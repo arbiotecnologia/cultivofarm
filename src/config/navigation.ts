@@ -104,7 +104,7 @@ export const navigation: NavItem[] = [
   { id: "estoque", label: "Estoque", icon: Warehouse, route: "/estoque", matchRoutes: ["/estoque/embalagens"], section: "Operação", platforms: ["desktop"], searchKeywords: ["inventário", "insumo", "embalagem"] },
   { id: "entregas", label: "Entregas", icon: Truck, route: "/entregas", matchRoutes: ["/entregas/:id/formulario"], section: "Operação", platforms: ["desktop"], searchKeywords: ["entrega", "logística"] },
   { id: "aplicacoes", label: "Aplicações", icon: Sprout, route: "/aplicacoes", section: "Operação", platforms: ["desktop"], searchKeywords: ["aplicação", "manejo"] },
-  { id: "painel-operacional", label: "Painel Operacional", icon: Activity, route: "/painel-operacional", section: "Operação", platforms: ["desktop"], searchKeywords: ["operacional", "painel", "visão operacional"] },
+  
 
   // ── Técnico / Auditoria ────────────────────────────────────────────────────
   { id: "lotes", label: "Lotes", icon: FlaskConical, route: "/lotes", section: "Técnico / Auditoria", badge: "Técnico", platforms: ["desktop"], searchKeywords: ["lote", "produção"] },
