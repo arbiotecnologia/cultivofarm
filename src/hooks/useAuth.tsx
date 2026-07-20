@@ -189,7 +189,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Cross-tab: reage a eventos de troca/limpeza/logout emitidos em outras abas.
   useEffect(() => {
     const unsub = subscribePortalEvents((event) => {
-      if (!queryClient) return;
       if (event.type === "signed_out") {
         clearActivePortalContext();
         queryClient.clear();
@@ -205,7 +204,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      const { clearActivePortalContext } = await import("@/lib/activePortalContext");
       clearActivePortalContext();
       const { broadcastPortalEvent } = await import("@/lib/portalBroadcast");
       broadcastPortalEvent({ type: "signed_out", at: Date.now() });
@@ -213,12 +211,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       /* noop */
     }
     try {
-      queryClient?.clear();
+      queryClient.clear();
     } catch {
       /* noop */
     }
     await supabase.auth.signOut();
   };
+
 
   return (
     <AuthContext.Provider
