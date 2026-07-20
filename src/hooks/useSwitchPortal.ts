@@ -9,16 +9,17 @@ import {
   TECHNICAL_SESSION_KEYS,
 } from "@/lib/portalQueryKeys";
 import { hasUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { clearActivePortalContext } from "@/lib/activePortalContext";
+import { broadcastPortalEvent } from "@/lib/portalBroadcast";
 
 /**
  * useSwitchPortal — troca de contexto B2B ↔ Técnico sem logout.
  *
- * Fase 9 — remove apenas as chaves do contexto atual (nunca cancela tudo).
- * Fase 10 — bloqueia a troca quando há alterações não salvas, exceto se
- *           o chamador confirmar `{ force: true }`.
- *
- * O contexto atual é inferido pela URL: `/portal-parceiro/*` = B2B,
- * `/app/*` = técnico. Fluxos administrativos não chamam este hook.
+ * Hardening:
+ * - cancela e remove queries do portal atual;
+ * - invalida `available-portal-contexts`, `profile` e `notifications`;
+ * - limpa contexto ativo antes de reenviar ao seletor;
+ * - registra a troca via canal entre abas para sincronização.
  */
 export function useSwitchPortal() {
   const navigate = useNavigate();
@@ -32,7 +33,6 @@ export function useSwitchPortal() {
       const leavingTechnical =
         currentPath.startsWith("/app") && currentPath !== "/app/login";
 
-      // Fase 10 — proteção de alterações não salvas.
       if (!options?.force && hasUnsavedChanges()) {
         const proceed = window.confirm(
           "Existem alterações não salvas. Deseja sair deste portal e descartá-las?"
@@ -41,11 +41,9 @@ export function useSwitchPortal() {
       }
 
       try {
-        // Cancela apenas as queries do portal que estamos deixando.
         const predicate = (queryKey: unknown) => {
           if (leavingB2B && isB2BQueryKey(queryKey)) return true;
           if (leavingTechnical && isTechnicalQueryKey(queryKey)) return true;
-          // fallback: se rota não bate, ainda limpamos as duas famílias.
           if (!leavingB2B && !leavingTechnical) {
             return isB2BQueryKey(queryKey) || isTechnicalQueryKey(queryKey);
           }
@@ -59,7 +57,13 @@ export function useSwitchPortal() {
           predicate: (q) => predicate(q.queryKey),
         });
 
-        // sessionStorage efêmero por contexto.
+        // Invalida chaves globais que devem refletir novo contexto/permissões.
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["available-portal-contexts"] }),
+          queryClient.invalidateQueries({ queryKey: ["profile"] }),
+          queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+        ]);
+
         try {
           const keys = leavingB2B
             ? B2B_SESSION_KEYS
@@ -68,10 +72,12 @@ export function useSwitchPortal() {
               : [...B2B_SESSION_KEYS, ...TECHNICAL_SESSION_KEYS];
           keys.forEach((k) => sessionStorage.removeItem(k));
         } catch {
-          // sessionStorage indisponível
+          /* sessionStorage indisponível */
         }
 
-        // Preserva registros offline; apenas revalida sessão.
+        clearActivePortalContext();
+        broadcastPortalEvent({ type: "portal_switched", at: Date.now() });
+
         await supabase.auth.getSession();
       } finally {
         navigate("/selecionar-portal", { replace: true });
@@ -81,3 +87,4 @@ export function useSwitchPortal() {
     [navigate, queryClient]
   );
 }
+
