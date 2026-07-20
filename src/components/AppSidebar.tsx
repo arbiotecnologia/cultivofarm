@@ -111,7 +111,7 @@ export function AppSidebar() {
           .map((c) => (
             <div key={c.id}>{renderItem(c, { nested: true })}</div>
           ))}
-      </>
+      </div>
     );
   };
 
