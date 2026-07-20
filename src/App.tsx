@@ -11,6 +11,8 @@ import { canAccess, getHomeForRole } from "@/lib/permissions";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "@/pages/Auth";
 import Index from "@/pages/Index";
+import DashboardUnificado from "@/pages/dashboard/DashboardUnificado";
+import { PreservedNavigate } from "@/components/PreservedNavigate";
 import SelecionarPortal from "@/pages/SelecionarPortal";
 import AcessoPendente from "@/pages/AcessoPendente";
 import SemPermissao from "@/pages/SemPermissao";
@@ -484,7 +486,11 @@ const App = () => (
                 <Route path="/solicitacoes" element={<RoleGuard><Solicitacoes /></RoleGuard>} />
                 <Route path="/monitoramento-alertas" element={<RoleGuard><MonitoramentoAlertas /></RoleGuard>} />
                 <Route path="/agenda-tecnica" element={<RoleGuard><AgendaTecnica /></RoleGuard>} />
-                <Route path="/painel-operacional" element={<RoleGuard><PainelOperacional /></RoleGuard>} />
+                <Route path="/dashboard" element={<PreservedNavigate to="/dashboard/geral" />} />
+                <Route path="/dashboard/geral" element={<RoleGuard><DashboardUnificado /></RoleGuard>} />
+                <Route path="/dashboard/executivo" element={<RoleGuard><DashboardUnificado /></RoleGuard>} />
+                <Route path="/dashboard/operacional" element={<RoleGuard><DashboardUnificado /></RoleGuard>} />
+                <Route path="/painel-operacional" element={<PreservedNavigate to="/dashboard/operacional" />} />
                 <Route path="/cockpit-laboratorio" element={<RoleGuard><CockpitLaboratorio /></RoleGuard>} />
                 <Route path="/financeiro" element={<RoleGuard><FinanceiroDashboard /></RoleGuard>} />
                 <Route path="/financeiro/receber" element={<RoleGuard><ContasReceber /></RoleGuard>} />
