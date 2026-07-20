@@ -163,7 +163,7 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/operacao/dashboard-producao": { administrador: "rw", gestor: "rw", producao: "r", gestor_comercial: "r" },
   "/portal-parceiro": { parceiro_b2b: "rw", parceiro_b2b_tecnico: "rw", administrador: "rw", gestor_comercial: "rw" },
   "/portal-parceiro/pedidos": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
-  // Solicitações: oculta do parceiro_b2b no menu (Fase 2). Mantida apenas para admin/gestor_comercial.
+  // Solicitações: acessível a gestor parceiro (parceiro_b2b), administrador e gestor_comercial.
   "/portal-parceiro/solicitacoes": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
   // /novo mantida temporariamente para redirect → /catalogo (feito no layout).
   "/portal-parceiro/novo": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
