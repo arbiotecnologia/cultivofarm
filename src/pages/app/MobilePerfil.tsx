@@ -12,8 +12,39 @@ import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 
 export default function MobilePerfil() {
   const { profile, primaryRole, roles, signOut } = useAuth();
-            : "Parceiro B2B"
-          : roleFallback;
+  const { isSupported, subscription, subscribe, unsubscribe, isLoading: isLoadingPush } = usePushSubscription();
+  const { data: contexts } = useAvailableContexts();
+  const switchPortal = useSwitchPortal();
+  const canSwitch =
+    !!contexts?.available_contexts?.includes("b2b") &&
+    !!contexts?.available_contexts?.includes("technical");
+
+  const activeCtx = getActivePortalContext();
+  const derivedFromRole: ActivePortalContext | null =
+    primaryRole === "cliente_produtor"
+      ? "producer"
+      : primaryRole === "parceiro_b2b" || primaryRole === "parceiro_b2b_tecnico"
+        ? "b2b"
+        : primaryRole
+          ? "technical"
+          : null;
+  const effectiveCtx = activeCtx ?? derivedFromRole;
+
+  // Rótulo unificado do papel/portal — respeita papel efetivo (aplicador,
+  // consultor, produtor) e mantém usuário duplo em technical como Consultor.
+  const displayRoleLabel = getPortalDisplayLabel({
+    activeCtx: effectiveCtx,
+    primaryRole,
+    roles,
+  });
+  const portalLabel = displayRoleLabel;
+  const PortalIcon = effectiveCtx === "b2b" ? Store : Sprout;
+
+  const others: string[] = [];
+  if (contexts?.has_b2b_access && effectiveCtx !== "b2b") others.push("Portal Parceiro B2B");
+  if (contexts?.has_technical_access && effectiveCtx !== "technical") others.push("Portal Técnico");
+
+
 
   return (
     <div className="p-4 space-y-6">
