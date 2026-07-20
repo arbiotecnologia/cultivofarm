@@ -26,13 +26,13 @@ export default function VisaoGeral() {
   const labQ = useQuery({
     queryKey: ["dashboard-geral-lab-resumo"],
     queryFn: async () => {
-      const [os, lotes, cq, envases, insumos, entregas] = await Promise.all([
+      const [os, lotesProd, lotesCQ, lotesEnvase, insumos, entregas] = await Promise.all([
         supabase.from("ordens_servico_onfarm").select("id", { count: "exact", head: true }).eq("status", "aberta"),
         supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "em_producao"),
-        supabase.from("controle_qualidade").select("id", { count: "exact", head: true }).eq("status", "pendente"),
-        supabase.from("envases").select("id", { count: "exact", head: true }).eq("status", "pendente"),
+        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "em_cq"),
+        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "envase"),
         supabase.from("produtos").select("id, estoque_minimo, estoque_produto(volume_total)").eq("e_insumo", true),
-        supabase.from("entregas").select("id", { count: "exact", head: true }).in("status", ["pendente", "programada"]),
+        supabase.from("entregas").select("id", { count: "exact", head: true }).in("status", ["separado", "em_rota"]),
       ]);
       const insumosCriticos = (insumos.data || []).filter((p: any) => {
         const total = (p.estoque_produto || []).reduce((a: number, x: any) => a + Number(x.volume_total || 0), 0);
@@ -40,9 +40,9 @@ export default function VisaoGeral() {
       }).length;
       return {
         os_aguardando: os.count ?? 0,
-        lotes_producao: lotes.count ?? 0,
-        cq_pendente: cq.count ?? 0,
-        envases_pendentes: envases.count ?? 0,
+        lotes_producao: lotesProd.count ?? 0,
+        cq_pendente: lotesCQ.count ?? 0,
+        envases_pendentes: lotesEnvase.count ?? 0,
         insumos_criticos: insumosCriticos,
         entregas_pendentes: entregas.count ?? 0,
       };
