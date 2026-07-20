@@ -59,48 +59,59 @@ export function AppSidebar() {
     return searchNavItems(itemsForPlatform("desktop"), query, role);
   }, [query, role]);
 
-  const renderItem = (item: NavItem) => {
+  const renderItem = (item: NavItem, opts?: { nested?: boolean }) => {
     const active = isNavItemActive(item, pathname);
     const isCockpit = item.route === "/cockpit-laboratorio";
     const isProducao = role === "producao" || role === "operador_onfarm";
+    const nested = opts?.nested === true;
 
     return (
-      <SidebarMenuItem key={item.id}>
-        <SidebarMenuButton
-          asChild
-          isActive={active}
-          tooltip={collapsed ? item.label : undefined}
-          className={cn(
-            isCockpit && isProducao && "bg-primary/5 hover:bg-primary/10 border border-primary/20",
-          )}
-        >
-          <NavLink
-            to={item.route}
-            end={item.route === "/"}
-            aria-current={active ? "page" : undefined}
-            className="hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-            activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-          >
-            <item.icon className={cn("h-4 w-4", isCockpit && isProducao && "text-primary")} aria-hidden="true" />
-            {!collapsed && (
-              <span className="flex items-center gap-2 flex-1 min-w-0">
-                <span className={cn("truncate", isCockpit && isProducao && "font-bold text-primary")}>
-                  {item.label}
-                </span>
-                {item.badgeSlot === "alertas" ? (
-                  <AlertasBadgeMenu />
-                ) : (
-                  item.badge && (
-                    <span className="ml-auto rounded-sm bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {item.badge}
-                    </span>
-                  )
-                )}
-              </span>
+      <>
+        <SidebarMenuItem key={item.id}>
+          <SidebarMenuButton
+            asChild
+            isActive={active}
+            tooltip={collapsed ? item.label : undefined}
+            className={cn(
+              isCockpit && isProducao && "bg-primary/5 hover:bg-primary/10 border border-primary/20",
+              nested && "pl-7 text-[13px]",
             )}
-          </NavLink>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
+          >
+            <NavLink
+              to={item.route}
+              end={item.route === "/"}
+              aria-current={active ? "page" : undefined}
+              className="hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+            >
+              <item.icon className={cn("h-4 w-4", isCockpit && isProducao && "text-primary")} aria-hidden="true" />
+              {!collapsed && (
+                <span className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className={cn("truncate", isCockpit && isProducao && "font-bold text-primary")}>
+                    {item.label}
+                  </span>
+                  {item.badgeSlot === "alertas" ? (
+                    <AlertasBadgeMenu />
+                  ) : (
+                    item.badge && (
+                      <span className="ml-auto rounded-sm bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {item.badge}
+                      </span>
+                    )
+                  )}
+                </span>
+              )}
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        {/* Fase 3 — renderiza filhos indentados quando existirem e a sidebar
+            estiver expandida. Cada filho respeita `canAccess` do próprio route. */}
+        {!collapsed && item.children && item.children
+          .filter((c) => canAccess(role, c.route))
+          .map((c) => (
+            <div key={c.id}>{renderItem(c, { nested: true })}</div>
+          ))}
+      </>
     );
   };
 
