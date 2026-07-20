@@ -184,7 +184,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("user_id, nome")
+        .select("id, user_id, nome")
         .eq("ativo", true)
         .order("nome");
       return data ?? [];
@@ -374,7 +374,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
                   <SelectContent>
                     <SelectItem value="none">— Sem responsável —</SelectItem>
                     {consultores?.map((c: any) => (
-                      <SelectItem key={c.user_id} value={c.user_id}>{c.nome}</SelectItem>
+                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
