@@ -671,10 +671,12 @@ export default function Configuracoes() {
                     ) : filteredUsers.map((u: any) => (
                       <MobileCard
                         key={u.user_id}
+                        onClick={() => { setEditUser(u); setEditOpen(true); }}
+                        ariaLabel={`Editar usuário ${u.nome || u.email || ""}`}
                         title={u.nome || "—"}
                         subtitle={u.email}
                         status={
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2" onClick={stopRowClick}>
                             <Switch
                               checked={u.ativo !== false}
                               onCheckedChange={(checked) => toggleAtivo.mutate({ userId: u.user_id, ativo: checked })}
