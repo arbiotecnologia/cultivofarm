@@ -57,13 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [primaryRole, setPrimaryRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // QueryClient pode não estar disponível em testes; usar try/catch defensivo.
-  let queryClient: ReturnType<typeof useQueryClient> | null = null;
-  try {
-    queryClient = useQueryClient();
-  } catch {
-    queryClient = null;
-  }
+  // AuthProvider é sempre montado dentro do QueryClientProvider (App.tsx e
+  // renderWithProviders). Chamar o hook incondicionalmente respeita as Rules
+  // of Hooks — o try/catch anterior violava a regra e podia render-por-render.
+  const queryClient = useQueryClient();
+
 
   const fetchProfileAndRole = async (userId: string) => {
     try {
@@ -191,7 +189,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Cross-tab: reage a eventos de troca/limpeza/logout emitidos em outras abas.
   useEffect(() => {
     const unsub = subscribePortalEvents((event) => {
-      if (!queryClient) return;
       if (event.type === "signed_out") {
         clearActivePortalContext();
         queryClient.clear();
@@ -207,7 +204,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      const { clearActivePortalContext } = await import("@/lib/activePortalContext");
       clearActivePortalContext();
       const { broadcastPortalEvent } = await import("@/lib/portalBroadcast");
       broadcastPortalEvent({ type: "signed_out", at: Date.now() });
@@ -215,12 +211,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       /* noop */
     }
     try {
-      queryClient?.clear();
+      queryClient.clear();
     } catch {
       /* noop */
     }
     await supabase.auth.signOut();
   };
+
 
   return (
     <AuthContext.Provider
