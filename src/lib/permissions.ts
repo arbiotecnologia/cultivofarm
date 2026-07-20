@@ -164,7 +164,7 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/portal-parceiro": { parceiro_b2b: "rw", parceiro_b2b_tecnico: "rw", administrador: "rw", gestor_comercial: "rw" },
   "/portal-parceiro/pedidos": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
   // Solicitações: oculta do parceiro_b2b no menu (Fase 2). Mantida apenas para admin/gestor_comercial.
-  "/portal-parceiro/solicitacoes": { administrador: "rw", gestor_comercial: "rw" },
+  "/portal-parceiro/solicitacoes": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
   // /novo mantida temporariamente para redirect → /catalogo (feito no layout).
   "/portal-parceiro/novo": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
   "/portal-parceiro/catalogo": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
@@ -177,10 +177,10 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/portal-parceiro/fichas": { parceiro_b2b: "r", parceiro_b2b_tecnico: "rw", administrador: "rw", gestor_comercial: "rw" },
   "/portal-parceiro/simulacoes": { parceiro_b2b_tecnico: "rw", administrador: "r", gestor_comercial: "r" },
   "/portal-parceiro/simulacoes-equipe": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
-  // Rotas de vínculo B2B × cliente: preservadas para uso futuro. Acesso apenas admin/gestor_comercial (Fase 2).
-  "/portal-parceiro/meus-produtores": { administrador: "rw", gestor_comercial: "rw" },
-  "/portal-parceiro/meus-produtores/:clienteId": { administrador: "rw", gestor_comercial: "rw" },
-  "/portal-parceiro/tecnicos-produtores": { administrador: "rw", gestor_comercial: "rw" },
+  // Vínculo técnico ↔ produtor: gestor B2B administra a equipe; técnico gerencia seus próprios produtores.
+  "/portal-parceiro/meus-produtores": { parceiro_b2b_tecnico: "rw", administrador: "rw", gestor_comercial: "rw" },
+  "/portal-parceiro/meus-produtores/:clienteId": { parceiro_b2b_tecnico: "rw", administrador: "rw", gestor_comercial: "rw" },
+  "/portal-parceiro/tecnicos-produtores": { parceiro_b2b: "rw", administrador: "rw", gestor_comercial: "rw" },
   "/portal-parceiro/usuarios-clientes": { administrador: "rw", gestor_comercial: "rw" },
 
 
