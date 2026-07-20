@@ -46,6 +46,20 @@ export default function MobilePerfil() {
   if (contexts?.has_b2b_access && effectiveCtx !== "b2b") others.push("Portal Parceiro B2B");
   if (contexts?.has_technical_access && effectiveCtx !== "technical") others.push("Portal Técnico");
 
+  // Rótulo do perfil coerente com o contexto ativo — evita mostrar
+  // "Parceiro B2B (Gestor)" no cabeçalho quando o usuário está operando
+  // como Consultor Técnico.
+  const roleFallback = role ? ROLE_LABELS[role] || role : "—";
+  const displayRoleLabel =
+    effectiveCtx === "technical"
+      ? "Consultor Técnico"
+      : effectiveCtx === "producer"
+        ? "Produtor"
+        : effectiveCtx === "b2b"
+          ? primaryRole === "parceiro_b2b_tecnico" || primaryRole === "parceiro_b2b"
+            ? ROLE_LABELS[primaryRole]
+            : "Parceiro B2B"
+          : roleFallback;
 
   return (
     <div className="p-4 space-y-6">
@@ -65,11 +79,9 @@ export default function MobilePerfil() {
           </div>
           <div>
             <p className="font-semibold text-foreground text-lg">{profile?.nome || "Usuário"}</p>
-            {role && (
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {ROLE_LABELS[role] || role}
-              </span>
-            )}
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {displayRoleLabel}
+            </span>
           </div>
         </div>
 
@@ -80,7 +92,7 @@ export default function MobilePerfil() {
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Shield className="h-4 w-4 text-muted-foreground" />
-            <span className="text-foreground">{role ? ROLE_LABELS[role] || role : "—"}</span>
+            <span className="text-foreground">{displayRoleLabel}</span>
           </div>
         </div>
       </Card>
