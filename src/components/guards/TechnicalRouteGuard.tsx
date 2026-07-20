@@ -11,7 +11,7 @@ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
  * Nunca considera "todo admin como técnico"; admin acessa pelo fluxo legado.
  */
 export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
-  const { user, role, loading } = useAuth();
+  const { user, roles, loading } = useAuth();
   const location = useLocation();
   const { data, isLoading, isError } = useAvailableContexts();
 
@@ -31,8 +31,9 @@ export function TechnicalRouteGuard({ children }: { children: ReactNode }) {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
-  // Admin mantém fluxo legado.
-  if (role === "administrador") {
+  // Admin mantém fluxo legado — verifica a lista completa de roles para
+  // cobrir administradores com papéis adicionais atribuídos.
+  if (roles.includes("administrador")) {
     return <>{children}</>;
   }
 
