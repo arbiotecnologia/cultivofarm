@@ -188,6 +188,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Cross-tab: reage a eventos de troca/limpeza/logout emitidos em outras abas.
+  useEffect(() => {
+    const unsub = subscribePortalEvents((event) => {
+      if (!queryClient) return;
+      if (event.type === "signed_out") {
+        clearActivePortalContext();
+        queryClient.clear();
+        return;
+      }
+      // portal_switched | portal_cleared
+      queryClient.invalidateQueries({ queryKey: ["available-portal-contexts"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      clearActivePortalContext();
+    });
+    return unsub;
+  }, [queryClient]);
+
   const signOut = async () => {
     try {
       const { clearActivePortalContext } = await import("@/lib/activePortalContext");
