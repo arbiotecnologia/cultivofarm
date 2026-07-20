@@ -66,8 +66,8 @@ export function AppSidebar() {
     const nested = opts?.nested === true;
 
     return (
-      <>
-        <SidebarMenuItem key={item.id}>
+      <div key={item.id} className="contents">
+        <SidebarMenuItem>
           <SidebarMenuButton
             asChild
             isActive={active}
