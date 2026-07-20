@@ -739,7 +739,11 @@ export default function Configuracoes() {
                           <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
                       ) : filteredUsers.map((u: any) => (
-                        <TableRow key={u.user_id} className={u.ativo === false ? "opacity-50" : ""}>
+                        <TableRow
+                          key={u.user_id}
+                          {...rowClickProps(() => { setEditUser(u); setEditOpen(true); })}
+                          className={`${u.ativo === false ? "opacity-50 " : ""}cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+                        >
                           <TableCell className="font-medium">{u.nome || "—"}</TableCell>
                           <TableCell>{u.email || "—"}</TableCell>
                           <TableCell>
@@ -750,7 +754,7 @@ export default function Configuracoes() {
                             ))}
                             {u.roles.length === 0 && <span className="text-muted-foreground text-sm">Sem perfil</span>}
                           </TableCell>
-                          <TableCell>
+                          <TableCell onClick={stopRowClick}>
                             <div className="flex items-center gap-2">
                               <Switch
                                 checked={u.ativo !== false}
@@ -770,7 +774,7 @@ export default function Configuracoes() {
                               {(!u.vinculos || u.vinculos.length === 0) && <span className="text-muted-foreground text-xs">—</span>}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell onClick={stopRowClick}>
                             <Button variant="ghost" size="icon" onClick={() => { setEditUser(u); setEditOpen(true); }}>
                               <Pencil className="h-4 w-4" />
                             </Button>
