@@ -712,7 +712,7 @@ export default function Configuracoes() {
                           )},
                         ]}
                         actions={
-                          <div className="flex w-full gap-2 items-center justify-end">
+                          <div className="flex w-full gap-2 items-center justify-end" onClick={stopRowClick}>
                             <Button variant="outline" size="sm" onClick={() => { setEditUser(u); setEditOpen(true); }}>
                               <Pencil className="h-3 w-3 mr-1" /> Editar
                             </Button>
