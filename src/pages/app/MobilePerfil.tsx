@@ -8,10 +8,10 @@ import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useSwitchPortal } from "@/hooks/useSwitchPortal";
-import { getActivePortalContext } from "@/lib/activePortalContext";
+import { getActivePortalContext, type ActivePortalContext } from "@/lib/activePortalContext";
 
 export default function MobilePerfil() {
-  const { profile, role, signOut } = useAuth();
+  const { profile, role, primaryRole, signOut } = useAuth();
   const { isSupported, subscription, subscribe, unsubscribe, isLoading: isLoadingPush } = usePushSubscription();
   const { data: contexts } = useAvailableContexts();
   const switchPortal = useSwitchPortal();
@@ -19,20 +19,32 @@ export default function MobilePerfil() {
     !!contexts?.available_contexts?.includes("b2b") &&
     !!contexts?.available_contexts?.includes("technical");
 
+  // Contexto ATIVO tem prioridade absoluta. Só quando não há contexto ativo
+  // (usuário com um único papel, sem seleção prévia) derivamos do papel
+  // primário — nunca substituímos um contexto ativo pelo papel primário.
   const activeCtx = getActivePortalContext();
+  const derivedFromRole: ActivePortalContext | null =
+    primaryRole === "cliente_produtor"
+      ? "producer"
+      : primaryRole === "parceiro_b2b" || primaryRole === "parceiro_b2b_tecnico"
+        ? "b2b"
+        : primaryRole
+          ? "technical"
+          : null;
+  const effectiveCtx = activeCtx ?? derivedFromRole;
   const portalLabel =
-    activeCtx === "b2b"
+    effectiveCtx === "b2b"
       ? "Parceiro B2B"
-      : activeCtx === "technical"
+      : effectiveCtx === "technical"
         ? "Consultor Técnico"
-        : activeCtx === "producer"
+        : effectiveCtx === "producer"
           ? "Produtor"
-          : "Portal Técnico";
-  const PortalIcon = activeCtx === "b2b" ? Store : Sprout;
+          : "—";
+  const PortalIcon = effectiveCtx === "b2b" ? Store : Sprout;
 
   const others: string[] = [];
-  if (contexts?.has_b2b_access && activeCtx !== "b2b") others.push("Portal Parceiro B2B");
-  if (contexts?.has_technical_access && activeCtx !== "technical") others.push("Portal Técnico");
+  if (contexts?.has_b2b_access && effectiveCtx !== "b2b") others.push("Portal Parceiro B2B");
+  if (contexts?.has_technical_access && effectiveCtx !== "technical") others.push("Portal Técnico");
 
 
   return (
