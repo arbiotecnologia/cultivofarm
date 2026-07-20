@@ -11,6 +11,8 @@ import { canAccess, getHomeForRole } from "@/lib/permissions";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "@/pages/Auth";
 import Index from "@/pages/Index";
+import DashboardUnificado from "@/pages/dashboard/DashboardUnificado";
+import { PreservedNavigate } from "@/components/PreservedNavigate";
 import SelecionarPortal from "@/pages/SelecionarPortal";
 import AcessoPendente from "@/pages/AcessoPendente";
 import SemPermissao from "@/pages/SemPermissao";
@@ -113,7 +115,6 @@ import MobileCheckin from "@/pages/app/MobileCheckin";
 import MobileVisita from "@/pages/app/MobileVisita";
 import MobileTalhaoHistorico from "@/pages/app/MobileTalhaoHistorico";
 import MobileCatalogoTecnico from "@/pages/app/MobileCatalogoTecnico";
-import PortalExecutivo from "@/pages/executivo/PortalExecutivo";
 
 import PedidosB2B from "@/pages/comercial/PedidosB2B";
 import DashboardB2B from "@/pages/comercial/DashboardB2B";
@@ -158,7 +159,6 @@ import RegrasGovernancaB2B from "@/pages/financeiro/RegrasGovernancaB2B";
 import DashboardSociosB2B from "@/pages/executivo/DashboardSociosB2B";
 import Solicitacoes from "@/pages/Solicitacoes";
 import AgendaTecnica from "@/pages/AgendaTecnica";
-import PainelOperacional from "@/pages/PainelOperacional";
 import PortalFazendas from "@/pages/portal/PortalFazendas";
 import PortalFazendaDetalhe from "@/pages/portal/PortalFazendaDetalhe";
 import PortalRegistros from "@/pages/portal/PortalRegistros";
@@ -484,7 +484,11 @@ const App = () => (
                 <Route path="/solicitacoes" element={<RoleGuard><Solicitacoes /></RoleGuard>} />
                 <Route path="/monitoramento-alertas" element={<RoleGuard><MonitoramentoAlertas /></RoleGuard>} />
                 <Route path="/agenda-tecnica" element={<RoleGuard><AgendaTecnica /></RoleGuard>} />
-                <Route path="/painel-operacional" element={<RoleGuard><PainelOperacional /></RoleGuard>} />
+                <Route path="/dashboard" element={<PreservedNavigate to="/dashboard/geral" />} />
+                <Route path="/dashboard/geral" element={<RoleGuard><DashboardUnificado /></RoleGuard>} />
+                <Route path="/dashboard/executivo" element={<RoleGuard><DashboardUnificado /></RoleGuard>} />
+                <Route path="/dashboard/operacional" element={<RoleGuard><DashboardUnificado /></RoleGuard>} />
+                <Route path="/painel-operacional" element={<PreservedNavigate to="/dashboard/operacional" />} />
                 <Route path="/cockpit-laboratorio" element={<RoleGuard><CockpitLaboratorio /></RoleGuard>} />
                 <Route path="/financeiro" element={<RoleGuard><FinanceiroDashboard /></RoleGuard>} />
                 <Route path="/financeiro/receber" element={<RoleGuard><ContasReceber /></RoleGuard>} />
@@ -510,7 +514,7 @@ const App = () => (
                 <Route path="/financeiro/relatorios/por-cliente" element={<RoleGuard><RelPorCliente /></RoleGuard>} />
                 <Route path="/financeiro/relatorios/prestacao-contas" element={<RoleGuard><RelPrestacaoContas /></RoleGuard>} />
                 <Route path="/financeiro/recibos" element={<RoleGuard><FinRecibos /></RoleGuard>} />
-                 <Route path="/executivo" element={<RoleGuard><PortalExecutivo /></RoleGuard>} />
+                 <Route path="/executivo" element={<PreservedNavigate to="/dashboard/executivo" />} />
                  <Route path="/comercial/parceiros" element={<Navigate to="/clientes?aba=parceiros" replace />} />
                  <Route path="/comercial/pedidos-b2b" element={<RoleGuard><PedidosB2B /></RoleGuard>} />
                  <Route path="/comercial/solicitacoes-b2b" element={<RoleGuard><ComercialSolicitacoesB2B /></RoleGuard>} />

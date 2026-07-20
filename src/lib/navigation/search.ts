@@ -18,7 +18,9 @@ export function searchNavItems(
   role: string | null,
 ): NavItem[] {
   const term = normalize(query.trim());
-  const allowed = items.filter((it) => canAccess(role, it.route));
+  // Fase 3 — achata filhos para que a busca também os alcance.
+  const flat = items.flatMap((it) => (it.children ? [it, ...it.children] : [it]));
+  const allowed = flat.filter((it) => canAccess(role, it.route));
   if (!term) return allowed;
 
   return allowed.filter((it) => {

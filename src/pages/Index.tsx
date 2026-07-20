@@ -1,15 +1,16 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
-import PainelOperacional from "./PainelOperacional";
-import { DashboardAgronomico } from "@/components/bi/DashboardAgronomico";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-
-
 import { ErrorRecovery } from "@/components/ErrorRecovery";
 
+/**
+ * Fase 3 — `/` redireciona para o Dashboard unificado.
+ * - cliente_produtor → /portal (mantido).
+ * - demais perfis administrativos/técnicos → /dashboard/geral.
+ */
 export default function Index() {
   const { role, loading, error, refresh, signOut } = useAuth();
-  useSystemConfig(); // Carrega as configurações globais necessárias
+  useSystemConfig();
 
   if (loading) {
     return (
@@ -23,31 +24,9 @@ export default function Index() {
   }
 
   if (error) {
-    return (
-      <ErrorRecovery 
-        message={error} 
-        onRetry={refresh} 
-        onSignOut={signOut}
-      />
-    );
+    return <ErrorRecovery message={error} onRetry={refresh} onSignOut={signOut} />;
   }
 
-
-  // Redirecionamento baseado em perfil
-  if (role === "cliente_produtor") {
-    return <Navigate to="/portal" replace />;
-  }
-
-  // Perfis administrativos e gestores veem o painel operacional
-  if (role === "administrador" || role === "gestor") {
-    return <PainelOperacional />;
-  }
-
-  // Perfis técnicos veem o dashboard agronômico/BI
-  if (role === "consultor_tecnico" || role === "tecnico_agronomo" || role === "aplicador") {
-    return <DashboardAgronomico />;
-  }
-
-  // Default para outros perfis logados (administrativo, etc)
-  return <DashboardAgronomico />;
+  if (role === "cliente_produtor") return <Navigate to="/portal" replace />;
+  return <Navigate to="/dashboard/geral" replace />;
 }

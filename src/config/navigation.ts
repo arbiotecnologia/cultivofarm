@@ -72,8 +72,22 @@ export const DESKTOP_SECTION_ORDER: NavSection[] = [
 
 export const navigation: NavItem[] = [
   // ── Menu Principal ─────────────────────────────────────────────────────────
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, route: "/", section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["home", "início", "painel", "visão geral"] },
-  { id: "executivo", label: "Portal Executivo", icon: Activity, route: "/executivo", section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["executivo", "visão executiva", "kpi", "diretoria"] },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    route: "/dashboard/geral",
+    section: "Menu Principal",
+    matchRoutes: ["/dashboard", "/dashboard/geral", "/dashboard/executivo", "/dashboard/operacional"],
+    legacyRoutes: ["/", "/executivo", "/painel-operacional"],
+    platforms: ["desktop"],
+    searchKeywords: ["home", "início", "painel", "visão geral", "dashboard"],
+    children: [
+      { id: "dashboard-geral", label: "Visão Geral", icon: LayoutDashboard, route: "/dashboard/geral", section: "Menu Principal", legacyRoutes: ["/"], platforms: ["desktop"], searchKeywords: ["visão geral", "resumo"] },
+      { id: "dashboard-executivo", label: "Visão Executiva", icon: BarChart3, route: "/dashboard/executivo", section: "Menu Principal", legacyRoutes: ["/executivo"], platforms: ["desktop"], searchKeywords: ["executivo", "portal executivo", "kpi", "diretoria"] },
+      { id: "dashboard-operacional", label: "Visão Operacional", icon: Activity, route: "/dashboard/operacional", section: "Menu Principal", legacyRoutes: ["/painel-operacional"], platforms: ["desktop"], searchKeywords: ["painel operacional", "operacional"] },
+    ],
+  },
   { id: "clientes", label: "Clientes", icon: Users, route: "/clientes", section: "Menu Principal", matchRoutes: ["/clientes/:id", "/parceiros/:id"], legacyRoutes: ["/comercial/parceiros"], platforms: ["desktop"], searchKeywords: ["produtor", "parceiro", "conta"] },
   { id: "solicitacoes", label: "Solicitações", icon: Inbox, route: "/solicitacoes", section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["pedido interno", "demanda"] },
   { id: "agenda-tecnica", label: "Agenda Técnica", icon: CalendarClock, route: "/agenda-tecnica", section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["calendário", "visita agendada"] },
@@ -90,7 +104,7 @@ export const navigation: NavItem[] = [
   { id: "estoque", label: "Estoque", icon: Warehouse, route: "/estoque", matchRoutes: ["/estoque/embalagens"], section: "Operação", platforms: ["desktop"], searchKeywords: ["inventário", "insumo", "embalagem"] },
   { id: "entregas", label: "Entregas", icon: Truck, route: "/entregas", matchRoutes: ["/entregas/:id/formulario"], section: "Operação", platforms: ["desktop"], searchKeywords: ["entrega", "logística"] },
   { id: "aplicacoes", label: "Aplicações", icon: Sprout, route: "/aplicacoes", section: "Operação", platforms: ["desktop"], searchKeywords: ["aplicação", "manejo"] },
-  { id: "painel-operacional", label: "Painel Operacional", icon: Activity, route: "/painel-operacional", section: "Operação", platforms: ["desktop"], searchKeywords: ["operacional", "painel", "visão operacional"] },
+  
 
   // ── Técnico / Auditoria ────────────────────────────────────────────────────
   { id: "lotes", label: "Lotes", icon: FlaskConical, route: "/lotes", section: "Técnico / Auditoria", badge: "Técnico", platforms: ["desktop"], searchKeywords: ["lote", "produção"] },
