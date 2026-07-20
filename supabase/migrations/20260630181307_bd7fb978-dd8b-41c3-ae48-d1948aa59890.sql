@@ -1,0 +1,53 @@
+CREATE OR REPLACE FUNCTION public.validate_estoque_reserva()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.status::text = 'reservado' AND (OLD.status IS DISTINCT FROM NEW.status OR OLD.status::text <> 'reservado') THEN
+    IF NEW.reservado_para_os_id IS NULL THEN
+      RAISE EXCEPTION 'Reserva requer uma OS vinculada.' USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF NEW.reservado_para_os_tipo = 'b2b' THEN
+      IF NEW.reservado_para_partner_id IS NULL THEN
+        RAISE EXCEPTION 'Reserva B2B requer um parceiro vinculado.' USING ERRCODE = 'check_violation';
+      END IF;
+    ELSE
+      IF NEW.reservado_para_cliente_id IS NULL AND NEW.reservado_para_partner_id IS NULL THEN
+        RAISE EXCEPTION 'Reserva requer um cliente ou parceiro vinculado.' USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+
+    IF NEW.quantidade_reservada IS NULL OR NEW.quantidade_reservada <= 0 THEN
+      RAISE EXCEPTION 'Informe uma quantidade reservada maior que zero.' USING ERRCODE = 'check_violation';
+    END IF;
+    IF NEW.quantidade IS NOT NULL AND NEW.quantidade_reservada > NEW.quantidade THEN
+      RAISE EXCEPTION 'Quantidade reservada (%) excede o estoque disponível (%).', NEW.quantidade_reservada, NEW.quantidade
+        USING ERRCODE = 'check_violation';
+    END IF;
+    IF NEW.reservado_em IS NULL THEN NEW.reservado_em := now(); END IF;
+    IF NEW.reservado_por IS NULL THEN NEW.reservado_por := auth.uid(); END IF;
+  END IF;
+
+  IF NEW.status::text = 'disponivel' AND OLD.status::text = 'reservado' THEN
+    NEW.reservado_para_os_id := NULL;
+    NEW.reservado_para_os_tipo := NULL;
+    NEW.reservado_para_cliente_id := NULL;
+    NEW.reservado_para_partner_id := NULL;
+    NEW.reservado_para_partner_order_id := NULL;
+    NEW.quantidade_reservada := NULL;
+    NEW.reservado_por := NULL;
+    NEW.reservado_em := NULL;
+    NEW.observacao_reserva := NULL;
+  END IF;
+
+  IF NEW.status::text = 'expedido' AND OLD.status::text <> 'expedido' THEN
+    IF NEW.expedido_em IS NULL THEN NEW.expedido_em := now(); END IF;
+    IF NEW.expedido_por IS NULL THEN NEW.expedido_por := auth.uid(); END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;

@@ -1,0 +1,1 @@
+ALTER TABLE public.entregas ALTER COLUMN ordem_servico_id DROP NOT NULL;

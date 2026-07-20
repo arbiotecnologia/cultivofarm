@@ -1,0 +1,127 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export interface ParceiroB2BInput {
+  codigo?: string | null;
+  razao_social: string;
+  nome_fantasia?: string | null;
+  cnpj?: string | null;
+  client_id?: string | null;
+  desconto_padrao: number;
+  observacoes?: string | null;
+  ativo: boolean;
+  // Classificação
+  partner_type?: string | null;
+  segmento?: string | null;
+  porte?: string | null;
+  origem_parceiro?: string | null;
+  data_inicio_parceria?: string | null;
+  consultor_responsavel?: string | null;
+  commercial_region?: string | null;
+  commercial_state?: string | null;
+  commercial_city?: string | null;
+  // Fiscal
+  inscricao_estadual?: string | null;
+  inscricao_municipal?: string | null;
+  regime_tributario?: string | null;
+  suframa?: string | null;
+  // Endereço
+  cep?: string | null;
+  endereco_logradouro?: string | null;
+  endereco_numero?: string | null;
+  endereco_complemento?: string | null;
+  endereco_bairro?: string | null;
+  // Contatos
+  email_comercial?: string | null;
+  email_financeiro?: string | null;
+  email_nfe?: string | null;
+  telefone_comercial?: string | null;
+  whatsapp_comercial?: string | null;
+  site?: string | null;
+  // Financeiro
+  limite_credito_brl?: number | null;
+  prazo_pagamento_padrao_dias?: number | null;
+  condicao_pagamento_padrao?: string | null;
+  forma_pagamento_preferida?: string | null;
+  dados_bancarios?: any;
+  comissao_percentual?: number | null;
+  meta_mensal_brl?: number | null;
+  // Logística
+  endereco_entrega_igual_comercial?: boolean;
+  entrega_cep?: string | null;
+  entrega_logradouro?: string | null;
+  entrega_numero?: string | null;
+  entrega_complemento?: string | null;
+  entrega_bairro?: string | null;
+  entrega_cidade?: string | null;
+  entrega_estado?: string | null;
+  transportadora_preferida?: string | null;
+  incoterm?: string | null;
+}
+
+export function useCreateParceiroB2B() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: ParceiroB2BInput) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("partner_accounts")
+        .insert({ ...input, created_by: userData.user?.id } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
+      toast.success("Parceiro criado com sucesso");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao criar parceiro"),
+  });
+}
+
+export function useUpdateParceiroB2B() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: ParceiroB2BInput & { id: string }) => {
+      const { data, error } = await supabase
+        .from("partner_accounts")
+        .update(input as any)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
+      toast.success("Parceiro atualizado");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao atualizar parceiro"),
+  });
+}
+
+export function useSoftDeleteParceiroB2B() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { data, error } = await supabase
+        .from("partner_accounts")
+        .update({
+          ativo,
+          deleted_at: ativo ? null : new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["parceiros-b2b"] });
+      toast.success(vars.ativo ? "Parceiro reativado" : "Parceiro inativado");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao alterar status"),
+  });
+}

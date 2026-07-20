@@ -1,0 +1,10 @@
+CREATE INDEX IF NOT EXISTS idx_microorganism_targets_ativo ON public.microorganism_targets(ativo) WHERE ativo = true;
+CREATE INDEX IF NOT EXISTS idx_catalogo_volumes_ativo ON public.catalogo_volumes(ativo) WHERE ativo = true;
+CREATE INDEX IF NOT EXISTS idx_ordens_servico_status_created ON public.ordens_servico(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_catalog_technical_sources_entidade ON public.catalog_technical_sources(entidade_tipo, entidade_id);
+CREATE INDEX IF NOT EXISTS idx_microorganism_technical_profiles_micro ON public.microorganism_technical_profiles(microrganismo_id);
+ANALYZE public.microorganism_targets;
+ANALYZE public.catalogo_volumes;
+ANALYZE public.ordens_servico;
+ANALYZE public.catalog_technical_sources;
+ANALYZE public.microorganism_technical_profiles;

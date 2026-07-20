@@ -1,0 +1,821 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useDebounce } from "@/hooks/useDebounce";
+import { MaskedInput } from "@/components/ui/masked-input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { formatTelefone, formatCpfCnpj, unmask } from "@/lib/masks";
+import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Star, Timer } from "lucide-react";
+import { SlaB2BTab } from "@/pages/configuracoes/SlaB2BTab";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ROLE_LABELS, ROLE_VARIANTS, ACTIVE_ROLES } from "@/lib/permissions";
+import AparenciaTab from "@/components/configuracoes/AparenciaTab";
+import { ClientesVinculadosField, type ClienteVinculo } from "@/components/configuracoes/ClientesVinculadosField";
+import { Link } from "react-router-dom";
+import { History } from "lucide-react";
+
+
+
+export default function Configuracoes() {
+  const isMobile = useIsMobile();
+  const { profile, role, user } = useAuth();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+  const isAdmin = role === "administrador";
+  const initialTab = searchParams.get("tab") === "usuarios" && isAdmin ? "usuarios" : "perfil";
+
+
+  // Profile edit state
+  const [nome, setNome] = useState(profile?.nome || "");
+  const [phone, setPhone] = useState("");
+  const [cpfCnpj, setCpfCnpj] = useState("");
+
+  useEffect(() => { 
+    if (profile?.nome) setNome(profile.nome); 
+    if ((profile as any)?.telefone) setPhone((profile as any).telefone);
+    if ((profile as any)?.cpf_cnpj) setCpfCnpj((profile as any).cpf_cnpj);
+  }, [profile]);
+
+  const updateProfile = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Não autenticado");
+      const { error } = await supabase.from("profiles").update({ nome, telefone: unmask(phone), cpf_cnpj: unmask(cpfCnpj) }).eq("user_id", user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Perfil atualizado com sucesso" });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    },
+  });
+
+  // Admin: list all users
+  const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ["admin-users"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data: profiles, error } = await supabase.from("profiles").select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, cargo, crea, especialidade").order("created_at", { ascending: false });
+      if (error) throw error;
+      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
+      const { data: vinc } = await (supabase as any).from("user_clientes").select("user_id, cliente_id, principal");
+      return (profiles || []).map((p: any) => ({
+        ...p,
+        roles: (roles || []).filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
+        vinculos: (vinc || [])
+          .filter((v: any) => v.user_id === p.user_id)
+          .map((v: any) => ({ cliente_id: v.cliente_id, principal: !!v.principal })) as ClienteVinculo[],
+      }));
+    },
+  });
+
+  const { data: clientes = [] } = useQuery({
+    queryKey: ["clientes-lista"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clientes").select("id, nome, cpf_cnpj").order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string; cpf_cnpj: string | null }[];
+    },
+  });
+
+  const clienteNomeById = (id: string) => clientes.find(c => c.id === id)?.nome ?? id.slice(0, 8);
+
+
+  const filteredUsers = allUsers.filter((u: any) => {
+    if (filterRole !== "all" && !u.roles.includes(filterRole)) return false;
+    if (filterStatus === "ativo" && u.ativo === false) return false;
+    if (filterStatus === "inativo" && u.ativo !== false) return false;
+    if (debouncedSearchTerm) {
+      const s = debouncedSearchTerm.toLowerCase();
+      return (u.nome || "").toLowerCase().includes(s) || (u.email || "").toLowerCase().includes(s);
+    }
+    return true;
+  });
+
+  // Update role
+  const updateRole = useMutation({
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
+      const { error: delError } = await supabase.from("user_roles").delete().eq("user_id", userId);
+      if (delError) throw delError;
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({ title: "Perfil de acesso atualizado" });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    },
+  });
+
+  // Toggle ativo
+  const toggleAtivo = useMutation({
+    mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
+      const { error } = await supabase.from("profiles").update({ ativo } as any).eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({ title: "Status do usuário atualizado" });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    },
+  });
+
+  // Create user dialog
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    nome: "", email: "", password: "", role: "administrativo",
+    telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "",
+  });
+  const [newUserVinculos, setNewUserVinculos] = useState<ClienteVinculo[]>([]);
+
+  const createUser = useMutation({
+    mutationFn: async () => {
+      if (newUser.role === "cliente_produtor" && newUserVinculos.length === 0) {
+        throw new Error("Vincule pelo menos um cliente para o perfil de Produtor.");
+      }
+      const principal = newUserVinculos.find(v => v.principal)?.cliente_id ?? newUserVinculos[0]?.cliente_id;
+      const payload: any = {
+        ...newUser,
+        telefone: unmask(newUser.telefone),
+        cpf_cnpj: unmask(newUser.cpf_cnpj),
+        cliente_ids: newUserVinculos.map(v => v.cliente_id),
+        principal_cliente_id: principal,
+      };
+      const { data, error } = await supabase.functions.invoke("create-user", { body: payload });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({ title: "Usuário criado com sucesso" });
+      setCreateOpen(false);
+      setNewUser({ nome: "", email: "", password: "", role: "administrativo", telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "" });
+      setNewUserVinculos([]);
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro ao criar usuário", description: e.message, variant: "destructive" });
+    },
+  });
+
+  // Edit user dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUser, setEditUser] = useState<any>(null);
+  const [editVinculos, setEditVinculos] = useState<ClienteVinculo[]>([]);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!editOpen) {
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPassword(false);
+      setEditUser(null);
+      setEditVinculos([]);
+    }
+  }, [editOpen]);
+
+  // Inicializa vínculos apenas quando abre o diálogo ou muda o usuário sendo editado
+  // Usamos editUser?.user_id para evitar resetar o estado quando outros campos (nome, email) mudam
+  useEffect(() => {
+    if (editOpen && editUser?.user_id) {
+      setEditVinculos(editUser.vinculos || []);
+    }
+  }, [editOpen, editUser?.user_id]);
+
+  // Deep-link: ?tab=usuarios&user_id=...
+  useEffect(() => {
+    const uid = searchParams.get("user_id");
+    if (uid && isAdmin && allUsers.length > 0 && !editOpen) {
+      const found = allUsers.find((u: any) => u.user_id === uid);
+      if (found) { setEditUser(found); setEditOpen(true); }
+    }
+  }, [searchParams, allUsers, isAdmin, editOpen]);
+
+  const saveEditUser = useMutation({
+    mutationFn: async () => {
+      if (!editUser) return;
+      const currentRoles = editUser.roles || [];
+      const isProdutor = currentRoles.includes("cliente_produtor");
+      
+      if (isProdutor && editVinculos.length === 0) {
+        throw new Error("Para perfil Produtor é obrigatório ao menos um cliente vinculado.");
+      }
+
+      // 1. Sincroniza user_clientes PRIMEIRO (necessário para a trigger de roles se o perfil for Produtor)
+      const sb = supabase as any;
+      const { data: atuais, error: selectErr } = await sb.from("user_clientes").select("id, cliente_id, principal").eq("user_id", editUser.user_id);
+      if (selectErr) throw selectErr;
+
+      const atuaisMap = new Map<string, { id: string; principal: boolean }>((atuais ?? []).map((r: any) => [r.cliente_id, { id: r.id, principal: !!r.principal }]));
+      const desejados = new Set(editVinculos.map(v => v.cliente_id));
+
+      // Deletar os que não estão mais na lista
+      const toDelete = (atuais ?? []).filter((r: any) => !desejados.has(r.cliente_id)).map((r: any) => r.id);
+      if (toDelete.length) {
+        const { error: delErr } = await sb.from("user_clientes").delete().in("id", toDelete);
+        if (delErr) throw delErr;
+      }
+
+      // Inserir ou atualizar os desejados
+      for (const v of editVinculos) {
+        const existing = atuaisMap.get(v.cliente_id);
+        if (!existing) {
+          const { error: insErr } = await sb.from("user_clientes").insert({ user_id: editUser.user_id, cliente_id: v.cliente_id, principal: v.principal });
+          if (insErr) throw insErr;
+        } else if (existing.principal !== v.principal) {
+          const { error: updErr } = await sb.from("user_clientes").update({ principal: v.principal }).eq("id", existing.id);
+          if (updErr) throw updErr;
+        }
+      }
+
+      // 2. Atualiza perfil básico
+      // Não atualizamos cliente_id manualmente aqui pois a trigger trg_user_clientes_sync cuida disso
+      const { error: profileErr } = await supabase.from("profiles")
+        .update({
+          nome: editUser.nome,
+          telefone: unmask(editUser.telefone),
+          cargo: editUser.cargo,
+          cpf_cnpj: unmask(editUser.cpf_cnpj),
+          crea: editUser.crea,
+          especialidade: editUser.especialidade,
+        } as any)
+        .eq("user_id", editUser.user_id);
+      if (profileErr) throw profileErr;
+
+      // 3. Se o papel mudou no objeto editUser, atualizamos aqui também
+      // Isso permite que o diálogo de edição controle o papel
+      // 3. Se o papel mudou no objeto editUser, atualizamos aqui também
+      const originalUser = allUsers.find(u => u.user_id === editUser.user_id);
+      const newRole = editUser.roles?.[0];
+      const oldRole = originalUser?.roles?.[0];
+
+      if (newRole && newRole !== oldRole) {
+        // Remove roles antigos e insere o novo
+        const { error: delRoleErr } = await supabase.from("user_roles").delete().eq("user_id", editUser.user_id);
+        if (delRoleErr) throw delRoleErr;
+        
+        const { error: insRoleErr } = await supabase.from("user_roles").insert({ 
+          user_id: editUser.user_id, 
+          role: newRole as any 
+        });
+        if (insRoleErr) throw insRoleErr;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({ title: "Usuário atualizado" });
+      setEditOpen(false);
+      const sp = new URLSearchParams(searchParams);
+      sp.delete("user_id");
+      setSearchParams(sp, { replace: true });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    },
+  });
+
+
+  const updateUserPassword = useMutation({
+    mutationFn: async () => {
+      if (!editUser) throw new Error("Usuário não selecionado");
+      if (newPassword.length < 6) throw new Error("A senha deve ter no mínimo 6 caracteres");
+      if (newPassword !== confirmPassword) throw new Error("As senhas não coincidem");
+      const { data, error } = await supabase.functions.invoke("admin-update-user-password", {
+        body: { user_id: editUser.user_id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      toast({ title: "Senha atualizada com sucesso" });
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro ao alterar senha", description: e.message, variant: "destructive" });
+    },
+  });
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <PageHeader
+        title="Configurações"
+        description="Gerenciamento do sistema e usuários"
+      />
+
+      <Tabs defaultValue={initialTab} className="w-full">
+        <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg flex overflow-x-auto justify-start sm:justify-center gap-1 mb-4">
+          <TabsTrigger value="perfil" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />Perfil
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="aparencia" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <Palette className="h-3 w-3 sm:h-4 sm:w-4" />Visual
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="usuarios" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4" />Usuários
+            </TabsTrigger>
+          )}
+          {(isAdmin || role === "gestor") && (
+            <TabsTrigger value="catalogos" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <ListTree className="h-3 w-3 sm:h-4 sm:w-4" />Catálogos
+            </TabsTrigger>
+          )}
+          {(isAdmin || role === "gestor" || role === "gestor_comercial" || role === "producao" || role === "administrativo") && (
+            <TabsTrigger value="sla-b2b" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <Timer className="h-3 w-3 sm:h-4 sm:w-4" />SLA B2B
+            </TabsTrigger>
+          )}
+        </TabsList>
+
+        <TabsContent value="sla-b2b">
+          <SlaB2BTab podeEditar={isAdmin || role === "gestor"} />
+        </TabsContent>
+
+        {/* Profile Tab */}
+        <TabsContent value="perfil">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" />Meu Perfil</CardTitle>
+              <CardDescription>Atualize suas informações pessoais</CardDescription>
+            </CardHeader>
+            <CardContent className="form-spacing-mobile max-w-md">
+              <div className="space-y-1.5 sm:space-y-1">
+                <Label>Email</Label>
+                <Input value={user?.email || ""} disabled className="bg-muted" />
+              </div>
+              <div className="space-y-1.5 sm:space-y-1">
+                <Label>Nome</Label>
+                <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome completo" />
+              </div>
+              <div className="space-y-1.5 sm:space-y-1">
+                <Label>Telefone</Label>
+                <MaskedInput mask="telefone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" />
+              </div>
+              <div className="space-y-1.5 sm:space-y-1">
+                <Label>CPF/CNPJ</Label>
+                <MaskedInput mask="cpf-cnpj" value={cpfCnpj} onChange={e => setCpfCnpj(e.target.value)} placeholder="000.000.000-00" />
+              </div>
+              <div className="space-y-1.5 sm:space-y-1">
+                <Label>Perfil de Acesso</Label>
+                <div className="mt-1">
+                  <Badge variant={ROLE_VARIANTS[role || ""] || "outline"} className="h-6">
+                    {ROLE_LABELS[role || ""] || role || "—"}
+                  </Badge>
+                </div>
+              </div>
+              <div className="pt-2">
+                <Button onClick={() => updateProfile.mutate()} disabled={updateProfile.isPending} className="w-full sm:w-auto">
+                  <Save className="h-4 w-4 mr-2" />Salvar Alterações
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Aparência Tab */}
+        {isAdmin && (
+          <TabsContent value="aparencia">
+            <AparenciaTab />
+          </TabsContent>
+        )}
+
+        {(isAdmin || role === "gestor") && (
+          <TabsContent value="catalogos">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><ListTree className="h-5 w-5" />Catálogos</CardTitle>
+                <CardDescription>Gerencie listas e sugestões pré-definidas exibidas nos formulários do sistema.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Link
+                  to="/configuracoes/objetivos-visita"
+                  className="flex items-center justify-between border rounded-md p-3 hover:bg-accent/50 transition-colors"
+                >
+                  <div>
+                    <div className="font-medium text-sm">Objetivos de Visita Técnica</div>
+                    <div className="text-xs text-muted-foreground">
+                      Sugestões exibidas no campo "Objetivo da visita" do formulário, por cultura ou genéricas.
+                    </div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </Link>
+                <Link
+                  to="/configuracoes/catalogo-ia"
+                  className="flex items-center justify-between border rounded-md p-3 hover:bg-accent/50 transition-colors"
+                >
+                  <div>
+                    <div className="font-medium text-sm">Atualização das fichas técnicas com IA</div>
+                    <div className="text-xs text-muted-foreground">
+                      Gera sugestões em lote para campos de produtos e microrganismos. Cada sugestão cria uma versão pendente de aprovação.
+                    </div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </Link>
+                <Link
+                  to="/configuracoes/parametros-cq"
+                  className="flex items-center justify-between border rounded-md p-3 hover:bg-accent/50 transition-colors"
+                >
+                  <div>
+                    <div className="font-medium text-sm">Parâmetros de referência do CQ</div>
+                    <div className="text-xs text-muted-foreground">
+                      Faixas esperadas (pH, concentração, aparência, odor, contaminação) por microrganismo/produto — exibidas como comparativo informativo no registro do CQ.
+                    </div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+
+        {/* Users Tab */}
+        {isAdmin && (
+          <TabsContent value="usuarios">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Gestão de Usuários</CardTitle>
+                    <CardDescription>Gerencie os perfis de acesso dos usuários do sistema</CardDescription>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" asChild>
+                      <Link to="/auditoria?tab=senhas">
+                        <History className="h-4 w-4 mr-2" />
+                        Auditoria de Senhas
+                      </Link>
+                    </Button>
+                    <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                      <DialogTrigger asChild>
+                        <Button><Plus className="h-4 w-4 mr-2" />Novo Usuário</Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Cadastrar Novo Usuário</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div><Label>Nome *</Label><Input value={newUser.nome} onChange={e => setNewUser({ ...newUser, nome: e.target.value })} /></div>
+                          <div><Label>Email *</Label><Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} /></div>
+                          <div><Label>Senha *</Label><Input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} /></div>
+                          <div>
+                            <Label>Perfil *</Label>
+                            <Select value={newUser.role} onValueChange={v => setNewUser({ ...newUser, role: v })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {ACTIVE_ROLES.map(r => (
+                                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                           <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
+                           <div><Label>Cargo</Label><Input value={newUser.cargo} onChange={e => setNewUser({ ...newUser, cargo: e.target.value })} /></div>
+                           <div><Label>CPF/CNPJ</Label><MaskedInput mask="cpf-cnpj" value={newUser.cpf_cnpj} onChange={e => setNewUser({ ...newUser, cpf_cnpj: e.target.value })} /></div>
+                          {(newUser.role === 'tecnico_agronomo' || newUser.role === 'consultor_tecnico') && (
+                            <>
+                              <div><Label>CREA</Label><Input value={newUser.crea} onChange={e => setNewUser({ ...newUser, crea: e.target.value })} /></div>
+                              <div><Label>Especialidade</Label><Input value={newUser.especialidade} onChange={e => setNewUser({ ...newUser, especialidade: e.target.value })} /></div>
+                            </>
+                          )}
+                          <ClientesVinculadosField
+                            clientes={clientes}
+                            value={newUserVinculos}
+                            onChange={setNewUserVinculos}
+                            required={newUser.role === 'cliente_produtor'}
+                            helperText={newUser.role === 'cliente_produtor'
+                              ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
+                              : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
+                          />
+
+                          <Button className="w-full" onClick={() => createUser.mutate()} disabled={createUser.isPending || !newUser.nome || !newUser.email || !newUser.password}>
+                            {createUser.isPending ? "Criando..." : "Criar Usuário"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className={isMobile ? "p-3" : "p-6"}>
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Buscar por nome ou email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
+                  </div>
+                  <Select value={filterRole} onValueChange={setFilterRole}>
+                    <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filtrar perfil" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os perfis</SelectItem>
+                      {ACTIVE_ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="ativo">Ativos</SelectItem>
+                      <SelectItem value="inativo">Inativos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Table */}
+                <ResponsiveTable
+                  mobileCards={
+                    filteredUsers.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">Nenhum usuário encontrado</div>
+                    ) : filteredUsers.map((u: any) => (
+                      <MobileCard
+                        key={u.user_id}
+                        title={u.nome || "—"}
+                        subtitle={u.email}
+                        status={
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={u.ativo !== false}
+                              onCheckedChange={(checked) => toggleAtivo.mutate({ userId: u.user_id, ativo: checked })}
+                            />
+                            <Badge variant={u.ativo === false ? "secondary" : "default"} className="text-[10px]">
+                              {u.ativo === false ? "Inativo" : "Ativo"}
+                            </Badge>
+                          </div>
+                        }
+                        content={[
+                          { label: "Perfil", value: (
+                            <div className="flex flex-wrap gap-1">
+                              {u.roles.map((r: string) => (
+                                <Badge key={r} variant={ROLE_VARIANTS[r] || "outline"} className="text-[10px]">
+                                  {ROLE_LABELS[r] || r}
+                                </Badge>
+                              ))}
+                            </div>
+                          )},
+                          { label: "Identificação", value: formatCpfCnpj(u.cpf_cnpj) || "—" },
+                          { label: "Telefone", value: formatTelefone(u.telefone) || "—" },
+                          { label: "Cargo", value: u.cargo || "—" },
+                          { label: "Vínculos", value: (
+                            <div className="flex flex-wrap gap-1">
+                              {u.vinculos?.map((v: ClienteVinculo) => (
+                                <Badge key={v.cliente_id} variant={v.principal ? "default" : "outline"} className="text-[10px]">
+                                  {v.principal && <Star className="h-2 w-2 mr-1 fill-current" />}
+                                  {clienteNomeById(v.cliente_id)}
+                                </Badge>
+                              ))}
+                              {(!u.vinculos || u.vinculos.length === 0) && "—"}
+                            </div>
+                          )},
+                        ]}
+                        actions={
+                          <div className="flex w-full gap-2 items-center">
+                            <div className="flex-1">
+                              <Select
+                                value={u.roles[0] || ""}
+                                onValueChange={(v) => updateRole.mutate({ userId: u.user_id, newRole: v })}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Mudar Perfil" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ACTIVE_ROLES.map(r => (
+                                    <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => { setEditUser(u); setEditOpen(true); }}>
+                              <Pencil className="h-3 w-3 mr-1" /> Editar
+                            </Button>
+                          </div>
+                        }
+                      />
+                    ))
+                  }
+                >
+                  <Table className="min-w-[700px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Perfil</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Vínculos</TableHead>
+                        <TableHead>Alterar Perfil</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
+                        </TableRow>
+                      ) : filteredUsers.map((u: any) => (
+                        <TableRow key={u.user_id} className={u.ativo === false ? "opacity-50" : ""}>
+                          <TableCell className="font-medium">{u.nome || "—"}</TableCell>
+                          <TableCell>{u.email || "—"}</TableCell>
+                          <TableCell>
+                            {u.roles.map((r: string) => (
+                              <Badge key={r} variant={ROLE_VARIANTS[r] || "outline"} className="mr-1">
+                                {ROLE_LABELS[r] || r}
+                              </Badge>
+                            ))}
+                            {u.roles.length === 0 && <span className="text-muted-foreground text-sm">Sem perfil</span>}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={u.ativo !== false}
+                                onCheckedChange={(checked) => toggleAtivo.mutate({ userId: u.user_id, ativo: checked })}
+                              />
+                              <span className="text-xs text-muted-foreground">{u.ativo === false ? "Inativo" : "Ativo"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1 max-w-[200px]">
+                              {u.vinculos?.map((v: ClienteVinculo) => (
+                                <Badge key={v.cliente_id} variant={v.principal ? "default" : "outline"} className="text-[10px]">
+                                  {v.principal && <Star className="h-2 w-2 mr-1 fill-current" />}
+                                  {clienteNomeById(v.cliente_id)}
+                                </Badge>
+                              ))}
+                              {(!u.vinculos || u.vinculos.length === 0) && <span className="text-muted-foreground text-xs">—</span>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={u.roles[0] || ""}
+                              onValueChange={(v) => updateRole.mutate({ userId: u.user_id, newRole: v })}
+                            >
+                              <SelectTrigger className="w-[160px]">
+                                <SelectValue placeholder="Selecionar" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ACTIVE_ROLES.map(r => (
+                                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" onClick={() => { setEditUser(u); setEditOpen(true); }}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ResponsiveTable>
+              </CardContent>
+            </Card>
+
+            {/* Edit Dialog */}
+            <Dialog open={editOpen} onOpenChange={(open) => {
+              setEditOpen(open);
+              if (!open) {
+                const sp = new URLSearchParams(searchParams);
+                if (sp.has("user_id")) {
+                  sp.delete("user_id");
+                  setSearchParams(sp, { replace: true });
+                }
+              }
+            }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Editar Usuário</DialogTitle>
+                </DialogHeader>
+                {editUser && (
+                  <div className="space-y-3">
+                    <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
+                    <div>
+                      <Label>Perfil de Acesso</Label>
+                      <Select 
+                        value={editUser.roles?.[0] || ""} 
+                        onValueChange={v => setEditUser({ ...editUser, roles: [v] })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {ACTIVE_ROLES.map(r => (
+                            <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>Nome</Label><Input value={editUser.nome || ""} onChange={e => setEditUser({ ...editUser, nome: e.target.value })} /></div>
+                    <div><Label>Telefone</Label><MaskedInput mask="telefone" value={editUser.telefone || ""} onChange={e => setEditUser({ ...editUser, telefone: e.target.value })} /></div>
+                    <div><Label>Cargo</Label><Input value={editUser.cargo || ""} onChange={e => setEditUser({ ...editUser, cargo: e.target.value })} /></div>
+                    <div><Label>CPF/CNPJ</Label><MaskedInput mask="cpf-cnpj" value={editUser.cpf_cnpj || ""} onChange={e => setEditUser({ ...editUser, cpf_cnpj: e.target.value })} /></div>
+                    {editUser.roles?.some((r: string) => r === 'tecnico_agronomo' || r === 'consultor_tecnico') && (
+                      <>
+                        <div><Label>CREA</Label><Input value={editUser.crea || ""} onChange={e => setEditUser({ ...editUser, crea: e.target.value })} /></div>
+                        <div><Label>Especialidade</Label><Input value={editUser.especialidade || ""} onChange={e => setEditUser({ ...editUser, especialidade: e.target.value })} /></div>
+                      </>
+                    )}
+                    <ClientesVinculadosField
+                      clientes={clientes}
+                      value={editVinculos}
+                      onChange={setEditVinculos}
+                      required={editUser.roles?.includes('cliente_produtor')}
+                      helperText={editUser.roles?.includes('cliente_produtor')
+                        ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
+                        : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
+                    />
+                    <Button className="w-full" onClick={() => saveEditUser.mutate()} disabled={saveEditUser.isPending}>
+                      {saveEditUser.isPending ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+
+                    <div className="border-t pt-4 mt-2 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <KeyRound className="h-4 w-4 text-primary" />
+                        <h4 className="font-semibold text-sm">Alterar Senha</h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Defina uma nova senha para este usuário. Ele precisará usar a nova senha no próximo login.
+                      </p>
+                      <div>
+                        <Label>Nova Senha</Label>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            placeholder="Mínimo 6 caracteres"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(v => !v)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Confirmar Senha</Label>
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={e => setConfirmPassword(e.target.value)}
+                          placeholder="Repita a nova senha"
+                        />
+                        {confirmPassword && newPassword !== confirmPassword && (
+                          <p className="text-xs text-destructive mt-1">As senhas não coincidem</p>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => updateUserPassword.mutate()}
+                        disabled={
+                          updateUserPassword.isPending ||
+                          newPassword.length < 6 ||
+                          newPassword !== confirmPassword
+                        }
+                      >
+                        <KeyRound className="h-4 w-4 mr-2" />
+                        {updateUserPassword.isPending ? "Atualizando..." : "Atualizar Senha"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+        )}
+      </Tabs>
+    </div>
+  );
+}
