@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatTelefone, formatCpfCnpj, unmask } from "@/lib/masks";
@@ -99,7 +100,57 @@ export default function Configuracoes() {
     },
   });
 
+  // Parceiros B2B (para vínculo quando papel parceiro_b2b* é selecionado)
+  const { data: partners = [] } = useQuery({
+    queryKey: ["partner-accounts-lista"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("partner_accounts")
+        .select("id, codigo, razao_social, nome_fantasia, ativo")
+        .eq("ativo", true)
+        .order("razao_social");
+      if (error) throw error;
+      return (data ?? []) as { id: string; codigo: string | null; razao_social: string; nome_fantasia: string | null; ativo: boolean }[];
+    },
+  });
+
+  // Vínculo atual dos usuários com parceiros
+  const { data: partnerLinks = [] } = useQuery({
+    queryKey: ["partner-users-links"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("partner_users")
+        .select("id, user_id, partner_id, papel");
+      if (error) throw error;
+      return (data ?? []) as { id: string; user_id: string; partner_id: string; papel: string }[];
+    },
+  });
+
   const clienteNomeById = (id: string) => clientes.find(c => c.id === id)?.nome ?? id.slice(0, 8);
+  const partnerLinkByUser = (uid: string) => partnerLinks.find(l => l.user_id === uid) || null;
+
+  // Helpers de papéis
+  const PARTNER_ROLES = ["parceiro_b2b", "parceiro_b2b_tecnico"] as const;
+  const hasPartnerRole = (roles: string[]) => roles.some(r => (PARTNER_ROLES as readonly string[]).includes(r));
+  const partnerPapelFromRoles = (roles: string[]): "gestor" | "tecnico" =>
+    roles.includes("parceiro_b2b_tecnico") ? "tecnico" : "gestor";
+  function toggleRole(roles: string[], r: string, on: boolean): string[] {
+    let next = new Set(roles);
+    if (on) {
+      next.add(r);
+      // cliente_produtor é exclusivo
+      if (r === "cliente_produtor") next = new Set(["cliente_produtor"]);
+      else next.delete("cliente_produtor");
+      // gestor/técnico do parceiro são mutuamente exclusivos entre si
+      if (r === "parceiro_b2b") next.delete("parceiro_b2b_tecnico");
+      if (r === "parceiro_b2b_tecnico") next.delete("parceiro_b2b");
+    } else {
+      next.delete(r);
+    }
+    return Array.from(next);
+  }
 
 
   const filteredUsers = allUsers.filter((u: any) => {
@@ -113,22 +164,34 @@ export default function Configuracoes() {
     return true;
   });
 
-  // Update role
-  const updateRole = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
-      const { error: delError } = await supabase.from("user_roles").delete().eq("user_id", userId);
-      if (delError) throw delError;
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast({ title: "Perfil de acesso atualizado" });
-    },
-    onError: (e: Error) => {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
-    },
-  });
+  // Sincroniza papéis + vínculo com parceiro em uma única mutação atômica
+  async function syncUserRolesAndPartner(userId: string, desiredRoles: string[], partnerId: string) {
+    const sb = supabase as any;
+    // 1) Substitui todo o conjunto de papéis
+    const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", userId);
+    if (delErr) throw delErr;
+    if (desiredRoles.length > 0) {
+      const rows = desiredRoles.map((r) => ({ user_id: userId, role: r as any }));
+      const { error: insErr } = await supabase.from("user_roles").insert(rows);
+      if (insErr) throw insErr;
+    }
+    // 2) Sincroniza partner_users
+    const isPartner = hasPartnerRole(desiredRoles);
+    const papel = partnerPapelFromRoles(desiredRoles);
+    if (isPartner) {
+      if (!partnerId) throw new Error("Selecione o parceiro B2B vinculado.");
+      const { data: existing } = await sb.from("partner_users").select("id, partner_id, papel").eq("user_id", userId).maybeSingle();
+      if (!existing) {
+        const { error } = await sb.from("partner_users").insert({ user_id: userId, partner_id: partnerId, papel });
+        if (error) throw error;
+      } else if (existing.partner_id !== partnerId || existing.papel !== papel) {
+        const { error } = await sb.from("partner_users").update({ partner_id: partnerId, papel }).eq("id", existing.id);
+        if (error) throw error;
+      }
+    } else {
+      await sb.from("partner_users").delete().eq("user_id", userId);
+    }
+  }
 
   // Toggle ativo
   const toggleAtivo = useMutation({
@@ -147,20 +210,34 @@ export default function Configuracoes() {
 
   // Create user dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [newUser, setNewUser] = useState({
-    nome: "", email: "", password: "", role: "administrativo",
+  const initialNewUser = {
+    nome: "", email: "", password: "",
+    roles: ["administrativo"] as string[],
+    partner_id: "" as string,
     telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "",
-  });
+  };
+  const [newUser, setNewUser] = useState(initialNewUser);
   const [newUserVinculos, setNewUserVinculos] = useState<ClienteVinculo[]>([]);
 
   const createUser = useMutation({
     mutationFn: async () => {
-      if (newUser.role === "cliente_produtor" && newUserVinculos.length === 0) {
+      if (newUser.roles.length === 0) {
+        throw new Error("Selecione ao menos um perfil de acesso.");
+      }
+      if (newUser.roles.includes("cliente_produtor") && newUserVinculos.length === 0) {
         throw new Error("Vincule pelo menos um cliente para o perfil de Produtor.");
+      }
+      if (hasPartnerRole(newUser.roles) && !newUser.partner_id) {
+        throw new Error("Selecione o parceiro B2B vinculado.");
       }
       const principal = newUserVinculos.find(v => v.principal)?.cliente_id ?? newUserVinculos[0]?.cliente_id;
       const payload: any = {
         ...newUser,
+        // compat com fluxo legado que espera `role` string
+        role: newUser.roles[0],
+        roles: newUser.roles,
+        partner_id: newUser.partner_id || null,
+        partner_papel: hasPartnerRole(newUser.roles) ? partnerPapelFromRoles(newUser.roles) : null,
         telefone: unmask(newUser.telefone),
         cpf_cnpj: unmask(newUser.cpf_cnpj),
         cliente_ids: newUserVinculos.map(v => v.cliente_id),
@@ -173,9 +250,10 @@ export default function Configuracoes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
       toast({ title: "Usuário criado com sucesso" });
       setCreateOpen(false);
-      setNewUser({ nome: "", email: "", password: "", role: "administrativo", telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "" });
+      setNewUser(initialNewUser);
       setNewUserVinculos([]);
     },
     onError: (e: Error) => {
@@ -206,8 +284,13 @@ export default function Configuracoes() {
   useEffect(() => {
     if (editOpen && editUser?.user_id) {
       setEditVinculos(editUser.vinculos || []);
+      // Popula partner_id a partir do vínculo atual (fase multiportal)
+      const link = partnerLinkByUser(editUser.user_id);
+      if (link && !editUser.partner_id) {
+        setEditUser((prev: any) => (prev ? { ...prev, partner_id: link.partner_id } : prev));
+      }
     }
-  }, [editOpen, editUser?.user_id]);
+  }, [editOpen, editUser?.user_id, partnerLinks]);
 
   // Deep-link: ?tab=usuarios&user_id=...
   useEffect(() => {
@@ -269,27 +352,26 @@ export default function Configuracoes() {
         .eq("user_id", editUser.user_id);
       if (profileErr) throw profileErr;
 
-      // 3. Se o papel mudou no objeto editUser, atualizamos aqui também
-      // Isso permite que o diálogo de edição controle o papel
-      // 3. Se o papel mudou no objeto editUser, atualizamos aqui também
+      // 3. Sincroniza TODOS os papéis + vínculo com parceiro B2B (mudanças multi-role)
+      const desiredRoles: string[] = editUser.roles ?? [];
       const originalUser = allUsers.find(u => u.user_id === editUser.user_id);
-      const newRole = editUser.roles?.[0];
-      const oldRole = originalUser?.roles?.[0];
+      const originalRoles: string[] = originalUser?.roles ?? [];
+      const rolesChanged =
+        desiredRoles.length !== originalRoles.length ||
+        desiredRoles.some((r) => !originalRoles.includes(r));
+      const originalLink = partnerLinkByUser(editUser.user_id);
+      const partnerChanged =
+        (hasPartnerRole(desiredRoles) && (originalLink?.partner_id !== editUser.partner_id
+          || originalLink?.papel !== partnerPapelFromRoles(desiredRoles)))
+        || (!hasPartnerRole(desiredRoles) && !!originalLink);
 
-      if (newRole && newRole !== oldRole) {
-        // Remove roles antigos e insere o novo
-        const { error: delRoleErr } = await supabase.from("user_roles").delete().eq("user_id", editUser.user_id);
-        if (delRoleErr) throw delRoleErr;
-        
-        const { error: insRoleErr } = await supabase.from("user_roles").insert({ 
-          user_id: editUser.user_id, 
-          role: newRole as any 
-        });
-        if (insRoleErr) throw insRoleErr;
+      if (rolesChanged || partnerChanged) {
+        await syncUserRolesAndPartner(editUser.user_id, desiredRoles, editUser.partner_id || "");
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
       toast({ title: "Usuário atualizado" });
       setEditOpen(false);
       const sp = new URLSearchParams(searchParams);
@@ -489,20 +571,49 @@ export default function Configuracoes() {
                           <div><Label>Email *</Label><Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} /></div>
                           <div><Label>Senha *</Label><Input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} /></div>
                           <div>
-                            <Label>Perfil *</Label>
-                            <Select value={newUser.role} onValueChange={v => setNewUser({ ...newUser, role: v })}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {ACTIVE_ROLES.map(r => (
-                                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Label>Perfis * (selecione um ou mais)</Label>
+                            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                              {ACTIVE_ROLES.map(r => {
+                                const checked = newUser.roles.includes(r);
+                                return (
+                                  <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(v) =>
+                                        setNewUser({ ...newUser, roles: toggleRole(newUser.roles, r, v === true) })
+                                      }
+                                    />
+                                    {ROLE_LABELS[r]}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            {newUser.roles.includes("cliente_produtor") && newUser.roles.length > 1 && (
+                              <p className="text-xs text-destructive mt-1">Produtor não pode ser combinado com outros perfis.</p>
+                            )}
                           </div>
+                          {hasPartnerRole(newUser.roles) && (
+                            <div>
+                              <Label>Parceiro B2B vinculado *</Label>
+                              <Select value={newUser.partner_id} onValueChange={v => setNewUser({ ...newUser, partner_id: v })}>
+                                <SelectTrigger><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
+                                <SelectContent>
+                                  {partners.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      {p.razao_social}{p.codigo ? ` (${p.codigo})` : ""}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Papel no parceiro: <b>{partnerPapelFromRoles(newUser.roles) === "tecnico" ? "Técnico" : "Gestor"}</b>
+                              </p>
+                            </div>
+                          )}
                            <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
                            <div><Label>Cargo</Label><Input value={newUser.cargo} onChange={e => setNewUser({ ...newUser, cargo: e.target.value })} /></div>
                            <div><Label>CPF/CNPJ</Label><MaskedInput mask="cpf-cnpj" value={newUser.cpf_cnpj} onChange={e => setNewUser({ ...newUser, cpf_cnpj: e.target.value })} /></div>
-                          {(newUser.role === 'tecnico_agronomo' || newUser.role === 'consultor_tecnico') && (
+                          {newUser.roles.some(r => r === 'tecnico_agronomo' || r === 'consultor_tecnico') && (
                             <>
                               <div><Label>CREA</Label><Input value={newUser.crea} onChange={e => setNewUser({ ...newUser, crea: e.target.value })} /></div>
                               <div><Label>Especialidade</Label><Input value={newUser.especialidade} onChange={e => setNewUser({ ...newUser, especialidade: e.target.value })} /></div>
@@ -512,8 +623,8 @@ export default function Configuracoes() {
                             clientes={clientes}
                             value={newUserVinculos}
                             onChange={setNewUserVinculos}
-                            required={newUser.role === 'cliente_produtor'}
-                            helperText={newUser.role === 'cliente_produtor'
+                            required={newUser.roles.includes('cliente_produtor')}
+                            helperText={newUser.roles.includes('cliente_produtor')
                               ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
                               : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
                           />
@@ -598,22 +709,7 @@ export default function Configuracoes() {
                           )},
                         ]}
                         actions={
-                          <div className="flex w-full gap-2 items-center">
-                            <div className="flex-1">
-                              <Select
-                                value={u.roles[0] || ""}
-                                onValueChange={(v) => updateRole.mutate({ userId: u.user_id, newRole: v })}
-                              >
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue placeholder="Mudar Perfil" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {ACTIVE_ROLES.map(r => (
-                                    <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          <div className="flex w-full gap-2 items-center justify-end">
                             <Button variant="outline" size="sm" onClick={() => { setEditUser(u); setEditOpen(true); }}>
                               <Pencil className="h-3 w-3 mr-1" /> Editar
                             </Button>
@@ -631,14 +727,13 @@ export default function Configuracoes() {
                         <TableHead>Perfil</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Vínculos</TableHead>
-                        <TableHead>Alterar Perfil</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
                       ) : filteredUsers.map((u: any) => (
                         <TableRow key={u.user_id} className={u.ativo === false ? "opacity-50" : ""}>
@@ -673,21 +768,6 @@ export default function Configuracoes() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Select
-                              value={u.roles[0] || ""}
-                              onValueChange={(v) => updateRole.mutate({ userId: u.user_id, newRole: v })}
-                            >
-                              <SelectTrigger className="w-[160px]">
-                                <SelectValue placeholder="Selecionar" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ACTIVE_ROLES.map(r => (
-                                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
                             <Button variant="ghost" size="icon" onClick={() => { setEditUser(u); setEditOpen(true); }}>
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -719,19 +799,49 @@ export default function Configuracoes() {
                   <div className="space-y-3">
                     <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
                     <div>
-                      <Label>Perfil de Acesso</Label>
-                      <Select 
-                        value={editUser.roles?.[0] || ""} 
-                        onValueChange={v => setEditUser({ ...editUser, roles: [v] })}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {ACTIVE_ROLES.map(r => (
-                            <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Perfis de Acesso (selecione um ou mais)</Label>
+                      <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                        {ACTIVE_ROLES.map(r => {
+                          const currentRoles: string[] = editUser.roles ?? [];
+                          const checked = currentRoles.includes(r);
+                          return (
+                            <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(v) =>
+                                  setEditUser({ ...editUser, roles: toggleRole(currentRoles, r, v === true) })
+                                }
+                              />
+                              {ROLE_LABELS[r]}
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {(editUser.roles ?? []).includes("cliente_produtor") && (editUser.roles ?? []).length > 1 && (
+                        <p className="text-xs text-destructive mt-1">Produtor não pode ser combinado com outros perfis.</p>
+                      )}
                     </div>
+                    {hasPartnerRole(editUser.roles ?? []) && (
+                      <div>
+                        <Label>Parceiro B2B vinculado *</Label>
+                        <Select
+                          value={editUser.partner_id || ""}
+                          onValueChange={v => setEditUser({ ...editUser, partner_id: v })}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
+                          <SelectContent>
+                            {partners.map(p => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.razao_social}{p.codigo ? ` (${p.codigo})` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Papel no parceiro: <b>{partnerPapelFromRoles(editUser.roles ?? []) === "tecnico" ? "Técnico" : "Gestor"}</b>
+                        </p>
+                      </div>
+                    )}
                     <div><Label>Nome</Label><Input value={editUser.nome || ""} onChange={e => setEditUser({ ...editUser, nome: e.target.value })} /></div>
                     <div><Label>Telefone</Label><MaskedInput mask="telefone" value={editUser.telefone || ""} onChange={e => setEditUser({ ...editUser, telefone: e.target.value })} /></div>
                     <div><Label>Cargo</Label><Input value={editUser.cargo || ""} onChange={e => setEditUser({ ...editUser, cargo: e.target.value })} /></div>
