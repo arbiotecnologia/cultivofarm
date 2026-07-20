@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import type { AppRole } from "@/lib/permissions";
 import { normalizeRoles, pickPrimaryRole } from "@/lib/portalContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { subscribePortalEvents } from "@/lib/portalBroadcast";
+import { clearActivePortalContext } from "@/lib/activePortalContext";
 
 interface Profile {
   id: string;
@@ -54,6 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [primaryRole, setPrimaryRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // QueryClient pode não estar disponível em testes; usar try/catch defensivo.
+  let queryClient: ReturnType<typeof useQueryClient> | null = null;
+  try {
+    queryClient = useQueryClient();
+  } catch {
+    queryClient = null;
+  }
 
   const fetchProfileAndRole = async (userId: string) => {
     try {
