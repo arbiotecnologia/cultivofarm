@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 
 export default function FormasPagamento() {
   const qc = useQueryClient();
