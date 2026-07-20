@@ -124,6 +124,20 @@ describe("MobilePerfil — contexto technical não pode mostrar 'Parceiro B2B (G
   });
 });
 
+describe("MobilePerfil — papel efetivo aplicador", () => {
+  beforeEach(() => {
+    clearActivePortalContext();
+    authState.primaryRole = "aplicador";
+    authState.roles = ["aplicador"];
+  });
+
+  it("mostra 'Aplicador' no cabeçalho e no campo de perfil, nunca 'Consultor Técnico'", () => {
+    renderWithProviders(<MobilePerfil />);
+    expect(screen.getAllByText("Aplicador").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText("Consultor Técnico")).toBeNull();
+  });
+});
+
 describe("MobilePerfil — logout limpa contexto e cache", () => {
   it("clearActivePortalContext + queryClient.clear zeram estado", () => {
     setActivePortalContext("technical");
