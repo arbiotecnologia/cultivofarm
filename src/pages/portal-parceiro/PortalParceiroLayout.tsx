@@ -146,8 +146,14 @@ export default function PortalParceiroLayout() {
           <ShoppingCart className="h-5 w-5 text-primary" />
           <span className="font-semibold">Portal Parceiro</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setOpen((v) => !v)} aria-label={open ? "Fechar menu" : "Abrir menu"}>
-          <Menu className="h-5 w-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-12 w-12"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Fechar menu" : "Abrir menu"}
+        >
+          <Menu className="h-6 w-6" />
         </Button>
       </header>
 
@@ -207,14 +213,14 @@ export default function PortalParceiroLayout() {
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  "flex items-center gap-2 px-3 py-3 md:py-2 min-h-11 rounded-md text-sm transition-colors",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "hover:bg-accent text-foreground",
                 )
               }
             >
-              <m.icon className="h-4 w-4" />
+              <m.icon className="h-5 w-5 md:h-4 md:w-4" />
               {m.title}
             </NavLink>
           ))}
