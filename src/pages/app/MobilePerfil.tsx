@@ -37,7 +37,14 @@ export default function MobilePerfil() {
 
   return (
     <div className="p-4 space-y-6">
-      <h1 className="text-xl font-bold text-foreground">Meu Perfil</h1>
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-xl font-bold text-foreground">Meu Perfil</h1>
+        <Badge variant="secondary" className="gap-1">
+          <PortalIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          {portalLabel}
+        </Badge>
+      </div>
+
 
       <Card className="p-4 space-y-4">
         <div className="flex items-center gap-3">
