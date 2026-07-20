@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatTelefone, formatCpfCnpj, unmask } from "@/lib/masks";
@@ -99,7 +100,57 @@ export default function Configuracoes() {
     },
   });
 
+  // Parceiros B2B (para vínculo quando papel parceiro_b2b* é selecionado)
+  const { data: partners = [] } = useQuery({
+    queryKey: ["partner-accounts-lista"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("partner_accounts")
+        .select("id, codigo, razao_social, nome_fantasia, ativo")
+        .eq("ativo", true)
+        .order("razao_social");
+      if (error) throw error;
+      return (data ?? []) as { id: string; codigo: string | null; razao_social: string; nome_fantasia: string | null; ativo: boolean }[];
+    },
+  });
+
+  // Vínculo atual dos usuários com parceiros
+  const { data: partnerLinks = [] } = useQuery({
+    queryKey: ["partner-users-links"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("partner_users")
+        .select("id, user_id, partner_id, papel");
+      if (error) throw error;
+      return (data ?? []) as { id: string; user_id: string; partner_id: string; papel: string }[];
+    },
+  });
+
   const clienteNomeById = (id: string) => clientes.find(c => c.id === id)?.nome ?? id.slice(0, 8);
+  const partnerLinkByUser = (uid: string) => partnerLinks.find(l => l.user_id === uid) || null;
+
+  // Helpers de papéis
+  const PARTNER_ROLES = ["parceiro_b2b", "parceiro_b2b_tecnico"] as const;
+  const hasPartnerRole = (roles: string[]) => roles.some(r => (PARTNER_ROLES as readonly string[]).includes(r));
+  const partnerPapelFromRoles = (roles: string[]): "gestor" | "tecnico" =>
+    roles.includes("parceiro_b2b_tecnico") ? "tecnico" : "gestor";
+  function toggleRole(roles: string[], r: string, on: boolean): string[] {
+    let next = new Set(roles);
+    if (on) {
+      next.add(r);
+      // cliente_produtor é exclusivo
+      if (r === "cliente_produtor") next = new Set(["cliente_produtor"]);
+      else next.delete("cliente_produtor");
+      // gestor/técnico do parceiro são mutuamente exclusivos entre si
+      if (r === "parceiro_b2b") next.delete("parceiro_b2b_tecnico");
+      if (r === "parceiro_b2b_tecnico") next.delete("parceiro_b2b");
+    } else {
+      next.delete(r);
+    }
+    return Array.from(next);
+  }
 
 
   const filteredUsers = allUsers.filter((u: any) => {
@@ -113,22 +164,34 @@ export default function Configuracoes() {
     return true;
   });
 
-  // Update role
-  const updateRole = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
-      const { error: delError } = await supabase.from("user_roles").delete().eq("user_id", userId);
-      if (delError) throw delError;
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast({ title: "Perfil de acesso atualizado" });
-    },
-    onError: (e: Error) => {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
-    },
-  });
+  // Sincroniza papéis + vínculo com parceiro em uma única mutação atômica
+  async function syncUserRolesAndPartner(userId: string, desiredRoles: string[], partnerId: string) {
+    const sb = supabase as any;
+    // 1) Substitui todo o conjunto de papéis
+    const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", userId);
+    if (delErr) throw delErr;
+    if (desiredRoles.length > 0) {
+      const rows = desiredRoles.map((r) => ({ user_id: userId, role: r as any }));
+      const { error: insErr } = await supabase.from("user_roles").insert(rows);
+      if (insErr) throw insErr;
+    }
+    // 2) Sincroniza partner_users
+    const isPartner = hasPartnerRole(desiredRoles);
+    const papel = partnerPapelFromRoles(desiredRoles);
+    if (isPartner) {
+      if (!partnerId) throw new Error("Selecione o parceiro B2B vinculado.");
+      const { data: existing } = await sb.from("partner_users").select("id, partner_id, papel").eq("user_id", userId).maybeSingle();
+      if (!existing) {
+        const { error } = await sb.from("partner_users").insert({ user_id: userId, partner_id: partnerId, papel });
+        if (error) throw error;
+      } else if (existing.partner_id !== partnerId || existing.papel !== papel) {
+        const { error } = await sb.from("partner_users").update({ partner_id: partnerId, papel }).eq("id", existing.id);
+        if (error) throw error;
+      }
+    } else {
+      await sb.from("partner_users").delete().eq("user_id", userId);
+    }
+  }
 
   // Toggle ativo
   const toggleAtivo = useMutation({
