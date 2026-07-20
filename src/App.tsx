@@ -115,7 +115,6 @@ import MobileCheckin from "@/pages/app/MobileCheckin";
 import MobileVisita from "@/pages/app/MobileVisita";
 import MobileTalhaoHistorico from "@/pages/app/MobileTalhaoHistorico";
 import MobileCatalogoTecnico from "@/pages/app/MobileCatalogoTecnico";
-import PortalExecutivo from "@/pages/executivo/PortalExecutivo";
 
 import PedidosB2B from "@/pages/comercial/PedidosB2B";
 import DashboardB2B from "@/pages/comercial/DashboardB2B";
@@ -160,7 +159,6 @@ import RegrasGovernancaB2B from "@/pages/financeiro/RegrasGovernancaB2B";
 import DashboardSociosB2B from "@/pages/executivo/DashboardSociosB2B";
 import Solicitacoes from "@/pages/Solicitacoes";
 import AgendaTecnica from "@/pages/AgendaTecnica";
-import PainelOperacional from "@/pages/PainelOperacional";
 import PortalFazendas from "@/pages/portal/PortalFazendas";
 import PortalFazendaDetalhe from "@/pages/portal/PortalFazendaDetalhe";
 import PortalRegistros from "@/pages/portal/PortalRegistros";
