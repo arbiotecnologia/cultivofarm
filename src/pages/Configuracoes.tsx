@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatTelefone, formatCpfCnpj, unmask } from "@/lib/masks";
 import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Star, Timer } from "lucide-react";
+import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { SlaB2BTab } from "@/pages/configuracoes/SlaB2BTab";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
