@@ -57,16 +57,34 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       email, password, nome, role,
+      roles: rolesInput,
+      partner_id, partner_papel,
       telefone, cargo, cpf_cnpj, crea, especialidade,
       cliente_id,
       cliente_ids,
       principal_cliente_id,
     } = body;
 
-    if (!email || !password || !nome || !role) {
-      return new Response(JSON.stringify({ error: "email, password, nome e role são obrigatórios" }), {
+    // Normaliza lista de papéis (compatível com fluxo legado que envia `role`)
+    const rolesArr: string[] = Array.isArray(rolesInput) && rolesInput.length > 0
+      ? Array.from(new Set(rolesInput.filter(Boolean)))
+      : (role ? [role] : []);
+
+    if (!email || !password || !nome || rolesArr.length === 0) {
+      return new Response(JSON.stringify({ error: "email, password, nome e ao menos um perfil são obrigatórios" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const PARTNER_ROLES = ["parceiro_b2b", "parceiro_b2b_tecnico"];
+    const isPartner = rolesArr.some((r) => PARTNER_ROLES.includes(r));
+    const finalPartnerPapel: "gestor" | "tecnico" =
+      partner_papel === "tecnico" || rolesArr.includes("parceiro_b2b_tecnico") ? "tecnico" : "gestor";
+
+    if (isPartner && !partner_id) {
+      return new Response(JSON.stringify({ error: "Para perfil B2B é obrigatório informar partner_id." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -75,7 +93,7 @@ Deno.serve(async (req) => {
       ? cliente_ids
       : (cliente_id ? [cliente_id] : []);
 
-    if (role === "cliente_produtor" && finalClienteIds.length === 0) {
+    if (rolesArr.includes("cliente_produtor") && finalClienteIds.length === 0) {
       return new Response(JSON.stringify({ error: "Para perfil Produtor é obrigatório vincular pelo menos um cliente." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -126,11 +144,24 @@ Deno.serve(async (req) => {
       .eq("user_id", userId);
 
     await adminClient.from("user_roles").delete().eq("user_id", userId);
-    const { error: roleErr } = await adminClient.from("user_roles").insert({ user_id: userId, role });
+    const roleRows = rolesArr.map((r) => ({ user_id: userId, role: r }));
+    const { error: roleErr } = await adminClient.from("user_roles").insert(roleRows);
     if (roleErr) {
       return new Response(JSON.stringify({ error: roleErr.message }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Vincula ao parceiro B2B quando aplicável
+    if (isPartner) {
+      const { error: puErr } = await adminClient
+        .from("partner_users")
+        .insert({ user_id: userId, partner_id, papel: finalPartnerPapel });
+      if (puErr) {
+        return new Response(JSON.stringify({ error: "Falha ao vincular ao parceiro B2B: " + puErr.message }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ success: true, user_id: userId }), {
