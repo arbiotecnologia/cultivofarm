@@ -1,0 +1,1 @@
+ALTER TABLE public.registros_consultor_status_log ADD COLUMN IF NOT EXISTS motivo text;

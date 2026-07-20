@@ -1,0 +1,1052 @@
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSignedUrls } from "@/hooks/useSignedUrls";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Search, User, Mail, Phone,
+  MapPin, ClipboardCheck, MoreVertical,
+  Users, Map, Calendar, IdCard, Briefcase, ChevronRight, Layout, Camera, Eye, ChevronLeft, X, Edit2, Check, Download
+} from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
+import {
+  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator
+} from "@/components/ui/breadcrumb";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { ROLE_LABELS } from "@/lib/permissions";
+import { formatTelefone } from "@/lib/masks";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { formatDateDisplay } from "@/lib/date-utils";
+import { useMetricasOperacionais } from "@/hooks/useMetricasOperacionais";
+import { formatMetric } from "@/lib/metrics-utils";
+
+
+
+
+
+
+
+
+
+
+export default function ConsultorTecnico() {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<any | null>(null);
+  const [showVistorias, setShowVistorias] = useState(false);
+  const [selectedVistoria, setSelectedVistoria] = useState<any | null>(null);
+  const [selectedClienteFilter, setSelectedClienteFilter] = useState<string>("todos");
+  const [zoomedImageIndex, setZoomedImageIndex] = useState<number | null>(null);
+  const [editingCaption, setEditingCaption] = useState<string | null>(null);
+  const [captionValue, setCaptionValue] = useState("");
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [focusedPhotoIndex, setFocusedPhotoIndex] = useState<number | null>(null);
+  const queryClient = useQueryClient();
+  const { visitas: metricasVisitas } = useMetricasOperacionais();
+
+
+
+
+  const updateCaptionMutation = useMutation({
+    mutationFn: async ({ id, descricao }: { id: string; descricao: string }) => {
+      const { error } = await supabase
+        .from("arquivos")
+        .update({ descricao })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consultor-kpis"] });
+      toast.success("Legenda atualizada!");
+      setEditingCaption(null);
+    },
+    onError: (error) => {
+      toast.error("Erro ao atualizar legenda");
+      console.error(error);
+    }
+  });
+
+  const handleUpdateCaption = (id: string) => {
+    updateCaptionMutation.mutate({ id, descricao: captionValue });
+  };
+
+  const handleDownloadImage = async (url: string, filename: string, caption?: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      
+      // Limpa a legenda para usar no nome do arquivo (remove caracteres especiais)
+      const cleanCaption = caption 
+        ? caption.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 50) 
+        : '';
+      
+      const finalFilename = cleanCaption 
+        ? `${filename.split('.')[0]}_${cleanCaption}.jpg`
+        : filename;
+
+      link.download = finalFilename || 'evidencia.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Erro ao baixar imagem:", error);
+      toast.error("Não foi possível baixar a imagem diretamente. Tente clicar com o botão direito e 'Salvar como'.");
+      window.open(url, '_blank');
+    }
+  };
+
+
+  const handleNextImage = useCallback(() => {
+    if (selectedVistoria?.arquivos && zoomedImageIndex !== null) {
+      setZoomedImageIndex((prev) => (prev !== null && prev < selectedVistoria.arquivos.length - 1 ? prev + 1 : 0));
+      setEditingCaption(null);
+    }
+  }, [selectedVistoria, zoomedImageIndex]);
+
+  const handlePrevImage = useCallback(() => {
+    if (selectedVistoria?.arquivos && zoomedImageIndex !== null) {
+      setZoomedImageIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : selectedVistoria.arquivos.length - 1));
+      setEditingCaption(null);
+    }
+  }, [selectedVistoria, zoomedImageIndex]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (zoomedImageIndex === null) return;
+      if (e.key === "ArrowRight") handleNextImage();
+      if (e.key === "ArrowLeft") handlePrevImage();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [zoomedImageIndex, handleNextImage, handlePrevImage]);
+
+  useEffect(() => {
+    if (!selectedVistoria || zoomedImageIndex !== null) return;
+    
+    const handleGridKeyDown = (e: KeyboardEvent) => {
+      const files = selectedVistoria.arquivos || [];
+      if (files.length === 0) return;
+
+      if (focusedPhotoIndex === null) {
+        if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") {
+          setFocusedPhotoIndex(0);
+        }
+        return;
+      }
+
+      let newIndex = focusedPhotoIndex;
+      if (e.key === "ArrowRight") newIndex = Math.min(files.length - 1, focusedPhotoIndex + 1);
+      if (e.key === "ArrowLeft") newIndex = Math.max(0, focusedPhotoIndex - 1);
+      if (e.key === "ArrowDown") newIndex = Math.min(files.length - 1, focusedPhotoIndex + 3);
+      if (e.key === "ArrowUp") newIndex = Math.max(0, focusedPhotoIndex - 3);
+      
+      if (e.key === " ") { // Barra de espaço seleciona
+        e.preventDefault();
+        const file = files[focusedPhotoIndex];
+        setSelectedPhotos(prev => 
+          prev.includes(file.id) ? prev.filter(id => id !== file.id) : [...prev, file.id]
+        );
+      }
+
+      if (e.key === "Enter") { // Enter abre zoom
+        setZoomedImageIndex(focusedPhotoIndex);
+      }
+
+      if (newIndex !== focusedPhotoIndex) {
+        e.preventDefault();
+        setFocusedPhotoIndex(newIndex);
+      }
+    };
+
+    window.addEventListener("keydown", handleGridKeyDown);
+    return () => window.removeEventListener("keydown", handleGridKeyDown);
+  }, [selectedVistoria, focusedPhotoIndex, zoomedImageIndex]);
+
+
+
+
+
+
+
+
+
+
+  const { data: kpis, isLoading: loadingKpis } = useQuery({
+    queryKey: ["consultor-kpis", selected?.user_id, selectedClienteFilter],
+
+    enabled: !!selected?.user_id,
+    queryFn: async () => {
+      const start = new Date();
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      
+      let query = supabase
+        .from("registros_consultor")
+        .select(`
+          id, 
+          area_hectares, 
+          data_vistoria,
+          status,
+          observacoes_tecnicas,
+          problema_principal,
+          cliente_id,
+          fazenda:fazendas(nome),
+          talhao:talhoes(nome),
+          arquivos(id, arquivo_url, arquivo_path, entidade_tipo, descricao)
+        `)
+
+        .eq("consultor_responsavel", selected.user_id)
+        .gte("data_vistoria", start.toISOString().slice(0, 10));
+
+      if (selectedClienteFilter !== "todos") {
+        query = query.eq("cliente_id", selectedClienteFilter);
+      }
+
+      const { data } = await query.order('data_vistoria', { ascending: false });
+      
+      const vistorias = data?.length ?? 0;
+      const area = (data ?? []).reduce((s: number, r: any) => s + Number(r.area_hectares ?? 0), 0);
+      return { vistorias, area, list: data || [] };
+    },
+
+
+  });
+
+
+  const { data: clientesVinc, isLoading: loadingClientes } = useQuery({
+    queryKey: ["consultor-clientes", selected?.user_id],
+    enabled: !!selected?.user_id,
+    queryFn: async () => {
+      const { data: vinc } = await supabase
+        .from("user_clientes")
+        .select("cliente_id, principal")
+        .eq("user_id", selected.user_id);
+      if (!vinc || vinc.length === 0) return [];
+      const ids = vinc.map((v: any) => v.cliente_id);
+      const { data: clientes } = await supabase
+        .from("clientes")
+        .select("id, nome, nome_fantasia")
+        .in("id", ids)
+        .order("nome");
+      return (clientes ?? []).map((c: any) => ({
+        id: c.id,
+        nome: c.nome_fantasia || c.nome,
+        principal: vinc.find((v: any) => v.cliente_id === c.id)?.principal ?? false,
+      }));
+    },
+  });
+
+  const hasAmploAcesso = selected && ["administrador", "gestor", "administrativo", "consultor_tecnico", "tecnico_agronomo"].includes(selected.role);
+
+
+
+
+  // Consultores são usuários com roles específicas (tecnico_agronomo, consultor_tecnico)
+  const { data: consultores = [], isLoading } = useQuery({
+    queryKey: ["consultores-tecnicos"],
+    queryFn: async () => {
+      // 1. Buscar perfis que possuem roles de consultor/agrônomo
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["tecnico_agronomo", "consultor_tecnico", "gestor"]);
+
+      if (!roles || roles.length === 0) return [];
+
+      const userIds = roles.map(r => r.user_id);
+      
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("user_id", userIds)
+        .order("nome");
+
+      return (profiles || []).map(p => ({
+        ...p,
+        role: roles.find(r => r.user_id === p.user_id)?.role,
+      }));
+    }
+  });
+
+  const filtered = consultores.filter(c => 
+    c.nome?.toLowerCase().includes(search.toLowerCase()) ||
+    c.email?.toLowerCase().includes(search.toLowerCase()) ||
+    (c as any).crea?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/">Início</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Equipe Técnica</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Equipe Técnica</h1>
+          <p className="text-sm text-muted-foreground">Gestão de agrônomos, consultores e responsáveis técnicos</p>
+        </div>
+      </div>
+
+
+      {/* KPIs Rápidos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Consultores</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold font-mono-data">{consultores.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Em Campo (Hoje)</CardTitle>
+            <MapPin className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+             <div className="text-2xl font-bold font-mono-data">
+               {metricasVisitas.isLoading ? "…" : formatMetric(metricasVisitas.data?.totalCheckinsRealizados, "", 0)}
+             </div>
+
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Vistorias no Mês</CardTitle>
+            <ClipboardCheck className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+             <div className="text-2xl font-bold font-mono-data">
+               {metricasVisitas.isLoading ? "…" : formatMetric(metricasVisitas.data?.totalVisitasRealizadas, "", 0)}
+             </div>
+
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Área Coberta (ha)</CardTitle>
+            <Map className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+             <div className="text-2xl font-bold font-mono-data">
+               {metricasVisitas.isLoading ? "…" : "Sem dados suficientes"}
+             </div>
+
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+            <Input 
+              placeholder="Buscar por nome, e-mail ou CREA..." 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-md"
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Consultor / Agrônomo</TableHead>
+                <TableHead>Contato</TableHead>
+                <TableHead>Registro (CREA)</TableHead>
+                <TableHead>Cargo / Função</TableHead>
+                <TableHead>Especialidade</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Carregando...</TableCell></TableRow>
+              ) : filtered.length === 0 ? (
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum consultor encontrado</TableCell></TableRow>
+              ) : (
+                filtered.map((c) => (
+                  <TableRow
+                    key={c.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelected(c)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex flex-col text-sm">
+                          <span className="font-medium">{c.nome}</span>
+                          <span className="text-xs text-muted-foreground font-mono-data">
+                            Desde { (c as any).data_admissao ? formatDateDisplay((c as any).data_admissao) : '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col text-xs gap-1">
+                        <div className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> {c.email || '—'}</div>
+                        <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {formatTelefone(c.telefone) || '—'}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono-data text-xs">{(c as any).crea || '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">
+                        {ROLE_LABELS[c.role] || c.role || 'Consultor'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{(c as any).especialidade || 'Geral'}</TableCell>
+                    <TableCell>
+                      <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="text-xs" onClick={() => setSelected(c)}>Ver Perfil Completo</DropdownMenuItem>
+                          <DropdownMenuItem className="text-xs" onClick={() => toast.info("Edição de cadastro disponível via Configurações > Usuários.")}>Editar Cadastro</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!selected} onOpenChange={(o) => {
+        if (!o) {
+          setSelected(null);
+          setShowVistorias(false);
+          setSelectedVistoria(null);
+          setSelectedClienteFilter("todos");
+          setSelectedPhotos([]);
+        }
+
+      }}>
+
+
+
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Consultor</DialogTitle>
+            <DialogDescription>Informações do cadastro profissional</DialogDescription>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4">
+              {!showVistorias ? (
+                <>
+                  <div className="flex items-center gap-3 pb-3 border-b">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-base">{selected.nome}</span>
+                      <Badge variant="secondary" className="w-fit mt-1 font-normal text-[10px] uppercase tracking-wider">
+                        {ROLE_LABELS[selected.role] || selected.role || 'Consultor'}
+                      </Badge>
+                    </div>
+                    <Badge variant="default" className="ml-auto bg-green-500/10 text-green-600 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">E-mail</div>
+                        <div className="break-all">{selected.email || '—'}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Telefone</div>
+                        <div className="font-mono-data">{formatTelefone(selected.telefone) || '—'}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <IdCard className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Registro (CREA)</div>
+                        <div className="font-mono-data">{selected.crea || '—'}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Especialidade</div>
+                        <div>{selected.especialidade || 'Geral'}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Data de Admissão</div>
+                        <div className="font-mono-data">{selected.data_admissao ? formatDateDisplay(selected.data_admissao) : '—'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Atividade Recente (Mês Atual)</div>
+                      
+                      {clientesVinc && clientesVinc.length > 0 && (
+                        <select 
+                          value={selectedClienteFilter}
+                          onChange={(e) => setSelectedClienteFilter(e.target.value)}
+                          className="text-[10px] bg-muted border rounded px-2 py-1 outline-none focus:ring-1 ring-primary/30"
+                        >
+                          <option value="todos">Todos os Clientes</option>
+                          {clientesVinc.map((c: any) => (
+                            <option key={c.id} value={c.id}>{c.nome}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button 
+                        onClick={() => setShowVistorias(true)}
+                        className="rounded-lg border p-3 text-left hover:border-primary/50 transition-colors group flex flex-col justify-between"
+                        disabled={loadingKpis || (kpis?.vistorias ?? 0) === 0}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><ClipboardCheck className="h-3 w-3" /> Vistorias / mês</div>
+                          <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <div className="text-lg font-bold font-mono-data mt-1 group-hover:text-primary transition-colors">
+                          {loadingKpis ? "…" : (kpis?.vistorias ?? 0)}
+                        </div>
+                      </button>
+                      <div className="rounded-lg border p-3">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3 w-3" /> Área coberta (ha)</div>
+                        <div className="text-lg font-bold font-mono-data mt-1">
+                          {loadingKpis ? "…" : (kpis?.area ?? 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : !selectedVistoria ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <button 
+                      onClick={() => setShowVistorias(false)}
+                      className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
+                    >
+                      ← Voltar ao perfil
+                    </button>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Relação de Visitas do Mês</span>
+                  </div>
+
+                  <ScrollArea className="h-[300px] pr-4">
+                    <div className="space-y-3">
+                      {kpis?.list && kpis.list.length > 0 ? (
+                        kpis.list.map((v: any, idx: number) => (
+                          <div 
+                            key={v.id} 
+                            className="space-y-2 cursor-pointer group"
+                            onClick={() => setSelectedVistoria(v)}
+                          >
+                            <div className="flex items-start justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-sm font-medium group-hover:text-primary transition-colors">{formatDateDisplay(v.data_vistoria)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <MapPin className="h-3 w-3 shrink-0" />
+                                  <span>
+                                    {v.fazenda?.nome || 'Fazenda não informada'} 
+                                    {v.talhao?.nome && ` • Talhão ${v.talhao.nome}`}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                <Badge variant="outline" className="font-mono-data text-[10px]">
+                                  {Number(v.area_hectares || 0).toLocaleString("pt-BR")} ha
+                                </Badge>
+                                <Badge variant="secondary" className="text-[9px] uppercase tracking-tighter h-4">
+                                  {v.status || 'Finalizado'}
+                                </Badge>
+                              </div>
+                            </div>
+                            {idx < kpis.list.length - 1 && <Separator className="opacity-50" />}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-sm text-muted-foreground">Nenhuma visita registrada neste mês.</div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              ) : (
+                <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-200">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <button 
+                      onClick={() => {
+                        setSelectedVistoria(null);
+                        setSelectedPhotos([]);
+                      }}
+                      className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
+                    >
+
+                      ← Voltar à lista
+                    </button>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Detalhes da Visita</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">Data da Visita</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          {formatDateDisplay(selectedVistoria.data_vistoria)}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">Status</span>
+                        <div>
+                          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                            {selectedVistoria.status || 'Finalizado'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] uppercase font-semibold text-muted-foreground">Localização</span>
+                      <div className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/30">
+                        <MapPin className="h-4 w-4 text-primary shrink-0" />
+                        <span>
+                          {selectedVistoria.fazenda?.nome || 'Fazenda não informada'} 
+                          {selectedVistoria.talhao?.nome && ` • Talhão ${selectedVistoria.talhao.nome}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {selectedVistoria.problema_principal && (
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">Problema Principal</span>
+                        <div className="text-sm p-3 rounded-md bg-red-500/5 border border-red-500/10 text-red-700 dark:text-red-400">
+                          {selectedVistoria.problema_principal}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] uppercase font-semibold text-muted-foreground">Observações Técnicas</span>
+                      <div className="text-sm p-3 rounded-md bg-muted/50 border min-h-[80px] leading-relaxed italic">
+                        {selectedVistoria.observacoes_tecnicas || "Nenhuma observação técnica registrada."}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground flex items-center gap-1">
+                          <Camera className="h-3 w-3" /> Evidências e Fotos
+                        </span>
+                        
+                        {selectedVistoria.arquivos && selectedVistoria.arquivos.length > 0 && (
+                          <VistoriaFilesHeader 
+                            arquivos={selectedVistoria.arquivos} 
+                            selectedPhotos={selectedPhotos} 
+                            onSelectAll={() => setSelectedPhotos(selectedVistoria.arquivos.map((f: any) => f.id))}
+                            onClear={() => setSelectedPhotos([])}
+                            vistoriaId={selectedVistoria.id}
+                            onDownload={handleDownloadImage}
+                          />
+                        )}
+                      </div>
+                      
+                      {selectedVistoria.arquivos && selectedVistoria.arquivos.length > 0 ? (
+                        <VistoriaFilesGrid 
+                          arquivos={selectedVistoria.arquivos}
+                          selectedPhotos={selectedPhotos}
+                          onTogglePhoto={(id) => setSelectedPhotos(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])}
+                          focusedPhotoIndex={focusedPhotoIndex}
+                          onFocusPhoto={setFocusedPhotoIndex}
+                          onZoomPhoto={setZoomedImageIndex}
+                        />
+                      ) : (
+                        <div className="text-xs text-muted-foreground bg-muted/20 p-4 rounded-md border border-dashed text-center">
+                          Nenhuma foto anexada a esta visita.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
+
+
+              {!showVistorias && (
+                <div className="pt-3 border-t">
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Users className="h-3 w-3" /> Clientes Atendidos
+                  </div>
+                  {loadingClientes ? (
+                    <div className="text-xs text-muted-foreground">Carregando…</div>
+                  ) : clientesVinc && clientesVinc.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {clientesVinc.map((c: any) => (
+                        <Badge
+                          key={c.id}
+                          variant={c.principal ? "default" : "secondary"}
+                          className="font-normal text-xs"
+                        >
+                          {c.nome}{c.principal ? " • Principal" : ""}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : hasAmploAcesso ? (
+                    <div className="text-xs text-muted-foreground italic">
+                      Acesso a todos os clientes (perfil {ROLE_LABELS[selected.role] || selected.role})
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground italic">Nenhum cliente vinculado</div>
+                  )}
+                </div>
+              )}
+
+
+
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelected(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={zoomedImageIndex !== null} onOpenChange={(o) => {
+        if (!o) {
+          setZoomedImageIndex(null);
+          setEditingCaption(null);
+        }
+      }}>
+
+        <DialogContent 
+          className="max-w-4xl p-0 overflow-visible bg-transparent border-none shadow-none flex flex-col items-center justify-center h-[90vh] outline-none"
+          onClick={() => setZoomedImageIndex(null)}
+        >
+          {zoomedImageIndex !== null && selectedVistoria?.arquivos && (
+            <>
+              <div 
+                className="relative w-full h-full flex flex-col items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+
+                {/* Imagem principal */}
+                <div className="relative group/main">
+                  <img 
+                    src={selectedVistoria.arquivos[zoomedImageIndex].arquivo_url} 
+                    alt="Ampliada" 
+                    className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                  />
+                  
+                  {/* Botão de download no topo da imagem */}
+                  <div className="absolute top-4 right-4 flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-black/50 text-white border-white/10 backdrop-blur-sm px-3 py-1 font-mono-data">
+                      {zoomedImageIndex + 1} / {selectedVistoria.arquivos.length}
+                    </Badge>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="rounded-full bg-black/50 hover:bg-black/80 text-white border-white/10 backdrop-blur-sm transition-all hover:scale-110 active:scale-95 shadow-xl"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadImage(
+                          selectedVistoria.arquivos[zoomedImageIndex].arquivo_url, 
+                          `visita_${selectedVistoria.id}_${zoomedImageIndex}.jpg`,
+                          selectedVistoria.arquivos[zoomedImageIndex].descricao
+                        );
+                      }}
+                      title="Baixar imagem"
+                    >
+                      <Download className="h-5 w-5" />
+                    </Button>
+                  </div>
+
+
+
+                  
+                  {/* Legenda na imagem ampliada */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md">
+                    {editingCaption === selectedVistoria.arquivos[zoomedImageIndex].id ? (
+                      <div className="flex gap-2 bg-black/80 p-2 rounded-lg backdrop-blur-sm border border-white/10 shadow-xl">
+                        <Input 
+                          value={captionValue}
+                          onChange={(e) => setCaptionValue(e.target.value)}
+                          placeholder="Digite a legenda..."
+                          className="h-8 bg-white/10 border-white/20 text-white text-xs placeholder:text-white/40"
+                          autoFocus
+                          onKeyDown={(e) => e.key === 'Enter' && handleUpdateCaption(selectedVistoria.arquivos[zoomedImageIndex].id)}
+                        />
+                        <Button 
+                          size="icon" 
+                          className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/80" 
+                          onClick={() => handleUpdateCaption(selectedVistoria.arquivos[zoomedImageIndex].id)}
+                          disabled={updateCaptionMutation.isPending}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          className="h-8 w-8 shrink-0 text-white hover:bg-white/10" 
+                          onClick={() => setEditingCaption(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="bg-black/60 hover:bg-black/80 backdrop-blur-sm p-3 rounded-lg border border-white/10 text-center transition-all group/caption shadow-xl">
+                        <p className="text-white text-sm">
+                          {selectedVistoria.arquivos[zoomedImageIndex].descricao || "Sem legenda"}
+                        </p>
+                        <button 
+                          onClick={() => {
+                            setEditingCaption(selectedVistoria.arquivos[zoomedImageIndex].id);
+                            setCaptionValue(selectedVistoria.arquivos[zoomedImageIndex].descricao || "");
+                          }}
+                          className="mt-1 text-[10px] text-primary hover:underline flex items-center gap-1 mx-auto opacity-0 group-hover/caption:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="h-3 w-3" /> Editar legenda
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Setas de navegação */}
+                {selectedVistoria.arquivos.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrevImage();
+                      }}
+                      className="absolute left-[-60px] top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full transition-all hover:scale-110 active:scale-95 shadow-xl border border-white/10"
+                    >
+                      <ChevronLeft className="h-8 w-8" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNextImage();
+                      }}
+                      className="absolute right-[-60px] top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full transition-all hover:scale-110 active:scale-95 shadow-xl border border-white/10"
+                    >
+                      <ChevronRight className="h-8 w-8" />
+                    </button>
+                  </>
+                )}
+
+              </div>
+
+
+              {/* Miniaturas */}
+              {selectedVistoria.arquivos.length > 1 && (
+                <div className="mt-8 flex gap-2 overflow-x-auto p-4 max-w-full scrollbar-hide bg-black/20 rounded-xl backdrop-blur-sm border border-white/5">
+                  {selectedVistoria.arquivos.map((file: any, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setZoomedImageIndex(idx);
+                        setEditingCaption(null);
+                      }}
+                      className={cn(
+                        "relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0",
+                        zoomedImageIndex === idx 
+                          ? "border-primary scale-110 shadow-[0_0_15px_rgba(var(--primary),0.5)] z-10" 
+                          : "border-transparent opacity-40 hover:opacity-100 hover:scale-105"
+                      )}
+                    >
+                      <img src={file.arquivo_url} className="w-full h-full object-cover" alt={`Miniatura ${idx + 1}`} />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+    </div>
+  );
+}
+
+// --- Sub-componentes auxiliares ---
+
+function VistoriaFilesHeader({ 
+  arquivos, 
+  selectedPhotos, 
+  onSelectAll, 
+  onClear, 
+  vistoriaId, 
+  onDownload 
+}: { 
+  arquivos: any[], 
+  selectedPhotos: string[], 
+  onSelectAll: () => void, 
+  onClear: () => void, 
+  vistoriaId: string,
+  onDownload: (url: string, filename: string, caption?: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {selectedPhotos.length > 0 ? (
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="h-7 text-[10px] gap-1.5"
+          onClick={() => {
+            const toDownload = arquivos.filter((f: any) => selectedPhotos.includes(f.id));
+            toDownload.forEach((file: any, idx: number) => {
+              setTimeout(() => {
+                onDownload(
+                  file.arquivo_url, 
+                  `visita_${vistoriaId}_${idx}.jpg`,
+                  file.descricao
+                );
+              }, idx * 300);
+            });
+          }}
+        >
+          <Download className="h-3 w-3" /> Baixar Selecionadas ({selectedPhotos.length})
+        </Button>
+      ) : (
+        <Button 
+          size="sm" 
+          variant="ghost" 
+          className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-primary"
+          onClick={onSelectAll}
+        >
+          Selecionar Todas
+        </Button>
+      )}
+      {selectedPhotos.length > 0 && (
+        <Button 
+          size="sm" 
+          variant="ghost" 
+          className="h-7 text-[10px] text-muted-foreground"
+          onClick={onClear}
+        >
+          Limpar
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function VistoriaFilesGrid({ 
+  arquivos, 
+  selectedPhotos, 
+  onTogglePhoto, 
+  focusedPhotoIndex, 
+  onFocusPhoto, 
+  onZoomPhoto 
+}: { 
+  arquivos: any[], 
+  selectedPhotos: string[], 
+  onTogglePhoto: (id: string) => void, 
+  focusedPhotoIndex: number | null, 
+  onFocusPhoto: (idx: number | null) => void, 
+  onZoomPhoto: (idx: number) => void 
+}) {
+  const filePaths = useMemo(() => arquivos.map(a => a.arquivo_path).filter(Boolean), [arquivos]);
+  const { urls: signedUrls } = useSignedUrls(filePaths);
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {arquivos.map((file: any, idx: number) => {
+        const isSelected = selectedPhotos.includes(file.id);
+        const isFocused = focusedPhotoIndex === idx;
+        const effectiveUrl = (file.arquivo_path && signedUrls[file.arquivo_path]) || file.arquivo_url;
+        
+        return (
+          <div 
+            key={file.id} 
+            className={cn(
+              "relative aspect-square rounded-md overflow-hidden bg-muted group transition-all ring-offset-background outline-none",
+              isSelected ? "ring-2 ring-primary scale-[0.98]" : "hover:ring-1 hover:ring-primary/50",
+              isFocused && "ring-2 ring-primary ring-offset-2 z-10"
+            )}
+            tabIndex={0}
+            onFocus={() => onFocusPhoto(idx)}
+            onBlur={() => onFocusPhoto(null)}
+          >
+            <img 
+              src={effectiveUrl} 
+              alt={`Evidência ${idx + 1}`} 
+              className="w-full h-full object-cover cursor-zoom-in"
+              onClick={() => onZoomPhoto(idx)}
+            />
+            
+            <div 
+              className={cn(
+                "absolute top-1.5 left-1.5 h-4 w-4 rounded-sm border flex items-center justify-center cursor-pointer transition-all z-20",
+                isSelected ? "bg-primary border-primary text-white" : "bg-black/20 border-white/40 opacity-0 group-hover:opacity-100"
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePhoto(file.id);
+              }}
+            >
+              {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+            </div>
+
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex flex-col items-center justify-center p-2 text-center">
+              <Eye className="h-5 w-5 text-white mb-1" />
+              {file.descricao && (
+                <span className="text-[10px] text-white font-medium line-clamp-2 leading-tight px-1">
+                  {file.descricao}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+

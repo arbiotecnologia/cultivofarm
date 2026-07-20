@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS estoque_produto_lote_unico_idx ON public.estoque_produto (lote_id) WHERE quantidade_reservada IS NULL;

@@ -1,0 +1,380 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
+import {
+  FileText, Printer, PenLine, Upload, CheckCircle2, ShieldAlert, AlertTriangle, Copy, Loader2, ExternalLink,
+} from "lucide-react";
+import { AssinaturaDigitalCanvas } from "./AssinaturaDigitalCanvas";
+import { QRCodeComprovante, buildValidationUrl } from "./QRCodeComprovante";
+import { EntregaChecklistPanel } from "./EntregaChecklistPanel";
+import { EntregaOcorrenciasPanel } from "./EntregaOcorrenciasPanel";
+
+const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
+  pendente: { label: "Pendente", cls: "bg-muted text-muted-foreground" },
+  formulario_gerado: { label: "Formulário gerado", cls: "bg-blue-100 text-blue-700" },
+  aguardando_assinatura: { label: "Aguardando assinatura", cls: "bg-amber-100 text-amber-700" },
+  assinatura_digital_coletada: { label: "Assinatura digital coletada", cls: "bg-indigo-100 text-indigo-700" },
+  anexado: { label: "Anexado", cls: "bg-violet-100 text-violet-700" },
+  confirmado: { label: "Confirmado", cls: "bg-emerald-100 text-emerald-700" },
+  dispensado: { label: "Dispensado", cls: "bg-slate-200 text-slate-700" },
+  rejeitado: { label: "Rejeitado", cls: "bg-rose-100 text-rose-700" },
+};
+
+interface Props {
+  entrega: any;
+}
+
+export function EntregaComprovantePanel({ entrega }: Props) {
+  const qc = useQueryClient();
+  const { user, role } = useAuth();
+  const [openSign, setOpenSign] = useState(false);
+  const [openUpload, setOpenUpload] = useState(false);
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [openDispensa, setOpenDispensa] = useState(false);
+  const [recebedor, setRecebedor] = useState({ nome: "", documento: "", cargo: "", telefone: "" });
+  const [ressalvas, setRessalvas] = useState("");
+  const [motivoDispensa, setMotivoDispensa] = useState("");
+
+  const { data: comprovante } = useQuery({
+    queryKey: ["entrega-comprovante", entrega?.id],
+    enabled: !!entrega?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("entrega_comprovantes" as any)
+        .select("*")
+        .eq("entrega_id", entrega.id)
+        .order("gerado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  const status = entrega?.comprovante_status || "pendente";
+  const meta = STATUS_LABEL[status] || STATUS_LABEL.pendente;
+  const isAdmin = role === "administrador" || role === "gestor" || role === "administrativo";
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["entregas"] });
+    qc.invalidateQueries({ queryKey: ["entrega-comprovante", entrega.id] });
+  };
+
+  const gerar = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("rpc_gerar_formulario_entrega" as any, {
+        p_entrega_id: entrega.id,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Formulário gerado" });
+      invalidate();
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const confirmar = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("rpc_confirmar_recebimento_entrega" as any, {
+        p_entrega_id: entrega.id,
+        p_payload: { ressalvas: ressalvas || null },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Recebimento confirmado" });
+      setOpenConfirm(false);
+      setRessalvas("");
+      invalidate();
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const dispensar = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("rpc_dispensar_assinatura_entrega" as any, {
+        p_entrega_id: entrega.id,
+        p_motivo: motivoDispensa,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Assinatura dispensada" });
+      setOpenDispensa(false);
+      setMotivoDispensa("");
+      invalidate();
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const onConfirmSignature = async (data: {
+    pngBlob: Blob;
+    svgPath: string;
+    hash: string;
+  }) => {
+    if (!recebedor.nome.trim()) {
+      toast({ title: "Informe o recebedor", variant: "destructive" });
+      return;
+    }
+    try {
+      const path = `entregas/${entrega.id}/assinaturas/${Date.now()}-assinatura.png`;
+      const { error: upErr } = await supabase.storage
+        .from("entrega-documentos")
+        .upload(path, data.pngBlob, { contentType: "image/png", upsert: false });
+      if (upErr) throw upErr;
+      const { error } = await supabase.rpc("rpc_coletar_assinatura_digital_entrega" as any, {
+        p_entrega_id: entrega.id,
+        p_payload: {
+          assinatura_digital_png_path: path,
+          assinatura_digital_svg: data.svgPath.length < 8000 ? data.svgPath : null,
+          assinatura_hash: data.hash,
+          assinatura_user_agent: navigator.userAgent,
+          recebedor_nome: recebedor.nome,
+          recebedor_documento: recebedor.documento || null,
+          recebedor_cargo: recebedor.cargo || null,
+          recebedor_telefone: recebedor.telefone || null,
+        },
+      });
+      if (error) throw error;
+      toast({ title: "Assinatura digital coletada" });
+      setOpenSign(false);
+      invalidate();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const onUploadFile = async (file: File) => {
+    if (!recebedor.nome.trim()) {
+      toast({ title: "Informe o recebedor", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Arquivo excede 10MB", variant: "destructive" });
+      return;
+    }
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `entregas/${entrega.id}/comprovantes/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("entrega-documentos")
+        .upload(path, file, { contentType: file.type || undefined });
+      if (upErr) throw upErr;
+      const { error } = await supabase.rpc("rpc_anexar_comprovante_entrega" as any, {
+        p_entrega_id: entrega.id,
+        p_payload: {
+          arquivo_path: path,
+          arquivo_nome: file.name,
+          arquivo_mime: file.type,
+          recebedor_nome: recebedor.nome,
+          recebedor_documento: recebedor.documento || null,
+          recebedor_cargo: recebedor.cargo || null,
+          recebedor_telefone: recebedor.telefone || null,
+        },
+      });
+      if (error) throw error;
+      toast({ title: "Comprovante anexado" });
+      setOpenUpload(false);
+      invalidate();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const copyLink = async () => {
+    if (!entrega.validation_token) return;
+    await navigator.clipboard.writeText(buildValidationUrl(entrega.validation_token));
+    toast({ title: "Link de validação copiado" });
+  };
+
+  const openForm = () => window.open(`/entregas/${entrega.id}/formulario`, "_blank");
+  const openForm2Vias = () => window.open(`/entregas/${entrega.id}/formulario?vias=2`, "_blank");
+
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold">Comprovação de entrega</h3>
+        </div>
+        <Badge className={meta.cls} variant="secondary">{meta.label}</Badge>
+      </div>
+
+      {comprovante && (
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
+          <div className="space-y-1 text-sm">
+            <div><span className="text-muted-foreground">Formulário:</span> <span className="font-mono">{comprovante.numero_formulario}</span></div>
+            {comprovante.recebedor_nome && (
+              <div><span className="text-muted-foreground">Recebedor:</span> {comprovante.recebedor_nome}{comprovante.recebedor_cargo ? ` — ${comprovante.recebedor_cargo}` : ""}</div>
+            )}
+            {comprovante.assinatura_tipo && (
+              <div><span className="text-muted-foreground">Assinatura:</span> {comprovante.assinatura_tipo}</div>
+            )}
+            {comprovante.data_assinatura && (
+              <div><span className="text-muted-foreground">Data:</span> {new Date(comprovante.data_assinatura).toLocaleString("pt-BR")}</div>
+            )}
+            {comprovante.validation_hash && (
+              <div className="text-xs"><span className="text-muted-foreground">Hash:</span> <span className="font-mono break-all">{comprovante.validation_hash.slice(0,32)}…</span></div>
+            )}
+          </div>
+          {comprovante.validation_token && (
+            <QRCodeComprovante validationToken={comprovante.validation_token} numeroFormulario={comprovante.numero_formulario} size={110} showActions={false} />
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2 print:hidden">
+        {status === "pendente" && (
+          <Button size="sm" onClick={() => gerar.mutate()} disabled={gerar.isPending}>
+            {gerar.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            <FileText className="h-4 w-4 mr-1" /> Gerar formulário
+          </Button>
+        )}
+        {status !== "pendente" && (
+          <>
+            <Button size="sm" variant="outline" onClick={openForm}>
+              <Printer className="h-4 w-4 mr-1" /> Imprimir formulário
+            </Button>
+            <Button size="sm" variant="outline" onClick={openForm2Vias} title="Imprime 2 vias: Cliente e AR Bio">
+              <Copy className="h-4 w-4 mr-1" /> Imprimir 2 vias
+            </Button>
+            {status !== "confirmado" && status !== "dispensado" && (
+              <>
+                <Button size="sm" variant="outline" onClick={() => setOpenSign(true)}>
+                  <PenLine className="h-4 w-4 mr-1" /> Coletar assinatura digital
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setOpenUpload(true)}>
+                  <Upload className="h-4 w-4 mr-1" /> Anexar comprovante
+                </Button>
+              </>
+            )}
+            {(status === "anexado" || status === "assinatura_digital_coletada") && (
+              <Button size="sm" onClick={() => setOpenConfirm(true)}>
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Confirmar recebimento
+              </Button>
+            )}
+            {isAdmin && status !== "confirmado" && status !== "dispensado" && (
+              <Button size="sm" variant="ghost" onClick={() => setOpenDispensa(true)}>
+                <ShieldAlert className="h-4 w-4 mr-1" /> Dispensar assinatura
+              </Button>
+            )}
+            {entrega.validation_token && (
+              <Button size="sm" variant="ghost" onClick={copyLink}>
+                <Copy className="h-4 w-4 mr-1" /> Copiar link de validação
+              </Button>
+            )}
+            {comprovante?.arquivo_path && (
+              <Button size="sm" variant="ghost" onClick={async () => {
+                const { data } = await supabase.storage.from("entrega-documentos").createSignedUrl(comprovante.arquivo_path, 300);
+                if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+              }}>
+                <ExternalLink className="h-4 w-4 mr-1" /> Visualizar comprovante
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+
+      {status !== "pendente" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <EntregaChecklistPanel entregaId={entrega.id} canEdit={status !== "confirmado" && status !== "dispensado"} />
+          <EntregaOcorrenciasPanel entregaId={entrega.id} canAdd={status !== "confirmado" && status !== "dispensado"} />
+        </div>
+      )}
+
+      {/* Dialog: Assinatura Digital */}
+      <Dialog open={openSign} onOpenChange={setOpenSign}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Coletar assinatura digital</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
+            <AssinaturaDigitalCanvas onConfirm={onConfirmSignature} onCancel={() => setOpenSign(false)} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Upload */}
+      <Dialog open={openUpload} onOpenChange={setOpenUpload}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Anexar comprovante assinado</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
+            <Input
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp"
+              onChange={(e) => e.target.files?.[0] && onUploadFile(e.target.files[0])}
+            />
+            <p className="text-xs text-muted-foreground">PDF, JPG, PNG, WEBP — até 10MB.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Confirmar */}
+      <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Confirmar recebimento</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Ressalvas (opcional)</Label>
+            <Textarea rows={3} value={ressalvas} onChange={(e) => setRessalvas(e.target.value)} placeholder="Descreva ressalvas se houver" />
+            <p className="text-xs text-muted-foreground flex items-start gap-1">
+              <AlertTriangle className="h-3 w-3 mt-0.5" />
+              Confirmar com ressalvas mantém rastreabilidade. Esta ação é auditada.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenConfirm(false)}>Cancelar</Button>
+            <Button onClick={() => confirmar.mutate()} disabled={confirmar.isPending}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Dispensa */}
+      <Dialog open={openDispensa} onOpenChange={setOpenDispensa}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Dispensar assinatura</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo *</Label>
+            <Textarea rows={3} value={motivoDispensa} onChange={(e) => setMotivoDispensa(e.target.value)} placeholder="Mínimo 5 caracteres" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDispensa(false)}>Cancelar</Button>
+            <Button onClick={() => dispensar.mutate()} disabled={dispensar.isPending || motivoDispensa.trim().length < 5}>Dispensar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+function RecebedorFields({ recebedor, setRecebedor }: { recebedor: any; setRecebedor: (v: any) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <div className="col-span-2">
+        <Label>Nome do recebedor *</Label>
+        <Input value={recebedor.nome} maxLength={150} onChange={(e) => setRecebedor({ ...recebedor, nome: e.target.value })} />
+      </div>
+      <div>
+        <Label>Documento</Label>
+        <Input value={recebedor.documento} maxLength={50} onChange={(e) => setRecebedor({ ...recebedor, documento: e.target.value })} />
+      </div>
+      <div>
+        <Label>Cargo</Label>
+        <Input value={recebedor.cargo} maxLength={100} onChange={(e) => setRecebedor({ ...recebedor, cargo: e.target.value })} />
+      </div>
+      <div className="col-span-2">
+        <Label>Telefone</Label>
+        <Input value={recebedor.telefone} maxLength={30} onChange={(e) => setRecebedor({ ...recebedor, telefone: e.target.value })} />
+      </div>
+    </div>
+  );
+}

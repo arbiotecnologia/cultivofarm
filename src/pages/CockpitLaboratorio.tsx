@@ -1,0 +1,946 @@
+import { useMemo, useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { PageHeader } from "@/components/ResponsiveHelpers";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Search, ClipboardList, FlaskRound, CheckCircle2, Package, Warehouse, 
+  Truck, Sprout, AlertCircle, Clock, MoreVertical, Info, History, MapPin, 
+  User, Beaker, Box, List, AlertTriangle, Check, ArrowUpRight, Calendar, UserPlus, Star,
+  Target
+} from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
+import { useAuth } from "@/hooks/useAuth";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { formatDateDisplay, formatDateTimeDisplay } from "@/lib/date-utils";
+import { ptBR } from "date-fns/locale";
+import { EsteiraStepper } from "@/components/cockpit/EsteiraStepper";
+import { RegistrarCQDialog, type RegistrarCQTarget } from "@/components/cockpit/RegistrarCQDialog";
+import { GerarLoteDialog, type GerarLoteTarget } from "@/components/cockpit/GerarLoteDialog";
+import { RegistrarEnvaseDialog, type RegistrarEnvaseTarget } from "@/components/cockpit/RegistrarEnvaseDialog";
+import { ReservarEstoqueDialog, type ReservarEstoqueTarget } from "@/components/cockpit/ReservarEstoqueDialog";
+import { PendenciasInconsistenciasTab } from "@/components/cockpit/PendenciasInconsistenciasTab";
+import { FinalizarOSButton } from "@/components/cockpit/FinalizarOSButton";
+import { ComposicaoProducaoCard } from "@/components/cockpit/ComposicaoProducaoCard";
+import { ProducaoResumoTab } from "@/components/cockpit/ProducaoResumoTab";
+import { SeedFixturesButton } from "@/components/cockpit/SeedFixturesButton";
+
+
+import { useMetricasOperacionais } from "@/hooks/useMetricasOperacionais";
+import { formatMetric, formatIntervalToHours, SEM_DADOS } from "@/lib/metrics-utils";
+
+
+
+type KanbanStage = 
+  | "aguardando"
+  | "em_producao"
+  | "aguardando_cq"
+  | "aprovado_cq"
+  | "envase"
+  | "estoque_reserva"
+  | "entrega"
+  | "aplicacao";
+
+interface CockpitItem {
+  id: string;
+  os_id: string;
+  numero_os: string;
+  origem: "manual" | "onfarm";
+  cliente: string;
+  fazenda: string;
+  talhao: string;
+  produto: string;
+  volume_solicitado: number;
+  data_programada: string;
+  prioridade: "alta" | "media" | "baixa";
+  lote_id?: string;
+  codigo_lote?: string;
+  lote_status?: string;
+  cq_resultado?: string;
+  entrega_status?: string;
+  aplicacao_status?: string;
+  stage: KanbanStage;
+  os_status: string;
+  proxima_acao: string;
+  atrasado: boolean;
+  cliente_id?: string;
+  fazenda_id?: string;
+  talhao_id?: string;
+  produto_id?: string;
+  microrganismo_id?: string;
+  microrganismo_nome?: string;
+  created_at?: string;
+  responsavel_id?: string;
+  responsavel_nome?: string;
+  status_esteira_oficial: string;
+  bloqueios: string[];
+  pode_finalizar: boolean;
+  titular_nome: string;
+  titular_tipo: "cliente" | "parceiro" | "desconhecido";
+  partner_id?: string;
+  partner_nome?: string;
+  partner_numero?: string;
+}
+
+const STAGES: { id: KanbanStage; title: string; icon: any; color: string; mobileLabel: string }[] = [
+  { id: "aguardando", title: "Aguardando", icon: Clock, color: "bg-muted", mobileLabel: "Aguardando" },
+  { id: "em_producao", title: "Produção / PCP", icon: FlaskRound, color: "bg-status-producao/10", mobileLabel: "Produção" },
+  { id: "aguardando_cq", title: "Aguardando CQ", icon: Clock, color: "bg-status-cq/10", mobileLabel: "CQ" },
+  { id: "aprovado_cq", title: "Aprovado CQ", icon: CheckCircle2, color: "bg-status-aprovado/10", mobileLabel: "Aprovados" },
+  { id: "envase", title: "Envase", icon: Package, color: "bg-orange-100", mobileLabel: "Envase" },
+  { id: "estoque_reserva", title: "Estoque/Reserva", icon: Warehouse, color: "bg-blue-100", mobileLabel: "Estoque" },
+  { id: "entrega", title: "Entrega / Finalização", icon: Truck, color: "bg-purple-100", mobileLabel: "Entrega" },
+];
+
+
+export default function CockpitLaboratorio() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { profile, role } = useAuth();
+  const isProducaoRole = role === "producao";
+  const canEditResponsavel = role === "administrador" || role === "gestor";
+
+  const {
+    profiles,
+    assumirProducao,
+    enviarParaCQ,
+    enviarParaEnvase,
+    concluirEnvase,
+    finalizarOS,
+    atualizarPrioridade,
+    atualizarDataProgramada,
+    vincularResponsavel,
+    executarProximaAcao,
+  } = useEsteiraLaboratorio();
+  const [search, setSearch] = useState("");
+  const [filterPrioridade, setFilterPrioridade] = useState("all");
+  const [filterOrigem, setFilterOrigem] = useState("all");
+  const [filterCliente, setFilterCliente] = useState("all");
+  const [filterFazenda, setFilterFazenda] = useState("all");
+  const [filterProduto, setFilterProduto] = useState("all");
+  const [selectedItem, setSelectedItem] = useState<CockpitItem | null>(null);
+  const [cqTarget, setCqTarget] = useState<RegistrarCQTarget | null>(null);
+  const [loteTarget, setLoteTarget] = useState<GerarLoteTarget | null>(null);
+  const [envaseTarget, setEnvaseTarget] = useState<RegistrarEnvaseTarget | null>(null);
+  const [reservaTarget, setReservaTarget] = useState<ReservarEstoqueTarget | null>(null);
+  const [limit, setLimit] = useState(100);
+  const [analyzedAlerts, setAnalyzedAlerts] = useState<string[]>([]);
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["cockpit-laboratorio", limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vw_esteira_laboratorio")
+        .select("*")
+        .neq("status_os", "finalizada")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+
+      return (data as any[]).map(item => {
+        let stage: KanbanStage = "aguardando";
+        const officialStatus = item.status_esteira_oficial;
+
+        // Mapeamento do stage visual para o status oficial da esteira
+        // Ajustado: Aplicação agora é secundária, o fluxo termina em 'entregue' ou 'finalizada'
+        if (['finalizada', 'finalizado'].includes(officialStatus)) stage = "entrega";
+        else if (officialStatus === 'aplicado') stage = "entrega";
+        else if (['entregue', 'em_entrega', 'estoque_reservado'].includes(officialStatus)) stage = "entrega";
+        else if (['estoque_gerado', 'pronto_entrega'].includes(officialStatus)) stage = "estoque_reserva";
+
+        else if (['envase', 'em_envase'].includes(officialStatus)) stage = "envase";
+        else if (['cq_aprovado', 'aprovado_cq'].includes(officialStatus)) stage = "aprovado_cq";
+        else if (officialStatus === 'aguardando_cq' || officialStatus === 'em_cq') stage = "aguardando_cq";
+        else if (officialStatus === 'em_producao') stage = "em_producao";
+        else if (officialStatus === 'programada') stage = "aguardando";
+
+
+        return {
+          id: item.programacao_id,
+          os_id: item.os_id,
+          numero_os: item.numero_os || "—",
+          origem: item.origem_os,
+          cliente: item.cliente_nome || "—",
+          fazenda: item.fazenda_nome || "—",
+          talhao: item.talhao_nome || "—",
+          produto: item.produto_nome || item.microrganismo_nome || "—",
+          volume_solicitado: item.volume_solicitado_l || 0,
+          data_programada: item.data_programada,
+          prioridade: item.prioridade || "media",
+          lote_id: item.lote_id,
+          codigo_lote: item.codigo_lote,
+          lote_status: item.status_lote,
+          cq_resultado: item.cq_resultado,
+          entrega_status: item.entrega_status,
+          aplicacao_status: item.aplicacao_status,
+          stage,
+          os_status: item.status_os,
+          proxima_acao: item.proxima_acao,
+          atrasado: item.atrasado,
+          created_at: item.created_at,
+          cliente_id: item.cliente_id,
+          fazenda_id: item.fazenda_id,
+          talhao_id: item.talhao_id,
+          produto_id: item.produto_id,
+          microrganismo_id: item.microrganismo_id,
+          microrganismo_nome: item.microrganismo_nome,
+          responsavel_id: item.responsavel_id,
+          responsavel_nome: item.responsavel_nome,
+          status_esteira_oficial: item.status_esteira_oficial,
+          bloqueios: item.bloqueios || [],
+          pode_finalizar: item.pode_finalizar,
+          titular_nome: item.titular_nome || item.cliente_nome || "—",
+          titular_tipo: (item.titular_tipo as any) || (item.cliente_id ? "cliente" : "desconhecido"),
+          partner_id: item.partner_id || undefined,
+          partner_nome: item.partner_nome || undefined,
+          partner_numero: item.partner_numero || undefined,
+
+
+        } as CockpitItem;
+      });
+    },
+    refetchInterval: 300000,
+  });
+
+  const { data: history = [] } = useQuery({
+    queryKey: ["esteira-history", selectedItem?.os_id],
+    enabled: !!selectedItem,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("laboratorio_esteira_eventos")
+        .select("*")
+        .eq("os_id", selectedItem?.os_id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { laboratorio: metricasReal } = useMetricasOperacionais();
+  const performance = metricasReal.data?.temposMedios || { 
+    osAteProgramacao: null, 
+    programacaoAteLote: null, 
+    loteAteCQ: null, 
+    envaseAteEntrega: null 
+  };
+
+
+  const { data: osSemProgCount = 0 } = useQuery({
+    queryKey: ["os-sem-programacao"],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("ordens_servico").select("*", { count: "exact", head: true }).eq("status", "aberta");
+      if (error) return 0;
+      return count || 0;
+    }
+  });
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      if (search && !Object.values(item).some(v => String(v).toLowerCase().includes(search.toLowerCase()))) return false;
+      if (filterPrioridade !== "all" && item.prioridade !== filterPrioridade) return false;
+      if (filterOrigem !== "all" && item.origem !== filterOrigem) return false;
+      if (filterCliente !== "all" && item.cliente_id !== filterCliente) return false;
+      if (filterFazenda !== "all" && item.fazenda_id !== filterFazenda) return false;
+      if (filterProduto !== "all" && item.produto_id !== filterProduto && item.microrganismo_id !== filterProduto) return false;
+      return true;
+    });
+  }, [items, search, filterPrioridade, filterOrigem, filterCliente, filterFazenda, filterProduto]);
+
+  const { uniqueClientes, uniqueFazendas, uniqueProdutos } = useMemo(() => {
+    const clientesMap = new Map();
+    const fazendasMap = new Map();
+    const produtosMap = new Map();
+
+    items.forEach(item => {
+      if (item.cliente_id) clientesMap.set(item.cliente_id, item.cliente);
+      if (item.fazenda_id) fazendasMap.set(item.fazenda_id, item.fazenda);
+      if (item.produto_id) produtosMap.set(item.produto_id, item.produto);
+      else if (item.microrganismo_id) produtosMap.set(item.microrganismo_id, item.microrganismo_nome || item.produto);
+    });
+
+    return {
+      uniqueClientes: Array.from(clientesMap.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
+      uniqueFazendas: Array.from(fazendasMap.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
+      uniqueProdutos: Array.from(produtosMap.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
+    };
+  }, [items]);
+
+  const alerts = useMemo(() => {
+    const list: { id: string; type: string; message: string; item?: CockpitItem }[] = [];
+    
+    if (osSemProgCount > 0) {
+      list.push({ id: "os-sem-prog", type: "OS sem Programação", message: `${osSemProgCount} ordens de serviço aguardam programação no PCP.` });
+    }
+
+    items.forEach(item => {
+      if (item.stage === "aguardando" && item.created_at && (new Date().getTime() - new Date(item.created_at).getTime()) > 24 * 60 * 60 * 1000) {
+        list.push({ id: `wait-prod-${item.id}`, type: "Produção Lenta", message: `OS ${item.numero_os} aguarda início de produção há mais de 24h.`, item });
+      }
+      if (item.stage === "em_producao" && item.lote_id && item.lote_status === "em_producao") {
+        list.push({ id: `lote-prod-${item.id}`, type: "Lote em Produção", message: `Lote ${item.codigo_lote} (OS ${item.numero_os}) não foi enviado para CQ.`, item });
+      }
+      if (item.stage === "aguardando_cq") {
+        list.push({ id: `cq-${item.id}`, type: "CQ Pendente", message: `OS ${item.numero_os} aguarda resultado laboratorial.`, item });
+      }
+      if (item.lote_status === "reprovado") {
+        list.push({ id: `lote-rep-${item.id}`, type: "Lote Reprovado", message: `OS ${item.numero_os} teve lote reprovado no controle de qualidade.`, item });
+      }
+      if (item.stage === "aprovado_cq") {
+        list.push({ id: `aprov-no-env-${item.id}`, type: "Aguardando Envase", message: `OS ${item.numero_os} aprovada, aguardando envase.`, item });
+      }
+    });
+    return list.filter(a => !analyzedAlerts.includes(a.id));
+  }, [items, analyzedAlerts, osSemProgCount]);
+
+  const stats = useMemo(() => {
+    const s = {
+      demandas: 0, producao: 0, vol_producao: 0, aguardando_cq: 0, vol_cq: 0,
+      aprovados: 0, reprovados: 0, envase_pendente: 0, estoque_disp: 0, 
+      entregas: 0, aplicacoes: 0, atrasadas: 0,
+    };
+    items.forEach(item => {
+      if (item.stage === "aguardando") s.demandas++;
+      if (item.stage === "em_producao") { s.producao++; s.vol_producao += item.volume_solicitado; }
+      if (item.stage === "aguardando_cq") { s.aguardando_cq += 1; s.vol_cq += item.volume_solicitado; }
+      if (item.lote_status === "aprovado") s.aprovados++;
+      if (item.lote_status === "reprovado") s.reprovados++;
+      if (item.stage === "aprovado_cq") s.envase_pendente++;
+      if (item.stage === "estoque_reserva") s.estoque_disp++; 
+      if (item.stage === "entrega") s.entregas++;
+      if (item.atrasado) s.atrasadas++;
+    });
+    return s;
+  }, [items]);
+
+  // Abrir sheet diretamente quando recebemos ?os=<id>
+  useEffect(() => {
+    const osParam = searchParams.get("os");
+    if (!osParam || items.length === 0) return;
+    if (selectedItem?.os_id === osParam) return;
+    const found = items.find((i) => i.os_id === osParam);
+    if (found) setSelectedItem(found);
+  }, [searchParams, items, selectedItem?.os_id]);
+
+  useEffect(() => {
+    if (!selectedItem) return;
+    const updatedItem = items.find((item) => item.os_id === selectedItem.os_id);
+    if (updatedItem) {
+      setSelectedItem(updatedItem);
+      return;
+    }
+
+    if (!isLoading) {
+      setSelectedItem(null);
+    }
+  }, [items, selectedItem?.os_id, isLoading]);
+
+  // Auto-atribui o responsável quando o usuário logado é do perfil "producao"
+  useEffect(() => {
+    if (!isProducaoRole) return;
+    if (!selectedItem || !profile?.id) return;
+    if (selectedItem.responsavel_id) return;
+    vincularResponsavel(selectedItem.id, profile.id);
+  }, [isProducaoRole, selectedItem?.id, selectedItem?.responsavel_id, profile?.id, vincularResponsavel]);
+
+
+  const refetchCockpit = async () => {
+    await qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] });
+  };
+
+  const runStepperAction = async (action: () => Promise<boolean>) => {
+    const success = await action();
+    if (success) await refetchCockpit();
+  };
+
+  const handleAvancarEsteira = async (item: CockpitItem) => {
+    if (item.stage === "em_producao" && !item.lote_id) {
+      abrirGerarLote(item);
+      return;
+    }
+    if (item.stage === "aguardando_cq") {
+      abrirRegistroCQ(item);
+      return;
+    }
+    await executarProximaAcao({
+      id: item.id,
+      os_id: item.os_id,
+      origem: item.origem,
+      stage: item.stage === "entrega" && item.status_esteira_oficial === 'entregue' ? "entrega" : item.stage,
+    });
+  };
+
+
+  const abrirGerarLote = (item: CockpitItem) => {
+    if (item.lote_id) {
+      toast.error(`Lote já gerado para esta OS (${item.codigo_lote ?? "—"}).`);
+      return;
+    }
+    if (item.stage !== "em_producao") {
+      toast.info("Assuma a produção antes de gerar o lote.");
+      return;
+    }
+    setLoteTarget({
+      programacao_id: item.id,
+      os_id: item.os_id,
+      origem: item.origem,
+      numero_os: item.numero_os,
+      cliente: item.cliente,
+      produto_id: item.produto_id || null,
+      microrganismo_id: item.microrganismo_id || null,
+      produto_nome: item.microrganismo_nome || item.produto,
+      volume_solicitado: item.volume_solicitado,
+    });
+  };
+
+
+  const abrirRegistroCQ = (item: CockpitItem) => {
+    if (!item.lote_id) {
+      toast.error("Gere o lote antes de registrar o CQ.");
+      return;
+    }
+    setCqTarget({
+      programacao_id: item.id,
+      os_id: item.os_id,
+      origem: item.origem,
+      lote_id: item.lote_id,
+      codigo_lote: item.codigo_lote,
+      produto: item.produto,
+      produto_id: item.produto_id || null,
+      microrganismo_id: item.microrganismo_id || null,
+    });
+  };
+
+  const abrirRegistroEnvase = (item: CockpitItem) => {
+    if (!item.lote_id) {
+      toast.error("Gere o lote antes de registrar o envase.");
+      return;
+    }
+    if (item.stage !== "envase") {
+      toast.info("A OS precisa estar liberada para envase.");
+      return;
+    }
+    setEnvaseTarget({
+      programacao_id: item.id,
+      os_id: item.os_id,
+      origem: item.origem,
+      lote_id: item.lote_id,
+      codigo_lote: item.codigo_lote,
+      produto: item.produto,
+      produto_id: item.produto_id || null,
+      microrganismo_id: item.microrganismo_id || null,
+    });
+  };
+
+  const abrirReservaEstoque = async (item: CockpitItem) => {
+    if (!item.lote_id) {
+      toast.error("Gere o lote antes de reservar estoque.");
+      return;
+    }
+    if (item.stage !== "estoque_reserva") {
+      toast.info("Conclua o envase antes de reservar estoque.");
+      return;
+    }
+
+    // Para OS B2B, busca o partner_order_id real (FK em estoque_produto).
+    // Usar item.os_id como partner_order_id quebra a FK
+    // estoque_produto_reservado_para_partner_order_id_fkey.
+    let partner_order_id: string | undefined;
+    if (item.titular_tipo === "parceiro") {
+      const { data: osRow } = await supabase
+        .from("ordens_servico")
+        .select("partner_order_id")
+        .eq("id", item.os_id)
+        .maybeSingle();
+      partner_order_id = (osRow as any)?.partner_order_id ?? undefined;
+      if (!partner_order_id) {
+        toast.error("Pedido B2B desta OS não encontrado.");
+        return;
+      }
+    }
+
+    setReservaTarget({
+      programacao_id: item.id,
+      os_id: item.os_id,
+      origem: item.origem,
+      lote_id: item.lote_id,
+      codigo_lote: item.codigo_lote,
+      produto: item.produto,
+      cliente_id: item.cliente_id,
+      cliente_nome: item.titular_tipo === "cliente" ? item.titular_nome : undefined,
+      titular_nome: item.titular_nome,
+      titular_tipo: item.titular_tipo,
+      numero_os: item.numero_os,
+      partner_id: item.partner_id,
+      partner_order_id,
+    });
+  };
+
+
+
+
+  const copySummary = (item: CockpitItem) => {
+    const summary = `OS: ${item.numero_os}\nCliente: ${item.cliente}\nProduto: ${item.produto}\nVolume: ${item.volume_solicitado.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}L\nLote: ${item.codigo_lote || 'N/A'}\nStatus: ${item.stage.replace('_', ' ')}`;
+    navigator.clipboard.writeText(summary);
+    toast.success("Resumo copiado!");
+  };
+
+  const renderCard = (item: CockpitItem) => (
+    <Card
+      key={item.id}
+      className="mb-2 border-l-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => setSelectedItem(item)}
+      style={{ borderLeftColor: item.prioridade === "alta" ? "#ef4444" : item.prioridade === "media" ? "#f59e0b" : "#10b981" }}
+    >
+      <CardContent className="p-2">
+        <div className="flex justify-between items-center mb-1 gap-1">
+          <span className="text-[9px] font-bold text-muted-foreground uppercase truncate">{item.numero_os}</span>
+          <Badge variant={item.origem === "onfarm" ? "secondary" : "outline"} className="text-[8px] px-1 h-3.5 uppercase shrink-0">{item.origem}</Badge>
+        </div>
+        <p className="text-xs font-bold leading-tight mb-0.5 truncate text-foreground">{item.produto}</p>
+        <p className="text-[10px] text-muted-foreground truncate mb-1.5">{item.titular_nome}</p>
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="font-semibold">{item.volume_solicitado.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}L</span>
+          <span className={cn("flex items-center gap-1", item.atrasado ? "text-red-500 font-bold" : "text-muted-foreground")}>
+            <Calendar className="h-2.5 w-2.5" />
+            {item.data_programada ? formatDateDisplay(item.data_programada) : "S/D"}
+          </span>
+        </div>
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          <Badge variant="outline" className="text-[8px] h-3.5 bg-primary/5 text-primary border-primary/20 px-1 font-bold">
+            {item.status_esteira_oficial?.replace(/_/g, ' ').toUpperCase()}
+          </Badge>
+          {item.pode_finalizar && (
+            <Badge className="text-[8px] h-3.5 bg-emerald-500 text-white border-none px-1">
+              PRONTO
+            </Badge>
+          )}
+        </div>
+        {item.responsavel_nome && (
+          <div className="mt-1 flex items-center gap-1 text-[9px] text-primary truncate">
+            <User className="h-2.5 w-2.5 shrink-0" /> <span className="truncate">{item.responsavel_nome.split(' ')[0]}</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-6 pb-10">
+      <div className="flex justify-between items-end flex-wrap gap-4">
+        <PageHeader title="Cockpit Operacional" description="Gestão em tempo real da esteira do laboratório." />
+        <SeedFixturesButton />
+      </div>
+
+
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="xl:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Demandas", val: formatMetric(stats.demandas, "", 0), icon: ClipboardList, color: "text-slate-600" },
+            { label: "Produção", val: `${stats.producao} (${formatMetric(stats.vol_producao, "L")})`, icon: FlaskRound, color: "text-status-producao" },
+            { label: "Aguardando CQ", val: formatMetric(stats.vol_cq, "L"), icon: Clock, color: "text-status-cq" },
+            { label: "Lotes Reprov.", val: formatMetric(stats.reprovados, "", 0), icon: AlertCircle, color: "text-red-500" },
+            { label: "Envases", val: formatMetric(stats.envase_pendente, "", 0), icon: Package, color: "text-orange-500" },
+            { label: "Estoque", val: formatMetric(stats.estoque_disp, "", 0), icon: Warehouse, color: "text-blue-500" },
+            { label: "Entregas", val: formatMetric(stats.entregas, "", 0), icon: Truck, color: "text-purple-500" },
+            { label: "Atrasadas", val: formatMetric(stats.atrasadas, "", 0), icon: AlertTriangle, color: "text-red-600" },
+
+            { label: "OS → Prod", val: formatIntervalToHours(performance.osAteProgramacao), icon: Clock, color: "text-slate-400" },
+            { label: "Prod → CQ", val: formatIntervalToHours(performance.programacaoAteLote), icon: Clock, color: "text-slate-400" },
+            { label: "CQ → Env", val: formatIntervalToHours(performance.loteAteCQ), icon: Clock, color: "text-slate-400" },
+            { label: "Env → Ent", val: formatIntervalToHours(performance.envaseAteEntrega), icon: Clock, color: "text-slate-400" },
+
+          ].map((kpi, i) => (
+            <Card key={i} className="border-none shadow-sm"><CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <kpi.icon className={cn("h-3 w-3", kpi.color)} />
+                <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">{kpi.label}</p>
+              </div>
+              <p className="text-xl font-bold">{kpi.val}</p>
+            </CardContent></Card>
+          ))}
+        </div>
+        
+        <Card className="bg-orange-50/50 border-orange-100 shadow-none">
+          <CardContent className="p-4">
+            <h3 className="font-bold text-xs uppercase tracking-widest flex items-center gap-2 text-orange-800 mb-3"><AlertTriangle className="h-3.5 w-3.5" /> Alertas Operacionais</h3>
+            <ScrollArea className="h-[120px]">
+              {alerts.length > 0 ? alerts.map(a => (
+                <div key={a.id} className="flex justify-between items-center text-[10px] bg-background p-2 rounded mb-2 border border-orange-100 shadow-sm group">
+                  <div className="flex flex-col flex-1 cursor-pointer" onClick={() => a.item && setSelectedItem(a.item)}>
+                    <span className="font-bold text-orange-900">{a.type}</span>
+                    <span className="text-muted-foreground line-clamp-1">{a.message}</span>
+                  </div>
+                  <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" onClick={() => setAnalyzedAlerts([...analyzedAlerts, a.id])}><Check className="h-3 w-3" /></Button>
+                </div>
+              )) : <div className="text-center py-6 text-orange-600 italic text-[10px]">Tudo em dia!</div>}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-3 items-center p-3 border rounded-lg bg-background">
+        <div className="relative w-full lg:w-1/3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar OS, cliente, lote..." className="pl-9 h-9 text-xs" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="flex flex-wrap gap-2 w-full lg:flex-1 justify-end">
+          <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+            <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue placeholder="Origem" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todas</SelectItem><SelectItem value="manual">Manual</SelectItem><SelectItem value="onfarm">On-Farm</SelectItem></SelectContent>
+          </Select>
+          <Select value={filterPrioridade} onValueChange={setFilterPrioridade}>
+            <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todas</SelectItem><SelectItem value="alta">Alta</SelectItem><SelectItem value="media">Média</SelectItem><SelectItem value="baixa">Baixa</SelectItem></SelectContent>
+          </Select>
+          <Select value={filterCliente} onValueChange={setFilterCliente}>
+            <SelectTrigger className="h-9 w-[130px] text-xs truncate"><SelectValue placeholder="Cliente" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos Clientes</SelectItem>
+              {uniqueClientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterFazenda} onValueChange={setFilterFazenda}>
+            <SelectTrigger className="h-9 w-[130px] text-xs truncate"><SelectValue placeholder="Fazenda" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas Fazendas</SelectItem>
+              {uniqueFazendas.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterProduto} onValueChange={setFilterProduto}>
+            <SelectTrigger className="h-9 w-[130px] text-xs truncate"><SelectValue placeholder="Produto" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos Produtos</SelectItem>
+              {uniqueProdutos.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { 
+            setSearch(""); setFilterPrioridade("all"); setFilterOrigem("all"); 
+            setFilterCliente("all"); setFilterFazenda("all"); setFilterProduto("all"); 
+          }}>Limpar</Button>
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-hidden mt-2">
+        <Tabs defaultValue="fluxo" className="h-full flex flex-col">
+          <div className="px-4 border-b bg-white">
+            <TabsList className="bg-muted/50 mb-[-1px]">
+              <TabsTrigger value="fluxo" className="flex items-center gap-2 py-2">
+                <Target className="h-4 w-4" /> <span>Fluxo de Produção</span>
+              </TabsTrigger>
+              <TabsTrigger value="pendencias" className="flex items-center gap-2 py-2">
+                <AlertTriangle className="h-4 w-4" /> 
+                <span>Pendências</span>
+                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                  {alerts.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="producao" className="flex items-center gap-2 py-2">
+                <Warehouse className="h-4 w-4" /> <span>Produção & Estoque</span>
+              </TabsTrigger>
+            </TabsList>
+
+          </div>
+
+          <TabsContent value="fluxo" className="flex-1 overflow-hidden m-0 p-0">
+            <div className="flex flex-col h-full">
+              <div className="hidden lg:flex flex-1 overflow-x-auto gap-3 p-4 scrollbar-thin bg-slate-50/50">
+                {STAGES.map(s => {
+                  const stageItems = filteredItems.filter(i => i.stage === s.id);
+                  return (
+                    <div key={s.id} className="min-w-[200px] w-[200px] shrink-0 flex flex-col h-full">
+                      <div className={cn("p-2 rounded-t-lg border-b-2 font-bold text-[10px] uppercase mb-2 flex justify-between items-center gap-1", s.color)}>
+                        <div className="flex items-center gap-1.5 min-w-0"><s.icon className="h-3 w-3 shrink-0" /> <span className="truncate">{s.title}</span></div>
+                        <Badge variant="secondary" className="bg-white/50 text-[9px] h-4 shrink-0">{stageItems.length}</Badge>
+                      </div>
+                      <ScrollArea className="flex-1">
+                        <div className="space-y-2 pb-4">
+                          {stageItems.map(i => renderCard(i))}
+                          {stageItems.length === 0 && <div className="h-14 border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground text-[9px] italic">Sem registros</div>}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="lg:hidden p-4 overflow-y-auto h-full">
+                <Tabs defaultValue="aguardando" className="w-full">
+                  <TabsList className="w-full h-12 overflow-x-auto justify-start bg-muted/50 p-1 mb-4 no-scrollbar scrollbar-hide">
+                    {STAGES.map(s => (
+                      <TabsTrigger key={s.id} value={s.id} className="text-[10px] px-4 h-full uppercase font-bold">
+                        {s.mobileLabel} ({filteredItems.filter(i => i.stage === s.id).length})
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  {STAGES.map(s => (
+                    <TabsContent key={s.id} value={s.id} className="space-y-3 pb-20">
+                      {filteredItems.filter(i => i.stage === s.id).map(item => renderCard(item))}
+                      {filteredItems.filter(i => i.stage === s.id).length === 0 && <div className="text-center p-10 text-muted-foreground italic text-sm">Vazio</div>}
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="pendencias" className="flex-1 overflow-auto bg-slate-50 p-4 m-0">
+            <PendenciasInconsistenciasTab />
+          </TabsContent>
+
+          <TabsContent value="producao" className="flex-1 overflow-auto bg-slate-50 p-4 m-0">
+            <ProducaoResumoTab />
+          </TabsContent>
+
+        </Tabs>
+      </div>
+
+      {items.length >= limit && (
+        <div className="flex justify-center mt-6"><Button variant="outline" onClick={() => setLimit(prev => prev + 100)}>Carregar Mais</Button></div>
+      )}
+
+      <Sheet open={!!selectedItem} onOpenChange={(o) => {
+        if (!o) {
+          setSelectedItem(null);
+          if (searchParams.get("os")) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("os");
+            setSearchParams(next, { replace: true });
+          }
+        }
+      }}>
+        <SheetContent className="sm:max-w-xl w-full p-0">
+          {selectedItem && (
+            <div className="flex flex-col h-full bg-slate-50/30">
+              <SheetHeader className="p-6 border-b bg-white">
+                <div className="flex justify-between items-start mb-2">
+                  <Badge className={cn("text-[9px] font-bold uppercase tracking-wider px-2", selectedItem.prioridade === 'alta' ? 'bg-red-500' : 'bg-blue-500')}>Prioridade {selectedItem.prioridade}</Badge>
+                  <button
+                    onClick={() => navigate(`/ordens-servico?id=${selectedItem.os_id}`)}
+                    className="text-[10px] font-mono font-bold text-slate-400 hover:text-primary inline-flex items-center gap-1 transition-colors"
+                  >
+                    {selectedItem.numero_os} <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                </div>
+                <SheetTitle className="text-2xl font-bold tracking-tight">{selectedItem.produto}</SheetTitle>
+                <SheetDescription className="flex items-center gap-3 text-xs font-medium">
+                  <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-primary" /> {selectedItem.titular_nome}</span>
+                  <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" /> {selectedItem.fazenda}</span>
+                </SheetDescription>
+              </SheetHeader>
+              <ScrollArea className="flex-1 p-6">
+                <Tabs defaultValue="esteira" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6 h-11 bg-slate-100/50 p-1">
+                    <TabsTrigger value="esteira" className="flex items-center gap-2 text-xs"><ClipboardList className="h-3.5 w-3.5" /> Esteira</TabsTrigger>
+                    <TabsTrigger value="history" className="flex items-center gap-2 text-xs"><History className="h-3.5 w-3.5" /> Timeline</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="esteira" className="space-y-4">
+                    {/* Resumo de produção — "O que produzir" */}
+                    <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Resumo de produção</p>
+
+                      {/* Linha 1: volume + produto + lote/CQ */}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-lg font-bold text-foreground">{selectedItem.volume_solicitado.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}L</span>
+                        <span className="text-sm text-muted-foreground">·</span>
+                        <span className="text-sm font-semibold text-foreground truncate">
+                          {selectedItem.microrganismo_nome || selectedItem.produto}
+                        </span>
+                        <div className="ml-auto flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-[10px] font-mono">
+                            Lote: {selectedItem.codigo_lote || "—"}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] font-bold uppercase",
+                              selectedItem.cq_resultado === "aprovado" && "border-green-500 text-green-600",
+                              selectedItem.cq_resultado === "reprovado" && "border-red-500 text-red-600",
+                            )}
+                          >
+                            CQ {selectedItem.cq_resultado || "—"}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <ComposicaoProducaoCard
+                        osId={selectedItem.os_id}
+                        produtoId={selectedItem.produto_id}
+                        microrganismoFallback={selectedItem.microrganismo_id ? { id: selectedItem.microrganismo_id, nome: selectedItem.microrganismo_nome ?? selectedItem.produto } : null}
+                        volumeTotalL={selectedItem.volume_solicitado}
+                      />
+
+                      {/* Linha 2: meta inline editável */}
+                      <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-[11px] font-semibold">
+                              <Calendar className="h-3 w-3 text-primary" />
+                              {selectedItem.data_programada ? formatDateDisplay(selectedItem.data_programada) : 'Definir data'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={selectedItem.data_programada ? new Date(selectedItem.data_programada) : undefined}
+                              onSelect={(date) => date && atualizarDataProgramada(selectedItem.id, format(date, 'yyyy-MM-dd'))}
+                              locale={ptBR}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+
+                        <span className="text-muted-foreground">·</span>
+
+                        <Select
+                          value={selectedItem.prioridade}
+                          onValueChange={(val) => atualizarPrioridade(selectedItem.os_id, selectedItem.origem, val)}
+                        >
+                          <SelectTrigger className="h-7 w-auto gap-1.5 px-2 text-[11px] font-bold border-none bg-transparent shadow-none focus:ring-0">
+                            <Star className="h-3 w-3" />
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="alta" className="text-red-600 font-bold">ALTA</SelectItem>
+                            <SelectItem value="media" className="text-amber-600 font-bold">MÉDIA</SelectItem>
+                            <SelectItem value="baixa" className="text-green-600 font-bold">BAIXA</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <span className="text-muted-foreground">·</span>
+
+                        <Select
+                          value={selectedItem.responsavel_id || (isProducaoRole && profile?.id ? profile.id : "none")}
+                          onValueChange={(val) => val !== "none" && vincularResponsavel(selectedItem.id, val)}
+                          disabled={isProducaoRole || (!canEditResponsavel && !!selectedItem.responsavel_id)}
+                        >
+                          <SelectTrigger className="h-7 w-auto gap-1.5 px-2 text-[11px] font-semibold border-none bg-transparent shadow-none focus:ring-0 disabled:opacity-100">
+                            <UserPlus className="h-3 w-3" />
+                            <SelectValue placeholder="Não atribuído" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Não atribuído</SelectItem>
+                            {profiles.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.nome || p.email}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+
+                        <span className="text-muted-foreground">·</span>
+
+                        <span className="inline-flex items-center gap-1 px-2 text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          {selectedItem.talhao}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border bg-white p-4">
+                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3">Passo a passo da esteira</p>
+                      <EsteiraStepper
+                        item={{
+                          id: selectedItem.id,
+                          os_id: selectedItem.os_id,
+                          numero_os: selectedItem.numero_os,
+                          origem: selectedItem.origem,
+                          stage: selectedItem.stage,
+                          os_status: selectedItem.os_status,
+                          lote_id: selectedItem.lote_id,
+                          codigo_lote: selectedItem.codigo_lote,
+                          cq_resultado: selectedItem.cq_resultado,
+                          entrega_status: selectedItem.entrega_status,
+                          aplicacao_status: selectedItem.aplicacao_status,
+                        }}
+                        handlers={{
+                          onAssumirProducao: () => runStepperAction(() => assumirProducao(selectedItem.id, selectedItem.os_id, selectedItem.origem)),
+                          onGerarLote: () => abrirGerarLote(selectedItem),
+                          onEnviarParaCQ: () => runStepperAction(() => enviarParaCQ(selectedItem.id, selectedItem.os_id, selectedItem.origem)),
+                          onRegistrarCQ: () => abrirRegistroCQ(selectedItem),
+                          onEnviarParaEnvase: () => runStepperAction(() => enviarParaEnvase(selectedItem.id, selectedItem.os_id, selectedItem.origem)),
+                          onConcluirEnvase: () => abrirRegistroEnvase(selectedItem),
+                          onReservarEstoque: () => abrirReservaEstoque(selectedItem),
+                        }}
+                      />
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="history" className="space-y-6">
+                    <div className="relative pl-6 border-l-2 border-slate-200 space-y-8 ml-3 py-2">
+                       {history.length > 0 ? history.map((event: any) => (
+                        <div key={event.id} className="relative">
+                          <div className="absolute -left-[31px] top-1 h-4 w-4 rounded-full bg-primary border-4 border-background" />
+                          <div>
+                            <p className="text-sm font-bold text-foreground">{event.acao.replace('_', ' ').toUpperCase()}</p>
+                            <p className="text-xs text-muted-foreground mb-1">{formatDateTimeDisplay(event.created_at)}</p>
+                            {event.observacao && <p className="text-[11px] bg-muted/50 p-2 rounded italic text-muted-foreground">"{event.observacao}"</p>}
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="text-center p-10 text-muted-foreground text-sm italic">Nenhum evento registrado.</div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </ScrollArea>
+              
+              {selectedItem && (
+                <div className="p-6 border-t bg-white mt-auto">
+                  <FinalizarOSButton 
+                    osId={selectedItem.os_id}
+                    origem={selectedItem.origem}
+                    podeFinalizar={selectedItem.pode_finalizar}
+                    bloqueios={selectedItem.bloqueios}
+                    className="w-full h-12 text-base"
+                    onSuccess={() => {
+                      setSelectedItem(null);
+                      qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] });
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <RegistrarCQDialog
+        open={!!cqTarget}
+        onOpenChange={(o) => !o && setCqTarget(null)}
+        target={cqTarget}
+      />
+
+      <GerarLoteDialog
+        open={!!loteTarget}
+        onOpenChange={(o) => !o && setLoteTarget(null)}
+        target={loteTarget}
+        onCreated={() => qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] })}
+      />
+
+      <RegistrarEnvaseDialog
+        open={!!envaseTarget}
+        onOpenChange={(o) => !o && setEnvaseTarget(null)}
+        target={envaseTarget}
+      />
+
+      <ReservarEstoqueDialog
+        open={!!reservaTarget}
+        onOpenChange={(o) => !o && setReservaTarget(null)}
+        target={reservaTarget}
+      />
+    </div>
+  );
+}

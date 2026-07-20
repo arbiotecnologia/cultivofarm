@@ -1,0 +1,2 @@
+CREATE POLICY "Authenticated users can update formulacoes" ON public.formulacoes FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users can delete formulacoes" ON public.formulacoes FOR DELETE TO authenticated USING (auth.uid() IS NOT NULL);

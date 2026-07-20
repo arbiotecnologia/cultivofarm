@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_partner_orders_payment_approval ON public.partner_orders (payment_condition_status, financial_approval_status);
