@@ -1,19 +1,9 @@
-import {
-  LayoutDashboard, Users, MapPin, Grid3X3, FileText,
-  ClipboardList, CalendarClock, FlaskConical, ShieldCheck, Package,
-  Warehouse, Truck, Sprout, BarChart3, Settings, GitPullRequestArrow, BrainCircuit, CloudSun, Inbox, Activity, ClipboardCheck, Clock,
-  Wallet, ArrowDownCircle, ArrowUpCircle, FolderTree, Building2, Layers, CreditCard, PieChart,
-  Repeat, FileSpreadsheet, Receipt, History, Cog, TrendingUp, FileBarChart2, Siren, Handshake, Factory, AlertTriangle, ChevronDown
-
-} from "lucide-react";
-
-import { useState } from "react";
-import { NavLink } from "@/components/NavLink";
+import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { Search, ChevronDown } from "lucide-react";
+import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
 import { canAccess } from "@/lib/permissions";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { LogoDisplay } from "@/components/LogoDisplay";
@@ -22,159 +12,82 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarHeader, useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertasBadgeMenu } from "@/components/alertas/AlertasBadgeMenu";
-
-type MenuItem = {
-  title: string;
-  url: string;
-  icon: typeof LayoutDashboard;
-  badge?: string;
-};
-
-const menuItems: MenuItem[] = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Portal Executivo", url: "/executivo", icon: Activity },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Solicitações", url: "/solicitacoes", icon: Inbox },
-  { title: "Agenda Técnica", url: "/agenda-tecnica", icon: CalendarClock },
-  { title: "Visita Técnica", url: "/visita-tecnica", icon: ClipboardCheck },
-  { title: "BI Agronômico", url: "/bi-agronomico", icon: BrainCircuit },
-  { title: "Portal do Produtor", url: "/portal", icon: LayoutDashboard },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
-];
-
-const operationalItems: MenuItem[] = [
-  { title: "Ordens de Serviço", url: "/ordens-servico", icon: ClipboardList },
-  { title: "Cockpit Laboratório", url: "/cockpit-laboratorio", icon: FlaskConical },
-  { title: "Planejamento Produção", url: "/operacao/planejamento", icon: Factory },
-  { title: "Dashboard Produção", url: "/operacao/dashboard-producao", icon: Activity },
-  { title: "Estoque", url: "/estoque", icon: Warehouse },
-  { title: "Entregas", url: "/entregas", icon: Truck },
-  { title: "Aplicações", url: "/aplicacoes", icon: Sprout },
-  { title: "Painel Operacional", url: "/painel-operacional", icon: Activity },
-];
-
-const auxiliaryItems: MenuItem[] = [
-  { title: "Lotes", url: "/lotes", icon: FlaskConical, badge: "Técnico" },
-  { title: "Controle de Qualidade", url: "/controle-qualidade", icon: ShieldCheck, badge: "Técnico" },
-  { title: "Envase", url: "/envase", icon: Package, badge: "Técnico" },
-];
-
-const secondaryItems: MenuItem[] = [
-  { title: "Fazendas", url: "/fazendas", icon: MapPin },
-  { title: "Protocolos", url: "/protocolos", icon: FileText },
-  { title: "Equipe Técnica", url: "/consultor-tecnico", icon: Users },
-  { title: "Fluxo Técnico", url: "/fluxo-tecnico", icon: GitPullRequestArrow },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
-  { title: "BI Operacional", url: "/bi-operacional", icon: Activity },
-  { title: "Alertas", url: "/alertas-operacionais", icon: Siren },
-  { title: "Monitoramento", url: "/monitoramento-alertas", icon: Clock },
-  { title: "Previsão Climática", url: "/previsao-agronomica", icon: CloudSun },
-
-  { title: "Auditorias", url: "/auditoria", icon: ShieldCheck },
-];
-
-
-const financialItems: MenuItem[] = [
- { title: "Financeiro", url: "/financeiro", icon: PieChart },
- { title: "Fluxo de Caixa", url: "/financeiro/fluxo-caixa", icon: TrendingUp },
- { title: "DRE Gerencial", url: "/financeiro/dre", icon: FileBarChart2 },
- { title: "Relatórios", url: "/financeiro/relatorios", icon: FileBarChart2 },
- { title: "Recibos", url: "/financeiro/recibos", icon: Receipt },
- { title: "Contas a Receber", url: "/financeiro/receber", icon: ArrowUpCircle },
- { title: "Contas a Pagar", url: "/financeiro/pagar", icon: ArrowDownCircle },
-  { title: "Categorias", url: "/financeiro/categorias", icon: FolderTree },
-  { title: "Centros de Custo", url: "/financeiro/centros-custo", icon: Building2 },
-  { title: "Contas Bancárias", url: "/financeiro/contas-bancarias", icon: Layers },
-  { title: "Formas de Pagamento", url: "/financeiro/formas-pagamento", icon: CreditCard },
-  { title: "Recorrências", url: "/financeiro/recorrencias", icon: Repeat },
-  { title: "Notas Fiscais", url: "/financeiro/notas-fiscais", icon: FileSpreadsheet },
-  { title: "Entregas s/ Fatura", url: "/financeiro/entregas-nao-faturadas", icon: Receipt },
-  { title: "Auditoria", url: "/financeiro/auditoria", icon: History },
-  { title: "Configurações Fin.", url: "/financeiro/configuracoes", icon: Cog },
-];
-
-const financialB2BItems: MenuItem[] = [
-  { title: "Visão Geral B2B", url: "/financeiro/b2b", icon: Handshake },
-  { title: "Dashboard B2B", url: "/financeiro/b2b/dashboard", icon: TrendingUp },
-  { title: "Governança", url: "/financeiro/b2b/governanca", icon: ShieldCheck },
-  { title: "Aging", url: "/financeiro/b2b/aging", icon: BarChart3 },
-  { title: "Previsão Receita", url: "/financeiro/b2b/previsao", icon: TrendingUp },
-  { title: "Rentabilidade", url: "/financeiro/b2b/rentabilidade", icon: BarChart3 },
-  { title: "Alertas Financeiros", url: "/financeiro/b2b/alertas", icon: AlertTriangle },
-  { title: "Central Governança", url: "/financeiro/b2b/central-governanca", icon: ShieldCheck },
-  { title: "Regras Governança", url: "/financeiro/b2b/regras", icon: ShieldCheck },
-  { title: "Dashboard Sócios", url: "/executivo/socios-b2b", icon: TrendingUp },
-];
-
-const comercialItems: MenuItem[] = [
-  { title: "Dashboard Consolidado", url: "/comercial/dashboard-consolidado", icon: BarChart3 },
-  { title: "Indicadores", url: "/comercial/indicadores", icon: BarChart3 },
-  { title: "Pedidos B2B", url: "/comercial/pedidos-b2b", icon: ClipboardCheck },
-  { title: "Solicitações B2B", url: "/comercial/solicitacoes-b2b", icon: Inbox },
-
-  
-  { title: "Campanhas", url: "/comercial/campanhas", icon: TrendingUp },
-  { title: "Catálogo", url: "/comercial/catalogo", icon: FlaskConical },
-  { title: "Simulador", url: "/comercial/simulador", icon: BarChart3 },
-  { title: "Alertas Comerciais", url: "/comercial/alertas", icon: AlertTriangle },
-];
+import {
+  desktopItemsBySection,
+  itemsForPlatform,
+  type NavItem,
+  type NavSection,
+} from "@/config/navigation";
+import { isNavItemActive } from "@/lib/navigation/matchActive";
+import { searchNavItems } from "@/lib/navigation/search";
+import { useSidebarGroupState } from "@/hooks/useSidebarGroupState";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
-  const currentPath = location.pathname;
+  const { pathname } = useLocation();
   const { role } = useAuth();
   const { config } = useSystemConfig();
 
-  const logoUrl = config?.logo_url;
   const nomeEmpresa = config?.nome_empresa || "AR Bio";
+  const [query, setQuery] = useState("");
 
-  const isActive = (path: string) => {
-    if (path === "/") return currentPath === "/";
-    return currentPath.startsWith(path);
-  };
+  // Descobre a seção do item ativo — usada para forçar seu grupo aberto.
+  const activeSection: NavSection | null = useMemo(() => {
+    const all = itemsForPlatform("desktop");
+    const active = all.find((it) => isNavItemActive(it, pathname));
+    return active?.section ?? null;
+  }, [pathname]);
 
-  const visibleItems = menuItems.filter(item => canAccess(role, item.url));
-  const visibleOperational = operationalItems.filter(item => canAccess(role, item.url));
-  const visibleAuxiliary = auxiliaryItems.filter(item => canAccess(role, item.url));
-  const visibleSecondary = secondaryItems.filter(item => canAccess(role, item.url));
-  const visibleFinancial = financialItems.filter(item => canAccess(role, item.url));
-  const visibleFinancialB2B = financialB2BItems.filter(item => canAccess(role, item.url));
-  const visibleComercial = comercialItems.filter(item => canAccess(role, item.url));
-  const isB2BFinanceiroActive = currentPath.startsWith("/financeiro/b2b") || currentPath === "/executivo/socios-b2b";
-  // Grupo "Financeiro B2B" inicia aberto por padrão (espelha os demais grupos).
-  const [b2bFinOpen, setB2bFinOpen] = useState(true);
-  // Mantém referência para destacar o item ativo mesmo com o grupo aberto.
-  void isB2BFinanceiroActive;
+  const { isOpen, setOpen } = useSidebarGroupState(activeSection);
 
-  const renderItem = (item: MenuItem) => {
-    const isCockpit = item.url === "/cockpit-laboratorio";
+  // Grupos visíveis (filtrados por perfil).
+  const groups = useMemo(() => {
+    return desktopItemsBySection()
+      .map(({ section, items }) => ({
+        section,
+        items: items.filter((it) => canAccess(role, it.route)),
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [role]);
+
+  // Resultados de busca (achata todos os grupos).
+  const searchResults = useMemo(() => {
+    if (!query.trim()) return null;
+    return searchNavItems(itemsForPlatform("desktop"), query, role);
+  }, [query, role]);
+
+  const renderItem = (item: NavItem) => {
+    const active = isNavItemActive(item, pathname);
+    const isCockpit = item.route === "/cockpit-laboratorio";
     const isProducao = role === "producao" || role === "operador_onfarm";
 
     return (
-      <SidebarMenuItem key={item.title}>
-        <SidebarMenuButton 
-          asChild 
-          isActive={isActive(item.url)}
+      <SidebarMenuItem key={item.id}>
+        <SidebarMenuButton
+          asChild
+          isActive={active}
+          tooltip={collapsed ? item.label : undefined}
           className={cn(
-            isCockpit && isProducao && "bg-primary/5 hover:bg-primary/10 border border-primary/20"
+            isCockpit && isProducao && "bg-primary/5 hover:bg-primary/10 border border-primary/20",
           )}
         >
           <NavLink
-            to={item.url}
-            end={item.url === "/"}
-            className="hover:bg-sidebar-accent"
+            to={item.route}
+            end={item.route === "/"}
+            aria-current={active ? "page" : undefined}
+            className="hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
             activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
           >
-            <item.icon className={cn("h-4 w-4", isCockpit && isProducao && "text-primary")} />
+            <item.icon className={cn("h-4 w-4", isCockpit && isProducao && "text-primary")} aria-hidden="true" />
             {!collapsed && (
               <span className="flex items-center gap-2 flex-1 min-w-0">
                 <span className={cn("truncate", isCockpit && isProducao && "font-bold text-primary")}>
-                  {item.title}
+                  {item.label}
                 </span>
-                {item.url === "/alertas-operacionais" ? (
+                {item.badgeSlot === "alertas" ? (
                   <AlertasBadgeMenu />
                 ) : (
                   item.badge && (
@@ -191,7 +104,6 @@ export function AppSidebar() {
     );
   };
 
-
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
@@ -204,77 +116,62 @@ export function AppSidebar() {
             </div>
           )}
         </div>
+
+        {!collapsed && (
+          <div className="mt-3 relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar no menu..."
+              aria-label="Buscar no menu"
+              className="w-full h-9 pl-8 pr-2 rounded-md bg-sidebar-accent/40 text-sm text-sidebar-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            />
+          </div>
+        )}
       </SidebarHeader>
+
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>{visibleItems.map(renderItem)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {visibleOperational.length > 0 && (
+        {searchResults ? (
           <SidebarGroup>
-            <SidebarGroupLabel>Operação</SidebarGroupLabel>
+            <SidebarGroupLabel>
+              {searchResults.length > 0
+                ? `Resultados (${searchResults.length})`
+                : "Nenhum resultado"}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>{visibleOperational.map(renderItem)}</SidebarMenu>
+              <SidebarMenu>{searchResults.map(renderItem)}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        )}
-
-        {visibleAuxiliary.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Técnico / Auditoria</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleAuxiliary.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {visibleFinancial.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Financeiro</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleFinancial.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {visibleFinancialB2B.length > 0 && (
-          <Collapsible open={b2bFinOpen} onOpenChange={setB2bFinOpen}>
-            <SidebarGroup>
-              <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="cursor-pointer flex items-center justify-between hover:text-foreground">
-                  <span>Financeiro B2B</span>
-                  <ChevronDown className={cn("h-3 w-3 transition-transform", b2bFinOpen && "rotate-180")} />
-                </SidebarGroupLabel>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu>{visibleFinancialB2B.map(renderItem)}</SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-        )}
-
-        {visibleComercial.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Comercial</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleComercial.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-
-        {visibleSecondary.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Gestão e Estratégico</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleSecondary.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        ) : (
+          groups.map(({ section, items }) => {
+            const open = isOpen(section, true);
+            return (
+              <Collapsible key={section} open={open} onOpenChange={(o) => setOpen(section, o)}>
+                <SidebarGroup>
+                  <CollapsibleTrigger asChild>
+                    <SidebarGroupLabel
+                      className="cursor-pointer flex items-center justify-between hover:text-foreground"
+                      aria-expanded={open}
+                      aria-controls={`nav-section-${section}`}
+                    >
+                      <span>{section}</span>
+                      <ChevronDown
+                        className={cn("h-3 w-3 transition-transform", open && "rotate-180")}
+                        aria-hidden="true"
+                      />
+                    </SidebarGroupLabel>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent id={`nav-section-${section}`}>
+                    <SidebarGroupContent>
+                      <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            );
+          })
         )}
       </SidebarContent>
     </Sidebar>
