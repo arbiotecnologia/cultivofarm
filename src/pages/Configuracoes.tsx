@@ -284,8 +284,13 @@ export default function Configuracoes() {
   useEffect(() => {
     if (editOpen && editUser?.user_id) {
       setEditVinculos(editUser.vinculos || []);
+      // Popula partner_id a partir do vínculo atual (fase multiportal)
+      const link = partnerLinkByUser(editUser.user_id);
+      if (link && !editUser.partner_id) {
+        setEditUser((prev: any) => (prev ? { ...prev, partner_id: link.partner_id } : prev));
+      }
     }
-  }, [editOpen, editUser?.user_id]);
+  }, [editOpen, editUser?.user_id, partnerLinks]);
 
   // Deep-link: ?tab=usuarios&user_id=...
   useEffect(() => {
@@ -566,20 +571,49 @@ export default function Configuracoes() {
                           <div><Label>Email *</Label><Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} /></div>
                           <div><Label>Senha *</Label><Input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} /></div>
                           <div>
-                            <Label>Perfil *</Label>
-                            <Select value={newUser.role} onValueChange={v => setNewUser({ ...newUser, role: v })}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {ACTIVE_ROLES.map(r => (
-                                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Label>Perfis * (selecione um ou mais)</Label>
+                            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                              {ACTIVE_ROLES.map(r => {
+                                const checked = newUser.roles.includes(r);
+                                return (
+                                  <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(v) =>
+                                        setNewUser({ ...newUser, roles: toggleRole(newUser.roles, r, v === true) })
+                                      }
+                                    />
+                                    {ROLE_LABELS[r]}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            {newUser.roles.includes("cliente_produtor") && newUser.roles.length > 1 && (
+                              <p className="text-xs text-destructive mt-1">Produtor não pode ser combinado com outros perfis.</p>
+                            )}
                           </div>
+                          {hasPartnerRole(newUser.roles) && (
+                            <div>
+                              <Label>Parceiro B2B vinculado *</Label>
+                              <Select value={newUser.partner_id} onValueChange={v => setNewUser({ ...newUser, partner_id: v })}>
+                                <SelectTrigger><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
+                                <SelectContent>
+                                  {partners.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      {p.razao_social}{p.codigo ? ` (${p.codigo})` : ""}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Papel no parceiro: <b>{partnerPapelFromRoles(newUser.roles) === "tecnico" ? "Técnico" : "Gestor"}</b>
+                              </p>
+                            </div>
+                          )}
                            <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
                            <div><Label>Cargo</Label><Input value={newUser.cargo} onChange={e => setNewUser({ ...newUser, cargo: e.target.value })} /></div>
                            <div><Label>CPF/CNPJ</Label><MaskedInput mask="cpf-cnpj" value={newUser.cpf_cnpj} onChange={e => setNewUser({ ...newUser, cpf_cnpj: e.target.value })} /></div>
-                          {(newUser.role === 'tecnico_agronomo' || newUser.role === 'consultor_tecnico') && (
+                          {newUser.roles.some(r => r === 'tecnico_agronomo' || r === 'consultor_tecnico') && (
                             <>
                               <div><Label>CREA</Label><Input value={newUser.crea} onChange={e => setNewUser({ ...newUser, crea: e.target.value })} /></div>
                               <div><Label>Especialidade</Label><Input value={newUser.especialidade} onChange={e => setNewUser({ ...newUser, especialidade: e.target.value })} /></div>
@@ -589,8 +623,8 @@ export default function Configuracoes() {
                             clientes={clientes}
                             value={newUserVinculos}
                             onChange={setNewUserVinculos}
-                            required={newUser.role === 'cliente_produtor'}
-                            helperText={newUser.role === 'cliente_produtor'
+                            required={newUser.roles.includes('cliente_produtor')}
+                            helperText={newUser.roles.includes('cliente_produtor')
                               ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
                               : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
                           />
@@ -675,22 +709,7 @@ export default function Configuracoes() {
                           )},
                         ]}
                         actions={
-                          <div className="flex w-full gap-2 items-center">
-                            <div className="flex-1">
-                              <Select
-                                value={u.roles[0] || ""}
-                                onValueChange={(v) => updateRole.mutate({ userId: u.user_id, newRole: v })}
-                              >
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue placeholder="Mudar Perfil" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {ACTIVE_ROLES.map(r => (
-                                    <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          <div className="flex w-full gap-2 items-center justify-end">
                             <Button variant="outline" size="sm" onClick={() => { setEditUser(u); setEditOpen(true); }}>
                               <Pencil className="h-3 w-3 mr-1" /> Editar
                             </Button>
@@ -708,14 +727,13 @@ export default function Configuracoes() {
                         <TableHead>Perfil</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Vínculos</TableHead>
-                        <TableHead>Alterar Perfil</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
                       ) : filteredUsers.map((u: any) => (
                         <TableRow key={u.user_id} className={u.ativo === false ? "opacity-50" : ""}>
@@ -749,20 +767,6 @@ export default function Configuracoes() {
                               {(!u.vinculos || u.vinculos.length === 0) && <span className="text-muted-foreground text-xs">—</span>}
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <Select
-                              value={u.roles[0] || ""}
-                              onValueChange={(v) => updateRole.mutate({ userId: u.user_id, newRole: v })}
-                            >
-                              <SelectTrigger className="w-[160px]">
-                                <SelectValue placeholder="Selecionar" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ACTIVE_ROLES.map(r => (
-                                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" onClick={() => { setEditUser(u); setEditOpen(true); }}>
@@ -796,19 +800,49 @@ export default function Configuracoes() {
                   <div className="space-y-3">
                     <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
                     <div>
-                      <Label>Perfil de Acesso</Label>
-                      <Select 
-                        value={editUser.roles?.[0] || ""} 
-                        onValueChange={v => setEditUser({ ...editUser, roles: [v] })}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {ACTIVE_ROLES.map(r => (
-                            <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Perfis de Acesso (selecione um ou mais)</Label>
+                      <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                        {ACTIVE_ROLES.map(r => {
+                          const currentRoles: string[] = editUser.roles ?? [];
+                          const checked = currentRoles.includes(r);
+                          return (
+                            <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(v) =>
+                                  setEditUser({ ...editUser, roles: toggleRole(currentRoles, r, v === true) })
+                                }
+                              />
+                              {ROLE_LABELS[r]}
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {(editUser.roles ?? []).includes("cliente_produtor") && (editUser.roles ?? []).length > 1 && (
+                        <p className="text-xs text-destructive mt-1">Produtor não pode ser combinado com outros perfis.</p>
+                      )}
                     </div>
+                    {hasPartnerRole(editUser.roles ?? []) && (
+                      <div>
+                        <Label>Parceiro B2B vinculado *</Label>
+                        <Select
+                          value={editUser.partner_id || ""}
+                          onValueChange={v => setEditUser({ ...editUser, partner_id: v })}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
+                          <SelectContent>
+                            {partners.map(p => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.razao_social}{p.codigo ? ` (${p.codigo})` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Papel no parceiro: <b>{partnerPapelFromRoles(editUser.roles ?? []) === "tecnico" ? "Técnico" : "Gestor"}</b>
+                        </p>
+                      </div>
+                    )}
                     <div><Label>Nome</Label><Input value={editUser.nome || ""} onChange={e => setEditUser({ ...editUser, nome: e.target.value })} /></div>
                     <div><Label>Telefone</Label><MaskedInput mask="telefone" value={editUser.telefone || ""} onChange={e => setEditUser({ ...editUser, telefone: e.target.value })} /></div>
                     <div><Label>Cargo</Label><Input value={editUser.cargo || ""} onChange={e => setEditUser({ ...editUser, cargo: e.target.value })} /></div>
