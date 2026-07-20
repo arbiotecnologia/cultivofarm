@@ -16,9 +16,11 @@ import {
 } from "lucide-react";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { LogoDisplay } from "@/components/LogoDisplay";
+import { getPortalGreetingLabel } from "@/lib/portalDisplayLabel";
+import { getActivePortalContext } from "@/lib/activePortalContext";
 
 export default function MobileDashboardConsultor() {
-  const { profile } = useAuth();
+  const { profile, primaryRole, roles } = useAuth();
   const navigate = useNavigate();
   const { config, defaults } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
@@ -117,7 +119,9 @@ export default function MobileDashboardConsultor() {
       <div className="flex items-center gap-3">
         <LogoDisplay size="md" />
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">Olá, consultor</p>
+          <p className="text-sm text-muted-foreground">
+            Olá, {getPortalGreetingLabel({ activeCtx: getActivePortalContext(), primaryRole, roles })}
+          </p>
           <h1 className="text-lg font-bold text-foreground truncate">
             {profile?.nome || "Bem-vindo"}
           </h1>
