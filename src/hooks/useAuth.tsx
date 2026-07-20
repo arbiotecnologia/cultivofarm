@@ -182,6 +182,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { clearActivePortalContext } = await import("@/lib/activePortalContext");
       clearActivePortalContext();
+      const { broadcastPortalEvent } = await import("@/lib/portalBroadcast");
+      broadcastPortalEvent({ type: "signed_out", at: Date.now() });
     } catch {
       /* noop */
     }

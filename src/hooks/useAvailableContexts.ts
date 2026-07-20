@@ -24,9 +24,10 @@ export function useAvailableContexts() {
   return useQuery({
     queryKey: ["available-portal-contexts", user?.id],
     enabled: !!user?.id,
-    staleTime: 60_000,
-    gcTime: 5 * 60_000,
+    staleTime: 15_000,
+    gcTime: 2 * 60_000,
     retry: 1,
+    refetchOnWindowFocus: true,
     queryFn: async (): Promise<AvailableContexts> => {
       const { data, error } = await supabase.rpc("get_my_available_portal_contexts");
       if (error) throw error;
