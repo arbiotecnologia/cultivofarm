@@ -57,13 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [primaryRole, setPrimaryRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // QueryClient pode não estar disponível em testes; usar try/catch defensivo.
-  let queryClient: ReturnType<typeof useQueryClient> | null = null;
-  try {
-    queryClient = useQueryClient();
-  } catch {
-    queryClient = null;
-  }
+  // AuthProvider é sempre montado dentro do QueryClientProvider (App.tsx e
+  // renderWithProviders). Chamar o hook incondicionalmente respeita as Rules
+  // of Hooks — o try/catch anterior violava a regra e podia render-por-render.
+  const queryClient = useQueryClient();
+
 
   const fetchProfileAndRole = async (userId: string) => {
     try {
