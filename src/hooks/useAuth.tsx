@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import type { AppRole } from "@/lib/permissions";
 import { normalizeRoles, pickPrimaryRole } from "@/lib/portalContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { subscribePortalEvents } from "@/lib/portalBroadcast";
+import { clearActivePortalContext } from "@/lib/activePortalContext";
 
 interface Profile {
   id: string;
@@ -54,6 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [primaryRole, setPrimaryRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // QueryClient pode não estar disponível em testes; usar try/catch defensivo.
+  let queryClient: ReturnType<typeof useQueryClient> | null = null;
+  try {
+    queryClient = useQueryClient();
+  } catch {
+    queryClient = null;
+  }
 
   const fetchProfileAndRole = async (userId: string) => {
     try {
@@ -178,10 +188,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Cross-tab: reage a eventos de troca/limpeza/logout emitidos em outras abas.
+  useEffect(() => {
+    const unsub = subscribePortalEvents((event) => {
+      if (!queryClient) return;
+      if (event.type === "signed_out") {
+        clearActivePortalContext();
+        queryClient.clear();
+        return;
+      }
+      // portal_switched | portal_cleared
+      queryClient.invalidateQueries({ queryKey: ["available-portal-contexts"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      clearActivePortalContext();
+    });
+    return unsub;
+  }, [queryClient]);
+
   const signOut = async () => {
     try {
       const { clearActivePortalContext } = await import("@/lib/activePortalContext");
       clearActivePortalContext();
+      const { broadcastPortalEvent } = await import("@/lib/portalBroadcast");
+      broadcastPortalEvent({ type: "signed_out", at: Date.now() });
+    } catch {
+      /* noop */
+    }
+    try {
+      queryClient?.clear();
     } catch {
       /* noop */
     }

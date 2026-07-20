@@ -92,8 +92,13 @@ export default function MobileLayout() {
         progress={progress}
       />
 
-      {/* Main content area */}
-      <main className={cn("flex-1 overflow-auto pb-20", (!isOnline || pendingCount > 0) && "pt-10")}>
+      {/* Main content area — em desktop limita largura para evitar cartões excessivamente largos */}
+      <main
+        className={cn(
+          "flex-1 overflow-auto pb-20 w-full mx-auto max-w-full lg:max-w-5xl xl:max-w-6xl lg:px-6",
+          (!isOnline || pendingCount > 0) && "pt-10",
+        )}
+      >
         <Outlet />
       </main>
 

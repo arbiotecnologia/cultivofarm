@@ -44,8 +44,10 @@ export default function SelecionarPortal() {
   }, [data?.skip_context_selector, data?.preferred_context]);
 
   // Redirecionamento automático baseado nos contextos reais (nunca em query/localStorage).
+  // Não redireciona para /acesso-pendente enquanto a consulta estiver carregando,
+  // revalidando (isFetching) ou em erro transitório.
   useEffect(() => {
-    if (!data || submitting) return;
+    if (!data || submitting || isLoading || isFetching || isError) return;
     const ctxs = data.available_contexts;
 
     if (ctxs.length === 0) {
@@ -69,7 +71,7 @@ export default function SelecionarPortal() {
       registerLoginRedirect(pref);
       navigate(PORTAL_CONTEXT_HOME[pref], { replace: true });
     }
-  }, [data, submitting, navigate]);
+  }, [data, submitting, navigate, isLoading, isFetching, isError]);
 
   async function pick(ctx: PortalContext) {
     if (submitting) return; // evita duplo clique
