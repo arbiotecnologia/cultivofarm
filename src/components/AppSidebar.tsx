@@ -152,7 +152,7 @@ export function AppSidebar() {
                 : "Nenhum resultado"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>{searchResults.map(renderItem)}</SidebarMenu>
+              <SidebarMenu>{searchResults.map((it) => renderItem(it))}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ) : (
@@ -176,7 +176,7 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent id={`nav-section-${section}`}>
                     <SidebarGroupContent>
-                      <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+                      <SidebarMenu>{items.map((it) => renderItem(it))}</SidebarMenu>
                     </SidebarGroupContent>
                   </CollapsibleContent>
                 </SidebarGroup>
