@@ -118,6 +118,17 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/painel-operacional": {
     administrador: "rw", gestor: "rw",
   },
+  // Fase 3 — Dashboard unificado (Visão Geral aberta aos perfis técnicos).
+  "/dashboard": {
+    administrador: "rw", gestor: "rw", consultor_tecnico: "r",
+    tecnico_agronomo: "r", aplicador: "r", administrativo: "r", financeiro: "r",
+  },
+  "/dashboard/geral": {
+    administrador: "rw", gestor: "rw", consultor_tecnico: "r",
+    tecnico_agronomo: "r", aplicador: "r", administrativo: "r", financeiro: "r",
+  },
+  "/dashboard/executivo": { administrador: "rw", gestor: "rw" },
+  "/dashboard/operacional": { administrador: "rw", gestor: "rw" },
   "/monitoramento-alertas": {
     administrador: "rw", gestor: "rw", consultor_tecnico: "r", tecnico_agronomo: "r",
   },
