@@ -2,11 +2,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Shield, Mail, Bell, ArrowLeftRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { LogOut, User, Shield, Mail, Bell, ArrowLeftRight, Sprout, Store } from "lucide-react";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useSwitchPortal } from "@/hooks/useSwitchPortal";
+import { getActivePortalContext } from "@/lib/activePortalContext";
 
 export default function MobilePerfil() {
   const { profile, role, signOut } = useAuth();
@@ -16,6 +18,22 @@ export default function MobilePerfil() {
   const canSwitch =
     !!contexts?.available_contexts?.includes("b2b") &&
     !!contexts?.available_contexts?.includes("technical");
+
+  const activeCtx = getActivePortalContext();
+  const portalLabel =
+    activeCtx === "b2b"
+      ? "Parceiro B2B"
+      : activeCtx === "technical"
+        ? "Consultor Técnico"
+        : activeCtx === "producer"
+          ? "Produtor"
+          : "Portal Técnico";
+  const PortalIcon = activeCtx === "b2b" ? Store : Sprout;
+
+  const others: string[] = [];
+  if (contexts?.has_b2b_access && activeCtx !== "b2b") others.push("Portal Parceiro B2B");
+  if (contexts?.has_technical_access && activeCtx !== "technical") others.push("Portal Técnico");
+
 
   return (
     <div className="p-4 space-y-6">
