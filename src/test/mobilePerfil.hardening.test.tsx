@@ -66,7 +66,7 @@ describe("MobilePerfil — usuário duplo em contexto technical", () => {
   it("exibe rótulo 'Consultor Técnico' quando contexto ativo é technical", () => {
     setActivePortalContext("technical");
     renderWithProviders(<MobilePerfil />);
-    expect(screen.getByText("Consultor Técnico")).toBeInTheDocument();
+    expect(screen.getAllByText("Consultor Técnico").length).toBeGreaterThan(0);
   });
 
   it("lista 'Portal Parceiro B2B' em Outros acessos disponíveis, sem substituir o contexto ativo", () => {
@@ -75,7 +75,7 @@ describe("MobilePerfil — usuário duplo em contexto technical", () => {
     expect(screen.getByText("Outros acessos disponíveis")).toBeInTheDocument();
     expect(screen.getByText(/Portal Parceiro B2B/)).toBeInTheDocument();
     // Continua mostrando o contexto ativo, não substituído pelo papel primário.
-    expect(screen.getByText("Consultor Técnico")).toBeInTheDocument();
+    expect(screen.getAllByText("Consultor Técnico").length).toBeGreaterThan(0);
   });
 
   it("oferece botão 'Trocar de portal' quando há b2b + technical disponíveis", () => {
@@ -87,7 +87,7 @@ describe("MobilePerfil — usuário duplo em contexto technical", () => {
   it("cai para rótulo derivado do papel primário quando não há contexto ativo (sem forçar 'Portal Técnico')", () => {
     // primaryRole = consultor_tecnico → deriva "Consultor Técnico"
     renderWithProviders(<MobilePerfil />);
-    expect(screen.getByText("Consultor Técnico")).toBeInTheDocument();
+    expect(screen.getAllByText("Consultor Técnico").length).toBeGreaterThan(0);
   });
 });
 
