@@ -5,59 +5,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, User, Shield, Mail, Bell, ArrowLeftRight, Sprout, Store } from "lucide-react";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
-import { ROLE_LABELS } from "@/lib/permissions";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useSwitchPortal } from "@/hooks/useSwitchPortal";
 import { getActivePortalContext, type ActivePortalContext } from "@/lib/activePortalContext";
+import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 
 export default function MobilePerfil() {
-  const { profile, role, primaryRole, signOut } = useAuth();
-  const { isSupported, subscription, subscribe, unsubscribe, isLoading: isLoadingPush } = usePushSubscription();
-  const { data: contexts } = useAvailableContexts();
-  const switchPortal = useSwitchPortal();
-  const canSwitch =
-    !!contexts?.available_contexts?.includes("b2b") &&
-    !!contexts?.available_contexts?.includes("technical");
-
-  // Contexto ATIVO tem prioridade absoluta. Só quando não há contexto ativo
-  // (usuário com um único papel, sem seleção prévia) derivamos do papel
-  // primário — nunca substituímos um contexto ativo pelo papel primário.
-  const activeCtx = getActivePortalContext();
-  const derivedFromRole: ActivePortalContext | null =
-    primaryRole === "cliente_produtor"
-      ? "producer"
-      : primaryRole === "parceiro_b2b" || primaryRole === "parceiro_b2b_tecnico"
-        ? "b2b"
-        : primaryRole
-          ? "technical"
-          : null;
-  const effectiveCtx = activeCtx ?? derivedFromRole;
-  const portalLabel =
-    effectiveCtx === "b2b"
-      ? "Parceiro B2B"
-      : effectiveCtx === "technical"
-        ? "Consultor Técnico"
-        : effectiveCtx === "producer"
-          ? "Produtor"
-          : "—";
-  const PortalIcon = effectiveCtx === "b2b" ? Store : Sprout;
-
-  const others: string[] = [];
-  if (contexts?.has_b2b_access && effectiveCtx !== "b2b") others.push("Portal Parceiro B2B");
-  if (contexts?.has_technical_access && effectiveCtx !== "technical") others.push("Portal Técnico");
-
-  // Rótulo do perfil coerente com o contexto ativo — evita mostrar
-  // "Parceiro B2B (Gestor)" no cabeçalho quando o usuário está operando
-  // como Consultor Técnico.
-  const roleFallback = role ? ROLE_LABELS[role] || role : "—";
-  const displayRoleLabel =
-    effectiveCtx === "technical"
-      ? "Consultor Técnico"
-      : effectiveCtx === "producer"
-        ? "Produtor"
-        : effectiveCtx === "b2b"
-          ? primaryRole === "parceiro_b2b_tecnico" || primaryRole === "parceiro_b2b"
-            ? ROLE_LABELS[primaryRole]
+  const { profile, primaryRole, roles, signOut } = useAuth();
             : "Parceiro B2B"
           : roleFallback;
 
