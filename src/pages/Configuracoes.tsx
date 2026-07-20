@@ -210,20 +210,34 @@ export default function Configuracoes() {
 
   // Create user dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [newUser, setNewUser] = useState({
-    nome: "", email: "", password: "", role: "administrativo",
+  const initialNewUser = {
+    nome: "", email: "", password: "",
+    roles: ["administrativo"] as string[],
+    partner_id: "" as string,
     telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "",
-  });
+  };
+  const [newUser, setNewUser] = useState(initialNewUser);
   const [newUserVinculos, setNewUserVinculos] = useState<ClienteVinculo[]>([]);
 
   const createUser = useMutation({
     mutationFn: async () => {
-      if (newUser.role === "cliente_produtor" && newUserVinculos.length === 0) {
+      if (newUser.roles.length === 0) {
+        throw new Error("Selecione ao menos um perfil de acesso.");
+      }
+      if (newUser.roles.includes("cliente_produtor") && newUserVinculos.length === 0) {
         throw new Error("Vincule pelo menos um cliente para o perfil de Produtor.");
+      }
+      if (hasPartnerRole(newUser.roles) && !newUser.partner_id) {
+        throw new Error("Selecione o parceiro B2B vinculado.");
       }
       const principal = newUserVinculos.find(v => v.principal)?.cliente_id ?? newUserVinculos[0]?.cliente_id;
       const payload: any = {
         ...newUser,
+        // compat com fluxo legado que espera `role` string
+        role: newUser.roles[0],
+        roles: newUser.roles,
+        partner_id: newUser.partner_id || null,
+        partner_papel: hasPartnerRole(newUser.roles) ? partnerPapelFromRoles(newUser.roles) : null,
         telefone: unmask(newUser.telefone),
         cpf_cnpj: unmask(newUser.cpf_cnpj),
         cliente_ids: newUserVinculos.map(v => v.cliente_id),
@@ -236,9 +250,10 @@ export default function Configuracoes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
       toast({ title: "Usuário criado com sucesso" });
       setCreateOpen(false);
-      setNewUser({ nome: "", email: "", password: "", role: "administrativo", telefone: "", cargo: "", cpf_cnpj: "", crea: "", especialidade: "" });
+      setNewUser(initialNewUser);
       setNewUserVinculos([]);
     },
     onError: (e: Error) => {
@@ -332,27 +347,26 @@ export default function Configuracoes() {
         .eq("user_id", editUser.user_id);
       if (profileErr) throw profileErr;
 
-      // 3. Se o papel mudou no objeto editUser, atualizamos aqui também
-      // Isso permite que o diálogo de edição controle o papel
-      // 3. Se o papel mudou no objeto editUser, atualizamos aqui também
+      // 3. Sincroniza TODOS os papéis + vínculo com parceiro B2B (mudanças multi-role)
+      const desiredRoles: string[] = editUser.roles ?? [];
       const originalUser = allUsers.find(u => u.user_id === editUser.user_id);
-      const newRole = editUser.roles?.[0];
-      const oldRole = originalUser?.roles?.[0];
+      const originalRoles: string[] = originalUser?.roles ?? [];
+      const rolesChanged =
+        desiredRoles.length !== originalRoles.length ||
+        desiredRoles.some((r) => !originalRoles.includes(r));
+      const originalLink = partnerLinkByUser(editUser.user_id);
+      const partnerChanged =
+        (hasPartnerRole(desiredRoles) && (originalLink?.partner_id !== editUser.partner_id
+          || originalLink?.papel !== partnerPapelFromRoles(desiredRoles)))
+        || (!hasPartnerRole(desiredRoles) && !!originalLink);
 
-      if (newRole && newRole !== oldRole) {
-        // Remove roles antigos e insere o novo
-        const { error: delRoleErr } = await supabase.from("user_roles").delete().eq("user_id", editUser.user_id);
-        if (delRoleErr) throw delRoleErr;
-        
-        const { error: insRoleErr } = await supabase.from("user_roles").insert({ 
-          user_id: editUser.user_id, 
-          role: newRole as any 
-        });
-        if (insRoleErr) throw insRoleErr;
+      if (rolesChanged || partnerChanged) {
+        await syncUserRolesAndPartner(editUser.user_id, desiredRoles, editUser.partner_id || "");
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
       toast({ title: "Usuário atualizado" });
       setEditOpen(false);
       const sp = new URLSearchParams(searchParams);
