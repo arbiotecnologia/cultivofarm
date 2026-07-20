@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatTelefone, formatCpfCnpj, unmask } from "@/lib/masks";
 import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Star, Timer } from "lucide-react";
+import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { SlaB2BTab } from "@/pages/configuracoes/SlaB2BTab";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
@@ -670,10 +671,12 @@ export default function Configuracoes() {
                     ) : filteredUsers.map((u: any) => (
                       <MobileCard
                         key={u.user_id}
+                        onClick={() => { setEditUser(u); setEditOpen(true); }}
+                        ariaLabel={`Editar usuário ${u.nome || u.email || ""}`}
                         title={u.nome || "—"}
                         subtitle={u.email}
                         status={
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2" onClick={stopRowClick}>
                             <Switch
                               checked={u.ativo !== false}
                               onCheckedChange={(checked) => toggleAtivo.mutate({ userId: u.user_id, ativo: checked })}
@@ -709,7 +712,7 @@ export default function Configuracoes() {
                           )},
                         ]}
                         actions={
-                          <div className="flex w-full gap-2 items-center justify-end">
+                          <div className="flex w-full gap-2 items-center justify-end" onClick={stopRowClick}>
                             <Button variant="outline" size="sm" onClick={() => { setEditUser(u); setEditOpen(true); }}>
                               <Pencil className="h-3 w-3 mr-1" /> Editar
                             </Button>
@@ -736,7 +739,11 @@ export default function Configuracoes() {
                           <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
                       ) : filteredUsers.map((u: any) => (
-                        <TableRow key={u.user_id} className={u.ativo === false ? "opacity-50" : ""}>
+                        <TableRow
+                          key={u.user_id}
+                          {...rowClickProps(() => { setEditUser(u); setEditOpen(true); })}
+                          className={`${u.ativo === false ? "opacity-50 " : ""}cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+                        >
                           <TableCell className="font-medium">{u.nome || "—"}</TableCell>
                           <TableCell>{u.email || "—"}</TableCell>
                           <TableCell>
@@ -747,7 +754,7 @@ export default function Configuracoes() {
                             ))}
                             {u.roles.length === 0 && <span className="text-muted-foreground text-sm">Sem perfil</span>}
                           </TableCell>
-                          <TableCell>
+                          <TableCell onClick={stopRowClick}>
                             <div className="flex items-center gap-2">
                               <Switch
                                 checked={u.ativo !== false}
@@ -767,7 +774,7 @@ export default function Configuracoes() {
                               {(!u.vinculos || u.vinculos.length === 0) && <span className="text-muted-foreground text-xs">—</span>}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell onClick={stopRowClick}>
                             <Button variant="ghost" size="icon" onClick={() => { setEditUser(u); setEditOpen(true); }}>
                               <Pencil className="h-4 w-4" />
                             </Button>

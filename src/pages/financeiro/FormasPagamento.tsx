@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 
 export default function FormasPagamento() {
   const qc = useQueryClient();
@@ -51,10 +52,10 @@ export default function FormasPagamento() {
               <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
               <TableBody>
                 {data.map((r: any) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} {...rowClickProps(() => { setEditing(r); setForm({ name: r.name, active: r.active }); setOpen(true); })}>
                     <TableCell className="font-medium">{r.name}</TableCell>
                     <TableCell>{r.active ? <Badge>Ativa</Badge> : <Badge variant="secondary">Inativa</Badge>}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={stopRowClick}>
                       <Button size="icon" variant="ghost" onClick={() => { setEditing(r); setForm({ name: r.name, active: r.active }); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => remove.mutate(r.id)}><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
