@@ -29,8 +29,8 @@ export default function VisaoGeral() {
       const [os, lotesProd, lotesCQ, lotesEnvase, insumos, entregas] = await Promise.all([
         supabase.from("ordens_servico_onfarm").select("id", { count: "exact", head: true }).eq("status", "aberta"),
         supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "em_producao"),
-        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "em_cq"),
-        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "envase"),
+        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "aguardando_cq"),
+        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "aprovado"),
         supabase.from("produtos").select("id, estoque_minimo, estoque_produto(volume_total)").eq("e_insumo", true),
         supabase.from("entregas").select("id", { count: "exact", head: true }).in("status", ["separado", "em_rota"]),
       ]);
