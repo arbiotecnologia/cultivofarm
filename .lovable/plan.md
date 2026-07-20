@@ -1,42 +1,43 @@
-## Objetivo
+## Plano de testes funcionais
 
-Recriar o projeto do zip `lovable-678a7573.zip` 1:1 dentro deste repositório, mantendo a stack original (Vite + React Router DOM + Tailwind v3 + shadcn) e conectando ao mesmo Supabase (`pcjzpvhbizccjtegekbb.supabase.co`) já usado pelo `.env` do zip.
+Vou testar o sistema recriado módulo a módulo, começando pelas bases de autenticação e navegação, depois seguindo para o portal do produtor e os demais módulos. Para cada etapa vou rodar o build/typecheck, acessar as rotas no preview, validar dados no Supabase e documentar o que estiver quebrado.
 
-## Passos
+### 1. Preparação
+- Rodar `typecheck` e `build` para garantir que o projeto está compilando sem erros.
+- Verificar se as variáveis do Supabase estão presentes e se o cliente consegue listar tabelas públicas (perfis/roles/config).
+- Confirmar se existe ao menos um usuário de teste com perfil e papel atribuído; se não houver, criar um usuário administrador + produtor de teste via Supabase e rodar as migrations/RLS necessárias.
 
-1. **Limpar o template TanStack Start atual**
-   - Remover: `src/routes/`, `src/router.tsx`, `src/server.ts`, `src/start.ts`, `src/routeTree.gen.ts`, `src/styles.css`, `src/lib/error-*.ts`, `src/hooks/use-mobile.tsx`, `src/lib/utils.ts`, `vite.config.ts`, `tsconfig.json`, `components.json`, `eslint.config.js`, `bunfig.toml`, `package.json`, `bun.lock`, `.prettierrc`, `.prettierignore`, `AGENTS.md`, `public/favicon.ico`.
-   - Manter apenas `.gitignore` e `.lovable/`.
+### 2. Autenticação e papéis
+- Acessar `/auth` e validar: login com email/senha, erro de credenciais, link de cadastro removido (se ainda estiver, remover), recuperação de senha se existir.
+- Após login, verificar se `useAuth` carrega o perfil, `roles` e `primaryRole` corretamente.
+- Testar redirecionamentos: usuário sem role → `/acesso-pendente`; usuário com múltiplos papéis de portal → `/selecionar-portal`; usuário admin → home correta.
+- Verificar no console logs do Supabase se `user_roles` e `profiles` estão sendo lidos com a RLS correta.
 
-2. **Copiar o conteúdo do zip para a raiz do projeto** (excluindo `.git`, `node_modules`, `bun.lockb`, `package-lock.json`, `.lovable/plan.md`, testes E2E opcionais mantidos):
-   - Diretórios: `src/`, `public/`, `supabase/`, `docs/`, `e2e/`, `tests/`, `scripts/`.
-   - Arquivos raiz: `index.html`, `package.json`, `bun.lock`, `vite.config.ts`, `tailwind.config.ts`, `postcss.config.js`, `tsconfig*.json`, `components.json`, `eslint.config.js`, `playwright.config.ts`, `playwright-fixture.ts`, `vitest.config.ts`, `README.md`.
+### 3. Portal do produtor / App mobile
+- Testar `/app` com papel `cliente_produtor`.
+- Validar: dashboard, listagem de fazendas, registro de ocorrência, ordens de serviço, entregas, visitas/talhões, notificações, perfil.
+- Verificar se o layout mobile está responsivo e se as guards de rota (`TechnicalFeatureGuard` / `ProducerFeatureGuard`) bloqueiam corretamente.
+- Confirmar que dados de fazendas e talhões estão vindo do Supabase e não de mock/IndexedDB.
 
-3. **Wiring Supabase**
-   - Criar `.env` com as credenciais publicáveis do zip:
-     ```
-     VITE_SUPABASE_URL="https://pcjzpvhbizccjtegekbb.supabase.co"
-     VITE_SUPABASE_PUBLISHABLE_KEY="<anon key do zip>"
-     VITE_SUPABASE_PROJECT_ID="pcjzpvhbizccjtegekbb"
-     ```
-   - `src/integrations/supabase/client.ts` já lê essas variáveis — nenhum código muda.
-   - Nada de `supabase--enable`: o projeto continua apontando para o Supabase existente do usuário. Migrations e edge functions do diretório `supabase/` ficam como referência/histórico; não serão reaplicadas.
+### 4. Módulos operacionais
+- Testar rotas internas: Clientes, Fazendas, Talhões, Ordens de Serviço, Lotes, Controle de Qualidade, Envase, Estoque, Entregas, Aplicações, Visitas Técnicas, Agenda.
+- Verificar CRUD básico em uma entidade de cada módulo (ex: criar/editar cliente, ordem de serviço, talhão).
+- Validar busca, filtros e exportações (PDF, Excel) se existirem.
 
-4. **Instalar dependências e verificar build**
-   - `bun install` para regenerar `node_modules` com o `package.json` novo.
-   - Rodar `bun run build` para validar que compila. Ajustar apenas erros bloqueantes de import/typescript se aparecerem.
+### 5. Comercial B2B e financeiro
+- Portal do parceiro: login, pedidos, simulador, histórico, favoritos, financeiro.
+- Comercial interno: pedidos B2B, campanhas, simulador, indicadores, alertas.
+- Financeiro: contas a receber/pagar, fluxo de caixa, DRE, relatórios, recibos, notas fiscais.
+- Verificar se dashboards carregam gráficos e se relatórios exportam corretamente.
 
-5. **Preview**
-   - Reiniciar o dev server. O app deve subir na rota `/` do `src/App.tsx` original, conectado ao Supabase do usuário. Login/perfis funcionam contra o projeto Supabase existente.
+### 6. BI, laboratório e executivo
+- Dashboards agronômico/operacional/executivo.
+- Cockpit de laboratório, alertas operacionais, monitoramento.
+- Validar se as consultas estão usando Supabase e se não há erros 400/RLS.
 
-## Fora do escopo
+### 7. Entregáveis do teste
+- Resumo por módulo: status, erros críticos, observações.
+- Lista de correções priorizadas, se houver.
+- Sugestão do próximo passo após os testes (correções, publicação ou nova funcionalidade).
 
-- **Não** vou reaplicar as 486 migrations nem reimplantar as 19 edge functions — o Supabase de destino já é o mesmo do zip, então já as tem. Se você quiser aplicá-las em um projeto novo, é outra tarefa.
-- **Não** vou rodar Playwright/E2E — só build + preview.
-- **Não** vou migrar para TanStack Start (você escolheu manter Vite/React Router).
-
-## Riscos
-
-- A chave anon está commitada no `.env` (é publicável, seguro).
-- Como a stack muda de TanStack Start para Vite puro, o preview do Lovable precisa reiniciar; qualquer configuração específica do template atual (SSR, `start.ts`) deixa de existir.
-- Alguns imports do projeto do zip podem depender de pacotes que precisam de flags específicas (ex.: `xlsx` vindo de URL da SheetJS). Se `bun install` falhar em algum deles, resolvo pontualmente.
+Se concordar, começo pela preparação e autenticação.
