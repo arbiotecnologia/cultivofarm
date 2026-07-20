@@ -65,23 +65,19 @@ describe("multiportal.hardening — cross-tab broadcast", () => {
 });
 
 describe("multiportal.hardening — matriz de acesso (contrato)", () => {
-  // Este teste documenta a matriz esperada. RLS/RPC continuam sendo a fonte
-  // de verdade em runtime; aqui garantimos apenas que o mapeamento de rotas
-  // por papel primário não regride.
-  const MATRIX: Record<string, string> = {
-    administrador: "/",
-    tecnico_agronomo: "/app",
-    consultor_tecnico: "/app",
-    cliente_produtor: "/app",
-    gestor_comercial: "/",
-    parceiro_b2b: "/portal-parceiro/dashboard",
-    parceiro_b2b_tecnico: "/portal-parceiro/dashboard",
-  };
-
-  it("todas as roles ativas possuem home mapeada", async () => {
-    const { ACTIVE_ROLES } = await import("@/lib/permissions");
+  it("getHomeForRole cobre todas as roles ativas com destino não-vazio", async () => {
+    const { ACTIVE_ROLES, getHomeForRole } = await import("@/lib/permissions");
     for (const role of ACTIVE_ROLES) {
-      expect(MATRIX[role]).toBeDefined();
+      const home = getHomeForRole(role);
+      expect(typeof home).toBe("string");
+      expect(home.length).toBeGreaterThan(0);
     }
   });
+
+  it("papéis B2B são direcionados ao portal-parceiro", async () => {
+    const { getHomeForRole } = await import("@/lib/permissions");
+    expect(getHomeForRole("parceiro_b2b")).toMatch(/portal-parceiro/);
+    expect(getHomeForRole("parceiro_b2b_tecnico")).toMatch(/portal-parceiro/);
+  });
 });
+
