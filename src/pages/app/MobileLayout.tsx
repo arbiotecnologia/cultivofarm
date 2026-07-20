@@ -1,16 +1,6 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Home,
-  MapPin,
-  ClipboardList,
-  Bell,
-  User,
-  Plus,
-  Truck,
-  FileText,
-  BookOpen,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Navigate } from "react-router-dom";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
@@ -18,22 +8,21 @@ import { OfflineIndicator } from "@/components/app/OfflineIndicator";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
 import { useEffect } from "react";
+import { itemsForPlatform } from "@/config/navigation";
 
-const consultorTabs = [
-  { path: "/app", icon: Home, label: "Início" },
-  { path: "/app/solicitacoes", icon: ClipboardList, label: "Demandas" },
-  { path: "/app/fazendas", icon: MapPin, label: "Fazendas" },
-  { path: "/app/catalogo", icon: BookOpen, label: "Catálogo" },
-  { path: "/app/perfil", icon: User, label: "Perfil" },
-];
+// Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
+// Fase 2 preserva rotas, ícones e rótulos anteriores — apenas centraliza a fonte.
+const consultorTabs = itemsForPlatform("mobile-consultor").map((it) => ({
+  path: it.route,
+  icon: it.icon,
+  label: it.label,
+}));
 
-const produtorTabs = [
-  { path: "/app", icon: Home, label: "Início" },
-  { path: "/app/recomendacoes", icon: FileText, label: "Recom." },
-  { path: "/app/entregas", icon: Truck, label: "Entregas" },
-  { path: "/app/notificacoes", icon: Bell, label: "Alertas" },
-  { path: "/app/perfil", icon: User, label: "Perfil" },
-];
+const produtorTabs = itemsForPlatform("mobile-produtor").map((it) => ({
+  path: it.route,
+  icon: it.icon,
+  label: it.label,
+}));
 
 export default function MobileLayout() {
   const { user, roles, loading } = useAuth();
