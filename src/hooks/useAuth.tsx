@@ -214,6 +214,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* noop */
     }
+    try {
+      queryClient?.clear();
+    } catch {
+      /* noop */
+    }
     await supabase.auth.signOut();
   };
 
