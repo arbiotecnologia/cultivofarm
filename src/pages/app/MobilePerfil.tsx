@@ -104,10 +104,22 @@ export default function MobilePerfil() {
         </Button>
       )}
 
+      {others.length > 0 && (
+        <Card className="p-4 space-y-2">
+          <p className="text-sm font-medium">Outros acessos disponíveis</p>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            {others.map((o) => (
+              <li key={o}>• {o}</li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       <Button variant="destructive" className="w-full h-12 text-base" onClick={signOut}>
         <LogOut className="h-5 w-5 mr-2" />
         Sair
       </Button>
+
     </div>
   );
 }
