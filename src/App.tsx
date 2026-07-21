@@ -43,6 +43,7 @@ import ConfigCatalogoIA from "@/pages/configuracoes/ConfigCatalogoIA";
 import ParametrosCQPage from "@/pages/configuracoes/ParametrosCQPage";
 import FiscalEmpresa from "@/pages/configuracoes/FiscalEmpresa";
 import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
+import FiscalServicos from "@/pages/configuracoes/FiscalServicos";
 import Relatorios from "@/pages/Relatorios";
 import ConsultorTecnico from "@/pages/ConsultorTecnico";
 import FinanceiroDashboard from "@/pages/financeiro/FinanceiroDashboard";
