@@ -1,10 +1,11 @@
 /**
- * Fase 4 — Reorganização declarativa (Comercial, Campo, Produção).
+ * Fase 6 — Inteligência, Controle e Administração.
  *
- * Alterações desta fase são exclusivamente de agrupamento visual e metadados
- * (section/subSection/order/searchKeywords). Rotas, ícones, ids, permissões,
- * badges, matchRoutes e legacyRoutes permanecem intactos. Financeiro,
- * Financeiro B2B, mobile e demais grupos ficam fora do escopo.
+ * Continua sendo alteração exclusivamente declarativa/visual
+ * (section/subSection/order/label/searchKeywords). Rotas, ícones, ids,
+ * permissões, badges, matchRoutes, legacyRoutes e children permanecem intactos.
+ * Financeiro, Financeiro B2B, Comercial, Campo, Produção e mobile ficam fora
+ * do escopo desta fase.
  */
 import {
   LayoutDashboard, Users, MapPin, FileText, ClipboardList, CalendarClock,
