@@ -1,41 +1,32 @@
-# Fase Fiscal 3.0 — Backfill sintético (Opção B)
+# Fase Fiscal 3.0.1 — Backfill em schema REAL (public.*)
 
 ## Status
-**TESTE PREPARADO — EXECUÇÃO PENDENTE EM STAGING.**
+**TESTE PREPARADO — EXECUÇÃO PENDENTE EM STAGING DOCKER ISOLADO.**
 
-Nenhum dado sintético foi inserido no projeto real. Nenhum schema `fiscal_test` foi criado em produção.
+Nenhuma fixture foi inserida no projeto real. O `03-apply.sh` aborta se `PGURL`
+contiver o project ref real.
 
-## Objetivo
-Provar, em ambiente Docker local isolado, que:
-1. As migrations fiscais canônicas (`20260721000000`, `20260721010000`) aplicadas sobre dados legados **preservam** todos os registros pré-existentes.
-2. As invariantes da Fase 2 são satisfeitas após o backfill (uniqueness com `environment`, FKs, policies, mascaramento).
+## Fluxo obrigatório
+1. `docker run` de um Postgres isolado.
+2. Aplicar TODAS as migrations do repositório anteriores a `20260721000000`
+   (fora do escopo deste diretório — use o pipeline padrão da AR Bio).
+3. `psql "$PGURL" -f restoration/backfill-fiscal-fase3/01-prepare.sql`
+   — cria marker anti-produção e fixtures em `public.*`.
+4. `psql "$PGURL" -f restoration/backfill-fiscal-fase3/02-baseline.sql`
+   — snapshot **ANTES** das migrations fiscais.
+5. `bash restoration/backfill-fiscal-fase3/03-apply.sh`
+   — aplica `20260721000000` + `20260721010000` + `20260722000000` em ordem.
+6. `psql "$PGURL" -f restoration/backfill-fiscal-fase3/04-verify.sql`
+   — verifica contagens, órfãos, ISSUED ≠ AUTHORIZED, metadados legados,
+     índices críticos.
+7. `psql "$PGURL" -f restoration/backfill-fiscal-fase3/99-cleanup.sql`
+   e descartar o container.
 
-## Arquivos
-| Arquivo | Papel |
-| --- | --- |
-| `fixtures.sql`        | 12 registros pré-migration (produtos, clientes, invoices legadas). |
-| `01-prepare.sql`      | Cria schema `fiscal_test` isolado + dependências mínimas. |
-| `02-apply-migrations.sh` | Aplica fundação + hardening em ordem. |
-| `03-verify.sql`       | Asserções via `SELECT ... EXCEPT` para cada invariante. |
-| `99-cleanup.sql`      | `DROP SCHEMA fiscal_test CASCADE`. |
+## Fixtures cobrem
+PENDING, ISSUED, CANCELED, ERROR; com/sem `access_key`; múltiplos documentos
+por cliente; documento sem número/série; documento manual; documento externo.
 
-## Como executar (Docker local — NUNCA em produção)
-
-```sh
-docker run --rm -d --name pg-fiscal-test \
-  -e POSTGRES_PASSWORD=temp -p 55432:5432 postgres:15
-sleep 3
-export PGURL='postgres://postgres:temp@localhost:55432/postgres'
-
-psql "$PGURL" -f restoration/backfill-fiscal-fase3/01-prepare.sql
-psql "$PGURL" -f restoration/backfill-fiscal-fase3/fixtures.sql
-bash restoration/backfill-fiscal-fase3/02-apply-migrations.sh "$PGURL"
-psql "$PGURL" -f restoration/backfill-fiscal-fase3/03-verify.sql
-psql "$PGURL" -f restoration/backfill-fiscal-fase3/99-cleanup.sql
-docker rm -f pg-fiscal-test
-```
-
-## Regras
-- Nunca apontar `PGURL` para o projeto real da AR Bio.
-- Nunca comitar dumps do banco resultante.
-- Falha em `03-verify.sql` é bloqueante.
+## Proibido
+- Executar contra o projeto real (`03-apply.sh` aborta por heurística de ref).
+- Deixar o container ativo após validação.
+- Compartilhar dumps do banco de teste.
