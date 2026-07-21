@@ -18,6 +18,10 @@ PATTERNS=(
   'focusnfe\.com'
   'nfse\.gov\.br'
   'homologacao\.sefaz'
+)
+
+# "Authorization: Bearer" só é problema em arquivos fiscais.
+FISCAL_ONLY_PATTERNS=(
   'Authorization: Bearer'
 )
 
