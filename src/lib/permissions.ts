@@ -125,6 +125,13 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/configuracoes/fiscal/servicos": {
     administrador: "rw", financeiro: "rw", gestor: "r",
   },
+  // Fase Fiscal 3.5 — Workflow documental fiscal MANUAL (sem emissão).
+  // Espelha as policies canônicas em fiscal_invoices/fiscal_events:
+  // administrador e financeiro escrevem; gestor lê. Demais perfis
+  // bloqueados por URL. Item NÃO entra no menu enquanto a flag estiver false.
+  "/fiscal/documentos": {
+    administrador: "rw", financeiro: "rw", gestor: "r",
+  },
   // Fase Fiscal 3.4 — Perfis Fiscais de Clientes. Admin e Financeiro
   // editam; Gestor somente lê. Demais perfis: bloqueado por URL.
   "/configuracoes/fiscal/clientes": {
