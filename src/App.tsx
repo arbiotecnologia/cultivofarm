@@ -550,6 +550,7 @@ const App = () => (
                 <Route path="/configuracoes/fiscal/empresa" element={<RoleGuard><FiscalEmpresa /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/produtos" element={<RoleGuard><FiscalProdutos /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/servicos" element={<RoleGuard><FiscalServicos /></RoleGuard>} />
+                <Route path="/configuracoes/fiscal/clientes" element={<RoleGuard><FiscalClientes /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
