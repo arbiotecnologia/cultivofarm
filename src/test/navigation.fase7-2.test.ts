@@ -20,7 +20,12 @@ describe("Fase 7.2 — unificação do Portal Executivo", () => {
     "em %s: pai parcialmente ativo, apenas Visão Executiva com selfActive",
     (path) => {
       expect(isNavItemActive(dashboard, path)).toBe(true);
-      expect(isNavItemActiveSelf(dashboard, path)).toBe(false);
+      // Pai perde `active` porque algum filho está com selfActive.
+      const anyChildActive = dashboard.children!.some((c) => isNavItemActiveSelf(c, path));
+      const parentSelf = isNavItemActiveSelf(dashboard, path);
+      const parentActive = parentSelf && !anyChildActive;
+      expect(anyChildActive).toBe(true);
+      expect(parentActive).toBe(false);
       expect(isNavItemActiveSelf(executivo, path)).toBe(true);
       const geral = dashboard.children!.find((c) => c.id === "dashboard-geral")!;
       const op = dashboard.children!.find((c) => c.id === "dashboard-operacional")!;
