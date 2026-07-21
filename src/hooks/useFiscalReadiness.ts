@@ -59,14 +59,33 @@ async function countHead(
   return count ?? 0;
 }
 
-async function countBoolTrue(
-  view: "v_product_fiscal_readiness" | "v_service_fiscal_readiness" | "v_customer_fiscal_readiness",
-  col: BoolCol,
+async function countProductBoolTrue(
+  col: "minimally_classified" | "accounting_validated",
 ): Promise<number> {
   const { count, error } = await supabase
-    .from(view)
+    .from("v_product_fiscal_readiness")
     .select("*", { count: "exact", head: true })
     .eq(col, true);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function countServiceBoolTrue(
+  col: "minimally_classified" | "accounting_validated",
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("v_service_fiscal_readiness")
+    .select("*", { count: "exact", head: true })
+    .eq(col, true);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function countCustomersWithIbge(): Promise<number> {
+  const { count, error } = await supabase
+    .from("v_customer_fiscal_readiness")
+    .select("*", { count: "exact", head: true })
+    .eq("has_ibge", true);
   if (error) throw error;
   return count ?? 0;
 }
