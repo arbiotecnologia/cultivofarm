@@ -411,7 +411,7 @@ describe("Fase 3.5 (14) — preservação das fases 3.1 → 3.4", () => {
     expect(getAccessLevel(role, route)).toBe(level);
   });
   test("flags de UI de fases anteriores permanecem default false", () => {
-    expect(FEATURE_FLAGS.fiscalCompanyConfigUi).toBe(false);
+    expect(FEATURE_FLAGS.fiscalConfigurationUi).toBe(false);
     expect(FEATURE_FLAGS.fiscalProductProfilesUi).toBe(false);
     expect(FEATURE_FLAGS.fiscalServiceProfilesUi).toBe(false);
     expect(FEATURE_FLAGS.fiscalCustomerProfilesUi).toBe(false);
