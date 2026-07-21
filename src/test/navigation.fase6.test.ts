@@ -58,7 +58,7 @@ describe("Fase 6 — Inteligência, Controle e Administração", () => {
     // desambiguação:
     expect(find("alertas comerciais")).toContain("com-alertas");
     expect(find("alertas financeiros")).toContain("b2b-alertas");
-    expect(find("auditoria financeira")).toContain("fin-auditoria");
-    expect(find("configurações financeiras")).toContain("fin-config");
+    expect(find("auditoria financeira")).toContain("auditorias");
+    expect(find("configurações financeiras")).toContain("configuracoes");
   });
 });

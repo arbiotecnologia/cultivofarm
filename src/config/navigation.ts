@@ -12,7 +12,7 @@ import {
   FlaskConical, ShieldCheck, Package, Warehouse, Truck, Sprout, BarChart3,
   Settings, GitPullRequestArrow, BrainCircuit, CloudSun, Inbox, Activity,
   ClipboardCheck, Clock, ArrowDownCircle, ArrowUpCircle, FolderTree, Building2,
-  Layers, CreditCard, PieChart, Repeat, FileSpreadsheet, Receipt, History, Cog,
+  Layers, CreditCard, PieChart, Repeat, FileSpreadsheet, Receipt,
   TrendingUp, FileBarChart2, Siren, Handshake, Factory, AlertTriangle, Home,
   User, Bell, BookOpen,
 } from "lucide-react";
@@ -143,8 +143,6 @@ export const navigation: NavItem[] = [
   { id: "fin-cc", label: "Centros de Custo", icon: Building2, route: "/financeiro/centros-custo", section: "Financeiro", subSection: "Cadastros Financeiros", order: 12, platforms: ["desktop"], searchKeywords: ["centro de custo", "cc", "centros de custo", "rateio", "custos"] },
   { id: "fin-contas-bancarias", label: "Contas Bancárias", icon: Layers, route: "/financeiro/contas-bancarias", section: "Financeiro", subSection: "Cadastros Financeiros", order: 13, platforms: ["desktop"], searchKeywords: ["banco", "conta bancária", "contas bancárias", "bancos", "conta corrente"] },
   { id: "fin-formas-pgto", label: "Formas de Pagamento", icon: CreditCard, route: "/financeiro/formas-pagamento", section: "Financeiro", subSection: "Cadastros Financeiros", order: 14, platforms: ["desktop"], searchKeywords: ["forma de pagamento", "formas de pagamento", "pagamento", "condições"] },
-  { id: "fin-auditoria", label: "Auditoria Financeira", icon: History, route: "/financeiro/auditoria", section: "Financeiro", subSection: "Controle Financeiro", order: 15, platforms: ["desktop"], searchKeywords: ["auditoria", "auditoria financeira", "trilha", "logs financeiros"] },
-  { id: "fin-config", label: "Configurações Financeiras", icon: Cog, route: "/financeiro/configuracoes", section: "Financeiro", subSection: "Controle Financeiro", order: 16, platforms: ["desktop"], searchKeywords: ["configuração financeira", "configurações financeiras", "parâmetros financeiros"] },
 
   // ── Financeiro B2B ─────────────────────────────────────────────────────────
   { id: "b2b-visao", label: "Visão Geral B2B", icon: Handshake, route: "/financeiro/b2b", section: "Financeiro B2B", subSection: "Visão e Desempenho", order: 1, platforms: ["desktop"], searchKeywords: ["b2b", "visão geral", "visão geral b2b", "financeiro b2b", "parceiro"] },
@@ -163,10 +161,10 @@ export const navigation: NavItem[] = [
   { id: "bi-operacional", label: "BI Operacional", icon: Activity, route: "/bi-operacional", section: "Inteligência e Controle", subSection: "Inteligência", order: 2, platforms: ["desktop"], searchKeywords: ["bi", "bi operacional", "operacional", "indicadores operacionais", "desempenho", "produtividade operacional", "solicitações", "visitas", "produção", "entregas"] },
   { id: "relatorios", label: "Relatórios Gerenciais", icon: BarChart3, route: "/relatorios", section: "Inteligência e Controle", subSection: "Inteligência", order: 3, platforms: ["desktop"], searchKeywords: ["relatório", "relatórios", "relatório gerencial", "relatórios gerenciais", "relatórios estratégicos", "gestão", "exportações", "indicadores", "gerencial"] },
   { id: "alertas", label: "Alertas", icon: Siren, route: "/alertas-operacionais", section: "Inteligência e Controle", subSection: "Controle", order: 4, badgeSlot: "alertas", platforms: ["desktop"], searchKeywords: ["alerta", "alertas", "alertas gerais", "central de alertas", "ocorrências", "riscos", "pendências", "sla", "prioridades", "notificação"] },
-  { id: "auditorias", label: "Auditorias", icon: ShieldCheck, route: "/auditoria", legacyRoutes: ["/auditoria-sync"], section: "Inteligência e Controle", subSection: "Controle", order: 5, platforms: ["desktop"], searchKeywords: ["auditoria", "auditorias", "auditoria geral", "auditorias gerais", "histórico", "logs", "rastreabilidade", "alterações", "eventos", "sync", "trilha"] },
+  { id: "auditorias", label: "Auditorias", icon: ShieldCheck, route: "/auditoria", legacyRoutes: ["/auditoria-sync", "/financeiro/auditoria"], section: "Inteligência e Controle", subSection: "Controle", order: 5, platforms: ["desktop"], searchKeywords: ["auditoria", "auditorias", "auditoria geral", "auditorias gerais", "auditoria financeira", "trilha", "trilha financeira", "logs", "logs financeiros", "histórico", "rastreabilidade", "alterações", "eventos", "sync"] },
 
   // ── Administração ──────────────────────────────────────────────────────────
-  { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], section: "Administração", order: 1, platforms: ["desktop"], searchKeywords: ["configurações", "configuracoes", "config", "administração", "administracao", "ajustes", "parâmetros", "sistema", "preferências", "integrações", "usuários", "perfis", "configurações gerais", "configuracoes gerais", "administração geral", "administracao geral", "parâmetros gerais", "parametros gerais"] },
+  { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], legacyRoutes: ["/financeiro/configuracoes"], section: "Administração", order: 1, platforms: ["desktop"], searchKeywords: ["configurações", "configuracoes", "config", "administração", "administracao", "ajustes", "parâmetros", "sistema", "preferências", "integrações", "usuários", "perfis", "configurações gerais", "configuracoes gerais", "administração geral", "administracao geral", "parâmetros gerais", "parametros gerais", "configurações financeiras", "configuracoes financeiras", "parâmetros financeiros", "parametros financeiros"] },
 
   // ── Mobile Consultor (tabs) ────────────────────────────────────────────────
   { id: "m-c-inicio", label: "Início", icon: Home, route: "/app", section: "Mobile Consultor", platforms: ["mobile-consultor", "mobile-produtor"], order: 1 },

@@ -1,135 +1,55 @@
-# Fase 4 — Reorganização de Comercial, Campo e Produção
 
-Alteração puramente **declarativa e visual** na fonte central de navegação. Nenhuma rota, componente, hook, RPC, permissão ou regra de negócio será modificada. Financeiro, Financeiro B2B, Inteligência e Administração ficam intocados.
+# Unificação do subgrupo "Controle Financeiro"
 
-## Estado atual detectado
+Objetivo: eliminar o subgrupo **Controle Financeiro** do menu Financeiro. **Auditoria Financeira** passa a viver dentro de **Inteligência e Controle → Auditorias**, e **Configurações Financeiras** dentro de **Administração → Configurações**. Rotas antigas continuam funcionando via redirecionamento para não quebrar links.
 
-Fonte única: `src/config/navigation.ts` (consumida por `AppSidebar.tsx` via `desktopItemsBySection()` e `MobileLayout.tsx` via `itemsForPlatform()`).
+## Estado atual (verificado)
 
-Seções desktop hoje: `Menu Principal`, `Operação`, `Técnico / Auditoria`, `Financeiro`, `Financeiro B2B`, `Comercial`, `Gestão e Estratégico`.
+- `src/config/navigation.ts` linhas 146–147: itens `fin-auditoria` e `fin-config` com `subSection: "Controle Financeiro"`.
+- `src/App.tsx` linhas 505–506: rotas `/financeiro/auditoria` e `/financeiro/configuracoes` (RoleGuard).
+- `src/pages/Auditoria.tsx`: tabs `sync | senhas | clientes | visitas | agenda` sincronizadas com `?tab=`.
+- `src/pages/Configuracoes.tsx`: tabs `perfil | usuarios | ...` sincronizadas com `?tab=`.
+- `src/lib/permissions.ts` linhas 175–176: ACL das duas rotas atuais (administrador/gestor/financeiro).
+- `src/test/integration/financeiro.routes.test.tsx` linhas 23 e 34: exige `/financeiro/auditoria` + página `AuditoriaFinanceira` em App.tsx.
 
-Itens em escopo estão espalhados entre `Menu Principal`, `Operação`, `Técnico / Auditoria`, `Comercial` e `Gestão e Estratégico`. Campo `subSection` já existe no tipo `NavItem` mas ainda não é usado como header visual na sidebar.
+## Escopo funcional
 
-## Arquivos a editar
+### 1. Auditorias (`/auditoria`)
+- Adicionar nova aba **Financeiro** ao final da lista `TABS` em `src/pages/Auditoria.tsx`, renderizando o componente atual `AuditoriaFinanceira` como sub-tela.
+- Sub-abas internas atuais (Eventos / Inconsistências) permanecem intactas dentro do componente.
 
-1. **`src/config/navigation.ts`** — reatribuir `section`, adicionar `subSection`, `order` e expandir `searchKeywords` dos itens em escopo. Adicionar as três novas seções ao tipo `NavSection` e ao `DESKTOP_SECTION_ORDER`. Manter os itens fora de escopo inalterados. Nenhuma rota, `matchRoutes`, `legacyRoutes`, `badge`, `badgeSlot`, `allowedRoles`, `platforms`, `children`, `icon` ou `id` será alterado.
+### 2. Configurações (`/configuracoes`)
+- Adicionar nova aba **Financeiro** ao `Tabs` de `src/pages/Configuracoes.tsx`, renderizando `ConfiguracoesFinanceiras`.
+- Visível apenas para papéis com acesso financeiro (administrador, gestor, financeiro).
 
-2. **`src/components/AppSidebar.tsx`** — renderizar headers de `subSection` (labels menores, agrupando itens contíguos dentro de cada grupo). Preservar: busca, destaque de rota ativa, `aria-current`, `aria-expanded`, colapsada com tooltips, drawer mobile, ordenação por `order`, persistência de grupo aberto.
+### 3. Rotas antigas
+Manter em `src/App.tsx`, substituindo o `element` por `PreservedNavigate` (padrão já usado no projeto):
+- `/financeiro/auditoria` → `/auditoria?tab=financeiro`
+- `/financeiro/configuracoes` → `/configuracoes?tab=financeiro`
 
-3. **`src/config/navigation.ts` (função `desktopItemsBySection`)** — passar a ordenar itens dentro do grupo pelo campo `order` para garantir a ordem visual obrigatória.
+Registrar ambas em `legacyRoutes` dos novos itens no navigation.
 
-4. **Breadcrumbs** — auditar componentes de breadcrumb existentes; se derivarem de `section`/`subSection`, atualização é automática. Se estáticos por página, ajustar apenas os títulos visuais das páginas em escopo (ver Parte 6 do prompt). Nenhuma renomeação interna.
+### 4. Menu (`src/config/navigation.ts`)
+- Remover os itens `fin-auditoria` e `fin-config` do grupo Financeiro (linhas 146–147).
+- Enriquecer `searchKeywords` do item `auditorias` com "auditoria financeira", "trilha financeira", "logs financeiros" e do item `configuracoes` com "configurações financeiras", "parâmetros financeiros", para preservar a descoberta via busca.
+- Isso elimina o subgrupo "Controle Financeiro" (sem itens restantes).
 
-5. **Testes** — atualizar `src/test/sidebar.dashboard.active.test.tsx` só se as asserções dependerem de nomes de section antigos dos itens movidos. Novos testes: um verificando que cada item em escopo cai na section+subSection correta e na ordem esperada; um verificando que as searchKeywords antigas ainda encontram os itens ("dashboard-b2b", "consultor", "propriedade", "os", etc.).
+### 5. Permissões (`src/lib/permissions.ts`)
+- Remover as entradas específicas de `/financeiro/auditoria` e `/financeiro/configuracoes` do `ACCESS_MAP` (as rotas viram redirects; o acesso passa a ser regido por `/auditoria` e `/configuracoes` já existentes, ambos abertos a administrador/gestor).
+- Adicionar guard visual dentro das novas abas para ocultar a aba **Financeiro** quando o papel não for administrador/gestor/financeiro.
 
-## Nova estrutura declarativa
+### 6. Testes
+- Atualizar `src/test/integration/financeiro.routes.test.tsx`: remover `/financeiro/auditoria` da lista `REQUIRED_ROUTES` e `AuditoriaFinanceira` de `REQUIRED_PAGES`; adicionar asserção de que `/financeiro/auditoria` redireciona para `/auditoria?tab=financeiro`.
+- Novo teste curto em `src/test/navigation.controle-financeiro.test.ts` garantindo:
+  - Nenhum item com `subSection === "Controle Financeiro"`.
+  - Busca por "auditoria financeira" retorna o item `auditorias`.
+  - Busca por "configurações financeiras" retorna o item `configuracoes`.
 
-### COMERCIAL E RELACIONAMENTO
-
-```text
-Visão Comercial
-  1. Dashboard Consolidado          (com-consolidado    → /comercial/dashboard-consolidado)
-  2. Indicadores                    (com-indicadores    → /comercial/indicadores)
-  3. Alertas Comerciais             (com-alertas        → /comercial/alertas)
-Clientes e Propriedades
-  4. Clientes                       (clientes           → /clientes)             [movido de Menu Principal]
-  5. Fazendas                       (fazendas           → /fazendas)             [movido de Gestão e Estratégico]
-Demandas e Vendas
-  6. Solicitações                   (solicitacoes       → /solicitacoes)         [movido de Menu Principal]
-  7. Pedidos B2B                    (com-pedidos-b2b    → /comercial/pedidos-b2b)
-  8. Solicitações B2B               (com-solicitacoes-b2b → /comercial/solicitacoes-b2b)
-  9. Campanhas                      (com-campanhas      → /comercial/campanhas)
-Produtos e Planejamento
- 10. Catálogo                       (com-catalogo       → /comercial/catalogo)
- 11. Protocolos                     (protocolos         → /protocolos)           [movido de Gestão e Estratégico]
- 12. Simulador                      (com-simulador      → /comercial/simulador)
-```
-
-### CAMPO E ASSISTÊNCIA TÉCNICA
-
-```text
- 1. Agenda Técnica          (agenda-tecnica       → /agenda-tecnica)         [de Menu Principal]
- 2. Visita Técnica          (visita-tecnica       → /visita-tecnica)         [de Menu Principal]
- 3. Aplicações              (aplicacoes           → /aplicacoes)             [de Operação]
- 4. Equipe Técnica          (equipe-tecnica       → /consultor-tecnico)      [de Gestão e Estratégico]
- 5. Fluxo Técnico           (fluxo-tecnico        → /fluxo-tecnico)          [de Gestão e Estratégico]
- 6. Monitoramento           (monitoramento        → /monitoramento-alertas)  [de Gestão e Estratégico]
- 7. Previsão Climática      (previsao-climatica   → /previsao-agronomica)    [de Gestão e Estratégico]
-```
-
-Sem subseções (conforme "não criar subníveis desnecessários").
-
-### PRODUÇÃO ON-FARM
-
-```text
-Acompanhamento
- 1. Dashboard Produção            (dashboard-producao     → /operacao/dashboard-producao)
-Central Operacional
- 2. Cockpit Laboratório           (cockpit-lab            → /cockpit-laboratorio)   [destaque visual mantido]
-Fluxo de Produção
- 3. Planejamento Produção         (planejamento-producao  → /operacao/planejamento)
- 4. Ordens de Serviço             (ordens-servico         → /ordens-servico)
- 5. Lotes                         (lotes                  → /lotes)                 [badge Técnico preservado]
- 6. Controle de Qualidade         (cq                     → /controle-qualidade)    [badge Técnico preservado]
- 7. Envase                        (envase                 → /envase)                [badge Técnico preservado]
- 8. Estoque                       (estoque                → /estoque)
- 9. Entregas                      (entregas               → /entregas)
-```
-
-Cockpit Laboratório: mesma rota, mesmo componente, mesma permissão, mesmo destaque visual (`isCockpit && isProducao` no AppSidebar). Apenas troca `section` de `Operação` para `Produção On-Farm` e recebe `subSection: "Central Operacional"` e `order: 2`.
-
-### Grupos remanescentes
-
-- `Menu Principal` fica com: Dashboard, BI Agronômico, Portal do Produtor, Configurações.
-- `Operação`, `Técnico / Auditoria` e `Gestão e Estratégico` esvaziados dos itens realocados. `Gestão e Estratégico` retém: Relatórios, BI Operacional, Alertas, Auditorias. `Operação` e `Técnico / Auditoria` ficam sem itens dentro do escopo desta fase — serão removidos de `DESKTOP_SECTION_ORDER` apenas se ficarem vazios após a movimentação (a função `desktopItemsBySection` já filtra grupos vazios, então não é imprescindível remover do enum, mas fica mais limpo).
-- Financeiro, Financeiro B2B, Mobile Consultor, Mobile Produtor: **intocados**.
-
-## Palavras-chave (Parte 5)
-
-Serão mescladas às já existentes (nunca substituídas). Exemplos-chave preservados: "produtor", "parceiro", "consultor", "os", "lote", "cq", "clima", "consolidado", "b2b". Adições conforme lista da Parte 5 do prompt.
-
-## Ordem visual
-
-`desktopItemsBySection` será ajustada para retornar `items.sort((a,b) => (a.order ?? 999) - (b.order ?? 999))`. Cada item em escopo receberá `order` de 1..12 (Comercial), 1..7 (Campo), 1..9 (Produção) conforme tabelas acima. Itens fora de escopo mantêm `order` indefinido → caem no fallback 999 sem afetar seções não tocadas.
-
-## Renderização de subSection na Sidebar
-
-Alteração mínima em `AppSidebar.tsx`, dentro do map de `groups`: agrupar `items` por `subSection` mantendo ordem, e renderizar um pequeno header (`<div className="px-2 pt-2 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">`) entre blocos. Itens sem `subSection` são renderizados diretamente sob o grupo (comportamento atual). Colapsada: headers ocultos, itens continuam com tooltip.
-
-## Breadcrumbs (Parte 6)
-
-Auditar `src/components/**` procurando `breadcrumb`. Se implementação for derivada de `navigation.ts` via `section`/`subSection`, atualização é automática. Se estiver hardcoded por página, alterar apenas as strings visuais (sem tocar em títulos funcionais internos). Truncamento acessível no mobile mantido.
-
-## Preservação — checklist executado antes de commitar
-
-- Todas as rotas atuais continuam alcançáveis pelas mesmas URLs.
-- `matchRoutes` e `legacyRoutes` inalterados → redirecionamentos antigos seguem funcionando.
-- Badges "Técnico" (Lotes, CQ, Envase) preservados.
-- `badgeSlot: "alertas"` preservado em Alertas.
-- Nenhum `allowedRoles` novo introduzido; `canAccess()` continua sendo a fonte de verdade.
-- Destaque especial do Cockpit (`isCockpit && isProducao`) permanece — depende de `item.route`, não de `section`.
-- Busca continua respeitando permissões via `canAccess`.
-- `useSidebarGroupState` persistência funciona com nomes novos (chave é a string da section).
-
-## Validações técnicas (Parte 9)
-
+## Validação
 - `bun run typecheck`
 - `bun run build`
-- `bunx vitest run` (315 atuais + testes novos de reorganização)
-- Playwright rápido: `/comercial/dashboard-consolidado`, `/cockpit-laboratorio`, `/agenda-tecnica`, `/fazendas` — verificar que aparecem nos novos grupos, que a busca por termos antigos ("dashboard-b2b", "consultor", "os") localiza, e que a rota ativa realça o grupo/subseção corretos.
-- Console/network limpos.
-- Lint: registrado como indisponível (dívida aceita); não instalar.
+- `bun run test`
 
 ## Fora de escopo
-
-- Financeiro, Financeiro B2B, Inteligência, Administração.
-- Conteúdo interno das páginas.
-- Roteamento inicial por perfil.
-- Rotas mobile e `AppPortalGuard`.
-- `ACCESS_MAP` e `permissions.ts`.
-- Sidebar colapsada (comportamento de design aceito).
-- Configuração de lint.
-
-## Relatório final
-
-Ao concluir, entrega estruturada A–W conforme prompt: matriz antes/depois, listas de rotas/componentes/permissões/badges preservados, resultado por perfil, resultados desktop/tablet/mobile, typecheck/build/testes, situação do lint, riscos residuais e recomendação para auditoria da Fase 4. Fase 5 **não** será iniciada.
+- Nenhuma mudança em schema, RPCs ou lógica de negócio das telas movidas.
+- Layouts internos de `AuditoriaFinanceira` e `ConfiguracoesFinanceiras` permanecem idênticos.

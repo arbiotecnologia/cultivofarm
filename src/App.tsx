@@ -53,8 +53,6 @@ import FinFormasPagamento from "@/pages/financeiro/FormasPagamento";
 import FinRecorrencias from "@/pages/financeiro/Recorrencias";
 import FinNotasFiscais from "@/pages/financeiro/NotasFiscais";
 import FinEntregasNaoFaturadas from "@/pages/financeiro/EntregasNaoFaturadas";
-import FinAuditoriaFinanceira from "@/pages/financeiro/AuditoriaFinanceira";
-import FinConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 import FinFluxoCaixa from "@/pages/financeiro/FluxoCaixa";
 import FinDRE from "@/pages/financeiro/DRE";
 import FinRelatorios from "@/pages/financeiro/FinanceiroRelatorios";
@@ -502,8 +500,8 @@ const App = () => (
                 <Route path="/financeiro/dre" element={<RoleGuard><FinDRE /></RoleGuard>} />
                 <Route path="/financeiro/notas-fiscais" element={<RoleGuard><FinNotasFiscais /></RoleGuard>} />
                 <Route path="/financeiro/entregas-nao-faturadas" element={<RoleGuard><FinEntregasNaoFaturadas /></RoleGuard>} />
-                <Route path="/financeiro/auditoria" element={<RoleGuard><FinAuditoriaFinanceira /></RoleGuard>} />
-                <Route path="/financeiro/configuracoes" element={<RoleGuard><FinConfiguracoesFinanceiras /></RoleGuard>} />
+                <Route path="/financeiro/auditoria" element={<Navigate to="/auditoria?tab=financeiro" replace />} />
+                <Route path="/financeiro/configuracoes" element={<Navigate to="/configuracoes?tab=financeiro" replace />} />
                 <Route path="/financeiro/relatorios" element={<RoleGuard><FinRelatorios /></RoleGuard>} />
                 <Route path="/financeiro/relatorios/mensal" element={<RoleGuard><RelMensal /></RoleGuard>} />
                 <Route path="/financeiro/relatorios/contas-receber" element={<RoleGuard><RelReceber /></RoleGuard>} />

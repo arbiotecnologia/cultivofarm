@@ -27,7 +27,8 @@ import { ROLE_LABELS, ROLE_VARIANTS, ACTIVE_ROLES } from "@/lib/permissions";
 import AparenciaTab from "@/components/configuracoes/AparenciaTab";
 import { ClientesVinculadosField, type ClienteVinculo } from "@/components/configuracoes/ClientesVinculadosField";
 import { Link } from "react-router-dom";
-import { History } from "lucide-react";
+import { History, Wallet } from "lucide-react";
+import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 
 
 
@@ -39,7 +40,16 @@ export default function Configuracoes() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isAdmin = role === "administrador";
-  const initialTab = searchParams.get("tab") === "usuarios" && isAdmin ? "usuarios" : "perfil";
+  const canFin = isAdmin || role === "gestor" || role === "financeiro";
+  const tabParam = searchParams.get("tab");
+  const initialTab =
+    tabParam === "usuarios" && isAdmin
+      ? "usuarios"
+      : tabParam === "financeiro" && canFin
+        ? "financeiro"
+        : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
+          ? tabParam
+          : "perfil";
 
 
   // Profile edit state
@@ -438,11 +448,22 @@ export default function Configuracoes() {
               <Timer className="h-3 w-3 sm:h-4 sm:w-4" />SLA B2B
             </TabsTrigger>
           )}
+          {canFin && (
+            <TabsTrigger value="financeiro" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />Financeiro
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="sla-b2b">
           <SlaB2BTab podeEditar={isAdmin || role === "gestor"} />
         </TabsContent>
+
+        {canFin && (
+          <TabsContent value="financeiro">
+            <ConfiguracoesFinanceiras />
+          </TabsContent>
+        )}
 
         {/* Profile Tab */}
         <TabsContent value="perfil">
