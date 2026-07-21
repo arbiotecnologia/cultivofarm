@@ -1,0 +1,6 @@
+# Documentação — cita nomes de env sem valor.
+Configure FOCUS_TOKEN em Project Settings.
+Runtime lê: Deno.env.get("FOCUS_TOKEN")
+Exemplo: postgres://user:<VALOR>@host:5432/db
+PEM path esperado: /etc/certs/<PATH>.pem
+Placeholder redacted: "***REDACTED***"
