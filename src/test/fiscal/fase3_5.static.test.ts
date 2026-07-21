@@ -398,7 +398,7 @@ describe("Fase 3.5 (13) — gestor somente leitura", () => {
 describe("Fase 3.5 (14) — preservação das fases 3.1 → 3.4", () => {
   test.each([
     ["/configuracoes/fiscal/empresa", "administrador", "rw"],
-    ["/configuracoes/fiscal/empresa", "financeiro", "rw"],
+    ["/configuracoes/fiscal/empresa", "financeiro", "r"],
     ["/configuracoes/fiscal/empresa", "gestor", "r"],
     ["/configuracoes/fiscal/produtos", "administrador", "rw"],
     ["/configuracoes/fiscal/produtos", "gestor", "r"],
