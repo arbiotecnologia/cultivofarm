@@ -166,7 +166,7 @@ export function AppSidebar() {
                 : "Nenhum resultado"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>{searchResults.map((it) => renderItem(it))}</SidebarMenu>
+              <SidebarMenu>{searchResults.map((it) => renderTopLevel(it))}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ) : (
