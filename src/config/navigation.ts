@@ -20,13 +20,14 @@ import type { LucideIcon } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
 export type NavSection =
-  | "Menu Principal"
+  | "Dashboard"
   | "Comercial e Relacionamento"
   | "Campo e Assistência Técnica"
   | "Produção On-Farm"
   | "Financeiro"
   | "Financeiro B2B"
-  | "Gestão e Estratégico"
+  | "Inteligência e Controle"
+  | "Administração"
   | "Mobile Consultor"
   | "Mobile Produtor";
 
@@ -61,13 +62,14 @@ export interface NavItem {
 
 /** Ordem dos grupos na sidebar desktop. */
 export const DESKTOP_SECTION_ORDER: NavSection[] = [
-  "Menu Principal",
+  "Dashboard",
   "Comercial e Relacionamento",
   "Campo e Assistência Técnica",
   "Produção On-Farm",
   "Financeiro",
   "Financeiro B2B",
-  "Gestão e Estratégico",
+  "Inteligência e Controle",
+  "Administração",
 ];
 
 export const navigation: NavItem[] = [
