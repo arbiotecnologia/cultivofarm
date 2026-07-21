@@ -120,6 +120,11 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/configuracoes/fiscal/produtos": {
     administrador: "rw", financeiro: "rw", gestor: "r",
   },
+  // Fase Fiscal 3.3 — Perfis Fiscais de Serviços. Admin e Financeiro
+  // editam; Gestor somente lê. Demais perfis: bloqueado por URL.
+  "/configuracoes/fiscal/servicos": {
+    administrador: "rw", financeiro: "rw", gestor: "r",
+  },
   "/bi-agronomico": {
     administrador: "rw", gestor: "rw", consultor_tecnico: "r",
     operador_onfarm: "r", administrativo: "r", tecnico_agronomo: "r", producao: "r",
