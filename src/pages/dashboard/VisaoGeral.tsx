@@ -9,7 +9,9 @@ import {
   Package, Truck, Users, ShieldCheck, Warehouse, Layers, RefreshCw,
 } from "lucide-react";
 
+import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
 import { useExecutivoResumo } from "@/hooks/useExecutivoResumo";
 
 /**
