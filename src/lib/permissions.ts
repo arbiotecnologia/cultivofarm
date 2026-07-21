@@ -132,6 +132,12 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/fiscal/documentos": {
     administrador: "rw", financeiro: "rw", gestor: "r",
   },
+  // Fase Fiscal 3.6 — Reconciliação assistida (fila + relatório interno).
+  // Somente admin/financeiro RW; gestor R. Escrita adicional é gated por
+  // flag `fiscalReconciliationWrite` (default false).
+  "/fiscal/reconciliacao": {
+    administrador: "rw", financeiro: "rw", gestor: "r",
+  },
   // Fase Fiscal 3.4 — Perfis Fiscais de Clientes. Admin e Financeiro
   // editam; Gestor somente lê. Demais perfis: bloqueado por URL.
   "/configuracoes/fiscal/clientes": {

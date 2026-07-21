@@ -21,6 +21,8 @@ export type FeatureFlagName =
   | "fiscalCustomerProfilesUi"
   | "fiscalDocumentWorkflowUi"
   | "fiscalDocumentManualEventRpc"
+  | "fiscalReconciliationUi"
+  | "fiscalReconciliationWrite"
   | "fiscalEmissionEnabled";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
@@ -57,6 +59,19 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
    * A trava de emissão (`fiscalEmissionEnabled`) permanece independente.
    */
   fiscalDocumentManualEventRpc: false,
+  /**
+   * Fase Fiscal 3.6 — Habilita a rota `/fiscal/reconciliacao` (fila +
+   * relatório interno somente leitura). Nunca autoriza emissão nem
+   * mutações. Menu só é exposto quando true (não é o caso nesta fase).
+   */
+  fiscalReconciliationUi: false,
+  /**
+   * Fase Fiscal 3.6 — Gate secundário para ações de vínculo/desvínculo
+   * assistido em `fiscal_invoices` (nunca em AR/entregas). Mantido
+   * `false` até certificação de staging cobrindo policies, locked_at
+   * e disponibilidade da RPC de eventos manuais.
+   */
+  fiscalReconciliationWrite: false,
   /** TRAVA DE EMISSÃO. Nunca deve ser `true` nesta fase. Não conecta nada — apenas indica intenção. */
   fiscalEmissionEnabled: false,
 };
