@@ -172,8 +172,6 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/financeiro/dre": { administrador: "rw", gestor: "rw", financeiro: "rw" },
   "/financeiro/notas-fiscais": { administrador: "rw", gestor: "rw", financeiro: "rw" },
   "/financeiro/entregas-nao-faturadas": { administrador: "rw", gestor: "rw", financeiro: "rw" },
-  "/financeiro/auditoria": { administrador: "rw", gestor: "rw", financeiro: "rw" },
-  "/financeiro/configuracoes": { administrador: "rw", gestor: "rw", financeiro: "rw" },
   "/financeiro/relatorios": { administrador: "rw", gestor: "rw", financeiro: "rw" },
   "/financeiro/recibos": { administrador: "rw", gestor: "rw", financeiro: "rw" },
   "/executivo": { administrador: "rw", gestor: "rw" },

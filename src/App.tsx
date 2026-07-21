@@ -53,8 +53,6 @@ import FinFormasPagamento from "@/pages/financeiro/FormasPagamento";
 import FinRecorrencias from "@/pages/financeiro/Recorrencias";
 import FinNotasFiscais from "@/pages/financeiro/NotasFiscais";
 import FinEntregasNaoFaturadas from "@/pages/financeiro/EntregasNaoFaturadas";
-import FinAuditoriaFinanceira from "@/pages/financeiro/AuditoriaFinanceira";
-import FinConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 import FinFluxoCaixa from "@/pages/financeiro/FluxoCaixa";
 import FinDRE from "@/pages/financeiro/DRE";
 import FinRelatorios from "@/pages/financeiro/FinanceiroRelatorios";

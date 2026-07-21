@@ -20,7 +20,6 @@ const REQUIRED_ROUTES = [
   "/financeiro/dre",
   "/financeiro/fluxo-caixa",
   "/financeiro/recibos",
-  "/financeiro/auditoria",
   "/financeiro/b2b/governanca",
 ];
 
@@ -31,7 +30,6 @@ const REQUIRED_PAGES = [
   "@/pages/financeiro/DRE",
   "@/pages/financeiro/FluxoCaixa",
   "@/pages/financeiro/RecibosList",
-  "@/pages/financeiro/AuditoriaFinanceira",
   "@/pages/financeiro/GovernancaFinanceiraB2B",
 ];
 
