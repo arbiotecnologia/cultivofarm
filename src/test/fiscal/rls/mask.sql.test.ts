@@ -11,10 +11,13 @@ const pgUrl = process.env.PGURL_STAGING;
 describe("Fase Fiscal 3.0 — mask_sensitive_jsonb (SQL)", () => {
   test.skipIf(!pgUrl)("mascara recursivamente chaves sensíveis", async () => {
     if (!pgUrl) return;
+    // Import dinâmico por string para evitar dependência de tipos em CI.
+    // `pg` é opcional; se ausente, faz skip explícito.
+    const modName = "pg";
     let Client: any;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      Client = (await import("pg")).Client;
+      const mod: any = await import(/* @vite-ignore */ modName);
+      Client = mod.Client;
     } catch {
       console.warn("[mask.sql.test] pg indisponível — skip");
       return;
