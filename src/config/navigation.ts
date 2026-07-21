@@ -73,27 +73,26 @@ export const DESKTOP_SECTION_ORDER: NavSection[] = [
 ];
 
 export const navigation: NavItem[] = [
-  // ── Menu Principal ─────────────────────────────────────────────────────────
+  // ── Dashboard ──────────────────────────────────────────────────────────────
   {
     id: "dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
     route: "/dashboard/geral",
-    section: "Menu Principal",
+    section: "Dashboard",
     matchRoutes: ["/dashboard", "/dashboard/geral", "/dashboard/executivo", "/dashboard/operacional"],
     legacyRoutes: ["/", "/executivo", "/painel-operacional"],
     platforms: ["desktop"],
     order: 1,
     searchKeywords: ["home", "início", "painel", "visão geral", "dashboard"],
     children: [
-      { id: "dashboard-geral", label: "Visão Geral", icon: LayoutDashboard, route: "/dashboard/geral", section: "Menu Principal", legacyRoutes: ["/"], platforms: ["desktop"], searchKeywords: ["visão geral", "resumo"] },
-      { id: "dashboard-executivo", label: "Visão Executiva", icon: BarChart3, route: "/dashboard/executivo", section: "Menu Principal", legacyRoutes: ["/executivo"], platforms: ["desktop"], searchKeywords: ["executivo", "portal executivo", "kpi", "diretoria"] },
-      { id: "dashboard-operacional", label: "Visão Operacional", icon: Activity, route: "/dashboard/operacional", section: "Menu Principal", legacyRoutes: ["/painel-operacional"], platforms: ["desktop"], searchKeywords: ["painel operacional", "operacional"] },
+      { id: "dashboard-geral", label: "Visão Geral", icon: LayoutDashboard, route: "/dashboard/geral", section: "Dashboard", legacyRoutes: ["/"], platforms: ["desktop"], searchKeywords: ["visão geral", "resumo"] },
+      { id: "dashboard-executivo", label: "Visão Executiva", icon: BarChart3, route: "/dashboard/executivo", section: "Dashboard", legacyRoutes: ["/executivo"], platforms: ["desktop"], searchKeywords: ["executivo", "portal executivo", "kpi", "diretoria"] },
+      { id: "dashboard-operacional", label: "Visão Operacional", icon: Activity, route: "/dashboard/operacional", section: "Dashboard", legacyRoutes: ["/painel-operacional"], platforms: ["desktop"], searchKeywords: ["painel operacional", "operacional"] },
     ],
   },
-  { id: "bi-agronomico", label: "BI Agronômico", icon: BrainCircuit, route: "/bi-agronomico", section: "Menu Principal", platforms: ["desktop"], order: 2, searchKeywords: ["bi", "agronomia", "indicador agronômico"] },
-  { id: "portal-produtor", label: "Portal do Produtor", icon: LayoutDashboard, route: "/portal", section: "Menu Principal", platforms: ["desktop"], order: 3, searchKeywords: ["produtor", "cliente"] },
-  { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], section: "Menu Principal", platforms: ["desktop"], order: 4, searchKeywords: ["config", "ajustes", "usuários", "sistema"] },
+  { id: "portal-produtor", label: "Portal do Produtor", icon: LayoutDashboard, route: "/portal", section: "Dashboard", platforms: ["desktop"], order: 2, searchKeywords: ["produtor", "cliente", "portal do produtor"] },
+
 
   // ── Comercial e Relacionamento ─────────────────────────────────────────────
   { id: "com-consolidado", label: "Dashboard Consolidado", icon: BarChart3, route: "/comercial/dashboard-consolidado", section: "Comercial e Relacionamento", subSection: "Visão Comercial", order: 1, legacyRoutes: ["/comercial/dashboard-b2b"], platforms: ["desktop"], searchKeywords: ["consolidado", "comercial", "dashboard comercial", "visão comercial", "dashboard-b2b"] },
