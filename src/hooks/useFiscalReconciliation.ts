@@ -147,7 +147,10 @@ export function useLinkFiscalInvoice() {
         throw new Error("Vínculo já existente; confirmação explícita necessária.");
       }
       if (currentLink === parsed.targetId) return prev.id;
-      const patch: Record<string, string> = { [parsed.target]: parsed.targetId };
+      const patch: Database["public"]["Tables"]["fiscal_invoices"]["Update"] =
+        parsed.target === "receivable_id"
+          ? { receivable_id: parsed.targetId }
+          : { delivery_id: parsed.targetId };
       const { data, error } = await supabase
         .from("fiscal_invoices")
         .update(patch)
