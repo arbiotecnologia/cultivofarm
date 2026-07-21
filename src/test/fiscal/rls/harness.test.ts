@@ -75,7 +75,6 @@ describe("Fase Fiscal 3.0.2-B.1 — Harness RLS", () => {
           results.push(...(await runRpcCell(session, r.role, r.expected)));
         }
         const s = summarize(results, PLANNED_COUNTS.total);
-        // eslint-disable-next-line no-console
         console.log("[fiscal-harness] summary", JSON.stringify({
           planned: s.planned, executed: s.executed, passed: s.passed,
           failed: s.failed.length, errors: s.errors.length, skipped: s.skipped,
