@@ -23,6 +23,11 @@ export function searchNavItems(
   const allowed = flat.filter((it) => canAccess(role, it.route));
   if (!term) return allowed;
 
+  // Fase 6.1 — busca por tokens (AND). Cada token precisa aparecer no haystack,
+  // permitindo desambiguar frases como "configurações gerais" vs
+  // "configurações financeiras" e "regras governança" vs "governança".
+  const tokens = term.split(/\s+/).filter(Boolean);
+
   return allowed.filter((it) => {
     const haystack = [
       it.label,
@@ -32,6 +37,6 @@ export function searchNavItems(
     ]
       .map(normalize)
       .join(" | ");
-    return haystack.includes(term);
+    return tokens.every((tok) => haystack.includes(tok));
   });
 }
