@@ -402,9 +402,15 @@ describe("Fase 3.8 · (J) Preservação das fases anteriores", () => {
   ])("arquivo %s continua existindo", (rel) => {
     expect(existsSync(resolve(__dirname, "../../../", rel))).toBe(true);
   });
-  test("nenhum novo edge function fiscal foi materializado nesta fase", () => {
-    const p = resolve(__dirname, "../../../supabase/functions/fiscal-preflight");
-    expect(existsSync(p)).toBe(false);
+  test("entrypoint 3.9 (fiscal-preflight) não importa provedor/service_role", () => {
+    const p = resolve(__dirname, "../../../supabase/functions/fiscal-preflight/index.ts");
+    if (!existsSync(p)) return;
+    const srcNoComments = readFileSync(p, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+    expect(srcNoComments).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
+    expect(srcNoComments).not.toMatch(/service_role/i);
+    expect(srcNoComments).not.toMatch(/sefaz|focusnfe|webmania|nfe\.io/i);
   });
   test("README documenta decisão de entrypoint", () => {
     const r = readFileSync(
