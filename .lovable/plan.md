@@ -1,110 +1,100 @@
 
-# Fase Fiscal 3.0.1 — Plano corretivo
+# Fase Fiscal 3.0.2-B.1 — Harness RLS executável + certificação A.2
 
-Escopo estritamente corretivo e preparatório. **Não inicia 3.1**, não toca produção, não edita migrations já aplicadas (`20260721000000`, `20260721010000`), não altera motor financeiro/B2B, não cria usuários/fixtures no projeto real.
+Escopo estritamente local: apenas código de teste, scripts e docs fiscais. Zero acesso a banco, zero secrets, zero produção, zero emissão/provedor/certificado.
 
-## 1. Inventário do schema real (leitura)
-Reler as duas migrations fiscais aplicadas + `src/integrations/supabase/types.ts` e mapear nomes reais de tabelas, colunas, nullables, views, RPC, policies. Registrar em `docs/fiscal-fase3-0-1-inventario.md` como fonte-de-verdade para os passos 2–8. Nenhuma leitura contra o projeto real; apenas artefatos do repo.
+## 1. Runner: remover throw e implementar pipeline real
 
-## 2. Verificador `scripts/verify-fiscal-types.ts`
-Reescrever whitelist para refletir schema real:
-- `company_fiscal_settings`: `cnpj`, `fiscal_environment`, `fiscal_provider`, `configuration_status`, `nfe_enabled`, `nfse_enabled`, `production_enabled`.
-- `product_fiscal_profiles`: `product_id`, `ncm`, `cfop_in_state`, `cfop_interstate`, `profile_status`.
-- `service_fiscal_profiles`: `service_id` (nullable), `source_reference` (nullable), `lc116_item`, `cnae`, `profile_status`.
-- `customer_fiscal_profiles`: `customer_id`, `taxpayer_indicator`, `fiscal_municipality_ibge_code`, `profile_status`.
-- `fiscal_invoices`: `company_cnpj`, `document_model`, `environment`, `series`, `invoice_number` todos nullable.
-- `fiscal_invoice_items.fiscal_invoice_id`; `fiscal_events` (`fiscal_invoice_id`, `request_snapshot`, `response_snapshot`, `event_type`); `fiscal_idempotency_keys` (`idempotency_key`, `fiscal_invoice_id`); `fiscal_audit_log` (`old_values`, `new_values`, `changed_by`, `changed_at`).
-- Views reais: `v_fiscal_company_readiness`, `v_product_fiscal_readiness`, `v_service_fiscal_readiness`, `v_customer_fiscal_readiness`, `v_fiscal_document_reconciliation_pending`.
-- RPC: `rpc_fiscal_event_manual(p_invoice_id uuid, p_event_type text, p_notes text) RETURNS uuid`.
-- `mask_sensitive_jsonb(v jsonb) RETURNS jsonb`.
+Arquivo: `src/test/fiscal/rls/runner.ts`
 
-Adicionar `scripts/verify-fiscal-types.test.ts` com 4 fixtures embutidas (correta, coluna ausente, nullable errado, RPC errada) — usa `child_process` para invocar o script.
+- Remover o `throw "pipeline preparado"` em `setupStaging` (linhas ~242-246).
+- Implementar `setupStaging(cfg)` real, ativado apenas quando `loadRunnerConfigFromEnv` retornar `kind: "config"`:
+  1. `createClient` admin com `serviceRoleKey` e `createClient` anon com `anonKey`.
+  2. Reconfirmar `assertStagingMarker` no banco (já existente).
+  3. **Criar usuários sintéticos** com `admin.auth.admin.createUser({ email, password, email_confirm: true })` para os 13 papéis autenticados + 2 `cliente_produtor` (A e B). Senha gerada por `crypto.randomBytes` (16 bytes hex), mantida apenas em variável local, nunca logada.
+  4. **Base pré-role** para `cliente_produtor`: inserir linha em `public.profiles`, `public.clientes` (prefixo `FISCAL_TEST_B1_`) e `public.user_clientes` (vínculo user↔cliente) **antes** de inserir em `user_roles`, para satisfazer `enforce_cliente_id_for_produtor`.
+  5. Atribuir papéis em `public.user_roles` via admin.
+  6. **JWT por usuário**: para cada, `anonClient.auth.signInWithPassword({ email, password })` → capturar `session.access_token`. Anon usa `cfg.anonKey`. Execução sequencial.
+  7. **Fixtures** (prefixo `FISCAL_TEST_B1_`, UUIDs gerados em runtime): 1 produto, 1 serviço (via `source_reference`), 1 cliente extra p/ perfil, 1 CNPJ sintético, 1 `company_fiscal_settings`, 1 `product_fiscal_profiles`, 1 `service_fiscal_profiles`, 1 `customer_fiscal_profiles`, 1 `fiscal_invoices` do cliente A + vínculo por `accounts_receivable` (customer_id=A), 1 `fiscal_invoice_items`, 1 `fiscal_events` via RPC, 1 `fiscal_idempotency_keys`, 1 `fiscal_audit_log` gerada por trigger. Para cada tabela, criar também um registro **descartável** (`__disposable`) apenas para o teste de DELETE.
+  8. **Não** enfraquecer trigger de entregas: usar apenas o vínculo por `accounts_receivable` no ownership do harness HTTP (o smoke SQL externo já cobriu a origem `delivery_id`).
+  9. Retornar `StagingSession` com `jwts`, `fixtureIds`, `clienteA/B`, `teardown`.
 
-## 3. Nova migration incremental
-`supabase/migrations/20260722000000_fiscal_fase3_0_1_integridade.sql`, aditiva:
-- FKs (idempotentes, condicionais a zero órfãos verificados via `DO $$ ... RAISE EXCEPTION`):
-  - `product_fiscal_profiles.product_id → produtos(id) ON DELETE RESTRICT`
-  - `customer_fiscal_profiles.customer_id → clientes(id) ON DELETE RESTRICT`
-- `service_fiscal_profiles`: **sem FK** (catálogo canônico ausente). Unique parciais:
-  - `(service_id) WHERE service_id IS NOT NULL AND profile_status = 'active'`
-  - `(source_reference) WHERE source_reference IS NOT NULL AND profile_status = 'active'`
-  - Comentário SQL documentando `source_reference` como transitório.
-- `fiscal_events.fiscal_invoice_id`: guard `DO` que aborta se houver órfãos; caso contrário `SET NOT NULL` + FK RESTRICT idempotente.
-- `mask_sensitive_jsonb` substituída por versão realmente recursiva (ver §4).
-- `rpc_fiscal_event_manual`: recriada com validação `p_invoice_id IS NOT NULL`, `EXISTS` em `fiscal_invoices`, `performed_by := auth.uid()`, `event_source` fixo interno; `p_notes` gravado em coluna `notes` aditiva em `fiscal_events` (adicionar `ADD COLUMN IF NOT EXISTS notes text`). Autorização por role preservada.
+- **Teardown idempotente** em ordem segura, ignorando linhas ausentes:
+  `fiscal_audit_log` → `fiscal_events` → `fiscal_invoice_items` → `fiscal_idempotency_keys` → `fiscal_invoices` → `*_fiscal_profiles` → `company_fiscal_settings` → `accounts_receivable` (sintéticas) → `user_roles` → `user_clientes` → `clientes` → `produtos` (sintéticos) → `profiles` → `auth.admin.deleteUser`. Ao fim, `SELECT count` em cada tabela filtrando prefixo `FISCAL_TEST_B1_` e assertar zero.
 
-## 4. `mask_sensitive_jsonb` recursiva
-Implementação PL/pgSQL que percorre `jsonb_typeof` (`object`/`array`/primitivo/null); em objeto, `lower(key) LIKE '%<term>%'` para cada termo da lista mínima solicitada (authorization, token, access_token, refresh_token, password, senha, certificate, certificado, private_key, privatekey, secret, client_secret, pfx, p12, api_key, apikey, bearer). Chave sensível → `"***REDACTED***"`. Contrato idêntico ao TS.
+- Ownership: separar JWT do cliente B (hoje ambos apontam para `session.jwts.cliente_produtor`). Ampliar `StagingSession.jwts` para incluir `cliente_produtor_b` ou reindexar `runOwnershipCell` para pegar B a partir de `session.clienteB`.
 
-## 5. Testes de máscara
-`src/test/fiscal/mask.test.ts` (TS) e `src/test/fiscal/rls/mask.sql.test.ts` (SQL via `pg`) — mesmo conjunto de casos: 1º nível, 3 níveis, arrays, arrays de objetos, headers, `accessToken`, `private_key_pem`, `null`, objeto vazio, array vazio, payload grande (500 chaves). O SQL test **falha explicitamente** se `PGURL_STAGING` presente e `pg` não puder ser carregado; skip apenas quando envs ausentes.
+- Erros: reforçar `classifyHttp` e caminhos de INSERT/UPDATE/DELETE para que **qualquer** falha de constraint, coluna, FK, 404, rede ou payload retorne `observed: "error"` (nunca `deny`). Zero linha em SELECT também é `deny` real, mas erro de rede/schema é `error`.
 
-## 6. Dependências
-`bun add -d pg @types/pg tsx` (se ausentes).
+- RPC (`runRpcCell`): manter execução dos 15 perfis; para staff, além de `allow`, validar retorno UUID, e após ler `fiscal_events` via service-role conferindo `event_source='USER'`, `performed_by` = usuário, `notes` gravado. Casos negativos: `event_type` inválido, `p_invoice_id` inexistente, `p_notes` > 2000 chars.
 
-## 7. Matriz RLS por-tabela
-Reescrever `src/test/fiscal/rls/matrix.ts` — expectativas explícitas por (role, tabela, op) conforme policies reais (ver especificação §6 do prompt). Incluir `fiscal_invoices` com célula `cliente_produtor_own` (documento próprio → ALLOW SELECT) e `cliente_produtor_other` (ALLOW SELECT mas 0 linhas — enforced pelo runner). Incluir `financial_documents` se relevante ao escopo fiscal.
+## 2. Matriz e contadores
 
-## 8. Views do harness
-Substituir nomes antigos pelos reais listados em §2. Expectativa por-view. Para `v_fiscal_document_reconciliation_pending`: nova migration adiciona filtro `WHERE has_role(auth.uid(),'administrador'|'gestor'|'financeiro')` diretamente na view (recriada em migration 3.0.1) para impedir vazamento a cliente_produtor.
+Arquivo: `src/test/fiscal/rls/matrix.ts`
 
-## 9. Runner RLS baseado em fixtures
-Reescrever `src/test/fiscal/rls/runner.ts`:
-- Setup: cria UUIDs conhecidos por tabela usando `service_role` (staging isolado).
-- SELECT: consulta por UUID; DENY = 0 linhas; ALLOW = linha presente.
-- INSERT: payload válido; distingue `42501`/RLS de `23xxx`/constraint; cleanup.
-- UPDATE: `Prefer: return=representation`; conta linhas; confere valor.
-- DELETE: cria descartável e conta linhas removidas.
-- RPC: 15 chamadas (`rpc_fiscal_event_manual`).
-- Certificação exige zero skip / zero falha; JWT ausente ⇒ falha.
+- Ampliar `RPC_EXPECTATIONS` para incluir os casos negativos (RPC extras). Ajustar `PLANNED_COUNTS` para que `total` = tabelas + views + ownership + rpc positiva + rpc negativa.
+- `harness.test.ts`: alinhar cálculo de `s.planned` ao novo total e remover o hack `PLANNED_COUNTS.total + rpcResults.length - RPC_EXPECTATIONS.length`.
 
-## 10. Guard anti-produção
-`src/test/fiscal/rls/guard.ts` (usado pelo runner e pelo backfill): aborta se URL/host contiver `navfzbwgwzruipouyfnk`, se `FISCAL_TEST_ENV !== 'STAGING'`, ou se tabela marker `public._fiscal_staging_marker` ausente.
+## 3. harness.test.ts — semântica de skip/parcial/completo
 
-## 11. Backfill redesenhado
-`restoration/backfill-fiscal-fase3/` — reescrever:
-- `01-prepare.sql`: cria marker de staging + fixtures em tabelas reais (`clientes`, `accounts_receivable`, `entregas`, `financial_documents`, `fiscal_invoices`) cobrindo PENDING/ISSUED/CANCELED/ERROR, com/sem receivable/delivery, com access_key/XML/DANFE, múltiplos por conta, sem número, sem série, manual, externo.
-- `02-baseline.sql`: snapshot **antes** das migrations fiscais.
-- `03-apply.sh`: aplica `20260721000000` + `20260721010000` + `20260722000000`.
-- `04-verify.sql`: contagens antes/depois, zero perda/órfão, ISSUED ≠ AUTHORIZED, origem MANUAL_RECORD, normalized_status LEGACY_RECORDED, provider NONE, environment NOT_CONFIGURED, anexos preservados, múltiplos preservados, índices aplicados, zero emissão.
-- `99-cleanup.sql`: descarta banco.
-- README atualizado: só executável em banco isolado.
+- Ausência total das 6 envs → skip explícito (já ok).
+- Configuração parcial → **falha real** do teste (hoje é convertida em skip via try/catch em torno do `loadRunnerConfigFromEnv`). Ajustar: manter `test.skipIf` apenas para o caso `kind: "skip"`; para o caso de `throw`, criar `test` que sempre falha com a mensagem do erro.
+- Configuração completa → `test.runIf` executa harness real.
 
-## 12. Scanner de segurança
-`scripts/fiscal-security-scan.sh`:
-- Adicionar padrões: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY`, `SERVICE_ROLE_KEY`, `JWT_SECRET`, `DATABASE_URL`, `DB_PASSWORD`, `PRIVATE_KEY`, `CLIENT_SECRET`, `FOCUS_*`, `PLUGNOTAS_*`, `*.pfx`, `*.p12`.
-- Remover exclusão em bloco de `docs/`, `restoration/`, `src/test/`; substituir por allowlist de termos documentais conhecidos.
-- Saída mascarada: `arquivo:linha [tipo] <valor mascarado>`.
+## 4. Testes unitários novos
 
-## 13. Validações
-`bun run typecheck`, `bun run build`, `bunx vitest run`, ESLint nos arquivos alterados, `scripts/fiscal-security-scan.sh`. Sem execução runtime contra projeto real.
+- `src/test/fiscal/rls/runner.unit.test.ts` (mocks): valida `buildPayload` por tabela, `classifyHttp` (200/401/403/404/409/500/42501/JSON quebrado), ordem de teardown, e que setup aborta se marker/project_ref divergir.
+- `src/test/fiscal/rls/harness.config.test.ts`: cobre os três estados de configuração (ausente/parcial/completo) via `vi.stubEnv`.
 
-## 14. Relatório
-`docs/fiscal-fase3-0-1-relatorio.md` com seções A–X exatamente como especificado. Recomendação será uma de: AUTORIZADO / CORRIGIR ANTES / INCONCLUSIVA — decidida a partir dos resultados de §13.
+## 5. Smoke SQL reproduzível
+
+Arquivo novo: `scripts/fiscal-staging-a2-smoke.sql`
+
+- Guard inicial: `DO $$ BEGIN IF current_setting('fiscal.expected_project_ref', true) IS NULL OR NOT EXISTS (SELECT 1 FROM public._fiscal_staging_marker WHERE marker='STAGING' AND project_ref = current_setting('fiscal.expected_project_ref')) THEN RAISE EXCEPTION 'ABORT: marker/project_ref inválido'; END IF; END $$;`
+- Reproduz os 31 casos smoke (admin/gestor/financeiro/produtor A/B/parceiro/sem papel/anon × leitura/RPC/mask) usando `SET LOCAL role` + `SET LOCAL request.jwt.claims`.
+- Cleanup final de tudo criado com prefixo `FISCAL_TEST_A2_SMOKE_`.
+- **Não** hardcodar project_ref nem credenciais: usa `current_setting('fiscal.expected_project_ref')`.
+
+## 6. Documentação
+
+- Novo: `docs/fiscal-fase3-0-2-a2-certificacao.md`
+  - Evidência externa registrada (marker, 489 migrations, 9/5/3 objetos, 31/31 smoke, teardown zero).
+  - Declaração explícita: "smoke SQL aprovado; matriz HTTP/JWT completa PENDENTE até execução com envs — não há aprovação simulada".
+  - Referência ao `scripts/fiscal-staging-a2-smoke.sql`.
+
+- Novo: `docs/fiscal-fase3-0-2-b1-runbook.md`
+  - Sequência de setup/teardown, prefixo `FISCAL_TEST_B1_`, política de senha/JWT em memória, requisitos de vínculo `user_clientes` para produtor.
+
+- Novo: `docs/fiscal-divida-tecnica-rebuild.md` — registra três incompatibilidades em rebuild vazio (sem editar migrations aplicadas):
+  1. `20260509174314` depende de seed de microrganismos previamente presente.
+  2. `20260616000001` presume `ordens_servico_onfarm.microrganismo_id` — coluna adicionada só em migration posterior; ordem cronológica quebra rebuild vazio.
+  3. `20260707213038` (FASE11) faz patch textual não-determinístico.
+  - Runbook: em rebuild vazio, aplicar seed inicial + reordenar via migrations complementares; nunca editar históricas.
+
+## 7. Não escopo
+
+- Nenhuma migration nova.
+- Nenhum acesso a banco.
+- Nenhum secret novo pedido/registrado.
+- Nenhuma integração com provedor fiscal, tela, token, certificado.
+- Nenhuma alteração fora dos caminhos de teste/scripts/docs fiscais.
+
+## 8. Validação local (obrigatória, sequencial)
+
+- `bunx eslint` apenas nos arquivos alterados (sem `--fix` global).
+- `bun run typecheck`.
+- `bun run build`.
+- `bunx vitest run src/test/fiscal`.
+- `bash scripts/fiscal-secrets-scan.sh` e `bash scripts/fiscal-integration-scan.sh`.
+- Confirmar que `harness.test.ts` marca skip explícito (envs ausentes neste sandbox) e que o teste de "configuração parcial" falha corretamente quando simulado.
+
+## 9. Relatório final
+
+Ao término, entregar: lista de arquivos alterados; resumo do pipeline setup/teardown; `PLANNED_COUNTS.total` novo; resultados de ESLint/typecheck/build/vitest; scanners; gates aprovados (código fechado, smoke SQL certificado externamente); gates pendentes (execução runtime HTTP/JWT depende das 6 envs — não iniciar Fase 3.1).
 
 ## Detalhes técnicos
 
-```text
-supabase/migrations/
-  20260721000000_fiscal_fase2_fundacao.sql       (INTACTA)
-  20260721010000_fiscal_fase2_1_hardening.sql    (INTACTA)
-  20260722000000_fiscal_fase3_0_1_integridade.sql (NOVA — aditiva, idempotente)
-```
-
-Arquivos previstos para edição/criação:
-- `scripts/verify-fiscal-types.ts` (reescrito)
-- `scripts/verify-fiscal-types.test.ts` (novo)
-- `scripts/fiscal-security-scan.sh` (ampliado)
-- `supabase/migrations/20260722000000_fiscal_fase3_0_1_integridade.sql` (novo)
-- `src/test/fiscal/rls/matrix.ts` (reescrito)
-- `src/test/fiscal/rls/runner.ts` (reescrito)
-- `src/test/fiscal/rls/guard.ts` (novo)
-- `src/test/fiscal/rls/harness.test.ts` (ajuste de nomes/expectativas)
-- `src/test/fiscal/rls/mask.sql.test.ts` (endurecido)
-- `src/test/fiscal/mask.test.ts` (ampliado)
-- `restoration/backfill-fiscal-fase3/*` (redesenhado)
-- `docs/fiscal-fase3-0-1-inventario.md` (novo)
-- `docs/fiscal-fase3-0-1-relatorio.md` (novo)
-- `package.json` (devDeps: `pg`, `@types/pg`, `tsx` se ausentes)
-
-Aguardo aprovação para executar.
+- Novo dep runtime: nenhuma. `@supabase/supabase-js` já presente. `crypto.randomBytes` via `node:crypto`.
+- Prefixo único: `FISCAL_TEST_B1_` para runtime, `FISCAL_TEST_A2_SMOKE_` para script SQL. Facilita verificação de "zero remanescente" no teardown.
+- Concorrência: `for...of` sequencial nas fases de criação/cleanup. Execução das células pode manter loop sequencial atual.
+- Segurança de logs: substituir qualquer `console.log(cfg)` ou similar por logs que expõem só `projectRef` e contagens. Nunca imprimir `serviceRoleKey`, `anonKey`, JWTs, `pgUrl` completo ou e-mail+senha sintéticos.

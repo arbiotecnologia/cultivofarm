@@ -185,11 +185,18 @@ export const RPC_EXPECTATIONS: Array<{ role: Role; rpc: string; expected: Expect
     expected: STAFF.includes(role) ? "allow" : "deny",
   }));
 
+/**
+ * Cada célula RPC gera 4 execuções: 1 primária (allow/deny por role) + 3
+ * negativas (invoice ausente, event_type inválido, notes overflow) que devem
+ * sempre falhar em qualquer role.
+ */
+export const RPC_CASES_PER_ROLE = 4;
+
 /** Totais planejados (planejadas). */
 export const PLANNED_COUNTS = {
   tableCells: MATRIX.length,
   viewCells: VIEW_MATRIX.length,
-  rpcCells: RPC_EXPECTATIONS.length,
+  rpcCells: RPC_EXPECTATIONS.length * RPC_CASES_PER_ROLE,
   ownershipCells: OWNERSHIP_CELLS.length,
   get total() { return this.tableCells + this.viewCells + this.rpcCells + this.ownershipCells; },
 };
