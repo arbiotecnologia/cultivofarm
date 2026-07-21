@@ -10,39 +10,51 @@
 import { describe, test, expect } from "vitest";
 import {
   MATRIX, VIEW_MATRIX, RPC_EXPECTATIONS, OWNERSHIP_CELLS, PLANNED_COUNTS,
-  ROLES, FISCAL_TABLES, FISCAL_VIEWS,
+  ROLES, FISCAL_TABLES, FISCAL_VIEWS, RPC_CASES_PER_ROLE,
 } from "./matrix";
 import { loadRunnerConfigFromEnv } from "./runner";
 
-let load: ReturnType<typeof loadRunnerConfigFromEnv> | { kind: "skip"; reason: string };
+type LoadState =
+  | { kind: "skip"; reason: string }
+  | { kind: "config"; cfg: import("./runner").RunnerConfig }
+  | { kind: "partial"; error: string };
+
+let load: LoadState;
 try {
-  load = loadRunnerConfigFromEnv();
+  const r = loadRunnerConfigFromEnv();
+  load = r;
 } catch (err) {
-  // Configuração parcial ⇒ transforma em falha determinística.
-  load = { kind: "skip", reason: `configuração parcial: ${(err as Error).message}` };
+  load = { kind: "partial", error: (err as Error).message };
 }
 
 const isRuntime = load.kind === "config";
+const isPartial = load.kind === "partial";
+const isSkip = load.kind === "skip";
 
-describe("Fase Fiscal 3.0.2-B — Harness RLS", () => {
+describe("Fase Fiscal 3.0.2-B.1 — Harness RLS", () => {
   test("matriz declarativa: totais planejados", () => {
-    expect(MATRIX.length).toBe(ROLES.length * FISCAL_TABLES.length * 4);      // 540
-    expect(VIEW_MATRIX.length).toBe(ROLES.length * FISCAL_VIEWS.length);      // 75
-    expect(RPC_EXPECTATIONS.length).toBe(ROLES.length);                       // 15
+    expect(MATRIX.length).toBe(ROLES.length * FISCAL_TABLES.length * 4);
+    expect(VIEW_MATRIX.length).toBe(ROLES.length * FISCAL_VIEWS.length);
+    expect(RPC_EXPECTATIONS.length).toBe(ROLES.length);
     expect(OWNERSHIP_CELLS.length).toBeGreaterThan(0);
+    expect(PLANNED_COUNTS.rpcCells).toBe(ROLES.length * RPC_CASES_PER_ROLE);
     expect(PLANNED_COUNTS.total).toBe(
-      MATRIX.length + VIEW_MATRIX.length + RPC_EXPECTATIONS.length + OWNERSHIP_CELLS.length,
+      MATRIX.length + VIEW_MATRIX.length + PLANNED_COUNTS.rpcCells + OWNERSHIP_CELLS.length,
     );
   });
 
-  test.skipIf(isRuntime)(
-    "SKIP EXPLÍCITO — staging não provisionado ou config parcial",
+  test.skipIf(!isPartial)(
+    "FALHA — configuração de staging PARCIAL detectada",
     () => {
-      // Este teste apenas documenta o motivo. Runtime real requer as 6 envs
-      // (ver src/test/fiscal/rls/runner.ts). Configuração parcial vira falha
-      // via loadRunnerConfigFromEnv(); ausência total é skip aqui.
+      // Config parcial NUNCA é convertida em skip.
+      expect.fail(`[fiscal-harness] configuração parcial: ${(load as { error: string }).error}`);
+    },
+  );
+
+  test.skipIf(!isSkip)(
+    "SKIP EXPLÍCITO — staging não provisionado (todas as envs ausentes)",
+    () => {
       expect(load.kind).toBe("skip");
-      // Sinaliza motivo no output do vitest.
       // eslint-disable-next-line no-console
       console.warn(`[fiscal-harness] SKIP: ${(load as { reason: string }).reason}`);
     },
@@ -51,24 +63,19 @@ describe("Fase Fiscal 3.0.2-B — Harness RLS", () => {
   test.runIf(isRuntime)(
     "execução runtime completa — tabelas + views + RPC + ownership",
     async () => {
-      // Import dinâmico para não instanciar setup fora do modo runtime.
       const { setupStaging, runCellRest, runViewCell, runOwnershipCell, runRpcCell, summarize } =
         await import("./runner");
       const cfg = (load as { kind: "config"; cfg: import("./runner").RunnerConfig }).cfg;
       const session = await setupStaging(cfg);
       try {
-        const tableResults: import("./runner").RunResult[] = [];
-        for (const c of MATRIX) tableResults.push(await runCellRest(session, c));
-        const viewResults: import("./runner").RunResult[] = [];
-        for (const v of VIEW_MATRIX) viewResults.push(await runViewCell(session, v));
-        const ownResults: import("./runner").RunResult[] = [];
-        for (const o of OWNERSHIP_CELLS) ownResults.push(await runOwnershipCell(session, o));
-        const rpcResults: import("./runner").RunResult[] = [];
+        const results: import("./runner").RunResult[] = [];
+        for (const c of MATRIX) results.push(await runCellRest(session, c));
+        for (const v of VIEW_MATRIX) results.push(await runViewCell(session, v));
+        for (const o of OWNERSHIP_CELLS) results.push(await runOwnershipCell(session, o));
         for (const r of RPC_EXPECTATIONS) {
-          rpcResults.push(...(await runRpcCell(session, r.role, r.expected)));
+          results.push(...(await runRpcCell(session, r.role, r.expected)));
         }
-        const all = [...tableResults, ...viewResults, ...ownResults, ...rpcResults];
-        const s = summarize(all, PLANNED_COUNTS.total + rpcResults.length - RPC_EXPECTATIONS.length);
+        const s = summarize(results, PLANNED_COUNTS.total);
         // eslint-disable-next-line no-console
         console.log("[fiscal-harness] summary", JSON.stringify({
           planned: s.planned, executed: s.executed, passed: s.passed,
@@ -79,6 +86,7 @@ describe("Fase Fiscal 3.0.2-B — Harness RLS", () => {
         expect(s.errors).toHaveLength(0);
         expect(s.failed).toHaveLength(0);
         expect(s.skipped).toBe(0);
+        expect(s.executed).toBe(s.planned);
       } finally {
         await session.teardown().catch((e) => console.error("teardown:", e));
       }
