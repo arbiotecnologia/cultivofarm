@@ -23,6 +23,7 @@ export type FeatureFlagName =
   | "fiscalDocumentManualEventRpc"
   | "fiscalReconciliationUi"
   | "fiscalReconciliationWrite"
+  | "fiscalReadinessCenterUi"
   | "fiscalEmissionEnabled";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
