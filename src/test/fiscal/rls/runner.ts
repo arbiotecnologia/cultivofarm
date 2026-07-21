@@ -665,7 +665,7 @@ export async function runOwnershipCell(
   // "other" ⇒ usa JWT do clienteB e busca invoice do clienteA (deve retornar 0).
   const jwt = cell.scope === "own"
     ? session.jwts.cliente_produtor
-    : session.jwts.cliente_produtor; // ambos "cliente_produtor" — B substitui A no wrapper
+    : session.jwtClienteB;
   const targetId = session.clienteA.invoiceId;
   const res = await fetch(
     `${session.cfg.restUrl}/${cell.table}?id=eq.${targetId}&select=id`,
