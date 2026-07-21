@@ -39,7 +39,16 @@ export default function Configuracoes() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isAdmin = role === "administrador";
-  const initialTab = searchParams.get("tab") === "usuarios" && isAdmin ? "usuarios" : "perfil";
+  const canFin = isAdmin || role === "gestor" || role === "financeiro";
+  const tabParam = searchParams.get("tab");
+  const initialTab =
+    tabParam === "usuarios" && isAdmin
+      ? "usuarios"
+      : tabParam === "financeiro" && canFin
+        ? "financeiro"
+        : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
+          ? tabParam
+          : "perfil";
 
 
   // Profile edit state
