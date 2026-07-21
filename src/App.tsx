@@ -41,6 +41,7 @@ import Configuracoes from "@/pages/Configuracoes";
 import ObjetivosVisita from "@/pages/configuracoes/ObjetivosVisita";
 import ConfigCatalogoIA from "@/pages/configuracoes/ConfigCatalogoIA";
 import ParametrosCQPage from "@/pages/configuracoes/ParametrosCQPage";
+import FiscalEmpresa from "@/pages/configuracoes/FiscalEmpresa";
 import Relatorios from "@/pages/Relatorios";
 import ConsultorTecnico from "@/pages/ConsultorTecnico";
 import FinanceiroDashboard from "@/pages/financeiro/FinanceiroDashboard";
@@ -543,6 +544,7 @@ const App = () => (
                 <Route path="/configuracoes/objetivos-visita" element={<RoleGuard><ObjetivosVisita /></RoleGuard>} />
                 <Route path="/configuracoes/catalogo-ia" element={<RoleGuard><ConfigCatalogoIA /></RoleGuard>} />
                 <Route path="/configuracoes/parametros-cq" element={<RoleGuard><ParametrosCQPage /></RoleGuard>} />
+                <Route path="/configuracoes/fiscal/empresa" element={<RoleGuard><FiscalEmpresa /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
