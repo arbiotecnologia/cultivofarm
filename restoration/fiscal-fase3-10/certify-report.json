@@ -1,0 +1,107 @@
+{
+  "version": "3.10",
+  "mode": "dry-run",
+  "projectRefSuffix": "***",
+  "startedAt": "2026-07-21T22:51:26.609Z",
+  "finishedAt": "2026-07-21T22:51:26.609Z",
+  "guards": {
+    "ok": true
+  },
+  "gates": [
+    {
+      "id": "A",
+      "name": "anti-produção + marker",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "Confere env, ref != PROD, hosts, marker _fiscal_staging_marker.",
+      "writes": false
+    },
+    {
+      "id": "B",
+      "name": "migrations: list + checksum + dry-run",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "Lista supabase/migrations/2026072*_fiscal_*.sql e calcula sha256.",
+      "writes": false
+    },
+    {
+      "id": "C",
+      "name": "aplicar migrations fiscais canônicas",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "Só em --execute. Delegado a restoration/backfill-fiscal-fase3/03-apply.sh.",
+      "writes": true
+    },
+    {
+      "id": "D",
+      "name": "types.ts oficial + verificador",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "Executa verify-fiscal-types.ts contra o arquivo canônico.",
+      "writes": false
+    },
+    {
+      "id": "E",
+      "name": "mask_sensitive_jsonb runtime",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "Executa mask.sql.test.ts contra PGURL_STAGING.",
+      "writes": false
+    },
+    {
+      "id": "F",
+      "name": "backfill sintético",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "prepare + baseline + verify em ambiente descartável.",
+      "writes": true
+    },
+    {
+      "id": "G",
+      "name": "setup de usuários sintéticos",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "SERVICE_ROLE cria auth.users sintéticos apenas em staging.",
+      "writes": true
+    },
+    {
+      "id": "H",
+      "name": "matriz RLS completa (630 asserts)",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "harness.test.ts corre a matriz inteira; skip=falha.",
+      "writes": false
+    },
+    {
+      "id": "I",
+      "name": "smoke fiscal-preflight (apenas se implantado)",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "Fetch autenticado. Espera canTransmit:false, provider:NONE, production:false.",
+      "writes": false
+    },
+    {
+      "id": "J",
+      "name": "teardown + relatório",
+      "status": "planned",
+      "durationMs": 0,
+      "detail": "Cleanup restrito às fixtures marcadas + emissão do relatório sanitizado.",
+      "writes": true
+    }
+  ],
+  "totals": {
+    "planned": 10,
+    "executed": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  "checksums": {},
+  "classification": "PREPARADO",
+  "notes": [
+    "DRY-RUN — nenhuma migration/SQL foi aplicado.",
+    "Variáveis presentes: 0/6",
+    "Variáveis ausentes: FISCAL_TEST_ENV, FISCAL_TEST_PROJECT_REF, PGURL_STAGING, PGREST_STAGING, PGREST_ANON_KEY, PGREST_SERVICE_ROLE_KEY",
+    "Execução real exige --execute + todas as variáveis + marker + ref!=navfzbwgwzruipouyfnk."
+  ]
+}
