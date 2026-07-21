@@ -173,13 +173,26 @@ CREATE POLICY "fi_staff_delete"
 
 REVOKE DELETE ON public.fiscal_invoices FROM authenticated;
 
+-- fiscal_invoices NAO possui customer_id: vinculo produtor->nota e feito
+-- via receivable_id (accounts_receivable.customer_id) ou delivery_id
+-- (entregas.cliente_id). Reutiliza public.get_cliente_ids_for_user ja
+-- adotada pelas policies AR/entregas.
 DROP POLICY IF EXISTS "fi_producer_read" ON public.fiscal_invoices;
 CREATE POLICY "fi_producer_read"
   ON public.fiscal_invoices FOR SELECT TO authenticated
   USING (
     public.has_role(auth.uid(),'cliente_produtor'::app_role)
-    AND customer_id IN (
-      SELECT id FROM public.clientes WHERE user_id = auth.uid()
+    AND (
+      (receivable_id IS NOT NULL AND EXISTS (
+         SELECT 1 FROM public.accounts_receivable ar
+          WHERE ar.id = fiscal_invoices.receivable_id
+            AND ar.customer_id = ANY(public.get_cliente_ids_for_user(auth.uid()))
+      ))
+      OR (delivery_id IS NOT NULL AND EXISTS (
+         SELECT 1 FROM public.entregas e
+          WHERE e.id = fiscal_invoices.delivery_id
+            AND e.cliente_id = ANY(public.get_cliente_ids_for_user(auth.uid()))
+      ))
     )
   );
 
