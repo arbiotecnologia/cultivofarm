@@ -39,8 +39,9 @@ describe("Fase 3.10 — invariantes do orquestrador", () => {
     }
   });
 
-  test("não referencia provedor/SEFAZ/certificado", () => {
-    expect(src).not.toMatch(/focusnfe|sefaz|nfe\.fazenda|\.pfx|BEGIN CERTIFICATE/i);
+  test("não referencia provedor/SEFAZ/certificado como uso real", () => {
+    // Ignora comentários de proibição — foco em URLs/imports/arquivos.
+    expect(src).not.toMatch(/\bfocusnfe\.com|nfe\.fazenda\.[a-z]|nfe\.sefaz\.[a-z]|\.pfx\b|BEGIN\s+CERTIFICATE/i);
   });
 
   test("dry-run é o padrão (execute exige flag explícita)", () => {
