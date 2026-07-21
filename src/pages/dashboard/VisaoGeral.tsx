@@ -51,9 +51,16 @@ export default function VisaoGeral() {
     retry: false,
   });
 
+  if (import.meta.env.DEV) {
+    if (resumoQ.error) console.warn("[VisaoGeral] resumo executivo indisponível:", resumoQ.error);
+    if (labQ.error) console.warn("[VisaoGeral] resumo laboratório indisponível:", labQ.error);
+  }
+
   const resumo = resumoQ.data?.resumo;
   const saude = resumoQ.data?.saude_operacional;
   const lab = labQ.data;
+  const resumoErr = !!resumoQ.error;
+  const labErr = !!labQ.error;
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 max-w-[1600px] mx-auto">
@@ -61,7 +68,7 @@ export default function VisaoGeral() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Visão Geral</h1>
           <p className="text-sm text-muted-foreground">
-            Saúde operacional, alertas, financeiro, laboratório e prioridades imediatas.
+            Período: últimos 30 dias · Indicadores de posição atual marcados como “Agora”.
           </p>
         </div>
       </header>
@@ -75,12 +82,15 @@ export default function VisaoGeral() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {resumoQ.isLoading ? <Skeleton className="h-8 w-20" /> : (
+            {resumoQ.isLoading ? <Skeleton className="h-8 w-20" /> : resumoErr ? (
+              <div className="text-sm text-muted-foreground" title="Consulta indisponível">Indisponível</div>
+            ) : (
               <>
                 <div className="text-3xl font-bold">{saude?.score ?? "—"}</div>
                 <Badge variant="outline" className="mt-1 text-xs">{saude?.classificacao ?? "sem dados"}</Badge>
               </>
             )}
+            <p className="text-[10px] text-muted-foreground mt-1">Agora</p>
           </CardContent>
         </Card>
 
@@ -91,21 +101,26 @@ export default function VisaoGeral() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : (
+            {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : resumoErr ? (
+              <div className="text-sm text-muted-foreground" title="Consulta indisponível">Indisponível</div>
+            ) : (
               <div className="text-3xl font-bold">{resumo?.alertas_ativos ?? 0}</div>
             )}
             <Link to="/alertas-operacionais" className="text-xs text-primary hover:underline">Ver alertas →</Link>
+            <p className="text-[10px] text-muted-foreground">Agora</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary" /> Situação Financeira
+              <DollarSign className="h-4 w-4 text-primary" /> Receita bruta
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {resumoQ.isLoading ? <Skeleton className="h-8 w-24" /> : (
+            {resumoQ.isLoading ? <Skeleton className="h-8 w-24" /> : resumoErr ? (
+              <div className="text-sm text-muted-foreground" title="Consulta indisponível">Indisponível</div>
+            ) : (
               <div className="text-2xl font-bold">
                 {resumo?.receita_bruta != null
                   ? Number(resumo.receita_bruta).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
@@ -113,20 +128,24 @@ export default function VisaoGeral() {
               </div>
             )}
             <Link to="/financeiro" className="text-xs text-primary hover:underline">Abrir financeiro →</Link>
+            <p className="text-[10px] text-muted-foreground">Últimos 30 dias</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Saúde da Carteira
+              <Users className="h-4 w-4 text-primary" /> Clientes ativos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : (
+            {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : resumoErr ? (
+              <div className="text-sm text-muted-foreground" title="Consulta indisponível">Indisponível</div>
+            ) : (
               <div className="text-3xl font-bold">{resumo?.clientes_ativos ?? 0}</div>
             )}
             <Link to="/clientes" className="text-xs text-primary hover:underline">Ver clientes →</Link>
+            <p className="text-[10px] text-muted-foreground">Agora</p>
           </CardContent>
         </Card>
       </div>
@@ -141,16 +160,19 @@ export default function VisaoGeral() {
           </CardHeader>
           <CardContent className="space-y-2 max-h-64 overflow-y-auto">
             {resumoQ.isLoading && <Skeleton className="h-20" />}
-            {!resumoQ.isLoading && (resumo?.solicitacoes_criticas ?? 0) === 0 && (
+            {resumoErr && !resumoQ.isLoading && (
+              <p className="text-sm text-muted-foreground italic">Indisponível no momento.</p>
+            )}
+            {!resumoQ.isLoading && !resumoErr && (resumo?.solicitacoes_criticas ?? 0) === 0 && (resumo?.visitas_atrasadas ?? 0) === 0 && (
               <p className="text-sm text-muted-foreground italic">Sem prioridades críticas.</p>
             )}
-            {(resumo?.solicitacoes_criticas ?? 0) > 0 && (
+            {!resumoErr && (resumo?.solicitacoes_criticas ?? 0) > 0 && (
               <Link to="/solicitacoes?urgencia=critica" className="block border rounded p-2 hover:bg-accent">
                 <div className="text-sm font-medium">Solicitações críticas</div>
                 <div className="text-xs text-muted-foreground">{resumo?.solicitacoes_criticas} pendente(s)</div>
               </Link>
             )}
-            {(resumo?.visitas_atrasadas ?? 0) > 0 && (
+            {!resumoErr && (resumo?.visitas_atrasadas ?? 0) > 0 && (
               <Link to="/agenda-tecnica?filtro=atrasadas" className="block border rounded p-2 hover:bg-accent">
                 <div className="text-sm font-medium">Visitas atrasadas</div>
                 <div className="text-xs text-muted-foreground">{resumo?.visitas_atrasadas} agendamento(s)</div>
@@ -161,13 +183,13 @@ export default function VisaoGeral() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Fluxo do dia</CardTitle>
+            <CardTitle className="text-base">Fluxo do dia <span className="text-[10px] font-normal text-muted-foreground">(Hoje)</span></CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
-            <StatMini label="Check-ins hoje" value={resumo?.checkins_hoje} loading={resumoQ.isLoading} />
-            <StatMini label="Visitas hoje" value={resumo?.visitas_hoje} loading={resumoQ.isLoading} />
-            <StatMini label="OS abertas" value={resumo?.os_abertas} loading={resumoQ.isLoading} />
-            <StatMini label="Recom. pendentes" value={resumo?.recomendacoes_pendentes} loading={resumoQ.isLoading} />
+            <StatMini label="Check-ins hoje" value={resumo?.checkins_hoje} loading={resumoQ.isLoading} error={resumoErr} />
+            <StatMini label="Visitas hoje" value={resumo?.visitas_hoje} loading={resumoQ.isLoading} error={resumoErr} />
+            <StatMini label="OS abertas" value={resumo?.os_abertas} loading={resumoQ.isLoading} error={resumoErr} />
+            <StatMini label="Recom. pendentes" value={resumo?.recomendacoes_pendentes} loading={resumoQ.isLoading} error={resumoErr} />
           </CardContent>
         </Card>
       </div>
@@ -176,7 +198,7 @@ export default function VisaoGeral() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base flex items-center gap-2">
-            <FlaskConical className="h-4 w-4 text-primary" /> Situação do Laboratório
+            <FlaskConical className="h-4 w-4 text-primary" /> Situação do Laboratório <span className="text-[10px] font-normal text-muted-foreground">(Agora)</span>
           </CardTitle>
           <Button asChild size="sm" variant="outline">
             <Link to="/cockpit-laboratorio">
@@ -185,14 +207,15 @@ export default function VisaoGeral() {
           </Button>
         </CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <LabTile icon={Activity} label="OS aguardando"     value={lab?.os_aguardando}     to="/ordens-servico?status=aberta" loading={labQ.isLoading} />
-          <LabTile icon={Package}  label="Lotes em produção" value={lab?.lotes_producao}    to="/lotes?status=em_producao"   loading={labQ.isLoading} />
-          <LabTile icon={ShieldCheck} label="CQ pendente"    value={lab?.cq_pendente}       to="/controle-qualidade"          loading={labQ.isLoading} />
-          <LabTile icon={Warehouse} label="Envases pendentes" value={lab?.envases_pendentes} to="/envase"                     loading={labQ.isLoading} />
-          <LabTile icon={Layers}   label="Insumos críticos"   value={lab?.insumos_criticos}  to="/estoque"                    loading={labQ.isLoading} />
-          <LabTile icon={Truck}    label="Entregas pendentes" value={lab?.entregas_pendentes} to="/entregas"                  loading={labQ.isLoading} />
+          <LabTile icon={Activity} label="OS aguardando"     value={lab?.os_aguardando}     to="/ordens-servico?status=aberta" loading={labQ.isLoading} error={labErr} />
+          <LabTile icon={Package}  label="Lotes em produção" value={lab?.lotes_producao}    to="/lotes?status=em_producao"   loading={labQ.isLoading} error={labErr} />
+          <LabTile icon={ShieldCheck} label="CQ pendente"    value={lab?.cq_pendente}       to="/controle-qualidade"          loading={labQ.isLoading} error={labErr} />
+          <LabTile icon={Warehouse} label="Envases pendentes" value={lab?.envases_pendentes} to="/envase"                     loading={labQ.isLoading} error={labErr} />
+          <LabTile icon={Layers}   label="Insumos críticos"   value={lab?.insumos_criticos}  to="/estoque"                    loading={labQ.isLoading} error={labErr} />
+          <LabTile icon={Truck}    label="Entregas pendentes" value={lab?.entregas_pendentes} to="/entregas"                  loading={labQ.isLoading} error={labErr} />
         </CardContent>
       </Card>
+
 
       {/* Acesso rápido às visões detalhadas */}
       <Card>
@@ -221,11 +244,13 @@ export default function VisaoGeral() {
   );
 }
 
-function StatMini({ label, value, loading }: { label: string; value?: number | null; loading?: boolean }) {
+function StatMini({ label, value, loading, error }: { label: string; value?: number | null; loading?: boolean; error?: boolean }) {
   return (
     <div className="border rounded p-2">
       <p className="text-xs text-muted-foreground">{label}</p>
-      {loading ? <Skeleton className="h-6 w-12 mt-1" /> : (
+      {loading ? <Skeleton className="h-6 w-12 mt-1" /> : error ? (
+        <p className="text-sm text-muted-foreground mt-1" title="Consulta indisponível">Indisponível</p>
+      ) : (
         <p className="text-xl font-bold">{value ?? 0}</p>
       )}
     </div>
@@ -233,9 +258,9 @@ function StatMini({ label, value, loading }: { label: string; value?: number | n
 }
 
 function LabTile({
-  icon: Icon, label, value, to, loading,
+  icon: Icon, label, value, to, loading, error,
 }: {
-  icon: any; label: string; value?: number; to: string; loading?: boolean;
+  icon: any; label: string; value?: number; to: string; loading?: boolean; error?: boolean;
 }) {
   return (
     <Link to={to} className="border rounded p-2 hover:bg-accent transition-colors">
@@ -243,9 +268,12 @@ function LabTile({
         <Icon className="h-4 w-4 text-muted-foreground" />
         <span className="text-xs text-muted-foreground truncate">{label}</span>
       </div>
-      {loading ? <Skeleton className="h-6 w-10 mt-1" /> : (
+      {loading ? <Skeleton className="h-6 w-10 mt-1" /> : error ? (
+        <div className="text-sm text-muted-foreground mt-1" title="Consulta indisponível">Indisponível</div>
+      ) : (
         <div className="text-xl font-bold mt-1">{value ?? 0}</div>
       )}
     </Link>
   );
 }
+
