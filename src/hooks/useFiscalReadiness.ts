@@ -43,7 +43,7 @@ export function useCompanyReadiness() {
   });
 }
 
-type BoolCol = "minimally_classified" | "accounting_validated" | "has_ibge";
+
 
 async function countHead(
   view:
@@ -113,8 +113,8 @@ export function useProductsReadiness() {
     queryFn: async (): Promise<AggregateResult> => {
       const [total, classified, validated] = await Promise.all([
         countHead("v_product_fiscal_readiness"),
-        countBoolTrue("v_product_fiscal_readiness", "minimally_classified"),
-        countBoolTrue("v_product_fiscal_readiness", "accounting_validated"),
+        countProductBoolTrue("minimally_classified"),
+        countProductBoolTrue("accounting_validated"),
       ]);
       // A view não expõe interseção; usamos o menor dos dois como piso e
       // reportamos ambos os números no card — sem inventar aprovação.
@@ -132,8 +132,8 @@ export function useServicesReadiness() {
     queryFn: async (): Promise<AggregateResult> => {
       const [total, classified, validated] = await Promise.all([
         countHead("v_service_fiscal_readiness"),
-        countBoolTrue("v_service_fiscal_readiness", "minimally_classified"),
-        countBoolTrue("v_service_fiscal_readiness", "accounting_validated"),
+        countServiceBoolTrue("minimally_classified"),
+        countServiceBoolTrue("accounting_validated"),
       ]);
       const ok = Math.min(classified, validated);
       return { total, ok, pending: Math.max(0, total - ok) };
@@ -149,7 +149,7 @@ export function useCustomersReadiness() {
     queryFn: async (): Promise<AggregateResult> => {
       const [total, withIbge] = await Promise.all([
         countHead("v_customer_fiscal_readiness"),
-        countBoolTrue("v_customer_fiscal_readiness", "has_ibge"),
+        countCustomersWithIbge(),
       ]);
       return { total, ok: withIbge, pending: Math.max(0, total - withIbge) };
     },
