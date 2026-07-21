@@ -14,11 +14,19 @@
  * Tipagem: os valores são `boolean` (não literais) — permite que o app
  * atualize a flag por código deliberado sem invalidar comparações.
  */
-export type FeatureFlagName = "fiscalConfigurationUi" | "fiscalEmissionEnabled";
+export type FeatureFlagName =
+  | "fiscalConfigurationUi"
+  | "fiscalProductProfilesUi"
+  | "fiscalEmissionEnabled";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
   /** Habilita a tela de Configuração Fiscal da Empresa e o item de menu associado. */
   fiscalConfigurationUi: false,
+  /**
+   * Fase Fiscal 3.2 — Habilita a tela de Perfis Fiscais de Produtos
+   * (`/configuracoes/fiscal/produtos`). Isolada; NÃO autoriza emissão.
+   */
+  fiscalProductProfilesUi: false,
   /** TRAVA DE EMISSÃO. Nunca deve ser `true` nesta fase. Não conecta nada — apenas indica intenção. */
   fiscalEmissionEnabled: false,
 };
