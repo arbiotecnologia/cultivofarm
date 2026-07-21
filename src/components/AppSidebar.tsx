@@ -65,11 +65,14 @@ export function AppSidebar() {
     const hasChildren = !!item.children && item.children.length > 0;
     const selfActive = isNavItemActiveSelf(item, pathname);
     const groupActive = isNavItemActive(item, pathname);
-    // Filhos usam apenas match do próprio route. Pais usam match ampliado
-    // (matchRoutes + legacyRoutes) e diferenciam "próprio ativo" de
-    // "filho ativo" (parcialmente ativo).
-    const active = isParent ? selfActive : selfActive;
-    const partiallyActive = isParent && !selfActive && groupActive;
+    // Fase 6.1 — se um filho está ativo em seu próprio route, o pai NUNCA
+    // recebe estado de página ativa (evita aria-current="page" duplicado
+    // entre "Dashboard" e "Visão Geral" quando ambos apontam para
+    // /dashboard/geral). O pai fica apenas parcialmente ativo.
+    const anyChildActive =
+      hasChildren && item.children!.some((c) => isNavItemActiveSelf(c, pathname));
+    const active = isParent ? selfActive && !anyChildActive : selfActive;
+    const partiallyActive = isParent && !active && groupActive;
     const isCockpit = item.route === "/cockpit-laboratorio";
     const isProducao = role === "producao" || role === "operador_onfarm";
 
