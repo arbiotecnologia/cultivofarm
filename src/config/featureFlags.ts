@@ -19,6 +19,8 @@ export type FeatureFlagName =
   | "fiscalProductProfilesUi"
   | "fiscalServiceProfilesUi"
   | "fiscalCustomerProfilesUi"
+  | "fiscalDocumentWorkflowUi"
+  | "fiscalDocumentManualEventRpc"
   | "fiscalEmissionEnabled";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
@@ -42,6 +44,19 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
    * Vinculada 1:1 a `clientes.id` via FK real.
    */
   fiscalCustomerProfilesUi: false,
+  /**
+   * Fase Fiscal 3.5 — Habilita a rota `/fiscal/documentos` (workflow
+   * documental manual e auditável). Nunca expõe emissão. Item de menu só
+   * aparece com esta flag em `true`, o que NÃO é o caso nesta fase.
+   */
+  fiscalDocumentWorkflowUi: false,
+  /**
+   * Fase Fiscal 3.5 — Gate secundário para permitir chamar
+   * `rpc_fiscal_event_manual` a partir da UI. Mantido `false` até
+   * validação em runtime de staging (auth, papéis e event_type).
+   * A trava de emissão (`fiscalEmissionEnabled`) permanece independente.
+   */
+  fiscalDocumentManualEventRpc: false,
   /** TRAVA DE EMISSÃO. Nunca deve ser `true` nesta fase. Não conecta nada — apenas indica intenção. */
   fiscalEmissionEnabled: false,
 };
