@@ -38,10 +38,14 @@ const MODULE_PATH = resolve(
   "../../../supabase/functions/_shared/fiscal/preflight.ts",
 );
 const moduleSrcRaw = readFileSync(MODULE_PATH, "utf8");
-/** Fonte sem comentários — usada para asserts estáticos de proibição. */
+/**
+ * Fonte sem comentários e sem a regex de identificação de chaves sensíveis
+ * (que precisa listar os próprios nomes proibidos para poder mascará-los).
+ */
 const moduleSrc = moduleSrcRaw
   .replace(/\/\*[\s\S]*?\*\//g, "")
-  .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  .replace(/(^|[^:])\/\/.*$/gm, "$1")
+  .replace(/const\s+SENSITIVE_KEY_RX[\s\S]*?;\n/, "");
 
 /** Entrada base "tudo pronto" — para validar que mesmo assim é PRECHECK_ONLY. */
 const allTrueInput = (): PreflightInput => ({
