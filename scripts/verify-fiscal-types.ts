@@ -253,7 +253,22 @@ export function verifyTypes(source: string): Miss[] {
     }
   }
 
+  // Escopo estrutural: extrair blocos oficiais Views e Functions.
+  const viewsBlock = extractSectionBlock(source, "Views");
+  const functionsBlock = extractSectionBlock(source, "Functions");
+  if (!viewsBlock) missing.push({ kind: "section", detail: "public.Views ausente" });
+  if (!functionsBlock) missing.push({ kind: "section", detail: "public.Functions ausente" });
+
   for (const v of EXPECTED_VIEWS) {
+    // A view deve estar no bloco Views…
+    if (viewsBlock && !hasTopLevelKey(viewsBlock, v.name)) {
+      missing.push({ kind: "view.section", detail: `${v.name} — ausente em public.Views` });
+    }
+    // …e nunca no bloco Functions.
+    if (functionsBlock && hasTopLevelKey(functionsBlock, v.name)) {
+      missing.push({ kind: "view.misplaced", detail: `${v.name} — indevidamente em public.Functions` });
+    }
+
     const block = extractEntityBlock(source, v.name);
     if (!block) { missing.push({ kind: "view", detail: v.name }); continue; }
     const row = extractSubBlock(block, "Row");
@@ -264,6 +279,7 @@ export function verifyTypes(source: string): Miss[] {
       }
     }
   }
+
 
   for (const r of EXPECTED_RPCS) {
     const fnRe = new RegExp(
