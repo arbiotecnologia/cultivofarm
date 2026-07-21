@@ -264,13 +264,15 @@ describe("Fase 3.9 · (H) Server-only — nenhum import em src/**", () => {
     }
     return acc;
   }
-  const files = walk(SRC);
-  test("nenhum arquivo em src importa o entrypoint", () => {
+  // Excluímos arquivos de teste — eles legitimamente citam o caminho em strings.
+  const files = walk(SRC).filter((f) => !/[\\/]test[\\/]/.test(f));
+  test("nenhum arquivo de produção em src/** importa o entrypoint", () => {
     const offenders: string[] = [];
+    // Apenas linhas `import ... from` ou `require(...)` contam.
+    const importRx = /(?:import[^;]*from\s*|require\(\s*)["']([^"']*fiscal-preflight[^"']*)["']/;
     for (const f of files) {
       const src = readFileSync(f, "utf8");
-      if (/fiscal-preflight\/index/.test(src)) offenders.push(f);
-      if (/supabase\/functions\/fiscal-preflight/.test(src)) offenders.push(f);
+      if (importRx.test(src)) offenders.push(f);
     }
     expect(offenders).toEqual([]);
   });
