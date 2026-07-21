@@ -42,12 +42,19 @@ describe("Financeiro — rotas (Fase 4)", () => {
     expect(APP).toContain(mod);
   });
 
-  it("todas as rotas financeiras são protegidas por RoleGuard", () => {
+  it("todas as rotas financeiras funcionais são protegidas por RoleGuard", () => {
     const lines = APP.split("\n").filter((l) => l.includes('path="/financeiro'));
     expect(lines.length).toBeGreaterThan(0);
     for (const line of lines) {
+      // Rotas de redirecionamento legacy usam <Navigate/>; as demais devem ter RoleGuard.
+      if (line.includes("<Navigate")) continue;
       expect(line).toContain("RoleGuard");
     }
+  });
+
+  it("rotas legacy de auditoria e configurações financeiras redirecionam", () => {
+    expect(APP).toMatch(/path="\/financeiro\/auditoria"[^\n]*Navigate to="\/auditoria\?tab=financeiro"/);
+    expect(APP).toMatch(/path="\/financeiro\/configuracoes"[^\n]*Navigate to="\/configuracoes\?tab=financeiro"/);
   });
 
   it("rota de recibos está disponível (lista ou rota dedicada)", () => {
