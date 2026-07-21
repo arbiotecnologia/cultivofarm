@@ -1,7 +1,7 @@
 /**
  * Fase Fiscal 3.7 — Hooks somente leitura para a Central de Prontidão.
  *
- * - Nenhum insert/update/delete/upsert/RPC/functions.invoke.
+ * - Nenhum insert/update/delete/upsert/RPC/edge-function calls.
  * - Cinco queries independentes (empresa, produtos, serviços, clientes,
  *   documentos), cada uma com estado isolado de loading/error/empty.
  * - Contagens via `count: "exact", head: true` para não baixar a base.
