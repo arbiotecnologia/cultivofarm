@@ -49,7 +49,7 @@ export default function Auditoria() {
         }}
       >
         <TabsList className="flex flex-wrap h-auto">
-          {TABS.map((t) => {
+          {visibleTabs.map((t) => {
             const Icon = t.icon;
             return (
               <TabsTrigger key={t.id} value={t.id} className="gap-1 sm:gap-2 text-xs sm:text-sm">
@@ -60,7 +60,7 @@ export default function Auditoria() {
           })}
         </TabsList>
 
-        {TABS.map(({ id, Component }) => (
+        {visibleTabs.map(({ id, Component }) => (
           <TabsContent key={id} value={id} className="mt-4">
             <Component />
           </TabsContent>
