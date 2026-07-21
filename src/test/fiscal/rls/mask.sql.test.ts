@@ -14,9 +14,13 @@ describe("Fase Fiscal 3.0 — mask_sensitive_jsonb (SQL)", () => {
     // Import dinâmico por string para evitar dependência de tipos em CI.
     // `pg` é opcional; se ausente, faz skip explícito.
     const modName = "pg";
-    let Client: any;
+    let Client: new (opts: { connectionString: string }) => {
+      connect: () => Promise<void>;
+      query: (sql: string, params?: unknown[]) => Promise<{ rows: Array<{ out: Record<string, unknown> }> }>;
+      end: () => Promise<void>;
+    };
     try {
-      const mod: any = await import(/* @vite-ignore */ modName);
+      const mod = (await import(/* @vite-ignore */ modName)) as { Client: typeof Client };
       Client = mod.Client;
     } catch {
       console.warn("[mask.sql.test] pg indisponível — skip");
