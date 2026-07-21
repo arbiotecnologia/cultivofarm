@@ -279,3 +279,68 @@ describe("verify-fiscal-types — fixtures NEGATIVAS", () => {
     expect(verifyTypes(src).some((m) => m.kind === "rpc.returns")).toBe(true);
   });
 });
+
+describe("verify-fiscal-types — posicionamento estrutural (Fase 3.1.1)", () => {
+  const VIEW_BLOCK = `      v_fiscal_company_readiness: {
+        Row: { configuration_status: string }
+        Insert: {}
+        Update: {}
+        Relationships: []
+      }
+`;
+
+  test("view declarada dentro de Functions é reprovada", () => {
+    // Move v_fiscal_company_readiness de Views para Functions.
+    const src = CORRECT
+      .replace(VIEW_BLOCK, "")
+      .replace("Functions: {\n", `Functions: {\n${VIEW_BLOCK}`);
+    const miss = verifyTypes(src);
+    expect(
+      miss.some(
+        (m) => m.kind === "view.misplaced" && m.detail.includes("v_fiscal_company_readiness"),
+      ),
+    ).toBe(true);
+    expect(
+      miss.some(
+        (m) => m.kind === "view.section" && m.detail.includes("v_fiscal_company_readiness"),
+      ),
+    ).toBe(true);
+  });
+
+  test("view ausente de public.Views é reprovada por view.section", () => {
+    const src = CORRECT.replace(VIEW_BLOCK, "");
+    expect(
+      verifyTypes(src).some(
+        (m) => m.kind === "view.section" && m.detail.includes("v_fiscal_company_readiness"),
+      ),
+    ).toBe(true);
+  });
+
+  test("RPC ausente de public.Functions é reprovada por rpc.section", () => {
+    const src = CORRECT.replace(
+      /rpc_fiscal_event_manual:\s*\{[\s\S]*?Returns: string\s*\}/,
+      "",
+    );
+    expect(
+      verifyTypes(src).some(
+        (m) => m.kind === "rpc.section" && m.detail.includes("rpc_fiscal_event_manual"),
+      ),
+    ).toBe(true);
+  });
+
+  test("nome duplicado em Views e Functions é reprovado", () => {
+    // Copia v_fiscal_company_readiness também para Functions (mantendo em Views).
+    const src = CORRECT.replace(
+      "Functions: {\n",
+      `Functions: {\n${VIEW_BLOCK}`,
+    );
+    expect(
+      verifyTypes(src).some(
+        (m) =>
+          m.kind === "duplicate.section" &&
+          m.detail.includes("v_fiscal_company_readiness"),
+      ),
+    ).toBe(true);
+  });
+});
+

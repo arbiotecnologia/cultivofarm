@@ -146,6 +146,22 @@ export const EXPECTED_RPCS: RpcSpec[] = [
 ];
 
 // ---- Extração --------------------------------------------------------------
+function extractSectionBlock(source: string, section: "Views" | "Functions"): string | null {
+  const re = new RegExp(`\\n\\s{4}${section}\\s*:\\s*\\{`);
+  const m = re.exec(source);
+  if (!m) return null;
+  const start = m.index + m[0].length; // position after opening `{`
+  let depth = 1;
+  for (let i = start; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return source.slice(start, i);
+    }
+  }
+  return null;
+}
 function extractEntityBlock(source: string, name: string): string | null {
   const re = new RegExp(
     `\\b${name}\\s*:\\s*\\{[\\s\\S]*?Relationships\\s*:\\s*\\[[\\s\\S]*?\\]\\s*\\}`,
@@ -160,6 +176,30 @@ function extractSubBlock(entityBlock: string, label: "Row" | "Insert" | "Update"
   const m = entityBlock.match(re);
   return m ? m[1] : null;
 }
+function hasTopLevelKey(sectionBlock: string, name: string): boolean {
+  // Match `name:` only at brace-depth 0 within the section block.
+  let depth = 0;
+  const key = name;
+  for (let i = 0; i < sectionBlock.length; i++) {
+    const ch = sectionBlock[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") depth--;
+    else if (depth === 0) {
+      if (sectionBlock.startsWith(key, i)) {
+        const before = i === 0 ? " " : sectionBlock[i - 1];
+        const after = sectionBlock[i + key.length];
+        if (/\s/.test(before) && (after === ":" || /\s/.test(after ?? ""))) {
+          // Look ahead skipping whitespace for `:`
+          let j = i + key.length;
+          while (j < sectionBlock.length && /\s/.test(sectionBlock[j])) j++;
+          if (sectionBlock[j] === ":") return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 
 export type Miss = { kind: string; detail: string };
 
@@ -213,7 +253,22 @@ export function verifyTypes(source: string): Miss[] {
     }
   }
 
+  // Escopo estrutural: extrair blocos oficiais Views e Functions.
+  const viewsBlock = extractSectionBlock(source, "Views");
+  const functionsBlock = extractSectionBlock(source, "Functions");
+  if (!viewsBlock) missing.push({ kind: "section", detail: "public.Views ausente" });
+  if (!functionsBlock) missing.push({ kind: "section", detail: "public.Functions ausente" });
+
   for (const v of EXPECTED_VIEWS) {
+    // A view deve estar no bloco Views…
+    if (viewsBlock && !hasTopLevelKey(viewsBlock, v.name)) {
+      missing.push({ kind: "view.section", detail: `${v.name} — ausente em public.Views` });
+    }
+    // …e nunca no bloco Functions.
+    if (functionsBlock && hasTopLevelKey(functionsBlock, v.name)) {
+      missing.push({ kind: "view.misplaced", detail: `${v.name} — indevidamente em public.Functions` });
+    }
+
     const block = extractEntityBlock(source, v.name);
     if (!block) { missing.push({ kind: "view", detail: v.name }); continue; }
     const row = extractSubBlock(block, "Row");
@@ -225,7 +280,13 @@ export function verifyTypes(source: string): Miss[] {
     }
   }
 
+
   for (const r of EXPECTED_RPCS) {
+    // A RPC deve estar declarada no bloco Functions (posicionamento oficial).
+    if (functionsBlock && !hasTopLevelKey(functionsBlock, r.name)) {
+      missing.push({ kind: "rpc.section", detail: `${r.name} — ausente em public.Functions` });
+    }
+
     const fnRe = new RegExp(
       `\\b${r.name}\\s*:\\s*\\{[\\s\\S]*?Args\\s*:\\s*\\{([\\s\\S]*?)\\}[\\s\\S]*?Returns\\s*:\\s*([^;\\n]+)`,
       "m",
@@ -259,6 +320,17 @@ export function verifyTypes(source: string): Miss[] {
       missing.push({ kind: "rpc.returns", detail: `${r.name} — esperado ${r.returns}, encontrado "${returns}"` });
     }
   }
+
+  // Nenhum nome deve aparecer simultaneamente em Views e Functions.
+  if (viewsBlock && functionsBlock) {
+    const allNames = [...EXPECTED_VIEWS.map((v) => v.name), ...EXPECTED_RPCS.map((r) => r.name)];
+    for (const n of allNames) {
+      if (hasTopLevelKey(viewsBlock, n) && hasTopLevelKey(functionsBlock, n)) {
+        missing.push({ kind: "duplicate.section", detail: `${n} — presente em Views e Functions` });
+      }
+    }
+  }
+
 
   return missing;
 }
