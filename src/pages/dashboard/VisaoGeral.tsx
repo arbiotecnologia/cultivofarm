@@ -285,8 +285,9 @@ function StatMini({ label, value, loading, error }: { label: string; value?: num
 function LabTile({
   icon: Icon, label, value, to, loading, error,
 }: {
-  icon: any; label: string; value?: number; to: string; loading?: boolean; error?: boolean;
+  icon: LucideIcon; label: string; value?: number; to: string; loading?: boolean; error?: boolean;
 }) {
+
   return (
     <Link to={to} className="border rounded p-2 hover:bg-accent transition-colors">
       <div className="flex items-center gap-2">
