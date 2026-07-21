@@ -29,3 +29,16 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
     return pathname === pattern || pathname.startsWith(pattern + "/");
   });
 }
+
+/**
+ * Fase 3.2 — verifica somente o `route` próprio do item (ignora
+ * `matchRoutes` e `legacyRoutes`). Usado para diferenciar o filho ativo
+ * do pai no realce da sidebar quando ambos casam via `matchRoutes`.
+ */
+export function isNavItemActiveSelf(item: NavItem, pathname: string): boolean {
+  if (item.route === "/") return pathname === "/";
+  const pattern = item.route;
+  if (pattern.includes(":")) return patternToRegex(pattern).test(pathname);
+  return pathname === pattern || pathname.startsWith(pattern + "/");
+}
+
