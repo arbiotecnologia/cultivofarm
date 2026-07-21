@@ -15,9 +15,9 @@ describe("Fase 6.1 — busca desambiguada", () => {
     expect(r.map((i) => i.id)).toEqual(["configuracoes"]);
   });
 
-  it("'configurações financeiras' → apenas Configurações Financeiras", () => {
+  it("'configurações financeiras' → agora unificado em Configurações", () => {
     const r = searchNavItems(desktop, "configurações financeiras", "administrador");
-    expect(r.map((i) => i.id)).toEqual(["fin-config"]);
+    expect(r.map((i) => i.id)).toEqual(["configuracoes"]);
   });
 
   it("'regras governança' → apenas Regras Governança", () => {
