@@ -118,17 +118,16 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/painel-operacional": {
     administrador: "rw", gestor: "rw",
   },
-  // Fase 3 — Dashboard unificado (Visão Geral aberta aos perfis técnicos).
+  // Fase 3.1 — Dashboard unificado (Visão Geral usa RPC executiva; restrito a admin/gestor).
   "/dashboard": {
-    administrador: "rw", gestor: "rw", consultor_tecnico: "r",
-    tecnico_agronomo: "r", aplicador: "r", administrativo: "r", financeiro: "r",
+    administrador: "rw", gestor: "rw",
   },
   "/dashboard/geral": {
-    administrador: "rw", gestor: "rw", consultor_tecnico: "r",
-    tecnico_agronomo: "r", aplicador: "r", administrativo: "r", financeiro: "r",
+    administrador: "rw", gestor: "rw",
   },
   "/dashboard/executivo": { administrador: "rw", gestor: "rw" },
   "/dashboard/operacional": { administrador: "rw", gestor: "rw" },
+
   "/monitoramento-alertas": {
     administrador: "rw", gestor: "rw", consultor_tecnico: "r", tecnico_agronomo: "r",
   },
@@ -208,13 +207,36 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
 };
 
 export function getHomeForRole(role: string | null): string {
-  if (!role) return "/";
-  if (role === "cliente_produtor") return "/portal";
-  if (role === "parceiro_b2b") return "/portal-parceiro/pedidos";
-  if (role === "parceiro_b2b_tecnico") return "/portal-parceiro/dashboard";
-  if (["consultor_tecnico", "tecnico_agronomo", "aplicador"].includes(role)) return "/app";
-  return "/";
+  if (!role) return "/auth";
+  switch (role) {
+    case "administrador":
+    case "gestor":
+      return "/dashboard/geral";
+    case "cliente_produtor":
+      return "/portal";
+    case "parceiro_b2b":
+      return "/portal-parceiro/pedidos";
+    case "parceiro_b2b_tecnico":
+      return "/portal-parceiro/dashboard";
+    case "consultor_tecnico":
+    case "tecnico_agronomo":
+    case "aplicador":
+      return "/app";
+    case "gestor_comercial":
+      return "/comercial/dashboard-consolidado";
+    case "financeiro":
+      return "/financeiro";
+    case "operador_onfarm":
+      return "/cockpit-laboratorio";
+    case "producao":
+      return "/operacao/dashboard-producao";
+    case "administrativo":
+      return "/solicitacoes";
+    default:
+      return "/";
+  }
 }
+
 
 export function isMobileProfile(role: string | null): boolean {
   if (!role) return false;

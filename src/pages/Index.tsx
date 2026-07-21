@@ -2,11 +2,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { ErrorRecovery } from "@/components/ErrorRecovery";
+import { getHomeForRole } from "@/lib/permissions";
 
 /**
- * Fase 3 — `/` redireciona para o Dashboard unificado.
- * - cliente_produtor → /portal (mantido).
- * - demais perfis administrativos/técnicos → /dashboard/geral.
+ * Fase 3.1 — `/` é agregador por perfil.
+ * Destino centralizado em `getHomeForRole` (fonte única).
+ * Perfis não executivos NÃO caem em /dashboard/geral (que usa RPC executiva).
  */
 export default function Index() {
   const { role, loading, error, refresh, signOut } = useAuth();
@@ -27,6 +28,5 @@ export default function Index() {
     return <ErrorRecovery message={error} onRetry={refresh} onSignOut={signOut} />;
   }
 
-  if (role === "cliente_produtor") return <Navigate to="/portal" replace />;
-  return <Navigate to="/dashboard/geral" replace />;
+  return <Navigate to={getHomeForRole(role)} replace />;
 }
