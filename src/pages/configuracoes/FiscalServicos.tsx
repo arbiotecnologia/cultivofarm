@@ -479,11 +479,9 @@ function EditDrawer({
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>
-            {isNew ? "Preencha identificador e classificação fiscal." : (
-              <>
-                {item !== "new" ? (item.source_reference ?? item.service_id ?? "—") : ""}
-              </>
-            )}
+            {isNew
+              ? "Preencha identificador e classificação fiscal."
+              : (item.source_reference ?? item.service_id ?? "—")}
           </SheetDescription>
         </SheetHeader>
 
