@@ -1,6 +1,8 @@
 /**
- * Fase Fiscal 3.0.1 — Teste unitário do próprio verificador.
- * Fixtures embutidas: correta, coluna ausente, nullable errado, RPC errada.
+ * Fase Fiscal 3.0.2-D — Testes do verify-fiscal-types com fixtures POSITIVAS e NEGATIVAS.
+ * Cobre: tabela ausente, coluna ausente, tipo errado, nullability errada,
+ * relationship inválida, arg RPC ausente, arg RPC extra, arg opcionalidade,
+ * retorno errado, view ausente.
  */
 import { describe, test, expect } from "vitest";
 import { verifyTypes } from "../../../scripts/verify-fiscal-types";
@@ -20,8 +22,8 @@ export type Database = {
           nfse_enabled: boolean
           production_enabled: boolean
         }
-        Insert: {}
-        Update: {}
+        Insert: { id?: string }
+        Update: { id?: string }
         Relationships: []
       }
       product_fiscal_profiles: {
@@ -33,9 +35,17 @@ export type Database = {
           cfop_interstate: string | null
           profile_status: string
         }
-        Insert: {}
-        Update: {}
-        Relationships: [{ columns: ["product_id"] }]
+        Insert: { id?: string }
+        Update: { id?: string }
+        Relationships: [
+          {
+            foreignKeyName: "x"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       service_fiscal_profiles: {
         Row: {
@@ -46,8 +56,8 @@ export type Database = {
           cnae: string | null
           profile_status: string
         }
-        Insert: {}
-        Update: {}
+        Insert: { id?: string }
+        Update: { id?: string }
         Relationships: []
       }
       customer_fiscal_profiles: {
@@ -58,9 +68,17 @@ export type Database = {
           fiscal_municipality_ibge_code: string | null
           profile_status: string
         }
-        Insert: {}
-        Update: {}
-        Relationships: [{ columns: ["customer_id"] }]
+        Insert: { id?: string }
+        Update: { id?: string }
+        Relationships: [
+          {
+            foreignKeyName: "x"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       fiscal_invoices: {
         Row: {
@@ -72,8 +90,8 @@ export type Database = {
           invoice_number: number | null
           status: string
         }
-        Insert: {}
-        Update: {}
+        Insert: { id?: string }
+        Update: { id?: string }
         Relationships: []
       }
       fiscal_invoice_items: {
@@ -81,21 +99,37 @@ export type Database = {
           id: string
           fiscal_invoice_id: string
         }
-        Insert: {}
-        Update: {}
-        Relationships: [{ columns: ["fiscal_invoice_id"] }]
+        Insert: { id?: string }
+        Update: { id?: string }
+        Relationships: [
+          {
+            foreignKeyName: "x"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       fiscal_events: {
         Row: {
           id: string
-          fiscal_invoice_id: string | null
+          fiscal_invoice_id: string
           event_type: string
           request_snapshot: Json | null
           response_snapshot: Json | null
         }
-        Insert: {}
-        Update: {}
-        Relationships: [{ columns: ["fiscal_invoice_id"] }]
+        Insert: { id?: string }
+        Update: { id?: string }
+        Relationships: [
+          {
+            foreignKeyName: "x"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       fiscal_idempotency_keys: {
         Row: {
@@ -103,8 +137,8 @@ export type Database = {
           idempotency_key: string
           fiscal_invoice_id: string | null
         }
-        Insert: {}
-        Update: {}
+        Insert: { id?: string }
+        Update: { id?: string }
         Relationships: []
       }
       fiscal_audit_log: {
@@ -116,8 +150,8 @@ export type Database = {
           old_values: Json | null
           new_values: Json | null
         }
-        Insert: {}
-        Update: {}
+        Insert: { id?: string }
+        Update: { id?: string }
         Relationships: []
       }
     }
@@ -155,7 +189,7 @@ export type Database = {
     }
     Functions: {
       rpc_fiscal_event_manual: {
-        Args: { p_invoice_id: string; p_event_type: string; p_notes: string }
+        Args: { p_invoice_id: string; p_event_type: string; p_notes?: string }
         Returns: string
       }
       mask_sensitive_jsonb: {
@@ -167,32 +201,81 @@ export type Database = {
 }
 `;
 
-describe("verify-fiscal-types — fixtures embutidas", () => {
+describe("verify-fiscal-types — contrato positivo", () => {
   test("fixture correta passa sem divergências", () => {
     expect(verifyTypes(CORRECT)).toEqual([]);
+  });
+});
+
+describe("verify-fiscal-types — fixtures NEGATIVAS", () => {
+  test("tabela ausente é detectada", () => {
+    const src = CORRECT.replace(/fiscal_audit_log:[\s\S]*?Relationships: \[\]\s*\}/, "");
+    const miss = verifyTypes(src);
+    expect(miss.some((m) => m.kind === "table" && m.detail === "fiscal_audit_log")).toBe(true);
   });
 
   test("coluna ausente é detectada", () => {
     const src = CORRECT.replace(/\s+ncm: string \| null\n/, "\n");
-    const miss = verifyTypes(src);
-    expect(miss.some((m) => m.kind === "column" && m.detail.includes("ncm"))).toBe(true);
+    expect(verifyTypes(src).some((m) => m.kind === "column" && m.detail.includes("ncm"))).toBe(true);
   });
 
-  test("nullable incorreto é detectado", () => {
-    const src = CORRECT.replace(
-      "cnpj: string | null",
-      "cnpj: string",
-    );
-    const miss = verifyTypes(src);
-    expect(miss.some((m) => m.kind === "nullable" && m.detail.includes("cnpj"))).toBe(true);
+  test("tipo TS incorreto é detectado", () => {
+    const src = CORRECT.replace("nfe_enabled: boolean", "nfe_enabled: string");
+    expect(verifyTypes(src).some((m) => m.kind === "type" && m.detail.includes("nfe_enabled"))).toBe(true);
   });
 
-  test("RPC ausente ou com retorno errado é detectada", () => {
+  test("nullability incorreta é detectada", () => {
+    const src = CORRECT.replace("cnpj: string | null", "cnpj: string");
+    expect(verifyTypes(src).some((m) => m.kind === "nullable" && m.detail.includes("cnpj"))).toBe(true);
+  });
+
+  test("fiscal_events.fiscal_invoice_id NÃO pode ser nullable no contrato final", () => {
     const src = CORRECT.replace(
-      "rpc_fiscal_event_manual: {\n        Args: { p_invoice_id: string; p_event_type: string; p_notes: string }\n        Returns: string",
-      "rpc_fiscal_event_manual: {\n        Args: { p_invoice_id: string; p_event_type: string; p_notes: string }\n        Returns: number",
+      /fiscal_events:[\s\S]*?fiscal_invoice_id: string\n/,
+      (block) => block.replace("fiscal_invoice_id: string", "fiscal_invoice_id: string | null"),
     );
-    const miss = verifyTypes(src);
-    expect(miss.some((m) => m.kind === "rpc.returns")).toBe(true);
+    expect(verifyTypes(src).some((m) => m.kind === "nullable" && m.detail.includes("fiscal_events.fiscal_invoice_id"))).toBe(true);
+  });
+
+  test("relationship com referencedRelation errado é detectado", () => {
+    const src = CORRECT.replace('referencedRelation: "produtos"', 'referencedRelation: "produtos_wrong"');
+    expect(verifyTypes(src).some((m) => m.kind === "relationship" && m.detail.includes("product_fiscal_profiles"))).toBe(true);
+  });
+
+  test("view ausente é detectada", () => {
+    const src = CORRECT.replace(/v_fiscal_company_readiness:[\s\S]*?Relationships: \[\]\s*\}/, "");
+    expect(verifyTypes(src).some((m) => m.kind === "view" && m.detail === "v_fiscal_company_readiness")).toBe(true);
+  });
+
+  test("arg obrigatório ausente é detectado", () => {
+    const src = CORRECT.replace(
+      "Args: { p_invoice_id: string; p_event_type: string; p_notes?: string }",
+      "Args: { p_event_type: string; p_notes?: string }",
+    );
+    expect(verifyTypes(src).some((m) => m.kind === "rpc.arg.missing" && m.detail.includes("p_invoice_id"))).toBe(true);
+  });
+
+  test("arg obrigatório marcado opcional é detectado", () => {
+    const src = CORRECT.replace(
+      "Args: { p_invoice_id: string; p_event_type: string; p_notes?: string }",
+      "Args: { p_invoice_id?: string; p_event_type: string; p_notes?: string }",
+    );
+    expect(verifyTypes(src).some((m) => m.kind === "rpc.arg.optionality" && m.detail.includes("p_invoice_id"))).toBe(true);
+  });
+
+  test("arg extra é detectado", () => {
+    const src = CORRECT.replace(
+      "Args: { p_invoice_id: string; p_event_type: string; p_notes?: string }",
+      "Args: { p_invoice_id: string; p_event_type: string; p_notes?: string; p_extra: string }",
+    );
+    expect(verifyTypes(src).some((m) => m.kind === "rpc.arg.extra" && m.detail.includes("p_extra"))).toBe(true);
+  });
+
+  test("retorno RPC incorreto é detectado", () => {
+    const src = CORRECT.replace(
+      /rpc_fiscal_event_manual:\s*\{\s*Args:[^}]*\}\s*Returns: string/,
+      "rpc_fiscal_event_manual: {\n        Args: { p_invoice_id: string; p_event_type: string; p_notes?: string }\n        Returns: number",
+    );
+    expect(verifyTypes(src).some((m) => m.kind === "rpc.returns")).toBe(true);
   });
 });

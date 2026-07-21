@@ -1,23 +1,31 @@
 /**
- * Fase Fiscal 3.0.1 — Verificador de src/integrations/supabase/types.ts
- * reescrito para refletir o SCHEMA REAL aplicado pelas migrations
- * 20260721000000, 20260721010000 e 20260722000000.
+ * Fase Fiscal 3.0.2-D — Verificador estrito do types.ts.
  *
- * Uso:
- *   bunx tsx scripts/verify-fiscal-types.ts [--file <path>]
+ * Contrato final:
+ *   - Tabelas 9: Row/Insert/Update + nullability + tipo TS + Relationships completas
+ *     (referencedRelation + referencedColumns exatos).
+ *   - Views 5: Row + colunas mínimas.
+ *   - RPCs: assinatura exata (args obrigatórios, opcionais, sem args extras, retorno).
+ *   - fiscal_events.fiscal_invoice_id DEVE ser NOT NULL (contrato final 3.0.2-A).
  *
- * Retorna exit 1 na primeira divergência (entidade/coluna/nullable/tipo/RPC).
- * NÃO gera tipos.
+ * Uso: bunx tsx scripts/verify-fiscal-types.ts [--file <path>]
+ * Exit 1 em qualquer divergência.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 type ColSpec = { name: string; nullable: boolean; tsType?: string };
-type TableSpec = { name: string; columns: ColSpec[]; relationships?: string[] };
+type RelSpec = { columns: string[]; referencedRelation: string; referencedColumns: string[] };
+type TableSpec = { name: string; columns: ColSpec[]; relationships?: RelSpec[] };
 type ViewSpec = { name: string; columns: string[] };
-type RpcSpec = { name: string; args: string[]; returns: string };
+type RpcSpec = {
+  name: string;
+  requiredArgs: string[];
+  optionalArgs: string[];
+  returns: string;
+};
 
-// ---- Contrato real esperado (§I do relatório) -----------------------------
+// ---- Contrato ---------------------------------------------------------------
 export const EXPECTED_TABLES: TableSpec[] = [
   {
     name: "company_fiscal_settings",
@@ -42,7 +50,7 @@ export const EXPECTED_TABLES: TableSpec[] = [
       { name: "cfop_interstate", nullable: true, tsType: "string" },
       { name: "profile_status", nullable: false, tsType: "string" },
     ],
-    relationships: ["product_id"],
+    relationships: [{ columns: ["product_id"], referencedRelation: "produtos", referencedColumns: ["id"] }],
   },
   {
     name: "service_fiscal_profiles",
@@ -64,7 +72,7 @@ export const EXPECTED_TABLES: TableSpec[] = [
       { name: "fiscal_municipality_ibge_code", nullable: true, tsType: "string" },
       { name: "profile_status", nullable: false, tsType: "string" },
     ],
-    relationships: ["customer_id"],
+    relationships: [{ columns: ["customer_id"], referencedRelation: "clientes", referencedColumns: ["id"] }],
   },
   {
     name: "fiscal_invoices",
@@ -84,20 +92,19 @@ export const EXPECTED_TABLES: TableSpec[] = [
       { name: "id", nullable: false },
       { name: "fiscal_invoice_id", nullable: false },
     ],
-    relationships: ["fiscal_invoice_id"],
+    relationships: [{ columns: ["fiscal_invoice_id"], referencedRelation: "fiscal_invoices", referencedColumns: ["id"] }],
   },
   {
     name: "fiscal_events",
     columns: [
       { name: "id", nullable: false },
-      // Nullability real: pode ser NOT NULL após 3.0.1 se backfill limpo;
-      // aceitamos ambos aqui para tolerar staging pre/pos 3.0.1.
-      { name: "fiscal_invoice_id", nullable: true },
+      // 3.0.2-A contrato final: NOT NULL. Zero tolerância.
+      { name: "fiscal_invoice_id", nullable: false },
       { name: "event_type", nullable: false, tsType: "string" },
       { name: "request_snapshot", nullable: true },
       { name: "response_snapshot", nullable: true },
     ],
-    relationships: ["fiscal_invoice_id"],
+    relationships: [{ columns: ["fiscal_invoice_id"], referencedRelation: "fiscal_invoices", referencedColumns: ["id"] }],
   },
   {
     name: "fiscal_idempotency_keys",
@@ -125,26 +132,20 @@ export const EXPECTED_VIEWS: ViewSpec[] = [
   { name: "v_product_fiscal_readiness", columns: ["product_id", "profile_status"] },
   { name: "v_service_fiscal_readiness", columns: ["service_id", "profile_status"] },
   { name: "v_customer_fiscal_readiness", columns: ["customer_id", "profile_status"] },
-  {
-    name: "v_fiscal_document_reconciliation_pending",
-    columns: ["fiscal_invoice_id", "reconciliation_status"],
-  },
+  { name: "v_fiscal_document_reconciliation_pending", columns: ["fiscal_invoice_id", "reconciliation_status"] },
 ];
 
 export const EXPECTED_RPCS: RpcSpec[] = [
   {
     name: "rpc_fiscal_event_manual",
-    args: ["p_invoice_id", "p_event_type"],
+    requiredArgs: ["p_invoice_id", "p_event_type"],
+    optionalArgs: ["p_notes"],
     returns: "string",
   },
-  {
-    name: "mask_sensitive_jsonb",
-    args: ["v"],
-    returns: "Json",
-  },
+  { name: "mask_sensitive_jsonb", requiredArgs: ["v"], optionalArgs: [], returns: "Json" },
 ];
 
-// ---- Extração e verificação ------------------------------------------------
+// ---- Extração --------------------------------------------------------------
 function extractEntityBlock(source: string, name: string): string | null {
   const re = new RegExp(
     `\\b${name}\\s*:\\s*\\{[\\s\\S]*?Relationships\\s*:\\s*\\[[\\s\\S]*?\\]\\s*\\}`,
@@ -153,54 +154,60 @@ function extractEntityBlock(source: string, name: string): string | null {
   const m = source.match(re);
   return m ? m[0] : null;
 }
-function extractRowBlock(entityBlock: string): string | null {
-  const m = entityBlock.match(/Row\s*:\s*\{([\s\S]*?)\}\s*Insert\s*:/);
+function extractSubBlock(entityBlock: string, label: "Row" | "Insert" | "Update"): string | null {
+  const next = { Row: "Insert", Insert: "Update", Update: "Relationships" }[label];
+  const re = new RegExp(`${label}\\s*:\\s*\\{([\\s\\S]*?)\\}\\s*${next}\\s*:`);
+  const m = entityBlock.match(re);
   return m ? m[1] : null;
 }
 
 export type Miss = { kind: string; detail: string };
+
+function checkColumn(block: string, col: ColSpec, tableName: string, missing: Miss[]) {
+  const colRe = new RegExp(`\\b${col.name}\\b\\s*\\??:\\s*([^;\\n]+)`);
+  const m = block.match(colRe);
+  if (!m) {
+    missing.push({ kind: "column", detail: `${tableName}.${col.name}` });
+    return;
+  }
+  const decl = m[1].trim();
+  const isNullable = /\|\s*null\b/.test(decl);
+  if (col.nullable !== isNullable) {
+    missing.push({
+      kind: "nullable",
+      detail: `${tableName}.${col.name} — esperado nullable=${col.nullable}, decl="${decl}"`,
+    });
+  }
+  if (col.tsType && !new RegExp(`\\b${col.tsType}\\b`).test(decl)) {
+    missing.push({ kind: "type", detail: `${tableName}.${col.name} — esperado ${col.tsType}, decl="${decl}"` });
+  }
+}
 
 export function verifyTypes(source: string): Miss[] {
   const missing: Miss[] = [];
 
   for (const t of EXPECTED_TABLES) {
     const block = extractEntityBlock(source, t.name);
-    if (!block) {
-      missing.push({ kind: "table", detail: t.name });
-      continue;
-    }
-    const row = extractRowBlock(block);
-    if (!row) {
-      missing.push({ kind: "table.Row", detail: t.name });
-      continue;
-    }
-    for (const col of t.columns) {
-      const colRe = new RegExp(`\\b${col.name}\\b\\s*\\??:\\s*([^;\\n]+)`);
-      const m = row.match(colRe);
-      if (!m) {
-        missing.push({ kind: "column", detail: `${t.name}.${col.name}` });
-        continue;
-      }
-      const decl = m[1].trim();
-      const isNullable = /\|\s*null\b/.test(decl);
-      if (col.nullable !== isNullable) {
-        missing.push({
-          kind: "nullable",
-          detail: `${t.name}.${col.name} — esperado nullable=${col.nullable}, decl="${decl}"`,
-        });
-      }
-      if (col.tsType && !new RegExp(`\\b${col.tsType}\\b`).test(decl)) {
-        missing.push({
-          kind: "type",
-          detail: `${t.name}.${col.name} — esperado ${col.tsType}, decl="${decl}"`,
-        });
-      }
-    }
+    if (!block) { missing.push({ kind: "table", detail: t.name }); continue; }
+    const row = extractSubBlock(block, "Row");
+    const ins = extractSubBlock(block, "Insert");
+    const upd = extractSubBlock(block, "Update");
+    if (!row) { missing.push({ kind: "table.Row", detail: t.name }); continue; }
+    if (!ins) missing.push({ kind: "table.Insert", detail: t.name });
+    if (!upd) missing.push({ kind: "table.Update", detail: t.name });
+    for (const col of t.columns) checkColumn(row, col, t.name, missing);
+
     if (t.relationships) {
       for (const rel of t.relationships) {
-        const relRe = new RegExp(`columns:\\s*\\[\\s*"${rel}"\\s*\\]`);
-        if (!relRe.test(block)) {
-          missing.push({ kind: "relationship", detail: `${t.name} → ${rel}` });
+        const relRe = new RegExp(
+          `columns:\\s*\\[\\s*${rel.columns.map((c) => `"${c}"`).join(",\\s*")}\\s*\\][\\s\\S]{0,300}?referencedRelation:\\s*"([^"]+)"[\\s\\S]{0,300}?referencedColumns:\\s*\\[\\s*${rel.referencedColumns.map((c) => `"${c}"`).join(",\\s*")}\\s*\\]`,
+        );
+        const m = block.match(relRe);
+        if (!m || m[1] !== rel.referencedRelation) {
+          missing.push({
+            kind: "relationship",
+            detail: `${t.name} → columns=[${rel.columns.join(",")}] referencedRelation=${rel.referencedRelation} referencedColumns=[${rel.referencedColumns.join(",")}]`,
+          });
         }
       }
     }
@@ -208,15 +215,9 @@ export function verifyTypes(source: string): Miss[] {
 
   for (const v of EXPECTED_VIEWS) {
     const block = extractEntityBlock(source, v.name);
-    if (!block) {
-      missing.push({ kind: "view", detail: v.name });
-      continue;
-    }
-    const row = extractRowBlock(block);
-    if (!row) {
-      missing.push({ kind: "view.Row", detail: v.name });
-      continue;
-    }
+    if (!block) { missing.push({ kind: "view", detail: v.name }); continue; }
+    const row = extractSubBlock(block, "Row");
+    if (!row) { missing.push({ kind: "view.Row", detail: v.name }); continue; }
     for (const c of v.columns) {
       if (!new RegExp(`\\b${c}\\b\\s*\\??:`).test(row)) {
         missing.push({ kind: "view.column", detail: `${v.name}.${c}` });
@@ -230,51 +231,56 @@ export function verifyTypes(source: string): Miss[] {
       "m",
     );
     const m = source.match(fnRe);
-    if (!m) {
-      missing.push({ kind: "rpc", detail: r.name });
-      continue;
-    }
+    if (!m) { missing.push({ kind: "rpc", detail: r.name }); continue; }
     const argsBlock = m[1];
     const returns = m[2].trim();
-    for (const a of r.args) {
-      if (!new RegExp(`\\b${a}\\b\\s*\\??:`).test(argsBlock)) {
-        missing.push({ kind: "rpc.arg", detail: `${r.name}(${a})` });
+
+    // Parse args names — captura tokens "name?:" ou "name:"
+    const declared = Array.from(argsBlock.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(\??):/g))
+      .map((mm) => ({ name: mm[1], optional: mm[2] === "?" }));
+
+    for (const req of r.requiredArgs) {
+      const d = declared.find((x) => x.name === req);
+      if (!d) missing.push({ kind: "rpc.arg.missing", detail: `${r.name}(${req})` });
+      else if (d.optional) missing.push({ kind: "rpc.arg.optionality", detail: `${r.name}(${req}) — deveria ser obrigatório` });
+    }
+    for (const opt of r.optionalArgs) {
+      const d = declared.find((x) => x.name === opt);
+      if (!d) missing.push({ kind: "rpc.arg.missing", detail: `${r.name}(${opt}?)` });
+      // opcional pode aparecer como `name?:` (preferido) ou `name: X | null` — ambos aceitos.
+    }
+    const allowed = new Set<string>([...r.requiredArgs, ...r.optionalArgs]);
+    for (const d of declared) {
+      if (!allowed.has(d.name)) {
+        missing.push({ kind: "rpc.arg.extra", detail: `${r.name}(${d.name}) — arg não esperado` });
       }
     }
     if (!new RegExp(`\\b${r.returns}\\b`).test(returns)) {
-      missing.push({
-        kind: "rpc.returns",
-        detail: `${r.name} — esperado ${r.returns}, encontrado "${returns}"`,
-      });
+      missing.push({ kind: "rpc.returns", detail: `${r.name} — esperado ${r.returns}, encontrado "${returns}"` });
     }
   }
 
   return missing;
 }
 
-// ---- CLI -------------------------------------------------------------------
 function isMain(): boolean {
-  const argv1 = process.argv[1] ?? "";
-  return argv1.endsWith("verify-fiscal-types.ts");
+  return (process.argv[1] ?? "").endsWith("verify-fiscal-types.ts");
 }
 
 if (isMain()) {
-  const fileArgIdx = process.argv.indexOf("--file");
-  const path =
-    fileArgIdx > -1
-      ? resolve(process.cwd(), process.argv[fileArgIdx + 1])
-      : resolve(process.cwd(), "src/integrations/supabase/types.ts");
-
+  const idx = process.argv.indexOf("--file");
+  const path = idx > -1
+    ? resolve(process.cwd(), process.argv[idx + 1])
+    : resolve(process.cwd(), "src/integrations/supabase/types.ts");
   if (!existsSync(path)) {
     console.error(`[verify-fiscal-types] FAIL — arquivo não encontrado: ${path}`);
     process.exit(1);
   }
-  const source = readFileSync(path, "utf8");
-  const missing = verifyTypes(source);
+  const src = readFileSync(path, "utf8");
+  const missing = verifyTypes(src);
   if (missing.length > 0) {
     console.error("[verify-fiscal-types] FAIL — divergências:");
     for (const m of missing) console.error(`  - ${m.kind}: ${m.detail}`);
-    console.error("\nRegenerar externamente conforme docs/fiscal-fase3-0-types-regen.md.");
     process.exit(1);
   }
   console.log(
