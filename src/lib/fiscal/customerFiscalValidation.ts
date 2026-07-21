@@ -34,7 +34,7 @@ export function digitsOnly(v: string | null | undefined): string {
 }
 
 /** Máscara de CPF/CNPJ para exibição. Nunca expõe o documento completo.
- *  CPF: `***.***.***-XX`. CNPJ: `**.***.***/****-XX`. Fallback: `***`. */
+ *  Fallback quando o documento é inválido: "***". */
 export function maskDocument(doc: string | null | undefined): string {
   const d = digitsOnly(doc);
   if (d.length === 11) {
