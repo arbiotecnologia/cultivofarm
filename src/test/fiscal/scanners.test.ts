@@ -4,9 +4,11 @@
  */
 import { describe, test, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(__dirname, "../..");
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(HERE, "../../..");
 const SECRETS = resolve(ROOT, "scripts/fiscal-secrets-scan.sh");
 const INTEG   = resolve(ROOT, "scripts/fiscal-integration-scan.sh");
 const FIX     = resolve(ROOT, "scripts/fixtures/fiscal-scan");
