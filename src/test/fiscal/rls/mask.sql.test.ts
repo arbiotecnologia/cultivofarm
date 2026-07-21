@@ -38,7 +38,12 @@ describe("Fase Fiscal 3.0 — mask_sensitive_jsonb (SQL)", () => {
       const { rows } = await client.query("SELECT public.mask_sensitive_jsonb($1::jsonb) AS out", [
         JSON.stringify(payload),
       ]);
-      const out = rows[0].out;
+      const out = rows[0].out as {
+        Authorization: string;
+        nested: { token: string; certificate: string; ok: string };
+        list: Array<{ password?: string; senha?: string }>;
+        untouched: number;
+      };
       expect(out.Authorization).toBe("***REDACTED***");
       expect(out.nested.token).toBe("***REDACTED***");
       expect(out.nested.certificate).toBe("***REDACTED***");
