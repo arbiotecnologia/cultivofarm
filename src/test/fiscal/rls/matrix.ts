@@ -88,30 +88,30 @@ const RULES: Record<FiscalTable, Rule> = {
     gestor: { SELECT: "allow" },
     financeiro: { SELECT: "allow" },
   },
-  // product/service/customer_fiscal_profiles: admin & financeiro write; gestor read.
+  // product/service/customer_fiscal_profiles: admin & financeiro escrevem;
+  // DELETE direto NEGADO (policy *_delete USING(false) na 3.0.2-A).
   product_fiscal_profiles: {
-    administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "allow" },
-    financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "allow" },
+    administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
+    financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     gestor: { SELECT: "allow" },
   },
   service_fiscal_profiles: {
-    administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "allow" },
-    financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "allow" },
+    administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
+    financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     gestor: { SELECT: "allow" },
   },
   customer_fiscal_profiles: {
-    administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "allow" },
-    financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "allow" },
+    administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
+    financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     gestor: { SELECT: "allow" },
   },
-  // fiscal_invoices: policies históricas (is_financial_staff = admin/gestor/financeiro).
-  // cliente_produtor lê apenas próprio documento (enforced via fixture no runner).
+  // fiscal_invoices (3.0.2-A): SELECT/INSERT/UPDATE admin/gestor/financeiro;
+  // DELETE negado; administrativo NÃO tem acesso (spec §5).
+  // cliente_produtor lê apenas próprio documento (enforced no runner).
   fiscal_invoices: {
     administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     gestor: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
-    administrativo: { SELECT: "allow" },
-    // cliente_produtor: policy fi_producer_read → allow SELECT (linhas próprias apenas).
     cliente_produtor: { SELECT: "allow" },
   },
   // fiscal_invoice_items: administrativo REMOVIDO na 2.1.
