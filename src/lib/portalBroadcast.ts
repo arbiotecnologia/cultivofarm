@@ -11,7 +11,9 @@ const FALLBACK_KEY = "arbio:portal:event";
 export type PortalBroadcastEvent =
   | { type: "portal_switched"; at: number }
   | { type: "portal_cleared"; at: number }
-  | { type: "signed_out"; at: number };
+  | { type: "signed_out"; at: number }
+  | { type: "roles_updated"; at: number; userId: string };
+
 
 function getChannel(): BroadcastChannel | null {
   if (typeof window === "undefined") return null;
