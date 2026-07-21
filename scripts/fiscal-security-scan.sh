@@ -51,6 +51,20 @@ for p in "${PATTERNS[@]}"; do
 done
 rm -f /tmp/fiscal-scan.$$
 
+# Padrões fiscais restritos: só falhar quando encontrados em arquivos com
+# nome fiscal (fiscal, nfe, nfse, sefaz, focus).
+FISCAL_SCOPE=(--glob '**/*fiscal*' --glob '**/*nfe*' --glob '**/*nfse*' --glob '**/*sefaz*' --glob '**/*focus*')
+for p in "${FISCAL_ONLY_PATTERNS[@]}"; do
+  if rg -n -i "${INCLUDES[@]}" "${FISCAL_SCOPE[@]}" -- "$p" . >/tmp/fiscal-scan.$$ 2>/dev/null; then
+    if [ -s /tmp/fiscal-scan.$$ ]; then
+      echo "FISCAL SECURITY (fiscal scope): term found -> $p"
+      cat /tmp/fiscal-scan.$$
+      fail=1
+    fi
+  fi
+done
+rm -f /tmp/fiscal-scan.$$
+
 if [ "$fail" -eq 1 ]; then
   echo "FISCAL SECURITY SCAN: FAIL"
   exit 1
