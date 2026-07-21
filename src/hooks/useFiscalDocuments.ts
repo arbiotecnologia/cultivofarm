@@ -140,7 +140,7 @@ export function useFiscalDocument(id: string | null) {
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return (data as FiscalInvoiceRow | null) ?? null;
+      return (data as unknown as FiscalInvoiceRow | null) ?? null;
     },
     staleTime: 15_000,
   });
@@ -163,7 +163,7 @@ export function useFiscalDocumentItems(id: string | null) {
         .eq("fiscal_invoice_id", id)
         .order("item_sequence", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as FiscalInvoiceItemRow[];
+      return (data ?? []) as unknown as FiscalInvoiceItemRow[];
     },
     staleTime: 30_000,
   });
@@ -186,7 +186,7 @@ export function useFiscalDocumentEvents(id: string | null) {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data ?? []) as FiscalEventRow[];
+      return (data ?? []) as unknown as FiscalEventRow[];
     },
     staleTime: 15_000,
   });
@@ -205,7 +205,7 @@ export function useFiscalAuditLog(recordId: string | null) {
         .order("changed_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data ?? []) as FiscalAuditRow[];
+      return (data ?? []) as unknown as FiscalAuditRow[];
     },
     staleTime: 15_000,
   });
@@ -223,7 +223,7 @@ export function useReconciliationPending() {
         )
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as ReconciliationRow[];
+      return (data ?? []) as unknown as ReconciliationRow[];
     },
     staleTime: 60_000,
   });
