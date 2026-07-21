@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { NAVIGATION_ITEMS } from "@/config/navigation";
+import { navigation as NAVIGATION_ITEMS } from "@/config/navigation";
 import { searchNavItems } from "@/lib/navigation/search";
 
 describe("Unificação do subgrupo Controle Financeiro", () => {
