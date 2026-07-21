@@ -1,11 +1,10 @@
 /**
- * Fase 2 — Fonte declarativa única de navegação (desktop + mobile).
+ * Fase 4 — Reorganização declarativa (Comercial, Campo, Produção).
  *
- * Nesta fase NÃO reorganizamos grupos. Cada item mantém seu grupo atual do
- * `AppSidebar` (Menu Principal / Operação / Técnico / Financeiro / Financeiro B2B
- * / Comercial / Gestão e Estratégico) e sua rota original. A infraestrutura já
- * suporta `subSection`, `matchRoutes`, `legacyRoutes`, `searchKeywords`,
- * `allowedRoles`, `featureFlag`, `order` — para uso nas próximas fases.
+ * Alterações desta fase são exclusivamente de agrupamento visual e metadados
+ * (section/subSection/order/searchKeywords). Rotas, ícones, ids, permissões,
+ * badges, matchRoutes e legacyRoutes permanecem intactos. Financeiro,
+ * Financeiro B2B, mobile e demais grupos ficam fora do escopo.
  */
 import {
   LayoutDashboard, Users, MapPin, FileText, ClipboardList, CalendarClock,
@@ -21,11 +20,11 @@ import type { AppRole } from "@/lib/permissions";
 
 export type NavSection =
   | "Menu Principal"
-  | "Operação"
-  | "Técnico / Auditoria"
+  | "Comercial e Relacionamento"
+  | "Campo e Assistência Técnica"
+  | "Produção On-Farm"
   | "Financeiro"
   | "Financeiro B2B"
-  | "Comercial"
   | "Gestão e Estratégico"
   | "Mobile Consultor"
   | "Mobile Produtor";
@@ -59,14 +58,14 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-/** Ordem dos grupos na sidebar desktop. Preserva ordem atual (Fase 2). */
+/** Ordem dos grupos na sidebar desktop. */
 export const DESKTOP_SECTION_ORDER: NavSection[] = [
   "Menu Principal",
-  "Operação",
-  "Técnico / Auditoria",
+  "Comercial e Relacionamento",
+  "Campo e Assistência Técnica",
+  "Produção On-Farm",
   "Financeiro",
   "Financeiro B2B",
-  "Comercial",
   "Gestão e Estratégico",
 ];
 
@@ -81,6 +80,7 @@ export const navigation: NavItem[] = [
     matchRoutes: ["/dashboard", "/dashboard/geral", "/dashboard/executivo", "/dashboard/operacional"],
     legacyRoutes: ["/", "/executivo", "/painel-operacional"],
     platforms: ["desktop"],
+    order: 1,
     searchKeywords: ["home", "início", "painel", "visão geral", "dashboard"],
     children: [
       { id: "dashboard-geral", label: "Visão Geral", icon: LayoutDashboard, route: "/dashboard/geral", section: "Menu Principal", legacyRoutes: ["/"], platforms: ["desktop"], searchKeywords: ["visão geral", "resumo"] },
@@ -88,28 +88,43 @@ export const navigation: NavItem[] = [
       { id: "dashboard-operacional", label: "Visão Operacional", icon: Activity, route: "/dashboard/operacional", section: "Menu Principal", legacyRoutes: ["/painel-operacional"], platforms: ["desktop"], searchKeywords: ["painel operacional", "operacional"] },
     ],
   },
-  { id: "clientes", label: "Clientes", icon: Users, route: "/clientes", section: "Menu Principal", matchRoutes: ["/clientes/:id", "/parceiros/:id"], legacyRoutes: ["/comercial/parceiros"], platforms: ["desktop"], searchKeywords: ["produtor", "parceiro", "conta"] },
-  { id: "solicitacoes", label: "Solicitações", icon: Inbox, route: "/solicitacoes", section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["pedido interno", "demanda"] },
-  { id: "agenda-tecnica", label: "Agenda Técnica", icon: CalendarClock, route: "/agenda-tecnica", section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["calendário", "visita agendada"] },
-  { id: "visita-tecnica", label: "Visita Técnica", icon: ClipboardCheck, route: "/visita-tecnica", matchRoutes: ["/visita-tecnica/nova", "/visita-tecnica/:id"], section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["visita", "campo"] },
-  { id: "bi-agronomico", label: "BI Agronômico", icon: BrainCircuit, route: "/bi-agronomico", section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["bi", "agronomia", "indicador agronômico"] },
-  { id: "portal-produtor", label: "Portal do Produtor", icon: LayoutDashboard, route: "/portal", section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["produtor", "cliente"] },
-  { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], section: "Menu Principal", platforms: ["desktop"], searchKeywords: ["config", "ajustes", "usuários", "sistema"] },
+  { id: "bi-agronomico", label: "BI Agronômico", icon: BrainCircuit, route: "/bi-agronomico", section: "Menu Principal", platforms: ["desktop"], order: 2, searchKeywords: ["bi", "agronomia", "indicador agronômico"] },
+  { id: "portal-produtor", label: "Portal do Produtor", icon: LayoutDashboard, route: "/portal", section: "Menu Principal", platforms: ["desktop"], order: 3, searchKeywords: ["produtor", "cliente"] },
+  { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], section: "Menu Principal", platforms: ["desktop"], order: 4, searchKeywords: ["config", "ajustes", "usuários", "sistema"] },
 
-  // ── Operação ───────────────────────────────────────────────────────────────
-  { id: "ordens-servico", label: "Ordens de Serviço", icon: ClipboardList, route: "/ordens-servico", section: "Operação", platforms: ["desktop"], searchKeywords: ["os", "ordem"] },
-  { id: "cockpit-lab", label: "Cockpit Laboratório", icon: FlaskConical, route: "/cockpit-laboratorio", section: "Operação", platforms: ["desktop"], searchKeywords: ["laboratório", "laboratorio", "lab", "cockpit"] },
-  { id: "planejamento-producao", label: "Planejamento Produção", icon: Factory, route: "/operacao/planejamento", matchRoutes: ["/operacao/planejamento/:id"], section: "Operação", platforms: ["desktop"], searchKeywords: ["planejamento", "produção"] },
-  { id: "dashboard-producao", label: "Dashboard Produção", icon: Activity, route: "/operacao/dashboard-producao", section: "Operação", platforms: ["desktop"], searchKeywords: ["produção", "dashboard"] },
-  { id: "estoque", label: "Estoque", icon: Warehouse, route: "/estoque", matchRoutes: ["/estoque/embalagens"], section: "Operação", platforms: ["desktop"], searchKeywords: ["inventário", "insumo", "embalagem"] },
-  { id: "entregas", label: "Entregas", icon: Truck, route: "/entregas", matchRoutes: ["/entregas/:id/formulario"], section: "Operação", platforms: ["desktop"], searchKeywords: ["entrega", "logística"] },
-  { id: "aplicacoes", label: "Aplicações", icon: Sprout, route: "/aplicacoes", section: "Operação", platforms: ["desktop"], searchKeywords: ["aplicação", "manejo"] },
-  
+  // ── Comercial e Relacionamento ─────────────────────────────────────────────
+  { id: "com-consolidado", label: "Dashboard Consolidado", icon: BarChart3, route: "/comercial/dashboard-consolidado", section: "Comercial e Relacionamento", subSection: "Visão Comercial", order: 1, legacyRoutes: ["/comercial/dashboard-b2b"], platforms: ["desktop"], searchKeywords: ["consolidado", "comercial", "dashboard comercial", "visão comercial", "dashboard-b2b"] },
+  { id: "com-indicadores", label: "Indicadores", icon: BarChart3, route: "/comercial/indicadores", section: "Comercial e Relacionamento", subSection: "Visão Comercial", order: 2, platforms: ["desktop"], searchKeywords: ["indicador comercial", "kpi", "indicadores comerciais", "métricas", "desempenho comercial"] },
+  { id: "com-alertas", label: "Alertas Comerciais", icon: AlertTriangle, route: "/comercial/alertas", section: "Comercial e Relacionamento", subSection: "Visão Comercial", order: 3, platforms: ["desktop"], searchKeywords: ["alerta comercial", "alertas comerciais", "alertas vendas", "comercial"] },
+  { id: "clientes", label: "Clientes", icon: Users, route: "/clientes", section: "Comercial e Relacionamento", subSection: "Clientes e Propriedades", order: 4, matchRoutes: ["/clientes/:id", "/parceiros/:id"], legacyRoutes: ["/comercial/parceiros"], platforms: ["desktop"], searchKeywords: ["produtor", "parceiro", "conta", "clientes", "produtores", "cadastro cliente"] },
+  { id: "fazendas", label: "Fazendas", icon: MapPin, route: "/fazendas", matchRoutes: ["/fazendas/:id", "/talhoes", "/talhoes/:id"], section: "Comercial e Relacionamento", subSection: "Clientes e Propriedades", order: 5, platforms: ["desktop"], searchKeywords: ["fazenda", "talhão", "fazendas", "propriedades", "propriedades rurais"] },
+  { id: "solicitacoes", label: "Solicitações", icon: Inbox, route: "/solicitacoes", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 6, platforms: ["desktop"], searchKeywords: ["pedido interno", "demanda", "solicitações", "demandas", "atendimento"] },
+  { id: "com-pedidos-b2b", label: "Pedidos B2B", icon: ClipboardCheck, route: "/comercial/pedidos-b2b", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 7, platforms: ["desktop"], searchKeywords: ["pedido b2b", "pedidos b2b", "pedidos parceiro", "revenda"] },
+  { id: "com-solicitacoes-b2b", label: "Solicitações B2B", icon: Inbox, route: "/comercial/solicitacoes-b2b", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 8, platforms: ["desktop"], searchKeywords: ["solicitação b2b", "solicitações b2b", "parceiro", "revenda"] },
+  { id: "com-campanhas", label: "Campanhas", icon: TrendingUp, route: "/comercial/campanhas", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 9, platforms: ["desktop"], searchKeywords: ["campanha", "promoção", "campanhas", "comercial", "ações comerciais"] },
+  { id: "com-catalogo", label: "Catálogo", icon: FlaskConical, route: "/comercial/catalogo", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 10, platforms: ["desktop"], searchKeywords: ["catálogo", "produto", "produtos", "portfólio"] },
+  { id: "protocolos", label: "Protocolos", icon: FileText, route: "/protocolos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11, platforms: ["desktop"], searchKeywords: ["protocolo", "protocolos", "manejo", "recomendação", "protocolo agronômico"] },
+  { id: "com-simulador", label: "Simulador", icon: BarChart3, route: "/comercial/simulador", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 12, platforms: ["desktop"], searchKeywords: ["simulador", "simulação", "proposta", "orçamento"] },
 
-  // ── Técnico / Auditoria ────────────────────────────────────────────────────
-  { id: "lotes", label: "Lotes", icon: FlaskConical, route: "/lotes", section: "Técnico / Auditoria", badge: "Técnico", platforms: ["desktop"], searchKeywords: ["lote", "produção"] },
-  { id: "cq", label: "Controle de Qualidade", icon: ShieldCheck, route: "/controle-qualidade", section: "Técnico / Auditoria", badge: "Técnico", platforms: ["desktop"], searchKeywords: ["cq", "qualidade", "controle"] },
-  { id: "envase", label: "Envase", icon: Package, route: "/envase", section: "Técnico / Auditoria", badge: "Técnico", platforms: ["desktop"], searchKeywords: ["envase", "envasar", "embalar"] },
+  // ── Campo e Assistência Técnica ────────────────────────────────────────────
+  { id: "agenda-tecnica", label: "Agenda Técnica", icon: CalendarClock, route: "/agenda-tecnica", section: "Campo e Assistência Técnica", order: 1, platforms: ["desktop"], searchKeywords: ["calendário", "visita agendada", "agenda", "agenda técnica", "calendário técnico"] },
+  { id: "visita-tecnica", label: "Visita Técnica", icon: ClipboardCheck, route: "/visita-tecnica", matchRoutes: ["/visita-tecnica/nova", "/visita-tecnica/:id"], section: "Campo e Assistência Técnica", order: 2, platforms: ["desktop"], searchKeywords: ["visita", "campo", "visita técnica", "atendimento em campo"] },
+  { id: "aplicacoes", label: "Aplicações", icon: Sprout, route: "/aplicacoes", section: "Campo e Assistência Técnica", order: 3, platforms: ["desktop"], searchKeywords: ["aplicação", "manejo", "aplicações", "campo"] },
+  { id: "equipe-tecnica", label: "Equipe Técnica", icon: Users, route: "/consultor-tecnico", section: "Campo e Assistência Técnica", order: 4, platforms: ["desktop"], searchKeywords: ["consultor", "técnico", "equipe", "técnicos", "consultores"] },
+  { id: "fluxo-tecnico", label: "Fluxo Técnico", icon: GitPullRequestArrow, route: "/fluxo-tecnico", section: "Campo e Assistência Técnica", order: 5, platforms: ["desktop"], searchKeywords: ["fluxo", "processo técnico", "fluxo técnico", "atendimento técnico", "etapas técnicas"] },
+  { id: "monitoramento", label: "Monitoramento", icon: Clock, route: "/monitoramento-alertas", section: "Campo e Assistência Técnica", order: 6, platforms: ["desktop"], searchKeywords: ["monitoramento", "sla", "acompanhamento", "retorno"] },
+  { id: "previsao-climatica", label: "Previsão Climática", icon: CloudSun, route: "/previsao-agronomica", section: "Campo e Assistência Técnica", order: 7, platforms: ["desktop"], searchKeywords: ["clima", "previsão climática", "meteorologia", "previsão", "tempo"] },
+
+  // ── Produção On-Farm ───────────────────────────────────────────────────────
+  { id: "dashboard-producao", label: "Dashboard Produção", icon: Activity, route: "/operacao/dashboard-producao", section: "Produção On-Farm", subSection: "Acompanhamento", order: 1, platforms: ["desktop"], searchKeywords: ["produção", "dashboard", "dashboard produção", "indicadores produção"] },
+  { id: "cockpit-lab", label: "Cockpit Laboratório", icon: FlaskConical, route: "/cockpit-laboratorio", section: "Produção On-Farm", subSection: "Central Operacional", order: 2, platforms: ["desktop"], searchKeywords: ["laboratório", "laboratorio", "lab", "cockpit", "cockpit laboratório", "central operacional", "produção laboratório"] },
+  { id: "planejamento-producao", label: "Planejamento Produção", icon: Factory, route: "/operacao/planejamento", matchRoutes: ["/operacao/planejamento/:id"], section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 3, platforms: ["desktop"], searchKeywords: ["planejamento", "produção", "planejamento produção", "programação produção"] },
+  { id: "ordens-servico", label: "Ordens de Serviço", icon: ClipboardList, route: "/ordens-servico", section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 4, platforms: ["desktop"], searchKeywords: ["os", "ordem", "ordens de serviço", "produção"] },
+  { id: "lotes", label: "Lotes", icon: FlaskConical, route: "/lotes", section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 5, badge: "Técnico", platforms: ["desktop"], searchKeywords: ["lote", "produção", "lotes"] },
+  { id: "cq", label: "Controle de Qualidade", icon: ShieldCheck, route: "/controle-qualidade", section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 6, badge: "Técnico", platforms: ["desktop"], searchKeywords: ["cq", "qualidade", "controle", "controle de qualidade", "laboratório"] },
+  { id: "envase", label: "Envase", icon: Package, route: "/envase", section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 7, badge: "Técnico", platforms: ["desktop"], searchKeywords: ["envase", "envasar", "embalar", "embalagens", "produção"] },
+  { id: "estoque", label: "Estoque", icon: Warehouse, route: "/estoque", matchRoutes: ["/estoque/embalagens"], section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 8, platforms: ["desktop"], searchKeywords: ["inventário", "insumo", "embalagem", "estoque", "insumos", "embalagens"] },
+  { id: "entregas", label: "Entregas", icon: Truck, route: "/entregas", matchRoutes: ["/entregas/:id/formulario"], section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 9, platforms: ["desktop"], searchKeywords: ["entrega", "logística", "entregas", "expedição"] },
 
   // ── Financeiro ─────────────────────────────────────────────────────────────
   { id: "fin-dashboard", label: "Financeiro", icon: PieChart, route: "/financeiro", section: "Financeiro", platforms: ["desktop"], searchKeywords: ["financeiro", "dashboard"] },
@@ -141,26 +156,10 @@ export const navigation: NavItem[] = [
   { id: "b2b-regras-gov", label: "Regras Governança", icon: ShieldCheck, route: "/financeiro/b2b/regras", section: "Financeiro B2B", platforms: ["desktop"], searchKeywords: ["regras", "governança", "políticas"] },
   { id: "b2b-socios", label: "Dashboard Sócios", icon: TrendingUp, route: "/executivo/socios-b2b", section: "Financeiro B2B", platforms: ["desktop"], searchKeywords: ["sócios", "socios", "executivo"] },
 
-  // ── Comercial ──────────────────────────────────────────────────────────────
-  { id: "com-consolidado", label: "Dashboard Consolidado", icon: BarChart3, route: "/comercial/dashboard-consolidado", section: "Comercial", legacyRoutes: ["/comercial/dashboard-b2b"], platforms: ["desktop"], searchKeywords: ["consolidado", "comercial"] },
-  { id: "com-indicadores", label: "Indicadores", icon: BarChart3, route: "/comercial/indicadores", section: "Comercial", platforms: ["desktop"], searchKeywords: ["indicador comercial", "kpi"] },
-  { id: "com-pedidos-b2b", label: "Pedidos B2B", icon: ClipboardCheck, route: "/comercial/pedidos-b2b", section: "Comercial", platforms: ["desktop"], searchKeywords: ["pedido b2b"] },
-  { id: "com-solicitacoes-b2b", label: "Solicitações B2B", icon: Inbox, route: "/comercial/solicitacoes-b2b", section: "Comercial", platforms: ["desktop"], searchKeywords: ["solicitação b2b"] },
-  { id: "com-campanhas", label: "Campanhas", icon: TrendingUp, route: "/comercial/campanhas", section: "Comercial", platforms: ["desktop"], searchKeywords: ["campanha", "promoção"] },
-  { id: "com-catalogo", label: "Catálogo", icon: FlaskConical, route: "/comercial/catalogo", section: "Comercial", platforms: ["desktop"], searchKeywords: ["catálogo", "produto"] },
-  { id: "com-simulador", label: "Simulador", icon: BarChart3, route: "/comercial/simulador", section: "Comercial", platforms: ["desktop"], searchKeywords: ["simulador", "simulação"] },
-  { id: "com-alertas", label: "Alertas Comerciais", icon: AlertTriangle, route: "/comercial/alertas", section: "Comercial", platforms: ["desktop"], searchKeywords: ["alerta comercial"] },
-
   // ── Gestão e Estratégico ───────────────────────────────────────────────────
-  { id: "fazendas", label: "Fazendas", icon: MapPin, route: "/fazendas", matchRoutes: ["/fazendas/:id", "/talhoes", "/talhoes/:id"], section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["fazenda", "talhão"] },
-  { id: "protocolos", label: "Protocolos", icon: FileText, route: "/protocolos", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["protocolo"] },
-  { id: "equipe-tecnica", label: "Equipe Técnica", icon: Users, route: "/consultor-tecnico", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["consultor", "técnico", "equipe"] },
-  { id: "fluxo-tecnico", label: "Fluxo Técnico", icon: GitPullRequestArrow, route: "/fluxo-tecnico", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["fluxo", "processo técnico"] },
   { id: "relatorios", label: "Relatórios", icon: BarChart3, route: "/relatorios", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["relatório gerencial"] },
   { id: "bi-operacional", label: "BI Operacional", icon: Activity, route: "/bi-operacional", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["bi", "operacional"] },
   { id: "alertas", label: "Alertas", icon: Siren, route: "/alertas-operacionais", section: "Gestão e Estratégico", badgeSlot: "alertas", platforms: ["desktop"], searchKeywords: ["alerta", "notificação"] },
-  { id: "monitoramento", label: "Monitoramento", icon: Clock, route: "/monitoramento-alertas", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["monitoramento", "sla"] },
-  { id: "previsao-climatica", label: "Previsão Climática", icon: CloudSun, route: "/previsao-agronomica", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["clima", "previsão climática", "meteorologia"] },
   { id: "auditorias", label: "Auditorias", icon: ShieldCheck, route: "/auditoria", legacyRoutes: ["/auditoria-sync"], section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["auditoria", "sync", "trilha"] },
 
   // ── Mobile Consultor (tabs) ────────────────────────────────────────────────
@@ -182,7 +181,7 @@ export function itemsForPlatform(platform: NavPlatform): NavItem[] {
   return filtered.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 }
 
-/** Retorna todos os itens desktop agrupados por `section`, respeitando `DESKTOP_SECTION_ORDER`. */
+/** Retorna todos os itens desktop agrupados por `section`, respeitando `DESKTOP_SECTION_ORDER` e `order`. */
 export function desktopItemsBySection(): Array<{ section: NavSection; items: NavItem[] }> {
   const bySection = new Map<NavSection, NavItem[]>();
   for (const item of itemsForPlatform("desktop")) {
@@ -191,6 +190,9 @@ export function desktopItemsBySection(): Array<{ section: NavSection; items: Nav
     bySection.set(item.section, arr);
   }
   return DESKTOP_SECTION_ORDER
-    .map((section) => ({ section, items: bySection.get(section) ?? [] }))
+    .map((section) => ({
+      section,
+      items: (bySection.get(section) ?? []).sort((a, b) => (a.order ?? 999) - (b.order ?? 999)),
+    }))
     .filter((g) => g.items.length > 0);
 }
