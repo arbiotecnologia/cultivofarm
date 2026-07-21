@@ -138,6 +138,13 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/fiscal/reconciliacao": {
     administrador: "rw", financeiro: "rw", gestor: "r",
   },
+  // Fase Fiscal 3.7 — Central de Prontidão para Homologação (SOMENTE
+  // LEITURA). Admin R, Gestor R e Financeiro R. Todos os demais/anon
+  // recebem "none". Rota é registrada em App.tsx sob RoleGuard e só
+  // aparece no menu quando `fiscalReadinessCenterUi=true` (não é o caso).
+  "/fiscal/prontidao": {
+    administrador: "r", gestor: "r", financeiro: "r",
+  },
   // Fase Fiscal 3.4 — Perfis Fiscais de Clientes. Admin e Financeiro
   // editam; Gestor somente lê. Demais perfis: bloqueado por URL.
   "/configuracoes/fiscal/clientes": {
