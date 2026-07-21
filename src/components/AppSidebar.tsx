@@ -20,7 +20,7 @@ import {
   type NavItem,
   type NavSection,
 } from "@/config/navigation";
-import { isNavItemActive } from "@/lib/navigation/matchActive";
+import { isNavItemActive, isNavItemActiveSelf } from "@/lib/navigation/matchActive";
 import { searchNavItems } from "@/lib/navigation/search";
 import { useSidebarGroupState } from "@/hooks/useSidebarGroupState";
 
@@ -59,11 +59,19 @@ export function AppSidebar() {
     return searchNavItems(itemsForPlatform("desktop"), query, role);
   }, [query, role]);
 
-  const renderItem = (item: NavItem, opts?: { nested?: boolean }) => {
-    const active = isNavItemActive(item, pathname);
+  const renderItem = (item: NavItem, opts?: { nested?: boolean; parent?: boolean }) => {
+    const nested = opts?.nested === true;
+    const isParent = opts?.parent === true;
+    const hasChildren = !!item.children && item.children.length > 0;
+    const selfActive = isNavItemActiveSelf(item, pathname);
+    const groupActive = isNavItemActive(item, pathname);
+    // Filhos usam apenas match do próprio route. Pais usam match ampliado
+    // (matchRoutes + legacyRoutes) e diferenciam "próprio ativo" de
+    // "filho ativo" (parcialmente ativo).
+    const active = isParent ? selfActive : selfActive;
+    const partiallyActive = isParent && !selfActive && groupActive;
     const isCockpit = item.route === "/cockpit-laboratorio";
     const isProducao = role === "producao" || role === "operador_onfarm";
-    const nested = opts?.nested === true;
 
     return (
       <div key={item.id} className="contents">
@@ -75,12 +83,14 @@ export function AppSidebar() {
             className={cn(
               isCockpit && isProducao && "bg-primary/5 hover:bg-primary/10 border border-primary/20",
               nested && "pl-7 text-[13px]",
+              partiallyActive && "bg-sidebar-accent/50 text-sidebar-accent-foreground",
             )}
           >
             <NavLink
               to={item.route}
               end={item.route === "/"}
-              aria-current={active ? "page" : undefined}
+              aria-current={active ? "page" : partiallyActive ? "location" : undefined}
+              aria-expanded={hasChildren && !collapsed ? true : undefined}
               className="hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
             >
@@ -104,9 +114,9 @@ export function AppSidebar() {
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
-        {/* Fase 3 — renderiza filhos indentados quando existirem e a sidebar
+        {/* Fase 3.2 — renderiza filhos indentados quando existirem e a sidebar
             estiver expandida. Cada filho respeita `canAccess` do próprio route. */}
-        {!collapsed && item.children && item.children
+        {!collapsed && hasChildren && item.children!
           .filter((c) => canAccess(role, c.route))
           .map((c) => (
             <div key={c.id}>{renderItem(c, { nested: true })}</div>
@@ -114,6 +124,10 @@ export function AppSidebar() {
       </div>
     );
   };
+
+  const renderTopLevel = (item: NavItem) =>
+    renderItem(item, { parent: !!item.children && item.children.length > 0 });
+
 
   return (
     <Sidebar collapsible="icon">
@@ -152,7 +166,7 @@ export function AppSidebar() {
                 : "Nenhum resultado"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>{searchResults.map((it) => renderItem(it))}</SidebarMenu>
+              <SidebarMenu>{searchResults.map((it) => renderTopLevel(it))}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ) : (
@@ -176,7 +190,7 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent id={`nav-section-${section}`}>
                     <SidebarGroupContent>
-                      <SidebarMenu>{items.map((it) => renderItem(it))}</SidebarMenu>
+                      <SidebarMenu>{items.map((it) => renderTopLevel(it))}</SidebarMenu>
                     </SidebarGroupContent>
                   </CollapsibleContent>
                 </SidebarGroup>
