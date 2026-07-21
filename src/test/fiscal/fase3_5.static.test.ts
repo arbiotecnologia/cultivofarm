@@ -54,7 +54,7 @@ import {
   InvoiceLockedError,
   ManualEventRpcDisabledError,
 } from "@/hooks/useFiscalDocuments";
-import navigation from "@/config/navigation";
+import { navigation } from "@/config/navigation";
 
 const ROUTE = "/fiscal/documentos";
 const UUID_A = "11111111-1111-1111-1111-111111111111";
