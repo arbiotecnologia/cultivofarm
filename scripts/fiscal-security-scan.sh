@@ -53,7 +53,7 @@ rm -f /tmp/fiscal-scan.$$
 
 # Padrões fiscais restritos: só falhar quando encontrados em arquivos com
 # nome fiscal (fiscal, nfe, nfse, sefaz, focus).
-FISCAL_SCOPE=(--glob '**/*fiscal*' --glob '**/*nfe*' --glob '**/*nfse*' --glob '**/*sefaz*' --glob '**/*focus*')
+FISCAL_SCOPE=(--glob '**/*fiscal*' --glob '**/*nfe*' --glob '**/*nfse*' --glob '**/*sefaz*' --glob '**/*focus*' --glob '!scripts/fiscal-security-scan.sh')
 for p in "${FISCAL_ONLY_PATTERNS[@]}"; do
   if rg -n -i "${INCLUDES[@]}" "${FISCAL_SCOPE[@]}" -- "$p" . >/tmp/fiscal-scan.$$ 2>/dev/null; then
     if [ -s /tmp/fiscal-scan.$$ ]; then
