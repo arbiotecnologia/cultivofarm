@@ -51,7 +51,7 @@ trap 'rm -f "$tmp"' EXIT
 for entry in "${PATTERNS[@]}"; do
   label="${entry%%|*}"
   regex="${entry#*|}"
-  rg -n --pcre2 "${INCLUDES[@]}" -e "$regex" "${TARGETS[@]}" >"$tmp" 2>/dev/null || true
+  rg -n --with-filename --pcre2 "${INCLUDES[@]}" -e "$regex" "${TARGETS[@]}" >"$tmp" 2>/dev/null || true
   if [ -s "$tmp" ]; then
     while IFS= read -r line; do
       file_line="${line%%:*}"
