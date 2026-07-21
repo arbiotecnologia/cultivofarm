@@ -548,6 +548,7 @@ const App = () => (
                 <Route path="/configuracoes/parametros-cq" element={<RoleGuard><ParametrosCQPage /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/empresa" element={<RoleGuard><FiscalEmpresa /></RoleGuard>} />
                 <Route path="/configuracoes/fiscal/produtos" element={<RoleGuard><FiscalProdutos /></RoleGuard>} />
+                <Route path="/configuracoes/fiscal/servicos" element={<RoleGuard><FiscalServicos /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
