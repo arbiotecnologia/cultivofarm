@@ -35,7 +35,8 @@ describe("Fase 3.2 — resiliência da Visão Geral", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("erro: mostra card consolidado com Tentar novamente e preserva atalhos + Cockpit", () => {
-    (useExecutivoResumo as any).mockReturnValue({
+    (useExecutivoResumo as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({
+
       data: undefined, isLoading: false, isFetching: false,
       error: new Error("boom"), refetch: vi.fn(),
     });
