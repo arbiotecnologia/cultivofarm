@@ -1,23 +1,30 @@
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, RefreshCw, KeyRound, Users, ClipboardCheck, CalendarClock } from "lucide-react";
+import { ShieldCheck, RefreshCw, KeyRound, Users, ClipboardCheck, CalendarClock, Wallet } from "lucide-react";
 import SyncTab from "./auditoria/SyncTab";
 import SenhasTab from "./auditoria/SenhasTab";
 import ClientesTab from "./auditoria/ClientesTab";
 import VisitasTab from "./auditoria/VisitasTab";
 import AgendaTab from "./auditoria/AgendaTab";
+import AuditoriaFinanceira from "./financeiro/AuditoriaFinanceira";
+import { useAuth } from "@/hooks/useAuth";
+
+const FIN_ROLES = ["administrador", "gestor", "financeiro"];
 
 const TABS = [
-  { id: "sync", label: "Sync Offline", icon: RefreshCw, Component: SyncTab },
-  { id: "senhas", label: "Senhas", icon: KeyRound, Component: SenhasTab },
-  { id: "clientes", label: "Clientes", icon: Users, Component: ClientesTab },
-  { id: "visitas", label: "Visitas", icon: ClipboardCheck, Component: VisitasTab },
-  { id: "agenda", label: "Agenda", icon: CalendarClock, Component: AgendaTab },
+  { id: "sync", label: "Sync Offline", icon: RefreshCw, Component: SyncTab, roles: null as string[] | null },
+  { id: "senhas", label: "Senhas", icon: KeyRound, Component: SenhasTab, roles: null },
+  { id: "clientes", label: "Clientes", icon: Users, Component: ClientesTab, roles: null },
+  { id: "visitas", label: "Visitas", icon: ClipboardCheck, Component: VisitasTab, roles: null },
+  { id: "agenda", label: "Agenda", icon: CalendarClock, Component: AgendaTab, roles: null },
+  { id: "financeiro", label: "Financeiro", icon: Wallet, Component: AuditoriaFinanceira, roles: FIN_ROLES },
 ];
 
 export default function Auditoria() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const active = TABS.find((t) => t.id === searchParams.get("tab"))?.id || "sync";
+  const { role } = useAuth();
+  const visibleTabs = TABS.filter((t) => !t.roles || (role && t.roles.includes(role)));
+  const active = visibleTabs.find((t) => t.id === searchParams.get("tab"))?.id || visibleTabs[0]?.id || "sync";
 
   return (
     <div className="space-y-6">
