@@ -1,8 +1,8 @@
 /**
- * Fase Fiscal 3.0 (complemento) — validação runtime de mask_sensitive_jsonb.
+ * Fase Fiscal 3.0.1 — validação runtime de mask_sensitive_jsonb.
  *
- * Cobre: objetos aninhados, arrays, arrays de objetos, headers, case,
- * payload nulo, payload grande. Skip se PGURL_STAGING ausente.
+ * Contrato idêntico ao TS em src/test/fiscal/mask.test.ts.
+ * Se PGURL_STAGING presente e `pg` não puder ser carregado, FALHA (não skip).
  */
 import { describe, test, expect } from "vitest";
 
@@ -14,19 +14,12 @@ type PgClient = {
   end: () => Promise<void>;
 };
 
-async function loadPg(): Promise<
-  (new (o: { connectionString: string }) => PgClient) | null
-> {
+async function loadPgOrThrow(): Promise<new (o: { connectionString: string }) => PgClient> {
   const modName = "pg";
-  try {
-    const mod = (await import(/* @vite-ignore */ modName)) as {
-      Client: new (o: { connectionString: string }) => PgClient;
-    };
-    return mod.Client;
-  } catch {
-    console.warn("[mask.sql.test] pg indisponível — skip");
-    return null;
-  }
+  const mod = (await import(/* @vite-ignore */ modName)) as {
+    Client: new (o: { connectionString: string }) => PgClient;
+  };
+  return mod.Client;
 }
 
 async function mask(client: PgClient, payload: unknown): Promise<unknown> {
@@ -37,71 +30,86 @@ async function mask(client: PgClient, payload: unknown): Promise<unknown> {
   return rows[0].out;
 }
 
-describe("Fase Fiscal 3.0 — mask_sensitive_jsonb (SQL, cobertura ampliada)", () => {
-  test.skipIf(!pgUrl)("cobre objetos, arrays, headers, case, null e grande", async () => {
-    if (!pgUrl) return;
-    const Client = await loadPg();
-    if (!Client) return;
-    const client = new Client({ connectionString: pgUrl });
+describe("Fase Fiscal 3.0.1 — mask_sensitive_jsonb (SQL)", () => {
+  test.runIf(pgUrl != null)("cobertura completa contra staging", async () => {
+    // Se PGURL_STAGING presente e pg indisponível ⇒ FALHA explícita.
+    const Client = await loadPgOrThrow();
+    const client = new Client({ connectionString: pgUrl as string });
     await client.connect();
+    let executed = 0;
     try {
-      // 1) objetos aninhados
-      const nested = (await mask(client, {
-        outer: { token: "x", nested2: { password: "p", ok: 1 } },
-      })) as { outer: { token: string; nested2: { password: string; ok: number } } };
-      expect(nested.outer.token).toBe("***REDACTED***");
-      expect(nested.outer.nested2.password).toBe("***REDACTED***");
-      expect(nested.outer.nested2.ok).toBe(1);
+      // 1) topo case-insensitive
+      const l1 = (await mask(client, { Authorization: "x", TOKEN: "y", ok: "keep" })) as Record<string, string>;
+      expect(l1.Authorization).toBe("***REDACTED***");
+      expect(l1.TOKEN).toBe("***REDACTED***");
+      expect(l1.ok).toBe("keep");
+      executed++;
 
-      // 2) arrays simples (não devem quebrar)
+      // 2) 3 níveis
+      const l3 = (await mask(client, { a: { b: { certificate: "c", ok: 1 } } })) as {
+        a: { b: { certificate: string; ok: number } };
+      };
+      expect(l3.a.b.certificate).toBe("***REDACTED***");
+      expect(l3.a.b.ok).toBe(1);
+      executed++;
+
+      // 3) arrays
       const arr = (await mask(client, [1, "a", null])) as unknown[];
       expect(arr).toEqual([1, "a", null]);
+      executed++;
 
-      // 3) arrays de objetos
-      const arrObj = (await mask(client, [{ token: "t" }, { ok: "keep" }])) as Array<
-        Record<string, unknown>
-      >;
-      expect(arrObj[0].token).toBe("***REDACTED***");
-      expect(arrObj[1].ok).toBe("keep");
+      // 4) arrays de objetos
+      const arrObj = (await mask(client, [{ password: "p" }, { ok: 1 }])) as Array<Record<string, unknown>>;
+      expect(arrObj[0].password).toBe("***REDACTED***");
+      expect(arrObj[1].ok).toBe(1);
+      executed++;
 
-      // 4) headers (Authorization / apikey)
-      const headers = (await mask(client, {
-        headers: { Authorization: "Bearer z", apikey: "k", "X-Custom": "keep" },
-      })) as { headers: Record<string, string> };
-      expect(headers.headers.Authorization).toBe("***REDACTED***");
-      expect(headers.headers.apikey).toBe("***REDACTED***");
-      expect(headers.headers["X-Custom"]).toBe("keep");
+      // 5) headers
+      const h = (await mask(client, { headers: { Authorization: "Bearer z", apikey: "k", "X-Custom": "keep" } })) as {
+        headers: Record<string, string>;
+      };
+      expect(h.headers.Authorization).toBe("***REDACTED***");
+      expect(h.headers.apikey).toBe("***REDACTED***");
+      expect(h.headers["X-Custom"]).toBe("keep");
+      executed++;
 
-      // 5) case-insensitive
-      const cases = (await mask(client, {
-        TOKEN: "a",
-        Token: "b",
-        token: "c",
-        Password: "d",
-        SENHA: "e",
+      // 6) accessToken / private_key_pem
+      const comp = (await mask(client, {
+        accessToken: "a", private_key_pem: "p", refresh_token: "r", client_secret: "s",
       })) as Record<string, string>;
-      expect(cases.TOKEN).toBe("***REDACTED***");
-      expect(cases.Token).toBe("***REDACTED***");
-      expect(cases.token).toBe("***REDACTED***");
-      expect(cases.Password).toBe("***REDACTED***");
-      expect(cases.SENHA).toBe("***REDACTED***");
+      expect(comp.accessToken).toBe("***REDACTED***");
+      expect(comp.private_key_pem).toBe("***REDACTED***");
+      expect(comp.refresh_token).toBe("***REDACTED***");
+      expect(comp.client_secret).toBe("***REDACTED***");
+      executed++;
 
-      // 6) payload nulo
-      const nullOut = await mask(client, null);
-      expect(nullOut).toBeNull();
+      // 7) null
+      expect(await mask(client, null)).toBeNull();
+      executed++;
 
-      // 7) payload grande (500 chaves, algumas sensíveis)
+      // 8) objeto vazio
+      expect(await mask(client, {})).toEqual({});
+      executed++;
+
+      // 9) array vazio
+      expect(await mask(client, [])).toEqual([]);
+      executed++;
+
+      // 10) payload grande
       const big: Record<string, unknown> = {};
       for (let i = 0; i < 500; i++) big[`k${i}`] = i;
-      big.token = "secret";
+      big.token = "s";
       big.nested = { authorization: "z", ok: "keep" };
-      const bigOut = (await mask(client, big)) as Record<string, unknown> & {
+      const out = (await mask(client, big)) as Record<string, unknown> & {
         nested: { authorization: string; ok: string };
       };
-      expect(bigOut.token).toBe("***REDACTED***");
-      expect(bigOut.nested.authorization).toBe("***REDACTED***");
-      expect(bigOut.nested.ok).toBe("keep");
-      expect(bigOut.k499).toBe(499);
+      expect(out.token).toBe("***REDACTED***");
+      expect(out.nested.authorization).toBe("***REDACTED***");
+      expect(out.nested.ok).toBe("keep");
+      expect(out.k499).toBe(499);
+      executed++;
+
+      expect(executed).toBe(10);
     } finally {
       await client.end();
     }
@@ -109,8 +117,6 @@ describe("Fase Fiscal 3.0 — mask_sensitive_jsonb (SQL, cobertura ampliada)", (
 
   test.skipIf(pgUrl != null)(
     "EXECUÇÃO PENDENTE EM STAGING — defina PGURL_STAGING",
-    () => {
-      expect(true).toBe(true);
-    },
+    () => { expect(true).toBe(true); },
   );
 });
