@@ -3,7 +3,7 @@
  * Fixtures embutidas: correta, coluna ausente, nullable errado, RPC errada.
  */
 import { describe, test, expect } from "vitest";
-import { verifyTypes } from "../scripts/verify-fiscal-types";
+import { verifyTypes } from "../../../scripts/verify-fiscal-types";
 
 const CORRECT = `
 export type Database = {
