@@ -55,7 +55,6 @@ describe("Fase Fiscal 3.0.2-B.1 — Harness RLS", () => {
     "SKIP EXPLÍCITO — staging não provisionado (todas as envs ausentes)",
     () => {
       expect(load.kind).toBe("skip");
-      // eslint-disable-next-line no-console
       console.warn(`[fiscal-harness] SKIP: ${(load as { reason: string }).reason}`);
     },
   );
