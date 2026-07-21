@@ -448,11 +448,22 @@ export default function Configuracoes() {
               <Timer className="h-3 w-3 sm:h-4 sm:w-4" />SLA B2B
             </TabsTrigger>
           )}
+          {canFin && (
+            <TabsTrigger value="financeiro" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />Financeiro
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="sla-b2b">
           <SlaB2BTab podeEditar={isAdmin || role === "gestor"} />
         </TabsContent>
+
+        {canFin && (
+          <TabsContent value="financeiro">
+            <ConfiguracoesFinanceiras />
+          </TabsContent>
+        )}
 
         {/* Profile Tab */}
         <TabsContent value="perfil">
