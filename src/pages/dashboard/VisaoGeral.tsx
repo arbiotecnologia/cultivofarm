@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Activity, AlertTriangle, ArrowRight, DollarSign, FlaskConical,
-  Package, Truck, Users, ShieldCheck, Warehouse, Layers,
+  Package, Truck, Users, ShieldCheck, Warehouse, Layers, RefreshCw,
 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useExecutivoResumo } from "@/hooks/useExecutivoResumo";
 
