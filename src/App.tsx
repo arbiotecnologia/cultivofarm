@@ -515,6 +515,7 @@ const App = () => (
                 <Route path="/financeiro/relatorios/prestacao-contas" element={<RoleGuard><RelPrestacaoContas /></RoleGuard>} />
                 <Route path="/financeiro/recibos" element={<RoleGuard><FinRecibos /></RoleGuard>} />
                  <Route path="/executivo" element={<PreservedNavigate to="/dashboard/executivo" />} />
+                 <Route path="/portal-executivo" element={<PreservedNavigate to="/dashboard/executivo" />} />
                  <Route path="/comercial/parceiros" element={<Navigate to="/clientes?aba=parceiros" replace />} />
                  <Route path="/comercial/pedidos-b2b" element={<RoleGuard><PedidosB2B /></RoleGuard>} />
                  <Route path="/comercial/solicitacoes-b2b" element={<RoleGuard><ComercialSolicitacoesB2B /></RoleGuard>} />
