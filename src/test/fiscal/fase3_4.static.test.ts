@@ -210,6 +210,7 @@ describe("Fase 3.4 — payloads", () => {
     const values = customerFiscalFormSchema.parse({
       fiscal_municipality_ibge_code: "3550308",
       fiscal_city: "São Paulo",
+      country_code: "BR",
     });
     const payload = buildUpdatePayload(values, BASE_ROW);
     expect(payload).toEqual({
