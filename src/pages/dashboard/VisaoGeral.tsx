@@ -35,10 +35,12 @@ export default function VisaoGeral() {
         supabase.from("produtos").select("id, estoque_minimo, estoque_produto(volume_total)").eq("e_insumo", true),
         supabase.from("entregas").select("id", { count: "exact", head: true }).in("status", ["separado", "em_rota"]),
       ]);
-      const insumosCriticos = (insumos.data || []).filter((p: any) => {
-        const total = (p.estoque_produto || []).reduce((a: number, x: any) => a + Number(x.volume_total || 0), 0);
+      type InsumoRow = { estoque_minimo?: number | null; estoque_produto?: Array<{ volume_total?: number | null }> | null };
+      const insumosCriticos = ((insumos.data as InsumoRow[] | null) || []).filter((p) => {
+        const total = (p.estoque_produto || []).reduce((a, x) => a + Number(x.volume_total || 0), 0);
         return total < Number(p.estoque_minimo || 0);
       }).length;
+
       return {
         os_aguardando: os.count ?? 0,
         lotes_producao: lotesProd.count ?? 0,
