@@ -28,6 +28,8 @@ import AparenciaTab from "@/components/configuracoes/AparenciaTab";
 import { ClientesVinculadosField, type ClienteVinculo } from "@/components/configuracoes/ClientesVinculadosField";
 import { Link } from "react-router-dom";
 import { History, Wallet } from "lucide-react";
+import { broadcastPortalEvent } from "@/lib/portalBroadcast";
+
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 
 
@@ -379,16 +381,23 @@ export default function Configuracoes() {
       if (rolesChanged || partnerChanged) {
         await syncUserRolesAndPartner(editUser.user_id, desiredRoles, editUser.partner_id || "");
       }
+      return { rolesChanged, userId: editUser.user_id };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
+      // Cross-tab: se os papéis do usuário mudaram, avisa a sessão dele (se estiver logada em outra aba)
+      // para recarregar roles/portais sem exigir novo login. Não autoriza acesso — RLS/RPC seguem soberanos.
+      if (result?.rolesChanged && result?.userId) {
+        broadcastPortalEvent({ type: "roles_updated", at: Date.now(), userId: result.userId });
+      }
       toast({ title: "Usuário atualizado" });
       setEditOpen(false);
       const sp = new URLSearchParams(searchParams);
       sp.delete("user_id");
       setSearchParams(sp, { replace: true });
     },
+
     onError: (e: Error) => {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     },

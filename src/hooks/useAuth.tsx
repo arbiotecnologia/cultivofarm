@@ -194,13 +194,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         queryClient.clear();
         return;
       }
+      if (event.type === "roles_updated") {
+        // Só recarrega se o usuário afetado é o atualmente logado.
+        if (user?.id && event.userId === user.id) {
+          queryClient.invalidateQueries({ queryKey: ["available-portal-contexts"] });
+          queryClient.invalidateQueries({ queryKey: ["profile"] });
+          void refresh();
+        }
+        return;
+      }
       // portal_switched | portal_cleared
       queryClient.invalidateQueries({ queryKey: ["available-portal-contexts"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       clearActivePortalContext();
     });
     return unsub;
-  }, [queryClient]);
+  }, [queryClient, user?.id]);
+
 
   const signOut = async () => {
     try {
