@@ -42,6 +42,7 @@ INCLUDES=(
   --glob '!package-lock.json'
   --glob '!scripts/fiscal-secrets-scan.sh'
   --glob '!scripts/fiscal-integration-scan.sh'
+  --glob '!scripts/fixtures/**'
 )
 
 fail=0
