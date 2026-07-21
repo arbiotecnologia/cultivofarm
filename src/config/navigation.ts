@@ -12,7 +12,7 @@ import {
   FlaskConical, ShieldCheck, Package, Warehouse, Truck, Sprout, BarChart3,
   Settings, GitPullRequestArrow, BrainCircuit, CloudSun, Inbox, Activity,
   ClipboardCheck, Clock, ArrowDownCircle, ArrowUpCircle, FolderTree, Building2,
-  Layers, CreditCard, PieChart, Repeat, FileSpreadsheet, Receipt, History, Cog,
+  Layers, CreditCard, PieChart, Repeat, FileSpreadsheet, Receipt,
   TrendingUp, FileBarChart2, Siren, Handshake, Factory, AlertTriangle, Home,
   User, Bell, BookOpen,
 } from "lucide-react";
