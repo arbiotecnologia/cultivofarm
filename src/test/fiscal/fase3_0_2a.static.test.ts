@@ -124,10 +124,17 @@ describe("Fase 3.0.2-A — policies", () => {
     expect(invBlock).not.toMatch(/'administrativo'::app_role/);
   });
 
-  it("cliente_produtor limitado a documentos próprios", () => {
-    expect(canonical).toMatch(
-      /fi_producer_read[\s\S]*cliente_produtor[\s\S]*clientes[\s\S]*user_id = auth\.uid\(\)/,
-    );
+  it("cliente_produtor limitado via receivable_id/delivery_id (fiscal_invoices NÃO possui customer_id)", () => {
+    // Nunca referenciar fiscal_invoices.customer_id nem clientes.user_id (colunas inexistentes).
+    expect(canonical).not.toMatch(/fiscal_invoices\.customer_id/);
+    const producerBlock =
+      canonical.match(/CREATE POLICY "fi_producer_read"[\s\S]*?\);/)?.[0] ?? "";
+    expect(producerBlock).not.toMatch(/\bcustomer_id\s+IN\b/i);
+    expect(producerBlock).not.toMatch(/clientes\s+WHERE\s+user_id/i);
+    expect(producerBlock).toMatch(/cliente_produtor/);
+    expect(producerBlock).toMatch(/accounts_receivable[\s\S]*receivable_id/);
+    expect(producerBlock).toMatch(/entregas[\s\S]*delivery_id/);
+    expect(producerBlock).toMatch(/get_cliente_ids_for_user\(auth\.uid\(\)\)/);
   });
 
   it("perfis fiscais: DELETE direto negado nas 3 tabelas", () => {
