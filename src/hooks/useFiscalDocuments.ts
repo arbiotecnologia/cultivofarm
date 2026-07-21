@@ -120,7 +120,7 @@ export function useFiscalDocumentList(params: ListParams) {
       const { data, count, error } = await q;
       if (error) throw error;
       return {
-        items: (data ?? []) as FiscalInvoiceRow[],
+        items: (data ?? []) as unknown as FiscalInvoiceRow[],
         total: count ?? 0,
       };
     },
