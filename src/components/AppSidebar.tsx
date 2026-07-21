@@ -190,7 +190,25 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent id={`nav-section-${section}`}>
                     <SidebarGroupContent>
-                      <SidebarMenu>{items.map((it) => renderTopLevel(it))}</SidebarMenu>
+                      <SidebarMenu>
+                        {items.map((it, idx) => {
+                          const prevSub = idx > 0 ? items[idx - 1].subSection : undefined;
+                          const showSubHeader = !collapsed && !!it.subSection && it.subSection !== prevSub;
+                          return (
+                            <div key={it.id} className="contents">
+                              {showSubHeader && (
+                                <div
+                                  role="presentation"
+                                  className="px-2 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80"
+                                >
+                                  {it.subSection}
+                                </div>
+                              )}
+                              {renderTopLevel(it)}
+                            </div>
+                          );
+                        })}
+                      </SidebarMenu>
                     </SidebarGroupContent>
                   </CollapsibleContent>
                 </SidebarGroup>
