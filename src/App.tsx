@@ -502,8 +502,8 @@ const App = () => (
                 <Route path="/financeiro/dre" element={<RoleGuard><FinDRE /></RoleGuard>} />
                 <Route path="/financeiro/notas-fiscais" element={<RoleGuard><FinNotasFiscais /></RoleGuard>} />
                 <Route path="/financeiro/entregas-nao-faturadas" element={<RoleGuard><FinEntregasNaoFaturadas /></RoleGuard>} />
-                <Route path="/financeiro/auditoria" element={<PreservedNavigate to="/auditoria?tab=financeiro" />} />
-                <Route path="/financeiro/configuracoes" element={<PreservedNavigate to="/configuracoes?tab=financeiro" />} />
+                <Route path="/financeiro/auditoria" element={<Navigate to="/auditoria?tab=financeiro" replace />} />
+                <Route path="/financeiro/configuracoes" element={<Navigate to="/configuracoes?tab=financeiro" replace />} />
                 <Route path="/financeiro/relatorios" element={<RoleGuard><FinRelatorios /></RoleGuard>} />
                 <Route path="/financeiro/relatorios/mensal" element={<RoleGuard><RelMensal /></RoleGuard>} />
                 <Route path="/financeiro/relatorios/contas-receber" element={<RoleGuard><RelReceber /></RoleGuard>} />
