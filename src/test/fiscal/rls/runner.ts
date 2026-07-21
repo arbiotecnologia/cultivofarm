@@ -192,58 +192,310 @@ function cryptoRandom(): string {
 // Setup / teardown server-side (SERVICE ROLE — só staging).
 // -----------------------------------------------------------------------------
 
+export const FIXTURE_PREFIX = "FISCAL_TEST_B1_";
+
 export interface StagingSession {
   cfg: RunnerConfig;
   fx: FixtureIds;
-  jwts: Record<Role, string>;          // 15 JWTs (anon usa anonKey)
-  fixtureIds: Record<string, string>;  // 1 UUID descartável por tabela para SELECT/UPDATE/DELETE
-  clienteA: { userId: string; clienteId: string; invoiceId: string };
+  jwts: Record<Role, string>;
+  jwtClienteB: string;
+  fixtureIds: Record<string, string>;
+  clienteA: { userId: string; clienteId: string; invoiceId: string; receivableId: string };
   clienteB: { userId: string; clienteId: string };
   teardown: () => Promise<void>;
 }
 
+interface SupabaseAdminLike {
+  auth: {
+    admin: {
+      createUser: (p: { email: string; password: string; email_confirm: boolean }) => Promise<{ data: { user: { id: string } | null } | null; error: { message: string } | null }>;
+      deleteUser: (id: string) => Promise<{ error: { message: string } | null }>;
+    };
+    signInWithPassword: (p: { email: string; password: string }) => Promise<{ data: { session: { access_token: string } | null } | null; error: { message: string } | null }>;
+  };
+  from: (table: string) => {
+    select: (cols: string) => { eq: (c: string, v: unknown) => { limit: (n: number) => Promise<{ data: unknown; error: unknown }> } };
+  };
+}
+
+interface SupabaseModuleLike {
+  createClient: (url: string, key: string, opts?: unknown) => SupabaseAdminLike;
+}
+
+/** Hook para injeção em testes unitários. Nunca setar em runtime real. */
+let supabaseModuleOverride: SupabaseModuleLike | null = null;
+export function __setSupabaseModuleForTests(mod: SupabaseModuleLike | null): void {
+  supabaseModuleOverride = mod;
+}
+
+async function loadSupabaseModule(): Promise<SupabaseModuleLike> {
+  if (supabaseModuleOverride) return supabaseModuleOverride;
+  const modName = "@supabase/supabase-js";
+  const mod = (await import(/* @vite-ignore */ modName)) as unknown as SupabaseModuleLike;
+  return mod;
+}
+
+/** Gerador de senha aleatória — mantida apenas em memória local. */
+async function randomPassword(): Promise<string> {
+  const nodeCrypto = await import("node:crypto");
+  return nodeCrypto.randomBytes(16).toString("hex");
+}
+
+/** UUID v4 gerado em runtime — never hardcoded. */
+async function newUuid(): Promise<string> {
+  const nodeCrypto = await import("node:crypto");
+  return nodeCrypto.randomUUID();
+}
+
 /**
- * Cria usuários sintéticos via auth.admin (SERVICE ROLE), atribui roles em
- * public.user_roles, autentica cada um para obter JWT, cria fixtures descartáveis
- * por tabela e devolve um handle com teardown idempotente.
+ * Requisição REST via SERVICE ROLE. Wrapper deliberadamente minimalista para
+ * concentrar cleanup e evitar depender do supabase-js em toda operação.
+ */
+async function restAdmin(
+  cfg: RunnerConfig, method: string, path: string, body?: unknown,
+): Promise<{ status: number; text: string }> {
+  const res = await fetch(`${cfg.restUrl}/${path}`, {
+    method,
+    headers: {
+      apikey: cfg.serviceRoleKey,
+      Authorization: `Bearer ${cfg.serviceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  return { status: res.status, text: await res.text() };
+}
+
+/**
+ * Cria usuários sintéticos, vincula clientes/roles conforme necessário, cria
+ * fixtures descartáveis, obtém JWTs e devolve handle com teardown idempotente.
  *
- * Implementação real requer:
- *  - marker+project_ref confirmados (chamador valida antes);
- *  - service_role apontando ao staging;
- *  - sequência estrita (não concorrente) para evitar corrida.
+ * Pré-condições:
+ *  - marker STAGING + project_ref conferem com cfg.projectRef;
+ *  - service_role apontando ao staging isolado;
+ *  - execução sequencial (sem paralelismo em fixtures).
  *
- * ATENÇÃO: função implementada como "prepared" — depende de @supabase/supabase-js
- * carregado dinamicamente e das tabelas base já migradas no staging.
+ * Nunca loga: senha, JWT, service role, anon key, e-mail sintético, URL de PG.
  */
 export async function setupStaging(cfg: RunnerConfig): Promise<StagingSession> {
-  // Import dinâmico — só carrega quando runtime real ocorre.
-  const modName = "@supabase/supabase-js";
-  const mod = (await import(/* @vite-ignore */ modName)) as typeof import("@supabase/supabase-js");
+  if (cfg.projectRef === PROD_PROJECT_REF) {
+    throw new Error("ABORT: cfg aponta para produção");
+  }
+  const mod = await loadSupabaseModule();
   const admin = mod.createClient(hostFromRest(cfg.restUrl), cfg.serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  const anon = mod.createClient(hostFromRest(cfg.restUrl), cfg.anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
-  // Confirma marker no banco antes de qualquer mutação.
-  const markerCheck = await admin
-    .from("_fiscal_staging_marker")
-    .select("marker, project_ref")
-    .eq("marker", "STAGING")
-    .limit(1);
-  const g = await assertStagingMarker(
-    async () => ({ rows: (markerCheck.data ?? []) as Array<{ marker: unknown; project_ref: unknown }> }),
-    cfg.projectRef,
-  );
+  // Marker check em runtime (defesa em profundidade).
+  const markerRes = await admin.from("_fiscal_staging_marker").select("marker, project_ref").eq("marker", "STAGING").limit(1);
+  const rows = (Array.isArray(markerRes.data) ? markerRes.data : []) as Array<{ marker: unknown; project_ref: unknown }>;
+  const g = await assertStagingMarker(async () => ({ rows }), cfg.projectRef);
   if (g.ok !== true) throw new Error(`[fiscal-runner] marker inválido: ${(g as { reason: string }).reason}`);
-  if (cfg.projectRef === PROD_PROJECT_REF) throw new Error("ABORT: cfg apontando p/ produção");
 
-  // TODO em execução real: criar usuários, roles, fixtures, autenticar,
-  // preencher jwts/fixtureIds. Manter esta implementação enxuta e comentada
-  // impede que uma execução acidental (sem env) crie recursos.
-  throw new Error(
-    "[fiscal-runner] setupStaging: pipeline preparado — implementação de criação " +
-      "de usuários sintéticos deve ser habilitada durante a execução real no staging. " +
-      "Ver docs/fiscal-fase3-0-2b-runbook.md",
+  const createdUserIds: string[] = [];
+  const createdReceivables: string[] = [];
+  const createdInvoices: string[] = [];
+  const createdInvoiceItems: string[] = [];
+  const createdIdemp: string[] = [];
+  const createdCustomerProfiles: string[] = [];
+  const createdServiceProfiles: string[] = [];
+  const createdProductProfiles: string[] = [];
+  const createdCompanySettings: string[] = [];
+  const createdClientes: string[] = [];
+  const createdProdutos: string[] = [];
+
+  async function makeUser(role: Role): Promise<{ userId: string; jwt: string }> {
+    const email = `${FIXTURE_PREFIX}${role}_${(await newUuid()).slice(0, 8)}@fiscal-test.invalid`.toLowerCase();
+    const password = await randomPassword();
+    const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+    if (error || !data?.user) throw new Error(`createUser ${role}: ${error?.message ?? "sem user"}`);
+    const userId = data.user.id;
+    createdUserIds.push(userId);
+    // profile
+    await restAdmin(cfg, "POST", "profiles", { user_id: userId, nome: `${FIXTURE_PREFIX}${role}`, email });
+    // sign in — token nunca logado
+    const signin = await anon.auth.signInWithPassword({ email, password });
+    if (signin.error || !signin.data?.session) {
+      throw new Error(`signIn ${role}: ${signin.error?.message ?? "sem sessão"}`);
+    }
+    return { userId, jwt: signin.data.session.access_token };
+  }
+
+  // 13 papéis autenticados (todos exceto anon; cliente_produtor é criado abaixo com A + B)
+  const jwts = {} as Record<Role, string>;
+  const nonProducerRoles: Role[] = [
+    "administrador", "gestor", "financeiro", "administrativo", "gestor_comercial",
+    "consultor_tecnico", "tecnico_agronomo", "aplicador", "operador_onfarm",
+    "producao", "parceiro_b2b", "parceiro_b2b_tecnico", "authenticated_sem_papel",
+  ];
+
+  const adminUserIds: Record<string, string> = {};
+  for (const role of nonProducerRoles) {
+    const { userId, jwt } = await makeUser(role);
+    jwts[role] = jwt;
+    adminUserIds[role] = userId;
+    if (role !== "authenticated_sem_papel") {
+      await restAdmin(cfg, "POST", "user_roles", { user_id: userId, role });
+    }
+  }
+
+  // cliente_produtor A + B — exigem vínculo user_clientes ANTES do role.
+  async function makeProducer(tag: "A" | "B"): Promise<{ userId: string; clienteId: string; jwt: string }> {
+    const { userId, jwt } = await makeUser("cliente_produtor");
+    const clienteId = await newUuid();
+    await restAdmin(cfg, "POST", "clientes", {
+      id: clienteId,
+      nome: `${FIXTURE_PREFIX}cliente_${tag}`,
+      tipo_cliente: "produtor",
+    });
+    createdClientes.push(clienteId);
+    await restAdmin(cfg, "POST", "user_clientes", { user_id: userId, cliente_id: clienteId });
+    await restAdmin(cfg, "POST", "user_roles", { user_id: userId, role: "cliente_produtor" });
+    return { userId, clienteId, jwt };
+  }
+  const prodA = await makeProducer("A");
+  const prodB = await makeProducer("B");
+  jwts.cliente_produtor = prodA.jwt;
+  const jwtClienteB = prodB.jwt;
+  jwts.anon = cfg.anonKey;
+
+  // Fixtures fiscais
+  const createdBy = adminUserIds.administrador;
+  const productId = await newUuid();
+  await restAdmin(cfg, "POST", "produtos", { id: productId, nome: `${FIXTURE_PREFIX}produto`, tipo: "insumo" });
+  createdProdutos.push(productId);
+
+  const companyCnpj = `${FIXTURE_PREFIX}CNPJ`;
+  const fx: FixtureIds = {
+    productId,
+    serviceRef: `${FIXTURE_PREFIX}svc-${(await newUuid()).slice(0, 8)}`,
+    customerId: prodA.clienteId,
+    createdBy,
+    companyCnpj,
+  };
+
+  async function insertReturningId(table: string, payload: Record<string, unknown>, sink: string[]): Promise<string> {
+    const r = await restAdmin(cfg, "POST", table, payload);
+    if (r.status < 200 || r.status >= 300) throw new Error(`insert ${table}: HTTP ${r.status} ${r.text}`);
+    const arr = safeJson(r.text);
+    const id = Array.isArray(arr) && arr.length > 0 ? (arr[0] as { id?: string }).id : undefined;
+    if (!id) throw new Error(`insert ${table}: sem id retornado`);
+    sink.push(id);
+    return id;
+  }
+
+  const fixtureIds: Record<string, string> = {};
+  fixtureIds.company_fiscal_settings = await insertReturningId(
+    "company_fiscal_settings", buildPayload("company_fiscal_settings", "insert", fx), createdCompanySettings,
   );
+  fixtureIds.product_fiscal_profiles = await insertReturningId(
+    "product_fiscal_profiles", buildPayload("product_fiscal_profiles", "insert", fx), createdProductProfiles,
+  );
+  fixtureIds.service_fiscal_profiles = await insertReturningId(
+    "service_fiscal_profiles", buildPayload("service_fiscal_profiles", "insert", fx), createdServiceProfiles,
+  );
+  fixtureIds.customer_fiscal_profiles = await insertReturningId(
+    "customer_fiscal_profiles", buildPayload("customer_fiscal_profiles", "insert", fx), createdCustomerProfiles,
+  );
+
+  const receivableId = await newUuid();
+  await restAdmin(cfg, "POST", "accounts_receivable", {
+    id: receivableId,
+    customer_id: prodA.clienteId,
+    total_amount: 1,
+    reference: `${FIXTURE_PREFIX}ar`,
+  });
+  createdReceivables.push(receivableId);
+
+  const invoicePayload = {
+    ...buildPayload("fiscal_invoices", "insert", fx),
+    receivable_id: receivableId,
+  } as Record<string, unknown>;
+  fixtureIds.fiscal_invoices = await insertReturningId("fiscal_invoices", invoicePayload, createdInvoices);
+
+  fixtureIds.fiscal_invoice_items = await insertReturningId(
+    "fiscal_invoice_items",
+    { ...buildPayload("fiscal_invoice_items", "insert", fx), fiscal_invoice_id: fixtureIds.fiscal_invoices, item_sequence: 1 },
+    createdInvoiceItems,
+  );
+  fixtureIds.fiscal_idempotency_keys = await insertReturningId(
+    "fiscal_idempotency_keys",
+    { ...buildPayload("fiscal_idempotency_keys", "insert", fx), fiscal_invoice_id: fixtureIds.fiscal_invoices },
+    createdIdemp,
+  );
+
+  // Fixture "descartável" para DELETE (uma por tabela mutável).
+  const disposableTables = [
+    "product_fiscal_profiles", "service_fiscal_profiles", "customer_fiscal_profiles",
+    "company_fiscal_settings", "fiscal_invoices", "fiscal_invoice_items", "fiscal_idempotency_keys",
+  ];
+  for (const t of disposableTables) {
+    const payload = { ...buildPayload(t, "insert", fx) } as Record<string, unknown>;
+    if (t === "fiscal_invoice_items") { payload.fiscal_invoice_id = fixtureIds.fiscal_invoices; payload.item_sequence = 2; }
+    if (t === "fiscal_invoices") payload.receivable_id = receivableId;
+    if (t === "fiscal_idempotency_keys") { payload.idempotency_key = `${FIXTURE_PREFIX}disp-${(await newUuid()).slice(0, 8)}`; payload.fiscal_invoice_id = fixtureIds.fiscal_invoices; }
+    if (t === "company_fiscal_settings") payload.cnpj = `${FIXTURE_PREFIX}CNPJ_DISP`;
+    if (t === "service_fiscal_profiles") payload.source_reference = `${FIXTURE_PREFIX}svc-disp-${(await newUuid()).slice(0, 8)}`;
+    try {
+      const r = await restAdmin(cfg, "POST", t, payload);
+      const arr = safeJson(r.text);
+      const id = Array.isArray(arr) && arr.length > 0 ? (arr[0] as { id?: string }).id : undefined;
+      if (id) {
+        fixtureIds[`${t}__disposable`] = id;
+        if (t === "product_fiscal_profiles") createdProductProfiles.push(id);
+        else if (t === "service_fiscal_profiles") createdServiceProfiles.push(id);
+        else if (t === "customer_fiscal_profiles") createdCustomerProfiles.push(id);
+        else if (t === "company_fiscal_settings") createdCompanySettings.push(id);
+        else if (t === "fiscal_invoices") createdInvoices.push(id);
+        else if (t === "fiscal_invoice_items") createdInvoiceItems.push(id);
+        else if (t === "fiscal_idempotency_keys") createdIdemp.push(id);
+      }
+    } catch {
+      // Se DELETE-target falhar (ex.: singleton company), teste vira "error" — comportamento desejado.
+    }
+  }
+  // fiscal_events e fiscal_audit_log: escrita direta é DENY por design, não criamos disposable.
+  fixtureIds.fiscal_events = fixtureIds.fiscal_invoices;   // dummy, DELETE nunca deve passar
+  fixtureIds.fiscal_audit_log = fixtureIds.fiscal_invoices;
+
+  async function teardown(): Promise<void> {
+    const safeDel = async (table: string, ids: string[]): Promise<void> => {
+      for (const id of ids) {
+        await restAdmin(cfg, "DELETE", `${table}?id=eq.${id}`).catch(() => undefined);
+      }
+    };
+    await restAdmin(cfg, "DELETE", `fiscal_audit_log?table_name=like.${FIXTURE_PREFIX}*`).catch(() => undefined);
+    await restAdmin(cfg, "DELETE", `fiscal_events?fiscal_invoice_id=in.(${createdInvoices.join(",") || "00000000-0000-0000-0000-000000000000"})`).catch(() => undefined);
+    await safeDel("fiscal_invoice_items", createdInvoiceItems);
+    await safeDel("fiscal_idempotency_keys", createdIdemp);
+    await safeDel("fiscal_invoices", createdInvoices);
+    await safeDel("customer_fiscal_profiles", createdCustomerProfiles);
+    await safeDel("service_fiscal_profiles", createdServiceProfiles);
+    await safeDel("product_fiscal_profiles", createdProductProfiles);
+    await safeDel("company_fiscal_settings", createdCompanySettings);
+    await safeDel("accounts_receivable", createdReceivables);
+    for (const uid of createdUserIds) {
+      await restAdmin(cfg, "DELETE", `user_roles?user_id=eq.${uid}`).catch(() => undefined);
+      await restAdmin(cfg, "DELETE", `user_clientes?user_id=eq.${uid}`).catch(() => undefined);
+      await restAdmin(cfg, "DELETE", `profiles?user_id=eq.${uid}`).catch(() => undefined);
+    }
+    await safeDel("clientes", createdClientes);
+    await safeDel("produtos", createdProdutos);
+    for (const uid of createdUserIds) {
+      await admin.auth.admin.deleteUser(uid).catch(() => undefined);
+    }
+  }
+
+  return {
+    cfg, fx, jwts, jwtClienteB, fixtureIds,
+    clienteA: { userId: prodA.userId, clienteId: prodA.clienteId, invoiceId: fixtureIds.fiscal_invoices, receivableId },
+    clienteB: { userId: prodB.userId, clienteId: prodB.clienteId },
+    teardown,
+  };
 }
 
 function hostFromRest(restUrl: string): string {
