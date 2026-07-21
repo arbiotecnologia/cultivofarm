@@ -81,7 +81,7 @@ export const navigation: NavItem[] = [
     route: "/dashboard/geral",
     section: "Dashboard",
     matchRoutes: ["/dashboard", "/dashboard/geral", "/dashboard/executivo", "/dashboard/operacional"],
-    legacyRoutes: ["/", "/executivo", "/painel-operacional"],
+    legacyRoutes: ["/", "/executivo", "/portal-executivo", "/painel-operacional"],
     platforms: ["desktop"],
     order: 1,
     searchKeywords: ["home", "início", "painel", "visão geral", "dashboard"],
