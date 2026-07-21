@@ -45,6 +45,7 @@ import FiscalEmpresa from "@/pages/configuracoes/FiscalEmpresa";
 import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
 import FiscalServicos from "@/pages/configuracoes/FiscalServicos";
 import FiscalClientes from "@/pages/configuracoes/FiscalClientes";
+import FiscalDocumentos from "@/pages/fiscal/FiscalDocumentos";
 import Relatorios from "@/pages/Relatorios";
 import ConsultorTecnico from "@/pages/ConsultorTecnico";
 import FinanceiroDashboard from "@/pages/financeiro/FinanceiroDashboard";
