@@ -61,7 +61,7 @@ describe("evaluateGuards", () => {
   test("parcial ⇒ falha explícita", () => {
     const v = evaluateGuards(loadEnv({ FISCAL_TEST_ENV: "STAGING" }));
     expect(v.ok).toBe(false);
-    if (v.ok === false) expect(v.reason).toMatch(/configuração parcial/);
+    if (v.ok === false) expect((v as { reason: string }).reason).toMatch(/configuração parcial/);
   });
   test("FISCAL_TEST_ENV != STAGING ⇒ falha", () => {
     const v = evaluateGuards(loadEnv(fullEnv({ FISCAL_TEST_ENV: "prod" })));
