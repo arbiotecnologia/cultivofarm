@@ -45,6 +45,7 @@ export default function NotasFiscais() {
 
   return (
     <div className="space-y-4">
+      <FiscalReadinessBanner />
       <PageHeader 
         title="Notas Fiscais" 
         description="Registro e acompanhamento de documentos fiscais"
