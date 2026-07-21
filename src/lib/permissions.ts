@@ -15,8 +15,28 @@ export type AppRole =
 
 export type AccessLevel = "rw" | "r" | "none";
 
+/**
+ * Fase 3.2 — Fonte única de perfis autorizados no portal mobile `/app/*`.
+ * Espelha, em nível declarativo, o que já é enforced em runtime por
+ * `AppPortalGuard` (RPC `has_technical_access`), `TechnicalFeatureGuard` e
+ * `ProducerFeatureGuard`. NÃO amplia permissões — apenas permite que
+ * `canAccess()` (usado por sidebar/busca/testes) reconheça as rotas.
+ */
+const APP_SHARED_ROLES: AppRole[] = [
+  "administrador", "cliente_produtor",
+  "consultor_tecnico", "tecnico_agronomo", "aplicador",
+];
+const APP_TECHNICAL_ROLES: AppRole[] = [
+  "administrador", "consultor_tecnico", "tecnico_agronomo", "aplicador",
+];
+const APP_PRODUCER_ROLES: AppRole[] = ["administrador", "cliente_produtor"];
+
+const rw = <T extends readonly AppRole[]>(roles: T): Partial<Record<AppRole, AccessLevel>> =>
+  Object.fromEntries(roles.map((r) => [r, "rw" as AccessLevel]));
+
 // Routes and which roles can access them
 const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
+
   "/": {
     administrador: "rw", gestor: "rw", consultor_tecnico: "r", 
     operador_onfarm: "r", administrativo: "r", tecnico_agronomo: "r", producao: "r",
