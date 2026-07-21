@@ -12921,6 +12921,141 @@ export type Database = {
         }
         Relationships: []
       }
+      v_fiscal_company_readiness: {
+        Row: {
+          accounting_validated: boolean | null
+          configuration_status: string | null
+          filled_score: number | null
+          fiscal_environment: string | null
+          fiscal_provider: string | null
+          id: string | null
+          max_score: number | null
+          nfe_enabled: boolean | null
+          nfse_enabled: boolean | null
+          production_enabled: boolean | null
+        }
+        Insert: {
+          accounting_validated?: never
+          configuration_status?: string | null
+          filled_score?: never
+          fiscal_environment?: string | null
+          fiscal_provider?: string | null
+          id?: string | null
+          max_score?: never
+          nfe_enabled?: boolean | null
+          nfse_enabled?: boolean | null
+          production_enabled?: boolean | null
+        }
+        Update: {
+          accounting_validated?: never
+          configuration_status?: string | null
+          filled_score?: never
+          fiscal_environment?: string | null
+          fiscal_provider?: string | null
+          id?: string | null
+          max_score?: never
+          nfe_enabled?: boolean | null
+          nfse_enabled?: boolean | null
+          production_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      v_product_fiscal_readiness: {
+        Row: {
+          accounting_validated: boolean | null
+          minimally_classified: boolean | null
+          product_id: string | null
+          profile_status: string | null
+        }
+        Insert: {
+          accounting_validated?: never
+          minimally_classified?: never
+          product_id?: string | null
+          profile_status?: string | null
+        }
+        Update: {
+          accounting_validated?: never
+          minimally_classified?: never
+          product_id?: string | null
+          profile_status?: string | null
+        }
+        Relationships: []
+      }
+      v_service_fiscal_readiness: {
+        Row: {
+          accounting_validated: boolean | null
+          id: string | null
+          minimally_classified: boolean | null
+          profile_status: string | null
+          service_id: string | null
+          source_reference: string | null
+        }
+        Insert: {
+          accounting_validated?: never
+          id?: string | null
+          minimally_classified?: never
+          profile_status?: string | null
+          service_id?: string | null
+          source_reference?: string | null
+        }
+        Update: {
+          accounting_validated?: never
+          id?: string | null
+          minimally_classified?: never
+          profile_status?: string | null
+          service_id?: string | null
+          source_reference?: string | null
+        }
+        Relationships: []
+      }
+      v_customer_fiscal_readiness: {
+        Row: {
+          customer_id: string | null
+          has_ibge: boolean | null
+          profile_status: string | null
+        }
+        Insert: {
+          customer_id?: string | null
+          has_ibge?: never
+          profile_status?: string | null
+        }
+        Update: {
+          customer_id?: string | null
+          has_ibge?: never
+          profile_status?: string | null
+        }
+        Relationships: []
+      }
+      v_fiscal_document_reconciliation_pending: {
+        Row: {
+          document_model: string | null
+          document_origin: string | null
+          fiscal_invoice_id: string | null
+          normalized_status: string | null
+          receivable_id: string | null
+          reconciliation_status: string | null
+          status: string | null
+        }
+        Insert: {
+          document_model?: string | null
+          document_origin?: string | null
+          fiscal_invoice_id?: string | null
+          normalized_status?: string | null
+          receivable_id?: string | null
+          reconciliation_status?: string | null
+          status?: string | null
+        }
+        Update: {
+          document_model?: string | null
+          document_origin?: string | null
+          fiscal_invoice_id?: string | null
+          normalized_status?: string | null
+          receivable_id?: string | null
+          reconciliation_status?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _assert_visita_editavel: {
@@ -13536,141 +13671,6 @@ export type Database = {
           p_start_date: string
         }
         Returns: Json
-      v_fiscal_company_readiness: {
-        Row: {
-          accounting_validated: boolean | null
-          configuration_status: string | null
-          filled_score: number | null
-          fiscal_environment: string | null
-          fiscal_provider: string | null
-          id: string | null
-          max_score: number | null
-          nfe_enabled: boolean | null
-          nfse_enabled: boolean | null
-          production_enabled: boolean | null
-        }
-        Insert: {
-          accounting_validated?: never
-          configuration_status?: string | null
-          filled_score?: never
-          fiscal_environment?: string | null
-          fiscal_provider?: string | null
-          id?: string | null
-          max_score?: never
-          nfe_enabled?: boolean | null
-          nfse_enabled?: boolean | null
-          production_enabled?: boolean | null
-        }
-        Update: {
-          accounting_validated?: never
-          configuration_status?: string | null
-          filled_score?: never
-          fiscal_environment?: string | null
-          fiscal_provider?: string | null
-          id?: string | null
-          max_score?: never
-          nfe_enabled?: boolean | null
-          nfse_enabled?: boolean | null
-          production_enabled?: boolean | null
-        }
-        Relationships: []
-      }
-      v_product_fiscal_readiness: {
-        Row: {
-          accounting_validated: boolean | null
-          minimally_classified: boolean | null
-          product_id: string | null
-          profile_status: string | null
-        }
-        Insert: {
-          accounting_validated?: never
-          minimally_classified?: never
-          product_id?: string | null
-          profile_status?: string | null
-        }
-        Update: {
-          accounting_validated?: never
-          minimally_classified?: never
-          product_id?: string | null
-          profile_status?: string | null
-        }
-        Relationships: []
-      }
-      v_service_fiscal_readiness: {
-        Row: {
-          accounting_validated: boolean | null
-          id: string | null
-          minimally_classified: boolean | null
-          profile_status: string | null
-          service_id: string | null
-          source_reference: string | null
-        }
-        Insert: {
-          accounting_validated?: never
-          id?: string | null
-          minimally_classified?: never
-          profile_status?: string | null
-          service_id?: string | null
-          source_reference?: string | null
-        }
-        Update: {
-          accounting_validated?: never
-          id?: string | null
-          minimally_classified?: never
-          profile_status?: string | null
-          service_id?: string | null
-          source_reference?: string | null
-        }
-        Relationships: []
-      }
-      v_customer_fiscal_readiness: {
-        Row: {
-          customer_id: string | null
-          has_ibge: boolean | null
-          profile_status: string | null
-        }
-        Insert: {
-          customer_id?: string | null
-          has_ibge?: never
-          profile_status?: string | null
-        }
-        Update: {
-          customer_id?: string | null
-          has_ibge?: never
-          profile_status?: string | null
-        }
-        Relationships: []
-      }
-      v_fiscal_document_reconciliation_pending: {
-        Row: {
-          document_model: string | null
-          document_origin: string | null
-          fiscal_invoice_id: string | null
-          normalized_status: string | null
-          receivable_id: string | null
-          reconciliation_status: string | null
-          status: string | null
-        }
-        Insert: {
-          document_model?: string | null
-          document_origin?: string | null
-          fiscal_invoice_id?: string | null
-          normalized_status?: string | null
-          receivable_id?: string | null
-          reconciliation_status?: string | null
-          status?: string | null
-        }
-        Update: {
-          document_model?: string | null
-          document_origin?: string | null
-          fiscal_invoice_id?: string | null
-          normalized_status?: string | null
-          receivable_id?: string | null
-          reconciliation_status?: string | null
-          status?: string | null
-        }
-        Relationships: []
-      }
       }
       get_financial_report_data: {
         Args: {
