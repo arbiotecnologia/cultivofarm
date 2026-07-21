@@ -48,7 +48,7 @@ describe("Fase 3.2 — resiliência da Visão Geral", () => {
   });
 
   it("sucesso com dados: renderiza valores", () => {
-    (useExecutivoResumo as any).mockReturnValue({
+    (useExecutivoResumo as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({
       data: {
         resumo: { alertas_ativos: 5, clientes_ativos: 12, receita_bruta: 1000 },
         saude_operacional: { score: 87, classificacao: "boa", motivos: [] },
@@ -62,7 +62,7 @@ describe("Fase 3.2 — resiliência da Visão Geral", () => {
   });
 
   it("sucesso com zeros: renderiza zero, não 'Indisponível'", () => {
-    (useExecutivoResumo as any).mockReturnValue({
+    (useExecutivoResumo as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({
       data: {
         resumo: { alertas_ativos: 0, clientes_ativos: 0, receita_bruta: 0 },
         saude_operacional: { score: 0, classificacao: "sem dados", motivos: [] },
@@ -74,7 +74,7 @@ describe("Fase 3.2 — resiliência da Visão Geral", () => {
   });
 
   it("loading: mostra skeleton, sem card de erro", () => {
-    (useExecutivoResumo as any).mockReturnValue({
+    (useExecutivoResumo as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({
       data: undefined, isLoading: true, isFetching: true, error: null, refetch: vi.fn(),
     });
     renderPage();
