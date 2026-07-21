@@ -186,7 +186,10 @@ export function useUnlinkFiscalInvoice() {
       if (!writeEnabled) throw new ReconciliationWriteDisabledError();
       const parsed = unlinkSchema.parse(values);
       assertManualEditable(prev);
-      const patch: Record<string, null> = { [parsed.target]: null };
+      const patch: Database["public"]["Tables"]["fiscal_invoices"]["Update"] =
+        parsed.target === "receivable_id"
+          ? { receivable_id: null }
+          : { delivery_id: null };
       const { data, error } = await supabase
         .from("fiscal_invoices")
         .update(patch)
