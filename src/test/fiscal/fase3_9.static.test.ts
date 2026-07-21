@@ -126,7 +126,7 @@ describe("Fase 3.9 · (D) Autorização canônica", () => {
   });
   test("rota bloqueada retorna 403 sanitizado", () => {
     expect(entrySrc).toMatch(/forbidden/);
-    expect(entrySrc).toMatch(/status:\s*403/);
+    expect(entrySrc).toMatch(/json\(\s*403/);
   });
 });
 
