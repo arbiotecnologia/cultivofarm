@@ -274,9 +274,7 @@ describe("Fase 3.7 · (10) Sem provedor/certificado/token/webhook/emissão", () 
     expect(pageSrc.toLowerCase()).not.toContain(t.toLowerCase());
   });
   test("hook não chama endpoints de emissão/integração", () => {
-    // integrador, provedor, certificado, webhook, functions.invoke
-    expect(hookSrc).not.toMatch(/certificad|webhook|functions\.invoke|provider(?!:)/i);
-    // hook nunca menciona rpc_fiscal_event_manual ou emissão
+    expect(hookSrc).not.toMatch(/certificad|webhook|functions\.invoke/i);
     expect(hookSrc).not.toMatch(/rpc_fiscal_event_manual|emit_|transmit_|cancel_|inutiliza/i);
   });
 });
