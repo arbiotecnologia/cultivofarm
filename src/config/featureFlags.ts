@@ -21,6 +21,8 @@ export type FeatureFlagName =
   | "fiscalCustomerProfilesUi"
   | "fiscalDocumentWorkflowUi"
   | "fiscalDocumentManualEventRpc"
+  | "fiscalReconciliationUi"
+  | "fiscalReconciliationWrite"
   | "fiscalEmissionEnabled";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
