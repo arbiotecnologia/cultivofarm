@@ -1,136 +1,135 @@
-# Fase 3.2 — Estabilização Final do Dashboard, Rotas Mobile e Navegação
+# Fase 4 — Reorganização de Comercial, Campo e Produção
 
-Fase corretiva focada em resolver as 4 ressalvas remanescentes da Fase 3.1. Sem reorganizar grupos, sem alterar RLS/permissões de negócio, sem migrations, sem remover funcionalidades.
+Alteração puramente **declarativa e visual** na fonte central de navegação. Nenhuma rota, componente, hook, RPC, permissão ou regra de negócio será modificada. Financeiro, Financeiro B2B, Inteligência e Administração ficam intocados.
 
-## Escopo verificado no código atual
+## Estado atual detectado
 
-- **`/app/*`**: já protegida por `AppPortalGuard` (RPC `has_technical_access`) + `TechnicalFeatureGuard` / `ProducerFeatureGuard`. A autorização real **não** depende do `ACCESS_MAP` — este está omisso para `/app*`, o que gera falso-negativo na busca da sidebar e nos testes de permissão que consultam `canAccess`.
-- **Item pai "Dashboard"** (`src/config/navigation.ts`): tem `route: "/dashboard/geral"`, mas o componente `AppSidebar` marca `isActive` via `isNavItemActive(item, pathname)`, que testa também `matchRoutes`. Já contém `/dashboard/executivo` e `/dashboard/operacional` em `matchRoutes` — porém, quando um filho está ativo, o pai e o filho ficam ambos marcados como ativos simultaneamente com o mesmo estilo, e o filho **não** ganha destaque diferenciado. Falta também estado "parcialmente ativo" (aria) e não há `aria-expanded` no pai.
-- **`VisaoGeral`**: consome exclusivamente `useExecutivoResumo`. Um `error` colapsa todos os cards em "Indisponível" sem ação de retry e sem separação visual entre blocos executivos (dependentes da RPC) e blocos operacionais (que poderiam ter fontes próprias). Os atalhos e navegação já são estáticos e não quebram.
-- **Lint**: `package.json` **já tem** `"lint": "eslint ."` e existe `eslint.config.js` na raiz — cenário A. Basta executar e corrigir apenas o que estiver em arquivos das Fases 2/3/3.1/3.2.
+Fonte única: `src/config/navigation.ts` (consumida por `AppSidebar.tsx` via `desktopItemsBySection()` e `MobileLayout.tsx` via `itemsForPlatform()`).
 
-## Parte 1 — Proteção explícita de `/app/*` no ACCESS_MAP
+Seções desktop hoje: `Menu Principal`, `Operação`, `Técnico / Auditoria`, `Financeiro`, `Financeiro B2B`, `Comercial`, `Gestão e Estratégico`.
 
-Adicionar entradas em `src/lib/permissions.ts` refletindo exatamente os perfis já autorizados por `AppPortalGuard` + guards de feature. **Nenhuma permissão nova é concedida**; a mudança apenas espelha o que já é enforced em runtime, permitindo que `canAccess()` (usado por sidebar/busca/testes) reconheça as rotas.
+Itens em escopo estão espalhados entre `Menu Principal`, `Operação`, `Técnico / Auditoria`, `Comercial` e `Gestão e Estratégico`. Campo `subSection` já existe no tipo `NavItem` mas ainda não é usado como header visual na sidebar.
 
-Regra alvo (idêntica à do runtime):
+## Arquivos a editar
 
-```
-/app                    → administrador, cliente_produtor, consultor_tecnico, tecnico_agronomo, aplicador
-/app/perfil             → mesmos + parceiro_b2b_tecnico se já tiver has_technical_access
-/app/notificacoes       → mesmos de /app
-/app/fazendas           → administrador, consultor_tecnico, tecnico_agronomo, aplicador  (Technical)
-/app/registrar          → idem Technical
-/app/registros          → idem Technical
-/app/ordens             → idem Technical
-/app/solicitacoes       → idem Technical
-/app/checkin[/:id]      → idem Technical
-/app/visita[/:id|/novo] → idem Technical
-/app/talhao/:id         → idem Technical
-/app/catalogo           → idem Technical
-/app/recomendacoes      → administrador, cliente_produtor  (Producer)
-/app/entregas           → idem Producer
-/app/aplicacoes[/lista] → idem Producer
-/app/solicitar          → idem Producer
-```
+1. **`src/config/navigation.ts`** — reatribuir `section`, adicionar `subSection`, `order` e expandir `searchKeywords` dos itens em escopo. Adicionar as três novas seções ao tipo `NavSection` e ao `DESKTOP_SECTION_ORDER`. Manter os itens fora de escopo inalterados. Nenhuma rota, `matchRoutes`, `legacyRoutes`, `badge`, `badgeSlot`, `allowedRoles`, `platforms`, `children`, `icon` ou `id` será alterado.
 
-Para evitar duplicação, criar duas constantes no topo de `permissions.ts`:
+2. **`src/components/AppSidebar.tsx`** — renderizar headers de `subSection` (labels menores, agrupando itens contíguos dentro de cada grupo). Preservar: busca, destaque de rota ativa, `aria-current`, `aria-expanded`, colapsada com tooltips, drawer mobile, ordenação por `order`, persistência de grupo aberto.
 
-```ts
-const APP_TECHNICAL_ROLES = ["administrador","consultor_tecnico","tecnico_agronomo","aplicador"] as const;
-const APP_PRODUCER_ROLES  = ["administrador","cliente_produtor"] as const;
-```
+3. **`src/config/navigation.ts` (função `desktopItemsBySection`)** — passar a ordenar itens dentro do grupo pelo campo `order` para garantir a ordem visual obrigatória.
 
-e usá-las para gerar as entradas do `ACCESS_MAP`. `isMobileProfile` permanece intocado (é usado só por `getHomeForRole` / labels). Os guards em runtime permanecem — o ACCESS_MAP é a segunda camada declarativa, não substituta.
+4. **Breadcrumbs** — auditar componentes de breadcrumb existentes; se derivarem de `section`/`subSection`, atualização é automática. Se estáticos por página, ajustar apenas os títulos visuais das páginas em escopo (ver Parte 6 do prompt). Nenhuma renomeação interna.
 
-Testes: adicionar cobertura em `src/test/multiportal.guards.test.tsx` (ou novo `src/test/permissions.mobile.test.ts`) para `canAccess(role, "/app/...")` de todos os 13 perfis.
+5. **Testes** — atualizar `src/test/sidebar.dashboard.active.test.tsx` só se as asserções dependerem de nomes de section antigos dos itens movidos. Novos testes: um verificando que cada item em escopo cai na section+subSection correta e na ordem esperada; um verificando que as searchKeywords antigas ainda encontram os itens ("dashboard-b2b", "consultor", "propriedade", "os", etc.).
 
-## Parte 2 — Realce do item pai Dashboard
+## Nova estrutura declarativa
 
-Alterar `src/components/AppSidebar.tsx` e (se necessário) `src/lib/navigation/matchActive.ts`:
+### COMERCIAL E RELACIONAMENTO
 
-1. Introduzir helper `isNavItemActiveSelf(item, pathname)` que ignora `matchRoutes` para saber se **o próprio route** do item bate exatamente. O item filho passa a receber `isActive` só quando `pathname` casa com seu `route`.
-2. O item pai (`Dashboard`) continua usando `isNavItemActive` (que já cobre `matchRoutes` + `legacyRoutes`), mas ganha classe visual "parcialmente ativo" (fundo `sidebar-accent/60`, sem `text-sidebar-primary`) quando um filho está ativo e o pathname não é a rota do próprio pai.
-3. Renderizar o pai como `<button>`/`NavLink` com `aria-expanded={hasChildren && !collapsed}` e `aria-controls` do bloco de filhos.
-4. Manter clique do pai levando a `/dashboard/geral` (route atual já é essa) preservando query string e hash: usar `NavLink to={{ pathname: item.route, search: keepSearch ? search : "" }}` **apenas** se estivermos numa das legacyRoutes; caso contrário `to={item.route}`. Comportamento simples: sempre `to={item.route}` — a preservação de query/hash já é responsabilidade dos redirects `PreservedNavigate` das rotas `/executivo` e `/painel-operacional`.
-5. Drawer mobile (`MobileLayout`): confirmar se renderiza itens com children; se não renderiza (só usa tabs), o realce mobile de "Dashboard" não se aplica (rota `/app` é outra árvore) — documentar isso.
-6. Sidebar recolhida (`collapsed`): filhos ficam ocultos (comportamento atual). Garantir que o pai continua com estado ativo/parcial quando qualquer filho é a rota atual.
-
-Testes: `src/test/sidebar.dashboard.active.test.tsx` cobrindo `pathname` = `/dashboard/geral`, `/dashboard/executivo`, `/dashboard/operacional`, `/executivo`, `/painel-operacional`, e `/clientes` (nenhum ativo).
-
-## Parte 3 — Resiliência da Visão Geral
-
-Editar `src/pages/dashboard/VisaoGeral.tsx` sem tocar `useExecutivoResumo`, sem alterar RLS/RPC. Objetivo: distinguir estados e localizar a falha.
-
-1. **Classificação dos blocos** — separar visualmente (mesmo arquivo, seções):
-   - **A. Bloco Executivo** (dependente de `rpc_executivo_resumo_geral`): "Saúde Operacional", "Clientes ativos", "Receita bruta", contadores agregados.
-   - **B. Blocos Operacionais** (fontes próprias já presentes na página — OS/Lotes/Insumos/Entregas via queries diretas listadas na Fase 3): permanecem independentes; erro em A não afeta B.
-   - **C. Atalhos/Navegação**: sempre visíveis (links para `/dashboard/executivo`, `/dashboard/operacional`, Cockpit).
-2. **Estados do bloco A**:
-   - `isLoading` → skeleton.
-   - `data` presente → renderiza valores (inclusive `0` legítimo).
-   - `error` → **um único card consolidado** substitui os cards executivos com mensagem: "Não foi possível carregar o resumo executivo neste momento. Os demais módulos continuam disponíveis." + botão `Tentar novamente` (chama `resumoQ.refetch()`).
-   - Log técnico via `console.warn` (sem SQL/RLS/detalhes ao usuário).
-3. **Retry**: usar apenas `refetch` manual do React Query já presente. Não configurar `retry` automático adicional (a lib já tem o padrão 3, mantido). Sem loops.
-4. **Blocos operacionais (B)**: cada `useQuery` independente ganha seu próprio estado skeleton/erro/dados, sem cascatear. Já é o padrão do React Query — apenas explicitar `isError` por bloco.
-5. **Nomenclaturas** da Fase 3.1 preservadas ("Clientes ativos", "Receita bruta", períodos "Últimos 30 dias" / "Agora" / "Hoje").
-6. **Atalho Cockpit Laboratório** garantido no rodapé/topo do bloco C, sempre renderizado.
-
-Testes: `src/test/dashboard.visao-geral.resiliencia.test.tsx` com mock de `useExecutivoResumo` cobrindo: sucesso com dados, sucesso com zeros, `error`, `isLoading`. Verificar que atalhos + Cockpit permanecem no DOM em todos os cenários.
-
-## Parte 4 — Lint (cenário A confirmado)
-
-`package.json` já contém `"lint": "eslint ."` e `eslint.config.js` existe.
-
-1. Executar `bun run lint` no estado atual.
-2. Corrigir **apenas** violações em arquivos das Fases 2/3/3.1/3.2:
-   - `src/config/navigation.ts`
-   - `src/lib/navigation/*`
-   - `src/lib/permissions.ts`
-   - `src/components/AppSidebar.tsx`
-   - `src/hooks/useSidebarGroupState.ts`
-   - `src/pages/dashboard/*`
-   - `src/pages/Index.tsx`
-   - `src/App.tsx` (só as linhas de rota de dashboard)
-   - `src/components/PreservedNavigate.tsx`
-3. Não atualizar versões, não refatorar fora do escopo, não silenciar regras globalmente. Warnings pré-existentes fora do escopo ficam registrados no relatório.
-
-## Parte 5 — Bateria de testes
-
-Rodar em ordem e reportar tudo:
-
-```
-bun run typecheck
-bun run build
-bunx vitest run
-bun run lint
+```text
+Visão Comercial
+  1. Dashboard Consolidado          (com-consolidado    → /comercial/dashboard-consolidado)
+  2. Indicadores                    (com-indicadores    → /comercial/indicadores)
+  3. Alertas Comerciais             (com-alertas        → /comercial/alertas)
+Clientes e Propriedades
+  4. Clientes                       (clientes           → /clientes)             [movido de Menu Principal]
+  5. Fazendas                       (fazendas           → /fazendas)             [movido de Gestão e Estratégico]
+Demandas e Vendas
+  6. Solicitações                   (solicitacoes       → /solicitacoes)         [movido de Menu Principal]
+  7. Pedidos B2B                    (com-pedidos-b2b    → /comercial/pedidos-b2b)
+  8. Solicitações B2B               (com-solicitacoes-b2b → /comercial/solicitacoes-b2b)
+  9. Campanhas                      (com-campanhas      → /comercial/campanhas)
+Produtos e Planejamento
+ 10. Catálogo                       (com-catalogo       → /comercial/catalogo)
+ 11. Protocolos                     (protocolos         → /protocolos)           [movido de Gestão e Estratégico]
+ 12. Simulador                      (com-simulador      → /comercial/simulador)
 ```
 
-Novos testes automatizados:
-- `src/test/permissions.mobile.test.ts` — 13 perfis × rotas mobile.
-- `src/test/sidebar.dashboard.active.test.tsx` — pai/filho e pathnames legacy.
-- `src/test/dashboard.visao-geral.resiliencia.test.tsx` — 4 estados da RPC + presença dos atalhos.
+### CAMPO E ASSISTÊNCIA TÉCNICA
 
-Cenários manuais (documentados no relatório, não bloqueantes):
-- Login/redirect por perfil já validado nas Fases 3/3.1.
-- Verificação visual do drawer mobile (sem realce de "Dashboard" pois `/app` é outra árvore).
-
-## Arquivos a alterar
-
-```
-src/lib/permissions.ts                                    (Parte 1)
-src/components/AppSidebar.tsx                             (Parte 2)
-src/lib/navigation/matchActive.ts                         (Parte 2, se necessário helper novo)
-src/pages/dashboard/VisaoGeral.tsx                        (Parte 3)
-src/test/permissions.mobile.test.ts                       (novo)
-src/test/sidebar.dashboard.active.test.tsx                (novo)
-src/test/dashboard.visao-geral.resiliencia.test.tsx       (novo)
+```text
+ 1. Agenda Técnica          (agenda-tecnica       → /agenda-tecnica)         [de Menu Principal]
+ 2. Visita Técnica          (visita-tecnica       → /visita-tecnica)         [de Menu Principal]
+ 3. Aplicações              (aplicacoes           → /aplicacoes)             [de Operação]
+ 4. Equipe Técnica          (equipe-tecnica       → /consultor-tecnico)      [de Gestão e Estratégico]
+ 5. Fluxo Técnico           (fluxo-tecnico        → /fluxo-tecnico)          [de Gestão e Estratégico]
+ 6. Monitoramento           (monitoramento        → /monitoramento-alertas)  [de Gestão e Estratégico]
+ 7. Previsão Climática      (previsao-climatica   → /previsao-agronomica)    [de Gestão e Estratégico]
 ```
 
-Nenhum arquivo removido. Nenhuma migration. Nenhuma alteração em Edge Functions, RLS, `is_executivo` ou permissões de RPC.
+Sem subseções (conforme "não criar subníveis desnecessários").
 
-## Relatório final incluirá
+### PRODUÇÃO ON-FARM
 
-A. Arquivos analisados · B. Arquivos alterados · C. Matriz `/app/*` → perfis · D. Perfis autorizados em `/app` · E. Perfis bloqueados em `/app` · F. Diff resumido do `ACCESS_MAP` · G. Lógica pai/filho ativo · H. Comportamento sidebar expandida/recolhida/mobile · I. Dependências da RPC executiva · J. Blocos preservados em falha · K. Retry manual via `refetch` · L. typecheck · M. build · N. lint (executado — resultado real) · O. Testes por perfil · P. Riscos residuais · Q. Recomendação sobre Fase 4.
+```text
+Acompanhamento
+ 1. Dashboard Produção            (dashboard-producao     → /operacao/dashboard-producao)
+Central Operacional
+ 2. Cockpit Laboratório           (cockpit-lab            → /cockpit-laboratorio)   [destaque visual mantido]
+Fluxo de Produção
+ 3. Planejamento Produção         (planejamento-producao  → /operacao/planejamento)
+ 4. Ordens de Serviço             (ordens-servico         → /ordens-servico)
+ 5. Lotes                         (lotes                  → /lotes)                 [badge Técnico preservado]
+ 6. Controle de Qualidade         (cq                     → /controle-qualidade)    [badge Técnico preservado]
+ 7. Envase                        (envase                 → /envase)                [badge Técnico preservado]
+ 8. Estoque                       (estoque                → /estoque)
+ 9. Entregas                      (entregas               → /entregas)
+```
 
-Fase 4 permanece bloqueada até auditoria desta fase.
+Cockpit Laboratório: mesma rota, mesmo componente, mesma permissão, mesmo destaque visual (`isCockpit && isProducao` no AppSidebar). Apenas troca `section` de `Operação` para `Produção On-Farm` e recebe `subSection: "Central Operacional"` e `order: 2`.
+
+### Grupos remanescentes
+
+- `Menu Principal` fica com: Dashboard, BI Agronômico, Portal do Produtor, Configurações.
+- `Operação`, `Técnico / Auditoria` e `Gestão e Estratégico` esvaziados dos itens realocados. `Gestão e Estratégico` retém: Relatórios, BI Operacional, Alertas, Auditorias. `Operação` e `Técnico / Auditoria` ficam sem itens dentro do escopo desta fase — serão removidos de `DESKTOP_SECTION_ORDER` apenas se ficarem vazios após a movimentação (a função `desktopItemsBySection` já filtra grupos vazios, então não é imprescindível remover do enum, mas fica mais limpo).
+- Financeiro, Financeiro B2B, Mobile Consultor, Mobile Produtor: **intocados**.
+
+## Palavras-chave (Parte 5)
+
+Serão mescladas às já existentes (nunca substituídas). Exemplos-chave preservados: "produtor", "parceiro", "consultor", "os", "lote", "cq", "clima", "consolidado", "b2b". Adições conforme lista da Parte 5 do prompt.
+
+## Ordem visual
+
+`desktopItemsBySection` será ajustada para retornar `items.sort((a,b) => (a.order ?? 999) - (b.order ?? 999))`. Cada item em escopo receberá `order` de 1..12 (Comercial), 1..7 (Campo), 1..9 (Produção) conforme tabelas acima. Itens fora de escopo mantêm `order` indefinido → caem no fallback 999 sem afetar seções não tocadas.
+
+## Renderização de subSection na Sidebar
+
+Alteração mínima em `AppSidebar.tsx`, dentro do map de `groups`: agrupar `items` por `subSection` mantendo ordem, e renderizar um pequeno header (`<div className="px-2 pt-2 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">`) entre blocos. Itens sem `subSection` são renderizados diretamente sob o grupo (comportamento atual). Colapsada: headers ocultos, itens continuam com tooltip.
+
+## Breadcrumbs (Parte 6)
+
+Auditar `src/components/**` procurando `breadcrumb`. Se implementação for derivada de `navigation.ts` via `section`/`subSection`, atualização é automática. Se estiver hardcoded por página, alterar apenas as strings visuais (sem tocar em títulos funcionais internos). Truncamento acessível no mobile mantido.
+
+## Preservação — checklist executado antes de commitar
+
+- Todas as rotas atuais continuam alcançáveis pelas mesmas URLs.
+- `matchRoutes` e `legacyRoutes` inalterados → redirecionamentos antigos seguem funcionando.
+- Badges "Técnico" (Lotes, CQ, Envase) preservados.
+- `badgeSlot: "alertas"` preservado em Alertas.
+- Nenhum `allowedRoles` novo introduzido; `canAccess()` continua sendo a fonte de verdade.
+- Destaque especial do Cockpit (`isCockpit && isProducao`) permanece — depende de `item.route`, não de `section`.
+- Busca continua respeitando permissões via `canAccess`.
+- `useSidebarGroupState` persistência funciona com nomes novos (chave é a string da section).
+
+## Validações técnicas (Parte 9)
+
+- `bun run typecheck`
+- `bun run build`
+- `bunx vitest run` (315 atuais + testes novos de reorganização)
+- Playwright rápido: `/comercial/dashboard-consolidado`, `/cockpit-laboratorio`, `/agenda-tecnica`, `/fazendas` — verificar que aparecem nos novos grupos, que a busca por termos antigos ("dashboard-b2b", "consultor", "os") localiza, e que a rota ativa realça o grupo/subseção corretos.
+- Console/network limpos.
+- Lint: registrado como indisponível (dívida aceita); não instalar.
+
+## Fora de escopo
+
+- Financeiro, Financeiro B2B, Inteligência, Administração.
+- Conteúdo interno das páginas.
+- Roteamento inicial por perfil.
+- Rotas mobile e `AppPortalGuard`.
+- `ACCESS_MAP` e `permissions.ts`.
+- Sidebar colapsada (comportamento de design aceito).
+- Configuração de lint.
+
+## Relatório final
+
+Ao concluir, entrega estruturada A–W conforme prompt: matriz antes/depois, listas de rotas/componentes/permissões/badges preservados, resultado por perfil, resultados desktop/tablet/mobile, typecheck/build/testes, situação do lint, riscos residuais e recomendação para auditoria da Fase 4. Fase 5 **não** será iniciada.
