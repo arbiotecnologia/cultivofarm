@@ -403,15 +403,14 @@ describe("Fase 3.8 · (J) Preservação das fases anteriores", () => {
     expect(existsSync(resolve(__dirname, "../../../", rel))).toBe(true);
   });
   test("entrypoint 3.9 (fiscal-preflight) não importa provedor/service_role", () => {
-    // Nota: o entrypoint foi materializado na Fase 3.9. Validação server-side
-    // completa vive em fase3_9.static.test.ts; aqui apenas garantimos que ele
-    // não regride a barreira fail-closed da 3.8.
     const p = resolve(__dirname, "../../../supabase/functions/fiscal-preflight/index.ts");
-    if (!existsSync(p)) return; // fase 3.9 pode não estar aplicada em rollback
-    const src = readFileSync(p, "utf8");
-    expect(src).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
-    expect(src).not.toMatch(/service_role/i);
-    expect(src).not.toMatch(/sefaz|focusnfe|webmania|nfe\.io/i);
+    if (!existsSync(p)) return;
+    const srcNoComments = readFileSync(p, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+    expect(srcNoComments).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
+    expect(srcNoComments).not.toMatch(/service_role/i);
+    expect(srcNoComments).not.toMatch(/sefaz|focusnfe|webmania|nfe\.io/i);
   });
   test("README documenta decisão de entrypoint", () => {
     const r = readFileSync(
