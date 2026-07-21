@@ -1,106 +1,91 @@
-## Fase Fiscal 2.1 — Hardening da Fundação Fiscal
 
-Escopo estritamente aditivo e defensivo. Sem provedor, sem certificado, sem token, sem webhook, sem homologação, sem produção, sem alterar regras financeiras/motor B2B. Nada da Fase Fiscal 3 será iniciado.
+## Fase Fiscal 3.0 — Gates Técnicos
 
-### 1. Reconciliação da migration (canonizar)
-1. Snapshot atual do banco: `pg_dump --schema-only` das 8 tabelas novas + colunas aditivas de `fiscal_invoices`/`financial_documents` + views (via `psql`) → `restoration/fiscal_fase2_applied_schema.sql` (referência).
-2. Copiar `restoration/fiscal_fase2_fundacao.sql` para `supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql`, envelopando **todo** DDL em guards idempotentes: `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `CREATE OR REPLACE VIEW/FUNCTION`, `DROP POLICY IF EXISTS` antes de `CREATE POLICY`, `CREATE TRIGGER` protegido por `pg_trigger` lookup.
-3. Registrar no `supabase_migrations.schema_migrations` a versão `20260721000000` sem re-executar o SQL (INSERT direto via `psql`), documentando o procedimento em `docs/fiscal-fase2-1-reconciliacao.md`.
-4. Manter `restoration/fiscal_fase2_fundacao.sql` como referência histórica com header apontando para a migration canônica.
-5. Testar reprodutibilidade em base local vazia (dockerized `postgres:15` + extensões básicas) executando **apenas** a migration versionada.
+Escopo estritamente preparatório. Nenhuma emissão externa, nenhum provedor, nenhum certificado, nenhum token, nenhuma alteração em regras de negócio. Não iniciar 3.1 sem aceite explícito.
 
-### 2. Auditoria do schema real
-Coletar via `information_schema` + `pg_catalog`:
-- tabelas, colunas, tipos, defaults, nullability, checks, FKs, uniques, índices, triggers, funções, policies, grants, owners, `reloptions` das views.
-- Diff triplo: (planejado no plano) × (migration canônica) × (schema aplicado). Divergências publicadas em `docs/fiscal-fase2-1-schema-diff.md`.
+### Restrições absolutas (das decisões do responsável)
+- Sem `SUPABASE_ACCESS_TOKEN`, `service_role`, senha de banco, JWT secret ou connection string em arquivos/logs/env versionados.
+- Não criar/excluir usuários no projeto real.
+- Não inserir dados sintéticos no banco real. Sem schema `fiscal_test` em produção.
+- `supabase/migrations/` passa a ser o diretório canônico. `restoration/migrations/` deixa de ser fonte.
+- Nenhum `as any` novo, nenhum `@ts-ignore`, nenhum tipo manual divergente de `types.ts`.
 
-### 3. Correção da unicidade por ambiente (migration aditiva `20260721000001_fiscal_fase2_1_uniqueness.sql`)
-- `DROP INDEX IF EXISTS` do unique antigo `(document_model, series, invoice_number, company_cnpj)`.
-- `CREATE UNIQUE INDEX ... (company_cnpj, document_model, environment, series, invoice_number) WHERE …`.
-- Reavaliar `(provider, environment, provider_reference)` — incluir `document_model` se for necessário.
-- **Não** tocar em `access_key` unique.
+### 1. Canonização das migrations fiscais (`supabase/migrations/`)
+1. Mover, byte-a-byte, os dois arquivos já aplicados no banco:
+   - `restoration/migrations/20260721000000_fiscal_fase2_fundacao.sql` → `supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql`
+   - `restoration/migrations/20260721010000_fiscal_fase2_1_hardening.sql` → `supabase/migrations/20260721010000_fiscal_fase2_1_hardening.sql`
+2. Garantir que ambas continuam idempotentes (guards `IF NOT EXISTS`, `DROP POLICY IF EXISTS`, `CREATE OR REPLACE`, `ALTER TABLE ... ADD CONSTRAINT` protegido por `pg_constraint` lookup). Sem alterar semântica.
+3. Não reaplicar. Já estão registradas em `supabase_migrations.schema_migrations` (versões `20260721000000` e `20260721010000`). Documentar em `docs/fiscal-fase3-0-migrations-canonicas.md`:
+   - hash SHA-256 de cada arquivo canônico;
+   - procedimento de reconciliação para staging/produção (`INSERT ... ON CONFLICT DO NOTHING` em `schema_migrations`);
+   - procedimento para banco novo (aplicar tudo em ordem cronológica).
+4. Substituir o conteúdo de `restoration/migrations/*.sql` por um header apontando para a versão canônica (fonte única passa a ser `supabase/migrations/`). Sem apagar histórico.
+5. Se o sandbox bloquear escrita em `supabase/migrations/`: interromper este gate, registrar bloqueio e o patch pronto no relatório. Não voltar a `restoration/` como fonte.
 
-### 4. FKs e ON DELETE (migration `20260721000002_fiscal_fase2_1_fks.sql`)
-Padrão alvo:
-- `product_fiscal_profiles.product_id` → `RESTRICT`
-- `customer_fiscal_profiles.customer_id` → `RESTRICT`
-- `fiscal_invoice_items.fiscal_invoice_id` → `CASCADE` (documentado)
-- `fiscal_events.fiscal_invoice_id` → `RESTRICT`
-- `fiscal_idempotency_keys.fiscal_invoice_id` → `SET NULL`
-- `financial_documents.fiscal_invoice_id` → `RESTRICT`
-- `parent_invoice_id`, `substitution_invoice_id` → `RESTRICT`
-Usar `ALTER TABLE ... DROP CONSTRAINT ... ADD CONSTRAINT ...` idempotente.
+### 2. Preparação da regeneração de `types.ts` (sem executar)
+1. Criar `docs/fiscal-fase3-0-types-regen.md` com:
+   - comando exato (`npx supabase gen types typescript --project-id navfzbwgwzruipouyfnk --schema public > src/integrations/supabase/types.ts`);
+   - pré-requisitos (CLI autenticada externamente, sem token no repo);
+   - checklist de validação pós-geração (typecheck, build, vitest, diff de superfície).
+2. Criar `scripts/verify-fiscal-types.ts` que, quando o arquivo novo for adicionado, verifica presença das tabelas/colunas fiscais esperadas (whitelist estática) e falha com mensagem clara se ausentes. Não inventa tipos.
+3. Status permanece **AGUARDANDO TYPES GERADOS EXTERNAMENTE** até o arquivo ser fornecido. Nenhum `as any` novo introduzido nesta fase.
 
-### 5. Endurecimento de `fiscal_events` (migration `…_events_hardening.sql`)
-- `REVOKE INSERT/UPDATE/DELETE` de authenticated.
-- Bloquear `UPDATE`/`DELETE` por policy `USING (false)`.
-- RPC `rpc_fiscal_event_manual(p_invoice_id, p_event_type, p_notes)` `SECURITY DEFINER`, `search_path=public`, whitelisting apenas `MANUAL_NOTE`, `MANUAL_CORRECTION`, `MANUAL_RECONCILIATION`. `event_source='USER'`, `performed_by=auth.uid()`. Rejeita `PROVIDER|WEBHOOK|SYSTEM|SEFAZ|NFSE_NACIONAL`.
-- Grant `EXECUTE` a `administrador|gestor|financeiro` via check interno da própria função.
+### 3. Harness RLS runtime (implementado, não executado)
+1. Novo diretório `src/test/fiscal/rls/`:
+   - `matrix.ts` — matriz declarativa `perfil × tabela × operação → esperado (allow|deny)` cobrindo os 15 perfis listados (`administrador`, `gestor`, `financeiro`, `administrativo`, `gestor_comercial`, `consultor_tecnico`, `tecnico_agronomo`, `aplicador`, `operador_onfarm`, `producao`, `cliente_produtor`, `parceiro_b2b`, `parceiro_b2b_tecnico`, `authenticated_sem_papel`, `anon`) × 8 tabelas fiscais × {SELECT, INSERT, UPDATE, DELETE} + views `v_fiscal_*` + RPC `rpc_fiscal_event_manual`.
+   - `runner.ts` — dado `PGURL_STAGING` + `JWT_<ROLE>` no env, executa cada célula via PostgREST (`fetch` com header `Authorization`/`apikey`) e via `pg` client. Skip explícito quando envs ausentes (nunca em silêncio).
+   - `harness.test.ts` — vitest que carrega a matriz. Em ambientes sem envs de staging, marca `test.skip` com mensagem "EXECUÇÃO RUNTIME PENDENTE EM STAGING".
+2. `docs/fiscal-fase3-0-rls-harness.md`: como preparar staging, como injetar JWTs sem persistir, como interpretar o relatório.
+3. Nenhum usuário criado. Nenhum SQL executado no banco real.
 
-### 6. Endurecimento de `fiscal_audit_log` (migration `…_audit_hardening.sql`)
-- Revisar `public.fiscal_audit_trigger`: `SECURITY DEFINER`, `SET search_path = public, pg_temp`, referências schema-qualificadas.
-- `REVOKE ALL ON fiscal_audit_log FROM authenticated` (só `SELECT` para `administrador`); INSERT apenas via trigger.
-- Allowlist de tabelas auditadas dentro do trigger.
-- Função `mask_sensitive_jsonb(jsonb)` removendo chaves: `authorization|token|password|senha|certificate|certificado|private_key|secret|pfx|p12|Authorization` (case-insensitive). Aplicada em `old_data`/`new_data` antes do INSERT.
-- `performed_by := auth.uid()` sempre — nunca do payload.
+### 4. Backfill sintético — Opção B (preparado, não executado)
+1. Novo diretório `restoration/backfill-fiscal-fase3/`:
+   - `fixtures.sql` — 12 registros pré-migration (produtos, clientes, invoices legados) representando os casos da spec.
+   - `01-prepare.sql` — cria schema temporário isolado (em banco Docker local, nunca no projeto real).
+   - `02-apply-migrations.sh` — aplica em ordem: fundação → hardening.
+   - `03-verify.sql` — asserções (`SELECT ... EXCEPT`) para cada invariante da Fase 2.
+   - `99-cleanup.sql` — `DROP SCHEMA ... CASCADE`.
+   - `README.md` — instruções para rodar via `docker run postgres:15` local.
+2. Status: **TESTE PREPARADO — EXECUÇÃO PENDENTE EM STAGING**.
 
-### 7. Views: garantir `security_invoker=true`
-Migration `…_views_security_invoker.sql`: `ALTER VIEW … SET (security_invoker = true)` em todas as 5 views. Confirmar via `pg_class.reloptions`.
+### 5. Validação do mascaramento recursivo (`mask_sensitive_jsonb`)
+1. `src/test/fiscal/mask.test.ts`: testes unitários puros TypeScript que espelham o contrato da função SQL (casos: chaves de topo, chaves aninhadas em objetos/arrays, case-insensitive, chaves parciais `Authorization`, chaves não sensíveis preservadas). Referência: contrato documentado.
+2. `src/test/fiscal/rls/mask.sql.test.ts`: executa a função real via `pg` client quando `PGURL_STAGING` presente; skip caso contrário.
+3. Documentar limites em `docs/fiscal-fase3-0-mask.md`.
 
-### 8. Decisão sobre perfil `administrativo` em `fiscal_invoice_items`
-Proposta: **remover** SELECT (justificativa: administrativo cuida de faturamento agregado, não de linhas fiscais). Migration `…_admin_items_revoke.sql` com `DROP POLICY` correspondente. Decisão registrada em `docs/fiscal-fase2-1-relatorio.md`.
+### 6. Scan de segurança
+1. Rodar `scripts/fiscal-security-scan.sh` — deve permanecer verde.
+2. Rodar `secrets--fetch_secrets` e registrar ausência de segredos fiscais no relatório.
 
-### 9. Testes de RLS reais em banco (novo diretório `src/test/fiscal/rls/`)
-Suíte usando `pg` client conectando via `PGHOST` com cada JWT sintético (obtidos via `admin-create-user` já existente ou tokens gerados). Cobre 15 perfis × 8 tabelas × 4 operações. Ambiente pulável quando `PGHOST` ausente (skip com aviso), garantindo CI local. Também um teste PostgREST via `fetch` para 3 tabelas críticas.
-
-### 10. Testes de constraints e substituição (`src/test/fiscal/constraints.test.ts`)
-Inserções via `psql` numa transação `ROLLBACK`-only cobrindo os 11 casos listados. Ciclos de substituição detectados por trigger (adicionar em `…_substitution_guard.sql` se não existir).
-
-### 11. Testes de backfill sintético (`src/test/fiscal/backfill.test.ts`)
-Cria banco temporário (docker), carrega 12 registros pré-migration, aplica a migration versionada, valida cada asserção da spec (§10).
-
-### 12. Regeneração de tipos
-Executar geração de tipos Supabase → `src/integrations/supabase/types.ts`. Substituir os `as any` já introduzidos onde possível. Nenhum `@ts-ignore` novo.
-
-### 13. Testes de interface
-Snapshot/contract tests garantindo:
-- Copy "Registro e acompanhamento…" presente.
-- Banner respeita `isLoading`, `isError`, empty.
-- Nenhum botão contendo "Emitir"/"Transmitir"/"Certificado" existe nas telas fiscais.
-
-### 14. Grep de segurança + inventário de segredos
-Script `scripts/fiscal-security-scan.sh` (novo) rodando `rg` para a lista de termos. Falha se qualquer match. Executar `secrets--fetch_secrets` para confirmar ausência de segredos fiscais.
-
-### 15. Validações finais
+### 7. Validações finais
 - `bun run typecheck`
 - `bun run build`
 - `bunx vitest run`
-- `bun run lint` (registro)
-- ESLint focado apenas em arquivos alterados
+- ESLint apenas nos arquivos alterados nesta fase.
+- Lint global: registrar resultado, não bloquear.
+
+### 8. Relatório `docs/fiscal-fase3-0-relatorio.md` (itens A–Q exigidos)
+Estrutura fixa: A. Classificação · B. Arquivos alterados · C. Migrations canônicas · D. `types.ts` · E. Harness RLS · F. Matriz planejada · G. Fixtures backfill · H. Mascaramento recursivo · I. Scan de secrets · J. Typecheck · K. Build · L. Testes · M. ESLint · N. Gates aprovados · O. Gates pendentes · P. Bloqueios · Q. Recomendação.
 
 ### Entregáveis
-- `supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql` (canônica idempotente)
-- `supabase/migrations/2026072100000{1..7}_*.sql` (hardening incremental)
-- `docs/fiscal-fase2-1-reconciliacao.md`
-- `docs/fiscal-fase2-1-schema-diff.md`
-- `docs/fiscal-fase2-1-relatorio.md` (itens A–AC)
-- `src/test/fiscal/rls/*`, `src/test/fiscal/constraints.test.ts`, `src/test/fiscal/backfill.test.ts`, `src/test/fiscal/ui.copy.test.tsx`
-- `scripts/fiscal-security-scan.sh`
-- `src/integrations/supabase/types.ts` regenerado
+- `supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql`
+- `supabase/migrations/20260721010000_fiscal_fase2_1_hardening.sql`
+- `restoration/migrations/*` reduzidos a stubs apontando para a canônica
+- `docs/fiscal-fase3-0-migrations-canonicas.md`
+- `docs/fiscal-fase3-0-types-regen.md`
+- `docs/fiscal-fase3-0-rls-harness.md`
+- `docs/fiscal-fase3-0-mask.md`
+- `docs/fiscal-fase3-0-relatorio.md`
+- `scripts/verify-fiscal-types.ts`
+- `src/test/fiscal/rls/{matrix.ts,runner.ts,harness.test.ts,mask.sql.test.ts}`
+- `src/test/fiscal/mask.test.ts`
+- `restoration/backfill-fiscal-fase3/{fixtures.sql,01-prepare.sql,02-apply-migrations.sh,03-verify.sql,99-cleanup.sql,README.md}`
 
 ### Fora de escopo (bloqueado)
-Emissão real, Focus/SEFAZ/NFS-e, certificados, tokens, webhooks fiscais, Edge Functions fiscais, mudanças em regras financeiras/motor B2B/entregas/estoque, ativação de produção, unicidade em `receivable_id`/`delivery_id`, início da Fase Fiscal 3.
+Fases 3.1 a 3.6, integração de provedor, certificado, tokens, NF-e, NFS-e, criação de usuários, execução runtime em banco real, geração externa de `types.ts`.
 
-### Detalhes técnicos
-```text
-Ordem de execução:
-  1. Snapshot          -> restoration/fiscal_fase2_applied_schema.sql
-  2. Migration canônica -> insert em schema_migrations (sem reaplicar)
-  3. Migrations de hardening (idempotentes) aplicadas via psql
-  4. Regeneração de tipos
-  5. Suítes: rls -> constraints -> backfill -> ui -> security-scan
-  6. typecheck / build / vitest / lint
-  7. Relatório A-AC
-```
+### Gates de saída
+- **APROVADO** só se: migrations canonizadas sem divergência, harness completo, fixtures completas, mask tests verdes, scan verde, typecheck/build/vitest verdes.
+- **AGUARDANDO EXTERNO** para: execução RLS runtime, execução backfill, regeneração `types.ts`.
 
-Aguardando autorização explícita para executar. Confirmo que aplico as migrations via a connection string já em uso ou prefere revisar cada arquivo SQL antes?
+Ao concluir, apresento o relatório A–Q e aguardo aceite explícito antes da Fase 3.1.
