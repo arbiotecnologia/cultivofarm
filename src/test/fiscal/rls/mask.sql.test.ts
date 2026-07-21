@@ -17,8 +17,9 @@ type PgClient = {
 async function loadPg(): Promise<
   (new (o: { connectionString: string }) => PgClient) | null
 > {
+  const modName = "pg";
   try {
-    const mod = (await import(/* @vite-ignore */ "pg")) as {
+    const mod = (await import(/* @vite-ignore */ modName)) as {
       Client: new (o: { connectionString: string }) => PgClient;
     };
     return mod.Client;
