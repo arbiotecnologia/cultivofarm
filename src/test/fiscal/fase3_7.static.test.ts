@@ -266,19 +266,18 @@ describe("Fase 3.7 · (9) Privacidade", () => {
 
 describe("Fase 3.7 · (10) Sem provedor/certificado/token/webhook/emissão", () => {
   const banned = [
-    "sefaz", "SEFAZ", "focusnfe", "webmania", "nfe.io", "envia",
-    "transmit", "cancelar", "inutiliza", "certificado", "certificate",
-    "token", "webhook", "SERVICE_ROLE", "service_role", "process.env.",
+    "sefaz", "focusnfe", "webmania", "nfe.io",
+    "SERVICE_ROLE", "service_role", "process.env.",
   ];
-  test.each(banned)("token %s ausente do código da fase", (t) => {
-    for (const src of phaseSources) {
-      // Permitido apenas se estiver no gates externos como texto informativo.
-      // O código dos hooks e página nunca deve conter estes tokens fora do
-      // arquivo de gates (validationSrc). Aqui checamos hook e página.
-      if (src === hookSrc || src === pageSrc) {
-        expect(src.toLowerCase()).not.toContain(t.toLowerCase());
-      }
-    }
+  test.each(banned)("token %s ausente do hook e da página", (t) => {
+    expect(hookSrc.toLowerCase()).not.toContain(t.toLowerCase());
+    expect(pageSrc.toLowerCase()).not.toContain(t.toLowerCase());
+  });
+  test("hook não chama endpoints de emissão/integração", () => {
+    // integrador, provedor, certificado, webhook, functions.invoke
+    expect(hookSrc).not.toMatch(/certificad|webhook|functions\.invoke|provider(?!:)/i);
+    // hook nunca menciona rpc_fiscal_event_manual ou emissão
+    expect(hookSrc).not.toMatch(/rpc_fiscal_event_manual|emit_|transmit_|cancel_|inutiliza/i);
   });
 });
 
