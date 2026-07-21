@@ -224,7 +224,32 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/financeiro/b2b/central-governanca": { administrador: "rw", gestor: "rw", financeiro: "rw" },
   "/financeiro/b2b/regras": { administrador: "rw", gestor: "rw", financeiro: "rw" },
   "/executivo/socios-b2b": { administrador: "rw", gestor: "rw" },
+
+  // ── Portal Mobile `/app/*` (Fase 3.2) ───────────────────────────────────
+  // Compartilhado técnico + produtor
+  "/app": rw(APP_SHARED_ROLES),
+  "/app/perfil": rw(APP_SHARED_ROLES),
+  "/app/notificacoes": rw(APP_SHARED_ROLES),
+  // Somente técnico
+  "/app/fazendas": rw(APP_TECHNICAL_ROLES),
+  "/app/registrar": rw(APP_TECHNICAL_ROLES),
+  "/app/registros": rw(APP_TECHNICAL_ROLES),
+  "/app/ordens": rw(APP_TECHNICAL_ROLES),
+  "/app/solicitacoes": rw(APP_TECHNICAL_ROLES),
+  "/app/checkin": rw(APP_TECHNICAL_ROLES),
+  "/app/checkin/:solicitacaoId": rw(APP_TECHNICAL_ROLES),
+  "/app/visita/novo": rw(APP_TECHNICAL_ROLES),
+  "/app/visita/:id": rw(APP_TECHNICAL_ROLES),
+  "/app/talhao/:id": rw(APP_TECHNICAL_ROLES),
+  "/app/catalogo": rw(APP_TECHNICAL_ROLES),
+  // Somente produtor
+  "/app/recomendacoes": rw(APP_PRODUCER_ROLES),
+  "/app/entregas": rw(APP_PRODUCER_ROLES),
+  "/app/aplicacoes": rw(APP_PRODUCER_ROLES),
+  "/app/aplicacoes/lista": rw(APP_PRODUCER_ROLES),
+  "/app/solicitar": rw(APP_PRODUCER_ROLES),
 };
+
 
 export function getHomeForRole(role: string | null): string {
   if (!role) return "/auth";
