@@ -38,10 +38,10 @@ describe("Fase 4 — reorganização declarativa Comercial/Campo/Produção", ()
     expect(byId("dashboard-producao").subSection).toBe("Acompanhamento");
     expect(byId("cockpit-lab").subSection).toBe("Central Operacional");
     expect(byId("ordens-servico").subSection).toBe("Fluxo de Produção");
-    // Badges Técnico preservados
-    expect(byId("lotes").badge).toBe("Técnico");
-    expect(byId("cq").badge).toBe("Técnico");
-    expect(byId("envase").badge).toBe("Técnico");
+    // Badges "Técnico" removidos por decisão de UX
+    expect(byId("lotes").badge).toBeUndefined();
+    expect(byId("cq").badge).toBeUndefined();
+    expect(byId("envase").badge).toBeUndefined();
   });
 
   it("Rotas críticas preservadas (nenhuma renomeação interna)", () => {
