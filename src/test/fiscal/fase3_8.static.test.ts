@@ -355,6 +355,8 @@ describe("Fase 3.8 · (H) Server-only — nenhum import em src/**", () => {
   test("nenhum arquivo em src importa o módulo server-only", () => {
     const offenders: string[] = [];
     for (const f of files) {
+      // Ignora a própria suíte de testes de contratação da fase.
+      if (/[\\/]src[\\/]test[\\/]/.test(f)) continue;
       const s = readFileSync(f, "utf8");
       if (/supabase\/functions\/_shared\/fiscal\/preflight/.test(s)) offenders.push(f);
     }
