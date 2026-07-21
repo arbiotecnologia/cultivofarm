@@ -190,7 +190,7 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent id={`nav-section-${section}`}>
                     <SidebarGroupContent>
-                      <SidebarMenu>{items.map((it) => renderItem(it))}</SidebarMenu>
+                      <SidebarMenu>{items.map((it) => renderTopLevel(it))}</SidebarMenu>
                     </SidebarGroupContent>
                   </CollapsibleContent>
                 </SidebarGroup>
