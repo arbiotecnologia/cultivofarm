@@ -74,84 +74,105 @@ export default function VisaoGeral() {
         </div>
       </header>
 
-      {/* Linha 1: Saúde + Alertas + Financeiro + Carteira */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card>
+      {/* Bloco A — Executivo (dependente da RPC rpc_executivo_resumo_geral).
+          Em caso de erro: um único card consolidado com Tentar Novamente.
+          Blocos B/C permanecem independentes e continuam disponíveis. */}
+      {resumoErr ? (
+        <Card className="border-destructive/40 bg-destructive/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary" /> Saúde Operacional
+              <AlertTriangle className="h-4 w-4 text-destructive" /> Resumo executivo indisponível
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {resumoQ.isLoading ? <Skeleton className="h-8 w-20" /> : resumoErr ? (
-              <div className="text-sm text-muted-foreground" title="Consulta indisponível">Indisponível</div>
-            ) : (
-              <>
-                <div className="text-3xl font-bold">{saude?.score ?? "—"}</div>
-                <Badge variant="outline" className="mt-1 text-xs">{saude?.classificacao ?? "sem dados"}</Badge>
-              </>
-            )}
-            <p className="text-[10px] text-muted-foreground mt-1">Agora</p>
+          <CardContent className="flex items-start justify-between gap-3 flex-wrap">
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Não foi possível carregar o resumo executivo neste momento.
+              Os demais módulos continuam disponíveis.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => resumoQ.refetch()}
+              disabled={resumoQ.isFetching}
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${resumoQ.isFetching ? "animate-spin" : ""}`} />
+              Tentar novamente
+            </Button>
           </CardContent>
         </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" /> Saúde Operacional
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {resumoQ.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                <>
+                  <div className="text-3xl font-bold">{saude?.score ?? "—"}</div>
+                  <Badge variant="outline" className="mt-1 text-xs">{saude?.classificacao ?? "sem dados"}</Badge>
+                </>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">Agora</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive" /> Alertas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : resumoErr ? (
-              <div className="text-sm text-muted-foreground" title="Consulta indisponível">Indisponível</div>
-            ) : (
-              <div className="text-3xl font-bold">{resumo?.alertas_ativos ?? 0}</div>
-            )}
-            <Link to="/alertas-operacionais" className="text-xs text-primary hover:underline">Ver alertas →</Link>
-            <p className="text-[10px] text-muted-foreground">Agora</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" /> Alertas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : (
+                <div className="text-3xl font-bold">{resumo?.alertas_ativos ?? 0}</div>
+              )}
+              <Link to="/alertas-operacionais" className="text-xs text-primary hover:underline">Ver alertas →</Link>
+              <p className="text-[10px] text-muted-foreground">Agora</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary" /> Receita bruta
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {resumoQ.isLoading ? <Skeleton className="h-8 w-24" /> : resumoErr ? (
-              <div className="text-sm text-muted-foreground" title="Consulta indisponível">Indisponível</div>
-            ) : (
-              <div className="text-2xl font-bold">
-                {resumo?.receita_bruta != null
-                  ? Number(resumo.receita_bruta).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
-                  : "—"}
-              </div>
-            )}
-            <Link to="/financeiro" className="text-xs text-primary hover:underline">Abrir financeiro →</Link>
-            <p className="text-[10px] text-muted-foreground">Últimos 30 dias</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" /> Receita bruta
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {resumoQ.isLoading ? <Skeleton className="h-8 w-24" /> : (
+                <div className="text-2xl font-bold">
+                  {resumo?.receita_bruta != null
+                    ? Number(resumo.receita_bruta).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
+                    : "—"}
+                </div>
+              )}
+              <Link to="/financeiro" className="text-xs text-primary hover:underline">Abrir financeiro →</Link>
+              <p className="text-[10px] text-muted-foreground">Últimos 30 dias</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Clientes ativos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : resumoErr ? (
-              <div className="text-sm text-muted-foreground" title="Consulta indisponível">Indisponível</div>
-            ) : (
-              <div className="text-3xl font-bold">{resumo?.clientes_ativos ?? 0}</div>
-            )}
-            <Link to="/clientes" className="text-xs text-primary hover:underline">Ver clientes →</Link>
-            <p className="text-[10px] text-muted-foreground">Agora</p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" /> Clientes ativos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : (
+                <div className="text-3xl font-bold">{resumo?.clientes_ativos ?? 0}</div>
+              )}
+              <Link to="/clientes" className="text-xs text-primary hover:underline">Ver clientes →</Link>
+              <p className="text-[10px] text-muted-foreground">Agora</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {/* Prioridades imediatas + Fluxo do dia */}
+      {/* Prioridades imediatas + Fluxo do dia — dependem da RPC executiva.
+          Quando ela falha, mantemos o card visível com estado "indisponível"
+          amigável (sem zerar valores) para não bloquear o resto da página. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
@@ -194,6 +215,7 @@ export default function VisaoGeral() {
           </CardContent>
         </Card>
       </div>
+
 
       {/* Situação resumida do laboratório */}
       <Card>
