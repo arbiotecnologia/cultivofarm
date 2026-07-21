@@ -23,6 +23,7 @@ export type FeatureFlagName =
   | "fiscalDocumentManualEventRpc"
   | "fiscalReconciliationUi"
   | "fiscalReconciliationWrite"
+  | "fiscalReadinessCenterUi"
   | "fiscalEmissionEnabled";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
@@ -72,6 +73,14 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
    * e disponibilidade da RPC de eventos manuais.
    */
   fiscalReconciliationWrite: false,
+  /**
+   * Fase Fiscal 3.7 — Habilita a rota `/fiscal/prontidao` (Central de
+   * Prontidão para Homologação — SOMENTE LEITURA). Nunca autoriza
+   * emissão, escrita ou mutação. Menu só é exposto quando `true`
+   * (não é o caso nesta fase). Fonte exclusiva: as 5 views fiscais
+   * canônicas já tipadas.
+   */
+  fiscalReadinessCenterUi: false,
   /** TRAVA DE EMISSÃO. Nunca deve ser `true` nesta fase. Não conecta nada — apenas indica intenção. */
   fiscalEmissionEnabled: false,
 };
