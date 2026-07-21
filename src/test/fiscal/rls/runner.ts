@@ -68,8 +68,8 @@ export function loadRunnerConfigFromEnv(): LoadResult {
     envMarker: values.FISCAL_TEST_ENV,
     projectRef: values.FISCAL_TEST_PROJECT_REF,
   });
-  if (!g.ok) {
-    throw new Error(`[fiscal-runner] guard anti-produção falhou: ${g.reason}`);
+  if (g.ok !== true) {
+    throw new Error(`[fiscal-runner] guard anti-produção falhou: ${(g as { reason: string }).reason}`);
   }
   return {
     kind: "config",
@@ -233,7 +233,7 @@ export async function setupStaging(cfg: RunnerConfig): Promise<StagingSession> {
     async () => ({ rows: (markerCheck.data ?? []) as Array<{ marker: unknown; project_ref: unknown }> }),
     cfg.projectRef,
   );
-  if (!g.ok) throw new Error(`[fiscal-runner] marker inválido: ${g.reason}`);
+  if (g.ok !== true) throw new Error(`[fiscal-runner] marker inválido: ${(g as { reason: string }).reason}`);
   if (cfg.projectRef === PROD_PROJECT_REF) throw new Error("ABORT: cfg apontando p/ produção");
 
   // TODO em execução real: criar usuários, roles, fixtures, autenticar,
