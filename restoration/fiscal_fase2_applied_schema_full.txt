@@ -1,0 +1,135 @@
+-- ================ VIEWS ================
+CREATE OR REPLACE VIEW public.v_fiscal_document_reconciliation_pending AS
+ SELECT id AS fiscal_invoice_id,
+    receivable_id,
+    reconciliation_status,
+    document_model,
+    document_origin,
+    status,
+    normalized_status
+   FROM fiscal_invoices
+  WHERE (reconciliation_status = ANY (ARRAY['PENDING'::text, 'DIVERGENT'::text, 'REQUIRES_REVIEW'::text]));
+CREATE OR REPLACE VIEW public.v_fiscal_company_readiness AS
+ SELECT id,
+    configuration_status,
+    nfe_enabled,
+    nfse_enabled,
+    production_enabled,
+    fiscal_environment,
+    fiscal_provider,
+    (((((((cnpj IS NOT NULL))::integer + ((legal_name IS NOT NULL))::integer) + ((tax_regime IS NOT NULL))::integer) + ((crt IS NOT NULL))::integer) + ((primary_cnae IS NOT NULL))::integer) + ((municipality_ibge_code IS NOT NULL))::integer) AS filled_score,
+    6 AS max_score,
+    (accounting_validated_at IS NOT NULL) AS accounting_validated
+   FROM company_fiscal_settings
+  WHERE (is_active = true);
+CREATE OR REPLACE VIEW public.v_product_fiscal_readiness AS
+ SELECT product_id,
+    profile_status,
+    ((ncm IS NOT NULL) AND (cfop_in_state IS NOT NULL)) AS minimally_classified,
+    (accounting_validated_at IS NOT NULL) AS accounting_validated
+   FROM product_fiscal_profiles
+  WHERE (is_active = true);
+CREATE OR REPLACE VIEW public.v_service_fiscal_readiness AS
+ SELECT id,
+    service_id,
+    source_reference,
+    profile_status,
+    ((lc116_item IS NOT NULL) AND (cnae IS NOT NULL)) AS minimally_classified,
+    (accounting_validated_at IS NOT NULL) AS accounting_validated
+   FROM service_fiscal_profiles
+  WHERE (is_active = true);
+CREATE OR REPLACE VIEW public.v_customer_fiscal_readiness AS
+ SELECT customer_id,
+    profile_status,
+    (fiscal_municipality_ibge_code IS NOT NULL) AS has_ibge
+   FROM customer_fiscal_profiles;
+-- ================ VIEW reloptions ================
+                 relname                  | reloptions 
+------------------------------------------+------------
+ v_fiscal_document_reconciliation_pending | 
+ v_fiscal_company_readiness               | 
+ v_product_fiscal_readiness               | 
+ v_service_fiscal_readiness               | 
+ v_customer_fiscal_readiness              | 
+(5 rows)
+
+-- ================ POLICIES ================
+        tablename         |           policyname           |  cmd   |      roles      |                                                                                               qual                                                                                                |                                                                  with_check                                                                   
+--------------------------+--------------------------------+--------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------
+ company_fiscal_settings  | company_fiscal_settings_read   | SELECT | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                     | 
+ company_fiscal_settings  | company_fiscal_settings_write  | ALL    | {authenticated} | has_role(auth.uid(), 'administrador'::app_role)                                                                                                                                                   | has_role(auth.uid(), 'administrador'::app_role)
+ customer_fiscal_profiles | customer_fiscal_profiles_read  | SELECT | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                     | 
+ customer_fiscal_profiles | customer_fiscal_profiles_write | ALL    | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                                                                 | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))
+ fiscal_audit_log         | fiscal_audit_log_read          | SELECT | {authenticated} | has_role(auth.uid(), 'administrador'::app_role)                                                                                                                                                   | 
+ fiscal_events            | fiscal_events_insert           | INSERT | {authenticated} |                                                                                                                                                                                                   | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role) OR has_role(auth.uid(), 'gestor'::app_role))
+ fiscal_events            | fiscal_events_read             | SELECT | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                     | 
+ fiscal_idempotency_keys  | fiscal_idempotency_read        | SELECT | {authenticated} | has_role(auth.uid(), 'administrador'::app_role)                                                                                                                                                   | 
+ fiscal_invoice_items     | fiscal_invoice_items_read      | SELECT | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role) OR has_role(auth.uid(), 'administrativo'::app_role)) | 
+ fiscal_invoice_items     | fiscal_invoice_items_write     | ALL    | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                                                                 | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))
+ product_fiscal_profiles  | product_fiscal_profiles_read   | SELECT | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                     | 
+ product_fiscal_profiles  | product_fiscal_profiles_write  | ALL    | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                                                                 | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))
+ service_fiscal_profiles  | service_fiscal_profiles_read   | SELECT | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                     | 
+ service_fiscal_profiles  | service_fiscal_profiles_write  | ALL    | {authenticated} | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))                                                                                                 | (has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role))
+(14 rows)
+
+-- ================ FUNCTIONS ================
+             proname              | prosecdef |      proconfig       
+----------------------------------+-----------+----------------------
+ fn_audit_fiscal_status           | t         | {search_path=public}
+ rpc_upsert_fiscal_invoice_manual | t         | {search_path=public}
+ fiscal_audit_trigger             | t         | {search_path=public}
+(3 rows)
+
+-- ================ TRIGGERS ================
+    event_object_table    |               trigger_name                | action_timing | event_manipulation |             action_statement              
+--------------------------+-------------------------------------------+---------------+--------------------+-------------------------------------------
+ company_fiscal_settings  | trg_fiscal_audit_company_fiscal_settings  | AFTER         | UPDATE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ company_fiscal_settings  | trg_fiscal_audit_company_fiscal_settings  | AFTER         | INSERT             | EXECUTE FUNCTION fiscal_audit_trigger()
+ company_fiscal_settings  | trg_fiscal_audit_company_fiscal_settings  | AFTER         | DELETE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ customer_fiscal_profiles | trg_fiscal_audit_customer_fiscal_profiles | AFTER         | INSERT             | EXECUTE FUNCTION fiscal_audit_trigger()
+ customer_fiscal_profiles | trg_fiscal_audit_customer_fiscal_profiles | AFTER         | UPDATE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ customer_fiscal_profiles | trg_fiscal_audit_customer_fiscal_profiles | AFTER         | DELETE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_events            | trg_fiscal_audit_fiscal_events            | AFTER         | INSERT             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_events            | trg_fiscal_audit_fiscal_events            | AFTER         | UPDATE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_events            | trg_fiscal_audit_fiscal_events            | AFTER         | DELETE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_idempotency_keys  | trg_fiscal_audit_fiscal_idempotency_keys  | AFTER         | UPDATE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_idempotency_keys  | trg_fiscal_audit_fiscal_idempotency_keys  | AFTER         | INSERT             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_idempotency_keys  | trg_fiscal_audit_fiscal_idempotency_keys  | AFTER         | DELETE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_invoice_items     | trg_fiscal_audit_fiscal_invoice_items     | AFTER         | INSERT             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_invoice_items     | trg_fiscal_audit_fiscal_invoice_items     | AFTER         | DELETE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_invoice_items     | trg_fiscal_audit_fiscal_invoice_items     | AFTER         | UPDATE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_invoices          | trg_fiscal_audit_fiscal_invoices          | AFTER         | UPDATE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_invoices          | trg_audit_fiscal_status                   | AFTER         | UPDATE             | EXECUTE FUNCTION fn_audit_fiscal_status()
+ fiscal_invoices          | trg_fiscal_audit_fiscal_invoices          | AFTER         | INSERT             | EXECUTE FUNCTION fiscal_audit_trigger()
+ fiscal_invoices          | trg_fiscal_audit_fiscal_invoices          | AFTER         | DELETE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ product_fiscal_profiles  | trg_fiscal_audit_product_fiscal_profiles  | AFTER         | UPDATE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ product_fiscal_profiles  | trg_fiscal_audit_product_fiscal_profiles  | AFTER         | DELETE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ product_fiscal_profiles  | trg_fiscal_audit_product_fiscal_profiles  | AFTER         | INSERT             | EXECUTE FUNCTION fiscal_audit_trigger()
+ service_fiscal_profiles  | trg_fiscal_audit_service_fiscal_profiles  | AFTER         | DELETE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ service_fiscal_profiles  | trg_fiscal_audit_service_fiscal_profiles  | AFTER         | UPDATE             | EXECUTE FUNCTION fiscal_audit_trigger()
+ service_fiscal_profiles  | trg_fiscal_audit_service_fiscal_profiles  | AFTER         | INSERT             | EXECUTE FUNCTION fiscal_audit_trigger()
+(25 rows)
+
+-- ================ INDEXES fiscal_invoices ================
+                        indexname                         |                                                                                                                                       indexdef                                                                                                                                       
+----------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ financial_documents_pkey                                 | CREATE UNIQUE INDEX financial_documents_pkey ON public.financial_documents USING btree (id)
+ idx_fd_owner                                             | CREATE INDEX idx_fd_owner ON public.financial_documents USING btree (owner_type, owner_id)
+ idx_fin_docs_owner                                       | CREATE INDEX idx_fin_docs_owner ON public.financial_documents USING btree (owner_type, owner_id)
+ idx_findocs_owner                                        | CREATE INDEX idx_findocs_owner ON public.financial_documents USING btree (owner_type, owner_id)
+ fiscal_events_pkey                                       | CREATE UNIQUE INDEX fiscal_events_pkey ON public.fiscal_events USING btree (id)
+ ix_fiscal_events_created_at                              | CREATE INDEX ix_fiscal_events_created_at ON public.fiscal_events USING btree (created_at DESC)
+ ix_fiscal_events_invoice                                 | CREATE INDEX ix_fiscal_events_invoice ON public.fiscal_events USING btree (fiscal_invoice_id)
+ fiscal_idempotency_keys_idempotency_key_key              | CREATE UNIQUE INDEX fiscal_idempotency_keys_idempotency_key_key ON public.fiscal_idempotency_keys USING btree (idempotency_key)
+ fiscal_idempotency_keys_pkey                             | CREATE UNIQUE INDEX fiscal_idempotency_keys_pkey ON public.fiscal_idempotency_keys USING btree (id)
+ fiscal_invoice_items_fiscal_invoice_id_item_sequence_key | CREATE UNIQUE INDEX fiscal_invoice_items_fiscal_invoice_id_item_sequence_key ON public.fiscal_invoice_items USING btree (fiscal_invoice_id, item_sequence)
+ fiscal_invoice_items_pkey                                | CREATE UNIQUE INDEX fiscal_invoice_items_pkey ON public.fiscal_invoice_items USING btree (id)
+ fiscal_invoices_pkey                                     | CREATE UNIQUE INDEX fiscal_invoices_pkey ON public.fiscal_invoices USING btree (id)
+ idx_fi_receivable                                        | CREATE INDEX idx_fi_receivable ON public.fiscal_invoices USING btree (receivable_id)
+ idx_fi_status                                            | CREATE INDEX idx_fi_status ON public.fiscal_invoices USING btree (status)
+ ux_fi_access_key                                         | CREATE UNIQUE INDEX ux_fi_access_key ON public.fiscal_invoices USING btree (access_key) WHERE (access_key IS NOT NULL)
+ ux_fi_doc_model_series_number_company                    | CREATE UNIQUE INDEX ux_fi_doc_model_series_number_company ON public.fiscal_invoices USING btree (document_model, series, invoice_number, company_cnpj) WHERE ((document_model IS NOT NULL) AND (series IS NOT NULL) AND (invoice_number IS NOT NULL) AND (company_cnpj IS NOT NULL))
+ ux_fi_idempotency_key                                    | CREATE UNIQUE INDEX ux_fi_idempotency_key ON public.fiscal_invoices USING btree (idempotency_key) WHERE (idempotency_key IS NOT NULL)
+ ux_fi_provider_ref                                       | CREATE UNIQUE INDEX ux_fi_provider_ref ON public.fiscal_invoices USING btree (provider, environment, provider_reference) WHERE (provider_reference IS NOT NULL)
+(18 rows)
+
