@@ -1,11 +1,11 @@
 /**
- * Fase Fiscal 3.0.1 — Matriz RLS declarativa POR-TABELA.
+ * Fase Fiscal 3.0.2-B — Matriz RLS declarativa POR-TABELA.
  *
  * Expectativas geradas explicitamente por (role, tabela, op) — sem regra
  * genérica única. Reflete as policies aplicadas em:
  *   - 20260721000000_fiscal_fase2_fundacao.sql
  *   - 20260721010000_fiscal_fase2_1_hardening.sql
- *   - 20260722000000_fiscal_fase3_0_1_integridade.sql (view reconciliation restrita a staff)
+ *   - 20260722000000_fiscal_fase3_0_1_integridade.sql
  */
 
 export type Role =
@@ -80,16 +80,12 @@ export interface MatrixCell {
 
 type Rule = Partial<Record<Role, Partial<Record<Operation, Expectation>>>>;
 
-// Default: DENY para toda role/op não listada explicitamente.
 const RULES: Record<FiscalTable, Rule> = {
-  // company_fiscal_settings: admin write; gestor/financeiro read.
   company_fiscal_settings: {
     administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     gestor: { SELECT: "allow" },
     financeiro: { SELECT: "allow" },
   },
-  // product/service/customer_fiscal_profiles: admin & financeiro escrevem;
-  // DELETE direto NEGADO (policy *_delete USING(false) na 3.0.2-A).
   product_fiscal_profiles: {
     administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
@@ -105,32 +101,25 @@ const RULES: Record<FiscalTable, Rule> = {
     financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     gestor: { SELECT: "allow" },
   },
-  // fiscal_invoices (3.0.2-A): SELECT/INSERT/UPDATE admin/gestor/financeiro;
-  // DELETE negado; administrativo NÃO tem acesso (spec §5).
-  // cliente_produtor lê apenas próprio documento (enforced no runner).
   fiscal_invoices: {
     administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     gestor: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "deny" },
     cliente_produtor: { SELECT: "allow" },
   },
-  // fiscal_invoice_items: administrativo REMOVIDO na 2.1.
   fiscal_invoice_items: {
     administrador: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "allow" },
     financeiro: { SELECT: "allow", INSERT: "allow", UPDATE: "allow", DELETE: "allow" },
     gestor: { SELECT: "allow" },
   },
-  // fiscal_events: SELECT admin/gestor/financeiro; escrita direta DENY (só RPC).
   fiscal_events: {
     administrador: { SELECT: "allow" },
     gestor: { SELECT: "allow" },
     financeiro: { SELECT: "allow" },
   },
-  // fiscal_idempotency_keys: SELECT só admin; nada escreve pela API.
   fiscal_idempotency_keys: {
     administrador: { SELECT: "allow" },
   },
-  // fiscal_audit_log: SELECT só admin; toda escrita DENY.
   fiscal_audit_log: {
     administrador: { SELECT: "allow" },
   },
@@ -152,20 +141,19 @@ export const MATRIX: MatrixCell[] = ROLES.flatMap((role) =>
   ),
 );
 
-/** Célula especial: cliente_produtor lendo documento fiscal ALHEIO deve retornar 0 linhas. */
+/** Ownership: cliente_produtor A vê seu próprio invoice; cliente B não vê o de A. */
 export interface OwnershipCell {
+  label: string;
   role: Role;
   table: FiscalTable;
   scope: "own" | "other";
-  expected: Expectation;
   expectedRows: 0 | 1;
 }
 export const OWNERSHIP_CELLS: OwnershipCell[] = [
-  { role: "cliente_produtor", table: "fiscal_invoices", scope: "own", expected: "allow", expectedRows: 1 },
-  { role: "cliente_produtor", table: "fiscal_invoices", scope: "other", expected: "allow", expectedRows: 0 },
+  { label: "cliente_produtor_A vê próprio fiscal_invoice", role: "cliente_produtor", table: "fiscal_invoices", scope: "own", expectedRows: 1 },
+  { label: "cliente_produtor_B NÃO vê fiscal_invoice alheio de A", role: "cliente_produtor", table: "fiscal_invoices", scope: "other", expectedRows: 0 },
 ];
 
-// Views — expectativa individual por view (não por regra genérica).
 export interface ViewCell {
   role: Role;
   view: FiscalView;
@@ -173,19 +161,14 @@ export interface ViewCell {
 }
 
 const STAFF: Role[] = ["administrador", "gestor", "financeiro"];
-const STAFF_PLUS_ADMINISTRATIVO: Role[] = [...STAFF, "administrativo"];
 
 const VIEW_RULES: Record<FiscalView, Role[]> = {
   v_fiscal_company_readiness: STAFF,
   v_product_fiscal_readiness: STAFF,
   v_service_fiscal_readiness: STAFF,
   v_customer_fiscal_readiness: STAFF,
-  // Recriada por 20260722000000 com filtro has_role — só staff financeiro.
   v_fiscal_document_reconciliation_pending: STAFF,
 };
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _AUDIT_STAFF_PLUS = STAFF_PLUS_ADMINISTRATIVO;
 
 export const VIEW_MATRIX: ViewCell[] = ROLES.flatMap((role) =>
   FISCAL_VIEWS.map<ViewCell>((view) => ({
@@ -195,10 +178,18 @@ export const VIEW_MATRIX: ViewCell[] = ROLES.flatMap((role) =>
   })),
 );
 
-// RPC rpc_fiscal_event_manual: whitelisting admin/gestor/financeiro.
 export const RPC_EXPECTATIONS: Array<{ role: Role; rpc: string; expected: Expectation }> =
   ROLES.map((role) => ({
     role,
     rpc: "rpc_fiscal_event_manual",
     expected: STAFF.includes(role) ? "allow" : "deny",
   }));
+
+/** Totais planejados (planejadas). */
+export const PLANNED_COUNTS = {
+  tableCells: MATRIX.length,
+  viewCells: VIEW_MATRIX.length,
+  rpcCells: RPC_EXPECTATIONS.length,
+  ownershipCells: OWNERSHIP_CELLS.length,
+  get total() { return this.tableCells + this.viewCells + this.rpcCells + this.ownershipCells; },
+};
