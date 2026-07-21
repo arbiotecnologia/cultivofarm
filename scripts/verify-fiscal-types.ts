@@ -282,6 +282,11 @@ export function verifyTypes(source: string): Miss[] {
 
 
   for (const r of EXPECTED_RPCS) {
+    // A RPC deve estar declarada no bloco Functions (posicionamento oficial).
+    if (functionsBlock && !hasTopLevelKey(functionsBlock, r.name)) {
+      missing.push({ kind: "rpc.section", detail: `${r.name} — ausente em public.Functions` });
+    }
+
     const fnRe = new RegExp(
       `\\b${r.name}\\s*:\\s*\\{[\\s\\S]*?Args\\s*:\\s*\\{([\\s\\S]*?)\\}[\\s\\S]*?Returns\\s*:\\s*([^;\\n]+)`,
       "m",
@@ -315,6 +320,17 @@ export function verifyTypes(source: string): Miss[] {
       missing.push({ kind: "rpc.returns", detail: `${r.name} — esperado ${r.returns}, encontrado "${returns}"` });
     }
   }
+
+  // Nenhum nome deve aparecer simultaneamente em Views e Functions.
+  if (viewsBlock && functionsBlock) {
+    const allNames = [...EXPECTED_VIEWS.map((v) => v.name), ...EXPECTED_RPCS.map((r) => r.name)];
+    for (const n of allNames) {
+      if (hasTopLevelKey(viewsBlock, n) && hasTopLevelKey(functionsBlock, n)) {
+        missing.push({ kind: "duplicate.section", detail: `${n} — presente em Views e Functions` });
+      }
+    }
+  }
+
 
   return missing;
 }
