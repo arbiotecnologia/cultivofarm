@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PageHeader } from "@/components/ResponsiveHelpers";
-import { FileText } from "lucide-react";
+import { FileText, Info } from "lucide-react";
 import { brl, fmtDate } from "@/lib/financial/format";
 import { DocumentosPanel } from "@/components/financeiro/DocumentosPanel";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { FiscalReadinessBanner } from "@/components/financeiro/FiscalReadinessBanner";
 
 const STATUS = ["PENDING", "ISSUED", "CANCELED", "ERROR"] as const;
 
@@ -44,9 +45,10 @@ export default function NotasFiscais() {
 
   return (
     <div className="space-y-4">
+      <FiscalReadinessBanner />
       <PageHeader 
         title="Notas Fiscais" 
-        description="Controle e emissão de documentos fiscais"
+        description="Registro e acompanhamento de documentos fiscais"
         action={
           <Select value={filtro} onValueChange={setFiltro}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
