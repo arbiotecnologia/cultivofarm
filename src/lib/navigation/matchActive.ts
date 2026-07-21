@@ -31,14 +31,16 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
 }
 
 /**
- * Fase 3.2 — verifica somente o `route` próprio do item (ignora
- * `matchRoutes` e `legacyRoutes`). Usado para diferenciar o filho ativo
- * do pai no realce da sidebar quando ambos casam via `matchRoutes`.
+ * Fase 3.2 / 6.1 — verifica o `route` próprio do item + suas `legacyRoutes`
+ * (ignora `matchRoutes` do pai). Usado para diferenciar o filho ativo
+ * do pai no realce da sidebar. Rotas legadas ativam o filho correspondente.
  */
 export function isNavItemActiveSelf(item: NavItem, pathname: string): boolean {
-  if (item.route === "/") return pathname === "/";
-  const pattern = item.route;
-  if (pattern.includes(":")) return patternToRegex(pattern).test(pathname);
-  return pathname === pattern || pathname.startsWith(pattern + "/");
+  const candidates = [item.route, ...(item.legacyRoutes ?? [])];
+  return candidates.some((pattern) => {
+    if (pattern === "/") return pathname === "/";
+    if (pattern.includes(":")) return patternToRegex(pattern).test(pathname);
+    return pathname === pattern || pathname.startsWith(pattern + "/");
+  });
 }
 
