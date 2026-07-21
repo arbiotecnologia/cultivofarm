@@ -17,6 +17,7 @@
 export type FeatureFlagName =
   | "fiscalConfigurationUi"
   | "fiscalProductProfilesUi"
+  | "fiscalServiceProfilesUi"
   | "fiscalEmissionEnabled";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
@@ -27,6 +28,13 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
    * (`/configuracoes/fiscal/produtos`). Isolada; NÃO autoriza emissão.
    */
   fiscalProductProfilesUi: false,
+  /**
+   * Fase Fiscal 3.3 — Habilita a tela de Perfis Fiscais de Serviços
+   * (`/configuracoes/fiscal/servicos`). Isolada; NÃO autoriza emissão.
+   * Não existe catálogo canônico de serviços — `source_reference` é a
+   * referência transitória, `service_id` é opcional e sem FK.
+   */
+  fiscalServiceProfilesUi: false,
   /** TRAVA DE EMISSÃO. Nunca deve ser `true` nesta fase. Não conecta nada — apenas indica intenção. */
   fiscalEmissionEnabled: false,
 };
