@@ -245,7 +245,7 @@ describe("Fase 3.4 — payloads", () => {
 
   test("UPDATE limpa campo (string vazia → null) apenas quando prev não era null", () => {
     const row = { ...BASE_ROW, fiscal_city: "São Paulo" };
-    const values = customerFiscalFormSchema.parse({ fiscal_city: "" });
+    const values = customerFiscalFormSchema.parse({ fiscal_city: "", country_code: "BR" });
     expect(buildUpdatePayload(values, row)).toEqual({ fiscal_city: null });
   });
 
