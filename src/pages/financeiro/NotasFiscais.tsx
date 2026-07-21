@@ -46,7 +46,7 @@ export default function NotasFiscais() {
     <div className="space-y-4">
       <PageHeader 
         title="Notas Fiscais" 
-        description="Controle e emissão de documentos fiscais"
+        description="Registro e acompanhamento de documentos fiscais"
         action={
           <Select value={filtro} onValueChange={setFiltro}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
