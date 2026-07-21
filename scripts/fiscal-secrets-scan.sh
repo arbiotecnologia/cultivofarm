@@ -28,7 +28,7 @@ declare -a PATTERNS=(
   'JWT|ey[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}'
   'SUPABASE_SECRET|sb_secret_[A-Za-z0-9]{32,}'
   'SUPABASE_PAT|sbp_[a-f0-9]{40}'
-  'PG_URL_WITH_PWD|postgres(ql)?://[A-Za-z0-9._-]+:[^@\s"'"'"']{6,}@'
+  'PG_URL_WITH_PWD|postgres(ql)?://[A-Za-z0-9._-]+:[^@\s"'"'"'<>\[\]{}]{6,}@'
   'PEM_BLOCK|-----BEGIN (CERTIFICATE|PRIVATE KEY|RSA PRIVATE KEY|ENCRYPTED PRIVATE KEY)-----'
 )
 
