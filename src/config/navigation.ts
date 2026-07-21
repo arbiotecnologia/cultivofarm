@@ -1,10 +1,11 @@
 /**
- * Fase 4 — Reorganização declarativa (Comercial, Campo, Produção).
+ * Fase 6 — Inteligência, Controle e Administração.
  *
- * Alterações desta fase são exclusivamente de agrupamento visual e metadados
- * (section/subSection/order/searchKeywords). Rotas, ícones, ids, permissões,
- * badges, matchRoutes e legacyRoutes permanecem intactos. Financeiro,
- * Financeiro B2B, mobile e demais grupos ficam fora do escopo.
+ * Continua sendo alteração exclusivamente declarativa/visual
+ * (section/subSection/order/label/searchKeywords). Rotas, ícones, ids,
+ * permissões, badges, matchRoutes, legacyRoutes e children permanecem intactos.
+ * Financeiro, Financeiro B2B, Comercial, Campo, Produção e mobile ficam fora
+ * do escopo desta fase.
  */
 import {
   LayoutDashboard, Users, MapPin, FileText, ClipboardList, CalendarClock,
@@ -19,13 +20,14 @@ import type { LucideIcon } from "lucide-react";
 import type { AppRole } from "@/lib/permissions";
 
 export type NavSection =
-  | "Menu Principal"
+  | "Dashboard"
   | "Comercial e Relacionamento"
   | "Campo e Assistência Técnica"
   | "Produção On-Farm"
   | "Financeiro"
   | "Financeiro B2B"
-  | "Gestão e Estratégico"
+  | "Inteligência e Controle"
+  | "Administração"
   | "Mobile Consultor"
   | "Mobile Produtor";
 
@@ -60,37 +62,37 @@ export interface NavItem {
 
 /** Ordem dos grupos na sidebar desktop. */
 export const DESKTOP_SECTION_ORDER: NavSection[] = [
-  "Menu Principal",
+  "Dashboard",
   "Comercial e Relacionamento",
   "Campo e Assistência Técnica",
   "Produção On-Farm",
   "Financeiro",
   "Financeiro B2B",
-  "Gestão e Estratégico",
+  "Inteligência e Controle",
+  "Administração",
 ];
 
 export const navigation: NavItem[] = [
-  // ── Menu Principal ─────────────────────────────────────────────────────────
+  // ── Dashboard ──────────────────────────────────────────────────────────────
   {
     id: "dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
     route: "/dashboard/geral",
-    section: "Menu Principal",
+    section: "Dashboard",
     matchRoutes: ["/dashboard", "/dashboard/geral", "/dashboard/executivo", "/dashboard/operacional"],
     legacyRoutes: ["/", "/executivo", "/painel-operacional"],
     platforms: ["desktop"],
     order: 1,
     searchKeywords: ["home", "início", "painel", "visão geral", "dashboard"],
     children: [
-      { id: "dashboard-geral", label: "Visão Geral", icon: LayoutDashboard, route: "/dashboard/geral", section: "Menu Principal", legacyRoutes: ["/"], platforms: ["desktop"], searchKeywords: ["visão geral", "resumo"] },
-      { id: "dashboard-executivo", label: "Visão Executiva", icon: BarChart3, route: "/dashboard/executivo", section: "Menu Principal", legacyRoutes: ["/executivo"], platforms: ["desktop"], searchKeywords: ["executivo", "portal executivo", "kpi", "diretoria"] },
-      { id: "dashboard-operacional", label: "Visão Operacional", icon: Activity, route: "/dashboard/operacional", section: "Menu Principal", legacyRoutes: ["/painel-operacional"], platforms: ["desktop"], searchKeywords: ["painel operacional", "operacional"] },
+      { id: "dashboard-geral", label: "Visão Geral", icon: LayoutDashboard, route: "/dashboard/geral", section: "Dashboard", legacyRoutes: ["/"], platforms: ["desktop"], searchKeywords: ["visão geral", "resumo"] },
+      { id: "dashboard-executivo", label: "Visão Executiva", icon: BarChart3, route: "/dashboard/executivo", section: "Dashboard", legacyRoutes: ["/executivo"], platforms: ["desktop"], searchKeywords: ["executivo", "portal executivo", "kpi", "diretoria"] },
+      { id: "dashboard-operacional", label: "Visão Operacional", icon: Activity, route: "/dashboard/operacional", section: "Dashboard", legacyRoutes: ["/painel-operacional"], platforms: ["desktop"], searchKeywords: ["painel operacional", "operacional"] },
     ],
   },
-  { id: "bi-agronomico", label: "BI Agronômico", icon: BrainCircuit, route: "/bi-agronomico", section: "Menu Principal", platforms: ["desktop"], order: 2, searchKeywords: ["bi", "agronomia", "indicador agronômico"] },
-  { id: "portal-produtor", label: "Portal do Produtor", icon: LayoutDashboard, route: "/portal", section: "Menu Principal", platforms: ["desktop"], order: 3, searchKeywords: ["produtor", "cliente"] },
-  { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], section: "Menu Principal", platforms: ["desktop"], order: 4, searchKeywords: ["config", "ajustes", "usuários", "sistema"] },
+  { id: "portal-produtor", label: "Portal do Produtor", icon: LayoutDashboard, route: "/portal", section: "Dashboard", platforms: ["desktop"], order: 2, searchKeywords: ["produtor", "cliente", "portal do produtor"] },
+
 
   // ── Comercial e Relacionamento ─────────────────────────────────────────────
   { id: "com-consolidado", label: "Dashboard Consolidado", icon: BarChart3, route: "/comercial/dashboard-consolidado", section: "Comercial e Relacionamento", subSection: "Visão Comercial", order: 1, legacyRoutes: ["/comercial/dashboard-b2b"], platforms: ["desktop"], searchKeywords: ["consolidado", "comercial", "dashboard comercial", "visão comercial", "dashboard-b2b"] },
@@ -156,11 +158,15 @@ export const navigation: NavItem[] = [
   { id: "b2b-regras-gov", label: "Regras Governança", icon: ShieldCheck, route: "/financeiro/b2b/regras", section: "Financeiro B2B", subSection: "Governança", order: 9, platforms: ["desktop"], searchKeywords: ["regras", "regras de governança", "governança", "políticas", "aprovação"] },
   { id: "b2b-socios", label: "Dashboard Sócios", icon: TrendingUp, route: "/executivo/socios-b2b", section: "Financeiro B2B", subSection: "Governança", order: 10, platforms: ["desktop"], searchKeywords: ["sócios", "socios", "dashboard sócios", "executivo", "visão societária"] },
 
-  // ── Gestão e Estratégico ───────────────────────────────────────────────────
-  { id: "relatorios", label: "Relatórios", icon: BarChart3, route: "/relatorios", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["relatório gerencial"] },
-  { id: "bi-operacional", label: "BI Operacional", icon: Activity, route: "/bi-operacional", section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["bi", "operacional"] },
-  { id: "alertas", label: "Alertas", icon: Siren, route: "/alertas-operacionais", section: "Gestão e Estratégico", badgeSlot: "alertas", platforms: ["desktop"], searchKeywords: ["alerta", "notificação"] },
-  { id: "auditorias", label: "Auditorias", icon: ShieldCheck, route: "/auditoria", legacyRoutes: ["/auditoria-sync"], section: "Gestão e Estratégico", platforms: ["desktop"], searchKeywords: ["auditoria", "sync", "trilha"] },
+  // ── Inteligência e Controle ────────────────────────────────────────────────
+  { id: "bi-agronomico", label: "BI Agronômico", icon: BrainCircuit, route: "/bi-agronomico", section: "Inteligência e Controle", subSection: "Inteligência", order: 1, platforms: ["desktop"], searchKeywords: ["bi", "bi agronômico", "agronomia", "agronômico", "indicador agronômico", "indicadores agronômicos", "produtividade", "culturas", "fazendas", "aplicações", "manejo", "resultados agronômicos"] },
+  { id: "bi-operacional", label: "BI Operacional", icon: Activity, route: "/bi-operacional", section: "Inteligência e Controle", subSection: "Inteligência", order: 2, platforms: ["desktop"], searchKeywords: ["bi", "bi operacional", "operacional", "indicadores operacionais", "desempenho", "produtividade operacional", "solicitações", "visitas", "produção", "entregas"] },
+  { id: "relatorios", label: "Relatórios Gerenciais", icon: BarChart3, route: "/relatorios", section: "Inteligência e Controle", subSection: "Inteligência", order: 3, platforms: ["desktop"], searchKeywords: ["relatório", "relatórios", "relatório gerencial", "relatórios gerenciais", "relatórios estratégicos", "gestão", "exportações", "indicadores", "gerencial"] },
+  { id: "alertas", label: "Alertas", icon: Siren, route: "/alertas-operacionais", section: "Inteligência e Controle", subSection: "Controle", order: 4, badgeSlot: "alertas", platforms: ["desktop"], searchKeywords: ["alerta", "alertas", "alertas gerais", "central de alertas", "ocorrências", "riscos", "pendências", "sla", "prioridades", "notificação"] },
+  { id: "auditorias", label: "Auditorias", icon: ShieldCheck, route: "/auditoria", legacyRoutes: ["/auditoria-sync"], section: "Inteligência e Controle", subSection: "Controle", order: 5, platforms: ["desktop"], searchKeywords: ["auditoria", "auditorias", "auditoria geral", "auditorias gerais", "histórico", "logs", "rastreabilidade", "alterações", "eventos", "sync", "trilha"] },
+
+  // ── Administração ──────────────────────────────────────────────────────────
+  { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], section: "Administração", order: 1, platforms: ["desktop"], searchKeywords: ["configurações", "configuracoes", "config", "administração", "administracao", "ajustes", "parâmetros", "sistema", "preferências", "integrações", "usuários", "perfis"] },
 
   // ── Mobile Consultor (tabs) ────────────────────────────────────────────────
   { id: "m-c-inicio", label: "Início", icon: Home, route: "/app", section: "Mobile Consultor", platforms: ["mobile-consultor", "mobile-produtor"], order: 1 },
