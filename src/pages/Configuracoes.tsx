@@ -27,7 +27,8 @@ import { ROLE_LABELS, ROLE_VARIANTS, ACTIVE_ROLES } from "@/lib/permissions";
 import AparenciaTab from "@/components/configuracoes/AparenciaTab";
 import { ClientesVinculadosField, type ClienteVinculo } from "@/components/configuracoes/ClientesVinculadosField";
 import { Link } from "react-router-dom";
-import { History } from "lucide-react";
+import { History, Wallet } from "lucide-react";
+import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
 
 
 
