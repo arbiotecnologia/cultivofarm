@@ -8,14 +8,10 @@
  * - Empresa lê no máximo 1 linha com colunas explícitas.
  * - Documentos: até 4 counts targeted (total + por modelo).
  */
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { PostgrestError } from "@supabase/supabase-js";
-import {
-  DOCUMENT_MODELS,
-  type CompanyRow,
-  type DocumentModel,
-} from "@/lib/fiscal/readinessValidation";
+import { DOCUMENT_MODELS, type CompanyRow, type DocumentModel } from "@/lib/fiscal/readinessValidation";
 
 const KEYS = {
   root: ["fiscal", "readiness"] as const,
@@ -47,36 +43,47 @@ export function useCompanyReadiness() {
   });
 }
 
-async function countRows(
-  from: keyof Database["public"]["Views"] | string,
-  applyFilter?: (q: ReturnType<typeof supabase.from>) => ReturnType<typeof supabase.from>,
-): Promise<number> {
-  // helper interno; contagem HEAD-only, sem baixar linhas.
-  // Tipagem intencionalmente frouxa aqui (helper): a colher específica é
-  // aplicada pelo callsite tipado abaixo.
-  throw new Error("unused");
-}
-// (o helper genérico acima é apenas ilustrativo; usamos chamadas tipadas por view abaixo.)
+type BoolCol = "minimally_classified" | "accounting_validated" | "has_ibge";
 
-import type { Database } from "@/integrations/supabase/types";
+async function countHead(
+  view:
+    | "v_product_fiscal_readiness"
+    | "v_service_fiscal_readiness"
+    | "v_customer_fiscal_readiness"
+    | "v_fiscal_document_reconciliation_pending",
+): Promise<number> {
+  const { count, error } = await supabase
+    .from(view)
+    .select("*", { count: "exact", head: true });
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function countBoolTrue(
+  view: "v_product_fiscal_readiness" | "v_service_fiscal_readiness" | "v_customer_fiscal_readiness",
+  col: BoolCol,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from(view)
+    .select("*", { count: "exact", head: true })
+    .eq(col, true);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function countDocsByModel(model: DocumentModel): Promise<number> {
+  const { count, error } = await supabase
+    .from("v_fiscal_document_reconciliation_pending")
+    .select("*", { count: "exact", head: true })
+    .eq("document_model", model);
+  if (error) throw error;
+  return count ?? 0;
+}
 
 export interface AggregateResult {
   total: number;
   ok: number;
   pending: number;
-}
-
-async function countExact<T extends keyof Database["public"]["Views"]>(
-  view: T,
-  buildFilters?: (
-    q: ReturnType<ReturnType<typeof supabase.from<T>>["select"]>,
-  ) => ReturnType<ReturnType<typeof supabase.from<T>>["select"]>,
-): Promise<number> {
-  const base = supabase.from(view).select("*", { count: "exact", head: true });
-  const q = buildFilters ? buildFilters(base) : base;
-  const { count, error } = await q;
-  if (error) throw error;
-  return count ?? 0;
 }
 
 /** Produtos: total, minimamente classificados e validados. */
@@ -86,38 +93,28 @@ export function useProductsReadiness() {
     staleTime: STALE_MS,
     queryFn: async (): Promise<AggregateResult> => {
       const [total, classified, validated] = await Promise.all([
-        countExact("v_product_fiscal_readiness"),
-        countExact("v_product_fiscal_readiness", (q) =>
-          q.eq("minimally_classified", true),
-        ),
-        countExact("v_product_fiscal_readiness", (q) =>
-          q.eq("accounting_validated", true),
-        ),
+        countHead("v_product_fiscal_readiness"),
+        countBoolTrue("v_product_fiscal_readiness", "minimally_classified"),
+        countBoolTrue("v_product_fiscal_readiness", "accounting_validated"),
       ]);
-      // "ok" para o card é a interseção implícita mínima da view: exige
-      // ambas as flags. Sem inventar, usamos o menor dos dois — a view
-      // NÃO exporta a interseção diretamente; a UI exibe os dois números
-      // e reporta pendências (total - min(classified, validated)).
+      // A view não expõe interseção; usamos o menor dos dois como piso e
+      // reportamos ambos os números no card — sem inventar aprovação.
       const ok = Math.min(classified, validated);
       return { total, ok, pending: Math.max(0, total - ok) };
     },
   });
 }
 
-/** Serviços: total, referências mínimas classificadas e validadas. */
+/** Serviços: total, minimamente classificados e validados. */
 export function useServicesReadiness() {
   return useQuery({
     queryKey: KEYS.services(),
     staleTime: STALE_MS,
     queryFn: async (): Promise<AggregateResult> => {
       const [total, classified, validated] = await Promise.all([
-        countExact("v_service_fiscal_readiness"),
-        countExact("v_service_fiscal_readiness", (q) =>
-          q.eq("minimally_classified", true),
-        ),
-        countExact("v_service_fiscal_readiness", (q) =>
-          q.eq("accounting_validated", true),
-        ),
+        countHead("v_service_fiscal_readiness"),
+        countBoolTrue("v_service_fiscal_readiness", "minimally_classified"),
+        countBoolTrue("v_service_fiscal_readiness", "accounting_validated"),
       ]);
       const ok = Math.min(classified, validated);
       return { total, ok, pending: Math.max(0, total - ok) };
@@ -132,8 +129,8 @@ export function useCustomersReadiness() {
     staleTime: STALE_MS,
     queryFn: async (): Promise<AggregateResult> => {
       const [total, withIbge] = await Promise.all([
-        countExact("v_customer_fiscal_readiness"),
-        countExact("v_customer_fiscal_readiness", (q) => q.eq("has_ibge", true)),
+        countHead("v_customer_fiscal_readiness"),
+        countBoolTrue("v_customer_fiscal_readiness", "has_ibge"),
       ]);
       return { total, ok: withIbge, pending: Math.max(0, total - withIbge) };
     },
@@ -151,23 +148,19 @@ export function useDocumentsReadiness() {
     queryKey: KEYS.documents(),
     staleTime: STALE_MS,
     queryFn: async (): Promise<DocumentsBreakdown> => {
-      const [total, nfe, nfse, other] = await Promise.all([
-        countExact("v_fiscal_document_reconciliation_pending"),
-        countExact("v_fiscal_document_reconciliation_pending", (q) =>
-          q.eq("document_model", "NFE"),
-        ),
-        countExact("v_fiscal_document_reconciliation_pending", (q) =>
-          q.eq("document_model", "NFSE"),
-        ),
-        countExact("v_fiscal_document_reconciliation_pending", (q) =>
-          q.eq("document_model", "OTHER"),
-        ),
+      const [total, ...perModel] = await Promise.all([
+        countHead("v_fiscal_document_reconciliation_pending"),
+        ...DOCUMENT_MODELS.map((m) => countDocsByModel(m)),
       ]);
-      const known = nfe + nfse + other;
+      const byModel = DOCUMENT_MODELS.reduce(
+        (acc, m, i) => ({ ...acc, [m]: perModel[i] ?? 0 }),
+        {} as Record<DocumentModel, number>,
+      );
+      const known = DOCUMENT_MODELS.reduce((s, m) => s + (byModel[m] ?? 0), 0);
       const unknown = Math.max(0, total - known);
       return {
         total,
-        byModel: { NFE: nfe, NFSE: nfse, OTHER: other, UNKNOWN: unknown },
+        byModel: { ...byModel, UNKNOWN: unknown },
       };
     },
   });
@@ -200,7 +193,3 @@ export function safeErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return "Falha inesperada.";
 }
-
-// Silencia lint sobre "unused" helper deixado como referência histórica.
-export const __unused_countRows_placeholder = countRows;
-export type __KeysType = typeof useQueries;
