@@ -146,6 +146,22 @@ export const EXPECTED_RPCS: RpcSpec[] = [
 ];
 
 // ---- Extração --------------------------------------------------------------
+function extractSectionBlock(source: string, section: "Views" | "Functions"): string | null {
+  const re = new RegExp(`\\n\\s{4}${section}\\s*:\\s*\\{`);
+  const m = re.exec(source);
+  if (!m) return null;
+  const start = m.index + m[0].length; // position after opening `{`
+  let depth = 1;
+  for (let i = start; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return source.slice(start, i);
+    }
+  }
+  return null;
+}
 function extractEntityBlock(source: string, name: string): string | null {
   const re = new RegExp(
     `\\b${name}\\s*:\\s*\\{[\\s\\S]*?Relationships\\s*:\\s*\\[[\\s\\S]*?\\]\\s*\\}`,
@@ -160,6 +176,30 @@ function extractSubBlock(entityBlock: string, label: "Row" | "Insert" | "Update"
   const m = entityBlock.match(re);
   return m ? m[1] : null;
 }
+function hasTopLevelKey(sectionBlock: string, name: string): boolean {
+  // Match `name:` only at brace-depth 0 within the section block.
+  let depth = 0;
+  const key = name;
+  for (let i = 0; i < sectionBlock.length; i++) {
+    const ch = sectionBlock[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") depth--;
+    else if (depth === 0) {
+      if (sectionBlock.startsWith(key, i)) {
+        const before = i === 0 ? " " : sectionBlock[i - 1];
+        const after = sectionBlock[i + key.length];
+        if (/\s/.test(before) && (after === ":" || /\s/.test(after ?? ""))) {
+          // Look ahead skipping whitespace for `:`
+          let j = i + key.length;
+          while (j < sectionBlock.length && /\s/.test(sectionBlock[j])) j++;
+          if (sectionBlock[j] === ":") return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 
 export type Miss = { kind: string; detail: string };
 
