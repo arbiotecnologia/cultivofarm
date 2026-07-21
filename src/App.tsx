@@ -47,6 +47,7 @@ import FiscalServicos from "@/pages/configuracoes/FiscalServicos";
 import FiscalClientes from "@/pages/configuracoes/FiscalClientes";
 import FiscalDocumentos from "@/pages/fiscal/FiscalDocumentos";
 import FiscalReconciliacao from "@/pages/fiscal/FiscalReconciliacao";
+import FiscalProntidao from "@/pages/fiscal/FiscalProntidao";
 import Relatorios from "@/pages/Relatorios";
 import ConsultorTecnico from "@/pages/ConsultorTecnico";
 import FinanceiroDashboard from "@/pages/financeiro/FinanceiroDashboard";
@@ -555,6 +556,7 @@ const App = () => (
                 <Route path="/configuracoes/fiscal/clientes" element={<RoleGuard><FiscalClientes /></RoleGuard>} />
                 <Route path="/fiscal/documentos" element={<RoleGuard><FiscalDocumentos /></RoleGuard>} />
                 <Route path="/fiscal/reconciliacao" element={<RoleGuard><FiscalReconciliacao /></RoleGuard>} />
+                <Route path="/fiscal/prontidao" element={<RoleGuard><FiscalProntidao /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
