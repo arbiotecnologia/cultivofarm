@@ -203,7 +203,8 @@ describe("FiscalEmpresa — flag ON", () => {
     expect(within(page).getByTestId("fiscal-empresa-save")).toBeInTheDocument();
     const cnpjInput = within(page).getByLabelText("CNPJ") as HTMLInputElement;
     expect(cnpjInput).not.toBeDisabled();
-    expect(cnpjInput.value).toBe("11222333000181");
+    // Exibição mascarada; armazenamento continua sendo dígitos crus.
+    expect(cnpjInput.value).toBe("11.222.333/0001-81");
     // Banner de emissão desativada sempre visível
     expect(within(page).getByTestId("fiscal-emission-banner")).toBeInTheDocument();
     // Nenhum campo de credencial sensível no formulário base (Fase 3.16.1:
