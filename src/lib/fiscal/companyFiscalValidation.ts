@@ -10,7 +10,7 @@
  *   são rejeitados recursivamente se contiverem chaves sensíveis.
  * - `fiscal_environment` limitado a NOT_CONFIGURED / HOMOLOGATION.
  * - `configuration_status` limitado a DRAFT / PENDING_ACCOUNTING /
- *   READY_FOR_HOMOLOGATION (esta fase — validação contábil externa).
+ *   READY_FOR_HOMOLOGATION (validação contábil externa).
  * - `nfe_provider` / `nfse_provider` são configuráveis mas NÃO autorizam
  *   conexão nem emissão.
  * - `fiscal_provider` legacy permanece `NONE`.
@@ -21,9 +21,7 @@ import type { Database } from "@/integrations/supabase/types";
 type Row = Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
 type Update = Database["public"]["Tables"]["company_fiscal_settings"]["Update"];
 
-// ————————————————————————————————————————————————————————————
-// CNPJ mod-11
-// ————————————————————————————————————————————————————————————
+// CNPJ mod-11 ----------------------------------------------------------
 export function normalizeCnpj(value: string): string {
   return value.replace(/\D/g, "");
 }
@@ -44,20 +42,12 @@ export function isValidCnpj(value: string): boolean {
   return cnpj.endsWith(`${d1}${d2}`);
 }
 
-// ————————————————————————————————————————————————————————————
-// Enums permitidos
-// ————————————————————————————————————————————————————————————
+// Enums ---------------------------------------------------------------
 export const ALLOWED_ENVIRONMENTS = ["NOT_CONFIGURED", "HOMOLOGATION"] as const;
 export const ALLOWED_STATUSES = ["DRAFT", "PENDING_ACCOUNTING", "READY_FOR_HOMOLOGATION"] as const;
 export const ALLOWED_PROVIDERS = [
-  "NONE",
-  "NOT_CONFIGURED",
-  "FOCUS_NFE",
-  "PLUGNOTAS",
-  "SEFAZ_DIRETO",
-  "NFSE_NACIONAL",
-  "MUNICIPAL",
-  "OTHER_FUTURE",
+  "NONE", "NOT_CONFIGURED", "FOCUS_NFE", "PLUGNOTAS",
+  "SEFAZ_DIRETO", "NFSE_NACIONAL", "MUNICIPAL", "OTHER_FUTURE",
 ] as const;
 export const LOCKED_PROVIDER = "NONE" as const;
 
@@ -65,9 +55,7 @@ export type AllowedEnvironment = (typeof ALLOWED_ENVIRONMENTS)[number];
 export type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
 export type AllowedProvider = (typeof ALLOWED_PROVIDERS)[number];
 
-// ————————————————————————————————————————————————————————————
-// Sensitive-key scanner (fail-closed, paralelo ao CHECK do banco)
-// ————————————————————————————————————————————————————————————
+// Sensitive-key scanner ----------------------------------------------
 export const SENSITIVE_JSON_KEYS = [
   "token", "password", "senha", "secret", "api_key", "apikey",
   "private_key", "privatekey", "pfx", "p12",
@@ -87,15 +75,7 @@ export function hasSensitiveKey(value: unknown): boolean {
   return false;
 }
 
-const safeJsonObject = (max = 40) =>
-  z
-    .record(z.unknown())
-    .refine((v) => !hasSensitiveKey(v), { message: "Conteúdo sensível não é permitido." })
-    .refine((v) => Object.keys(v).length <= max, { message: `Máximo ${max} campos.` });
-
-// ————————————————————————————————————————————————————————————
-// Helpers
-// ————————————————————————————————————————————————————————————
+// Helpers -------------------------------------------------------------
 const optionalTrimmedString = (max: number) =>
   z.string().trim().max(max).transform((v) => (v.length === 0 ? null : v)).nullable().optional();
 
@@ -119,9 +99,7 @@ const refField = z
   .nullable()
   .optional();
 
-// ————————————————————————————————————————————————————————————
-// Sub-schemas NF-e / NFS-e / Integração
-// ————————————————————————————————————————————————————————————
+// Sub-schemas ---------------------------------------------------------
 export const NFE_FINALIDADES = ["NORMAL", "COMPLEMENTARY", "ADJUSTMENT", "RETURN"] as const;
 export const NFE_NUMBERING_MODES = ["MANUAL_REFERENCE", "PROVIDER_MANAGED"] as const;
 export const NFE_DANFE_LAYOUTS = ["PORTRAIT", "LANDSCAPE"] as const;
@@ -146,7 +124,7 @@ export const nfeConfigurationSchema = z
     suggested_cfop_interstate: optionalTrimmedString(10),
     default_additional_info: optionalTrimmedString(2000),
   })
-  .strict()
+  .passthrough()
   .refine((v) => !hasSensitiveKey(v), { message: "Conteúdo sensível não é permitido." });
 
 export const nfseConfigurationSchema = z
@@ -172,7 +150,7 @@ export const nfseConfigurationSchema = z
     default_service_description: optionalTrimmedString(2000),
     send_email_after_authorization: z.boolean().optional(),
   })
-  .strict()
+  .passthrough()
   .refine((v) => !hasSensitiveKey(v), { message: "Conteúdo sensível não é permitido." });
 
 export const integrationRefsSchema = z
@@ -187,11 +165,8 @@ export const integrationRefsSchema = z
   })
   .strict();
 
-// ————————————————————————————————————————————————————————————
-// Formulário unificado (dados gerais + NF-e + NFS-e + integração)
-// ————————————————————————————————————————————————————————————
+// Form schema --------------------------------------------------------
 export const companyFiscalFormSchema = z.object({
-  // Dados gerais
   cnpj: optionalCnpj,
   legal_name: optionalTrimmedString(200),
   trade_name: optionalTrimmedString(200),
@@ -224,7 +199,6 @@ export const companyFiscalFormSchema = z.object({
   nfse_enabled: z.boolean().optional(),
   nfe_series: optionalTrimmedString(20),
   nfse_series: optionalTrimmedString(20),
-  // NF-e / NFS-e / integração
   nfe_configuration: nfeConfigurationSchema.optional(),
   nfse_configuration: nfseConfigurationSchema.optional(),
   nfe_provider: z.enum(ALLOWED_PROVIDERS).optional(),
@@ -234,13 +208,11 @@ export const companyFiscalFormSchema = z.object({
   certificate_ref: refField,
   webhook_ref: refField,
   configuration_notes: optionalTrimmedString(4000),
-  // Concorrência otimista
   configuration_version: z.number().int().positive().optional(),
 });
 
 export type CompanyFiscalFormValues = z.infer<typeof companyFiscalFormSchema>;
 
-/** Campos que a UI NUNCA envia — trava explícita contra emissão. */
 export const FORBIDDEN_PAYLOAD_KEYS = [
   "production_enabled",
   "id",
@@ -254,10 +226,6 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
   "last_validation_at",
 ] as const;
 
-/**
- * Constrói o payload de UPDATE idempotente. Omite ausentes; normaliza CNPJ;
- * mantém `fiscal_provider` legacy em `NONE`; nunca vaza chaves proibidas.
- */
 export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   const parsed = companyFiscalFormSchema.parse(values);
   const payload: Record<string, unknown> = {};
@@ -273,12 +241,10 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
     payload[key] = val;
   }
 
-  // Trava: legacy provider permanece NONE.
   payload.fiscal_provider = LOCKED_PROVIDER;
-  return payload as Update;
+  return payload as unknown as Update;
 }
 
-/** Extrai valores iniciais do formulário a partir de uma Row real (ou vazio). */
 export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
   if (!row) {
     return {
@@ -290,6 +256,7 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
       nfse_provider: "NONE",
       nfe_configuration: {},
       nfse_configuration: {},
+      configuration_version: 1,
     };
   }
   const env = (ALLOWED_ENVIRONMENTS as readonly string[]).includes(row.fiscal_environment)
@@ -298,20 +265,12 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
   const status = (ALLOWED_STATUSES as readonly string[]).includes(row.configuration_status)
     ? (row.configuration_status as AllowedStatus)
     : "DRAFT";
-  const nfeProvider = (ALLOWED_PROVIDERS as readonly string[]).includes(
-    (row as unknown as { nfe_provider?: string }).nfe_provider ?? "NONE",
-  )
-    ? ((row as unknown as { nfe_provider?: string }).nfe_provider as AllowedProvider) ?? "NONE"
-    : "NONE";
-  const nfseProvider = (ALLOWED_PROVIDERS as readonly string[]).includes(
-    (row as unknown as { nfse_provider?: string }).nfse_provider ?? "NONE",
-  )
-    ? ((row as unknown as { nfse_provider?: string }).nfse_provider as AllowedProvider) ?? "NONE"
-    : "NONE";
 
   const extra = row as unknown as {
     nfe_configuration?: Record<string, unknown> | null;
     nfse_configuration?: Record<string, unknown> | null;
+    nfe_provider?: string;
+    nfse_provider?: string;
     nfe_credential_ref?: string | null;
     nfse_credential_ref?: string | null;
     certificate_ref?: string | null;
@@ -319,6 +278,13 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
     configuration_notes?: string | null;
     configuration_version?: number | null;
   };
+
+  const nfeProvider = (ALLOWED_PROVIDERS as readonly string[]).includes(extra.nfe_provider ?? "NONE")
+    ? (extra.nfe_provider as AllowedProvider) ?? "NONE"
+    : "NONE";
+  const nfseProvider = (ALLOWED_PROVIDERS as readonly string[]).includes(extra.nfse_provider ?? "NONE")
+    ? (extra.nfse_provider as AllowedProvider) ?? "NONE"
+    : "NONE";
 
   return {
     cnpj: row.cnpj ?? undefined,
@@ -359,23 +325,21 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
   };
 }
 
-// ————————————————————————————————————————————————————————————
-// Checklist local de prontidão (sem I/O).
-// ————————————————————————————————————————————————————————————
+// Checklist local ----------------------------------------------------
 export interface ChecklistItem {
   key: string;
   label: string;
   ok: boolean;
 }
 export function nfeChecklist(v: CompanyFiscalFormValues): ChecklistItem[] {
-  const c = v.nfe_configuration ?? {};
+  const c = (v.nfe_configuration ?? {}) as Record<string, unknown>;
   return [
     { key: "cnpj", label: "CNPJ da empresa", ok: !!v.cnpj },
     { key: "legal_name", label: "Razão social", ok: !!v.legal_name },
     { key: "state_registration", label: "Inscrição estadual", ok: !!v.state_registration },
-    { key: "series", label: "Série NF-e", ok: !!(v.nfe_series || (c as any).series) },
-    { key: "cfop_in_state", label: "CFOP interno sugerido", ok: !!(c as any).suggested_cfop_in_state },
-    { key: "cfop_interstate", label: "CFOP interestadual", ok: !!(c as any).suggested_cfop_interstate },
+    { key: "series", label: "Série NF-e", ok: !!(v.nfe_series || c.series) },
+    { key: "cfop_in_state", label: "CFOP interno sugerido", ok: !!c.suggested_cfop_in_state },
+    { key: "cfop_interstate", label: "CFOP interestadual", ok: !!c.suggested_cfop_interstate },
     { key: "environment", label: "Ambiente de homologação", ok: v.fiscal_environment === "HOMOLOGATION" },
   ];
 }
