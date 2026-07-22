@@ -111,7 +111,7 @@ export default function FiscalEmpresa() {
   const access = getAccessLevel(role, "/configuracoes/fiscal/empresa");
   const canEdit = access === "rw";
   // Gestão de certificados é estritamente admin — financeiro/gestor só visualizam.
-  const canManageCertificates = roles.includes("administrador");
+  const canManageCertificates = Array.isArray(roles) && roles.includes("administrador");
   const uiEnabled = FEATURE_FLAGS.fiscalConfigurationUi === true;
   const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;
 
