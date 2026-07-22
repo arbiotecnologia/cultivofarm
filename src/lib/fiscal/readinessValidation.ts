@@ -10,7 +10,26 @@
  */
 import type { Database } from "@/integrations/supabase/types";
 
-export type CompanyRow = Database["public"]["Views"]["v_fiscal_company_readiness"]["Row"];
+/**
+ * Subconjunto explícito do Row da view usado pela Central de Prontidão.
+ * Colunas novas adicionadas pela Fase 3.15 (nfe_provider, nfse_provider,
+ * configuration_version, last_validation_*, *_field_count) NÃO fazem
+ * parte deste snapshot — o classificador só usa os 10 campos abaixo, e
+ * mantê-los explícitos evita acoplamento a colunas irrelevantes.
+ */
+export type CompanyRow = Pick<
+  Database["public"]["Views"]["v_fiscal_company_readiness"]["Row"],
+  | "id"
+  | "configuration_status"
+  | "fiscal_environment"
+  | "fiscal_provider"
+  | "nfe_enabled"
+  | "nfse_enabled"
+  | "production_enabled"
+  | "accounting_validated"
+  | "filled_score"
+  | "max_score"
+>;
 export type ProductRow = Database["public"]["Views"]["v_product_fiscal_readiness"]["Row"];
 export type ServiceRow = Database["public"]["Views"]["v_service_fiscal_readiness"]["Row"];
 export type CustomerRow = Database["public"]["Views"]["v_customer_fiscal_readiness"]["Row"];
