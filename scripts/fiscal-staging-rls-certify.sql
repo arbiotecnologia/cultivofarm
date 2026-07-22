@@ -339,13 +339,18 @@ BEGIN
           jsonb_build_object('notes','FISCAL_TEST_3111_AUDIT_DEL'));
 
   -- company_fiscal_settings:
-  --   * SEL is_active=true (elegível à view v_fiscal_company_readiness)
-  --   * DEL isolado, is_active=false
+  --   3.11.4: constraint ux_company_fiscal_settings_active_singleton no
+  --   staging já possui um singleton ativo real. Fixture sintética NUNCA
+  --   pode ser is_active=true (segundo singleton ativo => 23505). Para a
+  --   view v_fiscal_company_readiness, o teste depende do singleton ativo
+  --   preexistente, que NÃO é lido/apagado/alterado por este harness.
+  --   * SEL/UPDATE is_active=false, id ...c04f-...0001
+  --   * DEL         is_active=false, id ...c04f-...0002 (marker DELCNPJ)
   INSERT INTO public.company_fiscal_settings(
     id, is_active, cnpj, legal_name, tax_regime, crt, primary_cnae,
     municipality_ibge_code, configuration_status
   ) VALUES
-    ('ff5c3111-c04f-0000-0000-000000000001', true,
+    ('ff5c3111-c04f-0000-0000-000000000001', false,
      'FISCAL_TEST_3111_CNPJ','FISCAL_TEST_3111_LEGAL','SIMPLES','1','0111-3','3550308','DRAFT'),
     ('ff5c3111-c04f-0000-0000-000000000002', false,
      'FISCAL_TEST_3111_DELCNPJ',NULL,NULL,NULL,NULL,NULL,'DRAFT')
