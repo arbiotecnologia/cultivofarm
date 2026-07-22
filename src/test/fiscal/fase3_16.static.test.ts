@@ -380,8 +380,10 @@ describe("Fase 3.16.2-B — hardening OS bridge + snapshots por item + labels pt
 
   test("rpc_fiscal_draft_validate_homologation exige perfil fiscal por item", () => {
     expect(sql).toMatch(/item_fiscal_profile/);
-    expect(sql).toMatch(/NCM obrigatorio/);
-    expect(sql).toMatch(/LC116 e CNAE obrigatorios/);
+    // 3.16.2-C: mensagens/campos mais específicos
+    expect(sql).toContain("sem NCM no perfil fiscal");
+    expect(sql).toContain("sem item LC 116 no perfil fiscal");
+    expect(sql).toContain("sem CNAE no perfil fiscal");
   });
 
   test("mapa pt-BR existe e cobre enums fiscais", () => {
@@ -401,3 +403,139 @@ describe("Fase 3.16.2-B — hardening OS bridge + snapshots por item + labels pt
     expect(fe).toMatch(/canManageCertificates={canManageCertificates}/);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────
+// Fase 3.16.2-C — Ajustes finais de segurança e usabilidade
+// ────────────────────────────────────────────────────────────────────────
+describe("Fase 3.16.2-C — travas de emissão/produção", () => {
+  test("todas as flags de emissão permanecem false", () => {
+    expect(FEATURE_FLAGS.fiscalEmissionEnabled).toBe(false);
+    expect(FEATURE_FLAGS.fiscalReconciliationWrite).toBe(false);
+    expect(FEATURE_FLAGS.fiscalDocumentManualEventRpc).toBe(false);
+  });
+});
+
+describe("Fase 3.16.2-C — CertificadoDigitalSecao", () => {
+  const CDS = p("src/components/fiscal/certificados/CertificadoDigitalSecao.tsx");
+  const src = readFileSync(CDS, "utf8");
+
+  test("não oculta a seção via canEdit=false", () => {
+    expect(src).not.toMatch(/if\s*\(\s*canEdit\s*===\s*false\s*\)\s*return\s+null/);
+  });
+
+  test("expõe helpers de mascaramento e mensagens padronizadas", () => {
+    expect(src).toContain("export function maskFingerprint");
+    expect(src).toContain("export function maskSerial");
+    expect(src).toContain("export function environmentLabel");
+    expect(src).toContain('VAULT_UNAVAILABLE_MESSAGE');
+    expect(src).toContain('OS_BRIDGE_MISSING_MESSAGE');
+    expect(src).toContain("Cofre de certificados ainda não ativado neste ambiente");
+    expect(src).toContain("Conector do sistema operacional não instalado");
+  });
+
+  test("botão de detecção renomeado", () => {
+    expect(src).toContain("Atualizar detecção");
+    expect(src).not.toMatch(/>\s*Detectar\s*</);
+  });
+
+  test("statusBadge não retorna enum cru", () => {
+    // status default cai em "Status indisponível"; NOT_CONFIGURED → "Não configurado"
+    expect(src).toContain('Status indisponível');
+    expect(src).toContain('Não configurado');
+    // não deve renderizar `{status}` diretamente dentro de <Badge>
+    expect(src).not.toMatch(/<Badge[^>]*>\{status\}<\/Badge>/);
+  });
+
+  test("environmentLabel jamais rotula ambiente diferente como Produção", () => {
+    expect(src).toMatch(/env === "HOMOLOGATION" \? "Homologação" : "Indisponível"/);
+  });
+
+  test("fingerprint nunca renderizado integralmente na tabela/lista SO", () => {
+    // A tabela usa maskFingerprint (não o valor bruto)
+    expect(src).toContain('maskFingerprint(c.fingerprint_sha256)');
+    // não deve haver template exibindo o fingerprint bruto sem máscara
+    expect(src).not.toMatch(/SHA-256:\s*\{c\.fingerprint_sha256\}/);
+  });
+
+  test("refetch após upload A1", () => {
+    expect(src).toContain("onUploaded={() => {");
+    expect(src).toContain("listQ.refetch()");
+  });
+});
+
+describe("Fase 3.16.2-C — hook useFiscalRascunho", () => {
+  const HOOK = readFileSync(p("src/hooks/useFiscalRascunho.ts"), "utf8");
+
+  test("payload por item não envia gross/net como fonte", () => {
+    // gross_value e net_value não devem aparecer como chaves no payload
+    // do item enviado à RPC
+    const itemBlock = HOOK.slice(HOOK.indexOf("itemsPayload"), HOOK.indexOf("rpc(\"rpc_fiscal_draft_save\""));
+    expect(itemBlock).not.toMatch(/gross_value\s*:/);
+    expect(itemBlock).not.toMatch(/net_value\s*:/);
+  });
+
+  test("usa buildItemSnapshots (whitelist) para construir snapshots", () => {
+    expect(HOOK).toContain('from "@/lib/fiscal/rascunhoSnapshots"');
+    expect(HOOK).toContain("buildItemSnapshots(args.values.invoice_type, it)");
+  });
+});
+
+describe("Fase 3.16.2-C — migration RPC SYSTEM_STORE", () => {
+  const SQL = readFileSync(CANONICAL_MIGRATION, "utf8");
+
+  test("exige company_settings_id existente", () => {
+    expect(SQL).toContain("company_settings_id_required");
+    expect(SQL).toContain("company_settings_not_found");
+    expect(SQL).toMatch(/FROM public\.company_fiscal_settings WHERE id = p_company_settings_id/);
+  });
+
+  test("notBefore server-side v_from <= now() < v_until", () => {
+    expect(SQL).toContain("certificate_not_yet_valid");
+    expect(SQL).toMatch(/IF v_from > now\(\) THEN/);
+    expect(SQL).toMatch(/IF now\(\) >= v_until THEN/);
+  });
+
+  test("key_usage limites (helper fail-closed)", () => {
+    expect(SQL).toContain("fiscal_validate_key_usage");
+    expect(SQL).toContain("key_usage_too_many");
+    expect(SQL).toContain("key_usage_item_not_string");
+    expect(SQL).toContain("key_usage_item_length_invalid");
+    expect(SQL).toMatch(/v_len > 20/);
+    expect(SQL).toMatch(/char_length\(v_el #>> '\{\}'\) < 1 OR char_length\(v_el #>> '\{\}'\) > 80/);
+  });
+});
+
+describe("Fase 3.16.2-C — snapshots fail-closed no rpc_fiscal_draft_save", () => {
+  const SQL = readFileSync(CANONICAL_MIGRATION, "utf8");
+
+  test("whitelist NF-e (perfil e tributos) presente", () => {
+    expect(SQL).toContain("fiscal_validate_snapshot_keys");
+    expect(SQL).toContain("'ncm','cest','cfop','origem_mercadoria','cst_icms','csosn','unidade'");
+    expect(SQL).toContain("'pis','cofins','ipi','icms'");
+    expect(SQL).toContain("'cst','csosn','aliquota','base_calculo_modalidade'");
+  });
+
+  test("whitelist NFS-e (perfil e tributos) presente", () => {
+    expect(SQL).toContain("'lc116_item','cnae','municipal_tax_code','national_tax_code','municipality_ibge_code'");
+    expect(SQL).toContain("'iss_rate','iss_withheld','retencoes_suportadas'");
+    expect(SQL).toMatch(/nfse_iss_rate_out_of_range/);
+    expect(SQL).toMatch(/nfse_iss_withheld_not_boolean/);
+    expect(SQL).toContain("'pis','cofins','csll','irrf','inss'");
+  });
+
+  test("valida existência do source_item_id (produto e serviço)", () => {
+    expect(SQL).toContain("source_item_product_not_found");
+    expect(SQL).toContain("source_item_product_profile_missing");
+    expect(SQL).toContain("source_item_service_profile_missing");
+    expect(SQL).toMatch(/FROM public\.product_fiscal_profiles pfp\s+WHERE pfp\.product_id = v_source_id/);
+    expect(SQL).toMatch(/FROM public\.service_fiscal_profiles sfp\s+WHERE sfp\.service_id = v_source_id/);
+  });
+
+  test("validate_homologation exige CFOP+CST/CSOSN e ISS rate", () => {
+    expect(SQL).toMatch(/item_cfop/);
+    expect(SQL).toMatch(/item_cst_csosn/);
+    expect(SQL).toMatch(/item_iss_rate/);
+    expect(SQL).toContain("sem aliquota de ISS definida");
+  });
+});
+
