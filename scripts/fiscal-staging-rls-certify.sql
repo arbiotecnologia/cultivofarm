@@ -710,11 +710,13 @@ BEGIN
         EXECUTE $q$INSERT INTO public.service_fiscal_profiles(source_reference, is_active, lc116_item, cnae, profile_status)
                    VALUES('FISCAL_TEST_3111_INS_'||gen_random_uuid()::text, false, '01.01', '0111-3', 'DRAFT')$q$;
       ELSIF p_table='customer_fiscal_profiles' THEN
+        -- 3.11.4: usa cliente C exclusivo do INSERT (sem profile seed) para
+        -- evitar duplicate key contra o profile SEL de cli_A (unique customer_id).
         EXECUTE format($f$INSERT INTO public.customer_fiscal_profiles
                           (customer_id, profile_status, validation_notes)
                           VALUES (%L::uuid, 'INCOMPLETE',
                                   'FISCAL_TEST_3111_INS_'||gen_random_uuid()::text)$f$,
-                       current_setting('fiscal_test_3111.cliente_a_id'));
+                       current_setting('fiscal_test_3111.cliente_c_id'));
       ELSIF p_table='fiscal_invoices' THEN
         EXECUTE $q$INSERT INTO public.fiscal_invoices(invoice_type,status,total_amount,notes,created_by,
                      document_model,document_origin,environment,provider,normalized_status,reconciliation_status)
