@@ -1,17 +1,28 @@
 # Fase Fiscal 3.11 — Harness RLS SQL-Nativo (guia não técnico)
 
-> **AVISO — VERSÃO 3.11.2.**
-> - A versão **3.11** era um **placeholder** (inseria 677 linhas `skipped` e
->   trazia texto "a preencher"). **Não executar cópia dessa versão.**
-> - A versão **3.11.1** executava a matriz de verdade, mas deixava funções
->   auxiliares e tabelas de suporte em `public` após COMMIT, exigindo
->   `DROP TABLE` manual — e o ramo DELETE usava `WHERE 1=0` (deny sem tocar
->   em fixture real).
-> - A versão **3.11.2** — este arquivo — substitui integralmente as duas versões anteriores (3.11 e 3.11.1 ficam formalmente substituídas).
->   Todos os helpers vivem em `pg_temp` (descartados pelo PostgreSQL ao fim
->   da sessão), o ramo DELETE opera contra fixtures descartáveis reais com
->   verificação de presença física, e o `role_map` foi corrigido para não
->   atribuir papel ao UUID anônimo.
+> **AVISO — VERSÃO 3.11.3.**
+> - **3.11** era um placeholder (inseria 677 linhas `skipped`).
+> - **3.11.1** executava a matriz mas deixava helpers em `public` e usava
+>   `WHERE 1=0` no ramo DELETE.
+> - **3.11.2** moveu helpers para `pg_temp` e usou fixtures reais de DELETE,
+>   mas o run runtime no staging revelou 46 falhas + 2 erros por:
+>   (a) meta-comando psql `\set` (SQL Editor não interpreta);
+>   (b) role `cliente_produtor` atribuída antes do vínculo `user_clientes`
+>   exigido pelo trigger canônico;
+>   (c) FK `financial_audit_log.performed_by` bloqueando teardown de
+>   `auth.users`;
+>   (d) `INSERT..SELECT` sem checagem de `ROW_COUNT` marcado como allow
+>   quando a fonte era invisível ao papel;
+>   (e) DELETE reutilizando linha alterada pelo UPDATE em
+>   `product_fiscal_profiles` / `customer_fiscal_profiles`;
+>   (f) UPDATE mutando o próprio marker de identificação;
+>   (g) Views `v_product/service_fiscal_readiness` sem fixture
+>   `is_active=true` elegível;
+>   (h) pré/pós-count de `fiscal_events` no RPC executor rodando sob role
+>   sem grant, fora do bloco de exceção.
+> - **3.11.3** — este arquivo — elimina esses achados sem alterar policies,
+>   migrations, schema ou regras de negócio. Todas as flags fiscais
+>   permanecem `false`.
 
 ## O que é
 
