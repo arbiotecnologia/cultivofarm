@@ -28,6 +28,7 @@ DECLARE
   v_prod_on     integer;
   v_mig_3_16    integer;
   v_mig_3_17    integer;
+  v_mig_3_18    integer;
 BEGIN
   IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
     RAISE EXCEPTION 'FISCAL_HML_ABORT: tabela public._fiscal_staging_marker ausente. Crie o marker manualmente antes de rodar as fixtures.';
@@ -80,12 +81,17 @@ BEGIN
     INTO v_mig_3_16 USING '20260724000000';
   EXECUTE 'SELECT count(*) FROM supabase_migrations.schema_migrations WHERE version = $1'
     INTO v_mig_3_17 USING '20260725000000';
+  EXECUTE 'SELECT count(*) FROM supabase_migrations.schema_migrations WHERE version = $1'
+    INTO v_mig_3_18 USING '20260726000000';
 
   IF v_mig_3_16 = 0 THEN
     RAISE EXCEPTION 'FISCAL_HML_ABORT: migration 20260724000000 (Fase 3.16) não aplicada.';
   END IF;
   IF v_mig_3_17 = 0 THEN
     RAISE EXCEPTION 'FISCAL_HML_ABORT: migration 20260725000000 (Fase 3.17) não aplicada.';
+  END IF;
+  IF v_mig_3_18 = 0 THEN
+    RAISE EXCEPTION 'FISCAL_HML_ABORT: migration 20260726000000 (Fase 3.18) não aplicada.';
   END IF;
 
   RAISE NOTICE 'FISCAL_HML preflight OK em % (project_ref=%).', current_database(), v_marker_ref;

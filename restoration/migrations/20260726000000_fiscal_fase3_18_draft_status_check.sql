@@ -1,0 +1,16 @@
+-- =====================================================================
+-- STUB DOCUMENTAL — NÃO EXECUTAR.
+--
+-- A migration canônica da Fase Fiscal 3.18 vive exclusivamente em:
+--
+--   supabase/migrations/20260726000000_fiscal_fase3_18_draft_status_check.sql
+--
+-- Escopo: correção incremental de fiscal_invoices_status_check para
+-- preservar { PENDING, ISSUED, CANCELED, ERROR } e adicionar 'DRAFT',
+-- alinhando o schema à Fase 3.16 (rpc_fiscal_draft_save). Nenhum dado
+-- é limpo. Nenhum outro objeto é alterado.
+--
+-- Este arquivo é apenas um redirecionamento textual mantido para
+-- coerência histórica com as fases anteriores em restoration/migrations.
+-- NENHUMA cópia executável do SQL da Fase 3.18 deve residir aqui.
+-- =====================================================================
