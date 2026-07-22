@@ -409,7 +409,16 @@ export default function FiscalEmpresa() {
               <CardHeader><CardTitle className="text-base">Identificação</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FieldRow id="cnpj" label="CNPJ" description="Somente números; validação algorítmica.">
-                  <Input id="cnpj" inputMode="numeric" value={values.cnpj ?? ""} onChange={(e) => set("cnpj", e.target.value)} aria-invalid={!!errors.cnpj} />
+                  <Input
+                    id="cnpj"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={18}
+                    placeholder="00.000.000/0000-00"
+                    value={formatCNPJ(values.cnpj ?? "")}
+                    onChange={(e) => set("cnpj", unmask(e.target.value).slice(0, 14))}
+                    aria-invalid={!!errors.cnpj}
+                  />
                   {errors.cnpj ? <p className="text-xs text-destructive" role="alert">{errors.cnpj}</p> : null}
                 </FieldRow>
                 <FieldRow id="legal_name" label="Razão social">
@@ -419,11 +428,29 @@ export default function FiscalEmpresa() {
                   <Input id="trade_name" value={values.trade_name ?? ""} onChange={(e) => set("trade_name", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="fiscal_email" label="E-mail fiscal">
-                  <Input id="fiscal_email" type="email" value={values.fiscal_email ?? ""} onChange={(e) => set("fiscal_email", e.target.value)} aria-invalid={!!errors.fiscal_email} />
+                  <Input
+                    id="fiscal_email"
+                    type="email"
+                    autoComplete="email"
+                    spellCheck={false}
+                    placeholder="fiscal@empresa.com.br"
+                    value={values.fiscal_email ?? ""}
+                    onChange={(e) => set("fiscal_email", e.target.value)}
+                    onBlur={(e) => set("fiscal_email", e.target.value.trim())}
+                    aria-invalid={!!errors.fiscal_email}
+                  />
                   {errors.fiscal_email ? <p className="text-xs text-destructive" role="alert">{errors.fiscal_email}</p> : null}
                 </FieldRow>
                 <FieldRow id="phone" label="Telefone">
-                  <Input id="phone" value={values.phone ?? ""} onChange={(e) => set("phone", e.target.value)} />
+                  <Input
+                    id="phone"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    maxLength={15}
+                    placeholder="(00) 00000-0000"
+                    value={formatTelefone(values.phone ?? "")}
+                    onChange={(e) => set("phone", unmask(e.target.value).slice(0, 11))}
+                  />
                 </FieldRow>
                 <FieldRow id="tax_regime" label="Regime tributário">
                   <Input id="tax_regime" value={values.tax_regime ?? ""} onChange={(e) => set("tax_regime", e.target.value)} />
