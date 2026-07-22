@@ -7,7 +7,7 @@
 >   auxiliares e tabelas de suporte em `public` após COMMIT, exigindo
 >   `DROP TABLE` manual — e o ramo DELETE usava `WHERE 1=0` (deny sem tocar
 >   em fixture real).
-> - A versão **3.11.2** — este arquivo — substitui integralmente as duas.
+> - A versão **3.11.2** — este arquivo — substitui integralmente as duas versões anteriores (3.11 e 3.11.1 ficam formalmente substituídas).
 >   Todos os helpers vivem em `pg_temp` (descartados pelo PostgreSQL ao fim
 >   da sessão), o ramo DELETE opera contra fixtures descartáveis reais com
 >   verificação de presença física, e o `role_map` foi corrigido para não
