@@ -1,9 +1,11 @@
 /**
- * Fase Fiscal 3.16 — Hook do wizard de rascunho.
+ * Fase Fiscal 3.16 / 3.16.2-B — Hook do wizard de rascunho.
  *
- * Chama RPC transacional `rpc_fiscal_draft_save` (server recalcula totais)
- * e `rpc_fiscal_draft_validate_homologation` (read-only). Concorrência via
- * `draft_version`. Nenhum caminho aceita `AUTHORIZED`/`ISSUED`.
+ * Chama RPC transacional `rpc_fiscal_draft_save` (server recalcula totais e
+ * persiste `fiscal_profile_snapshot`/`tax_snapshot` por item) e
+ * `rpc_fiscal_draft_validate_homologation` (read-only, exige perfil fiscal
+ * por item). Concorrência via `draft_version`. Nenhum caminho aceita
+ * `AUTHORIZED`/`ISSUED`.
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +64,8 @@ export function useSaveFiscalRascunho() {
         net_value: it.net_value,
         source_item_type: it.source_item_type ?? null,
         source_item_id: it.source_item_id ?? null,
+        fiscal_profile_snapshot: it.fiscal_profile_snapshot ?? {},
+        tax_snapshot: it.tax_snapshot ?? {},
       }));
 
       const { data, error } = await rpc("rpc_fiscal_draft_save", {
@@ -81,7 +85,7 @@ export function useSaveFiscalRascunho() {
 
 export interface HomologationValidationResult {
   status: "READY" | "INCOMPLETE" | "BLOCKED";
-  missing?: string[];
+  missing?: Array<{ field: string; message: string }>;
   reason?: string;
   item_count?: number;
   total_amount?: number;

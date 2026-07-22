@@ -1,10 +1,18 @@
 /**
- * Fase Fiscal 3.16 — Wizard de rascunho NF-e/NFS-e (preparação/homologação).
+ * Fase Fiscal 3.16 / 3.16.2-B — Wizard de rascunho NF-e/NFS-e
+ * (preparação/homologação).
  *
  * NÃO transmite nada. Apenas prepara e salva rascunhos. Todos os textos
  * estão em pt-BR. Nenhum botão de emissão/transmissão/autorização.
- * Fase 3.16.1: destinatário agora consulta `public.clientes` (metadados
- * mínimos) via `useFiscalClientesLite`.
+ *
+ * 3.16.2-B:
+ *   - Removido o campo manual de UUID do cliente; permanece somente o
+ *     ClientePicker.
+ *   - Cada item carrega campos fiscais reais (NCM/CEST/CFOP/CST/CSOSN/
+ *     ISS/LC116/CNAE/origem) preenchíveis manualmente ou automaticamente
+ *     via ProdutoPicker/ServicoPicker (perfil fiscal cadastrado).
+ *   - Persistência inclui `fiscal_profile_snapshot` e `tax_snapshot` por
+ *     item (sanitizados; o servidor rejeita chaves sensíveis).
  */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -24,6 +32,8 @@ import {
 } from "@/lib/fiscal/rascunhoWizardValidation";
 import { useSaveFiscalRascunho, useValidateHomologation } from "@/hooks/useFiscalRascunho";
 import { useFiscalClientesLite } from "@/hooks/useFiscalClientesLite";
+import { useFiscalProdutosLite, type FiscalProdutoLite } from "@/hooks/useFiscalProdutosLite";
+import { useFiscalServicosLite, type FiscalServicoLite } from "@/hooks/useFiscalServicosLite";
 import { useDebounce } from "@/hooks/useDebounce";
 
 const STEPS = ["documento", "destinatario", "itens", "tributos", "revisao"] as const;
@@ -76,6 +86,21 @@ export default function RascunhoWizard({
       gross_value: 0,
       discount_value: 0,
       net_value: 0,
+      ncm: "",
+      cest: "",
+      cfop: "",
+      origin_code: "",
+      icms_cst: "",
+      icms_csosn: "",
+      ipi_cst: "",
+      pis_cst: "",
+      cofins_cst: "",
+      lc116_item: "",
+      cnae: "",
+      municipal_taxation_code: "",
+      iss_withheld: false,
+      fiscal_profile_snapshot: {},
+      tax_snapshot: {},
     };
     setValues((prev) => ({ ...prev, items: [...prev.items, empty] }));
   }
@@ -97,6 +122,79 @@ export default function RascunhoWizard({
         return merged;
       }),
     }));
+  }
+
+  function applyProduto(idx: number, p: FiscalProdutoLite) {
+    const profile = p.fiscal_profile;
+    const snap = profile
+      ? {
+          kind: "PRODUCT" as const,
+          ncm: profile.ncm,
+          cest: profile.cest,
+          cfop_in_state: profile.cfop_in_state,
+          cfop_interstate: profile.cfop_interstate,
+          origin_code: profile.origin_code,
+          profile_status: profile.profile_status,
+        }
+      : {};
+    const tax = profile
+      ? {
+          icms_cst: profile.icms_cst,
+          icms_csosn: profile.icms_csosn,
+          ipi_cst: profile.ipi_cst,
+          pis_cst: profile.pis_cst,
+          cofins_cst: profile.cofins_cst,
+        }
+      : {};
+    updateItem(idx, {
+      item_kind: "PRODUCT",
+      description: p.nome,
+      source_item_type: "produto",
+      source_item_id: p.id,
+      commercial_unit: profile?.commercial_unit ?? "UN",
+      ncm: profile?.ncm ?? "",
+      cest: profile?.cest ?? "",
+      cfop: profile?.cfop_in_state ?? "",
+      origin_code: profile?.origin_code ?? "",
+      icms_cst: profile?.icms_cst ?? "",
+      icms_csosn: profile?.icms_csosn ?? "",
+      ipi_cst: profile?.ipi_cst ?? "",
+      pis_cst: profile?.pis_cst ?? "",
+      cofins_cst: profile?.cofins_cst ?? "",
+      fiscal_profile_snapshot: snap,
+      tax_snapshot: tax,
+    });
+  }
+
+  function applyServico(idx: number, s: FiscalServicoLite) {
+    const profile = s.fiscal_profile;
+    const snap = {
+      kind: "SERVICE" as const,
+      lc116_item: profile.lc116_item,
+      cnae: profile.cnae,
+      municipal_taxation_code: profile.municipal_taxation_code,
+      incidence_municipality_ibge_code: profile.incidence_municipality_ibge_code,
+      profile_status: profile.profile_status,
+    };
+    const tax = {
+      iss_rate: profile.iss_rate,
+      iss_withheld_default: profile.iss_withheld_default,
+      national_taxation_code: profile.national_taxation_code,
+    };
+    updateItem(idx, {
+      item_kind: "SERVICE",
+      description: s.nome,
+      source_item_type: "servico",
+      source_item_id: s.service_id ?? undefined,
+      commercial_unit: "UN",
+      lc116_item: profile.lc116_item ?? "",
+      cnae: profile.cnae ?? "",
+      municipal_taxation_code: profile.municipal_taxation_code ?? "",
+      iss_rate: profile.iss_rate ?? undefined,
+      iss_withheld: profile.iss_withheld_default,
+      fiscal_profile_snapshot: snap,
+      tax_snapshot: tax,
+    });
   }
 
   function validateAll(): boolean {
@@ -147,9 +245,10 @@ export default function RascunhoWizard({
       if (res.status === "READY") {
         toast({ title: "Pronto para homologação", description: "Nenhuma pendência identificada." });
       } else if (res.status === "INCOMPLETE") {
+        const list = (res.missing ?? []).map((m) => m.message).join(" · ");
         toast({
           title: "Rascunho incompleto",
-          description: `Campos pendentes: ${(res.missing ?? []).join(", ")}`,
+          description: list || "Campos pendentes identificados pelo servidor.",
           variant: "destructive",
         });
       } else {
@@ -197,8 +296,8 @@ export default function RascunhoWizard({
                 <div>
                   <Label>Tipo de documento</Label>
                   <select className="h-10 border rounded-md px-3 bg-background w-full" value={values.invoice_type} onChange={(e) => set("invoice_type", e.target.value as RascunhoFormValues["invoice_type"])}>
-                    <option value="NFE">NF-e</option>
-                    <option value="NFSE">NFS-e</option>
+                    <option value="NFE">NF-e (produtos)</option>
+                    <option value="NFSE">NFS-e (serviços)</option>
                   </select>
                 </div>
                 <div>
@@ -252,16 +351,16 @@ export default function RascunhoWizard({
                   }}
                   disabled={readonly}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>ID do cliente</Label>
-                    <Input value={values.customer_id} onChange={(e) => set("customer_id", e.target.value)} placeholder="UUID do cliente" />
-                    {errors.customer_id ? <p className="text-xs text-destructive" role="alert">{errors.customer_id}</p> : null}
-                  </div>
-                  <div>
-                    <Label>CPF/CNPJ</Label>
-                    <Input value={values.customer_document} onChange={(e) => set("customer_document", e.target.value.replace(/\D/g, ""))} maxLength={14} />
-                  </div>
+                {errors.customer_id ? (
+                  <p className="text-xs text-destructive" role="alert">{errors.customer_id}</p>
+                ) : null}
+                <div>
+                  <Label>CPF/CNPJ do destinatário</Label>
+                  <Input
+                    value={values.customer_document}
+                    readOnly
+                    placeholder="Selecione um cliente"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -276,39 +375,124 @@ export default function RascunhoWizard({
                   </CardTitle>
                   <CardDescription>
                     Adicione, edite ou remova. Totais são recalculados no servidor ao salvar.
+                    Selecione um produto ou serviço cadastrado para preencher automaticamente o perfil fiscal.
                   </CardDescription>
                 </div>
                 <Button size="sm" variant="secondary" onClick={addItem} type="button">
                   <Plus className="h-4 w-4 mr-1" /> Adicionar
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 {values.items.length === 0 && (
                   <p className="text-sm text-muted-foreground">Nenhum item adicionado.</p>
                 )}
                 {values.items.map((it, idx) => (
-                  <div key={idx} className="border rounded p-3 grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
-                    <div className="md:col-span-2">
-                      <Label>Descrição</Label>
-                      <Input value={it.description} onChange={(e) => updateItem(idx, { description: e.target.value })} />
+                  <div key={idx} className="border rounded p-3 space-y-3">
+                    {values.invoice_type === "NFE" ? (
+                      <ProdutoPicker onPick={(p) => applyProduto(idx, p)} disabled={readonly} />
+                    ) : (
+                      <ServicoPicker onPick={(s) => applyServico(idx, s)} disabled={readonly} />
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
+                      <div className="md:col-span-2">
+                        <Label>Descrição</Label>
+                        <Input value={it.description} onChange={(e) => updateItem(idx, { description: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Qtd.</Label>
+                        <Input type="number" step="0.01" value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} />
+                      </div>
+                      <div>
+                        <Label>Unidade</Label>
+                        <Input value={it.commercial_unit} onChange={(e) => updateItem(idx, { commercial_unit: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Valor unit.</Label>
+                        <Input type="number" step="0.01" value={it.unit_value} onChange={(e) => updateItem(idx, { unit_value: Number(e.target.value) })} />
+                      </div>
+                      <div>
+                        <Label>Total líquido</Label>
+                        <Input readOnly value={it.net_value} />
+                      </div>
                     </div>
-                    <div>
-                      <Label>Qtd.</Label>
-                      <Input type="number" step="0.01" value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} />
-                    </div>
-                    <div>
-                      <Label>Unidade</Label>
-                      <Input value={it.commercial_unit} onChange={(e) => updateItem(idx, { commercial_unit: e.target.value })} />
-                    </div>
-                    <div>
-                      <Label>Valor unit.</Label>
-                      <Input type="number" step="0.01" value={it.unit_value} onChange={(e) => updateItem(idx, { unit_value: Number(e.target.value) })} />
-                    </div>
-                    <div>
-                      <Label>Total líquido</Label>
-                      <Input readOnly value={it.net_value} />
-                    </div>
-                    <div className="md:col-span-6 flex justify-end">
+
+                    {values.invoice_type === "NFE" ? (
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2 border-t">
+                        <div>
+                          <Label>NCM</Label>
+                          <Input value={it.ncm ?? ""} onChange={(e) => updateItem(idx, { ncm: e.target.value.replace(/\D/g, "").slice(0, 8) })} />
+                        </div>
+                        <div>
+                          <Label>CEST</Label>
+                          <Input value={it.cest ?? ""} onChange={(e) => updateItem(idx, { cest: e.target.value.replace(/\D/g, "").slice(0, 7) })} />
+                        </div>
+                        <div>
+                          <Label>CFOP</Label>
+                          <Input value={it.cfop ?? ""} onChange={(e) => updateItem(idx, { cfop: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
+                        </div>
+                        <div>
+                          <Label>Origem</Label>
+                          <Input value={it.origin_code ?? ""} onChange={(e) => updateItem(idx, { origin_code: e.target.value.slice(0, 2) })} />
+                        </div>
+                        <div>
+                          <Label>ICMS CST</Label>
+                          <Input value={it.icms_cst ?? ""} onChange={(e) => updateItem(idx, { icms_cst: e.target.value.slice(0, 4) })} />
+                        </div>
+                        <div>
+                          <Label>ICMS CSOSN</Label>
+                          <Input value={it.icms_csosn ?? ""} onChange={(e) => updateItem(idx, { icms_csosn: e.target.value.slice(0, 4) })} />
+                        </div>
+                        <div>
+                          <Label>IPI CST</Label>
+                          <Input value={it.ipi_cst ?? ""} onChange={(e) => updateItem(idx, { ipi_cst: e.target.value.slice(0, 4) })} />
+                        </div>
+                        <div>
+                          <Label>PIS CST</Label>
+                          <Input value={it.pis_cst ?? ""} onChange={(e) => updateItem(idx, { pis_cst: e.target.value.slice(0, 4) })} />
+                        </div>
+                        <div>
+                          <Label>COFINS CST</Label>
+                          <Input value={it.cofins_cst ?? ""} onChange={(e) => updateItem(idx, { cofins_cst: e.target.value.slice(0, 4) })} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t">
+                        <div>
+                          <Label>Item LC 116</Label>
+                          <Input value={it.lc116_item ?? ""} onChange={(e) => updateItem(idx, { lc116_item: e.target.value.slice(0, 10) })} />
+                        </div>
+                        <div>
+                          <Label>CNAE</Label>
+                          <Input value={it.cnae ?? ""} onChange={(e) => updateItem(idx, { cnae: e.target.value.replace(/\D/g, "").slice(0, 7) })} />
+                        </div>
+                        <div>
+                          <Label>Código municipal</Label>
+                          <Input value={it.municipal_taxation_code ?? ""} onChange={(e) => updateItem(idx, { municipal_taxation_code: e.target.value.slice(0, 20) })} />
+                        </div>
+                        <div>
+                          <Label>Alíquota ISS (%)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={it.iss_rate ?? ""}
+                            onChange={(e) => updateItem(idx, { iss_rate: e.target.value === "" ? undefined : Number(e.target.value) })}
+                          />
+                        </div>
+                        <div className="col-span-2 md:col-span-4 flex items-center gap-2 text-sm">
+                          <input
+                            id={`iss-with-${idx}`}
+                            type="checkbox"
+                            checked={!!it.iss_withheld}
+                            onChange={(e) => updateItem(idx, { iss_withheld: e.target.checked })}
+                          />
+                          <Label htmlFor={`iss-with-${idx}`} className="cursor-pointer">
+                            ISS retido pelo tomador
+                          </Label>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end">
                       <Button variant="ghost" size="sm" type="button" onClick={() => removeItem(idx)}>
                         <Trash2 className="h-4 w-4 mr-1" /> Remover
                       </Button>
@@ -367,7 +551,7 @@ export default function RascunhoWizard({
                   </li>
                   <li className="flex items-center gap-2">
                     {values.customer_id ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
-                    Destinatário: {values.customer_id || "não selecionado"}
+                    Destinatário: {values.customer_document || "não selecionado"}
                   </li>
                   <li className="flex items-center gap-2">
                     {values.items.length > 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
@@ -392,7 +576,7 @@ export default function RascunhoWizard({
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Subcomponente: seletor de cliente (leitura leve, filtrado por RLS)
+// Subcomponente: seletor de cliente
 // ────────────────────────────────────────────────────────────────────────────
 
 interface ClientePickerProps {
@@ -458,6 +642,132 @@ function ClientePicker({ currentId, currentDoc, disabled, onPick }: ClientePicke
           Selecionado: <span className="font-mono">{currentId.slice(0, 8)}…</span>
           {currentDoc ? <> · CPF/CNPJ: {currentDoc}</> : null}
         </p>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcomponente: seletor de produto (com perfil fiscal)
+// ────────────────────────────────────────────────────────────────────────────
+
+function ProdutoPicker({ onPick, disabled }: { onPick: (p: FiscalProdutoLite) => void; disabled?: boolean }) {
+  const [term, setTerm] = useState("");
+  const debounced = useDebounce(term, 250);
+  const [open, setOpen] = useState(false);
+  const listQ = useFiscalProdutosLite(debounced);
+
+  useEffect(() => {
+    if (debounced.trim().length >= 2) setOpen(true);
+  }, [debounced]);
+
+  return (
+    <div className="rounded-md border p-2 space-y-1 bg-muted/20" data-testid="fiscal-rascunho-produto-picker">
+      <Label className="text-xs">Selecionar produto (opcional) — preenche perfil fiscal</Label>
+      <div className="relative">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+        <Input
+          className="pl-8"
+          placeholder="Nome ou código do produto"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          disabled={disabled}
+        />
+      </div>
+      {open && debounced.trim().length >= 2 && (
+        <div className="max-h-40 overflow-auto rounded border bg-background">
+          {listQ.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : (listQ.data ?? []).length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum produto encontrado.</div>
+          ) : (
+            <ul className="text-sm">
+              {(listQ.data ?? []).map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted"
+                    onClick={() => {
+                      onPick(p);
+                      setTerm(p.nome);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-medium">{p.nome}</span>
+                    {p.fiscal_profile?.ncm ? (
+                      <span className="text-xs text-muted-foreground ml-2">NCM {p.fiscal_profile.ncm}</span>
+                    ) : (
+                      <span className="text-xs text-amber-600 ml-2">sem perfil fiscal</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcomponente: seletor de serviço (com perfil fiscal)
+// ────────────────────────────────────────────────────────────────────────────
+
+function ServicoPicker({ onPick, disabled }: { onPick: (s: FiscalServicoLite) => void; disabled?: boolean }) {
+  const [term, setTerm] = useState("");
+  const debounced = useDebounce(term, 250);
+  const [open, setOpen] = useState(false);
+  const listQ = useFiscalServicosLite(debounced);
+
+  useEffect(() => {
+    if (debounced.trim().length >= 2) setOpen(true);
+  }, [debounced]);
+
+  return (
+    <div className="rounded-md border p-2 space-y-1 bg-muted/20" data-testid="fiscal-rascunho-servico-picker">
+      <Label className="text-xs">Selecionar serviço (opcional) — preenche perfil fiscal</Label>
+      <div className="relative">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+        <Input
+          className="pl-8"
+          placeholder="Nome do serviço"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          disabled={disabled}
+        />
+      </div>
+      {open && debounced.trim().length >= 2 && (
+        <div className="max-h-40 overflow-auto rounded border bg-background">
+          {listQ.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : (listQ.data ?? []).length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum serviço encontrado.</div>
+          ) : (
+            <ul className="text-sm">
+              {(listQ.data ?? []).map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted"
+                    onClick={() => {
+                      onPick(s);
+                      setTerm(s.nome);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-medium">{s.nome}</span>
+                    {s.fiscal_profile.lc116_item ? (
+                      <span className="text-xs text-muted-foreground ml-2">LC116 {s.fiscal_profile.lc116_item}</span>
+                    ) : (
+                      <span className="text-xs text-amber-600 ml-2">sem LC 116</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );

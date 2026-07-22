@@ -107,9 +107,11 @@ function Checklist({ items }: { items: Array<{ key: string; label: string; ok: b
 }
 
 export default function FiscalEmpresa() {
-  const { role } = useAuth();
+  const { role, roles } = useAuth();
   const access = getAccessLevel(role, "/configuracoes/fiscal/empresa");
   const canEdit = access === "rw";
+  // Gestão de certificados é estritamente admin — financeiro/gestor só visualizam.
+  const canManageCertificates = roles.includes("administrador");
   const uiEnabled = FEATURE_FLAGS.fiscalConfigurationUi === true;
   const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;
 
@@ -572,7 +574,9 @@ export default function FiscalEmpresa() {
             <CertificadoDigitalSecao
               companySettingsId={settingsQuery.data.id}
               canEdit={canEdit}
+              canManageCertificates={canManageCertificates}
             />
+
           </TabsContent>
 
           <TabsContent value="integracao" className="space-y-4">

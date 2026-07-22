@@ -387,19 +387,34 @@ BEGIN
     END IF;
     v_net  := round(v_gross - v_disc, 2);
 
-    v_computed_items := v_computed_items || jsonb_build_object(
-      'seq', v_seq,
-      'item_kind', v_kind,
-      'description', COALESCE(v_item->>'description',''),
-      'quantity', v_qty,
-      'commercial_unit', v_item->>'commercial_unit',
-      'unit_value', v_unit,
-      'gross_value', v_gross,
-      'discount_value', v_disc,
-      'net_value', v_net,
-      'source_item_type', v_item->>'source_item_type',
-      'source_item_id',   NULLIF(v_item->>'source_item_id','')::uuid
-    );
+    -- 3.16.2-B: snapshots por item (sanitizados; server valida ausência de segredo)
+    DECLARE
+      v_item_profile jsonb := COALESCE(v_item->'fiscal_profile_snapshot', '{}'::jsonb);
+      v_item_tax     jsonb := COALESCE(v_item->'tax_snapshot', '{}'::jsonb);
+    BEGIN
+      IF jsonb_typeof(v_item_profile) <> 'object' THEN v_item_profile := '{}'::jsonb; END IF;
+      IF jsonb_typeof(v_item_tax)     <> 'object' THEN v_item_tax     := '{}'::jsonb; END IF;
+      IF public.fiscal_json_has_sensitive_key(v_item_profile)
+         OR public.fiscal_json_has_sensitive_key(v_item_tax) THEN
+        RAISE EXCEPTION 'sensitive_key_in_snapshot' USING ERRCODE = '22023';
+      END IF;
+
+      v_computed_items := v_computed_items || jsonb_build_object(
+        'seq', v_seq,
+        'item_kind', v_kind,
+        'description', COALESCE(v_item->>'description',''),
+        'quantity', v_qty,
+        'commercial_unit', v_item->>'commercial_unit',
+        'unit_value', v_unit,
+        'gross_value', v_gross,
+        'discount_value', v_disc,
+        'net_value', v_net,
+        'source_item_type', v_item->>'source_item_type',
+        'source_item_id',   NULLIF(v_item->>'source_item_id','')::uuid,
+        'fiscal_profile_snapshot', v_item_profile,
+        'tax_snapshot',            v_item_tax
+      );
+    END;
     v_total := v_total + v_net;
   END LOOP;
 
@@ -491,7 +506,8 @@ BEGIN
   INSERT INTO public.fiscal_invoice_items (
     fiscal_invoice_id, item_sequence, item_kind, description,
     quantity, commercial_unit, unit_value, gross_value, discount_value, net_value,
-    source_item_type, source_item_id
+    source_item_type, source_item_id,
+    fiscal_profile_snapshot, tax_snapshot
   )
   SELECT
     v_new_id,
@@ -505,7 +521,9 @@ BEGIN
     (it->>'discount_value')::numeric,
     (it->>'net_value')::numeric,
     it->>'source_item_type',
-    NULLIF(it->>'source_item_id','')::uuid
+    NULLIF(it->>'source_item_id','')::uuid,
+    COALESCE(it->'fiscal_profile_snapshot','{}'::jsonb),
+    COALESCE(it->'tax_snapshot','{}'::jsonb)
   FROM jsonb_array_elements(v_computed_items) AS it;
 
   SELECT * INTO v_row FROM public.fiscal_invoices WHERE id = v_new_id;
@@ -601,6 +619,38 @@ BEGIN
     v_missing := v_missing || jsonb_build_object('field','items','message','Documento precisa de ao menos um item.');
   END IF;
 
+  -- 3.16.2-B: perfil fiscal obrigatório por item (NCM p/ produto, LC116+CNAE p/ serviço)
+  DECLARE
+    r RECORD;
+    v_prof jsonb;
+  BEGIN
+    FOR r IN
+      SELECT item_sequence, item_kind, COALESCE(fiscal_profile_snapshot, '{}'::jsonb) AS prof
+      FROM public.fiscal_invoice_items
+      WHERE fiscal_invoice_id = p_invoice_id
+      ORDER BY item_sequence
+    LOOP
+      v_prof := r.prof;
+      IF r.item_kind = 'PRODUCT' THEN
+        IF v_prof = '{}'::jsonb OR NULLIF(v_prof->>'ncm','') IS NULL THEN
+          v_missing := v_missing || jsonb_build_object(
+            'field','item_fiscal_profile',
+            'message','Item '||r.item_sequence||' sem perfil fiscal (NCM obrigatorio).'
+          );
+        END IF;
+      ELSIF r.item_kind = 'SERVICE' THEN
+        IF v_prof = '{}'::jsonb
+           OR NULLIF(v_prof->>'lc116_item','') IS NULL
+           OR NULLIF(v_prof->>'cnae','') IS NULL THEN
+          v_missing := v_missing || jsonb_build_object(
+            'field','item_fiscal_profile',
+            'message','Item '||r.item_sequence||' sem perfil fiscal (LC116 e CNAE obrigatorios).'
+          );
+        END IF;
+      END IF;
+    END LOOP;
+  END;
+
   IF v_row.customer_id IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM public.customer_fiscal_profiles WHERE customer_id = v_row.customer_id
   ) THEN
@@ -635,8 +685,22 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_user uuid := auth.uid();
-  v_id   uuid;
+  v_user            uuid := auth.uid();
+  v_id              uuid;
+  v_display_name    text;
+  v_native_alias    text;
+  v_subject         text;
+  v_issuer          text;
+  v_serial          text;
+  v_from            timestamptz;
+  v_until           timestamptz;
+  v_fp              text;
+  v_env             text := 'HOMOLOGATION';
+  ALLOWED_KEYS      text[] := ARRAY[
+    'display_name','native_alias','subject_name','issuer_name',
+    'serial_number','valid_from','valid_until','fingerprint_sha256','key_usage'
+  ];
+  k text;
 BEGIN
   IF v_user IS NULL THEN
     RAISE EXCEPTION 'unauthenticated' USING ERRCODE = '28000';
@@ -644,16 +708,78 @@ BEGIN
   IF NOT public.has_role(v_user, 'administrador'::app_role) THEN
     RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
   END IF;
-  IF public.fiscal_json_has_sensitive_key(COALESCE(p_metadata, '{}'::jsonb)) THEN
+  IF p_metadata IS NULL OR jsonb_typeof(p_metadata) <> 'object' THEN
+    RAISE EXCEPTION 'metadata_object_required' USING ERRCODE = '22023';
+  END IF;
+  IF public.fiscal_json_has_sensitive_key(p_metadata) THEN
     RAISE EXCEPTION 'sensitive_key_in_payload' USING ERRCODE = '22023';
   END IF;
 
+  -- Whitelist estrita de chaves
+  FOR k IN SELECT jsonb_object_keys(p_metadata) LOOP
+    IF NOT (k = ANY(ALLOWED_KEYS)) THEN
+      RAISE EXCEPTION 'metadata_key_not_allowed' USING ERRCODE = '22023';
+    END IF;
+  END LOOP;
+
+  -- Ambiente sempre HOMOLOGATION nesta fase (PRODUCTION bloqueado)
+  IF v_env <> 'HOMOLOGATION' THEN
+    RAISE EXCEPTION 'environment_not_allowed' USING ERRCODE = '22023';
+  END IF;
+
+  v_display_name := COALESCE(NULLIF(p_metadata->>'display_name',''), 'Certificado do sistema operacional');
+  IF char_length(v_display_name) > 120 THEN
+    RAISE EXCEPTION 'display_name_too_long' USING ERRCODE = '22023';
+  END IF;
+
+  v_native_alias := NULLIF(p_metadata->>'native_alias','');
+  IF v_native_alias IS NOT NULL AND char_length(v_native_alias) > 200 THEN
+    RAISE EXCEPTION 'native_alias_too_long' USING ERRCODE = '22023';
+  END IF;
+
+  v_subject := NULLIF(p_metadata->>'subject_name','');
+  IF v_subject IS NULL OR char_length(v_subject) > 500 THEN
+    RAISE EXCEPTION 'subject_name_invalid' USING ERRCODE = '22023';
+  END IF;
+
+  v_issuer := NULLIF(p_metadata->>'issuer_name','');
+  IF v_issuer IS NULL OR char_length(v_issuer) > 500 THEN
+    RAISE EXCEPTION 'issuer_name_invalid' USING ERRCODE = '22023';
+  END IF;
+
+  v_serial := NULLIF(p_metadata->>'serial_number','');
+  IF v_serial IS NULL OR char_length(v_serial) > 128 THEN
+    RAISE EXCEPTION 'serial_number_invalid' USING ERRCODE = '22023';
+  END IF;
+
+  v_fp := lower(COALESCE(p_metadata->>'fingerprint_sha256',''));
+  IF v_fp !~ '^[0-9a-f]{64}$' THEN
+    RAISE EXCEPTION 'fingerprint_sha256_invalid' USING ERRCODE = '22023';
+  END IF;
+
+  v_from  := NULLIF(p_metadata->>'valid_from','')::timestamptz;
+  v_until := NULLIF(p_metadata->>'valid_until','')::timestamptz;
+  IF v_from IS NULL OR v_until IS NULL THEN
+    RAISE EXCEPTION 'validity_required' USING ERRCODE = '22023';
+  END IF;
+  IF v_from >= v_until THEN
+    RAISE EXCEPTION 'validity_range_invalid' USING ERRCODE = '22023';
+  END IF;
+  IF v_until <= now() THEN
+    RAISE EXCEPTION 'certificate_expired' USING ERRCODE = '22023';
+  END IF;
+
+  IF p_metadata ? 'key_usage' AND jsonb_typeof(p_metadata->'key_usage') <> 'array' THEN
+    RAISE EXCEPTION 'key_usage_invalid' USING ERRCODE = '22023';
+  END IF;
+
+  -- Revoga certificados ativos anteriores de homologação
   UPDATE public.fiscal_certificates SET
     is_active = false,
     status = CASE WHEN status = 'AVAILABLE' THEN 'REVOKED' ELSE status END,
     revoked_at = now(), revoked_by = v_user, updated_at = now()
   WHERE company_settings_id = p_company_settings_id
-    AND environment = 'HOMOLOGATION'
+    AND environment = v_env
     AND is_active = true;
 
   INSERT INTO public.fiscal_certificates (
@@ -661,17 +787,11 @@ BEGIN
     display_name, native_alias, subject_name, issuer_name, serial_number,
     valid_from, valid_until, fingerprint_sha256, key_usage, created_by
   ) VALUES (
-    p_company_settings_id, 'SYSTEM_STORE', 'HOMOLOGATION', 'AVAILABLE',
-    COALESCE(p_metadata->>'display_name','Certificado do sistema operacional'),
-    p_metadata->>'native_alias',
-    p_metadata->>'subject_name',
-    p_metadata->>'issuer_name',
-    p_metadata->>'serial_number',
-    NULLIF(p_metadata->>'valid_from','')::timestamptz,
-    NULLIF(p_metadata->>'valid_until','')::timestamptz,
-    p_metadata->>'fingerprint_sha256',
+    p_company_settings_id, 'SYSTEM_STORE', v_env, 'AVAILABLE',
+    v_display_name, v_native_alias, v_subject, v_issuer, v_serial,
+    v_from, v_until, v_fp,
     CASE
-      WHEN p_metadata ? 'key_usage' AND jsonb_typeof(p_metadata->'key_usage')='array'
+      WHEN p_metadata ? 'key_usage'
       THEN ARRAY(SELECT jsonb_array_elements_text(p_metadata->'key_usage'))
       ELSE NULL
     END,
