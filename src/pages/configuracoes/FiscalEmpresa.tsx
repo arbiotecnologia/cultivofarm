@@ -7,6 +7,7 @@
  * Concorrência otimista via `configuration_version`.
  */
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
@@ -123,7 +124,34 @@ export default function FiscalEmpresa() {
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const canViewHomologation = Array.isArray(roles) && roles.some((r) => r === "administrador" || r === "gestor" || r === "financeiro");
-  const [tab, setTab] = useState<"empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "homologacao" | "revisao">("empresa");
+  type FiscalEmpresaTab = "empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "homologacao" | "revisao";
+  const FISCAL_EMPRESA_TABS: readonly FiscalEmpresaTab[] = [
+    "empresa","nfe","nfse","certificado","integracao","homologacao","revisao",
+  ] as const;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab: FiscalEmpresaTab = (() => {
+    const raw = searchParams.get("aba");
+    return (FISCAL_EMPRESA_TABS as readonly string[]).includes(raw ?? "")
+      ? (raw as FiscalEmpresaTab)
+      : "empresa";
+  })();
+  const [tab, setTab] = useState<FiscalEmpresaTab>(initialTab);
+  // Deep-link seguro: só respeita valores conhecidos.
+  useEffect(() => {
+    const raw = searchParams.get("aba");
+    if (raw && (FISCAL_EMPRESA_TABS as readonly string[]).includes(raw) && raw !== tab) {
+      setTab(raw as FiscalEmpresaTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const handleTabChange = (v: string) => {
+    if ((FISCAL_EMPRESA_TABS as readonly string[]).includes(v)) {
+      setTab(v as FiscalEmpresaTab);
+      const next = new URLSearchParams(searchParams);
+      next.set("aba", v);
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   useEffect(() => {
     if (settingsQuery.data) setValues(rowToFormValues(settingsQuery.data));
