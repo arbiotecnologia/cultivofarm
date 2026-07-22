@@ -462,10 +462,10 @@ export default function FiscalEmpresa() {
                   />
                 </FieldRow>
                 <FieldRow id="tax_regime" label="Regime tributário">
-                  <Input id="tax_regime" value={values.tax_regime ?? ""} onChange={(e) => set("tax_regime", e.target.value)} />
+                  <SelectNative id="tax_regime" value={values.tax_regime ?? ""} options={TAX_REGIME_OPTIONS} onChange={(v) => set("tax_regime", v)} />
                 </FieldRow>
-                <FieldRow id="crt" label="CRT">
-                  <Input id="crt" value={values.crt ?? ""} onChange={(e) => set("crt", e.target.value)} />
+                <FieldRow id="crt" label="CRT" description="Código do Regime Tributário conforme SEFAZ.">
+                  <SelectNative id="crt" value={values.crt ?? ""} options={CRT_OPTIONS} onChange={(v) => set("crt", v)} />
                 </FieldRow>
                 <FieldRow id="primary_cnae" label="CNAE principal">
                   <Input
