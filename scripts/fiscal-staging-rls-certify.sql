@@ -316,7 +316,7 @@ BEGIN
   INSERT INTO public.customer_fiscal_profiles(
     id, customer_id, profile_status, validation_notes, fiscal_municipality_ibge_code
   ) VALUES (
-    'ff5c3111-c05t-0000-0000-000000000001', v_cli_a, 'INCOMPLETE',
+    'ff5c3111-c057-0000-0000-000000000001', v_cli_a, 'INCOMPLETE',
     'FISCAL_TEST_3111_CUST', '3550308'
   ) ON CONFLICT (id) DO NOTHING;
 END $seed_fixtures$;
@@ -470,7 +470,7 @@ BEGIN
     WHEN 'company_fiscal_settings' THEN 'ff5c3111-c04f-0000-0000-000000000001'::uuid
     WHEN 'product_fiscal_profiles' THEN 'ff5c3111-b12b-0000-0000-000000000001'::uuid
     WHEN 'service_fiscal_profiles' THEN 'ff5c3111-5e12-0000-0000-000000000001'::uuid
-    WHEN 'customer_fiscal_profiles' THEN 'ff5c3111-c05t-0000-0000-000000000001'::uuid
+    WHEN 'customer_fiscal_profiles' THEN 'ff5c3111-c057-0000-0000-000000000001'::uuid
     WHEN 'fiscal_invoices'         THEN 'ff5c3111-f15c-0000-0000-000000000001'::uuid
     WHEN 'fiscal_invoice_items'    THEN NULL   -- select geral
     WHEN 'fiscal_events'           THEN NULL
@@ -792,7 +792,7 @@ END $run$;
 -- =====================================================================
 -- 8. TEARDOWN garantido (namespace sintético apenas)
 -- =====================================================================
-PERFORM public._fiscal_3111_reset();
+-- reset via DO block abaixo
 
 DO $post_cleanup$
 BEGIN
