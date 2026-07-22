@@ -526,21 +526,42 @@ function EditDrawer({
                 )}
               </div>
 
-              {STRING_FIELD_META.map(({ key, label, numeric }) => (
-                <div key={key} className="grid gap-1.5">
-                  <Label htmlFor={`f-${key}`}>{label}</Label>
-                  <Input
-                    id={`f-${key}`}
-                    value={values[key] ?? ""}
-                    onChange={(e) => setField(key, e.target.value)}
-                    aria-invalid={!!errors[key]}
-                    inputMode={numeric ? "numeric" : undefined}
-                  />
-                  {errors[key] ? (
-                    <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
-                  ) : null}
-                </div>
-              ))}
+              {STRING_FIELD_META.map(({ key, label, numeric, select, hint, placeholder }) => {
+                const raw = values[key] ?? "";
+                return (
+                  <div key={key} className="grid gap-1.5">
+                    <Label htmlFor={`f-${key}`}>{label}</Label>
+                    {select ? (
+                      <select
+                        id={`f-${key}`}
+                        className="h-10 border rounded-md px-3 bg-background disabled:opacity-60"
+                        value={raw}
+                        onChange={(e) => setField(key, e.target.value)}
+                        aria-invalid={!!errors[key]}
+                      >
+                        <option value="">— selecione —</option>
+                        {withLegacyOption(select, raw).map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        id={`f-${key}`}
+                        value={raw}
+                        placeholder={placeholder}
+                        onChange={(e) => setField(key, e.target.value)}
+                        aria-invalid={!!errors[key]}
+                        inputMode={numeric ? "numeric" : undefined}
+                      />
+                    )}
+                    {errors[key] ? (
+                      <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
+                    ) : hint ? (
+                      <p className="text-xs text-muted-foreground">{hint}</p>
+                    ) : null}
+                  </div>
+                );
+              })}
 
               <div className="grid gap-1.5">
                 <Label htmlFor="f-iss_rate">Alíquota ISS (%)</Label>
