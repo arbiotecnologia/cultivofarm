@@ -485,14 +485,33 @@ export default function FiscalEmpresa() {
             <Card>
               <CardHeader><CardTitle className="text-base">Endereço fiscal</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FieldRow id="postal_code" label="CEP"><Input id="postal_code" value={values.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value)} /></FieldRow>
-                <FieldRow id="street" label="Logradouro"><Input id="street" value={values.street ?? ""} onChange={(e) => set("street", e.target.value)} /></FieldRow>
-                <FieldRow id="number" label="Número"><Input id="number" value={values.number ?? ""} onChange={(e) => set("number", e.target.value)} /></FieldRow>
+                <FieldRow id="postal_code" label="CEP">
+                  <Input
+                    id="postal_code"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    maxLength={9}
+                    placeholder="00000-000"
+                    value={formatCEP(values.postal_code ?? "")}
+                    onChange={(e) => set("postal_code", unmask(e.target.value).slice(0, 8))}
+                  />
+                </FieldRow>
+                <FieldRow id="street" label="Logradouro"><Input id="street" autoComplete="address-line1" value={values.street ?? ""} onChange={(e) => set("street", e.target.value)} /></FieldRow>
+                <FieldRow id="number" label="Número"><Input id="number" inputMode="numeric" value={values.number ?? ""} onChange={(e) => set("number", e.target.value)} /></FieldRow>
                 <FieldRow id="complement" label="Complemento"><Input id="complement" value={values.complement ?? ""} onChange={(e) => set("complement", e.target.value)} /></FieldRow>
                 <FieldRow id="neighborhood" label="Bairro"><Input id="neighborhood" value={values.neighborhood ?? ""} onChange={(e) => set("neighborhood", e.target.value)} /></FieldRow>
-                <FieldRow id="city" label="Cidade"><Input id="city" value={values.city ?? ""} onChange={(e) => set("city", e.target.value)} /></FieldRow>
-                <FieldRow id="state" label="UF"><Input id="state" maxLength={2} value={values.state ?? ""} onChange={(e) => set("state", e.target.value.toUpperCase())} /></FieldRow>
-                <FieldRow id="municipality_ibge_code" label="Código IBGE do município"><Input id="municipality_ibge_code" inputMode="numeric" value={values.municipality_ibge_code ?? ""} onChange={(e) => set("municipality_ibge_code", e.target.value)} /></FieldRow>
+                <FieldRow id="city" label="Cidade"><Input id="city" autoComplete="address-level2" value={values.city ?? ""} onChange={(e) => set("city", e.target.value)} /></FieldRow>
+                <FieldRow id="state" label="UF"><Input id="state" autoComplete="address-level1" maxLength={2} placeholder="UF" value={values.state ?? ""} onChange={(e) => set("state", e.target.value.toUpperCase())} /></FieldRow>
+                <FieldRow id="municipality_ibge_code" label="Código IBGE do município">
+                  <Input
+                    id="municipality_ibge_code"
+                    inputMode="numeric"
+                    maxLength={7}
+                    placeholder="0000000"
+                    value={values.municipality_ibge_code ?? ""}
+                    onChange={(e) => set("municipality_ibge_code", unmask(e.target.value).slice(0, 7))}
+                  />
+                </FieldRow>
                 <FieldRow id="country_code" label="Código do país"><Input id="country_code" value={values.country_code ?? ""} onChange={(e) => set("country_code", e.target.value)} /></FieldRow>
               </CardContent>
             </Card>
