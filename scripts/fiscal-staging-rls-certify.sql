@@ -209,11 +209,18 @@ DO $seed_clientes$
 DECLARE
   v_cli_a uuid := 'ff5c3111-c1e1-0000-0000-000000000001';
   v_cli_b uuid := 'ff5c3111-c1e1-0000-0000-000000000002';
+  -- 3.11.4: cliente C dedicado ao INSERT de customer_fiscal_profiles.
+  -- Nunca recebe profile seed; é limpo antes/depois de cada célula INSERT
+  -- para que admin e financeiro testem a mesma operação em estado limpo,
+  -- eliminando a duplicidade indevidamente classificada como RLS allow.
+  v_cli_c uuid := 'ff5c3111-c1e1-0000-0000-000000000003';
   v_upA   uuid := 'ff5c3111-0000-0000-0000-00000000000b';
   v_upB   uuid := 'ff5c3111-0000-0000-0000-000000000010';
 BEGIN
   INSERT INTO public.clientes(id,nome)
-    VALUES (v_cli_a,'FISCAL_TEST_3111_cli_A'),(v_cli_b,'FISCAL_TEST_3111_cli_B')
+    VALUES (v_cli_a,'FISCAL_TEST_3111_cli_A'),
+           (v_cli_b,'FISCAL_TEST_3111_cli_B'),
+           (v_cli_c,'FISCAL_TEST_3111_cli_C_INSERT')
     ON CONFLICT (id) DO NOTHING;
 
   INSERT INTO public.user_clientes(user_id,cliente_id,principal)
@@ -223,6 +230,7 @@ BEGIN
   -- Persistir ids como GUC de sessão para uso em executores (payload FK real)
   PERFORM set_config('fiscal_test_3111.cliente_a_id', v_cli_a::text, false);
   PERFORM set_config('fiscal_test_3111.cliente_b_id', v_cli_b::text, false);
+  PERFORM set_config('fiscal_test_3111.cliente_c_id', v_cli_c::text, false);
 END $seed_clientes$;
 
 -- Roles: só depois de user_clientes existir para produtor A/B.
