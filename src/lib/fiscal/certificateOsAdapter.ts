@@ -41,7 +41,7 @@ export async function probeOsBridge(): Promise<FiscalOsBridgeStatus> {
   }
 }
 
-/** Retorna somente metadados sanitizados; nunca inclui senha/chave. */
+/** Retorna somente metadados sanitizados; nunca inclui material sensível. */
 export async function listOsCertificatesSafe(): Promise<FiscalOsCertificateMetadata[]> {
   const b = getOsBridge();
   if (!b) return [];

@@ -2,9 +2,10 @@
  * Fase Fiscal 3.16 — Contrato do bridge de certificado do sistema operacional.
  *
  * O navegador NUNCA enumera diretamente o Windows/macOS. Um conector nativo
- * futuro (extensão instalada pelo usuário) expõe `window.ARBioFiscalCertificateBridge`
- * com métodos ESTRITAMENTE de metadados. Nenhum método retorna PFX,
- * senha ou chave privada. `signDigest` NÃO faz parte desta fase.
+ * futuro (extensão instalada pelo usuário) expõe
+ * `window.ARBioFiscalCertificateBridge` com métodos ESTRITAMENTE de
+ * metadados sanitizados. Nenhum método retorna material criptográfico
+ * sensível. `signDigest` NÃO faz parte desta fase.
  */
 
 export interface FiscalOsCertificateMetadata {
