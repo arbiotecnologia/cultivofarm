@@ -221,11 +221,10 @@ Deno.serve(async (req) => {
     md3.update(der);
     fingerprintHex = md3.digest().toHex();
 
-    const ku = cert.getExtension("keyUsage");
+    const ku = cert.getExtension("keyUsage") as Record<string, unknown> | undefined;
     if (ku && typeof ku === "object") {
       for (const flag of ["digitalSignature","nonRepudiation","keyEncipherment","dataEncipherment","keyAgreement","keyCertSign","cRLSign"]) {
-        // deno-lint-ignore no-explicit-any
-        if ((ku as any)[flag]) keyUsages.push(flag);
+        if (ku[flag]) keyUsages.push(flag);
       }
     }
   } catch (err) {
