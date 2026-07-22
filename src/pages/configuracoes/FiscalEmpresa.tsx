@@ -64,24 +64,33 @@ function FieldRow({
   );
 }
 
+type SelectOption = string | { value: string; label: string };
 function SelectNative({
   id, value, onChange, options, disabled,
 }: {
   id: string;
   value: string | undefined;
   onChange: (v: string) => void;
-  options: readonly string[];
+  options: readonly SelectOption[];
   disabled?: boolean;
 }) {
+  const normalized = options.map((o) =>
+    typeof o === "string" ? { value: o, label: o } : o,
+  );
+  const currentValue = value ?? normalized[0]?.value ?? "";
+  const missing = value != null && value !== "" && !normalized.some((o) => o.value === value);
   return (
     <select
       id={id}
       disabled={disabled}
       className="h-10 border rounded-md px-3 bg-background disabled:opacity-60"
-      value={value ?? options[0]}
+      value={currentValue}
       onChange={(e) => onChange(e.target.value)}
     >
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      {missing ? (
+        <option value={value}>{`— manter valor atual (${value}) —`}</option>
+      ) : null}
+      {normalized.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );
 }
