@@ -367,7 +367,7 @@ END $seed_fixtures$;
 -- =====================================================================
 -- 6. Helpers de fixture descartável para DELETE (em pg_temp)
 --    Estratégia: cada DELETE roda contra uma linha real identificável
---    (nunca WHERE 1=0). Antes da tentativa, ensure_fixture_delete garante
+--    (nunca filtro vazio). Antes da tentativa, ensure_fixture_delete garante
 --    a existência; após a tentativa, presenca_delete inspeciona (como
 --    postgres, bypassando RLS) para diferenciar allow (linha some) de
 --    deny (linha permanece).
@@ -743,7 +743,7 @@ BEGIN
       v_observed := CASE WHEN v_ct > 0 THEN 'allow' ELSE 'deny' END;
 
     ELSIF p_op='DELETE' THEN
-      -- DELETE real contra fixture identificável (nunca WHERE 1=0)
+      -- DELETE real contra fixture identificável (nunca filtro vazio)
       EXECUTE pg_temp._fiscal_3111_delete_sql(p_table);
       GET DIAGNOSTICS v_ct = ROW_COUNT;
       v_observed := CASE WHEN v_ct > 0 THEN 'allow' ELSE 'deny' END;
@@ -1083,5 +1083,5 @@ SELECT
 COMMIT;
 -- pg_temp (funções auxiliares + tabelas de suporte) é descartado
 -- automaticamente pelo PostgreSQL ao encerrar a sessão.
--- Nenhuma limpeza manual é necessária.
+-- Cleanup adicional não é necessário.
 -- Fim do harness 3.11.2
