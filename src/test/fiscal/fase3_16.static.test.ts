@@ -242,9 +242,9 @@ describe("Fase 3.16 — bridge do sistema operacional", () => {
 describe("Fase 3.16 — A1 upload frontend", () => {
   const src = readFileSync(A1, "utf8");
   test("aceita apenas .pfx/.p12; senha em type=password autocomplete=new-password", () => {
-    expect(src).toMatch(/accept=\"\.pfx,\.p12\"/);
-    expect(src).toMatch(/type=\"password\"/);
-    expect(src).toMatch(/autoComplete=\"new-password\"/);
+    expect(src).toMatch(/accept="\.pfx,\.p12"/);
+    expect(src).toMatch(/type="password"/);
+    expect(src).toMatch(/autoComplete="new-password"/);
   });
   test("chama Edge Function fiscal-certificate-upload; não persiste no navegador", () => {
     expect(src).toContain('functions.invoke("fiscal-certificate-upload"');
