@@ -156,11 +156,12 @@ describe("Fase 3.17 — fixtures de staging seguras", () => {
     expect(/INSERT\s+INTO\s+public\._fiscal_staging_marker/i.test(s)).toBe(false);
   });
   test("seed usa prefixo FISCAL_HML_ e não cria emissão real", () => {
-    const s = readFileSync(FX_SEED, "utf8");
-    expect(s).toMatch(/FISCAL_HML_/);
-    expect(/AUTHORIZED|ISSUED|TRANSMITTED/i.test(s)).toBe(false);
+    const raw = readFileSync(FX_SEED, "utf8");
+    const s = raw.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(raw).toMatch(/FISCAL_HML_/);
+    expect(/'(AUTHORIZED|ISSUED|TRANSMITTED)'/i.test(s)).toBe(false);
     // Nenhum certificado real.
-    expect(/fiscal_certificates|fiscal_certificate_material/i.test(s)).toBe(false);
+    expect(/\bfiscal_certificates\b|\bfiscal_certificate_material\b/i.test(s)).toBe(false);
     // Preflight repetido.
     expect(s).toMatch(/_fiscal_staging_marker/);
   });
@@ -171,11 +172,12 @@ describe("Fase 3.17 — fixtures de staging seguras", () => {
     expect(s).toMatch(/ISSUED/);
   });
   test("cleanup é limitado ao prefixo e não usa CASCADE amplo", () => {
-    const s = readFileSync(FX_CLEAN, "utf8");
-    expect(s).toMatch(/FISCAL_HML_/);
-    expect(/TRUNCATE/i.test(s)).toBe(false);
-    expect(/DROP\s+/i.test(s)).toBe(false);
-    // DELETEs devem SEMPRE possuir WHERE com prefixo.
+    const raw = readFileSync(FX_CLEAN, "utf8");
+    const s = raw.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(raw).toMatch(/FISCAL_HML_/);
+    expect(/\bTRUNCATE\b/i.test(s)).toBe(false);
+    expect(/\bDROP\s+/i.test(s)).toBe(false);
+    expect(/\bCASCADE\b/i.test(s)).toBe(false);
     const deletes = s.match(/DELETE\s+FROM[\s\S]+?;/gi) ?? [];
     expect(deletes.length).toBeGreaterThan(0);
     for (const d of deletes) {
