@@ -228,8 +228,8 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
 
 /**
  * Constrói payload de UPDATE tipado. Mapeamento explícito para as
- * colunas reais de `company_fiscal_settings` — nenhum `as unknown as`,
- * nenhum `any`. Chaves proibidas nunca são incluídas.
+ * colunas reais de company_fiscal_settings — sem casts estruturais
+ * (nenhum any). Chaves proibidas nunca são incluídas.
  */
 export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   const parsed = companyFiscalFormSchema.parse(values);
