@@ -45,6 +45,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, CheckCircle2, Circle, Info } from "lucide-react";
 import CertificadoDigitalSecao from "@/components/fiscal/certificados/CertificadoDigitalSecao";
+import HomologacaoSecao from "@/components/fiscal/homologacao/HomologacaoSecao";
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
@@ -121,7 +122,8 @@ export default function FiscalEmpresa() {
 
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [tab, setTab] = useState<"empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "revisao">("empresa");
+  const canViewHomologation = Array.isArray(roles) && roles.some((r) => r === "administrador" || r === "gestor" || r === "financeiro");
+  const [tab, setTab] = useState<"empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "homologacao" | "revisao">("empresa");
 
   useEffect(() => {
     if (settingsQuery.data) setValues(rowToFormValues(settingsQuery.data));
@@ -366,6 +368,9 @@ export default function FiscalEmpresa() {
           <TabsTrigger value="nfse">NFS-e</TabsTrigger>
           <TabsTrigger value="certificado" data-testid="fiscal-empresa-tab-certificado">Certificado digital</TabsTrigger>
           <TabsTrigger value="integracao">Integração e segurança</TabsTrigger>
+          {canViewHomologation ? (
+            <TabsTrigger value="homologacao" data-testid="fiscal-empresa-tab-homologacao">Homologação fiscal</TabsTrigger>
+          ) : null}
           <TabsTrigger value="revisao">Revisão</TabsTrigger>
         </TabsList>
 
@@ -623,6 +628,12 @@ export default function FiscalEmpresa() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {canViewHomologation ? (
+            <TabsContent value="homologacao" className="space-y-4">
+              <HomologacaoSecao companySettingsId={settingsQuery.data?.id ?? null} />
+            </TabsContent>
+          ) : null}
 
           <TabsContent value="revisao" className="space-y-4">
             <Card>

@@ -1,71 +1,58 @@
-## Fase Fiscal 3.16.2-B — Plano de execução
+## Fase Fiscal 3.17 — Homologação operacional isolada e auditável
 
-Escopo estrito das 6 pendências apontadas pela auditoria. Nada além será tocado.
-Migration `20260724000000` ainda não aplicada → pode ser corrigida no lugar.
-Sem deploy Edge, sem habilitar emissão/produção, sem provedor.
+Orçamento desta rodada: 35 créditos. Escopo estrito, sem aplicar banco nem deploy.
 
 ---
 
-### 1. Certificado do SO no `CertificadoDigitalSecao`
-`src/components/fiscal/certificados/CertificadoDigitalSecao.tsx`
-- Dois cards lado a lado: **A1 (upload)** e **Sistema Operacional (bridge)**.
-- Card SO usa `probeOsBridge`/`listOsCertificatesSafe` do `certificateOsAdapter`.
-- Botão "Registrar no cofre" chama nova mutation `useRegisterOsCertificate` → RPC `rpc_fiscal_certificate_register_os`.
-- Se `probeOsBridge()` retornar `available:false`, exibe mensagem pt-BR do conector nativo (não simula).
-- Nova prop `canManageCertificates: boolean` substitui `canEdit` para gates de escrita (upload/revogar/registrar SO). `canEdit` permanece para visualização da seção.
+### Parte A — Central de Homologação (frontend)
+- Nova aba **"Homologação"** em `src/pages/configuracoes/FiscalEmpresa.tsx` (reuso da página existente; sem nova rota).
+- Novo componente `src/components/fiscal/homologacao/HomologacaoSecao.tsx`:
+  - Checklist somente-leitura (ambiente, produção off, dados empresa, NF-e, NFS-e, ≥1 produto/serviço/cliente prontos, certificado ativo, cofre disponível, funções disponíveis via probe seguro, RPCs presentes, contagem de rascunhos por estado).
+  - Estados pt-BR: Pronto, Incompleto, Bloqueado, Indisponível, Não configurado.
+  - Ações: "Ir para Empresa/Produtos/Serviços/Clientes/Certificado Digital", "Criar rascunho" (link para `/fiscal/documentos`), "Atualizar verificação" (refetch).
+  - Sem botões de Emitir/Transmitir/Autorizar/Produção.
+- Novo hook `src/hooks/useFiscalHomologationReadiness.ts` chamando a RPC via `supabase.rpc`, com tipo local estreito. Fail-safe para "Indisponível" quando a RPC ainda não estiver no schema.
+- Gate de aba: administrador, gestor, financeiro (via `useAuth().roles`).
 
-### 2. Restringir gestão de certificados a administrador
-`src/pages/configuracoes/FiscalEmpresa.tsx`
-- Calcular `const canManageCertificates = roles.includes("administrador")` a partir de `useAuth().roles`.
-- Passar ao `CertificadoDigitalSecao`. `financeiro`/`gestor` continuam vendo, mas sem botões de escrita.
+### Parte B — Migration canônica read-only
+- `supabase/migrations/20260725000000_fiscal_fase3_17_homologation_readiness.sql`:
+  - `create or replace function public.rpc_fiscal_homologation_readiness() returns jsonb`
+  - `security definer`, `set search_path = public, pg_temp`, `stable`.
+  - Gate: `has_role(auth.uid(),'administrador'|'gestor'|'financeiro')` senão `raise exception 'FISCAL_FORBIDDEN'`.
+  - Lê apenas views/tabelas fiscais existentes; nunca `http`, nunca escreve.
+  - Retorna JSON estável: `{ status: 'READY'|'INCOMPLETE'|'BLOCKED'|'UNAVAILABLE', checklist: [{key,label_ptbr,status,detail}], counts:{drafts_total, drafts_ready, drafts_incomplete, drafts_blocked} }`.
+  - `production_enabled=true` → `BLOCKED`. Ambiente ≠ HOMOLOGATION → nunca `READY`. Certificado precisa estar ATIVO/AVAILABLE e dentro de validade para READY.
+  - Não retorna fingerprint, serial completo, subject, object_path, material.
+  - `revoke all on function ... from public, anon;` + `grant execute ... to authenticated;`.
+- Stub documental em `restoration/migrations/20260725000000_fiscal_fase3_17_homologation_readiness.sql` (sem SQL executável, apenas cabeçalho de redirecionamento igual ao padrão da fase anterior).
 
-### 3. Hardening do `rpc_fiscal_certificate_register_os`
-`supabase/migrations/20260724000000_fiscal_fase3_16_homologacao_certificados.sql`
-- Whitelist de chaves em `p_metadata` (rejeita qualquer chave fora de: display_name, native_alias, subject_name, issuer_name, serial_number, valid_from, valid_until, fingerprint_sha256, key_usage).
-- Limites: display_name ≤120, native_alias ≤200, subject/issuer_name ≤500, serial_number ≤128.
-- `fingerprint_sha256` obrigatório, 64 hex minúsculos (regex `^[0-9a-f]{64}$`).
-- `valid_from < valid_until`, e `valid_until > now()` (bloqueia expirado).
-- Bloqueia environment `PRODUCTION` (sempre `HOMOLOGATION` nesta fase).
-- Mantém REVOKE de anterior + GRANT `authenticated` (usa `has_role` interno).
+### Parte C — Tipos
+- Regeneração oficial não é possível (sem CLI). Criar tipos locais estreitos em `src/lib/fiscal/homologationReadiness.ts` (ChecklistItem, ReadinessResult, unions pt-BR). Sem `any`, sem cast global. Documentar pendência de regeneração no cabeçalho do arquivo.
 
-### 4. Wizard com campos fiscais reais
-`src/components/fiscal/documentos/RascunhoWizard.tsx` + `src/lib/fiscal/rascunhoWizardValidation.ts`
-- `itemSchema` estendido com: `cest`, `cfop`, `icms_cst`, `icms_csosn`, `ipi_cst`, `pis_cst`, `cofins_cst`, `origin_code`, `lc116_item`, `cnae`, `municipal_taxation_code`, `iss_rate`, `iss_withheld`, `fiscal_profile_snapshot`, `tax_snapshot`.
-- Novo passo "Tributos por item" (ou expansão no passo "Itens"): inputs pt-BR para os campos acima, condicionados a NF-e/NFS-e.
-- Ao selecionar produto/serviço (novos pickers `ProdutoPicker`/`ServicoPicker` usando `useProductFiscalProfiles`/`useServiceFiscalProfiles`), preenche automaticamente os campos e monta `fiscal_profile_snapshot` (perfil sanitizado, sem PII) e `tax_snapshot` (aliquotas/CST computados).
-- Sem UUID manual: campo "ID do cliente" removido; permanece apenas via `ClientePicker`.
+### Parte D — Fixtures staging
+- `restoration/fiscal-homologation-fixtures/` com:
+  - `README.md` (pt-BR, uso manual, guardas).
+  - `01-preflight.sql` — checa `public._fiscal_staging_marker` com `marker='STAGING'`; aborta senão.
+  - `02-seed.sql` — insere fixtures com prefixo `FISCAL_HML_` (2 clientes, 1 produto pronto, 1 serviço pronto, rascunhos NF-e válido / NFS-e válido / incompleto, snapshots por item; nenhum status AUTHORIZED/ISSUED; nenhum certificado).
+  - `03-verify.sql` — asserts (zero produção, zero AUTHORIZED/ISSUED, DRAFT/NONE/MANUAL_RECORD apenas, prefixos, totais, snapshots).
+  - `04-cleanup.sql` — DELETE limitado a `LIKE 'FISCAL_HML_%'`, sem CASCADE amplo.
+- Sem senha, JWT, URL, project ref.
 
-### 5. Persistência de snapshots por item
-`src/hooks/useFiscalRascunho.ts`
-- `itemsPayload` inclui `fiscal_profile_snapshot` e `tax_snapshot` por item.
+### Parte E — Permissões e UX
+- Aba visível apenas para administrador/gestor/financeiro. Sem alterar home/menu global. Buscador global já cobre a página; adicionar termo "Homologação fiscal" no title da aba.
 
-`supabase/migrations/20260724000000_...sql` — `rpc_fiscal_draft_save`
-- `v_computed_items` inclui `fiscal_profile_snapshot` e `tax_snapshot` de cada item (rejeita `sensitive_key_in_snapshot`).
-- `INSERT INTO fiscal_invoice_items` grava `fiscal_profile_snapshot`, `tax_snapshot`.
-
-`rpc_fiscal_draft_validate_homologation`
-- Para cada item PRODUCT: exige `fiscal_profile_snapshot` não-vazio com `ncm`.
-- Para cada item SERVICE: exige `fiscal_profile_snapshot` com `lc116_item` e `cnae`.
-- Mensagens pt-BR por item (`Item N sem perfil fiscal…`).
-
-### 6. Rotulação pt-BR
-`src/pages/fiscal/FiscalDocumentos.tsx`
-- Novo módulo `src/lib/fiscal/documentLabels.ts` com maps para `document_model`, `document_origin`, `normalized_status`, `status`, `environment`, `reconciliation_status`, `invoice_type`, `item_kind`.
-- Tabela de listagem e filtros exibem rótulos pt-BR (mantendo `value` técnico interno).
-- `SelectItem` mostra label pt-BR; badges idem.
-
-### 7. Testes (`src/test/fiscal/fase3_16.static.test.ts`)
-Novas asserções:
-- `rpc_fiscal_certificate_register_os`: whitelist + regex fingerprint + validade + bloqueio PRODUCTION.
-- Wizard contém labels pt-BR "NCM", "CFOP", "LC116", "CNAE", "ISS".
-- `useFiscalRascunho` envia `fiscal_profile_snapshot`/`tax_snapshot` por item.
-- Migration `rpc_fiscal_draft_save`: `fiscal_profile_snapshot`/`tax_snapshot` no INSERT de itens.
-- `rpc_fiscal_draft_validate_homologation`: mensagens por item (`Item %`).
-- `documentLabels.ts` existe e não expõe enum cru na tela.
+### Parte F — Testes
+- Ampliar `src/test/fiscal/fase3_16.static.test.ts` (ou novo `fase3_17.static.test.ts`) com asserções:
+  - Migration 20260725 existe, contém REVOKE FROM PUBLIC/anon, GRANT authenticated, gate has_role, sem `http`, sem `insert/update/delete`, sem `alter`.
+  - RPC não retorna fingerprint/serial/object_path (regex no SQL).
+  - `HomologacaoSecao.tsx` não contém `Emitir|Transmitir|Autorizar|Produção` como botão, contém labels pt-BR.
+  - Fixtures: 01-preflight exige marker STAGING; 02-seed usa `FISCAL_HML_`; sem `AUTHORIZED`/`ISSUED`; 04-cleanup restrito a prefixo, sem CASCADE.
+  - Stub restoration sem SQL executável.
+  - `homologationReadiness.ts` não usa `any`.
 
 ### Validação
-`bun run typecheck`, `bun run build`, `bunx vitest run`.
-Sem migrations aplicadas. Sem alterações em rotas/permissões/dependências.
+- `bun run typecheck`, `bun run build`, `bunx vitest run src/test/fiscal`.
+- Nenhum deploy, nenhuma migration aplicada, nenhuma alteração no banco principal, `production_enabled=false` mantido.
 
 ### Fora de escopo
-Aplicação da migration, deploy de Edge Function, ativação de emissão, criação de novas rotas, alteração de RLS de outras tabelas.
+Aplicação da migration, deploy de Edge, ativação de emissão, integração com provedor, alterações em RLS não fiscal, criação de rotas novas, alteração de motor financeiro/B2B.

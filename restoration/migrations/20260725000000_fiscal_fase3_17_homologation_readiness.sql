@@ -1,0 +1,11 @@
+-- =====================================================================
+-- STUB DOCUMENTAL — NÃO EXECUTAR.
+--
+-- A migration canônica da Fase Fiscal 3.17 vive exclusivamente em:
+--
+--   supabase/migrations/20260725000000_fiscal_fase3_17_homologation_readiness.sql
+--
+-- Este arquivo é apenas um redirecionamento textual mantido para
+-- coerência histórica com as fases anteriores em restoration/migrations.
+-- NENHUMA cópia executável do SQL da Fase 3.17 deve residir aqui.
+-- =====================================================================
