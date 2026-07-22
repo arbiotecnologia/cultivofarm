@@ -122,7 +122,8 @@ export default function FiscalEmpresa() {
 
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [tab, setTab] = useState<"empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "revisao">("empresa");
+  const canViewHomologation = Array.isArray(roles) && roles.some((r) => r === "administrador" || r === "gestor" || r === "financeiro");
+  const [tab, setTab] = useState<"empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "homologacao" | "revisao">("empresa");
 
   useEffect(() => {
     if (settingsQuery.data) setValues(rowToFormValues(settingsQuery.data));
