@@ -573,20 +573,20 @@ export default function FiscalEmpresa() {
                   <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODES} onChange={(v) => setNfe("numbering_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_nature" label="Natureza padrão da operação">
-                  <Input id="nfe_default_nature" value={(nfe.default_nature as string) ?? ""} onChange={(e) => setNfe("default_nature", e.target.value)} />
+                  <Input id="nfe_default_nature" placeholder="Ex.: Venda de mercadoria adquirida de terceiros" value={(nfe.default_nature as string) ?? ""} onChange={(e) => setNfe("default_nature", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_finality" label="Finalidade padrão">
                   <SelectNative id="nfe_default_finality" value={(nfe.default_finality as string) ?? "NORMAL"} options={NFE_FINALIDADES} onChange={(v) => setNfe("default_finality", v)} />
                 </FieldRow>
-                <FieldRow id="nfe_presence_indicator" label="Indicador de presença">
-                  <Input id="nfe_presence_indicator" value={(nfe.presence_indicator as string) ?? ""} onChange={(e) => setNfe("presence_indicator", e.target.value)} />
+                <FieldRow id="nfe_presence_indicator" label="Indicador de presença" description="Código conforme NT2011.004.">
+                  <SelectNative id="nfe_presence_indicator" value={(nfe.presence_indicator as string) ?? ""} options={PRESENCE_OPTIONS} onChange={(v) => setNfe("presence_indicator", v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Consumidor final padrão</Label>
                   <Switch checked={nfe.default_end_consumer === true} onCheckedChange={(v) => setNfe("default_end_consumer", v)} />
                 </div>
                 <FieldRow id="nfe_freight_modality" label="Modalidade de frete">
-                  <Input id="nfe_freight_modality" value={(nfe.freight_modality as string) ?? ""} onChange={(e) => setNfe("freight_modality", e.target.value)} />
+                  <SelectNative id="nfe_freight_modality" value={(nfe.freight_modality as string) ?? ""} options={FREIGHT_MODALITY_OPTIONS} onChange={(v) => setNfe("freight_modality", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_danfe_layout" label="Layout DANFE">
                   <SelectNative id="nfe_danfe_layout" value={(nfe.danfe_layout as string) ?? "PORTRAIT"} options={NFE_DANFE_LAYOUTS} onChange={(v) => setNfe("danfe_layout", v)} />
