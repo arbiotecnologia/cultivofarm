@@ -1,13 +1,13 @@
 -- =====================================================================
 -- STUB DOCUMENTAL — NÃO EXECUTAR.
 --
--- A migration canônica da Fase Fiscal 3.15 vive em:
+-- A migration canônica da Fase Fiscal 3.15 vive exclusivamente em:
 --
 --   supabase/migrations/20260723000000_fiscal_fase3_15_central_config.sql
 --
--- Este arquivo é apenas um redirecionamento textual para manter o
--- histórico de auditoria em restoration/migrations coerente com as
--- fases anteriores. NENHUMA cópia executável do SQL da Fase 3.15 deve
--- residir aqui — o teste estático src/test/fiscal/fase3_15.static.test.ts
--- reprova qualquer conteúdo executável neste caminho.
+-- Este arquivo é apenas um redirecionamento textual mantido para
+-- coerência histórica com as fases anteriores em restoration/migrations.
+-- NENHUMA cópia executável do SQL da Fase 3.15 deve residir aqui — o
+-- teste estático src/test/fiscal/fase3_15.static.test.ts reprova
+-- qualquer conteúdo executável neste caminho.
 -- =====================================================================
