@@ -26,6 +26,10 @@ import {
   TAXPAYER_INDICATOR_VALUES,
   type CustomerFiscalFormValues,
 } from "@/lib/fiscal/customerFiscalValidation";
+import {
+  UF_OPTIONS, COUNTRY_OPTIONS, STATE_REG_STATUS_OPTIONS,
+  withLegacyOption, type FiscalOption,
+} from "@/lib/fiscal/fiscalOptions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
