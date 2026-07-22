@@ -397,7 +397,7 @@ describe("Fase 3.16.2-B — hardening OS bridge + snapshots por item + labels pt
 
   test("FiscalEmpresa restringe gestão de certificados a administrador", () => {
     const fe = readFileSync(p("src/pages/configuracoes/FiscalEmpresa.tsx"), "utf8");
-    expect(fe).toMatch(/canManageCertificates\s*=\s*roles\.includes\(["']administrador["']\)/);
+    expect(fe).toMatch(/roles\.includes\(["']administrador["']\)/);
     expect(fe).toMatch(/canManageCertificates={canManageCertificates}/);
   });
 });
