@@ -270,6 +270,58 @@ GRANT EXECUTE ON FUNCTION public.rpc_fiscal_certificate_register_a1(
   text[], text, text, text, text, integer
 ) TO service_role;
 
+-- 6.b. Helpers de whitelist para snapshots por item (Fase 3.16.2-C) --------
+-- Fail-closed: rejeitam qualquer chave fora do contrato permitido.
+CREATE OR REPLACE FUNCTION public.fiscal_validate_snapshot_keys(
+  p_obj jsonb, p_allowed text[], p_label text
+) RETURNS void
+LANGUAGE plpgsql IMMUTABLE
+AS $HELPERKEYS$
+DECLARE k text;
+BEGIN
+  IF p_obj IS NULL OR jsonb_typeof(p_obj) <> 'object' THEN
+    RETURN;
+  END IF;
+  FOR k IN SELECT jsonb_object_keys(p_obj) LOOP
+    IF NOT (k = ANY(p_allowed)) THEN
+      RAISE EXCEPTION 'snapshot_unknown_key:%:%', p_label, k
+        USING ERRCODE = '22023';
+    END IF;
+  END LOOP;
+END;
+$HELPERKEYS$;
+REVOKE ALL ON FUNCTION public.fiscal_validate_snapshot_keys(jsonb, text[], text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fiscal_validate_snapshot_keys(jsonb, text[], text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fiscal_validate_key_usage(p_arr jsonb)
+RETURNS void
+LANGUAGE plpgsql IMMUTABLE
+AS $HELPERKU$
+DECLARE
+  v_len integer;
+  v_el  jsonb;
+BEGIN
+  IF p_arr IS NULL THEN RETURN; END IF;
+  IF jsonb_typeof(p_arr) <> 'array' THEN
+    RAISE EXCEPTION 'key_usage_invalid' USING ERRCODE = '22023';
+  END IF;
+  v_len := jsonb_array_length(p_arr);
+  IF v_len > 20 THEN
+    RAISE EXCEPTION 'key_usage_too_many' USING ERRCODE = '22023';
+  END IF;
+  FOR v_el IN SELECT * FROM jsonb_array_elements(p_arr) LOOP
+    IF jsonb_typeof(v_el) <> 'string' THEN
+      RAISE EXCEPTION 'key_usage_item_not_string' USING ERRCODE = '22023';
+    END IF;
+    IF char_length(v_el #>> '{}') < 1 OR char_length(v_el #>> '{}') > 80 THEN
+      RAISE EXCEPTION 'key_usage_item_length_invalid' USING ERRCODE = '22023';
+    END IF;
+  END LOOP;
+END;
+$HELPERKU$;
+REVOKE ALL ON FUNCTION public.fiscal_validate_key_usage(jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fiscal_validate_key_usage(jsonb) TO authenticated;
+
 -- 7. RPC de rascunho — validação estrita, cálculo server-side ---------------
 CREATE OR REPLACE FUNCTION public.rpc_fiscal_draft_save(
   p_invoice_id uuid,
@@ -387,16 +439,113 @@ BEGIN
     END IF;
     v_net  := round(v_gross - v_disc, 2);
 
-    -- 3.16.2-B: snapshots por item (sanitizados; server valida ausência de segredo)
+    -- 3.16.2-C: whitelist FAIL-CLOSED por item + verificação de source_item_id
     DECLARE
       v_item_profile jsonb := COALESCE(v_item->'fiscal_profile_snapshot', '{}'::jsonb);
       v_item_tax     jsonb := COALESCE(v_item->'tax_snapshot', '{}'::jsonb);
+      v_source_id    uuid  := NULLIF(v_item->>'source_item_id','')::uuid;
+      v_icms_obj     jsonb;
+      v_pis_obj      jsonb;
+      v_cofins_obj   jsonb;
+      v_ipi_obj      jsonb;
+      v_rate         numeric;
+      v_withheld     jsonb;
+      v_rets         jsonb;
     BEGIN
       IF jsonb_typeof(v_item_profile) <> 'object' THEN v_item_profile := '{}'::jsonb; END IF;
       IF jsonb_typeof(v_item_tax)     <> 'object' THEN v_item_tax     := '{}'::jsonb; END IF;
       IF public.fiscal_json_has_sensitive_key(v_item_profile)
          OR public.fiscal_json_has_sensitive_key(v_item_tax) THEN
         RAISE EXCEPTION 'sensitive_key_in_snapshot' USING ERRCODE = '22023';
+      END IF;
+
+      IF v_invoice_type = 'NFE' THEN
+        -- Whitelist do perfil NF-e
+        PERFORM public.fiscal_validate_snapshot_keys(
+          v_item_profile,
+          ARRAY['ncm','cest','cfop','origem_mercadoria','cst_icms','csosn','unidade'],
+          'nfe_profile'
+        );
+        -- Whitelist da tributação NF-e (somente configuração preparatória)
+        PERFORM public.fiscal_validate_snapshot_keys(
+          v_item_tax, ARRAY['pis','cofins','ipi','icms'], 'nfe_tax'
+        );
+        v_icms_obj   := v_item_tax->'icms';
+        v_pis_obj    := v_item_tax->'pis';
+        v_cofins_obj := v_item_tax->'cofins';
+        v_ipi_obj    := v_item_tax->'ipi';
+        IF v_icms_obj IS NOT NULL THEN
+          IF jsonb_typeof(v_icms_obj) <> 'object' THEN RAISE EXCEPTION 'nfe_tax_icms_not_object' USING ERRCODE = '22023'; END IF;
+          PERFORM public.fiscal_validate_snapshot_keys(
+            v_icms_obj, ARRAY['cst','csosn','aliquota','base_calculo_modalidade'], 'nfe_tax.icms'
+          );
+        END IF;
+        IF v_pis_obj IS NOT NULL THEN
+          IF jsonb_typeof(v_pis_obj) <> 'object' THEN RAISE EXCEPTION 'nfe_tax_pis_not_object' USING ERRCODE = '22023'; END IF;
+          PERFORM public.fiscal_validate_snapshot_keys(v_pis_obj, ARRAY['cst','aliquota'], 'nfe_tax.pis');
+        END IF;
+        IF v_cofins_obj IS NOT NULL THEN
+          IF jsonb_typeof(v_cofins_obj) <> 'object' THEN RAISE EXCEPTION 'nfe_tax_cofins_not_object' USING ERRCODE = '22023'; END IF;
+          PERFORM public.fiscal_validate_snapshot_keys(v_cofins_obj, ARRAY['cst','aliquota'], 'nfe_tax.cofins');
+        END IF;
+        IF v_ipi_obj IS NOT NULL THEN
+          IF jsonb_typeof(v_ipi_obj) <> 'object' THEN RAISE EXCEPTION 'nfe_tax_ipi_not_object' USING ERRCODE = '22023'; END IF;
+          PERFORM public.fiscal_validate_snapshot_keys(v_ipi_obj, ARRAY['cst','aliquota'], 'nfe_tax.ipi');
+        END IF;
+
+        -- Verificação de existência do source_item_id (produto + perfil)
+        IF v_source_id IS NOT NULL THEN
+          IF NOT EXISTS (SELECT 1 FROM public.produtos pr WHERE pr.id = v_source_id) THEN
+            RAISE EXCEPTION 'source_item_product_not_found:%', v_seq USING ERRCODE = 'P0002';
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM public.product_fiscal_profiles pfp
+            WHERE pfp.product_id = v_source_id AND pfp.is_active = true
+          ) THEN
+            RAISE EXCEPTION 'source_item_product_profile_missing:%', v_seq USING ERRCODE = 'P0002';
+          END IF;
+        END IF;
+      ELSE
+        -- NFS-e
+        PERFORM public.fiscal_validate_snapshot_keys(
+          v_item_profile,
+          ARRAY['lc116_item','cnae','municipal_tax_code','national_tax_code','municipality_ibge_code'],
+          'nfse_profile'
+        );
+        PERFORM public.fiscal_validate_snapshot_keys(
+          v_item_tax, ARRAY['iss_rate','iss_withheld','retencoes_suportadas'], 'nfse_tax'
+        );
+        IF v_item_tax ? 'iss_rate' THEN
+          IF jsonb_typeof(v_item_tax->'iss_rate') <> 'number' THEN
+            RAISE EXCEPTION 'nfse_iss_rate_not_number' USING ERRCODE = '22023';
+          END IF;
+          v_rate := (v_item_tax->>'iss_rate')::numeric;
+          IF v_rate < 0 OR v_rate > 100 THEN
+            RAISE EXCEPTION 'nfse_iss_rate_out_of_range' USING ERRCODE = '22023';
+          END IF;
+        END IF;
+        v_withheld := v_item_tax->'iss_withheld';
+        IF v_withheld IS NOT NULL AND jsonb_typeof(v_withheld) <> 'boolean' THEN
+          RAISE EXCEPTION 'nfse_iss_withheld_not_boolean' USING ERRCODE = '22023';
+        END IF;
+        v_rets := v_item_tax->'retencoes_suportadas';
+        IF v_rets IS NOT NULL THEN
+          IF jsonb_typeof(v_rets) <> 'object' THEN
+            RAISE EXCEPTION 'nfse_retencoes_not_object' USING ERRCODE = '22023';
+          END IF;
+          PERFORM public.fiscal_validate_snapshot_keys(
+            v_rets, ARRAY['pis','cofins','csll','irrf','inss'], 'nfse_tax.retencoes_suportadas'
+          );
+        END IF;
+
+        IF v_source_id IS NOT NULL THEN
+          IF NOT EXISTS (
+            SELECT 1 FROM public.service_fiscal_profiles sfp
+            WHERE sfp.service_id = v_source_id AND sfp.is_active = true
+          ) THEN
+            RAISE EXCEPTION 'source_item_service_profile_missing:%', v_seq USING ERRCODE = 'P0002';
+          END IF;
+        END IF;
       END IF;
 
       v_computed_items := v_computed_items || jsonb_build_object(
@@ -619,32 +768,67 @@ BEGIN
     v_missing := v_missing || jsonb_build_object('field','items','message','Documento precisa de ao menos um item.');
   END IF;
 
-  -- 3.16.2-B: perfil fiscal obrigatório por item (NCM p/ produto, LC116+CNAE p/ serviço)
+  -- 3.16.2-C: perfil fiscal + tributos obrigatórios por item
+  -- Produto (NF-e): NCM, CFOP e (CST_ICMS ou CSOSN).
+  -- Serviço (NFS-e): LC116, CNAE e ISS rate.
   DECLARE
     r RECORD;
     v_prof jsonb;
+    v_tax  jsonb;
+    v_icms jsonb;
+    v_has_cst_or_csosn boolean;
   BEGIN
     FOR r IN
-      SELECT item_sequence, item_kind, COALESCE(fiscal_profile_snapshot, '{}'::jsonb) AS prof
+      SELECT item_sequence, item_kind,
+             COALESCE(fiscal_profile_snapshot, '{}'::jsonb) AS prof,
+             COALESCE(tax_snapshot, '{}'::jsonb) AS tax
       FROM public.fiscal_invoice_items
       WHERE fiscal_invoice_id = p_invoice_id
       ORDER BY item_sequence
     LOOP
       v_prof := r.prof;
+      v_tax  := r.tax;
       IF r.item_kind = 'PRODUCT' THEN
         IF v_prof = '{}'::jsonb OR NULLIF(v_prof->>'ncm','') IS NULL THEN
           v_missing := v_missing || jsonb_build_object(
-            'field','item_fiscal_profile',
-            'message','Item '||r.item_sequence||' sem perfil fiscal (NCM obrigatorio).'
+            'field','item_fiscal_profile','item_sequence', r.item_sequence,
+            'message','Item '||r.item_sequence||' sem NCM no perfil fiscal.'
+          );
+        END IF;
+        IF NULLIF(v_prof->>'cfop','') IS NULL THEN
+          v_missing := v_missing || jsonb_build_object(
+            'field','item_cfop','item_sequence', r.item_sequence,
+            'message','Item '||r.item_sequence||' sem CFOP no perfil fiscal.'
+          );
+        END IF;
+        v_icms := v_tax->'icms';
+        v_has_cst_or_csosn :=
+          NULLIF(v_prof->>'cst_icms','') IS NOT NULL
+          OR NULLIF(v_prof->>'csosn','') IS NOT NULL
+          OR (v_icms IS NOT NULL AND (NULLIF(v_icms->>'cst','') IS NOT NULL OR NULLIF(v_icms->>'csosn','') IS NOT NULL));
+        IF NOT v_has_cst_or_csosn THEN
+          v_missing := v_missing || jsonb_build_object(
+            'field','item_cst_csosn','item_sequence', r.item_sequence,
+            'message','Item '||r.item_sequence||' sem CST_ICMS ou CSOSN definido.'
           );
         END IF;
       ELSIF r.item_kind = 'SERVICE' THEN
-        IF v_prof = '{}'::jsonb
-           OR NULLIF(v_prof->>'lc116_item','') IS NULL
-           OR NULLIF(v_prof->>'cnae','') IS NULL THEN
+        IF v_prof = '{}'::jsonb OR NULLIF(v_prof->>'lc116_item','') IS NULL THEN
           v_missing := v_missing || jsonb_build_object(
-            'field','item_fiscal_profile',
-            'message','Item '||r.item_sequence||' sem perfil fiscal (LC116 e CNAE obrigatorios).'
+            'field','item_lc116','item_sequence', r.item_sequence,
+            'message','Item '||r.item_sequence||' sem item LC 116 no perfil fiscal.'
+          );
+        END IF;
+        IF NULLIF(v_prof->>'cnae','') IS NULL THEN
+          v_missing := v_missing || jsonb_build_object(
+            'field','item_cnae','item_sequence', r.item_sequence,
+            'message','Item '||r.item_sequence||' sem CNAE no perfil fiscal.'
+          );
+        END IF;
+        IF NOT (v_tax ? 'iss_rate') OR jsonb_typeof(v_tax->'iss_rate') <> 'number' THEN
+          v_missing := v_missing || jsonb_build_object(
+            'field','item_iss_rate','item_sequence', r.item_sequence,
+            'message','Item '||r.item_sequence||' sem aliquota de ISS definida.'
           );
         END IF;
       END IF;
@@ -715,6 +899,16 @@ BEGIN
     RAISE EXCEPTION 'sensitive_key_in_payload' USING ERRCODE = '22023';
   END IF;
 
+  -- 3.16.2-C: exigir company_settings_id existente antes de qualquer escrita
+  IF p_company_settings_id IS NULL THEN
+    RAISE EXCEPTION 'company_settings_id_required' USING ERRCODE = '22023';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.company_fiscal_settings WHERE id = p_company_settings_id
+  ) THEN
+    RAISE EXCEPTION 'company_settings_not_found' USING ERRCODE = 'P0002';
+  END IF;
+
   -- Whitelist estrita de chaves
   FOR k IN SELECT jsonb_object_keys(p_metadata) LOOP
     IF NOT (k = ANY(ALLOWED_KEYS)) THEN
@@ -765,12 +959,17 @@ BEGIN
   IF v_from >= v_until THEN
     RAISE EXCEPTION 'validity_range_invalid' USING ERRCODE = '22023';
   END IF;
-  IF v_until <= now() THEN
+  -- 3.16.2-C: notBefore server-side (v_from <= now() < v_until)
+  IF v_from > now() THEN
+    RAISE EXCEPTION 'certificate_not_yet_valid' USING ERRCODE = '22023';
+  END IF;
+  IF now() >= v_until THEN
     RAISE EXCEPTION 'certificate_expired' USING ERRCODE = '22023';
   END IF;
 
-  IF p_metadata ? 'key_usage' AND jsonb_typeof(p_metadata->'key_usage') <> 'array' THEN
-    RAISE EXCEPTION 'key_usage_invalid' USING ERRCODE = '22023';
+  -- 3.16.2-C: key_usage — max 20 itens, cada string 1..80, apenas strings
+  IF p_metadata ? 'key_usage' THEN
+    PERFORM public.fiscal_validate_key_usage(p_metadata->'key_usage');
   END IF;
 
   -- Revoga certificados ativos anteriores de homologação

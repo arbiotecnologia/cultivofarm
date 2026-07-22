@@ -1,15 +1,22 @@
 /**
- * Fase Fiscal 3.16.1 / 3.16.2-B — Seção "Certificado Digital" da configuração fiscal.
+ * Fase Fiscal 3.16.1 / 3.16.2-B / 3.16.2-C — Seção "Certificado Digital".
  *
- * Reúne:
- *   - Upload seguro A1 (Edge Function `fiscal-certificate-upload`)
- *   - Bridge do sistema operacional (metadados via conector nativo)
- *   - Lista de certificados ativos/revogados (view sanitizada)
- *   - Ação de revogação (Edge Function `fiscal-certificate-revoke`)
- *
- * Somente metadados são carregados no cliente. Nenhum PFX/senha trafega.
- * Ações de escrita (upload/registro SO/revogar) exigem `canManageCertificates`
- * (papel administrador). Financeiro/gestor apenas visualizam.
+ * Regras 3.16.2-C:
+ *   - A seção é SEMPRE visível para quem tem permissão de rota (a aba já é
+ *     controlada pela página). `canEdit` NÃO é usado para ocultar; somente
+ *     `canManageCertificates` (papel administrador) libera ações de escrita.
+ *   - Fingerprint SHA-256 é sempre mascarado: 4 primeiros + "…" + 4 últimos.
+ *     Nenhum tooltip/title expõe o valor completo.
+ *   - Serial é mascarado no centro.
+ *   - Ambiente diferente de HOMOLOGATION é rotulado "Indisponível" e sem
+ *     ação de escrita — nunca "Produção" nesta fase.
+ *   - Erros da view/Edge são exibidos como
+ *     "Cofre de certificados ainda não ativado neste ambiente".
+ *   - Bridge indisponível: "Conector do sistema operacional não instalado".
+ *   - Botão de detecção é rotulado "Atualizar detecção".
+ *   - `statusBadge` mapeia `NOT_CONFIGURED` para "Não configurado" e faz
+ *     fallback "Status indisponível". Nenhum enum cru vaza para a UI.
+ *   - Após upload A1 bem-sucedido, refetch da lista (via `onUploaded`).
  */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,16 +37,52 @@ export interface CertificadoDigitalSecaoProps {
   companySettingsId: string;
   /** Papel administrador — libera upload, registro SO e revogação. */
   canManageCertificates: boolean;
-  /** Compat: se true, a seção é exibida. Falso oculta completamente. */
+  /**
+   * Compat legado. IGNORADO para exibição desde 3.16.2-C: a aba é
+   * controlada pela página. Somente `canManageCertificates` gate ações.
+   */
   canEdit?: boolean;
 }
 
-function statusBadge(status: string, isActive: boolean) {
+/** Mascaramento visual seguro do fingerprint SHA-256. */
+export function maskFingerprint(fp: string | null | undefined): string {
+  if (!fp) return "—";
+  const s = String(fp).replace(/\s+/g, "");
+  if (s.length <= 8) return "•".repeat(s.length);
+  return `${s.slice(0, 4)}…${s.slice(-4)}`;
+}
+
+/** Mascaramento visual do serial (mantém pontas, oculta o centro). */
+export function maskSerial(serial: string | null | undefined): string {
+  if (!serial) return "—";
+  const s = String(serial).replace(/\s+/g, "");
+  if (s.length <= 6) return "•".repeat(s.length);
+  return `${s.slice(0, 3)}…${s.slice(-3)}`;
+}
+
+/** Rótulo pt-BR para o ambiente exibido; nunca rotula outros como Produção. */
+export function environmentLabel(env: string | null | undefined): string {
+  return env === "HOMOLOGATION" ? "Homologação" : "Indisponível";
+}
+
+/** Mensagem única e neutra para falhas de leitura da view/Edge. */
+export const VAULT_UNAVAILABLE_MESSAGE =
+  "Cofre de certificados ainda não ativado neste ambiente";
+
+/** Mensagem única quando o bridge nativo do SO não está presente. */
+export const OS_BRIDGE_MISSING_MESSAGE =
+  "Conector do sistema operacional não instalado";
+
+function statusBadge(status: string | null | undefined, isActive: boolean) {
+  if (status == null || status === "") {
+    return <Badge variant="secondary">Status indisponível</Badge>;
+  }
   if (!isActive || status === "REVOKED") return <Badge variant="outline">Revogado</Badge>;
   if (status === "EXPIRED") return <Badge variant="destructive">Expirado</Badge>;
   if (status === "AVAILABLE") return <Badge variant="default">Ativo</Badge>;
   if (status === "ERROR") return <Badge variant="destructive">Erro</Badge>;
-  return <Badge variant="secondary">{status}</Badge>;
+  if (status === "NOT_CONFIGURED") return <Badge variant="secondary">Não configurado</Badge>;
+  return <Badge variant="secondary">Status indisponível</Badge>;
 }
 
 function formatDate(iso: string | null): string {
@@ -54,14 +97,10 @@ function formatDate(iso: string | null): string {
 export default function CertificadoDigitalSecao({
   companySettingsId,
   canManageCertificates,
-  canEdit,
 }: CertificadoDigitalSecaoProps) {
   const listQ = useFiscalCertificates(companySettingsId);
   const revoke = useRevokeFiscalCertificate();
   const [confirmId, setConfirmId] = useState<string | null>(null);
-
-  // Se `canEdit` explicitamente falso, ocultamos toda a seção (fluxo legado).
-  if (canEdit === false) return null;
 
   async function handleRevoke(id: string) {
     try {
@@ -93,13 +132,13 @@ export default function CertificadoDigitalSecao({
       </Alert>
 
       {!canManageCertificates && (
-        <Alert variant="destructive" data-testid="fiscal-cert-readonly">
+        <Alert data-testid="fiscal-cert-readonly">
           <ShieldOff className="h-4 w-4" aria-hidden />
           <AlertTitle>Somente leitura</AlertTitle>
           <AlertDescription>
-            Você pode visualizar os certificados registrados, mas carregar,
-            registrar do sistema operacional ou revogar exige o papel
-            administrador.
+            Você pode visualizar os metadados dos certificados registrados. As
+            ações de carregar, registrar do sistema operacional ou revogar
+            exigem o papel administrador.
           </AlertDescription>
         </Alert>
       )}
@@ -115,7 +154,12 @@ export default function CertificadoDigitalSecao({
             </CardHeader>
             <CardContent>
               {canManageCertificates ? (
-                <UploadCertificadoA1 companySettingsId={companySettingsId} />
+                <UploadCertificadoA1
+                  companySettingsId={companySettingsId}
+                  onUploaded={() => {
+                    void listQ.refetch();
+                  }}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Upload disponível apenas para administradores.
@@ -147,9 +191,9 @@ export default function CertificadoDigitalSecao({
             </div>
           )}
           {listQ.isError && (
-            <Alert variant="destructive">
-              <AlertTitle>Falha ao carregar certificados</AlertTitle>
-              <AlertDescription>{(listQ.error as Error)?.message ?? "Erro inesperado."}</AlertDescription>
+            <Alert variant="destructive" data-testid="fiscal-cert-list-error">
+              <AlertTitle>Cofre indisponível</AlertTitle>
+              <AlertDescription>{VAULT_UNAVAILABLE_MESSAGE}</AlertDescription>
             </Alert>
           )}
           {listQ.data && listQ.data.length === 0 && (
@@ -166,48 +210,55 @@ export default function CertificadoDigitalSecao({
                     <th className="p-2">Origem</th>
                     <th className="p-2">Ambiente</th>
                     <th className="p-2">Status</th>
+                    <th className="p-2">Impressão digital</th>
                     <th className="p-2">Validade</th>
                     <th className="p-2">Dias restantes</th>
                     <th className="p-2 sr-only">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {listQ.data.map((c) => (
-                    <tr key={c.certificate_id} className="border-t">
-                      <td className="p-2">
-                        <div className="font-medium">{c.display_name}</div>
-                        {c.subject_name && (
-                          <div className="text-xs text-muted-foreground truncate max-w-[280px]">{c.subject_name}</div>
-                        )}
-                      </td>
-                      <td className="p-2 text-xs">{c.source_type === "A1_UPLOAD" ? "A1 (upload)" : "Sistema operacional"}</td>
-                      <td className="p-2 text-xs">{c.environment === "HOMOLOGATION" ? "Homologação" : "Produção"}</td>
-                      <td className="p-2">{statusBadge(c.status, c.is_active)}</td>
-                      <td className="p-2 text-xs">
-                        <div>Início: {formatDate(c.valid_from)}</div>
-                        <div>Fim: {formatDate(c.valid_until)}</div>
-                      </td>
-                      <td className="p-2 text-xs tabular-nums">
-                        {c.days_until_expiration === null ? "—" : c.days_until_expiration}
-                      </td>
-                      <td className="p-2 text-right">
-                        {canManageCertificates && c.is_active && c.status === "AVAILABLE" ? (
-                          confirmId === c.certificate_id ? (
-                            <div className="flex gap-1 justify-end">
-                              <Button size="sm" variant="destructive" disabled={revoke.isPending} onClick={() => handleRevoke(c.certificate_id)}>
-                                Confirmar
+                  {listQ.data.map((c) => {
+                    const isHomolog = c.environment === "HOMOLOGATION";
+                    return (
+                      <tr key={c.certificate_id} className="border-t">
+                        <td className="p-2">
+                          <div className="font-medium">{c.display_name}</div>
+                          {c.subject_name && (
+                            <div className="text-xs text-muted-foreground truncate max-w-[280px]">{c.subject_name}</div>
+                          )}
+                        </td>
+                        <td className="p-2 text-xs">{c.source_type === "A1_UPLOAD" ? "A1 (upload)" : "Sistema operacional"}</td>
+                        <td className="p-2 text-xs">{environmentLabel(c.environment)}</td>
+                        <td className="p-2">{statusBadge(c.status, c.is_active)}</td>
+                        <td className="p-2 text-[10px] font-mono" data-testid="fiscal-cert-fp">
+                          {maskFingerprint(c.fingerprint_sha256)}
+                        </td>
+                        <td className="p-2 text-xs">
+                          <div>Início: {formatDate(c.valid_from)}</div>
+                          <div>Fim: {formatDate(c.valid_until)}</div>
+                        </td>
+                        <td className="p-2 text-xs tabular-nums">
+                          {c.days_until_expiration === null ? "—" : c.days_until_expiration}
+                        </td>
+                        <td className="p-2 text-right">
+                          {canManageCertificates && isHomolog && c.is_active && c.status === "AVAILABLE" ? (
+                            confirmId === c.certificate_id ? (
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="destructive" disabled={revoke.isPending} onClick={() => handleRevoke(c.certificate_id)}>
+                                  Confirmar
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => setConfirmId(null)}>Cancelar</Button>
+                              </div>
+                            ) : (
+                              <Button size="sm" variant="outline" onClick={() => setConfirmId(c.certificate_id)}>
+                                Revogar
                               </Button>
-                              <Button size="sm" variant="ghost" onClick={() => setConfirmId(null)}>Cancelar</Button>
-                            </div>
-                          ) : (
-                            <Button size="sm" variant="outline" onClick={() => setConfirmId(c.certificate_id)}>
-                              Revogar
-                            </Button>
-                          )
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
+                            )
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -285,7 +336,7 @@ function OsCertificateCard({ companySettingsId, canManage }: OsCardProps) {
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} /> Detectar
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} /> Atualizar detecção
           </Button>
           {status && (
             <span className="text-xs text-muted-foreground">
@@ -295,12 +346,13 @@ function OsCertificateCard({ companySettingsId, canManage }: OsCardProps) {
         </div>
 
         {status && !status.available && (
-          <Alert>
+          <Alert data-testid="fiscal-os-bridge-missing">
             <ShieldOff className="h-4 w-4" aria-hidden />
-            <AlertTitle>Conector nativo não detectado</AlertTitle>
+            <AlertTitle>{OS_BRIDGE_MISSING_MESSAGE}</AlertTitle>
             <AlertDescription className="text-xs">
-              {status.error ??
-                "Instale o conector ARBio para acessar o repositório de certificados do sistema operacional."}
+              Instale o conector nativo ARBio para acessar os certificados do
+              repositório do sistema operacional. Nenhuma ação é possível até
+              que o conector esteja disponível.
             </AlertDescription>
           </Alert>
         )}
@@ -331,13 +383,13 @@ function OsCertificateCard({ companySettingsId, canManage }: OsCardProps) {
                     Emissor: {c.issuer_name}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Serial: <span className="font-mono">{c.serial_number}</span>
+                    Serial: <span className="font-mono">{maskSerial(c.serial_number)}</span>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Validade: {formatDate(c.valid_from)} → {formatDate(c.valid_until)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground font-mono truncate">
-                    SHA-256: {c.fingerprint_sha256}
+                  <div className="text-[10px] text-muted-foreground font-mono" data-testid="fiscal-os-cert-fp">
+                    Impressão digital: {maskFingerprint(c.fingerprint_sha256)}
                   </div>
                   {canManage && (
                     <div className="mt-2 flex justify-end">
