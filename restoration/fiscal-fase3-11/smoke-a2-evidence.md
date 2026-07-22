@@ -1,3 +1,13 @@
+> **Supersessão 3.11.5 (adendo, texto histórico preservado abaixo):**
+> A pendência descrita na seção "O que este arquivo NÃO certifica" foi
+> superada pela execução completa da matriz de 677 asserções no staging
+> temporário `ikaa***hoq`, commit `49c58e5871b14d99cc7a61c2cea7d19a703c1a95`,
+> classificação **APTO**. Detalhes em
+> [`docs/fiscal-fase3-11-5-certificacao-runtime.md`](../../docs/fiscal-fase3-11-5-certificacao-runtime.md).
+> Este arquivo continua registrando o smoke A.2 original (31 casos) como
+> evidência histórica; não descreve nem substitui a execução runtime da
+> Fase 3.11.
+
 # Evidência Smoke A.2 — Fase Fiscal 3.0.2
 
 **Origem:** execução manual no SQL Editor do staging temporário (Supabase).

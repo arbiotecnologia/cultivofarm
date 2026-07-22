@@ -126,3 +126,12 @@ contador for `> 0`, o script aborta com `ABORT 3.11.3`.
 - Homologação em ambiente real da Receita.
 - Certificado digital, secrets de provedor, webhooks.
 - Aprovação humana final para promoção a produção.
+
+## Supersessão 3.11.5 (adendo, texto histórico preservado acima)
+
+Execução completa registrada em staging temporário `ikaa***hoq`, commit
+`49c58e5871b14d99cc7a61c2cea7d19a703c1a95`: 677/677/677/0/0/0, zero
+resíduos, classificação **APTO**. Detalhes e limitações em
+[`fiscal-fase3-11-5-certificacao-runtime.md`](./fiscal-fase3-11-5-certificacao-runtime.md).
+Este guia continua sendo o manual operacional do harness (não substituído).
+

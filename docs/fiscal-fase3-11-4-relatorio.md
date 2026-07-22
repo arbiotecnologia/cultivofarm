@@ -1,3 +1,13 @@
+> **Supersessão 3.11.5 (adendo, texto histórico preservado abaixo):**
+> A classificação final deste relatório ("PREPARADO PARA REEXECUÇÃO EM
+> STAGING") foi superada pela execução completa e verde da matriz de 677
+> asserções no staging temporário `ikaa***hoq`, commit
+> `49c58e5871b14d99cc7a61c2cea7d19a703c1a95`: 677 planejadas / 677
+> executadas / 677 aprovadas / 0 falhas / 0 erros / 0 skips / zero
+> resíduos / classificação **APTO**. Detalhes em
+> [`fiscal-fase3-11-5-certificacao-runtime.md`](./fiscal-fase3-11-5-certificacao-runtime.md).
+> Nenhum texto histórico abaixo foi apagado.
+
 # Fase Fiscal 3.11.4 — Fechamento dos 2 últimos erros runtime
 
 Evidência baseline (staging pós-3.11.3, singleton sintético mantido `false`):
