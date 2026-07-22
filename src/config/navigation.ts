@@ -165,6 +165,7 @@ export const navigation: NavItem[] = [
 
   // ── Administração ──────────────────────────────────────────────────────────
   { id: "configuracoes", label: "Configurações", icon: Settings, route: "/configuracoes", matchRoutes: ["/configuracoes/objetivos-visita", "/configuracoes/catalogo-ia", "/configuracoes/parametros-cq"], legacyRoutes: ["/financeiro/configuracoes"], section: "Administração", order: 1, platforms: ["desktop"], searchKeywords: ["configurações", "configuracoes", "config", "administração", "administracao", "ajustes", "parâmetros", "sistema", "preferências", "integrações", "usuários", "perfis", "configurações gerais", "configuracoes gerais", "administração geral", "administracao geral", "parâmetros gerais", "parametros gerais", "configurações financeiras", "configuracoes financeiras", "parâmetros financeiros", "parametros financeiros"] },
+  { id: "config-fiscal", label: "Configuração Fiscal", icon: ShieldCheck, route: "/configuracoes/fiscal/empresa", section: "Administração", order: 2, platforms: ["desktop"], searchKeywords: ["fiscal", "configuração fiscal", "configuracao fiscal", "nf-e", "nfe", "nfs-e", "nfse", "empresa fiscal", "homologação", "homologacao", "sefaz", "prefeitura"] },
 
   // ── Mobile Consultor (tabs) ────────────────────────────────────────────────
   { id: "m-c-inicio", label: "Início", icon: Home, route: "/app", section: "Mobile Consultor", platforms: ["mobile-consultor", "mobile-produtor"], order: 1 },

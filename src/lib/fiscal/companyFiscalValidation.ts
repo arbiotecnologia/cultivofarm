@@ -1,16 +1,19 @@
 /**
- * Fase Fiscal 3.1 — Validação pura para `company_fiscal_settings`.
+ * Fase Fiscal 3.15 — Validação da Central de Configuração Fiscal.
  *
- * Fonte do contrato: `src/integrations/supabase/types.ts` (derivado das
- * migrations canônicas 20260721000000 / 20260721010000 / 20260722000000).
- *
- * REGRAS DE SEGURANÇA aplicadas nesta camada:
- * - `fiscal_provider` SEMPRE `NONE` no payload.
- * - `production_enabled` NUNCA aparece no payload (não editável pela UI).
- * - `fiscal_environment` restrito a `NOT_CONFIGURED` ou `HOMOLOGATION`.
- * - `configuration_status` restrito a `DRAFT` ou `PENDING_ACCOUNTING`
- *   (validação contábil é feita fora da UI).
- * - Nenhum campo de credencial/certificado/token é aceito.
+ * SEGURANÇA:
+ * - `production_enabled` NUNCA aparece no payload.
+ * - Refs (`nfe_credential_ref`, `nfse_credential_ref`, `certificate_ref`,
+ *   `webhook_ref`) aceitam apenas identificadores curtos. Nenhum valor
+ *   de credencial, token ou certificado.
+ * - `nfe_configuration` / `nfse_configuration` / `last_validation_summary`
+ *   são rejeitados recursivamente se contiverem chaves sensíveis.
+ * - `fiscal_environment` limitado a NOT_CONFIGURED / HOMOLOGATION.
+ * - `configuration_status` limitado a DRAFT / PENDING_ACCOUNTING /
+ *   READY_FOR_HOMOLOGATION (validação contábil externa).
+ * - `nfe_provider` / `nfse_provider` são configuráveis mas NÃO autorizam
+ *   conexão nem emissão.
+ * - `fiscal_provider` legacy permanece `NONE`.
  */
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
@@ -18,26 +21,19 @@ import type { Database } from "@/integrations/supabase/types";
 type Row = Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
 type Update = Database["public"]["Tables"]["company_fiscal_settings"]["Update"];
 
-// —————————————————————————————————————————————————————————————
-// CNPJ — validação algorítmica (mod-11), sem chamadas externas.
-// —————————————————————————————————————————————————————————————
+// CNPJ mod-11 ----------------------------------------------------------
 export function normalizeCnpj(value: string): string {
   return value.replace(/\D/g, "");
 }
-
 export function isValidCnpj(value: string): boolean {
   const cnpj = normalizeCnpj(value);
   if (cnpj.length !== 14) return false;
   if (/^(\d)\1{13}$/.test(cnpj)) return false;
-
   const calc = (base: string, weights: number[]): number => {
-    const sum = base
-      .split("")
-      .reduce((acc, digit, idx) => acc + Number(digit) * weights[idx], 0);
+    const sum = base.split("").reduce((acc, d, i) => acc + Number(d) * weights[i], 0);
     const rest = sum % 11;
     return rest < 2 ? 0 : 11 - rest;
   };
-
   const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   const base = cnpj.slice(0, 12);
@@ -46,29 +42,42 @@ export function isValidCnpj(value: string): boolean {
   return cnpj.endsWith(`${d1}${d2}`);
 }
 
-// —————————————————————————————————————————————————————————————
-// Enums permitidos NESTA fase (subconjunto seguro dos CHECKs canônicos).
-// —————————————————————————————————————————————————————————————
+// Enums ---------------------------------------------------------------
 export const ALLOWED_ENVIRONMENTS = ["NOT_CONFIGURED", "HOMOLOGATION"] as const;
-export const ALLOWED_STATUSES = ["DRAFT", "PENDING_ACCOUNTING"] as const;
+export const ALLOWED_STATUSES = ["DRAFT", "PENDING_ACCOUNTING", "READY_FOR_HOMOLOGATION"] as const;
+export const ALLOWED_PROVIDERS = [
+  "NONE", "NOT_CONFIGURED", "FOCUS_NFE", "PLUGNOTAS",
+  "SEFAZ_DIRETO", "NFSE_NACIONAL", "MUNICIPAL", "OTHER_FUTURE",
+] as const;
 export const LOCKED_PROVIDER = "NONE" as const;
 
 export type AllowedEnvironment = (typeof ALLOWED_ENVIRONMENTS)[number];
 export type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
+export type AllowedProvider = (typeof ALLOWED_PROVIDERS)[number];
 
-// —————————————————————————————————————————————————————————————
-// Schema do formulário (o que a UI aceita).
-// Cada campo é opcional/nullable — a UI não pode apagar dados existentes
-// silenciosamente. Ausência = manter valor no banco (`omit` no payload).
-// —————————————————————————————————————————————————————————————
+// Sensitive-key scanner ----------------------------------------------
+export const SENSITIVE_JSON_KEYS = [
+  "token", "password", "senha", "secret", "api_key", "apikey",
+  "private_key", "privatekey", "pfx", "p12",
+  "certificate_content", "certificate_pem", "pem",
+  "authorization", "bearer",
+];
+
+export function hasSensitiveKey(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (Array.isArray(value)) return value.some(hasSensitiveKey);
+  if (typeof value === "object") {
+    for (const k of Object.keys(value as Record<string, unknown>)) {
+      if (SENSITIVE_JSON_KEYS.includes(k.toLowerCase())) return true;
+      if (hasSensitiveKey((value as Record<string, unknown>)[k])) return true;
+    }
+  }
+  return false;
+}
+
+// Helpers -------------------------------------------------------------
 const optionalTrimmedString = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((v) => (v.length === 0 ? null : v))
-    .nullable()
-    .optional();
+  z.string().trim().max(max).transform((v) => (v.length === 0 ? null : v)).nullable().optional();
 
 const optionalCnpj = z
   .string()
@@ -78,6 +87,85 @@ const optionalCnpj = z
   .refine((v) => v === null || isValidCnpj(v), { message: "CNPJ inválido." })
   .optional();
 
+const REF_REGEX = /^[A-Za-z0-9_.:\-]+$/;
+const refField = z
+  .string()
+  .trim()
+  .max(120)
+  .refine((v) => v === "" || REF_REGEX.test(v), {
+    message: "Use apenas identificadores (sem URLs, sem credenciais).",
+  })
+  .transform((v) => (v.length === 0 ? null : v))
+  .nullable()
+  .optional();
+
+// Sub-schemas ---------------------------------------------------------
+export const NFE_FINALIDADES = ["NORMAL", "COMPLEMENTARY", "ADJUSTMENT", "RETURN"] as const;
+export const NFE_NUMBERING_MODES = ["MANUAL_REFERENCE", "PROVIDER_MANAGED"] as const;
+export const NFE_DANFE_LAYOUTS = ["PORTRAIT", "LANDSCAPE"] as const;
+export const NFE_CONTINGENCIA = ["DISABLED", "EPEC", "FUTURE"] as const;
+export const NFSE_MODES = ["NFSE_NACIONAL", "MUNICIPAL"] as const;
+
+export const nfeConfigurationSchema = z
+  .object({
+    enabled_for_preparation: z.boolean().optional(),
+    environment: z.enum(ALLOWED_ENVIRONMENTS).optional(),
+    series: optionalTrimmedString(20),
+    numbering_mode: z.enum(NFE_NUMBERING_MODES).optional(),
+    default_nature: optionalTrimmedString(200),
+    default_finality: z.enum(NFE_FINALIDADES).optional(),
+    presence_indicator: optionalTrimmedString(20),
+    default_end_consumer: z.boolean().optional(),
+    freight_modality: optionalTrimmedString(20),
+    danfe_layout: z.enum(NFE_DANFE_LAYOUTS).optional(),
+    send_email_after_authorization: z.boolean().optional(),
+    contingency_mode: z.enum(NFE_CONTINGENCIA).optional(),
+    suggested_cfop_in_state: optionalTrimmedString(10),
+    suggested_cfop_interstate: optionalTrimmedString(10),
+    default_additional_info: optionalTrimmedString(2000),
+  })
+  .passthrough()
+  .refine((v) => !hasSensitiveKey(v), { message: "Conteúdo sensível não é permitido." });
+
+export const nfseConfigurationSchema = z
+  .object({
+    enabled_for_preparation: z.boolean().optional(),
+    environment: z.enum(ALLOWED_ENVIRONMENTS).optional(),
+    mode: z.enum(NFSE_MODES).optional(),
+    municipality_ibge_code: optionalTrimmedString(10),
+    municipal_registration: optionalTrimmedString(40),
+    series: optionalTrimmedString(20),
+    rps_series: optionalTrimmedString(20),
+    rps_type: optionalTrimmedString(20),
+    national_taxation_code: optionalTrimmedString(20),
+    municipal_taxation_code: optionalTrimmedString(20),
+    lc116_item: optionalTrimmedString(20),
+    cnae: optionalTrimmedString(20),
+    iss_rate: z.number().min(0).max(100).optional(),
+    iss_withheld_default: z.boolean().optional(),
+    special_taxation_regime: optionalTrimmedString(60),
+    fiscal_incentive: z.boolean().optional(),
+    operation_nature: optionalTrimmedString(200),
+    deductions_default: z.number().min(0).optional(),
+    default_service_description: optionalTrimmedString(2000),
+    send_email_after_authorization: z.boolean().optional(),
+  })
+  .passthrough()
+  .refine((v) => !hasSensitiveKey(v), { message: "Conteúdo sensível não é permitido." });
+
+export const integrationRefsSchema = z
+  .object({
+    nfe_provider: z.enum(ALLOWED_PROVIDERS).optional(),
+    nfse_provider: z.enum(ALLOWED_PROVIDERS).optional(),
+    nfe_credential_ref: refField,
+    nfse_credential_ref: refField,
+    certificate_ref: refField,
+    webhook_ref: refField,
+    configuration_notes: optionalTrimmedString(4000),
+  })
+  .strict();
+
+// Form schema --------------------------------------------------------
 export const companyFiscalFormSchema = z.object({
   cnpj: optionalCnpj,
   legal_name: optionalTrimmedString(200),
@@ -88,9 +176,7 @@ export const companyFiscalFormSchema = z.object({
     .max(255)
     .transform((v) => (v.length === 0 ? null : v))
     .nullable()
-    .refine((v) => v === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), {
-      message: "E-mail inválido.",
-    })
+    .refine((v) => v === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), { message: "E-mail inválido." })
     .optional(),
   phone: optionalTrimmedString(40),
   tax_regime: optionalTrimmedString(60),
@@ -113,14 +199,20 @@ export const companyFiscalFormSchema = z.object({
   nfse_enabled: z.boolean().optional(),
   nfe_series: optionalTrimmedString(20),
   nfse_series: optionalTrimmedString(20),
+  nfe_configuration: nfeConfigurationSchema.optional(),
+  nfse_configuration: nfseConfigurationSchema.optional(),
+  nfe_provider: z.enum(ALLOWED_PROVIDERS).optional(),
+  nfse_provider: z.enum(ALLOWED_PROVIDERS).optional(),
+  nfe_credential_ref: refField,
+  nfse_credential_ref: refField,
+  certificate_ref: refField,
+  webhook_ref: refField,
+  configuration_notes: optionalTrimmedString(4000),
+  configuration_version: z.number().int().positive().optional(),
 });
 
 export type CompanyFiscalFormValues = z.infer<typeof companyFiscalFormSchema>;
 
-/**
- * Campos que a UI NUNCA envia — trava explícita contra emissão.
- * Auditar `buildUpdatePayload` para garantir que nenhum destes vaze.
- */
 export const FORBIDDEN_PAYLOAD_KEYS = [
   "production_enabled",
   "id",
@@ -131,14 +223,9 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
   "accounting_validated_at",
   "accounting_validated_by",
   "is_active",
+  "last_validation_at",
 ] as const;
 
-/**
- * Constrói o payload de UPDATE idempotente.
- * - Omite chaves ausentes/undefined (preserva valores existentes).
- * - Força `fiscal_provider = 'NONE'`.
- * - Nunca inclui `production_enabled` nem colunas de auditoria/sistema.
- */
 export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   const parsed = companyFiscalFormSchema.parse(values);
   const payload: Record<string, unknown> = {};
@@ -146,6 +233,7 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   for (const [key, val] of Object.entries(parsed)) {
     if (val === undefined) continue;
     if ((FORBIDDEN_PAYLOAD_KEYS as readonly string[]).includes(key)) continue;
+    if (key === "configuration_version") continue; // usado só na cláusula WHERE
     if (key === "cnpj" && typeof val === "string") {
       payload.cnpj = normalizeCnpj(val);
       continue;
@@ -153,14 +241,10 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
     payload[key] = val;
   }
 
-  // Trava: provider sempre NONE nesta fase.
   payload.fiscal_provider = LOCKED_PROVIDER;
-  return payload as Update;
+  return payload as unknown as Update;
 }
 
-/**
- * Extrai valores iniciais do formulário a partir de uma Row real (ou vazio).
- */
 export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
   if (!row) {
     return {
@@ -168,6 +252,11 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
       configuration_status: "DRAFT",
       nfe_enabled: false,
       nfse_enabled: false,
+      nfe_provider: "NONE",
+      nfse_provider: "NONE",
+      nfe_configuration: {},
+      nfse_configuration: {},
+      configuration_version: 1,
     };
   }
   const env = (ALLOWED_ENVIRONMENTS as readonly string[]).includes(row.fiscal_environment)
@@ -176,6 +265,26 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
   const status = (ALLOWED_STATUSES as readonly string[]).includes(row.configuration_status)
     ? (row.configuration_status as AllowedStatus)
     : "DRAFT";
+
+  const extra = row as unknown as {
+    nfe_configuration?: Record<string, unknown> | null;
+    nfse_configuration?: Record<string, unknown> | null;
+    nfe_provider?: string;
+    nfse_provider?: string;
+    nfe_credential_ref?: string | null;
+    nfse_credential_ref?: string | null;
+    certificate_ref?: string | null;
+    webhook_ref?: string | null;
+    configuration_notes?: string | null;
+    configuration_version?: number | null;
+  };
+
+  const nfeProvider = (ALLOWED_PROVIDERS as readonly string[]).includes(extra.nfe_provider ?? "NONE")
+    ? (extra.nfe_provider as AllowedProvider) ?? "NONE"
+    : "NONE";
+  const nfseProvider = (ALLOWED_PROVIDERS as readonly string[]).includes(extra.nfse_provider ?? "NONE")
+    ? (extra.nfse_provider as AllowedProvider) ?? "NONE"
+    : "NONE";
 
   return {
     cnpj: row.cnpj ?? undefined,
@@ -203,5 +312,46 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
     nfse_enabled: row.nfse_enabled,
     nfe_series: row.nfe_series ?? undefined,
     nfse_series: row.nfse_series ?? undefined,
+    nfe_configuration: (extra.nfe_configuration ?? {}) as Record<string, unknown>,
+    nfse_configuration: (extra.nfse_configuration ?? {}) as Record<string, unknown>,
+    nfe_provider: nfeProvider,
+    nfse_provider: nfseProvider,
+    nfe_credential_ref: extra.nfe_credential_ref ?? undefined,
+    nfse_credential_ref: extra.nfse_credential_ref ?? undefined,
+    certificate_ref: extra.certificate_ref ?? undefined,
+    webhook_ref: extra.webhook_ref ?? undefined,
+    configuration_notes: extra.configuration_notes ?? undefined,
+    configuration_version: extra.configuration_version ?? 1,
   };
+}
+
+// Checklist local ----------------------------------------------------
+export interface ChecklistItem {
+  key: string;
+  label: string;
+  ok: boolean;
+}
+export function nfeChecklist(v: CompanyFiscalFormValues): ChecklistItem[] {
+  const c = (v.nfe_configuration ?? {}) as Record<string, unknown>;
+  return [
+    { key: "cnpj", label: "CNPJ da empresa", ok: !!v.cnpj },
+    { key: "legal_name", label: "Razão social", ok: !!v.legal_name },
+    { key: "state_registration", label: "Inscrição estadual", ok: !!v.state_registration },
+    { key: "series", label: "Série NF-e", ok: !!(v.nfe_series || c.series) },
+    { key: "cfop_in_state", label: "CFOP interno sugerido", ok: !!c.suggested_cfop_in_state },
+    { key: "cfop_interstate", label: "CFOP interestadual", ok: !!c.suggested_cfop_interstate },
+    { key: "environment", label: "Ambiente de homologação", ok: v.fiscal_environment === "HOMOLOGATION" },
+  ];
+}
+export function nfseChecklist(v: CompanyFiscalFormValues): ChecklistItem[] {
+  const c = (v.nfse_configuration ?? {}) as Record<string, unknown>;
+  return [
+    { key: "cnpj", label: "CNPJ da empresa", ok: !!v.cnpj },
+    { key: "municipal_registration", label: "Inscrição municipal", ok: !!v.municipal_registration },
+    { key: "municipality_ibge_code", label: "Código IBGE do município", ok: !!v.municipality_ibge_code },
+    { key: "mode", label: "Modo (nacional/municipal)", ok: !!c.mode },
+    { key: "lc116_item", label: "Item LC 116", ok: !!c.lc116_item },
+    { key: "iss_rate", label: "Alíquota ISS", ok: typeof c.iss_rate === "number" },
+    { key: "environment", label: "Ambiente de homologação", ok: v.fiscal_environment === "HOMOLOGATION" },
+  ];
 }

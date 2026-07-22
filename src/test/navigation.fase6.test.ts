@@ -29,9 +29,9 @@ describe("Fase 6 — Inteligência, Controle e Administração", () => {
     expect(byId("auditorias").subSection).toBe("Controle");
   });
 
-  it("Administração contém somente Configurações", () => {
+  it("Administração contém Configurações e Configuração Fiscal (Fase 3.15)", () => {
     const g = groups.find((s) => s.section === "Administração")!;
-    expect(g.items.map((i) => i.id)).toEqual(["configuracoes"]);
+    expect(g.items.map((i) => i.id)).toEqual(["configuracoes", "config-fiscal"]);
   });
 
   it("preserva rotas, badges e legacyRoutes dos itens migrados", () => {

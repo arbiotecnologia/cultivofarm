@@ -310,10 +310,13 @@ describe("Fase Fiscal 3.11.3 — harness SQL executável e sem regressões runti
     expect(SQL).toMatch(/ABORT 3\.11\.3: matriz com % asserções \(esperado 677\)/);
   });
 
-  test("flags fiscais permanecem false", () => {
+  test("flags fiscais de emissão/workflow permanecem false (fiscalConfigurationUi liberada na 3.15)", () => {
     const fiscalFlags = Object.entries(FEATURE_FLAGS).filter(([k]) => /fiscal/i.test(k));
     expect(fiscalFlags.length).toBeGreaterThan(0);
-    for (const [, v] of fiscalFlags) expect(v).toBe(false);
+    for (const [k, v] of fiscalFlags) {
+      if (k === "fiscalConfigurationUi") continue; // Fase 3.15 — Central de Configuração
+      expect(v, `flag ${k} deveria estar false`).toBe(false);
+    }
   });
 
   test("nenhum indicador de provider/emissão/certificado/webhook/secret", () => {
