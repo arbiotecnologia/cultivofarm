@@ -66,7 +66,5 @@ BEGIN
 END $$;
 
 
--- Limpa o inventário para não cruzar corridas subsequentes.
-DELETE FROM public._fiscal_hml_inventory;
-
 COMMIT;
+
