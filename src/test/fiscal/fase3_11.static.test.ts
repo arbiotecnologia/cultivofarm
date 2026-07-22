@@ -40,13 +40,13 @@ describe("Fase Fiscal 3.11.1 — harness SQL executável (não placeholder)", ()
   });
 
   test("não emite status='skipped' em massa nem loop de expectativa vazio", () => {
-    // Nenhum literal 'skipped' escrito no fluxo de execução. Apenas o CHECK
-    // constraint pode mencioná-lo (como valor permitido no enum).
+    // 'skipped' aceito apenas em: CHECK constraint + 3 usos na query de resumo
+    // (WHERE status <> 'skipped', WHERE status='skipped', WHERE status IN (...)).
     const skippedLiterals = [...SQL.matchAll(/'skipped'/g)];
-    // CHECK constraint declara a lista; qualquer uso adicional é suspeito.
-    expect(skippedLiterals.length).toBeLessThanOrEqual(2);
-    // E se aparecer, deve ser dentro de CHECK ou como contador de saída.
+    expect(skippedLiterals.length).toBeLessThanOrEqual(5);
     expect(SQL).toMatch(/status IN \('passed','failed','error','skipped'\)/);
+    // Nenhum INSERT direto de status='skipped' fora do CHECK constraint
+    expect(SQL).not.toMatch(/,\s*'skipped'\s*,/);
   });
 
   test("APTO exige zero skipped e total planejado atingido", () => {
