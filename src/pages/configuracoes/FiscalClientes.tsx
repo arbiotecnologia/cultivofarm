@@ -75,8 +75,8 @@ type StringField =
   | "fiscal_state"
   | "country_code";
 
-const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean }[] = [
-  { key: "state_registration_status", label: "Situação da Inscrição Estadual" },
+const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean; select?: FiscalOption[]; hint?: string }[] = [
+  { key: "state_registration_status", label: "Situação da Inscrição Estadual", select: STATE_REG_STATUS_OPTIONS },
   { key: "municipal_registration", label: "Inscrição Municipal" },
   { key: "fiscal_email", label: "E-mail fiscal" },
   { key: "fiscal_phone", label: "Telefone fiscal" },
@@ -86,9 +86,9 @@ const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean }[
   { key: "fiscal_complement", label: "Complemento" },
   { key: "fiscal_neighborhood", label: "Bairro" },
   { key: "fiscal_city", label: "Município" },
-  { key: "fiscal_municipality_ibge_code", label: "Município IBGE (7 dígitos)", numeric: true },
-  { key: "fiscal_state", label: "UF (2 letras)" },
-  { key: "country_code", label: "País (ISO)" },
+  { key: "fiscal_municipality_ibge_code", label: "Município IBGE (7 dígitos)", numeric: true, hint: "Consulte em ibge.gov.br/localidades." },
+  { key: "fiscal_state", label: "UF", select: UF_OPTIONS },
+  { key: "country_code", label: "País", select: COUNTRY_OPTIONS },
 ];
 
 export default function FiscalClientes() {
