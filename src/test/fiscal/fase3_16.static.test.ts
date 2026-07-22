@@ -357,3 +357,47 @@ describe("Fase 3.16.2-A — Edge Function revoke (hardening)", () => {
     expect(rv).toContain("rpc_fiscal_certificate_revoke");
   });
 });
+
+describe("Fase 3.16.2-B — hardening OS bridge + snapshots por item + labels pt-BR", () => {
+  const sql = readFileSync(CANONICAL_MIGRATION, "utf8");
+
+  test("RPC register_os aplica whitelist estrita de metadata", () => {
+    expect(sql).toMatch(/ALLOWED_KEYS\s+text\[\]\s*:=\s*ARRAY\[/);
+    expect(sql).toMatch(/metadata_key_not_allowed/);
+    expect(sql).toMatch(/fingerprint_sha256_invalid/);
+    expect(sql).toMatch(/validity_range_invalid/);
+    expect(sql).toMatch(/certificate_expired/);
+    expect(sql).toMatch(/subject_name_invalid/);
+    expect(sql).toMatch(/issuer_name_invalid/);
+    expect(sql).toMatch(/serial_number_invalid/);
+  });
+
+  test("rpc_fiscal_draft_save persiste snapshots por item", () => {
+    expect(sql).toMatch(/fiscal_profile_snapshot['"]?,\s*v_item_profile/);
+    expect(sql).toMatch(/tax_snapshot['"]?,\s*v_item_tax/);
+    expect(sql).toMatch(/INSERT INTO public\.fiscal_invoice_items[\s\S]*fiscal_profile_snapshot,\s*tax_snapshot/);
+  });
+
+  test("rpc_fiscal_draft_validate_homologation exige perfil fiscal por item", () => {
+    expect(sql).toMatch(/item_fiscal_profile/);
+    expect(sql).toMatch(/NCM obrigatorio/);
+    expect(sql).toMatch(/LC116 e CNAE obrigatorios/);
+  });
+
+  test("mapa pt-BR existe e cobre enums fiscais", () => {
+    const labels = readFileSync(p("src/lib/fiscal/documentLabels.ts"), "utf8");
+    for (const fn of [
+      "labelDocumentModel","labelDocumentOrigin","labelStatus",
+      "labelNormalizedStatus","labelEnvironment","labelReconciliationStatus",
+      "labelInvoiceType","labelItemKind",
+    ]) {
+      expect(labels, `${fn} ausente`).toContain(fn);
+    }
+  });
+
+  test("FiscalEmpresa restringe gestão de certificados a administrador", () => {
+    const fe = readFileSync(p("src/pages/configuracoes/FiscalEmpresa.tsx"), "utf8");
+    expect(fe).toMatch(/canManageCertificates\s*=\s*roles\.includes\(["']administrador["']\)/);
+    expect(fe).toMatch(/canManageCertificates={canManageCertificates}/);
+  });
+});
