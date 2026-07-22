@@ -152,13 +152,16 @@ describe("Fase Fiscal 3.11.3 — harness SQL executável e sem regressões runti
     expect(SQL).not.toMatch(/UPDATE public\.fiscal_invoice_items SET description=/);
   });
 
-  test("Views v_product/service_fiscal_readiness recebem fixture elegível (is_active=true)", () => {
+  test("Views v_product/service_fiscal_readiness recebem fixture elegível (is_active=true); company NÃO (3.11.4)", () => {
     // product SEL row: '<uuid>', v_prod_real, true, ...
     expect(SQL).toMatch(/'ff5c3111-b12b-0000-0000-000000000001',\s*v_prod_real,\s*true/);
     // service SEL row: '<uuid>','FISCAL_TEST_3111_SEL_SERV', true, ...
     expect(SQL).toMatch(/'ff5c3111-5e12-0000-0000-000000000001'\s*,\s*'FISCAL_TEST_3111_SEL_SERV'\s*,\s*true/);
-    // company SEL row: '<uuid>', true, ...
-    expect(SQL).toMatch(/'ff5c3111-c04f-0000-0000-000000000001'\s*,\s*true/);
+    // 3.11.4: fixture company_fiscal_settings NÃO pode ser is_active=true
+    // (staging já possui singleton ativo; segundo violaria a unique).
+    expect(SQL).toMatch(/'ff5c3111-c04f-0000-0000-000000000001'\s*,\s*false/);
+    expect(SQL).not.toMatch(/'ff5c3111-c04f-0000-0000-000000000001'\s*,\s*true/);
+    expect(SQL).toMatch(/ux_company_fiscal_settings_active_singleton/);
   });
 
   test("RPC executor faz pre/post count como postgres (fora do bloco de exceção do role)", () => {
@@ -347,5 +350,72 @@ describe("Fase Fiscal 3.11.3 — harness SQL executável e sem regressões runti
   test("runner TS existente preservado", () => {
     expect(() => readFileSync(join(ROOT, "src/test/fiscal/rls/runner.ts"), "utf8")).not.toThrow();
     expect(() => readFileSync(join(ROOT, "src/test/fiscal/rls/matrix.ts"), "utf8")).not.toThrow();
+  });
+
+  // ===================================================================
+  // 3.11.4 — fecha os 2 últimos erros runtime (duplicate key em
+  // customer_fiscal_profiles INSERT para administrador e financeiro).
+  // ===================================================================
+  test("3.11.4: cliente C dedicado ao INSERT existe e não é cliente A", () => {
+    // Bloco seed_clientes contém uuid do cliente C (…c1e1-…0003).
+    const iSeed = SQL.indexOf("$seed_clientes$");
+    const iEnd = SQL.indexOf("$seed_clientes$", iSeed + 1);
+    const block = SQL.slice(iSeed, iEnd);
+    expect(block).toContain("ff5c3111-c1e1-0000-0000-000000000003");
+    expect(block).toMatch(/FISCAL_TEST_3111_cli_C_INSERT/);
+    // GUC cliente_c_id publicado e distinto de cliente_a_id.
+    expect(SQL).toMatch(/set_config\(\s*'fiscal_test_3111\.cliente_c_id'/);
+    // cli_A tem profile seed; cli_C não pode aparecer em customer_fiscal_profiles seed.
+    const iCfpSeed = SQL.indexOf("INSERT INTO public.customer_fiscal_profiles");
+    expect(iCfpSeed).toBeGreaterThan(0);
+    const seedCfpBlock = SQL.slice(iCfpSeed, iCfpSeed + 800);
+    // Seed do customer_fiscal_profiles usa variáveis v_cli_a / v_cli_b (não cli_C).
+    expect(seedCfpBlock).toMatch(/v_cli_a\b/);
+    expect(seedCfpBlock).not.toMatch(/v_cli_c\b/);
+    expect(seedCfpBlock).not.toContain("ff5c3111-c1e1-0000-0000-000000000003"); // cli_C literal
+  });
+
+  test("3.11.4: INSERT customer_fiscal_profiles usa cliente_c_id (não cliente_a_id)", () => {
+    // No executor de INSERT para customer_fiscal_profiles, o payload deve
+    // referenciar o GUC fiscal_test_3111.cliente_c_id.
+    const m = SQL.match(
+      /ELSIF p_table='customer_fiscal_profiles' THEN[\s\S]{0,1200}?current_setting\('fiscal_test_3111\.cliente_c_id'\)/,
+    );
+    expect(m, "INSERT customer_fiscal_profiles deve usar cliente_c_id").not.toBeNull();
+    // Não pode subsistir referência a cliente_a_id no ramo de INSERT dessa tabela.
+    const branch = SQL.match(
+      /ELSIF p_table='customer_fiscal_profiles' THEN[\s\S]{0,1200}?(?=ELSIF p_table=|END IF;)/,
+    );
+    expect(branch, "ramo INSERT customer_fiscal_profiles ausente").not.toBeNull();
+    expect(branch![0]).not.toMatch(/fiscal_test_3111\.cliente_a_id/);
+  });
+
+  test("3.11.4: cleanup pós-INSERT customer_fiscal_profiles em cliente C, executado como postgres", () => {
+    // Cleanup ocorre depois de _fiscal_3111_reset (que restaura postgres),
+    // escopado por customer_id=cli_C AND marker FISCAL_TEST_3111_INS_%.
+    expect(SQL).toMatch(
+      /_fiscal_3111_reset\(\);[\s\S]{0,600}IF p_op='INSERT' AND p_table='customer_fiscal_profiles' THEN[\s\S]{0,400}DELETE FROM public\.customer_fiscal_profiles[\s\S]{0,300}fiscal_test_3111\.cliente_c_id[\s\S]{0,200}FISCAL_TEST_3111_INS_%/,
+    );
+  });
+
+  test("3.11.4: fixture company_fiscal_settings sintética é is_active=false (sem segundo singleton)", () => {
+    // Bloco de seed do company_fiscal_settings tem AMBAS as linhas com false.
+    const i = SQL.indexOf("INSERT INTO public.company_fiscal_settings(\n    id, is_active, cnpj, legal_name");
+    expect(i).toBeGreaterThan(0);
+    const block = SQL.slice(i, i + 800);
+    // Duas linhas de VALUES, ambas false.
+    const trues = [...block.matchAll(/,\s*true\s*,/g)];
+    expect(trues.length, `fixture não pode conter is_active=true: ${block}`).toBe(0);
+    expect(block).toMatch(/'ff5c3111-c04f-0000-0000-000000000001',\s*false/);
+    expect(block).toMatch(/'ff5c3111-c04f-0000-0000-000000000002',\s*false/);
+    // Comentário/justificativa referencia a constraint singleton.
+    expect(SQL).toMatch(/ux_company_fiscal_settings_active_singleton/);
+  });
+
+  test("3.11.4: teardown remove cliente C junto dos demais (namespace FISCAL_TEST_3111_)", () => {
+    // Ambos pre e post cleanup deletam clientes com prefixo FISCAL_TEST_3111_,
+    // o que inclui cli_C (nome FISCAL_TEST_3111_cli_C_INSERT).
+    const clienteDeletes = [...SQL.matchAll(/DELETE FROM public\.clientes\s+WHERE nome LIKE 'FISCAL_TEST_3111_%'/g)];
+    expect(clienteDeletes.length).toBeGreaterThanOrEqual(2);
   });
 });

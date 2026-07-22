@@ -209,11 +209,18 @@ DO $seed_clientes$
 DECLARE
   v_cli_a uuid := 'ff5c3111-c1e1-0000-0000-000000000001';
   v_cli_b uuid := 'ff5c3111-c1e1-0000-0000-000000000002';
+  -- 3.11.4: cliente C dedicado ao INSERT de customer_fiscal_profiles.
+  -- Nunca recebe profile seed; é limpo antes/depois de cada célula INSERT
+  -- para que admin e financeiro testem a mesma operação em estado limpo,
+  -- eliminando a duplicidade indevidamente classificada como RLS allow.
+  v_cli_c uuid := 'ff5c3111-c1e1-0000-0000-000000000003';
   v_upA   uuid := 'ff5c3111-0000-0000-0000-00000000000b';
   v_upB   uuid := 'ff5c3111-0000-0000-0000-000000000010';
 BEGIN
   INSERT INTO public.clientes(id,nome)
-    VALUES (v_cli_a,'FISCAL_TEST_3111_cli_A'),(v_cli_b,'FISCAL_TEST_3111_cli_B')
+    VALUES (v_cli_a,'FISCAL_TEST_3111_cli_A'),
+           (v_cli_b,'FISCAL_TEST_3111_cli_B'),
+           (v_cli_c,'FISCAL_TEST_3111_cli_C_INSERT')
     ON CONFLICT (id) DO NOTHING;
 
   INSERT INTO public.user_clientes(user_id,cliente_id,principal)
@@ -223,6 +230,7 @@ BEGIN
   -- Persistir ids como GUC de sessão para uso em executores (payload FK real)
   PERFORM set_config('fiscal_test_3111.cliente_a_id', v_cli_a::text, false);
   PERFORM set_config('fiscal_test_3111.cliente_b_id', v_cli_b::text, false);
+  PERFORM set_config('fiscal_test_3111.cliente_c_id', v_cli_c::text, false);
 END $seed_clientes$;
 
 -- Roles: só depois de user_clientes existir para produtor A/B.
@@ -331,13 +339,18 @@ BEGIN
           jsonb_build_object('notes','FISCAL_TEST_3111_AUDIT_DEL'));
 
   -- company_fiscal_settings:
-  --   * SEL is_active=true (elegível à view v_fiscal_company_readiness)
-  --   * DEL isolado, is_active=false
+  --   3.11.4: constraint ux_company_fiscal_settings_active_singleton no
+  --   staging já possui um singleton ativo real. Fixture sintética NUNCA
+  --   pode ser is_active=true (segundo singleton ativo => 23505). Para a
+  --   view v_fiscal_company_readiness, o teste depende do singleton ativo
+  --   preexistente, que NÃO é lido/apagado/alterado por este harness.
+  --   * SEL/UPDATE is_active=false, id ...c04f-...0001
+  --   * DEL         is_active=false, id ...c04f-...0002 (marker DELCNPJ)
   INSERT INTO public.company_fiscal_settings(
     id, is_active, cnpj, legal_name, tax_regime, crt, primary_cnae,
     municipality_ibge_code, configuration_status
   ) VALUES
-    ('ff5c3111-c04f-0000-0000-000000000001', true,
+    ('ff5c3111-c04f-0000-0000-000000000001', false,
      'FISCAL_TEST_3111_CNPJ','FISCAL_TEST_3111_LEGAL','SIMPLES','1','0111-3','3550308','DRAFT'),
     ('ff5c3111-c04f-0000-0000-000000000002', false,
      'FISCAL_TEST_3111_DELCNPJ',NULL,NULL,NULL,NULL,NULL,'DRAFT')
@@ -697,11 +710,13 @@ BEGIN
         EXECUTE $q$INSERT INTO public.service_fiscal_profiles(source_reference, is_active, lc116_item, cnae, profile_status)
                    VALUES('FISCAL_TEST_3111_INS_'||gen_random_uuid()::text, false, '01.01', '0111-3', 'DRAFT')$q$;
       ELSIF p_table='customer_fiscal_profiles' THEN
+        -- 3.11.4: usa cliente C exclusivo do INSERT (sem profile seed) para
+        -- evitar duplicate key contra o profile SEL de cli_A (unique customer_id).
         EXECUTE format($f$INSERT INTO public.customer_fiscal_profiles
                           (customer_id, profile_status, validation_notes)
                           VALUES (%L::uuid, 'INCOMPLETE',
                                   'FISCAL_TEST_3111_INS_'||gen_random_uuid()::text)$f$,
-                       current_setting('fiscal_test_3111.cliente_a_id'));
+                       current_setting('fiscal_test_3111.cliente_c_id'));
       ELSIF p_table='fiscal_invoices' THEN
         EXECUTE $q$INSERT INTO public.fiscal_invoices(invoice_type,status,total_amount,notes,created_by,
                      document_model,document_origin,environment,provider,normalized_status,reconciliation_status)
@@ -787,6 +802,17 @@ BEGIN
   END;
 
   PERFORM pg_temp._fiscal_3111_reset();
+
+  -- 3.11.4: Cleanup pós-INSERT de customer_fiscal_profiles.
+  -- Como postgres (role já resetada), remove SOMENTE o profile do cliente C
+  -- criado nesta célula (marker FISCAL_TEST_3111_INS_%), garantindo estado
+  -- limpo para a próxima célula (admin -> financeiro -> demais papéis).
+  -- Isolado por customer_id=cli_C e marker exclusivo: nunca toca cli_A/cli_B.
+  IF p_op='INSERT' AND p_table='customer_fiscal_profiles' THEN
+    EXECUTE $q$DELETE FROM public.customer_fiscal_profiles
+               WHERE customer_id = current_setting('fiscal_test_3111.cliente_c_id')::uuid
+                 AND validation_notes LIKE 'FISCAL_TEST_3111_INS_%'$q$;
+  END IF;
 
   IF p_op='DELETE' THEN
     v_present_after := pg_temp._fiscal_3111_presence_delete(p_table);
