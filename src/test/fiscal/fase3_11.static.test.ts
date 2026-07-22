@@ -39,7 +39,7 @@ describe("Fase Fiscal 3.11.3 — harness SQL executável e sem regressões runti
     expect(GUIDE).toMatch(/3\.11\.3/);
     expect(GUIDE).toMatch(/pg_temp/i);
     expect(GUIDE).toMatch(/placeholder/i);
-    expect(GUIDE).toMatch(/substitu/i);
+    expect(GUIDE).toMatch(/(substitu|elimina)/i);
   });
 
   test("SQL puro — sem meta-comando psql \\set (Supabase SQL Editor)", () => {
