@@ -26,6 +26,10 @@ import {
   TAXPAYER_INDICATOR_VALUES,
   type CustomerFiscalFormValues,
 } from "@/lib/fiscal/customerFiscalValidation";
+import {
+  UF_OPTIONS, COUNTRY_OPTIONS, STATE_REG_STATUS_OPTIONS,
+  withLegacyOption, type FiscalOption,
+} from "@/lib/fiscal/fiscalOptions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -71,8 +75,8 @@ type StringField =
   | "fiscal_state"
   | "country_code";
 
-const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean }[] = [
-  { key: "state_registration_status", label: "Situação da Inscrição Estadual" },
+const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean; select?: FiscalOption[]; hint?: string }[] = [
+  { key: "state_registration_status", label: "Situação da Inscrição Estadual", select: STATE_REG_STATUS_OPTIONS },
   { key: "municipal_registration", label: "Inscrição Municipal" },
   { key: "fiscal_email", label: "E-mail fiscal" },
   { key: "fiscal_phone", label: "Telefone fiscal" },
@@ -82,9 +86,9 @@ const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean }[
   { key: "fiscal_complement", label: "Complemento" },
   { key: "fiscal_neighborhood", label: "Bairro" },
   { key: "fiscal_city", label: "Município" },
-  { key: "fiscal_municipality_ibge_code", label: "Município IBGE (7 dígitos)", numeric: true },
-  { key: "fiscal_state", label: "UF (2 letras)" },
-  { key: "country_code", label: "País (ISO)" },
+  { key: "fiscal_municipality_ibge_code", label: "Município IBGE (7 dígitos)", numeric: true, hint: "Consulte em ibge.gov.br/localidades." },
+  { key: "fiscal_state", label: "UF", select: UF_OPTIONS },
+  { key: "country_code", label: "País", select: COUNTRY_OPTIONS },
 ];
 
 export default function FiscalClientes() {
@@ -595,13 +599,38 @@ function EditDrawer({
                 </Label>
               </div>
 
-              {STRING_FIELD_META.map(({ key, label, numeric }) => {
+              {STRING_FIELD_META.map(({ key, label, numeric, select, hint }) => {
                 const isEmail = key === "fiscal_email";
                 const isPhone = key === "fiscal_phone";
                 const isCep = key === "fiscal_postal_code";
                 const isUf = key === "fiscal_state";
                 const isIbge = key === "fiscal_municipality_ibge_code";
                 const raw = values[key] ?? "";
+                if (select) {
+                  const opts = withLegacyOption(select, raw);
+                  return (
+                    <div key={key} className="grid gap-1.5">
+                      <Label htmlFor={`f-${key}`}>{label}</Label>
+                      <select
+                        id={`f-${key}`}
+                        className="h-10 border rounded-md px-3 bg-background disabled:opacity-60"
+                        value={raw}
+                        onChange={(e) => setField(key, e.target.value)}
+                        aria-invalid={!!errors[key]}
+                      >
+                        <option value="">— selecione —</option>
+                        {opts.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      {errors[key] ? (
+                        <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
+                      ) : hint ? (
+                        <p className="text-xs text-muted-foreground">{hint}</p>
+                      ) : null}
+                    </div>
+                  );
+                }
                 let displayValue: string = raw;
                 if (isPhone) displayValue = formatTelefone(raw);
                 else if (isCep) displayValue = formatCEP(raw);
@@ -649,6 +678,8 @@ function EditDrawer({
                     />
                     {errors[key] ? (
                       <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
+                    ) : hint ? (
+                      <p className="text-xs text-muted-foreground">{hint}</p>
                     ) : null}
                   </div>
                 );

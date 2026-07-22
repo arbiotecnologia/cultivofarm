@@ -33,6 +33,11 @@ import {
   NFSE_MODES,
   type CompanyFiscalFormValues,
 } from "@/lib/fiscal/companyFiscalValidation";
+import {
+  CRT_OPTIONS, TAX_REGIME_OPTIONS, UF_OPTIONS, COUNTRY_OPTIONS,
+  PRESENCE_OPTIONS, FREIGHT_MODALITY_OPTIONS, RPS_TYPE_OPTIONS,
+  NFSE_SPECIAL_REGIME_OPTIONS,
+} from "@/lib/fiscal/fiscalOptions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -64,24 +69,33 @@ function FieldRow({
   );
 }
 
+type SelectOption = string | { value: string; label: string };
 function SelectNative({
   id, value, onChange, options, disabled,
 }: {
   id: string;
   value: string | undefined;
   onChange: (v: string) => void;
-  options: readonly string[];
+  options: readonly SelectOption[];
   disabled?: boolean;
 }) {
+  const normalized = options.map((o) =>
+    typeof o === "string" ? { value: o, label: o } : o,
+  );
+  const currentValue = value ?? normalized[0]?.value ?? "";
+  const missing = value != null && value !== "" && !normalized.some((o) => o.value === value);
   return (
     <select
       id={id}
       disabled={disabled}
       className="h-10 border rounded-md px-3 bg-background disabled:opacity-60"
-      value={value ?? options[0]}
+      value={currentValue}
       onChange={(e) => onChange(e.target.value)}
     >
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      {missing ? (
+        <option value={value}>{`— manter valor atual (${value}) —`}</option>
+      ) : null}
+      {normalized.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );
 }
@@ -453,12 +467,12 @@ export default function FiscalEmpresa() {
                   />
                 </FieldRow>
                 <FieldRow id="tax_regime" label="Regime tributário">
-                  <Input id="tax_regime" value={values.tax_regime ?? ""} onChange={(e) => set("tax_regime", e.target.value)} />
+                  <SelectNative id="tax_regime" value={values.tax_regime ?? ""} options={TAX_REGIME_OPTIONS} onChange={(v) => set("tax_regime", v)} />
                 </FieldRow>
-                <FieldRow id="crt" label="CRT">
-                  <Input id="crt" value={values.crt ?? ""} onChange={(e) => set("crt", e.target.value)} />
+                <FieldRow id="crt" label="CRT" description="Código do Regime Tributário oficial.">
+                  <SelectNative id="crt" value={values.crt ?? ""} options={CRT_OPTIONS} onChange={(v) => set("crt", v)} />
                 </FieldRow>
-                <FieldRow id="primary_cnae" label="CNAE principal">
+                <FieldRow id="primary_cnae" label="CNAE principal" description="7 dígitos, ex.: 0111301 — Cultivo de arroz.">
                   <Input
                     id="primary_cnae"
                     inputMode="numeric"
@@ -471,12 +485,13 @@ export default function FiscalEmpresa() {
                 <FieldRow id="municipal_registration" label="Inscrição municipal (IM)">
                   <Input id="municipal_registration" value={values.municipal_registration ?? ""} onChange={(e) => set("municipal_registration", e.target.value)} />
                 </FieldRow>
-                <FieldRow id="state_registration" label="Inscrição estadual (IE)">
+                <FieldRow id="state_registration" label="Inscrição estadual (IE)" description="Digite ISENTO se não contribuinte.">
                   <Input
                     id="state_registration"
-                    inputMode="numeric"
+                    inputMode="text"
+                    placeholder="ISENTO ou números"
                     value={values.state_registration ?? ""}
-                    onChange={(e) => set("state_registration", unmask(e.target.value))}
+                    onChange={(e) => set("state_registration", e.target.value)}
                   />
                 </FieldRow>
               </CardContent>
@@ -501,8 +516,10 @@ export default function FiscalEmpresa() {
                 <FieldRow id="complement" label="Complemento"><Input id="complement" value={values.complement ?? ""} onChange={(e) => set("complement", e.target.value)} /></FieldRow>
                 <FieldRow id="neighborhood" label="Bairro"><Input id="neighborhood" value={values.neighborhood ?? ""} onChange={(e) => set("neighborhood", e.target.value)} /></FieldRow>
                 <FieldRow id="city" label="Cidade"><Input id="city" autoComplete="address-level2" value={values.city ?? ""} onChange={(e) => set("city", e.target.value)} /></FieldRow>
-                <FieldRow id="state" label="UF"><Input id="state" autoComplete="address-level1" maxLength={2} placeholder="UF" value={values.state ?? ""} onChange={(e) => set("state", e.target.value.toUpperCase())} /></FieldRow>
-                <FieldRow id="municipality_ibge_code" label="Código IBGE do município">
+                <FieldRow id="state" label="UF">
+                  <SelectNative id="state" value={values.state ?? ""} options={UF_OPTIONS} onChange={(v) => set("state", v)} />
+                </FieldRow>
+                <FieldRow id="municipality_ibge_code" label="Código IBGE do município" description="7 dígitos — consulte em ibge.gov.br/localidades.">
                   <Input
                     id="municipality_ibge_code"
                     inputMode="numeric"
@@ -512,7 +529,9 @@ export default function FiscalEmpresa() {
                     onChange={(e) => set("municipality_ibge_code", unmask(e.target.value).slice(0, 7))}
                   />
                 </FieldRow>
-                <FieldRow id="country_code" label="Código do país"><Input id="country_code" value={values.country_code ?? ""} onChange={(e) => set("country_code", e.target.value)} /></FieldRow>
+                <FieldRow id="country_code" label="Código do país">
+                  <SelectNative id="country_code" value={values.country_code ?? "1058"} options={COUNTRY_OPTIONS} onChange={(v) => set("country_code", v)} />
+                </FieldRow>
               </CardContent>
             </Card>
 
@@ -554,20 +573,20 @@ export default function FiscalEmpresa() {
                   <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODES} onChange={(v) => setNfe("numbering_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_nature" label="Natureza padrão da operação">
-                  <Input id="nfe_default_nature" value={(nfe.default_nature as string) ?? ""} onChange={(e) => setNfe("default_nature", e.target.value)} />
+                  <Input id="nfe_default_nature" placeholder="Ex.: Venda de mercadoria adquirida de terceiros" value={(nfe.default_nature as string) ?? ""} onChange={(e) => setNfe("default_nature", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_finality" label="Finalidade padrão">
                   <SelectNative id="nfe_default_finality" value={(nfe.default_finality as string) ?? "NORMAL"} options={NFE_FINALIDADES} onChange={(v) => setNfe("default_finality", v)} />
                 </FieldRow>
-                <FieldRow id="nfe_presence_indicator" label="Indicador de presença">
-                  <Input id="nfe_presence_indicator" value={(nfe.presence_indicator as string) ?? ""} onChange={(e) => setNfe("presence_indicator", e.target.value)} />
+                <FieldRow id="nfe_presence_indicator" label="Indicador de presença" description="Código conforme NT2011.004.">
+                  <SelectNative id="nfe_presence_indicator" value={(nfe.presence_indicator as string) ?? ""} options={PRESENCE_OPTIONS} onChange={(v) => setNfe("presence_indicator", v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Consumidor final padrão</Label>
                   <Switch checked={nfe.default_end_consumer === true} onCheckedChange={(v) => setNfe("default_end_consumer", v)} />
                 </div>
                 <FieldRow id="nfe_freight_modality" label="Modalidade de frete">
-                  <Input id="nfe_freight_modality" value={(nfe.freight_modality as string) ?? ""} onChange={(e) => setNfe("freight_modality", e.target.value)} />
+                  <SelectNative id="nfe_freight_modality" value={(nfe.freight_modality as string) ?? ""} options={FREIGHT_MODALITY_OPTIONS} onChange={(v) => setNfe("freight_modality", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_danfe_layout" label="Layout DANFE">
                   <SelectNative id="nfe_danfe_layout" value={(nfe.danfe_layout as string) ?? "PORTRAIT"} options={NFE_DANFE_LAYOUTS} onChange={(v) => setNfe("danfe_layout", v)} />
@@ -579,11 +598,11 @@ export default function FiscalEmpresa() {
                 <FieldRow id="nfe_contingency_mode" label="Modo de contingência">
                   <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCIA} onChange={(v) => setNfe("contingency_mode", v)} />
                 </FieldRow>
-                <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido">
-                  <Input id="nfe_cfop_in" value={(nfe.suggested_cfop_in_state as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_in_state", e.target.value)} />
+                <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido" description="Ex.: 5102 — Venda de mercadoria adquirida.">
+                  <Input id="nfe_cfop_in" inputMode="numeric" maxLength={4} placeholder="5102" value={(nfe.suggested_cfop_in_state as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_in_state", e.target.value)} />
                 </FieldRow>
-                <FieldRow id="nfe_cfop_out" label="CFOP interestadual sugerido">
-                  <Input id="nfe_cfop_out" value={(nfe.suggested_cfop_interstate as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_interstate", e.target.value)} />
+                <FieldRow id="nfe_cfop_out" label="CFOP interestadual sugerido" description="Ex.: 6102 — Venda interestadual.">
+                  <Input id="nfe_cfop_out" inputMode="numeric" maxLength={4} placeholder="6102" value={(nfe.suggested_cfop_interstate as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_interstate", e.target.value)} />
                 </FieldRow>
                 <div className="md:col-span-2">
                   <FieldRow id="nfe_info" label="Informações adicionais padrão">
@@ -620,20 +639,22 @@ export default function FiscalEmpresa() {
                 </FieldRow>
                 <FieldRow id="nfse_series" label="Série NFS-e"><Input id="nfse_series" value={values.nfse_series ?? ""} onChange={(e) => set("nfse_series", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_rps_series" label="Série RPS"><Input id="nfse_rps_series" value={(nfse.rps_series as string) ?? ""} onChange={(e) => setNfse("rps_series", e.target.value)} /></FieldRow>
-                <FieldRow id="nfse_rps_type" label="Tipo RPS"><Input id="nfse_rps_type" value={(nfse.rps_type as string) ?? ""} onChange={(e) => setNfse("rps_type", e.target.value)} /></FieldRow>
+                <FieldRow id="nfse_rps_type" label="Tipo RPS">
+                  <SelectNative id="nfse_rps_type" value={(nfse.rps_type as string) ?? ""} options={RPS_TYPE_OPTIONS} onChange={(v) => setNfse("rps_type", v)} />
+                </FieldRow>
                 <FieldRow id="nfse_national_code" label="Cód. tributação nacional"><Input id="nfse_national_code" value={(nfse.national_taxation_code as string) ?? ""} onChange={(e) => setNfse("national_taxation_code", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_municipal_code" label="Cód. tributação municipal"><Input id="nfse_municipal_code" value={(nfse.municipal_taxation_code as string) ?? ""} onChange={(e) => setNfse("municipal_taxation_code", e.target.value)} /></FieldRow>
-                <FieldRow id="nfse_lc116" label="Item LC 116"><Input id="nfse_lc116" value={(nfse.lc116_item as string) ?? ""} onChange={(e) => setNfse("lc116_item", e.target.value)} /></FieldRow>
-                <FieldRow id="nfse_cnae" label="CNAE"><Input id="nfse_cnae" value={(nfse.cnae as string) ?? ""} onChange={(e) => setNfse("cnae", e.target.value)} /></FieldRow>
-                <FieldRow id="nfse_iss_rate" label="Alíquota ISS (%)">
-                  <Input id="nfse_iss_rate" type="number" step="0.01" min={0} max={100} value={typeof nfse.iss_rate === "number" ? String(nfse.iss_rate) : ""} onChange={(e) => setNfse("iss_rate", e.target.value === "" ? undefined : Number(e.target.value))} />
+                <FieldRow id="nfse_lc116" label="Item LC 116" description="Ex.: 1.05 — Licenciamento de programas."><Input id="nfse_lc116" placeholder="0.00" value={(nfse.lc116_item as string) ?? ""} onChange={(e) => setNfse("lc116_item", e.target.value)} /></FieldRow>
+                <FieldRow id="nfse_cnae" label="CNAE" description="7 dígitos numéricos."><Input id="nfse_cnae" inputMode="numeric" maxLength={7} placeholder="0000000" value={(nfse.cnae as string) ?? ""} onChange={(e) => setNfse("cnae", unmask(e.target.value).slice(0, 7))} /></FieldRow>
+                <FieldRow id="nfse_iss_rate" label="Alíquota ISS (%)" description="Normalmente entre 2% e 5%, conforme o município.">
+                  <Input id="nfse_iss_rate" type="number" step="0.01" min={0} max={100} placeholder="0.00" value={typeof nfse.iss_rate === "number" ? String(nfse.iss_rate) : ""} onChange={(e) => setNfse("iss_rate", e.target.value === "" ? undefined : Number(e.target.value))} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">ISS retido por padrão</Label>
                   <Switch checked={nfse.iss_withheld_default === true} onCheckedChange={(v) => setNfse("iss_withheld_default", v)} />
                 </div>
                 <FieldRow id="nfse_regime" label="Regime especial de tributação">
-                  <Input id="nfse_regime" value={(nfse.special_taxation_regime as string) ?? ""} onChange={(e) => setNfse("special_taxation_regime", e.target.value)} />
+                  <SelectNative id="nfse_regime" value={(nfse.special_taxation_regime as string) ?? ""} options={NFSE_SPECIAL_REGIME_OPTIONS} onChange={(v) => setNfse("special_taxation_regime", v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Incentivo fiscal</Label>

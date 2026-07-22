@@ -24,6 +24,9 @@ import {
   MissingServiceIdentifierError,
   type ServiceFiscalFormValues,
 } from "@/lib/fiscal/serviceFiscalValidation";
+import {
+  REQUIREMENT_STATUS_OPTIONS, withLegacyOption, type FiscalOption,
+} from "@/lib/fiscal/fiscalOptions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -56,15 +59,15 @@ type StringField =
   | "requirement_status"
   | "accounting_notes";
 
-const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean }[] = [
+const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean; select?: FiscalOption[]; hint?: string; placeholder?: string }[] = [
   { key: "service_name", label: "Nome do serviço" },
   { key: "fiscal_description_template", label: "Descrição fiscal (template)" },
-  { key: "lc116_item", label: "Item LC 116" },
-  { key: "cnae", label: "CNAE", numeric: true },
+  { key: "lc116_item", label: "Item LC 116", hint: "Ex.: 1.05 — Licenciamento de programas.", placeholder: "0.00" },
+  { key: "cnae", label: "CNAE", numeric: true, hint: "7 dígitos numéricos.", placeholder: "0000000" },
   { key: "national_taxation_code", label: "Código nacional de tributação" },
   { key: "municipal_taxation_code", label: "Código municipal de tributação" },
-  { key: "incidence_municipality_ibge_code", label: "Município de incidência (IBGE)", numeric: true },
-  { key: "requirement_status", label: "Status de requisitos" },
+  { key: "incidence_municipality_ibge_code", label: "Município de incidência (IBGE)", numeric: true, hint: "7 dígitos — consulte em ibge.gov.br/localidades.", placeholder: "0000000" },
+  { key: "requirement_status", label: "Status de requisitos", select: REQUIREMENT_STATUS_OPTIONS },
   { key: "accounting_notes", label: "Notas contábeis" },
 ];
 
@@ -523,21 +526,42 @@ function EditDrawer({
                 )}
               </div>
 
-              {STRING_FIELD_META.map(({ key, label, numeric }) => (
-                <div key={key} className="grid gap-1.5">
-                  <Label htmlFor={`f-${key}`}>{label}</Label>
-                  <Input
-                    id={`f-${key}`}
-                    value={values[key] ?? ""}
-                    onChange={(e) => setField(key, e.target.value)}
-                    aria-invalid={!!errors[key]}
-                    inputMode={numeric ? "numeric" : undefined}
-                  />
-                  {errors[key] ? (
-                    <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
-                  ) : null}
-                </div>
-              ))}
+              {STRING_FIELD_META.map(({ key, label, numeric, select, hint, placeholder }) => {
+                const raw = values[key] ?? "";
+                return (
+                  <div key={key} className="grid gap-1.5">
+                    <Label htmlFor={`f-${key}`}>{label}</Label>
+                    {select ? (
+                      <select
+                        id={`f-${key}`}
+                        className="h-10 border rounded-md px-3 bg-background disabled:opacity-60"
+                        value={raw}
+                        onChange={(e) => setField(key, e.target.value)}
+                        aria-invalid={!!errors[key]}
+                      >
+                        <option value="">— selecione —</option>
+                        {withLegacyOption(select, raw).map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        id={`f-${key}`}
+                        value={raw}
+                        placeholder={placeholder}
+                        onChange={(e) => setField(key, e.target.value)}
+                        aria-invalid={!!errors[key]}
+                        inputMode={numeric ? "numeric" : undefined}
+                      />
+                    )}
+                    {errors[key] ? (
+                      <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
+                    ) : hint ? (
+                      <p className="text-xs text-muted-foreground">{hint}</p>
+                    ) : null}
+                  </div>
+                );
+              })}
 
               <div className="grid gap-1.5">
                 <Label htmlFor="f-iss_rate">Alíquota ISS (%)</Label>
