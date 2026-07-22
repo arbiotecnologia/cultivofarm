@@ -4,14 +4,17 @@
 -- Migration CANÔNICA aditiva. Nenhum objeto anterior é alterado. Não escreve
 -- em nenhuma tabela, não chama serviços externos, não habilita emissão.
 --
--- Escopo:
---   - public.rpc_fiscal_homologation_readiness() — SECURITY DEFINER com
---     search_path fixado, apenas leitura, gate por papel via has_role.
---   - Retorno JSON estável com status agregado e checklist pt-BR.
+-- Correção 3.17.1 aplicada:
+--   - nomes canônicos: municipality_ibge_code, document_origin, status='DRAFT'.
+--   - fontes rastreadas por flag `_available`; zero válido segue INCOMPLETE,
+--     erro de dependência vira UNAVAILABLE (nunca 0 mascarado).
+--   - status geral: BLOCKED > UNAVAILABLE > READY (só se env HOMOLOGATION e
+--     nenhum item UNAVAILABLE/INCOMPLETE/BLOCKED) > INCOMPLETE.
 --
--- Regras de projeção segura (nunca retorna):
---   - fingerprint_sha256, serial_number completo, subject_name completo,
---     issuer_name, object_path, material do certificado, qualquer erro SQL.
+-- Segurança: SECURITY DEFINER com search_path fixo, STABLE, gate has_role
+-- por administrador/gestor/financeiro. Nunca escreve, nunca chama HTTP,
+-- nunca projeta fingerprint_sha256, serial completo, subject, issuer,
+-- object_path ou material do certificado.
 -- ============================================================================
 
 BEGIN;
@@ -32,6 +35,12 @@ DECLARE
   v_company_ok       boolean := false;
   v_nfe_ok           boolean := false;
   v_nfse_ok          boolean := false;
+
+  v_products_available  boolean := false;
+  v_services_available  boolean := false;
+  v_customers_available boolean := false;
+  v_drafts_available    boolean := false;
+
   v_products_ready   integer := 0;
   v_services_ready   integer := 0;
   v_customers_ready  integer := 0;
@@ -41,14 +50,17 @@ DECLARE
   v_revoke_fn_ok     boolean := false;
   v_rpc_save_ok      boolean := false;
   v_rpc_validate_ok  boolean := false;
+
   v_drafts_total     integer := 0;
   v_drafts_ready     integer := 0;
   v_drafts_incomp    integer := 0;
   v_drafts_blocked   integer := 0;
+
   v_checklist        jsonb := '[]'::jsonb;
   v_status           text := 'INCOMPLETE';
-  v_all_ready        boolean;
   v_has_blocker      boolean := false;
+  v_has_unavailable  boolean := false;
+  v_all_items_ready  boolean;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE = '42501';
@@ -77,7 +89,7 @@ BEGIN
       v_company.cnpj IS NOT NULL AND length(v_company.cnpj) >= 14
       AND v_company.legal_name IS NOT NULL AND length(btrim(v_company.legal_name)) > 0
       AND v_company.fiscal_email IS NOT NULL
-      AND v_company.municipality_code IS NOT NULL
+      AND v_company.municipality_ibge_code IS NOT NULL
     );
     v_nfe_ok  := (COALESCE(v_company.nfe_enabled, false)
                   AND COALESCE(jsonb_typeof(v_company.nfe_configuration), 'null') = 'object'
@@ -91,19 +103,31 @@ BEGIN
     SELECT count(*)::int INTO v_products_ready
       FROM public.v_product_fiscal_readiness
      WHERE minimally_classified = true AND accounting_validated = true;
-  EXCEPTION WHEN OTHERS THEN v_products_ready := 0; END;
+    v_products_available := true;
+  EXCEPTION WHEN OTHERS THEN
+    v_products_available := false;
+    v_products_ready := 0;
+  END;
 
   BEGIN
     SELECT count(*)::int INTO v_services_ready
       FROM public.v_service_fiscal_readiness
      WHERE minimally_classified = true AND accounting_validated = true;
-  EXCEPTION WHEN OTHERS THEN v_services_ready := 0; END;
+    v_services_available := true;
+  EXCEPTION WHEN OTHERS THEN
+    v_services_available := false;
+    v_services_ready := 0;
+  END;
 
   BEGIN
     SELECT count(*)::int INTO v_customers_ready
       FROM public.v_customer_fiscal_readiness
      WHERE has_ibge = true;
-  EXCEPTION WHEN OTHERS THEN v_customers_ready := 0; END;
+    v_customers_available := true;
+  EXCEPTION WHEN OTHERS THEN
+    v_customers_available := false;
+    v_customers_ready := 0;
+  END;
 
   IF v_company.id IS NOT NULL THEN
     SELECT EXISTS(
@@ -148,9 +172,11 @@ BEGIN
       count(*) FILTER (WHERE homologation_validation_status = 'BLOCKED')::int
     INTO v_drafts_total, v_drafts_ready, v_drafts_incomp, v_drafts_blocked
     FROM public.fiscal_invoices
-    WHERE origin = 'MANUAL_RECORD'
+    WHERE document_origin = 'MANUAL_RECORD'
       AND status = 'DRAFT';
+    v_drafts_available := true;
   EXCEPTION WHEN OTHERS THEN
+    v_drafts_available := false;
     v_drafts_total := 0; v_drafts_ready := 0; v_drafts_incomp := 0; v_drafts_blocked := 0;
   END;
 
@@ -160,26 +186,47 @@ BEGIN
 
   v_checklist := jsonb_build_array(
     jsonb_build_object('key','env_homologation','label','Ambiente fiscal em homologação',
-      'status', CASE WHEN v_env_ok THEN 'READY' ELSE 'INCOMPLETE' END),
+      'status', CASE
+        WHEN v_company.id IS NULL THEN 'NOT_CONFIGURED'
+        WHEN v_env_ok THEN 'READY'
+        ELSE 'INCOMPLETE' END),
     jsonb_build_object('key','production_disabled','label','Produção desabilitada',
       'status', CASE WHEN v_prod_off THEN 'READY' ELSE 'BLOCKED' END),
     jsonb_build_object('key','company_profile','label','Dados da empresa completos',
-      'status', CASE WHEN v_company_ok THEN 'READY' ELSE 'INCOMPLETE' END),
+      'status', CASE
+        WHEN v_company.id IS NULL THEN 'NOT_CONFIGURED'
+        WHEN v_company_ok THEN 'READY'
+        ELSE 'INCOMPLETE' END),
     jsonb_build_object('key','nfe_configured','label','NF-e habilitada e configurada',
       'status', CASE WHEN v_nfe_ok THEN 'READY' ELSE 'INCOMPLETE' END),
     jsonb_build_object('key','nfse_configured','label','NFS-e habilitada e configurada',
       'status', CASE WHEN v_nfse_ok THEN 'READY' ELSE 'INCOMPLETE' END),
     jsonb_build_object('key','product_ready','label','Ao menos um produto fiscal pronto',
-      'status', CASE WHEN v_products_ready > 0 THEN 'READY' ELSE 'INCOMPLETE' END,
+      'status', CASE
+        WHEN NOT v_products_available THEN 'UNAVAILABLE'
+        WHEN v_products_ready > 0 THEN 'READY'
+        ELSE 'INCOMPLETE' END,
       'count', v_products_ready),
     jsonb_build_object('key','service_ready','label','Ao menos um serviço fiscal pronto',
-      'status', CASE WHEN v_services_ready > 0 THEN 'READY' ELSE 'INCOMPLETE' END,
+      'status', CASE
+        WHEN NOT v_services_available THEN 'UNAVAILABLE'
+        WHEN v_services_ready > 0 THEN 'READY'
+        ELSE 'INCOMPLETE' END,
       'count', v_services_ready),
     jsonb_build_object('key','customer_ready','label','Ao menos um cliente fiscal pronto',
-      'status', CASE WHEN v_customers_ready > 0 THEN 'READY' ELSE 'INCOMPLETE' END,
+      'status', CASE
+        WHEN NOT v_customers_available THEN 'UNAVAILABLE'
+        WHEN v_customers_ready > 0 THEN 'READY'
+        ELSE 'INCOMPLETE' END,
       'count', v_customers_ready),
+    jsonb_build_object('key','drafts_source','label','Fonte de rascunhos disponível',
+      'status', CASE WHEN v_drafts_available THEN 'READY' ELSE 'UNAVAILABLE' END,
+      'count', v_drafts_total),
     jsonb_build_object('key','certificate_active','label','Certificado de homologação ativo e vigente',
-      'status', CASE WHEN v_cert_ok THEN 'READY' ELSE 'INCOMPLETE' END),
+      'status', CASE
+        WHEN v_company.id IS NULL THEN 'NOT_CONFIGURED'
+        WHEN v_cert_ok THEN 'READY'
+        ELSE 'INCOMPLETE' END),
     jsonb_build_object('key','vault_available','label','Cofre de certificados disponível',
       'status', CASE WHEN v_vault_available THEN 'READY' ELSE 'UNAVAILABLE' END),
     jsonb_build_object('key','upload_function','label','Função de registro de certificado disponível',
@@ -192,17 +239,20 @@ BEGIN
       'status', CASE WHEN v_rpc_validate_ok THEN 'READY' ELSE 'UNAVAILABLE' END)
   );
 
+  SELECT
+    bool_and((elem->>'status') = 'READY'),
+    bool_or((elem->>'status') = 'UNAVAILABLE')
+  INTO v_all_items_ready, v_has_unavailable
+    FROM jsonb_array_elements(v_checklist) elem;
+
   IF v_has_blocker THEN
     v_status := 'BLOCKED';
+  ELSIF v_has_unavailable THEN
+    v_status := 'UNAVAILABLE';
+  ELSIF COALESCE(v_all_items_ready, false) AND v_env_ok THEN
+    v_status := 'READY';
   ELSE
-    SELECT bool_and((elem->>'status') = 'READY')
-      INTO v_all_ready
-      FROM jsonb_array_elements(v_checklist) elem;
-    IF COALESCE(v_all_ready, false) AND v_env_ok THEN
-      v_status := 'READY';
-    ELSE
-      v_status := 'INCOMPLETE';
-    END IF;
+    v_status := 'INCOMPLETE';
   END IF;
 
   RETURN jsonb_build_object(
