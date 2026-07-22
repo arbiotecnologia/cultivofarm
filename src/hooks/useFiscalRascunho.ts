@@ -9,6 +9,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { RascunhoFormValues } from "@/lib/fiscal/rascunhoWizardValidation";
 
+// RPCs adicionadas na migration da Fase 3.16. Enquanto `types.ts` não é
+// regenerado (pós-aplicação da migration), usamos um proxy tipado local.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const rpc = supabase.rpc.bind(supabase) as unknown as (
+  fn: string,
+  args: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+
 export interface SaveDraftArgs {
   invoiceId: string | null;
   values: RascunhoFormValues;
