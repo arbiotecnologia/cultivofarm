@@ -307,3 +307,64 @@ describe("Fase 3.17.2 — microcorreções auditadas", () => {
   });
 });
 
+describe("Fase 3.18 — status DRAFT sem quebra do domínio legado", () => {
+  const MIG_318  = p("supabase/migrations/20260726000000_fiscal_fase3_18_draft_status_check.sql");
+  const STUB_318 = p("restoration/migrations/20260726000000_fiscal_fase3_18_draft_status_check.sql");
+  const RPC_SAVE = p("supabase/migrations/20260724000000_fiscal_fase3_16_homologacao_certificados.sql");
+  const mig318 = () => readFileSync(MIG_318, "utf8");
+
+  test("migration canônica presente em supabase/migrations", () => {
+    expect(existsSync(MIG_318)).toBe(true);
+    expect(statSync(MIG_318).size).toBeGreaterThan(500);
+  });
+  test("stub documental sem SQL executável", () => {
+    expect(existsSync(STUB_318)).toBe(true);
+    const s = readFileSync(STUB_318, "utf8");
+    expect(/^\s*(CREATE|ALTER|DROP|INSERT|UPDATE|DELETE|GRANT|REVOKE|BEGIN|COMMIT)\s/im.test(s)).toBe(false);
+  });
+  test("CHECK preserva os quatro valores legados e adiciona DRAFT", () => {
+    const s = stripSql(mig318());
+    const m = s.match(/ADD\s+CONSTRAINT\s+fiscal_invoices_status_check\s+CHECK\s*\(\s*status\s+IN\s*\(([^)]+)\)\s*\)/i);
+    expect(m).not.toBeNull();
+    const vals = (m![1].match(/'([A-Z_]+)'/g) ?? []).map((v) => v.replace(/'/g, ""));
+    for (const legacy of ["PENDING", "ISSUED", "CANCELED", "ERROR"]) {
+      expect(vals).toContain(legacy);
+    }
+    expect(vals).toContain("DRAFT");
+    // Não amplia para outros valores.
+    expect(vals.sort()).toEqual(["CANCELED", "DRAFT", "ERROR", "ISSUED", "PENDING"]);
+  });
+  test("nome canônico via DROP IF EXISTS + ADD CONSTRAINT", () => {
+    const s = mig318();
+    expect(s).toMatch(/DROP\s+CONSTRAINT\s+IF\s+EXISTS\s+fiscal_invoices_status_check/i);
+    expect(s).toMatch(/ADD\s+CONSTRAINT\s+fiscal_invoices_status_check/i);
+  });
+  test("aborta se houver status fora do conjunto legado — não limpa dados", () => {
+    const s = mig318();
+    expect(s).toMatch(/status\s+NOT\s+IN\s*\(\s*'PENDING'\s*,\s*'ISSUED'\s*,\s*'CANCELED'\s*,\s*'ERROR'\s*\)/i);
+    expect(s).toMatch(/FISCAL_318_ABORT/);
+    // Não pode conter DELETE/UPDATE/TRUNCATE em fiscal_invoices.
+    expect(/\b(DELETE\s+FROM|UPDATE|TRUNCATE)\s+.*fiscal_invoices/i.test(stripSql(s))).toBe(false);
+  });
+  test("não altera normalized_status nem homologation_validation_status", () => {
+    const s = stripSql(mig318());
+    expect(/normalized_status/i.test(s)).toBe(false);
+    expect(/homologation_validation_status/i.test(s)).toBe(false);
+  });
+  test("RPC rpc_fiscal_draft_save continua gravando status='DRAFT'", () => {
+    const s = readFileSync(RPC_SAVE, "utf8");
+    expect(s).toMatch(/rpc_fiscal_draft_save/);
+    expect(s).toMatch(/'DRAFT'/);
+  });
+  test("preflight das fixtures exige a migration 20260726000000", () => {
+    const s = readFileSync(FX_PRE, "utf8");
+    expect(s).toMatch(/20260726000000/);
+    expect(s).toMatch(/Fase 3\.18/);
+  });
+  test("README das fixtures cita a Fase 3.18", () => {
+    const s = readFileSync(FX_README, "utf8");
+    expect(s).toMatch(/20260726000000/);
+  });
+});
+
+
