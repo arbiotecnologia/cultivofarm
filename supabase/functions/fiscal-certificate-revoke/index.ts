@@ -9,15 +9,18 @@
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-function corsHeaders(origin: string | null): Record<string, string> {
+function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
   const allow = (Deno.env.get("FISCAL_CORS_ALLOWLIST") ?? "")
     .split(",").map((s) => s.trim()).filter(Boolean);
-  const ok = origin && allow.includes(origin) ? origin : allow[0] ?? "";
+  const allowed = !!origin && allow.includes(origin);
   return {
-    "Access-Control-Allow-Origin": ok,
-    "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
+    allowed,
+    headers: {
+      "Access-Control-Allow-Origin": allowed ? origin! : "null",
+      "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Vary": "Origin",
+    },
   };
 }
 
@@ -30,8 +33,10 @@ function json(body: unknown, status: number, headers: Record<string, string>): R
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
-  const headers = corsHeaders(origin);
+  const cors = corsHeaders(origin);
+  const headers = cors.headers;
   if (req.method === "OPTIONS") return new Response("ok", { headers });
+  if (!cors.allowed) return json({ error: "cors_origin_not_allowed" }, 403, headers);
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
 
   const authHeader = req.headers.get("Authorization");
