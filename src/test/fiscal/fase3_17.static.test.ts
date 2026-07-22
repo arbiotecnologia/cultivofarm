@@ -69,17 +69,17 @@ describe("Fase 3.17 — migration segura e read-only", () => {
     expect(s).toMatch(/GRANT EXECUTE ON FUNCTION public\.rpc_fiscal_homologation_readiness\(\) TO authenticated/);
   });
   test("sem escrita, HTTP ou material sensível projetado", () => {
-    const s = migSql();
-    // Corpo do plpgsql não deve conter statements de escrita nem HTTP.
-    // Ignoramos strings de label pt-BR que porventura contenham palavras.
+    const raw = migSql();
+    // Remove comentários de linha (-- ...) e de bloco (/* ... */) antes das
+    // checagens: palavras proibidas só podem aparecer em texto documental.
+    const s = raw.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
     expect(/\bhttp[_\.]/i.test(s)).toBe(false);
     expect(/\bpg_net\b/i.test(s)).toBe(false);
     expect(/\bINSERT\s+INTO\b/i.test(s)).toBe(false);
     expect(/\bUPDATE\s+public\./i.test(s)).toBe(false);
     expect(/\bDELETE\s+FROM\b/i.test(s)).toBe(false);
     expect(/\bALTER\s+TABLE\b/i.test(s)).toBe(false);
-    // Nunca retornar material sensível.
-    expect(/fingerprint_sha256\s*(,|\))/i.test(s.replace(/--.*$/gm, ""))).toBe(false);
+    expect(/fingerprint_sha256\s*(,|\))/i.test(s)).toBe(false);
     expect(/object_path/i.test(s)).toBe(false);
   });
 });
