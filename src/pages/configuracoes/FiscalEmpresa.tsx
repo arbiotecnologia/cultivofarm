@@ -654,7 +654,7 @@ export default function FiscalEmpresa() {
                   <Switch checked={nfse.iss_withheld_default === true} onCheckedChange={(v) => setNfse("iss_withheld_default", v)} />
                 </div>
                 <FieldRow id="nfse_regime" label="Regime especial de tributação">
-                  <Input id="nfse_regime" value={(nfse.special_taxation_regime as string) ?? ""} onChange={(e) => setNfse("special_taxation_regime", e.target.value)} />
+                  <SelectNative id="nfse_regime" value={(nfse.special_taxation_regime as string) ?? ""} options={NFSE_SPECIAL_REGIME_OPTIONS} onChange={(v) => setNfse("special_taxation_regime", v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Incentivo fiscal</Label>
