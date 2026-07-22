@@ -11783,10 +11783,13 @@ export type Database = {
           accounting_validated_at: string | null
           accounting_validated_by: string | null
           additional_cnaes: string[] | null
+          certificate_ref: string | null
           city: string | null
           cnpj: string | null
           complement: string | null
+          configuration_notes: string | null
           configuration_status: string
+          configuration_version: number
           country_code: string | null
           created_at: string
           created_by: string | null
@@ -11796,13 +11799,22 @@ export type Database = {
           fiscal_provider: string
           id: string
           is_active: boolean
+          last_validation_at: string | null
+          last_validation_status: string
+          last_validation_summary: Json
           legal_name: string | null
           municipal_registration: string | null
           municipality_ibge_code: string | null
           neighborhood: string | null
+          nfe_configuration: Json
+          nfe_credential_ref: string | null
           nfe_enabled: boolean
+          nfe_provider: string
           nfe_series: string | null
+          nfse_configuration: Json
+          nfse_credential_ref: string | null
           nfse_enabled: boolean
+          nfse_provider: string
           nfse_series: string | null
           number: string | null
           phone: string | null
@@ -11816,15 +11828,19 @@ export type Database = {
           trade_name: string | null
           updated_at: string
           updated_by: string | null
+          webhook_ref: string | null
         }
         Insert: {
           accounting_validated_at?: string | null
           accounting_validated_by?: string | null
           additional_cnaes?: string[] | null
+          certificate_ref?: string | null
           city?: string | null
           cnpj?: string | null
           complement?: string | null
+          configuration_notes?: string | null
           configuration_status?: string
+          configuration_version?: number
           country_code?: string | null
           created_at?: string
           created_by?: string | null
@@ -11834,13 +11850,22 @@ export type Database = {
           fiscal_provider?: string
           id?: string
           is_active?: boolean
+          last_validation_at?: string | null
+          last_validation_status?: string
+          last_validation_summary?: Json
           legal_name?: string | null
           municipal_registration?: string | null
           municipality_ibge_code?: string | null
           neighborhood?: string | null
+          nfe_configuration?: Json
+          nfe_credential_ref?: string | null
           nfe_enabled?: boolean
+          nfe_provider?: string
           nfe_series?: string | null
+          nfse_configuration?: Json
+          nfse_credential_ref?: string | null
           nfse_enabled?: boolean
+          nfse_provider?: string
           nfse_series?: string | null
           number?: string | null
           phone?: string | null
@@ -11854,15 +11879,19 @@ export type Database = {
           trade_name?: string | null
           updated_at?: string
           updated_by?: string | null
+          webhook_ref?: string | null
         }
         Update: {
           accounting_validated_at?: string | null
           accounting_validated_by?: string | null
           additional_cnaes?: string[] | null
+          certificate_ref?: string | null
           city?: string | null
           cnpj?: string | null
           complement?: string | null
+          configuration_notes?: string | null
           configuration_status?: string
+          configuration_version?: number
           country_code?: string | null
           created_at?: string
           created_by?: string | null
@@ -11872,13 +11901,22 @@ export type Database = {
           fiscal_provider?: string
           id?: string
           is_active?: boolean
+          last_validation_at?: string | null
+          last_validation_status?: string
+          last_validation_summary?: Json
           legal_name?: string | null
           municipal_registration?: string | null
           municipality_ibge_code?: string | null
           neighborhood?: string | null
+          nfe_configuration?: Json
+          nfe_credential_ref?: string | null
           nfe_enabled?: boolean
+          nfe_provider?: string
           nfe_series?: string | null
+          nfse_configuration?: Json
+          nfse_credential_ref?: string | null
           nfse_enabled?: boolean
+          nfse_provider?: string
           nfse_series?: string | null
           number?: string | null
           phone?: string | null
@@ -11892,6 +11930,7 @@ export type Database = {
           trade_name?: string | null
           updated_at?: string
           updated_by?: string | null
+          webhook_ref?: string | null
         }
         Relationships: []
       }
@@ -12925,37 +12964,58 @@ export type Database = {
         Row: {
           accounting_validated: boolean | null
           configuration_status: string | null
+          configuration_version: number | null
           filled_score: number | null
           fiscal_environment: string | null
           fiscal_provider: string | null
           id: string | null
+          last_validation_at: string | null
+          last_validation_status: string | null
           max_score: number | null
+          nfe_configuration_field_count: number | null
           nfe_enabled: boolean | null
+          nfe_provider: string | null
+          nfse_configuration_field_count: number | null
           nfse_enabled: boolean | null
+          nfse_provider: string | null
           production_enabled: boolean | null
         }
         Insert: {
           accounting_validated?: never
           configuration_status?: string | null
+          configuration_version?: number | null
           filled_score?: never
           fiscal_environment?: string | null
           fiscal_provider?: string | null
           id?: string | null
+          last_validation_at?: string | null
+          last_validation_status?: string | null
           max_score?: never
+          nfe_configuration_field_count?: never
           nfe_enabled?: boolean | null
+          nfe_provider?: string | null
+          nfse_configuration_field_count?: never
           nfse_enabled?: boolean | null
+          nfse_provider?: string | null
           production_enabled?: boolean | null
         }
         Update: {
           accounting_validated?: never
           configuration_status?: string | null
+          configuration_version?: number | null
           filled_score?: never
           fiscal_environment?: string | null
           fiscal_provider?: string | null
           id?: string | null
+          last_validation_at?: string | null
+          last_validation_status?: string | null
           max_score?: never
+          nfe_configuration_field_count?: never
           nfe_enabled?: boolean | null
+          nfe_provider?: string | null
+          nfse_configuration_field_count?: never
           nfse_enabled?: boolean | null
+          nfse_provider?: string | null
           production_enabled?: boolean | null
         }
         Relationships: []
@@ -15082,6 +15142,18 @@ export type Database = {
           p_notes?: string
         }
         Returns: string
+      }
+      rpc_fiscal_company_settings_init: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Tables"]["company_fiscal_settings"]["Row"]
+      }
+      fiscal_json_has_sensitive_key: {
+        Args: { p: Json }
+        Returns: boolean
+      }
+      jsonb_object_keys_count: {
+        Args: { p: Json }
+        Returns: number
       }
       mask_sensitive_jsonb: {
         Args: { v: Json }
