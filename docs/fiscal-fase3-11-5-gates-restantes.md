@@ -1,3 +1,13 @@
+> **ADENDO DE SUPERSESSÃO (Fase 3.12.1)** — O gate **B1** (diff de
+> paridade staging × produção) foi encerrado: paridade confirmada
+> após aplicação transacional da migration canônica
+> `20260722000000_fiscal_fase3_0_1_integridade.sql` em produção.
+> Fingerprint global de ambos os ambientes:
+> `51d96b09508c2471c3bf13fe42f5b156`. Ver
+> `docs/fiscal-fase3-12-1-paridade-confirmada.md`. Gates C, D e E
+> permanecem inalterados e bloqueados por decisão humana externa. O
+> mapa original abaixo é preservado como referência histórica.
+
 # Fase Fiscal 3.11.5 — Mapa de gates restantes antes de homologação
 
 Auditoria estritamente local e somente-leitura. Nenhum banco tocado.

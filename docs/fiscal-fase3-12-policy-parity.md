@@ -1,3 +1,13 @@
+> **ADENDO DE SUPERSESSÃO (Fase 3.12.1)** — O procedimento de snapshot
+> descrito abaixo foi executado externamente. Resultado: paridade
+> confirmada entre staging (`ikaa***hoq`) e produção após aplicação
+> transacional da migration canônica `20260722000000_fiscal_fase3_0_1_integridade.sql`.
+> Fingerprint global compartilhado: `51d96b09508c2471c3bf13fe42f5b156`
+> (26 policies, `missing` vazio em ambos). Ver
+> `docs/fiscal-fase3-12-1-paridade-confirmada.md` para sequência,
+> preflight e limites. O texto original abaixo é preservado como
+> referência histórica; não reexecutar sem prompt específico.
+
 # Fase Fiscal 3.12 — Snapshot de Paridade de Policies (SOMENTE LEITURA)
 
 ## Objetivo
