@@ -125,8 +125,8 @@ function makeRow(over: Partial<FiscalInvoiceRow> = {}): FiscalInvoiceRow {
 
 // (1) — flags e emissão desligada
 describe("Fase 3.5 (1) — flags default false", () => {
-  test("fiscalDocumentWorkflowUi default = false", () => {
-    expect(FEATURE_FLAGS.fiscalDocumentWorkflowUi).toBe(false);
+  test("fiscalDocumentWorkflowUi habilitada na Fase 3.16", () => {
+    expect(FEATURE_FLAGS.fiscalDocumentWorkflowUi).toBe(true);
   });
   test("fiscalDocumentManualEventRpc default = false", () => {
     expect(FEATURE_FLAGS.fiscalDocumentManualEventRpc).toBe(false);
@@ -164,12 +164,13 @@ describe("Fase 3.5 (2) — matriz de acesso por URL direta", () => {
   });
 });
 
-// (3) — ausência no menu
-describe("Fase 3.5 (3) — ausência no menu com flag desligada", () => {
-  test("navegação não expõe /fiscal/documentos", () => {
-    const items = navigation as unknown as Array<{ route?: string }>;
+// (3) — presença no menu (Fase 3.16 libera rascunhos sob feature flag)
+describe("Fase 3.5 (3) — presença no menu na Fase 3.16", () => {
+  test("navegação expõe /fiscal/documentos como rascunhos sob featureFlag", () => {
+    const items = navigation as unknown as Array<{ route?: string; featureFlag?: string }>;
     const hit = items.find((it) => it.route === ROUTE);
-    expect(hit).toBeUndefined();
+    expect(hit).toBeDefined();
+    expect(hit!.featureFlag).toBe("fiscalDocumentWorkflowUi");
   });
 });
 
@@ -410,10 +411,11 @@ describe("Fase 3.5 (14) — preservação das fases 3.1 → 3.4", () => {
   ] as const)("rota %s / perfil %s = %s", (route, role, level) => {
     expect(getAccessLevel(role, route)).toBe(level);
   });
-  test("flags de UI de fases anteriores permanecem default false (exceto fiscalConfigurationUi na 3.15)", () => {
-    expect(FEATURE_FLAGS.fiscalConfigurationUi).toBe(true); // Fase 3.15
-    expect(FEATURE_FLAGS.fiscalProductProfilesUi).toBe(false);
-    expect(FEATURE_FLAGS.fiscalServiceProfilesUi).toBe(false);
-    expect(FEATURE_FLAGS.fiscalCustomerProfilesUi).toBe(false);
+  test("Fase 3.16 — flags de UI liberadas; emissão continua travada", () => {
+    expect(FEATURE_FLAGS.fiscalConfigurationUi).toBe(true);
+    expect(FEATURE_FLAGS.fiscalProductProfilesUi).toBe(true);
+    expect(FEATURE_FLAGS.fiscalServiceProfilesUi).toBe(true);
+    expect(FEATURE_FLAGS.fiscalCustomerProfilesUi).toBe(true);
+    expect(FEATURE_FLAGS.fiscalEmissionEnabled).toBe(false);
   });
 });

@@ -280,20 +280,14 @@ describe("Fase 3.9 · (H) Server-only — nenhum import em src/**", () => {
 
 /* ────────────────────────── (I) Preservação de flags ────────────────────── */
 
-describe("Fase 3.9 · (I) Flags fiscais permanecem desligadas", () => {
+describe("Fase 3.9 · (I) Trava de emissão e escrita fiscal", () => {
+  // Fase 3.16 liberou flags de UI de preparação (perfis, workflow, prontidão).
+  // Aqui garantimos apenas que a EMISSÃO e as escritas sensíveis continuam OFF.
   test.each([
     "fiscalEmissionEnabled",
-    "fiscalCompanySettingsUi",
-    "fiscalProductProfilesUi",
-    "fiscalServiceProfilesUi",
-    "fiscalCustomerProfilesUi",
-    "fiscalDocumentWorkflowUi",
     "fiscalDocumentManualEventRpc",
-    "fiscalReconciliationUi",
     "fiscalReconciliationWrite",
-    "fiscalReadinessCenterUi",
   ])("%s continua false por default", (name) => {
-    // Nem toda flag existe: só falha se estiver true.
     const flags = FEATURE_FLAGS as Record<string, boolean>;
     if (name in flags) expect(flags[name]).toBe(false);
   });
