@@ -24,6 +24,9 @@ import {
   MissingServiceIdentifierError,
   type ServiceFiscalFormValues,
 } from "@/lib/fiscal/serviceFiscalValidation";
+import {
+  REQUIREMENT_STATUS_OPTIONS, withLegacyOption, type FiscalOption,
+} from "@/lib/fiscal/fiscalOptions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
