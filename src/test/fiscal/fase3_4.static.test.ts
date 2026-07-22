@@ -54,8 +54,8 @@ const BASE_ROW: CustomerFiscalRow = {
 };
 
 describe("Fase 3.4 — feature flag", () => {
-  test("fiscalCustomerProfilesUi default = false", () => {
-    expect(FEATURE_FLAGS.fiscalCustomerProfilesUi).toBe(false);
+  test("fiscalCustomerProfilesUi habilitada na Fase 3.16", () => {
+    expect(FEATURE_FLAGS.fiscalCustomerProfilesUi).toBe(true);
   });
   test("fiscalEmissionEnabled continua false", () => {
     expect(FEATURE_FLAGS.fiscalEmissionEnabled).toBe(false);

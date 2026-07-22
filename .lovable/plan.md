@@ -1,100 +1,162 @@
 
-# Fase Fiscal 3.0.2-B.1 — Harness RLS executável + certificação A.2
+# Fase Fiscal 3.16 — Homologação preparada, rascunhos NF-e/NFS-e e certificado digital
 
-Escopo estritamente local: apenas código de teste, scripts e docs fiscais. Zero acesso a banco, zero secrets, zero produção, zero emissão/provedor/certificado.
+Escopo: preparar todo o módulo fiscal para homologação (NF-e e NFS-e) com wizard em pt-BR, migration canônica aditiva, tabela/edge functions de certificado digital (SO + A1). **Sem aplicar migration, sem deploy de Edge Functions, sem emissão, sem chamadas a SEFAZ/prefeitura/provedor.** `fiscalEmissionEnabled=false` e `production_enabled=false` permanecem trancados.
 
-## 1. Runner: remover throw e implementar pipeline real
+## Premissas confirmadas pela auditoria prévia
 
-Arquivo: `src/test/fiscal/rls/runner.ts`
+- Fases 3.0–3.15 já certificadas (paridade staging↔prod, RLS harness 677/677, 1060 testes verdes).
+- `company_fiscal_settings`, `fiscal_invoices`, `fiscal_invoice_items`, `fiscal_events`, `fiscal_audit_log`, perfis fiscais e views de prontidão já existem e estão tipados.
+- `fiscal-preflight` Edge Function existe e é `PRECHECK_ONLY` — reuso obrigatório, nada de duplicar lógica.
+- Central de Configuração Fiscal (3.15) já tem abas Empresa/NF-e/NFS-e/Integração/Revisão — a fase 3.16 estende, não substitui.
 
-- Remover o `throw "pipeline preparado"` em `setupStaging` (linhas ~242-246).
-- Implementar `setupStaging(cfg)` real, ativado apenas quando `loadRunnerConfigFromEnv` retornar `kind: "config"`:
-  1. `createClient` admin com `serviceRoleKey` e `createClient` anon com `anonKey`.
-  2. Reconfirmar `assertStagingMarker` no banco (já existente).
-  3. **Criar usuários sintéticos** com `admin.auth.admin.createUser({ email, password, email_confirm: true })` para os 13 papéis autenticados + 2 `cliente_produtor` (A e B). Senha gerada por `crypto.randomBytes` (16 bytes hex), mantida apenas em variável local, nunca logada.
-  4. **Base pré-role** para `cliente_produtor`: inserir linha em `public.profiles`, `public.clientes` (prefixo `FISCAL_TEST_B1_`) e `public.user_clientes` (vínculo user↔cliente) **antes** de inserir em `user_roles`, para satisfazer `enforce_cliente_id_for_produtor`.
-  5. Atribuir papéis em `public.user_roles` via admin.
-  6. **JWT por usuário**: para cada, `anonClient.auth.signInWithPassword({ email, password })` → capturar `session.access_token`. Anon usa `cfg.anonKey`. Execução sequencial.
-  7. **Fixtures** (prefixo `FISCAL_TEST_B1_`, UUIDs gerados em runtime): 1 produto, 1 serviço (via `source_reference`), 1 cliente extra p/ perfil, 1 CNPJ sintético, 1 `company_fiscal_settings`, 1 `product_fiscal_profiles`, 1 `service_fiscal_profiles`, 1 `customer_fiscal_profiles`, 1 `fiscal_invoices` do cliente A + vínculo por `accounts_receivable` (customer_id=A), 1 `fiscal_invoice_items`, 1 `fiscal_events` via RPC, 1 `fiscal_idempotency_keys`, 1 `fiscal_audit_log` gerada por trigger. Para cada tabela, criar também um registro **descartável** (`__disposable`) apenas para o teste de DELETE.
-  8. **Não** enfraquecer trigger de entregas: usar apenas o vínculo por `accounts_receivable` no ownership do harness HTTP (o smoke SQL externo já cobriu a origem `delivery_id`).
-  9. Retornar `StagingSession` com `jwts`, `fixtureIds`, `clienteA/B`, `teardown`.
+## 1. Feature flags (`src/config/featureFlags.ts`)
 
-- **Teardown idempotente** em ordem segura, ignorando linhas ausentes:
-  `fiscal_audit_log` → `fiscal_events` → `fiscal_invoice_items` → `fiscal_idempotency_keys` → `fiscal_invoices` → `*_fiscal_profiles` → `company_fiscal_settings` → `accounts_receivable` (sintéticas) → `user_roles` → `user_clientes` → `clientes` → `produtos` (sintéticos) → `profiles` → `auth.admin.deleteUser`. Ao fim, `SELECT count` em cada tabela filtrando prefixo `FISCAL_TEST_B1_` e assertar zero.
+Habilitar apenas o mínimo:
+- `fiscalConfigurationUi` ✓ (já true)
+- `fiscalProductProfilesUi` → true
+- `fiscalServiceProfilesUi` → true
+- `fiscalCustomerProfilesUi` → true
+- `fiscalDocumentWorkflowUi` → true
+- `fiscalReadinessCenterUi` → true
 
-- Ownership: separar JWT do cliente B (hoje ambos apontam para `session.jwts.cliente_produtor`). Ampliar `StagingSession.jwts` para incluir `cliente_produtor_b` ou reindexar `runOwnershipCell` para pegar B a partir de `session.clienteB`.
+Permanecem `false`: `fiscalEmissionEnabled`, `fiscalReconciliationWrite`, `fiscalReconciliationUi`, `fiscalDocumentManualEventRpc` (sem justificativa nesta fase — eventos manuais continuam bloqueados até certificação separada).
 
-- Erros: reforçar `classifyHttp` e caminhos de INSERT/UPDATE/DELETE para que **qualquer** falha de constraint, coluna, FK, 404, rede ou payload retorne `observed: "error"` (nunca `deny`). Zero linha em SELECT também é `deny` real, mas erro de rede/schema é `error`.
+## 2. Navegação (`src/config/navigation.ts`)
 
-- RPC (`runRpcCell`): manter execução dos 15 perfis; para staff, além de `allow`, validar retorno UUID, e após ler `fiscal_events` via service-role conferindo `event_source='USER'`, `performed_by` = usuário, `notes` gravado. Casos negativos: `event_type` inválido, `p_invoice_id` inexistente, `p_notes` > 2000 chars.
+Novo grupo **Fiscal** (rótulo pt-BR, pesquisável) com itens visíveis a `administrador` (rw) e `financeiro` (rw exceto certificado), `gestor` (r):
 
-## 2. Matriz e contadores
+1. Visão Geral Fiscal — `/fiscal/prontidao` (já existe)
+2. Configuração da Empresa — `/configuracoes/fiscal/empresa` (já existe)
+3. Produtos — `/fiscal/perfis/produtos`
+4. Serviços — `/fiscal/perfis/servicos`
+5. Clientes — `/fiscal/perfis/clientes`
+6. Rascunhos de NF-e e NFS-e — `/fiscal/documentos` (renomeado; página refatorada)
 
-Arquivo: `src/test/fiscal/rls/matrix.ts`
+**Não remover** o item "Notas Fiscais" (financeiro/acompanhamento). Documentar a diferença em `docs/notas-fiscais-modulo.md` (nota curta).
 
-- Ampliar `RPC_EXPECTATIONS` para incluir os casos negativos (RPC extras). Ajustar `PLANNED_COUNTS` para que `total` = tabelas + views + ownership + rpc positiva + rpc negativa.
-- `harness.test.ts`: alinhar cálculo de `s.planned` ao novo total e remover o hack `PLANNED_COUNTS.total + rpcResults.length - RPC_EXPECTATIONS.length`.
+## 3. Wizard de rascunho — `src/pages/fiscal/FiscalDocumentos.tsx`
 
-## 3. harness.test.ts — semântica de skip/parcial/completo
+Refator para "Preparação de NF-e e NFS-e — Homologação". Preserva lista, detalhes, timeline, auditoria existentes.
 
-- Ausência total das 6 envs → skip explícito (já ok).
-- Configuração parcial → **falha real** do teste (hoje é convertida em skip via try/catch em torno do `loadRunnerConfigFromEnv`). Ajustar: manter `test.skipIf` apenas para o caso `kind: "skip"`; para o caso de `throw`, criar `test` que sempre falha com a mensagem do erro.
-- Configuração completa → `test.runIf` executa harness real.
+Novo componente `src/components/fiscal/documentos/RascunhoWizard.tsx` com 5 etapas:
 
-## 4. Testes unitários novos
+1. **Documento** — tipo NF-e/NFS-e, modelo (55/NFS-e), ambiente (fixo `HOMOLOGATION` ou `NOT_CONFIGURED`), natureza, finalidade, presença, consumidor final, série, data emissão, vínculo opcional a receivable/entrega, observações.
+2. **Destinatário** — combobox de clientes reais; carrega perfil fiscal + endereço; CPF/CNPJ mascarado em listas (`***.***.***-##`), exibido integral apenas com role autorizada; IE/contribuinte, IM, e-mail, telefone, endereço + IBGE; gera `customer_snapshot` no salvamento.
+3. **Itens / Serviços** — CRUD + reordenação de `fiscal_invoice_items`; escolha produto ou perfil de serviço; campos NF-e (NCM/CEST/origem/CFOP/CST-CSOSN, PIS, COFINS, IPI) ou NFS-e (item LC116, CNAE, cód. tributação nacional/municipal, ISS, retenção, município IBGE); gera `fiscal_profile_snapshot` + `tax_snapshot` imutáveis no rascunho.
+4. **Tributos e Totais** — bases, ICMS, IPI, PIS, COFINS, ISS, retenções, desconto, frete, seguro, outras despesas, total; aviso "Cálculos preparatórios sujeitos a validação contábil"; gera `fiscal_totals_snapshot`.
+5. **Revisão** — checklist pt-BR, avisos por aba/campo, botões:
+   - **Salvar rascunho** (RPC nova).
+   - **Validar para homologação** (RPC somente-leitura — chama preflight interno / leituras locais). Resultado: Pronto / Incompleto / Bloqueado.
+   - **Nenhum** botão de transmissão/emissão/autorização.
 
-- `src/test/fiscal/rls/runner.unit.test.ts` (mocks): valida `buildPayload` por tabela, `classifyHttp` (200/401/403/404/409/500/42501/JSON quebrado), ordem de teardown, e que setup aborta se marker/project_ref divergir.
-- `src/test/fiscal/rls/harness.config.test.ts`: cobre os três estados de configuração (ausente/parcial/completo) via `vi.stubEnv`.
+Restrição: `status ∈ {DRAFT, HOMOLOGATION}`, `document_origin ∈ {MANUAL_RECORD, NOT_CONFIGURED, HOMOLOGATION}`, `provider = NONE`, `access_key = null`, `provider_reference = null`.
 
-## 5. Smoke SQL reproduzível
+Hooks/schemas: novos arquivos tipados, sem `any`/`as unknown as`:
+- `src/lib/fiscal/rascunhoWizardValidation.ts` (Zod por etapa + agregador).
+- `src/hooks/useFiscalRascunho.ts` (leitura por id, CRUD itens via RPC, salvar rascunho, validar homologação — concorrência por `draft_version`).
 
-Arquivo novo: `scripts/fiscal-staging-a2-smoke.sql`
+## 4. Migration canônica aditiva
 
-- Guard inicial: `DO $$ BEGIN IF current_setting('fiscal.expected_project_ref', true) IS NULL OR NOT EXISTS (SELECT 1 FROM public._fiscal_staging_marker WHERE marker='STAGING' AND project_ref = current_setting('fiscal.expected_project_ref')) THEN RAISE EXCEPTION 'ABORT: marker/project_ref inválido'; END IF; END $$;`
-- Reproduz os 31 casos smoke (admin/gestor/financeiro/produtor A/B/parceiro/sem papel/anon × leitura/RPC/mask) usando `SET LOCAL role` + `SET LOCAL request.jwt.claims`.
-- Cleanup final de tudo criado com prefixo `FISCAL_TEST_A2_SMOKE_`.
-- **Não** hardcodar project_ref nem credenciais: usa `current_setting('fiscal.expected_project_ref')`.
+Arquivo real: `supabase/migrations/20260724000000_fiscal_fase3_16_homologacao_certificados.sql`
+Stub: `restoration/migrations/20260724000000_fiscal_fase3_16_homologacao_certificados.sql` (apenas comentário documental, rejeitado pelo teste estático se executável).
 
-## 6. Documentação
+Alterações **aditivas** em `fiscal_invoices`:
+- `draft_version integer NOT NULL DEFAULT 1`
+- `homologation_validation_status text NOT NULL DEFAULT 'NOT_VALIDATED'` (enum textual: `NOT_VALIDATED`, `READY`, `INCOMPLETE`, `BLOCKED`)
+- `homologation_validation_at timestamptz`
+- `homologation_validation_summary jsonb NOT NULL DEFAULT '{}'` + CHECK `jsonb_typeof = 'object'` + CHECK `NOT fiscal_json_has_sensitive_key(...)` (função já existe de 3.15).
+- `customer_id uuid` **sem** FK ainda — auditoria de órfãos primeiro; adicionar apenas se contagem zero (comentado no SQL com pré-check `DO $$`).
 
-- Novo: `docs/fiscal-fase3-0-2-a2-certificacao.md`
-  - Evidência externa registrada (marker, 489 migrations, 9/5/3 objetos, 31/31 smoke, teardown zero).
-  - Declaração explícita: "smoke SQL aprovado; matriz HTTP/JWT completa PENDENTE até execução com envs — não há aprovação simulada".
-  - Referência ao `scripts/fiscal-staging-a2-smoke.sql`.
+**Novos objetos:**
 
-- Novo: `docs/fiscal-fase3-0-2-b1-runbook.md`
-  - Sequência de setup/teardown, prefixo `FISCAL_TEST_B1_`, política de senha/JWT em memória, requisitos de vínculo `user_clientes` para produtor.
+- `public.fiscal_certificates` (metadados apenas — colunas conforme spec §5, sem senha/PFX/chave). CHECK constraints, unicidade parcial "um ativo por (company_settings_id, environment)".
+- `public.fiscal_certificate_material` (só service_role): `certificate_id`, `object_path`, `encrypted_password`, `password_iv`, `material_iv`, `key_version`, `created_at`. `REVOKE ALL FROM anon, authenticated;` `GRANT ALL ON ... TO service_role;` RLS ligada, **zero policies**.
+- View sanitizada `public.v_fiscal_certificate_readiness` com `security_invoker=true` (fonte, status, validade, dias restantes; sem material).
+- Bucket privado `fiscal-certificates` via `supabase--storage_create_bucket` **após** aplicação da migration (não nesta execução) — documentado no relatório e stub SQL como TODO manual.
 
-- Novo: `docs/fiscal-divida-tecnica-rebuild.md` — registra três incompatibilidades em rebuild vazio (sem editar migrations aplicadas):
-  1. `20260509174314` depende de seed de microrganismos previamente presente.
-  2. `20260616000001` presume `ordens_servico_onfarm.microrganismo_id` — coluna adicionada só em migration posterior; ordem cronológica quebra rebuild vazio.
-  3. `20260707213038` (FASE11) faz patch textual não-determinístico.
-  - Runbook: em rebuild vazio, aplicar seed inicial + reordenar via migrations complementares; nunca editar históricas.
+**RPCs (todas `SECURITY DEFINER`, `search_path = public, pg_temp`, fail-closed, admin/financeiro conforme cada caso):**
 
-## 7. Não escopo
+- `rpc_fiscal_draft_save(p_invoice jsonb, p_items jsonb[], p_expected_version int)` — transação: valida payload, recalcula totais no servidor, grava snapshots, bloqueia se `status ∉ {DRAFT, HOMOLOGATION}` ou `provider ≠ NONE`, retorna nova versão. Optimistic lock por `draft_version`.
+- `rpc_fiscal_draft_validate_homologation(p_invoice_id uuid)` — **read-only**, chama helpers internos; retorna JSONB `{status, checklist[]}`. Nunca aceita status `AUTHORIZED/ISSUED`.
+- `rpc_fiscal_certificate_register_os(p_company_settings_id uuid, p_metadata jsonb)` — admin-only, insere metadados vindos do bridge do SO; verifica assinatura/formato dos campos.
+- `rpc_fiscal_certificate_revoke(p_certificate_id uuid, p_reason text)` — admin-only, logical delete.
 
-- Nenhuma migration nova.
-- Nenhum acesso a banco.
-- Nenhum secret novo pedido/registrado.
-- Nenhuma integração com provedor fiscal, tela, token, certificado.
-- Nenhuma alteração fora dos caminhos de teste/scripts/docs fiscais.
+Nenhuma RPC concede rota para `AUTHORIZED/ISSUED`. Trigger de auditoria em `fiscal_certificates` grava apenas metadados sanitizados (reusa padrão 3.15).
 
-## 8. Validação local (obrigatória, sequencial)
+## 5. Bridge do certificado do sistema operacional
 
-- `bunx eslint` apenas nos arquivos alterados (sem `--fix` global).
-- `bun run typecheck`.
-- `bun run build`.
-- `bunx vitest run src/test/fiscal`.
-- `bash scripts/fiscal-secrets-scan.sh` e `bash scripts/fiscal-integration-scan.sh`.
-- Confirmar que `harness.test.ts` marca skip explícito (envs ausentes neste sandbox) e que o teste de "configuração parcial" falha corretamente quando simulado.
+- `src/types/fiscalCertificateBridge.ts` — contrato `window.ARBioFiscalCertificateBridge` opcional (`isAvailable`, `listCertificates`, `selectCertificate`, `getStatus`). Retornos: apenas alias/subject/issuer/serial/validade/fingerprint. **Nenhum** método de assinatura implementado nesta fase.
+- `src/lib/fiscal/certificateOsAdapter.ts` — detecção, fallback pt-BR "instale o conector nativo ARBio".
+- UI dentro de `FiscalEmpresa.tsx` (aba Integração) — cartão "Repositório do sistema operacional" listando aliases; ação "Registrar metadados" chama `rpc_fiscal_certificate_register_os`.
 
-## 9. Relatório final
+## 6. Fluxo A1 — Edge Functions
 
-Ao término, entregar: lista de arquivos alterados; resumo do pipeline setup/teardown; `PLANNED_COUNTS.total` novo; resultados de ESLint/typecheck/build/vitest; scanners; gates aprovados (código fechado, smoke SQL certificado externamente); gates pendentes (execução runtime HTTP/JWT depende das 6 envs — não iniciar Fase 3.1).
+**`supabase/functions/fiscal-certificate-upload/index.ts`** (não deployada nesta execução):
+- JWT admin verificado via `getClaims` + `has_role`.
+- `multipart/form-data`, aceita `.pfx`/`.p12`, ≤10 MB, MIME `application/x-pkcs12` ou octet-stream com magic bytes conferidos.
+- Senha em memória; nunca logada.
+- Valida PKCS#12 usando `node-forge` via `npm:node-forge@1` (Deno), extrai X.509 (subject, issuer, serial, validade, SHA-256), rejeita expirado/inválido/cadeia ausente.
+- AES-256-GCM (`crypto.subtle`) para material e senha; IVs aleatórios separados; `FISCAL_CERTIFICATE_MASTER_KEY` (base64 32B) — se ausente/malformada, retorna `CERTIFICATE_VAULT_NOT_CONFIGURED`.
+- Upload do ciphertext ao bucket privado `fiscal-certificates` (nome random UUID); grava metadados via service_role.
+- Rollback: se `fiscal_certificate_material` insert falhar, remover objeto.
+- CORS por allowlist (env `FISCAL_CORS_ALLOWLIST`).
+- Nunca loga body/senha/JWT/chave/service_role.
 
-## Detalhes técnicos
+**`supabase/functions/fiscal-certificate-revoke/index.ts`** — admin-only, remove objeto do bucket, marca metadado revogado, idempotente, auditável.
 
-- Novo dep runtime: nenhuma. `@supabase/supabase-js` já presente. `crypto.randomBytes` via `node:crypto`.
-- Prefixo único: `FISCAL_TEST_B1_` para runtime, `FISCAL_TEST_A2_SMOKE_` para script SQL. Facilita verificação de "zero remanescente" no teardown.
-- Concorrência: `for...of` sequencial nas fases de criação/cleanup. Execução das células pode manter loop sequencial atual.
-- Segurança de logs: substituir qualquer `console.log(cfg)` ou similar por logs que expõem só `projectRef` e contagens. Nunca imprimir `serviceRoleKey`, `anonKey`, JWTs, `pgUrl` completo ou e-mail+senha sintéticos.
+**Sem** função de descriptografia/assinatura nesta fase.
+
+**Frontend A1** — `src/components/fiscal/certificados/UploadCertificadoA1.tsx`:
+- Input arquivo `accept=".pfx,.p12"`, senha `type=password` `autocomplete=new-password`.
+- Aviso pt-BR de segurança.
+- Chama `supabase.functions.invoke('fiscal-certificate-upload')`.
+- Limpa `File` + senha da memória em `finally`.
+- Se function retornar `CERTIFICATE_VAULT_NOT_CONFIGURED`, exibe "Cofre de certificados ainda não configurado".
+- Lista metadados + ação "Revogar" (confirmação).
+
+## 7. Integração na Central Fiscal
+
+Aba Integração e Segurança (`FiscalEmpresa.tsx`) — nova seção "Certificado digital":
+- Select fonte: Não configurado / Sistema operacional / A1 armazenado com segurança.
+- Card certificado ativo (nome, validade, dias restantes, fonte).
+- Status conector nativo (do bridge).
+- Status cofre A1 (via probe leve — apenas verifica existência do secret configurado, exposta por hook seguro).
+- Bloqueio "Pronto para homologação" quando estratégia futura exigir certificado e nenhum estiver ativo.
+- `production_enabled` invisível e imutável.
+
+## 8. Testes
+
+Novos arquivos em `src/test/fiscal/`:
+- `fase3_16.static.test.ts` — flags, ausência de botões emitir/transmitir/produção, rotas visíveis por papel, textos pt-BR, ausência de fetch a provedor.
+- `fase3_16.wizard.test.tsx` — cada etapa renderiza, salvar rascunho chama RPC correta, validar homologação read-only, nenhum status `AUTHORIZED`.
+- `fase3_16.certificado.test.ts` — schemas Zod, adapter OS retorna só metadados, upload A1 limpa senha da memória, componente exibe fallback quando vault não configurado.
+- `fase3_16.migration.test.ts` — canônica em `supabase/migrations/`, stub em `restoration/` sem SQL executável, sem GRANT anon em `fiscal_certificate_material`, `fiscal_certificates` com CHECK de fonte/status.
+- `fase3_16.edge.test.ts` — parsing estático da função upload: rejeita >10MB, valida MIME, exige master key, nunca chama console.log com senha/body.
+
+Rodar após implementação: `bun run typecheck`, `bunx vitest run`, `bun run build`.
+
+## 9. Relatório
+
+`docs/fiscal-fase3-16-homologacao-certificados.md` cobrindo:
+- arquivos criados/alterados, schema aditivo, RPCs, Edge Functions;
+- telas, permissões, campos NF-e/NFS-e;
+- fluxo SO, fluxo A1 (com modelo de ameaça);
+- secrets externos pendentes (`FISCAL_CERTIFICATE_MASTER_KEY`, `FISCAL_CORS_ALLOWLIST`);
+- passos manuais pendentes (aplicar migration, criar bucket privado, deploy das duas edge functions, gerar master key com `secrets--generate_secret` de 44 chars base64);
+- confirmação: produção/emissão bloqueadas, `fiscalEmissionEnabled=false`, `production_enabled=false`.
+
+Classificação final: **PREPARADO PARA APLICAÇÃO CONTROLADA** apenas se typecheck + build + Vitest verdes.
+
+## Fora do escopo
+
+- Deploy de qualquer Edge Function.
+- Aplicação de migration em staging/produção.
+- Criação real do bucket (documentada como passo manual).
+- Função de assinatura digital / emissão / transmissão.
+- Habilitar `fiscalEmissionEnabled` ou `production_enabled`.
+- Ampliar policies certificadas em 3.11/3.12.
+
+## Confirmação
+
+Aguardando aprovação para iniciar a implementação estrita desta fase.

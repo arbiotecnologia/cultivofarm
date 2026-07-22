@@ -49,16 +49,15 @@ const permSrc = readFileSync(PERM_PATH, "utf8");
 const phaseSources = [hookSrc, pageSrc, validationSrc];
 
 describe("Fase 3.7 · (1) Flags e emissão", () => {
-  test("fiscalReadinessCenterUi default false", () => {
-    expect(FEATURE_FLAGS.fiscalReadinessCenterUi).toBe(false);
+  test("fiscalReadinessCenterUi habilitada na Fase 3.16", () => {
+    expect(FEATURE_FLAGS.fiscalReadinessCenterUi).toBe(true);
   });
   test("fiscalEmissionEnabled permanece false", () => {
     expect(FEATURE_FLAGS.fiscalEmissionEnabled).toBe(false);
   });
-  test("nenhuma flag anterior de escrita foi habilitada", () => {
+  test("nenhuma flag de escrita fiscal foi habilitada", () => {
     expect(FEATURE_FLAGS.fiscalReconciliationWrite).toBe(false);
     expect(FEATURE_FLAGS.fiscalDocumentManualEventRpc).toBe(false);
-    expect(FEATURE_FLAGS.fiscalDocumentWorkflowUi).toBe(false);
     expect(FEATURE_FLAGS.fiscalReconciliationUi).toBe(false);
   });
 });
@@ -92,12 +91,13 @@ describe("Fase 3.7 · (2) Matriz de perfis", () => {
   });
 });
 
-describe("Fase 3.7 · (3) Ausência no menu", () => {
-  test("navigation.ts não referencia /fiscal/prontidao", () => {
-    expect(navSrc.includes("/fiscal/prontidao")).toBe(false);
+describe("Fase 3.7 · (3) Presença no menu (Fase 3.16)", () => {
+  test("navigation.ts referencia /fiscal/prontidao sob featureFlag", () => {
+    expect(navSrc.includes("/fiscal/prontidao")).toBe(true);
+    expect(navSrc).toMatch(/featureFlag:\s*"fiscalReadinessCenterUi"/);
   });
-  test("flag de UI permanece false", () => {
-    expect(FEATURE_FLAGS.fiscalReadinessCenterUi).toBe(false);
+  test("flag de UI está habilitada", () => {
+    expect(FEATURE_FLAGS.fiscalReadinessCenterUi).toBe(true);
   });
 });
 

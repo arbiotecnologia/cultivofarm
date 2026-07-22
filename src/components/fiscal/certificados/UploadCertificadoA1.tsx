@@ -1,0 +1,156 @@
+/**
+ * Fase Fiscal 3.16 — Upload seguro de certificado A1 (frontend).
+ *
+ * NUNCA persiste PFX/senha no navegador. Envia à Edge Function
+ * `fiscal-certificate-upload` (admin-only, backend valida PKCS#12 e
+ * criptografa com AES-256-GCM). Limpa File + senha da memória sempre.
+ */
+import { useRef, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ShieldOff, Upload, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+export interface UploadCertificadoA1Props {
+  companySettingsId: string;
+  onUploaded?: (certificateId: string) => void;
+  disabled?: boolean;
+}
+
+export default function UploadCertificadoA1({
+  companySettingsId,
+  onUploaded,
+  disabled,
+}: UploadCertificadoA1Props) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("Certificado A1 — homologação");
+  const [pending, setPending] = useState(false);
+  const [vaultUnavailable, setVaultUnavailable] = useState<string | null>(null);
+
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault();
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      toast({ title: "Selecione um arquivo .pfx ou .p12", variant: "destructive" });
+      return;
+    }
+    if (!/\.(pfx|p12)$/i.test(file.name)) {
+      toast({ title: "Formato inválido", description: "Aceito apenas .pfx ou .p12.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Arquivo maior que 10 MB", variant: "destructive" });
+      return;
+    }
+    if (password.trim().length === 0) {
+      toast({ title: "Informe a senha do certificado", variant: "destructive" });
+      return;
+    }
+
+    setPending(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("password", password);
+    fd.append("company_settings_id", companySettingsId);
+    fd.append("display_name", displayName);
+    try {
+      const { data, error } = await supabase.functions.invoke("fiscal-certificate-upload", {
+        body: fd,
+      });
+      if (error) throw error;
+      const res = data as { certificate_id?: string; error?: string; code?: string };
+      if (res.code === "CERTIFICATE_VAULT_NOT_CONFIGURED") {
+        setVaultUnavailable("Cofre de certificados ainda não configurado. Contate o administrador do sistema.");
+        return;
+      }
+      if (!res.certificate_id) {
+        throw new Error(res.error ?? "Resposta inesperada do servidor.");
+      }
+      toast({ title: "Certificado A1 carregado com sucesso" });
+      onUploaded?.(res.certificate_id);
+    } catch (err) {
+      toast({
+        title: "Falha ao carregar certificado",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    } finally {
+      // Limpa material sensível da memória
+      setPassword("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setPending(false);
+    }
+  }
+
+  if (vaultUnavailable) {
+    return (
+      <Alert variant="destructive" data-testid="fiscal-a1-vault-off">
+        <ShieldOff className="h-4 w-4" aria-hidden />
+        <AlertTitle>Cofre de certificados indisponível</AlertTitle>
+        <AlertDescription>{vaultUnavailable}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <Card data-testid="fiscal-a1-upload">
+      <CardHeader>
+        <CardTitle className="text-base">Carregar certificado A1</CardTitle>
+        <CardDescription>
+          O arquivo e a senha são enviados diretamente ao cofre seguro do servidor
+          via AES-256-GCM. Nada é armazenado neste navegador. Somente administrador.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleUpload} className="space-y-3">
+          <div>
+            <Label>Arquivo (.pfx / .p12)</Label>
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".pfx,.p12"
+              disabled={disabled || pending}
+              data-testid="fiscal-a1-file"
+            />
+          </div>
+          <div>
+            <Label>Senha do certificado</Label>
+            <Input
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={disabled || pending}
+              data-testid="fiscal-a1-password"
+            />
+          </div>
+          <div>
+            <Label>Nome para exibição</Label>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              disabled={disabled || pending}
+            />
+          </div>
+          <Alert>
+            <ShieldOff className="h-4 w-4" aria-hidden />
+            <AlertTitle>Aviso de segurança</AlertTitle>
+            <AlertDescription className="text-xs">
+              O certificado permanecerá criptografado no cofre e será usado apenas
+              em processos server-side autorizados. Você poderá revogá-lo a qualquer
+              momento.
+            </AlertDescription>
+          </Alert>
+          <Button type="submit" disabled={disabled || pending}>
+            {pending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando…</> : <><Upload className="h-4 w-4 mr-2" /> Carregar para homologação</>}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

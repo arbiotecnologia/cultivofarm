@@ -29,9 +29,19 @@ describe("Fase 6 — Inteligência, Controle e Administração", () => {
     expect(byId("auditorias").subSection).toBe("Controle");
   });
 
-  it("Administração contém Configurações e Configuração Fiscal (Fase 3.15)", () => {
+  it("Administração contém Configurações, Configuração Fiscal e grupo Fiscal (Fase 3.16)", () => {
     const g = groups.find((s) => s.section === "Administração")!;
-    expect(g.items.map((i) => i.id)).toEqual(["configuracoes", "config-fiscal"]);
+    const ids = g.items.map((i) => i.id);
+    expect(ids).toContain("configuracoes");
+    expect(ids).toContain("config-fiscal");
+    // Fase 3.16 — sub-seção "Fiscal" de preparação/homologação (sem emissão).
+    expect(ids).toEqual(expect.arrayContaining([
+      "fiscal-prontidao",
+      "fiscal-perfis-produtos",
+      "fiscal-perfis-servicos",
+      "fiscal-perfis-clientes",
+      "fiscal-rascunhos",
+    ]));
   });
 
   it("preserva rotas, badges e legacyRoutes dos itens migrados", () => {
