@@ -230,8 +230,11 @@ describe("Fase 3.17.1 — fixtures de staging seguras", () => {
     expect(/\borigin\s*=\s*'MANUAL_RECORD'/i.test(s)).toBe(false);
     expect(/\binvoice_id\b(?!\w)/i.test(s.replace(/fiscal_invoice_id/g, ""))).toBe(false);
     expect(/internal_reference/i.test(s)).toBe(false);
-    // Usuário: não pode ler auth.users como fallback.
-    expect(/\bauth\.users\b/i.test(s)).toBe(false);
+    // Usuário: auth.users é permitido APENAS na validação sintética 3.17.2
+    // (SELECT com filtro fiscal-hml-*@example.invalid). Nenhum fallback.
+    expect(/COALESCE\s*\([^)]*auth\.users/i.test(s)).toBe(false);
+    expect(/INSERT[^;]+SELECT[^;]+auth\.users/i.test(s)).toBe(false);
+
     // Contexto sintético obrigatório.
     expect(s).toMatch(/_fiscal_hml_context/);
     expect(s).toMatch(/HML_USER/);
