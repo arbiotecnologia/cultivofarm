@@ -598,11 +598,11 @@ export default function FiscalEmpresa() {
                 <FieldRow id="nfe_contingency_mode" label="Modo de contingência">
                   <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCIA} onChange={(v) => setNfe("contingency_mode", v)} />
                 </FieldRow>
-                <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido">
-                  <Input id="nfe_cfop_in" value={(nfe.suggested_cfop_in_state as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_in_state", e.target.value)} />
+                <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido" description="Ex.: 5102 — Venda de mercadoria adquirida.">
+                  <Input id="nfe_cfop_in" inputMode="numeric" maxLength={4} placeholder="5102" value={(nfe.suggested_cfop_in_state as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_in_state", e.target.value)} />
                 </FieldRow>
-                <FieldRow id="nfe_cfop_out" label="CFOP interestadual sugerido">
-                  <Input id="nfe_cfop_out" value={(nfe.suggested_cfop_interstate as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_interstate", e.target.value)} />
+                <FieldRow id="nfe_cfop_out" label="CFOP interestadual sugerido" description="Ex.: 6102 — Venda interestadual.">
+                  <Input id="nfe_cfop_out" inputMode="numeric" maxLength={4} placeholder="6102" value={(nfe.suggested_cfop_interstate as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_interstate", e.target.value)} />
                 </FieldRow>
                 <div className="md:col-span-2">
                   <FieldRow id="nfe_info" label="Informações adicionais padrão">
