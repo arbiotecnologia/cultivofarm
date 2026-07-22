@@ -59,15 +59,15 @@ type StringField =
   | "requirement_status"
   | "accounting_notes";
 
-const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean }[] = [
+const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean; select?: FiscalOption[]; hint?: string; placeholder?: string }[] = [
   { key: "service_name", label: "Nome do serviço" },
   { key: "fiscal_description_template", label: "Descrição fiscal (template)" },
-  { key: "lc116_item", label: "Item LC 116" },
-  { key: "cnae", label: "CNAE", numeric: true },
+  { key: "lc116_item", label: "Item LC 116", hint: "Ex.: 1.05 — Licenciamento de programas.", placeholder: "0.00" },
+  { key: "cnae", label: "CNAE", numeric: true, hint: "7 dígitos numéricos.", placeholder: "0000000" },
   { key: "national_taxation_code", label: "Código nacional de tributação" },
   { key: "municipal_taxation_code", label: "Código municipal de tributação" },
-  { key: "incidence_municipality_ibge_code", label: "Município de incidência (IBGE)", numeric: true },
-  { key: "requirement_status", label: "Status de requisitos" },
+  { key: "incidence_municipality_ibge_code", label: "Município de incidência (IBGE)", numeric: true, hint: "7 dígitos — consulte em ibge.gov.br/localidades.", placeholder: "0000000" },
+  { key: "requirement_status", label: "Status de requisitos", select: REQUIREMENT_STATUS_OPTIONS },
   { key: "accounting_notes", label: "Notas contábeis" },
 ];
 
