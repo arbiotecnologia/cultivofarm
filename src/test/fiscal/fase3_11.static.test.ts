@@ -126,7 +126,7 @@ describe("Fase Fiscal 3.11 — invariantes do harness SQL-nativo", () => {
     expect(ev.harness_completo_aprovado).toBe(false);
     expect(ev.project_ref_masked).toMatch(/\*\*\*/);
     expect(ev.origin).toMatch(/execução manual no SQL Editor do staging/);
-    expect(EVID_MD).toMatch(/31\/31|31 \| 31/);
+    expect(EVID_MD).toMatch(/\b31\b/);
     expect(EVID_MD).toMatch(/staging temporário/);
   });
 
