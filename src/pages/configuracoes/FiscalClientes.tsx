@@ -595,21 +595,64 @@ function EditDrawer({
                 </Label>
               </div>
 
-              {STRING_FIELD_META.map(({ key, label, numeric }) => (
-                <div key={key} className="grid gap-1.5">
-                  <Label htmlFor={`f-${key}`}>{label}</Label>
-                  <Input
-                    id={`f-${key}`}
-                    value={values[key] ?? ""}
-                    onChange={(e) => setField(key, e.target.value)}
-                    aria-invalid={!!errors[key]}
-                    inputMode={numeric ? "numeric" : undefined}
-                  />
-                  {errors[key] ? (
-                    <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
-                  ) : null}
-                </div>
-              ))}
+              {STRING_FIELD_META.map(({ key, label, numeric }) => {
+                const isEmail = key === "fiscal_email";
+                const isPhone = key === "fiscal_phone";
+                const isCep = key === "fiscal_postal_code";
+                const isUf = key === "fiscal_state";
+                const isIbge = key === "fiscal_municipality_ibge_code";
+                const raw = values[key] ?? "";
+                let displayValue: string = raw;
+                if (isPhone) displayValue = formatTelefone(raw);
+                else if (isCep) displayValue = formatCEP(raw);
+                const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                  const v = e.target.value;
+                  if (isPhone) return setField(key, unmask(v).slice(0, 11));
+                  if (isCep) return setField(key, unmask(v).slice(0, 8));
+                  if (isIbge) return setField(key, unmask(v).slice(0, 7));
+                  if (isUf) return setField(key, v.toUpperCase().slice(0, 2));
+                  return setField(key, v);
+                };
+                return (
+                  <div key={key} className="grid gap-1.5">
+                    <Label htmlFor={`f-${key}`}>{label}</Label>
+                    <Input
+                      id={`f-${key}`}
+                      value={displayValue}
+                      onChange={handleChange}
+                      onBlur={isEmail ? (e) => setField(key, e.target.value.trim()) : undefined}
+                      aria-invalid={!!errors[key]}
+                      inputMode={
+                        isPhone ? "tel" : isEmail ? "email" : numeric || isCep ? "numeric" : undefined
+                      }
+                      type={isEmail ? "email" : "text"}
+                      spellCheck={isEmail ? false : undefined}
+                      autoComplete={
+                        isEmail ? "email" : isPhone ? "tel" : isCep ? "postal-code" : undefined
+                      }
+                      maxLength={
+                        isCep ? 9 : isPhone ? 15 : isUf ? 2 : isIbge ? 7 : undefined
+                      }
+                      placeholder={
+                        isCep
+                          ? "00000-000"
+                          : isPhone
+                          ? "(00) 00000-0000"
+                          : isEmail
+                          ? "email@dominio.com"
+                          : isUf
+                          ? "UF"
+                          : isIbge
+                          ? "0000000"
+                          : undefined
+                      }
+                    />
+                    {errors[key] ? (
+                      <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
+                    ) : null}
+                  </div>
+                );
+              })}
             </fieldset>
             <SheetFooter className="mt-4">
               <Button type="button" variant="outline" onClick={onClose}>
