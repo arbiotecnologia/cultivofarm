@@ -2,13 +2,13 @@
 -- Fase Fiscal 3.11.2 — Harness RLS SQL-nativo EXECUTÁVEL (staging)
 --
 -- Substitui integralmente as versões 3.11 e 3.11.1.
---   * 3.11 era não-executável (placeholder / mass insert de 'skipped').
---   * 3.11.1 executava, mas deixava funções/tabelas de suporte em public
---     após COMMIT e usava "WHERE 1=0" no ramo DELETE.
---   * 3.11.2 remove essas dívidas: todos os helpers e tabelas de suporte
+--   * 3.11 era inerte (histórico documental em docs/).
+--   * 3.11.1 executava, mas deixava funções e tabelas de suporte em
+--     public após COMMIT e o ramo DELETE não tocava fixture real.
+--   * 3.11.2 elimina essas dívidas: todos os helpers e tabelas de suporte
 --     vivem em pg_temp (auto-descartadas ao encerrar a sessão) e cada
 --     DELETE opera contra uma fixture descartável real com verificação
---     de presença após a tentativa.
+--     de presença física.
 --
 -- REGRAS ABSOLUTAS:
 --   * Executar SOMENTE no SQL Editor de staging, como postgres.
@@ -24,8 +24,7 @@
 --   1) SELECT * FROM public._fiscal_staging_marker;  -- conferir manualmente
 --   2) Colar este arquivo no SQL Editor e executar.
 --   3) Exportar as duas result-sets finais dentro da MESMA sessão.
---      Ao encerrar a sessão, pg_temp desaparece por conta do PostgreSQL —
---      não é necessária limpeza manual.
+--      pg_temp desaparece por conta do PostgreSQL ao encerrar a sessão.
 -- =====================================================================
 \set ON_ERROR_STOP on
 SET client_min_messages = warning;
