@@ -599,13 +599,38 @@ function EditDrawer({
                 </Label>
               </div>
 
-              {STRING_FIELD_META.map(({ key, label, numeric }) => {
+              {STRING_FIELD_META.map(({ key, label, numeric, select, hint }) => {
                 const isEmail = key === "fiscal_email";
                 const isPhone = key === "fiscal_phone";
                 const isCep = key === "fiscal_postal_code";
                 const isUf = key === "fiscal_state";
                 const isIbge = key === "fiscal_municipality_ibge_code";
                 const raw = values[key] ?? "";
+                if (select) {
+                  const opts = withLegacyOption(select, raw);
+                  return (
+                    <div key={key} className="grid gap-1.5">
+                      <Label htmlFor={`f-${key}`}>{label}</Label>
+                      <select
+                        id={`f-${key}`}
+                        className="h-10 border rounded-md px-3 bg-background disabled:opacity-60"
+                        value={raw}
+                        onChange={(e) => setField(key, e.target.value)}
+                        aria-invalid={!!errors[key]}
+                      >
+                        <option value="">— selecione —</option>
+                        {opts.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      {errors[key] ? (
+                        <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
+                      ) : hint ? (
+                        <p className="text-xs text-muted-foreground">{hint}</p>
+                      ) : null}
+                    </div>
+                  );
+                }
                 let displayValue: string = raw;
                 if (isPhone) displayValue = formatTelefone(raw);
                 else if (isCep) displayValue = formatCEP(raw);
@@ -653,6 +678,8 @@ function EditDrawer({
                     />
                     {errors[key] ? (
                       <p className="text-xs text-destructive" role="alert">{errors[key]}</p>
+                    ) : hint ? (
+                      <p className="text-xs text-muted-foreground">{hint}</p>
                     ) : null}
                   </div>
                 );
