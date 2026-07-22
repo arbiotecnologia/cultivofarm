@@ -64,14 +64,14 @@ export function useSaveFiscalRascunho() {
         source_item_id: it.source_item_id ?? null,
       }));
 
-      const { data, error } = await supabase.rpc("rpc_fiscal_draft_save", {
+      const { data, error } = await rpc("rpc_fiscal_draft_save", {
         p_invoice_id: args.invoiceId,
         p_invoice: invoicePayload,
         p_items: itemsPayload,
         p_expected_version: args.expectedVersion,
       });
-      if (error) throw error;
-      return data as unknown as DraftSaveResult;
+      if (error) throw new Error(error.message);
+      return data as DraftSaveResult;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["fiscal", "documents"] });
@@ -90,11 +90,11 @@ export interface HomologationValidationResult {
 export function useValidateHomologation() {
   return useMutation({
     mutationFn: async (invoiceId: string): Promise<HomologationValidationResult> => {
-      const { data, error } = await supabase.rpc("rpc_fiscal_draft_validate_homologation", {
+      const { data, error } = await rpc("rpc_fiscal_draft_validate_homologation", {
         p_invoice_id: invoiceId,
       });
-      if (error) throw error;
-      return data as unknown as HomologationValidationResult;
+      if (error) throw new Error(error.message);
+      return data as HomologationValidationResult;
     },
   });
 }
