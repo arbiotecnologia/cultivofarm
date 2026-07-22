@@ -193,12 +193,11 @@ Deno.serve(async (req) => {
       const md = forge.md.sha256.create();
       const nonce = forge.util.bytesToHex(forge.random.getBytesSync(32));
       md.update(nonce);
-      // deno-lint-ignore no-explicit-any
-      const signature = (privateKey as any).sign(md);
+      const signature = (privateKey as unknown as { sign: (m: unknown) => string }).sign(md);
       const md2 = forge.md.sha256.create();
       md2.update(nonce);
-      // deno-lint-ignore no-explicit-any
-      const ok = (cert.publicKey as any).verify(md2.digest().bytes(), signature);
+      const ok = (cert.publicKey as unknown as { verify: (d: string, s: string) => boolean })
+        .verify(md2.digest().bytes(), signature);
       if (!ok) return json({ error: "private_key_does_not_match_certificate" }, 400, headers);
     } catch {
       return json({ error: "private_key_does_not_match_certificate" }, 400, headers);
