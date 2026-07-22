@@ -5,7 +5,7 @@
  * futuro (extensão instalada pelo usuário) expõe
  * `window.ARBioFiscalCertificateBridge` com métodos ESTRITAMENTE de
  * metadados sanitizados. Nenhum método retorna material criptográfico
- * sensível. `signDigest` NÃO faz parte desta fase.
+ * sensível. Assinatura digital não faz parte desta fase.
  */
 
 export interface FiscalOsCertificateMetadata {
