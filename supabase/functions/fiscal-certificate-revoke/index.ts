@@ -1,13 +1,14 @@
 /**
- * Fase Fiscal 3.16 — Edge Function `fiscal-certificate-revoke`.
+ * Fase Fiscal 3.16.2-A — Edge Function `fiscal-certificate-revoke`.
  *
- * Admin-only. Marca metadado como revogado (logical delete),
- * remove objeto do bucket privado. Idempotente. NÃO faz DELETE físico
- * do registro de auditoria.
- *
- * NÃO IMPLANTAR nesta execução.
+ * Admin-only. Idempotente: se qualquer parte falhar (remoção física do
+ * objeto no bucket ou apagamento do material), a função NÃO reporta
+ * sucesso. O metadado lógico permanece marcado como revogado e a
+ * trilha de auditoria continua íntegra.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
   const allow = (Deno.env.get("FISCAL_CORS_ALLOWLIST") ?? "")
@@ -35,7 +36,11 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const cors = corsHeaders(origin);
   const headers = cors.headers;
-  if (req.method === "OPTIONS") return new Response("ok", { headers });
+
+  if (req.method === "OPTIONS") {
+    if (!cors.allowed) return new Response("cors_denied", { status: 403, headers });
+    return new Response("ok", { headers });
+  }
   if (!cors.allowed) return json({ error: "cors_origin_not_allowed" }, 403, headers);
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
 
@@ -57,8 +62,7 @@ Deno.serve(async (req) => {
   if (!userId) return json({ error: "unauthorized" }, 401, headers);
 
   const { data: isAdmin } = await authed.rpc("has_role", {
-    _user_id: userId,
-    _role: "administrador",
+    _user_id: userId, _role: "administrador",
   });
   if (!isAdmin) return json({ error: "permission_denied" }, 403, headers);
 
@@ -68,27 +72,41 @@ Deno.serve(async (req) => {
   } catch {
     return json({ error: "invalid_body" }, 400, headers);
   }
-  if (!body.certificate_id) return json({ error: "certificate_id_required" }, 400, headers);
+  const certId = String(body.certificate_id ?? "");
+  if (!UUID_RE.test(certId)) return json({ error: "certificate_id_invalid" }, 400, headers);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  // Busca object_path para remover fisicamente
+  // Valida existência antes de qualquer trabalho.
+  const cert = await admin.from("fiscal_certificates")
+    .select("id").eq("id", certId).maybeSingle();
+  if (cert.error || !cert.data) return json({ error: "certificate_not_found" }, 404, headers);
+
   const { data: mat } = await admin.from("fiscal_certificate_material")
-    .select("object_path")
-    .eq("certificate_id", body.certificate_id)
-    .maybeSingle();
+    .select("object_path").eq("certificate_id", certId).maybeSingle();
 
-  // Revoga logicamente via RPC autenticada (auth.uid dentro)
+  // Revoga logicamente via RPC autenticada.
   const { error: rpcErr } = await authed.rpc("rpc_fiscal_certificate_revoke", {
-    p_certificate_id: body.certificate_id,
-    p_reason: (body.reason ?? "").slice(0, 500),
+    p_certificate_id: certId,
+    p_reason: String(body.reason ?? "").slice(0, 500),
   });
-  if (rpcErr) return json({ error: rpcErr.message }, 400, headers);
+  if (rpcErr) return json({ error: "revoke_failed" }, 400, headers);
 
-  // Remove material criptografado
+  // Remove material físico. Se falhar em qualquer etapa, NÃO reporta sucesso.
+  const cleanupErrors: string[] = [];
   if (mat?.object_path) {
-    await admin.storage.from("fiscal-certificates").remove([mat.object_path]);
-    await admin.from("fiscal_certificate_material").delete().eq("certificate_id", body.certificate_id);
+    const rm = await admin.storage.from("fiscal-certificates").remove([mat.object_path]);
+    if (rm.error) cleanupErrors.push("storage_remove_failed");
+    const del = await admin.from("fiscal_certificate_material").delete().eq("certificate_id", certId);
+    if (del.error) cleanupErrors.push("material_delete_failed");
+  }
+
+  if (cleanupErrors.length > 0) {
+    return json({
+      revoked: true,
+      cleanup_incomplete: true,
+      warnings: cleanupErrors,
+    }, 502, headers);
   }
 
   return json({ revoked: true }, 200, headers);
