@@ -472,7 +472,7 @@ export default function FiscalEmpresa() {
                 <FieldRow id="crt" label="CRT" description="Código do Regime Tributário conforme SEFAZ.">
                   <SelectNative id="crt" value={values.crt ?? ""} options={CRT_OPTIONS} onChange={(v) => set("crt", v)} />
                 </FieldRow>
-                <FieldRow id="primary_cnae" label="CNAE principal">
+                <FieldRow id="primary_cnae" label="CNAE principal" description="7 dígitos, ex.: 0111301 — Cultivo de arroz.">
                   <Input
                     id="primary_cnae"
                     inputMode="numeric"
@@ -485,12 +485,13 @@ export default function FiscalEmpresa() {
                 <FieldRow id="municipal_registration" label="Inscrição municipal (IM)">
                   <Input id="municipal_registration" value={values.municipal_registration ?? ""} onChange={(e) => set("municipal_registration", e.target.value)} />
                 </FieldRow>
-                <FieldRow id="state_registration" label="Inscrição estadual (IE)">
+                <FieldRow id="state_registration" label="Inscrição estadual (IE)" description="Digite ISENTO se não contribuinte.">
                   <Input
                     id="state_registration"
-                    inputMode="numeric"
+                    inputMode="text"
+                    placeholder="ISENTO ou números"
                     value={values.state_registration ?? ""}
-                    onChange={(e) => set("state_registration", unmask(e.target.value))}
+                    onChange={(e) => set("state_registration", e.target.value)}
                   />
                 </FieldRow>
               </CardContent>
