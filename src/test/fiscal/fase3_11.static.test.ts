@@ -111,8 +111,8 @@ describe("Fase Fiscal 3.11.1 — harness SQL executável (não placeholder)", ()
     expect(SQL).toMatch(/_fiscal_3111_run_ownership/);
     expect(SQL).toMatch(/O-prodA-own/);
     expect(SQL).toMatch(/O-prodB-other/);
-    expect(SQL).toMatch(/scope\s*(=|when)?\s*'own'/i);
-    expect(SQL).toMatch(/scope\s*(=|when)?\s*'other'/i);
+    expect(SQL).toMatch(/WHEN 'own'/);
+    expect(SQL).toMatch(/WHEN 'other'/);
   });
 
   test("classificação diferencia RLS (42501) de constraint (error)", () => {
