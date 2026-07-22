@@ -49,7 +49,7 @@ SELECT marker, project_ref FROM public._fiscal_staging_marker;
 ```
 
 Só prosseguir se `marker='STAGING'` e `project_ref <> 'navfzbwgwzruipouyfnk'`.
-O próprio script aborta com `ABORT 3.11.2` em qualquer violação.
+O próprio script aborta com `ABORT 3.11.3` em qualquer violação.
 
 ## O que o script executa
 
@@ -110,7 +110,7 @@ e salvar em `restoration/fiscal-fase3-11/run-<data>.json`. Faça isso na
 O resumo traz a coluna `residuos`, incluindo `pub_helpers=0` e
 `pub_tables=0` (nenhuma função ou tabela `_fiscal_3111_*` / `_fiscal_test_3111_*`
 sobrou em `public`). Todos os contadores devem ser `0`. Se qualquer
-contador for `> 0`, o script aborta com `ABORT 3.11.2`.
+contador for `> 0`, o script aborta com `ABORT 3.11.3`.
 
 ## Como classificar
 
