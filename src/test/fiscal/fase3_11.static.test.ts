@@ -369,8 +369,10 @@ describe("Fase Fiscal 3.11.3 — harness SQL executável e sem regressões runti
     const iCfpSeed = SQL.indexOf("INSERT INTO public.customer_fiscal_profiles");
     expect(iCfpSeed).toBeGreaterThan(0);
     const seedCfpBlock = SQL.slice(iCfpSeed, iCfpSeed + 800);
-    expect(seedCfpBlock).toContain("ff5c3111-c1e1-0000-0000-000000000001"); // cli_A
-    expect(seedCfpBlock).not.toContain("ff5c3111-c1e1-0000-0000-000000000003"); // cli_C
+    // Seed do customer_fiscal_profiles usa variáveis v_cli_a / v_cli_b (não cli_C).
+    expect(seedCfpBlock).toMatch(/v_cli_a\b/);
+    expect(seedCfpBlock).not.toMatch(/v_cli_c\b/);
+    expect(seedCfpBlock).not.toContain("ff5c3111-c1e1-0000-0000-000000000003"); // cli_C literal
   });
 
   test("3.11.4: INSERT customer_fiscal_profiles usa cliente_c_id (não cliente_a_id)", () => {
