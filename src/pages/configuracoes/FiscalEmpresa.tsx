@@ -459,13 +459,25 @@ export default function FiscalEmpresa() {
                   <Input id="crt" value={values.crt ?? ""} onChange={(e) => set("crt", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="primary_cnae" label="CNAE principal">
-                  <Input id="primary_cnae" value={values.primary_cnae ?? ""} onChange={(e) => set("primary_cnae", e.target.value)} />
+                  <Input
+                    id="primary_cnae"
+                    inputMode="numeric"
+                    maxLength={7}
+                    placeholder="0000000"
+                    value={values.primary_cnae ?? ""}
+                    onChange={(e) => set("primary_cnae", unmask(e.target.value).slice(0, 7))}
+                  />
                 </FieldRow>
                 <FieldRow id="municipal_registration" label="Inscrição municipal (IM)">
                   <Input id="municipal_registration" value={values.municipal_registration ?? ""} onChange={(e) => set("municipal_registration", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="state_registration" label="Inscrição estadual (IE)">
-                  <Input id="state_registration" value={values.state_registration ?? ""} onChange={(e) => set("state_registration", e.target.value)} />
+                  <Input
+                    id="state_registration"
+                    inputMode="numeric"
+                    value={values.state_registration ?? ""}
+                    onChange={(e) => set("state_registration", unmask(e.target.value))}
+                  />
                 </FieldRow>
               </CardContent>
             </Card>
