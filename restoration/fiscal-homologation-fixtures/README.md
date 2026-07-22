@@ -49,7 +49,8 @@ liberar a execução.
 
 1. `01-preflight.sql` — valida marker, GUC de sessão, ambiente,
    `production_enabled = false` e presença das migrations
-   `20260724000000` e `20260725000000`.
+   `20260724000000`, `20260725000000` e `20260726000000` (Fase 3.18,
+   que estende `fiscal_invoices_status_check` para aceitar `DRAFT`).
 2. `02-seed.sql` — cria as fixtures descritas abaixo e registra
    cada objeto criado em `public._fiscal_hml_inventory`.
 3. `03-verify.sql` — provas: zero produção, zero
