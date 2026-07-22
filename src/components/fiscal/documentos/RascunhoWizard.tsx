@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatCpfCnpj } from "@/lib/masks";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -357,7 +358,7 @@ export default function RascunhoWizard({
                 <div>
                   <Label>CPF/CNPJ do destinatário</Label>
                   <Input
-                    value={values.customer_document}
+                    value={formatCpfCnpj(values.customer_document)}
                     readOnly
                     placeholder="Selecione um cliente"
                   />

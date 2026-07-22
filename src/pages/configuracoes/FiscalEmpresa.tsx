@@ -37,6 +37,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatCNPJ, formatCEP, formatTelefone, unmask } from "@/lib/masks";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -408,7 +409,16 @@ export default function FiscalEmpresa() {
               <CardHeader><CardTitle className="text-base">Identificação</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FieldRow id="cnpj" label="CNPJ" description="Somente números; validação algorítmica.">
-                  <Input id="cnpj" inputMode="numeric" value={values.cnpj ?? ""} onChange={(e) => set("cnpj", e.target.value)} aria-invalid={!!errors.cnpj} />
+                  <Input
+                    id="cnpj"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={18}
+                    placeholder="00.000.000/0000-00"
+                    value={formatCNPJ(values.cnpj ?? "")}
+                    onChange={(e) => set("cnpj", unmask(e.target.value).slice(0, 14))}
+                    aria-invalid={!!errors.cnpj}
+                  />
                   {errors.cnpj ? <p className="text-xs text-destructive" role="alert">{errors.cnpj}</p> : null}
                 </FieldRow>
                 <FieldRow id="legal_name" label="Razão social">
@@ -418,11 +428,29 @@ export default function FiscalEmpresa() {
                   <Input id="trade_name" value={values.trade_name ?? ""} onChange={(e) => set("trade_name", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="fiscal_email" label="E-mail fiscal">
-                  <Input id="fiscal_email" type="email" value={values.fiscal_email ?? ""} onChange={(e) => set("fiscal_email", e.target.value)} aria-invalid={!!errors.fiscal_email} />
+                  <Input
+                    id="fiscal_email"
+                    type="email"
+                    autoComplete="email"
+                    spellCheck={false}
+                    placeholder="fiscal@empresa.com.br"
+                    value={values.fiscal_email ?? ""}
+                    onChange={(e) => set("fiscal_email", e.target.value)}
+                    onBlur={(e) => set("fiscal_email", e.target.value.trim())}
+                    aria-invalid={!!errors.fiscal_email}
+                  />
                   {errors.fiscal_email ? <p className="text-xs text-destructive" role="alert">{errors.fiscal_email}</p> : null}
                 </FieldRow>
                 <FieldRow id="phone" label="Telefone">
-                  <Input id="phone" value={values.phone ?? ""} onChange={(e) => set("phone", e.target.value)} />
+                  <Input
+                    id="phone"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    maxLength={15}
+                    placeholder="(00) 00000-0000"
+                    value={formatTelefone(values.phone ?? "")}
+                    onChange={(e) => set("phone", unmask(e.target.value).slice(0, 11))}
+                  />
                 </FieldRow>
                 <FieldRow id="tax_regime" label="Regime tributário">
                   <Input id="tax_regime" value={values.tax_regime ?? ""} onChange={(e) => set("tax_regime", e.target.value)} />
@@ -431,13 +459,25 @@ export default function FiscalEmpresa() {
                   <Input id="crt" value={values.crt ?? ""} onChange={(e) => set("crt", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="primary_cnae" label="CNAE principal">
-                  <Input id="primary_cnae" value={values.primary_cnae ?? ""} onChange={(e) => set("primary_cnae", e.target.value)} />
+                  <Input
+                    id="primary_cnae"
+                    inputMode="numeric"
+                    maxLength={7}
+                    placeholder="0000000"
+                    value={values.primary_cnae ?? ""}
+                    onChange={(e) => set("primary_cnae", unmask(e.target.value).slice(0, 7))}
+                  />
                 </FieldRow>
                 <FieldRow id="municipal_registration" label="Inscrição municipal (IM)">
                   <Input id="municipal_registration" value={values.municipal_registration ?? ""} onChange={(e) => set("municipal_registration", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="state_registration" label="Inscrição estadual (IE)">
-                  <Input id="state_registration" value={values.state_registration ?? ""} onChange={(e) => set("state_registration", e.target.value)} />
+                  <Input
+                    id="state_registration"
+                    inputMode="numeric"
+                    value={values.state_registration ?? ""}
+                    onChange={(e) => set("state_registration", unmask(e.target.value))}
+                  />
                 </FieldRow>
               </CardContent>
             </Card>
@@ -445,14 +485,33 @@ export default function FiscalEmpresa() {
             <Card>
               <CardHeader><CardTitle className="text-base">Endereço fiscal</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FieldRow id="postal_code" label="CEP"><Input id="postal_code" value={values.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value)} /></FieldRow>
-                <FieldRow id="street" label="Logradouro"><Input id="street" value={values.street ?? ""} onChange={(e) => set("street", e.target.value)} /></FieldRow>
-                <FieldRow id="number" label="Número"><Input id="number" value={values.number ?? ""} onChange={(e) => set("number", e.target.value)} /></FieldRow>
+                <FieldRow id="postal_code" label="CEP">
+                  <Input
+                    id="postal_code"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    maxLength={9}
+                    placeholder="00000-000"
+                    value={formatCEP(values.postal_code ?? "")}
+                    onChange={(e) => set("postal_code", unmask(e.target.value).slice(0, 8))}
+                  />
+                </FieldRow>
+                <FieldRow id="street" label="Logradouro"><Input id="street" autoComplete="address-line1" value={values.street ?? ""} onChange={(e) => set("street", e.target.value)} /></FieldRow>
+                <FieldRow id="number" label="Número"><Input id="number" inputMode="numeric" value={values.number ?? ""} onChange={(e) => set("number", e.target.value)} /></FieldRow>
                 <FieldRow id="complement" label="Complemento"><Input id="complement" value={values.complement ?? ""} onChange={(e) => set("complement", e.target.value)} /></FieldRow>
                 <FieldRow id="neighborhood" label="Bairro"><Input id="neighborhood" value={values.neighborhood ?? ""} onChange={(e) => set("neighborhood", e.target.value)} /></FieldRow>
-                <FieldRow id="city" label="Cidade"><Input id="city" value={values.city ?? ""} onChange={(e) => set("city", e.target.value)} /></FieldRow>
-                <FieldRow id="state" label="UF"><Input id="state" maxLength={2} value={values.state ?? ""} onChange={(e) => set("state", e.target.value.toUpperCase())} /></FieldRow>
-                <FieldRow id="municipality_ibge_code" label="Código IBGE do município"><Input id="municipality_ibge_code" inputMode="numeric" value={values.municipality_ibge_code ?? ""} onChange={(e) => set("municipality_ibge_code", e.target.value)} /></FieldRow>
+                <FieldRow id="city" label="Cidade"><Input id="city" autoComplete="address-level2" value={values.city ?? ""} onChange={(e) => set("city", e.target.value)} /></FieldRow>
+                <FieldRow id="state" label="UF"><Input id="state" autoComplete="address-level1" maxLength={2} placeholder="UF" value={values.state ?? ""} onChange={(e) => set("state", e.target.value.toUpperCase())} /></FieldRow>
+                <FieldRow id="municipality_ibge_code" label="Código IBGE do município">
+                  <Input
+                    id="municipality_ibge_code"
+                    inputMode="numeric"
+                    maxLength={7}
+                    placeholder="0000000"
+                    value={values.municipality_ibge_code ?? ""}
+                    onChange={(e) => set("municipality_ibge_code", unmask(e.target.value).slice(0, 7))}
+                  />
+                </FieldRow>
                 <FieldRow id="country_code" label="Código do país"><Input id="country_code" value={values.country_code ?? ""} onChange={(e) => set("country_code", e.target.value)} /></FieldRow>
               </CardContent>
             </Card>

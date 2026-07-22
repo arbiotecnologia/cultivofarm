@@ -1,58 +1,61 @@
-## Fase Fiscal 3.17 — Homologação operacional isolada e auditável
+## Objetivo
 
-Orçamento desta rodada: 35 créditos. Escopo estrito, sem aplicar banco nem deploy.
+Aplicar máscaras visuais consistentes nos campos do módulo fiscal (Central de Configuração, Clientes, Rascunho de documentos), mantendo armazenamento normalizado (só dígitos) e preservando toda a validação/RLS/regra de negócio existente.
 
----
+## Escopo (somente UI/apresentação)
 
-### Parte A — Central de Homologação (frontend)
-- Nova aba **"Homologação"** em `src/pages/configuracoes/FiscalEmpresa.tsx` (reuso da página existente; sem nova rota).
-- Novo componente `src/components/fiscal/homologacao/HomologacaoSecao.tsx`:
-  - Checklist somente-leitura (ambiente, produção off, dados empresa, NF-e, NFS-e, ≥1 produto/serviço/cliente prontos, certificado ativo, cofre disponível, funções disponíveis via probe seguro, RPCs presentes, contagem de rascunhos por estado).
-  - Estados pt-BR: Pronto, Incompleto, Bloqueado, Indisponível, Não configurado.
-  - Ações: "Ir para Empresa/Produtos/Serviços/Clientes/Certificado Digital", "Criar rascunho" (link para `/fiscal/documentos`), "Atualizar verificação" (refetch).
-  - Sem botões de Emitir/Transmitir/Autorizar/Produção.
-- Novo hook `src/hooks/useFiscalHomologationReadiness.ts` chamando a RPC via `supabase.rpc`, com tipo local estreito. Fail-safe para "Indisponível" quando a RPC ainda não estiver no schema.
-- Gate de aba: administrador, gestor, financeiro (via `useAuth().roles`).
+Não altera schemas Zod, RPCs, migrations, RLS, tipos gerados nem `src/lib/masks.ts` (já cobre CNPJ, CPF, CEP, telefone, IE). Nada de banco, nada de business logic.
 
-### Parte B — Migration canônica read-only
-- `supabase/migrations/20260725000000_fiscal_fase3_17_homologation_readiness.sql`:
-  - `create or replace function public.rpc_fiscal_homologation_readiness() returns jsonb`
-  - `security definer`, `set search_path = public, pg_temp`, `stable`.
-  - Gate: `has_role(auth.uid(),'administrador'|'gestor'|'financeiro')` senão `raise exception 'FISCAL_FORBIDDEN'`.
-  - Lê apenas views/tabelas fiscais existentes; nunca `http`, nunca escreve.
-  - Retorna JSON estável: `{ status: 'READY'|'INCOMPLETE'|'BLOCKED'|'UNAVAILABLE', checklist: [{key,label_ptbr,status,detail}], counts:{drafts_total, drafts_ready, drafts_incomplete, drafts_blocked} }`.
-  - `production_enabled=true` → `BLOCKED`. Ambiente ≠ HOMOLOGATION → nunca `READY`. Certificado precisa estar ATIVO/AVAILABLE e dentro de validade para READY.
-  - Não retorna fingerprint, serial completo, subject, object_path, material.
-  - `revoke all on function ... from public, anon;` + `grant execute ... to authenticated;`.
-- Stub documental em `restoration/migrations/20260725000000_fiscal_fase3_17_homologation_readiness.sql` (sem SQL executável, apenas cabeçalho de redirecionamento igual ao padrão da fase anterior).
+### Arquivos que serão editados
 
-### Parte C — Tipos
-- Regeneração oficial não é possível (sem CLI). Criar tipos locais estreitos em `src/lib/fiscal/homologationReadiness.ts` (ChecklistItem, ReadinessResult, unions pt-BR). Sem `any`, sem cast global. Documentar pendência de regeneração no cabeçalho do arquivo.
+1. **`src/pages/configuracoes/FiscalEmpresa.tsx`**
+   - Aba **Empresa → Identificação**:
+     - CNPJ: exibir com `formatCNPJ`, armazenar via `unmask` (14 dígitos), `inputMode="numeric"`, `maxLength={18}`, `autoComplete="off"`.
+     - E-mail fiscal: `type="email"`, `autoComplete="email"`, `spellCheck={false}`, trim on blur.
+     - Telefone: `formatTelefone` no display, `unmask` no state, `inputMode="tel"`, `maxLength={15}`.
+     - Inscrição estadual (IE): `unmask` (só dígitos), `inputMode="numeric"`.
+     - CNAE principal: só dígitos, `maxLength={7}`.
+     - UF: já uppercased; adicionar `maxLength={2}` e `autoComplete="address-level1"` (já OK).
+   - Aba **Empresa → Endereço fiscal**:
+     - CEP: `formatCEP` no display, `unmask` no state, `inputMode="numeric"`, `maxLength={9}`.
+     - Código IBGE do município: só dígitos, `maxLength={7}`.
 
-### Parte D — Fixtures staging
-- `restoration/fiscal-homologation-fixtures/` com:
-  - `README.md` (pt-BR, uso manual, guardas).
-  - `01-preflight.sql` — checa `public._fiscal_staging_marker` com `marker='STAGING'`; aborta senão.
-  - `02-seed.sql` — insere fixtures com prefixo `FISCAL_HML_` (2 clientes, 1 produto pronto, 1 serviço pronto, rascunhos NF-e válido / NFS-e válido / incompleto, snapshots por item; nenhum status AUTHORIZED/ISSUED; nenhum certificado).
-  - `03-verify.sql` — asserts (zero produção, zero AUTHORIZED/ISSUED, DRAFT/NONE/MANUAL_RECORD apenas, prefixos, totais, snapshots).
-  - `04-cleanup.sql` — DELETE limitado a `LIKE 'FISCAL_HML_%'`, sem CASCADE amplo.
-- Sem senha, JWT, URL, project ref.
+2. **`src/pages/configuracoes/FiscalClientes.tsx`**
+   - Bloco `STRING_FIELD_META` (renderização genérica): interceptar por `key`:
+     - `fiscal_email` → `type="email"`, `spellCheck={false}`.
+     - `fiscal_phone` → aplicar `formatTelefone` on change (armazenar dígitos).
+     - `fiscal_postal_code` → aplicar `formatCEP` (armazenar dígitos), `maxLength={9}`.
+     - demais campos permanecem inalterados.
+   - Coluna "Documento" da tabela: continuar usando `maskDocument` (já mascarado por segurança — não mudar).
 
-### Parte E — Permissões e UX
-- Aba visível apenas para administrador/gestor/financeiro. Sem alterar home/menu global. Buscador global já cobre a página; adicionar termo "Homologação fiscal" no title da aba.
+3. **`src/components/fiscal/documentos/RascunhoWizard.tsx`**
+   - Campo "CPF/CNPJ do destinatário" (linha ~359): aplicar `formatCpfCnpj` no display, `unmask` (11/14 dígitos) no state, `inputMode="numeric"`, `maxLength={18}`.
+   - Busca de cliente (SearchCliente, linha ~604): manter texto livre (aceita nome ou documento), sem máscara forçada.
 
-### Parte F — Testes
-- Ampliar `src/test/fiscal/fase3_16.static.test.ts` (ou novo `fase3_17.static.test.ts`) com asserções:
-  - Migration 20260725 existe, contém REVOKE FROM PUBLIC/anon, GRANT authenticated, gate has_role, sem `http`, sem `insert/update/delete`, sem `alter`.
-  - RPC não retorna fingerprint/serial/object_path (regex no SQL).
-  - `HomologacaoSecao.tsx` não contém `Emitir|Transmitir|Autorizar|Produção` como botão, contém labels pt-BR.
-  - Fixtures: 01-preflight exige marker STAGING; 02-seed usa `FISCAL_HML_`; sem `AUTHORIZED`/`ISSUED`; 04-cleanup restrito a prefixo, sem CASCADE.
-  - Stub restoration sem SQL executável.
-  - `homologationReadiness.ts` não usa `any`.
+### Padrão técnico
 
-### Validação
-- `bun run typecheck`, `bun run build`, `bunx vitest run src/test/fiscal`.
-- Nenhum deploy, nenhuma migration aplicada, nenhuma alteração no banco principal, `production_enabled=false` mantido.
+Handler típico para campos com máscara + valor normalizado:
 
-### Fora de escopo
-Aplicação da migration, deploy de Edge, ativação de emissão, integração com provedor, alterações em RLS não fiscal, criação de rotas novas, alteração de motor financeiro/B2B.
+```ts
+onChange={(e) => {
+  const digits = unmask(e.target.value);
+  set("cnpj", digits.slice(0, 14));
+}}
+value={formatCNPJ(values.cnpj ?? "")}
+```
+
+Isso preserva o contrato dos schemas Zod (que já esperam dígitos ou aplicam `normalizeCnpj`).
+
+## Fora do escopo
+
+- CPF/CNPJ do cliente na listagem fiscal — mantém `maskDocument` (LGPD, propositalmente redigido).
+- Fingerprints/serials de certificado — mantêm máscara de segurança atual.
+- Novos utilitários em `src/lib/masks.ts` — funções existentes já cobrem os casos.
+- Migrations, RLS, RPCs, edge functions.
+
+## Validação
+
+- `bun run typecheck`
+- `bun run build`
+- `bunx vitest run` (garantir que os 804 testes continuam passando; nenhum é alterado).
+- Screenshot manual (Playwright) de `/configuracoes/fiscal/empresa` aba Empresa + aba Certificado para confirmar visual das máscaras.
