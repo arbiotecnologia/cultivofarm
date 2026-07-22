@@ -69,6 +69,39 @@ const FIELD_ORDER: FieldKey[] = [
   "fiscal_description", "accounting_notes",
 ];
 
+import {
+  ORIGIN_CODE_OPTIONS, ICMS_CST_OPTIONS, ICMS_CSOSN_OPTIONS,
+  IPI_CST_OPTIONS, PIS_COFINS_CST_OPTIONS, withLegacyOption,
+  type FiscalOption,
+} from "@/lib/fiscal/fiscalOptions";
+
+const FIELD_SELECTS: Partial<Record<FieldKey, FiscalOption[]>> = {
+  origin_code: ORIGIN_CODE_OPTIONS,
+  icms_cst: ICMS_CST_OPTIONS,
+  icms_csosn: ICMS_CSOSN_OPTIONS,
+  ipi_cst: IPI_CST_OPTIONS,
+  pis_cst: PIS_COFINS_CST_OPTIONS,
+  cofins_cst: PIS_COFINS_CST_OPTIONS,
+};
+
+const FIELD_HINTS: Partial<Record<FieldKey, string>> = {
+  ncm: "8 dígitos numéricos, ex.: 10059010.",
+  cest: "7 dígitos numéricos, quando aplicável.",
+  cfop_in_state: "Ex.: 5102 — Venda de mercadoria adquirida.",
+  cfop_interstate: "Ex.: 6102 — Venda interestadual.",
+  gtin: "GTIN-13/14 ou SEM GTIN.",
+  taxable_gtin: "GTIN-13/14 ou SEM GTIN.",
+  icms_cst: "Preencha CST se Regime Normal; CSOSN se Simples Nacional.",
+  icms_csosn: "Preencha CSOSN se Simples Nacional; CST se Regime Normal.",
+};
+
+const FIELD_PLACEHOLDERS: Partial<Record<FieldKey, string>> = {
+  ncm: "00000000",
+  cest: "0000000",
+  cfop_in_state: "5102",
+  cfop_interstate: "6102",
+};
+
 export default function FiscalProdutos() {
   const { role } = useAuth();
   const access = getAccessLevel(role, "/configuracoes/fiscal/produtos");
