@@ -29,16 +29,13 @@ const RESTORATION_STUB = resolve(
   "../../../restoration/migrations/20260723000000_fiscal_fase3_15_central_config.sql",
 );
 
-describe("Fase 3.15 — feature flags", () => {
-  test("apenas fiscalConfigurationUi está true; TODAS as demais flags fiscais permanecem false", () => {
+describe("Fase 3.15 — feature flags (compat com 3.16)", () => {
+  test("fiscalConfigurationUi permanece true e a TRAVA de emissão fica false", () => {
     expect(FEATURE_FLAGS.fiscalConfigurationUi).toBe(true);
-    const fiscalEntries = Object.entries(FEATURE_FLAGS).filter(([k]) => /fiscal/i.test(k));
-    for (const [k, v] of fiscalEntries) {
-      if (k === "fiscalConfigurationUi") continue;
-      expect(v, `flag ${k} deveria estar false`).toBe(false);
-    }
-    // Cinturão de segurança explícito da trava de emissão:
+    // A partir da fase 3.16 outras flags de preparação/homologação podem
+    // ficar true; apenas a trava de emissão precisa permanecer bloqueada.
     expect(FEATURE_FLAGS.fiscalEmissionEnabled).toBe(false);
+    expect(FEATURE_FLAGS.fiscalReconciliationWrite).toBe(false);
   });
 });
 
