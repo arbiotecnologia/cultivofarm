@@ -803,6 +803,17 @@ BEGIN
 
   PERFORM pg_temp._fiscal_3111_reset();
 
+  -- 3.11.4: Cleanup pós-INSERT de customer_fiscal_profiles.
+  -- Como postgres (role já resetada), remove SOMENTE o profile do cliente C
+  -- criado nesta célula (marker FISCAL_TEST_3111_INS_%), garantindo estado
+  -- limpo para a próxima célula (admin -> financeiro -> demais papéis).
+  -- Isolado por customer_id=cli_C e marker exclusivo: nunca toca cli_A/cli_B.
+  IF p_op='INSERT' AND p_table='customer_fiscal_profiles' THEN
+    EXECUTE $q$DELETE FROM public.customer_fiscal_profiles
+               WHERE customer_id = current_setting('fiscal_test_3111.cliente_c_id')::uuid
+                 AND validation_notes LIKE 'FISCAL_TEST_3111_INS_%'$q$;
+  END IF;
+
   IF p_op='DELETE' THEN
     v_present_after := pg_temp._fiscal_3111_presence_delete(p_table);
     IF v_status <> 'error' THEN
