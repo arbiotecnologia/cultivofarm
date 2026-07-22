@@ -28,6 +28,7 @@ DECLARE
   v_prod_on     integer;
   v_mig_3_16    integer;
   v_mig_3_17    integer;
+  v_mig_3_18    integer;
 BEGIN
   IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
     RAISE EXCEPTION 'FISCAL_HML_ABORT: tabela public._fiscal_staging_marker ausente. Crie o marker manualmente antes de rodar as fixtures.';
