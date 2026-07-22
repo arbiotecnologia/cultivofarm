@@ -515,8 +515,10 @@ export default function FiscalEmpresa() {
                 <FieldRow id="complement" label="Complemento"><Input id="complement" value={values.complement ?? ""} onChange={(e) => set("complement", e.target.value)} /></FieldRow>
                 <FieldRow id="neighborhood" label="Bairro"><Input id="neighborhood" value={values.neighborhood ?? ""} onChange={(e) => set("neighborhood", e.target.value)} /></FieldRow>
                 <FieldRow id="city" label="Cidade"><Input id="city" autoComplete="address-level2" value={values.city ?? ""} onChange={(e) => set("city", e.target.value)} /></FieldRow>
-                <FieldRow id="state" label="UF"><Input id="state" autoComplete="address-level1" maxLength={2} placeholder="UF" value={values.state ?? ""} onChange={(e) => set("state", e.target.value.toUpperCase())} /></FieldRow>
-                <FieldRow id="municipality_ibge_code" label="Código IBGE do município">
+                <FieldRow id="state" label="UF">
+                  <SelectNative id="state" value={values.state ?? ""} options={UF_OPTIONS} onChange={(v) => set("state", v)} />
+                </FieldRow>
+                <FieldRow id="municipality_ibge_code" label="Código IBGE do município" description="7 dígitos — consulte em ibge.gov.br/localidades.">
                   <Input
                     id="municipality_ibge_code"
                     inputMode="numeric"
@@ -526,7 +528,9 @@ export default function FiscalEmpresa() {
                     onChange={(e) => set("municipality_ibge_code", unmask(e.target.value).slice(0, 7))}
                   />
                 </FieldRow>
-                <FieldRow id="country_code" label="Código do país"><Input id="country_code" value={values.country_code ?? ""} onChange={(e) => set("country_code", e.target.value)} /></FieldRow>
+                <FieldRow id="country_code" label="Código do país">
+                  <SelectNative id="country_code" value={values.country_code ?? "1058"} options={COUNTRY_OPTIONS} onChange={(v) => set("country_code", v)} />
+                </FieldRow>
               </CardContent>
             </Card>
 
