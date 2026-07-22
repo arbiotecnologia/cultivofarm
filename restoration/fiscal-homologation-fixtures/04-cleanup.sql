@@ -51,4 +51,20 @@ DELETE FROM public.clientes c
 -- Limpa o inventário para não cruzar corridas subsequentes.
 DELETE FROM public._fiscal_hml_inventory;
 
+-- Confirma inventário vazio antes de remover o contexto sintético do usuário.
+-- Nunca remove outros markers do contexto (escopo estrito 'HML_USER').
+DO $$
+DECLARE
+  v_remaining integer;
+BEGIN
+  SELECT count(*) INTO v_remaining FROM public._fiscal_hml_inventory;
+  IF v_remaining <> 0 THEN
+    RAISE EXCEPTION 'FISCAL_HML_ABORT: inventário não esvaziou (% remanescentes).', v_remaining;
+  END IF;
+
+  DELETE FROM public._fiscal_hml_context WHERE marker = 'HML_USER';
+END $$;
+
+
 COMMIT;
+

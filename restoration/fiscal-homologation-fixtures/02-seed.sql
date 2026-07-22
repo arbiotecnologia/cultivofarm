@@ -84,11 +84,25 @@ BEGIN
     RAISE EXCEPTION 'FISCAL_HML_ABORT: registre um UUID sintético em public._fiscal_hml_context (marker=HML_USER) antes de rodar o seed.';
   END IF;
 
+  -- Validação explícita: o usuário precisa existir em auth.users E ter
+  -- e-mail inequivocamente sintético (prefixo fiscal-hml-, domínio
+  -- example.invalid, case-insensitive). Sem fallback. Sem coincidência.
+  IF NOT EXISTS (
+    SELECT 1
+      FROM auth.users u
+     WHERE u.id = v_user
+       AND lower(u.email) LIKE 'fiscal-hml-%@example.invalid'
+  ) THEN
+    RAISE EXCEPTION 'FISCAL_HML_ABORT: usuário % não é sintético (exige auth.users com e-mail fiscal-hml-*@example.invalid).', v_user;
+  END IF;
+
   -- Clientes com codigo_cliente obrigatório e prefixado.
-  INSERT INTO public.clientes (id, nome, cpf_cnpj, codigo_cliente, ativo)
+  -- A tabela public.clientes NÃO possui a coluna `ativo` (auditoria 3.17.2).
+  INSERT INTO public.clientes (id, nome, cpf_cnpj, codigo_cliente)
   VALUES
-    (v_cli_a, 'FISCAL_HML_CLIENTE_A', '00000000000191', 'FISCAL_HML_A', true),
-    (v_cli_b, 'FISCAL_HML_CLIENTE_B', '00000000000272', 'FISCAL_HML_B', true);
+    (v_cli_a, 'FISCAL_HML_CLIENTE_A', '00000000000191', 'FISCAL_HML_A'),
+    (v_cli_b, 'FISCAL_HML_CLIENTE_B', '00000000000272', 'FISCAL_HML_B');
+
 
   INSERT INTO public._fiscal_hml_inventory (kind, object_id, label) VALUES
     ('CLIENTE', v_cli_a, 'FISCAL_HML_CLIENTE_A'),

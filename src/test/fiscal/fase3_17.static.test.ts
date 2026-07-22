@@ -230,8 +230,11 @@ describe("Fase 3.17.1 — fixtures de staging seguras", () => {
     expect(/\borigin\s*=\s*'MANUAL_RECORD'/i.test(s)).toBe(false);
     expect(/\binvoice_id\b(?!\w)/i.test(s.replace(/fiscal_invoice_id/g, ""))).toBe(false);
     expect(/internal_reference/i.test(s)).toBe(false);
-    // Usuário: não pode ler auth.users como fallback.
-    expect(/\bauth\.users\b/i.test(s)).toBe(false);
+    // Usuário: auth.users é permitido APENAS na validação sintética 3.17.2
+    // (SELECT com filtro fiscal-hml-*@example.invalid). Nenhum fallback.
+    expect(/COALESCE\s*\([^)]*auth\.users/i.test(s)).toBe(false);
+    expect(/INSERT[^;]+SELECT[^;]+auth\.users/i.test(s)).toBe(false);
+
     // Contexto sintético obrigatório.
     expect(s).toMatch(/_fiscal_hml_context/);
     expect(s).toMatch(/HML_USER/);
@@ -276,3 +279,31 @@ describe("Fase 3.17.1 — fixtures de staging seguras", () => {
     }
   });
 });
+
+describe("Fase 3.17.2 — microcorreções auditadas", () => {
+  test("seed não usa coluna inexistente clientes.ativo", () => {
+    const s = stripSql(readFileSync(FX_SEED, "utf8"));
+    // Não pode aparecer 'ativo' na lista de colunas nem no VALUES.
+    const insertCli = s.match(/INSERT\s+INTO\s+public\.clientes[\s\S]+?;/i)?.[0] ?? "";
+    expect(insertCli).not.toMatch(/\bativo\b/i);
+    // Sanidade: colunas mínimas presentes.
+    expect(insertCli).toMatch(/\bnome\b/);
+    expect(insertCli).toMatch(/\bcpf_cnpj\b/);
+    expect(insertCli).toMatch(/\bcodigo_cliente\b/);
+  });
+  test("seed valida usuário sintético em auth.users com e-mail canônico", () => {
+    const s = readFileSync(FX_SEED, "utf8");
+    expect(s).toMatch(/FROM\s+auth\.users/i);
+    expect(s).toMatch(/lower\(\s*u\.email\s*\)\s+LIKE\s+'fiscal-hml-%@example\.invalid'/i);
+    expect(s).toMatch(/não é sintético/);
+  });
+  test("cleanup remove HML_USER do contexto após inventário vazio", () => {
+    const s = readFileSync(FX_CLEAN, "utf8");
+    expect(s).toMatch(/DELETE\s+FROM\s+public\._fiscal_hml_inventory/i);
+    expect(s).toMatch(/inventário não esvaziou/i);
+    expect(s).toMatch(/DELETE\s+FROM\s+public\._fiscal_hml_context\s+WHERE\s+marker\s*=\s*'HML_USER'/i);
+    // Nunca apagar contextos alheios.
+    expect(/DELETE\s+FROM\s+public\._fiscal_hml_context\s*;/i.test(s)).toBe(false);
+  });
+});
+
