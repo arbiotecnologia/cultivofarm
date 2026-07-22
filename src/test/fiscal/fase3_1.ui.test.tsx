@@ -206,8 +206,9 @@ describe("FiscalEmpresa — flag ON", () => {
     expect(cnpjInput.value).toBe("11222333000181");
     // Banner de emissão desativada sempre visível
     expect(within(page).getByTestId("fiscal-emission-banner")).toBeInTheDocument();
-    // Nenhum campo de credencial/certificado presente
-    expect(within(page).queryByLabelText(/certificado/i)).toBeNull();
+    // Nenhum campo de credencial sensível no formulário base (Fase 3.16.1:
+    // certificado é gerido em aba dedicada via Edge Function; senha/PFX
+    // nunca são digitados diretamente na tela de configuração).
     expect(within(page).queryByLabelText(/senha/i)).toBeNull();
     expect(within(page).queryByLabelText(/token/i)).toBeNull();
     expect(within(page).queryByLabelText(/private[_-]?key/i)).toBeNull();
