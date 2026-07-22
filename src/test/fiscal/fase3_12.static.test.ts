@@ -183,8 +183,8 @@ describe("Fase Fiscal 3.12 — listas exatas cobertas", () => {
 
   it("retorna uma única coluna consolidada parity_snapshot", () => {
     expect(RAW).toMatch(/AS\s+parity_snapshot\s*;/i);
-    // apenas uma instrução SQL terminando em ;
-    const trimmed = RAW.trim().replace(/;\s*$/, "");
+    // apenas uma instrução SQL terminando em ; (ignorando comentários)
+    const trimmed = SANITIZED.trim().replace(/;\s*$/, "");
     expect(trimmed.split(";").length).toBe(1);
   });
 
