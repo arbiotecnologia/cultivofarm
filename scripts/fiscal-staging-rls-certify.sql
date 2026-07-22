@@ -1,7 +1,7 @@
 -- =====================================================================
 -- Fase Fiscal 3.11.1 — Harness RLS SQL-nativo EXECUTÁVEL (staging)
 --
--- Substitui integralmente a versão 3.11 (que continha placeholder).
+-- Substitui integralmente a versão 3.11 (que era não-executável).
 --
 -- REGRAS ABSOLUTAS:
 --   * Executar SOMENTE no SQL Editor de staging, como postgres.
@@ -9,7 +9,7 @@
 --   * public._fiscal_staging_marker.marker='STAGING' obrigatório.
 --   * Todos os writes usam namespace sintético FISCAL_TEST_3111_* / ff5c3111-*.
 --   * Nenhum secret é lido, gravado ou impresso.
---   * Nenhuma emissão fiscal, nenhum provider, nenhum canTransmit=true.
+--   * Nenhuma emissão fiscal e nenhum flag de transmissão habilitado.
 --
 -- Uso:
 --   1) SELECT * FROM public._fiscal_staging_marker;   -- conferir manualmente
