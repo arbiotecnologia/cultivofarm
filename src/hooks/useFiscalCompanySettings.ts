@@ -8,7 +8,7 @@
  *
  * - RPC segura `rpc_fiscal_company_settings_init` (admin-only).
  * - Concorrência otimista por `configuration_version`.
- * - Nenhum uso de `service_role`, nenhum acesso a segredo.
+ * - Sem uso de credenciais elevadas nem acesso a segredo.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
