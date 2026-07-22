@@ -1,7 +1,14 @@
 -- =====================================================================
--- Fase Fiscal 3.11.1 — Harness RLS SQL-nativo EXECUTÁVEL (staging)
+-- Fase Fiscal 3.11.2 — Harness RLS SQL-nativo EXECUTÁVEL (staging)
 --
--- Substitui integralmente a versão 3.11 (que era não-executável).
+-- Substitui integralmente as versões 3.11 e 3.11.1.
+--   * 3.11 era inerte (histórico documental em docs/).
+--   * 3.11.1 executava, mas deixava funções e tabelas de suporte em
+--     public após COMMIT e o ramo DELETE não tocava fixture real.
+--   * 3.11.2 elimina essas dívidas: todos os helpers e tabelas de suporte
+--     vivem em pg_temp (auto-descartadas ao encerrar a sessão) e cada
+--     DELETE opera contra uma fixture descartável real com verificação
+--     de presença física.
 --
 -- REGRAS ABSOLUTAS:
 --   * Executar SOMENTE no SQL Editor de staging, como postgres.
@@ -10,11 +17,14 @@
 --   * Todos os writes usam namespace sintético FISCAL_TEST_3111_* / ff5c3111-*.
 --   * Nenhum secret é lido, gravado ou impresso.
 --   * Nenhuma emissão fiscal e nenhum flag de transmissão habilitado.
+--   * Nenhuma função/tabela _fiscal_3111_* ou _fiscal_test_3111_* pode
+--     existir em public ao final da execução.
 --
 -- Uso:
---   1) SELECT * FROM public._fiscal_staging_marker;   -- conferir manualmente
+--   1) SELECT * FROM public._fiscal_staging_marker;  -- conferir manualmente
 --   2) Colar este arquivo no SQL Editor e executar.
---   3) Exportar as duas result-sets finais.
+--   3) Exportar as duas result-sets finais dentro da MESMA sessão.
+--      pg_temp desaparece por conta do PostgreSQL ao encerrar a sessão.
 -- =====================================================================
 \set ON_ERROR_STOP on
 SET client_min_messages = warning;
@@ -32,10 +42,10 @@ BEGIN
    WHERE marker = 'STAGING' LIMIT 1;
 
   IF v_ref IS NULL OR btrim(v_ref) = '' THEN
-    RAISE EXCEPTION 'ABORT 3.11.1: marker STAGING ausente ou project_ref nulo';
+    RAISE EXCEPTION 'ABORT 3.11.2: marker STAGING ausente ou project_ref nulo';
   END IF;
   IF v_ref = 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'ABORT 3.11.1: project_ref aponta para PRODUÇÃO';
+    RAISE EXCEPTION 'ABORT 3.11.2: project_ref aponta para PRODUÇÃO';
   END IF;
 
   PERFORM set_config('fiscal.masked_ref',
@@ -43,12 +53,9 @@ BEGIN
 END $guard$;
 
 -- =====================================================================
--- 1. Helpers de execução como perfil sintético
+-- 1. Tabelas de suporte (TEMP: auto-descartadas ao fim da sessão)
 -- =====================================================================
-
--- Tabela permanente de resultados (namespace sintético; removida no teardown)
-DROP TABLE IF EXISTS public._fiscal_test_3111_results;
-CREATE TABLE public._fiscal_test_3111_results (
+CREATE TEMPORARY TABLE _fiscal_test_3111_results (
   assertion_id text PRIMARY KEY,
   categoria    text NOT NULL,
   perfil       text NOT NULL,
@@ -58,10 +65,24 @@ CREATE TABLE public._fiscal_test_3111_results (
   observado    text,
   status       text NOT NULL CHECK (status IN ('passed','failed','error','skipped')),
   detail       text
-);
+) ON COMMIT PRESERVE ROWS;
+
+CREATE TEMPORARY TABLE _fiscal_test_3111_matrix (
+  perfil    text NOT NULL,
+  user_id   uuid,
+  is_anon   boolean NOT NULL DEFAULT false,
+  categoria text NOT NULL,   -- table | view | rpc | ownership
+  objeto    text NOT NULL,
+  operacao  text NOT NULL,   -- SELECT | INSERT | UPDATE | DELETE | CALL_n
+  expected  text NOT NULL    -- allow | deny
+) ON COMMIT PRESERVE ROWS;
+
+-- =====================================================================
+-- 2. Funções auxiliares — TODAS em pg_temp (sem exposição pública)
+-- =====================================================================
 
 -- Sanitizer: remove qualquer aparência de segredo do detalhe.
-CREATE OR REPLACE FUNCTION public._fiscal_3111_sanitize(t text) RETURNS text
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_sanitize(t text) RETURNS text
 LANGUAGE sql IMMUTABLE AS $$
   SELECT regexp_replace(
            regexp_replace(coalesce(t,''),
@@ -70,19 +91,20 @@ LANGUAGE sql IMMUTABLE AS $$
            '\meyJ[A-Za-z0-9._-]+', '***JWT***', 'g');
 $$;
 
-CREATE OR REPLACE FUNCTION public._fiscal_3111_record(
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_record(
   p_id text, p_cat text, p_perfil text, p_obj text, p_op text,
   p_exp text, p_obs text, p_status text, p_detail text
-) RETURNS void LANGUAGE sql AS $$
-  INSERT INTO public._fiscal_test_3111_results
+) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO pg_temp._fiscal_test_3111_results
     VALUES (p_id, p_cat, p_perfil, p_obj, p_op, p_exp, p_obs, p_status,
-            public._fiscal_3111_sanitize(p_detail))
+            pg_temp._fiscal_3111_sanitize(p_detail))
   ON CONFLICT (assertion_id) DO UPDATE
     SET observado=EXCLUDED.observado, status=EXCLUDED.status, detail=EXCLUDED.detail;
-$$;
+END $$;
 
--- Configura sessão RLS para um usuário sintético
-CREATE OR REPLACE FUNCTION public._fiscal_3111_as(p_user uuid) RETURNS void
+-- Simula sessão RLS de um usuário sintético autenticado
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_as(p_user uuid) RETURNS void
 LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM set_config('role','authenticated',true);
@@ -91,7 +113,7 @@ BEGIN
                        'role','authenticated')::text, true);
 END $$;
 
-CREATE OR REPLACE FUNCTION public._fiscal_3111_as_anon() RETURNS void
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_as_anon() RETURNS void
 LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM set_config('role','anon',true);
@@ -99,7 +121,7 @@ BEGIN
     jsonb_build_object('role','anon')::text, true);
 END $$;
 
-CREATE OR REPLACE FUNCTION public._fiscal_3111_reset() RETURNS void
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_reset() RETURNS void
 LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM set_config('role','postgres',true);
@@ -107,7 +129,7 @@ BEGIN
 END $$;
 
 -- =====================================================================
--- 2. Limpeza defensiva (namespace sintético apenas)
+-- 3. Limpeza defensiva (namespace sintético apenas)
 -- =====================================================================
 DO $pre_cleanup$
 BEGIN
@@ -130,12 +152,10 @@ BEGIN
 END $pre_cleanup$;
 
 -- =====================================================================
--- 3. Semear 15 perfis + produtor B (16 usuários) em auth.users
--- Todos com UUIDs determinísticos ff5c3111-*
+-- 4. Semear 15 perfis + produtor B (16 usuários) em auth.users
 -- =====================================================================
 DO $seed_users$
 DECLARE
-  r record;
   users constant text[][] := ARRAY[
     ARRAY['ff5c3111-0000-0000-0000-000000000001','administrador'],
     ARRAY['ff5c3111-0000-0000-0000-000000000002','gestor'],
@@ -152,13 +172,12 @@ DECLARE
     ARRAY['ff5c3111-0000-0000-0000-00000000000d','parceiro_b2b_tecnico'],
     ARRAY['ff5c3111-0000-0000-0000-00000000000e','authenticated_sem_papel'],
     ARRAY['ff5c3111-0000-0000-0000-00000000000f','anon'],
-    -- produtor B (mesma role cliente_produtor, mas cliente distinto)
+    -- produtor B (mesma role cliente_produtor, cliente distinto para ownership)
     ARRAY['ff5c3111-0000-0000-0000-000000000010','cliente_produtor_b']
   ];
   i int;
 BEGIN
   FOR i IN 1..array_length(users,1) LOOP
-    -- auth.users direto (staging only). Colunas mínimas suficientes.
     INSERT INTO auth.users (
       id, instance_id, aud, role, email, encrypted_password,
       email_confirmed_at, created_at, updated_at,
@@ -177,10 +196,12 @@ BEGIN
   END LOOP;
 END $seed_users$;
 
--- profile + role
+-- Roles: apenas usuários AUTENTICADOS com papel real recebem entrada em user_roles.
+-- * uuid ...000e (authenticated_sem_papel) NÃO recebe role (intencional).
+-- * uuid ...000f (anon) NÃO recebe role — anon é simulado por _fiscal_3111_as_anon().
+-- * uuid ...0010 (produtor B) recebe cliente_produtor.
 DO $seed_roles$
 DECLARE
-  m record;
   role_map constant text[][] := ARRAY[
     ARRAY['ff5c3111-0000-0000-0000-000000000001','administrador'],
     ARRAY['ff5c3111-0000-0000-0000-000000000002','gestor'],
@@ -195,13 +216,11 @@ DECLARE
     ARRAY['ff5c3111-0000-0000-0000-00000000000b','cliente_produtor'],
     ARRAY['ff5c3111-0000-0000-0000-00000000000c','parceiro_b2b'],
     ARRAY['ff5c3111-0000-0000-0000-00000000000d','parceiro_b2b_tecnico'],
-    ARRAY['ff5c3111-0000-0000-0000-00000000000f','cliente_produtor'],  -- prodB reutiliza role
     ARRAY['ff5c3111-0000-0000-0000-000000000010','cliente_produtor']
   ];
   i int;
 BEGIN
-  -- Trigger handle_new_user já criou profile + role 'administrativo' default.
-  -- Remove roles default e insere o role planejado (exceto authenticated_sem_papel/anon).
+  -- Remove qualquer role default criado por trigger handle_new_user.
   DELETE FROM public.user_roles WHERE user_id::text LIKE 'ff5c3111-%';
 
   FOR i IN 1..array_length(role_map,1) LOOP
@@ -209,27 +228,33 @@ BEGIN
     VALUES (role_map[i][1]::uuid, role_map[i][2]::public.app_role)
     ON CONFLICT DO NOTHING;
   END LOOP;
-  -- authenticated_sem_papel (uuid ...0e) NÃO recebe role -> intencional
-  -- anon (uuid ...0f) — usado só com _fiscal_3111_as_anon(), ignorar role
+
+  -- Guard: uuid ...000f (anon) NÃO pode ter nenhum papel atribuído.
+  IF EXISTS (SELECT 1 FROM public.user_roles
+              WHERE user_id='ff5c3111-0000-0000-0000-00000000000f'::uuid) THEN
+    RAISE EXCEPTION 'ABORT 3.11.2: anon UUID (...000f) recebeu role indevidamente';
+  END IF;
 END $seed_roles$;
 
 -- =====================================================================
--- 4. Fixtures — clientes A/B, categoria financeira, AR, fiscal_invoices etc.
+-- 5. Fixtures — clientes A/B, AR, invoices, itens, eventos, perfis
+--    Inclui "delete-slots" descartáveis usados exclusivamente por
+--    testes DELETE (uma fixture identificável por tabela).
 -- =====================================================================
 DO $seed_fixtures$
 DECLARE
-  v_cli_a uuid := 'ff5c3111-c1e1-0000-0000-000000000001';
-  v_cli_b uuid := 'ff5c3111-c1e1-0000-0000-000000000002';
-  v_cat   uuid;
-  v_ar_a  uuid := 'ff5c3111-a1ec-0000-0000-000000000001';
-  v_ar_b  uuid := 'ff5c3111-a1ec-0000-0000-000000000002';
-  v_prod  uuid := 'ff5c3111-b12b-0000-0000-000000000001';
-  v_fi_a  uuid := 'ff5c3111-f15c-0000-0000-000000000001';
-  v_fi_b  uuid := 'ff5c3111-f15c-0000-0000-000000000002';
-  v_fi_del uuid := 'ff5c3111-f15c-0000-0000-000000000003';  -- descartável (não referenciado; usado só para DELETE deny)
+  v_cli_a  uuid := 'ff5c3111-c1e1-0000-0000-000000000001';
+  v_cli_b  uuid := 'ff5c3111-c1e1-0000-0000-000000000002';
+  v_cat    uuid;
+  v_ar_a   uuid := 'ff5c3111-a1ec-0000-0000-000000000001';
+  v_ar_b   uuid := 'ff5c3111-a1ec-0000-0000-000000000002';
+  v_fi_a   uuid := 'ff5c3111-f15c-0000-0000-000000000001';
+  v_fi_b   uuid := 'ff5c3111-f15c-0000-0000-000000000002';
+  v_fi_del uuid := 'ff5c3111-f15c-0000-0000-000000000003';  -- delete-slot fiscal_invoices
   v_uadmin uuid := 'ff5c3111-0000-0000-0000-000000000001';
   v_upA    uuid := 'ff5c3111-0000-0000-0000-00000000000b';
   v_upB    uuid := 'ff5c3111-0000-0000-0000-000000000010';
+  v_prod_real uuid;
 BEGIN
   -- clientes
   INSERT INTO public.clientes(id,nome)
@@ -244,10 +269,10 @@ BEGIN
   -- categoria financeira: usa a primeira existente
   SELECT id INTO v_cat FROM public.financial_categories LIMIT 1;
   IF v_cat IS NULL THEN
-    RAISE EXCEPTION 'ABORT 3.11.1: staging sem financial_categories — não é possível criar AR sintética';
+    RAISE EXCEPTION 'ABORT 3.11.2: staging sem financial_categories — impossível criar AR sintética';
   END IF;
 
-  -- AR do cliente A e do cliente B (para ownership)
+  -- AR do cliente A e do cliente B (ownership por AR)
   INSERT INTO public.accounts_receivable(
     id, origin_type, customer_id, description, category_id,
     total_amount, first_due_date, installment_count, status, created_by
@@ -256,7 +281,7 @@ BEGIN
     (v_ar_b,'MANUAL',v_cli_b,'FISCAL_TEST_3111_AR_B',v_cat,200,current_date+7,1,'OPEN',v_uadmin)
     ON CONFLICT (id) DO NOTHING;
 
-  -- fiscal_invoices: A (cliente A), B (cliente B), descartável (sem vínculo → produtor não vê)
+  -- fiscal_invoices: A (produtor A), B (produtor B), delete-slot (não vinculado a AR)
   INSERT INTO public.fiscal_invoices(
     id, receivable_id, invoice_type, status, total_amount, notes, created_by,
     document_model, document_origin, environment, provider,
@@ -270,76 +295,232 @@ BEGIN
      'NFE','MANUAL_RECORD','NOT_CONFIGURED','NONE','LEGACY_RECORDED','NOT_APPLICABLE')
     ON CONFLICT (id) DO NOTHING;
 
-  -- item vinculado à nota A
+  -- item vinculado à nota A (SELECT/UPDATE tests)
   INSERT INTO public.fiscal_invoice_items(
     fiscal_invoice_id, item_sequence, item_kind, description, quantity, unit_value, net_value
   ) VALUES (v_fi_a, 1, 'PRODUCT', 'FISCAL_TEST_3111_ITEM', 1, 100, 100)
   ON CONFLICT DO NOTHING;
 
-  -- evento vinculado (backfill do trigger já cria CREATED; adiciona um MANUAL_UPDATED explícito)
+  -- delete-slot fiscal_invoice_items (descartável — restaurado entre células)
+  INSERT INTO public.fiscal_invoice_items(
+    fiscal_invoice_id, item_sequence, item_kind, description, quantity, unit_value, net_value
+  ) VALUES (v_fi_a, 9999, 'PRODUCT', 'FISCAL_TEST_3111_ITEM_DEL_SLOT', 1, 1, 1)
+  ON CONFLICT DO NOTHING;
+
+  -- evento vinculado (para SELECT tests)
   INSERT INTO public.fiscal_events(fiscal_invoice_id, event_type, event_source, notes)
   VALUES (v_fi_a,'MANUAL_UPDATED','USER','FISCAL_TEST_3111_EV');
 
-  -- idempotency
+  -- delete-slot fiscal_events (DELETE denegado por policy → mantém-se)
+  INSERT INTO public.fiscal_events(fiscal_invoice_id, event_type, event_source, notes)
+  VALUES (v_fi_a,'MANUAL_UPDATED','USER','FISCAL_TEST_3111_EV_DEL');
+
+  -- idempotency + delete-slot
   INSERT INTO public.fiscal_idempotency_keys(
     idempotency_key, fiscal_invoice_id, operation_type, environment, provider, status
-  ) VALUES ('FISCAL_TEST_3111_IDEMP', v_fi_a, 'PREPARE', 'NOT_CONFIGURED', 'NONE', 'PENDING')
+  ) VALUES
+    ('FISCAL_TEST_3111_IDEMP',     v_fi_a, 'PREPARE', 'NOT_CONFIGURED', 'NONE', 'PENDING'),
+    ('FISCAL_TEST_3111_IDEMP_DEL', v_fi_a, 'PREPARE', 'NOT_CONFIGURED', 'NONE', 'PENDING')
   ON CONFLICT DO NOTHING;
 
-  -- company/product/service/customer profiles — sintéticos e mínimos
+  -- fiscal_audit_log delete-slot
+  INSERT INTO public.fiscal_audit_log(table_name, record_id, action, new_values)
+  VALUES ('fiscal_invoices', gen_random_uuid(), 'INSERT',
+          jsonb_build_object('notes','FISCAL_TEST_3111_AUDIT_DEL'));
+
+  -- company_fiscal_settings + delete-slot
   INSERT INTO public.company_fiscal_settings(id, is_active, cnpj, configuration_status)
-  VALUES ('ff5c3111-c04f-0000-0000-000000000001', false, 'FISCAL_TEST_3111_CNPJ', 'DRAFT')
+  VALUES
+    ('ff5c3111-c04f-0000-0000-000000000001', false, 'FISCAL_TEST_3111_CNPJ',    'DRAFT'),
+    ('ff5c3111-c04f-0000-0000-000000000002', false, 'FISCAL_TEST_3111_DELCNPJ','DRAFT')
   ON CONFLICT (id) DO NOTHING;
 
-  -- product_id precisa existir em produtos: usa qualquer produto
-  DECLARE v_prod_real uuid;
-  BEGIN
-    SELECT id INTO v_prod_real FROM public.produtos LIMIT 1;
-    IF v_prod_real IS NULL THEN
-      RAISE EXCEPTION 'ABORT 3.11.1: staging sem public.produtos — impossível criar product_fiscal_profile';
-    END IF;
-    INSERT INTO public.product_fiscal_profiles(
-      id, product_id, is_active, ncm, cfop_in_state, accounting_notes, profile_status
-    ) VALUES (
-      'ff5c3111-b12b-0000-0000-000000000001', v_prod_real, false,
-      '12345678','5101','FISCAL_TEST_3111_PROD','DRAFT'
-    ) ON CONFLICT (id) DO NOTHING;
-  END;
+  -- product_fiscal_profiles: reutiliza a única row descartável como delete-slot
+  SELECT id INTO v_prod_real FROM public.produtos LIMIT 1;
+  IF v_prod_real IS NULL THEN
+    RAISE EXCEPTION 'ABORT 3.11.2: staging sem public.produtos — impossível criar product_fiscal_profile';
+  END IF;
+  INSERT INTO public.product_fiscal_profiles(
+    id, product_id, is_active, ncm, cfop_in_state, accounting_notes, profile_status
+  ) VALUES (
+    'ff5c3111-b12b-0000-0000-000000000001', v_prod_real, false,
+    '12345678','5101','FISCAL_TEST_3111_DEL_PROD','DRAFT'
+  ) ON CONFLICT (id) DO NOTHING;
 
+  -- service_fiscal_profiles: única row serve para SELECT/UPDATE e DELETE (denegado para todos)
   INSERT INTO public.service_fiscal_profiles(
     id, source_reference, is_active, lc116_item, cnae, profile_status
   ) VALUES (
-    'ff5c3111-5e12-0000-0000-000000000001','FISCAL_TEST_3111_SERV', false,
+    'ff5c3111-5e12-0000-0000-000000000001','FISCAL_TEST_3111_DEL_SERV', false,
     '01.01','0111-3','DRAFT'
   ) ON CONFLICT (id) DO NOTHING;
 
+  -- customer_fiscal_profiles: idem
   INSERT INTO public.customer_fiscal_profiles(
     id, customer_id, profile_status, validation_notes, fiscal_municipality_ibge_code
   ) VALUES (
     'ff5c3111-c057-0000-0000-000000000001', v_cli_a, 'INCOMPLETE',
-    'FISCAL_TEST_3111_CUST', '3550308'
+    'FISCAL_TEST_3111_DEL_CUST', '3550308'
   ) ON CONFLICT (id) DO NOTHING;
 END $seed_fixtures$;
 
 -- =====================================================================
--- 5. Matriz de expectativas (materializada em tabela sintética)
---    Reflete src/test/fiscal/rls/matrix.ts (Fase 3.0.2-B) sem inferir regra
---    genérica: cada célula tem expectativa explícita.
+-- 6. Helpers de fixture descartável para DELETE (em pg_temp)
+--    Estratégia: cada DELETE roda contra uma linha real identificável
+--    (nunca filtro vazio). Antes da tentativa, ensure_fixture_delete garante
+--    a existência; após a tentativa, presenca_delete inspeciona (como
+--    postgres, bypassando RLS) para diferenciar allow (linha some) de
+--    deny (linha permanece).
 -- =====================================================================
-DROP TABLE IF EXISTS public._fiscal_test_3111_matrix;
-CREATE TABLE public._fiscal_test_3111_matrix (
-  perfil text NOT NULL,
-  user_id uuid,
-  is_anon boolean NOT NULL DEFAULT false,
-  categoria text NOT NULL,          -- table|view|rpc|ownership
-  objeto text NOT NULL,
-  operacao text NOT NULL,           -- SELECT|INSERT|UPDATE|DELETE|CALL
-  expected text NOT NULL            -- allow|deny
-);
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_ensure_fixture_delete(p_table text)
+RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  IF p_table='company_fiscal_settings' THEN
+    INSERT INTO public.company_fiscal_settings(id, is_active, cnpj, configuration_status)
+    VALUES ('ff5c3111-c04f-0000-0000-000000000002', false, 'FISCAL_TEST_3111_DELCNPJ', 'DRAFT')
+    ON CONFLICT (id) DO NOTHING;
 
+  ELSIF p_table='product_fiscal_profiles' THEN
+    -- product_fiscal_profiles delete slot é a única row semeada; DELETE denegado
+    -- para todos os 15 perfis → nunca é preciso recriar entre células, mas
+    -- reasserta idempotentemente para resiliência.
+    INSERT INTO public.product_fiscal_profiles(
+      id, product_id, is_active, ncm, cfop_in_state, accounting_notes, profile_status
+    )
+    SELECT 'ff5c3111-b12b-0000-0000-000000000001', id, false,
+           '12345678','5101','FISCAL_TEST_3111_DEL_PROD','DRAFT'
+      FROM public.produtos LIMIT 1
+    ON CONFLICT (id) DO NOTHING;
+
+  ELSIF p_table='service_fiscal_profiles' THEN
+    INSERT INTO public.service_fiscal_profiles(
+      id, source_reference, is_active, lc116_item, cnae, profile_status
+    ) VALUES (
+      'ff5c3111-5e12-0000-0000-000000000001','FISCAL_TEST_3111_DEL_SERV', false,
+      '01.01','0111-3','DRAFT'
+    ) ON CONFLICT (id) DO NOTHING;
+
+  ELSIF p_table='customer_fiscal_profiles' THEN
+    INSERT INTO public.customer_fiscal_profiles(
+      id, customer_id, profile_status, validation_notes, fiscal_municipality_ibge_code
+    )
+    SELECT 'ff5c3111-c057-0000-0000-000000000001', id, 'INCOMPLETE',
+           'FISCAL_TEST_3111_DEL_CUST','3550308'
+      FROM public.clientes WHERE nome='FISCAL_TEST_3111_cli_A'
+    ON CONFLICT (id) DO NOTHING;
+
+  ELSIF p_table='fiscal_invoices' THEN
+    INSERT INTO public.fiscal_invoices(
+      id, receivable_id, invoice_type, status, total_amount, notes, created_by,
+      document_model, document_origin, environment, provider,
+      normalized_status, reconciliation_status
+    ) VALUES (
+      'ff5c3111-f15c-0000-0000-000000000003', NULL, 'NFE','PENDING',10,
+      'FISCAL_TEST_3111_FI_DEL','ff5c3111-0000-0000-0000-000000000001',
+      'NFE','MANUAL_RECORD','NOT_CONFIGURED','NONE','LEGACY_RECORDED','NOT_APPLICABLE'
+    ) ON CONFLICT (id) DO NOTHING;
+
+  ELSIF p_table='fiscal_invoice_items' THEN
+    -- Reinseção necessária: administrador+financeiro conseguem DELETE.
+    INSERT INTO public.fiscal_invoice_items(
+      fiscal_invoice_id, item_sequence, item_kind, description, quantity, unit_value, net_value
+    ) VALUES (
+      'ff5c3111-f15c-0000-0000-000000000001', 9999, 'PRODUCT',
+      'FISCAL_TEST_3111_ITEM_DEL_SLOT', 1, 1, 1
+    ) ON CONFLICT DO NOTHING;
+
+  ELSIF p_table='fiscal_events' THEN
+    IF NOT EXISTS (SELECT 1 FROM public.fiscal_events
+                   WHERE notes='FISCAL_TEST_3111_EV_DEL') THEN
+      INSERT INTO public.fiscal_events(fiscal_invoice_id, event_type, event_source, notes)
+      VALUES ('ff5c3111-f15c-0000-0000-000000000001','MANUAL_UPDATED','USER',
+              'FISCAL_TEST_3111_EV_DEL');
+    END IF;
+
+  ELSIF p_table='fiscal_idempotency_keys' THEN
+    INSERT INTO public.fiscal_idempotency_keys(
+      idempotency_key, fiscal_invoice_id, operation_type, environment, provider, status
+    ) VALUES (
+      'FISCAL_TEST_3111_IDEMP_DEL', 'ff5c3111-f15c-0000-0000-000000000001',
+      'PREPARE', 'NOT_CONFIGURED', 'NONE', 'PENDING'
+    ) ON CONFLICT DO NOTHING;
+
+  ELSIF p_table='fiscal_audit_log' THEN
+    IF NOT EXISTS (SELECT 1 FROM public.fiscal_audit_log
+                   WHERE (new_values->>'notes')='FISCAL_TEST_3111_AUDIT_DEL') THEN
+      INSERT INTO public.fiscal_audit_log(table_name, record_id, action, new_values)
+      VALUES ('fiscal_invoices', gen_random_uuid(), 'INSERT',
+              jsonb_build_object('notes','FISCAL_TEST_3111_AUDIT_DEL'));
+    END IF;
+  END IF;
+END $$;
+
+-- SQL de DELETE alvo (executado dentro do papel simulado).
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_delete_sql(p_table text) RETURNS text
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT CASE p_table
+    WHEN 'company_fiscal_settings'  THEN
+      $q$DELETE FROM public.company_fiscal_settings  WHERE cnpj='FISCAL_TEST_3111_DELCNPJ'$q$
+    WHEN 'product_fiscal_profiles'  THEN
+      $q$DELETE FROM public.product_fiscal_profiles  WHERE accounting_notes='FISCAL_TEST_3111_DEL_PROD'$q$
+    WHEN 'service_fiscal_profiles'  THEN
+      $q$DELETE FROM public.service_fiscal_profiles  WHERE source_reference='FISCAL_TEST_3111_DEL_SERV'$q$
+    WHEN 'customer_fiscal_profiles' THEN
+      $q$DELETE FROM public.customer_fiscal_profiles WHERE validation_notes='FISCAL_TEST_3111_DEL_CUST'$q$
+    WHEN 'fiscal_invoices'          THEN
+      $q$DELETE FROM public.fiscal_invoices          WHERE notes='FISCAL_TEST_3111_FI_DEL'$q$
+    WHEN 'fiscal_invoice_items'     THEN
+      $q$DELETE FROM public.fiscal_invoice_items     WHERE description='FISCAL_TEST_3111_ITEM_DEL_SLOT'$q$
+    WHEN 'fiscal_events'            THEN
+      $q$DELETE FROM public.fiscal_events            WHERE notes='FISCAL_TEST_3111_EV_DEL'$q$
+    WHEN 'fiscal_idempotency_keys'  THEN
+      $q$DELETE FROM public.fiscal_idempotency_keys  WHERE idempotency_key='FISCAL_TEST_3111_IDEMP_DEL'$q$
+    WHEN 'fiscal_audit_log'         THEN
+      $q$DELETE FROM public.fiscal_audit_log         WHERE (new_values->>'notes')='FISCAL_TEST_3111_AUDIT_DEL'$q$
+  END;
+$$;
+
+-- Verifica presença da fixture-delete (como postgres, bypassando RLS).
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_presence_delete(p_table text) RETURNS int
+LANGUAGE plpgsql AS $$
+DECLARE v int;
+BEGIN
+  IF p_table='company_fiscal_settings' THEN
+    SELECT count(*) INTO v FROM public.company_fiscal_settings
+      WHERE cnpj='FISCAL_TEST_3111_DELCNPJ';
+  ELSIF p_table='product_fiscal_profiles' THEN
+    SELECT count(*) INTO v FROM public.product_fiscal_profiles
+      WHERE accounting_notes='FISCAL_TEST_3111_DEL_PROD';
+  ELSIF p_table='service_fiscal_profiles' THEN
+    SELECT count(*) INTO v FROM public.service_fiscal_profiles
+      WHERE source_reference='FISCAL_TEST_3111_DEL_SERV';
+  ELSIF p_table='customer_fiscal_profiles' THEN
+    SELECT count(*) INTO v FROM public.customer_fiscal_profiles
+      WHERE validation_notes='FISCAL_TEST_3111_DEL_CUST';
+  ELSIF p_table='fiscal_invoices' THEN
+    SELECT count(*) INTO v FROM public.fiscal_invoices
+      WHERE notes='FISCAL_TEST_3111_FI_DEL';
+  ELSIF p_table='fiscal_invoice_items' THEN
+    SELECT count(*) INTO v FROM public.fiscal_invoice_items
+      WHERE description='FISCAL_TEST_3111_ITEM_DEL_SLOT';
+  ELSIF p_table='fiscal_events' THEN
+    SELECT count(*) INTO v FROM public.fiscal_events
+      WHERE notes='FISCAL_TEST_3111_EV_DEL';
+  ELSIF p_table='fiscal_idempotency_keys' THEN
+    SELECT count(*) INTO v FROM public.fiscal_idempotency_keys
+      WHERE idempotency_key='FISCAL_TEST_3111_IDEMP_DEL';
+  ELSIF p_table='fiscal_audit_log' THEN
+    SELECT count(*) INTO v FROM public.fiscal_audit_log
+      WHERE (new_values->>'notes')='FISCAL_TEST_3111_AUDIT_DEL';
+  END IF;
+  RETURN coalesce(v,0);
+END $$;
+
+-- =====================================================================
+-- 7. Matriz canônica (materializada em TEMP TABLE)
+-- =====================================================================
 DO $mx$
 DECLARE
-  r record;
   roles constant text[][] := ARRAY[
     ARRAY['administrador','ff5c3111-0000-0000-0000-000000000001','f'],
     ARRAY['gestor','ff5c3111-0000-0000-0000-000000000002','f'],
@@ -370,14 +551,13 @@ DECLARE
   exp text;
 BEGIN
   FOR i IN 1..array_length(roles,1) LOOP
-    perfil := roles[i][1];
-    uid    := NULLIF(roles[i][2],'')::uuid;
+    perfil    := roles[i][1];
+    uid       := NULLIF(roles[i][2],'')::uuid;
     anon_flag := (roles[i][3]='t');
 
-    -- Tabelas × ops
+    -- Tabelas × ops (regras derivadas de src/test/fiscal/rls/matrix.ts)
     FOR j IN 1..array_length(tables,1) LOOP
       FOR k IN 1..array_length(ops,1) LOOP
-        -- Regras derivadas de matrix.ts / policies canônicas
         exp := 'deny';
         IF tables[j]='company_fiscal_settings' THEN
           IF perfil='administrador' AND ops[k] IN ('SELECT','INSERT','UPDATE') THEN exp:='allow';
@@ -404,7 +584,7 @@ BEGIN
           IF perfil='administrador' AND ops[k]='SELECT' THEN exp:='allow'; END IF;
         END IF;
 
-        INSERT INTO public._fiscal_test_3111_matrix
+        INSERT INTO pg_temp._fiscal_test_3111_matrix
           VALUES (perfil,uid,anon_flag,'table',tables[j],ops[k],exp);
       END LOOP;
     END LOOP;
@@ -412,24 +592,24 @@ BEGIN
     -- Views
     FOR j IN 1..array_length(views,1) LOOP
       exp := CASE WHEN perfil IN ('administrador','gestor','financeiro') THEN 'allow' ELSE 'deny' END;
-      INSERT INTO public._fiscal_test_3111_matrix
+      INSERT INTO pg_temp._fiscal_test_3111_matrix
         VALUES (perfil,uid,anon_flag,'view',views[j],'SELECT',exp);
     END LOOP;
 
-    -- RPC — 4 casos por perfil: 1 positivo (allow para staff) + 3 negativos (sempre deny/error)
+    -- RPC — 4 casos por perfil: 1 feliz (staff allow, demais deny) + 3 negativos (todos deny)
     FOR k IN 1..4 LOOP
       IF k=1 THEN
         exp := CASE WHEN perfil IN ('administrador','gestor','financeiro') THEN 'allow' ELSE 'deny' END;
       ELSE
-        exp := 'deny';  -- casos negativos: invoice inválido / event inválido / notes overflow
+        exp := 'deny';
       END IF;
-      INSERT INTO public._fiscal_test_3111_matrix
+      INSERT INTO pg_temp._fiscal_test_3111_matrix
         VALUES (perfil,uid,anon_flag,'rpc','rpc_fiscal_event_manual','CALL_'||k,exp);
     END LOOP;
   END LOOP;
 
   -- Ownership: 2 células
-  INSERT INTO public._fiscal_test_3111_matrix VALUES
+  INSERT INTO pg_temp._fiscal_test_3111_matrix VALUES
     ('cliente_produtor_A','ff5c3111-0000-0000-0000-00000000000b',false,
      'ownership','fiscal_invoices_own','SELECT','allow'),
     ('cliente_produtor_B','ff5c3111-0000-0000-0000-000000000010',false,
@@ -440,49 +620,46 @@ END $mx$;
 DO $check_total$
 DECLARE c int;
 BEGIN
-  SELECT count(*) INTO c FROM public._fiscal_test_3111_matrix;
+  SELECT count(*) INTO c FROM pg_temp._fiscal_test_3111_matrix;
   IF c <> 677 THEN
-    RAISE EXCEPTION 'ABORT 3.11.1: matriz com % asserções (esperado 677)', c;
+    RAISE EXCEPTION 'ABORT 3.11.2: matriz com % asserções (esperado 677)', c;
   END IF;
 END $check_total$;
 
 -- =====================================================================
--- 6. Executor por célula
+-- 8. Executor de tabela × operação
 -- =====================================================================
-
--- Executor tabela: executa 1 op real e classifica passed/failed/error
-CREATE OR REPLACE FUNCTION public._fiscal_3111_run_table(
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_run_table(
   p_perfil text, p_uid uuid, p_anon boolean,
   p_table text, p_op text, p_expected text
 ) RETURNS void
 LANGUAGE plpgsql AS $$
 DECLARE
-  v_id text := format('T-%s-%s-%s', p_perfil, p_table, p_op);
-  v_sql text;
-  v_ct  int;
+  v_id       text := format('T-%s-%s-%s', p_perfil, p_table, p_op);
+  v_ct       int;
   v_observed text;
-  v_status text;
-  v_detail text;
-  v_target uuid;
+  v_status   text;
+  v_detail   text;
+  v_target   uuid;
+  v_present_after int;
 BEGIN
-  -- Alvo padrão por tabela
   v_target := CASE p_table
-    WHEN 'company_fiscal_settings' THEN 'ff5c3111-c04f-0000-0000-000000000001'::uuid
-    WHEN 'product_fiscal_profiles' THEN 'ff5c3111-b12b-0000-0000-000000000001'::uuid
-    WHEN 'service_fiscal_profiles' THEN 'ff5c3111-5e12-0000-0000-000000000001'::uuid
+    WHEN 'company_fiscal_settings'  THEN 'ff5c3111-c04f-0000-0000-000000000001'::uuid
+    WHEN 'product_fiscal_profiles'  THEN 'ff5c3111-b12b-0000-0000-000000000001'::uuid
+    WHEN 'service_fiscal_profiles'  THEN 'ff5c3111-5e12-0000-0000-000000000001'::uuid
     WHEN 'customer_fiscal_profiles' THEN 'ff5c3111-c057-0000-0000-000000000001'::uuid
-    WHEN 'fiscal_invoices'         THEN 'ff5c3111-f15c-0000-0000-000000000001'::uuid
-    WHEN 'fiscal_invoice_items'    THEN NULL   -- select geral
-    WHEN 'fiscal_events'           THEN NULL
-    WHEN 'fiscal_idempotency_keys' THEN NULL
-    WHEN 'fiscal_audit_log'        THEN NULL
+    WHEN 'fiscal_invoices'          THEN 'ff5c3111-f15c-0000-0000-000000000001'::uuid
+    ELSE NULL
   END;
 
-  -- Configura sessão
-  IF p_anon THEN
-    PERFORM public._fiscal_3111_as_anon();
-  ELSE
-    PERFORM public._fiscal_3111_as(p_uid);
+  -- Para DELETE: garantir fixture ANTES do switch de role (como postgres).
+  IF p_op='DELETE' THEN
+    PERFORM pg_temp._fiscal_3111_ensure_fixture_delete(p_table);
+  END IF;
+
+  -- Simular sessão do perfil
+  IF p_anon THEN PERFORM pg_temp._fiscal_3111_as_anon();
+  ELSE           PERFORM pg_temp._fiscal_3111_as(p_uid);
   END IF;
 
   BEGIN
@@ -496,7 +673,6 @@ BEGIN
       v_observed := CASE WHEN v_ct > 0 THEN 'allow' ELSE 'deny' END;
 
     ELSIF p_op='INSERT' THEN
-      -- payload válido por tabela
       IF p_table='company_fiscal_settings' THEN
         EXECUTE $q$INSERT INTO public.company_fiscal_settings(is_active,cnpj,configuration_status)
                    VALUES(false, 'FISCAL_TEST_3111_INS_'||gen_random_uuid()::text, 'DRAFT')$q$;
@@ -539,27 +715,26 @@ BEGIN
         EXECUTE $q$UPDATE public.company_fiscal_settings SET updated_at=now()
                    WHERE cnpj='FISCAL_TEST_3111_CNPJ'$q$;
       ELSIF p_table='product_fiscal_profiles' THEN
-        EXECUTE $q$UPDATE public.product_fiscal_profiles SET accounting_notes='FISCAL_TEST_3111_UPD'
+        EXECUTE $q$UPDATE public.product_fiscal_profiles SET accounting_notes='FISCAL_TEST_3111_UPD_PROD'
                    WHERE accounting_notes LIKE 'FISCAL_TEST_3111_%'$q$;
       ELSIF p_table='service_fiscal_profiles' THEN
-        EXECUTE $q$UPDATE public.service_fiscal_profiles SET accounting_notes='FISCAL_TEST_3111_UPD'
+        EXECUTE $q$UPDATE public.service_fiscal_profiles SET accounting_notes='FISCAL_TEST_3111_UPD_SERV'
                    WHERE source_reference LIKE 'FISCAL_TEST_3111_%'$q$;
       ELSIF p_table='customer_fiscal_profiles' THEN
-        EXECUTE $q$UPDATE public.customer_fiscal_profiles SET validation_notes='FISCAL_TEST_3111_UPD'
+        EXECUTE $q$UPDATE public.customer_fiscal_profiles SET validation_notes='FISCAL_TEST_3111_UPD_CUST'
                    WHERE validation_notes LIKE 'FISCAL_TEST_3111_%'$q$;
       ELSIF p_table='fiscal_invoices' THEN
         EXECUTE $q$UPDATE public.fiscal_invoices SET notes='FISCAL_TEST_3111_UPD'||coalesce(notes,'')
                    WHERE id='ff5c3111-f15c-0000-0000-000000000001'$q$;
       ELSIF p_table='fiscal_invoice_items' THEN
         EXECUTE $q$UPDATE public.fiscal_invoice_items SET description='FISCAL_TEST_3111_UPD'
-                   WHERE description LIKE 'FISCAL_TEST_3111_%'$q$;
+                   WHERE description='FISCAL_TEST_3111_ITEM'$q$;
       ELSIF p_table='fiscal_events' THEN
-        -- fiscal_events sem UPDATE policy → sempre deny (grant é SELECT/INSERT)
         EXECUTE $q$UPDATE public.fiscal_events SET notes='FISCAL_TEST_3111_UPD'
-                   WHERE notes LIKE 'FISCAL_TEST_3111_%'$q$;
+                   WHERE notes='FISCAL_TEST_3111_EV'$q$;
       ELSIF p_table='fiscal_idempotency_keys' THEN
         EXECUTE $q$UPDATE public.fiscal_idempotency_keys SET status='PENDING'
-                   WHERE idempotency_key LIKE 'FISCAL_TEST_3111_%'$q$;
+                   WHERE idempotency_key='FISCAL_TEST_3111_IDEMP'$q$;
       ELSIF p_table='fiscal_audit_log' THEN
         EXECUTE $q$UPDATE public.fiscal_audit_log SET table_name='fiscal_invoices'
                    WHERE (new_values->>'notes') LIKE 'FISCAL_TEST_3111_%'$q$;
@@ -568,15 +743,8 @@ BEGIN
       v_observed := CASE WHEN v_ct > 0 THEN 'allow' ELSE 'deny' END;
 
     ELSIF p_op='DELETE' THEN
-      -- Todas as tabelas fiscais têm DELETE negado por policy (exceto fiscal_invoice_items
-      -- p/ administrador+financeiro). Executa contra fixture descartável quando aplicável.
-      IF p_table='fiscal_invoice_items' THEN
-        EXECUTE $q$DELETE FROM public.fiscal_invoice_items
-                   WHERE description='FISCAL_TEST_3111_ITEM_DEL_'||$1$q$
-          USING p_perfil;
-      ELSE
-        EXECUTE format('DELETE FROM public.%I WHERE 1=0', p_table);
-      END IF;
+      -- DELETE real contra fixture identificável (nunca filtro vazio)
+      EXECUTE pg_temp._fiscal_3111_delete_sql(p_table);
       GET DIAGNOSTICS v_ct = ROW_COUNT;
       v_observed := CASE WHEN v_ct > 0 THEN 'allow' ELSE 'deny' END;
     END IF;
@@ -595,20 +763,44 @@ BEGIN
       v_status   := 'error';
       v_detail   := format('constraint: %s', SQLERRM);
     WHEN OTHERS THEN
-      -- Distinção: erros de RLS (42501) já capturados acima. Aqui pode ser
-      -- erro de payload/coluna/etc → ERROR, nunca DENY.
       v_observed := 'error';
       v_status   := 'error';
       v_detail   := format('%s %s', SQLSTATE, SQLERRM);
   END;
 
-  PERFORM public._fiscal_3111_reset();
-  PERFORM public._fiscal_3111_record(v_id,'table',p_perfil,p_table,p_op,
-    p_expected,v_observed,v_status,v_detail);
+  -- Retorna a postgres para checagens fora do RLS e para escrever no temp table
+  PERFORM pg_temp._fiscal_3111_reset();
+
+  -- DELETE requer verificação de presença física da fixture
+  IF p_op='DELETE' THEN
+    v_present_after := pg_temp._fiscal_3111_presence_delete(p_table);
+    IF v_status <> 'error' THEN
+      IF p_expected='allow' THEN
+        v_status := CASE WHEN v_ct = 1 AND v_present_after = 0
+                         THEN 'passed' ELSE 'failed' END;
+        v_detail := v_detail || format(' present_after=%s allow_requires:ct=1&missing',
+                                        v_present_after);
+      ELSE  -- deny esperado
+        v_status := CASE WHEN v_observed='deny' AND v_present_after = 1
+                         THEN 'passed' ELSE 'failed' END;
+        v_detail := v_detail || format(' present_after=%s deny_requires:no_delete&preserved',
+                                        v_present_after);
+      END IF;
+    ELSE
+      v_detail := v_detail || format(' present_after=%s', v_present_after);
+    END IF;
+    -- Restaura/recria fixture para a próxima célula
+    PERFORM pg_temp._fiscal_3111_ensure_fixture_delete(p_table);
+  END IF;
+
+  PERFORM pg_temp._fiscal_3111_record(v_id,'table',p_perfil,p_table,p_op,
+    p_expected, v_observed, v_status, v_detail);
 END $$;
 
--- Executor view
-CREATE OR REPLACE FUNCTION public._fiscal_3111_run_view(
+-- =====================================================================
+-- 9. Executor de view
+-- =====================================================================
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_run_view(
   p_perfil text, p_uid uuid, p_anon boolean, p_view text, p_expected text
 ) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE
@@ -616,8 +808,8 @@ DECLARE
   v_ct int;
   v_observed text; v_status text; v_detail text;
 BEGIN
-  IF p_anon THEN PERFORM public._fiscal_3111_as_anon();
-  ELSE           PERFORM public._fiscal_3111_as(p_uid);
+  IF p_anon THEN PERFORM pg_temp._fiscal_3111_as_anon();
+  ELSE           PERFORM pg_temp._fiscal_3111_as(p_uid);
   END IF;
 
   BEGIN
@@ -634,36 +826,38 @@ BEGIN
     v_detail := format('%s %s',SQLSTATE,SQLERRM);
   END;
 
-  PERFORM public._fiscal_3111_reset();
-  PERFORM public._fiscal_3111_record(v_id,'view',p_perfil,p_view,'SELECT',
+  PERFORM pg_temp._fiscal_3111_reset();
+  PERFORM pg_temp._fiscal_3111_record(v_id,'view',p_perfil,p_view,'SELECT',
     p_expected,v_observed,v_status,v_detail);
 END $$;
 
--- Executor RPC — 4 casos por perfil
-CREATE OR REPLACE FUNCTION public._fiscal_3111_run_rpc(
+-- =====================================================================
+-- 10. Executor de RPC — 4 casos por perfil
+-- =====================================================================
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_run_rpc(
   p_perfil text, p_uid uuid, p_anon boolean, p_case int, p_expected text
 ) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE
-  v_id text := format('R-%s-%s',p_perfil,p_case);
-  v_ev_id uuid;
+  v_id       text := format('R-%s-%s',p_perfil,p_case);
+  v_ev_id    uuid;
   v_observed text; v_status text; v_detail text;
-  v_pre_ct int; v_post_ct int;
-  v_invoice uuid := 'ff5c3111-f15c-0000-0000-000000000001';
+  v_pre_ct   int; v_post_ct int;
+  v_invoice  uuid := 'ff5c3111-f15c-0000-0000-000000000001';
   v_event_type text := 'MANUAL_UPDATED';
-  v_notes text := 'FISCAL_TEST_3111_RPC';
+  v_notes    text := 'FISCAL_TEST_3111_RPC';
 BEGIN
   -- Casos:
-  --  1 = feliz (staff → allow, demais → deny por policy)
+  --  1 = feliz (staff → allow com metadados válidos; demais → deny)
   --  2 = invoice inexistente → deny (todos)
-  --  3 = event_type inválido → deny (todos)
+  --  3 = event_type inválido  → deny (todos)
   --  4 = notes overflow (>2000) → deny (todos)
   IF p_case=2 THEN v_invoice := 'ff5c3111-dead-dead-dead-deaddeaddead'::uuid;
   ELSIF p_case=3 THEN v_event_type := 'NAO_EXISTE_XYZ';
   ELSIF p_case=4 THEN v_notes := repeat('A',2500);
   END IF;
 
-  IF p_anon THEN PERFORM public._fiscal_3111_as_anon();
-  ELSE           PERFORM public._fiscal_3111_as(p_uid);
+  IF p_anon THEN PERFORM pg_temp._fiscal_3111_as_anon();
+  ELSE           PERFORM pg_temp._fiscal_3111_as(p_uid);
   END IF;
 
   SELECT count(*) INTO v_pre_ct
@@ -672,20 +866,20 @@ BEGIN
 
   BEGIN
     v_ev_id := public.rpc_fiscal_event_manual(v_invoice, v_event_type, v_notes);
-    -- Verifica que o evento foi criado corretamente
+    -- Confere que o evento existe com metadados exigidos
     SELECT count(*) INTO v_post_ct
       FROM public.fiscal_events
      WHERE id = v_ev_id
        AND fiscal_invoice_id = v_invoice
-       AND event_source='USER'
+       AND event_source = 'USER'
        AND performed_by = p_uid
        AND notes = v_notes;
     IF v_post_ct = 1 THEN
       v_observed := 'allow';
-      v_detail := format('event=%s actor_ok source=USER',v_ev_id);
+      v_detail   := format('event=%s actor_ok source=USER',v_ev_id);
     ELSE
       v_observed := 'error';
-      v_detail := 'evento criado sem metadados esperados';
+      v_detail   := 'evento criado sem metadados esperados';
     END IF;
     v_status := CASE
       WHEN v_observed='error' THEN 'error'
@@ -695,19 +889,16 @@ BEGIN
     v_status := CASE WHEN p_expected='deny' THEN 'passed' ELSE 'failed' END;
     v_detail := '42501';
   WHEN OTHERS THEN
-    -- Erros de negócio da RPC (forbidden, invoice_not_found, event_type_not_allowed_for_manual, notes_too_long)
-    -- são semanticamente DENY quando esperado deny.
     IF SQLERRM ILIKE '%forbidden%' OR SQLERRM ILIKE '%not_authenticated%' THEN
       v_observed := 'deny';
       v_status := CASE WHEN p_expected='deny' THEN 'passed' ELSE 'failed' END;
       v_detail := 'RPC forbidden';
     ELSE
-      -- casos negativos 2/3/4: erros de validação = deny esperado
       v_observed := 'deny';
       v_status := CASE WHEN p_expected='deny' THEN 'passed' ELSE 'failed' END;
       v_detail := format('validation: %s',SQLERRM);
     END IF;
-    -- Confirma que nenhum evento novo foi criado
+    -- Confirma que nenhum evento novo foi persistido
     SELECT count(*) INTO v_post_ct
       FROM public.fiscal_events
      WHERE notes = v_notes AND fiscal_invoice_id = v_invoice;
@@ -717,13 +908,15 @@ BEGIN
     END IF;
   END;
 
-  PERFORM public._fiscal_3111_reset();
-  PERFORM public._fiscal_3111_record(v_id,'rpc',p_perfil,'rpc_fiscal_event_manual',
+  PERFORM pg_temp._fiscal_3111_reset();
+  PERFORM pg_temp._fiscal_3111_record(v_id,'rpc',p_perfil,'rpc_fiscal_event_manual',
     'CALL_'||p_case, p_expected, v_observed, v_status, v_detail);
 END $$;
 
--- Executor ownership
-CREATE OR REPLACE FUNCTION public._fiscal_3111_run_ownership(
+-- =====================================================================
+-- 11. Executor de ownership
+-- =====================================================================
+CREATE OR REPLACE FUNCTION pg_temp._fiscal_3111_run_ownership(
   p_id text, p_perfil text, p_uid uuid, p_scope text, p_expected text
 ) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE
@@ -731,57 +924,59 @@ DECLARE
   v_ct int;
   v_observed text; v_status text; v_detail text;
 BEGIN
-  -- own = próprio invoice do produtor; other = invoice do outro
+  -- own: próprio invoice do produtor (via AR/user_clientes)
+  -- other: invoice do outro produtor (produtor B tenta ver A)
   v_target := CASE p_scope
     WHEN 'own' THEN CASE WHEN p_uid='ff5c3111-0000-0000-0000-00000000000b'::uuid
                           THEN 'ff5c3111-f15c-0000-0000-000000000001'::uuid
                           ELSE 'ff5c3111-f15c-0000-0000-000000000002'::uuid END
     WHEN 'other' THEN CASE WHEN p_uid='ff5c3111-0000-0000-0000-000000000010'::uuid
-                             THEN 'ff5c3111-f15c-0000-0000-000000000001'::uuid  -- B tenta ver A
+                             THEN 'ff5c3111-f15c-0000-0000-000000000001'::uuid
                              ELSE 'ff5c3111-f15c-0000-0000-000000000002'::uuid END
   END;
 
-  PERFORM public._fiscal_3111_as(p_uid);
+  PERFORM pg_temp._fiscal_3111_as(p_uid);
   BEGIN
     SELECT count(*) INTO v_ct FROM public.fiscal_invoices WHERE id = v_target;
     v_observed := CASE WHEN v_ct = 1 THEN 'allow' ELSE 'deny' END;
     v_status := CASE WHEN v_observed=p_expected THEN 'passed' ELSE 'failed' END;
-    v_detail := format('rows=%s target=%s',v_ct,left(v_target::text,8));
+    v_detail := format('rows=%s target=%s scope=%s',v_ct,left(v_target::text,8),p_scope);
   EXCEPTION WHEN OTHERS THEN
-    v_observed:='error'; v_status:='error'; v_detail := format('%s %s',SQLSTATE,SQLERRM);
+    v_observed:='error'; v_status:='error';
+    v_detail := format('%s %s',SQLSTATE,SQLERRM);
   END;
 
-  PERFORM public._fiscal_3111_reset();
-  PERFORM public._fiscal_3111_record(p_id,'ownership',p_perfil,
+  PERFORM pg_temp._fiscal_3111_reset();
+  PERFORM pg_temp._fiscal_3111_record(p_id,'ownership',p_perfil,
     'fiscal_invoices','SELECT',p_expected,v_observed,v_status,v_detail);
 END $$;
 
 -- =====================================================================
--- 7. Execução real da matriz
+-- 12. Execução real da matriz
 -- =====================================================================
 DO $run$
 DECLARE r record; cs int;
 BEGIN
-  FOR r IN SELECT * FROM public._fiscal_test_3111_matrix
+  FOR r IN SELECT * FROM pg_temp._fiscal_test_3111_matrix
            WHERE categoria='table' ORDER BY perfil, objeto, operacao LOOP
-    PERFORM public._fiscal_3111_run_table(r.perfil,r.user_id,r.is_anon,
+    PERFORM pg_temp._fiscal_3111_run_table(r.perfil,r.user_id,r.is_anon,
       r.objeto,r.operacao,r.expected);
   END LOOP;
 
-  FOR r IN SELECT * FROM public._fiscal_test_3111_matrix
+  FOR r IN SELECT * FROM pg_temp._fiscal_test_3111_matrix
            WHERE categoria='view' ORDER BY perfil, objeto LOOP
-    PERFORM public._fiscal_3111_run_view(r.perfil,r.user_id,r.is_anon,r.objeto,r.expected);
+    PERFORM pg_temp._fiscal_3111_run_view(r.perfil,r.user_id,r.is_anon,r.objeto,r.expected);
   END LOOP;
 
-  FOR r IN SELECT * FROM public._fiscal_test_3111_matrix
+  FOR r IN SELECT * FROM pg_temp._fiscal_test_3111_matrix
            WHERE categoria='rpc' ORDER BY perfil, operacao LOOP
     cs := split_part(r.operacao,'_',2)::int;
-    PERFORM public._fiscal_3111_run_rpc(r.perfil,r.user_id,r.is_anon,cs,r.expected);
+    PERFORM pg_temp._fiscal_3111_run_rpc(r.perfil,r.user_id,r.is_anon,cs,r.expected);
   END LOOP;
 
-  FOR r IN SELECT * FROM public._fiscal_test_3111_matrix
+  FOR r IN SELECT * FROM pg_temp._fiscal_test_3111_matrix
            WHERE categoria='ownership' ORDER BY perfil LOOP
-    PERFORM public._fiscal_3111_run_ownership(
+    PERFORM pg_temp._fiscal_3111_run_ownership(
       CASE r.objeto WHEN 'fiscal_invoices_own' THEN 'O-prodA-own' ELSE 'O-prodB-other' END,
       r.perfil, r.user_id,
       CASE r.objeto WHEN 'fiscal_invoices_own' THEN 'own' ELSE 'other' END,
@@ -790,10 +985,8 @@ BEGIN
 END $run$;
 
 -- =====================================================================
--- 8. TEARDOWN garantido (namespace sintético apenas)
+-- 13. TEARDOWN garantido (namespace sintético apenas)
 -- =====================================================================
--- reset via DO block abaixo
-
 DO $post_cleanup$
 BEGIN
   DELETE FROM public.fiscal_audit_log         WHERE (new_values->>'notes') LIKE 'FISCAL_TEST_3111_%'
@@ -814,12 +1007,13 @@ BEGIN
   DELETE FROM auth.users                      WHERE id::text LIKE 'ff5c3111-%';
 END $post_cleanup$;
 
--- Verificação zero-resíduo
+-- Verificação zero-resíduos: fixtures reais + ausência de helpers em public
 DO $residuals$
 DECLARE
   n_fi bigint; n_ev bigint; n_it bigint; n_ik bigint; n_al bigint;
   n_cs bigint; n_pfp bigint; n_sfp bigint; n_cfp bigint;
   n_ar bigint; n_cli bigint; n_uc bigint; n_ur bigint; n_pr bigint; n_au bigint;
+  n_pub_fn bigint; n_pub_tbl bigint;
   v_txt text;
 BEGIN
   SELECT count(*) INTO n_fi  FROM public.fiscal_invoices          WHERE notes LIKE 'FISCAL_TEST_3111_%';
@@ -838,50 +1032,56 @@ BEGIN
   SELECT count(*) INTO n_pr  FROM public.profiles                 WHERE user_id::text LIKE 'ff5c3111-%';
   SELECT count(*) INTO n_au  FROM auth.users                      WHERE id::text LIKE 'ff5c3111-%';
 
+  -- Helpers/tabelas de suporte em public devem ser inexistentes
+  SELECT count(*) INTO n_pub_fn FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname='public' AND p.proname LIKE '_fiscal_3111_%';
+  SELECT count(*) INTO n_pub_tbl FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+   WHERE n.nspname='public' AND c.relname LIKE '_fiscal_test_3111_%';
+
   v_txt := format(
-    'invoices=%s events=%s items=%s idemp=%s audit=%s company=%s prod=%s serv=%s cust=%s ar=%s clientes=%s user_clientes=%s user_roles=%s profiles=%s auth_users=%s',
-    n_fi,n_ev,n_it,n_ik,n_al,n_cs,n_pfp,n_sfp,n_cfp,n_ar,n_cli,n_uc,n_ur,n_pr,n_au);
+    'invoices=%s events=%s items=%s idemp=%s audit=%s company=%s prod=%s serv=%s cust=%s ar=%s clientes=%s user_clientes=%s user_roles=%s profiles=%s auth_users=%s pub_helpers=%s pub_tables=%s',
+    n_fi,n_ev,n_it,n_ik,n_al,n_cs,n_pfp,n_sfp,n_cfp,n_ar,n_cli,n_uc,n_ur,n_pr,n_au,n_pub_fn,n_pub_tbl);
   PERFORM set_config('fiscal.residuals', v_txt, false);
 
-  IF (n_fi+n_ev+n_it+n_ik+n_al+n_cs+n_pfp+n_sfp+n_cfp+n_ar+n_cli+n_uc+n_ur+n_pr+n_au) > 0 THEN
-    RAISE EXCEPTION 'ABORT 3.11.1: resíduos sintéticos remanescentes -> %', v_txt;
+  IF (n_fi+n_ev+n_it+n_ik+n_al+n_cs+n_pfp+n_sfp+n_cfp+n_ar+n_cli+n_uc+n_ur+n_pr+n_au+n_pub_fn+n_pub_tbl) > 0 THEN
+    RAISE EXCEPTION 'ABORT 3.11.2: resíduos sintéticos remanescentes -> %', v_txt;
   END IF;
 END $residuals$;
 
 -- =====================================================================
--- 9. SAÍDA 1 — detalhes por asserção
+-- 14. SAÍDA 1 — detalhes por asserção
 -- =====================================================================
 SELECT assertion_id, categoria, perfil, objeto, operacao,
        esperado, observado, status, detail
-  FROM public._fiscal_test_3111_results
+  FROM pg_temp._fiscal_test_3111_results
  ORDER BY categoria, perfil, objeto, operacao;
 
 -- =====================================================================
--- 10. SAÍDA 2 — resumo + classificação
+-- 15. SAÍDA 2 — resumo + classificação
 -- =====================================================================
 SELECT
   current_setting('fiscal.masked_ref', true)                       AS project_ref_masked,
-  (SELECT count(*)::int FROM public._fiscal_test_3111_results)      AS planejadas,
-  (SELECT count(*)::int FROM public._fiscal_test_3111_results
+  (SELECT count(*)::int FROM pg_temp._fiscal_test_3111_results)      AS planejadas,
+  (SELECT count(*)::int FROM pg_temp._fiscal_test_3111_results
      WHERE status <> 'skipped')                                     AS executadas,
-  (SELECT count(*)::int FROM public._fiscal_test_3111_results
+  (SELECT count(*)::int FROM pg_temp._fiscal_test_3111_results
      WHERE status='passed')                                         AS aprovadas,
-  (SELECT count(*)::int FROM public._fiscal_test_3111_results
+  (SELECT count(*)::int FROM pg_temp._fiscal_test_3111_results
      WHERE status='failed')                                         AS falhas,
-  (SELECT count(*)::int FROM public._fiscal_test_3111_results
+  (SELECT count(*)::int FROM pg_temp._fiscal_test_3111_results
      WHERE status='error')                                          AS erros,
-  (SELECT count(*)::int FROM public._fiscal_test_3111_results
+  (SELECT count(*)::int FROM pg_temp._fiscal_test_3111_results
      WHERE status='skipped')                                        AS skips,
   current_setting('fiscal.residuals', true)                        AS residuos,
-  CASE WHEN (SELECT count(*) FROM public._fiscal_test_3111_results
+  CASE WHEN (SELECT count(*) FROM pg_temp._fiscal_test_3111_results
               WHERE status IN ('failed','error','skipped'))=0
-       AND (SELECT count(*) FROM public._fiscal_test_3111_results)=677
+       AND (SELECT count(*) FROM pg_temp._fiscal_test_3111_results)=677
        THEN 'APTO' ELSE 'INAPTO' END                                AS classificacao;
 
--- Limpeza final das tabelas sintéticas de suporte
-DROP TABLE public._fiscal_test_3111_matrix;
--- (mantém _fiscal_test_3111_results temporariamente após COMMIT; usuário limpa manualmente
---  com DROP TABLE public._fiscal_test_3111_results; após exportar)
-
 COMMIT;
--- Fim do harness 3.11.1
+-- pg_temp (funções auxiliares + tabelas de suporte) é descartado
+-- automaticamente pelo PostgreSQL ao encerrar a sessão.
+-- Cleanup adicional não é necessário.
+-- Fim do harness 3.11.2
