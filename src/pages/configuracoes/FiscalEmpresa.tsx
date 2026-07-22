@@ -33,6 +33,11 @@ import {
   NFSE_MODES,
   type CompanyFiscalFormValues,
 } from "@/lib/fiscal/companyFiscalValidation";
+import {
+  CRT_OPTIONS, TAX_REGIME_OPTIONS, UF_OPTIONS, COUNTRY_OPTIONS,
+  PRESENCE_OPTIONS, FREIGHT_MODALITY_OPTIONS, RPS_TYPE_OPTIONS,
+  NFSE_SPECIAL_REGIME_OPTIONS,
+} from "@/lib/fiscal/fiscalOptions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
