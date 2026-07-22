@@ -1,14 +1,13 @@
 /**
  * Fase Fiscal 3.15 — Hook para o singleton `company_fiscal_settings`.
  *
- * `types.ts` é regenerado pela toolchain; nesta fase antecipamos o
- * contrato pela ampliação `CompanyFiscalRow` (união com os campos
- * novos). O acesso ao Supabase usa `as any` no filtro para tolerar a
- * defasagem até a regeneração.
- *
- * - RPC segura `rpc_fiscal_company_settings_init` (admin-only).
- * - Concorrência otimista por `configuration_version`.
- * - Sem uso de credenciais elevadas nem acesso a segredo.
+ * Contrato:
+ *   - Tipos são a fonte da verdade (types.ts já contém todas as colunas
+ *     e a RPC `rpc_fiscal_company_settings_init`). Não há casts locais.
+ *   - RPC segura `rpc_fiscal_company_settings_init` (admin-only, com
+ *     advisory lock transacional no banco).
+ *   - Concorrência otimista por `configuration_version`.
+ *   - Sem uso de credenciais elevadas nem acesso a segredo.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,24 +17,8 @@ import {
   type CompanyFiscalFormValues,
 } from "@/lib/fiscal/companyFiscalValidation";
 
-type BaseRow = Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
-
-/** Row estendido com colunas da Fase 3.15. */
-export type CompanyFiscalRow = BaseRow & {
-  configuration_version: number;
-  nfe_configuration: Record<string, unknown>;
-  nfse_configuration: Record<string, unknown>;
-  nfe_provider: string;
-  nfse_provider: string;
-  nfe_credential_ref: string | null;
-  nfse_credential_ref: string | null;
-  certificate_ref: string | null;
-  webhook_ref: string | null;
-  configuration_notes: string | null;
-  last_validation_at: string | null;
-  last_validation_status: string;
-  last_validation_summary: Record<string, unknown>;
-};
+export type CompanyFiscalRow =
+  Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
 
 export const FISCAL_COMPANY_KEYS = {
   settings: ["fiscal", "company", "settings"] as const,
@@ -48,6 +31,14 @@ function isPermissionError(err: unknown): boolean {
   if (e.status === 401 || e.status === 403) return true;
   if (typeof e.message === "string" && /permission|denied|rls/i.test(e.message)) return true;
   return false;
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === "object" && "message" in err) {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === "string") return m;
+  }
+  return fallback;
 }
 
 export function useFiscalCompanySettings(options: { enabled?: boolean } = {}) {
@@ -66,28 +57,23 @@ export function useFiscalCompanySettings(options: { enabled?: boolean } = {}) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
       }
-      return (data as unknown as CompanyFiscalRow) ?? null;
+      return data ?? null;
     },
   });
 }
 
-/** Inicializa o singleton (admin-only, idempotente). */
+/** Inicializa o singleton (admin-only, idempotente, anti-corrida no DB). */
 export function useInitFiscalCompanySettings() {
   const qc = useQueryClient();
   return useMutation<CompanyFiscalRow, Error, void>({
     mutationFn: async () => {
-      const { data, error } = await (
-        supabase as unknown as {
-          rpc: (name: string) => Promise<{ data: unknown; error: unknown }>;
-        }
-      ).rpc("rpc_fiscal_company_settings_init");
+      const { data, error } = await supabase.rpc("rpc_fiscal_company_settings_init");
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
-        const msg = (error as { message?: string }).message;
-        throw new Error(msg ?? "init_failed");
+        throw new Error(errorMessage(error, "init_failed"));
       }
       if (!data) throw new Error("init_failed");
-      return data as CompanyFiscalRow;
+      return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: FISCAL_COMPANY_KEYS.settings }),
   });
@@ -102,20 +88,10 @@ export function useUpdateFiscalCompanySettings() {
     { id: string; expectedVersion: number; values: CompanyFiscalFormValues }
   >({
     mutationFn: async ({ id, expectedVersion, values }) => {
-      const payload = buildUpdatePayload(values) as Record<string, unknown>;
+      const payload = buildUpdatePayload(values);
       payload.configuration_version = expectedVersion + 1;
-      const table = supabase.from("company_fiscal_settings") as unknown as {
-        update: (p: Record<string, unknown>) => {
-          eq: (col: string, val: unknown) => {
-            eq: (col: string, val: unknown) => {
-              select: (s: string) => {
-                maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
-              };
-            };
-          };
-        };
-      };
-      const { data, error } = await table
+      const { data, error } = await supabase
+        .from("company_fiscal_settings")
         .update(payload)
         .eq("id", id)
         .eq("configuration_version", expectedVersion)
@@ -123,10 +99,10 @@ export function useUpdateFiscalCompanySettings() {
         .maybeSingle();
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
-        throw new Error((error as { message?: string }).message ?? "update_failed");
+        throw new Error(errorMessage(error, "update_failed"));
       }
       if (!data) throw new Error("conflict");
-      return data as CompanyFiscalRow;
+      return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: FISCAL_COMPANY_KEYS.settings }),
   });
@@ -145,7 +121,7 @@ export interface CompanyFiscalReadiness {
   max_score: number;
 }
 
-const READINESS_FIELDS: Array<keyof BaseRow> = [
+const READINESS_FIELDS: Array<keyof CompanyFiscalRow> = [
   "cnpj", "legal_name", "trade_name", "fiscal_email", "tax_regime", "crt",
   "primary_cnae", "municipal_registration", "state_registration",
   "municipality_ibge_code", "postal_code", "street", "number",
