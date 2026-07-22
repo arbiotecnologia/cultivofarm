@@ -629,6 +629,12 @@ export default function FiscalEmpresa() {
             </Card>
           </TabsContent>
 
+          {canViewHomologation ? (
+            <TabsContent value="homologacao" className="space-y-4">
+              <HomologacaoSecao companySettingsId={settingsQuery.data?.id ?? null} />
+            </TabsContent>
+          ) : null}
+
           <TabsContent value="revisao" className="space-y-4">
             <Card>
               <CardHeader><CardTitle className="text-base">Revisão de prontidão</CardTitle></CardHeader>
