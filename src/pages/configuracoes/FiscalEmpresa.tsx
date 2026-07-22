@@ -389,7 +389,7 @@ export default function FiscalEmpresa() {
         </CardContent>
       </Card>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+      <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="nfe">NF-e</TabsTrigger>
