@@ -152,13 +152,16 @@ describe("Fase Fiscal 3.11.3 — harness SQL executável e sem regressões runti
     expect(SQL).not.toMatch(/UPDATE public\.fiscal_invoice_items SET description=/);
   });
 
-  test("Views v_product/service_fiscal_readiness recebem fixture elegível (is_active=true)", () => {
+  test("Views v_product/service_fiscal_readiness recebem fixture elegível (is_active=true); company NÃO (3.11.4)", () => {
     // product SEL row: '<uuid>', v_prod_real, true, ...
     expect(SQL).toMatch(/'ff5c3111-b12b-0000-0000-000000000001',\s*v_prod_real,\s*true/);
     // service SEL row: '<uuid>','FISCAL_TEST_3111_SEL_SERV', true, ...
     expect(SQL).toMatch(/'ff5c3111-5e12-0000-0000-000000000001'\s*,\s*'FISCAL_TEST_3111_SEL_SERV'\s*,\s*true/);
-    // company SEL row: '<uuid>', true, ...
-    expect(SQL).toMatch(/'ff5c3111-c04f-0000-0000-000000000001'\s*,\s*true/);
+    // 3.11.4: fixture company_fiscal_settings NÃO pode ser is_active=true
+    // (staging já possui singleton ativo; segundo violaria a unique).
+    expect(SQL).toMatch(/'ff5c3111-c04f-0000-0000-000000000001'\s*,\s*false/);
+    expect(SQL).not.toMatch(/'ff5c3111-c04f-0000-0000-000000000001'\s*,\s*true/);
+    expect(SQL).toMatch(/ux_company_fiscal_settings_active_singleton/);
   });
 
   test("RPC executor faz pre/post count como postgres (fora do bloco de exceção do role)", () => {
