@@ -17,15 +17,18 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED_EXT = [".pfx", ".p12"];
 const PKCS12_MAGIC = new Uint8Array([0x30, 0x82]);
 
-function corsHeaders(origin: string | null): Record<string, string> {
+function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
   const allow = (Deno.env.get("FISCAL_CORS_ALLOWLIST") ?? "")
     .split(",").map((s) => s.trim()).filter(Boolean);
-  const ok = origin && allow.includes(origin) ? origin : allow[0] ?? "";
+  const allowed = !!origin && allow.includes(origin);
   return {
-    "Access-Control-Allow-Origin": ok,
-    "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
+    allowed,
+    headers: {
+      "Access-Control-Allow-Origin": allowed ? origin! : "null",
+      "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Vary": "Origin",
+    },
   };
 }
 
@@ -59,9 +62,11 @@ async function aesGcmEncrypt(key: Uint8Array, data: Uint8Array): Promise<{ iv: U
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
-  const headers = corsHeaders(origin);
+  const cors = corsHeaders(origin);
+  const headers = cors.headers;
 
   if (req.method === "OPTIONS") return new Response("ok", { headers });
+  if (!cors.allowed) return json({ error: "cors_origin_not_allowed" }, 403, headers);
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
 
   // Auth

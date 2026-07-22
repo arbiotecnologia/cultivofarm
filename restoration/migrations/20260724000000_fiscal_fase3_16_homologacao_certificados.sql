@@ -499,14 +499,13 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  BEGIN
-    INSERT INTO public.fiscal_audit_log (
-      table_name, record_id, action, changed_by, old_values, new_values
-    ) VALUES (
-      'fiscal_certificates', COALESCE(NEW.id, OLD.id), v_action, auth.uid(), v_old, v_new
-    );
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
+  -- Fase 3.16.1: auditoria NUNCA silencia falhas — certificados são ativos
+  -- regulados e não podem ser gravados sem trilha completa.
+  INSERT INTO public.fiscal_audit_log (
+    table_name, record_id, action, changed_by, old_values, new_values
+  ) VALUES (
+    'fiscal_certificates', COALESCE(NEW.id, OLD.id), v_action, auth.uid(), v_old, v_new
+  );
   RETURN NEW;
 END;
 $$;

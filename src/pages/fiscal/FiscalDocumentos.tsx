@@ -54,7 +54,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, Lock, ShieldOff } from "lucide-react";
+import { AlertTriangle, Lock, ShieldOff, FilePlus2 } from "lucide-react";
+import RascunhoWizard from "@/components/fiscal/documentos/RascunhoWizard";
+import { useFiscalCompanySettings } from "@/hooks/useFiscalCompanySettings";
 
 const ROUTE = "/fiscal/documentos";
 
@@ -110,6 +112,8 @@ export default function FiscalDocumentos() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const companyQ = useFiscalCompanySettings({ enabled: flagOn && access !== "none" });
 
   const detailQ = useFiscalDocument(selectedId);
   const itemsQ = useFiscalDocumentItems(selectedId);
@@ -169,17 +173,29 @@ export default function FiscalDocumentos() {
             Consulta, edição documental e reconciliação. Sem emissão.
           </p>
         </div>
-        {canWrite && (
-          <Button
-            onClick={() => {
-              setSelectedId(null);
-              setCreating(true);
-            }}
-            data-testid="fiscal-doc-new"
-          >
-            Novo registro manual
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {canWrite && (
+            <Button
+              variant="default"
+              onClick={() => setWizardOpen(true)}
+              data-testid="fiscal-doc-novo-rascunho"
+            >
+              <FilePlus2 className="h-4 w-4 mr-2" aria-hidden /> Novo rascunho NF-e / NFS-e
+            </Button>
+          )}
+          {canWrite && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSelectedId(null);
+                setCreating(true);
+              }}
+              data-testid="fiscal-doc-new"
+            >
+              Novo registro manual
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -449,6 +465,40 @@ export default function FiscalDocumentos() {
         }}
         manualEventEnabled={manualEventFlag}
       />
+
+      <Sheet open={wizardOpen} onOpenChange={setWizardOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Novo rascunho NF-e / NFS-e</SheetTitle>
+            <SheetDescription>
+              Preparação e homologação. Nenhuma nota é transmitida por esta tela.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            {companyQ.isLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando configuração fiscal…</p>
+            ) : !companyQ.data?.cnpj ? (
+              <Alert variant="destructive">
+                <AlertTitle>Configuração fiscal incompleta</AlertTitle>
+                <AlertDescription>
+                  Preencha o CNPJ da empresa em Configurações → Fiscal antes de criar rascunhos.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <RascunhoWizard
+                invoiceId={null}
+                companyCnpj={companyQ.data.cnpj}
+                expectedVersion={1}
+                onSaved={(id) => {
+                  setWizardOpen(false);
+                  setSelectedId(id);
+                  toast({ title: "Rascunho salvo", description: "Você pode continuar editando pelo detalhe." });
+                }}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

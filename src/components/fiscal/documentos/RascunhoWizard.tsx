@@ -3,8 +3,10 @@
  *
  * NÃO transmite nada. Apenas prepara e salva rascunhos. Todos os textos
  * estão em pt-BR. Nenhum botão de emissão/transmissão/autorização.
+ * Fase 3.16.1: destinatário agora consulta `public.clientes` (metadados
+ * mínimos) via `useFiscalClientesLite`.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldOff, Trash2, Plus, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ShieldOff, Trash2, Plus, CheckCircle2, AlertTriangle, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   emptyRascunho,
@@ -21,6 +23,8 @@ import {
   type RascunhoItem,
 } from "@/lib/fiscal/rascunhoWizardValidation";
 import { useSaveFiscalRascunho, useValidateHomologation } from "@/hooks/useFiscalRascunho";
+import { useFiscalClientesLite } from "@/hooks/useFiscalClientesLite";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const STEPS = ["documento", "destinatario", "itens", "tributos", "revisao"] as const;
 type Step = (typeof STEPS)[number];
@@ -235,17 +239,29 @@ export default function RascunhoWizard({
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Destinatário</CardTitle>
-                <CardDescription>Selecione o cliente e confirme os dados fiscais.</CardDescription>
+                <CardDescription>Busque um cliente cadastrado (nome ou CPF/CNPJ) e confirme os dados fiscais.</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>ID do cliente</Label>
-                  <Input value={values.customer_id} onChange={(e) => set("customer_id", e.target.value)} placeholder="UUID do cliente" />
-                  {errors.customer_id ? <p className="text-xs text-destructive" role="alert">{errors.customer_id}</p> : null}
-                </div>
-                <div>
-                  <Label>CPF/CNPJ</Label>
-                  <Input value={values.customer_document} onChange={(e) => set("customer_document", e.target.value.replace(/\D/g, ""))} maxLength={14} />
+              <CardContent className="space-y-4">
+                <ClientePicker
+                  currentId={values.customer_id}
+                  currentDoc={values.customer_document}
+                  onPick={(c) => {
+                    set("customer_id", c.id);
+                    set("customer_document", (c.cpf_cnpj ?? "").replace(/\D/g, ""));
+                    set("customer_snapshot", { nome: c.nome, cpf_cnpj: c.cpf_cnpj });
+                  }}
+                  disabled={readonly}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>ID do cliente</Label>
+                    <Input value={values.customer_id} onChange={(e) => set("customer_id", e.target.value)} placeholder="UUID do cliente" />
+                    {errors.customer_id ? <p className="text-xs text-destructive" role="alert">{errors.customer_id}</p> : null}
+                  </div>
+                  <div>
+                    <Label>CPF/CNPJ</Label>
+                    <Input value={values.customer_document} onChange={(e) => set("customer_document", e.target.value.replace(/\D/g, ""))} maxLength={14} />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -371,6 +387,78 @@ export default function RascunhoWizard({
           </TabsContent>
         </fieldset>
       </Tabs>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcomponente: seletor de cliente (leitura leve, filtrado por RLS)
+// ────────────────────────────────────────────────────────────────────────────
+
+interface ClientePickerProps {
+  currentId: string;
+  currentDoc: string;
+  disabled?: boolean;
+  onPick: (c: { id: string; nome: string; cpf_cnpj: string | null }) => void;
+}
+
+function ClientePicker({ currentId, currentDoc, disabled, onPick }: ClientePickerProps) {
+  const [term, setTerm] = useState("");
+  const debounced = useDebounce(term, 250);
+  const [open, setOpen] = useState(false);
+  const listQ = useFiscalClientesLite(debounced);
+
+  useEffect(() => {
+    if (debounced.trim().length >= 2) setOpen(true);
+  }, [debounced]);
+
+  return (
+    <div className="rounded-md border p-3 space-y-2" data-testid="fiscal-rascunho-cliente-picker">
+      <Label>Buscar cliente</Label>
+      <div className="relative">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+        <Input
+          className="pl-8"
+          placeholder="Digite nome ou CPF/CNPJ"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          disabled={disabled}
+        />
+      </div>
+      {open && debounced.trim().length >= 2 && (
+        <div className="max-h-48 overflow-auto rounded border bg-background">
+          {listQ.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : (listQ.data ?? []).length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum cliente encontrado (ou sem permissão).</div>
+          ) : (
+            <ul className="text-sm">
+              {(listQ.data ?? []).map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted focus:bg-muted"
+                    onClick={() => {
+                      onPick(c);
+                      setTerm(c.nome);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-medium">{c.nome}</span>
+                    {c.cpf_cnpj ? <span className="text-xs text-muted-foreground ml-2">{c.cpf_cnpj}</span> : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {currentId && (
+        <p className="text-xs text-muted-foreground">
+          Selecionado: <span className="font-mono">{currentId.slice(0, 8)}…</span>
+          {currentDoc ? <> · CPF/CNPJ: {currentDoc}</> : null}
+        </p>
+      )}
     </div>
   );
 }

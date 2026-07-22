@@ -44,6 +44,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, CheckCircle2, Circle, Info } from "lucide-react";
+import CertificadoDigitalSecao from "@/components/fiscal/certificados/CertificadoDigitalSecao";
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
@@ -118,7 +119,7 @@ export default function FiscalEmpresa() {
 
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [tab, setTab] = useState<"empresa" | "nfe" | "nfse" | "integracao" | "revisao">("empresa");
+  const [tab, setTab] = useState<"empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "revisao">("empresa");
 
   useEffect(() => {
     if (settingsQuery.data) setValues(rowToFormValues(settingsQuery.data));
@@ -361,6 +362,7 @@ export default function FiscalEmpresa() {
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="nfe">NF-e</TabsTrigger>
           <TabsTrigger value="nfse">NFS-e</TabsTrigger>
+          <TabsTrigger value="certificado" data-testid="fiscal-empresa-tab-certificado">Certificado digital</TabsTrigger>
           <TabsTrigger value="integracao">Integração e segurança</TabsTrigger>
           <TabsTrigger value="revisao">Revisão</TabsTrigger>
         </TabsList>
@@ -564,6 +566,13 @@ export default function FiscalEmpresa() {
               <CardHeader><CardTitle className="text-base">Checklist NFS-e</CardTitle></CardHeader>
               <CardContent><Checklist items={nfseItems} /></CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="certificado" className="space-y-4">
+            <CertificadoDigitalSecao
+              companySettingsId={settingsQuery.data.id}
+              canEdit={canEdit}
+            />
           </TabsContent>
 
           <TabsContent value="integracao" className="space-y-4">
