@@ -81,7 +81,6 @@ describe("Fase Fiscal 3.11.3 — harness SQL executável e sem regressões runti
   });
 
   test("ordem canônica: user_clientes ANTES de user_roles cliente_produtor", () => {
-    // O bloco de user_clientes deve aparecer antes do bloco $seed_roles$
     const iSeedClientes = SQL.indexOf("$seed_clientes$");
     const iSeedRoles = SQL.indexOf("$seed_roles$");
     const iUserClientes = SQL.search(/INSERT INTO public\.user_clientes/);
@@ -90,9 +89,19 @@ describe("Fase Fiscal 3.11.3 — harness SQL executável e sem regressões runti
     expect(iSeedRoles).toBeGreaterThan(iSeedClientes);
     expect(iUserClientes).toBeGreaterThan(0);
     expect(iUserRoles).toBeGreaterThan(iUserClientes);
-    // E os produtores A/B (uuids ...000b e ...0010) estão vinculados a cliente
-    expect(SQL).toMatch(/ff5c3111-0000-0000-0000-00000000000b[\s\S]{0,400}ff5c3111-c1e1-0000-0000-000000000001/);
-    expect(SQL).toMatch(/ff5c3111-0000-0000-0000-000000000010[\s\S]{0,400}ff5c3111-c1e1-0000-0000-000000000002/);
+    // Bloco seed_clientes contém uuids dos produtores A/B e dos clientes A/B
+    const seedClientesBlock = SQL.slice(
+      iSeedClientes,
+      SQL.indexOf("$seed_clientes$", iSeedClientes + 1) + "$seed_clientes$".length,
+    );
+    for (const uuid of [
+      "ff5c3111-0000-0000-0000-00000000000b", // produtor A
+      "ff5c3111-0000-0000-0000-000000000010", // produtor B
+      "ff5c3111-c1e1-0000-0000-000000000001", // cliente A
+      "ff5c3111-c1e1-0000-0000-000000000002", // cliente B
+    ]) {
+      expect(seedClientesBlock, `bloco seed_clientes deve conter ${uuid}`).toContain(uuid);
+    }
   });
 
   test("financial_audit_log deletado ANTES de auth.users (pre e post cleanup)", () => {
