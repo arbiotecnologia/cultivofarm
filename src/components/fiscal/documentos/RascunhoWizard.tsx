@@ -358,7 +358,7 @@ export default function RascunhoWizard({
                 <div>
                   <Label>CPF/CNPJ do destinatário</Label>
                   <Input
-                    value={values.customer_document}
+                    value={formatCpfCnpj(values.customer_document)}
                     readOnly
                     placeholder="Selecione um cliente"
                   />
