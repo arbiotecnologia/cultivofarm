@@ -57,6 +57,17 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Lock, ShieldOff, FilePlus2 } from "lucide-react";
 import RascunhoWizard from "@/components/fiscal/documentos/RascunhoWizard";
 import { useFiscalCompanySettings } from "@/hooks/useFiscalCompanySettings";
+import {
+  labelDocumentModel,
+  labelDocumentOrigin,
+  labelNormalizedStatus,
+  labelStatus,
+  labelEnvironment,
+  labelReconciliationStatus,
+  labelInvoiceType,
+  labelItemKind,
+} from "@/lib/fiscal/documentLabels";
+
 
 const ROUTE = "/fiscal/documentos";
 
@@ -228,7 +239,7 @@ export default function FiscalDocumentos() {
               <SelectContent>
                 <SelectItem value="__all__">Todos</SelectItem>
                 {DOCUMENT_MODEL_VALUES.map((v) => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                  <SelectItem key={v} value={v}>{labelDocumentModel(v)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -246,7 +257,7 @@ export default function FiscalDocumentos() {
               <SelectContent>
                 <SelectItem value="__all__">Todos</SelectItem>
                 {NORMALIZED_STATUS_MANUAL.map((v) => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                  <SelectItem key={v} value={v}>{labelNormalizedStatus(v)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -264,7 +275,7 @@ export default function FiscalDocumentos() {
               <SelectContent>
                 <SelectItem value="__all__">Todos</SelectItem>
                 {RECONCILIATION_STATUS_VALUES.map((v) => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                  <SelectItem key={v} value={v}>{labelReconciliationStatus(v)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -322,21 +333,21 @@ export default function FiscalDocumentos() {
                       onClick={() => { setCreating(false); setSelectedId(r.id); }}
                       data-testid={`fiscal-doc-row-${r.id}`}
                     >
-                      <td className="p-2">{r.document_model ?? "—"}</td>
-                      <td className="p-2">{r.document_origin ?? "—"}</td>
+                      <td className="p-2">{labelDocumentModel(r.document_model)}</td>
+                      <td className="p-2">{labelDocumentOrigin(r.document_origin)}</td>
                       <td className="p-2">
                         {r.invoice_number ?? "—"} / {r.series ?? "—"}
                       </td>
                       <td className="p-2">{r.issue_date ?? "—"}</td>
                       <td className="p-2">
-                        <Badge variant="outline">{r.normalized_status ?? r.status}</Badge>
+                        <Badge variant="outline">{labelNormalizedStatus(r.normalized_status ?? r.status)}</Badge>
                         {r.locked_at && (
                           <Badge className="ml-2" variant="secondary">
                             <Lock className="w-3 h-3 mr-1" /> travado
                           </Badge>
                         )}
                       </td>
-                      <td className="p-2">{r.reconciliation_status ?? "—"}</td>
+                      <td className="p-2">{labelReconciliationStatus(r.reconciliation_status)}</td>
                       <td className="p-2">{currency(r.total_amount)}</td>
                       <td className="p-2 text-xs">
                         {r.receivable_id && <div>AR: {truncate(r.receivable_id, 8)}</div>}
@@ -389,7 +400,7 @@ export default function FiscalDocumentos() {
             <ul className="space-y-1">
               {reconQ.data.slice(0, 20).map((r, i) => (
                 <li key={`${r.fiscal_invoice_id}-${i}`}>
-                  {r.document_model} · {r.normalized_status} · {r.reconciliation_status}
+                  {labelDocumentModel(r.document_model)} · {labelNormalizedStatus(r.normalized_status)} · {labelReconciliationStatus(r.reconciliation_status)}
                 </li>
               ))}
             </ul>
@@ -627,7 +638,7 @@ function DetailSheet(props: DetailProps) {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {INVOICE_TYPE_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                        <SelectItem key={v} value={v}>{labelInvoiceType(v)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -642,7 +653,7 @@ function DetailSheet(props: DetailProps) {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {DOCUMENT_MODEL_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                        <SelectItem key={v} value={v}>{labelDocumentModel(v)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -657,7 +668,7 @@ function DetailSheet(props: DetailProps) {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {ENVIRONMENT_ALLOWED.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                        <SelectItem key={v} value={v}>{labelEnvironment(v)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -673,7 +684,7 @@ function DetailSheet(props: DetailProps) {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {STATUS_ALLOWED.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                        <SelectItem key={v} value={v}>{labelStatus(v)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -688,7 +699,7 @@ function DetailSheet(props: DetailProps) {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {NORMALIZED_STATUS_MANUAL.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                        <SelectItem key={v} value={v}>{labelNormalizedStatus(v)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -703,7 +714,7 @@ function DetailSheet(props: DetailProps) {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {RECONCILIATION_STATUS_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                        <SelectItem key={v} value={v}>{labelReconciliationStatus(v)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -809,7 +820,7 @@ function DetailSheet(props: DetailProps) {
                   {items.map((it) => (
                     <tr key={it.id} className="border-t">
                       <td className="p-2">{it.item_sequence}</td>
-                      <td className="p-2">{it.item_kind}</td>
+                      <td className="p-2">{labelItemKind(it.item_kind)}</td>
                       <td className="p-2">{truncate(it.description)}</td>
                       <td className="p-2">{it.quantity ?? "—"}</td>
                       <td className="p-2">{currency(it.unit_value)}</td>

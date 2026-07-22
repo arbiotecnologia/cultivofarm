@@ -1,8 +1,11 @@
 /**
- * Fase Fiscal 3.16 — Schemas Zod do wizard de rascunho NF-e/NFS-e.
+ * Fase Fiscal 3.16 / 3.16.2-B — Schemas Zod do wizard de rascunho NF-e/NFS-e.
  *
  * Sem `any`/`as unknown as`. Validação por etapa; agregador final.
  * Restringe a status DRAFT/HOMOLOGATION e provider NONE.
+ *
+ * 3.16.2-B: itens passam a carregar `fiscal_profile_snapshot` e
+ * `tax_snapshot` sanitizados; o servidor recomputa/valida e persiste.
  */
 import { z } from "zod";
 
@@ -32,6 +35,8 @@ export const destinatarioStepSchema = z.object({
   customer_snapshot: z.record(z.string(), z.unknown()).default({}),
 });
 
+const jsonRecord = z.record(z.string(), z.unknown()).default({});
+
 export const itemSchema = z.object({
   item_kind: z.enum(["PRODUCT", "SERVICE"]),
   description: z.string().trim().min(1).max(500),
@@ -43,14 +48,24 @@ export const itemSchema = z.object({
   net_value: z.number().nonnegative(),
   source_item_type: z.string().trim().max(60).optional(),
   source_item_id: z.string().uuid().optional().nullable(),
-  // Tributos (opcionais na etapa; recalculados no servidor)
-  ncm: z.string().trim().max(10).optional(),
-  cest: z.string().trim().max(10).optional(),
-  cfop: z.string().trim().max(6).optional(),
-  cst_icms: z.string().trim().max(4).optional(),
-  lc116_item: z.string().trim().max(10).optional(),
-  cnae: z.string().trim().max(10).optional(),
+  // Campos fiscais/tributários pt-BR — recomputados no servidor.
+  ncm: z.string().trim().max(10).optional().default(""),
+  cest: z.string().trim().max(10).optional().default(""),
+  cfop: z.string().trim().max(6).optional().default(""),
+  origin_code: z.string().trim().max(2).optional().default(""),
+  icms_cst: z.string().trim().max(4).optional().default(""),
+  icms_csosn: z.string().trim().max(4).optional().default(""),
+  ipi_cst: z.string().trim().max(4).optional().default(""),
+  pis_cst: z.string().trim().max(4).optional().default(""),
+  cofins_cst: z.string().trim().max(4).optional().default(""),
+  lc116_item: z.string().trim().max(10).optional().default(""),
+  cnae: z.string().trim().max(10).optional().default(""),
+  municipal_taxation_code: z.string().trim().max(20).optional().default(""),
   iss_rate: z.number().min(0).max(100).optional(),
+  iss_withheld: z.boolean().optional().default(false),
+  // Snapshots opacos por item (server valida ausência de segredo)
+  fiscal_profile_snapshot: jsonRecord,
+  tax_snapshot: jsonRecord,
 });
 
 export const itensStepSchema = z.object({
