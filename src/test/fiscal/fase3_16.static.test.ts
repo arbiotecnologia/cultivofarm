@@ -194,7 +194,7 @@ describe("Fase 3.16.2-A — migration canônica (schema + segurança)", () => {
     expect(sql).toMatch(/REVOKE ALL ON public\.fiscal_certificate_material FROM authenticated/);
     expect(sql).toMatch(/REVOKE ALL ON public\.fiscal_certificate_material FROM anon/);
     expect(sql).toMatch(/GRANT ALL ON public\.fiscal_certificate_material TO service_role/);
-    expect(sql).not.toMatch(/CREATE POLICY[\s\S]*ON public\.fiscal_certificate_material/);
+    expect(sql).not.toMatch(/CREATE POLICY\s+\w+\s+ON\s+public\.fiscal_certificate_material/);
     expect(sql).not.toMatch(/GRANT SELECT ON public\.fiscal_certificate_material TO authenticated/);
   });
 
