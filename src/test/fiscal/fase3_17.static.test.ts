@@ -1,8 +1,9 @@
 /**
- * Fase Fiscal 3.17 — Testes estáticos.
+ * Fase Fiscal 3.17 / 3.17.1 — Testes estáticos.
  *
  * Cobrem: migration canônica read-only, ausência de emissão na tela nova,
- * gate por papel, contrato de tipos estreito, guards das fixtures.
+ * gate por papel, contrato de tipos estreito, guards das fixtures e as
+ * incompatibilidades de schema corrigidas na auditoria 3.17.1.
  */
 import { describe, test, expect } from "vitest";
 import { readFileSync, existsSync, statSync } from "node:fs";
@@ -12,6 +13,7 @@ import {
   READINESS_ITEM_STATUS,
   READINESS_OVERALL_STATUS,
   STATUS_LABEL_PTBR,
+  OVERALL_STATUS_LABEL_PTBR,
 } from "@/lib/fiscal/homologationReadiness";
 
 const ROOT = resolve(__dirname, "../../..");
@@ -22,6 +24,7 @@ const STUB     = p("restoration/migrations/20260725000000_fiscal_fase3_17_homolo
 const SECAO    = p("src/components/fiscal/homologacao/HomologacaoSecao.tsx");
 const TYPES    = p("src/lib/fiscal/homologationReadiness.ts");
 const HOOK     = p("src/hooks/useFiscalHomologationReadiness.ts");
+const EMPRESA  = p("src/pages/configuracoes/FiscalEmpresa.tsx");
 const FX_DIR   = p("restoration/fiscal-homologation-fixtures");
 const FX_PRE   = p("restoration/fiscal-homologation-fixtures/01-preflight.sql");
 const FX_SEED  = p("restoration/fiscal-homologation-fixtures/02-seed.sql");
@@ -34,6 +37,8 @@ const stubSql  = () => readFileSync(STUB, "utf8");
 const secaoTsx = () => readFileSync(SECAO, "utf8");
 const typesTs  = () => readFileSync(TYPES, "utf8");
 const hookTs   = () => readFileSync(HOOK, "utf8");
+const empresaTsx = () => readFileSync(EMPRESA, "utf8");
+const stripSql = (s: string) => s.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
 
 describe("Fase 3.17 — arquivos presentes", () => {
   test("migration canônica em supabase/migrations", () => {
@@ -69,11 +74,8 @@ describe("Fase 3.17 — migration segura e read-only", () => {
     expect(s).toMatch(/GRANT EXECUTE ON FUNCTION public\.rpc_fiscal_homologation_readiness\(\) TO authenticated/);
   });
   test("sem escrita, HTTP ou material sensível projetado", () => {
-    const raw = migSql();
-    // Remove comentários de linha (-- ...) e de bloco (/* ... */) antes das
-    // checagens: palavras proibidas só podem aparecer em texto documental.
-    const s = raw.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
-    expect(/\bhttp[_\.]/i.test(s)).toBe(false);
+    const s = stripSql(migSql());
+    expect(/\bhttp[_.]/i.test(s)).toBe(false);
     expect(/\bpg_net\b/i.test(s)).toBe(false);
     expect(/\bINSERT\s+INTO\b/i.test(s)).toBe(false);
     expect(/\bUPDATE\s+public\./i.test(s)).toBe(false);
@@ -84,6 +86,38 @@ describe("Fase 3.17 — migration segura e read-only", () => {
   });
 });
 
+describe("Fase 3.17.1 — nomes canônicos de schema", () => {
+  test("migration usa municipality_ibge_code (nunca municipality_code)", () => {
+    const s = stripSql(migSql());
+    expect(s).toMatch(/municipality_ibge_code/);
+    expect(/\bmunicipality_code\b/.test(s)).toBe(false);
+  });
+  test("migration usa document_origin em fiscal_invoices (nunca `origin`)", () => {
+    const s = stripSql(migSql());
+    expect(s).toMatch(/document_origin\s*=\s*'MANUAL_RECORD'/);
+    // Sem `origin` como coluna de fiscal_invoices.
+    expect(/\borigin\s*=\s*'MANUAL_RECORD'/.test(s)).toBe(false);
+    expect(/\bfiscal_invoices\s+WHERE[^;]*\borigin\b/i.test(s)).toBe(false);
+  });
+  test("EXCEPTION handlers marcam flag de disponibilidade", () => {
+    const s = stripSql(migSql());
+    // Cada bloco EXCEPTION deve sinalizar UNAVAILABLE por flag `_available := false`.
+    expect(s).toMatch(/v_products_available\s*:=\s*false/);
+    expect(s).toMatch(/v_services_available\s*:=\s*false/);
+    expect(s).toMatch(/v_customers_available\s*:=\s*false/);
+    expect(s).toMatch(/v_drafts_available\s*:=\s*false/);
+  });
+  test("checklist projeta UNAVAILABLE quando flag negativa", () => {
+    const s = stripSql(migSql());
+    expect(s).toMatch(/NOT v_products_available[^,]+UNAVAILABLE/);
+    expect(s).toMatch(/NOT v_services_available[^,]+UNAVAILABLE/);
+    expect(s).toMatch(/NOT v_customers_available[^,]+UNAVAILABLE/);
+    // Status geral: UNAVAILABLE trava READY.
+    expect(s).toMatch(/v_has_unavailable/);
+    expect(s).toMatch(/ELSIF v_has_unavailable/);
+  });
+});
+
 describe("Fase 3.17 — UI Homologação", () => {
   test("componente existe e tem título pt-BR", () => {
     const s = secaoTsx();
@@ -91,10 +125,6 @@ describe("Fase 3.17 — UI Homologação", () => {
   });
   test("não expõe botões proibidos de emissão/transmissão", () => {
     const s = secaoTsx();
-    // Não devem existir botões/links de Emitir, Transmitir, Autorizar
-    // ou "Produção" como ação. As strings podem aparecer como rótulos
-    // informativos (ex.: "Produção: Desabilitada"), então checamos
-    // padrões de ação em JSX.
     expect(/>\s*Emitir\s*</i.test(s)).toBe(false);
     expect(/>\s*Transmitir\s*</i.test(s)).toBe(false);
     expect(/>\s*Autorizar\s*</i.test(s)).toBe(false);
@@ -112,6 +142,13 @@ describe("Fase 3.17 — UI Homologação", () => {
     expect(s).toMatch(/STATUS_LABEL_PTBR/);
     expect(s).toMatch(/OVERALL_STATUS_LABEL_PTBR/);
   });
+  test("deep-link ?aba=certificado é aceito pela FiscalEmpresa", () => {
+    const s = empresaTsx();
+    expect(s).toMatch(/useSearchParams/);
+    expect(s).toMatch(/searchParams\.get\(["']aba["']\)/);
+    // O componente Certificado é montado dentro de uma TabsContent 'certificado'.
+    expect(s).toMatch(/TabsContent value="certificado"/);
+  });
 });
 
 describe("Fase 3.17 — tipos estreitos sem any", () => {
@@ -125,6 +162,8 @@ describe("Fase 3.17 — tipos estreitos sem any", () => {
     }
     expect(READINESS_OVERALL_STATUS).toContain("READY");
     expect(READINESS_OVERALL_STATUS).toContain("BLOCKED");
+    expect(READINESS_OVERALL_STATUS).toContain("UNAVAILABLE");
+    expect(OVERALL_STATUS_LABEL_PTBR.UNAVAILABLE).toMatch(/Indisponível/);
   });
   test("parseReadinessResult é defensivo com payload arbitrário", () => {
     const out = parseReadinessResult({ status: "READY", checklist: [{ key: "k", label: "l", status: "READY" }] });
@@ -134,6 +173,14 @@ describe("Fase 3.17 — tipos estreitos sem any", () => {
     expect(empty.status).toBe("UNAVAILABLE");
     expect(empty.checklist).toEqual([]);
   });
+  test("parseReadinessResult aceita status UNAVAILABLE agregado", () => {
+    const out = parseReadinessResult({
+      status: "UNAVAILABLE",
+      checklist: [{ key: "k", label: "l", status: "UNAVAILABLE" }],
+    });
+    expect(out.status).toBe("UNAVAILABLE");
+    expect(out.checklist[0].status).toBe("UNAVAILABLE");
+  });
   test("hook não usa `any` cru e trata RPC ausente", () => {
     const s = hookTs();
     expect(/:\s*any\b/.test(s)).toBe(false);
@@ -141,47 +188,83 @@ describe("Fase 3.17 — tipos estreitos sem any", () => {
   });
 });
 
-describe("Fase 3.17 — fixtures de staging seguras", () => {
+describe("Fase 3.17.1 — fixtures de staging seguras", () => {
   test("pacote completo presente", () => {
     for (const f of [FX_DIR, FX_PRE, FX_SEED, FX_VER, FX_CLEAN, FX_README]) {
       expect(existsSync(f), `ausente: ${f}`).toBe(true);
     }
   });
-  test("preflight exige marker STAGING", () => {
+  test("preflight exige marker STAGING, GUC de sessão e migrations canônicas", () => {
     const s = readFileSync(FX_PRE, "utf8");
     expect(s).toMatch(/_fiscal_staging_marker/);
     expect(s).toMatch(/'STAGING'/);
+    expect(s).toMatch(/app\.fiscal_test_project_ref/);
+    expect(s).toMatch(/20260724000000/);
+    expect(s).toMatch(/20260725000000/);
+    expect(s).toMatch(/production_enabled\s*=\s*true/);
     expect(s).toMatch(/FISCAL_HML_ABORT/);
     // Preflight NÃO cria o marker.
     expect(/INSERT\s+INTO\s+public\._fiscal_staging_marker/i.test(s)).toBe(false);
   });
-  test("seed usa prefixo FISCAL_HML_ e não cria emissão real", () => {
+  test("seed usa colunas canônicas e proíbe as inexistentes", () => {
     const raw = readFileSync(FX_SEED, "utf8");
-    const s = raw.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    const s = stripSql(raw);
+    // Prefixo aplicado.
     expect(raw).toMatch(/FISCAL_HML_/);
+    // Colunas obrigatórias reais nos INSERT de fiscal_invoices.
+    expect(s).toMatch(/document_origin/);
+    expect(s).toMatch(/created_by/);
+    expect(s).toMatch(/invoice_type/);
+    // Cliente com codigo_cliente obrigatório.
+    expect(s).toMatch(/codigo_cliente/);
+    // Itens usando a coluna real.
+    expect(s).toMatch(/fiscal_invoice_id/);
+    expect(s).toMatch(/item_kind/);
+    // Nenhum status proibido.
     expect(/'(AUTHORIZED|ISSUED|TRANSMITTED)'/i.test(s)).toBe(false);
     // Nenhum certificado real.
     expect(/\bfiscal_certificates\b|\bfiscal_certificate_material\b/i.test(s)).toBe(false);
-    // Preflight repetido.
+    // Nomes proibidos: coluna `origin` de invoice, `invoice_id` do item,
+    // `internal_reference` inexistente.
+    expect(/\borigin\s*[,)]/i.test(s)).toBe(false);
+    expect(/\borigin\s*=\s*'MANUAL_RECORD'/i.test(s)).toBe(false);
+    expect(/\binvoice_id\b(?!\w)/i.test(s.replace(/fiscal_invoice_id/g, ""))).toBe(false);
+    expect(/internal_reference/i.test(s)).toBe(false);
+    // Usuário: não pode ler auth.users como fallback.
+    expect(/\bauth\.users\b/i.test(s)).toBe(false);
+    // Contexto sintético obrigatório.
+    expect(s).toMatch(/_fiscal_hml_context/);
+    expect(s).toMatch(/HML_USER/);
+    // Preflight reafirmado.
     expect(s).toMatch(/_fiscal_staging_marker/);
+    // Insere itens reais em fiscal_invoice_items.
+    expect(s).toMatch(/INSERT\s+INTO\s+public\.fiscal_invoice_items/i);
   });
   test("verify prova ausência de produção e status proibidos", () => {
-    const s = readFileSync(FX_VER, "utf8");
-    expect(s).toMatch(/environment <> 'HOMOLOGATION'/);
+    const s = stripSql(readFileSync(FX_VER, "utf8"));
+    expect(s).toMatch(/environment\s*<>\s*'HOMOLOGATION'/);
     expect(s).toMatch(/AUTHORIZED/);
     expect(s).toMatch(/ISSUED/);
+    expect(s).toMatch(/document_origin/);
+    expect(s).toMatch(/_fiscal_hml_inventory/);
+    expect(s).toMatch(/production_enabled/);
+    expect(/\borigin\s*<>/i.test(s)).toBe(false);
   });
-  test("cleanup é limitado ao prefixo e não usa CASCADE amplo", () => {
+  test("cleanup é limitado ao inventário e ao prefixo, sem CASCADE amplo", () => {
     const raw = readFileSync(FX_CLEAN, "utf8");
-    const s = raw.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    const s = stripSql(raw);
     expect(raw).toMatch(/FISCAL_HML_/);
     expect(/\bTRUNCATE\b/i.test(s)).toBe(false);
     expect(/\bDROP\s+/i.test(s)).toBe(false);
     expect(/\bCASCADE\b/i.test(s)).toBe(false);
+    // Usa a coluna real do schema, nunca a inexistente.
+    expect(s).toMatch(/fiscal_invoice_id/);
+    expect(/\binvoice_id\b(?!\w)/i.test(s.replace(/fiscal_invoice_id/g, ""))).toBe(false);
+    // Cada DELETE referencia o inventário OU o prefixo canônico.
     const deletes = s.match(/DELETE\s+FROM[\s\S]+?;/gi) ?? [];
     expect(deletes.length).toBeGreaterThan(0);
     for (const d of deletes) {
-      expect(d).toMatch(/FISCAL_HML_/);
+      expect(/_fiscal_hml_inventory|FISCAL_HML_/i.test(d)).toBe(true);
     }
   });
   test("nenhum segredo, URL ou project ref presente", () => {
