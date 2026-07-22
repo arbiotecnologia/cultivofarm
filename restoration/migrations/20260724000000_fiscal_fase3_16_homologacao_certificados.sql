@@ -1,0 +1,3 @@
+-- STUB DOCUMENTAL — Fase Fiscal 3.16.
+-- Migration canônica: supabase/migrations/20260724000000_fiscal_fase3_16_homologacao_certificados.sql
+-- Este arquivo não contém instruções executáveis. Não copiar SQL para cá.

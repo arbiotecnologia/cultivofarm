@@ -1,10 +1,13 @@
 /**
- * Fase Fiscal 3.15 — Feature flags fiscais.
+ * Fase Fiscal 3.16 — Feature flags fiscais.
  *
- * NESTA FASE: apenas `fiscalConfigurationUi` é liberada (Central de
- * Configuração Fiscal — SEM emissão). Todas as demais flags — inclusive
- * as de workflow, reconciliação e a TRAVA `fiscalEmissionEnabled` —
- * permanecem `false`.
+ * NESTA FASE liberamos apenas o necessário para PREPARAÇÃO/HOMOLOGAÇÃO:
+ * `fiscalConfigurationUi`, perfis (produtos/serviços/clientes), workflow
+ * de rascunho e a Central de Prontidão (somente leitura).
+ *
+ * Permanecem `false`: `fiscalReconciliationUi`, `fiscalReconciliationWrite`,
+ * `fiscalDocumentManualEventRpc` (eventos manuais aguardam certificação
+ * dedicada) e a TRAVA `fiscalEmissionEnabled`.
  */
 export type FeatureFlagName =
   | "fiscalConfigurationUi"
@@ -19,21 +22,24 @@ export type FeatureFlagName =
   | "fiscalEmissionEnabled";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
-  /**
-   * Fase Fiscal 3.15 — Central de Configuração Fiscal.
-   * Liberada para que o administrador prepare NF-e/NFS-e no momento
-   * correto. NÃO autoriza emissão nem conexão com provedor.
-   */
+  /** Central de Configuração Fiscal (Fase 3.15). */
   fiscalConfigurationUi: true,
-  fiscalProductProfilesUi: false,
-  fiscalServiceProfilesUi: false,
-  fiscalCustomerProfilesUi: false,
-  fiscalDocumentWorkflowUi: false,
+  /** Perfis fiscais de produtos (Fase 3.2) — liberados em 3.16. */
+  fiscalProductProfilesUi: true,
+  /** Perfis fiscais de serviços (Fase 3.3) — liberados em 3.16. */
+  fiscalServiceProfilesUi: true,
+  /** Perfis fiscais de clientes (Fase 3.4) — liberados em 3.16. */
+  fiscalCustomerProfilesUi: true,
+  /** Wizard de rascunho NF-e/NFS-e (Fase 3.5 + 3.16). */
+  fiscalDocumentWorkflowUi: true,
+  /** RPC de eventos manuais — permanece `false` até certificação dedicada. */
   fiscalDocumentManualEventRpc: false,
+  /** Reconciliação assistida — permanece leitura interna, sem UI liberada. */
   fiscalReconciliationUi: false,
   fiscalReconciliationWrite: false,
-  fiscalReadinessCenterUi: false,
-  /** TRAVA DE EMISSÃO — permanece `false` nesta fase. */
+  /** Central de Prontidão (Fase 3.7) — liberada em 3.16 (somente leitura). */
+  fiscalReadinessCenterUi: true,
+  /** TRAVA DE EMISSÃO — permanece `false` em toda esta fase. */
   fiscalEmissionEnabled: false,
 };
 
