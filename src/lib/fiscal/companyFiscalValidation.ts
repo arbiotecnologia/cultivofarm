@@ -16,7 +16,7 @@
  * - `fiscal_provider` legacy permanece `NONE`.
  */
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 type Row = Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
 type Update = Database["public"]["Tables"]["company_fiscal_settings"]["Update"];
@@ -226,23 +226,78 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
   "last_validation_at",
 ] as const;
 
+/**
+ * Constrói payload de UPDATE tipado. Mapeamento explícito para as
+ * colunas reais de `company_fiscal_settings` — nenhum `as unknown as`,
+ * nenhum `any`. Chaves proibidas nunca são incluídas.
+ */
 export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   const parsed = companyFiscalFormSchema.parse(values);
-  const payload: Record<string, unknown> = {};
+  const payload: Update = {
+    // Trava: provider legacy sempre NONE.
+    fiscal_provider: LOCKED_PROVIDER,
+  };
 
-  for (const [key, val] of Object.entries(parsed)) {
-    if (val === undefined) continue;
-    if ((FORBIDDEN_PAYLOAD_KEYS as readonly string[]).includes(key)) continue;
-    if (key === "configuration_version") continue; // usado só na cláusula WHERE
-    if (key === "cnpj" && typeof val === "string") {
-      payload.cnpj = normalizeCnpj(val);
-      continue;
-    }
-    payload[key] = val;
+  const assignText = (key: keyof Update, val: string | null | undefined) => {
+    if (val === undefined) return;
+    (payload as Record<string, string | null>)[key as string] = val;
+  };
+
+  if (parsed.cnpj !== undefined) payload.cnpj = parsed.cnpj === null ? null : normalizeCnpj(parsed.cnpj);
+  assignText("legal_name", parsed.legal_name);
+  assignText("trade_name", parsed.trade_name);
+  assignText("fiscal_email", parsed.fiscal_email);
+  assignText("phone", parsed.phone);
+  assignText("tax_regime", parsed.tax_regime);
+  assignText("crt", parsed.crt);
+  assignText("primary_cnae", parsed.primary_cnae);
+  assignText("municipal_registration", parsed.municipal_registration);
+  assignText("state_registration", parsed.state_registration);
+  assignText("municipality_ibge_code", parsed.municipality_ibge_code);
+  assignText("postal_code", parsed.postal_code);
+  assignText("street", parsed.street);
+  assignText("number", parsed.number);
+  assignText("complement", parsed.complement);
+  assignText("neighborhood", parsed.neighborhood);
+  assignText("city", parsed.city);
+  assignText("state", parsed.state);
+  assignText("country_code", parsed.country_code);
+  assignText("nfe_series", parsed.nfe_series);
+  assignText("nfse_series", parsed.nfse_series);
+  assignText("nfe_credential_ref", parsed.nfe_credential_ref);
+  assignText("nfse_credential_ref", parsed.nfse_credential_ref);
+  assignText("certificate_ref", parsed.certificate_ref);
+  assignText("webhook_ref", parsed.webhook_ref);
+  assignText("configuration_notes", parsed.configuration_notes);
+
+  if (parsed.fiscal_environment !== undefined) payload.fiscal_environment = parsed.fiscal_environment;
+  if (parsed.configuration_status !== undefined) payload.configuration_status = parsed.configuration_status;
+  if (parsed.nfe_enabled !== undefined) payload.nfe_enabled = parsed.nfe_enabled;
+  if (parsed.nfse_enabled !== undefined) payload.nfse_enabled = parsed.nfse_enabled;
+  if (parsed.nfe_provider !== undefined) payload.nfe_provider = parsed.nfe_provider;
+  if (parsed.nfse_provider !== undefined) payload.nfse_provider = parsed.nfse_provider;
+  if (parsed.nfe_configuration !== undefined) {
+    payload.nfe_configuration = parsed.nfe_configuration as Json;
   }
+  if (parsed.nfse_configuration !== undefined) {
+    payload.nfse_configuration = parsed.nfse_configuration as Json;
+  }
+  // configuration_version é definido pelo hook (expectedVersion + 1),
+  // não pelo formulário — nunca copiar do parsed aqui.
 
-  payload.fiscal_provider = LOCKED_PROVIDER;
-  return payload as unknown as Update;
+  return payload;
+}
+
+function coerceProvider(v: string | null | undefined): AllowedProvider {
+  if (v && (ALLOWED_PROVIDERS as readonly string[]).includes(v)) return v as AllowedProvider;
+  return "NONE";
+}
+
+function jsonObjectRecord(v: Json | null | undefined): Record<string, unknown> {
+  if (v && typeof v === "object" && !Array.isArray(v)) {
+    return v as Record<string, unknown>;
+  }
+  return {};
 }
 
 export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
@@ -259,32 +314,12 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
       configuration_version: 1,
     };
   }
-  const env = (ALLOWED_ENVIRONMENTS as readonly string[]).includes(row.fiscal_environment)
+  const env: AllowedEnvironment = (ALLOWED_ENVIRONMENTS as readonly string[]).includes(row.fiscal_environment)
     ? (row.fiscal_environment as AllowedEnvironment)
     : "NOT_CONFIGURED";
-  const status = (ALLOWED_STATUSES as readonly string[]).includes(row.configuration_status)
+  const status: AllowedStatus = (ALLOWED_STATUSES as readonly string[]).includes(row.configuration_status)
     ? (row.configuration_status as AllowedStatus)
     : "DRAFT";
-
-  const extra = row as unknown as {
-    nfe_configuration?: Record<string, unknown> | null;
-    nfse_configuration?: Record<string, unknown> | null;
-    nfe_provider?: string;
-    nfse_provider?: string;
-    nfe_credential_ref?: string | null;
-    nfse_credential_ref?: string | null;
-    certificate_ref?: string | null;
-    webhook_ref?: string | null;
-    configuration_notes?: string | null;
-    configuration_version?: number | null;
-  };
-
-  const nfeProvider = (ALLOWED_PROVIDERS as readonly string[]).includes(extra.nfe_provider ?? "NONE")
-    ? (extra.nfe_provider as AllowedProvider) ?? "NONE"
-    : "NONE";
-  const nfseProvider = (ALLOWED_PROVIDERS as readonly string[]).includes(extra.nfse_provider ?? "NONE")
-    ? (extra.nfse_provider as AllowedProvider) ?? "NONE"
-    : "NONE";
 
   return {
     cnpj: row.cnpj ?? undefined,
@@ -312,16 +347,16 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
     nfse_enabled: row.nfse_enabled,
     nfe_series: row.nfe_series ?? undefined,
     nfse_series: row.nfse_series ?? undefined,
-    nfe_configuration: (extra.nfe_configuration ?? {}) as Record<string, unknown>,
-    nfse_configuration: (extra.nfse_configuration ?? {}) as Record<string, unknown>,
-    nfe_provider: nfeProvider,
-    nfse_provider: nfseProvider,
-    nfe_credential_ref: extra.nfe_credential_ref ?? undefined,
-    nfse_credential_ref: extra.nfse_credential_ref ?? undefined,
-    certificate_ref: extra.certificate_ref ?? undefined,
-    webhook_ref: extra.webhook_ref ?? undefined,
-    configuration_notes: extra.configuration_notes ?? undefined,
-    configuration_version: extra.configuration_version ?? 1,
+    nfe_configuration: jsonObjectRecord(row.nfe_configuration),
+    nfse_configuration: jsonObjectRecord(row.nfse_configuration),
+    nfe_provider: coerceProvider(row.nfe_provider),
+    nfse_provider: coerceProvider(row.nfse_provider),
+    nfe_credential_ref: row.nfe_credential_ref ?? undefined,
+    nfse_credential_ref: row.nfse_credential_ref ?? undefined,
+    certificate_ref: row.certificate_ref ?? undefined,
+    webhook_ref: row.webhook_ref ?? undefined,
+    configuration_notes: row.configuration_notes ?? undefined,
+    configuration_version: row.configuration_version ?? 1,
   };
 }
 
