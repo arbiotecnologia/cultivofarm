@@ -68,14 +68,18 @@ export interface ConnectionsReadinessResult {
   /** `true` quando algum item bloqueia a habilitação de produção. */
   hasBlocker: boolean;
   /**
-   * `true` quando os pré-requisitos mínimos p/ habilitar produção estão
-   * atendidos: sem bloqueios, dados da empresa preenchidos, certificado
-   * disponível, provedor com credenciais preenchidas para todos os
-   * documentos habilitados, ambiente de homologação selecionado.
+   * Indicador **puramente informativo**: `true` quando os pré-requisitos
+   * mínimos p/ uma futura habilitação de produção estão atendidos (sem
+   * bloqueios, dados da empresa preenchidos, certificado disponível,
+   * provedor com credenciais preenchidas para todos os documentos
+   * habilitados, ambiente de homologação selecionado).
    *
-   * Esta fase NÃO habilita produção — apenas expõe o estado calculado.
+   * ATENÇÃO: este flag **não autoriza** produção, não altera
+   * `production_enabled`, feature flag, botão ou permissão. Ativação
+   * real exige homologação bem-sucedida, teste de conexão aprovado e
+   * autorização humana explícita em fase futura.
    */
-  productionAllowed: boolean;
+  prerequisitesReadyForFutureProduction: boolean;
 }
 
 // ─── Helpers internos ────────────────────────────────────────────────
