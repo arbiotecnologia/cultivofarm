@@ -172,6 +172,15 @@ export default function FiscalEmpresa() {
     }
   };
 
+  // Fase H4-A1 — foco/destaque via `?campo=<id>` (allow-list, fallback seguro).
+  useFiscalFieldFocus({
+    tab,
+    ready: !settingsQuery.isLoading,
+    searchParams,
+    setSearchParams,
+  });
+
+
   useEffect(() => {
     if (settingsQuery.data) setValues(rowToFormValues(settingsQuery.data));
   }, [settingsQuery.data]);
