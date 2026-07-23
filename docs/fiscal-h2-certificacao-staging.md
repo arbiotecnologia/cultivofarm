@@ -1105,3 +1105,49 @@ Continua **PARCIAL**. Explicitamente pendentes:
 
 **≤ 4 créditos** (auditoria estática + doc; nenhum arquivo de código
 alterado por bloqueio de proteção do types.ts).
+
+## §22 — Gate types oficial do staging (2026-07-23)
+
+### 22.1 Origem
+Arquivo `src/integrations/supabase/types.ts` foi **substituído integralmente**
+pelo artefato oficial gerado no painel Supabase do projeto **staging
+`ikaauvsflpmamgxmkhoq`** (Data API → Docs → *Generating types*), fornecido pelo
+responsável via upload (`user-uploads://supabase.ts`, 16 495 linhas). Nenhuma
+edição manual, nenhuma inferência, nenhuma injeção. Produção
+`navfzbwgwzruipouyfnk` não foi tocada.
+
+### 22.2 Alterações
+- `src/integrations/supabase/types.ts` — substituído (16 495 linhas, contrato
+  oficial do staging reconciliado até `20260803000000`).
+- `scripts/verify-fiscal-types.ts` — extractor corrigido para escopar
+  `Views/Functions` ao bloco `public:` (evita colisão com `graphql_public`);
+  contrato estendido com `fiscal_certificates` (12 colunas críticas + FK →
+  `company_fiscal_settings`), `rpc_fiscal_draft_save` e
+  `rpc_financial_document_soft_delete`.
+- `src/test/fiscal/verify-fiscal-types.test.ts` — fixture positiva estendida
+  com `fiscal_certificates` e as duas RPCs adicionais.
+- `src/test/fiscal/fase3_2.static.test.ts`, `fase3_3.static.test.ts` —
+  fixtures atualizadas com `ibs_cbs_configuration: {}` (coluna passou a ser
+  NOT NULL no contrato oficial).
+- `src/test/fiscal/fase3_15.static.test.ts` — regex de
+  `rpc_fiscal_company_settings_init` afrouxada para aceitar
+  `Args: never` e `Returns` como objeto inline (formato oficial do gen).
+
+### 22.3 Resultados
+- `bunx tsx scripts/verify-fiscal-types.ts` → **OK — 10 tabelas, 5 views, 4 RPCs**.
+- `bunx tsgo --noEmit` → **OK** (sem erros).
+- `bunx vitest run src/test/fiscal` → **1050 passed / 3 skipped / 0 failed** (52 arquivos).
+- `bun run build` → **OK** (dist gerado, PWA precache 5 629 KiB).
+
+### 22.4 Status do gate H2 (types)
+**APTO.** O contrato TS está agora alinhado ao staging oficial reconciliado
+`ikaauvsflpmamgxmkhoq @ 20260803000000`, com verificador estrutural cobrindo
+`fiscal_certificates` e as RPCs sensíveis a hardening.
+
+### 22.5 Pendências H2 (mantidas)
+1. Matriz RLS runtime integral no staging (bloqueada por harness dedicado).
+2. Homologação com provedor fiscal (SEFAZ/prefeituras — fora do escopo desta rodada).
+
+### 22.6 Custo real
+**≈ 5 créditos** (substituição, extensão do verificador + fixtures + doc;
+todas as validações verdes).

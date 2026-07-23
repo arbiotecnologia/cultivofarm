@@ -154,6 +154,33 @@ export type Database = {
         Update: { id?: string }
         Relationships: []
       }
+      fiscal_certificates: {
+        Row: {
+          id: string
+          company_settings_id: string
+          source_type: string
+          environment: string
+          status: string
+          display_name: string
+          is_active: boolean
+          fingerprint_sha256: string | null
+          valid_from: string | null
+          valid_until: string | null
+          revoked_at: string | null
+          version: number
+        }
+        Insert: { id?: string }
+        Update: { id?: string }
+        Relationships: [
+          {
+            foreignKeyName: "x"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "company_fiscal_settings"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       v_fiscal_company_readiness: {
@@ -195,6 +222,14 @@ export type Database = {
       mask_sensitive_jsonb: {
         Args: { v: Json }
         Returns: Json
+      }
+      rpc_fiscal_draft_save: {
+        Args: { p_expected_version: number; p_invoice: Json; p_invoice_id: string; p_items: Json }
+        Returns: Json
+      }
+      rpc_financial_document_soft_delete: {
+        Args: { p_document_id: string; p_reason: string }
+        Returns: string
       }
     }
   }

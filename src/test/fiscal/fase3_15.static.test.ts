@@ -243,8 +243,8 @@ describe("Fase 3.15 — types.ts contém colunas, view e RPC", () => {
     }
   });
   test("Functions.rpc_fiscal_company_settings_init declarado com Args vazios", () => {
-    expect(src).toMatch(/rpc_fiscal_company_settings_init:\s*\{[\s\S]{0,300}Args:\s*Record<PropertyKey,\s*never>/);
-    expect(src).toMatch(/rpc_fiscal_company_settings_init:[\s\S]{0,400}Returns:\s*Database\["public"\]\["Tables"\]\["company_fiscal_settings"\]\["Row"\]/);
+    expect(src).toMatch(/rpc_fiscal_company_settings_init:\s*\{[\s\S]{0,300}Args:\s*(?:Record<PropertyKey,\s*never>|never)/);
+    expect(src).toMatch(/rpc_fiscal_company_settings_init:[\s\S]{0,400}Returns:\s*(?:Database\["public"\]\["Tables"\]\["company_fiscal_settings"\]\["Row"\]|\{)/);
   });
   test("fiscal_json_has_sensitive_key e jsonb_object_keys_count expostos", () => {
     expect(src).toMatch(/fiscal_json_has_sensitive_key:\s*\{/);

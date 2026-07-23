@@ -125,6 +125,30 @@ export const EXPECTED_TABLES: TableSpec[] = [
       { name: "new_values", nullable: true },
     ],
   },
+  {
+    name: "fiscal_certificates",
+    columns: [
+      { name: "id", nullable: false },
+      { name: "company_settings_id", nullable: false, tsType: "string" },
+      { name: "source_type", nullable: false, tsType: "string" },
+      { name: "environment", nullable: false, tsType: "string" },
+      { name: "status", nullable: false, tsType: "string" },
+      { name: "display_name", nullable: false, tsType: "string" },
+      { name: "is_active", nullable: false, tsType: "boolean" },
+      { name: "fingerprint_sha256", nullable: true, tsType: "string" },
+      { name: "valid_from", nullable: true, tsType: "string" },
+      { name: "valid_until", nullable: true, tsType: "string" },
+      { name: "revoked_at", nullable: true, tsType: "string" },
+      { name: "version", nullable: false, tsType: "number" },
+    ],
+    relationships: [
+      {
+        columns: ["company_settings_id"],
+        referencedRelation: "company_fiscal_settings",
+        referencedColumns: ["id"],
+      },
+    ],
+  },
 ];
 
 export const EXPECTED_VIEWS: ViewSpec[] = [
@@ -143,21 +167,49 @@ export const EXPECTED_RPCS: RpcSpec[] = [
     returns: "string",
   },
   { name: "mask_sensitive_jsonb", requiredArgs: ["v"], optionalArgs: [], returns: "Json" },
+  {
+    name: "rpc_fiscal_draft_save",
+    requiredArgs: ["p_expected_version", "p_invoice", "p_invoice_id", "p_items"],
+    optionalArgs: [],
+    returns: "Json",
+  },
+  {
+    name: "rpc_financial_document_soft_delete",
+    requiredArgs: ["p_document_id", "p_reason"],
+    optionalArgs: [],
+    returns: "string",
+  },
 ];
 
 // ---- Extração --------------------------------------------------------------
 function extractSectionBlock(source: string, section: "Views" | "Functions"): string | null {
-  const re = new RegExp(`\\n\\s{4}${section}\\s*:\\s*\\{`);
-  const m = re.exec(source);
-  if (!m) return null;
-  const start = m.index + m[0].length; // position after opening `{`
+  // Scope: only within the `public:` schema block (skip graphql_public etc.).
+  const pubRe = /\n\s{2}public\s*:\s*\{/;
+  const pubM = pubRe.exec(source);
+  if (!pubM) return null;
+  const pubStart = pubM.index + pubM[0].length;
   let depth = 1;
-  for (let i = start; i < source.length; i++) {
+  let pubEnd = source.length;
+  for (let i = pubStart; i < source.length; i++) {
     const ch = source[i];
     if (ch === "{") depth++;
     else if (ch === "}") {
       depth--;
-      if (depth === 0) return source.slice(start, i);
+      if (depth === 0) { pubEnd = i; break; }
+    }
+  }
+  const pubBlock = source.slice(pubStart, pubEnd);
+  const re = new RegExp(`\\n\\s{4}${section}\\s*:\\s*\\{`);
+  const m = re.exec(pubBlock);
+  if (!m) return null;
+  const start = m.index + m[0].length;
+  depth = 1;
+  for (let i = start; i < pubBlock.length; i++) {
+    const ch = pubBlock[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return pubBlock.slice(start, i);
     }
   }
   return null;
