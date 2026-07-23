@@ -288,7 +288,11 @@ export default function FiscalServicos() {
                           <td className="p-2">{it.lc116_item ?? "—"}</td>
                           <td className="p-2">{it.cnae ?? "—"}</td>
                           <td className="p-2">{it.municipal_taxation_code ?? "—"}</td>
-                          <td className="p-2">{it.profile_status}</td>
+                          <td className="p-2">
+                            <Badge variant="outline" title={it.profile_status ?? undefined}>
+                              {getFiscalStatusLabel("service", it.profile_status)}
+                            </Badge>
+                          </td>
                           <td className="p-2">
                             {pending ? (
                               <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>
