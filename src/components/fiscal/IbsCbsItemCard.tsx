@@ -2,7 +2,7 @@
  * Fase Fiscal 3.19.3 — Card IBS/CBS por item (produto ou serviço).
  * Serviço: seção NFS-e Nacional (cIndOp já em codeString; finNFSe,
  * tpNFSeDebito, tpNFSeCredito e gIBSCBSAjuste/vAjusteBC em
- * `additional_fields`). Sem `as any`, com concorrência otimista.
+ * `additional_fields`). Sem casts inseguros, com concorrência otimista.
  */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
