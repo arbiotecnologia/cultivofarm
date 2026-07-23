@@ -1,10 +1,12 @@
 # Fase H2 — Certificação Runtime no Staging Temporário
 
 > Status desta rodada: **EVIDÊNCIA RUNTIME AMPLIADA APROVADA NO STAGING.**
-> Matriz RLS integral das demais tabelas, A1 sintético end-to-end, backfill,
-> regeneração de `types.ts` e reconciliação histórica de migrations
-> **PENDENTES**. H2 **não** está concluída; H3/produção continuam
-> proibidas. Produção `navfzbwgwzruipouyfnk` intocada nesta rodada.
+> Migrations `20260801000000` e `20260802000000` aplicadas e validadas
+> no staging temporário. Matriz RLS integral das demais tabelas, A1
+> sintético end-to-end, backfill, regeneração de `types.ts` e
+> reconciliação histórica de migrations **PENDENTES**. H2 **não** está
+> concluída; H3/produção continuam proibidas. Produção
+> `navfzbwgwzruipouyfnk` intocada nesta rodada.
 
 
 ## 0. Ambiente e anti-produção
@@ -823,3 +825,64 @@ SELECT public.rpc_fiscal_draft_save(
   compatibilidade textual com `rpc_fiscal_draft_save`.
 - Gates locais: typecheck ✅, build ✅, suíte fiscal 1042/1045
   (3 skipped) ✅.
+
+## 18. Evidência runtime — 20260802000000 aplicada (imutabilidade de itens)
+
+**Runtime `20260802000000` no staging `ikaauvsflpmamgxmkhoq`:** migration
+aplicada com sucesso. Produção `navfzbwgwzruipouyfnk` intocada.
+
+### 18.1 Confirmação no catálogo
+
+- `public.fiscal_invoice_items_state_guard(uuid)` confirmada como função
+  `SECURITY INVOKER`, `LANGUAGE plpgsql`, `search_path = public, pg_temp`.
+- Trigger `fiscal_invoice_items_state_guard_trigger` confirmada como
+  `BEFORE INSERT OR UPDATE OR DELETE` em `public.fiscal_invoice_items`.
+- Trigger function `fiscal_invoice_items_state_guard()` confirmada como
+  `SECURITY INVOKER` e `search_path = public, pg_temp`.
+
+### 18.2 Teste transacional BEGIN/ROLLBACK
+
+Executado como `authenticated` com papel `administrador` ou `financeiro`:
+
+| Cenário | Estado do pai | Operação | Resultado esperado | Resultado runtime |
+|---------|---------------|----------|--------------------|-------------------|
+| 1 | `DRAFT` | UPDATE item | 1 linha afetada | ✅ |
+| 2 | `DRAFT` | INSERT item | 1 linha inserida | ✅ |
+| 3 | `DRAFT` | DELETE item | 1 linha removida | ✅ |
+| 4 | `AUTHORIZED` | INSERT item | `P0001` bloqueado | ✅ |
+| 5 | `AUTHORIZED` | UPDATE item | `P0001` bloqueado | ✅ |
+| 6 | `AUTHORIZED` | DELETE item | `P0001` bloqueado | ✅ |
+
+Contagem residual de linhas de teste após `ROLLBACK`: **0**.
+
+### 18.3 Estado das migrations 20260801 e 20260802
+
+- `20260801000000_fiscal_revoke_anon_table_privileges.sql` já aplicada
+  previamente; auditoria confirma `anon_privileges_remaining = 0` nas
+  10 tabelas fiscais.
+- `20260802000000_fiscal_invoice_items_state_guard.sql` aplicada nesta
+  rodada; função e trigger confirmados no catálogo; teste transacional
+  aprovado.
+
+### 18.4 Status H2 após esta rodada
+
+H2 continua **PARCIAL**. Itens ainda pendentes para conclusão:
+
+1. **Matriz RLS integral das demais tabelas fiscais** com owner A/B,
+   roles `administrador`, `gestor`, `financeiro`, `cliente_produtor`,
+   `parceiro_b2b`, `authenticated` sem papel — em `fiscal_*`,
+   `company_fiscal_settings` e views `v_fiscal_*`.
+2. **Certificado A1 sintético end-to-end** — upload, verificação de
+   não-persistência de PFX/senha, revogação, cleanup.
+3. **Backfill sintético + smoke SQL + contagens antes/depois.**
+4. **Regeneração de `src/integrations/supabase/types.ts`** a partir do
+   staging (`SUPABASE_ACCESS_TOKEN` externo).
+5. **Reconciliação histórica do `schema_migrations` do staging** —
+   divergente por aplicação manual. Não reparar artificialmente; exige
+   decisão humana sobre baseline.
+
+H3/produção permanecem proibidas até que H2 seja declarada concluída.
+
+### 18.5 Custo desta rodada
+
+Custo da atualização documental H2: **≤ 2 créditos**.
