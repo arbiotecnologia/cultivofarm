@@ -130,23 +130,22 @@ export function useCustomerFiscalList(
         .order("id", { ascending: true })
         .range(from, to);
 
-      const term = params.search.trim();
-      if (term) {
-        const safe = term.replace(/[,()]/g, " ").slice(0, 100);
+      const raw = params.search ?? "";
+      const safe = sanitizePostgrestTerm(raw);
+      if (safe) {
         const digits = safe.replace(/\D/g, "");
-        // Busca por nome do cliente (embed) OR documento (digits) OR IE/IM.
-        const orClauses: string[] = [
-          `clientes.nome.ilike.%${safe}%`,
+        // NOTA: com `{ foreignTable: 'clientes' }` os nomes das colunas
+        // NÃO devem carregar o prefixo `clientes.` (o PostgREST já
+        // resolve dentro do escopo do embed). Mantemos apenas os nomes
+        // locais da tabela `clientes`.
+        const embedOr: string[] = [
+          `nome.ilike.%${safe}%`,
+          `codigo_cliente.ilike.%${safe}%`,
         ];
         if (digits.length >= 3) {
-          orClauses.push(`clientes.cpf_cnpj.ilike.%${digits}%`);
+          embedOr.push(`cpf_cnpj.ilike.%${digits}%`);
         }
-        // NOTA: filtros em relações embed exigem `foreignTable`; usamos a
-        // sintaxe `.or(..., { foreignTable: 'clientes' })` para nome/doc.
-        query = query.or(
-          orClauses.join(","),
-          { foreignTable: "clientes" },
-        );
+        query = query.or(embedOr.join(","), { foreignTable: "clientes" });
       }
       if (params.status) {
         query = query.eq("profile_status", params.status);
@@ -161,8 +160,8 @@ export function useCustomerFiscalList(
         throw new Error(error.message);
       }
 
-      const raw = (data ?? []) as unknown as RawListRow[];
-      const items: CustomerListItem[] = raw.map((r) => {
+      const rawRows = (data ?? []) as unknown as RawListRow[];
+      const items: CustomerListItem[] = rawRows.map((r) => {
         const c = pickCliente(r.clientes);
         return {
           id: r.id,
@@ -183,20 +182,9 @@ export function useCustomerFiscalList(
         };
       });
 
-      const statuses = Array.from(
-        new Set(
-          items
-            .map((it) => it.profile_status)
-            .filter((v): v is string => typeof v === "string" && v.length > 0),
-        ),
-      ).sort();
-      const taxpayerIndicators = Array.from(
-        new Set(
-          items
-            .map((it) => it.taxpayer_indicator)
-            .filter((v): v is string => typeof v === "string" && v.length > 0),
-        ),
-      ).sort();
+      // Filtros/opções derivam da lista canônica (não da página).
+      const statuses = [...CUSTOMER_FISCAL_PROFILE_STATUSES];
+      const taxpayerIndicators = TAXPAYER_INDICATOR_OPTIONS.map((o) => o.value);
 
       return { items, total: count ?? items.length, statuses, taxpayerIndicators };
     },
