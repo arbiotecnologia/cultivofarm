@@ -20,18 +20,25 @@ export const formatCPF = (value: string | number | undefined | null): string => 
 };
 
 /**
- * Formata um valor como CNPJ (00.000.000/0000-00)
+ * Formata um valor como CNPJ (00.000.000/0000-00).
+ *
+ * Fase Fiscal 3.19: aceita CNPJ ALFANUMÉRICO (IN RFB 2.229/2024).
+ * As 12 primeiras posições podem conter letras A–Z além de dígitos.
+ * Os 2 dígitos verificadores permanecem numéricos.
+ * NUNCA remove letras — apenas pontuação/espaços — e força uppercase.
  */
 export const formatCNPJ = (value: string | number | undefined | null): string => {
-  const v = unmask(value);
+  if (value === undefined || value === null) return "";
+  const v = String(value).replace(/[\s.\-/]/g, "").toUpperCase();
   if (!v) return "";
   return v
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
+    .replace(/^([0-9A-Z]{2})([0-9A-Z])/, "$1.$2")
+    .replace(/^([0-9A-Z]{2})\.([0-9A-Z]{3})([0-9A-Z])/, "$1.$2.$3")
+    .replace(/^([0-9A-Z]{2})\.([0-9A-Z]{3})\.([0-9A-Z]{3})([0-9A-Z])/, "$1.$2.$3/$4")
+    .replace(/^([0-9A-Z]{2})\.([0-9A-Z]{3})\.([0-9A-Z]{3})\/([0-9A-Z]{4})(\d)/, "$1.$2.$3/$4-$5")
     .slice(0, 18);
 };
+
 
 /**
  * Formata conforme o tamanho (CPF ou CNPJ)
