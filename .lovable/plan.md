@@ -1,34 +1,19 @@
-# Importar Tabela A.R Bio 2026 — Microrganismos
+## Ajustes na aba Microrganismos (`/protocolos`)
 
-## Escopo
-Popular a tabela `microrganismos` (já existente) com os 24 registros do PDF `Tabela_A.R_Bio_2026.pdf` — 14 bactérias + 10 fungos. **Não** alterar schema, RLS, triggers, hooks, tipos, fichas técnicas nem o formulário do `MicrorganismosTab`. Reuso total dos campos já mapeados.
+### 1. Remover botão "Importar Tabela A.R Bio 2026"
+- Em `src/components/protocolos/MicrorganismosTab.tsx`, remover o `<Button>` (linhas ~299–316), o import `importarMicrosARBio2026` e o ícone `Download` do import de `lucide-react` (não é usado em outro lugar).
+- Manter `src/lib/protocolos/seedMicrorganismosARBio2026.ts` no repositório como utilitário interno (função de uso único, sem UI).
 
-## Origem dos dados (PDF)
-- Bactérias: 14 espécies, dose 100 mL/ha, UFC/mL e valor/dose conforme tabela.
-- Fungos: 10 espécies (inclui "E.M — Microrganismos Eficientes" como consórcio), dose 100 mL/ha.
-- Todos com `fornecedor = "A.R Biotecnologia"`, `safra_referencia = "2026"`, `meio_cultivo = "líquido e sólido"`, `producao_on_farm = true`.
+### 2. Remover a coluna "Ref." da tabela
+- Remover o `<TableHead>Ref.</TableHead>` (linha 525) e a `<TableCell>` correspondente (linhas 576–581) que renderiza fornecedor + safra.
+- Ajustar `colSpan` do estado vazio de `7` para `6` (linha 532).
+- As informações **fornecedor** e **safra_referencia** continuam disponíveis ao abrir o item (clicar na linha abre o diálogo de edição, que já contém esses campos em "Referência Comercial"), atendendo ao pedido de exibir apenas nos detalhes.
 
-## Estratégia
-Import idempotente **client-side**, executado por usuário `administrador` autenticado, sem SQL direto no banco e sem migration:
+### 3. Acomodar melhor "UFC/mL"
+- Renomear o cabeçalho para **"Concentração"** com sublinha "(UFC/mL)" em tipografia menor, evitando quebra estranha em telas médias.
+- Formatar o valor em duas linhas semânticas: número em `font-mono-data` na primeira linha e a unidade `UFC/mL` como sublegenda em `text-[10px] text-muted-foreground`, alinhados à esquerda com `whitespace-nowrap` para evitar quebras no meio da notação científica.
+- Manter o uso de `formatConcentracaoDisplay` (fonte canônica) para o valor.
 
-1. Novo arquivo `src/lib/protocolos/seedMicrorganismosARBio2026.ts` — array tipado com os 24 registros já parseados (nome, `nome_cientifico`, `tipo` = `bacteria`|`fungo`|`consorcio`, `concentracao_ufc_ml` em notação decimal, `dose_ml_ha: 100`, `valor_dose_brl`, defaults acima).
-2. Novo botão discreto **"Importar Tabela A.R Bio 2026"** no cabeçalho de `src/components/protocolos/MicrorganismosTab.tsx` (ao lado de "Exportar PDF"), visível apenas quando `canManage` (mesma regra dos botões existentes).
-3. Handler faz `upsert` em `microrganismos` com `onConflict: "nome"` — cria os que faltam e atualiza UFC/dose/valor dos existentes; não sobrescreve `codigo` (deixa trigger gerar quando novo) nem `b2b_enabled`/`ativo` de registros pré-existentes.
-4. Toast com resumo `inseridos: X · atualizados: Y` e refetch da lista. Recalcula `valor_litro_brl = valor_dose_brl * 10` via `recalcPricing` já usado no arquivo.
-
-## Detalhes técnicos
-- `concentracao_ufc_ml` armazenado em decimal (ex.: `3,4×10¹⁰` → `3.4e10`); `concentracao_label` fica `null` (o display usa `formatConcentracaoDisplay`).
-- `tipo` mapeado: bactérias → `bacteria`; fungos → `fungo`; "E.M (Microrganismos Eficientes)" → `consorcio`.
-- Sem alterações em `MicroorganismTechnicalProfileDialog` — fichas técnicas continuam sendo preenchidas manualmente depois; o import só cria o registro base.
-- Sem chamadas a Edge Functions, sem novos secrets, sem alteração de rota.
-
-## Validação
-- `bunx tsgo --noEmit`
-- `bun run build`
-- `bunx vitest run` (suíte completa)
-- Verificação manual: acessar `/protocolos` → aba Microrganismos → clicar "Importar Tabela A.R Bio 2026" → confirmar 24 linhas presentes.
-
-## Fora de escopo
-- Nenhuma migration SQL.
-- Sem tocar em `produtos`, fichas técnicas, catálogo B2B, RLS ou trigger de código.
-- Sem importar campos ausentes no PDF (função agronômica detalhada, alvos, culturas) — permanecem em branco para preenchimento posterior.
+### Validação
+- `bun run typecheck` e `bun run build`.
+- Nenhuma alteração em lógica de negócio, migrations, RLS ou Supabase remoto.
