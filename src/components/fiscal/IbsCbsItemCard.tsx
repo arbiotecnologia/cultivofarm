@@ -27,7 +27,13 @@ import {
 } from "@/lib/fiscal/rtcConfiguration";
 
 export interface IbsCbsItemCardProps {
-  kind: "product" | "service";
+  /**
+   * "service_profile" (Bloco 5) usa a identidade estável do perfil
+   * (service_fiscal_profiles.id) e habilita a edição quando o perfil
+   * existe somente por source_reference (service_id nulo). "service"
+   * permanece por retrocompatibilidade dos consumidores atuais.
+   */
+  kind: "product" | "service" | "service_profile";
   itemId: string | null;
   canEdit: boolean;
 }
@@ -52,7 +58,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
   }, [rtc.data, rtc.error]);
 
   const disabled = !canEdit || rtc.loading || rtc.saving || !itemId;
-  const isService = kind === "service";
+  const isService = kind === "service" || kind === "service_profile";
   const title = isService
     ? "IBS/CBS do serviço — NFS-e Nacional"
     : "IBS/CBS do produto";
@@ -69,12 +75,24 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
 
   const ajusteAtivo = getNfseField(form, "gIBSCBSAjuste") === true;
 
+  // Mensagem contextual (pt-BR) — Bloco 5: enquanto o perfil carrega,
+  // evita "Selecione um item" que confunde quando o perfil já existe.
+  const emptyStateMessage = !itemId
+    ? (rtc.loading
+        ? "Carregando o perfil fiscal…"
+        : kind === "service_profile"
+          ? "Perfil fiscal indisponível para edição de IBS/CBS."
+          : "Selecione um item para editar.")
+    : null;
+
   return (
     <Card>
       <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
       <CardContent className="space-y-4">
-        {!itemId ? (
-          <p className="text-sm text-muted-foreground">Selecione um item para editar.</p>
+        {emptyStateMessage ? (
+          <p className="text-sm text-muted-foreground" data-testid="ibs-cbs-empty">
+            {emptyStateMessage}
+          </p>
         ) : null}
         {rtc.error ? (
           <Alert variant="destructive" data-testid="ibs-cbs-error">
