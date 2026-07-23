@@ -280,10 +280,15 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
               <div>
                 <Label>CNPJ</Label>
                 <Input
+                  inputMode="text"
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  maxLength={18}
                   value={formatCNPJ(form.cnpj ?? "")}
-                  onChange={(e) => set("cnpj", e.target.value)}
+                  onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
                   placeholder="00.000.000/0000-00"
                 />
+
                 {errors.cnpj && <p className="text-xs text-destructive mt-1">{errors.cnpj}</p>}
               </div>
               <div className="sm:col-span-2">
