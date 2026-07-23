@@ -53,6 +53,8 @@ import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, CheckCircle2, Circle, Info } from "lucide-react";
 import CertificadoDigitalSecao from "@/components/fiscal/certificados/CertificadoDigitalSecao";
 import HomologacaoSecao from "@/components/fiscal/homologacao/HomologacaoSecao";
+import { RtcCompanyCard } from "@/components/fiscal/RtcCompanyCard";
+
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
