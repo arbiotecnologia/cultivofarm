@@ -80,8 +80,8 @@ describe("useFiscalFieldFocus", () => {
       </MemoryRouter>,
     );
 
-    // O efeito enfileira setTimeout(60ms) antes de focar.
-    vi.advanceTimersByTime(80);
+    // O efeito enfileira setTimeout(60ms) antes de focar; flush em act().
+    act(() => { vi.advanceTimersByTime(80); });
     expect(document.activeElement).toBe(input);
     expect(document.body.getAttribute("data-current-campo")).toBe("");
   });
