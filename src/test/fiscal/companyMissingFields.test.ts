@@ -5,6 +5,9 @@
 import { describe, it, expect } from "vitest";
 import {
   computeCompanyMissingFields,
+  isExemptRegistration,
+  CERTIFICADO_A1_DEEP_LINK,
+  KNOWN_FIELD_TARGETS,
   SECTION_LABEL,
   SEVERITY_LABEL,
 } from "@/lib/fiscal/companyMissingFields";
