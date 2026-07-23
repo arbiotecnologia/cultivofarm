@@ -1,6 +1,8 @@
 /**
- * Fase Fiscal 3.19.2 — Card IBS/CBS por item (produto ou serviço).
- * Serviço inclui campos NFS-e Nacional: cIndOp, finNFSe, tpNFSeDebito, tpNFSeCredito.
+ * Fase Fiscal 3.19.3 — Card IBS/CBS por item (produto ou serviço).
+ * Serviço: seção NFS-e Nacional (cIndOp já em codeString; finNFSe,
+ * tpNFSeDebito, tpNFSeCredito e gIBSCBSAjuste/vAjusteBC em
+ * `additional_fields`). Sem casts inseguros, com concorrência otimista.
  */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +19,37 @@ export interface IbsCbsItemCardProps {
   canEdit: boolean;
 }
 
+/** Chaves NFS-e tratadas no passthrough `additional_fields`. */
+const NFSE_KEYS = ["finNFSe", "tpNFSeDebito", "tpNFSeCredito", "gIBSCBSAjuste", "vAjusteBC"] as const;
+type NfseKey = (typeof NFSE_KEYS)[number];
+
+function getExtra(cfg: IbsCbsItemConfiguration, key: NfseKey): string {
+  const extra = cfg.additional_fields;
+  if (extra && typeof extra === "object" && !Array.isArray(extra)) {
+    const v = (extra as Record<string, unknown>)[key];
+    return typeof v === "string" ? v : "";
+  }
+  return "";
+}
+
+function setExtra(
+  cfg: IbsCbsItemConfiguration,
+  key: NfseKey,
+  value: string,
+): IbsCbsItemConfiguration {
+  const prev =
+    cfg.additional_fields && typeof cfg.additional_fields === "object" && !Array.isArray(cfg.additional_fields)
+      ? { ...(cfg.additional_fields as Record<string, unknown>) }
+      : {};
+  if (value === "") delete prev[key];
+  else prev[key] = value;
+  return { ...cfg, additional_fields: Object.keys(prev).length ? prev : undefined };
+}
+
 export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
   const rtc = useFiscalRtcItem(kind, itemId);
   const [form, setForm] = useState<IbsCbsItemConfiguration>({ schema_version: 1 });
+  const [flash, setFlash] = useState<string | null>(null);
 
   useEffect(() => { if (rtc.data) setForm(rtc.data); }, [rtc.data]);
 
@@ -28,6 +58,12 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
     ? "IBS/CBS do serviço — NFS-e Nacional"
     : "IBS/CBS do produto";
 
+  async function onSave() {
+    setFlash(null);
+    const res = await rtc.save(form);
+    if (res.ok) setFlash("Salvo com sucesso.");
+  }
+
   return (
     <Card>
       <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
@@ -35,6 +71,9 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
         {!itemId ? <p className="text-sm text-muted-foreground">Selecione um item para editar.</p> : null}
         {rtc.error ? (
           <Alert variant="destructive"><AlertDescription>{rtc.error}</AlertDescription></Alert>
+        ) : null}
+        {flash ? (
+          <Alert><AlertDescription>{flash}</AlertDescription></Alert>
         ) : null}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -56,6 +95,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
               onChange={(e) => setForm((s) => ({ ...s, c_ind_op: e.target.value || undefined }))}
               disabled={disabled} />
           </div>
+
           <div>
             <Label htmlFor="aliquota_cbs">Alíquota CBS (%)</Label>
             <Input id="aliquota_cbs" type="number" step="0.01" min={0} max={100}
@@ -87,50 +127,23 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
 
         {kind === "service" ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 border-t pt-3">
-            <div>
-              <Label htmlFor="finNFSe">finNFSe</Label>
-              <Input id="finNFSe" maxLength={4}
-                value={(form.additional_fields as any)?.finNFSe ?? ""}
-                onChange={(e) => setForm((s) => ({
-                  ...s,
-                  additional_fields: {
-                    ...(s.additional_fields ?? {}),
-                    finNFSe: e.target.value || undefined,
-                  },
-                }))}
-                disabled={disabled} />
-            </div>
-            <div>
-              <Label htmlFor="tpNFSeDebito">tpNFSeDebito</Label>
-              <Input id="tpNFSeDebito" maxLength={4}
-                value={(form.additional_fields as any)?.tpNFSeDebito ?? ""}
-                onChange={(e) => setForm((s) => ({
-                  ...s,
-                  additional_fields: {
-                    ...(s.additional_fields ?? {}),
-                    tpNFSeDebito: e.target.value || undefined,
-                  },
-                }))}
-                disabled={disabled} />
-            </div>
-            <div>
-              <Label htmlFor="tpNFSeCredito">tpNFSeCredito</Label>
-              <Input id="tpNFSeCredito" maxLength={4}
-                value={(form.additional_fields as any)?.tpNFSeCredito ?? ""}
-                onChange={(e) => setForm((s) => ({
-                  ...s,
-                  additional_fields: {
-                    ...(s.additional_fields ?? {}),
-                    tpNFSeCredito: e.target.value || undefined,
-                  },
-                }))}
-                disabled={disabled} />
-            </div>
+            {NFSE_KEYS.map((key) => (
+              <div key={key}>
+                <Label htmlFor={key}>{key}</Label>
+                <Input id={key} maxLength={20}
+                  value={getExtra(form, key)}
+                  onChange={(e) => setForm((s) => setExtra(s, key, e.target.value))}
+                  disabled={disabled} />
+              </div>
+            ))}
           </div>
         ) : null}
 
-        <div className="flex justify-end">
-          <Button type="button" disabled={disabled} onClick={() => rtc.save(form)}>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={() => rtc.reload()} disabled={rtc.loading}>
+            Recarregar
+          </Button>
+          <Button type="button" disabled={disabled} onClick={onSave}>
             {rtc.saving ? "Salvando…" : "Salvar IBS/CBS"}
           </Button>
         </div>
