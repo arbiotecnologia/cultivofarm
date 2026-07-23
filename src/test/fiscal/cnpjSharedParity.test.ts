@@ -11,34 +11,18 @@
  * Qualquer divergência de aceitação, DV ou máscara quebra este teste.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import {
   validateCnpjAlpha as clientValidate,
   unmaskCnpjAlpha as clientUnmask,
 } from "@/lib/fiscal/cnpjAlpha";
-
-const SHARED_PATH = resolve(
-  __dirname,
-  "../../../supabase/functions/_shared/fiscal/cnpj.ts",
-);
-
-// Transpila o módulo Deno em um módulo ESM avaliável no Node/Vitest:
-// remove `export` para poder capturar as funções via `new Function`.
-function loadShared(): {
-  validateCnpjAlpha: (v: string) => boolean;
-  unmaskCnpjAlpha: (v: string) => string;
-  isCnpjNumericOnly: (v: string) => boolean;
-} {
-  const src = readFileSync(SHARED_PATH, "utf8")
-    .replace(/export\s+function/g, "function")
-    .replace(/export\s+/g, "");
-  const body =
-    src +
-    "\nreturn { validateCnpjAlpha, unmaskCnpjAlpha, isCnpjNumericOnly };";
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
-  return new Function(body)() as ReturnType<typeof loadShared>;
-}
+// Vitest transpila TypeScript, então importamos direto o arquivo Deno
+// compartilhado (é TS puro, sem APIs Deno) para exercitar exatamente o
+// mesmo código que a Edge Function usa.
+import {
+  validateCnpjAlpha as sharedValidate,
+  unmaskCnpjAlpha as sharedUnmask,
+  isCnpjNumericOnly as sharedIsNumeric,
+} from "../../../supabase/functions/_shared/fiscal/cnpj";
 
 describe("CNPJ shared/client parity (H3-B1)", () => {
   const shared = loadShared();
