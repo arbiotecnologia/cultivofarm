@@ -1,5 +1,5 @@
 /**
- * Fase Fiscal 3.19 — Contrato JSONB de configuração RTC 2026 (IBS/CBS).
+ * Fase Fiscal 3.19 (+3.19.4) — Contrato JSONB de configuração RTC 2026 (IBS/CBS).
  *
  * FONTES NORMATIVAS (referenciais; UI/backend NÃO devem tratar como
  * catálogo oficial completo sem a versão explícita indicada por
@@ -18,6 +18,9 @@
  *   próprios schemas — este arquivo apenas complementa com IBS/CBS.
  * - NUNCA persistir alíquotas default (0,9% / 0,1%) como valor efetivo:
  *   somente como referência informativa em `aliquota_*_reference`.
+ * - NFS-e Nacional: campos `finNFSe`, `tpNFSeDebito`, `tpNFSeCredito`,
+ *   `gIBSCBSAjuste` (bool) e `vAjusteBC` (>= 0) vivem em
+ *   `additional_fields` com validação forte (sem `as any`).
  */
 import { z } from "zod";
 
@@ -79,6 +82,58 @@ const monofasiaSchema = z
   })
   .strict();
 
+// ————————— NFS-e Nacional (dentro de additional_fields) —————————
+/** Chaves NFS-e conhecidas — tipadas para eliminar `as any` na UI. */
+export const NFSE_KEYS = ["finNFSe", "tpNFSeDebito", "tpNFSeCredito", "gIBSCBSAjuste", "vAjusteBC"] as const;
+export type NfseKey = (typeof NFSE_KEYS)[number];
+
+const nfseCodeMax20 = z.string().trim().min(1).max(20);
+
+/** Refinamento aplicado a `additional_fields` para as chaves NFS-e.
+ *  - `finNFSe`, `tpNFSeDebito`, `tpNFSeCredito`: string curta.
+ *  - `gIBSCBSAjuste`: boolean condicional.
+ *  - `vAjusteBC`: número >= 0; só permitido quando `gIBSCBSAjuste === true`.
+ *  Chaves NFS-e desconhecidas passam livremente; as conhecidas exigem tipos. */
+export function validateNfseInAdditionalFields(
+  af: Record<string, unknown> | undefined,
+): { ok: true } | { ok: false; code: string; field: NfseKey } {
+  if (!af) return { ok: true };
+  for (const k of ["finNFSe", "tpNFSeDebito", "tpNFSeCredito"] as const) {
+    if (k in af) {
+      const parsed = nfseCodeMax20.safeParse(af[k]);
+      if (!parsed.success) return { ok: false, code: "FISCAL_RTC_NFSE_INVALID_CODE", field: k };
+    }
+  }
+  const hasAjuste = "gIBSCBSAjuste" in af;
+  if (hasAjuste && typeof af.gIBSCBSAjuste !== "boolean") {
+    return { ok: false, code: "FISCAL_RTC_NFSE_INVALID_TOGGLE", field: "gIBSCBSAjuste" };
+  }
+  if ("vAjusteBC" in af) {
+    const v = af.vAjusteBC;
+    if (typeof v !== "number" || !Number.isFinite(v) || v < 0) {
+      return { ok: false, code: "FISCAL_RTC_NFSE_INVALID_VALUE", field: "vAjusteBC" };
+    }
+    if (af.gIBSCBSAjuste !== true) {
+      return { ok: false, code: "FISCAL_RTC_NFSE_VALUE_WITHOUT_TOGGLE", field: "vAjusteBC" };
+    }
+  }
+  return { ok: true };
+}
+
+/** Zod refinement adapter. */
+const additionalFieldsSchema = z
+  .record(z.string(), z.unknown())
+  .superRefine((af, ctx) => {
+    const r = validateNfseInAdditionalFields(af);
+    if (!r.ok) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${r.code}:${r.field}`,
+        path: [r.field],
+      });
+    }
+  });
+
 // ————————————— Empresa (company_fiscal_settings.rtc_configuration) —————————————
 export const rtcCompanySchema = z
   .object({
@@ -91,8 +146,7 @@ export const rtcCompanySchema = z
     transition_year: z.number().int().min(2026).max(2033).optional(),
     accounting_review_notes: z.string().trim().max(4000).optional(),
     accounting_review_status: z.enum(["PENDING", "REVIEWED"]).optional(),
-    additional_fields: z.record(z.string(), z.unknown()).optional(),
-
+    additional_fields: additionalFieldsSchema.optional(),
   })
   .strict()
   .refine((v) => !rtcHasSensitiveKey(v), {
@@ -129,8 +183,7 @@ export const ibsCbsItemSchema = z
 
     accounting_notes: z.string().trim().max(2000).optional(),
     accounting_review_status: z.enum(["PENDING", "REVIEWED"]).optional(),
-    additional_fields: z.record(z.string(), z.unknown()).optional(),
-
+    additional_fields: additionalFieldsSchema.optional(),
   })
   .strict()
   .refine((v) => !rtcHasSensitiveKey(v), {
@@ -142,4 +195,50 @@ export type IbsCbsItemConfiguration = z.infer<typeof ibsCbsItemSchema>;
 /** Valida payload JSONB genérico (objeto raiz, nunca array/primitivo). */
 export function assertJsonObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+// ————————————— Getters/setters tipados para additional_fields.NFS-e —————————————
+export type NfseFieldMap = {
+  finNFSe: string;
+  tpNFSeDebito: string;
+  tpNFSeCredito: string;
+  gIBSCBSAjuste: boolean;
+  vAjusteBC: number;
+};
+
+export function getNfseField<K extends NfseKey>(
+  cfg: IbsCbsItemConfiguration,
+  key: K,
+): NfseFieldMap[K] | undefined {
+  const af = cfg.additional_fields;
+  if (!af || typeof af !== "object") return undefined;
+  const v = (af as Record<string, unknown>)[key];
+  if (v === undefined || v === null) return undefined;
+  if (key === "gIBSCBSAjuste") return (typeof v === "boolean" ? v : undefined) as NfseFieldMap[K] | undefined;
+  if (key === "vAjusteBC") return (typeof v === "number" && Number.isFinite(v) ? v : undefined) as NfseFieldMap[K] | undefined;
+  return (typeof v === "string" ? v : undefined) as NfseFieldMap[K] | undefined;
+}
+
+export function setNfseField<K extends NfseKey>(
+  cfg: IbsCbsItemConfiguration,
+  key: K,
+  value: NfseFieldMap[K] | undefined,
+): IbsCbsItemConfiguration {
+  const prev: Record<string, unknown> =
+    cfg.additional_fields && typeof cfg.additional_fields === "object"
+      ? { ...(cfg.additional_fields as Record<string, unknown>) }
+      : {};
+  if (value === undefined || value === "" || (typeof value === "number" && Number.isNaN(value))) {
+    delete prev[key];
+  } else {
+    prev[key] = value;
+  }
+  // Regra condicional: desligar gIBSCBSAjuste limpa vAjusteBC.
+  if (key === "gIBSCBSAjuste" && value !== true) {
+    delete prev.vAjusteBC;
+  }
+  return {
+    ...cfg,
+    additional_fields: Object.keys(prev).length > 0 ? prev : undefined,
+  };
 }

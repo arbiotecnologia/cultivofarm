@@ -1,7 +1,8 @@
 /**
- * Fase Fiscal 3.19.2 — Card "Reforma Tributária 2026 (IBS/CBS)".
- * Interface mínima e auditável: campos textuais/enums de RTC, sem
- * credenciais, sem toggles de produção. Salva via RPC.
+ * Fase Fiscal 3.19 (+3.19.4) — Card "Reforma Tributária 2026 (IBS/CBS)".
+ * Interface auditável: enums, datas (effective_from, last_reviewed_at),
+ * fonte normativa, notas e status de revisão. Sem credenciais e sem
+ * toggles de produção. Salva via RPC narrow com concorrência otimista.
  */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,12 +26,25 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
   const [form, setForm] = useState<RtcCompanyConfiguration>({
     schema_version: 1, rtc_environment: "NOT_CONFIGURED",
   });
+  const [flash, setFlash] = useState<string | null>(null);
 
+  // Preserva formulário em erro; só sincroniza quando não há edição pendente.
   useEffect(() => {
-    if (rtc.data) setForm(rtc.data);
-  }, [rtc.data]);
+    if (rtc.data && !rtc.error) setForm(rtc.data);
+  }, [rtc.data, rtc.error]);
 
   const disabled = !canEdit || rtc.loading || rtc.saving;
+
+  async function onSave() {
+    setFlash(null);
+    const res = await rtc.save(form);
+    if (res.ok) setFlash("Configuração RTC salva com sucesso.");
+  }
+
+  function onReload() {
+    setFlash(null);
+    void rtc.reload();
+  }
 
   return (
     <Card>
@@ -40,7 +54,12 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
       <CardContent className="space-y-4">
         {rtc.loading ? <p className="text-sm text-muted-foreground">Carregando…</p> : null}
         {rtc.error ? (
-          <Alert variant="destructive"><AlertDescription>{rtc.error}</AlertDescription></Alert>
+          <Alert variant="destructive" data-testid="rtc-company-error">
+            <AlertDescription>{rtc.error}</AlertDescription>
+          </Alert>
+        ) : null}
+        {flash ? (
+          <Alert data-testid="rtc-company-success"><AlertDescription>{flash}</AlertDescription></Alert>
         ) : null}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -93,9 +112,31 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
               disabled={disabled}
             />
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="rtc_effective_from">Vigência inicial</Label>
+            <Input
+              id="rtc_effective_from" type="date"
+              value={(form.effective_from ?? "").slice(0, 10)}
+              onChange={(e) => setForm((s) => ({
+                ...s, effective_from: e.target.value || undefined,
+              }))}
+              disabled={disabled}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Data em que a configuração passa a valer (AAAA-MM-DD).
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="rtc_last_reviewed_at">Última revisão</Label>
+            <Input
+              id="rtc_last_reviewed_at" type="date"
+              value={(form.last_reviewed_at ?? "").slice(0, 10)}
+              onChange={(e) => setForm((s) => ({
+                ...s, last_reviewed_at: e.target.value || undefined,
+              }))}
+              disabled={disabled}
+            />
+          </div>
           <div>
             <Label htmlFor="rtc_review_status">Status da revisão contábil</Label>
             <Select
@@ -125,12 +166,20 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
           />
         </div>
 
-
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button" variant="outline"
+            onClick={onReload}
+            disabled={rtc.loading || rtc.saving}
+            data-testid="rtc-company-reload"
+          >
+            Recarregar
+          </Button>
           <Button
             type="button"
             disabled={disabled}
-            onClick={() => rtc.save(form)}
+            onClick={onSave}
+            data-testid="rtc-company-save"
           >
             {rtc.saving ? "Salvando…" : "Salvar RTC 2026"}
           </Button>
