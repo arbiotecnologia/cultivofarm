@@ -39,6 +39,7 @@ const BASE_ROW: ProductFiscalRow = {
   icms_csosn: null,
   icms_cst: null,
   ipi_cst: null,
+  ibs_cbs_configuration: {},
   is_active: true,
   ncm: null,
   origin_code: null,
