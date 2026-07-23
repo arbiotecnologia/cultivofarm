@@ -12,7 +12,10 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, FlaskConical, Download, Layers, Trash2, FileDown, Check, ChevronsUpDown, FileText, Droplets, Info } from "lucide-react";
+import { Plus, Search, Filter, FlaskConical, Download, Layers, Trash2, FileDown, Check, ChevronsUpDown, FileText, Droplets, Info, RefreshCcw, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { wipeCatalogoProdutos, importCatalogoARBioV13, isCatalogoARBioV13Aplicado } from "@/lib/protocolos/seedCatalogoARBioV13";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateCatalogoProdutosPdf } from "@/lib/pdf/catalogoProdutosPdf";
 import { generateFichaTecnicaProdutoPdf } from "@/lib/pdf/fichaTecnicaProdutoPdf";
 import { toast } from "sonner";
@@ -91,6 +94,12 @@ export function ProdutosTab() {
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("administrador");
+  const [reloadOpen, setReloadOpen] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const [catalogoAplicado, setCatalogoAplicado] = useState(false);
+
   
   const [form, setForm] = useState({
     id: "",
@@ -175,7 +184,39 @@ export function ProdutosTab() {
   useEffect(() => {
     fetch();
     fetchMicrorganismos();
+    isCatalogoARBioV13Aplicado().then(setCatalogoAplicado).catch(() => setCatalogoAplicado(false));
   }, []);
+
+  const handleRecarregarCatalogo = async () => {
+    setReloading(true);
+    try {
+      const wipe = await wipeCatalogoProdutos();
+      if (!wipe.ok) {
+        toast.error(`Falha no wipe: ${wipe.error ?? "erro"}${wipe.table ? ` (${wipe.table})` : ""}`, {
+          description: wipe.detail,
+        });
+        return;
+      }
+      const seed = await importCatalogoARBioV13();
+      if (seed.microrganismosFaltantes.length > 0) {
+        toast.error("Microrganismos ausentes no cadastro", {
+          description: seed.microrganismosFaltantes.join(", "),
+        });
+        return;
+      }
+      toast.success(`Catálogo A.R Bio v1.3 aplicado`, {
+        description: `${seed.inseridos} inseridos, ${seed.atualizados} atualizados, ${seed.formulacoesCriadas} formulações. Total removido: ${wipe.totalDeleted ?? 0} registros.`,
+      });
+      await fetch();
+      setCatalogoAplicado(true);
+      setReloadOpen(false);
+    } catch (e) {
+      toast.error("Erro ao aplicar catálogo", { description: (e as Error).message });
+    } finally {
+      setReloading(false);
+    }
+  };
+
 
   useEffect(() => {
     let result = items;
@@ -513,6 +554,49 @@ export function ProdutosTab() {
             <FileDown className="h-4 w-4 mr-1" />
             Exportar PDF
           </Button>
+
+          {isAdmin && !catalogoAplicado && (
+            <AlertDialog open={reloadOpen} onOpenChange={setReloadOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="hidden md:flex">
+                  <RefreshCcw className="h-4 w-4 mr-1" />
+                  Recarregar Catálogo A.R Bio v1.3
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Recarregar Catálogo A.R Bio v1.3</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-2 text-sm">
+                      <p>
+                        Esta ação apaga <strong>todos os produtos</strong> e todo o histórico operacional
+                        e fiscal vinculado (lotes, ordens de serviço, aplicações, entregas, notas fiscais,
+                        estoques, formulações). Em seguida, insere os 7 produtos do catálogo A.R Bio v1.3.
+                      </p>
+                      <p className="text-destructive font-medium">
+                        Ação irreversível. Confirme apenas em ambiente homologado.
+                      </p>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={reloading}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e) => { e.preventDefault(); handleRecarregarCatalogo(); }}
+                    disabled={reloading}
+                  >
+                    {reloading ? (
+                      <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Aplicando…</>
+                    ) : (
+                      "Confirmar wipe e recarga"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+
+
 
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
             <DialogTrigger asChild>
