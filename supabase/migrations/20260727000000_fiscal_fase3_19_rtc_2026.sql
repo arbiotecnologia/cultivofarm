@@ -193,7 +193,7 @@ BEGIN
     RAISE EXCEPTION 'FISCAL_RTC_STRING_TOO_LONG' USING ERRCODE='22023'; END IF;
   -- ------------------------------------------------------------------
   -- Fase 3.19.5 - validacao NFS-e Nacional dentro de additional_fields.
-  -- Codigos estaveis; fail-fast; sem EXCEPTION WHEN OTHERS.
+  -- Codigos estaveis; fail-fast; sem catch silenciador.
   -- ------------------------------------------------------------------
   IF payload ? 'additional_fields' THEN
     DECLARE af jsonb := payload->'additional_fields';
