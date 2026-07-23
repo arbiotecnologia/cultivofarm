@@ -29,7 +29,7 @@ Relatório curto da entrega. Escopo estritamente aditivo e auditável.
        para a Tabela I do RIPI e Tabelas 4.3.3/4.3.4.
 
 3. **Migração aditiva (não aplicada)**
-   - `supabase/migrations/20260727000000_fiscal_fase3_19_rtc_2026.sql`:
+   - `restoration/fiscal-fase3-19/20260727000000_fiscal_fase3_19_rtc_2026.sql`:
      - `ADD COLUMN IF NOT EXISTS rtc_configuration jsonb DEFAULT '{}'::jsonb`
        em `company_fiscal_settings`.
      - `ADD COLUMN IF NOT EXISTS ibs_cbs_configuration jsonb DEFAULT '{}'::jsonb`
