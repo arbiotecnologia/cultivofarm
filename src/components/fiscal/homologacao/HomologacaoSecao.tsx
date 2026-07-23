@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import CamposFaltantesEmpresa from "./CamposFaltantesEmpresa";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -208,6 +209,8 @@ export default function HomologacaoSecao({ companySettingsId }: Props) {
           )}
         </CardContent>
       </Card>
+
+      <CamposFaltantesEmpresa />
 
       <Card>
         <CardHeader className="pb-2">

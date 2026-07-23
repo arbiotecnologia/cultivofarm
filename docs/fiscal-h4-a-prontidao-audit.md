@@ -66,3 +66,30 @@
 - ❌ Não emitiu, transmitiu ou consultou documento fiscal externo.
 - ❌ Não integrou provedor nem gravou secrets.
 - ❌ Não cadastrou dados inventados nem defaults fiscais presumidos.
+
+---
+
+## 7. Correção implementada nesta rodada (código)
+
+Implementado o único gap tangível do cenário "infraestrutura pronta, dados da empresa pendentes" **sem banco/deploy**: listar campos faltantes por seção com deep-link ao campo/aba correto e estados "Não iniciado" / "Não aplicável" explícitos.
+
+**Arquivos novos**
+- `src/lib/fiscal/companyMissingFields.ts` — função pura `computeCompanyMissingFields(row)`; agrupa por seção (`empresa`, `endereco`, `nfe`, `nfse`), severidade (`bloqueia_homologacao` / `recomendado`) e marca `notApplicable` quando NF-e/NFS-e desativadas. Não inventa alíquotas nem defaults.
+- `src/components/fiscal/homologacao/CamposFaltantesEmpresa.tsx` — card na Central de Homologação; estados "Não iniciado" (singleton ausente), "Não aplicável" (módulo desativado), "Requisitos mínimos ok" e listagem detalhada com botão "preencher" que leva à aba correta.
+- `src/test/fiscal/companyMissingFields.test.ts` — 9 cenários (row nulo, vazio, NF-e/NFS-e habilitados, série via coluna ou JSON, row completo, deep-links, rótulos).
+
+**Arquivo alterado**
+- `src/components/fiscal/homologacao/HomologacaoSecao.tsx` — renderiza `<CamposFaltantesEmpresa />` acima do bloco "Ir para ajustes".
+
+**Cumprimento das proibições**
+- Sem Supabase remoto, sem migration, sem RLS, sem deploy, sem dados inventados, sem alíquotas hardcoded (ISS aparece como "a definir com a contabilidade").
+
+**Validações finais**
+- `vitest src/test/fiscal/companyMissingFields.test.ts` → **9/9 ✓**
+- `vitest src/test/fiscal` → **1090 passed · 3 skipped** ✓ (+9 vs. auditoria anterior)
+- `bunx tsgo --noEmit` → limpo ✓
+- `bun run build` → limpo ✓
+
+**Custo real total (auditoria + implementação):** ~13 créditos. Consumo acumulado: ~32/300.
+
+**Não avança automaticamente.** Próximas fatias sugeridas (autorização específica): banner de expiração de certificado A1 < 30 dias; extensão do derivador para Perfis (Produto/Serviço/Cliente); deploy controlado da Edge `fiscal-cnpj-lookup` em staging.
