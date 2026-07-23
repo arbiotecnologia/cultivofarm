@@ -8,8 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Filter, Info, FileDown, FileText, Droplets, Download } from "lucide-react";
-import { importarMicrosARBio2026 } from "@/lib/protocolos/seedMicrorganismosARBio2026";
+import { Plus, Search, Filter, Info, FileDown, FileText, Droplets } from "lucide-react";
 import { generateCatalogoMicrorganismosPdf } from "@/lib/pdf/catalogoMicrorganismosPdf";
 import { generateFichaTecnicaMicrorganismoPdf } from "@/lib/pdf/fichaTecnicaMicrorganismoPdf";
 import { toast } from "sonner";
