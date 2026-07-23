@@ -21,9 +21,17 @@ interface Props {
   label: string;
   itemLabel?: string;
   onDeleted?: () => void;
+  variant?: "icon" | "dropdown";
 }
 
-export function DeleteProtocoloButton({ table, id, label, itemLabel = "registro", onDeleted }: Props) {
+export function DeleteProtocoloButton({
+  table,
+  id,
+  label,
+  itemLabel = "registro",
+  onDeleted,
+  variant = "icon",
+}: Props) {
   const handleDelete = async () => {
     const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) {
