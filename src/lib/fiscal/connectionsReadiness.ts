@@ -320,7 +320,8 @@ function computeWebhook(row: CompanyFiscalRow | null): ConnectionItem {
     label: "Webhook de retorno",
     status: "not_started",
     description: "Nenhum webhook de retorno configurado.",
-    deepLink: link("webhook", "webhook_ref"),
+    // Aba real: "integracao". Campo real: #webhook_ref.
+    deepLink: link("integracao", "webhook_ref"),
   };
   if (row === null) return base;
   if (empty(row.webhook_ref)) {
