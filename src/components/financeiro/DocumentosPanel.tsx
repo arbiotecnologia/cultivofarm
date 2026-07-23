@@ -76,16 +76,16 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
   });
 
   const remove = useMutation({
-    mutationFn: async ({ id, fileName }: { id: string; fileName: string }) => {
+    mutationFn: async ({ id }: { id: string; fileName: string }) => {
       if (!user) throw new Error("Sessão inválida");
-      const { error } = await supabase
-        .from("financial_documents")
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: user.id,
-          delete_reason: "Removido pelo usuário",
-        })
-        .eq("id", id);
+      const rpc = supabase.rpc as unknown as (
+        fn: "rpc_financial_document_soft_delete",
+        args: { p_document_id: string; p_reason: string },
+      ) => Promise<{ error: { message: string } | null }>;
+      const { error } = await rpc("rpc_financial_document_soft_delete", {
+        p_document_id: id,
+        p_reason: "Removido pelo usuário",
+      });
       if (error) throw error;
     },
     onSuccess: () => {

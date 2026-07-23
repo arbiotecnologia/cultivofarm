@@ -269,7 +269,7 @@ Nas três tabelas (`product_fiscal_profiles`,
 
 ### 11.5 RPC produto IBS/CBS
 
-- `rpc_fiscal_product_profile_ibs_cbs_get` / `save` aprovadas ✅
+- `rpc_fiscal_product_ibs_cbs_get` / `rpc_fiscal_product_ibs_cbs_save` aprovadas ✅
 
 ### 11.6 Readiness v2
 
@@ -347,9 +347,96 @@ persistência de `fd_no_hard_delete USING(false)`, `REVOKE DELETE` e
 comprovação de que `DocumentosPanel` usa `.update({ deleted_at: ... })`
 e nunca `.delete()` sobre `financial_documents`.
 
-**Status:** correção **preparada e versionada**; **pendente de
-aplicação no staging** `ikaauvsflpmamgxmkhoq`. Nenhum acesso a banco,
-deploy, publicação ou produção nesta rodada.
+**Status:** migration `20260729000000` **aplicada e validada no staging**
+`ikaauvsflpmamgxmkhoq`: hard delete físico bloqueado (sem GRANT), INSERT
+e UPDATE comuns pelo staff financeiro aprovados. O ramo `DELETE FOR ALL`
+foi eliminado; produção `navfzbwgwzruipouyfnk` intocada.
 
-**Gates locais nesta rodada:** typecheck ✅, build ✅, focal 6/6 ✅,
-suíte fiscal completa 1004 passed / 3 skipped ✅.
+**Gate parcial:** o teste runtime de soft delete via `UPDATE` direto de
+`deleted_at`/`deleted_by`/`delete_reason` retornou `SQLSTATE 42501`
+porque a policy `SELECT` vigente oculta a linha após o soft delete
+(`deleted_at IS NULL`). Reabrir `SELECT` sobre documentos apagados
+exporia excluídos nas listagens normais; reabrir `DELETE` reintroduziria
+o hard delete recém-bloqueado. Correção deste gap está descrita na
+seção 13.
+
+## 13. Correção preparada — RPC `rpc_financial_document_soft_delete`
+
+**Migration versionada (não aplicada nesta rodada):**
+`supabase/migrations/20260730000000_fiscal_financial_documents_soft_delete_rpc.sql`.
+
+Conteúdo:
+
+1. `CREATE OR REPLACE FUNCTION public.rpc_financial_document_soft_delete(p_document_id uuid, p_reason text) RETURNS uuid`
+   `LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp`.
+2. Exige `auth.uid()` (`42501` para anônimo) e `public.is_financial_staff(v_uid)` (`42501` para papel sem autorização).
+3. Motivo sanitizado com `btrim(coalesce(...,''))`, obrigatório e limitado a 500 caracteres (`22023`).
+4. Documento inexistente → `P0002`; segunda exclusão → `40001`.
+5. `UPDATE ... SET deleted_at = now(), deleted_by = v_uid, delete_reason = v_reason WHERE id = p_document_id AND deleted_at IS NULL`.
+   Cliente nunca informa `deleted_by`/`deleted_at`; a assinatura só aceita `p_document_id` e `p_reason`.
+6. `REVOKE ALL ... FROM PUBLIC`, `REVOKE ALL ... FROM anon`, `GRANT EXECUTE ... TO authenticated`.
+7. `SELECT` sobre documentos apagados **não** é ampliado; listagens continuam filtrando `deleted_at IS NULL`. Nenhuma RLS/RPC não relacionada é alterada. Nenhum `GRANT DELETE` físico concedido.
+
+**Frontend:** `src/components/financeiro/DocumentosPanel.tsx` deixou de
+executar `UPDATE` direto e agora chama a RPC. Mensagens pt-BR, loading,
+erro e invalidação da lista preservados.
+
+**Teste canônico adicionado:**
+`src/test/fiscal/rpc_financial_document_soft_delete.test.ts` (9 asserts):
+assinatura/SECURITY DEFINER/search_path, rejeição de anônimo e sem
+papel, motivo `btrim`/vazio/`>500`, preenchimento server-side (nenhum
+`p_deleted_*`), `P0002`/`40001`, grants (`REVOKE PUBLIC/anon`,
+`GRANT EXECUTE authenticated`), ausência de `FOR ALL`/`GRANT DELETE`,
+manutenção do `REVOKE DELETE` da migration `20260729000000`, e
+comprovação de que o painel usa `supabase.rpc('rpc_financial_document_soft_delete')`
+sem `.update({ deleted_at })` nem `.delete()`.
+
+**Status:** correção **preparada e versionada**; **pendente de
+aplicação runtime no staging** `ikaauvsflpmamgxmkhoq`. Sem banco, deploy,
+publicação ou produção nesta rodada.
+
+**Gates locais nesta rodada:** typecheck ✅, build ✅, focal ✅, suíte
+fiscal completa ✅.
+
+### 13.1 Roteiro SQL mínimo do teste runtime (com rollback)
+
+```sql
+BEGIN;
+-- Prep: obter um documento ativo qualquer
+--   SELECT id FROM public.financial_documents WHERE deleted_at IS NULL LIMIT 1;
+
+-- 1. Sessão anônima → 42501
+SET LOCAL role anon;
+SELECT public.rpc_financial_document_soft_delete('00000000-0000-0000-0000-000000000000'::uuid, 'x');
+-- ERRO esperado: 42501
+
+-- 2. Autenticado sem papel financeiro → 42501
+RESET role;
+SET LOCAL role authenticated;
+SET LOCAL "request.jwt.claim.sub" TO '<uuid_usuario_sem_papel>';
+SELECT public.rpc_financial_document_soft_delete('<uuid_doc_ativo>'::uuid, 'motivo');
+-- ERRO esperado: 42501
+
+-- 3. Motivo vazio → 22023
+SET LOCAL "request.jwt.claim.sub" TO '<uuid_financeiro>';
+SELECT public.rpc_financial_document_soft_delete('<uuid_doc_ativo>'::uuid, '   ');
+-- ERRO esperado: 22023
+
+-- 4. Documento inexistente → P0002
+SELECT public.rpc_financial_document_soft_delete(gen_random_uuid(), 'motivo válido');
+-- ERRO esperado: P0002
+
+-- 5. Soft delete legítimo
+SELECT public.rpc_financial_document_soft_delete('<uuid_doc_ativo>'::uuid, 'Removido em teste H2');
+-- OK; retorna o uuid
+
+-- 6. Segunda exclusão → 40001
+SELECT public.rpc_financial_document_soft_delete('<uuid_doc_ativo>'::uuid, 'novamente');
+-- ERRO esperado: 40001
+
+-- 7. Confirmar autoria server-side
+SELECT id, deleted_at, deleted_by, delete_reason
+  FROM public.financial_documents WHERE id = '<uuid_doc_ativo>';
+
+ROLLBACK;
+```
