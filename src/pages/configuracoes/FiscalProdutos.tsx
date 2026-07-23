@@ -34,6 +34,10 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, Pencil, Plus } from "lucide-react";
 import { IbsCbsItemCard } from "@/components/fiscal/IbsCbsItemCard";
+import {
+  PRODUCT_FISCAL_PROFILE_STATUS_OPTIONS,
+  getFiscalStatusLabel,
+} from "@/lib/fiscal/fiscalOptions";
 
 
 const PAGE_TITLE = "Perfis Fiscais de Produtos";
