@@ -111,7 +111,7 @@ export function ProdutosTab() {
       a.download = `produtos-orfaos-audit-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      const resumo = data?.resumo ?? {};
+      const resumo = data.resumo;
       toast.success(
         `Auditoria concluída: ${resumo.tabelas_com_orfaos ?? 0} tabelas com órfãos, ${resumo.distinct_ids_orfaos_global ?? 0} IDs órfãos distintos.`,
         {
