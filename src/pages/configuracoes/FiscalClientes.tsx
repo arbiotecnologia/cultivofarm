@@ -416,10 +416,11 @@ export default function FiscalClientes() {
 }
 
 function EditDrawer({
-  item, canEdit, onClose,
+  item, canEdit, knownProfiledCustomerIds, onClose,
 }: {
   item: CustomerListItem | "new";
   canEdit: boolean;
+  knownProfiledCustomerIds?: readonly string[];
   onClose: () => void;
 }) {
   const isNew = item === "new";
