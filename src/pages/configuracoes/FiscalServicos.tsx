@@ -609,7 +609,7 @@ function EditDrawer({
         )}
         {!isNew ? (
           <div className="mt-6" data-testid="fiscal-servicos-ibs-cbs">
-            <IbsCbsItemCard kind="service" itemId={item.service_id ?? null} canEdit={canEdit} />
+            <IbsCbsItemCard kind="service_profile" itemId={item.id ?? null} canEdit={canEdit} />
           </div>
         ) : null}
       </SheetContent>
