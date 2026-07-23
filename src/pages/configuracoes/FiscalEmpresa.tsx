@@ -422,19 +422,21 @@ export default function FiscalEmpresa() {
             <Card>
               <CardHeader><CardTitle className="text-base">Identificação</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FieldRow id="cnpj" label="CNPJ" description="Somente números; validação algorítmica.">
+                <FieldRow id="cnpj" label="CNPJ" description="14 posições — desde 07/2026 aceita letras A–Z nas 12 primeiras (IN RFB 2.229/2024).">
                   <Input
                     id="cnpj"
-                    inputMode="numeric"
+                    inputMode="text"
+                    autoCapitalize="characters"
                     autoComplete="off"
                     maxLength={18}
                     placeholder="00.000.000/0000-00"
                     value={formatCNPJ(values.cnpj ?? "")}
-                    onChange={(e) => set("cnpj", unmask(e.target.value).slice(0, 14))}
+                    onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
                     aria-invalid={!!errors.cnpj}
                   />
                   {errors.cnpj ? <p className="text-xs text-destructive" role="alert">{errors.cnpj}</p> : null}
                 </FieldRow>
+
                 <FieldRow id="legal_name" label="Razão social">
                   <Input id="legal_name" value={values.legal_name ?? ""} onChange={(e) => set("legal_name", e.target.value)} />
                 </FieldRow>
