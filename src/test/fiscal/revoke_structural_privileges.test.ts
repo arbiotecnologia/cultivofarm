@@ -65,7 +65,7 @@ describe("Hardening estrutural fiscal — 20260731000000", () => {
     expect(sqlNoComments).not.toMatch(/service_role/i);
 
     // Não revoga SELECT em nenhum lugar (SELECT administrativo preservado)
-    expect(sql).not.toMatch(/REVOKE[^;]*\bSELECT\b/i);
+    expect(sqlNoComments).not.toMatch(/REVOKE[^;]*\bSELECT\b/i);
   });
 
   it("preserva grants DML/SELECT legítimos declarados em 20260721000000_fiscal_fase2_fundacao.sql", () => {
