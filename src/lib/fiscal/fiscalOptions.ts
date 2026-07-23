@@ -205,6 +205,30 @@ export const REQUIREMENT_STATUS_OPTIONS: FiscalOption[] = [
 ];
 
 /**
+ * Lista canônica de status do perfil fiscal de produtos, alinhada ao
+ * CHECK de `public.product_fiscal_profiles.profile_status` na migration
+ * 20260721000000. Não incluir valores observados na página.
+ */
+export const PRODUCT_FISCAL_PROFILE_STATUSES = [
+  "DRAFT",
+  "PENDING_ACCOUNTING",
+  "VALIDATED",
+  "BLOCKED",
+  "NOT_FISCALLY_SOLD",
+] as const;
+export type ProductFiscalProfileStatus =
+  (typeof PRODUCT_FISCAL_PROFILE_STATUSES)[number];
+
+export function isProductFiscalProfileStatus(
+  v: string | null | undefined,
+): v is ProductFiscalProfileStatus {
+  return (
+    !!v &&
+    (PRODUCT_FISCAL_PROFILE_STATUSES as readonly string[]).includes(v)
+  );
+}
+
+/**
  * Se o valor persistido não pertencer à lista canônica, retorna a lista
  * prefixada por uma opção "— manter valor atual (<x>) —" para não
  * perder o dado legado. Nenhuma coerção; o usuário migra ao editar.
