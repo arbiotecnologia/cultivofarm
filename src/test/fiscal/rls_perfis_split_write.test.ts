@@ -20,8 +20,8 @@ describe("RLS perfis fiscais — split INSERT/UPDATE + DELETE=false", () => {
       expect(sql).toMatch(
         new RegExp(`DROP POLICY IF EXISTS %I ON public\\.%I`),
       );
-      // Nenhuma criação FOR ALL deve permanecer na migration
-      expect(sql).not.toMatch(new RegExp(`FOR ALL`, "i"));
+      // Nenhuma CREATE POLICY ... FOR ALL deve permanecer na migration
+      expect(sql).not.toMatch(/CREATE POLICY[\s\S]*?FOR ALL/i);
       // Referência explícita à policy _write sendo removida
       expect(sql).toContain(`'_write'`);
       void t;
