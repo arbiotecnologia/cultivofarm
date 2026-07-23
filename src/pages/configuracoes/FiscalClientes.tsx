@@ -260,8 +260,8 @@ export default function FiscalClientes() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={STATUS_ALL}>Todos os status</SelectItem>
-                {(listQuery.data?.statuses ?? []).map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                {CUSTOMER_FISCAL_PROFILE_STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
