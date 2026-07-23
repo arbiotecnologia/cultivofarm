@@ -19,35 +19,37 @@ export const formatCPF = (value: string | number | undefined | null): string => 
     .slice(0, 14);
 };
 
-/**
- * Formata um valor como CNPJ (00.000.000/0000-00).
- *
- * Fase Fiscal 3.19: aceita CNPJ ALFANUMÉRICO (IN RFB 2.229/2024).
- * As 12 primeiras posições podem conter letras A–Z além de dígitos.
- * Os 2 dígitos verificadores permanecem numéricos.
- * NUNCA remove letras — apenas pontuação/espaços — e força uppercase.
- */
-export const formatCNPJ = (value: string | number | undefined | null): string => {
-  if (value === undefined || value === null) return "";
-  const v = String(value).replace(/[\s.\-/]/g, "").toUpperCase();
-  if (!v) return "";
-  return v
-    .replace(/^([0-9A-Z]{2})([0-9A-Z])/, "$1.$2")
-    .replace(/^([0-9A-Z]{2})\.([0-9A-Z]{3})([0-9A-Z])/, "$1.$2.$3")
-    .replace(/^([0-9A-Z]{2})\.([0-9A-Z]{3})\.([0-9A-Z]{3})([0-9A-Z])/, "$1.$2.$3/$4")
-    .replace(/^([0-9A-Z]{2})\.([0-9A-Z]{3})\.([0-9A-Z]{3})\/([0-9A-Z]{4})(\d)/, "$1.$2.$3/$4-$5")
-    .slice(0, 18);
-};
+// Fase Fiscal 3.19 — CNPJ alfanumérico (IN RFB 2.229/2024).
+// A ÚNICA fonte de verdade do algoritmo é `src/lib/fiscal/cnpjAlpha.ts`.
+// Este módulo apenas re-exporta para preservar as APIs históricas
+// (`formatCNPJ`, `unmaskCnpj`) sem duplicar lógica.
+import {
+  formatCnpjAlpha as _formatCnpjAlpha,
+  unmaskCnpjAlpha as _unmaskCnpjAlpha,
+} from "./fiscal/cnpjAlpha";
 
+/**
+ * Formata um valor como CNPJ (00.000.000/0000-00). Aceita alfanumérico.
+ * Delega ao módulo canônico `cnpjAlpha`.
+ */
+export const formatCNPJ = (
+  value: string | number | undefined | null,
+): string => {
+  if (value === undefined || value === null) return "";
+  return _formatCnpjAlpha(String(value));
+};
 
 /**
  * Remove pontuação/espaços de um CNPJ preservando letras (uppercase).
- * Fase Fiscal 3.19 — NÃO usar `unmask` para CNPJ, pois `unmask` remove letras.
+ * NÃO usar `unmask` para CNPJ — `unmask` remove letras.
  */
-export const unmaskCnpj = (value: string | number | undefined | null): string => {
+export const unmaskCnpj = (
+  value: string | number | undefined | null,
+): string => {
   if (value === undefined || value === null) return "";
-  return String(value).replace(/[\s.\-/]/g, "").toUpperCase();
+  return _unmaskCnpjAlpha(String(value));
 };
+
 
 /**
  * Formata conforme o tamanho (CPF ou CNPJ). CPF continua numérico;
