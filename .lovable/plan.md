@@ -1,45 +1,32 @@
-# Padronizar layout da aba "Microrganismos" com "Produtos"
+## Diagnóstico
 
-Objetivo: replicar o layout da tabela de **Produtos** na aba **Microrganismos**, respeitando os dados que cada entidade oferece (microrganismo não tem "Composição" nem `valor_ha_brl` direto).
+A coluna **Ref.** exibe `fornecedor` + `safra_referencia` em ambas as abas, mas apenas **Microrganismos** possui os campos editáveis no diálogo (seção "Referência Comercial", linhas 458–460 e 419–422 de `MicrorganismosTab.tsx`).
 
-## Alterações em `src/components/protocolos/MicrorganismosTab.tsx`
+Em **Produtos** (`ProdutosTab.tsx`) esses campos são apenas lidos para exibição na tabela (linhas 876–877, 975–976). Não existe input no formulário de cadastro/edição — por isso não é possível alterar nem excluir a referência de um produto pela interface.
 
-### 1. Cabeçalho da tabela — mesmo padrão de Produtos
-Colunas finais: **Microrganismo | Volumes | Concentração (UFC/mL) | Dose (mL/ha) | Valores | Ref. | Ações**
+## O que fazer
 
-- `Concentração (UFC/mL)` ocupa a posição de `Composição` (é o "conteúdo" próprio do microrganismo).
-- Adicionar coluna `Ref.` mostrando `fornecedor` / `safra_referencia` (dados que só o microrganismo tem), mesmo formato usado em Produtos (`div` xs, sublegenda muted). Quando ausente: `—`.
-- Atualizar `colSpan` do estado vazio para `7`.
+### 1. `src/components/protocolos/ProdutosTab.tsx` — adicionar edição da referência
+- Incluir `fornecedor` e `safra_referencia` no estado inicial de `form` e no `resetForm`.
+- Popular esses campos ao abrir para edição (`handleEdit`).
+- Adicionar seção **"Referência Comercial"** no diálogo, no mesmo padrão visual de Microrganismos, com dois `Input`s:
+  - **Fornecedor** (texto livre; vazio = remover)
+  - **Safra** (texto livre; vazio = remover)
+- Incluir ambos no `payload` do `handleSave`, enviando `null` quando string vazia — assim salvar em branco efetivamente "exclui" a referência sem apagar o produto.
 
-### 2. Célula "Valores" — mesmo formato de Produtos
-Renderizar duas linhas alinhadas à direita, `font-mono-data text-xs`, iguais à de Produtos:
-- Linha 1 (destaque primário): `R$ X /ha` calculado via `calcularCustoHa(dose_ml_ha, valor_dose_brl)`.
-- Linha 2 (muted): `R$ Y /100 mL` a partir de `valor_dose_brl` (ou derivado de `valor_litro_brl / 10`).
-- Se tudo nulo: `—`.
+### 2. `src/components/protocolos/MicrorganismosTab.tsx` — só melhoria de descoberta
+- Já existe a edição, mas os dois campos estão separados (Safra em cima, Fornecedor solto embaixo). Reagrupar dentro do bloco "Referência Comercial" lado a lado (Fornecedor + Safra em uma linha), para ficar visualmente idêntico ao de Produtos e mais fácil de localizar.
+- Nenhuma mudança de schema, payload ou validação.
 
-Importar `calcularCustoHa` de `@/lib/catalogo/pricing` (já usado em Produtos).
+### 3. Exclusão explícita
+Não será criado botão separado "excluir referência": deixar o campo em branco e salvar já grava `null`. Isso mantém consistência com o restante do formulário e evita ação destrutiva extra. Documentar via `placeholder="Deixe em branco para remover"` nos dois inputs.
 
-### 3. Coluna "Ações" — padrão inline de Produtos
-Substituir o `DropdownMenu` atual pela mesma barra inline usada em Produtos:
-`[Badge status] [Volumes] [Ficha] [PDF icon] [Info tooltip se houver obs] [Delete icon]`
-
-- Botões `size="sm" variant="outline" h-7 px-2` (mesmas dimensões de Produtos).
-- Botão PDF `variant="ghost" h-7 w-7 p-0` com `FileDown`.
-- `Info` como ícone com Tooltip (não `DropdownMenuItem`).
-- `DeleteProtocoloButton` volta a usar a variante padrão `icon` (sem `variant="dropdown"`).
-- Remover imports não usados: `DropdownMenu*`, `DropdownMenuSeparator`, `MoreVertical`.
-
-### 4. Manter o que já está correto
-- Célula "Microrganismo" (código, nome, científico, badge tipo, função) permanece.
-- Célula "Volumes" (`VolumesChips`) permanece.
-- Filtros, busca, exportar PDF e "Novo Microrganismo" permanecem.
-
-## Não alterar
-- `DeleteProtocoloButton.tsx` (mantém suporte a `variant="dropdown"` já entregue; só deixa de ser usado aqui).
-- Nada de banco, migrations, RLS, rotas ou lógica de negócio.
-- Aba de Produtos permanece intacta.
+## Fora do escopo
+- Nenhuma alteração em migrations, RLS, schema de tabelas ou rotas.
+- Nenhuma mudança em cálculos de custo, formulações, volumes ou fichas técnicas.
+- Sem alteração de testes de negócio existentes (apenas ajustes triviais se algum snapshot cobrir esses diálogos — verificar após implementar).
 
 ## Validação
-- `tsgo` (typecheck)
+- `bun run typecheck`
 - `bun run build`
-- Suíte fiscal (`src/test/fiscal`) para regressão geral
+- `bunx vitest run` (esperado manter 1479/1479).
