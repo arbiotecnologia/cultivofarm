@@ -213,7 +213,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
       ...form,
       codigo: form.codigo?.trim() || null,
       nome_fantasia: form.nome_fantasia?.trim() || null,
-      cnpj: form.cnpj ? unmask(form.cnpj) : null,
+      cnpj: form.cnpj ? unmaskCnpj(form.cnpj) : null,
       observacoes: form.observacoes?.trim() || null,
       client_id: form.client_id || null,
       dados_bancarios: form.dados_bancarios
