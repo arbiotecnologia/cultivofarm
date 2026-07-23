@@ -499,17 +499,21 @@ export function MicrorganismosTab() {
             <TableRow>
               <TableHead>Microrganismo</TableHead>
               <TableHead>Volumes</TableHead>
-              <TableHead>UFC/mL</TableHead>
+              <TableHead className="whitespace-nowrap">
+                Concentração
+                <span className="block text-[10px] font-normal text-muted-foreground normal-case">
+                  (UFC/mL)
+                </span>
+              </TableHead>
               <TableHead className="text-right">Dose (mL/ha)</TableHead>
               <TableHead className="text-right">Valores</TableHead>
-              <TableHead>Ref.</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
+                <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
                   Nenhum microrganismo encontrado
                 </TableCell>
               </TableRow>
@@ -540,8 +544,13 @@ export function MicrorganismosTab() {
                     onAdd={() => setVolumesEdit(m)}
                   />
                 </TableCell>
-                <TableCell className="font-mono-data text-xs">
-                  {formatConcentracaoDisplay(m.concentracao_ufc_ml)}
+                <TableCell className="whitespace-nowrap">
+                  <div className="font-mono-data text-xs leading-tight">
+                    {formatConcentracaoDisplay(m.concentracao_ufc_ml)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    UFC/mL
+                  </div>
                 </TableCell>
                 <TableCell className="text-right font-mono-data">
                   {m.dose_ml_ha || "—"}
