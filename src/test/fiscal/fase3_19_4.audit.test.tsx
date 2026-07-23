@@ -198,11 +198,13 @@ describe("Fase 3.19.4 — Higiene: sem `as any` nos artefatos RTC", () => {
   ];
   test.each(paths)("%s não contém `as any`", (p) => {
     const src = read(p);
-    // Ignora ocorrências dentro de comentários.
+    // Remove comentários de linha, de bloco e conteúdo em template literals
+    // que descrevem a proibição — foco só em código executável.
     const stripped = src
-      .split("\n")
-      .filter((ln) => !/^\s*\*/.test(ln) && !/^\s*\/\//.test(ln))
-      .join("\n");
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/.*$/gm, "")
+      .replace(/`[^`]*`/g, "");
     expect(stripped).not.toMatch(/\bas\s+any\b/);
   });
+
 });
