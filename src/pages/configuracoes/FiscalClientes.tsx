@@ -323,7 +323,7 @@ export default function FiscalClientes() {
                       const nome = it.cliente_nome ?? "—";
                       const doc = maskDocument(it.cliente_cpf_cnpj);
                       const contrib = it.taxpayer_indicator
-                        ? (TAXPAYER_LABELS[it.taxpayer_indicator] ?? it.taxpayer_indicator)
+                        ? getTaxpayerIndicatorLabel(it.taxpayer_indicator)
                         : "—";
                       return (
                         <tr key={it.id} className="border-t">
