@@ -89,11 +89,17 @@ describe("Fase 3.19.1 — migration canônica", () => {
   });
 
   test("não altera production_enabled/providers/emissão/RLS/GRANTs de tabelas", () => {
-    expect(canonical).not.toMatch(/production_enabled/i);
-    expect(canonical).not.toMatch(/CREATE\s+POLICY/i);
-    expect(canonical).not.toMatch(/DROP\s+POLICY/i);
+    // Remove comentários de linha SQL antes de checar palavras proibidas.
+    const code = canonical
+      .split("\n")
+      .filter((ln) => !ln.trim().startsWith("--"))
+      .join("\n");
+    expect(code).not.toMatch(/production_enabled/i);
+    expect(code).not.toMatch(/CREATE\s+POLICY/i);
+    expect(code).not.toMatch(/DROP\s+POLICY/i);
     // GRANT permitido apenas na função scanner; nada em tabelas.
-    const grantsOnTables = canonical.match(/GRANT[\s\S]*?ON\s+TABLE/gi);
+    const grantsOnTables = code.match(/GRANT[\s\S]*?ON\s+TABLE/gi);
     expect(grantsOnTables).toBeNull();
   });
+
 });
