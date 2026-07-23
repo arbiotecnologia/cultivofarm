@@ -1,22 +1,38 @@
 /**
- * Fase Fiscal — Consulta CNPJ (RFB) via BrasilAPI + resolução IBGE do
- * município. Apenas UI/apresentação; não persiste, não altera regras.
+ * Fase Fiscal H3-A — Consulta cadastral de CNPJ via Edge Function.
  *
- * Fontes públicas:
- * - https://brasilapi.com.br/api/cnpj/v1/{cnpj}
- * - https://brasilapi.com.br/api/ibge/municipios/v1/{UF}?providers=dados-abertos-br,gov,wikipedia
+ * FONTE
+ * - BrasilAPI (`/api/cnpj/v1/{cnpj}`), com dados públicos originados do
+ *   CNPJ/RFB. Não é canal oficial da RFB em tempo real. Os dados devem ser
+ *   revisados pelo usuário antes de salvar.
  *
- * Não consulta Inscrição Estadual (SINTEGRA): não há API pública
- * unificada gratuita — campo permanece manual.
+ * SEGURANÇA / OBSERVABILIDADE
+ * - O frontend chama SOMENTE a Edge Function `fiscal-cnpj-lookup`
+ *   (autenticada, com verificação de papel via `has_role`).
+ * - Não há fallback direto para BrasilAPI pelo navegador — isso violaria a
+ *   autorização e a observabilidade servidor-side.
+ * - Consulta automática indisponível para CNPJ alfanumérico enquanto a
+ *   BrasilAPI não expuser o formato — o preenchimento manual continua
+ *   possível e o CNPJ digitado nunca é alterado por esta função.
+ *
+ * PROTEÇÕES:
+ * - Validação de DV canônica (`validateCnpjAlpha`) antes do request.
+ * - `AbortSignal` para cancelamento (usado no unmount do botão).
+ * - Whitelist de campos aplicáveis (nenhum campo protegido é tocado).
  */
 import type { CompanyFiscalFormValues } from "./companyFiscalValidation";
-import { unmaskCnpjAlpha } from "./cnpjAlpha";
+import { unmaskCnpjAlpha, validateCnpjAlpha } from "./cnpjAlpha";
+import { supabase } from "@/integrations/supabase/client";
 
 export type CnpjLookupErrorCode =
   | "invalid_cnpj"
   | "alpha_unsupported"
   | "not_found"
   | "rate_limited"
+  | "timeout"
+  | "upstream_error"
+  | "unauthorized"
+  | "forbidden"
   | "network_error";
 
 export class CnpjLookupError extends Error {
@@ -27,31 +43,9 @@ export class CnpjLookupError extends Error {
   }
 }
 
-interface BrasilApiCnpj {
-  razao_social?: string;
-  nome_fantasia?: string;
-  cnae_fiscal?: number | string;
-  descricao_tipo_de_logradouro?: string;
-  logradouro?: string;
-  numero?: string;
-  complemento?: string;
-  bairro?: string;
-  cep?: string;
-  uf?: string;
-  municipio?: string;
-  ddd_telefone_1?: string;
-  opcao_pelo_simples?: boolean;
-  opcao_pelo_mei?: boolean;
-}
-
-interface IbgeMunicipio {
-  nome: string;
-  codigo_ibge: string;
-}
-
 /**
  * Campos do formulário que o auto-preenchimento pode tocar. Ordem usada
- * também na UI de confirmação.
+ * também na UI de confirmação. Nenhum campo protegido aparece aqui.
  */
 export const LOOKUP_TARGET_FIELDS = [
   "legal_name",
@@ -70,13 +64,16 @@ export const LOOKUP_TARGET_FIELDS = [
 ] as const satisfies ReadonlyArray<keyof CompanyFiscalFormValues>;
 
 export type LookupTargetField = (typeof LOOKUP_TARGET_FIELDS)[number];
+const LOOKUP_TARGET_SET = new Set<string>(LOOKUP_TARGET_FIELDS);
 
 export interface CnpjLookupResult {
   values: Partial<Pick<CompanyFiscalFormValues, LookupTargetField>>;
-  /** Município não resolvido no IBGE — usuário precisa preencher manualmente. */
+  /** Município não resolvido no IBGE — usuário deve preencher manualmente. */
   ibgeUnresolved: boolean;
   /** Sugestão informativa de regime — nunca preenchida automaticamente. */
   taxRegimeHint: "SIMPLES" | "MEI" | null;
+  /** Fonte real dos dados. */
+  source: "brasilapi";
 }
 
 export const LOOKUP_FIELD_LABELS: Record<LookupTargetField, string> = {
@@ -95,26 +92,12 @@ export const LOOKUP_FIELD_LABELS: Record<LookupTargetField, string> = {
   municipality_ibge_code: "Código IBGE do município",
 };
 
-const BRASILAPI_BASE = "https://brasilapi.com.br/api";
+const CONTRACT_VERSION = "fiscal-cnpj-lookup/1.0.0";
 
-function norm(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .trim()
-    .toLowerCase();
-}
-
-function formatCnae(v: unknown): string | undefined {
-  if (v === null || v === undefined || v === "") return undefined;
-  const digits = String(v).replace(/\D/g, "");
+// Formatação de telefone para exibição (o backend devolve apenas dígitos).
+function formatPhone(digits: string | undefined): string | undefined {
   if (!digits) return undefined;
-  return digits.padStart(7, "0");
-}
-
-function formatPhone(v: string | undefined): string | undefined {
-  if (!v) return undefined;
-  const d = v.replace(/\D/g, "");
+  const d = digits.replace(/\D/g, "");
   if (d.length < 10) return d || undefined;
   const ddd = d.slice(0, 2);
   const rest = d.slice(2);
@@ -122,99 +105,98 @@ function formatPhone(v: string | undefined): string | undefined {
   return `(${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
 }
 
-function joinStreet(rfb: BrasilApiCnpj): string | undefined {
-  const tipo = (rfb.descricao_tipo_de_logradouro ?? "").trim();
-  const log = (rfb.logradouro ?? "").trim();
-  const full = [tipo, log].filter(Boolean).join(" ").trim();
-  return full || undefined;
-}
-
-async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(url, { signal, headers: { Accept: "application/json" } });
-  } catch {
-    throw new CnpjLookupError("network_error");
-  }
-  if (res.status === 404) throw new CnpjLookupError("not_found");
-  if (res.status === 429) throw new CnpjLookupError("rate_limited");
-  if (!res.ok) throw new CnpjLookupError("network_error", `HTTP ${res.status}`);
-  try {
-    return (await res.json()) as T;
-  } catch {
-    throw new CnpjLookupError("network_error", "invalid_json");
-  }
-}
-
-async function resolveIbgeCode(
-  uf: string,
-  municipio: string,
-  signal?: AbortSignal,
-): Promise<string | null> {
-  try {
-    const list = await fetchJson<IbgeMunicipio[]>(
-      `${BRASILAPI_BASE}/ibge/municipios/v1/${encodeURIComponent(uf)}`,
-      signal,
-    );
-    const target = norm(municipio);
-    const match = list.find((m) => norm(m.nome) === target);
-    return match?.codigo_ibge ?? null;
-  } catch {
-    return null;
+function mapErrorCode(code: unknown): CnpjLookupErrorCode {
+  switch (code) {
+    case "invalid_cnpj":
+    case "alpha_unsupported":
+    case "not_found":
+    case "rate_limited":
+    case "timeout":
+    case "upstream_error":
+    case "unauthorized":
+    case "forbidden":
+      return code;
+    default:
+      return "network_error";
   }
 }
 
 /**
- * Consulta CNPJ na BrasilAPI (RFB) e retorna os campos mapeados para o
- * formulário. `cnpj` deve ser 100% numérico (a RFB ainda não expõe
- * endpoint para CNPJ alfanumérico).
+ * Consulta CNPJ via Edge Function `fiscal-cnpj-lookup`. `cnpj` pode conter
+ * pontuação; validação de DV é aplicada antes do request.
  */
 export async function lookupCnpj(
   cnpj: string,
   signal?: AbortSignal,
 ): Promise<CnpjLookupResult> {
   const clean = unmaskCnpjAlpha(cnpj);
-  if (clean.length !== 14) throw new CnpjLookupError("invalid_cnpj");
+  if (!validateCnpjAlpha(clean)) throw new CnpjLookupError("invalid_cnpj");
   if (!/^\d{14}$/.test(clean)) throw new CnpjLookupError("alpha_unsupported");
 
-  const rfb = await fetchJson<BrasilApiCnpj>(
-    `${BRASILAPI_BASE}/cnpj/v1/${clean}`,
-    signal,
-  );
+  if (signal?.aborted) throw new CnpjLookupError("network_error", "aborted");
 
-  const uf = (rfb.uf ?? "").toUpperCase().trim() || undefined;
-  const municipio = (rfb.municipio ?? "").trim() || undefined;
-
-  let ibgeCode: string | null = null;
-  let ibgeUnresolved = false;
-  if (uf && municipio) {
-    ibgeCode = await resolveIbgeCode(uf, municipio, signal);
-    if (!ibgeCode) ibgeUnresolved = true;
+  let invokeResult: Awaited<ReturnType<typeof supabase.functions.invoke>>;
+  try {
+    invokeResult = await supabase.functions.invoke("fiscal-cnpj-lookup", {
+      body: { version: CONTRACT_VERSION, cnpj: clean },
+    });
+  } catch {
+    throw new CnpjLookupError("network_error");
   }
 
+  if (signal?.aborted) throw new CnpjLookupError("network_error", "aborted");
+
+  const { data, error } = invokeResult as { data: unknown; error: unknown };
+
+  if (error) {
+    // supabase-js expõe `context.response` para respostas não-2xx; extrai code.
+    let code: unknown;
+    const ctx = (error as { context?: { response?: Response } })?.context;
+    if (ctx?.response) {
+      try {
+        const body = (await ctx.response.clone().json()) as { error?: unknown };
+        code = body?.error;
+      } catch {
+        code = undefined;
+      }
+    }
+    throw new CnpjLookupError(mapErrorCode(code));
+  }
+
+  if (!data || typeof data !== "object")
+    throw new CnpjLookupError("upstream_error");
+
+  const payload = data as {
+    values?: Record<string, unknown>;
+    ibge_unresolved?: unknown;
+    tax_regime_hint?: unknown;
+    source?: unknown;
+  };
+
+  const rawValues = payload.values ?? {};
   const values: Partial<Pick<CompanyFiscalFormValues, LookupTargetField>> = {};
-  if (rfb.razao_social) values.legal_name = rfb.razao_social.trim();
-  if (rfb.nome_fantasia) values.trade_name = rfb.nome_fantasia.trim();
-  const cnae = formatCnae(rfb.cnae_fiscal);
-  if (cnae) values.primary_cnae = cnae;
-  const phone = formatPhone(rfb.ddd_telefone_1);
-  if (phone) values.phone = phone;
-  if (rfb.cep) values.postal_code = rfb.cep.replace(/\D/g, "");
-  const street = joinStreet(rfb);
-  if (street) values.street = street;
-  if (rfb.numero) values.number = rfb.numero.trim();
-  if (rfb.complemento) values.complement = rfb.complemento.trim();
-  if (rfb.bairro) values.neighborhood = rfb.bairro.trim();
-  if (municipio) values.city = municipio;
-  if (uf) values.state = uf;
-  values.country_code = "BR";
-  if (ibgeCode) values.municipality_ibge_code = ibgeCode;
+  for (const key of Object.keys(rawValues)) {
+    if (!LOOKUP_TARGET_SET.has(key)) continue; // whitelist defensiva
+    const raw = rawValues[key];
+    if (raw == null) continue;
+    const v = String(raw).slice(0, 200);
+    if (!v) continue;
+    if (key === "phone") {
+      const formatted = formatPhone(v);
+      if (formatted) values.phone = formatted;
+      continue;
+    }
+    (values as Record<string, string>)[key] = v;
+  }
 
-  const taxRegimeHint: CnpjLookupResult["taxRegimeHint"] = rfb.opcao_pelo_mei
-    ? "MEI"
-    : rfb.opcao_pelo_simples
-      ? "SIMPLES"
-      : null;
+  const hint = payload.tax_regime_hint;
+  const taxRegimeHint =
+    hint === "SIMPLES" || hint === "MEI" ? hint : null;
 
-  return { values, ibgeUnresolved, taxRegimeHint };
+  return {
+    values,
+    ibgeUnresolved: payload.ibge_unresolved === true,
+    taxRegimeHint,
+    source: "brasilapi",
+  };
 }
