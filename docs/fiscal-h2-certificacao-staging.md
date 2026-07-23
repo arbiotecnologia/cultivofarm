@@ -1,131 +1,148 @@
 # Fase H2 — Certificação Runtime no Staging Temporário
 
-> Status final desta rodada: **BLOQUEADO POR CREDENCIAIS**
-> Nenhuma escrita realizada em qualquer projeto Supabase.
-> Produção `navfzbwgwzruipouyfnk` intocada. Staging `ikaauvsflpmamgxmkhoq`
-> inacessível a partir deste sandbox.
+> Status desta rodada: **DELTA DE PERFIS DE SERVIÇOS APROVADO NO STAGING.**
+> Suíte RLS completa, backfill, regeneração de `types.ts` e testes externos
+> **PENDENTES**. H2 **não** está concluída; H3/produção continuam
+> proibidas. Produção `navfzbwgwzruipouyfnk` intocada nesta rodada.
 
-## 0. Ambiente (mascarado) e anti-produção
+## 0. Ambiente e anti-produção
 
-| Verificação                                | Resultado                                |
-|--------------------------------------------|------------------------------------------|
-| `FISCAL_TEST_ENV == "STAGING"`             | ❌ variável ausente no sandbox            |
-| `PGHOST` (psql direto)                     | ❌ ausente                                |
-| Anon/service role do staging temporário    | ❌ não injetado                           |
-| URL/REST do staging temporário             | ❌ não injetada                           |
-| Marker `public._fiscal_staging_marker`     | ❌ inverificável (sem conexão)            |
-| Contexto Supabase disponível no sandbox    | apenas produção `navfz…yfnk` (PROIBIDO)  |
-| `supabase/config.toml → project_id`        | `navfz…yfnk` (produção — não usar)       |
+| Verificação                                | Resultado                                     |
+|--------------------------------------------|-----------------------------------------------|
+| Destino único autorizado                   | `ikaauvsflpmamgxmkhoq` (AR-Bio-TEMP)          |
+| Marker `public._fiscal_staging_marker`     | ✅ retornou `STAGING` com project ref correto |
+| Produção `navfzbwgwzruipouyfnk`            | ❌ NÃO tocada                                  |
+| Escrita executada nesta rodada             | apenas transação de smoke (revertida)         |
+| Segredos expostos                          | nenhum                                        |
 
-Regra do próprio prompt aplicada literalmente: “Se credenciais/marker
-faltarem ou apontarem para produção, NÃO improvise e não escreva: pare
-cedo, rode apenas verificações locais úteis e relate exatamente o gate
-faltante.” Feito.
+A execução runtime foi feita **fora do sandbox Lovable**, com evidência
+retornada por operador humano. Este documento registra e audita essa
+evidência; não há credenciais de staging no sandbox.
 
-Nenhum segredo, JWT, anon/service role ou URL com credencial foi
-impresso, logado ou incorporado a arquivo.
+## 1. Delta certificado no staging — APROVADO
 
-## 1. Gate faltante (bloqueante para H2)
+Certificação executada diretamente em `ikaauvsflpmamgxmkhoq`:
 
-Para prosseguir com H2 é necessário injetar no sandbox, no início da
-próxima execução, todos os itens abaixo — escopados exclusivamente ao
-projeto temporário `ikaauvsflpmamgxmkhoq` (AR-Bio-TEMP):
+- Dependências verificadas presentes: `public._fiscal_rtc_can_read(uuid)`,
+  `public._fiscal_rtc_assert_payload(jsonb,text)`, `public.has_role`,
+  colunas `ibs_cbs_configuration`, `updated_at`, `updated_by` em
+  `service_fiscal_profiles`.
+- Aplicadas transacionalmente as duas RPCs novas **exatamente** conforme
+  `supabase/migrations/20260727000000_fiscal_fase3_19_rtc_2026.sql`
+  (linhas 370–426):
+  - `public.rpc_fiscal_service_profile_ibs_cbs_get(uuid)` — `SECURITY
+    DEFINER`, `STABLE`, `search_path=public`, leitura filtrada por
+    `_fiscal_rtc_can_read(v_uid)` e `is_active = true`.
+  - `public.rpc_fiscal_service_profile_ibs_cbs_save(uuid,jsonb,text)` —
+    `SECURITY DEFINER`, `VOLATILE`, exige autenticação, papel
+    `administrador` OU `financeiro`, valida payload via
+    `_fiscal_rtc_assert_payload(payload,'item')`, faz concorrência
+    otimista com `expected_revision`, retorna `FISCAL_CONFLICT` /
+    `FISCAL_ITEM_NOT_FOUND`, e persiste `updated_by = v_uid` além de
+    `updated_at = now()`.
+- Grants estreitos aplicados via bloco `DO`: `REVOKE ALL … FROM PUBLIC`,
+  `REVOKE ALL … FROM anon`, `GRANT EXECUTE … TO authenticated`.
+- Smoke transacional aprovado:
+  - Papel `financeiro`: `get` retornou payload atual; `save` gravou
+    payload mínimo válido e atualizou `updated_by` para o UID do ator.
+  - Papel sem autorização: recebeu `SQLSTATE 42501` (permission denied)
+    conforme contrato.
+- Fixture revertida na mesma transação. **Contagem residual = 0.**
+- `supabase_migrations.schema_migrations` **não** recebeu inserção
+  artificial da versão `20260727000000`, pois o histórico do staging
+  não representa integralmente o estado real (objetos fiscais foram
+  aplicados manualmente ao longo do tempo). Reparo artificial foi
+  explicitamente evitado.
 
-1. `FISCAL_TEST_ENV=STAGING`
-2. Credenciais Postgres do staging (`PGHOST`, `PGPORT`, `PGDATABASE`,
-   `PGUSER`, `PGPASSWORD`) OU string `postgresql://…` equivalente.
-3. `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY`
-   **do staging temporário** (não da produção).
-4. Confirmação de que `public._fiscal_staging_marker` retorna
-   `'STAGING'` com `project_ref = 'ikaauvsflpmamgxmkhoq'` — a criação
-   desse marker precede qualquer escrita de H2.
-5. Confirmação humana explícita de que produção não recebe qualquer
-   comando desta rodada.
+### 1.1 Auditoria de conformidade código ↔ evidência
 
-Sem esses cinco itens, H2 não pode iniciar. Não haverá fallback
-automático nem improviso.
+Confirmado por leitura estática de
+`supabase/migrations/20260727000000_fiscal_fase3_19_rtc_2026.sql`:
 
-## 2. Verificações locais úteis executadas nesta rodada
+| Requisito                                               | Linha(s) | Status |
+|---------------------------------------------------------|----------|--------|
+| `rpc_fiscal_service_profile_ibs_cbs_get(p_profile_id)`  | 370      | ✅     |
+| `rpc_fiscal_service_profile_ibs_cbs_save(p_profile_id,payload,expected_revision)` | 387–388 | ✅ |
+| Validação `_fiscal_rtc_assert_payload(payload,'item')`  | 397      | ✅     |
+| Controle de revisão + `FISCAL_CONFLICT`                 | 402      | ✅     |
+| `updated_by = v_uid` no UPDATE                          | 405      | ✅     |
+| Grants estreitos (REVOKE PUBLIC/anon + GRANT authenticated) | 420–425 | ✅ |
 
-Executadas sem tocar em banco. Todas contra o repositório atual.
+Testes estáticos já cobrem exatamente esses pontos e não foram
+duplicados nesta rodada:
+- `src/test/fiscal/bloco5_service_profile_ibs_cbs.test.ts`
+- `src/test/fiscal/correcao_cirurgica_final.test.ts`
 
-| Gate local                                       | Resultado |
-|--------------------------------------------------|-----------|
-| `bun run typecheck` (`tsc --noEmit`)             | ✅        |
-| `scripts/fiscal-secrets-scan.sh`                 | ✅ nenhum segredo real |
-| `scripts/fiscal-integration-scan.sh`             | ✅ nenhuma emissão em runtime |
-| `scripts/verify-fiscal-types.ts`                 | ✅ 9 tabelas / 5 views / 2 RPCs |
-| `bunx vitest run` (2ª execução, referência)      | 1341 ✅ / 3 skipped / 0 falhas |
-| `bunx vitest run` (1ª execução)                  | 1340 ✅ / 1 falha transitória / 3 skipped |
-| `bun run build`                                  | ✅ (SW gerado) |
-| Lint dedicado                                    | ⚠ script `lint` não configurado (gate ausente, documentado em H1) |
+## 2. Gates locais executados nesta rodada
 
-Observação sobre a falha transitória: a 1ª execução do Vitest reportou
-`1 failed` sem imprimir o assert (`grep` posterior não encontrou
-`AssertionError`), e a reexecução ficou 100% verde. Padrão típico de
-timeout de setup na suíte pesada (transform 8s, environment 992s
-acumulados). Não é falha reprodutível de contrato; será re-observado
-no início de H2 e, se reincidir, isolado sob autorização.
+| Gate                                              | Resultado |
+|---------------------------------------------------|-----------|
+| `bun run typecheck` (`tsc --noEmit`)              | ✅        |
+| `bun run build` (SW gerado, 20 entries)           | ✅        |
+| `bunx vitest run src/test/fiscal` (44 arquivos)   | ✅ 992 passed / 3 skipped |
+| `scripts/fiscal-secrets-scan.sh`                  | ✅        |
+| `scripts/fiscal-integration-scan.sh`              | ✅        |
+| `scripts/verify-fiscal-types.ts`                  | ✅ 9 tabelas / 5 views / 2 RPCs |
+| Suíte Vitest completa (fora deste escopo)         | ⏭ não re-executada; referência H1 = 1341/1341 |
+| Lint dedicado                                     | ⚠ script `lint` ausente (gate documentado em H1) |
 
-## 3. Estado das migrations canônicas (não aplicadas neste sandbox)
+## 3. Pendências explícitas para concluir H2
 
-Ordem a ser respeitada em H2 sobre o schema-base já existente do staging
-(fail-fast, sem repair automático, sem `restoration/migrations`):
+Nenhum destes itens foi executado nesta rodada; nenhum pode ser
+declarado aprovado:
 
-1. `20260721000000_fiscal_fase2_fundacao.sql`
-2. `20260721010000_fiscal_fase2_1_hardening.sql`
-3. `20260722000000_fiscal_fase3_0_1_integridade.sql`
-4. `20260723000000_fiscal_fase3_15_central_config.sql`
-5. `20260724000000_fiscal_fase3_16_homologacao_certificados.sql`
-6. `20260725000000_fiscal_fase3_17_homologation_readiness.sql`
-7. `20260726000000_fiscal_fase3_18_draft_status_check.sql`
-8. `20260727000000_fiscal_fase3_19_rtc_2026.sql`
+1. **Suíte RLS completa** no staging cobrindo owner A/B, roles
+   `administrador`, `gestor`, `financeiro`, `cliente_produtor`,
+   `parceiro_b2b`, `authenticated` sem papel — em todas as tabelas
+   fiscais (`fiscal_*`, `product_fiscal_profiles`,
+   `service_fiscal_profiles`, `customer_fiscal_profiles`,
+   `company_fiscal_settings`) e views `v_fiscal_*`.
+2. **RPCs restantes**: evento manual, CRUD/deactivate de perfis,
+   readiness v2, RTC empresa/produto, `mask_sensitive_jsonb`.
+3. **Certificado A1 sintético** — upload, verificação de
+   não-persistência de PFX/senha, revogação, cleanup.
+4. **Backfill sintético + smoke SQL + contagens antes/depois.**
+5. **Regeneração de `src/integrations/supabase/types.ts`** a partir do
+   staging (`SUPABASE_ACCESS_TOKEN` externo).
+6. **Teardown completo** de qualquer usuário `FISCAL_TEST_H2_*` que
+   venha a ser criado.
+7. **Reconciliação do `schema_migrations` do staging** — divergente
+   por aplicação manual histórica. Não reparar artificialmente; exige
+   decisão humana sobre baseline.
 
-Se o schema-base anterior não existir no temporário, aplicar antes toda
-a cadeia canônica necessária de `supabase/migrations/` na ordem
-cronológica. Não aplicar apenas as fiscais sobre schema incompleto.
+## 4. Histórico de migrations do staging
 
-## 4. Escopo NÃO executado por falta do gate (fica intacto para H2)
-
-- Inventário real de `pg_catalog`, políticas, grants, RPCs no staging.
-- Dry-run/checksums e aplicação incremental das 8 migrations.
-- Regeneração de `types.ts` a partir do staging.
-- Criação server-side dos usuários sintéticos `FISCAL_TEST_H2_*`
-  (administrador, gestor, financeiro, cliente_produtor A/B,
-  parceiro_b2b, authenticated sem papel) e obtenção de JWTs.
-- Smoke/RLS por resultado real (SELECT/INSERT/UPDATE/DELETE + owner A/B).
-- RPCs: evento manual, CRUD/deactivate de perfis, readiness v2, RTC
-  empresa/produto/serviço + novas RPCs `service_profile` (incluindo
-  `source_reference` sem `service_id`, CONFLICT, inativo, autorização).
-- `mask_sensitive_jsonb` no PostgreSQL (objetos/arrays/níveis, CI,
-  `accessToken/private_key/client_secret`, `null`, idempotência).
-- Certificado A1 sintético (senha temporária, verificação de
-  não-persistência de PFX/senha, revogação/cleanup) + interface bridge SO
-  (sem simular acesso do navegador ao keystore).
-- Confirmação `production_enabled=false` e provider OFF no runtime
-  (nenhuma chamada a Focus/PlugNotas/SEFAZ/prefeitura).
-- Backfill sintético + smoke SQL + harness RLS + contagens antes/depois.
-- Teardown completo de todos os `FISCAL_TEST_H2_*`.
+Divergente/incompleto: o staging teve objetos fiscais aplicados
+manualmente ao longo do tempo e `schema_migrations` **não** reflete
+todo esse estado. Decisão desta rodada: **não** inserir versões
+artificialmente. Reconciliação real deve ser um item explícito de H3
+sob autorização humana, com baseline auditado.
 
 ## 5. Riscos residuais
 
-- Suíte Vitest apresenta falha transitória rara em execuções paralelas
-  pesadas — monitorar em H2.
-- `types.ts` continua dependendo de regeneração pós-aplicação em
-  staging (gate externo já registrado em H1).
-- Script `lint` ausente impede gate automatizado local de estilo.
-- Nenhum risco novo introduzido (nenhuma escrita ocorreu).
+- Cobertura RLS por resultado real ainda não medida no staging — item
+  #1 acima é o maior gap para fechar H2.
+- `types.ts` continua dependendo de regeneração externa (H1 §J).
+- Ausência de `lint` local mantém gate de estilo manual.
+- Falha transitória rara de Vitest em execuções paralelas pesadas
+  observada em H1; não observada nesta rodada.
 
 ## 6. Créditos consumidos
 
-Rodada H2 (esta): ~3 créditos (2 verificações de ambiente, 1 suíte de
-gates locais, relatório). Muito abaixo do teto de 30. Interrompido
-cedo por gate faltante, conforme instrução.
+Esta rodada: ~4 créditos (audit estático + gates locais + relatório).
+Nenhuma escrita em banco a partir do sandbox.
 
-## 7. Status final
+## 7. Próxima barreira objetiva
 
-**BLOQUEADO POR CREDENCIAIS.**
+Executar, **fora do sandbox** e no staging temporário, a **suíte RLS
+completa por resultado real** cobrindo todas as tabelas/views fiscais e
+todas as roles listadas em §3.1. Retornar contagens SELECT/INSERT/
+UPDATE/DELETE por role + evidência de negação onde esperada. Sem isso,
+H2 não pode ser declarada concluída, e H3/produção permanecem
+proibidas.
 
-H3 **não** foi iniciada. Produção **não** foi tocada. Frontend **não**
-foi deployado. Aguardando injeção dos itens listados em §1 antes de
-retomar H2.
+## 8. Status final
+
+**PARCIAL — delta de perfis de serviços APROVADO no staging; H2 ainda
+NÃO concluída.** Homologação completa **não** declarada. Produção
+**não** apta. H3 **não** iniciada. Frontend **não** deployado.
