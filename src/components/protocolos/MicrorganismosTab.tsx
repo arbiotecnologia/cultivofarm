@@ -8,22 +8,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Filter, Info, FileDown, FileText, Droplets, MoreVertical } from "lucide-react";
+import { Plus, Search, Filter, Info, FileDown, FileText, Droplets } from "lucide-react";
 import { generateCatalogoMicrorganismosPdf } from "@/lib/pdf/catalogoMicrorganismosPdf";
 import { generateFichaTecnicaMicrorganismoPdf } from "@/lib/pdf/fichaTecnicaMicrorganismoPdf";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { formatConcentracaoDisplay, formatConcentracaoValue, parseConcentracao } from "@/lib/cqFormat";
 import { MoneyInput } from "@/components/ui/money-input";
 import { brl } from "@/lib/financial/format";
 import { recalcPricing } from "@/lib/protocolos/pricingRecalc";
+import { calcularCustoHa } from "@/lib/catalogo/pricing";
 import { DeleteProtocoloButton } from "./DeleteProtocoloButton";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
@@ -514,13 +508,14 @@ export function MicrorganismosTab() {
               </TableHead>
               <TableHead className="text-right">Dose (mL/ha)</TableHead>
               <TableHead className="text-right">Valores</TableHead>
+              <TableHead>Ref.</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
                   Nenhum microrganismo encontrado
                 </TableCell>
               </TableRow>
@@ -559,105 +554,81 @@ export function MicrorganismosTab() {
                 <TableCell className="text-right font-mono-data">
                   {m.dose_ml_ha || "—"}
                 </TableCell>
-                <TableCell className="text-right whitespace-nowrap min-w-[110px]">
-                  {m.valor_dose_brl || m.valor_litro_brl ? (
-                    <div className="leading-tight">
-                      <div className="text-primary font-semibold text-sm">
-                        {m.valor_dose_brl ? brl(m.valor_dose_brl) : (m.valor_litro_brl ? brl(m.valor_litro_brl / 10) : "—")}
+                <TableCell className="text-right font-mono-data text-xs">
+                  {(() => {
+                    const dose = m.valor_dose_brl ?? (m.valor_litro_brl != null ? m.valor_litro_brl / 10 : null);
+                    const litro = m.valor_litro_brl ?? (m.valor_dose_brl != null ? m.valor_dose_brl * 10 : null);
+                    const ha = calcularCustoHa(m.dose_ml_ha, dose);
+                    if (dose == null && litro == null && ha == null) return "—";
+                    return (
+                      <div className="flex flex-col items-end leading-tight">
+                        <span className="text-primary font-semibold">{ha != null ? brl(ha) : "—"} <span className="text-muted-foreground font-normal">/ha</span></span>
+                        <span className="text-muted-foreground">{dose != null ? brl(dose) : "—"} <span className="font-normal">/100 mL</span></span>
                       </div>
-                      <div className="text-[10px] text-muted-foreground">/100 mL</div>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                    );
+                  })()}
+                </TableCell>
+                <TableCell>
+                  <div className="text-xs">
+                    <div>{m.fornecedor || "—"}</div>
+                    {m.safra_referencia && <div className="text-muted-foreground">{m.safra_referencia}</div>}
+                  </div>
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  <TooltipProvider>
-                    <div className="flex items-center justify-end gap-1.5 flex-nowrap">
-                      <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2"
-                        onClick={() => setVolumesEdit(m)}
-                        title="Volumes do catálogo"
-                      >
-                        <Droplets className="h-3.5 w-3.5 mr-1" />
-                        Volumes
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2"
-                        onClick={() => setFichaMicro(m)}
-                        title="Ficha técnica"
-                      >
-                        <FileText className="h-3.5 w-3.5 mr-1" />
-                        Ficha
-                      </Button>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0"
-                            aria-label="Mais ações"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuItem
-                            onClick={async () => {
-                              try {
-                                await generateFichaTecnicaMicrorganismoPdf({ microId: m.id });
-                                toast.success("PDF exportado");
-                              } catch (e: any) {
-                                toast.error(e.message);
-                              }
-                            }}
-                          >
-                            <FileDown className="h-4 w-4 mr-2" />
-                            Exportar PDF
-                          </DropdownMenuItem>
-
-                          {m.observacoes && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DropdownMenuItem asChild>
-                                  <button className="w-full text-left">
-                                    <Info className="h-4 w-4 mr-2" />
-                                    Observações
-                                  </button>
-                                </DropdownMenuItem>
-                              </TooltipTrigger>
-                              <TooltipContent side="left" className="max-w-xs">
-                                <p>{m.observacoes}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-
-                          <DropdownMenuSeparator />
-
-                          <DropdownMenuItem asChild className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                            <div className="w-full cursor-pointer">
-                              <DeleteProtocoloButton
-                                table="microrganismos"
-                                id={m.id}
-                                label={m.nome}
-                                itemLabel="microrganismo"
-                                onDeleted={fetch}
-                                variant="dropdown"
-                              />
-                            </div>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TooltipProvider>
+                  <div className="flex items-center gap-1 justify-end flex-wrap">
+                    <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2"
+                      onClick={() => setVolumesEdit(m)}
+                      title="Volumes do catálogo"
+                    >
+                      <Droplets className="h-3.5 w-3.5 mr-1" />Volumes
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2"
+                      onClick={() => setFichaMicro(m)}
+                      title="Ficha técnica"
+                    >
+                      <FileText className="h-3.5 w-3.5 mr-1" />Ficha
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={async () => {
+                        try {
+                          await generateFichaTecnicaMicrorganismoPdf({ microId: m.id });
+                          toast.success("PDF exportado");
+                        } catch (e: any) { toast.error(e.message); }
+                      }}
+                      title="Exportar PDF"
+                    >
+                      <FileDown className="h-3.5 w-3.5" />
+                    </Button>
+                    {m.observacoes && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>{m.observacoes}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    <DeleteProtocoloButton
+                      table="microrganismos"
+                      id={m.id}
+                      label={m.nome}
+                      itemLabel="microrganismo"
+                      onDeleted={fetch}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
