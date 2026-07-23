@@ -16,21 +16,28 @@
  */
 import { Link } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, CircleAlert, ShieldQuestion } from "lucide-react";
+import { AlertTriangle, CircleAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
 import { useFiscalCertificates } from "@/hooks/useFiscalCertificates";
 import {
   summarizeCertificateExpiry,
   type CertExpirySummary,
 } from "@/lib/fiscal/certificateExpiryStatus";
+import { CERTIFICADO_A1_DEEP_LINK } from "@/lib/fiscal/companyMissingFields";
 
 export interface CertificadoValidadeBannerProps {
   companySettingsId: string | null;
-  /** Destino da ação "Ir para certificados". Default = aba certificado. */
+  /** Destino da ação "Ir para certificados". Default = A1 na aba certificado. */
   actionHref?: string;
   className?: string;
+  /**
+   * Quando `true` (Central de Homologação), o banner também é renderizado
+   * para os estados "sem certificado" (pendente) e "válido" (>30 dias, ok).
+   * Padrão `false`: silencioso quando não há alerta a fazer (uso inline).
+   */
+  showAllStates?: boolean;
 }
 
-const DEFAULT_HREF = "/configuracoes/fiscal/empresa?aba=certificado";
+const DEFAULT_HREF = CERTIFICADO_A1_DEEP_LINK;
 
 function daysLabel(days: number): string {
   if (days === 0) return "expira hoje";
@@ -39,31 +46,35 @@ function daysLabel(days: number): string {
   return `expira em ${days} dia(s)`;
 }
 
-interface RenderableSummary extends CertExpirySummary {
-  status: "expired" | "expiring_soon" | "unknown";
-}
+type RenderStatus = "expired" | "expiring_soon" | "unknown" | "none" | "valid";
+interface RenderableSummary extends CertExpirySummary { status: RenderStatus }
 
-function shouldRender(s: CertExpirySummary): s is RenderableSummary {
-  return s.status === "expired" || s.status === "expiring_soon" || s.status === "unknown";
+function shouldRender(s: CertExpirySummary, showAllStates: boolean): s is RenderableSummary {
+  if (s.status === "expired" || s.status === "expiring_soon" || s.status === "unknown") return true;
+  if (showAllStates && (s.status === "none" || s.status === "valid")) return true;
+  return false;
 }
 
 export default function CertificadoValidadeBanner({
   companySettingsId,
   actionHref,
   className,
+  showAllStates = false,
 }: CertificadoValidadeBannerProps) {
   const q = useFiscalCertificates(companySettingsId);
-  // Loading/erro: silencioso — outras seções já sinalizam.
+  // Sem contexto de empresa ou em loading/erro: silencioso — outras seções sinalizam.
   if (!companySettingsId || q.isLoading || q.isError || !q.data) return null;
 
   const summary = summarizeCertificateExpiry(q.data);
-  if (!shouldRender(summary)) return null;
+  if (!shouldRender(summary, showAllStates)) return null;
 
   const href = actionHref ?? DEFAULT_HREF;
-  const variant = summary.status === "expired" ? "destructive" : "default";
+  const variant: "default" | "destructive" =
+    summary.status === "expired" ? "destructive" : "default";
   const Icon =
     summary.status === "expired" ? AlertTriangle
     : summary.status === "expiring_soon" ? CircleAlert
+    : summary.status === "valid" ? ShieldCheck
     : ShieldQuestion;
 
   const title =
@@ -71,22 +82,32 @@ export default function CertificadoValidadeBanner({
       ? "Certificado digital expirado — homologação bloqueada"
     : summary.status === "expiring_soon"
       ? "Certificado digital próximo do vencimento"
+    : summary.status === "none"
+      ? "Certificado digital pendente"
+    : summary.status === "valid"
+      ? "Certificado digital em dia"
       : "Validade do certificado não verificada";
 
   const detail =
-    summary.status === "unknown"
+    summary.status === "none"
+      ? "Nenhum certificado A1 ativo foi registrado para esta empresa."
+    : summary.status === "unknown"
       ? "Não foi possível confirmar a data de validade a partir dos metadados atuais."
-      : summary.worstDisplayName && summary.worstDaysRemaining !== null
-        ? `${summary.worstDisplayName}: ${daysLabel(summary.worstDaysRemaining)}.`
-        : summary.worstDaysRemaining !== null
-          ? `Certificado ativo ${daysLabel(summary.worstDaysRemaining)}.`
-          : "Verifique o certificado ativo.";
+    : summary.worstDisplayName && summary.worstDaysRemaining !== null
+      ? `${summary.worstDisplayName}: ${daysLabel(summary.worstDaysRemaining)}.`
+    : summary.worstDaysRemaining !== null
+      ? `Certificado ativo ${daysLabel(summary.worstDaysRemaining)}.`
+      : "Verifique o certificado ativo.";
 
   const followUp =
     summary.status === "expired"
       ? "Substitua o certificado A1 ou registre um novo para retomar a homologação."
     : summary.status === "expiring_soon"
       ? "Providencie a renovação antes do vencimento; a homologação ainda pode prosseguir."
+    : summary.status === "none"
+      ? "Cadastre um certificado A1 para prosseguir com a homologação."
+    : summary.status === "valid"
+      ? "Nenhuma ação necessária no momento."
       : "Abra a seção de certificados para reenviar os metadados ou substituir o arquivo.";
 
   return (
