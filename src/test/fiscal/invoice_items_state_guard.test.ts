@@ -84,13 +84,17 @@ describe("fiscal_invoice_items state guard (20260802000000)", () => {
   });
 
   it("nao altera RLS, grants de tabela, audit trigger nem faz backfill", () => {
-    expect(sql).not.toMatch(/\bCREATE POLICY\b|\bALTER POLICY\b|\bDROP POLICY\b/);
-    expect(sql).not.toMatch(/\bENABLE ROW LEVEL SECURITY\b|\bDISABLE ROW LEVEL SECURITY\b/);
-    expect(sql).not.toMatch(/\bGRANT\b[^;]*ON TABLE/);
-    expect(sql).not.toMatch(/fiscal_audit_trigger|fiscal_audit_log/);
-    expect(sql).not.toMatch(/\bUPDATE public\.fiscal_invoice_items\b/);
-    expect(sql).not.toMatch(/\bDELETE FROM public\.fiscal_invoice_items\b/);
-    expect(sql).not.toMatch(/\bINSERT INTO public\.fiscal_invoice_items\b/);
+    const code = sql
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("--"))
+      .join("\n");
+    expect(code).not.toMatch(/\bCREATE POLICY\b|\bALTER POLICY\b|\bDROP POLICY\b/);
+    expect(code).not.toMatch(/\bENABLE ROW LEVEL SECURITY\b|\bDISABLE ROW LEVEL SECURITY\b/);
+    expect(code).not.toMatch(/\bGRANT\b[^;]*ON TABLE/);
+    expect(code).not.toMatch(/fiscal_audit_trigger|fiscal_audit_log/);
+    expect(code).not.toMatch(/\bUPDATE public\.fiscal_invoice_items\b/);
+    expect(code).not.toMatch(/\bDELETE FROM public\.fiscal_invoice_items\b/);
+    expect(code).not.toMatch(/\bINSERT INTO public\.fiscal_invoice_items\b/);
   });
 
   it("funcao com SECURITY INVOKER, search_path fixo e REVOKE de PUBLIC", () => {
