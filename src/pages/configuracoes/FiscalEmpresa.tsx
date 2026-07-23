@@ -412,6 +412,8 @@ export default function FiscalEmpresa() {
           <TabsTrigger value="nfse">NFS-e</TabsTrigger>
           <TabsTrigger value="certificado" data-testid="fiscal-empresa-tab-certificado">Certificado digital</TabsTrigger>
           <TabsTrigger value="integracao">Integração e segurança</TabsTrigger>
+          <TabsTrigger value="rtc" data-testid="fiscal-empresa-tab-rtc">Reforma Tributária 2026</TabsTrigger>
+
           {canViewHomologation ? (
             <TabsTrigger value="homologacao" data-testid="fiscal-empresa-tab-homologacao">Homologação fiscal</TabsTrigger>
           ) : null}
