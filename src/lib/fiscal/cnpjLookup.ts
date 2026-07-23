@@ -17,7 +17,9 @@
  *
  * PROTEÇÕES:
  * - Validação de DV canônica (`validateCnpjAlpha`) antes do request.
- * - `AbortSignal` para cancelamento (usado no unmount do botão).
+ * - `AbortSignal` encaminhado a `supabase.functions.invoke` (functions-js
+ *   2.5+ suporta `signal`), permitindo cancelamento real da chamada de rede
+ *   ao desmontar o componente.
  * - Whitelist de campos aplicáveis (nenhum campo protegido é tocado).
  */
 import type { CompanyFiscalFormValues } from "./companyFiscalValidation";
