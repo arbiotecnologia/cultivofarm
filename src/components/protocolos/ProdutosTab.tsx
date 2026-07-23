@@ -579,9 +579,22 @@ export function ProdutosTab() {
             Exportar PDF
           </Button>
 
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex"
+              onClick={handleAuditarOrfaos}
+              disabled={auditing}
+            >
+              {auditing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}
+              Auditar órfãos
+            </Button>
+          )}
+
           {isAdmin && !catalogoAplicado && (
             <AlertDialog open={reloadOpen} onOpenChange={setReloadOpen}>
-              <AlertDialogTrigger asChild>
+              <AlertDialogTrigger asChild></AlertDialogTrigger>
                 <Button variant="outline" size="sm" className="hidden md:flex">
                   <RefreshCcw className="h-4 w-4 mr-1" />
                   Recarregar Catálogo A.R Bio v1.3
