@@ -407,6 +407,7 @@ export default function FiscalClientes() {
         <EditDrawer
           item={editing}
           canEdit={canEdit}
+          knownProfiledCustomerIds={customerIds}
           onClose={() => setEditing(null)}
         />
       ) : null}
