@@ -142,15 +142,22 @@ describe("computeCompanyMissingFields", () => {
     expect(r.total).toBe(0);
   });
 
-  it("deep-links respeitam a aba de cada seção (aceitando `&campo=`)", () => {
+  it("deep-links respeitam a aba onde o campo realmente é renderizado", () => {
     const row = emptyRow();
     row.nfe_enabled = true;
     row.nfse_enabled = true;
     const r = computeCompanyMissingFields(row);
     expect(r.bySection.empresa.every((f) => f.deepLink.includes("aba=empresa"))).toBe(true);
     expect(r.bySection.endereco.every((f) => f.deepLink.includes("aba=empresa"))).toBe(true);
-    expect(r.bySection.nfe.every((f) => f.deepLink.includes("aba=nfe"))).toBe(true);
-    expect(r.bySection.nfse.every((f) => f.deepLink.includes("aba=nfse"))).toBe(true);
+    // IE/IM ficam agrupadas em nfe/nfse mas o input é renderizado na aba empresa.
+    for (const f of r.bySection.nfe) {
+      const expected = f.key === "state_registration" ? "aba=empresa" : "aba=nfe";
+      expect(f.deepLink).toContain(expected);
+    }
+    for (const f of r.bySection.nfse) {
+      const expected = f.key === "municipal_registration" ? "aba=empresa" : "aba=nfse";
+      expect(f.deepLink).toContain(expected);
+    }
   });
 
   it("campos da allow-list expõem `&campo=<key>` e hasFieldTarget=true", () => {
@@ -167,15 +174,14 @@ describe("computeCompanyMissingFields", () => {
 
   it("campos sem alvo mapeado caem no fallback (só a aba, sem `campo=`)", () => {
     const row = emptyRow();
-    row.nfe_enabled = true;
     row.nfse_enabled = true;
     const r = computeCompanyMissingFields(row);
-    const cfop = r.bySection.nfe.find((f) => f.key === "cfop_in_state");
-    expect(cfop?.hasFieldTarget).toBe(false);
-    expect(cfop?.deepLink).not.toContain("campo=");
     const lc = r.bySection.nfse.find((f) => f.key === "lc116_item");
     expect(lc?.hasFieldTarget).toBe(false);
     expect(lc?.deepLink).not.toContain("campo=");
+    const iss = r.bySection.nfse.find((f) => f.key === "iss_rate");
+    expect(iss?.hasFieldTarget).toBe(false);
+    expect(iss?.deepLink).not.toContain("campo=");
   });
 
 
