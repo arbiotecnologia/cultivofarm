@@ -68,14 +68,18 @@ export interface ConnectionsReadinessResult {
   /** `true` quando algum item bloqueia a habilitação de produção. */
   hasBlocker: boolean;
   /**
-   * `true` quando os pré-requisitos mínimos p/ habilitar produção estão
-   * atendidos: sem bloqueios, dados da empresa preenchidos, certificado
-   * disponível, provedor com credenciais preenchidas para todos os
-   * documentos habilitados, ambiente de homologação selecionado.
+   * Indicador **puramente informativo**: `true` quando os pré-requisitos
+   * mínimos p/ uma futura habilitação de produção estão atendidos (sem
+   * bloqueios, dados da empresa preenchidos, certificado disponível,
+   * provedor com credenciais preenchidas para todos os documentos
+   * habilitados, ambiente de homologação selecionado).
    *
-   * Esta fase NÃO habilita produção — apenas expõe o estado calculado.
+   * ATENÇÃO: este flag **não autoriza** produção, não altera
+   * `production_enabled`, feature flag, botão ou permissão. Ativação
+   * real exige homologação bem-sucedida, teste de conexão aprovado e
+   * autorização humana explícita em fase futura.
    */
-  productionAllowed: boolean;
+  prerequisitesReadyForFutureProduction: boolean;
 }
 
 // ─── Helpers internos ────────────────────────────────────────────────
@@ -199,7 +203,9 @@ function computeProvedor(row: CompanyFiscalRow | null): ConnectionItem {
     label: "Provedor",
     status: "not_started",
     description: "Selecione o provedor fiscal para os documentos habilitados.",
-    deepLink: link("provedor"),
+    // Aba real: "integracao" (Integração e segurança). Campo real:
+    // #nfe_provider (existe também #nfse_provider como fallback natural).
+    deepLink: link("integracao", "nfe_provider"),
   };
   if (row === null) return base;
   const anyEnabled = row.nfe_enabled === true || row.nfse_enabled === true;
@@ -232,8 +238,11 @@ function computeCredenciais(row: CompanyFiscalRow | null): ConnectionItem {
     key: "credenciais_provedor",
     label: "Credenciais do provedor",
     status: "not_started",
-    description: "Somente referências server-side. Nunca cole token ou senha na tela.",
-    deepLink: link("provedor", "credenciais_provedor"),
+    description:
+      "As credenciais do provedor são configuradas com segurança no backend. Nesta tela apenas registramos a referência (identificador) — nunca token, senha ou secret.",
+    // Aba real: "integracao". Aponta para o campo real da referência NF-e
+    // (existe também #nfse_credential_ref na mesma aba).
+    deepLink: link("integracao", "nfe_credential_ref"),
   };
   if (row === null) return base;
   const anyEnabled = row.nfe_enabled === true || row.nfse_enabled === true;
@@ -250,13 +259,15 @@ function computeCredenciais(row: CompanyFiscalRow | null): ConnectionItem {
     return {
       ...base,
       status: "pending",
-      description: "Referência de credencial ausente. Configure o segredo no servidor e informe apenas o identificador.",
+      description:
+        "Referência de credencial ausente. O segredo é cadastrado no cofre do servidor — aqui informe apenas o identificador correspondente.",
     };
   }
   return {
     ...base,
     status: "not_tested",
-    description: "Referência de credencial preenchida. Teste de conexão ainda não realizado.",
+    description:
+      "Referência preenchida. A validação da credencial em si acontece no backend seguro; o teste de conexão será executado em fase futura.",
   };
 }
 
@@ -309,7 +320,8 @@ function computeWebhook(row: CompanyFiscalRow | null): ConnectionItem {
     label: "Webhook de retorno",
     status: "not_started",
     description: "Nenhum webhook de retorno configurado.",
-    deepLink: link("webhook", "webhook_ref"),
+    // Aba real: "integracao". Campo real: #webhook_ref.
+    deepLink: link("integracao", "webhook_ref"),
   };
   if (row === null) return base;
   if (empty(row.webhook_ref)) {
@@ -389,6 +401,7 @@ export function computeConnectionsReadiness(
   const ambienteOk = items.find((i) => i.key === "ambiente")?.status === "ready_to_test";
   const provedorOk = provedorState === "filled_untested" || provedorState === "not_applicable";
   const credOk = credState === "not_tested" || credState === "not_applicable";
-  const productionAllowed = !hasBlocker && empresaOk && certOk && provedorOk && credOk && ambienteOk;
-  return { items, hasBlocker, productionAllowed };
+  const prerequisitesReadyForFutureProduction =
+    !hasBlocker && empresaOk === true && certOk === true && provedorOk && credOk && ambienteOk === true;
+  return { items, hasBlocker, prerequisitesReadyForFutureProduction };
 }
