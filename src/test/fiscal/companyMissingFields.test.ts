@@ -70,8 +70,8 @@ describe("computeCompanyMissingFields", () => {
       expect.arrayContaining(["state_registration", "nfe_series", "cfop_in_state", "cfop_interstate"]),
     );
     expect(r.notApplicable).not.toContain("nfe");
-    // Deep-link para aba correta
-    expect(r.bySection.nfe.every((f) => f.deepLink === "/configuracoes/fiscal/empresa?aba=nfe")).toBe(true);
+    // Deep-link para aba correta (pode incluir `&campo=` conforme allow-list)
+    expect(r.bySection.nfe.every((f) => f.deepLink.includes("aba=nfe"))).toBe(true);
   });
 
   it("série NF-e informada na coluna dedicada satisfaz o requisito", () => {
