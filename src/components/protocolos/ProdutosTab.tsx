@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, Filter, FlaskConical, Download, Layers, Trash2, FileDown, Check, ChevronsUpDown, FileText, Droplets, Info, RefreshCcw, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { wipeCatalogoProdutos, importCatalogoARBioV13, isCatalogoARBioV13Aplicado } from "@/lib/protocolos/seedCatalogoARBioV13";
+import { wipeCatalogoProdutos, importCatalogoARBioV13, isCatalogoARBioV13Aplicado, auditProdutosOrfaos } from "@/lib/protocolos/seedCatalogoARBioV13";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateCatalogoProdutosPdf } from "@/lib/pdf/catalogoProdutosPdf";
 import { generateFichaTecnicaProdutoPdf } from "@/lib/pdf/fichaTecnicaProdutoPdf";
@@ -103,8 +103,7 @@ export function ProdutosTab() {
   const handleAuditarOrfaos = async () => {
     setAuditing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-audit-produtos-orfaos");
-      if (error) throw error;
+      const data = await auditProdutosOrfaos();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -115,6 +114,9 @@ export function ProdutosTab() {
       const resumo = data?.resumo ?? {};
       toast.success(
         `Auditoria concluída: ${resumo.tabelas_com_orfaos ?? 0} tabelas com órfãos, ${resumo.distinct_ids_orfaos_global ?? 0} IDs órfãos distintos.`,
+        {
+          description: resumo.mode === "client-fallback" ? "Executada pelo cliente autenticado porque a Edge Function ainda não está disponível no projeto." : undefined,
+        },
       );
     } catch (e) {
       toast.error(`Falha na auditoria: ${e instanceof Error ? e.message : String(e)}`);
