@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ShieldCheck, ShieldOff, KeyRound, Cpu, RefreshCw } from "lucide-react";
 import UploadCertificadoA1 from "./UploadCertificadoA1";
+import CertificadoValidadeBanner from "./CertificadoValidadeBanner";
 import { useFiscalCertificates, useRevokeFiscalCertificate } from "@/hooks/useFiscalCertificates";
 import { useRegisterOsCertificate } from "@/hooks/useRegisterOsCertificate";
 import { probeOsBridge, listOsCertificatesSafe } from "@/lib/fiscal/certificateOsAdapter";
