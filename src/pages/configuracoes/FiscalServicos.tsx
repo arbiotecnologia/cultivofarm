@@ -600,7 +600,13 @@ function EditDrawer({
             </SheetFooter>
           </form>
         )}
+        {!isNew ? (
+          <div className="mt-6" data-testid="fiscal-servicos-ibs-cbs">
+            <IbsCbsItemCard kind="service" itemId={item.service_id ?? null} canEdit={canEdit} />
+          </div>
+        ) : null}
       </SheetContent>
+
     </Sheet>
   );
 }
