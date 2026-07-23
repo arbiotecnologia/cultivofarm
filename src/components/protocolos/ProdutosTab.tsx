@@ -12,7 +12,10 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, FlaskConical, Download, Layers, Trash2, FileDown, Check, ChevronsUpDown, FileText, Droplets, Info } from "lucide-react";
+import { Plus, Search, Filter, FlaskConical, Download, Layers, Trash2, FileDown, Check, ChevronsUpDown, FileText, Droplets, Info, RefreshCcw, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { wipeCatalogoProdutos, importCatalogoARBioV13, isCatalogoARBioV13Aplicado } from "@/lib/protocolos/seedCatalogoARBioV13";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateCatalogoProdutosPdf } from "@/lib/pdf/catalogoProdutosPdf";
 import { generateFichaTecnicaProdutoPdf } from "@/lib/pdf/fichaTecnicaProdutoPdf";
 import { toast } from "sonner";
