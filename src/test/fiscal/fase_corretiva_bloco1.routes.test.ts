@@ -29,8 +29,8 @@ const LEGACY: Record<(typeof IDS)[number], string> = {
   "fiscal-perfis-clientes": "/fiscal/perfis/clientes",
 };
 
-function findItem(id: string) {
-  for (const it of NAV_ITEMS) {
+function findItem(id: string): NavItem | undefined {
+  for (const it of navigation) {
     if (it.id === id) return it;
     for (const c of it.children ?? []) if (c.id === id) return c;
   }
