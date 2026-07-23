@@ -19,6 +19,11 @@ import {
   type CustomerFiscalFormValues,
   type CustomerFiscalRow,
 } from "@/lib/fiscal/customerFiscalValidation";
+import {
+  CUSTOMER_FISCAL_PROFILE_STATUSES,
+  TAXPAYER_INDICATOR_OPTIONS,
+} from "@/lib/fiscal/fiscalOptions";
+import { sanitizePostgrestTerm } from "@/hooks/useFiscalClientesLite";
 
 export type CustomerReadinessRow =
   Database["public"]["Views"]["v_customer_fiscal_readiness"]["Row"];
