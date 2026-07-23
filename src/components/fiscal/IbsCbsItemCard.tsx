@@ -348,21 +348,21 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="finNFSe">Finalidade da NFS-e <span className="text-xs text-muted-foreground">(finNFSe)</span></Label>
-                <Input id="finNFSe" maxLength={20}
+                <Input id="finNFSe" maxLength={30}
                   value={getNfseField(form, "finNFSe") ?? ""}
                   onChange={(e) => setForm((s) => setNfseField(s, "finNFSe", e.target.value || undefined))}
                   disabled={disabled} />
               </div>
               <div>
                 <Label htmlFor="tpNFSeDebito">Tipo de débito <span className="text-xs text-muted-foreground">(tpNFSeDebito)</span></Label>
-                <Input id="tpNFSeDebito" maxLength={20}
+                <Input id="tpNFSeDebito" maxLength={30}
                   value={getNfseField(form, "tpNFSeDebito") ?? ""}
                   onChange={(e) => setForm((s) => setNfseField(s, "tpNFSeDebito", e.target.value || undefined))}
                   disabled={disabled} />
               </div>
               <div>
                 <Label htmlFor="tpNFSeCredito">Tipo de crédito <span className="text-xs text-muted-foreground">(tpNFSeCredito)</span></Label>
-                <Input id="tpNFSeCredito" maxLength={20}
+                <Input id="tpNFSeCredito" maxLength={30}
                   value={getNfseField(form, "tpNFSeCredito") ?? ""}
                   onChange={(e) => setForm((s) => setNfseField(s, "tpNFSeCredito", e.target.value || undefined))}
                   disabled={disabled} />
