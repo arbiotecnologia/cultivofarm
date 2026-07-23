@@ -511,7 +511,11 @@ function EditDrawer({
             </SheetFooter>
           </form>
         )}
+        <div className="mt-6" data-testid="fiscal-produtos-ibs-cbs">
+          <IbsCbsItemCard kind="product" itemId={item.product_id} canEdit={canEdit} />
+        </div>
       </SheetContent>
     </Sheet>
+
   );
 }
