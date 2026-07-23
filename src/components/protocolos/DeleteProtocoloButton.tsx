@@ -50,8 +50,19 @@ export function DeleteProtocoloButton({
     onDeleted?.();
   };
 
-  return (
-    <AlertDialog>
+  const trigger =
+    variant === "dropdown" ? (
+      <AlertDialogTrigger asChild>
+        <button
+          className="flex items-center gap-2 w-full text-left text-destructive focus:outline-none"
+          onClick={stopRowClick}
+          aria-label={`Excluir ${itemLabel}`}
+        >
+          <Trash2 className="h-4 w-4" />
+          <span>Excluir</span>
+        </button>
+      </AlertDialogTrigger>
+    ) : (
       <AlertDialogTrigger asChild>
         <Button
           variant="ghost"
@@ -63,6 +74,11 @@ export function DeleteProtocoloButton({
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </AlertDialogTrigger>
+    );
+
+  return (
+    <AlertDialog>
+      {trigger}
       <AlertDialogContent onClick={stopRowClick}>
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir {itemLabel}?</AlertDialogTitle>
