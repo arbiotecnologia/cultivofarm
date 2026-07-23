@@ -143,12 +143,15 @@ transações com `ROLLBACK`.
 
 ## 7. Próxima barreira objetiva
 
-Executar, **fora do sandbox** e no staging temporário, a **suíte RLS
-completa por resultado real** cobrindo todas as tabelas/views fiscais e
-todas as roles listadas em §3.1. Retornar contagens SELECT/INSERT/
-UPDATE/DELETE por role + evidência de negação onde esperada. Sem isso,
-H2 não pode ser declarada concluída, e H3/produção permanecem
-proibidas.
+Executar, **fora do sandbox** e no staging temporário, a **matriz RLS
+integral das demais tabelas fiscais** (`fiscal_*`,
+`company_fiscal_settings`, `v_fiscal_*`) com owner A/B e todas as
+roles. Retornar contagens SELECT/INSERT/UPDATE/DELETE por role +
+evidence de negação onde esperada. Complementar com A1 sintético
+end-to-end, backfill sintético, regeneração de `types.ts` e
+reconciliação histórica de `schema_migrations`. Sem isso H2 não pode
+ser declarada concluída, e H3/produção permanecem proibidas.
+
 
 ## 8. Status final
 
