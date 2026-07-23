@@ -305,3 +305,51 @@ Nas três tabelas (`product_fiscal_profiles`,
 
 
 
+
+## 12. Correção preparada — hard delete em `financial_documents`
+
+**Achado runtime (staging `ikaauvsflpmamgxmkhoq`, produção intocada):**
+
+- `public.financial_documents` possui duas policies permissivas `FOR ALL`
+  combinadas por OR: `"Financial staff full access"` e `"fd_staff_all"`.
+- O papel `authenticated` mantém privilégio `DELETE` na tabela.
+- Consequência: hard delete físico está tecnicamente autorizado, o que
+  ameaça XML, DANFE e trilha de auditoria financeira.
+- `src/components/financeiro/DocumentosPanel.tsx` executa exclusivamente
+  soft delete via `UPDATE` de `deleted_at`, `deleted_by` e
+  `delete_reason`; portanto o ramo DELETE é desnecessário.
+
+**Migration versionada (não aplicada nesta rodada):**
+`supabase/migrations/20260729000000_fiscal_financial_documents_no_hard_delete.sql`.
+
+Conteúdo:
+
+1. `DROP POLICY IF EXISTS "Financial staff full access"` e
+   `DROP POLICY IF EXISTS "fd_staff_all"` em
+   `public.financial_documents`.
+2. `CREATE POLICY "fd_staff_insert" FOR INSERT TO authenticated
+   WITH CHECK (public.is_financial_staff(auth.uid()))`.
+3. `CREATE POLICY "fd_staff_update" FOR UPDATE TO authenticated
+   USING/WITH CHECK (public.is_financial_staff(auth.uid()))` — cobre o
+   soft delete legítimo do painel.
+4. `CREATE POLICY "fd_no_hard_delete" FOR DELETE TO authenticated
+   USING (false)` (recriação idempotente).
+5. `REVOKE DELETE ON public.financial_documents FROM authenticated`.
+6. Policies `SELECT` existentes (staff em documentos não deletados;
+   produtor sobre documento próprio) preservadas integralmente. GRANTs
+   `SELECT/INSERT/UPDATE` inalterados.
+
+**Teste canônico adicionado:**
+`src/test/fiscal/rls_financial_documents_no_hard_delete.test.ts`
+(6 asserts): remoção nominal das duas policies antigas, ausência de
+`FOR ALL`, criação separada de `fd_staff_insert`/`fd_staff_update`,
+persistência de `fd_no_hard_delete USING(false)`, `REVOKE DELETE` e
+comprovação de que `DocumentosPanel` usa `.update({ deleted_at: ... })`
+e nunca `.delete()` sobre `financial_documents`.
+
+**Status:** correção **preparada e versionada**; **pendente de
+aplicação no staging** `ikaauvsflpmamgxmkhoq`. Nenhum acesso a banco,
+deploy, publicação ou produção nesta rodada.
+
+**Gates locais nesta rodada:** typecheck ✅, build ✅, focal 6/6 ✅,
+suíte fiscal completa 1004 passed / 3 skipped ✅.
