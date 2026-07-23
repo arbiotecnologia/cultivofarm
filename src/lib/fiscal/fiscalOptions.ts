@@ -234,7 +234,7 @@ export function isProductFiscalProfileStatus(
  *  - product_fiscal_profiles.profile_status:
  *      DRAFT | PENDING_ACCOUNTING | VALIDATED | BLOCKED | NOT_FISCALLY_SOLD
  *  - service_fiscal_profiles.profile_status:
- *      DRAFT | PENDING_ACCOUNTING | VALIDATED | BLOCKED
+ *      DRAFT | PENDING_ACCOUNTING | VALIDATED | BLOCKED | NOT_FISCALLY_BILLED
  *  - customer_fiscal_profiles.profile_status:
  *      INCOMPLETE | PENDING_REVIEW | VALIDATED | BLOCKED
  *
