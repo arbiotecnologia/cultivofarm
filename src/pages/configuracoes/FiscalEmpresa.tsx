@@ -55,6 +55,7 @@ import CertificadoDigitalSecao from "@/components/fiscal/certificados/Certificad
 import HomologacaoSecao from "@/components/fiscal/homologacao/HomologacaoSecao";
 import { RtcCompanyCard } from "@/components/fiscal/RtcCompanyCard";
 import { CnpjLookupButton } from "@/components/fiscal/CnpjLookupButton";
+import { useFiscalFieldFocus } from "@/lib/fiscal/useFiscalFieldFocus";
 
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
