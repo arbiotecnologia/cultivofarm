@@ -562,12 +562,6 @@ export function MicrorganismosTab() {
                     </span>
                   ) : "—"}
                 </TableCell>
-                <TableCell>
-                  <div className="text-xs">
-                    <div>{m.fornecedor || "—"}</div>
-                    <div className="text-muted-foreground">{m.safra_referencia}</div>
-                  </div>
-                </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1 justify-end flex-wrap">
                     <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
