@@ -38,14 +38,30 @@ export interface MissingFieldsResult {
   notApplicable: MissingSection[];
 }
 
-const LINK_EMPRESA = "/configuracoes/fiscal/empresa?aba=empresa";
-const LINK_NFE = "/configuracoes/fiscal/empresa?aba=nfe";
-const LINK_NFSE = "/configuracoes/fiscal/empresa?aba=nfse";
+/**
+ * Rota canônica da Central Fiscal neste projeto. A especificação H4-A2
+ * cita `/fiscal/configuracoes` como padrão de deep-link, porém a rota
+ * registrada em `App.tsx` (e amplamente vinculada por outros módulos)
+ * é `/configuracoes/fiscal/empresa`. Manter a rota real evita quebrar
+ * navegação e viola a regra "não modificar rotas sem autorização".
+ * O formato de query/hash — `?aba=<aba>#<id-real>` — é preservado.
+ */
+export const FISCAL_EMPRESA_BASE = "/configuracoes/fiscal/empresa";
+const LINK_EMPRESA = `${FISCAL_EMPRESA_BASE}?aba=empresa`;
+const LINK_NFE = `${FISCAL_EMPRESA_BASE}?aba=nfe`;
+const LINK_NFSE = `${FISCAL_EMPRESA_BASE}?aba=nfse`;
+const LINK_CERTIFICADO = `${FISCAL_EMPRESA_BASE}?aba=certificado`;
+
+/**
+ * Deep-link canônico da seção do certificado A1 na Central de Homologação.
+ * Nunca inclui qualquer material sensível.
+ */
+export const CERTIFICADO_A1_DEEP_LINK = `${LINK_CERTIFICADO}#certificado-a1`;
 
 /**
  * Chaves com `id` correspondente em `FiscalEmpresa` (via `FieldRow`).
- * Apenas essas chaves recebem `&campo=<key>` no deep-link. As demais
- * mantêm o link só até a aba, evitando alvo inexistente.
+ * Apenas essas chaves recebem `#<key>` no deep-link. As demais mantêm o
+ * link só até a aba, evitando alvo inexistente (fallback silencioso).
  */
 export const KNOWN_FIELD_TARGETS: ReadonlySet<string> = new Set<string>([
   // Empresa
@@ -59,7 +75,24 @@ export const KNOWN_FIELD_TARGETS: ReadonlySet<string> = new Set<string>([
   "nfe_series", "nfe_cfop_in", "nfe_cfop_out",
   // NFS-e (id real renderizado em FiscalEmpresa)
   "nfse_mode",
+  // Certificado digital (id real do wrapper do card A1)
+  "certificado-a1",
 ]);
+
+/**
+ * Trata inscrição estadual/municipal como satisfeita quando a empresa
+ * declarou explicitamente ser isenta/não contribuinte. Não inventa a
+ * condição — exige a marcação textual pelo usuário.
+ */
+export function isExemptRegistration(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const norm = value
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+  return norm === "ISENTO" || norm === "ISENTA" || norm === "NAO CONTRIBUINTE";
+}
 
 function withField(baseLink: string, key: string): { link: string; hasFieldTarget: boolean } {
   if (!KNOWN_FIELD_TARGETS.has(key)) return { link: baseLink, hasFieldTarget: false };
