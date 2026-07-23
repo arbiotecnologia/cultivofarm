@@ -78,7 +78,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
   const remove = useMutation({
     mutationFn: async ({ id }: { id: string; fileName: string }) => {
       if (!user) throw new Error("Sessão inválida");
-      const { error } = await supabase.rpc("rpc_financial_document_soft_delete", {
+      const { error } = await (supabase.rpc as any)("rpc_financial_document_soft_delete", {
         p_document_id: id,
         p_reason: "Removido pelo usuário",
       });
