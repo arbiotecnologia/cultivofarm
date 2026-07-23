@@ -83,10 +83,26 @@ export function useFiscalFieldFocus({
     // Formato canônico H4-A2: `?aba=<aba>#<id-real>`. Formato legado H4-A1
     // (`?campo=<id>`) segue aceito para não quebrar links já compartilhados.
     const rawHash = typeof window !== "undefined" ? (window.location.hash ?? "") : "";
-    const hashKey = rawHash.startsWith("#") ? decodeURIComponent(rawHash.slice(1)) : "";
+    // H4-A3: leitura defensiva do hash. `decodeURIComponent` lança para
+    // sequências percent-encoding malformadas (ex.: `#%E0%A4`); qualquer
+    // erro reduz o hash a string vazia (fallback silencioso, sem lançar).
+    // A validação por allow-list é feita adiante em `focusFieldById`
+    // (KNOWN_FIELD_TARGETS), então chaves fora da lista também caem no
+    // fallback sem alterar valores.
+    let hashKey = "";
+    if (rawHash.startsWith("#")) {
+      const raw = rawHash.slice(1);
+      try {
+        hashKey = decodeURIComponent(raw);
+      } catch {
+        hashKey = "";
+      }
+    }
     const legacyKey = searchParams.get("campo") ?? "";
     const campo = hashKey || legacyKey;
-    if (!campo) return;
+    if (!campo) {
+      return;
+    }
     // Aguarda o painel da aba montar (Tabs monta lazy o TabsContent ativo).
     const handle = window.setTimeout(() => {
       const ok = focusFieldById(campo);
