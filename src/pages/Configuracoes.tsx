@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { formatTelefone, formatCpfCnpj, unmask } from "@/lib/masks";
+import { formatTelefone, formatCpfCnpj, unmask, unmaskCpfCnpj } from "@/lib/masks";
 import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Star, Timer } from "lucide-react";
 import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { SlaB2BTab } from "@/pages/configuracoes/SlaB2BTab";
@@ -68,7 +68,7 @@ export default function Configuracoes() {
   const updateProfile = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
-      const { error } = await supabase.from("profiles").update({ nome, telefone: unmask(phone), cpf_cnpj: unmask(cpfCnpj) }).eq("user_id", user.id);
+      const { error } = await supabase.from("profiles").update({ nome, telefone: unmask(phone), cpf_cnpj: unmaskCpfCnpj(cpfCnpj) }).eq("user_id", user.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -252,7 +252,7 @@ export default function Configuracoes() {
         partner_id: newUser.partner_id || null,
         partner_papel: hasPartnerRole(newUser.roles) ? partnerPapelFromRoles(newUser.roles) : null,
         telefone: unmask(newUser.telefone),
-        cpf_cnpj: unmask(newUser.cpf_cnpj),
+        cpf_cnpj: unmaskCpfCnpj(newUser.cpf_cnpj),
         cliente_ids: newUserVinculos.map(v => v.cliente_id),
         principal_cliente_id: principal,
       };
@@ -358,7 +358,7 @@ export default function Configuracoes() {
           nome: editUser.nome,
           telefone: unmask(editUser.telefone),
           cargo: editUser.cargo,
-          cpf_cnpj: unmask(editUser.cpf_cnpj),
+          cpf_cnpj: unmaskCpfCnpj(editUser.cpf_cnpj),
           crea: editUser.crea,
           especialidade: editUser.especialidade,
         } as any)

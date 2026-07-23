@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCNPJ, unmask } from "@/lib/masks";
+import { formatCNPJ, unmask, unmaskCnpj } from "@/lib/masks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchCEP } from "@/lib/api/viacep";
 import { toast } from "sonner";
@@ -213,7 +213,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
       ...form,
       codigo: form.codigo?.trim() || null,
       nome_fantasia: form.nome_fantasia?.trim() || null,
-      cnpj: form.cnpj ? unmask(form.cnpj) : null,
+      cnpj: form.cnpj ? unmaskCnpj(form.cnpj) : null,
       observacoes: form.observacoes?.trim() || null,
       client_id: form.client_id || null,
       dados_bancarios: form.dados_bancarios
@@ -280,10 +280,15 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
               <div>
                 <Label>CNPJ</Label>
                 <Input
+                  inputMode="text"
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  maxLength={18}
                   value={formatCNPJ(form.cnpj ?? "")}
-                  onChange={(e) => set("cnpj", e.target.value)}
+                  onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
                   placeholder="00.000.000/0000-00"
                 />
+
                 {errors.cnpj && <p className="text-xs text-destructive mt-1">{errors.cnpj}</p>}
               </div>
               <div className="sm:col-span-2">

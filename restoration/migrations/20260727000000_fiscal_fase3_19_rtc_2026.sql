@@ -1,0 +1,11 @@
+-- =====================================================================
+-- Fase Fiscal 3.19 — STUB (não executável)
+--
+-- Este arquivo NÃO contém SQL executável. A migration canônica está em:
+--   supabase/migrations/20260727000000_fiscal_fase3_19_rtc_2026.sql
+--
+-- Preservado aqui apenas como referência humana e para satisfazer a
+-- convenção histórica de `restoration/migrations/`. Não aplicar.
+-- =====================================================================
+
+-- STUB — sem statements.

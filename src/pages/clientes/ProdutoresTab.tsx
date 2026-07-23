@@ -23,7 +23,7 @@ import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { ClienteFormTabs } from "@/components/clientes/ClienteFormTabs";
 import { ClienteHistoricoDialog } from "@/components/clientes/ClienteHistoricoDialog";
 
-import { unmask, formatCpfCnpj, getTipoDocumento } from "@/lib/masks";
+import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento } from "@/lib/masks";
 import { Link } from "react-router-dom";
 
 export default function ProdutoresTab() {
@@ -145,7 +145,7 @@ export default function ProdutoresTab() {
     const payload: any = {
       ...cleanValues,
       nome: (values.nome_fantasia || values.razao_social || "Sem Nome").trim(),
-      cpf_cnpj: unmask(values.cpf_cnpj) || null,
+      cpf_cnpj: unmaskCpfCnpj(values.cpf_cnpj) || null,
       telefone: mainPhone || null,
       telefones: telefonesArray,
       endereco_cep: unmask(values.endereco_cep) || null,
@@ -234,17 +234,22 @@ export default function ProdutoresTab() {
   const filtered = clientes.filter((c) => {
     const q = search.toLowerCase();
     const cleanQ = unmask(q);
+    // Busca CPF/CNPJ com suporte a CNPJ alfanumérico (Fase 3.19):
+    // compara tanto por dígitos quanto pela forma normalizada preservando letras.
+    const cleanQDocs = unmaskCpfCnpj(search).toUpperCase();
 
     const codigoNorm = (c.codigo_cliente || "").replace(/^0+/, "");
     const qNorm = cleanQ.replace(/^0+/, "");
+    const docNorm = unmaskCpfCnpj(c.cpf_cnpj || "").toUpperCase();
     const matchesSearch = (
       (c.nome_fantasia || "").toLowerCase().includes(q) ||
       (c.razao_social || "").toLowerCase().includes(q) ||
       (c.cpf_cnpj || "").includes(cleanQ) ||
-      unmask(c.cpf_cnpj || "").includes(cleanQ) ||
+      (cleanQDocs.length > 0 && docNorm.includes(cleanQDocs)) ||
       (c.codigo_cliente || "").includes(cleanQ) ||
       (qNorm.length > 0 && codigoNorm.includes(qNorm))
     );
+
 
     const matchesStatus = statusFilter === "all" || c.status_cliente === statusFilter;
     const matchesTag = tagFilter === "all" || (c.tags || []).includes(tagFilter);
