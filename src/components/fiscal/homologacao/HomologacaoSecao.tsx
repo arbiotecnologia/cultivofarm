@@ -246,7 +246,7 @@ export default function HomologacaoSecao({ companySettingsId }: Props) {
           </Button>
           {companySettingsId ? (
             <Button asChild variant="outline" size="sm">
-              <Link to="/configuracoes/fiscal/empresa?aba=certificado" data-testid="fiscal-homologacao-go-cert">
+              <Link to="/configuracoes/fiscal/empresa?aba=certificado#certificado-a1" data-testid="fiscal-homologacao-go-cert">
                 Ir para Certificado Digital
               </Link>
             </Button>
