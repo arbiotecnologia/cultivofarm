@@ -93,3 +93,45 @@ Implementado o único gap tangível do cenário "infraestrutura pronta, dados da
 **Custo real total (auditoria + implementação):** ~13 créditos. Consumo acumulado: ~32/300.
 
 **Não avança automaticamente.** Próximas fatias sugeridas (autorização específica): banner de expiração de certificado A1 < 30 dias; extensão do derivador para Perfis (Produto/Serviço/Cliente); deploy controlado da Edge `fiscal-cnpj-lookup` em staging.
+
+---
+
+## §8 — Fase H4-A1 aplicada (refinamentos locais aceitos)
+
+Escopo: apenas os achados **médios #1 (deep-link por campo)** e **#3 (banner de validade do certificado A1)** da auditoria acima. Sem banco remoto, sem migration, sem RLS, sem deploy, sem emissão, sem dados reais.
+
+**Arquivos novos**
+- `src/lib/fiscal/useFiscalFieldFocus.ts` — hook + `focusFieldById` puro. Consome `?campo=<id>`, aplica scroll/foco/destaque temporário (`ring-2 ring-primary`) e devolve o parâmetro à URL após uso. Allow-list explícita reutilizando `KNOWN_FIELD_TARGETS`.
+- `src/lib/fiscal/certificateExpiryStatus.ts` — classificador puro `summarizeCertificateExpiry`. Regras: `expired` (bloqueia), `expiring_soon` (<=30 dias, atenção), `unknown` (dias null e sem sinal claro), `valid`, `none`. Prioriza o pior certificado ativo (não revogado, `is_active=true`). Não lê PFX, senha, storage nem fingerprint completo.
+- `src/components/fiscal/certificados/CertificadoValidadeBanner.tsx` — banner agregado. Consome apenas `display_name` e `days_until_expiration` do view sanitizada; nunca renderiza PFX/senha/`object_path`/fingerprint. Link em pt-BR "Ir para certificado digital".
+- `src/test/fiscal/useFiscalFieldFocus.test.tsx` — 7 casos: foco em alvo permitido, allow-list rejeitando chave arbitrária, fallback sem alvo, hook aguardando `ready=false`, hook sem `campo`, consumo do parâmetro nas duas vias.
+- `src/test/fiscal/certificateExpiryStatus.test.ts` — 10 casos: vazio, null/undefined, apenas revogados, válido, `<=30`, `EXPIRED`, `dias<0`, precedência entre estados, unknown.
+- `src/test/fiscal/CertificadoValidadeBanner.test.tsx` — 9 casos incluindo o teste de "nenhum segredo (pfx/senha/storage/fingerprint) renderizado".
+
+**Arquivos alterados**
+- `src/lib/fiscal/companyMissingFields.ts` — deep-link agora inclui `&campo=<key>` quando a chave está na allow-list `KNOWN_FIELD_TARGETS`; nova flag `hasFieldTarget` no `MissingField`. Sem alteração de política/severidade.
+- `src/pages/configuracoes/FiscalEmpresa.tsx` — importa `useFiscalFieldFocus` e o invoca com `tab`/`ready`/`searchParams`. Nenhum campo de formulário alterado.
+- `src/components/fiscal/homologacao/HomologacaoSecao.tsx` — insere `<CertificadoValidadeBanner />` acima de `<CamposFaltantesEmpresa />`.
+- `src/components/fiscal/certificados/CertificadoDigitalSecao.tsx` — insere `<CertificadoValidadeBanner />` no topo, logo após o alerta introdutório.
+- `src/test/fiscal/companyMissingFields.test.ts` — cobertura estendida para o novo shape do deep-link (`aba=...`, `&campo=`) e para `hasFieldTarget`.
+
+**Regras de segurança confirmadas**
+- Nenhum segredo é renderizado. O banner só usa `display_name` e `days_until_expiration`, ambos originários da view `v_fiscal_certificate_readiness` (sanitizada).
+- Deep-link é rejeitado por allow-list — chave arbitrária vinda da URL não pode focar elementos fora do formulário fiscal.
+- Fallback seguro: alvo inexistente ⇒ apenas navega para a aba, sem exceção; parâmetro é consumido em ambos os casos, evitando re-disparo.
+- Foco acessível: aplica `focus({preventScroll:true})` e destaque temporário (~1600ms) via classes utilitárias; não altera valor do campo.
+
+**Validações finais (H4-A1)**
+- Focais (deep-link + expiry + banner + missing fields): **37/37 ✓**
+- `vitest src/test/fiscal`: **1118 passed · 3 skipped ✓** (+28 vs. §7)
+- `bunx tsgo --noEmit`: limpo ✓
+- `bun run build`: limpo ✓
+
+**Cumprimento das proibições:** sem Supabase remoto, sem migration, sem RLS, sem deploy, sem emissão, sem dados reais/inventados, sem exposição de PFX/senha/storage/fingerprint completo.
+
+**Custo real desta rodada:** ~18 créditos (limite: 22). **Consumo acumulado aproximado:** ~42/300.
+
+**Pendências (não avançar automaticamente):**
+- Médio #2 da §7 (antiguidade de documentos pendentes) — requer alteração da view `v_fiscal_homologation_readiness` no banco; **fora do escopo local**, aguarda autorização específica.
+- Extensão do derivador para Perfis (Produto/Serviço/Cliente).
+- Deploy controlado da Edge `fiscal-cnpj-lookup` em staging para converter gates externos `PENDENTE → APROVADO`.

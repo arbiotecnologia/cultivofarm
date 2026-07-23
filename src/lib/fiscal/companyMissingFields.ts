@@ -20,8 +20,14 @@ export interface MissingField {
   label: string;
   section: MissingSection;
   severity: MissingSeverity;
-  /** Rota + query com aba correta em FiscalEmpresa. */
+  /**
+   * Rota + query com aba correta em FiscalEmpresa. Inclui `campo=<key>`
+   * quando o campo possui alvo focável conhecido no formulário; para itens
+   * sem alvo mapeado, o deep-link cai de volta apenas na aba (fallback).
+   */
   deepLink: string;
+  /** Indica se o campo possui alvo focável conhecido no formulário. */
+  hasFieldTarget: boolean;
 }
 
 export interface MissingFieldsResult {
@@ -35,6 +41,38 @@ export interface MissingFieldsResult {
 const LINK_EMPRESA = "/configuracoes/fiscal/empresa?aba=empresa";
 const LINK_NFE = "/configuracoes/fiscal/empresa?aba=nfe";
 const LINK_NFSE = "/configuracoes/fiscal/empresa?aba=nfse";
+
+/**
+ * Chaves com `id` correspondente em `FiscalEmpresa` (via `FieldRow`).
+ * Apenas essas chaves recebem `&campo=<key>` no deep-link. As demais
+ * mantêm o link só até a aba, evitando alvo inexistente.
+ */
+export const KNOWN_FIELD_TARGETS: ReadonlySet<string> = new Set<string>([
+  // Empresa
+  "cnpj", "legal_name", "trade_name", "fiscal_email", "phone",
+  "tax_regime", "crt", "primary_cnae",
+  "municipal_registration", "state_registration",
+  // Endereço
+  "postal_code", "street", "number", "complement", "neighborhood",
+  "city", "state", "municipality_ibge_code", "country_code",
+]);
+
+function withField(baseLink: string, key: string): { link: string; hasFieldTarget: boolean } {
+  if (!KNOWN_FIELD_TARGETS.has(key)) return { link: baseLink, hasFieldTarget: false };
+  const sep = baseLink.includes("?") ? "&" : "?";
+  return { link: `${baseLink}${sep}campo=${encodeURIComponent(key)}`, hasFieldTarget: true };
+}
+
+function build(
+  key: string,
+  label: string,
+  section: MissingSection,
+  severity: MissingSeverity,
+  baseLink: string,
+): MissingField {
+  const { link, hasFieldTarget } = withField(baseLink, key);
+  return { key, label, section, severity, deepLink: link, hasFieldTarget };
+}
 
 function empty(v: unknown): boolean {
   return v === null || v === undefined || v === "";
@@ -71,32 +109,32 @@ export function computeCompanyMissingFields(
   const push = (item: MissingField) => bySection[item.section].push(item);
 
   // Empresa (bloqueantes)
-  if (empty(row.cnpj)) push({ key: "cnpj", label: "CNPJ", section: "empresa", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.legal_name)) push({ key: "legal_name", label: "Razão social", section: "empresa", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.fiscal_email)) push({ key: "fiscal_email", label: "E-mail fiscal", section: "empresa", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.tax_regime)) push({ key: "tax_regime", label: "Regime tributário", section: "empresa", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.crt)) push({ key: "crt", label: "CRT (código de regime tributário)", section: "empresa", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
+  if (empty(row.cnpj)) push(build("cnpj", "CNPJ", "empresa", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.legal_name)) push(build("legal_name", "Razão social", "empresa", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.fiscal_email)) push(build("fiscal_email", "E-mail fiscal", "empresa", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.tax_regime)) push(build("tax_regime", "Regime tributário", "empresa", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.crt)) push(build("crt", "CRT (código de regime tributário)", "empresa", "bloqueia_homologacao", LINK_EMPRESA));
   // Empresa (recomendados)
-  if (empty(row.trade_name)) push({ key: "trade_name", label: "Nome fantasia", section: "empresa", severity: "recomendado", deepLink: LINK_EMPRESA });
-  if (empty(row.primary_cnae)) push({ key: "primary_cnae", label: "CNAE principal", section: "empresa", severity: "recomendado", deepLink: LINK_EMPRESA });
-  if (empty(row.phone)) push({ key: "phone", label: "Telefone", section: "empresa", severity: "recomendado", deepLink: LINK_EMPRESA });
+  if (empty(row.trade_name)) push(build("trade_name", "Nome fantasia", "empresa", "recomendado", LINK_EMPRESA));
+  if (empty(row.primary_cnae)) push(build("primary_cnae", "CNAE principal", "empresa", "recomendado", LINK_EMPRESA));
+  if (empty(row.phone)) push(build("phone", "Telefone", "empresa", "recomendado", LINK_EMPRESA));
 
   // Endereço (bloqueantes)
-  if (empty(row.postal_code)) push({ key: "postal_code", label: "CEP", section: "endereco", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.street)) push({ key: "street", label: "Logradouro", section: "endereco", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.number)) push({ key: "number", label: "Número", section: "endereco", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.neighborhood)) push({ key: "neighborhood", label: "Bairro", section: "endereco", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.city)) push({ key: "city", label: "Município", section: "endereco", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.state)) push({ key: "state", label: "UF", section: "endereco", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
-  if (empty(row.municipality_ibge_code)) push({ key: "municipality_ibge_code", label: "Código IBGE do município", section: "endereco", severity: "bloqueia_homologacao", deepLink: LINK_EMPRESA });
+  if (empty(row.postal_code)) push(build("postal_code", "CEP", "endereco", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.street)) push(build("street", "Logradouro", "endereco", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.number)) push(build("number", "Número", "endereco", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.neighborhood)) push(build("neighborhood", "Bairro", "endereco", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.city)) push(build("city", "Município", "endereco", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.state)) push(build("state", "UF", "endereco", "bloqueia_homologacao", LINK_EMPRESA));
+  if (empty(row.municipality_ibge_code)) push(build("municipality_ibge_code", "Código IBGE do município", "endereco", "bloqueia_homologacao", LINK_EMPRESA));
 
   // NF-e condicional
   if (row.nfe_enabled === true) {
     const nfeCfg = jsonObj(row.nfe_configuration);
-    if (empty(row.state_registration)) push({ key: "state_registration", label: "Inscrição estadual", section: "nfe", severity: "bloqueia_homologacao", deepLink: LINK_NFE });
-    if (empty(row.nfe_series) && empty(nfeCfg.series)) push({ key: "nfe_series", label: "Série NF-e", section: "nfe", severity: "bloqueia_homologacao", deepLink: LINK_NFE });
-    if (empty(nfeCfg.suggested_cfop_in_state)) push({ key: "cfop_in_state", label: "CFOP interno sugerido", section: "nfe", severity: "bloqueia_homologacao", deepLink: LINK_NFE });
-    if (empty(nfeCfg.suggested_cfop_interstate)) push({ key: "cfop_interstate", label: "CFOP interestadual sugerido", section: "nfe", severity: "bloqueia_homologacao", deepLink: LINK_NFE });
+    if (empty(row.state_registration)) push(build("state_registration", "Inscrição estadual", "nfe", "bloqueia_homologacao", LINK_NFE));
+    if (empty(row.nfe_series) && empty(nfeCfg.series)) push(build("nfe_series", "Série NF-e", "nfe", "bloqueia_homologacao", LINK_NFE));
+    if (empty(nfeCfg.suggested_cfop_in_state)) push(build("cfop_in_state", "CFOP interno sugerido", "nfe", "bloqueia_homologacao", LINK_NFE));
+    if (empty(nfeCfg.suggested_cfop_interstate)) push(build("cfop_interstate", "CFOP interestadual sugerido", "nfe", "bloqueia_homologacao", LINK_NFE));
   } else {
     notApplicable.push("nfe");
   }
@@ -104,14 +142,15 @@ export function computeCompanyMissingFields(
   // NFS-e condicional
   if (row.nfse_enabled === true) {
     const nfseCfg = jsonObj(row.nfse_configuration);
-    if (empty(row.municipal_registration)) push({ key: "municipal_registration", label: "Inscrição municipal", section: "nfse", severity: "bloqueia_homologacao", deepLink: LINK_NFSE });
-    if (empty(nfseCfg.mode)) push({ key: "nfse_mode", label: "Modo NFS-e (nacional/municipal)", section: "nfse", severity: "bloqueia_homologacao", deepLink: LINK_NFSE });
-    if (empty(nfseCfg.lc116_item)) push({ key: "lc116_item", label: "Item LC 116", section: "nfse", severity: "bloqueia_homologacao", deepLink: LINK_NFSE });
+    if (empty(row.municipal_registration)) push(build("municipal_registration", "Inscrição municipal", "nfse", "bloqueia_homologacao", LINK_NFSE));
+    if (empty(nfseCfg.mode)) push(build("nfse_mode", "Modo NFS-e (nacional/municipal)", "nfse", "bloqueia_homologacao", LINK_NFSE));
+    if (empty(nfseCfg.lc116_item)) push(build("lc116_item", "Item LC 116", "nfse", "bloqueia_homologacao", LINK_NFSE));
     // Alíquota ISS é recomendada aqui (regra contábil externa; não inventar).
-    if (typeof nfseCfg.iss_rate !== "number") push({ key: "iss_rate", label: "Alíquota ISS (a definir com a contabilidade)", section: "nfse", severity: "recomendado", deepLink: LINK_NFSE });
+    if (typeof nfseCfg.iss_rate !== "number") push(build("iss_rate", "Alíquota ISS (a definir com a contabilidade)", "nfse", "recomendado", LINK_NFSE));
   } else {
     notApplicable.push("nfse");
   }
+
 
   const all = [
     ...bySection.empresa,

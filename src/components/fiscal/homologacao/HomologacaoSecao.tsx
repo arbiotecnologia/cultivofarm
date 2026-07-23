@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CamposFaltantesEmpresa from "./CamposFaltantesEmpresa";
+import CertificadoValidadeBanner from "@/components/fiscal/certificados/CertificadoValidadeBanner";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -210,7 +211,10 @@ export default function HomologacaoSecao({ companySettingsId }: Props) {
         </CardContent>
       </Card>
 
+      <CertificadoValidadeBanner companySettingsId={companySettingsId} />
+
       <CamposFaltantesEmpresa />
+
 
       <Card>
         <CardHeader className="pb-2">

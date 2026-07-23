@@ -55,6 +55,7 @@ import CertificadoDigitalSecao from "@/components/fiscal/certificados/Certificad
 import HomologacaoSecao from "@/components/fiscal/homologacao/HomologacaoSecao";
 import { RtcCompanyCard } from "@/components/fiscal/RtcCompanyCard";
 import { CnpjLookupButton } from "@/components/fiscal/CnpjLookupButton";
+import { useFiscalFieldFocus } from "@/lib/fiscal/useFiscalFieldFocus";
 
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
@@ -171,6 +172,15 @@ export default function FiscalEmpresa() {
       setSearchParams(next, { replace: true });
     }
   };
+
+  // Fase H4-A1 — foco/destaque via `?campo=<id>` (allow-list, fallback seguro).
+  useFiscalFieldFocus({
+    tab,
+    ready: !settingsQuery.isLoading,
+    searchParams,
+    setSearchParams,
+  });
+
 
   useEffect(() => {
     if (settingsQuery.data) setValues(rowToFormValues(settingsQuery.data));

@@ -70,8 +70,8 @@ describe("computeCompanyMissingFields", () => {
       expect.arrayContaining(["state_registration", "nfe_series", "cfop_in_state", "cfop_interstate"]),
     );
     expect(r.notApplicable).not.toContain("nfe");
-    // Deep-link para aba correta
-    expect(r.bySection.nfe.every((f) => f.deepLink === "/configuracoes/fiscal/empresa?aba=nfe")).toBe(true);
+    // Deep-link para aba correta (pode incluir `&campo=` conforme allow-list)
+    expect(r.bySection.nfe.every((f) => f.deepLink.includes("aba=nfe"))).toBe(true);
   });
 
   it("série NF-e informada na coluna dedicada satisfaz o requisito", () => {
@@ -125,16 +125,42 @@ describe("computeCompanyMissingFields", () => {
     expect(r.total).toBe(0);
   });
 
-  it("deep-links respeitam a aba de cada seção", () => {
+  it("deep-links respeitam a aba de cada seção (aceitando `&campo=`)", () => {
     const row = emptyRow();
     row.nfe_enabled = true;
     row.nfse_enabled = true;
     const r = computeCompanyMissingFields(row);
-    expect(r.bySection.empresa.every((f) => f.deepLink.endsWith("aba=empresa"))).toBe(true);
-    expect(r.bySection.endereco.every((f) => f.deepLink.endsWith("aba=empresa"))).toBe(true);
-    expect(r.bySection.nfe.every((f) => f.deepLink.endsWith("aba=nfe"))).toBe(true);
-    expect(r.bySection.nfse.every((f) => f.deepLink.endsWith("aba=nfse"))).toBe(true);
+    expect(r.bySection.empresa.every((f) => f.deepLink.includes("aba=empresa"))).toBe(true);
+    expect(r.bySection.endereco.every((f) => f.deepLink.includes("aba=empresa"))).toBe(true);
+    expect(r.bySection.nfe.every((f) => f.deepLink.includes("aba=nfe"))).toBe(true);
+    expect(r.bySection.nfse.every((f) => f.deepLink.includes("aba=nfse"))).toBe(true);
   });
+
+  it("campos da allow-list expõem `&campo=<key>` e hasFieldTarget=true", () => {
+    const r = computeCompanyMissingFields(emptyRow());
+    const cnpj = r.bySection.empresa.find((f) => f.key === "cnpj");
+    expect(cnpj?.hasFieldTarget).toBe(true);
+    expect(cnpj?.deepLink).toContain("&campo=cnpj");
+    const email = r.bySection.empresa.find((f) => f.key === "fiscal_email");
+    expect(email?.deepLink).toContain("&campo=fiscal_email");
+    const ibge = r.bySection.endereco.find((f) => f.key === "municipality_ibge_code");
+    expect(ibge?.hasFieldTarget).toBe(true);
+    expect(ibge?.deepLink).toContain("&campo=municipality_ibge_code");
+  });
+
+  it("campos sem alvo mapeado caem no fallback (só a aba, sem `campo=`)", () => {
+    const row = emptyRow();
+    row.nfe_enabled = true;
+    row.nfse_enabled = true;
+    const r = computeCompanyMissingFields(row);
+    const cfop = r.bySection.nfe.find((f) => f.key === "cfop_in_state");
+    expect(cfop?.hasFieldTarget).toBe(false);
+    expect(cfop?.deepLink).not.toContain("campo=");
+    const lc = r.bySection.nfse.find((f) => f.key === "lc116_item");
+    expect(lc?.hasFieldTarget).toBe(false);
+    expect(lc?.deepLink).not.toContain("campo=");
+  });
+
 
   it("rótulos pt-BR presentes para seções e severidades", () => {
     expect(SECTION_LABEL.empresa).toBe("Dados da empresa");
