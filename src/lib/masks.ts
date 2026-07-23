@@ -41,42 +41,61 @@ export const formatCNPJ = (value: string | number | undefined | null): string =>
 
 
 /**
- * Formata conforme o tamanho (CPF ou CNPJ)
+ * Remove pontuação/espaços de um CNPJ preservando letras (uppercase).
+ * Fase Fiscal 3.19 — NÃO usar `unmask` para CNPJ, pois `unmask` remove letras.
+ */
+export const unmaskCnpj = (value: string | number | undefined | null): string => {
+  if (value === undefined || value === null) return "";
+  return String(value).replace(/[\s.\-/]/g, "").toUpperCase();
+};
+
+/**
+ * Formata conforme o tamanho (CPF ou CNPJ). CPF continua numérico;
+ * CNPJ aceita alfanumérico (Fase 3.19).
  */
 export const formatCpfCnpj = (value: string | number | undefined | null): string => {
-  const v = unmask(value);
-  if (!v) return "";
-  return v.length > 11 ? formatCNPJ(v) : formatCPF(v);
+  if (value === undefined || value === null) return "";
+  const raw = String(value).replace(/[\s.\-/]/g, "");
+  if (!raw) return "";
+  // Contém letra → CNPJ alfanumérico (2026+).
+  if (/[A-Za-z]/.test(raw)) return formatCNPJ(raw);
+  // Só dígitos: heurística por comprimento.
+  return raw.length > 11 ? formatCNPJ(raw) : formatCPF(raw);
 };
 
 /**
  * Versão segura: sempre retorna algo exibível.
- * - vazio/nulo → fallback (default "—")
- * - tamanho inválido (≠ 11 e ≠ 14) → "<mask> (inválido)"
  */
 export const formatCpfCnpjSafe = (
   value: string | number | undefined | null,
   fallback = "—",
 ): string => {
-  const v = unmask(value);
-  if (!v) return fallback;
-  if (v.length === 11) return formatCPF(v);
-  if (v.length === 14) return formatCNPJ(v);
-  return `${v.length > 11 ? formatCNPJ(v) : formatCPF(v)} (inválido)`;
+  if (value === undefined || value === null || String(value).trim() === "") return fallback;
+  const raw = String(value).replace(/[\s.\-/]/g, "");
+  if (!raw) return fallback;
+  const hasLetter = /[A-Za-z]/.test(raw);
+  if (hasLetter) {
+    return raw.length === 14 ? formatCNPJ(raw) : `${formatCNPJ(raw)} (inválido)`;
+  }
+  if (raw.length === 11) return formatCPF(raw);
+  if (raw.length === 14) return formatCNPJ(raw);
+  return `${raw.length > 11 ? formatCNPJ(raw) : formatCPF(raw)} (inválido)`;
 };
 
 /**
- * Versão segura específica para CNPJ (14 dígitos).
+ * Versão segura específica para CNPJ (14 posições, alfa 3.19).
  */
 export const formatCNPJSafe = (
   value: string | number | undefined | null,
   fallback = "—",
 ): string => {
-  const v = unmask(value);
-  if (!v) return fallback;
-  if (v.length === 14) return formatCNPJ(v);
-  return `${formatCNPJ(v)} (inválido)`;
+  if (value === undefined || value === null || String(value).trim() === "") return fallback;
+  const raw = String(value).replace(/[\s.\-/]/g, "").toUpperCase();
+  if (!raw) return fallback;
+  if (raw.length === 14) return formatCNPJ(raw);
+  return `${formatCNPJ(raw)} (inválido)`;
 };
+
 
 /**
  * Retorna o tipo de documento ("CPF" | "CNPJ") com base no tipo_pessoa
