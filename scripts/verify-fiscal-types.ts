@@ -147,17 +147,33 @@ export const EXPECTED_RPCS: RpcSpec[] = [
 
 // ---- Extração --------------------------------------------------------------
 function extractSectionBlock(source: string, section: "Views" | "Functions"): string | null {
-  const re = new RegExp(`\\n\\s{4}${section}\\s*:\\s*\\{`);
-  const m = re.exec(source);
-  if (!m) return null;
-  const start = m.index + m[0].length; // position after opening `{`
+  // Scope: only within the `public:` schema block (skip graphql_public etc.).
+  const pubRe = /\n\s{2}public\s*:\s*\{/;
+  const pubM = pubRe.exec(source);
+  if (!pubM) return null;
+  const pubStart = pubM.index + pubM[0].length;
   let depth = 1;
-  for (let i = start; i < source.length; i++) {
+  let pubEnd = source.length;
+  for (let i = pubStart; i < source.length; i++) {
     const ch = source[i];
     if (ch === "{") depth++;
     else if (ch === "}") {
       depth--;
-      if (depth === 0) return source.slice(start, i);
+      if (depth === 0) { pubEnd = i; break; }
+    }
+  }
+  const pubBlock = source.slice(pubStart, pubEnd);
+  const re = new RegExp(`\\n\\s{4}${section}\\s*:\\s*\\{`);
+  const m = re.exec(pubBlock);
+  if (!m) return null;
+  const start = m.index + m[0].length;
+  depth = 1;
+  for (let i = start; i < pubBlock.length; i++) {
+    const ch = pubBlock[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return pubBlock.slice(start, i);
     }
   }
   return null;
