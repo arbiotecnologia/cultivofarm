@@ -145,8 +145,20 @@ export function useFiscalRtcCompany(options: { enabled?: boolean } = {}) {
   return { ...state, reload: load, save };
 }
 
+/**
+ * Kinds aceitos pelo hook de item:
+ *  - "product"          → RPC por p_product_id (product_fiscal_profiles);
+ *  - "service"          → RPC por p_service_id (service_fiscal_profiles),
+ *                          mantida por retrocompatibilidade;
+ *  - "service_profile"  → RPC por p_profile_id (identidade estável do
+ *                          perfil de serviço; funciona quando service_id
+ *                          é nulo e o perfil identifica-se por
+ *                          source_reference — Bloco 5).
+ */
+export type FiscalRtcItemKind = "product" | "service" | "service_profile";
+
 export function useFiscalRtcItem(
-  kind: "product" | "service",
+  kind: FiscalRtcItemKind,
   itemId: string | null,
   options: { enabled?: boolean } = {},
 ) {
@@ -155,13 +167,18 @@ export function useFiscalRtcItem(
     data: null, revision: "", loading: enabled, error: null, saving: false,
   });
 
-  const getFn = kind === "product"
-    ? "rpc_fiscal_product_ibs_cbs_get"
-    : "rpc_fiscal_service_ibs_cbs_get";
-  const saveFn = kind === "product"
-    ? "rpc_fiscal_product_ibs_cbs_save"
-    : "rpc_fiscal_service_ibs_cbs_save";
-  const idKey = kind === "product" ? "p_product_id" : "p_service_id";
+  const getFn =
+    kind === "product" ? "rpc_fiscal_product_ibs_cbs_get"
+    : kind === "service" ? "rpc_fiscal_service_ibs_cbs_get"
+    : "rpc_fiscal_service_profile_ibs_cbs_get";
+  const saveFn =
+    kind === "product" ? "rpc_fiscal_product_ibs_cbs_save"
+    : kind === "service" ? "rpc_fiscal_service_ibs_cbs_save"
+    : "rpc_fiscal_service_profile_ibs_cbs_save";
+  const idKey: "p_product_id" | "p_service_id" | "p_profile_id" =
+    kind === "product" ? "p_product_id"
+    : kind === "service" ? "p_service_id"
+    : "p_profile_id";
 
   const load = useCallback(async () => {
     if (!itemId) return;
