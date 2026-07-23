@@ -603,6 +603,11 @@ function EditDrawer({
                   Usar endereço principal do cliente
                 </Label>
               </div>
+              {(values.use_main_address ?? true) ? (
+                <p className="text-xs text-muted-foreground -mt-2" data-testid="fiscal-address-collapsed-hint">
+                  O endereço fiscal substituto está oculto porque o cadastro principal do cliente será usado. Desmarque acima para preencher um endereço fiscal específico. Valores já preenchidos são preservados.
+                </p>
+              ) : null}
 
               <div className="flex items-center gap-2">
                 <Checkbox
