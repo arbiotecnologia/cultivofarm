@@ -215,6 +215,10 @@ const CLIENT_WIPE_ORDER = [
   "produtos",
 ] as const;
 
+const DELETE_FILTER_COLUMN: Partial<Record<(typeof CLIENT_WIPE_ORDER)[number], string>> = {
+  commercial_campaign_products: "campaign_id",
+};
+
 export interface ProdutosOrfaosAuditResult {
   generated_at: string;
   catalogo_v13: unknown[];
@@ -270,9 +274,10 @@ async function wipeCatalogoProdutosViaClient(reason: string): Promise<WipeResult
   nullified["registros_consultor_recomendacoes.produto_biologico_sugerido_id"] = nullifyResult.count ?? 0;
 
   for (const table of CLIENT_WIPE_ORDER) {
+    const filterColumn = DELETE_FILTER_COLUMN[table] ?? "id";
     const deleteResult = await (supabase.from(table as never) as any)
       .delete({ count: "exact" })
-      .not("id", "is", null);
+      .not(filterColumn, "is", null);
 
     if (deleteResult.error) {
       return {
