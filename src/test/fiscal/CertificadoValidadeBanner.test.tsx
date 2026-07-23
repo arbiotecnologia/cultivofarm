@@ -25,10 +25,13 @@ function withResult(data: unknown, extras: Partial<{ isLoading: boolean; isError
   });
 }
 
-function renderBanner(companySettingsId: string | null = "cs-1") {
+function renderBanner(
+  companySettingsId: string | null = "cs-1",
+  props: { showAllStates?: boolean; actionHref?: string } = {},
+) {
   return render(
     <MemoryRouter>
-      <CertificadoValidadeBanner companySettingsId={companySettingsId} />
+      <CertificadoValidadeBanner companySettingsId={companySettingsId} {...props} />
     </MemoryRouter>,
   );
 }
@@ -126,5 +129,51 @@ describe("CertificadoValidadeBanner", () => {
     expect(text).not.toMatch(/pfx_password/i);
     expect(text).not.toMatch(/object_path|s3:\/\//i);
     expect(text).not.toMatch(/AABBCCDDEEFF/); // fingerprint bruto
+  });
+
+  // ─── H4-A2 ────────────────────────────────────────────────────────
+  it("sem certificado + showAllStates => banner de 'pendente'", () => {
+    withResult([]);
+    renderBanner("cs-1", { showAllStates: true });
+    const banner = screen.getByTestId("fiscal-cert-validity-banner");
+    expect(banner).toHaveAttribute("data-status", "none");
+    expect(banner).toHaveTextContent(/pendente/i);
+  });
+
+  it("válido (>30 dias) + showAllStates => banner 'em dia' (não destrutivo)", () => {
+    withResult([{
+      is_active: true, revoked_at: null, status: "AVAILABLE",
+      days_until_expiration: 200, display_name: "A1 OK",
+    }]);
+    renderBanner("cs-1", { showAllStates: true });
+    const banner = screen.getByTestId("fiscal-cert-validity-banner");
+    expect(banner).toHaveAttribute("data-status", "valid");
+    expect(banner).toHaveTextContent(/em dia/i);
+  });
+
+  it("link padrão aponta para ?aba=certificado#certificado-a1", () => {
+    withResult([]);
+    renderBanner("cs-1", { showAllStates: true });
+    const action = screen.getByTestId("fiscal-cert-validity-action");
+    expect(action.getAttribute("href")).toBe(
+      "/configuracoes/fiscal/empresa?aba=certificado#certificado-a1",
+    );
+  });
+
+  it("varredura ampla: nenhum estado renderiza campos sensíveis", () => {
+    const sensitive = [
+      { is_active: true, revoked_at: null, status: "AVAILABLE", days_until_expiration: 40,
+        display_name: "OK", pfx_blob: "PFX", pfx_password: "PWD", object_path: "s3://x",
+        fingerprint_sha256: "DEADBEEFCAFEBABE1234567890ABCDEF" },
+      { is_active: true, revoked_at: null, status: "EXPIRED", days_until_expiration: -5,
+        display_name: "OLD", pfx_password: "OLDPWD", object_path: "/var/secret/a.pfx" },
+    ];
+    for (const c of sensitive) {
+      withResult([c]);
+      const { container, unmount } = renderBanner("cs-1", { showAllStates: true });
+      const t = container.textContent ?? "";
+      expect(t).not.toMatch(/PFX|PWD|OLDPWD|s3:\/\/|\/var\/secret|DEADBEEF/i);
+      unmount();
+    }
   });
 });

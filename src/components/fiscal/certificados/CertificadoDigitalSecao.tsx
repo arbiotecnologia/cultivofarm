@@ -132,7 +132,7 @@ export default function CertificadoDigitalSecao({
         </AlertDescription>
       </Alert>
 
-      <CertificadoValidadeBanner companySettingsId={companySettingsId} actionHref="#certificados-registrados" />
+      <CertificadoValidadeBanner companySettingsId={companySettingsId} showAllStates />
 
       {!canManageCertificates && (
         <Alert data-testid="fiscal-cert-readonly">
@@ -147,7 +147,7 @@ export default function CertificadoDigitalSecao({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div data-testid="fiscal-cert-card-a1">
+        <div id="certificado-a1" data-testid="fiscal-cert-card-a1">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">

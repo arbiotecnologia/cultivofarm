@@ -5,6 +5,9 @@
 import { describe, it, expect } from "vitest";
 import {
   computeCompanyMissingFields,
+  isExemptRegistration,
+  CERTIFICADO_A1_DEEP_LINK,
+  KNOWN_FIELD_TARGETS,
   SECTION_LABEL,
   SEVERITY_LABEL,
 } from "@/lib/fiscal/companyMissingFields";
@@ -190,5 +193,58 @@ describe("computeCompanyMissingFields", () => {
     expect(SECTION_LABEL.endereco).toBe("Endereço");
     expect(SEVERITY_LABEL.bloqueia_homologacao).toBe("Bloqueia homologação");
     expect(SEVERITY_LABEL.recomendado).toBe("Recomendado");
+  });
+
+  // ─── H4-A2 ──────────────────────────────────────────────────────────
+  it("isExemptRegistration: reconhece variações de isenção", () => {
+    expect(isExemptRegistration("ISENTO")).toBe(true);
+    expect(isExemptRegistration("isento")).toBe(true);
+    expect(isExemptRegistration(" Isenta ")).toBe(true);
+    expect(isExemptRegistration("Não Contribuinte")).toBe(true);
+    expect(isExemptRegistration("Nao contribuinte")).toBe(true);
+    expect(isExemptRegistration("")).toBe(false);
+    expect(isExemptRegistration(null)).toBe(false);
+    expect(isExemptRegistration(undefined)).toBe(false);
+    expect(isExemptRegistration("123456789")).toBe(false);
+  });
+
+  it("IE marcada como ISENTO satisfaz o requisito de NF-e (não bloqueia)", () => {
+    const row = emptyRow();
+    row.nfe_enabled = true;
+    row.state_registration = "ISENTO";
+    const r = computeCompanyMissingFields(row);
+    expect(r.bySection.nfe.some((f) => f.key === "state_registration")).toBe(false);
+  });
+
+  it("IM marcada como ISENTO satisfaz o requisito de NFS-e", () => {
+    const row = emptyRow();
+    row.nfse_enabled = true;
+    row.municipal_registration = "Isenta";
+    const r = computeCompanyMissingFields(row);
+    expect(r.bySection.nfse.some((f) => f.key === "municipal_registration")).toBe(false);
+  });
+
+  it("CFOP não é bloqueante da empresa mesmo com NF-e ativa", () => {
+    const row = emptyRow();
+    row.nfe_enabled = true;
+    const r = computeCompanyMissingFields(row);
+    const cfops = r.bySection.nfe.filter(
+      (f) => f.key === "nfe_cfop_in" || f.key === "nfe_cfop_out",
+    );
+    expect(cfops.length).toBe(2);
+    expect(cfops.every((f) => f.severity === "recomendado")).toBe(true);
+  });
+
+  it("deep-links usam o formato canônico `?aba=<aba>#<id-real>`", () => {
+    const r = computeCompanyMissingFields(emptyRow());
+    const cnpj = r.bySection.empresa.find((f) => f.key === "cnpj");
+    expect(cnpj?.deepLink).toMatch(/^\/configuracoes\/fiscal\/empresa\?aba=empresa#cnpj$/);
+  });
+
+  it("CERTIFICADO_A1_DEEP_LINK aponta para a aba/id canônicos", () => {
+    expect(CERTIFICADO_A1_DEEP_LINK).toBe(
+      "/configuracoes/fiscal/empresa?aba=certificado#certificado-a1",
+    );
+    expect(KNOWN_FIELD_TARGETS.has("certificado-a1")).toBe(true);
   });
 });
