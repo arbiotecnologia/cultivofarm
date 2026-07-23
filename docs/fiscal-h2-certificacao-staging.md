@@ -155,9 +155,10 @@ ser declarada concluída, e H3/produção permanecem proibidas.
 
 ## 8. Status final
 
-**PARCIAL — delta de perfis de serviços APROVADO no staging; H2 ainda
+**PARCIAL — evidência runtime ampliada APROVADA no staging; H2 ainda
 NÃO concluída.** Homologação completa **não** declarada. Produção
 **não** apta. H3 **não** iniciada. Frontend **não** deployado.
+
 
 ---
 
