@@ -108,6 +108,8 @@ export function ProdutosTab() {
     b2b_enabled: false,
     e_insumo: false,
     estoque_minimo: "",
+    fornecedor: "",
+    safra_referencia: "",
     composicao: [] as { 
       microrganismo_id: string | null; 
       component_insumo_id: string | null; 
@@ -116,6 +118,7 @@ export function ProdutosTab() {
       e_volume_fixo: boolean;
     }[]
   });
+
 
 
   const fetchMicrorganismos = async () => {
