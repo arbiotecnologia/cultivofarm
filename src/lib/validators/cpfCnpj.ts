@@ -20,44 +20,22 @@ export const validateCPF = (cpf: string) => {
   return true;
 };
 
-export const validateCNPJ = (cnpj: string) => {
-  const cleanCNPJ = cnpj.replace(/\D/g, "");
-  if (cleanCNPJ.length !== 14) return false;
-  if (/^(\d)\1+$/.test(cleanCNPJ)) return false;
-  
-  let size = cleanCNPJ.length - 2;
-  let numbers = cleanCNPJ.substring(0, size);
-  const digits = cleanCNPJ.substring(size);
-  let sum = 0;
-  let pos = size - 7;
-  
-  for (let i = size; i >= 1; i--) {
-    sum += parseInt(numbers.charAt(size - i)) * pos--;
-    if (pos < 2) pos = 9;
-  }
-  
-  let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-  if (result !== parseInt(digits.charAt(0))) return false;
-  
-  size = size + 1;
-  numbers = cleanCNPJ.substring(0, size);
-  sum = 0;
-  pos = size - 7;
-  
-  for (let i = size; i >= 1; i--) {
-    sum += parseInt(numbers.charAt(size - i)) * pos--;
-    if (pos < 2) pos = 9;
-  }
-  
-  result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-  if (result !== parseInt(digits.charAt(1))) return false;
-  
-  return true;
-};
+import { validateCnpjAlpha, unmaskCnpjAlpha } from "@/lib/fiscal/cnpjAlpha";
+
+/**
+ * Fase Fiscal 3.19 — Aceita CNPJ numérico (legado) OU alfanumérico
+ * (IN RFB 2.229/2024, vigente a partir de 07/2026). DV segue a regra
+ * oficial (ASCII − 48) módulo-11.
+ */
+export const validateCNPJ = (cnpj: string) => validateCnpjAlpha(cnpj);
 
 export const validateCPF_CNPJ = (val: string) => {
-  const clean = val.replace(/\D/g, "");
-  if (clean.length === 11) return validateCPF(clean);
-  if (clean.length === 14) return validateCNPJ(clean);
+  const cleanCnpj = unmaskCnpjAlpha(val);
+  // Se contém letra, só pode ser CNPJ alfanumérico.
+  if (/[A-Z]/.test(cleanCnpj)) return validateCnpjAlpha(cleanCnpj);
+  const cleanDigits = val.replace(/\D/g, "");
+  if (cleanDigits.length === 11) return validateCPF(cleanDigits);
+  if (cleanDigits.length === 14) return validateCnpjAlpha(cleanDigits);
   return false;
 };
+
