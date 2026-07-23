@@ -63,8 +63,10 @@ export const KNOWN_FIELD_TARGETS: ReadonlySet<string> = new Set<string>([
 
 function withField(baseLink: string, key: string): { link: string; hasFieldTarget: boolean } {
   if (!KNOWN_FIELD_TARGETS.has(key)) return { link: baseLink, hasFieldTarget: false };
-  const sep = baseLink.includes("?") ? "&" : "?";
-  return { link: `${baseLink}${sep}campo=${encodeURIComponent(key)}`, hasFieldTarget: true };
+  // Formato canônico: `?aba=<aba>#<id-real>`. A âncora referencia o `id`
+  // real do controle/wrapper em FiscalEmpresa; o hook faz scroll/foco/destaque
+  // após a aba montar, com fallback silencioso quando o id não existir.
+  return { link: `${baseLink}#${encodeURIComponent(key)}`, hasFieldTarget: true };
 }
 
 function build(
