@@ -1,19 +1,28 @@
-## Ajustes na aba Microrganismos (`/protocolos`)
+## Refinamentos da tabela de Microrganismos (`/protocolos`)
 
-### 1. Remover botão "Importar Tabela A.R Bio 2026"
-- Em `src/components/protocolos/MicrorganismosTab.tsx`, remover o `<Button>` (linhas ~299–316), o import `importarMicrosARBio2026` e o ícone `Download` do import de `lucide-react` (não é usado em outro lugar).
-- Manter `src/lib/protocolos/seedMicrorganismosARBio2026.ts` no repositório como utilitário interno (função de uso único, sem UI).
+### 1. Remover duplicação "UFC/mL" abaixo do valor
+- Na célula de Concentração, remover a sublinha `<div>UFC/mL</div>` (linhas 551–553). O cabeçalho da coluna já indica "Concentração (UFC/mL)".
 
-### 2. Remover a coluna "Ref." da tabela
-- Remover o `<TableHead>Ref.</TableHead>` (linha 525) e a `<TableCell>` correspondente (linhas 576–581) que renderiza fornecedor + safra.
-- Ajustar `colSpan` do estado vazio de `7` para `6` (linha 532).
-- As informações **fornecedor** e **safra_referencia** continuam disponíveis ao abrir o item (clicar na linha abre o diálogo de edição, que já contém esses campos em "Referência Comercial"), atendendo ao pedido de exibir apenas nos detalhes.
+### 2. Melhor acomodação da coluna "Valores"
+- Aumentar a coluna com `min-w` adequado no `<TableCell>` e trocar `text-xs` por `text-sm` para melhor leitura.
+- Quebrar valor e unidade em duas linhas para evitar cortes:
+  - Linha 1: valor em destaque (ex.: `R$ 19,00`) em `text-primary font-semibold`.
+  - Linha 2: sublegenda `/100 mL` em `text-[10px] text-muted-foreground`.
+- Usar `whitespace-nowrap` para impedir quebra no meio do valor monetário.
 
-### 3. Acomodar melhor "UFC/mL"
-- Renomear o cabeçalho para **"Concentração"** com sublinha "(UFC/mL)" em tipografia menor, evitando quebra estranha em telas médias.
-- Formatar o valor em duas linhas semânticas: número em `font-mono-data` na primeira linha e a unidade `UFC/mL` como sublegenda em `text-[10px] text-muted-foreground`, alinhados à esquerda com `whitespace-nowrap` para evitar quebras no meio da notação científica.
-- Manter o uso de `formatConcentracaoDisplay` (fonte canônica) para o valor.
+### 3. Reorganizar coluna de ações
+- Manter os controles à direita, mas padronizar como toolbar compacta em uma única linha (sem `flex-wrap`), com separadores lógicos:
+  - **Status**: `TechnicalProfileStatusBadge` (sem ficha / rascunho / validado) — permanece na esquerda do bloco.
+  - **Grupo primário**: `Volumes` e `Ficha` como botões `outline` compactos (`h-8`), com ícone + label.
+  - **Grupo secundário (ações rápidas)**: `Exportar PDF` e `Observações (Info)` como botões `ghost` só-ícone (`h-8 w-8`), com `title`/tooltip acessível.
+  - **Destrutivo**: `DeleteProtocoloButton` no final, isolado por um pequeno espaçamento (`ml-1`) para reduzir chance de clique acidental.
+- Aplicar `gap-1.5`, alinhar com `justify-end`, `items-center` e `flex-nowrap`.
+- Envolver o botão de exportar PDF também em `Tooltip` para consistência visual com o `Info`.
+
+### Fora de escopo
+- Nenhuma alteração em lógica de negócio, dados, migrations ou Supabase remoto.
+- Layout de outras abas de `/protocolos` permanece inalterado.
 
 ### Validação
 - `bun run typecheck` e `bun run build`.
-- Nenhuma alteração em lógica de negócio, migrations, RLS ou Supabase remoto.
+- Inspeção visual via preview em 1034px e 1349px.
