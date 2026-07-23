@@ -128,7 +128,9 @@ export const ibsCbsItemSchema = z
     monofasia: monofasiaSchema.optional(),
 
     accounting_notes: z.string().trim().max(2000).optional(),
+    accounting_review_status: z.enum(["PENDING", "REVIEWED"]).optional(),
     additional_fields: z.record(z.string(), z.unknown()).optional(),
+
   })
   .strict()
   .refine((v) => !rtcHasSensitiveKey(v), {
