@@ -223,6 +223,14 @@ export type Database = {
         Args: { v: Json }
         Returns: Json
       }
+      rpc_fiscal_draft_save: {
+        Args: { p_expected_version: number; p_invoice: Json; p_invoice_id: string; p_items: Json }
+        Returns: Json
+      }
+      rpc_financial_document_soft_delete: {
+        Args: { p_document_id: string; p_reason: string }
+        Returns: string
+      }
     }
   }
 }
