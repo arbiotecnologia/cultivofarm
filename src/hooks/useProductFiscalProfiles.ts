@@ -19,6 +19,10 @@ import {
   type ProductFiscalFormValues,
   type ProductFiscalRow,
 } from "@/lib/fiscal/productFiscalValidation";
+import {
+  PRODUCT_FISCAL_PROFILE_STATUSES,
+  isProductFiscalProfileStatus,
+} from "@/lib/fiscal/fiscalOptions";
 
 export type ReadinessRow =
   Database["public"]["Views"]["v_product_fiscal_readiness"]["Row"];
@@ -85,23 +89,48 @@ export function useProductFiscalList(
       const from = params.page * params.pageSize;
       const to = from + params.pageSize - 1;
 
-      let query = supabase
-        .from("produtos")
-        .select(
-          "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
-          { count: "exact" },
-        )
-        .order("nome", { ascending: true })
-        .range(from, to);
-
       const term = params.search.trim();
-      if (term) {
-        // Escapa vírgulas do PostgREST OR — mantemos apenas letras/números/espaços.
-        const safe = term.replace(/[,()]/g, " ").slice(0, 100);
-        query = query.or(`nome.ilike.%${safe}%,codigo.ilike.%${safe}%`);
-      }
+      const safeTerm = term.replace(/[,()]/g, " ").slice(0, 100);
+      // Status entra ANTES do range: quando definido, usamos !inner para que
+      // o count e os items reflitam exatamente o subconjunto filtrado.
+      // Ramos separados por variante (evita união de tipos do query builder).
+      const hasStatus =
+        !!params.status && isProductFiscalProfileStatus(params.status);
 
-      const { data, error, count } = await query;
+      const runFiltered = async () => {
+        let q = supabase
+          .from("produtos")
+          .select(
+            "id, nome, codigo, product_fiscal_profiles!inner(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+            { count: "exact" },
+          )
+          .eq("product_fiscal_profiles.profile_status", params.status as string)
+          .order("nome", { ascending: true })
+          .range(from, to);
+        if (safeTerm) {
+          q = q.or(`nome.ilike.%${safeTerm}%,codigo.ilike.%${safeTerm}%`);
+        }
+        return q;
+      };
+
+      const runUnfiltered = async () => {
+        let q = supabase
+          .from("produtos")
+          .select(
+            "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+            { count: "exact" },
+          )
+          .order("nome", { ascending: true })
+          .range(from, to);
+        if (safeTerm) {
+          q = q.or(`nome.ilike.%${safeTerm}%,codigo.ilike.%${safeTerm}%`);
+        }
+        return q;
+      };
+
+      const { data, error, count } = hasStatus
+        ? await runFiltered()
+        : await runUnfiltered();
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
@@ -127,21 +156,10 @@ export function useProductFiscalList(
         };
       });
 
-      // Filtro de status é aplicado localmente sobre a página (evita join
-      // filter server-side arriscado). O filtro é apenas assistivo.
-      const filtered = params.status
-        ? items.filter((it) => it.profile_status === params.status)
-        : items;
+      // Opções derivadas da lista canônica tipada (não da página).
+      const statuses = [...PRODUCT_FISCAL_PROFILE_STATUSES];
 
-      const statuses = Array.from(
-        new Set(
-          items
-            .map((it) => it.profile_status)
-            .filter((v): v is string => typeof v === "string" && v.length > 0),
-        ),
-      ).sort();
-
-      return { items: filtered, total: count ?? filtered.length, statuses };
+      return { items, total: count ?? items.length, statuses };
     },
   });
 }

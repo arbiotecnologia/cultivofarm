@@ -265,7 +265,7 @@ export default function FiscalServicos() {
                       <th className="p-2">CNAE</th>
                       <th className="p-2">Cód. municipal</th>
                       <th className="p-2">Status</th>
-                      <th className="p-2">Prontidão</th>
+                      <th className="p-2" title="Verificação inicial dos campos essenciais. A revisão contábil e os demais dados fiscais continuam necessários antes da emissão.">Prontidão mínima</th>
                       <th className="p-2 text-right">Ação</th>
                     </tr>
                   </thead>
