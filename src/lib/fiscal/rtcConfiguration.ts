@@ -87,7 +87,7 @@ const monofasiaSchema = z
 export const NFSE_KEYS = ["finNFSe", "tpNFSeDebito", "tpNFSeCredito", "gIBSCBSAjuste", "vAjusteBC"] as const;
 export type NfseKey = (typeof NFSE_KEYS)[number];
 
-const nfseCodeMax20 = z.string().trim().min(1).max(20);
+const nfseCodeMax30 = z.string().trim().min(1).max(30);
 
 /** Refinamento aplicado a `additional_fields` para as chaves NFS-e.
  *  - `finNFSe`, `tpNFSeDebito`, `tpNFSeCredito`: string curta.
@@ -103,7 +103,7 @@ export function validateNfseInAdditionalFields(
   if (!af) return null;
   for (const k of ["finNFSe", "tpNFSeDebito", "tpNFSeCredito"] as const) {
     if (k in af) {
-      const parsed = nfseCodeMax20.safeParse(af[k]);
+      const parsed = nfseCodeMax30.safeParse(af[k]);
       if (!parsed.success) return { code: "FISCAL_RTC_NFSE_INVALID_CODE", field: k };
     }
   }
