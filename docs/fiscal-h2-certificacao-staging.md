@@ -682,3 +682,144 @@ autorização com validação runtime dedicada em staging.
 **Gates locais desta rodada:** typecheck ✅, build ✅, focal
 `revoke_anon_table_privileges.test.ts` ✅, suíte fiscal 1025/1028
 (3 skipped) ✅.
+
+## 17. Runtime 20260801 aplicada + entrega 20260802 (imutabilidade de itens)
+
+**Runtime 20260801000000 no staging `ikaauvsflpmamgxmkhoq`:** aplicada
+com sucesso. Auditoria pós-aplicação confirmou
+`anon_privileges_remaining = 0` nas 10 tabelas fiscais. Produção
+`navfzbwgwzruipouyfnk` intocada.
+
+**Nova migration versionada (pendente de aplicação):**
+`supabase/migrations/20260802000000_fiscal_invoice_items_state_guard.sql`.
+Cria trigger `BEFORE INSERT OR UPDATE OR DELETE` em
+`public.fiscal_invoice_items` que resolve o pai via `NEW`/`OLD`, trava
+a linha com `SELECT ... FOR UPDATE` e restringe mutação a uma
+whitelist de estados.
+
+**Compatibilidade validada por leitura de código:** a RPC canônica
+`rpc_fiscal_draft_save` (fase 3.16, linhas 611-676) só executa
+`DELETE`+`INSERT` de itens após validar o pai em `DRAFT` — estado
+permitido pela trigger, portanto o fluxo de rascunho/substituição
+segue funcional. `grep` em `src/` e `supabase/migrations/` confirmou
+zero outra RPC/edge/hook que mute `fiscal_invoice_items`. Nenhuma RPC
+`rpc_fiscal_document_substitution` existe no repositório — a auditoria
+anterior fez referência ao nome, mas o comportamento equivalente vive
+em `rpc_fiscal_draft_save` e é compatível.
+
+### 17.1 Matriz final estado × operação após 20260802
+
+| `fiscal_invoices.normalized_status` | INSERT | UPDATE | DELETE |
+|-------------------------------------|:------:|:------:|:------:|
+| `DRAFT`                             | ✅ | ✅ | ✅ |
+| `VALIDATING`                        | ✅ | ✅ | ✅ |
+| `READY`                             | ✅ | ✅ | ✅ |
+| `REJECTED`                          | ✅ | ✅ | ✅ |
+| `ERROR`                             | ✅ | ✅ | ✅ |
+| `NULL`                              | ⛔ P0001 | ⛔ P0001 | ⛔ P0001 |
+| `LEGACY_RECORDED`                   | ⛔ P0001 | ⛔ P0001 | ⛔ P0001 |
+| `QUEUED`                            | ⛔ P0001 | ⛔ P0001 | ⛔ P0001 |
+| `PROCESSING`                        | ⛔ P0001 | ⛔ P0001 | ⛔ P0001 |
+| `AUTHORIZED`                        | ⛔ P0001 | ⛔ P0001 | ⛔ P0001 |
+| `CANCEL_REQUESTED`                  | ⛔ P0001 | ⛔ P0001 | ⛔ P0001 |
+| `CANCELED`                          | ⛔ P0001 | ⛔ P0001 | ⛔ P0001 |
+| `SUBSTITUTED`                       | ⛔ P0001 | ⛔ P0001 | ⛔ P0001 |
+| pai inexistente                     | ⛔ P0002 | ⛔ P0002 | ⛔ P0002 |
+
+Mensagens em pt-BR, sem UUIDs/valores literais no corpo do erro.
+
+### 17.2 Roteiro BEGIN/ROLLBACK para validação runtime (staging)
+
+Executar como `authenticated` com papel `administrador` ou `financeiro`
+(a trigger é `SECURITY INVOKER` e o `service_role` bypass RLS mas não
+bypass triggers — se rodar como service_role, o guard permanece
+ativo, o que é o comportamento desejado).
+
+```sql
+-- Pré-requisito: um invoice DRAFT com pelo menos 1 item conhecido
+-- (v_draft_id, v_item_id) e um invoice AUTHORIZED (v_auth_id) com
+-- item (v_auth_item_id). Não usar dados de produção.
+
+-- 1) Estado permitido — mutação passa
+BEGIN;
+UPDATE public.fiscal_invoice_items
+   SET description = description
+ WHERE id = :v_item_id;                     -- esperado: 1 linha
+ROLLBACK;
+
+-- 2) Estado AUTHORIZED — INSERT bloqueado (P0001)
+BEGIN;
+INSERT INTO public.fiscal_invoice_items (
+  fiscal_invoice_id, item_sequence, item_kind, description,
+  quantity, commercial_unit, unit_value, gross_value,
+  discount_value, net_value
+) VALUES (
+  :v_auth_id, 999, 'MERCADORIA', 'teste guard',
+  1, 'UN', 1, 1, 0, 1
+);
+-- esperado: ERROR P0001 "Operacao bloqueada: itens fiscais ..."
+ROLLBACK;
+
+-- 3) Estado AUTHORIZED — UPDATE bloqueado (P0001)
+BEGIN;
+UPDATE public.fiscal_invoice_items
+   SET description = 'teste guard'
+ WHERE id = :v_auth_item_id;
+-- esperado: ERROR P0001
+ROLLBACK;
+
+-- 4) Estado AUTHORIZED — DELETE bloqueado (P0001)
+BEGIN;
+DELETE FROM public.fiscal_invoice_items WHERE id = :v_auth_item_id;
+-- esperado: ERROR P0001
+ROLLBACK;
+
+-- 5) Pai inexistente (P0002)
+BEGIN;
+INSERT INTO public.fiscal_invoice_items (
+  fiscal_invoice_id, item_sequence, item_kind, description,
+  quantity, commercial_unit, unit_value, gross_value,
+  discount_value, net_value
+) VALUES (
+  '00000000-0000-0000-0000-000000000000', 1, 'MERCADORIA', 't',
+  1, 'UN', 1, 1, 0, 1
+);
+-- esperado: ERROR P0002 "Operacao bloqueada: nota fiscal pai nao encontrada."
+ROLLBACK;
+
+-- 6) Lock concorrente (2 sessões)
+-- sessão A:
+BEGIN;
+UPDATE public.fiscal_invoice_items
+   SET description = description
+ WHERE id = :v_item_id;
+-- (não commit)
+-- sessão B (deve aguardar o SELECT ... FOR UPDATE da trigger):
+BEGIN;
+UPDATE public.fiscal_invoices SET normalized_status = 'AUTHORIZED'
+ WHERE id = :v_draft_id;
+-- esperado: B espera A liberar; ao commit de A, B prossegue.
+COMMIT;  -- em A
+-- em B: ROLLBACK para não alterar dados reais
+ROLLBACK;
+
+-- 7) Sanidade: RPC de rascunho continua funcional
+SELECT public.rpc_fiscal_draft_save(
+  :v_draft_id,
+  :v_invoice_json,
+  :v_items_json,
+  :v_expected_version
+);
+-- esperado: retorno com id/draft_version/total_amount, sem P0001.
+```
+
+### 17.3 Teste focal e gates
+
+- Focal: `src/test/fiscal/invoice_items_state_guard.test.ts` (11
+  asserts) cobre contrato do trigger, whitelist estrita, bloqueio
+  explícito de NULL, SQLSTATE `P0001`/`P0002`, mensagens pt-BR sem
+  dados sensíveis, ausência de mudanças em RLS/grants/audit trigger,
+  `SECURITY INVOKER` + `search_path` + `REVOKE PUBLIC`, e
+  compatibilidade textual com `rpc_fiscal_draft_save`.
+- Gates locais: typecheck ✅, build ✅, suíte fiscal 1042/1045
+  (3 skipped) ✅.
