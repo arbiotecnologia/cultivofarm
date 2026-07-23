@@ -135,6 +135,7 @@ describe("useFiscalFieldFocus", () => {
     );
     act(() => { vi.advanceTimersByTime(200); });
     expect(document.body.getAttribute("data-current-campo")).toBe("");
+  });
 
   it("hash canônico `?aba=...#id` foca o alvo e limpa o hash sem alterar o restante", () => {
     const input = document.createElement("input");
