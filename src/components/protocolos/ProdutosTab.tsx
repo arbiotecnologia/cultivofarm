@@ -671,6 +671,29 @@ export function ProdutosTab() {
                     </div>
 
                     <div className="border-t pt-4">
+                      <h3 className="text-sm font-semibold mb-3">Referência Comercial</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Fornecedor</Label>
+                          <Input
+                            value={form.fornecedor}
+                            onChange={(e) => setForm({ ...form, fornecedor: e.target.value })}
+                            placeholder="Deixe em branco para remover"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Safra</Label>
+                          <Input
+                            value={form.safra_referencia}
+                            onChange={(e) => setForm({ ...form, safra_referencia: e.target.value })}
+                            placeholder="Deixe em branco para remover"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+
                       <h3 className="text-sm font-semibold mb-3">Disponibilidade</h3>
                       <div className="flex flex-wrap gap-6">
                         <div className="flex items-center gap-2">
