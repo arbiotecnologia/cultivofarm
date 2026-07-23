@@ -90,27 +90,31 @@ duplicados nesta rodada:
 
 ## 3. Pendências explícitas para concluir H2
 
-Nenhum destes itens foi executado nesta rodada; nenhum pode ser
-declarado aprovado:
+Itens executados nesta rodada e registrados em §11 abaixo:
 
-1. **Suíte RLS completa** no staging cobrindo owner A/B, roles
-   `administrador`, `gestor`, `financeiro`, `cliente_produtor`,
-   `parceiro_b2b`, `authenticated` sem papel — em todas as tabelas
-   fiscais (`fiscal_*`, `product_fiscal_profiles`,
-   `service_fiscal_profiles`, `customer_fiscal_profiles`,
-   `company_fiscal_settings`) e views `v_fiscal_*`.
-2. **RPCs restantes**: evento manual, CRUD/deactivate de perfis,
-   readiness v2, RTC empresa/produto, `mask_sensitive_jsonb`.
-3. **Certificado A1 sintético** — upload, verificação de
+- RLS das três tabelas de perfis fiscais (`product_fiscal_profiles`,
+  `service_fiscal_profiles`, `customer_fiscal_profiles`) com migration
+  `20260728000000` aplicada no staging.
+- RPCs de IBS/CBS para perfis de serviço e produto.
+- `rpc_fiscal_homologation_readiness_v2`.
+- `mask_sensitive_jsonb`.
+- Verificações de segurança de ambiente e de certificados digitais.
+
+Itens que permanecem pendentes para concluir H2:
+
+1. **Matriz RLS integral das demais tabelas fiscais** com owner A/B,
+   roles `administrador`, `gestor`, `financeiro`, `cliente_produtor`,
+   `parceiro_b2b`, `authenticated` sem papel — em `fiscal_*`,
+   `company_fiscal_settings` e views `v_fiscal_*`.
+2. **Certificado A1 sintético end-to-end** — upload, verificação de
    não-persistência de PFX/senha, revogação, cleanup.
-4. **Backfill sintético + smoke SQL + contagens antes/depois.**
-5. **Regeneração de `src/integrations/supabase/types.ts`** a partir do
+3. **Backfill sintético + smoke SQL + contagens antes/depois.**
+4. **Regeneração de `src/integrations/supabase/types.ts`** a partir do
    staging (`SUPABASE_ACCESS_TOKEN` externo).
-6. **Teardown completo** de qualquer usuário `FISCAL_TEST_H2_*` que
-   venha a ser criado.
-7. **Reconciliação do `schema_migrations` do staging** — divergente
-   por aplicação manual histórica. Não reparar artificialmente; exige
+5. **Reconciliação histórica do `schema_migrations` do staging** —
+   divergente por aplicação manual. Não reparar artificialmente; exige
    decisão humana sobre baseline.
+
 
 ## 4. Histórico de migrations do staging
 
