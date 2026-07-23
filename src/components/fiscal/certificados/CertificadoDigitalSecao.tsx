@@ -132,7 +132,7 @@ export default function CertificadoDigitalSecao({
         </AlertDescription>
       </Alert>
 
-      <CertificadoValidadeBanner companySettingsId={companySettingsId} actionHref="#certificados-registrados" />
+      <CertificadoValidadeBanner companySettingsId={companySettingsId} showAllStates />
 
       {!canManageCertificates && (
         <Alert data-testid="fiscal-cert-readonly">
