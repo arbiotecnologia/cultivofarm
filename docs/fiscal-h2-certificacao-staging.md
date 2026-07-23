@@ -537,3 +537,148 @@ SELECT privilege_type
    AND table_name = 'fiscal_idempotency_keys';
 -- Esperado: privilégios prévios preservados (não devem ter sido tocados).
 ```
+
+## 15. Evidência runtime — 20260731 aplicada + entrega 20260801
+
+**Runtime 20260731000000 no staging `ikaauvsflpmamgxmkhoq`:** migration
+aplicada com sucesso. Auditoria pós-aplicação confirmou
+`structural_privileges_remaining = 0` para `authenticated` e `anon` nas
+10 tabelas alvo, e `fiscal_idempotency_keys` ficou **somente SELECT**
+para roles não-service. Produção `navfzbwgwzruipouyfnk` intocada.
+
+**Nova migration versionada (pendente de aplicação):**
+`supabase/migrations/20260801000000_fiscal_revoke_anon_table_privileges.sql`
+executa `REVOKE ALL PRIVILEGES ON TABLE public.<t> FROM anon` sobre as
+10 tabelas fiscais (loop `format('%I')`). Não altera `authenticated`,
+`service_role`, policies, RLS, funções, DML legítimo ou frontend.
+
+**Teste canônico:** `src/test/fiscal/revoke_anon_table_privileges.test.ts`
+(4 asserts) — 10 tabelas no array, REVOKE ALL via loop, ausência de
+alteração em authenticated/service_role/policies/RLS/funções e ausência
+de qualquer GRANT/DDL/DML.
+
+**Gates locais:** typecheck ✅, build ✅, focal ✅, suíte fiscal
+1025/1028 (3 skipped) ✅.
+
+### 15.1 SQL de auditoria pós-aplicação (staging)
+
+```sql
+-- 1) anon NÃO deve possuir nenhum privilégio nas 10 tabelas fiscais
+SELECT table_name, privilege_type
+  FROM information_schema.role_table_grants
+ WHERE table_schema = 'public'
+   AND grantee = 'anon'
+   AND table_name IN (
+     'company_fiscal_settings','product_fiscal_profiles',
+     'service_fiscal_profiles','customer_fiscal_profiles',
+     'fiscal_invoices','fiscal_invoice_items','fiscal_events',
+     'fiscal_idempotency_keys','fiscal_audit_log','financial_documents'
+   )
+ ORDER BY table_name, privilege_type;
+-- Esperado: 0 linhas.
+
+-- 2) authenticated permanece com o DML legítimo declarado nas fases
+--    anteriores (sanidade — nada foi tocado nesta migration)
+SELECT table_name, privilege_type
+  FROM information_schema.role_table_grants
+ WHERE table_schema = 'public'
+   AND grantee = 'authenticated'
+   AND table_name = 'company_fiscal_settings'
+ ORDER BY privilege_type;
+-- Esperado: SELECT + INSERT + UPDATE + DELETE (fase 2 fundação).
+```
+
+## 16. Auditoria somente-leitura — ciclo de edição de `fiscal_invoice_items`
+
+Escopo: mapear mutações do item fiscal no código atual, correlacionar
+com o estado do pai `fiscal_invoices` e apontar risco antes de qualquer
+mudança de política/trigger. **Nenhum código, RLS ou banco foi alterado
+nesta rodada.**
+
+### 16.1 Superfícies de mutação encontradas
+
+| Origem                                                                 | Operação                | Autoria/Autenticação                            |
+|------------------------------------------------------------------------|-------------------------|--------------------------------------------------|
+| `src/hooks/useFiscalDocuments.ts:156`                                  | `SELECT` apenas         | cliente PostgREST autenticado (RLS `_read`)      |
+| Nenhum outro `.from("fiscal_invoice_items")` no frontend/edge          | —                       | grep confirma zero mutação client-side           |
+| `supabase/migrations/20260724000000_fiscal_fase3_16_...sql:653-655`   | `DELETE` + `INSERT`     | RPC `rpc_fiscal_document_substitution` (server)  |
+| `restoration/backfill-fiscal-fase3/99-cleanup.sql` e fixtures          | `DELETE`/`INSERT` fixture| scripts operacionais fora do runtime da app     |
+| `restoration/fiscal_fase2_fundacao.sql` (histórico)                    | GRANT DML + policy FOR ALL| baseline aplicado nas fases 2/2.1                |
+
+Conclusão: **a única mutação client-side possível hoje passa direto pelo
+PostgREST**, autorizada pela policy `fiscal_invoice_items_write`
+(`FOR ALL TO authenticated USING/CHECK administrador|financeiro`). Não
+há hook/serviço/edge função que faça `insert/update/delete` em
+`fiscal_invoice_items` — a UI atual do fiscal só lê a tabela via
+`useFiscalDocumentItems`.
+
+### 16.2 Estados do pai `fiscal_invoices` conhecidos pelo sistema
+
+- Domínio canônico do CHECK (`NORMALIZED_STATUS_CANONICAL`,
+  `src/lib/fiscal/documentWorkflowValidation.ts:76-89`):
+  `LEGACY_RECORDED, DRAFT, VALIDATING, READY, QUEUED, PROCESSING,
+  AUTHORIZED, REJECTED, ERROR, CANCEL_REQUESTED, CANCELED, SUBSTITUTED`.
+- UI manual restringe-se a `LEGACY_RECORDED` e `DRAFT`
+  (`NORMALIZED_STATUS_MANUAL`).
+- Bloqueio pós-emissão do próprio invoice é feito por `locked_at`
+  (`src/hooks/useFiscalDocuments.ts:243,251` — `throw InvoiceLockedError`
+  no update do invoice) e pela guarda `IF v_row.locked_at IS NOT NULL`
+  em `rpc_fiscal_document_substitution` (fase 3.16, linha 614).
+
+### 16.3 Matriz estado x operação (`fiscal_invoice_items` hoje)
+
+| `fiscal_invoices.normalized_status` do pai | INSERT item      | UPDATE item      | DELETE item      |
+|--------------------------------------------|------------------|------------------|------------------|
+| `DRAFT`, `LEGACY_RECORDED`                 | permitido        | permitido        | permitido        |
+| `VALIDATING`, `READY`, `QUEUED`, `PROCESSING` | permitido¹    | permitido¹       | permitido¹       |
+| **`AUTHORIZED`**                            | **permitido¹**   | **permitido¹**   | **permitido¹**   |
+| `REJECTED`, `ERROR`, `CANCEL_REQUESTED`     | permitido¹       | permitido¹       | permitido¹       |
+| **`CANCELED`**                              | **permitido¹**   | **permitido¹**   | **permitido¹**   |
+| **`SUBSTITUTED`**                           | **permitido¹**   | **permitido¹**   | **permitido¹**   |
+
+¹ Permitido no nível de RLS/GRANT desde que o chamador tenha papel
+`administrador` ou `financeiro`. A policy `fiscal_invoice_items_write`
+**não consulta o `normalized_status`, `locked_at` ou `locked_by` do pai
+em nenhum ramo `USING`/`WITH CHECK`.** A UI atual não expõe essas
+operações, mas qualquer cliente autenticado com papel admin/financeiro
+pode executá-las diretamente via PostgREST/SQL.
+
+### 16.4 Risco
+
+- **Alto/estrutural:** itens de notas em estados terminais (`AUTHORIZED`,
+  `CANCELED`, `SUBSTITUTED`) podem ser mutados/apagados fora do fluxo
+  server-side (`rpc_fiscal_document_substitution`), quebrando a
+  auditabilidade fiscal e a paridade com o XML/DANFE já emitido.
+- **Médio:** itens de notas com `locked_at IS NOT NULL` continuam
+  editáveis porque o lock só cobre o invoice pai.
+- **Baixo (hoje):** exploração via UI oficial exigiria rota inexistente;
+  o vetor real é PostgREST direto por conta autenticada com papel
+  financeiro/admin.
+
+### 16.5 Recomendação (não implementar nesta rodada)
+
+Adicionar, em migration futura dedicada, uma **guarda a nível de banco**
+que subordine `INSERT`/`UPDATE`/`DELETE` em `fiscal_invoice_items` ao
+estado do pai. Duas alternativas mutuamente exclusivas, ambas viáveis
+com o schema atual:
+
+1. **Policy composta** — recriar `fiscal_invoice_items_write` dividida em
+   `INSERT`/`UPDATE`/`DELETE` com `WITH CHECK`/`USING` exigindo
+   `EXISTS (SELECT 1 FROM public.fiscal_invoices p
+     WHERE p.id = fiscal_invoice_id
+       AND p.locked_at IS NULL
+       AND p.normalized_status NOT IN
+           ('AUTHORIZED','CANCELED','SUBSTITUTED','CANCEL_REQUESTED'))`.
+   Preserva `rpc_fiscal_document_substitution` porque a RPC roda como
+   `SECURITY DEFINER` (RLS não se aplica).
+2. **Trigger BEFORE INSERT/UPDATE/DELETE** com a mesma checagem e
+   exceção `40001` para conflito ou `P0001` para violação de workflow,
+   permitindo bypass explícito para `session_user = 'postgres'` /
+   `current_setting('request.jwt.claim.role', true) = 'service_role'`.
+
+Ambos os caminhos ficam **fora do escopo desta rodada** e requerem nova
+autorização com validação runtime dedicada em staging.
+
+**Gates locais desta rodada:** typecheck ✅, build ✅, focal
+`revoke_anon_table_privileges.test.ts` ✅, suíte fiscal 1025/1028
+(3 skipped) ✅.
