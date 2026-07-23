@@ -182,7 +182,8 @@ Deno.serve(async (req: Request) => {
   if (!isBrowserOriginAllowed(req))
     return json(403, { error: "origin_not_allowed", correlation_id: cid }, cors);
 
-  let cnpjRaw = "";
+  // ── 1) Parse mínimo do body (limita tamanho; ainda não valida DV) ──
+  let cnpjRaw: string;
   try {
     const cl = Number(req.headers.get("Content-Length") ?? "0");
     if (Number.isFinite(cl) && cl > MAX_BODY_BYTES)
@@ -200,12 +201,7 @@ Deno.serve(async (req: Request) => {
     return json(400, { error: "invalid_body", correlation_id: cid }, cors);
   }
 
-  const cnpj = unmaskCnpjAlpha(cnpjRaw);
-  if (!validateCnpjAlpha(cnpj))
-    return json(400, { error: "invalid_cnpj", correlation_id: cid }, cors);
-  if (!isNumericOnly(cnpj))
-    return json(422, { error: "alpha_unsupported", correlation_id: cid }, cors);
-
+  // ── 2) Autenticação JWT (antes de qualquer validação detalhada do CNPJ) ──
   const authHeader = req.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer "))
     return json(401, { error: "unauthorized", correlation_id: cid }, cors);
@@ -225,19 +221,19 @@ Deno.serve(async (req: Request) => {
     return json(401, { error: "unauthorized", correlation_id: cid }, cors);
   const userId = userData.user.id;
 
+  // ── 3) Autorização por papel (fail-closed, com timeout real por chamada) ──
   let authorized = false;
   for (const role of PREFLIGHT_ALLOWED_ROLES) {
     try {
-      const t = setTimeout(() => {}, 0);
-      const p = client.rpc("has_role", { _user_id: userId, _role: role });
-      const race = await Promise.race([
-        p,
-        new Promise<{ data: unknown; error: unknown }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: "timeout" }), ROLE_TIMEOUT_MS),
-        ),
-      ]);
-      clearTimeout(t);
-      if (!(race as { error: unknown }).error && (race as { data: unknown }).data === true) {
+      const race = await withTimeout(
+        client.rpc("has_role", { _user_id: userId, _role: role }) as unknown as Promise<{
+          data: unknown;
+          error: unknown;
+        }>,
+        ROLE_TIMEOUT_MS,
+        () => ({ data: null, error: "timeout" }),
+      );
+      if (!race.error && race.data === true) {
         authorized = true;
         break;
       }
@@ -246,6 +242,14 @@ Deno.serve(async (req: Request) => {
     }
   }
   if (!authorized) return json(403, { error: "forbidden", correlation_id: cid }, cors);
+
+  // ── 4) Validação detalhada do CNPJ (só depois de auth+role) ──
+  const cnpj = unmaskCnpjAlpha(cnpjRaw);
+  if (!validateCnpjAlpha(cnpj))
+    return json(400, { error: "invalid_cnpj", correlation_id: cid }, cors);
+  if (!isCnpjNumericOnly(cnpj))
+    return json(422, { error: "alpha_unsupported", correlation_id: cid }, cors);
+
 
   // Consulta BrasilAPI — CNPJ
   const rfb = await fetchExternal(`${BRASILAPI_BASE}/cnpj/v1/${cnpj}`, MAX_EXTERNAL_BYTES);
