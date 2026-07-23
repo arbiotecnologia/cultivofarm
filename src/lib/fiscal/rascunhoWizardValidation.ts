@@ -10,7 +10,10 @@
 import { z } from "zod";
 
 export const INVOICE_TYPES = ["NFE", "NFSE"] as const;
-export const DOCUMENT_MODELS = ["55", "NFSE"] as const;
+// Contrato do banco (`chk_fi_document_model`) aceita apenas NFE | NFSE | OTHER.
+// A UI pode exibir rótulos pt-BR como "NF-e (55)", mas o valor técnico enviado
+// para `rpc_fiscal_draft_save` DEVE ser NFE ou NFSE. Nunca 55/57/65.
+export const DOCUMENT_MODELS = ["NFE", "NFSE"] as const;
 export const ENVIRONMENTS = ["HOMOLOGATION", "NOT_CONFIGURED"] as const;
 export const DRAFT_STATUSES = ["DRAFT", "HOMOLOGATION"] as const;
 
@@ -94,7 +97,7 @@ export type RascunhoItem = z.infer<typeof itemSchema>;
 export function emptyRascunho(): RascunhoFormValues {
   return {
     invoice_type: "NFE",
-    document_model: "55",
+    document_model: "NFE",
     environment: "NOT_CONFIGURED",
     series: "1",
     issue_date: new Date().toISOString().slice(0, 10),

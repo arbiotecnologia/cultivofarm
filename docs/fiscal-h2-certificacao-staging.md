@@ -886,3 +886,52 @@ H3/produção permanecem proibidas até que H2 seja declarada concluída.
 ### 18.5 Custo desta rodada
 
 Custo da atualização documental H2: **≤ 2 créditos**.
+
+## 19. Evidência runtime — ownership A/B + rpc_fiscal_draft_save + contrato document_model
+
+Staging `ikaauvsflpmamgxmkhoq` (produção `navfzbwgwzruipouyfnk` intocada).
+
+### 19.1 Ownership A/B `fiscal_invoices` — **APROVADO**
+
+- Produtor A viu apenas a nota A; produtor B apenas a nota B.
+- Nota alheia e nota sem vínculo `producer↔customer` invisíveis a ambos.
+- `UPDATE` disparado pelo produtor alterou **0 linhas** (RLS de escrita nega).
+- `DELETE` bloqueado por privilégio (grants + policy split `20260728000000`).
+- Cleanup removeu notas, AR, clientes, vínculos e roles sintéticos sem resíduo.
+
+### 19.2 `rpc_fiscal_draft_save` transacional — **APROVADO**
+
+- NF-e (HOMOLOGATION): item persistido; total recomputado no servidor;
+  `provider='NONE'`, `access_key IS NULL`, `authorized_at IS NULL`; rollback ok.
+- NFS-e (HOMOLOGATION): mesmo comportamento; snapshots por item preservados;
+  `draft_version` incrementado; nenhuma transmissão.
+
+### 19.3 Contrato `chk_fi_document_model` — **CORRIGIDO NO FRONT**
+
+Evidência: `document_model='55'` falha na inserção; `document_model='NFE'`
+passa. `chk_fi_document_model` aceita somente `NFE | NFSE | OTHER`.
+
+Correção aditiva no frontend (sem banco):
+
+- `src/lib/fiscal/rascunhoWizardValidation.ts`: `DOCUMENT_MODELS` agora é
+  `["NFE","NFSE"]`; default de `emptyRascunho()` passou de `"55"` para `"NFE"`.
+- `src/components/fiscal/documentos/RascunhoWizard.tsx`: o `<select>` de
+  modelo exibe rótulo pt-BR "NF-e (modelo 55)" mas emite valor técnico `NFE`.
+- Nenhuma mudança em `invoice_type` (permanece `NFE|NFSE`).
+- Teste focal `src/test/fiscal/document_model_contract.test.ts` (3 asserts)
+  falha se `'55'` for reintroduzido e confirma `NFE`/`NFSE`.
+
+### 19.4 Gates locais
+
+- `bunx vitest run src/test/fiscal/document_model_contract.test.ts` → 3/3 ✓
+- `bunx tsgo --noEmit` → sem erros.
+- `bun run build` → ok.
+
+### 19.5 Status H2
+
+Permanece **PARCIAL**. Pendências reais preservadas (backfill de tipos,
+provedor, emissão, itens fiscais em produção). H3/produção continuam proibidas.
+
+### 19.6 Custo desta rodada
+
+**≤ 5 créditos.**

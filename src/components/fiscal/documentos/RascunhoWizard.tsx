@@ -304,7 +304,7 @@ export default function RascunhoWizard({
                 <div>
                   <Label>Modelo</Label>
                   <select className="h-10 border rounded-md px-3 bg-background w-full" value={values.document_model} onChange={(e) => set("document_model", e.target.value as RascunhoFormValues["document_model"])}>
-                    <option value="55">55 (NF-e)</option>
+                    <option value="NFE">NF-e (modelo 55)</option>
                     <option value="NFSE">NFS-e</option>
                   </select>
                 </div>
