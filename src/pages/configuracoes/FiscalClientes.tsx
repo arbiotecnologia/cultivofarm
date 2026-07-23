@@ -29,7 +29,12 @@ import {
 import {
   UF_OPTIONS, COUNTRY_OPTIONS, STATE_REG_STATUS_OPTIONS,
   withLegacyOption, type FiscalOption,
+  CUSTOMER_FISCAL_PROFILE_STATUS_OPTIONS,
+  TAXPAYER_INDICATOR_OPTIONS,
+  getFiscalStatusLabel,
+  getTaxpayerIndicatorLabel,
 } from "@/lib/fiscal/fiscalOptions";
+import { useFiscalClientesLite } from "@/hooks/useFiscalClientesLite";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
