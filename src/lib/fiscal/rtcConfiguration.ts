@@ -93,31 +93,34 @@ const nfseCodeMax20 = z.string().trim().min(1).max(20);
  *  - `finNFSe`, `tpNFSeDebito`, `tpNFSeCredito`: string curta.
  *  - `gIBSCBSAjuste`: boolean condicional.
  *  - `vAjusteBC`: número >= 0; só permitido quando `gIBSCBSAjuste === true`.
- *  Chaves NFS-e desconhecidas passam livremente; as conhecidas exigem tipos. */
+ *  Chaves NFS-e desconhecidas passam livremente; as conhecidas exigem tipos.
+ *  Retorna `null` quando OK e `{ code, field }` na primeira falha. */
+export type NfseFailure = { code: string; field: NfseKey };
+
 export function validateNfseInAdditionalFields(
   af: Record<string, unknown> | undefined,
-): { ok: true } | { ok: false; code: string; field: NfseKey } {
-  if (!af) return { ok: true };
+): NfseFailure | null {
+  if (!af) return null;
   for (const k of ["finNFSe", "tpNFSeDebito", "tpNFSeCredito"] as const) {
     if (k in af) {
       const parsed = nfseCodeMax20.safeParse(af[k]);
-      if (!parsed.success) return { ok: false, code: "FISCAL_RTC_NFSE_INVALID_CODE", field: k };
+      if (!parsed.success) return { code: "FISCAL_RTC_NFSE_INVALID_CODE", field: k };
     }
   }
   const hasAjuste = "gIBSCBSAjuste" in af;
   if (hasAjuste && typeof af.gIBSCBSAjuste !== "boolean") {
-    return { ok: false, code: "FISCAL_RTC_NFSE_INVALID_TOGGLE", field: "gIBSCBSAjuste" };
+    return { code: "FISCAL_RTC_NFSE_INVALID_TOGGLE", field: "gIBSCBSAjuste" };
   }
   if ("vAjusteBC" in af) {
     const v = af.vAjusteBC;
     if (typeof v !== "number" || !Number.isFinite(v) || v < 0) {
-      return { ok: false, code: "FISCAL_RTC_NFSE_INVALID_VALUE", field: "vAjusteBC" };
+      return { code: "FISCAL_RTC_NFSE_INVALID_VALUE", field: "vAjusteBC" };
     }
     if (af.gIBSCBSAjuste !== true) {
-      return { ok: false, code: "FISCAL_RTC_NFSE_VALUE_WITHOUT_TOGGLE", field: "vAjusteBC" };
+      return { code: "FISCAL_RTC_NFSE_VALUE_WITHOUT_TOGGLE", field: "vAjusteBC" };
     }
   }
-  return { ok: true };
+  return null;
 }
 
 /** Zod refinement adapter. */
@@ -125,13 +128,14 @@ const additionalFieldsSchema = z
   .record(z.string(), z.unknown())
   .superRefine((af, ctx) => {
     const r = validateNfseInAdditionalFields(af);
-    if (r.ok) return;
+    if (r === null) return;
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: `${r.code}:${r.field}`,
       path: [r.field],
     });
   });
+
 
 
 // ————————————— Empresa (company_fiscal_settings.rtc_configuration) —————————————
