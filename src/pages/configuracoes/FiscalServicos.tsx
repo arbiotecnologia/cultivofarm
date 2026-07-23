@@ -26,6 +26,7 @@ import {
 } from "@/lib/fiscal/serviceFiscalValidation";
 import {
   REQUIREMENT_STATUS_OPTIONS, withLegacyOption, type FiscalOption,
+  SERVICE_FISCAL_PROFILE_STATUS_OPTIONS, getFiscalStatusLabel,
 } from "@/lib/fiscal/fiscalOptions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
