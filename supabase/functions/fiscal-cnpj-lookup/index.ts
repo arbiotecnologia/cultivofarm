@@ -26,6 +26,11 @@ import {
   PREFLIGHT_ALLOWED_ROLES,
   maskRecursive,
 } from "../_shared/fiscal/preflight.ts";
+import {
+  unmaskCnpjAlpha,
+  validateCnpjAlpha,
+  isCnpjNumericOnly,
+} from "../_shared/fiscal/cnpj.ts";
 
 const CONTRACT_VERSION = "fiscal-cnpj-lookup/1.0.0";
 const MAX_BODY_BYTES = 1024; // {version?, cnpj} cabe folgado
@@ -71,33 +76,41 @@ function json(status: number, body: unknown, cors: Record<string, string>) {
   });
 }
 
-/* ─────────── Validação canônica de CNPJ (numérico e alfanumérico) ─────────── */
-// Inline (Edge Functions não podem importar `src/**`).
-const CNPJ_BASE = /^[0-9A-Z]$/;
-const CNPJ_DIGIT = /^[0-9]$/;
-function unmaskCnpjAlpha(v: string): string {
-  return String(v).replace(/[\s.\-/]/g, "").toUpperCase();
-}
-const W1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-const W2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-function computeDv(base: string, weights: number[]): number {
-  let sum = 0;
-  for (let i = 0; i < base.length; i++) sum += (base.charCodeAt(i) - 48) * weights[i];
-  const rest = sum % 11;
-  return rest < 2 ? 0 : 11 - rest;
-}
-function validateCnpjAlpha(v: string): boolean {
-  if (v.length !== 14) return false;
-  for (let i = 0; i < 12; i++) if (!CNPJ_BASE.test(v[i])) return false;
-  if (!CNPJ_DIGIT.test(v[12]) || !CNPJ_DIGIT.test(v[13])) return false;
-  if (/^\d+$/.test(v) && /^(\d)\1{13}$/.test(v)) return false;
-  const base = v.slice(0, 12);
-  const d1 = computeDv(base, W1);
-  const d2 = computeDv(base + String(d1), W2);
-  return v.slice(12) === `${d1}${d2}`;
-}
-function isNumericOnly(v: string): boolean {
-  return /^\d{14}$/.test(v);
+/**
+ * Executa uma promise com timeout real. Guarda o handle do timer e o limpa
+ * em qualquer caminho (sucesso, erro ou expiração), evitando timers órfãos.
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  onTimeout: () => T,
+): Promise<T> {
+  let handle: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await new Promise<T>((resolve, reject) => {
+      handle = setTimeout(() => {
+        try {
+          resolve(onTimeout());
+        } catch (e) {
+          reject(e);
+        }
+      }, ms);
+      promise.then(
+        (v) => {
+          if (handle !== undefined) clearTimeout(handle);
+          handle = undefined;
+          resolve(v);
+        },
+        (e) => {
+          if (handle !== undefined) clearTimeout(handle);
+          handle = undefined;
+          reject(e);
+        },
+      );
+    });
+  } finally {
+    if (handle !== undefined) clearTimeout(handle);
+  }
 }
 
 /* ─────────────────────── Fetch externo com timeout ─────────────────────── */
