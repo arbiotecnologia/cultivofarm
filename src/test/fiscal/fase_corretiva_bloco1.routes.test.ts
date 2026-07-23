@@ -6,8 +6,8 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { describe, it, expect } from "vitest";
-import { NAV_ITEMS } from "@/config/navigation";
-import { ACCESS_MAP } from "@/lib/permissions";
+import { navigation, type NavItem } from "@/config/navigation";
+import { canAccess } from "@/lib/permissions";
 
 const APP = readFileSync(resolve(__dirname, "../../App.tsx"), "utf8");
 
