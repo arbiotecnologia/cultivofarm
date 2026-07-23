@@ -33,15 +33,15 @@ export function digitsOnly(v: string | null | undefined): string {
   return typeof v === "string" ? v.replace(/\D/g, "") : "";
 }
 
-/** Máscara de CPF/CNPJ para exibição. Nunca expõe o documento completo.
+/** Mascara CPF/CNPJ para exibicao. Nunca expoe o documento completo.
  *  Aceita:
- *   - CPF numérico de 11 dígitos → `***.***.***-DD`
- *   - CNPJ numérico de 14 dígitos → `**.***.***/****-DD`
- *   - CNPJ alfanumérico (IN RFB 2.229/2024): 12 posições alfanuméricas
- *     (A–Z/0–9 em maiúsculas) + 2 DVs numéricos → `**.***.***/****-DD`
- *  Só os 2 dígitos verificadores finais são revelados.
- *  Documento inválido retorna `***`. Não usa `digitsOnly` antes de
- *  identificar o formato — letras válidas seriam destruídas. */
+ *    CPF numerico de 11 digitos: retorna ***.***.***-DD
+ *    CNPJ numerico de 14 digitos: retorna **.***.***\/****-DD
+ *    CNPJ alfanumerico (IN RFB 2.229\/2024): 12 posicoes alfanumericas
+ *    (A-Z\/0-9 em maiusculas) + 2 DVs numericos, mesma mascara.
+ *  Apenas os 2 digitos verificadores finais sao revelados.
+ *  Documento invalido retorna ***. Nao usa digitsOnly antes de identificar
+ *  o formato — letras validas seriam destruidas. */
 export function maskDocument(doc: string | null | undefined): string {
   if (typeof doc !== "string" || doc.length === 0) return "***";
   // Normalização mínima: remove separadores usuais e força uppercase,
