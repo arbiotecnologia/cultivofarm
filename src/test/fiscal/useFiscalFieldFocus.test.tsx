@@ -8,7 +8,7 @@
  *  - o hook consome o parâmetro `campo` após aplicar
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 import { MemoryRouter, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 import {
