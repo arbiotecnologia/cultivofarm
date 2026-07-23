@@ -145,7 +145,7 @@ export default function ProdutoresTab() {
     const payload: any = {
       ...cleanValues,
       nome: (values.nome_fantasia || values.razao_social || "Sem Nome").trim(),
-      cpf_cnpj: unmask(values.cpf_cnpj) || null,
+      cpf_cnpj: unmaskCpfCnpj(values.cpf_cnpj) || null,
       telefone: mainPhone || null,
       telefones: telefonesArray,
       endereco_cep: unmask(values.endereco_cep) || null,
