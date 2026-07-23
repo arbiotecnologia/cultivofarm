@@ -142,6 +142,7 @@ export interface WipeResult {
   error?: string;
   detail?: string;
   table?: string;
+  mode?: "edge-function" | "client-fallback";
 }
 
 export interface SeedResult {
@@ -149,6 +150,94 @@ export interface SeedResult {
   atualizados: number;
   formulacoesCriadas: number;
   microrganismosFaltantes: string[];
+}
+
+type CatalogReferenceTarget = { table: string; column: string };
+
+const PRODUTO_REFERENCE_TARGETS: CatalogReferenceTarget[] = [
+  { table: "catalogo_volumes", column: "produto_id" },
+  { table: "commercial_campaign_products", column: "product_id" },
+  { table: "cq_parametros_referencia", column: "produto_id" },
+  { table: "entregas", column: "produto_id" },
+  { table: "estoque_embalagens", column: "produto_id" },
+  { table: "estoque_produto", column: "produto_id" },
+  { table: "formulacoes", column: "produto_id" },
+  { table: "formulacoes", column: "component_insumo_id" },
+  { table: "lotes", column: "produto_id" },
+  { table: "ordens_servico", column: "produto_id" },
+  { table: "ordens_servico_onfarm", column: "produto_id" },
+  { table: "os_faturamento_base", column: "produto_id" },
+  { table: "partner_order_items", column: "product_id" },
+  { table: "partner_product_prices", column: "product_id" },
+  { table: "partner_simulation_items", column: "product_id" },
+  { table: "product_crop_recommendations", column: "produto_id" },
+  { table: "product_fiscal_profiles", column: "product_id" },
+  { table: "product_target_recommendations", column: "produto_id" },
+  { table: "product_technical_profiles", column: "produto_id" },
+  { table: "produto_etiquetas", column: "produto_id" },
+  { table: "programacao_producao", column: "produto_id" },
+  { table: "registros_consultor_recomendacoes", column: "produto_biologico_sugerido_id" },
+];
+
+const CLIENT_WIPE_ORDER = [
+  "fiscal_invoices",
+  "entrega_checklist",
+  "entrega_comprovantes",
+  "entrega_documentos",
+  "entrega_etiquetas",
+  "entrega_ocorrencias",
+  "controle_qualidade",
+  "envase",
+  "estoque_movimentacoes",
+  "ordens_servico_onfarm_status_history",
+  "production_order_link",
+  "aplicacoes",
+  "produto_etiquetas",
+  "estoque_embalagens",
+  "estoque_produto",
+  "entregas",
+  "lotes",
+  "programacao_producao",
+  "os_faturamento_base",
+  "ordens_servico_onfarm",
+  "ordens_servico",
+  "partner_order_items",
+  "partner_simulation_items",
+  "catalogo_volumes",
+  "commercial_campaign_products",
+  "cq_parametros_referencia",
+  "partner_product_prices",
+  "product_crop_recommendations",
+  "product_fiscal_profiles",
+  "product_target_recommendations",
+  "product_technical_profiles",
+  "formulacoes",
+  "produtos",
+] as const;
+
+const DELETE_FILTER_COLUMN: Partial<Record<(typeof CLIENT_WIPE_ORDER)[number], string>> = {
+  commercial_campaign_products: "campaign_id",
+};
+
+export interface ProdutosOrfaosAuditResult {
+  generated_at: string;
+  catalogo_v13: unknown[];
+  total_produtos: number;
+  resumo: {
+    distinct_ids_orfaos_global: number;
+    tabelas_com_orfaos: number;
+    mode?: "edge-function" | "client-fallback";
+  };
+  por_tabela: Array<{
+    tabela: string;
+    coluna: string;
+    total_referencias: number;
+    orfaos: number;
+    distinct_ids_orfaos: number;
+    sample_ids: string[];
+    error?: string;
+  }>;
+  sample_ids_orfaos_global: string[];
 }
 
 /**
@@ -160,9 +249,145 @@ export async function wipeCatalogoProdutos(): Promise<WipeResult> {
     { method: "POST" },
   );
   if (error) {
-    return { ok: false, error: error.message ?? "invoke_failed" };
+    return wipeCatalogoProdutosViaClient(error.message ?? "invoke_failed");
   }
-  return data ?? { ok: false, error: "empty_response" };
+  return data ? { ...data, mode: "edge-function" } : { ok: false, error: "empty_response" };
+}
+
+async function wipeCatalogoProdutosViaClient(reason: string): Promise<WipeResult> {
+  const nullified: Record<string, number> = {};
+  const deleted: Record<string, number> = {};
+
+  const nullifyResult = await (supabase.from("registros_consultor_recomendacoes" as never) as any)
+    .update({ produto_biologico_sugerido_id: null }, { count: "exact" })
+    .not("produto_biologico_sugerido_id", "is", null);
+
+  if (nullifyResult.error) {
+    return {
+      ok: false,
+      mode: "client-fallback",
+      error: "nullify_failed",
+      table: "registros_consultor_recomendacoes",
+      detail: `${nullifyResult.error.message}. Edge Function indisponível: ${reason}`,
+    };
+  }
+  nullified["registros_consultor_recomendacoes.produto_biologico_sugerido_id"] = nullifyResult.count ?? 0;
+
+  for (const table of CLIENT_WIPE_ORDER) {
+    const filterColumn = DELETE_FILTER_COLUMN[table] ?? "id";
+    const deleteResult = await (supabase.from(table as never) as any)
+      .delete({ count: "exact" })
+      .not(filterColumn, "is", null);
+
+    if (deleteResult.error) {
+      return {
+        ok: false,
+        mode: "client-fallback",
+        error: "delete_failed",
+        table,
+        detail: `${deleteResult.error.message}. Edge Function indisponível: ${reason}`,
+        deleted,
+        nullified,
+      };
+    }
+    deleted[table] = deleteResult.count ?? 0;
+  }
+
+  return {
+    ok: true,
+    mode: "client-fallback",
+    deleted,
+    nullified,
+    totalDeleted: Object.values(deleted).reduce((sum, count) => sum + count, 0),
+  };
+}
+
+export async function auditProdutosOrfaos(): Promise<ProdutosOrfaosAuditResult> {
+  const { data, error } = await supabase.functions.invoke<ProdutosOrfaosAuditResult>("admin-audit-produtos-orfaos", {
+    method: "POST",
+  });
+
+  if (!error && data) {
+    return data;
+  }
+
+  return auditProdutosOrfaosViaClient();
+}
+
+async function auditProdutosOrfaosViaClient(): Promise<ProdutosOrfaosAuditResult> {
+  const { data: produtos, error: prodErr } = await supabase
+    .from("produtos")
+    .select("id, codigo, nome, ativo")
+    .order("codigo");
+
+  if (prodErr) throw prodErr;
+
+  const validIds = new Set((produtos ?? []).map((p: any) => p.id as string));
+  const globalOrphanIds = new Set<string>();
+  const por_tabela: ProdutosOrfaosAuditResult["por_tabela"] = [];
+
+  for (const target of PRODUTO_REFERENCE_TARGETS) {
+    let from = 0;
+    const pageSize = 1000;
+    let total = 0;
+    let orfaos = 0;
+    let error: string | undefined;
+    const orphanSet = new Set<string>();
+
+    while (true) {
+      const result = await (supabase.from(target.table as never) as any)
+        .select(target.column)
+        .not(target.column, "is", null)
+        .range(from, from + pageSize - 1);
+
+      if (result.error) {
+        error = result.error.message;
+        break;
+      }
+
+      const rows = (result.data ?? []) as Record<string, string | null>[];
+      if (rows.length === 0) break;
+
+      for (const row of rows) {
+        const referencedId = row[target.column];
+        if (!referencedId) continue;
+        total += 1;
+        if (!validIds.has(referencedId)) {
+          orfaos += 1;
+          orphanSet.add(referencedId);
+          globalOrphanIds.add(referencedId);
+        }
+      }
+
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+
+    por_tabela.push({
+      tabela: target.table,
+      coluna: target.column,
+      total_referencias: total,
+      orfaos,
+      distinct_ids_orfaos: orphanSet.size,
+      sample_ids: [...orphanSet].slice(0, 10),
+      ...(error ? { error } : {}),
+    });
+  }
+
+  por_tabela.sort((a, b) => b.orfaos - a.orfaos || a.tabela.localeCompare(b.tabela));
+
+  return {
+    generated_at: new Date().toISOString(),
+    catalogo_v13: produtos ?? [],
+    total_produtos: produtos?.length ?? 0,
+    resumo: {
+      distinct_ids_orfaos_global: globalOrphanIds.size,
+      tabelas_com_orfaos: por_tabela.filter((r) => r.orfaos > 0).length,
+      mode: "client-fallback",
+    },
+    por_tabela,
+    sample_ids_orfaos_global: [...globalOrphanIds].slice(0, 50),
+  };
 }
 
 /**
