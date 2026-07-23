@@ -132,6 +132,8 @@ export default function CertificadoDigitalSecao({
         </AlertDescription>
       </Alert>
 
+      <CertificadoValidadeBanner companySettingsId={companySettingsId} actionHref="#certificados-registrados" />
+
       {!canManageCertificates && (
         <Alert data-testid="fiscal-cert-readonly">
           <ShieldOff className="h-4 w-4" aria-hidden />
