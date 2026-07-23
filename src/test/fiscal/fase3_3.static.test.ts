@@ -30,6 +30,7 @@ const BASE_ROW: ServiceFiscalRow = {
   service_id: null,
   source_reference: "svc-001",
   is_active: true,
+  ibs_cbs_configuration: {},
   service_name: null,
   fiscal_description_template: null,
   national_taxation_code: null,
