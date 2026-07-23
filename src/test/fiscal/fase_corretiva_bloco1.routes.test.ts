@@ -53,7 +53,7 @@ describe("Bloco 1 — rotas fiscais canônicas no menu", () => {
     expect(APP).toContain(`path="${EXPECTED[id]}"`);
   });
 
-  it.each(IDS)("%s rota canônica declarada em ACCESS_MAP", (id) => {
-    expect(ACCESS_MAP[EXPECTED[id]]).toBeTruthy();
+  it.each(IDS)("%s rota canônica reconhecida por canAccess (admin)", (id) => {
+    expect(canAccess("administrador", EXPECTED[id])).toBe(true);
   });
 });
