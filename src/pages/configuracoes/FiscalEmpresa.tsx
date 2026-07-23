@@ -139,10 +139,11 @@ export default function FiscalEmpresa() {
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const canViewHomologation = Array.isArray(roles) && roles.some((r) => r === "administrador" || r === "gestor" || r === "financeiro");
-  type FiscalEmpresaTab = "empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "homologacao" | "revisao";
+  type FiscalEmpresaTab = "empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "rtc" | "homologacao" | "revisao";
   const FISCAL_EMPRESA_TABS: readonly FiscalEmpresaTab[] = [
-    "empresa","nfe","nfse","certificado","integracao","homologacao","revisao",
+    "empresa","nfe","nfse","certificado","integracao","rtc","homologacao","revisao",
   ] as const;
+
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab: FiscalEmpresaTab = (() => {
     const raw = searchParams.get("aba");
