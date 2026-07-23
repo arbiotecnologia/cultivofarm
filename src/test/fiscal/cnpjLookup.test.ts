@@ -215,4 +215,35 @@ describe("lookupCnpj (H3-A, via Edge Function)", () => {
     });
     expect(invokeMock).not.toHaveBeenCalled();
   });
+
+  it("encaminha o AbortSignal para supabase.functions.invoke", async () => {
+    invokeMock.mockResolvedValueOnce(
+      okResponse({ source: "brasilapi", ibge_unresolved: false, tax_regime_hint: null, values: {} }),
+    );
+    const ctrl = new AbortController();
+    await lookupCnpj(CNPJ_VALID, ctrl.signal);
+    expect(invokeMock).toHaveBeenCalledTimes(1);
+    const [, opts] = invokeMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(opts.signal).toBe(ctrl.signal);
+    expect((opts.body as { version: string; cnpj: string }).cnpj).toBe(CNPJ_VALID);
+  });
+
+  it("mapeia AbortError vindo do invoke como network_error/aborted", async () => {
+    const err = Object.assign(new Error("aborted"), { name: "AbortError" });
+    invokeMock.mockRejectedValueOnce(err);
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({
+      code: "network_error",
+      message: "aborted",
+    });
+  });
+
+  it("401 e 403 são propagados sem exigir mudança na validação DV local", async () => {
+    // 401 antes de qualquer detalhamento: cliente confia no status vindo da Edge.
+    invokeMock.mockResolvedValueOnce(errResponse("unauthorized", 401));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "unauthorized" });
+    invokeMock.mockResolvedValueOnce(errResponse("forbidden", 403));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "forbidden" });
+    // Ambas ocorreram (2 chamadas).
+    expect(invokeMock).toHaveBeenCalledTimes(2);
+  });
 });

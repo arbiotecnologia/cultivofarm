@@ -26,6 +26,11 @@ import {
   PREFLIGHT_ALLOWED_ROLES,
   maskRecursive,
 } from "../_shared/fiscal/preflight.ts";
+import {
+  unmaskCnpjAlpha,
+  validateCnpjAlpha,
+  isCnpjNumericOnly,
+} from "../_shared/fiscal/cnpj.ts";
 
 const CONTRACT_VERSION = "fiscal-cnpj-lookup/1.0.0";
 const MAX_BODY_BYTES = 1024; // {version?, cnpj} cabe folgado
@@ -71,33 +76,41 @@ function json(status: number, body: unknown, cors: Record<string, string>) {
   });
 }
 
-/* ─────────── Validação canônica de CNPJ (numérico e alfanumérico) ─────────── */
-// Inline (Edge Functions não podem importar `src/**`).
-const CNPJ_BASE = /^[0-9A-Z]$/;
-const CNPJ_DIGIT = /^[0-9]$/;
-function unmaskCnpjAlpha(v: string): string {
-  return String(v).replace(/[\s.\-/]/g, "").toUpperCase();
-}
-const W1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-const W2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-function computeDv(base: string, weights: number[]): number {
-  let sum = 0;
-  for (let i = 0; i < base.length; i++) sum += (base.charCodeAt(i) - 48) * weights[i];
-  const rest = sum % 11;
-  return rest < 2 ? 0 : 11 - rest;
-}
-function validateCnpjAlpha(v: string): boolean {
-  if (v.length !== 14) return false;
-  for (let i = 0; i < 12; i++) if (!CNPJ_BASE.test(v[i])) return false;
-  if (!CNPJ_DIGIT.test(v[12]) || !CNPJ_DIGIT.test(v[13])) return false;
-  if (/^\d+$/.test(v) && /^(\d)\1{13}$/.test(v)) return false;
-  const base = v.slice(0, 12);
-  const d1 = computeDv(base, W1);
-  const d2 = computeDv(base + String(d1), W2);
-  return v.slice(12) === `${d1}${d2}`;
-}
-function isNumericOnly(v: string): boolean {
-  return /^\d{14}$/.test(v);
+/**
+ * Executa uma promise com timeout real. Guarda o handle do timer e o limpa
+ * em qualquer caminho (sucesso, erro ou expiração), evitando timers órfãos.
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  onTimeout: () => T,
+): Promise<T> {
+  let handle: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await new Promise<T>((resolve, reject) => {
+      handle = setTimeout(() => {
+        try {
+          resolve(onTimeout());
+        } catch (e) {
+          reject(e);
+        }
+      }, ms);
+      promise.then(
+        (v) => {
+          if (handle !== undefined) clearTimeout(handle);
+          handle = undefined;
+          resolve(v);
+        },
+        (e) => {
+          if (handle !== undefined) clearTimeout(handle);
+          handle = undefined;
+          reject(e);
+        },
+      );
+    });
+  } finally {
+    if (handle !== undefined) clearTimeout(handle);
+  }
 }
 
 /* ─────────────────────── Fetch externo com timeout ─────────────────────── */
@@ -169,7 +182,8 @@ Deno.serve(async (req: Request) => {
   if (!isBrowserOriginAllowed(req))
     return json(403, { error: "origin_not_allowed", correlation_id: cid }, cors);
 
-  let cnpjRaw = "";
+  // ── 1) Parse mínimo do body (limita tamanho; ainda não valida DV) ──
+  let cnpjRaw: string;
   try {
     const cl = Number(req.headers.get("Content-Length") ?? "0");
     if (Number.isFinite(cl) && cl > MAX_BODY_BYTES)
@@ -187,12 +201,7 @@ Deno.serve(async (req: Request) => {
     return json(400, { error: "invalid_body", correlation_id: cid }, cors);
   }
 
-  const cnpj = unmaskCnpjAlpha(cnpjRaw);
-  if (!validateCnpjAlpha(cnpj))
-    return json(400, { error: "invalid_cnpj", correlation_id: cid }, cors);
-  if (!isNumericOnly(cnpj))
-    return json(422, { error: "alpha_unsupported", correlation_id: cid }, cors);
-
+  // ── 2) Autenticação JWT (antes de qualquer validação detalhada do CNPJ) ──
   const authHeader = req.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer "))
     return json(401, { error: "unauthorized", correlation_id: cid }, cors);
@@ -212,19 +221,19 @@ Deno.serve(async (req: Request) => {
     return json(401, { error: "unauthorized", correlation_id: cid }, cors);
   const userId = userData.user.id;
 
+  // ── 3) Autorização por papel (fail-closed, com timeout real por chamada) ──
   let authorized = false;
   for (const role of PREFLIGHT_ALLOWED_ROLES) {
     try {
-      const t = setTimeout(() => {}, 0);
-      const p = client.rpc("has_role", { _user_id: userId, _role: role });
-      const race = await Promise.race([
-        p,
-        new Promise<{ data: unknown; error: unknown }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: "timeout" }), ROLE_TIMEOUT_MS),
-        ),
-      ]);
-      clearTimeout(t);
-      if (!(race as { error: unknown }).error && (race as { data: unknown }).data === true) {
+      const race = await withTimeout(
+        client.rpc("has_role", { _user_id: userId, _role: role }) as unknown as Promise<{
+          data: unknown;
+          error: unknown;
+        }>,
+        ROLE_TIMEOUT_MS,
+        () => ({ data: null, error: "timeout" }),
+      );
+      if (!race.error && race.data === true) {
         authorized = true;
         break;
       }
@@ -233,6 +242,14 @@ Deno.serve(async (req: Request) => {
     }
   }
   if (!authorized) return json(403, { error: "forbidden", correlation_id: cid }, cors);
+
+  // ── 4) Validação detalhada do CNPJ (só depois de auth+role) ──
+  const cnpj = unmaskCnpjAlpha(cnpjRaw);
+  if (!validateCnpjAlpha(cnpj))
+    return json(400, { error: "invalid_cnpj", correlation_id: cid }, cors);
+  if (!isCnpjNumericOnly(cnpj))
+    return json(422, { error: "alpha_unsupported", correlation_id: cid }, cors);
+
 
   // Consulta BrasilAPI — CNPJ
   const rfb = await fetchExternal(`${BRASILAPI_BASE}/cnpj/v1/${cnpj}`, MAX_EXTERNAL_BYTES);

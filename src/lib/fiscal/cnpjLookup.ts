@@ -17,7 +17,9 @@
  *
  * PROTEÇÕES:
  * - Validação de DV canônica (`validateCnpjAlpha`) antes do request.
- * - `AbortSignal` para cancelamento (usado no unmount do botão).
+ * - `AbortSignal` encaminhado a `supabase.functions.invoke` (functions-js
+ *   2.5+ suporta `signal`), permitindo cancelamento real da chamada de rede
+ *   ao desmontar o componente.
  * - Whitelist de campos aplicáveis (nenhum campo protegido é tocado).
  */
 import type { CompanyFiscalFormValues } from "./companyFiscalValidation";
@@ -139,8 +141,12 @@ export async function lookupCnpj(
   try {
     invokeResult = await supabase.functions.invoke("fiscal-cnpj-lookup", {
       body: { version: CONTRACT_VERSION, cnpj: clean },
+      // functions-js 2.5+: encaminha AbortSignal para cancelamento real da rede.
+      ...(signal ? { signal } : {}),
     });
-  } catch {
+  } catch (err) {
+    if ((err as { name?: string })?.name === "AbortError")
+      throw new CnpjLookupError("network_error", "aborted");
     throw new CnpjLookupError("network_error");
   }
 

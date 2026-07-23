@@ -1243,3 +1243,33 @@ homologação, autorizar:
 ### 23.9 Custo real
 **≈ 12 créditos** (Edge Function, cliente, componente, 15 testes, doc H2 §23; todas as
 validações verdes).
+
+## 24. Rodada H3-B1 — hardening somente-código (2026-07-23)
+
+Escopo estrito: correções de código sem deploy, sem tocar staging ou produção.
+
+### 24.1 Alterações
+- `supabase/functions/_shared/fiscal/cnpj.ts` (novo): helper compartilhado de CNPJ (numérico e alfanumérico) usado pela Edge Function. Espelho de `src/lib/fiscal/cnpjAlpha.ts`, com paridade travada por teste.
+- `supabase/functions/fiscal-cnpj-lookup/index.ts`:
+  - Importa `validateCnpjAlpha`/`unmaskCnpjAlpha`/`isCnpjNumericOnly` do helper compartilhado (sem duplicação silenciosa do algoritmo).
+  - Novo helper `withTimeout` que guarda o handle real de `setTimeout` e limpa em sucesso, erro e expiração. Substitui o `Promise.race` com `setTimeout(() => {}, 0)` órfão que existia em cada iteração de `has_role`.
+  - **Reordenação (fail-closed):** parse do body → autenticação JWT (`getUser`) → autorização por `has_role` → validação detalhada do CNPJ → request externo. `401`/`403` respondem antes de qualquer sinal sobre validade do CNPJ.
+- `src/lib/fiscal/cnpjLookup.ts`: encaminha `signal` real a `supabase.functions.invoke({ signal })` (functions-js 2.104.1 declara `signal?: AbortSignal`). `AbortError` do invoke é remapeado como `network_error` com `message="aborted"`.
+- `src/test/fiscal/cnpjLookup.test.ts`: adiciona (a) teste de forwarding do `AbortSignal` para `invoke`, (b) mapeamento de `AbortError` do invoke, (c) propagação explícita de `401`/`403` (total: 18 cenários).
+- `src/test/fiscal/cnpjSharedParity.test.ts` (novo): importa o módulo Deno compartilhado como TS e compara `unmask`/`validate` com o cliente canônico em 12 vetores (numérico válido/inválido, alfanumérico válido/inválido, repetidos, mascarado, lowercase, degenerados).
+
+### 24.2 Distinção obrigatória de evidências
+- **PASS runtime real (H3-B1):** *nenhum*. Nada foi executado contra staging.
+- **PASS unitário/mockado (H3-B1):** cancelamento com signal pré-abortado, forwarding do signal, `AbortError` do invoke, mapeamento de códigos de erro, whitelist de campos, paridade de validação CNPJ shared↔client. Todos verdes em `vitest`.
+- **NÃO TESTADO runtime (permanece pendente H3-B):** CORS allowlist real, ordem JWT→role→validação observada da Edge deployada, cancelamento efetivo da conexão TCP em Deno (o teste unitário só confirma que `signal` é encaminhado à API do supabase-js), timeouts reais contra BrasilAPI, `has_role` no dialeto real do staging, ausência de PII em logs de produção da Edge.
+
+### 24.3 Validações locais
+- `vitest src/test/fiscal` → **1081 passed · 3 skipped** (54 files) ✓
+- `bunx tsgo --noEmit` → sem erros ✓
+- `bun run build` → limpo ✓
+
+### 24.4 Custo real
+**≈ 4 créditos** nesta rodada.
+
+### 24.5 Pendências para H3-B (runtime)
+Requer reapontamento controlado do projeto Lovable ao staging `ikaauvsflpmamgxmkhoq` (ou execução via CLI externa autorizada) para: deploy exclusivo de `fiscal-cnpj-lookup`, configuração de `FISCAL_ALLOWED_ORIGINS` sem wildcard e sem produção, e execução da matriz de cenários runtime descrita no pedido H3-B. Nenhum item runtime foi antecipado nesta rodada.
