@@ -576,8 +576,8 @@ function EditDrawer({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={TAX_NONE}>Não informado</SelectItem>
-                    {TAXPAYER_INDICATOR_VALUES.map((v) => (
-                      <SelectItem key={v} value={v}>{TAXPAYER_LABELS[v] ?? v}</SelectItem>
+                    {TAXPAYER_INDICATOR_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
