@@ -169,14 +169,17 @@ NÃO concluída.** Homologação completa **não** declarada. Produção
   camada de GRANT — não pela RLS. A modelagem RLS é inconsistente e
   depende de uma segunda camada de defesa.
 
-## 10. Correção preparada — pendente de aplicação
+## 10. Correção canônica — versionada, pendente de aplicação em banco
 
-**Arquivo canônico preparado:**
-`restoration/20260728000000_fiscal_rls_perfis_split_write.sql`
+**Fonte canônica versionada:**
+`supabase/migrations/20260728000000_fiscal_rls_perfis_split_write.sql`
 
-O sandbox não pode escrever em `supabase/migrations/`; o arquivo será
-promovido para `supabase/migrations/20260728000000_fiscal_rls_perfis_split_write.sql`
-no canal de aplicação externa autorizado para staging.
+O arquivo foi criado diretamente no diretório canônico de migrations.
+Versionar SQL em `supabase/migrations/` **não** aplica migration, não
+conecta banco e não toca produção — é apenas registro da fonte. A
+aplicação em banco ocorre em canal externo autorizado, exclusivamente no
+staging temporário `ikaauvsflpmamgxmkhoq`. Produção
+`navfzbwgwzruipouyfnk` permanece intocada.
 
 **Regras aplicadas (aditivas, sem alteração de comportamento legítimo):**
 
@@ -198,10 +201,12 @@ Para cada uma das três tabelas de perfis fiscais:
 `is_active=false` / RPC existente.
 
 **Teste estático canônico:**
-`src/test/fiscal/rls_perfis_split_write.test.ts` (6 asserts) — falha se
-voltar a existir `CREATE POLICY ... FOR ALL` nessas tabelas e confirma
-INSERT/UPDATE separados, DELETE=false e REVOKE DELETE.
+`src/test/fiscal/rls_perfis_split_write.test.ts` (6 asserts) — lê a
+fonte canônica em `supabase/migrations/`, falha se voltar a existir
+`CREATE POLICY ... FOR ALL` nessas tabelas e confirma INSERT/UPDATE
+separados, DELETE=false e REVOKE DELETE.
 
-**Status:** correção **preparada**, **NÃO aplicada** no staging.
-Aguarda aplicação externa da migration, seguida de reprodução da suíte
-RLS §3.1 por resultado real. Produção proibida.
+**Status:** migration **versionada** no caminho canônico, **NÃO
+aplicada** em banco. Aguarda aplicação externa no staging, seguida de
+reprodução da suíte RLS §3.1 por resultado real. Produção proibida.
+
