@@ -120,9 +120,9 @@ export default function ProntidaoConexoesSecao({ companySettingsId }: Props) {
           <ShieldOff className="h-4 w-4" aria-hidden />
           <AlertTitle>Produção desabilitada</AlertTitle>
           <AlertDescription className="text-xs">
-            {readiness.productionAllowed
-              ? "Pré-requisitos atendidos. A ativação de produção exige teste de conexão e aprovação explícita — indisponível nesta fase."
-              : "Complete os itens acima. Produção permanecerá indisponível até que teste de conexão e aprovação explícita sejam realizados."}
+            {readiness.prerequisitesReadyForFutureProduction
+              ? "Pré-requisitos preenchidos. A produção continua desabilitada e depende de homologação bem-sucedida, credenciais/certificado válidos e autorização humana explícita em fase futura."
+              : "Complete os itens acima. Produção permanece desabilitada e só poderá ser considerada após homologação, teste de conexão e autorização humana explícita."}
           </AlertDescription>
         </Alert>
       </CardContent>
