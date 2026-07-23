@@ -1,81 +1,70 @@
 ## Objetivo
-Zerar o conteúdo atual da tabela `produtos` (e suas dependências operacionais/fiscais) e recarregar exatamente os 7 produtos do Catálogo On-Farm v1.3 (PDF anexado), preservando estrutura de tabelas, RLS, políticas e componentes de UI.
 
-## Escopo confirmado com o usuário
-- **Wipe total** com cascata (lotes, ordens, aplicações, perfis fiscais, formulações, volumes, cache de preços B2B, etc.).
-- **Seed idempotente + botão único** na aba Produtos (padrão usado no seed de microrganismos A.R Bio 2026).
-- **Composição microbiológica vinculada** aos microrganismos já cadastrados via tabela `formulacoes` existente.
+Limpar, em outros módulos do sistema, dados e menções que apontam para produtos que **não existem mais** na tabela `produtos` (por exemplo, itens antigos removidos que sobraram como referência em estoques, recomendações, dashboards, BI, PDFs, etc.).
 
-## Fase 1 — Wipe controlado (Edge Function admin)
-Criar `supabase/functions/admin-wipe-produtos-catalog/index.ts`:
-- Valida JWT + `has_role(auth.uid(),'administrador')`. Nega qualquer outro papel.
-- Usa cliente `service_role` para executar, em transação lógica e nesta ordem (filhos → pais):
-  1. `formulacoes` (composição produto↔microrganismo)
-  2. `catalogo_volumes` / `produto_volumes` (se existir)
-  3. `precos_parceiro`, `partner_prices`, `partner_catalog_cache`
-  4. `product_technical_profiles`, `product_fiscal_profiles`
-  5. `ordens_servico_itens` / `os_itens` (linhas por produto) e depois OS órfãs, se aplicável
-  6. `aplicacoes` (linhas por produto)
-  7. `lotes` (produção) por produto
-  8. `estoque_movimentos` / `estoque_saldos` por produto
-  9. `produtos` (delete final)
-- A lista definitiva de tabelas dependentes será derivada de `information_schema` no início da função (introspecção de FKs que apontam para `produtos.id`) para não deixar órfãos. Cada delete registra contagem.
-- Retorna JSON `{ deletedByTable: {...}, totalDeleted }` para exibição no toast.
-- Sem migração de schema. Sem drop/alter.
+O catálogo oficial atual é o **A.R Bio v1.3** (7 produtos: `SOLO-1`, `SOLO-2`, `BINS-01`, `BINS-02`, `BFUN-01`, `BINO-01`, `BSOL-01`). Qualquer linha em tabelas dependentes que referencie um `produto_id` fora desse conjunto é considerada "sobressalente".
 
-## Fase 2 — Seed do catálogo v1.3
-Criar `src/lib/protocolos/seedCatalogoARBioV13.ts` com constante `SEED_PRODUTOS_AR_BIO_V13` contendo os 7 itens do PDF:
+Nada será apagado sem autorização explícita — a Fase 1 é somente-leitura.
 
-| Código sugerido | Nome | Tipo | Dose/ha | Valor/ha | Modo aplicação |
-|---|---|---|---|---|---|
-| SOLO-1 | Solo 1 | bioestimulante | 500 mL | R$ 71,00 | sulco de plantio |
-| SOLO-2 | Solo 2 | nematicida | 500 mL | R$ 82,00 | sulco de plantio |
-| BINS-01 | BioInseticida 01 | inseticida | 400 mL | R$ 61,00 | barra |
-| BINS-02 | BioInseticida 02 | inseticida | 300 mL | R$ 46,00 | barra |
-| BFUN-01 | BioFungicida | fungicida | 300 mL | R$ 40,00 | barra |
-| BINO-01 | BioInoculante | inoculante | 100 mL | R$ 40,00 | barra/sulco/TS |
-| BSOL-01 | BioSolubilizador | solubilizador P | 200 mL | R$ 32,00 | sulco de plantio |
+## Fase 1 — Auditoria somente-leitura (sem alterações)
 
-Cada produto carrega `funcao_completa` com o texto da coluna "Função" do PDF.
+Levantar, sem escrever nada, o volume real de referências órfãs. Entrega em `restoration/produtos-orfaos-manifest.json`.
 
-Composição (via `formulacoes`, `volume_ml` conforme PDF; soma bate com `dose_ml_ha`):
-- **Solo 1**: aryabhattai 100 · subtilis 100 · velezensis 100 · T. asperellum 100 · E.M 100
-- **Solo 2**: amyloliquefaciens 100 · methylotrophicus 100 · T. harzianum 100 · Paecilomyces 200
-- **BioInseticida 01**: Bt kurstaki 100 · Beauveria 100 · Metarhizium 100 · E.M 100
-- **BioInseticida 02**: Beauveria 100 · Isaria 100 · E.M 100
-- **BioFungicida**: subtilis 100 · pumilus 100 · E.M 100
-- **BioInoculante**: Methylobacterium symbioticum 100
-- **BioSolubilizador**: B. megaterium 100 · Pseudomonas fluorescens 100
+Para cada tabela dependente detectada em `src/integrations/supabase/types.ts` com FK para `produtos` (≈25 relações), rodar consultas do tipo:
 
-Função `importarCatalogoARBioV13()`:
-1. Lê `microrganismos` filtrando por `nome_cientifico` das cepas usadas; se algum faltar, aborta com mensagem clara (usuário deve rodar antes o seed A.R Bio 2026).
-2. Para cada produto do seed: `upsert` por `codigo` em `produtos` (ativa=true, b2b_enabled=false, e_insumo=false, `versao_catalogo="v1.3"`).
-3. Repopula `formulacoes` do produto (apaga e reinsere as linhas do seed, reaproveitando `buildFormulacoesPayload`).
-4. Retorna `{ inseridos, atualizados, formulacoesCriadas }`.
+```sql
+SELECT '<tabela>' AS tabela, COUNT(*) AS orfas
+FROM <tabela> t
+LEFT JOIN produtos p ON p.id = t.produto_id
+WHERE t.produto_id IS NOT NULL AND p.id IS NULL;
+```
 
-## Fase 3 — UI (aba Produtos)
-Em `src/components/protocolos/ProdutosTab.tsx`, no toolbar visível apenas para papel `administrador`:
-- Botão **"Recarregar Catálogo A.R Bio v1.3"** com `AlertDialog` de confirmação em duas etapas ("digite RECARREGAR"):
-  1. Invoca `admin-wipe-produtos-catalog` e mostra contagem por tabela.
-  2. Chama `importarCatalogoARBioV13()` e mostra resultado.
-- Após sucesso, invalida `queryClient` de produtos e formulações; toast final com totais.
-- Botão remove-se automaticamente se `versao_catalogo` de todos os produtos ativos já for `v1.3` e a contagem for 7 (evita reexecução acidental — igual pattern dos microrganismos que também foi retirado após uso).
+Escopo mínimo esperado (a auditoria confirma a lista final):
+- `formulacoes`, `estoque_produto`, `movimentacoes_estoque`, `lotes_producao`
+- `recomendacoes*`, `visita_recomendacoes`, `ordem_servico_itens`
+- `pedido_itens`, `nfe_itens`, `product_fiscal_profiles`
+- `partner_prices`, `catalogo_*`, `historico_produtos`
 
-## Fase 4 — Validação
-- `bun tsgo --noEmit` (typecheck).
-- `bunx vitest run` completo (esperado: mesma quantidade atual, sem regressão).
-- Smoke Playwright: abrir `/protocolos`, alternar para aba Produtos, verificar catálogo antigo e presença do botão (sem clicar).
+Também mapear, no código, componentes/páginas que exibem produtos e como se comportam quando o `produto_id` referenciado não existe (ex.: cards mostrando "—", nomes vazios, IDs crus). Foco em:
+- `pages/dashboard/VisaoGeral.tsx`
+- `components/bi/*` (BI/dashboards)
+- `pages/portal/*` e `pages/portal-parceiro/FichasTecnicas.tsx`
+- `components/visita/EncerramentoCard.tsx`
+- `lib/pdf/fichaTecnicaProdutoPdf.ts`
 
-## Guard rails
-- Nenhuma migration de schema, nenhuma alteração de RLS ou grants.
-- Wipe restrito a administrador via Edge Function; UI protegida pelo mesmo papel.
-- Se algum FK novo aparecer que não esteja no map de deleção, a introspecção em runtime cobre; caso contrário, a função aborta antes de deletar `produtos` e reporta a tabela pendente.
-- Ambiente remoto (produção) permanece intocado: a operação só roda quando o admin clica no botão.
+Ao fim, apresentar o manifesto com contagens por tabela e pedir autorização para a Fase 2.
 
-## Riscos e mitigação
-- **Perda de histórico operacional/fiscal**: aceito pelo usuário (wipe total).
-- **Microrganismos ausentes**: seed aborta com instrução clara para rodar o seed A.R Bio 2026 primeiro.
-- **Reexecução acidental**: botão some quando catálogo já está em v1.3 com 7 itens.
+## Fase 2 — Limpeza controlada (só após aprovação do manifesto)
 
-## Créditos estimados
-~18 créditos (Edge Function + seed + UI + validação).
+Uma migration única, revisada, com transação, seguindo o princípio "preservar histórico, remover ruído":
+
+1. **Tabelas transacionais/históricas** (pedidos, NF-e, movimentações, lotes, ordens de serviço, histórico): manter linhas, mas gravar `produto_id = NULL` quando a coluna for nullable, preservando `nome_produto`/snapshot textual quando existir. **Não apagar** registros contábeis/fiscais.
+2. **Tabelas operacionais vivas** (`estoque_produto`, `formulacoes`, `recomendacoes*`, `partner_prices`, `product_fiscal_profiles`, `catalogo_*`): `DELETE` das linhas cujo `produto_id` não existe em `produtos`.
+3. Toda operação restrita a `produto_id NOT IN (SELECT id FROM produtos)` — não toca em nada dos 7 produtos v1.3.
+4. Log de contagens antes/depois em `restoration/produtos-orfaos-cleanup-log.md`.
+
+Nenhum `DROP`, nenhuma alteração de schema, nenhuma mudança em RLS.
+
+## Fase 3 — Robustez na UI (defensivo)
+
+Ajustes locais para que os módulos não voltem a "vazar" produto inexistente:
+
+- `EncerramentoCard`, `FichasTecnicas`, `BIFiltrosGlobais`, `EficienciaBioinsumos`, `VisaoGeral`: filtrar `produto_id` nulo/ausente antes de renderizar.
+- `fichaTecnicaProdutoPdf`: retornar erro amigável quando `produto` for `null` em vez de gerar PDF vazio.
+- Sem mudanças de contrato de API, sem novas dependências.
+
+## Fora de escopo
+
+- Não altera o catálogo v1.3 nem a aba Produtos/Microrganismos.
+- Não mexe em migrations históricas, RLS, permissões, rotas ou Edge Functions.
+- Não re-executa o wipe da Edge Function `admin-wipe-produtos-catalog`.
+
+## Validação
+
+Após cada fase que tocar código: `bun run typecheck`, `bun run build`, `bunx vitest run`. Após a Fase 2: reconsulta das mesmas queries de auditoria mostrando `0` órfãs.
+
+## Detalhes técnicos
+
+- Acesso `psql` direto não está disponível nesta sessão (`PGHOST` ausente); as consultas da Fase 1 serão executadas via ferramentas Supabase de leitura.
+- A Fase 2 será entregue como uma migration SQL em `supabase/migrations/` para revisão antes de aplicar.
+- Todo `UPDATE ... SET produto_id = NULL` é precedido por checagem de que a coluna aceita NULL — caso contrário, cai na regra de `DELETE` (com destaque no manifesto).
