@@ -155,3 +155,27 @@ Escopo: apenas os achados **médios #1 (deep-link por campo)** e **#3 (banner de
 - `companyMissingFields.test.ts`: nova cobertura de severidades (CFOP=recomendado, IE/IM=bloqueante em aba empresa) e chaves alinhadas aos ids reais.
 - `useFiscalFieldFocus.test.tsx`: novo teste "contêiner com controle interno".
 - Total focais: **38/38 ✓**.
+
+## §10. H4-A3 — Fechamento corretivo local (evidência)
+
+### Mudanças aplicadas
+1. **Certificado A1 pendente na Central**: `CertificadoValidadeBanner` já suportava `showAllStates`, então na Central de Homologação seguimos renderizando o estado "none" como "Certificado A1 pendente / não configurado", sem bloquear as demais configurações. No painel de certificados removemos `showAllStates` para evitar banner duplicado — a lista vazia continua sendo o indicador visual local.
+2. **Ação canônica**: o link do banner aponta para `/configuracoes/fiscal/empresa?aba=certificado#certificado-a1` (rota real do projeto). O id `certificado-a1` está aplicado no container do cartão A1 em `CertificadoDigitalSecao` (sem duplicidade).
+3. **Hash defensivo em `useFiscalFieldFocus`**: `decodeURIComponent` agora vive em `try/catch`; percent-encoding malformado (`#%E0%A4`) vira string vazia (fallback silencioso, nunca lança). Chaves fora da allow-list (`KNOWN_FIELD_TARGETS`) continuam rejeitadas em `focusFieldById`, preservando query e valores. Links legados `?aba=` e `?campo=` seguem aceitos.
+4. **IE não bloqueante universal**: `companyMissingFields.ts` marca `state_registration` como `recomendado` com rótulo "Inscrição estadual — confirmar contribuinte/isento com a contabilidade/SEFAZ". Não há coluna canônica de contribuinte/isento no schema atual, então a decisão fica com a contabilidade/perfis fiscais. CFOP permanece `recomendado` no singleton.
+
+### Testes adicionados
+- `src/test/fiscal/fase_h4_a3.test.tsx` (novo, 7 testes): certificado `none` renderizado como pendente; link canônico com `#certificado-a1` (e ausência de `#certificados-registrados`); varredura de segredos no estado "none"; IE sem indicador canônico é `recomendado` e não entra em bloqueantes; hash com percent-encoding inválido não lança e mantém query; hash fora da allow-list não foca alvo alheio; link legado `?campo=` continua funcional.
+- `src/test/fiscal/companyMissingFields.test.ts`: atualizado o teste de NF-e habilitada para refletir IE=`recomendado` (com rótulo canônico).
+
+### Resultados
+- Focais H4-A3 + banner + hash + missing-fields: **46/46 ✓**.
+- Suíte fiscal completa: **1137 passed, 3 skipped (1140)** ✓.
+- `tsgo --noEmit`: sem erros. `bun run build`: OK (26.59s).
+
+### Escopo unit vs runtime
+- Unit/mock: banner por estado, contagem de severidades, deep-link canônico, hash defensivo (percent-encoding, allow-list, fallback), link legado `?campo=`, varredura de segredos.
+- Runtime pendente (não coberto por unit): validar visualmente `scrollIntoView`/foco em navegador real e cores do destaque em ambientes com prefers-reduced-motion; renderização de dados reais do hook `useFiscalCertificates` no staging.
+
+### Créditos
+- Rodada H4-A3: ~9 créditos consumidos (limite 12). Sem toque em produção remota, migrations, RLS, deploy ou emissão.

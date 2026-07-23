@@ -73,9 +73,11 @@ describe("computeCompanyMissingFields", () => {
       expect.arrayContaining(["state_registration", "nfe_series", "nfe_cfop_in", "nfe_cfop_out"]),
     );
     expect(r.notApplicable).not.toContain("nfe");
-    // IE é bloqueante mas o campo mora na aba empresa: deep-link vai para lá.
+    // H4-A3: IE não é bloqueante universal — schema não expõe indicador
+    // canônico de contribuinte/isento, então marcamos como recomendado.
     const ie = r.bySection.nfe.find((f) => f.key === "state_registration");
-    expect(ie?.severity).toBe("bloqueia_homologacao");
+    expect(ie?.severity).toBe("recomendado");
+    expect(ie?.label).toMatch(/contribuinte\/isento/i);
     expect(ie?.deepLink).toContain("aba=empresa");
     expect(ie?.deepLink).toContain("#state_registration");
     // CFOP sugerido é recomendado (regra canônica vive nos perfis).

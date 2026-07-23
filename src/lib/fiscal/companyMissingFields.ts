@@ -170,10 +170,19 @@ export function computeCompanyMissingFields(
   // NF-e condicional
   if (row.nfe_enabled === true) {
     const nfeCfg = jsonObj(row.nfe_configuration);
-    // IE é obrigatória para NF-e apenas quando a empresa não declarou
-    // isenção. O campo é renderizado na aba "empresa".
+    // IE: H4-A3 — o schema atual não expõe indicador canônico de
+    // contribuinte/isento (nenhuma coluna booleana em `fiscal_company_settings`),
+    // então NÃO tratamos IE como bloqueante universal. Marcamos como
+    // "recomendado" com orientação para confirmar contribuinte/isento com
+    // a contabilidade/SEFAZ; a decisão real vive nos perfis fiscais.
     if (empty(row.state_registration) && !isExemptRegistration(row.state_registration)) {
-      push(build("state_registration", "Inscrição estadual (ou marcar como ISENTO)", "nfe", "bloqueia_homologacao", LINK_EMPRESA));
+      push(build(
+        "state_registration",
+        "Inscrição estadual — confirmar contribuinte/isento com a contabilidade/SEFAZ",
+        "nfe",
+        "recomendado",
+        LINK_EMPRESA,
+      ));
     }
     if (empty(row.nfe_series) && empty(nfeCfg.series)) push(build("nfe_series", "Série NF-e", "nfe", "bloqueia_homologacao", LINK_NFE));
     // CFOP de produto é regra dos perfis fiscais — aqui é apenas recomendado

@@ -132,7 +132,12 @@ export default function CertificadoDigitalSecao({
         </AlertDescription>
       </Alert>
 
-      <CertificadoValidadeBanner companySettingsId={companySettingsId} showAllStates />
+      {/* H4-A3: no painel de certificados, evitamos banner duplicado para os
+          estados none/valid — a lista logo abaixo já comunica ausência ou
+          vigência. O banner permanece silencioso nesses estados e só aparece
+          para expiring_soon / expired / unknown. */}
+      <CertificadoValidadeBanner companySettingsId={companySettingsId} />
+
 
       {!canManageCertificates && (
         <Alert data-testid="fiscal-cert-readonly">
