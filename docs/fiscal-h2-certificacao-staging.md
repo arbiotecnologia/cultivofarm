@@ -1,9 +1,11 @@
 # Fase H2 — Certificação Runtime no Staging Temporário
 
-> Status desta rodada: **DELTA DE PERFIS DE SERVIÇOS APROVADO NO STAGING.**
-> Suíte RLS completa, backfill, regeneração de `types.ts` e testes externos
+> Status desta rodada: **EVIDÊNCIA RUNTIME AMPLIADA APROVADA NO STAGING.**
+> Matriz RLS integral das demais tabelas, A1 sintético end-to-end, backfill,
+> regeneração de `types.ts` e reconciliação histórica de migrations
 > **PENDENTES**. H2 **não** está concluída; H3/produção continuam
 > proibidas. Produção `navfzbwgwzruipouyfnk` intocada nesta rodada.
+
 
 ## 0. Ambiente e anti-produção
 
@@ -88,27 +90,31 @@ duplicados nesta rodada:
 
 ## 3. Pendências explícitas para concluir H2
 
-Nenhum destes itens foi executado nesta rodada; nenhum pode ser
-declarado aprovado:
+Itens executados nesta rodada e registrados em §11 abaixo:
 
-1. **Suíte RLS completa** no staging cobrindo owner A/B, roles
-   `administrador`, `gestor`, `financeiro`, `cliente_produtor`,
-   `parceiro_b2b`, `authenticated` sem papel — em todas as tabelas
-   fiscais (`fiscal_*`, `product_fiscal_profiles`,
-   `service_fiscal_profiles`, `customer_fiscal_profiles`,
-   `company_fiscal_settings`) e views `v_fiscal_*`.
-2. **RPCs restantes**: evento manual, CRUD/deactivate de perfis,
-   readiness v2, RTC empresa/produto, `mask_sensitive_jsonb`.
-3. **Certificado A1 sintético** — upload, verificação de
+- RLS das três tabelas de perfis fiscais (`product_fiscal_profiles`,
+  `service_fiscal_profiles`, `customer_fiscal_profiles`) com migration
+  `20260728000000` aplicada no staging.
+- RPCs de IBS/CBS para perfis de serviço e produto.
+- `rpc_fiscal_homologation_readiness_v2`.
+- `mask_sensitive_jsonb`.
+- Verificações de segurança de ambiente e de certificados digitais.
+
+Itens que permanecem pendentes para concluir H2:
+
+1. **Matriz RLS integral das demais tabelas fiscais** com owner A/B,
+   roles `administrador`, `gestor`, `financeiro`, `cliente_produtor`,
+   `parceiro_b2b`, `authenticated` sem papel — em `fiscal_*`,
+   `company_fiscal_settings` e views `v_fiscal_*`.
+2. **Certificado A1 sintético end-to-end** — upload, verificação de
    não-persistência de PFX/senha, revogação, cleanup.
-4. **Backfill sintético + smoke SQL + contagens antes/depois.**
-5. **Regeneração de `src/integrations/supabase/types.ts`** a partir do
+3. **Backfill sintético + smoke SQL + contagens antes/depois.**
+4. **Regeneração de `src/integrations/supabase/types.ts`** a partir do
    staging (`SUPABASE_ACCESS_TOKEN` externo).
-6. **Teardown completo** de qualquer usuário `FISCAL_TEST_H2_*` que
-   venha a ser criado.
-7. **Reconciliação do `schema_migrations` do staging** — divergente
-   por aplicação manual histórica. Não reparar artificialmente; exige
+5. **Reconciliação histórica do `schema_migrations` do staging** —
+   divergente por aplicação manual. Não reparar artificialmente; exige
    decisão humana sobre baseline.
+
 
 ## 4. Histórico de migrations do staging
 
@@ -129,23 +135,30 @@ sob autorização humana, com baseline auditado.
 
 ## 6. Créditos consumidos
 
-Esta rodada: ~4 créditos (audit estático + gates locais + relatório).
-Nenhuma escrita em banco a partir do sandbox.
+Acumulado desta fase H2: ~17 créditos (audit estático, gates locais,
+relatórios e atualizações de relatório). Nenhuma escrita em banco a
+partir do sandbox; execução runtime ocorreu fora do sandbox em
+transações com `ROLLBACK`.
+
 
 ## 7. Próxima barreira objetiva
 
-Executar, **fora do sandbox** e no staging temporário, a **suíte RLS
-completa por resultado real** cobrindo todas as tabelas/views fiscais e
-todas as roles listadas em §3.1. Retornar contagens SELECT/INSERT/
-UPDATE/DELETE por role + evidência de negação onde esperada. Sem isso,
-H2 não pode ser declarada concluída, e H3/produção permanecem
-proibidas.
+Executar, **fora do sandbox** e no staging temporário, a **matriz RLS
+integral das demais tabelas fiscais** (`fiscal_*`,
+`company_fiscal_settings`, `v_fiscal_*`) com owner A/B e todas as
+roles. Retornar contagens SELECT/INSERT/UPDATE/DELETE por role +
+evidence de negação onde esperada. Complementar com A1 sintético
+end-to-end, backfill sintético, regeneração de `types.ts` e
+reconciliação histórica de `schema_migrations`. Sem isso H2 não pode
+ser declarada concluída, e H3/produção permanecem proibidas.
+
 
 ## 8. Status final
 
-**PARCIAL — delta de perfis de serviços APROVADO no staging; H2 ainda
+**PARCIAL — evidência runtime ampliada APROVADA no staging; H2 ainda
 NÃO concluída.** Homologação completa **não** declarada. Produção
 **não** apta. H3 **não** iniciada. Frontend **não** deployado.
+
 
 ---
 
@@ -206,7 +219,89 @@ fonte canônica em `supabase/migrations/`, falha se voltar a existir
 `CREATE POLICY ... FOR ALL` nessas tabelas e confirma INSERT/UPDATE
 separados, DELETE=false e REVOKE DELETE.
 
-**Status:** migration **versionada** no caminho canônico, **NÃO
-aplicada** em banco. Aguarda aplicação externa no staging, seguida de
-reprodução da suíte RLS §3.1 por resultado real. Produção proibida.
+**Status:** migration **versionada** no caminho canônico e **aplicada**
+com sucesso no staging `ikaauvsflpmamgxmkhoq`. Resultado real
+registrado em §11. Produção `navfzbwgwzruipouyfnk` permanece intocada.
+
+## 11. Evidência runtime executada no staging `ikaauvsflpmamgxmkhoq`
+
+Toda a execução ocorreu **fora do sandbox**, em transações com
+`ROLLBACK`; produção `navfzbwgwzruipouyfnk` intocada. Resíduos
+sintéticos = 0.
+
+### 11.1 Migration `20260728000000` aplicada
+
+- `supabase/migrations/20260728000000_fiscal_rls_perfis_split_write.sql`
+  aplicada com sucesso no staging temporário.
+- Produção `navfzbwgwzruipouyfnk` não foi alterada.
+
+### 11.2 RLS das tabelas de perfis fiscais
+
+Nas três tabelas (`product_fiscal_profiles`,
+`service_fiscal_profiles`, `customer_fiscal_profiles`):
+
+| Verificação | Count / Resultado |
+|-------------|-------------------|
+| `*_write` (FOR ALL) | 0 — removida |
+| `*_insert` | 1 — `WITH CHECK (administrador OR financeiro)` |
+| `*_update` | 1 — `USING (...) WITH CHECK (administrador OR financeiro)` |
+| `*_read` | 1 — `USING (administrador OR gestor OR financeiro)` |
+| `*_delete` | 1 — `USING (false)` |
+| `REVOKE DELETE FROM authenticated` | aplicado — defesa em profundidade |
+
+### 11.3 Permissões por papel — tabelas de perfis
+
+- `service_fiscal_profiles`:
+  - `financeiro`: INSERT ✅, UPDATE ✅, SELECT ✅
+  - `gestor`: SELECT ✅, UPDATE retornou 0 linhas afetadas, INSERT retornou `SQLSTATE 42501`
+  - `gestor_comercial`: SELECT retornou 0 linhas, INSERT retornou `SQLSTATE 42501`
+- `product_fiscal_profiles` e `customer_fiscal_profiles`:
+  - `financeiro`: INSERT ✅, UPDATE ✅, SELECT ✅
+
+### 11.4 RPCs de perfis de serviço (IBS/CBS)
+
+- `rpc_fiscal_service_profile_ibs_cbs_get` ✅
+- `rpc_fiscal_service_profile_ibs_cbs_save` ✅
+- `updated_by` persistido corretamente ✅
+- Papel sem autorização: `SQLSTATE 42501` ✅
+- Conflito de revisão obsoleta: `SQLSTATE 40001` / `FISCAL_CONFLICT` ✅
+- Perfil inativo: invisível na leitura ✅
+
+### 11.5 RPC produto IBS/CBS
+
+- `rpc_fiscal_product_profile_ibs_cbs_get` / `save` aprovadas ✅
+
+### 11.6 Readiness v2
+
+- `rpc_fiscal_homologation_readiness_v2` autorizado retornou objeto válido ✅
+
+### 11.7 Máscara de JSON sensível
+
+`mask_sensitive_jsonb` aprovou:
+
+- aninhamento ✅
+- arrays ✅
+- case-insensitive ✅
+- `accessToken`, `private_key`, `client_secret` ✅
+- `null` ✅
+- idempotência ✅
+
+### 11.8 Segurança de ambiente
+
+| Verificação | Resultado |
+|-------------|-----------|
+| Provider | `NONE` |
+| Ambiente | `NOT_CONFIGURED` |
+| Status | `DRAFT` |
+| NF-e habilitado | `false` |
+| NFS-e habilitado | `false` |
+| `production_enabled` | `false` |
+
+### 11.9 Certificados digitais
+
+- Tabela de certificados: 0 registros.
+- Nenhuma coluna de senha, PFX ou chave privada presente.
+- Bucket privado: 10 MiB, 0 objetos.
+
+
 
