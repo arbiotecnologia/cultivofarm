@@ -393,6 +393,7 @@ export function computeConnectionsReadiness(
   const ambienteOk = items.find((i) => i.key === "ambiente")?.status === "ready_to_test";
   const provedorOk = provedorState === "filled_untested" || provedorState === "not_applicable";
   const credOk = credState === "not_tested" || credState === "not_applicable";
-  const productionAllowed = !hasBlocker && empresaOk && certOk && provedorOk && credOk && ambienteOk;
-  return { items, hasBlocker, productionAllowed };
+  const prerequisitesReadyForFutureProduction =
+    !hasBlocker && empresaOk === true && certOk === true && provedorOk && credOk && ambienteOk === true;
+  return { items, hasBlocker, prerequisitesReadyForFutureProduction };
 }
