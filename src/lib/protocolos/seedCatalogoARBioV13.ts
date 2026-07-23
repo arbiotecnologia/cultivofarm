@@ -390,6 +390,190 @@ async function auditProdutosOrfaosViaClient(): Promise<ProdutosOrfaosAuditResult
   };
 }
 
+// ============================================================================
+// Dry-run + limpeza controlada de referências órfãs a produtos
+// ============================================================================
+
+export interface OrphanCleanupStep {
+  tabela: string;
+  coluna: string;
+  acao: "delete" | "nullify";
+  linhas_afetadas: number;
+  distinct_ids: number;
+  orphan_ids: string[];
+}
+
+export interface OrphanCleanupPlan {
+  generated_at: string;
+  total_ids_orfaos: number;
+  total_linhas_a_remover: number;
+  total_linhas_a_nulificar: number;
+  steps: OrphanCleanupStep[];
+  audit: ProdutosOrfaosAuditResult;
+}
+
+/**
+ * Nome das tabelas onde a referência a produto órfão deve ser **anulada**
+ * (preserva o histórico da linha em vez de removê-la).
+ */
+const NULLIFY_TABLES = new Set<string>(["registros_consultor_recomendacoes"]);
+
+/**
+ * Dry-run: roda a auditoria e monta o plano de limpeza (ordem respeita
+ * `CLIENT_WIPE_ORDER` — filhos antes dos pais). Não altera nada no banco.
+ */
+export async function previewOrphanCleanup(): Promise<OrphanCleanupPlan> {
+  const audit = await auditProdutosOrfaos();
+
+  const orderIndex = new Map<string, number>();
+  CLIENT_WIPE_ORDER.forEach((t, i) => orderIndex.set(t, i));
+
+  const steps: OrphanCleanupStep[] = audit.por_tabela
+    .filter((r) => r.orfaos > 0 || r.distinct_ids_orfaos > 0)
+    .map<OrphanCleanupStep>((r) => ({
+      tabela: r.tabela,
+      coluna: r.coluna,
+      acao: NULLIFY_TABLES.has(r.tabela) ? "nullify" : "delete",
+      linhas_afetadas: r.orfaos,
+      distinct_ids: r.distinct_ids_orfaos,
+      orphan_ids: r.sample_ids,
+    }))
+    .sort((a, b) => (orderIndex.get(a.tabela) ?? 999) - (orderIndex.get(b.tabela) ?? 999));
+
+  const total_linhas_a_remover = steps
+    .filter((s) => s.acao === "delete")
+    .reduce((sum, s) => sum + s.linhas_afetadas, 0);
+  const total_linhas_a_nulificar = steps
+    .filter((s) => s.acao === "nullify")
+    .reduce((sum, s) => sum + s.linhas_afetadas, 0);
+
+  return {
+    generated_at: new Date().toISOString(),
+    total_ids_orfaos: audit.resumo.distinct_ids_orfaos_global,
+    total_linhas_a_remover,
+    total_linhas_a_nulificar,
+    steps,
+    audit,
+  };
+}
+
+export interface OrphanCleanupResult {
+  ok: boolean;
+  deleted: Record<string, number>;
+  nullified: Record<string, number>;
+  totalDeleted: number;
+  totalNullified: number;
+  failedAt?: { tabela: string; coluna: string; detail: string };
+}
+
+/**
+ * Executa o plano de limpeza. Para cada tabela:
+ *  - `nullify`: UPDATE coluna = null WHERE coluna NOT IN (produtos válidos)
+ *  - `delete` : DELETE WHERE coluna NOT IN (produtos válidos)
+ *
+ * Requer role `administrador` (as RLS das tabelas alvo cobrem isso).
+ * Se qualquer passo falhar, para imediatamente e devolve o progresso parcial.
+ */
+export async function executeOrphanCleanup(): Promise<OrphanCleanupResult> {
+  const { data: produtos, error: prodErr } = await supabase.from("produtos").select("id");
+  if (prodErr) throw prodErr;
+  const validIds = (produtos ?? []).map((p: any) => p.id as string);
+
+  const deleted: Record<string, number> = {};
+  const nullified: Record<string, number> = {};
+
+  // Recoleta os IDs órfãos completos por tabela (não só a amostra do plano).
+  const plan = await previewOrphanCleanup();
+
+  for (const step of plan.steps) {
+    // Recolher IDs órfãos reais desta tabela paginando (o audit já contou; aqui
+    // precisamos dos IDs para o filtro `.in(...)`).
+    const orphanIds = new Set<string>();
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data, error } = await (supabase.from(step.tabela as never) as any)
+        .select(step.coluna)
+        .not(step.coluna, "is", null)
+        .range(from, from + pageSize - 1);
+      if (error) {
+        return {
+          ok: false,
+          deleted,
+          nullified,
+          totalDeleted: Object.values(deleted).reduce((a, b) => a + b, 0),
+          totalNullified: Object.values(nullified).reduce((a, b) => a + b, 0),
+          failedAt: { tabela: step.tabela, coluna: step.coluna, detail: error.message },
+        };
+      }
+      const rows = (data ?? []) as Record<string, string | null>[];
+      if (rows.length === 0) break;
+      const validSet = new Set(validIds);
+      for (const row of rows) {
+        const v = row[step.coluna];
+        if (v && !validSet.has(v)) orphanIds.add(v);
+      }
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+
+    if (orphanIds.size === 0) {
+      if (step.acao === "delete") deleted[step.tabela] = 0;
+      else nullified[step.tabela] = 0;
+      continue;
+    }
+
+    // Aplica em chunks (evita URLs gigantes no PostgREST `in.(...)`).
+    const ids = [...orphanIds];
+    let affected = 0;
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
+      if (step.acao === "nullify") {
+        const { count, error } = await (supabase.from(step.tabela as never) as any)
+          .update({ [step.coluna]: null }, { count: "exact" })
+          .in(step.coluna, chunk);
+        if (error) {
+          return {
+            ok: false,
+            deleted,
+            nullified,
+            totalDeleted: Object.values(deleted).reduce((a, b) => a + b, 0),
+            totalNullified: Object.values(nullified).reduce((a, b) => a + b, 0),
+            failedAt: { tabela: step.tabela, coluna: step.coluna, detail: error.message },
+          };
+        }
+        affected += count ?? 0;
+      } else {
+        const { count, error } = await (supabase.from(step.tabela as never) as any)
+          .delete({ count: "exact" })
+          .in(step.coluna, chunk);
+        if (error) {
+          return {
+            ok: false,
+            deleted,
+            nullified,
+            totalDeleted: Object.values(deleted).reduce((a, b) => a + b, 0),
+            totalNullified: Object.values(nullified).reduce((a, b) => a + b, 0),
+            failedAt: { tabela: step.tabela, coluna: step.coluna, detail: error.message },
+          };
+        }
+        affected += count ?? 0;
+      }
+    }
+
+    if (step.acao === "delete") deleted[step.tabela] = affected;
+    else nullified[step.tabela] = affected;
+  }
+
+  return {
+    ok: true,
+    deleted,
+    nullified,
+    totalDeleted: Object.values(deleted).reduce((a, b) => a + b, 0),
+    totalNullified: Object.values(nullified).reduce((a, b) => a + b, 0),
+  };
+}
+
 /**
  * Etapa 2 — insere os 7 produtos do catálogo v1.3 e suas formulações.
  * Idempotente por `codigo` (upsert). Se algum microrganismo requerido não existir,
