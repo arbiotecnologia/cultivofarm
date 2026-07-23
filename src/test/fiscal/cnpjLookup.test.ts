@@ -54,13 +54,13 @@ describe("lookupCnpj", () => {
   });
 
   it("rejeita CNPJ alfanumérico (sem endpoint público)", async () => {
-    // 12 chars com uma letra + 2 dígitos DV quaisquer
+    // 16 chars > invalid length
     await expect(lookupCnpj("ABCDE12345670012")).rejects.toMatchObject({
       code: "invalid_cnpj",
     });
-    // Comprimento certo, mas com letra
+    // 14 chars com letra: passa no length, cai no filtro alfa
     await expect(lookupCnpj("1234567890123A")).rejects.toMatchObject({
-      code: "invalid_cnpj",
+      code: "alpha_unsupported",
     });
     await expect(lookupCnpj("A1234567890123")).rejects.toMatchObject({
       code: "alpha_unsupported",
