@@ -54,6 +54,7 @@ import { AlertTriangle, ShieldOff, Loader2, CheckCircle2, Circle, Info } from "l
 import CertificadoDigitalSecao from "@/components/fiscal/certificados/CertificadoDigitalSecao";
 import HomologacaoSecao from "@/components/fiscal/homologacao/HomologacaoSecao";
 import { RtcCompanyCard } from "@/components/fiscal/RtcCompanyCard";
+import { CnpjLookupButton } from "@/components/fiscal/CnpjLookupButton";
 
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
@@ -428,18 +429,28 @@ export default function FiscalEmpresa() {
               <CardHeader><CardTitle className="text-base">Identificação</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FieldRow id="cnpj" label="CNPJ" description="14 posições — desde 07/2026 aceita letras A–Z nas 12 primeiras (IN RFB 2.229/2024).">
-                  <Input
-                    id="cnpj"
-                    inputMode="text"
-                    autoCapitalize="characters"
-                    autoComplete="off"
-                    maxLength={18}
-                    placeholder="00.000.000/0000-00"
-                    value={formatCNPJ(values.cnpj ?? "")}
-                    onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
-                    aria-invalid={!!errors.cnpj}
-                  />
-                  {errors.cnpj ? <p className="text-xs text-destructive" role="alert">{errors.cnpj}</p> : null}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                    <div className="flex-1">
+                      <Input
+                        id="cnpj"
+                        inputMode="text"
+                        autoCapitalize="characters"
+                        autoComplete="off"
+                        maxLength={18}
+                        placeholder="00.000.000/0000-00"
+                        value={formatCNPJ(values.cnpj ?? "")}
+                        onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
+                        aria-invalid={!!errors.cnpj}
+                      />
+                      {errors.cnpj ? <p className="text-xs text-destructive" role="alert">{errors.cnpj}</p> : null}
+                    </div>
+                    <CnpjLookupButton
+                      cnpj={values.cnpj}
+                      currentValues={values}
+                      disabled={readonly || update.isPending}
+                      onApply={(patch) => setValues((prev) => ({ ...prev, ...patch }))}
+                    />
+                  </div>
                 </FieldRow>
 
                 <FieldRow id="legal_name" label="Razão social">
