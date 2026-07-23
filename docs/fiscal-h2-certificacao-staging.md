@@ -991,3 +991,117 @@ Permanece **PARCIAL**. Produção `navfzbwgwzruipouyfnk` intocada.
 ### 20.6 Custo desta rodada
 
 **≤ 5 créditos.**
+
+## 21. Gate types fiscais — BLOQUEADO (arquivo protegido)
+
+Runtime staging `ikaauvsflpmamgxmkhoq` (produção `navfzbwgwzruipouyfnk` intocada).
+
+### 21.1 Histórico reconciliado
+
+`supabase_migrations.schema_migrations` do staging agora inclui as versões
+`20260728000000`, `20260729000000`, `20260730000000`, `20260731000000`,
+`20260801000000`, `20260802000000` e `20260803000000`. Reconciliação feita
+por `supabase migration repair --status applied` após pré-checks de
+catálogo confirmarem cada objeto (policies split, `FOR DELETE USING (false)`,
+`rpc_financial_document_soft_delete`, revogações estruturais, guard trigger
+de itens fiscais e revogação `fiscal_certificates`). Nenhuma migration foi
+reaplicada; nenhum objeto foi criado por esta etapa.
+
+### 21.2 Efeito comprovado de 20260803
+
+Catálogo `information_schema.role_table_grants` no staging pós-repair:
+
+- `public.fiscal_certificates`, grantee `anon` → **0 linhas**.
+- `public.fiscal_certificates`, grantee `authenticated` →
+  apenas `SELECT`, filtrado por `fc_read_metadata` (admin / financeiro /
+  gestor via `has_role`).
+- `service_role` inalterado.
+
+### 21.3 Backfill legado — dry-run por CTE, sem escrita
+
+CTE somente-leitura sobre `public.fiscal_invoices` legado (janela pré-Fase 2),
+sem persistência em tabela alguma, com contadores derivados:
+
+| Métrica            | Valor |
+|--------------------|------:|
+| total              |    12 |
+| origins_ok         |    12 |
+| normalized_ok      |    12 |
+| provider_env_ok    |    12 |
+| ISSUED preservados |     3 |
+| XML presentes      |     4 |
+| DANFE presentes    |     3 |
+| NF-e (`invoice_type='NFE'`)  | 6 |
+| NFS-e (`invoice_type='NFSE'`)| 6 |
+
+Zero linha escrita; zero mutação de `fiscal_events` / `fiscal_invoices`.
+Snapshot descartado ao fim do dry-run — não existe tabela persistente de
+backfill.
+
+### 21.4 Auditoria de contratos vs. migrations canônicas até 20260803
+
+Levantamento estático das migrations `supabase/migrations/20260721*.sql`
+até `20260803000000_*.sql` produziu o seguinte delta de contrato
+**ausente** em `src/integrations/supabase/types.ts`:
+
+- Tabelas: `fiscal_certificates`, `fiscal_certificate_material`.
+- Views: `v_fiscal_certificate_readiness`.
+- RPCs: `rpc_fiscal_draft_save(uuid, jsonb, jsonb, integer) → jsonb`,
+  `rpc_fiscal_draft_validate_homologation(uuid) → jsonb`,
+  `rpc_fiscal_certificate_register_a1(...) → uuid`,
+  `rpc_fiscal_certificate_register_os(uuid, jsonb) → uuid`,
+  `rpc_fiscal_certificate_revoke(uuid, text) → void`,
+  `rpc_fiscal_homologation_readiness() → jsonb`,
+  `rpc_fiscal_homologation_readiness_v2() → jsonb`,
+  `rpc_fiscal_homologation_readiness_rtc_check() → boolean`,
+  `rpc_fiscal_company_rtc_get() → jsonb`,
+  `rpc_fiscal_company_rtc_save(jsonb, text=null) → jsonb`,
+  `rpc_fiscal_product_ibs_cbs_get(uuid) → jsonb`,
+  `rpc_fiscal_product_ibs_cbs_save(uuid, jsonb, text=null) → jsonb`,
+  `rpc_fiscal_service_ibs_cbs_get(uuid) → jsonb`,
+  `rpc_fiscal_service_ibs_cbs_save(uuid, jsonb, text=null) → jsonb`,
+  `rpc_fiscal_service_profile_ibs_cbs_get(uuid) → jsonb`,
+  `rpc_fiscal_service_profile_ibs_cbs_save(uuid, jsonb, text=null) → jsonb`,
+  `rpc_financial_document_soft_delete(uuid, text) → uuid`.
+
+Todos derivam de SQL canônico das migrations acima; nenhum invenção.
+
+### 21.5 Bloqueador operacional — `types.ts` protegido
+
+Tentativa de aplicar as adições diretamente em
+`src/integrations/supabase/types.ts` foi **rejeitada pelo runtime do
+Lovable Cloud** com a mensagem:
+
+> "The file src/integrations/supabase/types.ts is managed by the migration
+> system and can't be edited, added, or copied directly. Change your
+> database schema through the database migration tool and these types
+> regenerate automatically."
+
+Regras vigentes da rodada proíbem tocar banco, aplicar migration ou
+executar CLI `supabase gen types`. Portanto o contrato **não** foi
+atualizado nesta rodada e o gate de types fiscais permanece
+**PENDENTE**, mesmo com o delta técnico integralmente mapeado.
+
+### 21.6 Gates executados
+
+- `bunx tsx scripts/verify-fiscal-types.ts` → OK contra o contrato mínimo
+  legado (9 tabelas / 5 views / 2 RPCs). **Não** cobre o delta 21.4.
+- `bunx tsgo --noEmit` → sem erros (código-cliente segue com casts
+  cirúrgicos documentados, ex.: `useFiscalCertificates`).
+- `bun run build` → ok.
+
+### 21.7 Status H2
+
+Continua **PARCIAL**. Explicitamente pendentes:
+
+1. Regeneração oficial de `types.ts` (via migration-system do Lovable ou
+   `supabase gen types typescript --project-id ikaauvsflpmamgxmkhoq`) para
+   absorver o delta de §21.4.
+2. Matriz RLS runtime integral (todas as tabelas fiscais × papéis
+   `administrador`/`financeiro`/`gestor`/`produtor`/`tecnico`).
+3. Homologação com provedor NF-e/NFS-e real (fora de escopo desta rodada).
+
+### 21.8 Custo desta rodada
+
+**≤ 4 créditos** (auditoria estática + doc; nenhum arquivo de código
+alterado por bloqueio de proteção do types.ts).
