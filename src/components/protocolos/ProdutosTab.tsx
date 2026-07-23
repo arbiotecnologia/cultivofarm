@@ -108,6 +108,8 @@ export function ProdutosTab() {
     b2b_enabled: false,
     e_insumo: false,
     estoque_minimo: "",
+    fornecedor: "",
+    safra_referencia: "",
     composicao: [] as { 
       microrganismo_id: string | null; 
       component_insumo_id: string | null; 
@@ -116,6 +118,7 @@ export function ProdutosTab() {
       e_volume_fixo: boolean;
     }[]
   });
+
 
 
   const fetchMicrorganismos = async () => {
@@ -220,7 +223,10 @@ export function ProdutosTab() {
       b2b_enabled: form.b2b_enabled,
       e_insumo: form.e_insumo,
       estoque_minimo: form.estoque_minimo ? Number(form.estoque_minimo) : 0,
+      fornecedor: form.fornecedor.trim() || null,
+      safra_referencia: form.safra_referencia.trim() || null,
     };
+
 
     let produtoNovoCriadoId: string | null = null;
 
@@ -282,9 +288,12 @@ export function ProdutosTab() {
       b2b_enabled: false,
       e_insumo: false,
       estoque_minimo: "",
+      fornecedor: "",
+      safra_referencia: "",
       composicao: []
     });
   };
+
 
   const handleEdit = (p: Produto) => {
     let dose = p.valor_dose_brl;
@@ -313,6 +322,8 @@ export function ProdutosTab() {
       b2b_enabled: !!p.b2b_enabled,
       e_insumo: p.e_insumo,
       estoque_minimo: p.estoque_minimo?.toString() || "",
+      fornecedor: ((p as any).fornecedor as string | null) || "",
+      safra_referencia: ((p as any).safra_referencia as string | null) || "",
       composicao: p.formulacoes?.map(f => ({
         microrganismo_id: f.microrganismo_id,
         component_insumo_id: f.component_insumo_id,
@@ -321,6 +332,7 @@ export function ProdutosTab() {
         e_volume_fixo: f.e_volume_fixo
       })) || []
     });
+
     composicaoTouched.current = false;
     lastSuggestion.current = null;
     setOpen(true);
@@ -659,6 +671,29 @@ export function ProdutosTab() {
                     </div>
 
                     <div className="border-t pt-4">
+                      <h3 className="text-sm font-semibold mb-3">Referência Comercial</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Fornecedor</Label>
+                          <Input
+                            value={form.fornecedor}
+                            onChange={(e) => setForm({ ...form, fornecedor: e.target.value })}
+                            placeholder="Deixe em branco para remover"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Safra</Label>
+                          <Input
+                            value={form.safra_referencia}
+                            onChange={(e) => setForm({ ...form, safra_referencia: e.target.value })}
+                            placeholder="Deixe em branco para remover"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+
                       <h3 className="text-sm font-semibold mb-3">Disponibilidade</h3>
                       <div className="flex flex-wrap gap-6">
                         <div className="flex items-center gap-2">

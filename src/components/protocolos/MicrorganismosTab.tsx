@@ -417,9 +417,22 @@ export function MicrorganismosTab() {
                       <Input type="number" value={form.dose_ml_ha} onChange={(e) => setForm({...form, dose_ml_ha: e.target.value})} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Safra</Label>
-                      <Input value={form.safra_referencia || ""} onChange={(e) => setForm({...form, safra_referencia: e.target.value})} />
+                      <Label>Fornecedor</Label>
+                      <Input
+                        value={form.fornecedor || ""}
+                        onChange={(e) => setForm({...form, fornecedor: e.target.value})}
+                        placeholder="Deixe em branco para remover"
+                      />
                     </div>
+                    <div className="space-y-2">
+                      <Label>Safra</Label>
+                      <Input
+                        value={form.safra_referencia || ""}
+                        onChange={(e) => setForm({...form, safra_referencia: e.target.value})}
+                        placeholder="Deixe em branco para remover"
+                      />
+                    </div>
+
                     <div className="space-y-2">
                       <Label>Valor da dose 100 mL</Label>
                       <MoneyInput
@@ -454,11 +467,8 @@ export function MicrorganismosTab() {
                   <p className="text-[11px] text-muted-foreground mt-2 italic">
                     1 dose = 100 mL · 1 litro = 10 doses. Editar um valor recalcula o outro.
                   </p>
-                  <div className="space-y-2 mt-4">
-                    <Label>Fornecedor</Label>
-                    <Input value={form.fornecedor || ""} onChange={(e) => setForm({...form, fornecedor: e.target.value})} />
-                  </div>
                 </div>
+
 
                 <div className="border-t pt-4">
                   <h3 className="text-sm font-semibold mb-3">Disponibilidade</h3>
