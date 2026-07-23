@@ -61,7 +61,9 @@ describe("Hardening estrutural fiscal — 20260731000000", () => {
     expect(sql).not.toMatch(/CREATE\s+POLICY|DROP\s+POLICY|ALTER\s+POLICY/i);
     expect(sql).not.toMatch(/ENABLE\s+ROW\s+LEVEL\s+SECURITY|DISABLE\s+ROW\s+LEVEL\s+SECURITY/i);
     expect(sql).not.toMatch(/CREATE\s+(OR\s+REPLACE\s+)?FUNCTION|DROP\s+FUNCTION/i);
-    expect(sql).not.toMatch(/\b(REVOKE|GRANT)\b[^;]*service_role/i);
+    const sqlNoComments = sql.replace(/--[^\n]*/g, "");
+    expect(sqlNoComments).not.toMatch(/service_role/i);
+
     // Não revoga SELECT em nenhum lugar (SELECT administrativo preservado)
     expect(sql).not.toMatch(/REVOKE[^;]*\bSELECT\b/i);
   });
