@@ -285,9 +285,12 @@ export function ProdutosTab() {
       b2b_enabled: false,
       e_insumo: false,
       estoque_minimo: "",
+      fornecedor: "",
+      safra_referencia: "",
       composicao: []
     });
   };
+
 
   const handleEdit = (p: Produto) => {
     let dose = p.valor_dose_brl;
