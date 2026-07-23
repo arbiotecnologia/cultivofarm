@@ -13,10 +13,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { MemoryRouter, useSearchParams } from "react-router-dom";
 import CertificadoValidadeBanner from "@/components/fiscal/certificados/CertificadoValidadeBanner";
-import {
-  computeCompanyMissingFields,
-  type FiscalCompanyRow,
-} from "@/lib/fiscal/companyMissingFields";
+import { computeCompanyMissingFields } from "@/lib/fiscal/companyMissingFields";
+import type { CompanyFiscalRow } from "@/hooks/useFiscalCompanySettings";
 import { useFiscalFieldFocus } from "@/lib/fiscal/useFiscalFieldFocus";
 
 const mockUseFiscalCertificates = vi.fn();
@@ -67,7 +65,7 @@ describe("H4-A3 · Certificado A1 pendente (Central de Homologação)", () => {
 });
 
 describe("H4-A3 · IE sem indicador canônico é recomendado", () => {
-  function baseRow(): FiscalCompanyRow {
+  function baseRow(): CompanyFiscalRow {
     return {
       id: "cs-1",
       company_id: null,
@@ -78,14 +76,19 @@ describe("H4-A3 · IE sem indicador canônico é recomendado", () => {
       nfe_enabled: true, nfse_enabled: false,
       nfe_configuration: { series: "1", suggested_cfop_in_state: "5102", suggested_cfop_interstate: "6102" },
       nfse_configuration: null,
-    };
+    } as unknown as CompanyFiscalRow;
   }
   it("state_registration vazio => severity 'recomendado' (não bloqueante)", () => {
     const r = computeCompanyMissingFields(baseRow());
     const ie = r.bySection.nfe.find((f) => f.key === "state_registration");
     expect(ie).toBeDefined();
     expect(ie?.severity).toBe("recomendado");
-    expect(r.blocking.some((f) => f.key === "state_registration")).toBe(false);
+    // `blocking` é a contagem de itens bloqueantes; nenhum deles é IE.
+    const allBloqueia = [
+      ...r.bySection.empresa, ...r.bySection.endereco,
+      ...r.bySection.nfe, ...r.bySection.nfse,
+    ].filter((f) => f.severity === "bloqueia_homologacao");
+    expect(allBloqueia.some((f) => f.key === "state_registration")).toBe(false);
   });
 });
 
