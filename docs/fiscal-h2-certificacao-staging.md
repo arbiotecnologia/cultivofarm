@@ -1,9 +1,11 @@
 # Fase H2 — Certificação Runtime no Staging Temporário
 
-> Status desta rodada: **DELTA DE PERFIS DE SERVIÇOS APROVADO NO STAGING.**
-> Suíte RLS completa, backfill, regeneração de `types.ts` e testes externos
+> Status desta rodada: **EVIDÊNCIA RUNTIME AMPLIADA APROVADA NO STAGING.**
+> Matriz RLS integral das demais tabelas, A1 sintético end-to-end, backfill,
+> regeneração de `types.ts` e reconciliação histórica de migrations
 > **PENDENTES**. H2 **não** está concluída; H3/produção continuam
 > proibidas. Produção `navfzbwgwzruipouyfnk` intocada nesta rodada.
+
 
 ## 0. Ambiente e anti-produção
 
