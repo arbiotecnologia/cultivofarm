@@ -179,3 +179,72 @@ Escopo: apenas os achados **médios #1 (deep-link por campo)** e **#3 (banner de
 
 ### Créditos
 - Rodada H4-A3: ~9 créditos consumidos (limite 12). Sem toque em produção remota, migrations, RLS, deploy ou emissão.
+
+## §11. H5-A — Prontidão para preenchimento e conexões fiscais
+
+### Escopo (audit + implementação)
+Reutiliza integralmente o schema/RPC existente (`company_fiscal_settings`,
+`v_fiscal_certificate_readiness`) e hooks (`useFiscalCompanySettings`,
+`useFiscalCertificates`). Nenhuma migration, RLS, deploy ou emissão foi
+tocada. Nenhum campo novo foi criado no singleton; segredos continuam
+server-side (referências como `nfe_credential_ref`, `nfse_credential_ref`,
+`certificate_ref`, `webhook_ref`).
+
+### Arquivos
+- `src/lib/fiscal/connectionsReadiness.ts` (novo): função pura que calcula
+  os 8 itens (Empresa, NF-e, NFS-e, Provedor, Credenciais do provedor,
+  Certificado A1, Webhook, Ambiente) e estados canônicos
+  (`not_started | pending | filled_untested | not_tested | ready_to_test |
+  blocked | not_applicable`), com deep-links canônicos.
+- `src/components/fiscal/homologacao/ProntidaoConexoesSecao.tsx` (novo):
+  card somente-leitura na Central de Homologação. Renderiza status,
+  descrição e link "Abrir" por item; sinaliza produção como
+  "desabilitada" mesmo quando os pré-requisitos estão atendidos (a
+  ativação real exige teste de conexão e aprovação futuros).
+- `src/components/fiscal/homologacao/HomologacaoSecao.tsx`: passa a
+  incluir a nova seção logo abaixo do banner do certificado.
+- `src/test/fiscal/fase_h5_a.connectionsReadiness.test.ts` (novo,
+  17 testes).
+
+### Como cada exigência do prompt foi coberta
+1. **Rascunho parcial**: `computeConnectionsReadiness(null, [])` retorna todos
+   os itens como `not_started`; nenhum valor numérico/fictício é inserido.
+   Descrição usa "Pendente"/"Não informado", nunca zero.
+2. **N/A para NF-e/NFS-e desativados**: `nfe_enabled=false` ou
+   `nfse_enabled=false` retornam `not_applicable`; provedor/credenciais
+   agregam corretamente (também `not_applicable` se nada está habilitado).
+3. **Estados de conexão**: os 6 estados + N/A estão cobertos em testes
+   focais. Provedor + credenciais + webhook usam `not_tested` para
+   marcar "existe referência, sem teste de conexão".
+4. **Credenciais**: nunca aceitam token/senha no cálculo; o helper opera só
+   sobre referências. O teste "nenhum segredo" garante que qualquer campo
+   contaminado (ex.: `pfx_password`, `nfe_credential_secret`) não aparece
+   no resultado calculado — o helper simplesmente não lê essas chaves.
+5. **Certificado A1**: `not_started` sem certificado; `filled_untested`
+   quando `AVAILABLE` e válido; `blocked` quando expirado (contribui para
+   `hasBlocker=true` e mantém `productionAllowed=false`).
+6. **Ambiente**: `HOMOLOGATION|SANDBOX` → `ready_to_test`; `PRODUCTION`
+   vira `pending` (volte para homologação); nunca ativa produção.
+   `productionAllowed` é apenas um flag de relatório — não altera o
+   `production_enabled` do banco.
+7. **Webhook**: usa `webhook_ref` já existente (identificador curto);
+   estados `pending`/`not_tested` sem gerar segredo nem endpoint.
+
+### Distinção unit/mock vs runtime pendente
+- **Unit (cobertos)**: matriz de estados por item, deep-links canônicos,
+  N/A para NF-e/NFS-e desativados, produção não permitida, varredura de
+  segredos no payload calculado, labels pt-BR.
+- **Runtime (pendente futuro)**: consumo real do hook `useFiscalCertificates`
+  no navegador (visualização dos estados em produção-preview), execução
+  de teste de conexão com o provedor (fora de escopo desta fase), foco
+  visual dos deep-links por container fiscal (parcialmente coberto em
+  `useFiscalFieldFocus`).
+
+### Resultados
+- Focais H5-A: **17/17 ✓**.
+- Suíte fiscal completa: **1154 passed, 3 skipped (1157)** ✓.
+- `tsgo --noEmit`: sem erros. `bun run build`: OK (58.31s).
+
+### Créditos
+- Rodada H5-A: ~28 créditos consumidos (limite 35). Acumulado aproximado
+  95/300. Sem toque em produção remota, migrations, RLS, deploy ou emissão.
