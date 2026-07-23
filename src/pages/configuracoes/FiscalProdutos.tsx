@@ -291,7 +291,7 @@ export default function FiscalProdutos() {
                       <th className="p-2">CEST</th>
                       <th className="p-2">CFOP int./inter.</th>
                       <th className="p-2">Status</th>
-                      <th className="p-2">Prontidão</th>
+                      <th className="p-2" title="Verificação inicial dos campos essenciais. A revisão contábil e os demais dados fiscais continuam necessários antes da emissão.">Prontidão mínima</th>
                       <th className="p-2 text-right">Ação</th>
                     </tr>
                   </thead>
