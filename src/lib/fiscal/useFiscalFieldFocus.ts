@@ -80,19 +80,26 @@ export function useFiscalFieldFocus({
 }: UseFiscalFieldFocusOptions): void {
   useEffect(() => {
     if (!ready) return;
-    const campo = searchParams.get("campo");
+    // Formato canônico H4-A2: `?aba=<aba>#<id-real>`. Formato legado H4-A1
+    // (`?campo=<id>`) segue aceito para não quebrar links já compartilhados.
+    const rawHash = typeof window !== "undefined" ? (window.location.hash ?? "") : "";
+    const hashKey = rawHash.startsWith("#") ? decodeURIComponent(rawHash.slice(1)) : "";
+    const legacyKey = searchParams.get("campo") ?? "";
+    const campo = hashKey || legacyKey;
     if (!campo) return;
     // Aguarda o painel da aba montar (Tabs monta lazy o TabsContent ativo).
     const handle = window.setTimeout(() => {
       const ok = focusFieldById(campo);
-      // Consome o parâmetro em ambos os casos (alvo válido OU fallback),
-      // sem alterar valor nem outros parâmetros.
-      if (searchParams.get("campo") === campo) {
+      // Consome hash canônico e/ou parâmetro legado sem alterar valores.
+      if (hashKey && typeof window !== "undefined" && window.history?.replaceState) {
+        const { pathname, search } = window.location;
+        window.history.replaceState(null, "", `${pathname}${search}`);
+      }
+      if (legacyKey && searchParams.get("campo") === legacyKey) {
         const next = new URLSearchParams(searchParams);
         next.delete("campo");
         setSearchParams(next, { replace: true });
       }
-      // Retorno explícito para o linter.
       void ok;
     }, 60);
     return () => window.clearTimeout(handle);
