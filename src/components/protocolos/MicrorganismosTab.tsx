@@ -548,75 +548,91 @@ export function MicrorganismosTab() {
                   <div className="font-mono-data text-xs leading-tight">
                     {formatConcentracaoDisplay(m.concentracao_ufc_ml)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    UFC/mL
-                  </div>
                 </TableCell>
                 <TableCell className="text-right font-mono-data">
                   {m.dose_ml_ha || "—"}
                 </TableCell>
-                <TableCell className="text-right font-mono-data text-xs">
+                <TableCell className="text-right whitespace-nowrap min-w-[110px]">
                   {m.valor_dose_brl || m.valor_litro_brl ? (
-                    <span className="text-primary font-semibold">
-                      {m.valor_dose_brl ? brl(m.valor_dose_brl) : (m.valor_litro_brl ? brl(m.valor_litro_brl / 10) : "—")} <span className="text-muted-foreground font-normal">/100 mL</span>
-                    </span>
-                  ) : "—"}
+                    <div className="leading-tight">
+                      <div className="text-primary font-semibold text-sm">
+                        {m.valor_dose_brl ? brl(m.valor_dose_brl) : (m.valor_litro_brl ? brl(m.valor_litro_brl / 10) : "—")}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">/100 mL</div>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center gap-1 justify-end flex-wrap">
-                    <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2"
-                      onClick={() => setVolumesEdit(m)}
-                      title="Volumes do catálogo"
-                    >
-                      <Droplets className="h-3.5 w-3.5 mr-1" />Volumes
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2"
-                      onClick={() => setFichaMicro(m)}
-                      title="Ficha técnica"
-                    >
-                      <FileText className="h-3.5 w-3.5 mr-1" />Ficha
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      onClick={async () => {
-                        try {
-                          await generateFichaTecnicaMicrorganismoPdf({ microId: m.id });
-                          toast.success("PDF exportado");
-                        } catch (e: any) { toast.error(e.message); }
-                      }}
-                      title="Exportar PDF"
-                    >
-                      <FileDown className="h-3.5 w-3.5" />
-                    </Button>
-                    {m.observacoes && (
-                      <TooltipProvider>
+                  <TooltipProvider>
+                    <div className="flex items-center justify-end gap-1.5 flex-nowrap">
+                      <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2"
+                        onClick={() => setVolumesEdit(m)}
+                        title="Volumes do catálogo"
+                      >
+                        <Droplets className="h-3.5 w-3.5 mr-1" />Volumes
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2"
+                        onClick={() => setFichaMicro(m)}
+                        title="Ficha técnica"
+                      >
+                        <FileText className="h-3.5 w-3.5 mr-1" />Ficha
+                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={async () => {
+                              try {
+                                await generateFichaTecnicaMicrorganismoPdf({ microId: m.id });
+                                toast.success("PDF exportado");
+                              } catch (e: any) { toast.error(e.message); }
+                            }}
+                            aria-label="Exportar PDF"
+                          >
+                            <FileDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Exportar PDF</TooltipContent>
+                      </Tooltip>
+                      {m.observacoes && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-muted-foreground" />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              aria-label="Observações"
+                            >
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p>{m.observacoes}</p>
                           </TooltipContent>
                         </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    <DeleteProtocoloButton
-                      table="microrganismos"
-                      id={m.id}
-                      label={m.nome}
-                      itemLabel="microrganismo"
-                      onDeleted={fetch}
-                    />
-                  </div>
+                      )}
+                      <div className="ml-1">
+                        <DeleteProtocoloButton
+                          table="microrganismos"
+                          id={m.id}
+                          label={m.nome}
+                          itemLabel="microrganismo"
+                          onDeleted={fetch}
+                        />
+                      </div>
+                    </div>
+                  </TooltipProvider>
                 </TableCell>
               </TableRow>
             ))}
