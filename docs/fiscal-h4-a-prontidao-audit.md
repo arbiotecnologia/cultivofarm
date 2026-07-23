@@ -248,3 +248,79 @@ server-side (referências como `nfe_credential_ref`, `nfse_credential_ref`,
 ### Créditos
 - Rodada H5-A: ~28 créditos consumidos (limite 35). Acumulado aproximado
   95/300. Sem toque em produção remota, migrations, RLS, deploy ou emissão.
+
+## §12. H5-A.1 — Correções finais da prontidão
+
+### Escopo
+Correção local/estrita: sem toque em produção remota, migrations, RLS,
+deploy, emissão, webhook externo ou provedor fiscal. Sem novas dependências.
+
+### Achados e correções
+1. **Deep-links quebrados** — abas `provedor` e `webhook` NÃO existem em
+   `FiscalEmpresa.tsx` (as reais são `empresa|nfe|nfse|certificado|integracao|
+   rtc|homologacao|revisao`). Corrigido:
+   - `provedor` → `?aba=integracao#nfe_provider`
+   - `credenciais_provedor` → `?aba=integracao#nfe_credential_ref` (com
+     descrição segura: segredo cadastrado no cofre server-side; a tela
+     mantém apenas o identificador — não há input para senha/token/PFX).
+   - `webhook` → `?aba=integracao#webhook_ref`.
+   - `ambiente` mantido em `?aba=empresa#fiscal_environment` (id real).
+   - `certificado_a1` mantido em `?aba=certificado#certificado-a1`.
+2. **Semântica de produção** — renomeado `productionAllowed` →
+   `prerequisitesReadyForFutureProduction`. Documentado no tipo que o
+   flag é **puramente informativo** e nunca altera `production_enabled`,
+   ambiente, feature flag, botão ou permissão. Copy do card atualizada
+   para deixar claro que produção continua desabilitada mesmo com os
+   pré-requisitos atendidos e depende de homologação + credenciais/cert.
+   válidos + autorização humana explícita.
+3. **Rascunho parcial** — auditoria confirmou que
+   `companyFiscalFormSchema` já é totalmente opcional e `onSave`
+   persiste rascunho sem exigir campos da empresa (nenhuma validação de
+   completude bloqueia o save). Nada refatorado; adicionados testes de
+   regressão (`fase_h5_a1.draftSave.test.ts`).
+4. **Segurança/certificado** — o formulário continua expondo apenas
+   `certificate_ref` (identificador), sem input para PFX/senha. O
+   conector do SO permanece somente como preparação (não implementado).
+   O helper de prontidão não lê nem serializa `fingerprint_sha256`,
+   `pfx_*`, `*_credential_secret`, etc. (varredura garantida por teste).
+5. **Textos pt-BR** — labels revisadas: "Não iniciado", "Pendente",
+   "Preenchido — não testado", "Conexão não testada", "Pronto para
+   testar", "Bloqueado", "Não aplicável". As descrições diferenciam
+   "preenchido" (dado no formulário) de "não testado" (validação de
+   conexão futura).
+
+### Campos mínimos técnicos para persistir rascunho
+Nenhum. O UPDATE só grava colunas presentes no payload; a única trava
+adicional é `fiscal_provider = LOCKED_PROVIDER` (constante interna). Os
+campos que continuam sendo exigidos apenas em fases futuras (homologar/
+validar/ativar): `cnpj`, `legal_name`, `state`, `municipality_ibge_code`,
+`nfe_series` (se NF-e habilitada), `nfe_provider` + `nfe_credential_ref`
+(se NF-e habilitada), `nfse_provider` + `nfse_credential_ref` (se NFS-e
+habilitada), `certificate_ref` + certificado A1 válido, `webhook_ref` e
+ambiente = homologação.
+
+### Arquivos
+- `src/lib/fiscal/connectionsReadiness.ts` — deep-links reais + rename.
+- `src/components/fiscal/homologacao/ProntidaoConexoesSecao.tsx` — copy
+  atualizada usando o novo nome.
+- `src/test/fiscal/fase_h5_a.connectionsReadiness.test.ts` — renomeou
+  asserções para o novo campo.
+- `src/test/fiscal/fase_h5_a1.connectionsLinks.test.ts` (novo, 9 testes)
+  — extrai TabsTrigger/ids reais direto do arquivo `FiscalEmpresa.tsx`
+  e valida que cada deep-link aponta a aba+id existentes; também
+  bloqueia o retorno de `productionAllowed` no contrato.
+- `src/test/fiscal/fase_h5_a1.draftSave.test.ts` (novo, 4 testes) —
+  regressão do rascunho: objeto vazio válido, nenhum default fictício,
+  chaves proibidas nunca entram no payload.
+
+### Validação
+- Focais H5-A/H5-A.1: **30/30 ✓**.
+- Suíte fiscal completa: **1167 passed, 3 skipped** ✓.
+- `tsgo --noEmit`: sem erros. `bun run build`: OK.
+- Lint: sem configuração funcional versionada; nada a rodar (respeitado
+  o critério "apenas se houver configuração; sem instalar deps").
+
+### Créditos
+- Rodada H5-A.1: ~15 créditos (dentro do teto de 20).
+- Acumulado aproximado: ~110/300. Nenhuma ação em produção, banco
+  remoto, homologação runtime ou emissão.
