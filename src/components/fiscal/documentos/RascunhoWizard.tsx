@@ -614,11 +614,17 @@ function ClientePicker({ currentId, currentDoc, disabled, onPick }: ClientePicke
         <div className="max-h-48 overflow-auto rounded border bg-background">
           {listQ.isLoading ? (
             <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
-          ) : (listQ.data ?? []).length === 0 ? (
-            <div className="p-2 text-xs text-muted-foreground">Nenhum cliente encontrado (ou sem permissão).</div>
+          ) : (listQ.data?.items ?? []).length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">
+              {listQ.data?.status === "permission_denied"
+                ? "Sem permissão para consultar clientes."
+                : listQ.data?.status === "error"
+                ? "Falha ao consultar clientes. Tente novamente."
+                : "Nenhum cliente encontrado."}
+            </div>
           ) : (
             <ul className="text-sm">
-              {(listQ.data ?? []).map((c) => (
+              {(listQ.data?.items ?? []).map((c) => (
                 <li key={c.id}>
                   <button
                     type="button"

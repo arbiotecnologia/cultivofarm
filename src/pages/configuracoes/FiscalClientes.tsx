@@ -29,7 +29,12 @@ import {
 import {
   UF_OPTIONS, COUNTRY_OPTIONS, STATE_REG_STATUS_OPTIONS,
   withLegacyOption, type FiscalOption,
+  CUSTOMER_FISCAL_PROFILE_STATUS_OPTIONS,
+  TAXPAYER_INDICATOR_OPTIONS,
+  getFiscalStatusLabel,
+  getTaxpayerIndicatorLabel,
 } from "@/lib/fiscal/fiscalOptions";
+import { useFiscalClientesLite } from "@/hooks/useFiscalClientesLite";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -54,11 +59,22 @@ const STATUS_ALL = "__all__";
 const TAX_ALL = "__all_tax__";
 const TAX_NONE = "__none__";
 
-const TAXPAYER_LABELS: Record<string, string> = {
-  "1": "1 — Contribuinte ICMS",
-  "2": "2 — Contribuinte isento de IE",
-  "9": "9 — Não contribuinte",
-};
+// Rótulos de indicador de contribuinte agora vêm da fonte canônica
+// (TAXPAYER_INDICATOR_OPTIONS / getTaxpayerIndicatorLabel).
+
+// Campos que compõem o bloco de endereço fiscal substituto.
+// Quando `use_main_address = true`, o bloco é recolhido, sem apagar valores.
+const FISCAL_ADDRESS_FIELDS: ReadonlySet<StringField> = new Set<StringField>([
+  "fiscal_postal_code",
+  "fiscal_street",
+  "fiscal_number",
+  "fiscal_complement",
+  "fiscal_neighborhood",
+  "fiscal_city",
+  "fiscal_municipality_ibge_code",
+  "fiscal_state",
+  "country_code",
+]);
 
 type StringField =
   | "state_registration_status"
@@ -244,8 +260,8 @@ export default function FiscalClientes() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={STATUS_ALL}>Todos os status</SelectItem>
-                {(listQuery.data?.statuses ?? []).map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                {CUSTOMER_FISCAL_PROFILE_STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -261,8 +277,8 @@ export default function FiscalClientes() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={TAX_ALL}>Todos os contribuintes</SelectItem>
-                {TAXPAYER_INDICATOR_VALUES.map((v) => (
-                  <SelectItem key={v} value={v}>{TAXPAYER_LABELS[v] ?? v}</SelectItem>
+                {TAXPAYER_INDICATOR_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -307,7 +323,7 @@ export default function FiscalClientes() {
                       const nome = it.cliente_nome ?? "—";
                       const doc = maskDocument(it.cliente_cpf_cnpj);
                       const contrib = it.taxpayer_indicator
-                        ? (TAXPAYER_LABELS[it.taxpayer_indicator] ?? it.taxpayer_indicator)
+                        ? getTaxpayerIndicatorLabel(it.taxpayer_indicator)
                         : "—";
                       return (
                         <tr key={it.id} className="border-t">
@@ -330,7 +346,11 @@ export default function FiscalClientes() {
                               ? `${it.fiscal_municipality_ibge_code} · ${it.fiscal_city ?? "—"}/${it.fiscal_state ?? "—"}`
                               : "—"}
                           </td>
-                          <td className="p-2">{it.profile_status}</td>
+                          <td className="p-2">
+                            <Badge variant="outline" title={it.profile_status ?? undefined}>
+                              {getFiscalStatusLabel("customer", it.profile_status)}
+                            </Badge>
+                          </td>
                           <td className="p-2">
                             {pending ? (
                               <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>
@@ -527,15 +547,22 @@ function EditDrawer({
           <form onSubmit={onSubmit} className="mt-4 space-y-4" aria-label="Formulário de perfil fiscal de cliente">
             <fieldset disabled={!canEdit || save.isPending} className="space-y-4">
               <div className="grid gap-1.5">
-                <Label htmlFor="f-customer_id">customer_id (UUID do cliente)</Label>
-                <Input
-                  id="f-customer_id"
-                  value={customerIdInput}
-                  onChange={(e) => setCustomerIdInput(e.target.value)}
-                  disabled={!isNew}
-                  aria-invalid={!!errors.customer_id}
-                  placeholder="Ex.: 00000000-0000-0000-0000-000000000000"
-                />
+                <Label htmlFor="f-customer_id">Cliente</Label>
+                {isNew ? (
+                  <CustomerPicker
+                    value={customerIdInput}
+                    onPick={(id) => setCustomerIdInput(id)}
+                    invalid={!!errors.customer_id}
+                  />
+                ) : (
+                  <Input
+                    id="f-customer_id"
+                    value={customerIdInput}
+                    readOnly
+                    disabled
+                    aria-invalid={!!errors.customer_id}
+                  />
+                )}
                 {errors.customer_id ? (
                   <p className="text-xs text-destructive" role="alert">{errors.customer_id}</p>
                 ) : (
@@ -556,8 +583,8 @@ function EditDrawer({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={TAX_NONE}>Não informado</SelectItem>
-                    {TAXPAYER_INDICATOR_VALUES.map((v) => (
-                      <SelectItem key={v} value={v}>{TAXPAYER_LABELS[v] ?? v}</SelectItem>
+                    {TAXPAYER_INDICATOR_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -576,6 +603,11 @@ function EditDrawer({
                   Usar endereço principal do cliente
                 </Label>
               </div>
+              {(values.use_main_address ?? true) ? (
+                <p className="text-xs text-muted-foreground -mt-2" data-testid="fiscal-address-collapsed-hint">
+                  O endereço fiscal substituto está oculto porque o cadastro principal do cliente será usado. Desmarque acima para preencher um endereço fiscal específico. Valores já preenchidos são preservados.
+                </p>
+              ) : null}
 
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -599,7 +631,14 @@ function EditDrawer({
                 </Label>
               </div>
 
-              {STRING_FIELD_META.map(({ key, label, numeric, select, hint }) => {
+              {STRING_FIELD_META.filter(({ key }) => {
+                // Recolhe (não apaga) o bloco de endereço fiscal substituto
+                // enquanto "Usar endereço principal do cliente" estiver ativo.
+                if (FISCAL_ADDRESS_FIELDS.has(key) && (values.use_main_address ?? true)) {
+                  return false;
+                }
+                return true;
+              }).map(({ key, label, numeric, select, hint }) => {
                 const isEmail = key === "fiscal_email";
                 const isPhone = key === "fiscal_phone";
                 const isCep = key === "fiscal_postal_code";
@@ -699,5 +738,87 @@ function EditDrawer({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/**
+ * CustomerPicker — seletor de cliente com busca sanitizada.
+ * Consome `useFiscalClientesLite`, exibindo nome + código + documento
+ * mascarado. Trata explicitamente `permission_denied` e `error`.
+ * Não expõe o `id` técnico ao usuário; apenas repassa via `onPick`.
+ */
+function CustomerPicker({
+  value,
+  onPick,
+  invalid,
+}: {
+  value: string;
+  onPick: (customerId: string) => void;
+  invalid?: boolean;
+}) {
+  const [term, setTerm] = useState<string>("");
+  const [open, setOpen] = useState<boolean>(false);
+  const [picked, setPicked] = useState<{ id: string; nome: string; doc: string | null; codigo: string | null } | null>(null);
+  const listQ = useFiscalClientesLite(term);
+
+  useEffect(() => {
+    if (!value) setPicked(null);
+  }, [value]);
+
+  const status = listQ.data?.status ?? "ok";
+  const items = listQ.data?.items ?? [];
+
+  return (
+    <div className="relative">
+      <Input
+        id="f-customer_id"
+        value={picked ? `${picked.nome}${picked.codigo ? ` · ${picked.codigo}` : ""}` : term}
+        onChange={(e) => {
+          setPicked(null);
+          onPick("");
+          setTerm(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        aria-invalid={invalid}
+        placeholder="Digite nome, código ou documento do cliente"
+        autoComplete="off"
+      />
+      {open && term.trim().length >= 2 && !picked ? (
+        <div className="mt-1 max-h-56 overflow-auto rounded border bg-background shadow-sm">
+          {listQ.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : status === "permission_denied" ? (
+            <div className="p-2 text-xs text-muted-foreground">Sem permissão para consultar clientes.</div>
+          ) : status === "error" ? (
+            <div className="p-2 text-xs text-destructive">Falha ao consultar clientes. Tente novamente.</div>
+          ) : items.length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum cliente encontrado.</div>
+          ) : (
+            <ul className="text-sm" role="listbox" aria-label="Resultados de clientes">
+              {items.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted focus:bg-muted"
+                    onClick={() => {
+                      setPicked({ id: c.id, nome: c.nome, doc: c.cpf_cnpj, codigo: c.codigo_cliente });
+                      onPick(c.id);
+                      setTerm(c.nome);
+                      setOpen(false);
+                    }}
+                  >
+                    <div className="font-medium">{c.nome}</div>
+                    <div className="text-xs text-muted-foreground font-mono">
+                      {c.codigo_cliente ? `${c.codigo_cliente} · ` : ""}{maskDocument(c.cpf_cnpj)}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }

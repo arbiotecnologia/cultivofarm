@@ -228,6 +228,104 @@ export function isProductFiscalProfileStatus(
   );
 }
 
+// ————————————————————— Rótulos pt-BR canônicos —————————————————————
+/**
+ * Alinhados aos CHECKs reais (migration 20260721000000):
+ *  - product_fiscal_profiles.profile_status:
+ *      DRAFT | PENDING_ACCOUNTING | VALIDATED | BLOCKED | NOT_FISCALLY_SOLD
+ *  - service_fiscal_profiles.profile_status:
+ *      DRAFT | PENDING_ACCOUNTING | VALIDATED | BLOCKED
+ *  - customer_fiscal_profiles.profile_status:
+ *      INCOMPLETE | PENDING_REVIEW | VALIDATED | BLOCKED
+ *
+ * O `value` é o código técnico persistido; `label` é a exibição pt-BR.
+ * Nenhum helper altera o valor salvo — apenas resolve exibição.
+ */
+export const PRODUCT_FISCAL_PROFILE_STATUS_OPTIONS: FiscalOption[] = [
+  { value: "DRAFT", label: "Rascunho" },
+  { value: "PENDING_ACCOUNTING", label: "Aguardando contabilidade" },
+  { value: "VALIDATED", label: "Validado" },
+  { value: "BLOCKED", label: "Bloqueado" },
+  { value: "NOT_FISCALLY_SOLD", label: "Não vendido fiscalmente" },
+];
+
+export const SERVICE_FISCAL_PROFILE_STATUSES = [
+  "DRAFT",
+  "PENDING_ACCOUNTING",
+  "VALIDATED",
+  "BLOCKED",
+] as const;
+export type ServiceFiscalProfileStatus =
+  (typeof SERVICE_FISCAL_PROFILE_STATUSES)[number];
+export const SERVICE_FISCAL_PROFILE_STATUS_OPTIONS: FiscalOption[] = [
+  { value: "DRAFT", label: "Rascunho" },
+  { value: "PENDING_ACCOUNTING", label: "Aguardando contabilidade" },
+  { value: "VALIDATED", label: "Validado" },
+  { value: "BLOCKED", label: "Bloqueado" },
+];
+
+export const CUSTOMER_FISCAL_PROFILE_STATUSES = [
+  "INCOMPLETE",
+  "PENDING_REVIEW",
+  "VALIDATED",
+  "BLOCKED",
+] as const;
+export type CustomerFiscalProfileStatus =
+  (typeof CUSTOMER_FISCAL_PROFILE_STATUSES)[number];
+export const CUSTOMER_FISCAL_PROFILE_STATUS_OPTIONS: FiscalOption[] = [
+  { value: "INCOMPLETE", label: "Incompleto" },
+  { value: "PENDING_REVIEW", label: "Aguardando revisão" },
+  { value: "VALIDATED", label: "Validado" },
+  { value: "BLOCKED", label: "Bloqueado" },
+];
+
+/** Rótulos pt-BR do indicador de contribuinte (NF-e indIEDest). */
+export const TAXPAYER_INDICATOR_OPTIONS: FiscalOption[] = [
+  { value: "1", label: "Contribuinte de ICMS" },
+  { value: "2", label: "Contribuinte isento de IE" },
+  { value: "9", label: "Não contribuinte" },
+];
+
+export type FiscalStatusKind = "product" | "service" | "customer";
+
+const STATUS_MAPS: Record<FiscalStatusKind, Map<string, string>> = {
+  product: new Map(
+    PRODUCT_FISCAL_PROFILE_STATUS_OPTIONS.map((o) => [o.value, o.label]),
+  ),
+  service: new Map(
+    SERVICE_FISCAL_PROFILE_STATUS_OPTIONS.map((o) => [o.value, o.label]),
+  ),
+  customer: new Map(
+    CUSTOMER_FISCAL_PROFILE_STATUS_OPTIONS.map((o) => [o.value, o.label]),
+  ),
+};
+
+/**
+ * Retorna o rótulo pt-BR do status. Nunca altera o valor persistido.
+ * Se o código não pertencer à lista canônica, devolve
+ * "Status não reconhecido" — o código técnico deve ser mostrado
+ * apenas em `title`/tooltip pela UI.
+ */
+export function getFiscalStatusLabel(
+  kind: FiscalStatusKind,
+  value: string | null | undefined,
+): string {
+  const v = (value ?? "").trim();
+  if (!v) return "—";
+  return STATUS_MAPS[kind].get(v) ?? "Status não reconhecido";
+}
+
+const TAXPAYER_MAP = new Map(
+  TAXPAYER_INDICATOR_OPTIONS.map((o) => [o.value, o.label]),
+);
+export function getTaxpayerIndicatorLabel(
+  value: string | null | undefined,
+): string {
+  const v = (value ?? "").trim();
+  if (!v) return "—";
+  return TAXPAYER_MAP.get(v) ?? "Indicador não reconhecido";
+}
+
 /**
  * Se o valor persistido não pertencer à lista canônica, retorna a lista
  * prefixada por uma opção "— manter valor atual (<x>) —" para não

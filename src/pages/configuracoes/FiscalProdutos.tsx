@@ -34,6 +34,10 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, Pencil, Plus } from "lucide-react";
 import { IbsCbsItemCard } from "@/components/fiscal/IbsCbsItemCard";
+import {
+  PRODUCT_FISCAL_PROFILE_STATUS_OPTIONS,
+  getFiscalStatusLabel,
+} from "@/lib/fiscal/fiscalOptions";
 
 
 const PAGE_TITLE = "Perfis Fiscais de Produtos";
@@ -256,8 +260,8 @@ export default function FiscalProdutos() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={STATUS_ALL}>Todos os status</SelectItem>
-                  {(listQuery.data?.statuses ?? []).map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  {PRODUCT_FISCAL_PROFILE_STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -310,7 +314,11 @@ export default function FiscalProdutos() {
                           <td className="p-2">
                             {(it.cfop_in_state ?? "—")}/{(it.cfop_interstate ?? "—")}
                           </td>
-                          <td className="p-2">{it.profile_status ?? "—"}</td>
+                          <td className="p-2">
+                            <Badge variant="outline" title={it.profile_status ?? undefined}>
+                              {getFiscalStatusLabel("product", it.profile_status)}
+                            </Badge>
+                          </td>
                           <td className="p-2">
                             {pending ? (
                               <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>

@@ -26,6 +26,7 @@ import {
 } from "@/lib/fiscal/serviceFiscalValidation";
 import {
   REQUIREMENT_STATUS_OPTIONS, withLegacyOption, type FiscalOption,
+  SERVICE_FISCAL_PROFILE_STATUS_OPTIONS, getFiscalStatusLabel,
 } from "@/lib/fiscal/fiscalOptions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -230,8 +231,8 @@ export default function FiscalServicos() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={STATUS_ALL}>Todos os status</SelectItem>
-                {(listQuery.data?.statuses ?? []).map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                {SERVICE_FISCAL_PROFILE_STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -287,7 +288,11 @@ export default function FiscalServicos() {
                           <td className="p-2">{it.lc116_item ?? "—"}</td>
                           <td className="p-2">{it.cnae ?? "—"}</td>
                           <td className="p-2">{it.municipal_taxation_code ?? "—"}</td>
-                          <td className="p-2">{it.profile_status}</td>
+                          <td className="p-2">
+                            <Badge variant="outline" title={it.profile_status ?? undefined}>
+                              {getFiscalStatusLabel("service", it.profile_status)}
+                            </Badge>
+                          </td>
                           <td className="p-2">
                             {pending ? (
                               <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>

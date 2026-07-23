@@ -33,15 +33,27 @@ export function digitsOnly(v: string | null | undefined): string {
   return typeof v === "string" ? v.replace(/\D/g, "") : "";
 }
 
-/** Máscara de CPF/CNPJ para exibição. Nunca expõe o documento completo.
- *  Fallback quando o documento é inválido: "***". */
+/** Mascara CPF/CNPJ para exibicao. Nunca expoe o documento completo.
+ *  Aceita:
+ *    CPF numerico de 11 digitos: retorna ***.***.***-DD
+ *    CNPJ numerico de 14 digitos: retorna **.***.***\/****-DD
+ *    CNPJ alfanumerico (IN RFB 2.229\/2024): 12 posicoes alfanumericas
+ *    (A-Z\/0-9 em maiusculas) + 2 DVs numericos, mesma mascara.
+ *  Apenas os 2 digitos verificadores finais sao revelados.
+ *  Documento invalido retorna ***. Nao usa digitsOnly antes de identificar
+ *  o formato — letras validas seriam destruidas. */
 export function maskDocument(doc: string | null | undefined): string {
-  const d = digitsOnly(doc);
-  if (d.length === 11) {
-    return `***.***.***-${d.slice(-2)}`;
+  if (typeof doc !== "string" || doc.length === 0) return "***";
+  // Normalização mínima: remove separadores usuais e força uppercase,
+  // sem descartar letras (necessário para CNPJ alfanumérico).
+  const norm = doc.replace(/[\s.\-/]/g, "").toUpperCase();
+  // CPF numérico (11).
+  if (/^\d{11}$/.test(norm)) {
+    return `***.***.***-${norm.slice(-2)}`;
   }
-  if (d.length === 14) {
-    return `**.***.***/****-${d.slice(-2)}`;
+  // CNPJ 14 chars: 12 alfanuméricos + 2 dígitos verificadores.
+  if (/^[0-9A-Z]{12}\d{2}$/.test(norm)) {
+    return `**.***.***/****-${norm.slice(-2)}`;
   }
   return "***";
 }
