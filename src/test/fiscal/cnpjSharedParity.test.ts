@@ -25,17 +25,15 @@ import {
 } from "../../../supabase/functions/_shared/fiscal/cnpj";
 
 describe("CNPJ shared/client parity (H3-B1)", () => {
-  const shared = loadShared();
-
   const cases: string[] = [
-    "00000000000191", // numérico válido (BrasilAPI Petrobras exemplo)
+    "00000000000191",
     "00.000.000/0001-91",
-    "00000000000192", // DV inválido
-    "12ABC34501DE35", // alfanumérico válido
-    "12abc34501de35", // lowercase (deve virar upper)
-    "12ABC34501DE34", // alfanumérico DV errado
-    "11111111111111", // repetido numérico
-    "AAAAAAAAAAAA00", // repetido alfabético (não é bloqueado pela regra, mas DV falha)
+    "00000000000192",
+    "12ABC34501DE35",
+    "12abc34501de35",
+    "12ABC34501DE34",
+    "11111111111111",
+    "AAAAAAAAAAAA00",
     "",
     "123",
     "abcdefghijkl00",
@@ -44,15 +42,19 @@ describe("CNPJ shared/client parity (H3-B1)", () => {
 
   for (const raw of cases) {
     it(`paridade para "${raw}"`, () => {
-      expect(shared.unmaskCnpjAlpha(raw)).toBe(clientUnmask(raw));
-      expect(shared.validateCnpjAlpha(raw)).toBe(clientValidate(raw));
+      expect(sharedUnmask(raw)).toBe(clientUnmask(raw));
+      expect(sharedValidate(raw)).toBe(clientValidate(raw));
     });
   }
 
   it("isCnpjNumericOnly distingue formatos", () => {
-    expect(shared.isCnpjNumericOnly("00000000000191")).toBe(true);
-    expect(shared.isCnpjNumericOnly("12ABC34501DE35")).toBe(false);
-    expect(shared.isCnpjNumericOnly("00.000.000/0001-91")).toBe(true);
+    expect(sharedIsNumeric("00000000000191")).toBe(true);
+    expect(sharedIsNumeric("12ABC34501DE35")).toBe(false);
+    expect(sharedIsNumeric("00.000.000/0001-91")).toBe(true);
+    expect(sharedIsNumeric("123")).toBe(false);
+  });
+});
+
     expect(shared.isCnpjNumericOnly("123")).toBe(false);
   });
 });
