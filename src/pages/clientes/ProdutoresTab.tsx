@@ -234,17 +234,22 @@ export default function ProdutoresTab() {
   const filtered = clientes.filter((c) => {
     const q = search.toLowerCase();
     const cleanQ = unmask(q);
+    // Busca CPF/CNPJ com suporte a CNPJ alfanumérico (Fase 3.19):
+    // compara tanto por dígitos quanto pela forma normalizada preservando letras.
+    const cleanQDocs = unmaskCpfCnpj(search).toUpperCase();
 
     const codigoNorm = (c.codigo_cliente || "").replace(/^0+/, "");
     const qNorm = cleanQ.replace(/^0+/, "");
+    const docNorm = unmaskCpfCnpj(c.cpf_cnpj || "").toUpperCase();
     const matchesSearch = (
       (c.nome_fantasia || "").toLowerCase().includes(q) ||
       (c.razao_social || "").toLowerCase().includes(q) ||
       (c.cpf_cnpj || "").includes(cleanQ) ||
-      unmask(c.cpf_cnpj || "").includes(cleanQ) ||
+      (cleanQDocs.length > 0 && docNorm.includes(cleanQDocs)) ||
       (c.codigo_cliente || "").includes(cleanQ) ||
       (qNorm.length > 0 && codigoNorm.includes(qNorm))
     );
+
 
     const matchesStatus = statusFilter === "all" || c.status_cliente === statusFilter;
     const matchesTag = tagFilter === "all" || (c.tags || []).includes(tagFilter);
