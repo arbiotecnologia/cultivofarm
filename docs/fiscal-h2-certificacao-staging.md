@@ -219,7 +219,8 @@ fonte canônica em `supabase/migrations/`, falha se voltar a existir
 `CREATE POLICY ... FOR ALL` nessas tabelas e confirma INSERT/UPDATE
 separados, DELETE=false e REVOKE DELETE.
 
-**Status:** migration **versionada** no caminho canônico, **NÃO
-aplicada** em banco. Aguarda aplicação externa no staging, seguida de
-reprodução da suíte RLS §3.1 por resultado real. Produção proibida.
+**Status:** migration **versionada** no caminho canônico e **aplicada**
+com sucesso no staging `ikaauvsflpmamgxmkhoq`. Resultado real
+registrado em §11. Produção `navfzbwgwzruipouyfnk` permanece intocada.
+
 
