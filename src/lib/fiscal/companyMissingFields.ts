@@ -20,8 +20,14 @@ export interface MissingField {
   label: string;
   section: MissingSection;
   severity: MissingSeverity;
-  /** Rota + query com aba correta em FiscalEmpresa. */
+  /**
+   * Rota + query com aba correta em FiscalEmpresa. Inclui `campo=<key>`
+   * quando o campo possui alvo focável conhecido no formulário; para itens
+   * sem alvo mapeado, o deep-link cai de volta apenas na aba (fallback).
+   */
   deepLink: string;
+  /** Indica se o campo possui alvo focável conhecido no formulário. */
+  hasFieldTarget: boolean;
 }
 
 export interface MissingFieldsResult {
@@ -35,6 +41,38 @@ export interface MissingFieldsResult {
 const LINK_EMPRESA = "/configuracoes/fiscal/empresa?aba=empresa";
 const LINK_NFE = "/configuracoes/fiscal/empresa?aba=nfe";
 const LINK_NFSE = "/configuracoes/fiscal/empresa?aba=nfse";
+
+/**
+ * Chaves com `id` correspondente em `FiscalEmpresa` (via `FieldRow`).
+ * Apenas essas chaves recebem `&campo=<key>` no deep-link. As demais
+ * mantêm o link só até a aba, evitando alvo inexistente.
+ */
+export const KNOWN_FIELD_TARGETS: ReadonlySet<string> = new Set<string>([
+  // Empresa
+  "cnpj", "legal_name", "trade_name", "fiscal_email", "phone",
+  "tax_regime", "crt", "primary_cnae",
+  "municipal_registration", "state_registration",
+  // Endereço
+  "postal_code", "street", "number", "complement", "neighborhood",
+  "city", "state", "municipality_ibge_code", "country_code",
+]);
+
+function withField(baseLink: string, key: string): { link: string; hasFieldTarget: boolean } {
+  if (!KNOWN_FIELD_TARGETS.has(key)) return { link: baseLink, hasFieldTarget: false };
+  const sep = baseLink.includes("?") ? "&" : "?";
+  return { link: `${baseLink}${sep}campo=${encodeURIComponent(key)}`, hasFieldTarget: true };
+}
+
+function build(
+  key: string,
+  label: string,
+  section: MissingSection,
+  severity: MissingSeverity,
+  baseLink: string,
+): MissingField {
+  const { link, hasFieldTarget } = withField(baseLink, key);
+  return { key, label, section, severity, deepLink: link, hasFieldTarget };
+}
 
 function empty(v: unknown): boolean {
   return v === null || v === undefined || v === "";
