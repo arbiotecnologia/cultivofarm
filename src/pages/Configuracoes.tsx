@@ -358,7 +358,7 @@ export default function Configuracoes() {
           nome: editUser.nome,
           telefone: unmask(editUser.telefone),
           cargo: editUser.cargo,
-          cpf_cnpj: unmask(editUser.cpf_cnpj),
+          cpf_cnpj: unmaskCpfCnpj(editUser.cpf_cnpj),
           crea: editUser.crea,
           especialidade: editUser.especialidade,
         } as any)
