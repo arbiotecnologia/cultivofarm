@@ -547,15 +547,22 @@ function EditDrawer({
           <form onSubmit={onSubmit} className="mt-4 space-y-4" aria-label="Formulário de perfil fiscal de cliente">
             <fieldset disabled={!canEdit || save.isPending} className="space-y-4">
               <div className="grid gap-1.5">
-                <Label htmlFor="f-customer_id">customer_id (UUID do cliente)</Label>
-                <Input
-                  id="f-customer_id"
-                  value={customerIdInput}
-                  onChange={(e) => setCustomerIdInput(e.target.value)}
-                  disabled={!isNew}
-                  aria-invalid={!!errors.customer_id}
-                  placeholder="Ex.: 00000000-0000-0000-0000-000000000000"
-                />
+                <Label htmlFor="f-customer_id">Cliente</Label>
+                {isNew ? (
+                  <CustomerPicker
+                    value={customerIdInput}
+                    onPick={(id) => setCustomerIdInput(id)}
+                    invalid={!!errors.customer_id}
+                  />
+                ) : (
+                  <Input
+                    id="f-customer_id"
+                    value={customerIdInput}
+                    readOnly
+                    disabled
+                    aria-invalid={!!errors.customer_id}
+                  />
+                )}
                 {errors.customer_id ? (
                   <p className="text-xs text-destructive" role="alert">{errors.customer_id}</p>
                 ) : (
