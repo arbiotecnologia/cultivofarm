@@ -21,26 +21,17 @@ import type { Database, Json } from "@/integrations/supabase/types";
 type Row = Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
 type Update = Database["public"]["Tables"]["company_fiscal_settings"]["Update"];
 
-// CNPJ mod-11 ----------------------------------------------------------
+import { unmaskCnpjAlpha, validateCnpjAlpha } from "./cnpjAlpha";
+
+// CNPJ — Fase 3.19: aceita numérico E alfanumérico (RFB IN 2.229/2024).
+// NÃO remove letras: apenas pontuação/espaços + uppercase.
 export function normalizeCnpj(value: string): string {
-  return value.replace(/\D/g, "");
+  return unmaskCnpjAlpha(value);
 }
 export function isValidCnpj(value: string): boolean {
-  const cnpj = normalizeCnpj(value);
-  if (cnpj.length !== 14) return false;
-  if (/^(\d)\1{13}$/.test(cnpj)) return false;
-  const calc = (base: string, weights: number[]): number => {
-    const sum = base.split("").reduce((acc, d, i) => acc + Number(d) * weights[i], 0);
-    const rest = sum % 11;
-    return rest < 2 ? 0 : 11 - rest;
-  };
-  const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  const base = cnpj.slice(0, 12);
-  const d1 = calc(base, w1);
-  const d2 = calc(base + d1, w2);
-  return cnpj.endsWith(`${d1}${d2}`);
+  return validateCnpjAlpha(value);
 }
+
 
 // Enums ---------------------------------------------------------------
 export const ALLOWED_ENVIRONMENTS = ["NOT_CONFIGURED", "HOMOLOGATION"] as const;

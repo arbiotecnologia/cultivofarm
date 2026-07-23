@@ -110,16 +110,30 @@ export const ICMS_CSOSN_OPTIONS: FiscalOption[] = [
   { value: "900", label: "900 — Outras (Simples Nacional)" },
 ];
 
+// IPI CST — catálogo resumido (Tabela I do RIPI). NÃO é lista oficial completa;
+// permita valor livre quando a operação exigir código específico.
 export const IPI_CST_OPTIONS: FiscalOption[] = [
   { value: "00", label: "00 — Entrada com recuperação de crédito" },
+  { value: "01", label: "01 — Entrada tributada alíquota zero" },
+  { value: "02", label: "02 — Entrada isenta" },
+  { value: "03", label: "03 — Entrada não-tributada" },
+  { value: "04", label: "04 — Entrada imune" },
+  { value: "05", label: "05 — Entrada com suspensão" },
   { value: "49", label: "49 — Outras entradas" },
   { value: "50", label: "50 — Saída tributada" },
+  { value: "51", label: "51 — Saída tributada alíquota zero" },
+  { value: "52", label: "52 — Saída isenta" },
+  { value: "53", label: "53 — Saída não-tributada" },
+  { value: "54", label: "54 — Saída imune" },
+  { value: "55", label: "55 — Saída com suspensão" },
   { value: "99", label: "99 — Outras saídas" },
 ];
 
+// PIS/COFINS CST — Tabelas 4.3.3/4.3.4. Catálogo resumido; UI aceita valor livre.
 export const PIS_COFINS_CST_OPTIONS: FiscalOption[] = [
-  { value: "01", label: "01 — Tributável com alíquota básica" },
-  { value: "02", label: "02 — Tributável com alíquota diferenciada" },
+  { value: "01", label: "01 — Tributável alíquota básica" },
+  { value: "02", label: "02 — Tributável alíquota diferenciada" },
+  { value: "03", label: "03 — Tributável por unidade de medida (qtd. vendida)" },
   { value: "04", label: "04 — Tributável monofásica — alíquota zero" },
   { value: "05", label: "05 — Tributável por substituição tributária" },
   { value: "06", label: "06 — Tributável a alíquota zero" },
@@ -127,8 +141,56 @@ export const PIS_COFINS_CST_OPTIONS: FiscalOption[] = [
   { value: "08", label: "08 — Sem incidência da contribuição" },
   { value: "09", label: "09 — Com suspensão da contribuição" },
   { value: "49", label: "49 — Outras operações de saída" },
+  { value: "50", label: "50 — Entrada com direito a crédito — receita tributada" },
+  { value: "51", label: "51 — Entrada com direito a crédito — receita não tributada" },
+  { value: "52", label: "52 — Entrada com direito a crédito — receita exportação" },
+  { value: "53", label: "53 — Entrada com crédito — receitas tributadas e não tributadas" },
+  { value: "54", label: "54 — Entrada com crédito — tributadas e exportação" },
+  { value: "55", label: "55 — Entrada com crédito — não tributadas e exportação" },
+  { value: "56", label: "56 — Entrada com crédito — tributadas, não tributadas e exportação" },
+  { value: "60", label: "60 — Crédito presumido — receita tributada" },
+  { value: "61", label: "61 — Crédito presumido — receita não tributada" },
+  { value: "62", label: "62 — Crédito presumido — receita exportação" },
+  { value: "63", label: "63 — Crédito presumido — tributadas e não tributadas" },
+  { value: "64", label: "64 — Crédito presumido — tributadas e exportação" },
+  { value: "65", label: "65 — Crédito presumido — não tributadas e exportação" },
+  { value: "66", label: "66 — Crédito presumido — tributadas, não tributadas e exportação" },
+  { value: "67", label: "67 — Crédito presumido — outras operações" },
+  { value: "70", label: "70 — Entrada com carta de correção crédito" },
+  { value: "71", label: "71 — Entrada com crédito — adquirente de crédito presumido" },
+  { value: "72", label: "72 — Entrada de bens do ativo imobilizado" },
+  { value: "73", label: "73 — Entrada de bens para uso e consumo" },
+  { value: "74", label: "74 — Entrada de energia elétrica" },
+  { value: "75", label: "75 — Entrada de contraprestação de arrendamento mercantil" },
+  { value: "98", label: "98 — Outras operações de entrada" },
   { value: "99", label: "99 — Outras operações" },
 ];
+
+// RTC 2026 — IBS/CBS. Não é catálogo oficial completo; depende da versão
+// vigente da NT NF-e 2025.002 e NFS-e NT 007/2026 configurada pelo contador.
+export const RTC_CST_IBS_CBS_OPTIONS: FiscalOption[] = [
+  { value: "000", label: "000 — Tributação integral (referência)" },
+  { value: "010", label: "010 — Redução de alíquota (referência)" },
+  { value: "020", label: "020 — Diferimento (referência)" },
+  { value: "030", label: "030 — Alíquota zero (referência)" },
+  { value: "040", label: "040 — Isenção (referência)" },
+  { value: "050", label: "050 — Imunidade (referência)" },
+  { value: "060", label: "060 — Suspensão (referência)" },
+  { value: "090", label: "090 — Outras (referência)" },
+];
+
+export const RTC_FIN_NFSE_OPTIONS: FiscalOption[] = [
+  { value: "1", label: "1 — Normal" },
+  { value: "2", label: "2 — Complementar" },
+  { value: "4", label: "4 — Substituição" },
+];
+
+export const RTC_C_IND_OP_OPTIONS: FiscalOption[] = [
+  { value: "1", label: "1 — Operação com IBS/CBS" },
+  { value: "2", label: "2 — Operação sem IBS/CBS (transição)" },
+];
+
+
 
 export const STATE_REG_STATUS_OPTIONS: FiscalOption[] = [
   { value: "1", label: "1 — Contribuinte de ICMS" },
