@@ -146,3 +146,62 @@ proibidas.
 **PARCIAL — delta de perfis de serviços APROVADO no staging; H2 ainda
 NÃO concluída.** Homologação completa **não** declarada. Produção
 **não** apta. H3 **não** iniciada. Frontend **não** deployado.
+
+---
+
+## 9. Achado runtime — RLS ambígua em perfis fiscais
+
+**Origem:** verificação no staging `ikaauvsflpmamgxmkhoq` das policies de
+`product_fiscal_profiles`, `service_fiscal_profiles` e
+`customer_fiscal_profiles`. Produção `navfzbwgwzruipouyfnk` intocada.
+
+**Evidência:**
+
+- Cada tabela possui policy permissiva `<tabela>_write FOR ALL` para
+  administrador/financeiro (migration `20260721000000_fiscal_fase2_fundacao.sql`).
+- Cada tabela também possui policy `<tabela>_delete FOR DELETE USING (false)`
+  (migration `20260722000000_fiscal_fase3_0_1_integridade.sql`).
+- Policies permissivas são combinadas por **OR**: o ramo DELETE da policy
+  `FOR ALL` continua ativo no plano RLS; a policy DELETE=false **não** o
+  neutraliza.
+- Hoje `authenticated` não tem privilégio DELETE nessas tabelas (REVOKE
+  aplicado em 20260722000000), então a exclusão direta é bloqueada pela
+  camada de GRANT — não pela RLS. A modelagem RLS é inconsistente e
+  depende de uma segunda camada de defesa.
+
+## 10. Correção preparada — pendente de aplicação
+
+**Arquivo canônico preparado:**
+`restoration/20260728000000_fiscal_rls_perfis_split_write.sql`
+
+O sandbox não pode escrever em `supabase/migrations/`; o arquivo será
+promovido para `supabase/migrations/20260728000000_fiscal_rls_perfis_split_write.sql`
+no canal de aplicação externa autorizado para staging.
+
+**Regras aplicadas (aditivas, sem alteração de comportamento legítimo):**
+
+Para cada uma das três tabelas de perfis fiscais:
+
+1. `DROP POLICY IF EXISTS <tabela>_write` — remove a policy FOR ALL.
+2. `CREATE POLICY <tabela>_insert FOR INSERT TO authenticated WITH CHECK
+   (administrador OR financeiro)`.
+3. `CREATE POLICY <tabela>_update FOR UPDATE TO authenticated USING (...)
+   WITH CHECK (...)` — mesmos papéis.
+4. `CREATE POLICY <tabela>_read FOR SELECT TO authenticated USING
+   (administrador OR gestor OR financeiro)` — recriação idempotente.
+5. `CREATE POLICY <tabela>_delete FOR DELETE TO authenticated USING (false)`
+   — recriação idempotente.
+6. `REVOKE DELETE ON public.<tabela> FROM authenticated` — defesa em
+   profundidade preservada.
+
+**Não coberto nesta fase:** DELETE via RPC. Desativação continua por
+`is_active=false` / RPC existente.
+
+**Teste estático canônico:**
+`src/test/fiscal/rls_perfis_split_write.test.ts` (6 asserts) — falha se
+voltar a existir `CREATE POLICY ... FOR ALL` nessas tabelas e confirma
+INSERT/UPDATE separados, DELETE=false e REVOKE DELETE.
+
+**Status:** correção **preparada**, **NÃO aplicada** no staging.
+Aguarda aplicação externa da migration, seguida de reprodução da suíte
+RLS §3.1 por resultado real. Produção proibida.
