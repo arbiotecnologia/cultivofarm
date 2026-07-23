@@ -36,26 +36,38 @@ export interface UseFiscalFieldFocusOptions {
   setSearchParams: SetSearchParams;
 }
 
+const FOCUSABLE_SELECTOR = "input, select, textarea, button, [tabindex]";
+
+function isNativelyFocusable(el: Element): el is HTMLElement {
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || tag === "BUTTON";
+}
+
 export function focusFieldById(fieldId: string): boolean {
   if (typeof document === "undefined") return false;
   if (!KNOWN_FIELD_TARGETS.has(fieldId)) return false;
-  const el = document.getElementById(fieldId);
-  if (!el) return false;
+  const container = document.getElementById(fieldId);
+  if (!container) return false;
+  // Se o `id` corresponde a um contêiner (ex.: FieldRow wrapper), procura o
+  // primeiro controle focável interno; caso contrário mantém o próprio alvo.
+  const target: HTMLElement = isNativelyFocusable(container)
+    ? container
+    : ((container.querySelector(FOCUSABLE_SELECTOR) as HTMLElement | null) ?? container);
   try {
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
   } catch {
     // JSDOM/older browsers: fallback silencioso.
   }
-  if (typeof (el as HTMLElement).focus === "function") {
+  if (typeof target.focus === "function") {
     try {
-      (el as HTMLElement).focus({ preventScroll: true });
+      target.focus({ preventScroll: true });
     } catch {
       /* noop */
     }
   }
-  el.classList.add(...HIGHLIGHT_CLASSES);
+  target.classList.add(...HIGHLIGHT_CLASSES);
   window.setTimeout(() => {
-    el.classList.remove(...HIGHLIGHT_CLASSES);
+    target.classList.remove(...HIGHLIGHT_CLASSES);
   }, HIGHLIGHT_MS);
   return true;
 }
