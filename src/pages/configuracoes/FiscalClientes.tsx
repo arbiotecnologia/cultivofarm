@@ -626,7 +626,14 @@ function EditDrawer({
                 </Label>
               </div>
 
-              {STRING_FIELD_META.map(({ key, label, numeric, select, hint }) => {
+              {STRING_FIELD_META.filter(({ key }) => {
+                // Recolhe (não apaga) o bloco de endereço fiscal substituto
+                // enquanto "Usar endereço principal do cliente" estiver ativo.
+                if (FISCAL_ADDRESS_FIELDS.has(key) && (values.use_main_address ?? true)) {
+                  return false;
+                }
+                return true;
+              }).map(({ key, label, numeric, select, hint }) => {
                 const isEmail = key === "fiscal_email";
                 const isPhone = key === "fiscal_phone";
                 const isCep = key === "fiscal_postal_code";
