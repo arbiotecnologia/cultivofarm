@@ -1,111 +1,79 @@
-
 ## Objetivo
 
-Melhorar o preenchimento de todo o módulo **Fiscal** trocando campos de texto livre por **listas de escolha (Select)** quando o valor pertence a um domínio oficial da legislação, e adicionar **placeholders, helpers e tooltips** para os campos que costumam gerar dúvida. Alteração puramente de **UI/apresentação** — sem tocar em banco, RPCs, RLS, feature flags ou regras de validação já existentes.
+Ao digitar o CNPJ na aba "Empresa" da Central de Configuração Fiscal (`/configuracoes/fiscal/empresa`), buscar automaticamente os dados cadastrais na Receita Federal (RFB) e complementar com dados do órgão estadual (SINTEGRA/SEFAZ) quando disponíveis, preenchendo o máximo de campos do formulário. Apenas UI/apresentação — sem alterar migrations, RLS, flags fiscais ou lógica de emissão.
 
-Trabalho dividido em duas fases numeradas — implementar Fase A e aguardar aprovação antes da Fase B, conforme regra do projeto.
+## Escopo
 
----
+Somente a aba **Empresa** de `src/pages/configuracoes/FiscalEmpresa.tsx`. Nenhum outro fluxo fiscal muda. Sem persistência automática — o usuário revisa e clica em "Salvar configuração".
 
-## Fase A — Selects guiados e helpers (somente UI)
+## Fontes de dados
 
-### Arquivo novo — dicionário de opções
+1. **BrasilAPI CNPJ v1** (`https://brasilapi.com.br/api/cnpj/v1/{cnpj}`) — já usada no projeto (`src/lib/api/brasilapi.ts`). Pública, sem chave, cobre RFB: razão social, nome fantasia, CNAE fiscal, endereço, CEP, UF, município, telefone, natureza jurídica, porte, Simples/MEI, situação cadastral.
+2. **BrasilAPI CNPJ v2** (fallback) — mesmo endpoint com v2, retorna alguns campos adicionais.
+3. **BrasilAPI IBGE Municípios por UF** (`/api/ibge/municipios/v1/{UF}`) — usada para resolver `municipality_ibge_code` a partir do nome do município retornado pela RFB.
+4. **Inscrição Estadual (SEFAZ)**: não existe API pública unificada gratuita. BrasilAPI não expõe IE. Estratégia: **não** buscar IE automaticamente nesta fase; deixar o campo `state_registration` para preenchimento manual, com dica na UI indicando que a consulta ao SINTEGRA depende do estado. (Alternativa futura: conector pago tipo CNPJá/InfoSimples via edge function — fora do escopo por exigir segredo e custo.)
 
-`src/lib/fiscal/fiscalOptions.ts` (~120 linhas). Exporta arrays `{ value, label, hint? }[]` com rótulos oficiais em pt-BR e código prefixado (ex.: `1 — Simples Nacional`):
+CNPJ Alfanumérico (Fase 3.19): a RFB só terá endpoint para alfanuméricos a partir de 07/2026. O lookup só dispara para CNPJ 100% numérico válido; para alfanumérico, desabilita o botão e exibe aviso "consulta RFB indisponível para CNPJ alfanumérico".
 
-- `CRT_OPTIONS` — 1 a 4
-- `TAX_REGIME_OPTIONS` — Simples Nacional, Lucro Presumido, Lucro Real, MEI, Imune/Isento
-- `UF_OPTIONS` — 27 UFs
-- `COUNTRY_OPTIONS` — mínimo `1058 — Brasil` (default SEFAZ)
-- `PRESENCE_OPTIONS` — NT2011.004 (0,1,2,3,4,5,9)
-- `FREIGHT_MODALITY_OPTIONS` — 0,1,2,3,4,9
-- `RPS_TYPE_OPTIONS` — 1 RPS, 2 Mista, 3 Cupom
-- `NFSE_SPECIAL_REGIME_OPTIONS` — 1 a 6
-- `ORIGIN_CODE_OPTIONS` — 0 a 8
-- `ICMS_CST_OPTIONS` — 00, 10, 20, 30, 40, 41, 50, 51, 60, 70, 90
-- `ICMS_CSOSN_OPTIONS` — 101, 102, 103, 201, 202, 203, 300, 400, 500, 900
-- `IPI_CST_OPTIONS` — 00, 49, 50, 99
-- `PIS_CST_OPTIONS` / `COFINS_CST_OPTIONS` — 01, 02, 04, 05, 06, 07, 08, 09, 49, 99
-- `STATE_REG_STATUS_OPTIONS` — Contribuinte / Isento / Não contribuinte
+## Mapeamento RFB → formulário
 
-### `src/pages/configuracoes/FiscalEmpresa.tsx`
+| Campo formulário | Origem BrasilAPI |
+| --- | --- |
+| `legal_name` | `razao_social` |
+| `trade_name` | `nome_fantasia` |
+| `primary_cnae` | `cnae_fiscal` (formatado 7 dígitos) |
+| `postal_code` | `cep` |
+| `street` | `descricao_tipo_de_logradouro` + `logradouro` |
+| `number` | `numero` |
+| `complement` (se existir no schema) | `complemento` |
+| `neighborhood` | `bairro` |
+| `city` | `municipio` |
+| `state` | `uf` |
+| `country_code` | `"BR"` fixo |
+| `municipality_ibge_code` | resolvido via IBGE (match por nome + UF) |
+| `phone` (se existir) | `ddd_telefone_1` formatado |
 
-Estender `SelectNative` local para aceitar `options: Array<string | {value,label}>` (retrocompatível). Trocar por Select:
+Campos que **nunca** são sobrescritos automaticamente: `cnpj` (é o input), `fiscal_email`, `tax_regime`, `crt`, `municipal_registration`, `state_registration`, e todos os campos NF-e/NFS-e/Integração. Regime tributário é sugerido apenas como *dica visual* baseado em `opcao_pelo_simples`/`opcao_pelo_mei`, sem preencher automaticamente (decisão fiscal).
 
-- **Empresa → Identificação**: CRT, Regime tributário; helpers em CNAE (7 dígitos) e IE ("ISENTO")
-- **Empresa → Endereço**: UF, Código do país; helper no IBGE
-- **NF-e**: Indicador de presença, Modalidade de frete; placeholders/tooltips em CFOP interno/interestadual e Natureza padrão
-- **NFS-e**: Tipo RPS, Regime especial; tooltip em Item LC 116; sufixo `%` + helper em Alíquota ISS; helper em CNAE
+## UX
 
-### `src/pages/configuracoes/FiscalClientes.tsx`
+- Botão **"Buscar dados na RFB"** ao lado do input CNPJ, na seção Empresa.
+- Habilitado quando o CNPJ digitado passa em `validateCnpjAlpha` e é 100% numérico.
+- Estado de loading no botão. Toasts para sucesso, "CNPJ não encontrado" (404), rate-limit (429) e falha de rede.
+- Antes de aplicar, mostra `AlertDialog` de confirmação listando os campos que serão preenchidos/sobrescritos, permitindo cancelar. Campos já preenchidos manualmente aparecem marcados como "será substituído".
+- Após confirmar, atualiza o estado local do formulário (não salva). Usuário revisa e usa "Salvar configuração" existente (concorrência otimista intacta).
+- Se `municipality_ibge_code` não puder ser resolvido (município não encontrado ou ambíguo), exibe aviso inline para preenchimento manual.
+- Dica textual em `state_registration`: "Consulta ao SINTEGRA não automatizada — preencha manualmente com base na inscrição estadual da empresa."
 
-Ampliar `STRING_FIELD_META` para aceitar `select?: OptionList`:
-- UF fiscal → `UF_OPTIONS`
-- País → `COUNTRY_OPTIONS`
-- Situação da IE → `STATE_REG_STATUS_OPTIONS`
-- Helper no IBGE; máscaras existentes de e-mail/telefone/CEP preservadas
+## Arquivos afetados
 
-### `src/pages/configuracoes/FiscalProdutos.tsx`
+Criar:
+- `src/lib/fiscal/cnpjLookup.ts` — orquestra BrasilAPI CNPJ + IBGE, retorna `Partial<CompanyFiscalFormValues>` mapeado, com tratamento de erros tipado.
+- `src/components/fiscal/CnpjLookupButton.tsx` — botão + AlertDialog de confirmação.
+- `src/test/fiscal/cnpjLookup.test.ts` — testes unitários do mapeamento (mock de fetch), incluindo: campos ausentes, município sem match IBGE, CNPJ alfanumérico bloqueado, campos protegidos não sobrescritos.
 
-No dialog de edição:
-- origin_code, icms_cst, icms_csosn, ipi_cst, pis_cst, cofins_cst → Selects
-- ncm (8 dígitos), cest (7 dígitos), cfop_in_state/interstate → mantém input + placeholder + tooltip
-- gtin/taxable_gtin → helper "GTIN-13/14 ou `SEM GTIN`"
-- Helper cruzado ICMS CST × CSOSN (Regime Normal vs Simples Nacional)
+Modificar (apenas a aba Empresa):
+- `src/pages/configuracoes/FiscalEmpresa.tsx` — inserir o botão junto ao campo CNPJ; handler que faz `setFormValues(prev => ({ ...prev, ...lookupResult }))` respeitando a lista de campos protegidos.
 
-### `src/pages/configuracoes/FiscalServicos.tsx`
+Não modificar: hooks, schemas Zod, migrations, RLS, feature flags, `useFiscalCompanySettings.ts`, contrato de tipos.
 
-- cnae, incidence_municipality_ibge_code, lc116_item → mantém input + helpers/tooltips
-- requirement_status → Select simples se o schema permitir (verifico ao implementar sem alterar Zod); senão só placeholder
+## Segurança e limites
 
-### Compatibilidade com dados legados
+- Chamadas feitas do browser (endpoint público, sem credencial). Sem edge function nesta fase.
+- Debounce/lock por 2s entre chamadas para evitar disparo múltiplo.
+- Nenhum dado retornado é logado; toasts genéricos.
+- Não altera `production_enabled`, `configuration_version`, `configuration_status`.
 
-Para todo Select cujo valor persistido não pertença à lista canônica, exibir opção `— manter valor atual (<x>) —` no topo. Nenhuma coerção automática; nenhuma migração de banco.
+## Validação
 
-### Verificações após Fase A
-
-- `bun run typecheck`
+- `bunx tsgo --noEmit`
+- `bunx vitest run src/test/fiscal`
 - `bun run build`
-- `bunx vitest run` — esperar suíte verde (804). Ajustar seletores de teste em `src/test/fiscal/*.ui.test.tsx` se algum consultar por input agora renderizado como select, sem alterar semântica.
+- Verificação manual: digitar um CNPJ válido conhecido, confirmar preenchimento, confirmar que campos NF-e/NFS-e e `state_registration` continuam vazios.
 
----
+## Fora do escopo (para fases futuras, com autorização)
 
-## Fase B — Autocomplete por API (planejada, executada só após aprovação da Fase A)
-
-Objetivo: reduzir digitação manual em campos de alto atrito, com fontes públicas gratuitas e sem persistir dados de terceiros.
-
-### B.1 — Autocomplete de CNPJ (Empresa e Clientes)
-- Já existe `src/lib/api/brasilapi.ts` com `fetchCNPJ`. Adicionar botão **"Buscar CNPJ"** ao lado do campo em `FiscalEmpresa.tsx` (Identificação) e no formulário de edição de `FiscalClientes.tsx`.
-- Ao encontrar, pré-preencher razão social, nome fantasia, CNAE, UF, município, CEP, endereço, telefone. Usuário confirma cada campo antes de salvar (sem overwrite silencioso).
-- Fonte: `https://brasilapi.com.br/api/cnpj/v1/{cnpj}` (pública, sem chave).
-
-### B.2 — Autocomplete de CEP (Empresa, Clientes)
-- Novo helper `src/lib/api/viacep.ts` com `fetchCEP`.
-- Ao completar 8 dígitos no campo CEP, buscar automaticamente e preencher logradouro, bairro, cidade, UF, IBGE. Confirmação por toast desfazível.
-- Fonte: `https://viacep.com.br/ws/{cep}/json/` (pública, sem chave). Fallback silencioso se offline.
-
-### B.3 — Autocomplete de município IBGE (Empresa, Clientes, Serviços)
-- Combobox digitável que lista municípios da UF selecionada, retornando o código IBGE de 7 dígitos.
-- Fonte: `https://servicodados.ibge.gov.br/api/v1/localidades/estados/{uf}/municipios` (pública, sem chave). Cache em memória por UF durante a sessão.
-
-### B.4 — Sugestão de CNAE (Empresa e Serviços)
-- Combobox com busca por descrição/código. Ao selecionar, preenche o código de 7 dígitos.
-- Fonte: `https://servicodados.ibge.gov.br/api/v2/cnae/classes` (pública). Cache em memória.
-
-### Não incluído na Fase B
-- Consulta de NCM/CEST (não há API pública oficial estável — mantém tooltip).
-- Validação online contra tabela SEFAZ de CFOP.
-- Persistência de qualquer resposta das APIs em banco (todas as respostas ficam apenas em memória do formulário).
-
-### Notas de execução para Fase B
-- Todas as chamadas são feitas no cliente (fetch direto), sem Edge Function e sem segredos — todas as APIs listadas são públicas e sem chave.
-- Cada campo autopreenchido deixa o usuário editar/sobrescrever livremente.
-- Nenhuma alteração de RLS, RPC, migrations, ou regras de validação Zod existentes.
-- Verificações idênticas às da Fase A (typecheck, build, vitest).
-
----
-
-## Fora do escopo (ambas as fases)
-
-- Wizard `RascunhoWizard.tsx` e abas Certificado/Homologação/Revisão — sem campos texto-livre de domínio conhecido.
-- Validação cruzada avançada (CST×CSOSN×regime, CFOP×UF origem/destino).
+- Consulta automática de Inscrição Estadual (SINTEGRA) — exige conector pago e segredo.
+- Consulta de inscrição municipal.
+- Auto-preenchimento de `tax_regime`/`crt` (decisão contábil, não automatizada).
+- Persistência automática no banco.
