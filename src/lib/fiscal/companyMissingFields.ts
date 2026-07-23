@@ -170,13 +170,16 @@ export function computeCompanyMissingFields(
   // NF-e condicional
   if (row.nfe_enabled === true) {
     const nfeCfg = jsonObj(row.nfe_configuration);
-    // IE é obrigatória para NF-e, mas o campo é renderizado na aba "empresa".
-    if (empty(row.state_registration)) push(build("state_registration", "Inscrição estadual", "nfe", "bloqueia_homologacao", LINK_EMPRESA));
+    // IE é obrigatória para NF-e apenas quando a empresa não declarou
+    // isenção. O campo é renderizado na aba "empresa".
+    if (empty(row.state_registration) && !isExemptRegistration(row.state_registration)) {
+      push(build("state_registration", "Inscrição estadual (ou marcar como ISENTO)", "nfe", "bloqueia_homologacao", LINK_EMPRESA));
+    }
     if (empty(row.nfe_series) && empty(nfeCfg.series)) push(build("nfe_series", "Série NF-e", "nfe", "bloqueia_homologacao", LINK_NFE));
-    // CFOP sugerido no singleton é referência; regra canônica de bloqueio
-    // vive nos perfis fiscais — aqui é apenas recomendado.
-    if (empty(nfeCfg.suggested_cfop_in_state)) push(build("nfe_cfop_in", "CFOP interno sugerido", "nfe", "recomendado", LINK_NFE));
-    if (empty(nfeCfg.suggested_cfop_interstate)) push(build("nfe_cfop_out", "CFOP interestadual sugerido", "nfe", "recomendado", LINK_NFE));
+    // CFOP de produto é regra dos perfis fiscais — aqui é apenas recomendado
+    // e não bloqueia homologação da empresa.
+    if (empty(nfeCfg.suggested_cfop_in_state)) push(build("nfe_cfop_in", "CFOP interno sugerido (referência)", "nfe", "recomendado", LINK_NFE));
+    if (empty(nfeCfg.suggested_cfop_interstate)) push(build("nfe_cfop_out", "CFOP interestadual sugerido (referência)", "nfe", "recomendado", LINK_NFE));
   } else {
     notApplicable.push("nfe");
   }
@@ -184,8 +187,10 @@ export function computeCompanyMissingFields(
   // NFS-e condicional
   if (row.nfse_enabled === true) {
     const nfseCfg = jsonObj(row.nfse_configuration);
-    // IM é obrigatória para NFS-e, mas o campo é renderizado na aba "empresa".
-    if (empty(row.municipal_registration)) push(build("municipal_registration", "Inscrição municipal", "nfse", "bloqueia_homologacao", LINK_EMPRESA));
+    // IM é obrigatória para NFS-e apenas quando não isenta. Renderizada na aba empresa.
+    if (empty(row.municipal_registration) && !isExemptRegistration(row.municipal_registration)) {
+      push(build("municipal_registration", "Inscrição municipal (ou marcar como ISENTO)", "nfse", "bloqueia_homologacao", LINK_EMPRESA));
+    }
     if (empty(nfseCfg.mode)) push(build("nfse_mode", "Modo NFS-e (nacional/municipal)", "nfse", "bloqueia_homologacao", LINK_NFSE));
     // Item LC 116 e alíquota ISS dependem de perfil/atividade — recomendados aqui.
     if (empty(nfseCfg.lc116_item)) push(build("lc116_item", "Item LC 116", "nfse", "recomendado", LINK_NFSE));
