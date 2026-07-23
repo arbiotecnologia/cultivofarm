@@ -363,6 +363,51 @@ BEGIN
   RETURN jsonb_build_object('configuration', payload, 'revision', v_new);
 END; $F$;
 
+-- Bloco 5 (aditivo): RPCs por profile_id — permitem editar IBS/CBS de
+-- perfis de serviço identificados apenas por source_reference (service_id
+-- nulo). Autorização, validação de payload, revisão otimista e conflito
+-- idênticos às RPCs por p_service_id, que permanecem intactas.
+CREATE OR REPLACE FUNCTION public.rpc_fiscal_service_profile_ibs_cbs_get(p_profile_id uuid)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = pg_catalog, public AS $F$
+DECLARE v_uid uuid := auth.uid(); v_cfg jsonb; v_rev text;
+BEGIN
+  IF NOT public._fiscal_rtc_can_read(v_uid) THEN
+    RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  SELECT COALESCE(ibs_cbs_configuration,'{}'::jsonb), updated_at::text
+    INTO v_cfg, v_rev
+    FROM public.service_fiscal_profiles
+   WHERE id = p_profile_id AND is_active = true LIMIT 1;
+  RETURN jsonb_build_object(
+    'configuration', COALESCE(v_cfg,'{}'::jsonb),
+    'revision', COALESCE(v_rev,''),
+    'exists', v_rev IS NOT NULL);
+END; $F$;
+
+CREATE OR REPLACE FUNCTION public.rpc_fiscal_service_profile_ibs_cbs_save(
+  p_profile_id uuid, payload jsonb, expected_revision text DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = pg_catalog, public AS $F$
+DECLARE v_uid uuid := auth.uid(); v_current text; v_new text;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'FISCAL_UNAUTHENTICATED' USING ERRCODE='42501'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador'::app_role)
+       OR public.has_role(v_uid,'financeiro'::app_role)) THEN
+    RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  PERFORM public._fiscal_rtc_assert_payload(payload,'item');
+  SELECT updated_at::text INTO v_current
+    FROM public.service_fiscal_profiles
+   WHERE id = p_profile_id AND is_active = true LIMIT 1;
+  IF v_current IS NULL THEN RAISE EXCEPTION 'FISCAL_ITEM_NOT_FOUND' USING ERRCODE='P0002'; END IF;
+  IF expected_revision IS NOT NULL AND expected_revision <> v_current THEN
+    RAISE EXCEPTION 'FISCAL_CONFLICT' USING ERRCODE='40001'; END IF;
+  UPDATE public.service_fiscal_profiles
+     SET ibs_cbs_configuration = payload, updated_at = now()
+   WHERE id = p_profile_id AND is_active = true
+   RETURNING updated_at::text INTO v_new;
+  RETURN jsonb_build_object('configuration', payload, 'revision', v_new);
+END; $F$;
+
 DO $$ DECLARE fn text;
 BEGIN
   FOR fn IN SELECT unnest(ARRAY[
@@ -371,7 +416,9 @@ BEGIN
     'rpc_fiscal_product_ibs_cbs_get(uuid)',
     'rpc_fiscal_product_ibs_cbs_save(uuid,jsonb,text)',
     'rpc_fiscal_service_ibs_cbs_get(uuid)',
-    'rpc_fiscal_service_ibs_cbs_save(uuid,jsonb,text)'
+    'rpc_fiscal_service_ibs_cbs_save(uuid,jsonb,text)',
+    'rpc_fiscal_service_profile_ibs_cbs_get(uuid)',
+    'rpc_fiscal_service_profile_ibs_cbs_save(uuid,jsonb,text)'
   ]) LOOP
     EXECUTE format('REVOKE ALL ON FUNCTION public.%s FROM PUBLIC', fn);
     EXECUTE format('REVOKE ALL ON FUNCTION public.%s FROM anon',   fn);

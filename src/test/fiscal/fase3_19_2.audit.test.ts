@@ -175,7 +175,11 @@ describe("Fase 3.19.3 — Integração de páginas", () => {
 
   test("FiscalProdutos e FiscalServicos incluem IbsCbsItemCard", () => {
     expect(read("src/pages/configuracoes/FiscalProdutos.tsx")).toContain('kind="product"');
-    expect(read("src/pages/configuracoes/FiscalServicos.tsx")).toContain('kind="service"');
+    // Bloco 5: FiscalServicos passa a identidade estável do perfil
+    // (service_fiscal_profiles.id) via kind="service_profile", permitindo
+    // editar IBS/CBS de perfis que existem só por source_reference.
+    expect(read("src/pages/configuracoes/FiscalServicos.tsx")).toContain('kind="service_profile"');
+    expect(read("src/pages/configuracoes/FiscalServicos.tsx")).toContain("IbsCbsItemCard");
   });
 });
 
