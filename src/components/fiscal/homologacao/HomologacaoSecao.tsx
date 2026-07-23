@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CamposFaltantesEmpresa from "./CamposFaltantesEmpresa";
+import ProntidaoConexoesSecao from "./ProntidaoConexoesSecao";
 import CertificadoValidadeBanner from "@/components/fiscal/certificados/CertificadoValidadeBanner";
 import {
   AlertTriangle,
@@ -213,7 +214,10 @@ export default function HomologacaoSecao({ companySettingsId }: Props) {
 
       <CertificadoValidadeBanner companySettingsId={companySettingsId} showAllStates />
 
+      <ProntidaoConexoesSecao companySettingsId={companySettingsId} />
+
       <CamposFaltantesEmpresa />
+
 
 
       <Card>
