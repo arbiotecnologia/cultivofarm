@@ -555,6 +555,7 @@ function EditDrawer({
                     value={customerIdInput}
                     onPick={(id) => setCustomerIdInput(id)}
                     invalid={!!errors.customer_id}
+                    excludeIds={knownProfiledCustomerIds}
                   />
                 ) : (
                   <Input
