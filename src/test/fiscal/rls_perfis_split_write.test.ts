@@ -1,10 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 
-// Migration canônica preparada em restoration/ (aplicação externa em staging;
-// sandbox não pode escrever em supabase/migrations/ nem tocar produção).
 const MIGRATION_PATH =
-  "restoration/20260728000000_fiscal_rls_perfis_split_write.sql";
+  "supabase/migrations/20260728000000_fiscal_rls_perfis_split_write.sql";
 
 const TABLES = [
   "product_fiscal_profiles",
