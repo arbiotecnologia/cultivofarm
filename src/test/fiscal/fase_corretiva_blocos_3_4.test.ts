@@ -42,11 +42,11 @@ describe("Bloco 3 — status canônicos (produto)", () => {
 });
 
 describe("Bloco 3 — status canônicos (serviço)", () => {
-  it("lista exatamente os 4 status do CHECK", () => {
+  it("lista exatamente os 5 status do CHECK (inclui NOT_FISCALLY_BILLED — fase 3.19.x)", () => {
     expect([...SERVICE_FISCAL_PROFILE_STATUSES].sort()).toEqual(
-      ["BLOCKED", "DRAFT", "PENDING_ACCOUNTING", "VALIDATED"].sort(),
+      ["BLOCKED", "DRAFT", "NOT_FISCALLY_BILLED", "PENDING_ACCOUNTING", "VALIDATED"].sort(),
     );
-    expect(SERVICE_FISCAL_PROFILE_STATUS_OPTIONS).toHaveLength(4);
+    expect(SERVICE_FISCAL_PROFILE_STATUS_OPTIONS).toHaveLength(5);
   });
   it("rótulos pt-BR", () => {
     expect(getFiscalStatusLabel("service", "DRAFT")).toBe("Rascunho");
