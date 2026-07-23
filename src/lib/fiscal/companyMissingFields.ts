@@ -55,6 +55,10 @@ export const KNOWN_FIELD_TARGETS: ReadonlySet<string> = new Set<string>([
   // Endereço
   "postal_code", "street", "number", "complement", "neighborhood",
   "city", "state", "municipality_ibge_code", "country_code",
+  // NF-e (ids reais renderizados em FiscalEmpresa)
+  "nfe_series", "nfe_cfop_in", "nfe_cfop_out",
+  // NFS-e (id real renderizado em FiscalEmpresa)
+  "nfse_mode",
 ]);
 
 function withField(baseLink: string, key: string): { link: string; hasFieldTarget: boolean } {
