@@ -125,14 +125,14 @@ const additionalFieldsSchema = z
   .record(z.string(), z.unknown())
   .superRefine((af, ctx) => {
     const r = validateNfseInAdditionalFields(af);
-    if (!r.ok) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${r.code}:${r.field}`,
-        path: [r.field],
-      });
-    }
+    if (r.ok) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `${r.code}:${r.field}`,
+      path: [r.field],
+    });
   });
+
 
 // ————————————— Empresa (company_fiscal_settings.rtc_configuration) —————————————
 export const rtcCompanySchema = z
