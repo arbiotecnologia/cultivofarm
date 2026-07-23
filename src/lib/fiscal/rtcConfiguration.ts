@@ -90,7 +90,9 @@ export const rtcCompanySchema = z
     rtc_environment: z.enum(["NOT_CONFIGURED", "HOMOLOGATION"]).default("NOT_CONFIGURED"),
     transition_year: z.number().int().min(2026).max(2033).optional(),
     accounting_review_notes: z.string().trim().max(4000).optional(),
+    accounting_review_status: z.enum(["PENDING", "REVIEWED"]).optional(),
     additional_fields: z.record(z.string(), z.unknown()).optional(),
+
   })
   .strict()
   .refine((v) => !rtcHasSensitiveKey(v), {
