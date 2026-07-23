@@ -391,12 +391,24 @@ manutenção do `REVOKE DELETE` da migration `20260729000000`, e
 comprovação de que o painel usa `supabase.rpc('rpc_financial_document_soft_delete')`
 sem `.update({ deleted_at })` nem `.delete()`.
 
-**Status:** correção **preparada e versionada**; **pendente de
-aplicação runtime no staging** `ikaauvsflpmamgxmkhoq`. Sem banco, deploy,
-publicação ou produção nesta rodada.
+**Status:** migration/RPC **aplicada no staging `ikaauvsflpmamgxmkhoq`**;
+testes runtime **sequenciais passaram com zero resíduos** (anônimo, sem
+papel, motivo vazio, inexistente, soft delete legítimo, segunda exclusão
+e verificação de autoria server-side — todos com os SQLSTATE esperados;
+rollback confirmado). Auditoria posterior identificou **condição de
+corrida** no `SELECT` sem lock: duas chamadas simultâneas podiam ambas
+aprovar a checagem de `deleted_at IS NULL` e a segunda retornar sucesso
+atualizando 0 linhas. Correção aplicada **somente na migration
+versionada** `20260730000000` — `SELECT ... FOR UPDATE` antes da
+validação e `GET DIAGNOSTICS ... ROW_COUNT` com conversão de 0 linhas em
+`40001` — preservando assinatura, `P0002`/`40001`, grants e demais
+regras. **Teste concorrente runtime fica PENDENTE** até a definição
+corrigida ser reaplicada no staging.
 
-**Gates locais nesta rodada:** typecheck ✅, build ✅, focal ✅, suíte
-fiscal completa ✅.
+**Gates locais nesta rodada:** typecheck ✅, build ✅, focal ✅
+(`rpc_financial_document_soft_delete.test.ts` com novo assert
+`FOR UPDATE` + `ROW_COUNT`).
+
 
 ### 13.1 Roteiro SQL mínimo do teste runtime (com rollback)
 

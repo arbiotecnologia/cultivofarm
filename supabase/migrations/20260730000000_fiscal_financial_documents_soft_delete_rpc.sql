@@ -27,8 +27,8 @@ AS $$
 DECLARE
   v_uid    uuid := auth.uid();
   v_reason text;
-  v_exists boolean;
   v_active boolean;
+  v_rows   integer;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Sessão não autenticada' USING ERRCODE = '42501';
@@ -50,12 +50,16 @@ BEGIN
     RAISE EXCEPTION 'Motivo excede 500 caracteres' USING ERRCODE = '22023';
   END IF;
 
-  SELECT true, (deleted_at IS NULL)
-    INTO v_exists, v_active
+  -- Trava a linha para tornar a verificação/atualização atômica e evitar
+  -- corrida entre duas chamadas simultâneas: sem FOR UPDATE ambas passariam
+  -- no SELECT e a segunda faria UPDATE de 0 linhas retornando sucesso.
+  SELECT (deleted_at IS NULL)
+    INTO v_active
     FROM public.financial_documents
-   WHERE id = p_document_id;
+   WHERE id = p_document_id
+   FOR UPDATE;
 
-  IF NOT coalesce(v_exists, false) THEN
+  IF NOT FOUND THEN
     RAISE EXCEPTION 'Documento não encontrado' USING ERRCODE = 'P0002';
   END IF;
 
@@ -69,6 +73,13 @@ BEGIN
          delete_reason = v_reason
    WHERE id = p_document_id
      AND deleted_at IS NULL;
+
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 1 THEN
+    -- Salvaguarda dupla: se por qualquer motivo o UPDATE não afetou a linha
+    -- travada, sinaliza conflito serializável em vez de sucesso silencioso.
+    RAISE EXCEPTION 'Conflito concorrente ao remover documento' USING ERRCODE = '40001';
+  END IF;
 
   RETURN p_document_id;
 END;
