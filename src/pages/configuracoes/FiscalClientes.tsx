@@ -740,3 +740,85 @@ function EditDrawer({
     </Sheet>
   );
 }
+
+/**
+ * CustomerPicker — seletor de cliente com busca sanitizada.
+ * Consome `useFiscalClientesLite`, exibindo nome + código + documento
+ * mascarado. Trata explicitamente `permission_denied` e `error`.
+ * Não expõe o `id` técnico ao usuário; apenas repassa via `onPick`.
+ */
+function CustomerPicker({
+  value,
+  onPick,
+  invalid,
+}: {
+  value: string;
+  onPick: (customerId: string) => void;
+  invalid?: boolean;
+}) {
+  const [term, setTerm] = useState<string>("");
+  const [open, setOpen] = useState<boolean>(false);
+  const [picked, setPicked] = useState<{ id: string; nome: string; doc: string | null; codigo: string | null } | null>(null);
+  const listQ = useFiscalClientesLite(term);
+
+  useEffect(() => {
+    if (!value) setPicked(null);
+  }, [value]);
+
+  const status = listQ.data?.status ?? "ok";
+  const items = listQ.data?.items ?? [];
+
+  return (
+    <div className="relative">
+      <Input
+        id="f-customer_id"
+        value={picked ? `${picked.nome}${picked.codigo ? ` · ${picked.codigo}` : ""}` : term}
+        onChange={(e) => {
+          setPicked(null);
+          onPick("");
+          setTerm(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        aria-invalid={invalid}
+        placeholder="Digite nome, código ou documento do cliente"
+        autoComplete="off"
+      />
+      {open && term.trim().length >= 2 && !picked ? (
+        <div className="mt-1 max-h-56 overflow-auto rounded border bg-background shadow-sm">
+          {listQ.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : status === "permission_denied" ? (
+            <div className="p-2 text-xs text-muted-foreground">Sem permissão para consultar clientes.</div>
+          ) : status === "error" ? (
+            <div className="p-2 text-xs text-destructive">Falha ao consultar clientes. Tente novamente.</div>
+          ) : items.length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum cliente encontrado.</div>
+          ) : (
+            <ul className="text-sm" role="listbox" aria-label="Resultados de clientes">
+              {items.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted focus:bg-muted"
+                    onClick={() => {
+                      setPicked({ id: c.id, nome: c.nome, doc: c.cpf_cnpj, codigo: c.codigo_cliente });
+                      onPick(c.id);
+                      setTerm(c.nome);
+                      setOpen(false);
+                    }}
+                  >
+                    <div className="font-medium">{c.nome}</div>
+                    <div className="text-xs text-muted-foreground font-mono">
+                      {c.codigo_cliente ? `${c.codigo_cliente} · ` : ""}{maskDocument(c.cpf_cnpj)}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
