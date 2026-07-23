@@ -135,8 +135,11 @@ sob autorização humana, com baseline auditado.
 
 ## 6. Créditos consumidos
 
-Esta rodada: ~4 créditos (audit estático + gates locais + relatório).
-Nenhuma escrita em banco a partir do sandbox.
+Acumulado desta fase H2: ~17 créditos (audit estático, gates locais,
+relatórios e atualizações de relatório). Nenhuma escrita em banco a
+partir do sandbox; execução runtime ocorreu fora do sandbox em
+transações com `ROLLBACK`.
+
 
 ## 7. Próxima barreira objetiva
 
