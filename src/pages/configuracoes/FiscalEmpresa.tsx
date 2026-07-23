@@ -742,6 +742,12 @@ export default function FiscalEmpresa() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="rtc" className="space-y-4" data-testid="fiscal-empresa-panel-rtc">
+            <RtcCompanyCard canEdit={canEdit} />
+          </TabsContent>
+
+
+
           {canViewHomologation ? (
             <TabsContent value="homologacao" className="space-y-4">
               <HomologacaoSecao companySettingsId={settingsQuery.data?.id ?? null} />
