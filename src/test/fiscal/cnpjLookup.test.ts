@@ -1,119 +1,149 @@
 /**
- * Testes do mapeamento RFB → formulário fiscal (Fase Fiscal — CNPJ lookup).
+ * Fase Fiscal H3-A — Testes do cliente de consulta CNPJ.
+ *
+ * Cobre: DV inválido (sem request), alfanumérico bloqueado, mapeamento de
+ * valores, whitelist defensiva, formatação de telefone, propagação de
+ * códigos (not_found, rate_limited, timeout, upstream_error, forbidden,
+ * unauthorized), cancelamento via AbortSignal, ausência de campos protegidos.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+const invokeMock = vi.fn();
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { functions: { invoke: (...args: unknown[]) => invokeMock(...args) } },
+}));
+
 import {
   lookupCnpj,
   CnpjLookupError,
   LOOKUP_TARGET_FIELDS,
 } from "@/lib/fiscal/cnpjLookup";
 
-const RFB_OK = {
-  razao_social: "ACME INDUSTRIA LTDA",
-  nome_fantasia: "Acme",
-  cnae_fiscal: 4711302,
-  descricao_tipo_de_logradouro: "RUA",
-  logradouro: "das Flores",
-  numero: "123",
-  complemento: "SALA 4",
-  bairro: "Centro",
-  cep: "01001000",
-  uf: "SP",
-  municipio: "SAO PAULO",
-  ddd_telefone_1: "1133224455",
-  opcao_pelo_simples: true,
-  opcao_pelo_mei: false,
-};
+// CNPJ numérico válido (DV correto)
+const CNPJ_VALID = "00000000000191";
+// CNPJ numérico com DV inválido
+const CNPJ_DV_INVALID = "00000000000192";
+// CNPJ alfanumérico válido: 12ABC34501DE + DV.
+// Reutilizamos validateCnpjAlpha calculado offline: base "12ABC34501DE" → DV "35".
+const CNPJ_ALPHA_VALID = "12ABC34501DE35";
 
-const IBGE_SP = [
-  { nome: "São Paulo", codigo_ibge: "3550308" },
-  { nome: "Campinas", codigo_ibge: "3509502" },
-];
-
-function mockFetchSequence(responses: Array<{ status?: number; body?: unknown }>) {
-  const spy = vi.spyOn(globalThis, "fetch" as never) as unknown as ReturnType<
-    typeof vi.fn
-  >;
-  responses.forEach((r) => {
-    spy.mockResolvedValueOnce({
-      ok: (r.status ?? 200) < 400,
-      status: r.status ?? 200,
-      json: async () => r.body,
-    } as Response);
-  });
-  return spy;
+function okResponse(body: unknown) {
+  return { data: body, error: null };
+}
+function errResponse(code: string, status = 400) {
+  return {
+    data: null,
+    error: {
+      context: {
+        response: new Response(JSON.stringify({ error: code }), {
+          status,
+          headers: { "Content-Type": "application/json" },
+        }),
+      },
+    },
+  };
 }
 
-describe("lookupCnpj", () => {
-  beforeEach(() => vi.restoreAllMocks());
-  afterEach(() => vi.restoreAllMocks());
-
-  it("rejeita CNPJ com tamanho inválido", async () => {
-    await expect(lookupCnpj("123")).rejects.toBeInstanceOf(CnpjLookupError);
-    await expect(lookupCnpj("123")).rejects.toMatchObject({ code: "invalid_cnpj" });
+describe("lookupCnpj (H3-A, via Edge Function)", () => {
+  beforeEach(() => {
+    invokeMock.mockReset();
+  });
+  afterEach(() => {
+    invokeMock.mockReset();
   });
 
-  it("rejeita CNPJ alfanumérico (sem endpoint público)", async () => {
-    // 16 chars > invalid length
-    await expect(lookupCnpj("ABCDE12345670012")).rejects.toMatchObject({
+  it("rejeita CNPJ com DV inválido ANTES de qualquer request", async () => {
+    await expect(lookupCnpj(CNPJ_DV_INVALID)).rejects.toMatchObject({
       code: "invalid_cnpj",
     });
-    // 14 chars com letra: passa no length, cai no filtro alfa
-    await expect(lookupCnpj("1234567890123A")).rejects.toMatchObject({
-      code: "alpha_unsupported",
-    });
-    await expect(lookupCnpj("A1234567890123")).rejects.toMatchObject({
-      code: "alpha_unsupported",
-    });
+    expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it("mapeia campos RFB e resolve IBGE por nome (case/acento-insensível)", async () => {
-    mockFetchSequence([{ body: RFB_OK }, { body: IBGE_SP }]);
-    const r = await lookupCnpj("00000000000191");
-    expect(r.values.legal_name).toBe("ACME INDUSTRIA LTDA");
-    expect(r.values.trade_name).toBe("Acme");
-    expect(r.values.primary_cnae).toBe("4711302");
-    expect(r.values.postal_code).toBe("01001000");
-    expect(r.values.street).toBe("RUA das Flores");
-    expect(r.values.number).toBe("123");
-    expect(r.values.complement).toBe("SALA 4");
-    expect(r.values.neighborhood).toBe("Centro");
-    expect(r.values.city).toBe("SAO PAULO");
-    expect(r.values.state).toBe("SP");
-    expect(r.values.country_code).toBe("BR");
-    expect(r.values.municipality_ibge_code).toBe("3550308");
+  it("rejeita CNPJ com tamanho inválido sem request", async () => {
+    await expect(lookupCnpj("123")).rejects.toBeInstanceOf(CnpjLookupError);
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  it("rejeita CNPJ alfanumérico com alpha_unsupported sem request", async () => {
+    await expect(lookupCnpj(CNPJ_ALPHA_VALID)).rejects.toMatchObject({
+      code: "alpha_unsupported",
+    });
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  it("mapeia campos retornados e formata telefone", async () => {
+    invokeMock.mockResolvedValueOnce(
+      okResponse({
+        source: "brasilapi",
+        ibge_unresolved: false,
+        tax_regime_hint: "SIMPLES",
+        values: {
+          legal_name: "ACME LTDA",
+          trade_name: "Acme",
+          primary_cnae: "4711302",
+          phone: "1133224455",
+          postal_code: "01001000",
+          street: "RUA das Flores",
+          number: "123",
+          complement: "SALA 4",
+          neighborhood: "Centro",
+          city: "SAO PAULO",
+          state: "SP",
+          country_code: "BR",
+          municipality_ibge_code: "3550308",
+        },
+      }),
+    );
+    const r = await lookupCnpj(CNPJ_VALID);
+    expect(invokeMock).toHaveBeenCalledWith("fiscal-cnpj-lookup", {
+      body: { version: "fiscal-cnpj-lookup/1.0.0", cnpj: CNPJ_VALID },
+    });
+    expect(r.source).toBe("brasilapi");
     expect(r.values.phone).toBe("(11) 3322-4455");
+    expect(r.values.legal_name).toBe("ACME LTDA");
+    expect(r.values.municipality_ibge_code).toBe("3550308");
     expect(r.ibgeUnresolved).toBe(false);
     expect(r.taxRegimeHint).toBe("SIMPLES");
   });
 
-  it("marca ibgeUnresolved quando município não bate", async () => {
-    mockFetchSequence([
-      { body: { ...RFB_OK, municipio: "Cidade Inexistente" } },
-      { body: IBGE_SP },
-    ]);
-    const r = await lookupCnpj("00000000000191");
+  it("propaga ibge_unresolved e mantém demais campos", async () => {
+    invokeMock.mockResolvedValueOnce(
+      okResponse({
+        source: "brasilapi",
+        ibge_unresolved: true,
+        tax_regime_hint: null,
+        values: { legal_name: "X", state: "SP", city: "Inexistente" },
+      }),
+    );
+    const r = await lookupCnpj(CNPJ_VALID);
     expect(r.ibgeUnresolved).toBe(true);
     expect(r.values.municipality_ibge_code).toBeUndefined();
+    expect(r.values.legal_name).toBe("X");
   });
 
-  it("propaga 404 como not_found", async () => {
-    mockFetchSequence([{ status: 404, body: {} }]);
-    await expect(lookupCnpj("00000000000191")).rejects.toMatchObject({
-      code: "not_found",
-    });
-  });
-
-  it("propaga 429 como rate_limited", async () => {
-    mockFetchSequence([{ status: 429, body: {} }]);
-    await expect(lookupCnpj("00000000000191")).rejects.toMatchObject({
-      code: "rate_limited",
-    });
-  });
-
-  it("nunca mapeia campos protegidos (regime, inscrições, e-mail, provider)", async () => {
-    mockFetchSequence([{ body: RFB_OK }, { body: IBGE_SP }]);
-    const r = await lookupCnpj("00000000000191");
+  it("descarta chaves fora da whitelist (nunca toca campos protegidos)", async () => {
+    invokeMock.mockResolvedValueOnce(
+      okResponse({
+        source: "brasilapi",
+        ibge_unresolved: false,
+        tax_regime_hint: null,
+        values: {
+          legal_name: "OK",
+          // Chaves proibidas (defesa em profundidade):
+          cnpj: "99999999999999",
+          fiscal_email: "x@y.z",
+          tax_regime: "SIMPLES",
+          state_registration: "ISENTO",
+          municipal_registration: "1",
+          nfe_provider: "PLUGNOTAS",
+          nfse_provider: "PLUGNOTAS",
+          production_enabled: true,
+          configuration_version: 42,
+        },
+      }),
+    );
+    const r = await lookupCnpj(CNPJ_VALID);
     const keys = Object.keys(r.values);
     for (const forbidden of [
       "cnpj",
@@ -128,12 +158,61 @@ describe("lookupCnpj", () => {
       "nfse_configuration",
       "configuration_status",
       "configuration_version",
+      "production_enabled",
     ]) {
       expect(keys).not.toContain(forbidden);
     }
-    // Todos os campos retornados estão na whitelist
     for (const k of keys) {
       expect(LOOKUP_TARGET_FIELDS as readonly string[]).toContain(k);
     }
+  });
+
+  it("propaga 404 como not_found", async () => {
+    invokeMock.mockResolvedValueOnce(errResponse("not_found", 404));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "not_found" });
+  });
+
+  it("propaga 429 como rate_limited", async () => {
+    invokeMock.mockResolvedValueOnce(errResponse("rate_limited", 429));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "rate_limited" });
+  });
+
+  it("propaga timeout", async () => {
+    invokeMock.mockResolvedValueOnce(errResponse("timeout", 504));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "timeout" });
+  });
+
+  it("propaga upstream_error", async () => {
+    invokeMock.mockResolvedValueOnce(errResponse("upstream_error", 502));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "upstream_error" });
+  });
+
+  it("propaga forbidden quando papel não autorizado", async () => {
+    invokeMock.mockResolvedValueOnce(errResponse("forbidden", 403));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "forbidden" });
+  });
+
+  it("propaga unauthorized quando sem sessão", async () => {
+    invokeMock.mockResolvedValueOnce(errResponse("unauthorized", 401));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "unauthorized" });
+  });
+
+  it("mapeia falha de rede/lançamento como network_error", async () => {
+    invokeMock.mockRejectedValueOnce(new Error("boom"));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "network_error" });
+  });
+
+  it("mapeia payload não-objeto como upstream_error", async () => {
+    invokeMock.mockResolvedValueOnce(okResponse("not-an-object"));
+    await expect(lookupCnpj(CNPJ_VALID)).rejects.toMatchObject({ code: "upstream_error" });
+  });
+
+  it("aborta antes do request quando o signal já está abortado", async () => {
+    const ctrl = new AbortController();
+    ctrl.abort();
+    await expect(lookupCnpj(CNPJ_VALID, ctrl.signal)).rejects.toMatchObject({
+      code: "network_error",
+    });
+    expect(invokeMock).not.toHaveBeenCalled();
   });
 });

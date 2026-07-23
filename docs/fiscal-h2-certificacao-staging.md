@@ -1151,3 +1151,95 @@ edição manual, nenhuma inferência, nenhuma injeção. Produção
 ### 22.6 Custo real
 **≈ 5 créditos** (substituição, extensão do verificador + fixtures + doc;
 todas as validações verdes).
+
+## 23. Fase H3-A — Endurecimento da consulta cadastral CNPJ
+
+### 23.1 Fonte real dos dados
+- Consulta cadastral via **BrasilAPI** (`/api/cnpj/v1/{cnpj}` + `/api/ibge/municipios/v1/{UF}`),
+  com dados públicos originados do CNPJ/RFB. **Não é canal oficial da RFB em tempo real.**
+  Todos os textos de UI, toasts, comentários e testes foram corrigidos para refletir a fonte real.
+- Os dados devolvidos são apresentados em `AlertDialog` para revisão manual antes de qualquer
+  gravação. Nenhum autosave é realizado.
+
+### 23.2 Validação canônica de CNPJ
+- Frontend e Edge Function reutilizam `validateCnpjAlpha` (DV módulo-11 conforme
+  IN RFB 2.229/2024).
+- CNPJ numérico com DV inválido é bloqueado **antes** de qualquer request (nem à Edge Function
+  nem à BrasilAPI). Coberto por teste focal.
+- CNPJ alfanumérico é aceito e persistido normalmente pelo formulário; a consulta automática
+  responde `alpha_unsupported` com mensagem: "consulta automática via BrasilAPI ainda
+  indisponível para este formato". O sistema continua permitindo preenchimento manual.
+- O CNPJ digitado pelo usuário **nunca é alterado** pelo retorno da consulta (campo protegido).
+
+### 23.3 Edge Function `fiscal-cnpj-lookup` (versionada, sem deploy nesta rodada)
+- Localização: `supabase/functions/fiscal-cnpj-lookup/index.ts`.
+- Autenticação: JWT obrigatório (`Authorization: Bearer …`) validado via `auth.getUser`.
+- Autorização: `has_role` para os mesmos papéis de `fiscal-preflight`
+  (`administrador`, `gestor`, `financeiro`). Fail-closed.
+- Sem `SUPABASE_SERVICE_ROLE_KEY`; cliente construído com `SUPABASE_ANON_KEY` + header do usuário,
+  preservando RLS.
+- CORS por allowlist (`FISCAL_ALLOWED_ORIGINS`), reutilizando o padrão de `fiscal-preflight`.
+- Payload máximo aceito: 1 KiB (`{ version?, cnpj }`). Response externa limitada a 32 KiB (CNPJ)
+  e 256 KiB (lista IBGE). Timeout externo: 5 s. Timeout de `has_role`: 3 s.
+- Mapeamento de erros externos para códigos seguros: `not_found` (404), `rate_limited` (429),
+  `timeout` (504, via `AbortController`), `upstream_error` (413/502/JSON inválido/response não-objeto).
+- Log emitido é mínimo (`{evt, cid, contract, fields, ibge_unresolved}`) — **nunca** payload,
+  telefone, endereço, CEP, resposta completa ou JWT.
+- Resposta whitelisted server-side: apenas os 13 campos de `LOOKUP_TARGET_FIELDS`. Whitelist
+  duplicada no cliente como defesa em profundidade.
+- **Sem provedor externo de emissão**, sem segredos, sem escrita em banco.
+
+### 23.4 Frontend — proteção de UX
+- `src/lib/fiscal/cnpjLookup.ts` chama exclusivamente `supabase.functions.invoke("fiscal-cnpj-lookup")`.
+  **Não existe fallback direto para BrasilAPI pelo navegador** — isso violaria autorização
+  e observabilidade servidor-side.
+- `CnpjLookupButton`:
+  - `AbortController` cancelado no unmount e a cada novo clique (trava contra duplo clique).
+  - Cooldown de 3 s após qualquer resposta (sem loop de retry automático).
+  - Só habilita quando `validateCnpjAlpha` e formato numérico completo.
+  - Tooltip distingue: DV inválido / alfanumérico não suportado / em cooldown / pronto.
+  - Falha do IBGE não invalida os demais campos — código municipal fica manual com aviso.
+- Removidas promessas anteriores de "v2 / SINTEGRA". Inscrição estadual, CRT e regime tributário
+  continuam **manuais** — nunca automatizados.
+- Diálogo de confirmação lista claramente cada campo, o valor novo e (quando houver) o valor
+  que será substituído, além de identificar a fonte "BrasilAPI · dados públicos originados
+  do CNPJ/RFB".
+
+### 23.5 Testes
+`src/test/fiscal/cnpjLookup.test.ts` (15 cenários): DV inválido sem request, tamanho inválido,
+alfanumérico bloqueado, mapeamento de valores, formatação de telefone, whitelist defensiva
+(rejeita `cnpj`, `fiscal_email`, `tax_regime`, `state_registration`, `municipal_registration`,
+`nfe_provider`, `nfse_provider`, `production_enabled`, `configuration_version`, etc.),
+`not_found`, `rate_limited`, `timeout`, `upstream_error`, `unauthorized`, `forbidden`,
+falha de rede como `network_error`, payload não-objeto como `upstream_error`, cancelamento
+via `AbortSignal` já abortado.
+
+Testes de RLS e assinatura de invocação da Edge Function em runtime **permanecem UNVERIFIED**
+até deploy autorizado em staging.
+
+### 23.6 Validações executadas
+- `bunx vitest run src/test/fiscal/cnpjLookup.test.ts` → **15/15 passed**.
+- `bunx vitest run src/test/fiscal` → **1065 passed · 3 skipped · 53 files**.
+- `bunx tsgo --noEmit` → sem erros.
+- `bun run build` → build limpo (aviso pré-existente de chunk > 500 KiB não relacionado).
+
+### 23.7 Riscos residuais
+1. Edge Function `fiscal-cnpj-lookup` está versionada mas **sem deploy** no staging
+   `ikaauvsflpmamgxmkhoq` — runtime real (CORS allowlist, `has_role`, timeouts) não foi
+   exercitado. Recomenda-se deploy controlado em staging antes da certificação H3 completa.
+2. BrasilAPI é serviço público de terceiros; sujeito a rate-limit e indisponibilidade.
+   Mitigações no servidor: timeout curto, sem retry, cooldown no cliente.
+3. Consulta automática indisponível para CNPJ alfanumérico enquanto a BrasilAPI não expuser
+   o endpoint correspondente. Preenchimento manual continua funcional.
+4. Sem consulta de Inscrição Estadual (SINTEGRA) — permanece manual por decisão de escopo.
+
+### 23.8 Recomendação
+Rodada H3-A concluída dentro do orçamento. Antes de seguir para auditoria completa de
+homologação, autorizar:
+(a) deploy da Edge Function em `ikaauvsflpmamgxmkhoq`;
+(b) evidência runtime das 4 rotas de erro (401/403/404/429/504);
+(c) verificação da allowlist de origens em preview + produção.
+
+### 23.9 Custo real
+**≈ 12 créditos** (Edge Function, cliente, componente, 15 testes, doc H2 §23; todas as
+validações verdes).
