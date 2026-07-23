@@ -141,8 +141,12 @@ export async function lookupCnpj(
   try {
     invokeResult = await supabase.functions.invoke("fiscal-cnpj-lookup", {
       body: { version: CONTRACT_VERSION, cnpj: clean },
+      // functions-js 2.5+: encaminha AbortSignal para cancelamento real da rede.
+      ...(signal ? { signal } : {}),
     });
-  } catch {
+  } catch (err) {
+    if ((err as { name?: string })?.name === "AbortError")
+      throw new CnpjLookupError("network_error", "aborted");
     throw new CnpjLookupError("network_error");
   }
 
