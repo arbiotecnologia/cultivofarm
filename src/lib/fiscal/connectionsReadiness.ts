@@ -203,7 +203,9 @@ function computeProvedor(row: CompanyFiscalRow | null): ConnectionItem {
     label: "Provedor",
     status: "not_started",
     description: "Selecione o provedor fiscal para os documentos habilitados.",
-    deepLink: link("provedor"),
+    // Aba real: "integracao" (Integração e segurança). Campo real:
+    // #nfe_provider (existe também #nfse_provider como fallback natural).
+    deepLink: link("integracao", "nfe_provider"),
   };
   if (row === null) return base;
   const anyEnabled = row.nfe_enabled === true || row.nfse_enabled === true;
