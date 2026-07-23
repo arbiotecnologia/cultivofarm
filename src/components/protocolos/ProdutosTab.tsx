@@ -594,7 +594,7 @@ export function ProdutosTab() {
 
           {isAdmin && !catalogoAplicado && (
             <AlertDialog open={reloadOpen} onOpenChange={setReloadOpen}>
-              <AlertDialogTrigger asChild></AlertDialogTrigger>
+              <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" className="hidden md:flex">
                   <RefreshCcw className="h-4 w-4 mr-1" />
                   Recarregar Catálogo A.R Bio v1.3
