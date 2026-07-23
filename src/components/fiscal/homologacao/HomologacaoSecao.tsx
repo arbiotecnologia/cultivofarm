@@ -211,7 +211,7 @@ export default function HomologacaoSecao({ companySettingsId }: Props) {
         </CardContent>
       </Card>
 
-      <CertificadoValidadeBanner companySettingsId={companySettingsId} />
+      <CertificadoValidadeBanner companySettingsId={companySettingsId} showAllStates />
 
       <CamposFaltantesEmpresa />
 
