@@ -430,15 +430,12 @@ export async function previewOrphanCleanup(): Promise<OrphanCleanupPlan> {
 
   const steps: OrphanCleanupStep[] = audit.por_tabela
     .filter((r) => r.orfaos > 0 || r.distinct_ids_orfaos > 0)
-    .map((r) => ({
+    .map<OrphanCleanupStep>((r) => ({
       tabela: r.tabela,
       coluna: r.coluna,
       acao: NULLIFY_TABLES.has(r.tabela) ? "nullify" : "delete",
       linhas_afetadas: r.orfaos,
       distinct_ids: r.distinct_ids_orfaos,
-      // sample_ids do audit é limitado; o plano usa todos os IDs distintos coletados
-      // por meio de nova varredura leve — reaproveitamos sample_ids para exibição
-      // mas o executor recoleta os IDs completos por tabela para garantir cobertura.
       orphan_ids: r.sample_ids,
     }))
     .sort((a, b) => (orderIndex.get(a.tabela) ?? 999) - (orderIndex.get(b.tabela) ?? 999));
