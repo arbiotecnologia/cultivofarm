@@ -98,6 +98,30 @@ export function ProdutosTab() {
   const isAdmin = roles.includes("administrador");
   const [reloadOpen, setReloadOpen] = useState(false);
   const [reloading, setReloading] = useState(false);
+  const [auditing, setAuditing] = useState(false);
+
+  const handleAuditarOrfaos = async () => {
+    setAuditing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-audit-produtos-orfaos");
+      if (error) throw error;
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `produtos-orfaos-audit-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      const resumo = data?.resumo ?? {};
+      toast.success(
+        `Auditoria concluída: ${resumo.tabelas_com_orfaos ?? 0} tabelas com órfãos, ${resumo.distinct_ids_orfaos_global ?? 0} IDs órfãos distintos.`,
+      );
+    } catch (e) {
+      toast.error(`Falha na auditoria: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setAuditing(false);
+    }
+  };
   const [catalogoAplicado, setCatalogoAplicado] = useState(false);
 
   
@@ -554,6 +578,19 @@ export function ProdutosTab() {
             <FileDown className="h-4 w-4 mr-1" />
             Exportar PDF
           </Button>
+
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex"
+              onClick={handleAuditarOrfaos}
+              disabled={auditing}
+            >
+              {auditing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}
+              Auditar órfãos
+            </Button>
+          )}
 
           {isAdmin && !catalogoAplicado && (
             <AlertDialog open={reloadOpen} onOpenChange={setReloadOpen}>
