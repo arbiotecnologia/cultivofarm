@@ -180,10 +180,16 @@ describe("Fase 3.19.3 — Integração de páginas", () => {
 });
 
 describe("Fase 3.19.3 — Migration/stub", () => {
-  test("nenhum SQL executável duplicado em restoration", () => {
-    const glob = read("restoration/migrations/20260727000000_fiscal_fase3_19_rtc_2026.sql.stub");
-    expect(glob).toMatch(/canonical|stub/i);
-    // Não deve haver arquivo executável (.sql) com mesmo conteúdo.
+  test("restoration/migrations tem apenas stub documental (sem SQL executável)", () => {
+    const stub = read("restoration/migrations/20260727000000_fiscal_fase3_19_rtc_2026.sql");
+    expect(stub).toMatch(/STUB/i);
+    // Nenhum statement SQL executável: sem BEGIN, CREATE, ALTER, DO $$, GRANT, REVOKE.
+    const noComments = stub
+      .split("\n")
+      .filter((ln) => !ln.trim().startsWith("--"))
+      .join("\n");
+    expect(noComments).not.toMatch(/\b(BEGIN|COMMIT|CREATE|ALTER|GRANT|REVOKE|DROP|INSERT|UPDATE|DELETE|DO\s+\$\$)\b/i);
+    // Nenhum SQL executável em fiscal-fase3-19/.
     let hasExec = false;
     try {
       readFileSync(resolve(ROOT, "restoration/fiscal-fase3-19/20260727000000_fiscal_fase3_19_rtc_2026.sql"));
@@ -192,6 +198,7 @@ describe("Fase 3.19.3 — Migration/stub", () => {
     expect(hasExec).toBe(false);
   });
 });
+
 
 describe("Fase 3.19.3 — CNPJ alfanumérico preservado", () => {
   test("masks delega para cnpjAlpha; unmaskCnpjAlpha usado em FiscalEmpresa", () => {
