@@ -19,6 +19,10 @@ import {
   type ProductFiscalFormValues,
   type ProductFiscalRow,
 } from "@/lib/fiscal/productFiscalValidation";
+import {
+  PRODUCT_FISCAL_PROFILE_STATUSES,
+  isProductFiscalProfileStatus,
+} from "@/lib/fiscal/fiscalOptions";
 
 export type ReadinessRow =
   Database["public"]["Views"]["v_product_fiscal_readiness"]["Row"];
