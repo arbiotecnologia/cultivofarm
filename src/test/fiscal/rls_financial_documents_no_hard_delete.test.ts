@@ -42,10 +42,11 @@ describe("RLS financial_documents — sem hard delete", () => {
     );
   });
 
-  it("DocumentosPanel usa soft delete via UPDATE de deleted_at, nunca .delete()", () => {
+  it("DocumentosPanel não usa .delete() sobre financial_documents (soft delete migrado para RPC)", () => {
     const panel = readFileSync(PANEL_PATH, "utf8");
-    expect(panel).toMatch(/from\(\s*["']financial_documents["']\s*\)[\s\S]*?\.update\(\s*\{[\s\S]*?deleted_at:/);
     // Nenhuma chamada .delete() sobre financial_documents no painel
     expect(panel).not.toMatch(/from\(\s*["']financial_documents["']\s*\)[\s\S]{0,200}\.delete\(/);
+    // Soft delete agora ocorre via RPC dedicada (ver 20260730000000)
+    expect(panel).toMatch(/rpc_financial_document_soft_delete/);
   });
 });

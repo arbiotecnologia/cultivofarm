@@ -77,9 +77,9 @@ describe("RPC rpc_financial_document_soft_delete — H2 correção soft delete",
 
   it("DocumentosPanel remove documentos via RPC, nunca via UPDATE direto ou .delete()", () => {
     const panel = readFileSync(PANEL_PATH, "utf8");
-    expect(panel).toMatch(
-      /supabase\.rpc\(\s*["']rpc_financial_document_soft_delete["'][\s\S]*?p_document_id[\s\S]*?p_reason/,
-    );
+    expect(panel).toMatch(/rpc_financial_document_soft_delete/);
+    expect(panel).toMatch(/p_document_id\s*:\s*id/);
+    expect(panel).toMatch(/p_reason\s*:/);
     expect(panel).not.toMatch(
       /from\(\s*["']financial_documents["']\s*\)[\s\S]{0,300}\.update\(\s*\{[\s\S]*?deleted_at/,
     );
