@@ -319,6 +319,8 @@ export function ProdutosTab() {
       b2b_enabled: !!p.b2b_enabled,
       e_insumo: p.e_insumo,
       estoque_minimo: p.estoque_minimo?.toString() || "",
+      fornecedor: ((p as any).fornecedor as string | null) || "",
+      safra_referencia: ((p as any).safra_referencia as string | null) || "",
       composicao: p.formulacoes?.map(f => ({
         microrganismo_id: f.microrganismo_id,
         component_insumo_id: f.component_insumo_id,
@@ -327,6 +329,7 @@ export function ProdutosTab() {
         e_volume_fixo: f.e_volume_fixo
       })) || []
     });
+
     composicaoTouched.current = false;
     lastSuggestion.current = null;
     setOpen(true);
