@@ -238,8 +238,11 @@ function computeCredenciais(row: CompanyFiscalRow | null): ConnectionItem {
     key: "credenciais_provedor",
     label: "Credenciais do provedor",
     status: "not_started",
-    description: "Somente referências server-side. Nunca cole token ou senha na tela.",
-    deepLink: link("provedor", "credenciais_provedor"),
+    description:
+      "As credenciais do provedor são configuradas com segurança no backend. Nesta tela apenas registramos a referência (identificador) — nunca token, senha ou secret.",
+    // Aba real: "integracao". Aponta para o campo real da referência NF-e
+    // (existe também #nfse_credential_ref na mesma aba).
+    deepLink: link("integracao", "nfe_credential_ref"),
   };
   if (row === null) return base;
   const anyEnabled = row.nfe_enabled === true || row.nfse_enabled === true;
@@ -256,13 +259,15 @@ function computeCredenciais(row: CompanyFiscalRow | null): ConnectionItem {
     return {
       ...base,
       status: "pending",
-      description: "Referência de credencial ausente. Configure o segredo no servidor e informe apenas o identificador.",
+      description:
+        "Referência de credencial ausente. O segredo é cadastrado no cofre do servidor — aqui informe apenas o identificador correspondente.",
     };
   }
   return {
     ...base,
     status: "not_tested",
-    description: "Referência de credencial preenchida. Teste de conexão ainda não realizado.",
+    description:
+      "Referência preenchida. A validação da credencial em si acontece no backend seguro; o teste de conexão será executado em fase futura.",
   };
 }
 
