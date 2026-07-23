@@ -8,8 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Filter, Info, FileDown, FileText, Droplets, Download } from "lucide-react";
-import { importarMicrosARBio2026 } from "@/lib/protocolos/seedMicrorganismosARBio2026";
+import { Plus, Search, Filter, Info, FileDown, FileText, Droplets } from "lucide-react";
 import { generateCatalogoMicrorganismosPdf } from "@/lib/pdf/catalogoMicrorganismosPdf";
 import { generateFichaTecnicaMicrorganismoPdf } from "@/lib/pdf/fichaTecnicaMicrorganismoPdf";
 import { toast } from "sonner";
@@ -296,25 +295,6 @@ export function MicrorganismosTab() {
             </SelectContent>
           </Select>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden md:flex"
-            onClick={async () => {
-              try {
-                const r = await importarMicrosARBio2026();
-                toast.success(`Tabela A.R Bio 2026 importada — inseridos: ${r.inseridos} · atualizados: ${r.atualizados}`);
-                await fetch();
-              } catch (e: any) {
-                toast.error(e?.message || "Falha ao importar tabela A.R Bio 2026");
-              }
-            }}
-            title="Importa/atualiza os 24 microrganismos da Tabela A.R Bio 2026"
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Importar Tabela A.R Bio 2026
-          </Button>
-
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="hidden md:flex">
             <FileDown className="h-4 w-4 mr-1" />
             Exportar PDF
@@ -519,17 +499,21 @@ export function MicrorganismosTab() {
             <TableRow>
               <TableHead>Microrganismo</TableHead>
               <TableHead>Volumes</TableHead>
-              <TableHead>UFC/mL</TableHead>
+              <TableHead className="whitespace-nowrap">
+                Concentração
+                <span className="block text-[10px] font-normal text-muted-foreground normal-case">
+                  (UFC/mL)
+                </span>
+              </TableHead>
               <TableHead className="text-right">Dose (mL/ha)</TableHead>
               <TableHead className="text-right">Valores</TableHead>
-              <TableHead>Ref.</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
+                <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
                   Nenhum microrganismo encontrado
                 </TableCell>
               </TableRow>
@@ -560,8 +544,13 @@ export function MicrorganismosTab() {
                     onAdd={() => setVolumesEdit(m)}
                   />
                 </TableCell>
-                <TableCell className="font-mono-data text-xs">
-                  {formatConcentracaoDisplay(m.concentracao_ufc_ml)}
+                <TableCell className="whitespace-nowrap">
+                  <div className="font-mono-data text-xs leading-tight">
+                    {formatConcentracaoDisplay(m.concentracao_ufc_ml)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    UFC/mL
+                  </div>
                 </TableCell>
                 <TableCell className="text-right font-mono-data">
                   {m.dose_ml_ha || "—"}
@@ -572,12 +561,6 @@ export function MicrorganismosTab() {
                       {m.valor_dose_brl ? brl(m.valor_dose_brl) : (m.valor_litro_brl ? brl(m.valor_litro_brl / 10) : "—")} <span className="text-muted-foreground font-normal">/100 mL</span>
                     </span>
                   ) : "—"}
-                </TableCell>
-                <TableCell>
-                  <div className="text-xs">
-                    <div>{m.fornecedor || "—"}</div>
-                    <div className="text-muted-foreground">{m.safra_referencia}</div>
-                  </div>
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1 justify-end flex-wrap">
