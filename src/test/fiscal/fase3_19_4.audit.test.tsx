@@ -138,13 +138,15 @@ describe("Fase 3.19.4 — IbsCbsItemCard: seções, rótulos, NFS-e condicional"
 
 describe("Fase 3.19.4 — Regras condicionais no schema", () => {
   test("setNfseField(gIBSCBSAjuste, false) limpa vAjusteBC", () => {
-    let cfg = { schema_version: 1 as const };
+    let cfg: import("@/lib/fiscal/rtcConfiguration").IbsCbsItemConfiguration =
+      { schema_version: 1 };
     cfg = setNfseField(cfg, "gIBSCBSAjuste", true);
     cfg = setNfseField(cfg, "vAjusteBC", 12.5);
     expect(getNfseField(cfg, "vAjusteBC")).toBe(12.5);
     cfg = setNfseField(cfg, "gIBSCBSAjuste", false);
     expect(getNfseField(cfg, "vAjusteBC")).toBeUndefined();
   });
+
 
   test("validateNfseInAdditionalFields rejeita vAjusteBC negativo", () => {
     const r = validateNfseInAdditionalFields({ gIBSCBSAjuste: true, vAjusteBC: -1 });
