@@ -97,7 +97,7 @@ export type RascunhoItem = z.infer<typeof itemSchema>;
 export function emptyRascunho(): RascunhoFormValues {
   return {
     invoice_type: "NFE",
-    document_model: "55",
+    document_model: "NFE",
     environment: "NOT_CONFIGURED",
     series: "1",
     issue_date: new Date().toISOString().slice(0, 10),
