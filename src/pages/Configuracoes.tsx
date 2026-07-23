@@ -252,7 +252,7 @@ export default function Configuracoes() {
         partner_id: newUser.partner_id || null,
         partner_papel: hasPartnerRole(newUser.roles) ? partnerPapelFromRoles(newUser.roles) : null,
         telefone: unmask(newUser.telefone),
-        cpf_cnpj: unmask(newUser.cpf_cnpj),
+        cpf_cnpj: unmaskCpfCnpj(newUser.cpf_cnpj),
         cliente_ids: newUserVinculos.map(v => v.cliente_id),
         principal_cliente_id: principal,
       };
