@@ -8,11 +8,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Filter, Info, FileDown, FileText, Droplets } from "lucide-react";
+import { Plus, Search, Filter, Info, FileDown, FileText, Droplets, MoreVertical } from "lucide-react";
 import { generateCatalogoMicrorganismosPdf } from "@/lib/pdf/catalogoMicrorganismosPdf";
 import { generateFichaTecnicaMicrorganismoPdf } from "@/lib/pdf/fichaTecnicaMicrorganismoPdf";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatConcentracaoDisplay, formatConcentracaoValue, parseConcentracao } from "@/lib/cqFormat";
 import { MoneyInput } from "@/components/ui/money-input";
 import { brl } from "@/lib/financial/format";
@@ -568,6 +575,7 @@ export function MicrorganismosTab() {
                   <TooltipProvider>
                     <div className="flex items-center justify-end gap-1.5 flex-nowrap">
                       <TechnicalProfileStatusBadge status={profileStatusMap[m.id] ?? null} />
+
                       <Button
                         size="sm"
                         variant="outline"
@@ -575,8 +583,10 @@ export function MicrorganismosTab() {
                         onClick={() => setVolumesEdit(m)}
                         title="Volumes do catálogo"
                       >
-                        <Droplets className="h-3.5 w-3.5 mr-1" />Volumes
+                        <Droplets className="h-3.5 w-3.5 mr-1" />
+                        Volumes
                       </Button>
+
                       <Button
                         size="sm"
                         variant="outline"
@@ -584,53 +594,68 @@ export function MicrorganismosTab() {
                         onClick={() => setFichaMicro(m)}
                         title="Ficha técnica"
                       >
-                        <FileText className="h-3.5 w-3.5 mr-1" />Ficha
+                        <FileText className="h-3.5 w-3.5 mr-1" />
+                        Ficha
                       </Button>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-8 w-8 p-0"
+                            aria-label="Mais ações"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem
                             onClick={async () => {
                               try {
                                 await generateFichaTecnicaMicrorganismoPdf({ microId: m.id });
                                 toast.success("PDF exportado");
-                              } catch (e: any) { toast.error(e.message); }
+                              } catch (e: any) {
+                                toast.error(e.message);
+                              }
                             }}
-                            aria-label="Exportar PDF"
                           >
-                            <FileDown className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Exportar PDF</TooltipContent>
-                      </Tooltip>
-                      {m.observacoes && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0"
-                              aria-label="Observações"
-                            >
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>{m.observacoes}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                      <div className="ml-1">
-                        <DeleteProtocoloButton
-                          table="microrganismos"
-                          id={m.id}
-                          label={m.nome}
-                          itemLabel="microrganismo"
-                          onDeleted={fetch}
-                        />
-                      </div>
+                            <FileDown className="h-4 w-4 mr-2" />
+                            Exportar PDF
+                          </DropdownMenuItem>
+
+                          {m.observacoes && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuItem asChild>
+                                  <button className="w-full text-left">
+                                    <Info className="h-4 w-4 mr-2" />
+                                    Observações
+                                  </button>
+                                </DropdownMenuItem>
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="max-w-xs">
+                                <p>{m.observacoes}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+
+                          <DropdownMenuSeparator />
+
+                          <DropdownMenuItem asChild className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                            <div className="w-full cursor-pointer">
+                              <DeleteProtocoloButton
+                                table="microrganismos"
+                                id={m.id}
+                                label={m.nome}
+                                itemLabel="microrganismo"
+                                onDeleted={fetch}
+                                variant="dropdown"
+                              />
+                            </div>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TooltipProvider>
                 </TableCell>
