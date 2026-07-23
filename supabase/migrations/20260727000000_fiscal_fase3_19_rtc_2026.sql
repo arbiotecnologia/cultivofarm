@@ -198,23 +198,36 @@ BEGIN
   IF payload ? 'additional_fields' THEN
     DECLARE af jsonb := payload->'additional_fields';
     BEGIN
-      IF af ? 'finNFSe' AND (jsonb_typeof(af->'finNFSe') <> 'string'
-         OR length(af->>'finNFSe') < 1 OR length(af->>'finNFSe') > 20) THEN
-        RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:finNFSe' USING ERRCODE='22023'; END IF;
-      IF af ? 'tpNFSeDebito' AND (jsonb_typeof(af->'tpNFSeDebito') <> 'string'
-         OR length(af->>'tpNFSeDebito') < 1 OR length(af->>'tpNFSeDebito') > 20) THEN
-        RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:tpNFSeDebito' USING ERRCODE='22023'; END IF;
-      IF af ? 'tpNFSeCredito' AND (jsonb_typeof(af->'tpNFSeCredito') <> 'string'
-         OR length(af->>'tpNFSeCredito') < 1 OR length(af->>'tpNFSeCredito') > 20) THEN
-        RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:tpNFSeCredito' USING ERRCODE='22023'; END IF;
-      IF af ? 'gIBSCBSAjuste' AND jsonb_typeof(af->'gIBSCBSAjuste') <> 'boolean' THEN
-        RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_TOGGLE:gIBSCBSAjuste' USING ERRCODE='22023'; END IF;
+      IF af ? 'finNFSe' THEN
+        IF jsonb_typeof(af->'finNFSe') <> 'string' THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:finNFSe' USING ERRCODE='22023'; END IF;
+        IF length(btrim(af->>'finNFSe')) < 1 OR length(btrim(af->>'finNFSe')) > 30 THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:finNFSe' USING ERRCODE='22023'; END IF;
+      END IF;
+      IF af ? 'tpNFSeDebito' THEN
+        IF jsonb_typeof(af->'tpNFSeDebito') <> 'string' THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:tpNFSeDebito' USING ERRCODE='22023'; END IF;
+        IF length(btrim(af->>'tpNFSeDebito')) < 1 OR length(btrim(af->>'tpNFSeDebito')) > 30 THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:tpNFSeDebito' USING ERRCODE='22023'; END IF;
+      END IF;
+      IF af ? 'tpNFSeCredito' THEN
+        IF jsonb_typeof(af->'tpNFSeCredito') <> 'string' THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:tpNFSeCredito' USING ERRCODE='22023'; END IF;
+        IF length(btrim(af->>'tpNFSeCredito')) < 1 OR length(btrim(af->>'tpNFSeCredito')) > 30 THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:tpNFSeCredito' USING ERRCODE='22023'; END IF;
+      END IF;
+      IF af ? 'gIBSCBSAjuste' THEN
+        IF jsonb_typeof(af->'gIBSCBSAjuste') <> 'boolean' THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_TOGGLE:gIBSCBSAjuste' USING ERRCODE='22023'; END IF;
+      END IF;
       IF af ? 'vAjusteBC' THEN
-        IF jsonb_typeof(af->'vAjusteBC') <> 'number'
-           OR (af->>'vAjusteBC')::numeric < 0 THEN
+        IF jsonb_typeof(af->'vAjusteBC') <> 'number' THEN
           RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_VALUE:vAjusteBC' USING ERRCODE='22023'; END IF;
-        IF NOT (af ? 'gIBSCBSAjuste')
-           OR jsonb_typeof(af->'gIBSCBSAjuste') <> 'boolean'
+        IF (af->>'vAjusteBC')::numeric < 0 THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_VALUE:vAjusteBC' USING ERRCODE='22023'; END IF;
+        IF NOT (af ? 'gIBSCBSAjuste') THEN
+          RAISE EXCEPTION 'FISCAL_RTC_NFSE_VALUE_WITHOUT_TOGGLE:vAjusteBC' USING ERRCODE='22023'; END IF;
+        IF jsonb_typeof(af->'gIBSCBSAjuste') <> 'boolean'
            OR (af->>'gIBSCBSAjuste')::boolean IS DISTINCT FROM true THEN
           RAISE EXCEPTION 'FISCAL_RTC_NFSE_VALUE_WITHOUT_TOGGLE:vAjusteBC' USING ERRCODE='22023'; END IF;
       END IF;

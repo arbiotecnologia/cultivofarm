@@ -46,8 +46,8 @@ describe("Fase 3.19.5 — NFS-e assert vive na migration canônica", () => {
     expect(sql).toMatch(/jsonb_typeof\(af->'vAjusteBC'\) <> 'number'/);
   });
 
-  test("tamanho máximo 20 para os códigos NFS-e", () => {
-    const matches = sql.match(/length\(af->>'(finNFSe|tpNFSeDebito|tpNFSeCredito)'\) > 20/g);
+  test("tamanho máximo 30 (btrim) para os códigos NFS-e", () => {
+    const matches = sql.match(/length\(btrim\(af->>'(finNFSe|tpNFSeDebito|tpNFSeCredito)'\)\) > 30/g);
     expect(matches?.length).toBe(3);
   });
 
