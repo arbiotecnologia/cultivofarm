@@ -210,6 +210,8 @@ export default function HomologacaoSecao({ companySettingsId }: Props) {
         </CardContent>
       </Card>
 
+      <CamposFaltantesEmpresa />
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Ir para ajustes</CardTitle>
