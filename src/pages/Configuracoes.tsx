@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { formatTelefone, formatCpfCnpj, unmask } from "@/lib/masks";
+import { formatTelefone, formatCpfCnpj, unmask, unmaskCpfCnpj } from "@/lib/masks";
 import { Settings, Users, UserCog, Save, Plus, Pencil, Search, Palette, ListTree, ExternalLink, Mail, Phone, Shield, Eye, EyeOff, KeyRound, Star, Timer } from "lucide-react";
 import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { SlaB2BTab } from "@/pages/configuracoes/SlaB2BTab";
