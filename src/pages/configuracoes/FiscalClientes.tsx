@@ -754,15 +754,17 @@ function CustomerPicker({
   value,
   onPick,
   invalid,
+  excludeIds,
 }: {
   value: string;
   onPick: (customerId: string) => void;
   invalid?: boolean;
+  excludeIds?: readonly string[];
 }) {
   const [term, setTerm] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
   const [picked, setPicked] = useState<{ id: string; nome: string; doc: string | null; codigo: string | null } | null>(null);
-  const listQ = useFiscalClientesLite(term);
+  const listQ = useFiscalClientesLite(term, { excludeIds, excludeProfiled: true });
 
   useEffect(() => {
     if (!value) setPicked(null);
