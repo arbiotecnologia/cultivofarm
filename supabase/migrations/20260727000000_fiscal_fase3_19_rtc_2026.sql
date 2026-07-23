@@ -402,7 +402,7 @@ BEGIN
   IF expected_revision IS NOT NULL AND expected_revision <> v_current THEN
     RAISE EXCEPTION 'FISCAL_CONFLICT' USING ERRCODE='40001'; END IF;
   UPDATE public.service_fiscal_profiles
-     SET ibs_cbs_configuration = payload, updated_at = now()
+     SET ibs_cbs_configuration = payload, updated_at = now(), updated_by = v_uid
    WHERE id = p_profile_id AND is_active = true
    RETURNING updated_at::text INTO v_new;
   RETURN jsonb_build_object('configuration', payload, 'revision', v_new);
