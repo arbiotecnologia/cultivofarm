@@ -99,7 +99,12 @@ describe("Fase 3.19.1 — migration canônica", () => {
       .split("\n")
       .filter((ln) => !ln.trim().startsWith("--"))
       .join("\n");
-    expect(code).not.toMatch(/production_enabled/i);
+    // Não pode ALTERAR nem GRAVAR em `production_enabled` (só rejeitar
+    // no payload das RPCs). Aceitamos referências textuais em mensagens
+    // de erro (`production_enabled não é aceito ...`).
+    expect(code).not.toMatch(/ALTER\s+[^;]*production_enabled/i);
+    expect(code).not.toMatch(/UPDATE[^;]*SET[^;]*production_enabled\s*=/i);
+
     expect(code).not.toMatch(/CREATE\s+POLICY/i);
     expect(code).not.toMatch(/DROP\s+POLICY/i);
     // GRANT permitido apenas na função scanner; nada em tabelas.

@@ -53,6 +53,8 @@ import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, CheckCircle2, Circle, Info } from "lucide-react";
 import CertificadoDigitalSecao from "@/components/fiscal/certificados/CertificadoDigitalSecao";
 import HomologacaoSecao from "@/components/fiscal/homologacao/HomologacaoSecao";
+import { RtcCompanyCard } from "@/components/fiscal/RtcCompanyCard";
+
 
 const PAGE_TITLE = "Central de Configuração Fiscal";
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
@@ -139,10 +141,11 @@ export default function FiscalEmpresa() {
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const canViewHomologation = Array.isArray(roles) && roles.some((r) => r === "administrador" || r === "gestor" || r === "financeiro");
-  type FiscalEmpresaTab = "empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "homologacao" | "revisao";
+  type FiscalEmpresaTab = "empresa" | "nfe" | "nfse" | "certificado" | "integracao" | "rtc" | "homologacao" | "revisao";
   const FISCAL_EMPRESA_TABS: readonly FiscalEmpresaTab[] = [
-    "empresa","nfe","nfse","certificado","integracao","homologacao","revisao",
+    "empresa","nfe","nfse","certificado","integracao","rtc","homologacao","revisao",
   ] as const;
+
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab: FiscalEmpresaTab = (() => {
     const raw = searchParams.get("aba");
@@ -411,6 +414,8 @@ export default function FiscalEmpresa() {
           <TabsTrigger value="nfse">NFS-e</TabsTrigger>
           <TabsTrigger value="certificado" data-testid="fiscal-empresa-tab-certificado">Certificado digital</TabsTrigger>
           <TabsTrigger value="integracao">Integração e segurança</TabsTrigger>
+          <TabsTrigger value="rtc" data-testid="fiscal-empresa-tab-rtc">Reforma Tributária 2026</TabsTrigger>
+
           {canViewHomologation ? (
             <TabsTrigger value="homologacao" data-testid="fiscal-empresa-tab-homologacao">Homologação fiscal</TabsTrigger>
           ) : null}
@@ -738,6 +743,12 @@ export default function FiscalEmpresa() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="rtc" className="space-y-4" data-testid="fiscal-empresa-panel-rtc">
+            <RtcCompanyCard canEdit={canEdit} />
+          </TabsContent>
+
+
 
           {canViewHomologation ? (
             <TabsContent value="homologacao" className="space-y-4">

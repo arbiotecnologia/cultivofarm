@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, Pencil, Plus } from "lucide-react";
+import { IbsCbsItemCard } from "@/components/fiscal/IbsCbsItemCard";
+
 
 const PAGE_TITLE = "Perfis Fiscais de Produtos";
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
@@ -511,7 +513,11 @@ function EditDrawer({
             </SheetFooter>
           </form>
         )}
+        <div className="mt-6" data-testid="fiscal-produtos-ibs-cbs">
+          <IbsCbsItemCard kind="product" itemId={item.product_id} canEdit={canEdit} />
+        </div>
       </SheetContent>
     </Sheet>
+
   );
 }

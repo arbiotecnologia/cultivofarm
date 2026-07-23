@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, Pencil, Plus } from "lucide-react";
+import { IbsCbsItemCard } from "@/components/fiscal/IbsCbsItemCard";
+
 
 const PAGE_TITLE = "Perfis Fiscais de Serviços";
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
@@ -600,7 +602,13 @@ function EditDrawer({
             </SheetFooter>
           </form>
         )}
+        {!isNew ? (
+          <div className="mt-6" data-testid="fiscal-servicos-ibs-cbs">
+            <IbsCbsItemCard kind="service" itemId={item.service_id ?? null} canEdit={canEdit} />
+          </div>
+        ) : null}
       </SheetContent>
+
     </Sheet>
   );
 }
