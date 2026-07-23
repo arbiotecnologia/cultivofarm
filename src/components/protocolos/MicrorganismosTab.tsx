@@ -567,15 +567,9 @@ export function MicrorganismosTab() {
                 <TableCell className="text-right font-mono-data text-xs">
                   {(() => {
                     const dose = m.valor_dose_brl ?? (m.valor_litro_brl != null ? m.valor_litro_brl / 10 : null);
-                    const litro = m.valor_litro_brl ?? (m.valor_dose_brl != null ? m.valor_dose_brl * 10 : null);
                     const ha = calcularCustoHa(m.dose_ml_ha, dose);
-                    if (dose == null && litro == null && ha == null) return "—";
-                    return (
-                      <div className="flex flex-col items-end leading-tight">
-                        <span className="text-primary font-semibold">{ha != null ? brl(ha) : "—"} <span className="text-muted-foreground font-normal">/ha</span></span>
-                        <span className="text-muted-foreground">{dose != null ? brl(dose) : "—"} <span className="font-normal">/100 mL</span></span>
-                      </div>
-                    );
+                    if (dose == null && ha == null) return "—";
+                    return <span className="text-primary font-semibold">{ha != null ? brl(ha) : "—"}</span>;
                   })()}
                 </TableCell>
                 <TableCell>
