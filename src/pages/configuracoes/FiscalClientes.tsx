@@ -346,7 +346,11 @@ export default function FiscalClientes() {
                               ? `${it.fiscal_municipality_ibge_code} · ${it.fiscal_city ?? "—"}/${it.fiscal_state ?? "—"}`
                               : "—"}
                           </td>
-                          <td className="p-2">{it.profile_status}</td>
+                          <td className="p-2">
+                            <Badge variant="outline" title={it.profile_status ?? undefined}>
+                              {getFiscalStatusLabel("customer", it.profile_status)}
+                            </Badge>
+                          </td>
                           <td className="p-2">
                             {pending ? (
                               <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>
