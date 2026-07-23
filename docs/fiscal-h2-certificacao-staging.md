@@ -452,3 +452,88 @@ SELECT id, deleted_at, deleted_by, delete_reason
 
 ROLLBACK;
 ```
+
+## 14. Achado runtime — privilégios estruturais em tabelas fiscais
+
+**Origem:** auditoria runtime no staging `ikaauvsflpmamgxmkhoq`. O papel
+`authenticated` (e `anon`, quando presente) mantém `TRUNCATE`,
+`REFERENCES` e `TRIGGER` nas tabelas fiscais críticas. RLS não protege
+essas operações — `TRUNCATE` esvazia fisicamente ignorando policies e
+`REFERENCES`/`TRIGGER` permitem anexar dependências indevidas. Além
+disso, `fiscal_idempotency_keys` deve aceitar gravação apenas
+server-side/`service_role`; qualquer INSERT/UPDATE/DELETE por
+`authenticated`/`anon` viola o contrato de idempotência.
+
+**Migration versionada (não aplicada nesta rodada):**
+`supabase/migrations/20260731000000_fiscal_revoke_structural_privileges.sql`.
+
+Conteúdo aditivo e idempotente:
+
+1. `DO $$ ... $$` com `ARRAY[...]` das 10 tabelas alvo — `company_fiscal_settings`,
+   `product_fiscal_profiles`, `service_fiscal_profiles`,
+   `customer_fiscal_profiles`, `fiscal_invoices`, `fiscal_invoice_items`,
+   `fiscal_events`, `fiscal_idempotency_keys`, `fiscal_audit_log`,
+   `financial_documents` — executando via `format('%I', t)`:
+   - `REVOKE TRUNCATE, REFERENCES, TRIGGER ... FROM authenticated`
+   - `REVOKE TRUNCATE, REFERENCES, TRIGGER ... FROM anon`
+2. Hardening extra da idempotência:
+   - `REVOKE INSERT, UPDATE, DELETE ON public.fiscal_idempotency_keys FROM authenticated`
+   - `REVOKE INSERT, UPDATE, DELETE ON public.fiscal_idempotency_keys FROM anon`
+3. **Nada mais é alterado**: policies, RLS, funções, DML legítimo das
+   demais tabelas, grants de `service_role` e o `SELECT` administrativo
+   preservado em `20260721000000_fiscal_fase2_fundacao.sql`
+   (`GRANT SELECT ON public.fiscal_idempotency_keys TO authenticated`,
+   `GRANT SELECT, INSERT, UPDATE, DELETE ON public.company_fiscal_settings TO authenticated`, etc.)
+   permanecem intactos.
+
+**Teste canônico:** `src/test/fiscal/revoke_structural_privileges.test.ts`
+(7 asserts) — cobre as 10 tabelas alvo, presença de REVOKE
+TRUNCATE/REFERENCES/TRIGGER para `authenticated` e `anon`, hardening
+INSERT/UPDATE/DELETE em `fiscal_idempotency_keys`, ausência de qualquer
+GRANT estrutural ou reintrodução DML, preservação de policies/RLS/
+funções/`service_role`/`SELECT`, e verificação de que os GRANTs base da
+migration `20260721000000` continuam declarados e não são revogados.
+
+**Status:** correção **preparada e versionada**; **pendente de aplicação
+runtime no staging** `ikaauvsflpmamgxmkhoq`. Produção
+`navfzbwgwzruipouyfnk` intocada.
+
+**Gates locais nesta rodada:** typecheck ✅, build ✅, focal ✅
+(`revoke_structural_privileges.test.ts`), suíte fiscal completa ✅
+(1021 passed, 3 skipped).
+
+### 14.1 SQL de auditoria pós-aplicação (staging)
+
+```sql
+-- 1) Privilégios estruturais devem estar ausentes para authenticated/anon
+SELECT grantee, table_name, privilege_type
+  FROM information_schema.role_table_grants
+ WHERE table_schema = 'public'
+   AND grantee IN ('authenticated','anon')
+   AND privilege_type IN ('TRUNCATE','REFERENCES','TRIGGER')
+   AND table_name IN (
+     'company_fiscal_settings','product_fiscal_profiles',
+     'service_fiscal_profiles','customer_fiscal_profiles',
+     'fiscal_invoices','fiscal_invoice_items','fiscal_events',
+     'fiscal_idempotency_keys','fiscal_audit_log','financial_documents'
+   )
+ ORDER BY table_name, grantee, privilege_type;
+-- Esperado: 0 linhas.
+
+-- 2) fiscal_idempotency_keys: authenticated/anon só podem manter SELECT
+SELECT grantee, privilege_type
+  FROM information_schema.role_table_grants
+ WHERE table_schema = 'public'
+   AND table_name = 'fiscal_idempotency_keys'
+   AND grantee IN ('authenticated','anon')
+ ORDER BY grantee, privilege_type;
+-- Esperado: no máximo SELECT para authenticated (conforme fase 2); nada para anon.
+
+-- 3) service_role permanece com privilégios necessários (sanidade)
+SELECT privilege_type
+  FROM information_schema.role_table_grants
+ WHERE table_schema = 'public'
+   AND grantee = 'service_role'
+   AND table_name = 'fiscal_idempotency_keys';
+-- Esperado: privilégios prévios preservados (não devem ter sido tocados).
+```
