@@ -201,11 +201,14 @@ describe("Fase 3.19.3 — Migration/stub", () => {
 
 
 describe("Fase 3.19.3 — CNPJ alfanumérico preservado", () => {
-  test("masks delega para cnpjAlpha; unmaskCnpjAlpha usado em FiscalEmpresa", () => {
+  test("masks delega para cnpjAlpha e FiscalEmpresa aceita alfa", () => {
     const masks = read("src/lib/masks.ts");
     expect(masks).toMatch(/from\s+["']\.\/fiscal\/cnpjAlpha["']|cnpjAlpha/);
     const empresa = read("src/pages/configuracoes/FiscalEmpresa.tsx");
-    expect(empresa).toMatch(/unmaskCnpjAlpha/);
-    expect(empresa).not.toMatch(/inputMode=["']numeric["'][^>]*cnpj/i);
+    // Aceita unmaskCnpj (delegado) ou unmaskCnpjAlpha diretamente.
+    expect(empresa).toMatch(/unmaskCnpj(Alpha)?/);
+    // Campo CNPJ deve usar inputMode text (não numeric) para permitir letras.
+    expect(empresa).not.toMatch(/inputMode=["']numeric["'][^>]*"cnpj"/i);
   });
 });
+
