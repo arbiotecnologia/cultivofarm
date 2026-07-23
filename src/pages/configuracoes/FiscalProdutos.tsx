@@ -314,7 +314,11 @@ export default function FiscalProdutos() {
                           <td className="p-2">
                             {(it.cfop_in_state ?? "—")}/{(it.cfop_interstate ?? "—")}
                           </td>
-                          <td className="p-2">{it.profile_status ?? "—"}</td>
+                          <td className="p-2">
+                            <Badge variant="outline" title={it.profile_status ?? undefined}>
+                              {getFiscalStatusLabel("product", it.profile_status)}
+                            </Badge>
+                          </td>
                           <td className="p-2">
                             {pending ? (
                               <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>
