@@ -117,7 +117,7 @@ describe("useFiscalFieldFocus", () => {
         <Harness tab="empresa" ready={true} />
       </MemoryRouter>,
     );
-    vi.advanceTimersByTime(200);
+    act(() => { vi.advanceTimersByTime(200); });
     expect(document.body.getAttribute("data-current-campo")).toBe("");
   });
 });
