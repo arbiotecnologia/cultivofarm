@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCNPJ, unmask } from "@/lib/masks";
+import { formatCNPJ, unmask, unmaskCnpj } from "@/lib/masks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchCEP } from "@/lib/api/viacep";
 import { toast } from "sonner";
