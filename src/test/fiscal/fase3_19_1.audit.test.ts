@@ -70,9 +70,14 @@ describe("Fase 3.19.1 — migration canônica", () => {
   });
 
   test("não altera document_number nem cnpj", () => {
-    expect(canonical).not.toMatch(/document_number/i);
-    expect(canonical).not.toMatch(/ALTER\s+TABLE[^;]*\bcnpj\b/i);
+    const code = canonical
+      .split("\n")
+      .filter((ln) => !ln.trim().startsWith("--"))
+      .join("\n");
+    expect(code).not.toMatch(/document_number/i);
+    expect(code).not.toMatch(/ALTER\s+TABLE[^;]*\bcnpj\b/i);
   });
+
 
   test("declara CHECK object + scanner de segredos", () => {
     expect(canonical).toContain("jsonb_typeof(rtc_configuration) = 'object'");
