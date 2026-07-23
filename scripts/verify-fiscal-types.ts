@@ -125,6 +125,30 @@ export const EXPECTED_TABLES: TableSpec[] = [
       { name: "new_values", nullable: true },
     ],
   },
+  {
+    name: "fiscal_certificates",
+    columns: [
+      { name: "id", nullable: false },
+      { name: "company_settings_id", nullable: false, tsType: "string" },
+      { name: "source_type", nullable: false, tsType: "string" },
+      { name: "environment", nullable: false, tsType: "string" },
+      { name: "status", nullable: false, tsType: "string" },
+      { name: "display_name", nullable: false, tsType: "string" },
+      { name: "is_active", nullable: false, tsType: "boolean" },
+      { name: "fingerprint_sha256", nullable: true, tsType: "string" },
+      { name: "valid_from", nullable: true, tsType: "string" },
+      { name: "valid_until", nullable: true, tsType: "string" },
+      { name: "revoked_at", nullable: true, tsType: "string" },
+      { name: "version", nullable: false, tsType: "number" },
+    ],
+    relationships: [
+      {
+        columns: ["company_settings_id"],
+        referencedRelation: "company_fiscal_settings",
+        referencedColumns: ["id"],
+      },
+    ],
+  },
 ];
 
 export const EXPECTED_VIEWS: ViewSpec[] = [
@@ -143,6 +167,18 @@ export const EXPECTED_RPCS: RpcSpec[] = [
     returns: "string",
   },
   { name: "mask_sensitive_jsonb", requiredArgs: ["v"], optionalArgs: [], returns: "Json" },
+  {
+    name: "rpc_fiscal_draft_save",
+    requiredArgs: ["p_expected_version", "p_invoice", "p_invoice_id", "p_items"],
+    optionalArgs: [],
+    returns: "Json",
+  },
+  {
+    name: "rpc_financial_document_soft_delete",
+    requiredArgs: ["p_document_id", "p_reason"],
+    optionalArgs: [],
+    returns: "string",
+  },
 ];
 
 // ---- Extração --------------------------------------------------------------
