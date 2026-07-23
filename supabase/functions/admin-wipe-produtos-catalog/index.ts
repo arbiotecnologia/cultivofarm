@@ -4,7 +4,12 @@
 // NÃO executa nenhuma alteração de schema. Apenas DELETE de dados.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 // Ordem de deleção (filhos → pais). Cada item vira `DELETE FROM <t>` sem where
 // pois o wipe é total (usuário autorizou "Wipe total: apagar produtos e cascatear em lotes/ordens/aplicações/fiscais").
