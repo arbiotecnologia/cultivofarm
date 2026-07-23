@@ -50,6 +50,21 @@ export const unmaskCnpj = (
   return _unmaskCnpjAlpha(String(value));
 };
 
+/**
+ * Normaliza um valor CPF/CNPJ preservando semântica de cada tipo:
+ * - Se contém letra ⇒ CNPJ alfanumérico (uppercase, sem pontuação).
+ * - Caso contrário ⇒ dígitos apenas (compat CPF e CNPJ numérico legado).
+ * Use este helper em QUALQUER campo `cpf_cnpj` de banco.
+ * Nunca use `unmask()` (numérico puro) para CNPJ na Fase Fiscal 3.19+.
+ */
+export const unmaskCpfCnpj = (
+  value: string | number | undefined | null,
+): string => {
+  if (value === undefined || value === null) return "";
+  const raw = String(value);
+  return /[A-Za-z]/.test(raw) ? _unmaskCnpjAlpha(raw) : raw.replace(/\D/g, "");
+};
+
 
 /**
  * Formata conforme o tamanho (CPF ou CNPJ). CPF continua numérico;
