@@ -254,6 +254,7 @@ export const SERVICE_FISCAL_PROFILE_STATUSES = [
   "PENDING_ACCOUNTING",
   "VALIDATED",
   "BLOCKED",
+  "NOT_FISCALLY_BILLED",
 ] as const;
 export type ServiceFiscalProfileStatus =
   (typeof SERVICE_FISCAL_PROFILE_STATUSES)[number];
@@ -262,7 +263,17 @@ export const SERVICE_FISCAL_PROFILE_STATUS_OPTIONS: FiscalOption[] = [
   { value: "PENDING_ACCOUNTING", label: "Aguardando contabilidade" },
   { value: "VALIDATED", label: "Validado" },
   { value: "BLOCKED", label: "Bloqueado" },
+  { value: "NOT_FISCALLY_BILLED", label: "Não faturado fiscalmente" },
 ];
+
+export function isServiceFiscalProfileStatus(
+  v: string | null | undefined,
+): v is ServiceFiscalProfileStatus {
+  return (
+    !!v &&
+    (SERVICE_FISCAL_PROFILE_STATUSES as readonly string[]).includes(v)
+  );
+}
 
 export const CUSTOMER_FISCAL_PROFILE_STATUSES = [
   "INCOMPLETE",
