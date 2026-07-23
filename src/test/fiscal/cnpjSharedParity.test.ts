@@ -54,7 +54,3 @@ describe("CNPJ shared/client parity (H3-B1)", () => {
     expect(sharedIsNumeric("123")).toBe(false);
   });
 });
-
-    expect(shared.isCnpjNumericOnly("123")).toBe(false);
-  });
-});
