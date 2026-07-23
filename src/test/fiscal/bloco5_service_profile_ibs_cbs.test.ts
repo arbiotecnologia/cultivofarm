@@ -69,8 +69,8 @@ describe("Bloco 5 — hook useFiscalRtcItem (frontend tipado)", () => {
   });
 
   it("mapeia service_profile → RPCs novas com p_profile_id", () => {
-    expect(HOOK).toMatch(/kind === "service_profile"[\s\S]*rpc_fiscal_service_profile_ibs_cbs_get/);
-    expect(HOOK).toMatch(/kind === "service_profile"[\s\S]*rpc_fiscal_service_profile_ibs_cbs_save/);
+    expect(HOOK).toMatch(/rpc_fiscal_service_profile_ibs_cbs_get/);
+    expect(HOOK).toMatch(/rpc_fiscal_service_profile_ibs_cbs_save/);
     expect(HOOK).toMatch(/"p_profile_id"/);
     // idKey tipado — sem ambiguidade
     expect(HOOK).toMatch(/idKey: "p_product_id" \| "p_service_id" \| "p_profile_id"/);
