@@ -95,6 +95,26 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="rtc_review_status">Status da revisão contábil</Label>
+            <Select
+              value={form.accounting_review_status ?? "PENDING"}
+              onValueChange={(v) => setForm((s) => ({
+                ...s,
+                accounting_review_status: v as RtcCompanyConfiguration["accounting_review_status"],
+              }))}
+              disabled={disabled}
+            >
+              <SelectTrigger id="rtc_review_status"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PENDING">Pendente</SelectItem>
+                <SelectItem value="REVIEWED">Revisado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div>
           <Label htmlFor="rtc_notes">Notas contábeis</Label>
           <Textarea
@@ -104,6 +124,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
             disabled={disabled}
           />
         </div>
+
 
         <div className="flex justify-end">
           <Button
