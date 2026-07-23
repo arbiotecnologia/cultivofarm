@@ -135,5 +135,23 @@ describe("useFiscalFieldFocus", () => {
     );
     act(() => { vi.advanceTimersByTime(200); });
     expect(document.body.getAttribute("data-current-campo")).toBe("");
+
+  it("hash canônico `?aba=...#id` foca o alvo e limpa o hash sem alterar o restante", () => {
+    const input = document.createElement("input");
+    input.id = "cnpj";
+    input.scrollIntoView = vi.fn();
+    document.body.appendChild(input);
+
+    // jsdom mantém `window.location.hash` sincronizado com history/hash.
+    window.history.replaceState(null, "", "/x?aba=empresa#cnpj");
+    render(
+      <MemoryRouter initialEntries={["/x?aba=empresa"]}>
+        <Harness tab="empresa" ready={true} />
+      </MemoryRouter>,
+    );
+    act(() => { vi.advanceTimersByTime(80); });
+    expect(document.activeElement).toBe(input);
+    expect(window.location.hash).toBe("");
+    expect(window.location.search).toBe("?aba=empresa");
   });
 });
