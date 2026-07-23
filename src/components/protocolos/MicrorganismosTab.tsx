@@ -295,25 +295,6 @@ export function MicrorganismosTab() {
             </SelectContent>
           </Select>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden md:flex"
-            onClick={async () => {
-              try {
-                const r = await importarMicrosARBio2026();
-                toast.success(`Tabela A.R Bio 2026 importada — inseridos: ${r.inseridos} · atualizados: ${r.atualizados}`);
-                await fetch();
-              } catch (e: any) {
-                toast.error(e?.message || "Falha ao importar tabela A.R Bio 2026");
-              }
-            }}
-            title="Importa/atualiza os 24 microrganismos da Tabela A.R Bio 2026"
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Importar Tabela A.R Bio 2026
-          </Button>
-
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="hidden md:flex">
             <FileDown className="h-4 w-4 mr-1" />
             Exportar PDF
