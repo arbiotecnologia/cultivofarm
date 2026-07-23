@@ -59,11 +59,22 @@ const STATUS_ALL = "__all__";
 const TAX_ALL = "__all_tax__";
 const TAX_NONE = "__none__";
 
-const TAXPAYER_LABELS: Record<string, string> = {
-  "1": "1 — Contribuinte ICMS",
-  "2": "2 — Contribuinte isento de IE",
-  "9": "9 — Não contribuinte",
-};
+// Rótulos de indicador de contribuinte agora vêm da fonte canônica
+// (TAXPAYER_INDICATOR_OPTIONS / getTaxpayerIndicatorLabel).
+
+// Campos que compõem o bloco de endereço fiscal substituto.
+// Quando `use_main_address = true`, o bloco é recolhido, sem apagar valores.
+const FISCAL_ADDRESS_FIELDS: ReadonlySet<StringField> = new Set<StringField>([
+  "fiscal_postal_code",
+  "fiscal_street",
+  "fiscal_number",
+  "fiscal_complement",
+  "fiscal_neighborhood",
+  "fiscal_city",
+  "fiscal_municipality_ibge_code",
+  "fiscal_state",
+  "country_code",
+]);
 
 type StringField =
   | "state_registration_status"
