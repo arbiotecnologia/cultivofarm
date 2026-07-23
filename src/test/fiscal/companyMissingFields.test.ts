@@ -62,16 +62,24 @@ describe("computeCompanyMissingFields", () => {
     expect(r.blocking).toBeGreaterThan(0);
   });
 
-  it("nfe_enabled=true expõe pendências NF-e incluindo série e CFOPs", () => {
+  it("nfe_enabled=true expõe pendências NF-e incluindo série e CFOPs (ids reais)", () => {
     const row = emptyRow();
     row.nfe_enabled = true;
     const r = computeCompanyMissingFields(row);
     expect(r.bySection.nfe.map((f) => f.key)).toEqual(
-      expect.arrayContaining(["state_registration", "nfe_series", "cfop_in_state", "cfop_interstate"]),
+      expect.arrayContaining(["state_registration", "nfe_series", "nfe_cfop_in", "nfe_cfop_out"]),
     );
     expect(r.notApplicable).not.toContain("nfe");
-    // Deep-link para aba correta (pode incluir `&campo=` conforme allow-list)
-    expect(r.bySection.nfe.every((f) => f.deepLink.includes("aba=nfe"))).toBe(true);
+    // IE é bloqueante mas o campo mora na aba empresa: deep-link vai para lá.
+    const ie = r.bySection.nfe.find((f) => f.key === "state_registration");
+    expect(ie?.severity).toBe("bloqueia_homologacao");
+    expect(ie?.deepLink).toContain("aba=empresa");
+    expect(ie?.deepLink).toContain("campo=state_registration");
+    // CFOP sugerido é recomendado (regra canônica vive nos perfis).
+    const cfopIn = r.bySection.nfe.find((f) => f.key === "nfe_cfop_in");
+    expect(cfopIn?.severity).toBe("recomendado");
+    expect(cfopIn?.deepLink).toContain("aba=nfe");
+    expect(cfopIn?.deepLink).toContain("campo=nfe_cfop_in");
   });
 
   it("série NF-e informada na coluna dedicada satisfaz o requisito", () => {
@@ -90,13 +98,22 @@ describe("computeCompanyMissingFields", () => {
     expect(r.bySection.nfe.some((f) => f.key === "nfe_series")).toBe(false);
   });
 
-  it("nfse_enabled=true exige IM, modo, LC116 e recomenda ISS", () => {
+  it("nfse_enabled=true exige IM e modo (bloqueantes); LC116 e ISS são recomendados", () => {
     const row = emptyRow();
     row.nfse_enabled = true;
     const r = computeCompanyMissingFields(row);
     expect(r.bySection.nfse.map((f) => f.key)).toEqual(
       expect.arrayContaining(["municipal_registration", "nfse_mode", "lc116_item", "iss_rate"]),
     );
+    const im = r.bySection.nfse.find((f) => f.key === "municipal_registration");
+    expect(im?.severity).toBe("bloqueia_homologacao");
+    expect(im?.deepLink).toContain("aba=empresa");
+    expect(im?.deepLink).toContain("campo=municipal_registration");
+    const modo = r.bySection.nfse.find((f) => f.key === "nfse_mode");
+    expect(modo?.severity).toBe("bloqueia_homologacao");
+    expect(modo?.deepLink).toContain("campo=nfse_mode");
+    const lc = r.bySection.nfse.find((f) => f.key === "lc116_item");
+    expect(lc?.severity).toBe("recomendado");
     const iss = r.bySection.nfse.find((f) => f.key === "iss_rate");
     expect(iss?.severity).toBe("recomendado");
   });
@@ -125,15 +142,22 @@ describe("computeCompanyMissingFields", () => {
     expect(r.total).toBe(0);
   });
 
-  it("deep-links respeitam a aba de cada seção (aceitando `&campo=`)", () => {
+  it("deep-links respeitam a aba onde o campo realmente é renderizado", () => {
     const row = emptyRow();
     row.nfe_enabled = true;
     row.nfse_enabled = true;
     const r = computeCompanyMissingFields(row);
     expect(r.bySection.empresa.every((f) => f.deepLink.includes("aba=empresa"))).toBe(true);
     expect(r.bySection.endereco.every((f) => f.deepLink.includes("aba=empresa"))).toBe(true);
-    expect(r.bySection.nfe.every((f) => f.deepLink.includes("aba=nfe"))).toBe(true);
-    expect(r.bySection.nfse.every((f) => f.deepLink.includes("aba=nfse"))).toBe(true);
+    // IE/IM ficam agrupadas em nfe/nfse mas o input é renderizado na aba empresa.
+    for (const f of r.bySection.nfe) {
+      const expected = f.key === "state_registration" ? "aba=empresa" : "aba=nfe";
+      expect(f.deepLink).toContain(expected);
+    }
+    for (const f of r.bySection.nfse) {
+      const expected = f.key === "municipal_registration" ? "aba=empresa" : "aba=nfse";
+      expect(f.deepLink).toContain(expected);
+    }
   });
 
   it("campos da allow-list expõem `&campo=<key>` e hasFieldTarget=true", () => {
@@ -150,15 +174,14 @@ describe("computeCompanyMissingFields", () => {
 
   it("campos sem alvo mapeado caem no fallback (só a aba, sem `campo=`)", () => {
     const row = emptyRow();
-    row.nfe_enabled = true;
     row.nfse_enabled = true;
     const r = computeCompanyMissingFields(row);
-    const cfop = r.bySection.nfe.find((f) => f.key === "cfop_in_state");
-    expect(cfop?.hasFieldTarget).toBe(false);
-    expect(cfop?.deepLink).not.toContain("campo=");
     const lc = r.bySection.nfse.find((f) => f.key === "lc116_item");
     expect(lc?.hasFieldTarget).toBe(false);
     expect(lc?.deepLink).not.toContain("campo=");
+    const iss = r.bySection.nfse.find((f) => f.key === "iss_rate");
+    expect(iss?.hasFieldTarget).toBe(false);
+    expect(iss?.deepLink).not.toContain("campo=");
   });
 
 

@@ -55,6 +55,22 @@ describe("focusFieldById", () => {
     expect(() => focusFieldById("phone")).not.toThrow();
     expect(focusFieldById("phone")).toBe(false);
   });
+
+  it("contêiner com controle interno => foca o controle focável (fallback container→input)", () => {
+    const wrapper = document.createElement("div");
+    wrapper.id = "nfe_cfop_in";
+    const input = document.createElement("input");
+    input.setAttribute("data-testid", "cfop-input");
+    wrapper.appendChild(input);
+    document.body.appendChild(wrapper);
+    wrapper.scrollIntoView = vi.fn();
+    input.scrollIntoView = vi.fn();
+
+    const ok = focusFieldById("nfe_cfop_in");
+    expect(ok).toBe(true);
+    expect(document.activeElement).toBe(input);
+    expect(input.classList.contains("ring-2")).toBe(true);
+  });
 });
 
 function Harness({ tab, ready }: { tab: string; ready: boolean }) {

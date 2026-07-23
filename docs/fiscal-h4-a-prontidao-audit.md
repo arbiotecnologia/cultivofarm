@@ -135,3 +135,23 @@ Escopo: apenas os achados **médios #1 (deep-link por campo)** e **#3 (banner de
 - Médio #2 da §7 (antiguidade de documentos pendentes) — requer alteração da view `v_fiscal_homologation_readiness` no banco; **fora do escopo local**, aguarda autorização específica.
 - Extensão do derivador para Perfis (Produto/Serviço/Cliente).
 - Deploy controlado da Edge `fiscal-cnpj-lookup` em staging para converter gates externos `PENDENTE → APROVADO`.
+
+## §9 — Fase H4-A2 aplicada (correção da entrega parcial H4-A1)
+
+**Correção da autoavaliação anterior.** A rodada H4-A1 introduziu a infraestrutura de deep-link e o banner de validade do certificado, porém entregou o comportamento de forma **parcialmente inconsistente** em dois pontos:
+
+1. As chaves de deep-link para NF-e/NFS-e (`cfop_in_state`, `cfop_interstate`) e os campos `state_registration`/`municipal_registration` **não correspondiam aos `id` reais** renderizados em `FiscalEmpresa.tsx`, então o foco caía no fallback (apenas a aba) sem atingir o campo.
+2. CFOP sugerido e LC116 estavam marcados como `bloqueia_homologacao` no singleton, sem regra canônica — a regra correta vive nos perfis fiscais.
+
+### Correções desta rodada
+- `KNOWN_FIELD_TARGETS` agora inclui `nfe_series`, `nfe_cfop_in`, `nfe_cfop_out`, `nfse_mode` (ids reais do formulário).
+- Chaves renomeadas: `cfop_in_state` → `nfe_cfop_in`, `cfop_interstate` → `nfe_cfop_out`.
+- `state_registration` (bloqueante) e `municipal_registration` (bloqueante) agora apontam para `aba=empresa` — a aba onde o input é renderizado — mantendo o agrupamento por seção `nfe`/`nfse`.
+- CFOP sugerido e LC116 rebaixados a `recomendado`; ISS mantido em `recomendado`. Modo NFS-e mantido bloqueante (obrigatório operacionalmente).
+- `focusFieldById` agora faz fallback contêiner→controle focável: quando o `id` mapeia um wrapper (ex.: FieldRow), procura o primeiro `input/select/textarea/button` interno.
+- Banner de validade do certificado A1 continua ativo em `HomologacaoSecao.tsx` e `CertificadoDigitalSecao.tsx`. Nenhum PFX, senha, path ou fingerprint completo é renderizado.
+
+### Testes adicionados/atualizados
+- `companyMissingFields.test.ts`: nova cobertura de severidades (CFOP=recomendado, IE/IM=bloqueante em aba empresa) e chaves alinhadas aos ids reais.
+- `useFiscalFieldFocus.test.tsx`: novo teste "contêiner com controle interno".
+- Total focais: **38/38 ✓**.
