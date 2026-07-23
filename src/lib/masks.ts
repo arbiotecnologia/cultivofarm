@@ -107,10 +107,14 @@ export const getTipoDocumento = (
 ): "CPF" | "CNPJ" | null => {
   if (tipoPessoa === "fisica") return "CPF";
   if (tipoPessoa === "juridica") return "CNPJ";
-  const v = unmask(value);
-  if (!v) return null;
-  return v.length > 11 ? "CNPJ" : "CPF";
+  if (value === undefined || value === null) return null;
+  const raw = String(value).replace(/[\s.\-/]/g, "");
+  if (!raw) return null;
+  // Alfanumérico → sempre CNPJ (Fase 3.19).
+  if (/[A-Za-z]/.test(raw)) return "CNPJ";
+  return raw.length > 11 ? "CNPJ" : "CPF";
 };
+
 
 /**
  * Formata telefone brasileiro
