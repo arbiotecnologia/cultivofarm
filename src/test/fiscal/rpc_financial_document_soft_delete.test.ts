@@ -49,6 +49,19 @@ describe("RPC rpc_financial_document_soft_delete — H2 correção soft delete",
     expect(sql).toMatch(/WHERE id = p_document_id\s+AND deleted_at IS NULL/);
   });
 
+  it("protege contra corrida concorrente com SELECT ... FOR UPDATE e checagem estrita de ROW_COUNT", () => {
+    // Trava a linha antes de validar deleted_at para serializar chamadas simultâneas.
+    expect(sql).toMatch(
+      /SELECT\s*\(\s*deleted_at IS NULL\s*\)[\s\S]*?FROM\s+public\.financial_documents[\s\S]*?WHERE\s+id\s*=\s*p_document_id[\s\S]*?FOR\s+UPDATE/i,
+    );
+    // Usa NOT FOUND (do SELECT travado) para P0002 em vez de flag manual sujeita a corrida.
+    expect(sql).toMatch(/IF NOT FOUND THEN[\s\S]*?USING ERRCODE = 'P0002'/);
+    // Confere ROW_COUNT do UPDATE e converte 0 linhas em 40001 (conflito), nunca sucesso silencioso.
+    expect(sql).toMatch(/GET DIAGNOSTICS\s+v_rows\s*=\s*ROW_COUNT/i);
+    expect(sql).toMatch(/IF v_rows\s*<>\s*1 THEN[\s\S]*?USING ERRCODE = '40001'/);
+  });
+
+
   it("REVOKE ALL de PUBLIC/anon e GRANT EXECUTE somente authenticated", () => {
     expect(sql).toMatch(
       /REVOKE ALL ON FUNCTION public\.rpc_financial_document_soft_delete\(uuid, text\) FROM PUBLIC/,
