@@ -38,7 +38,7 @@ export interface UseFiscalFieldFocusOptions {
 
 const FOCUSABLE_SELECTOR = "input, select, textarea, button, [tabindex]";
 
-function isNativelyFocusable(el: Element): el is HTMLElement {
+function isNativelyFocusable(el: Element): boolean {
   const tag = el.tagName;
   return tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || tag === "BUTTON";
 }
