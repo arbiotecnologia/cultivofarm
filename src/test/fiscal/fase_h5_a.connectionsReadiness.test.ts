@@ -64,7 +64,7 @@ describe("H5-A · computeConnectionsReadiness — rascunho parcial", () => {
       expect(item.description).not.toMatch(/\b0\b/);
     }
     expect(r.hasBlocker).toBe(false);
-    expect(r.productionAllowed).toBe(false);
+    expect(r.prerequisitesReadyForFutureProduction).toBe(false);
   });
 
   it("dados parciais (só CNPJ) => empresa 'pendente', demais coerentes", () => {
@@ -132,7 +132,7 @@ describe("H5-A · Certificado A1", () => {
     const r = computeConnectionsReadiness(baseRow(), [cert("EXPIRED", -3)]);
     expect(findItem(r.items, "certificado_a1").status).toBe("blocked");
     expect(r.hasBlocker).toBe(true);
-    expect(r.productionAllowed).toBe(false);
+    expect(r.prerequisitesReadyForFutureProduction).toBe(false);
   });
 });
 
@@ -150,17 +150,17 @@ describe("H5-A · Deep-links canônicos", () => {
 });
 
 describe("H5-A · Produção bloqueada / permitida-somente-em-relatório", () => {
-  it("qualquer pendência => productionAllowed=false", () => {
+  it("qualquer pendência => prerequisitesReadyForFutureProduction=false", () => {
     const r = computeConnectionsReadiness(baseRow(), []);
-    expect(r.productionAllowed).toBe(false);
+    expect(r.prerequisitesReadyForFutureProduction).toBe(false);
   });
-  it("todos requisitos ok => productionAllowed=true (apenas reporta, não ativa)", () => {
+  it("todos requisitos ok => prerequisitesReadyForFutureProduction=true (apenas reporta, não ativa)", () => {
     const row = baseRow({
       nfe_provider: "TECNOSPEED", nfe_credential_ref: "cred-1",
       webhook_ref: "wh-x", fiscal_environment: "HOMOLOGATION",
     });
     const r = computeConnectionsReadiness(row, [cert("AVAILABLE", 200)]);
-    expect(r.productionAllowed).toBe(true);
+    expect(r.prerequisitesReadyForFutureProduction).toBe(true);
     // O flag não implica production_enabled do banco.
     expect(row.production_enabled).toBe(false);
   });
