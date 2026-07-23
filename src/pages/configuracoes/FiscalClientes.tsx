@@ -277,8 +277,8 @@ export default function FiscalClientes() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={TAX_ALL}>Todos os contribuintes</SelectItem>
-                {TAXPAYER_INDICATOR_VALUES.map((v) => (
-                  <SelectItem key={v} value={v}>{TAXPAYER_LABELS[v] ?? v}</SelectItem>
+                {TAXPAYER_INDICATOR_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
