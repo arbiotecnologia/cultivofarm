@@ -935,3 +935,59 @@ provedor, emissão, itens fiscais em produção). H3/produção continuam proibi
 ### 19.6 Custo desta rodada
 
 **≤ 5 créditos.**
+
+## 20. Drift `fiscal_certificates` detectado antes da reconciliação
+
+Runtime do staging `ikaauvsflpmamgxmkhoq` (produção `navfzbwgwzruipouyfnk`
+intocada), executado durante a preparação da reconciliação de histórico
+(§ audit anterior), detectou que **`public.fiscal_certificates` não estava
+no array de 10 tabelas varridas por `20260801000000`** e apresentava drift
+residual de privilégios para `anon`, além de exposição estrutural
+(`TRUNCATE/REFERENCES/TRIGGER`) potencialmente herdada de `PUBLIC` para
+`authenticated`. O drift foi **bloqueado antes de qualquer `migration
+repair`**: nada foi registrado em `schema_migrations` para 20260728–20260802
+até que a superfície `fiscal_certificates` fosse coberta por migration
+canônica dedicada.
+
+### 20.1 Entrega aditiva
+
+- Artefato: `restoration/20260803000000_fiscal_certificates_revoke_anon_and_structural.sql`
+  (aguarda promoção autorizada para
+  `supabase/migrations/20260803000000_fiscal_certificates_revoke_anon_and_structural.sql`).
+- Efeitos:
+  - `REVOKE ALL PRIVILEGES ON TABLE public.fiscal_certificates FROM anon`.
+  - `REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE
+    public.fiscal_certificates FROM authenticated` — preserva o
+    `GRANT SELECT` de `20260724000000`, filtrado por `fc_read_metadata`.
+  - `service_role` intacto; upload/revogação seguem via edge functions.
+- Sem alteração de policies, RLS, funções, triggers ou DML. Idempotente.
+
+### 20.2 Teste estático
+
+`src/test/fiscal/fiscal_certificates_revoke_privileges.test.ts` (5 asserts)
+prova revogação de `anon`, revogação estrutural em `authenticated` sem
+tocar em `SELECT`, ausência de `GRANT`/`service_role`/policies/RLS/DML e
+alvo exclusivo `public.fiscal_certificates`.
+
+### 20.3 Gates locais
+
+- `bunx vitest run src/test/fiscal/fiscal_certificates_revoke_privileges.test.ts`
+  → 5/5 ✓
+- `bunx tsgo --noEmit` → sem erros.
+- `bun run build` → ok.
+
+### 20.4 Impacto na reconciliação
+
+A reconciliação `migration repair` de 20260728–20260802 fica condicionada
+à promoção prévia de `20260803000000` e à re-execução dos pré-checks
+(§3 da auditoria de histórico), agora incluindo `fiscal_certificates` na
+matriz de privilégios. Ordem sugerida: promover 20260803 → aplicar em
+staging → só então executar `repair applied` das seis versões.
+
+### 20.5 Status H2
+
+Permanece **PARCIAL**. Produção `navfzbwgwzruipouyfnk` intocada.
+
+### 20.6 Custo desta rodada
+
+**≤ 5 créditos.**
