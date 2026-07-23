@@ -1,44 +1,5 @@
--- =====================================================================
--- Fase Fiscal 3.19.4 — Adendo NFS-e Nacional em `additional_fields`
---
--- STUB DOCUMENTAL (NÃO EXECUTAR nesta rodada). Este trecho descreve a
--- extensão aditiva do validador `_fiscal_rtc_assert_payload` para
--- rejeitar tipos/valores inválidos das chaves NFS-e conhecidas
--- (`finNFSe`, `tpNFSeDebito`, `tpNFSeCredito`, `gIBSCBSAjuste`,
--- `vAjusteBC`). A migração canônica (`supabase/migrations/`) é gerenciada
--- pelo pipeline oficial e não é editada aqui.
---
--- Códigos estáveis emitidos (ERRCODE 22023):
---   FISCAL_RTC_NFSE_INVALID_CODE:<field>       (string 1..20 esperada)
---   FISCAL_RTC_NFSE_INVALID_TOGGLE:gIBSCBSAjuste (boolean esperado)
---   FISCAL_RTC_NFSE_INVALID_VALUE:vAjusteBC     (number >= 0)
---   FISCAL_RTC_NFSE_VALUE_WITHOUT_TOGGLE:vAjusteBC (dependência quebrada)
---
--- Referência de implementação (a ser incorporada no assert canônico):
---
---   IF payload ? 'additional_fields' THEN
---     DECLARE af jsonb := payload->'additional_fields';
---     BEGIN
---       IF af ? 'finNFSe' AND (jsonb_typeof(af->'finNFSe') <> 'string'
---          OR length(af->>'finNFSe') < 1 OR length(af->>'finNFSe') > 20) THEN
---         RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_CODE:finNFSe' USING ERRCODE='22023';
---       END IF;
---       -- (mesmo padrão para tpNFSeDebito, tpNFSeCredito)
---       IF af ? 'gIBSCBSAjuste' AND jsonb_typeof(af->'gIBSCBSAjuste') <> 'boolean' THEN
---         RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_TOGGLE:gIBSCBSAjuste' USING ERRCODE='22023';
---       END IF;
---       IF af ? 'vAjusteBC' THEN
---         IF jsonb_typeof(af->'vAjusteBC') <> 'number'
---            OR (af->>'vAjusteBC')::numeric < 0 THEN
---           RAISE EXCEPTION 'FISCAL_RTC_NFSE_INVALID_VALUE:vAjusteBC' USING ERRCODE='22023';
---         END IF;
---         IF NOT (af ? 'gIBSCBSAjuste') OR (af->>'gIBSCBSAjuste')::boolean <> true THEN
---           RAISE EXCEPTION 'FISCAL_RTC_NFSE_VALUE_WITHOUT_TOGGLE:vAjusteBC' USING ERRCODE='22023';
---         END IF;
---       END IF;
---     END;
---   END IF;
---
--- Enquanto o adendo não é aplicado no banco, o hook + Zod
--- (`validateNfseInAdditionalFields`) já rejeita esses casos no frontend.
--- =====================================================================
+-- Fase 3.19.5 — este stub foi absorvido.
+-- A validação NFS-e Nacional dentro de `_fiscal_rtc_assert_payload` agora
+-- vive integralmente na migration canônica:
+--   supabase/migrations/20260727000000_fiscal_fase3_19_rtc_2026.sql
+-- Não duplicar SQL aqui — fonte única.
