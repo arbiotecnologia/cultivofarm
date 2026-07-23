@@ -223,4 +223,85 @@ separados, DELETE=false e REVOKE DELETE.
 com sucesso no staging `ikaauvsflpmamgxmkhoq`. Resultado real
 registrado em §11. Produção `navfzbwgwzruipouyfnk` permanece intocada.
 
+## 11. Evidência runtime executada no staging `ikaauvsflpmamgxmkhoq`
+
+Toda a execução ocorreu **fora do sandbox**, em transações com
+`ROLLBACK`; produção `navfzbwgwzruipouyfnk` intocada. Resíduos
+sintéticos = 0.
+
+### 11.1 Migration `20260728000000` aplicada
+
+- `supabase/migrations/20260728000000_fiscal_rls_perfis_split_write.sql`
+  aplicada com sucesso no staging temporário.
+- Produção `navfzbwgwzruipouyfnk` não foi alterada.
+
+### 11.2 RLS das tabelas de perfis fiscais
+
+Nas três tabelas (`product_fiscal_profiles`,
+`service_fiscal_profiles`, `customer_fiscal_profiles`):
+
+| Verificação | Count / Resultado |
+|-------------|-------------------|
+| `*_write` (FOR ALL) | 0 — removida |
+| `*_insert` | 1 — `WITH CHECK (administrador OR financeiro)` |
+| `*_update` | 1 — `USING (...) WITH CHECK (administrador OR financeiro)` |
+| `*_read` | 1 — `USING (administrador OR gestor OR financeiro)` |
+| `*_delete` | 1 — `USING (false)` |
+| `REVOKE DELETE FROM authenticated` | aplicado — defesa em profundidade |
+
+### 11.3 Permissões por papel — tabelas de perfis
+
+- `service_fiscal_profiles`:
+  - `financeiro`: INSERT ✅, UPDATE ✅, SELECT ✅
+  - `gestor`: SELECT ✅, UPDATE retornou 0 linhas afetadas, INSERT retornou `SQLSTATE 42501`
+  - `gestor_comercial`: SELECT retornou 0 linhas, INSERT retornou `SQLSTATE 42501`
+- `product_fiscal_profiles` e `customer_fiscal_profiles`:
+  - `financeiro`: INSERT ✅, UPDATE ✅, SELECT ✅
+
+### 11.4 RPCs de perfis de serviço (IBS/CBS)
+
+- `rpc_fiscal_service_profile_ibs_cbs_get` ✅
+- `rpc_fiscal_service_profile_ibs_cbs_save` ✅
+- `updated_by` persistido corretamente ✅
+- Papel sem autorização: `SQLSTATE 42501` ✅
+- Conflito de revisão obsoleta: `SQLSTATE 40001` / `FISCAL_CONFLICT` ✅
+- Perfil inativo: invisível na leitura ✅
+
+### 11.5 RPC produto IBS/CBS
+
+- `rpc_fiscal_product_profile_ibs_cbs_get` / `save` aprovadas ✅
+
+### 11.6 Readiness v2
+
+- `rpc_fiscal_homologation_readiness_v2` autorizado retornou objeto válido ✅
+
+### 11.7 Máscara de JSON sensível
+
+`mask_sensitive_jsonb` aprovou:
+
+- aninhamento ✅
+- arrays ✅
+- case-insensitive ✅
+- `accessToken`, `private_key`, `client_secret` ✅
+- `null` ✅
+- idempotência ✅
+
+### 11.8 Segurança de ambiente
+
+| Verificação | Resultado |
+|-------------|-----------|
+| Provider | `NONE` |
+| Ambiente | `NOT_CONFIGURED` |
+| Status | `DRAFT` |
+| NF-e habilitado | `false` |
+| NFS-e habilitado | `false` |
+| `production_enabled` | `false` |
+
+### 11.9 Certificados digitais
+
+- Tabela de certificados: 0 registros.
+- Nenhuma coluna de senha, PFX ou chave privada presente.
+- Bucket privado: 10 MiB, 0 objetos.
+
+
 
