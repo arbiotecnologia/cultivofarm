@@ -74,12 +74,12 @@ describe("computeCompanyMissingFields", () => {
     const ie = r.bySection.nfe.find((f) => f.key === "state_registration");
     expect(ie?.severity).toBe("bloqueia_homologacao");
     expect(ie?.deepLink).toContain("aba=empresa");
-    expect(ie?.deepLink).toContain("campo=state_registration");
+    expect(ie?.deepLink).toContain("#state_registration");
     // CFOP sugerido é recomendado (regra canônica vive nos perfis).
     const cfopIn = r.bySection.nfe.find((f) => f.key === "nfe_cfop_in");
     expect(cfopIn?.severity).toBe("recomendado");
     expect(cfopIn?.deepLink).toContain("aba=nfe");
-    expect(cfopIn?.deepLink).toContain("campo=nfe_cfop_in");
+    expect(cfopIn?.deepLink).toContain("#nfe_cfop_in");
   });
 
   it("série NF-e informada na coluna dedicada satisfaz o requisito", () => {
@@ -108,10 +108,10 @@ describe("computeCompanyMissingFields", () => {
     const im = r.bySection.nfse.find((f) => f.key === "municipal_registration");
     expect(im?.severity).toBe("bloqueia_homologacao");
     expect(im?.deepLink).toContain("aba=empresa");
-    expect(im?.deepLink).toContain("campo=municipal_registration");
+    expect(im?.deepLink).toContain("#municipal_registration");
     const modo = r.bySection.nfse.find((f) => f.key === "nfse_mode");
     expect(modo?.severity).toBe("bloqueia_homologacao");
-    expect(modo?.deepLink).toContain("campo=nfse_mode");
+    expect(modo?.deepLink).toContain("#nfse_mode");
     const lc = r.bySection.nfse.find((f) => f.key === "lc116_item");
     expect(lc?.severity).toBe("recomendado");
     const iss = r.bySection.nfse.find((f) => f.key === "iss_rate");
@@ -164,12 +164,12 @@ describe("computeCompanyMissingFields", () => {
     const r = computeCompanyMissingFields(emptyRow());
     const cnpj = r.bySection.empresa.find((f) => f.key === "cnpj");
     expect(cnpj?.hasFieldTarget).toBe(true);
-    expect(cnpj?.deepLink).toContain("&campo=cnpj");
+    expect(cnpj?.deepLink).toContain("#cnpj");
     const email = r.bySection.empresa.find((f) => f.key === "fiscal_email");
-    expect(email?.deepLink).toContain("&campo=fiscal_email");
+    expect(email?.deepLink).toContain("#fiscal_email");
     const ibge = r.bySection.endereco.find((f) => f.key === "municipality_ibge_code");
     expect(ibge?.hasFieldTarget).toBe(true);
-    expect(ibge?.deepLink).toContain("&campo=municipality_ibge_code");
+    expect(ibge?.deepLink).toContain("#municipality_ibge_code");
   });
 
   it("campos sem alvo mapeado caem no fallback (só a aba, sem `campo=`)", () => {
@@ -178,10 +178,10 @@ describe("computeCompanyMissingFields", () => {
     const r = computeCompanyMissingFields(row);
     const lc = r.bySection.nfse.find((f) => f.key === "lc116_item");
     expect(lc?.hasFieldTarget).toBe(false);
-    expect(lc?.deepLink).not.toContain("campo=");
+    expect(lc?.deepLink).not.toContain("#");
     const iss = r.bySection.nfse.find((f) => f.key === "iss_rate");
     expect(iss?.hasFieldTarget).toBe(false);
-    expect(iss?.deepLink).not.toContain("campo=");
+    expect(iss?.deepLink).not.toContain("#");
   });
 
 
