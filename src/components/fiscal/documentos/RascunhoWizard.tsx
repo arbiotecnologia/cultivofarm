@@ -36,8 +36,9 @@ import { useFiscalClientesLite } from "@/hooks/useFiscalClientesLite";
 import { useFiscalProdutosLite, type FiscalProdutoLite } from "@/hooks/useFiscalProdutosLite";
 import { useFiscalServicosLite, type FiscalServicoLite } from "@/hooks/useFiscalServicosLite";
 import { useDebounce } from "@/hooks/useDebounce";
+import SinefOperationsPanel from "@/components/fiscal/documentos/sinief49/SinefOperationsPanel";
 
-const STEPS = ["documento", "destinatario", "itens", "tributos", "revisao"] as const;
+const STEPS = ["documento", "destinatario", "itens", "tributos", "sinief49", "revisao"] as const;
 type Step = (typeof STEPS)[number];
 
 const STEP_LABELS: Record<Step, string> = {
@@ -45,6 +46,7 @@ const STEP_LABELS: Record<Step, string> = {
   destinatario: "Destinatário",
   itens: "Itens e Serviços",
   tributos: "Tributos e Totais",
+  sinief49: "Operações especiais — SINIEF 49/2025",
   revisao: "Revisão",
 };
 
@@ -536,6 +538,10 @@ export default function RascunhoWizard({
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="sinief49">
+            <SinefOperationsPanel issuerCnpj={companyCnpj} disabled={readonly} />
           </TabsContent>
 
           <TabsContent value="revisao">
