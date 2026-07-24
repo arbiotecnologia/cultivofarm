@@ -49,10 +49,11 @@ export default function MobileTalhaoHistorico() {
     enabled: !!id,
   });
 
-  // Bloqueio: produtor não pode abrir talhão fora do cliente ativo
-  if (isProdutor && !talhaoLoading && talhao && clienteId && (talhao.fazendas as any)?.cliente_id !== clienteId) {
-    return <Navigate to="/app/fazendas" replace />;
-  }
+  const blockProdutor =
+    isProdutor && !talhaoLoading && !!talhao && !!clienteId &&
+    (talhao.fazendas as any)?.cliente_id !== clienteId;
+
+
 
   const { data: registros } = useQuery({
     queryKey: ["mobile-talhao-registros", id],
@@ -149,7 +150,12 @@ export default function MobileTalhaoHistorico() {
 
   const { urls: signedUrls } = useSignedUrls(allPaths);
 
+  if (blockProdutor) {
+    return <Navigate to="/app/fazendas" replace />;
+  }
+
   return (
+
     <div className="p-4 space-y-5 pb-8">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="text-muted-foreground">
