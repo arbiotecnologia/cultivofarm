@@ -247,7 +247,7 @@ function ProtectedRoutes() {
   return <AppLayout />;
 }
 
-function PortalGuard() {
+export function PortalGuard() {
   const { user, roles, loading, error, refresh, signOut } = useAuth();
 
   if (loading) {
