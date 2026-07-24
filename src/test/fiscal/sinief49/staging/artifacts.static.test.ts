@@ -89,9 +89,10 @@ describe("SINIEF 4.0.1 · fixtures/cenários: templates parametrizados sem auth.
       expect(sql).toContain(PROD_REF);
     });
     test(`${name}: NÃO cria/mexe em auth.users`, () => {
-      expect(sql).not.toMatch(/INSERT\s+INTO\s+auth\.users/i);
-      expect(sql).not.toMatch(/DELETE\s+FROM\s+auth\.users/i);
-      expect(sql).not.toMatch(/UPDATE\s+auth\.users/i);
+      const s = strip(sql);
+      expect(s).not.toMatch(/INSERT\s+INTO\s+auth\.users/i);
+      expect(s).not.toMatch(/DELETE\s+FROM\s+auth\.users/i);
+      expect(s).not.toMatch(/UPDATE\s+auth\.users/i);
     });
     test(`${name}: usa placeholders psql :'u_*' / :'seed_user_id'`, () => {
       expect(sql).toMatch(/:'seed_user_id'/);
