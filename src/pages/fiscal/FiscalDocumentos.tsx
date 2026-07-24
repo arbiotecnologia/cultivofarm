@@ -163,7 +163,7 @@ export default function FiscalDocumentos() {
             Recursos previstos: consulta paginada de <em>fiscal_invoices</em>,
             detalhe com itens, eventos e trilha de auditoria mascarados,
             criação/edição manual restrita a ambiente seguro
-            (NOT_CONFIGURED/HOMOLOGATION) e provider NONE.
+            (Não configurado/Homologação) e provedor Nenhum.
           </CardContent>
         </Card>
       </div>
@@ -592,8 +592,9 @@ function DetailSheet(props: DetailProps) {
             {creating ? "Novo registro manual" : `Registro ${detail?.invoice_number ?? "—"}`}
           </SheetTitle>
           <SheetDescription>
-            Somente MANUAL. Provider forçado como NONE, ambiente restrito a
-            NOT_CONFIGURED ou HOMOLOGATION. Nenhuma emissão é executada.
+            Apenas registro manual. Provedor forçado como Nenhum, ambiente
+            restrito a Não configurado ou Homologação. Nenhuma emissão é
+            executada.
           </SheetDescription>
         </SheetHeader>
 

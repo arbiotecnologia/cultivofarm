@@ -32,7 +32,6 @@ import {
 import {
   useMicroorganismList,
   useAssociateMicroorganism,
-  MicroorganismAssociationConflictError,
 } from "@/hooks/useMicroorganismFiscalAssociation";
 import {
   productFiscalFormSchema,
@@ -639,14 +638,6 @@ function AssociateDialog({
       });
       onClose();
     } catch (err) {
-      if (err instanceof MicroorganismAssociationConflictError) {
-        toast({
-          title: "Produto já associado",
-          description: "Outro microrganismo já usa este produto canônico.",
-          variant: "destructive",
-        });
-        return;
-      }
       const msg = err instanceof Error ? err.message : "unknown";
       if (msg === "permission_denied") {
         toast({ title: "Sem permissão para alterar a associação", variant: "destructive" });
