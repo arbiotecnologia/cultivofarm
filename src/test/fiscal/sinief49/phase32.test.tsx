@@ -300,44 +300,56 @@ function renderWizard() {
   );
 }
 
+async function clickTab(el: HTMLElement) {
+  await act(async () => {
+    fireEvent.pointerDown(el, { button: 0 });
+    fireEvent.mouseDown(el, { button: 0 });
+    fireEvent.click(el);
+  });
+}
+
 describe("Fase 3.2 · RascunhoWizard — etapas por papel", () => {
-  it("administrador: 6 etapas incluindo aba SINIEF, painel montado", async () => {
+  it("administrador: 6 etapas, aba SINIEF ativa monta painel", async () => {
     currentRole = "administrador";
-    const { container } = renderWizard();
+    renderWizard();
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(6);
     const sinief = tabs.find((t) => /SINIEF 49\/2025/.test(t.textContent ?? ""));
     expect(sinief).toBeDefined();
-    // Radix monta o TabsContent (mesmo oculto) quando o wizard permite a aba.
-    // O painel usa data-testid estável.
-    expect(container.querySelector('[data-testid="sinief49-panel"]')).not.toBeNull();
+    await clickTab(sinief!);
+    expect(await screen.findByTestId("sinief49-panel")).toBeInTheDocument();
   });
 
-  it("financeiro: 6 etapas incluindo aba SINIEF, painel montado", async () => {
+  it("financeiro: 6 etapas, aba SINIEF ativa monta painel", async () => {
     currentRole = "financeiro";
-    const { container } = renderWizard();
+    renderWizard();
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(6);
-    expect(tabs.some((t) => /SINIEF/.test(t.textContent ?? ""))).toBe(true);
-    expect(container.querySelector('[data-testid="sinief49-panel"]')).not.toBeNull();
+    const sinief = tabs.find((t) => /SINIEF/.test(t.textContent ?? ""));
+    expect(sinief).toBeDefined();
+    await clickTab(sinief!);
+    expect(await screen.findByTestId("sinief49-panel")).toBeInTheDocument();
   });
 
   it.each(["gestor", "tecnico_agronomo", "consultor"] as AppRole[])(
-    "%s: exatamente 5 etapas legadas, sem aba SINIEF nem painel",
+    "%s: exatamente 5 etapas legadas, sem aba SINIEF",
     (role) => {
       currentRole = role;
-      const { container } = renderWizard();
+      renderWizard();
       const tabs = screen.getAllByRole("tab");
       expect(tabs).toHaveLength(5);
       expect(tabs.every((t) => !/SINIEF/.test(t.textContent ?? ""))).toBe(true);
-      expect(container.querySelector('[data-testid="sinief49-panel"]')).toBeNull();
     },
   );
 
-  it("se o papel perde acesso, aba/painel SINIEF somem e voltam ao legado", async () => {
+  it("se o papel perde acesso, aba SINIEF some e painel é desmontado", async () => {
     currentRole = "administrador";
-    const { rerender, container } = renderWizard();
-    expect(container.querySelector('[data-testid="sinief49-panel"]')).not.toBeNull();
+    const { rerender } = renderWizard();
+    const sinief = screen
+      .getAllByRole("tab")
+      .find((t) => /SINIEF/.test(t.textContent ?? ""))!;
+    await clickTab(sinief);
+    expect(await screen.findByTestId("sinief49-panel")).toBeInTheDocument();
     await act(async () => {
       currentRole = "gestor";
       const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -347,9 +359,9 @@ describe("Fase 3.2 · RascunhoWizard — etapas por papel", () => {
         </QueryClientProvider>,
       );
     });
-    const newTabs = screen.getAllByRole("tab");
-    expect(newTabs).toHaveLength(5);
-    expect(container.querySelector('[data-testid="sinief49-panel"]')).toBeNull();
+    expect(screen.getAllByRole("tab")).toHaveLength(5);
+    expect(screen.queryByTestId("sinief49-panel")).not.toBeInTheDocument();
   });
 });
+
 
