@@ -197,9 +197,9 @@ export default function FiscalReconciliacao() {
               <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">Todos</SelectItem>
-                <SelectItem value="NFE">{DOCUMENT_MODEL.label("NFE")}</SelectItem>
-                <SelectItem value="NFSE">{DOCUMENT_MODEL.label("NFSE")}</SelectItem>
-                <SelectItem value="OTHER">{DOCUMENT_MODEL.label("OTHER")}</SelectItem>
+                <SelectItem value="NFE">{INVOICE_TYPE.label("NFE")}</SelectItem>
+                <SelectItem value="NFSE">{INVOICE_TYPE.label("NFSE")}</SelectItem>
+                <SelectItem value="OTHER">{INVOICE_TYPE.label("OTHER")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
