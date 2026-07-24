@@ -53,9 +53,12 @@ export interface FiscalInvoiceInsertShape {
 export function mapDraftToInvoiceInsert(
   draft: CanonicalDraft,
 ): FiscalInvoiceInsertShape {
-  if (PERSISTENCE_MAPPER_ENABLED) {
-    // Guarda dupla: mesmo com a flag ligada, este caminho não persiste
-    // — apenas retorna o shape. Requerimento explícito da Fase 3.
+  if (!PERSISTENCE_MAPPER_ENABLED) {
+    // Guarda em runtime: enquanto a flag estiver desligada, qualquer
+    // chamada acidental falha explicitamente sem tocar em I/O.
+    throw new Error(
+      "sinief49.persistenceMapper: desabilitado (PERSISTENCE_MAPPER_ENABLED=false).",
+    );
   }
   return {
     direction: draft.direction,
