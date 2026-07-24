@@ -626,7 +626,7 @@ export default function FiscalEmpresa() {
                   <SelectNative id="nfe_freight_modality" value={(nfe.freight_modality as string) ?? ""} options={FREIGHT_MODALITY_OPTIONS} onChange={(v) => setNfe("freight_modality", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_danfe_layout" label="Layout DANFE">
-                  <SelectNative id="nfe_danfe_layout" value={(nfe.danfe_layout as string) ?? "PORTRAIT"} options={NFE_DANFE_LAYOUTS} onChange={(v) => setNfe("danfe_layout", v)} />
+                  <SelectNative id="nfe_danfe_layout" value={(nfe.danfe_layout as string) ?? "PORTRAIT"} options={NFE_DANFE_LAYOUT.toOptions(NFE_DANFE_LAYOUTS)} onChange={(v) => setNfe("danfe_layout", v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Enviar e-mail após autorização futura</Label>
