@@ -136,20 +136,40 @@ export function useAssociateMicroorganism() {
     { microorganismId: string; productId: string | null }
   >({
     mutationFn: async ({ microorganismId, productId }) => {
-      // Boundary narrow: payload contém apenas product_id (uuid|null).
-      const payload = { product_id: productId } as unknown as Database["public"]["Tables"]["microrganismos"]["Update"];
-      const { data, error } = await supabase
-        .from("microrganismos")
-        .update(payload)
-        .eq("id", microorganismId)
-        .select("id, product_id" as string)
-        .maybeSingle();
+      // Boundary narrow: a RPC canônica
+      // `rpc_associate_microorganism_fiscal_product` (migration
+      // 20260805000000) autoriza `administrador` e `financeiro`
+      // (coerente com a rota /configuracoes/fiscal/produtos) e
+      // atualiza EXCLUSIVAMENTE microrganismos.product_id. O UPDATE
+      // direto foi removido para não exigir ampliação de policy da
+      // tabela. Cast local `as never` no nome da função enquanto o
+      // types.ts canônico não é regenerado; remover no próximo
+      // ciclo de regeneração.
+      const args = {
+        p_microorganism_id: microorganismId,
+        p_product_id: productId,
+      };
+      const { data, error } = await (supabase.rpc as unknown as (
+        fn: string,
+        args: { p_microorganism_id: string; p_product_id: string | null },
+      ) => Promise<{ data: unknown; error: unknown }>)(
+        "rpc_associate_microorganism_fiscal_product",
+        args,
+      );
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
-        throw new Error(error.message);
+        const msg = (error as { message?: string }).message ?? "";
+        if (/not_found|product_not_found|P0002/i.test(msg)) {
+          throw new Error(/product_not_found/i.test(msg) ? "product_not_found" : "not_found");
+        }
+        throw new Error(msg || "unknown_error");
       }
-      if (!data) throw new Error("not_found");
-      const row = data as unknown as { id: string; product_id: string | null };
+      const rows = (Array.isArray(data) ? data : data ? [data] : []) as Array<{
+        id: string;
+        product_id: string | null;
+      }>;
+      const row = rows[0];
+      if (!row) throw new Error("not_found");
       return { id: row.id, product_id: row.product_id ?? null };
     },
     onSuccess: () => {
@@ -158,3 +178,4 @@ export function useAssociateMicroorganism() {
     },
   });
 }
+
