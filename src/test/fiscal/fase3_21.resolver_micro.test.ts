@@ -53,7 +53,7 @@ describe("resolveFiscalItemFromMicroorganism — puro", () => {
     const res = await resolveFiscalItemFromMicroorganism("micro-x", async () => null);
     expect(res.ok).toBe(false);
     if (res.ok) throw new Error("expected failure");
-    expect(res.code).toBe("microorganism_profile_missing");
+    expect((res as { code: string }).code).toBe("microorganism_profile_missing");
   });
 
   test("falha quando perfil inativo", async () => {
@@ -62,7 +62,7 @@ describe("resolveFiscalItemFromMicroorganism — puro", () => {
     }));
     expect(res.ok).toBe(false);
     if (res.ok) throw new Error("expected failure");
-    expect(res.code).toBe("microorganism_profile_inactive");
+    expect((res as { code: string }).code).toBe("microorganism_profile_inactive");
   });
 
   test("falha quando não minimamente classificado (sem NCM ou CFOP interno)", async () => {
@@ -70,12 +70,12 @@ describe("resolveFiscalItemFromMicroorganism — puro", () => {
       ...baseProfile(), ncm: null,
     }));
     expect(r1.ok).toBe(false);
-    if (!r1.ok) expect(r1.code).toBe("microorganism_not_minimally_classified");
+    if (!r1.ok) expect((r1 as { code: string }).code).toBe("microorganism_not_minimally_classified");
     const r2 = await resolveFiscalItemFromMicroorganism("micro-1", async () => ({
       ...baseProfile(), cfop_in_state: null,
     }));
     expect(r2.ok).toBe(false);
-    if (!r2.ok) expect(r2.code).toBe("microorganism_not_minimally_classified");
+    if (!r2.ok) expect((r2 as { code: string }).code).toBe("microorganism_not_minimally_classified");
   });
 
   test("loader é único ponto de I/O — resolver não recebe supabase nem faz fetch", async () => {
