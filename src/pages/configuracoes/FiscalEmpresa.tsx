@@ -603,7 +603,7 @@ export default function FiscalEmpresa() {
                   <Switch checked={nfe.enabled_for_preparation === true} onCheckedChange={(v) => setNfe("enabled_for_preparation", v)} />
                 </div>
                 <FieldRow id="nfe_environment" label="Ambiente NF-e">
-                  <SelectNative id="nfe_environment" value={(nfe.environment as string) ?? "NOT_CONFIGURED"} options={ALLOWED_ENVIRONMENTS} onChange={(v) => setNfe("environment", v)} />
+                  <SelectNative id="nfe_environment" value={(nfe.environment as string) ?? "NOT_CONFIGURED"} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => setNfe("environment", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_series" label="Série NF-e"><Input id="nfe_series" value={values.nfe_series ?? ""} onChange={(e) => set("nfe_series", e.target.value)} /></FieldRow>
                 <FieldRow id="nfe_numbering_mode" label="Modo de numeração">
