@@ -181,13 +181,27 @@ export default function FiscalProdutos() {
     enabled: microorganismsEnabled,
   });
 
+  const productItemsPage = listQuery.data?.items ?? [];
+  const pageProductIds = new Set(productItemsPage.map((it) => it.product_id));
+  const microLinkedIds = Array.from(
+    new Set(
+      (microorganismsQuery.data ?? [])
+        .map((m) => m.product_id)
+        .filter((id): id is string => !!id),
+    ),
+  );
+  // Fonte independente: resolve produtos vinculados por microrganismos que
+  // não estejam na página/filtro atual, sem SELECT amplo.
+  const missingLinkedProductIds = microLinkedIds.filter(
+    (id) => !pageProductIds.has(id),
+  );
+  const resolvedLinkedQuery = useProductFiscalListByIds(missingLinkedProductIds, {
+    enabled: uiEnabled && access !== "none",
+  });
+
   const productIds = useMemo(() => {
-    const fromProducts = (listQuery.data?.items ?? []).map((it) => it.product_id);
-    const fromMicros = (microorganismsQuery.data ?? [])
-      .map((m) => m.product_id)
-      .filter((id): id is string => !!id);
-    return Array.from(new Set([...fromProducts, ...fromMicros]));
-  }, [listQuery.data, microorganismsQuery.data]);
+    return Array.from(new Set([...pageProductIds, ...microLinkedIds]));
+  }, [pageProductIds, microLinkedIds]);
 
   const readinessQuery = useProductFiscalReadiness(productIds, {
     enabled: uiEnabled && access !== "none",
@@ -196,7 +210,8 @@ export default function FiscalProdutos() {
   const permissionDenied =
     listQuery.error?.message === "permission_denied" ||
     readinessQuery.error?.message === "permission_denied" ||
-    microorganismsQuery.error?.message === "permission_denied";
+    microorganismsQuery.error?.message === "permission_denied" ||
+    resolvedLinkedQuery.error?.message === "permission_denied";
 
   // Estados de acesso/flag ————————————————————————————————
   if (access === "none") {
