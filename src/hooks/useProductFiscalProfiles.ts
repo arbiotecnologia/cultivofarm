@@ -33,6 +33,8 @@ export const PRODUCT_FISCAL_KEYS = {
     [...PRODUCT_FISCAL_KEYS.root, "list", p] as const,
   readiness: (ids: string[]) =>
     [...PRODUCT_FISCAL_KEYS.root, "readiness", ids.slice().sort()] as const,
+  byIds: (ids: string[]) =>
+    [...PRODUCT_FISCAL_KEYS.root, "by-ids", ids.slice().sort()] as const,
 };
 
 export interface ListParams {
