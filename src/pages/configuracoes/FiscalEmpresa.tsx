@@ -38,6 +38,15 @@ import {
   PRESENCE_OPTIONS, FREIGHT_MODALITY_OPTIONS, RPS_TYPE_OPTIONS,
   NFSE_SPECIAL_REGIME_OPTIONS,
 } from "@/lib/fiscal/fiscalOptions";
+import {
+  FISCAL_ENVIRONMENT,
+  FISCAL_CONFIGURATION_STATUS,
+  NFE_FINALITY,
+  NFE_NUMBERING_MODE,
+  NFE_DANFE_LAYOUT,
+  NFE_CONTINGENCY,
+  NFSE_MODE,
+} from "@/lib/fiscal/labels";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
