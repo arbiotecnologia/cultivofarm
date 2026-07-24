@@ -1,15 +1,11 @@
 /**
  * Fase SINIEF 1 — Auditoria estática da migration canônica.
  *
- * DIVERGÊNCIA CONTROLADA: o sandbox do agente não permitiu gravar em
- * supabase/migrations/ nesta fase (projeto usa Supabase externo sem
- * Lovable Cloud). A fonte executável canônica está em:
- *   restoration/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql
- * O humano deve sincronizar este arquivo para supabase/migrations/
- * com o mesmo nome antes de aplicar via pipeline oficial.
+ * Fonte canônica ÚNICA (aditiva, transacional):
+ *   supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql
  *
- * Testes garantem: fonte executável única (em restoration/) + ausência
- * de duplicata parcial em supabase/migrations/ (evita divergência).
+ * Espelho documental (SEM SQL executável):
+ *   restoration/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql
  */
 import { describe, test, expect } from "vitest";
 import fs from "node:fs";
@@ -17,11 +13,11 @@ import path from "node:path";
 
 const CANON = path.resolve(
   process.cwd(),
-  "restoration/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql",
-);
-const SUPABASE_MIRROR = path.resolve(
-  process.cwd(),
   "supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql",
+);
+const STUB = path.resolve(
+  process.cwd(),
+  "restoration/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql",
 );
 
 const sql = fs.readFileSync(CANON, "utf-8");
@@ -197,20 +193,23 @@ describe("Fase SINIEF 1 — migration aditiva SINIEF 49/2025", () => {
     }
   });
 
-  test("fonte executável única: nenhuma duplicata em supabase/migrations/ até sincronização externa", () => {
-    // O humano copiará este arquivo para supabase/migrations/ pelo pipeline
-    // oficial. Enquanto isso, garantimos que não existe cópia parcial no
-    // caminho supabase/migrations/ — evitando divergência silenciosa.
-    // Se, após a sincronização, o arquivo passar a existir em ambos, este
-    // teste deve ser atualizado para exigir conteúdo idêntico (byte a byte).
-    if (fs.existsSync(SUPABASE_MIRROR)) {
-      const mirror = fs.readFileSync(SUPABASE_MIRROR, "utf-8");
-      // Sincronização já realizada — exigir cópia exata.
-      expect(mirror).toBe(sql);
-    } else {
-      // Estado esperado nesta fase (fonte única em restoration/).
-      expect(fs.existsSync(SUPABASE_MIRROR)).toBe(false);
-    }
+  test("fonte executável única: canônica em supabase/migrations/ + stub não executável em restoration/", () => {
+    // A fonte executável canônica vive em supabase/migrations/. O arquivo
+    // em restoration/migrations/ é apenas um marcador documental sem SQL
+    // executável (sem BEGIN/CREATE/ALTER/GRANT/REVOKE/COMMIT).
+    expect(fs.existsSync(CANON)).toBe(true);
+    expect(fs.existsSync(STUB)).toBe(true);
+    const stub = fs.readFileSync(STUB, "utf-8");
+    const stubNoComments = stub
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("--"))
+      .join("\n");
+    expect(stubNoComments).not.toMatch(/\bBEGIN\b/i);
+    expect(stubNoComments).not.toMatch(/\bCREATE\b/i);
+    expect(stubNoComments).not.toMatch(/\bALTER\b/i);
+    expect(stubNoComments).not.toMatch(/\bGRANT\b/i);
+    expect(stubNoComments).not.toMatch(/\bREVOKE\b/i);
+    expect(stubNoComments).not.toMatch(/\bCOMMIT\b/i);
   });
 });
 
