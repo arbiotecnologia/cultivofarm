@@ -23,6 +23,7 @@ import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import {
   useProductFiscalList,
+  useProductFiscalListByIds,
   useProductFiscalReadiness,
   useProductFiscalProfile,
   useSaveProductFiscalProfile,
