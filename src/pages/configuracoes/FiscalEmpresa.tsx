@@ -669,10 +669,10 @@ export default function FiscalEmpresa() {
                   <Switch checked={nfse.enabled_for_preparation === true} onCheckedChange={(v) => setNfse("enabled_for_preparation", v)} />
                 </div>
                 <FieldRow id="nfse_environment" label="Ambiente NFS-e">
-                  <SelectNative id="nfse_environment" value={(nfse.environment as string) ?? "NOT_CONFIGURED"} options={ALLOWED_ENVIRONMENTS} onChange={(v) => setNfse("environment", v)} />
+                  <SelectNative id="nfse_environment" value={(nfse.environment as string) ?? "NOT_CONFIGURED"} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => setNfse("environment", v)} />
                 </FieldRow>
                 <FieldRow id="nfse_mode" label="Modo">
-                  <SelectNative id="nfse_mode" value={(nfse.mode as string) ?? "MUNICIPAL"} options={NFSE_MODES} onChange={(v) => setNfse("mode", v)} />
+                  <SelectNative id="nfse_mode" value={(nfse.mode as string) ?? "MUNICIPAL"} options={NFSE_MODE.toOptions(NFSE_MODES)} onChange={(v) => setNfse("mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfse_series" label="Série NFS-e"><Input id="nfse_series" value={values.nfse_series ?? ""} onChange={(e) => set("nfse_series", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_rps_series" label="Série RPS"><Input id="nfse_rps_series" value={(nfse.rps_series as string) ?? ""} onChange={(e) => setNfse("rps_series", e.target.value)} /></FieldRow>
