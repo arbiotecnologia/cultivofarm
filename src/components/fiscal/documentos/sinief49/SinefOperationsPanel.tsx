@@ -111,6 +111,70 @@ export default function SinefOperationsPanel({
     [state, issuerCnpj],
   );
 
+  // Ids selecionados (nunca expostos ao usuário) para consulta em lote
+  // dos perfis fiscais próprios de produtos e microrganismos.
+  const productIds = useMemo(
+    () =>
+      state.items
+        .filter((it) => it.sourceKind === "PRODUCT" && it.sourceId.trim().length > 0)
+        .map((it) => it.sourceId),
+    [state.items],
+  );
+  const microorganismIds = useMemo(
+    () =>
+      state.items
+        .filter((it) => it.sourceKind === "MICROORGANISM" && it.sourceId.trim().length > 0)
+        .map((it) => it.sourceId),
+    [state.items],
+  );
+  const productProfilesQuery = useProductFiscalListByIds(productIds, {
+    enabled: productIds.length > 0,
+  });
+  const microorganismProfilesQuery = useMicroorganismFiscalProfileList(
+    microorganismIds,
+    { enabled: microorganismIds.length > 0 },
+  );
+
+  const itemResolutions: ProfileResolution[] = useMemo(() => {
+    return state.items.map((it): ProfileResolution => {
+      const id = it.sourceId.trim();
+      if (!id) return { status: "missing" };
+      if (it.sourceKind === "PRODUCT") {
+        if (productProfilesQuery.isLoading) return { status: "loading" };
+        if (productProfilesQuery.isError) return { status: "unknown" };
+        const row = (productProfilesQuery.data ?? []).find((r) => r.product_id === id);
+        if (!row || !row.profile_id) return { status: "missing" };
+        const label = row.profile_status ?? "PENDING";
+        if (label.toUpperCase() === "ACTIVE" || label.toUpperCase() === "READY")
+          return { status: "configured", label };
+        return { status: "incomplete", label };
+      }
+      // MICROORGANISM
+      if (microorganismProfilesQuery.isLoading) return { status: "loading" };
+      if (microorganismProfilesQuery.isError) return { status: "unknown" };
+      const row = (microorganismProfilesQuery.data ?? []).find(
+        (r) => r.microorganism_id === id,
+      );
+      if (!row) return { status: "missing" };
+      const label = row.profile_status ?? "PENDING";
+      if (label.toUpperCase() === "ACTIVE" || label.toUpperCase() === "READY")
+        return { status: "configured", label };
+      return { status: "incomplete", label };
+    });
+  }, [
+    state.items,
+    productProfilesQuery.isLoading,
+    productProfilesQuery.isError,
+    productProfilesQuery.data,
+    microorganismProfilesQuery.isLoading,
+    microorganismProfilesQuery.isError,
+    microorganismProfilesQuery.data,
+  ]);
+
+  const profilesBlockPreview = itemResolutions.some(
+    (r) => r.status === "missing" || r.status === "incomplete" || r.status === "unknown" || r.status === "loading",
+  );
+
   if (!allowed) return null;
 
   function patch(next: Partial<SinefFormState>) {
