@@ -117,8 +117,9 @@ beforeEach(() => {
 describe("Fase 3.2 · hooks lite propagam erro em vez de vazio", () => {
   it("useFiscalMicrorganismosLite não retorna [] em caso de erro", async () => {
     const { readFileSync } = await import("node:fs");
+    const path = await import("node:path");
     const src = readFileSync(
-      new URL("../../../hooks/useFiscalMicrorganismosLite.ts", import.meta.url),
+      path.resolve(process.cwd(), "src/hooks/useFiscalMicrorganismosLite.ts"),
       "utf8",
     );
     expect(src).not.toMatch(/if\s*\(\s*error\s*\)\s*return\s*\[\]/);
@@ -127,14 +128,16 @@ describe("Fase 3.2 · hooks lite propagam erro em vez de vazio", () => {
 
   it("useFiscalProdutosLite não retorna [] em caso de erro", async () => {
     const { readFileSync } = await import("node:fs");
+    const path = await import("node:path");
     const src = readFileSync(
-      new URL("../../../hooks/useFiscalProdutosLite.ts", import.meta.url),
+      path.resolve(process.cwd(), "src/hooks/useFiscalProdutosLite.ts"),
       "utf8",
     );
     expect(src).not.toMatch(/if\s*\(\s*error\s*\)\s*return\s*\[\]/);
     expect(src).toMatch(/throw new Error\("Falha ao consultar produtos/);
   });
 });
+
 
 
 // ── Gate 3: estados carregando / erro / vazio no picker ───────────────────
