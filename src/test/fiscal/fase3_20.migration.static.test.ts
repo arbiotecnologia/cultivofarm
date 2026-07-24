@@ -1,12 +1,15 @@
 /**
  * Fase Fiscal 3.20 — Auditoria estática da migration aditiva
- * `restoration/20260804000000_fiscal_microrganismos_product_association.sql`.
+ * `supabase/migrations/20260804000000_fiscal_microrganismos_product_association.sql`.
  *
  * Garante que a migration:
+ *   - Vive EXCLUSIVAMENTE em `supabase/migrations/` (fonte canônica).
+ *   - `restoration/` não contém cópia executável, apenas stub documental.
  *   - Adiciona a coluna `product_id uuid` em `public.microrganismos`.
  *   - Cria FK para `public.produtos(id)` com ON DELETE RESTRICT.
- *   - Cria índice de busca + partial UNIQUE parcial em `product_id`.
- *   - NÃO faz backfill (nenhum UPDATE público).
+ *   - Cria índice de busca em `product_id` (NÃO único).
+ *   - NÃO cria UNIQUE em `product_id` (cardinalidade N:1 permitida).
+ *   - NÃO faz backfill (nenhum UPDATE em microrganismos).
  *   - NÃO faz DELETE em nenhuma tabela.
  *   - NÃO cria/alterna policies ou GRANTs (reutiliza os existentes).
  */
@@ -14,23 +17,34 @@ import { describe, expect, it } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
-const CANDIDATES = [
-  "supabase/migrations/20260804000000_fiscal_microrganismos_product_association.sql",
-  "restoration/20260804000000_fiscal_microrganismos_product_association.sql",
-];
+const CANONICAL_PATH =
+  "supabase/migrations/20260804000000_fiscal_microrganismos_product_association.sql";
+const RESTORATION_PATH =
+  "restoration/20260804000000_fiscal_microrganismos_product_association.sql";
 
-function loadMigration(): string {
-  for (const p of CANDIDATES) {
-    const abs = join(process.cwd(), p);
-    if (existsSync(abs)) return readFileSync(abs, "utf8");
-  }
-  throw new Error(
-    "Migration 20260804000000 não encontrada em supabase/migrations/ nem em restoration/.",
-  );
+function read(rel: string): string {
+  return readFileSync(join(process.cwd(), rel), "utf8");
 }
 
 describe("Fase 3.20 — migration microrganismos.product_id (estática)", () => {
-  const sql = loadMigration();
+  it("existe EXCLUSIVAMENTE em supabase/migrations/", () => {
+    expect(existsSync(join(process.cwd(), CANONICAL_PATH))).toBe(true);
+  });
+
+  it("restoration/ não contém cópia executável, apenas stub", () => {
+    if (!existsSync(join(process.cwd(), RESTORATION_PATH))) return;
+    const stub = read(RESTORATION_PATH);
+    // Nenhum comando DDL/DML executável.
+    expect(stub).not.toMatch(/\bBEGIN\b/i);
+    expect(stub).not.toMatch(/\bCOMMIT\b/i);
+    expect(stub).not.toMatch(/\bALTER\s+TABLE\b/i);
+    expect(stub).not.toMatch(/\bCREATE\s+(UNIQUE\s+)?INDEX\b/i);
+    expect(stub).not.toMatch(/\bCREATE\s+POLICY\b/i);
+    // Deve apontar para a migration canônica.
+    expect(stub).toMatch(/supabase\/migrations\//);
+  });
+
+  const sql = read(CANONICAL_PATH);
 
   it("adiciona coluna product_id uuid nullable, sem NOT NULL", () => {
     expect(sql).toMatch(/ALTER TABLE public\.microrganismos\s+ADD COLUMN IF NOT EXISTS product_id uuid NULL/i);
@@ -43,17 +57,23 @@ describe("Fase 3.20 — migration microrganismos.product_id (estática)", () => 
     expect(sql).toMatch(/ON DELETE RESTRICT/i);
   });
 
-  it("cria índice de busca e unicidade parcial (NULL permitido)", () => {
+  it("cria índice parcial (NÃO único) de busca por product_id", () => {
     expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS microrganismos_product_id_idx/i);
-    expect(sql).toMatch(/CREATE UNIQUE INDEX IF NOT EXISTS microrganismos_product_id_unique/i);
-    // Ambos os índices devem ter WHERE product_id IS NOT NULL.
-    const unique = sql.match(/CREATE UNIQUE INDEX[\s\S]+?product_id_unique[\s\S]+?;/i)?.[0] ?? "";
-    expect(unique).toMatch(/WHERE product_id IS NOT NULL/i);
+    const idx = sql.match(/CREATE INDEX[\s\S]+?product_id_idx[\s\S]+?;/i)?.[0] ?? "";
+    expect(idx).toMatch(/WHERE product_id IS NOT NULL/i);
+  });
+
+  it("NÃO cria UNIQUE em product_id (cardinalidade N:1 permitida)", () => {
+    const stripped = sql
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n");
+    expect(stripped).not.toMatch(/CREATE\s+UNIQUE\s+INDEX/i);
+    expect(stripped).not.toMatch(/microrganismos_product_id_unique/i);
+    expect(stripped).not.toMatch(/UNIQUE\s*\(\s*product_id\s*\)/i);
   });
 
   it("NÃO faz backfill (nenhum UPDATE em microrganismos)", () => {
-    // A migration pode conter linhas de comentário mencionando UPDATE em
-    // exemplos, mas nenhuma instrução ativa deve alterar dados.
     const stripped = sql
       .split("\n")
       .filter((line) => !line.trim().startsWith("--"))
