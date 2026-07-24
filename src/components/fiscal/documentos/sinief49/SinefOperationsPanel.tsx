@@ -146,7 +146,7 @@ export default function SinefOperationsPanel({
           Prévia de rascunho — não transmite documento fiscal. Nenhum campo
           desta seção é salvo enquanto a modelagem SINIEF não estiver aplicada.
           <span className="block text-xs text-muted-foreground mt-1">
-            Base legal: {SINIEF_LEGAL_BASIS} · vigência {SINIEF_LEGAL_EFFECTIVE_DATE}.
+            Base legal: {SINIEF_LEGAL_BASIS} · vigência {SINIEF_LEGAL_EFFECTIVE_DATE_PT_BR}.
           </span>
         </AlertDescription>
       </Alert>
