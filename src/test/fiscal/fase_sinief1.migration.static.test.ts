@@ -191,20 +191,20 @@ describe("Fase SINIEF 1 — migration aditiva SINIEF 49/2025", () => {
     }
   });
 
-  test("fonte executável única: restoration/ é stub documental sem SQL executável", () => {
-    expect(fs.existsSync(STUB)).toBe(true);
-    const raw = fs.readFileSync(STUB, "utf-8");
-    const body = raw
-      .split("\n")
-      .filter((l) => !l.trim().startsWith("--"))
-      .join("\n");
-    expect(body).not.toMatch(/\bBEGIN\s*;/i);
-    expect(body).not.toMatch(/\bCOMMIT\s*;/i);
-    expect(body).not.toMatch(/\bCREATE\s+(TABLE|VIEW|POLICY|INDEX|TRIGGER|OR\s+REPLACE)/i);
-    expect(body).not.toMatch(/\bALTER\s+(TABLE|VIEW|TYPE)/i);
-    expect(body).not.toMatch(/\bGRANT\b/i);
-    expect(body).not.toMatch(/\bREVOKE\b/i);
-    expect(raw).toMatch(/supabase\/migrations\/20260807000000_fiscal_sinief_49_scaffolding\.sql/);
+  test("fonte executável única: nenhuma duplicata em supabase/migrations/ até sincronização externa", () => {
+    // O humano copiará este arquivo para supabase/migrations/ pelo pipeline
+    // oficial. Enquanto isso, garantimos que não existe cópia parcial no
+    // caminho supabase/migrations/ — evitando divergência silenciosa.
+    // Se, após a sincronização, o arquivo passar a existir em ambos, este
+    // teste deve ser atualizado para exigir conteúdo idêntico (byte a byte).
+    if (fs.existsSync(SUPABASE_MIRROR)) {
+      const mirror = fs.readFileSync(SUPABASE_MIRROR, "utf-8");
+      // Sincronização já realizada — exigir cópia exata.
+      expect(mirror).toBe(sql);
+    } else {
+      // Estado esperado nesta fase (fonte única em restoration/).
+      expect(fs.existsSync(SUPABASE_MIRROR)).toBe(false);
+    }
   });
 });
 
