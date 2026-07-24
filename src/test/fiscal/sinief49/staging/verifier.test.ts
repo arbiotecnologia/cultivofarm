@@ -80,13 +80,13 @@ describe("verify-fiscal-types-sinief49", () => {
     expect(classifyVerdict(fake, misses)).toBe("PASS");
   });
 
-  test("classifica FAIL quando alguma tabela está incompleta (parcial)", () => {
+  test("classifica FAIL quando alguma coluna diverge (nullability)", () => {
+    // Torna referenced_invoice_id NOT NULL indevidamente.
     const broken = buildFakeTypes().replace(
-      /fiscal_invoice_item_id: string/,
-      "fiscal_invoice_item_id?: string",
+      /referenced_invoice_id: string \| null/,
+      "referenced_invoice_id: string",
     );
     const misses = verifySinief49Types(broken);
-    // Detecta divergência de nullability.
     expect(misses.some((m) => m.kind === "nullable")).toBe(true);
     expect(classifyVerdict(broken, misses)).toBe("FAIL");
   });
