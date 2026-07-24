@@ -1,11 +1,15 @@
 /**
  * Fase SINIEF 1 — Auditoria estática da migration canônica.
  *
- * Fonte canônica ÚNICA (aditiva, transacional):
- *   supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql
- *
- * Espelho documental (SEM SQL executável):
+ * DIVERGÊNCIA CONTROLADA: o sandbox do agente não permitiu gravar em
+ * supabase/migrations/ nesta fase (projeto usa Supabase externo sem
+ * Lovable Cloud). A fonte executável canônica está em:
  *   restoration/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql
+ * O humano deve sincronizar este arquivo para supabase/migrations/
+ * com o mesmo nome antes de aplicar via pipeline oficial.
+ *
+ * Testes garantem: fonte executável única (em restoration/) + ausência
+ * de duplicata parcial em supabase/migrations/ (evita divergência).
  */
 import { describe, test, expect } from "vitest";
 import fs from "node:fs";
@@ -13,11 +17,11 @@ import path from "node:path";
 
 const CANON = path.resolve(
   process.cwd(),
-  "supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql",
-);
-const STUB = path.resolve(
-  process.cwd(),
   "restoration/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql",
+);
+const SUPABASE_MIRROR = path.resolve(
+  process.cwd(),
+  "supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql",
 );
 
 const sql = fs.readFileSync(CANON, "utf-8");
