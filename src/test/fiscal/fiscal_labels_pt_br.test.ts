@@ -96,6 +96,20 @@ describe("Reconciliação — filtros de tipo NFE/NFSE/OTHER", () => {
   });
 });
 
+describe("Reconciliação — todos os RECONCILIATION_STATUS_VALUES têm rótulo amigável", () => {
+  it("nenhum item devolve fallback ou código cru", async () => {
+    const { RECONCILIATION_STATUS_VALUES } = await import(
+      "@/lib/fiscal/documentWorkflowValidation"
+    );
+    for (const v of RECONCILIATION_STATUS_VALUES) {
+      const label = RECONCILIATION_STATUS.label(v);
+      expect(label, `valor ${v}`).not.toMatch(/^Não mapeado/);
+      expect(label, `valor ${v}`).not.toBe(v);
+      expect(label.length).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe("fiscal labels — fallback legado", () => {
   it('valores desconhecidos viram "Não mapeado (VALOR)" e nunca o código puro', () => {
     expect(FISCAL_ENVIRONMENT.label("LEGADO_X")).toBe("Não mapeado (LEGADO_X)");
