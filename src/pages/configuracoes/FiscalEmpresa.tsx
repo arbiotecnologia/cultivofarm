@@ -613,7 +613,7 @@ export default function FiscalEmpresa() {
                   <Input id="nfe_default_nature" placeholder="Ex.: Venda de mercadoria adquirida de terceiros" value={(nfe.default_nature as string) ?? ""} onChange={(e) => setNfe("default_nature", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_finality" label="Finalidade padrão">
-                  <SelectNative id="nfe_default_finality" value={(nfe.default_finality as string) ?? "NORMAL"} options={NFE_FINALIDADES} onChange={(v) => setNfe("default_finality", v)} />
+                  <SelectNative id="nfe_default_finality" value={(nfe.default_finality as string) ?? "NORMAL"} options={NFE_FINALITY.toOptions(NFE_FINALIDADES)} onChange={(v) => setNfe("default_finality", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_presence_indicator" label="Indicador de presença" description="Código conforme NT2011.004.">
                   <SelectNative id="nfe_presence_indicator" value={(nfe.presence_indicator as string) ?? ""} options={PRESENCE_OPTIONS} onChange={(v) => setNfe("presence_indicator", v)} />
