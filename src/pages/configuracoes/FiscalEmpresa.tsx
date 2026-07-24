@@ -38,6 +38,15 @@ import {
   PRESENCE_OPTIONS, FREIGHT_MODALITY_OPTIONS, RPS_TYPE_OPTIONS,
   NFSE_SPECIAL_REGIME_OPTIONS,
 } from "@/lib/fiscal/fiscalOptions";
+import {
+  FISCAL_ENVIRONMENT,
+  FISCAL_CONFIGURATION_STATUS,
+  NFE_FINALITY,
+  NFE_NUMBERING_MODE,
+  NFE_DANFE_LAYOUT,
+  NFE_CONTINGENCY,
+  NFSE_MODE,
+} from "@/lib/fiscal/labels";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -570,10 +579,10 @@ export default function FiscalEmpresa() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FieldRow id="fiscal_environment" label="Ambiente">
-                  <SelectNative id="fiscal_environment" value={values.fiscal_environment} options={ALLOWED_ENVIRONMENTS} onChange={(v) => set("fiscal_environment", v as (typeof ALLOWED_ENVIRONMENTS)[number])} />
+                  <SelectNative id="fiscal_environment" value={values.fiscal_environment} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => set("fiscal_environment", v as (typeof ALLOWED_ENVIRONMENTS)[number])} />
                 </FieldRow>
                 <FieldRow id="configuration_status" label="Status de configuração">
-                  <SelectNative id="configuration_status" value={values.configuration_status} options={ALLOWED_STATUSES} onChange={(v) => set("configuration_status", v as (typeof ALLOWED_STATUSES)[number])} />
+                  <SelectNative id="configuration_status" value={values.configuration_status} options={FISCAL_CONFIGURATION_STATUS.toOptions(ALLOWED_STATUSES)} onChange={(v) => set("configuration_status", v as (typeof ALLOWED_STATUSES)[number])} />
                 </FieldRow>
               </CardContent>
             </Card>
@@ -594,17 +603,17 @@ export default function FiscalEmpresa() {
                   <Switch checked={nfe.enabled_for_preparation === true} onCheckedChange={(v) => setNfe("enabled_for_preparation", v)} />
                 </div>
                 <FieldRow id="nfe_environment" label="Ambiente NF-e">
-                  <SelectNative id="nfe_environment" value={(nfe.environment as string) ?? "NOT_CONFIGURED"} options={ALLOWED_ENVIRONMENTS} onChange={(v) => setNfe("environment", v)} />
+                  <SelectNative id="nfe_environment" value={(nfe.environment as string) ?? "NOT_CONFIGURED"} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => setNfe("environment", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_series" label="Série NF-e"><Input id="nfe_series" value={values.nfe_series ?? ""} onChange={(e) => set("nfe_series", e.target.value)} /></FieldRow>
                 <FieldRow id="nfe_numbering_mode" label="Modo de numeração">
-                  <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODES} onChange={(v) => setNfe("numbering_mode", v)} />
+                  <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODE.toOptions(NFE_NUMBERING_MODES)} onChange={(v) => setNfe("numbering_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_nature" label="Natureza padrão da operação">
                   <Input id="nfe_default_nature" placeholder="Ex.: Venda de mercadoria adquirida de terceiros" value={(nfe.default_nature as string) ?? ""} onChange={(e) => setNfe("default_nature", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_finality" label="Finalidade padrão">
-                  <SelectNative id="nfe_default_finality" value={(nfe.default_finality as string) ?? "NORMAL"} options={NFE_FINALIDADES} onChange={(v) => setNfe("default_finality", v)} />
+                  <SelectNative id="nfe_default_finality" value={(nfe.default_finality as string) ?? "NORMAL"} options={NFE_FINALITY.toOptions(NFE_FINALIDADES)} onChange={(v) => setNfe("default_finality", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_presence_indicator" label="Indicador de presença" description="Código conforme NT2011.004.">
                   <SelectNative id="nfe_presence_indicator" value={(nfe.presence_indicator as string) ?? ""} options={PRESENCE_OPTIONS} onChange={(v) => setNfe("presence_indicator", v)} />
@@ -617,14 +626,14 @@ export default function FiscalEmpresa() {
                   <SelectNative id="nfe_freight_modality" value={(nfe.freight_modality as string) ?? ""} options={FREIGHT_MODALITY_OPTIONS} onChange={(v) => setNfe("freight_modality", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_danfe_layout" label="Layout DANFE">
-                  <SelectNative id="nfe_danfe_layout" value={(nfe.danfe_layout as string) ?? "PORTRAIT"} options={NFE_DANFE_LAYOUTS} onChange={(v) => setNfe("danfe_layout", v)} />
+                  <SelectNative id="nfe_danfe_layout" value={(nfe.danfe_layout as string) ?? "PORTRAIT"} options={NFE_DANFE_LAYOUT.toOptions(NFE_DANFE_LAYOUTS)} onChange={(v) => setNfe("danfe_layout", v)} />
                 </FieldRow>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <Label className="m-0">Enviar e-mail após autorização futura</Label>
                   <Switch checked={nfe.send_email_after_authorization === true} onCheckedChange={(v) => setNfe("send_email_after_authorization", v)} />
                 </div>
                 <FieldRow id="nfe_contingency_mode" label="Modo de contingência">
-                  <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCIA} onChange={(v) => setNfe("contingency_mode", v)} />
+                  <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCY.toOptions(NFE_CONTINGENCIA)} onChange={(v) => setNfe("contingency_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido" description="Ex.: 5102 — Venda de mercadoria adquirida.">
                   <Input id="nfe_cfop_in" inputMode="numeric" maxLength={4} placeholder="5102" value={(nfe.suggested_cfop_in_state as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_in_state", e.target.value)} />
@@ -660,10 +669,10 @@ export default function FiscalEmpresa() {
                   <Switch checked={nfse.enabled_for_preparation === true} onCheckedChange={(v) => setNfse("enabled_for_preparation", v)} />
                 </div>
                 <FieldRow id="nfse_environment" label="Ambiente NFS-e">
-                  <SelectNative id="nfse_environment" value={(nfse.environment as string) ?? "NOT_CONFIGURED"} options={ALLOWED_ENVIRONMENTS} onChange={(v) => setNfse("environment", v)} />
+                  <SelectNative id="nfse_environment" value={(nfse.environment as string) ?? "NOT_CONFIGURED"} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => setNfse("environment", v)} />
                 </FieldRow>
                 <FieldRow id="nfse_mode" label="Modo">
-                  <SelectNative id="nfse_mode" value={(nfse.mode as string) ?? "MUNICIPAL"} options={NFSE_MODES} onChange={(v) => setNfse("mode", v)} />
+                  <SelectNative id="nfse_mode" value={(nfse.mode as string) ?? "MUNICIPAL"} options={NFSE_MODE.toOptions(NFSE_MODES)} onChange={(v) => setNfse("mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfse_series" label="Série NFS-e"><Input id="nfse_series" value={values.nfse_series ?? ""} onChange={(e) => set("nfse_series", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_rps_series" label="Série RPS"><Input id="nfse_rps_series" value={(nfse.rps_series as string) ?? ""} onChange={(e) => setNfse("rps_series", e.target.value)} /></FieldRow>
