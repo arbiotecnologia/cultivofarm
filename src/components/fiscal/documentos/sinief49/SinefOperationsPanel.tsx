@@ -688,16 +688,34 @@ export default function SinefOperationsPanel({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div className="md:col-span-2">
-                    <Label>Id do {it.sourceKind === "PRODUCT" ? "produto" : "microrganismo"}</Label>
-                    <Input
-                      value={it.sourceId}
-                      onChange={(e) => patchItem(idx, { sourceId: e.target.value })}
-                      placeholder={
-                        it.sourceKind === "MICROORGANISM"
-                          ? "Microrganismo é faturável direto — não exige product_id"
-                          : ""
-                      }
-                    />
+                    {it.sourceKind === "PRODUCT" ? (
+                      <ProdutoPicker
+                        selectedName={it.description}
+                        selectedId={it.sourceId}
+                        disabled={readonly}
+                        onPick={(p) =>
+                          patchItem(idx, {
+                            sourceId: p.id,
+                            description: p.nome,
+                          })
+                        }
+                        onClear={() => patchItem(idx, { sourceId: "", description: "" })}
+                      />
+                    ) : (
+                      <MicrorganismoPicker
+                        selectedName={it.description}
+                        selectedId={it.sourceId}
+                        disabled={readonly}
+                        onPick={(m) =>
+                          patchItem(idx, {
+                            sourceId: m.id,
+                            description: m.nome,
+                          })
+                        }
+                        onClear={() => patchItem(idx, { sourceId: "", description: "" })}
+                      />
+                    )}
+                    <ItemProfileStatusLine resolution={itemResolutions[idx]} />
                   </div>
                   <div className="flex items-end">
                     <Button
