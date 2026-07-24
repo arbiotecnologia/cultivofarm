@@ -13,8 +13,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { UserRole } from "@/lib/permissions";
-import { canTransmit } from "@/lib/fiscal/featureFlags";
+import type { AppRole } from "@/lib/permissions";
+type UserRole = AppRole;
 
 // ── Mocks de hooks externos ───────────────────────────────────────────────
 let currentRole: UserRole | null = "administrador";
