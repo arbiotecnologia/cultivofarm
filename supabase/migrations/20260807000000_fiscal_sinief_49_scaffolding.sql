@@ -3,19 +3,12 @@
 -- consolidado pelos Ajustes SINIEF 8/2026, 15/2026 e 20/2026.
 -- Vigência normativa: 03/08/2026.
 --
--- FONTE EXECUTÁVEL CANÔNICA (esta fase).
+-- FONTE EXECUTÁVEL CANÔNICA ÚNICA:
+--   supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql
 --
--- IMPORTANTE — DIVERGÊNCIA CONTROLADA DA CONVENÇÃO:
---   Nas fases anteriores, o SQL executável canônico residia em
---   supabase/migrations/. Nesta fase, o sandbox do agente NÃO
---   permitiu gravar arquivos novos em supabase/migrations/, e o
---   projeto usa Supabase externo (Lovable Cloud desabilitado), sem
---   ferramenta de migration disponível ao agente. Por isso a fonte
---   executável foi mantida aqui em restoration/migrations/. O
---   humano deve sincronizar este arquivo para
---     supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql
---   e aplicá-lo pelo pipeline oficial, restaurando a convenção
---   anterior a partir da próxima fase.
+-- O arquivo homônimo em restoration/migrations/ é apenas marcador
+-- documental (sem SQL executável) para rastreabilidade da fase; NÃO
+-- deve ser aplicado nem duplicar SQL.
 --
 -- Escopo:
 --   • fiscal_invoices: campos aditivos (direction, fiscal_operation_type,
@@ -30,7 +23,8 @@
 --     de perda de estoque; FK confirmada para public.lotes; sem FK
 --     inventada para movimentação.
 --   • fiscal_events.event_type — CHECK reescrito preservando todos os
---     valores atuais e acrescentando os cenários SINIEF.
+--     13 valores originais (Fase 2 fundação) e acrescentando os 7
+--     cenários SINIEF 49/2025 de forma aditiva.
 --
 -- NÃO faz: emissão, XML, provedor, transmissão, backfill de dados,
 -- edição de migrations existentes, alteração de RLS existente.
