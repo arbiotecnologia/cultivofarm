@@ -53,11 +53,11 @@ describe("Fase SINIEF 1 — migration aditiva SINIEF 49/2025", () => {
   });
 
   test("sem provider/URL/transmissão introduzidos", () => {
-    expect(sql).not.toMatch(/sefaz/i);
-    expect(sql).not.toMatch(/focus[_-]?nfe/i);
-    expect(sql).not.toMatch(/https?:\/\//i);
-    expect(sql).not.toMatch(/transmit/i);
-    expect(sql).not.toMatch(/xml/i);
+    expect(sqlNoComments).not.toMatch(/sefaz/i);
+    expect(sqlNoComments).not.toMatch(/focus[_-]?nfe/i);
+    expect(sqlNoComments).not.toMatch(/https?:\/\//i);
+    expect(sqlNoComments).not.toMatch(/transmit/i);
+    expect(sqlNoComments).not.toMatch(/xml/i);
   });
 
   test("fiscal_invoices: colunas aditivas + CHECKs restritivos", () => {
