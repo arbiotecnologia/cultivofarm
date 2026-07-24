@@ -1,0 +1,18 @@
+-- =====================================================================
+-- STUB DOCUMENTAL — NÃO EXECUTÁVEL
+--
+-- Fase SINIEF 1 — Modelagem canônica aditiva do Ajuste SINIEF 49/2025
+-- (consolidado pelos Ajustes SINIEF 8/2026, 15/2026 e 20/2026).
+--
+-- Fonte executável única (canônica):
+--   supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql
+--
+-- Este arquivo em restoration/migrations/ existe apenas como marcador
+-- histórico para rastreabilidade da fase. Todo o SQL executável
+-- (BEGIN/CREATE/ALTER/GRANT/REVOKE/COMMIT) foi intencionalmente
+-- removido para garantir uma única fonte executável no repositório e
+-- eliminar risco de divergência ou dupla aplicação.
+--
+-- Para inspecionar/aplicar a migration, consulte exclusivamente o
+-- caminho canônico acima. Não reintroduzir SQL executável aqui.
+-- =====================================================================
