@@ -98,71 +98,8 @@ export function ProdutosTab() {
   const isAdmin = roles.includes("administrador");
   const [reloadOpen, setReloadOpen] = useState(false);
   const [reloading, setReloading] = useState(false);
-  const [auditing, setAuditing] = useState(false);
-  const [cleanupOpen, setCleanupOpen] = useState(false);
-  const [cleanupLoading, setCleanupLoading] = useState(false);
-  const [cleanupExecuting, setCleanupExecuting] = useState(false);
-  const [cleanupPlan, setCleanupPlan] = useState<OrphanCleanupPlan | null>(null);
 
-  const handleAuditarOrfaos = async () => {
-    setAuditing(true);
-    try {
-      const data = await auditProdutosOrfaos();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `produtos-orfaos-audit-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      const resumo = data.resumo;
-      toast.success(
-        `Auditoria concluída: ${resumo.tabelas_com_orfaos ?? 0} tabelas com órfãos, ${resumo.distinct_ids_orfaos_global ?? 0} IDs órfãos distintos.`,
-        {
-          description: resumo.mode === "client-fallback" ? "Executada pelo cliente autenticado porque a Edge Function ainda não está disponível no projeto." : undefined,
-        },
-      );
-    } catch (e) {
-      toast.error(`Falha na auditoria: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setAuditing(false);
-    }
-  };
 
-  const handleAbrirLimpezaOrfaos = async () => {
-    setCleanupOpen(true);
-    setCleanupPlan(null);
-    setCleanupLoading(true);
-    try {
-      const plan = await previewOrphanCleanup();
-      setCleanupPlan(plan);
-    } catch (e) {
-      toast.error(`Falha no dry-run: ${e instanceof Error ? e.message : String(e)}`);
-      setCleanupOpen(false);
-    } finally {
-      setCleanupLoading(false);
-    }
-  };
-
-  const handleConfirmarLimpezaOrfaos = async () => {
-    setCleanupExecuting(true);
-    try {
-      const result = await executeOrphanCleanup();
-      if (!result.ok) {
-        toast.error(`Limpeza interrompida em ${result.failedAt?.tabela}.${result.failedAt?.coluna}`, {
-          description: result.failedAt?.detail,
-        });
-        return;
-      }
-      toast.success(`Órfãos removidos: ${result.totalDeleted} linhas apagadas, ${result.totalNullified} nulificadas.`);
-      setCleanupOpen(false);
-      setCleanupPlan(null);
-    } catch (e) {
-      toast.error(`Erro na limpeza: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setCleanupExecuting(false);
-    }
-  };
 
   const [catalogoAplicado, setCatalogoAplicado] = useState(false);
 
