@@ -582,7 +582,7 @@ export default function FiscalEmpresa() {
                   <SelectNative id="fiscal_environment" value={values.fiscal_environment} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => set("fiscal_environment", v as (typeof ALLOWED_ENVIRONMENTS)[number])} />
                 </FieldRow>
                 <FieldRow id="configuration_status" label="Status de configuração">
-                  <SelectNative id="configuration_status" value={values.configuration_status} options={ALLOWED_STATUSES} onChange={(v) => set("configuration_status", v as (typeof ALLOWED_STATUSES)[number])} />
+                  <SelectNative id="configuration_status" value={values.configuration_status} options={FISCAL_CONFIGURATION_STATUS.toOptions(ALLOWED_STATUSES)} onChange={(v) => set("configuration_status", v as (typeof ALLOWED_STATUSES)[number])} />
                 </FieldRow>
               </CardContent>
             </Card>
