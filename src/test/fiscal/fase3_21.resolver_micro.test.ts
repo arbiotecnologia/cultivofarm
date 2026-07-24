@@ -52,7 +52,7 @@ describe("resolveFiscalItemFromMicroorganism — puro", () => {
   test("falha quando perfil ausente — NÃO consulta produto como fallback", async () => {
     const res = await resolveFiscalItemFromMicroorganism("micro-x", async () => null);
     expect(res.ok).toBe(false);
-    if (res.ok) return;
+    if (res.ok) throw new Error("expected failure");
     expect(res.code).toBe("microorganism_profile_missing");
   });
 
@@ -61,7 +61,7 @@ describe("resolveFiscalItemFromMicroorganism — puro", () => {
       ...baseProfile(), is_active: false,
     }));
     expect(res.ok).toBe(false);
-    if (res.ok) return;
+    if (res.ok) throw new Error("expected failure");
     expect(res.code).toBe("microorganism_profile_inactive");
   });
 
