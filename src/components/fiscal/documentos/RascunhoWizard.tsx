@@ -37,9 +37,12 @@ import { useFiscalProdutosLite, type FiscalProdutoLite } from "@/hooks/useFiscal
 import { useFiscalServicosLite, type FiscalServicoLite } from "@/hooks/useFiscalServicosLite";
 import { useDebounce } from "@/hooks/useDebounce";
 import SinefOperationsPanel from "@/components/fiscal/documentos/sinief49/SinefOperationsPanel";
+import { useAuth } from "@/hooks/useAuth";
+import { canUseSinief49Operations } from "@/lib/fiscal/sinief49/permissions";
 
-const STEPS = ["documento", "destinatario", "itens", "tributos", "sinief49", "revisao"] as const;
-type Step = (typeof STEPS)[number];
+const LEGACY_STEPS = ["documento", "destinatario", "itens", "tributos", "revisao"] as const;
+const SINIEF_STEPS = ["documento", "destinatario", "itens", "tributos", "sinief49", "revisao"] as const;
+type Step = (typeof SINIEF_STEPS)[number];
 
 const STEP_LABELS: Record<Step, string> = {
   documento: "Documento",
