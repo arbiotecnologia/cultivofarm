@@ -1,133 +1,148 @@
-# Perfil fiscal autônomo de microrganismos
+# Fase 0 — Matriz Regulatória e Auditoria de Impacto (Ajuste SINIEF 49/2025 + 8/2026, 15/2026, 20/2026)
 
-Faturamento fiscal direto de microrganismos, sem exigir produto canônico. O vínculo `microrganismos.product_id` permanece opcional (composição/comercial), nunca requisito fiscal. Emissão continua desativada.
+Auditoria somente leitura. Nada foi editado, migrado ou aplicado. Emissão permanece bloqueada.
 
-## 1. Modelo de dados (migration canônica + stub)
+## J. Estado real de emissão (verificado)
 
-**Arquivo executável**: `supabase/migrations/20260806000000_fiscal_microorganism_profiles.sql`
-**Stub documental**: `restoration/migrations/20260806000000_fiscal_microorganism_profiles.sql` (sem SQL executável, apontando para o canônico).
+- `src/config/featureFlags.ts` → `fiscalEmissionEnabled: false` (TRAVA ativa).
+- `supabase/functions/fiscal-preflight/index.ts` → resposta hardcoded `canTransmit: false as const`, `provider: "NONE" as const`, `production: false as const`; sem `service_role`; sem writes.
+- `supabase/functions/_shared/fiscal/preflight.ts` → literal-type impede promoção mesmo com todos os gates `true`.
+- `company_fiscal_settings.fiscal_provider` CHECK inclui `NONE|NOT_CONFIGURED|FOCUS_NFE|SEFAZ_DIRETO|NFSE_NACIONAL|MUNICIPAL`; `LOCKED_PROVIDER="NONE"` em `companyFiscalValidation.ts`.
+- Nenhuma Edge Function referencia SEFAZ/provedor; Edge Functions existentes: `fiscal-preflight`, `fiscal-cnpj-lookup`, `fiscal-certificate-upload`, `fiscal-certificate-revoke`.
+- Nenhum builder de XML NF-e/NFS-e no repositório.
 
-Tabela `public.microorganism_fiscal_profiles`, espelhando `product_fiscal_profiles` apenas nos campos realmente usados:
+## A. Inventário de superfícies afetadas
 
-- `id uuid PK default gen_random_uuid()`
-- `microorganism_id uuid NOT NULL REFERENCES public.microrganismos(id) ON DELETE RESTRICT`
-- `is_active boolean NOT NULL default true`
-- `fiscal_description text`
-- `commercial_unit text`, `taxable_unit text`
-- `ncm text`, `cest text`, `origin_code text`
-- `cfop_in_state text`, `cfop_interstate text`
-- `icms_cst text`, `icms_csosn text`, `ipi_cst text`, `pis_cst text`, `cofins_cst text`
-- `gtin text`, `taxable_gtin text`, `tax_benefit_code text`, `accounting_notes text`
-- `profile_status` (mesmo enum/domínio de `product_fiscal_profiles.profile_status`)
-- `created_at`, `updated_at`, `created_by`, `updated_by` (mesmo padrão + trigger de `updated_at` já existente reutilizado)
+**Tabelas fiscais (18 migrations, `20260721…20260806`):**
+`company_fiscal_settings`, `product_fiscal_profiles`, `service_fiscal_profiles`, `customer_fiscal_profiles`, `microorganism_fiscal_profiles`, `fiscal_invoices`, `fiscal_invoice_items`, `fiscal_events`, `fiscal_idempotency_keys`, `fiscal_audit_log`, `fiscal_certificates`, `fiscal_documents`, RTC 2026 (`20260727`), `microrganismos.product_id` (`20260804`), RPC `rpc_associate_microorganism_fiscal_product` (`20260805`).
 
-Índices e integridade:
-- Índice único parcial `UNIQUE (microorganism_id) WHERE is_active` — no máximo 1 perfil ativo por microrganismo.
-- Índices auxiliares em `microorganism_id`, `profile_status`.
+**Colunas de `fiscal_invoices` hoje:** `document_model` (`NFE|NFSE|OTHER`), `document_origin` (`MANUAL_RECORD|EXTERNAL_IMPORTED|SYSTEM_PREPARED|PROVIDER_INTEGRATED`), `normalized_status`, `environment`, `provider`, `reconciliation_status`, `access_key`, `series`, `invoice_number`, `receivable_id`, snapshots (`company_snapshot|customer_snapshot|fiscal_totals_snapshot`), `payload_schema_version`, idempotência. **Não há** `finNFe`, `tpNFDebito`, `tpNFCredito`, `natOp`, `nf_referenciadas`, `nfe_referenced_id`, nem estruturas para DFeReferenciado por item.
 
-Grants + RLS (mesma superfície do product_fiscal_profiles, não mais permissiva):
+**Itens (`fiscal_invoice_items`):** `source_item_type`, `source_item_id`, `item_kind ∈ {PRODUCT|SERVICE|OTHER}`, snapshots `fiscal_profile_snapshot`/`tax_snapshot`. **Não há** referência a NF-e original por item (necessário para recusa parcial e redução).
+
+**Eventos (`fiscal_events.event_type`):** conjunto atual não cobre `SINIEF_ANTICIPATION_ISSUED`, `SINIEF_EFFECTIVE_SHIPMENT`, `SINIEF_STOCK_LOSS`, `SINIEF_REDUCTION`, `SINIEF_RETURN_REFUSAL`.
+
+**Front (páginas/hooks/libs):** `pages/configuracoes/{FiscalEmpresa,FiscalProdutos,FiscalServicos,FiscalClientes}.tsx`, `pages/financeiro/NotasFiscais.tsx`, `components/fiscal/documentos/RascunhoWizard.tsx`, `components/financeiro/FiscalTab.tsx`, `components/financeiro/ConfirmarEntregaFinanceiroDialog.tsx`, hooks `useFiscalDocuments`, `useFiscalRascunho`, `useFiscalReconciliation`, `useFiscalReadiness`, `useFiscalHomologationReadiness`, libs `documentWorkflowValidation`, `rascunhoWizardValidation`, `rascunhoSnapshots`, `labels/index.ts`.
+
+**Domínios operacionais tocados pelo SINIEF (auditoria futura precisará mapear em detalhe):** contas a receber (`accounts_receivable` + espelhamento fiscal), pagamentos antecipados, pedidos/entregas (`ConfirmarEntregaFinanceiroDialog`, `fn_generate_receivable_from_entrega`), estoque/movimentações, produção/lotes/envase, portal do produtor (leitura de NFs por `customer_id`).
+
+## B. Matriz requisito legal × suporte × lacuna
+
+| # | Requisito SINIEF (03/08/2026) | Suporte hoje | Lacuna | Módulo | Risco | Solução proposta |
+|---|---|---|---|---|---|---|
+| 1 | **Antecipação** `finNFe=6`, `tpNFDebito=06`, CFOP 5.922/6.922, sem ICMS; saída efetiva `finNFe=1` + `refNFe` | Nenhum. Só `document_model` genérico | Campos `finalidade_nfe`, `tp_nf_debito`, `nat_op`, `referenced_invoice_id`, marcação "sem destaque ICMS" | fiscal_invoices, itens, financeiro (AR antecipado), builder XML futuro | Alto | Colunas aditivas nullable + tabela `fiscal_invoice_references` (N:1) + estados no workflow |
+| 2 | **Perda de estoque** `finNFe=6`, `tpNFDebito=07`, CFOP 5.927, destinatário próprio, justificativa em `infAdFisco` | Nenhum. Sem fluxo próprio | Campos idem + `justificativa_fisco text`, integração com módulo estoque (movimento de baixa) | Estoque, fiscal, auditoria | Alto | Rota `/estoque/baixa-fiscal` com criação de fiscal_invoice `PURPOSE=STOCK_LOSS`; snapshot do lote |
+| 3 | **Redução** NF-e entrada, `finNFe=5`, `tpNFCredito=04`, CFOP inverso, `refNFe` da original, mesmo destinatário, apenas valores/qtd deduzidos | Nenhum | Direção "entrada" ausente; `finNFe/tpNFCredito` ausentes; validação "apenas dedução vs original" ausente | Fiscal, financeiro (nota de crédito), pedidos | Alto | Coluna `direction ∈ {OUT,IN}` + `tp_nf_credito` + validador cruzado com NF-e original |
+| 4 | **Recusa** entrada, `finNFe=5`, `tpNFCredito ∈ {03 total, 06 parcial}`; total: `refNFe`; parcial: `DFeReferenciado` por item; itens não entregues em `prod` | Nenhum | Referência por item ausente; falta workflow parcial vs total; falta integração com entrega recusada | Entregas, fiscal, estoque (retorno) | Alto | Colunas em `fiscal_invoice_items` (`referenced_item_seq`, `referenced_access_key`, `not_delivered_reason`) |
+| 5 | ICMS na perda quando UF exigir (03/08/2026) | Sem cálculo de tributo | Sem motor tributário — projeto declara "não inventar tributação" | Fiscal, contábil | Bloqueante | Marcar como **BLOQUEADO até validação contábil**; expor apenas placeholder editável |
+| 6 | Estorno/escrituração por UF | Não existe | Sem SPED, sem escrituração | Contábil | Médio | Fora de escopo — registrar como dívida técnica |
+
+## C. Modelo de estados e vínculos
+
 ```
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.microorganism_fiscal_profiles TO authenticated;
-GRANT ALL ON public.microorganism_fiscal_profiles TO service_role;
-ALTER TABLE ... ENABLE ROW LEVEL SECURITY;
+NF-e ORIGINAL (finNFe=1, saída)
+   │
+   ├─► ANTECIPAÇÃO (finNFe=6, tpNFDebito=06, CFOP 5.922) — referenced_by SAÍDA_EFETIVA
+   │       └─► SAÍDA_EFETIVA (finNFe=1) refNFe→ANTECIPAÇÃO
+   │
+   ├─► REDUÇÃO (finNFe=5 entrada, tpNFCredito=04) refNFe→ORIGINAL
+   │       (apenas valores/qtd; destinatário = destinatário original)
+   │
+   └─► RECUSA (finNFe=5 entrada)
+           ├─ TOTAL/NÃO_LOCALIZAÇÃO (tpNFCredito=03) refNFe→ORIGINAL
+           └─ PARCIAL (tpNFCredito=06) DFeReferenciado por item
+
+PERDA_ESTOQUE (finNFe=6, tpNFDebito=07, CFOP 5.927) — autônoma, destinatário=própria empresa
 ```
-Policies:
-- SELECT: mesmos papéis que já leem `product_fiscal_profiles`.
-- INSERT/UPDATE/DELETE: apenas `administrador` e `financeiro` via `public.has_role(auth.uid(), ...)`.
 
-View segura `public.v_microorganism_fiscal_readiness`, dirigida por microrganismos ativos com LEFT JOIN ao perfil:
-- `microorganism_id, profile_status, minimally_classified, accounting_validated` e campos adicionais mínimos consumidos pela UI.
-- `minimally_classified` e `accounting_validated` calculados só a partir do próprio perfil (ncm/cfop/csts), nunca de `product_id`.
+Requer tabela associativa `fiscal_invoice_references (id, invoice_id, referenced_access_key, referenced_invoice_id NULL, relation_type ∈ {ANTICIPATION_OF, EFFECTIVE_OF, REDUCTION_OF, REFUSAL_TOTAL_OF, REFUSAL_PARTIAL_OF}, item_sequence NULL)`.
 
-Não há backfill, cópia automática de dados de produto, produto-sombra ou alteração de dados existentes.
+## D. Matriz operacional por cenário
 
-## 2. Hooks tipados
+| Operação | Estoque | Financeiro | Pedido/Entrega | Fiscal | Auditoria |
+|---|---|---|---|---|---|
+| Antecipação | não movimenta | AR "recebimento antecipado" | pedido aberto, sem entrega | NF antecipação | evento `ANTICIPATION_ISSUED` |
+| Saída efetiva | baixa lote | quita/mantém AR | entrega confirmada | NF saída `refNFe`→antecipação | `EFFECTIVE_SHIPMENT` |
+| Perda | baixa por perda (motivo) | sem AR | sem pedido | NF perda | `STOCK_LOSS` |
+| Redução | ajuste qtd (se aplicável) | nota de crédito no AR | pedido revisto | NF entrada redução | `REDUCTION_ISSUED` |
+| Recusa total | retorno integral lote | estorno AR | entrega marcada recusada | NF entrada recusa total | `RETURN_REFUSAL_TOTAL` |
+| Recusa parcial | retorno parcial lote | estorno parcial AR | itens marcados recusados | NF entrada com DFeReferenciado por item | `RETURN_REFUSAL_PARTIAL` |
 
-Novo `src/hooks/useMicroorganismFiscalProfiles.ts` — espelho de `useProductFiscalProfiles`:
-- `useMicroorganismFiscalList` (agora dirigido por `microrganismos` com LEFT JOIN ao perfil próprio, paginação/busca/status)
-- `useMicroorganismFiscalReadiness` (view acima, análoga à de produto)
-- `useMicroorganismFiscalProfile(microorganismId)`
-- `useSaveMicroorganismFiscalProfile` (insert/update com concorrência otimista via `updated_at`, verificação prévia de duplicidade, `permission_denied`, `OptimisticConflictError`)
+## E. Reutilizáveis × Aditivos
 
-Reaproveita `buildInsertPayload`/`buildUpdatePayload` de `productFiscalValidation` quando os campos batem 1:1; refatora esse módulo para aceitar `entityKind` sem casts amplos, extraindo os utilitários compartilhados.
+**Reutilizáveis:** `fiscal_invoices` (id, series, invoice_number, access_key, snapshots, environment, provider, reconciliation_status, receivable_id), `fiscal_invoice_items.source_item_type/id`, `fiscal_events` (extensível), `fiscal_idempotency_keys`, `fiscal_audit_log`, `product_fiscal_profiles`, `microorganism_fiscal_profiles`, workflow de rascunho.
 
-`useMicroorganismFiscalAssociation.useAssociateMicroorganism` permanece exclusivamente para o vínculo comercial opcional; não toca perfis fiscais.
+**Aditivos necessários (todos NULLABLE, todos aditivos):**
+- `fiscal_invoices`: `direction text CHECK IN ('OUT','IN')`, `fiscal_purpose text CHECK IN ('NORMAL','COMPLEMENT','ADJUSTMENT','RETURN','ANTICIPATION','EFFECTIVE_SHIPMENT','STOCK_LOSS','REDUCTION','REFUSAL_TOTAL','REFUSAL_PARTIAL')`, `fin_nfe smallint`, `tp_nf_debito smallint`, `tp_nf_credito smallint`, `nat_op text`, `justificativa_fisco text`, `sinief_scenario text`.
+- Nova `fiscal_invoice_references` (ver C).
+- `fiscal_invoice_items`: `referenced_item_sequence int`, `referenced_access_key text`, `not_delivered_reason text`, `is_effective_delivery boolean`.
+- `fiscal_events.event_type` CHECK ampliado com os 6 tipos SINIEF.
+- Sem novas RLS mais permissivas — reutilizar policies existentes (`administrador`/`financeiro` para escrita; leitura conforme padrão).
 
-Boundary de tipos: mantido em cada hook (adapters explícitos). Sem `any`.
+## F. Regras UF/regime bloqueadas até validação contábil
 
-## 3. UI unificada (`FiscalProdutos.tsx` + drawer)
+- Alíquota ICMS aplicável à perda a partir de 03/08/2026.
+- CFOP diferente do padrão em operações interestaduais (5.922↔6.922, 5.927 e inversos de redução/recusa) — apenas expor campos, sem heurística.
+- Regras de escrituração/estorno por UF.
+- Substituição tributária, ST, DIFAL sobre perda.
+- Retenção de ISS em cenários de retorno de NFS-e (SINIEF trata NF-e; NFS-e permanece fora do escopo dos 4 cenários).
 
-Mantém uma única página “Perfis fiscais” com produtos e microrganismos.
+Todos os campos tributários entram como texto/numérico opcional e revisão obrigatória pela contabilidade antes de qualquer transmissão.
 
-Linhas de microrganismo:
-- Ação: sempre “Criar perfil fiscal” / “Editar perfil fiscal” (independente de `product_id`).
-- Badges corrigidos:
-  - Sem perfil próprio → **“Perfil fiscal pendente”** (substitui “Produto fiscal não associado”).
-  - Sem `product_id` → **“Vínculo comercial opcional”** (informativo, não bloqueia nada).
-  - Erro/loading do resolver de perfil próprio permanecem tratados (não regredir para “sem perfil”).
-- Coluna/seção separada: status fiscal próprio × produto/composição vinculado (quando houver), sem herdar campos.
-- Ação de vínculo renomeada para **“Vincular a produto/composição (opcional)”** com texto explicativo no diálogo: “Este vínculo não é necessário para faturar o microrganismo diretamente. Ele apenas registra a relação comercial/de composição.”
+## G. Matriz de permissões proposta
 
-Drawer/formulário fiscal generalizado: recebe `entityKind: "PRODUCT" | "MICROORGANISM"` e `entityId`; escolhe hook e tabela alvo correspondentes. Mesma validação onde os campos são equivalentes.
+| Ação | administrador | financeiro | gestor | administrativo | tecnico_agronomo | cliente/parceiro |
+|---|---|---|---|---|---|---|
+| Criar NF antecipação/redução/recusa/perda | ✔ | ✔ | — | — | — | — |
+| Editar snapshot / referências | ✔ | ✔ | — | — | — | — |
+| Emitir eventos SINIEF | ✔ | ✔ | — | — | — | — |
+| Ler NFs (todas) | ✔ | ✔ | ✔ | leitura | — | somente próprias |
+| Executar baixa fiscal de estoque | ✔ | ✔ | — | — | — | — |
+| Transmitir a SEFAZ | **NÃO — flag `false`** | | | | | |
 
-Filtros, busca, status e resumo passam a contar microrganismos com/sem perfil próprio corretamente. Loading/erro/permission são separados por fonte (produtos, micros, readiness de cada um) e nunca degradam para “sem perfil” ou “Pendente”.
+Mantém padrão existente; nenhuma RLS afrouxa.
 
-## 4. Faturamento fiscal direto (contrato + resolver)
+## H. Testes obrigatórios por cenário
 
-Auditar `supabase/functions/_shared/fiscal/*` (preflight, builders, contratos de `fiscal_invoice_items`) e adaptadores em `src/`.
+**Positivos:** cada uma das 4 operações compõe um rascunho válido; referências obrigatórias presentes; snapshots imutáveis; eventos SINIEF gravados; idempotência preservada; readiness diferencia direções OUT/IN.
 
-Adicionar suporte explícito, sem criar fluxo paralelo de emissão:
-- Constante canônica de origem: `SOURCE_ITEM_TYPE.MICROORGANISM = 'MICROORGANISM'` (documentada em um único módulo compartilhado com o edge).
-- Resolver puro `resolveFiscalItemFromMicroorganism(microorganismId)` que:
-  - carrega `microorganism_fiscal_profiles` ativo do próprio microrganismo;
-  - monta snapshot fiscal (ncm/cest/cfop/csts/unidades/descrição fiscal) exclusivamente dele;
-  - preenche `source_item_type='MICROORGANISM'`, `source_item_id=<micro.id>`, `item_kind` compatível com mercadoria;
-  - **NÃO** consulta ou usa `product_fiscal_profiles` como fallback, mesmo se `microrganismos.product_id` estiver preenchido;
-  - retorna erro amigável `microorganism_profile_missing` / `microorganism_not_minimally_classified` quando faltar perfil próprio ou classificação mínima.
-- Preflight ganha branch equivalente para itens `MICROORGANISM`.
+**Negativos:** antecipação sem CFOP 5.922/6.922 é recusada; redução sem `refNFe` original é recusada; recusa parcial sem `DFeReferenciado` por item é recusada; perda sem justificativa é recusada; nenhuma operação SINIEF permite `canTransmit=true`; edição de campos após LOCK é recusada; tentativa de escrever direto em `fiscal_invoices` sem RPC é bloqueada por RLS; role fora da matriz recebe `permission_denied`; provider ≠ `NONE` é rejeitado; item `referenced_item_sequence` inexistente na NF original é rejeitado.
 
-Nenhuma nota real é criada; `FEATURE_FLAGS.fiscalEmissionEnabled` permanece `false`. Se o fluxo de criação de itens ainda não existir, apenas o resolver + contrato + testes são entregues.
+**Estáticos:** migrations exclusivamente aditivas; enum ampliado sem remover valores; `fiscalEmissionEnabled=false` invariante; ausência de URL de SEFAZ/provedor.
 
-## 5. Testes
+## I. Plano detalhado Fases 1–7 (gate APTO/INAPTO por fase)
 
-Novos arquivos sob `src/test/fiscal/`:
-- `fase3_21.microorganism_profile.hooks.test.ts` — CRUD, concorrência otimista, permission_denied, unicidade de perfil ativo (mock).
-- `fase3_21.microorganism_profile.ui.test.tsx` — UI unificada: badges “Perfil fiscal pendente” / “Vínculo comercial opcional”, ação sempre disponível, filtros, resumo, loading/erro/permission separados; produto vinculado não altera perfil do micro.
-- `fase3_21.microorganism_profile.resolver.test.ts` — resolver de item fiscal MICROORGANISM: snapshot correto, produto vinculado nunca é fallback, ausência de perfil bloqueia com mensagem amigável, emissão permanece bloqueada.
-- `fase3_21.microorganism_profile.migration.static.test.ts` — presença da canônica, stub sem SQL executável, unicidade da fonte, `UNIQUE` parcial de perfil ativo, grants, RLS restrita a administrador/financeiro para escrita, RESTRICT no FK.
+- **Fase 1 — Modelagem canônica (SQL + tipos).** Migration aditiva `20260807…_sinief_49_scaffolding.sql` (colunas + tabela `fiscal_invoice_references` + expansão do CHECK de `fiscal_events`), stub em `restoration/`, atualização de `src/integrations/supabase/types.ts` **apenas via regeneração oficial**. Gate: static tests + typecheck + build.
+- **Fase 2 — Domínio & validação puros.** `src/lib/fiscal/sinief/` com enums (`FiscalPurpose`, `FinNFe`, `TpNFDebito`, `TpNFCredito`), validadores por cenário, referências. Sem I/O. Gate: 100% cobertura dos validadores.
+- **Fase 3 — Workflow de rascunho por cenário.** Estender `rascunhoWizardValidation` + `rascunhoSnapshots` + UI `RascunhoWizard`. Gate: matriz UI × cenário verde.
+- **Fase 4 — Integração operacional.**
+  - 4a Estoque: rota "Baixa fiscal (perda)".
+  - 4b Financeiro/AR: antecipação e saída efetiva.
+  - 4c Entregas: recusa total/parcial dispara rascunho de NF entrada.
+  - 4d Pedidos: redução ligada à NF original.
+  Gate por sub-fase.
+- **Fase 5 — Readiness & auditoria.** Novos gates em `readinessValidation`, novos `event_type`, painel em `NotasFiscais.tsx`. Gate: preflight retorna evidências novas; nunca promove `canTransmit`.
+- **Fase 6 — RLS/roles.** Confirmar policies em novas tabelas; sem afrouxar; tests estáticos de policy parity.
+- **Fase 7 — Homologação assistida (sem SEFAZ).** Fixtures em `restoration/fiscal-homologation-fixtures/`, documentação por UF **em branco**, checklist para contabilidade. Gate final: `fiscalEmissionEnabled` continua `false` e nenhum caminho novo consegue promovê-lo.
 
-Ajustes nos testes existentes de `FiscalProdutos` para a nova terminologia e para a coexistência de perfil próprio do micro com vínculo opcional.
+Cada fase começa somente após prompt explícito, aceite formal e classificação APTO na anterior — regra Core do projeto.
 
-Validação: `tsgo`, `bun run build`, suíte fiscal completa, `eslint` nos arquivos alterados.
+## K. Riscos críticos e ordem recomendada
 
-## 6. Restrições
+1. **R1 — Regeneração de `types.ts`:** projeto usa Supabase gerenciado externamente; sem `SUPABASE_ACCESS_TOKEN` no ambiente. **Bloqueia** Fase 1 se não confirmado.
+2. **R2 — Sem builder XML/adapter provedor:** Fases 1–5 são seguras sem isso; Fase 7 depende de decisão futura fora de escopo.
+3. **R3 — Cálculo tributário por UF:** deve ficar declarado como responsabilidade contábil; nunca inferido pelo sistema.
+4. **R4 — Impacto em estoque e AR:** 4a/4b/4c/4d exigem migrations aditivas em módulos não-fiscais (movimentos, `accounts_receivable`); risco de regressão financeira — obrigatoriamente com dry-run e testes E2E.
+5. **R5 — Retrocompatibilidade de `fiscal_invoices` legadas:** todos os novos campos NULLABLE; UPDATE de backfill apenas para `direction='OUT'` e `fiscal_purpose='NORMAL'` onde `document_origin='MANUAL_RECORD'`.
 
-- Nenhuma migration existente é editada.
-- Migration nova **não é aplicada** no banco pelo Lovable — apenas criada.
-- RLS existente não é ampliada.
-- `fiscalEmissionEnabled` continua `false`; nenhum provedor externo é chamado.
-- Nenhum dado existente é alterado; nenhuma associação automática é criada.
-- Nenhuma alteração em módulos financeiros/B2B.
+Ordem recomendada: **1 → 2 → 3 → 4a → 4b → 4c → 4d → 5 → 6 → 7**.
 
-## 7. Detalhes técnicos
+## Classificação final
 
-Arquivos alterados/criados (previstos):
-- `supabase/migrations/20260806000000_fiscal_microorganism_profiles.sql` (novo)
-- `restoration/migrations/20260806000000_fiscal_microorganism_profiles.sql` (novo, stub)
-- `supabase/functions/_shared/fiscal/sourceItemTypes.ts` (novo, constantes canônicas)
-- `supabase/functions/_shared/fiscal/resolveMicroorganismItem.ts` (novo, resolver puro)
-- Ajustes mínimos em preflight/builder existentes para reconhecer `MICROORGANISM`.
-- `src/hooks/useMicroorganismFiscalProfiles.ts` (novo)
-- `src/lib/fiscal/productFiscalValidation.ts` (extração de helpers compartilhados; sem quebrar API)
-- `src/lib/fiscal/microorganismFiscalValidation.ts` (novo, thin wrapper)
-- `src/lib/fiscal/sourceItemTypes.ts` (mirror client-side)
-- `src/pages/configuracoes/FiscalProdutos.tsx` (linguagem, ação sempre disponível para micro, separação de estados)
-- `src/components/fiscal/**` — drawer generalizado com `entityKind`.
-- Novos testes citados na seção 5.
+**APTO COM RESSALVAS PARA FASE 1**, condicionado a:
 
-Types do Supabase: os hooks novos usam boundary local (interfaces manuais) até regen oficial de `src/integrations/supabase/types.ts`, análogo ao já feito na fase 3.20.
+1. Confirmar que a regeneração oficial de `src/integrations/supabase/types.ts` será realizada externamente pelo humano após a migration da Fase 1 (mesmo procedimento já usado em fases anteriores).
+2. Aceitar explicitamente que Fase 1 aplica **apenas** migration aditiva no ambiente (fora do Lovable) e que campos tributários permanecem sem cálculo automático.
+3. Manter `fiscalEmissionEnabled=false` como invariante contratual até Fase 7 fechada com validação contábil.
 
-## Riscos residuais
-
-- `src/integrations/supabase/types.ts` não conterá a nova tabela/view até regen externo — mitigado com boundary local.
-- Se `product_fiscal_profiles` tiver colunas fiscais adicionais realmente usadas que eu não mapear, o perfil de microrganismo ficará mais estreito; a auditoria de campos será feita antes de escrever a migration.
+Não avançar sem novo prompt específico para Fase 1.
