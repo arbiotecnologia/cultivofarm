@@ -64,7 +64,8 @@ vi.mock("@/hooks/useDebounce", () => ({
   useDebounce: <T,>(v: T) => v,
 }));
 
-import { SinefOperationsPanel } from "@/components/fiscal/documentos/sinief49/SinefOperationsPanel";
+import SinefOperationsPanel from "@/components/fiscal/documentos/sinief49/SinefOperationsPanel";
+import { buildAdvancePaymentDraft } from "@/lib/fiscal/sinief49/builders";
 
 function renderPanel() {
   const qc = new QueryClient({
