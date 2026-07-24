@@ -40,9 +40,9 @@ export function FiscalReadinessBanner() {
         </div>
         {company && (
           <div className="opacity-80">
-            Configuração fiscal da empresa: <strong>{company.configuration_status}</strong>
-            {" · "}Ambiente: <strong>{company.fiscal_environment}</strong>
-            {" · "}Provedor: <strong>{company.fiscal_provider}</strong>
+            Configuração fiscal da empresa: <strong>{FISCAL_CONFIGURATION_STATUS.label(company.configuration_status)}</strong>
+            {" · "}Ambiente: <strong>{FISCAL_ENVIRONMENT.label(company.fiscal_environment)}</strong>
+            {" · "}Provedor: <strong>{FISCAL_PROVIDER.label(company.fiscal_provider)}</strong>
             {pendingScore !== null && pendingScore > 0 && (
               <> {" · "}Campos fiscais pendentes: <strong>{pendingScore}</strong>/{company.max_score}</>
             )}
