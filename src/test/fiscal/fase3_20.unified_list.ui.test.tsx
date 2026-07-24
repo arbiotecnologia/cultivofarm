@@ -121,6 +121,9 @@ beforeEach(() => {
     data: { items: [PRODUCT_A, PRODUCT_B], total: 2 },
     isLoading: false, isError: false, error: null,
   });
+  mockUseProductFiscalListByIds.mockReturnValue({
+    data: [], isLoading: false, isError: false, error: null,
+  });
   mockUseProductFiscalReadiness.mockReturnValue({
     data: [
       { product_id: "prod-A", minimally_classified: true, accounting_validated: true },
