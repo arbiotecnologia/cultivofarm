@@ -80,6 +80,19 @@ describe("fiscal labels — valores canônicos traduzidos", () => {
   void cases;
 });
 
+describe("Reconciliação — filtros de tipo NFE/NFSE/OTHER", () => {
+  it('nenhum valor renderiza como "Não mapeado"', () => {
+    for (const v of ["NFE", "NFSE", "OTHER"]) {
+      const label = INVOICE_TYPE.label(v);
+      expect(label).not.toMatch(/^Não mapeado/);
+      expect(label).not.toBe(v);
+    }
+    expect(INVOICE_TYPE.label("NFE")).toBe("NF-e (produtos)");
+    expect(INVOICE_TYPE.label("NFSE")).toBe("NFS-e (serviços)");
+    expect(INVOICE_TYPE.label("OTHER")).toBe("Outro");
+  });
+});
+
 describe("fiscal labels — fallback legado", () => {
   it('valores desconhecidos viram "Não mapeado (VALOR)" e nunca o código puro', () => {
     expect(FISCAL_ENVIRONMENT.label("LEGADO_X")).toBe("Não mapeado (LEGADO_X)");
