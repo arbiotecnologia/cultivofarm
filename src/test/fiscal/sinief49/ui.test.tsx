@@ -173,7 +173,27 @@ describe("SinefOperationsPanel · perfil próprio bloqueia prévia", () => {
 });
 
 describe("SinefOperationsPanel · segurança de transmissão", () => {
-  it("canTransmit permanece false", () => {
-    expect(canTransmit()).toBe(false);
+  it("qualquer rascunho canônico tem canTransmit=false", () => {
+    const r = buildAdvancePaymentDraft({
+      operationType: "ADVANCE_PAYMENT",
+      issuerCnpj: "12345678000199",
+      taxSetupApproval: { approved: true },
+      recipient: { kind: "EXTERNAL", cnpj: "98765432000188" },
+      orderId: "PED-1",
+      expectedDeliveryDate: "2026-09-01",
+      items: [
+        {
+          sequence: 1,
+          sourceKind: "PRODUCT",
+          sourceId: "p1",
+          description: "Semente",
+          quantity: 1,
+          unitValue: 10,
+          cfop: "5922",
+        },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    expect(r.draft?.canTransmit).toBe(false);
   });
 });
