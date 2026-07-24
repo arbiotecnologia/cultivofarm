@@ -7,7 +7,7 @@
  * - Textos em pt-BR. Produtos e microrganismos podem ser faturáveis direto.
  *   Serviços/NFS-e ficam explicitamente fora destes cenários.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ShieldOff, Info, Plus, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ShieldOff, Info, Plus, Trash2, CheckCircle2, AlertTriangle, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   buildFromForm,
@@ -27,7 +27,6 @@ import {
 } from "@/lib/fiscal/sinief49/formAdapter";
 import {
   SINIEF_LEGAL_BASIS,
-  SINIEF_LEGAL_EFFECTIVE_DATE,
 } from "@/lib/fiscal/sinief49/constants";
 import {
   SINIEF_OPERATION_LABELS,
@@ -36,6 +35,33 @@ import {
   STOCK_LOSS_REASON_LABELS,
 } from "@/lib/fiscal/sinief49/labels";
 import { canUseSinief49Operations } from "@/lib/fiscal/sinief49/permissions";
+import { useFiscalProdutosLite, type FiscalProdutoLite } from "@/hooks/useFiscalProdutosLite";
+import {
+  useFiscalMicrorganismosLite,
+  type FiscalMicrorganismoLite,
+} from "@/hooks/useFiscalMicrorganismosLite";
+import { useProductFiscalListByIds } from "@/hooks/useProductFiscalProfiles";
+import { useMicroorganismFiscalProfileList } from "@/hooks/useMicroorganismFiscalProfiles";
+import { useDebounce } from "@/hooks/useDebounce";
+
+/** Vigência exibida em pt-BR (03/08/2026); domínio mantém 2026-08-03. */
+const SINIEF_LEGAL_EFFECTIVE_DATE_PT_BR = "03/08/2026" as const;
+
+/** Rótulo pt-BR estável do status resolvido por item. */
+type ProfileResolution =
+  | { status: "loading" }
+  | { status: "missing" }
+  | { status: "incomplete"; label: string }
+  | { status: "configured"; label: string }
+  | { status: "unknown" };
+
+const PROFILE_STATUS_LABELS: Record<ProfileResolution["status"], string> = {
+  loading: "Verificando perfil fiscal…",
+  missing: "Perfil fiscal ausente",
+  incomplete: "Perfil fiscal incompleto",
+  configured: "Perfil fiscal configurado",
+  unknown: "Perfil fiscal indisponível no momento",
+};
 
 const UI_OPTIONS: readonly SinefUiOption[] = [
   "ADVANCE_PAYMENT",
