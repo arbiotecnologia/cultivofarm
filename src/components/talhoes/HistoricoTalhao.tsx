@@ -262,15 +262,6 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
     severo: "bg-destructive/15 text-destructive",
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    );
-  }
-
   const allPaths = useMemo(() => {
     const paths: string[] = [];
     timeline.forEach(item => {
@@ -280,6 +271,17 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
   }, [timeline]);
 
   const { urls: signedUrls } = useSignedUrls(allPaths);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
+  }
+
+
 
   return (
     <div className="space-y-4">
