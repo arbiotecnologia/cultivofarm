@@ -275,6 +275,28 @@ async function wipeCatalogoProdutosViaClient(reason: string): Promise<WipeResult
 
   for (const table of CLIENT_WIPE_ORDER) {
     const filterColumn = DELETE_FILTER_COLUMN[table] ?? "id";
+
+    // Pré-checagem: se a tabela está vazia (ou o admin não tem SELECT nela),
+    // pulamos o DELETE. Isso evita "permission denied" desnecessário em tabelas
+    // fiscais/operacionais que só o service_role deveria tocar quando têm dados.
+    const probe = await (supabase.from(table as never) as any)
+      .select(filterColumn, { count: "exact", head: true })
+      .not(filterColumn, "is", null)
+      .limit(1);
+
+    if (probe.error) {
+      // Sem SELECT → também não teremos DELETE. Se a tabela realmente estiver
+      // vazia no ambiente, o wipe pode seguir; registramos 0 e continuamos.
+      deleted[table] = 0;
+      continue;
+    }
+
+    const rowCount = probe.count ?? 0;
+    if (rowCount === 0) {
+      deleted[table] = 0;
+      continue;
+    }
+
     const deleteResult = await (supabase.from(table as never) as any)
       .delete({ count: "exact" })
       .not(filterColumn, "is", null);
@@ -285,7 +307,9 @@ async function wipeCatalogoProdutosViaClient(reason: string): Promise<WipeResult
         mode: "client-fallback",
         error: "delete_failed",
         table,
-        detail: `${deleteResult.error.message}. Edge Function indisponível: ${reason}`,
+        detail:
+          `${deleteResult.error.message}. Tabela tem ${rowCount} registro(s) que exigem a Edge Function ` +
+          `(service_role) para limpeza. Edge Function indisponível: ${reason}`,
         deleted,
         nullified,
       };
