@@ -579,7 +579,7 @@ export default function FiscalEmpresa() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FieldRow id="fiscal_environment" label="Ambiente">
-                  <SelectNative id="fiscal_environment" value={values.fiscal_environment} options={ALLOWED_ENVIRONMENTS} onChange={(v) => set("fiscal_environment", v as (typeof ALLOWED_ENVIRONMENTS)[number])} />
+                  <SelectNative id="fiscal_environment" value={values.fiscal_environment} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => set("fiscal_environment", v as (typeof ALLOWED_ENVIRONMENTS)[number])} />
                 </FieldRow>
                 <FieldRow id="configuration_status" label="Status de configuração">
                   <SelectNative id="configuration_status" value={values.configuration_status} options={ALLOWED_STATUSES} onChange={(v) => set("configuration_status", v as (typeof ALLOWED_STATUSES)[number])} />
