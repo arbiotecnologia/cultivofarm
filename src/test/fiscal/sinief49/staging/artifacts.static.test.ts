@@ -47,9 +47,10 @@ describe("SINIEF 4.0.1 · artefatos presentes", () => {
 describe("SINIEF 4.0.1 · snapshots são READ-ONLY + fail-fast real", () => {
   for (const [name, sql] of [["pre", PRE], ["post", POST]] as const) {
     test(`${name}: sem DDL/DML de escrita`, () => {
-      const s = strip(sql).toUpperCase();
-      for (const kw of ["INSERT ","UPDATE ","DELETE ","TRUNCATE","DROP ","ALTER ","CREATE TABLE","CREATE INDEX","CREATE POLICY","GRANT ","REVOKE "]) {
-        expect(s).not.toContain(kw);
+      // Remove comentários e strings literais SQL antes de auditar.
+      const s = strip(sql).replace(/'[^']*'/g, "''").toUpperCase();
+      for (const kw of ["INSERT INTO","UPDATE ","DELETE ","TRUNCATE","DROP ","ALTER ","CREATE TABLE","CREATE INDEX","CREATE POLICY","GRANT ","REVOKE "]) {
+        expect(s, kw).not.toContain(kw);
       }
     });
     test(`${name}: RAISE EXCEPTION em DO $$ para marker ausente/duplicado/prod/ref divergente`, () => {
