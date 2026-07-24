@@ -743,7 +743,7 @@ export default function SinefOperationsPanel({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <PreviewBlock preview={preview} />
+            <PreviewBlock preview={preview} blockedByProfiles={profilesBlockPreview} />
           </CardContent>
         </Card>
       </fieldset>
