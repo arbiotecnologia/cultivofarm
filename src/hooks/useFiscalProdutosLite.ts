@@ -1,7 +1,11 @@
 /**
- * Fase Fiscal 3.16.2-B — Hook leve de produtos com perfil fiscal para o
- * wizard. Retorna apenas metadados sanitizados; nunca senha, chave ou
- * campos administrativos. Se a RLS negar, devolve [].
+ * Fase Fiscal 3.16.2-B / SINIEF 3.2 — Hook leve de produtos com perfil fiscal
+ * para o wizard. Retorna apenas metadados sanitizados; nunca senha, chave ou
+ * campos administrativos.
+ *
+ * 3.2: falhas do Supabase são propagadas como erro amigável (sem SQL cru).
+ * Nunca converte falha em `[]` — isso confundiria catálogo vazio com
+ * indisponibilidade e impediria `isError` de acionar UI de erro.
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,7 +49,9 @@ export function useFiscalProdutosLite(search: string) {
         q = q.or(`nome.ilike.%${term}%,codigo.ilike.%${term}%`);
       }
       const { data, error } = await q;
-      if (error) return [];
+      if (error) {
+        throw new Error("Falha ao consultar produtos.");
+      }
       return ((data ?? []) as Array<Record<string, unknown>>).map((row) => {
         const profileRaw = row.product_fiscal_profiles;
         const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
@@ -72,5 +78,6 @@ export function useFiscalProdutosLite(search: string) {
         };
       });
     },
+    retry: false,
   });
 }

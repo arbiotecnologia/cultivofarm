@@ -1,10 +1,14 @@
 /**
- * Fase SINIEF 3.1 — Hook leve de leitura de microrganismos para o painel
+ * Fase SINIEF 3.1/3.2 — Hook leve de leitura de microrganismos para o painel
  * "Operações especiais — Ajuste SINIEF 49/2025".
  *
  * Reutiliza apenas colunas públicas de `microrganismos` já expostas em
  * `types.ts`. Nunca lê perfil fiscal aqui (isso é responsabilidade dos
- * hooks `useMicroorganismFiscalProfileList`). Se a RLS negar, devolve [].
+ * hooks `useMicroorganismFiscalProfileList`).
+ *
+ * 3.2: falhas do Supabase são propagadas como erro amigável (sem SQL cru),
+ * permitindo que `isError` seja detectado pelos consumidores. Nunca converte
+ * falha em `[]` — isso confundiria catálogo vazio com indisponibilidade.
  *
  * NÃO grava em nenhuma tabela SINIEF.
  */
@@ -35,7 +39,10 @@ export function useFiscalMicrorganismosLite(search: string) {
         );
       }
       const { data, error } = await q;
-      if (error) return [];
+      if (error) {
+        // Não expõe SQL/detalhes; propaga como erro para acionar isError.
+        throw new Error("Falha ao consultar microrganismos.");
+      }
       return (data ?? []).map((row) => ({
         id: String(row.id),
         nome: String(row.nome ?? ""),
@@ -43,5 +50,6 @@ export function useFiscalMicrorganismosLite(search: string) {
         nome_cientifico: (row.nome_cientifico as string | null) ?? null,
       }));
     },
+    retry: false,
   });
 }
