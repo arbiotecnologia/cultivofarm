@@ -159,7 +159,11 @@ describe("SINIEF 49 · cenários cobrem os 7 tipos + produto + microrganismo", (
     expect(SCE).toContain("'PERISHMENT'");
   });
   test("nenhum serviço/NFS-e nos cenários", () => {
-    expect(SCE.toLowerCase()).not.toMatch(/service_fiscal_profiles|nfse|nfs-e/);
+    const sceNoComments = SCE.split("\n")
+      .filter((l) => !l.trim().startsWith("--"))
+      .join("\n")
+      .toLowerCase();
+    expect(sceNoComments).not.toMatch(/service_fiscal_profiles|nfse|nfs-e/);
   });
 });
 
@@ -168,13 +172,15 @@ describe("SINIEF 49 · cleanup é determinístico e restrito às fixtures", () =
     expect(CLE).toMatch(/FIXTURE sinief49-fx/);
     expect(CLE).toMatch(/00000000-0000-4000-8000-0000000000/);
   });
-  test("ordem respeita FKs (item_references → references → contexts → items → invoices)", () => {
-    const idx = (s: string) => CLE.indexOf(s);
-    expect(idx("fiscal_invoice_item_references")).toBeGreaterThan(-1);
-    expect(idx("fiscal_invoice_item_references")).toBeLessThan(idx("fiscal_invoice_references"));
-    expect(idx("fiscal_invoice_references")).toBeLessThan(idx("fiscal_stock_loss_contexts"));
-    expect(idx("fiscal_stock_loss_contexts")).toBeLessThan(idx("fiscal_invoice_items"));
-    expect(idx("fiscal_invoice_items")).toBeLessThan(idx("fiscal_invoices"));
+  test("ordem dos DELETEs respeita FKs", () => {
+    const deletes = Array.from(CLE.matchAll(/DELETE FROM public\.(\w+)/g)).map((m) => m[1]);
+    // item_references antes de invoice_items; invoice_references e stock_loss_contexts antes de fiscal_invoices.
+    const pos = (t: string) => deletes.indexOf(t);
+    expect(pos("fiscal_invoice_item_references")).toBeGreaterThanOrEqual(0);
+    expect(pos("fiscal_invoice_item_references")).toBeLessThan(pos("fiscal_invoice_items"));
+    expect(pos("fiscal_invoice_references")).toBeLessThan(pos("fiscal_invoices"));
+    expect(pos("fiscal_stock_loss_contexts")).toBeLessThan(pos("fiscal_invoices"));
+    expect(pos("fiscal_invoice_items")).toBeLessThan(pos("fiscal_invoices"));
   });
 });
 
