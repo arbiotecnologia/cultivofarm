@@ -101,12 +101,21 @@ export const SINIEF49_TABLES: TableSpec[] = [
 export type Miss = { kind: string; detail: string };
 
 function extractEntityBlock(source: string, name: string): string | null {
-  const re = new RegExp(
-    `\\b${name}\\s*:\\s*\\{[\\s\\S]*?Relationships\\s*:\\s*\\[[\\s\\S]*?\\]\\s*\\}`,
-    "m",
-  );
-  const m = source.match(re);
-  return m ? m[0] : null;
+  // Match `name:` seguido de `{` e coleta até fechar por profundidade.
+  const re = new RegExp(`\\b${name}\\s*:\\s*\\{`);
+  const m = re.exec(source);
+  if (!m) return null;
+  const start = m.index + m[0].length;
+  let depth = 1;
+  for (let i = start; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === "{" || ch === "[") depth++;
+    else if (ch === "}" || ch === "]") {
+      depth--;
+      if (depth === 0) return source.slice(m.index, i + 1);
+    }
+  }
+  return null;
 }
 
 function extractRowBlock(entityBlock: string): string | null {
