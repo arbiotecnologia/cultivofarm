@@ -25,6 +25,12 @@ const SUPABASE_MIRROR = path.resolve(
 );
 
 const sql = fs.readFileSync(CANON, "utf-8");
+// SQL sem linhas de comentário — usado nas checagens de "ausência de X",
+// para evitar falsos positivos com notas descritivas do cabeçalho.
+const sqlNoComments = sql
+  .split("\n")
+  .filter((l) => !l.trim().startsWith("--"))
+  .join("\n");
 
 describe("Fase SINIEF 1 — migration aditiva SINIEF 49/2025", () => {
   test("canônica existe em supabase/migrations/", () => {
