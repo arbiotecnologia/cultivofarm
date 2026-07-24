@@ -48,6 +48,7 @@ import {
   DOCUMENT_ORIGIN,
   RECONCILIATION_STATUS,
   NORMALIZED_STATUS,
+  INVOICE_TYPE,
 } from "@/lib/fiscal/labels";
 
 const ROUTE = "/fiscal/reconciliacao";
