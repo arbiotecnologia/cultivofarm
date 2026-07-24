@@ -314,10 +314,10 @@ export default function FiscalReconciliacao() {
                           {KIND_LABEL[classifyPendency(r)]}
                         </Badge>
                       </td>
-                      <td className="p-2">{r.document_model ?? "—"}</td>
-                      <td className="p-2">{r.document_origin ?? "—"}</td>
-                      <td className="p-2">{r.normalized_status ?? r.status ?? "—"}</td>
-                      <td className="p-2">{r.reconciliation_status ?? "—"}</td>
+                      <td className="p-2">{r.document_model ? DOCUMENT_MODEL.label(r.document_model) : "—"}</td>
+                      <td className="p-2">{r.document_origin ? DOCUMENT_ORIGIN.label(r.document_origin) : "—"}</td>
+                      <td className="p-2">{(r.normalized_status || r.status) ? NORMALIZED_STATUS.label(r.normalized_status ?? r.status) : "—"}</td>
+                      <td className="p-2">{r.reconciliation_status ? RECONCILIATION_STATUS.label(r.reconciliation_status) : "—"}</td>
                       <td className="p-2 text-xs">{r.receivable_id ? truncateId(r.receivable_id, 8) : "—"}</td>
                       <td className="p-2 text-right">Detalhes</td>
                     </tr>
