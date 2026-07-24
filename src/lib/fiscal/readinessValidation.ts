@@ -9,6 +9,10 @@
  *   nunca aprovados por teste estático.
  */
 import type { Database } from "@/integrations/supabase/types";
+import {
+  FISCAL_ENVIRONMENT,
+  FISCAL_CONFIGURATION_STATUS,
+} from "@/lib/fiscal/labels";
 
 /**
  * Subconjunto explícito do Row da view usado pela Central de Prontidão.
