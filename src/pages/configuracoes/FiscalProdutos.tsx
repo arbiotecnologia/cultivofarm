@@ -260,8 +260,17 @@ export default function FiscalProdutos() {
     );
   }
 
-  const productItems = listQuery.data?.items ?? [];
-  const productByProductId = new Map(productItems.map((p) => [p.product_id, p] as const));
+  const productItems = productItemsPage;
+  const productByProductId = new Map<string, ProductListItem>();
+  for (const p of productItems) productByProductId.set(p.product_id, p);
+  // Reforço da fonte independente: produtos vinculados por microrganismos
+  // que não estejam na página corrente. Não sobrescrevem itens da página
+  // atual — apenas complementam para que o vínculo seja reconhecido.
+  for (const p of resolvedLinkedQuery.data ?? []) {
+    if (!productByProductId.has(p.product_id)) {
+      productByProductId.set(p.product_id, p);
+    }
+  }
   const readinessByProduct = new Map(
     (readinessQuery.data ?? []).map((r) => [r.product_id ?? "", r] as const),
   );
