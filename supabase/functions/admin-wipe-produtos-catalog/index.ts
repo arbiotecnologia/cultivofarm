@@ -1,4 +1,4 @@
-// Edge Function: admin-wipe-produtos-catalog
+// Edge Function: admin-wipe-produtos-catalog (v1.1)
 // Objetivo: wipe total de `produtos` e cascata operacional/fiscal.
 // Autorização: administrador (via user_roles), JWT obrigatório.
 // NÃO executa nenhuma alteração de schema. Apenas DELETE de dados.
