@@ -173,7 +173,7 @@ function CompanyDetails(props: { row: CompanyRow }) {
       <dd>
         {labelForStatus(row.fiscal_environment)}
         {envSafe === false && (
-          <Badge variant="destructive" className="ml-2">produtivo</Badge>
+          <Badge variant="destructive" className="ml-2">Ambiente produtivo</Badge>
         )}
       </dd>
       <dt className="text-muted-foreground">NF-e habilitada (config.)</dt>

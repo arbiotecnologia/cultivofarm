@@ -672,7 +672,7 @@ function DetailSheet(props: DetailProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">PRODUCTION é proibido nesta fase.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Ambiente de Produção não é permitido nesta fase.</p>
                 </div>
                 <div>
                   <Label>Status</Label>

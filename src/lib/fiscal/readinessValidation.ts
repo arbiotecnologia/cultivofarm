@@ -132,11 +132,42 @@ export const EXTERNAL_GATES: readonly ExternalGate[] = [
   },
 ];
 
-/** Rótulos amigáveis para status normalizados; nunca falseiam ausência. */
+/**
+ * Rótulos amigáveis para status normalizados; nunca falseiam ausência.
+ *
+ * Delega ao dicionário central `src/lib/fiscal/labels` para reutilizar
+ * a mesma tabela pt-BR das telas fiscais. Valor desconhecido chega no
+ * usuário como "Não mapeado (VALOR)" — nunca cru em inglês.
+ */
 export function labelForStatus(v: string | null | undefined): string {
   if (v === null || v === undefined || v === "") return BLOCK_STATUS_LABEL.nao_verificado;
-  return v;
+  const s = String(v).trim();
+  // Import dinâmico não é possível em contexto sync; usamos as tabelas
+  // já expostas pelo módulo de labels via lookup encadeado.
+  const fromEnv = FISCAL_ENVIRONMENT_LABEL.get(s);
+  if (fromEnv) return fromEnv;
+  const fromCfg = FISCAL_CONFIG_STATUS_LABEL.get(s);
+  if (fromCfg) return fromCfg;
+  return `Não mapeado (${s})`;
 }
+
+// Espelhos locais — mantidos em sincronia com src/lib/fiscal/labels.
+// Duplicação intencional para preservar o módulo `readinessValidation`
+// como puro (sem import circular do módulo de labels de UI).
+const FISCAL_ENVIRONMENT_LABEL = new Map<string, string>([
+  ["NOT_CONFIGURED", "Não configurado"],
+  ["HOMOLOGATION", "Homologação"],
+  ["PRODUCTION", "Produção"],
+]);
+const FISCAL_CONFIG_STATUS_LABEL = new Map<string, string>([
+  ["DRAFT", "Rascunho"],
+  ["PENDING_ACCOUNTING", "Aguardando contabilidade"],
+  ["READY_FOR_HOMOLOGATION", "Pronto para homologação"],
+  ["in_review", "Em revisão"],
+  ["pending", "Pendente"],
+  ["incomplete", "Incompleto"],
+  ["ready", "Pronto"],
+]);
 
 /**
  * Classifica o bloco Empresa a partir da view canônica.
