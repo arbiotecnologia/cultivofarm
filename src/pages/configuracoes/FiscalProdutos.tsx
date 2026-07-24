@@ -287,6 +287,23 @@ export default function FiscalProdutos() {
     (readinessQuery.data ?? []).map((r) => [r.product_id ?? "", r] as const),
   );
 
+  // Estados globais de resolução/prontidão. Quando a resolução do produto
+  // vinculado ainda está carregando ou falhou (fora de permission_denied,
+  // que já é tratado acima), NÃO podemos declarar "não associado" nem
+  // "Pendente" para os microrganismos cujo product_id depende dessa fonte.
+  const linkResolutionPending =
+    missingLinkedProductIds.length > 0 &&
+    (resolvedLinkedQuery.isLoading || resolvedLinkedQuery.isError);
+  const unresolvedLinkedIds = new Set(
+    linkResolutionPending ? missingLinkedProductIds : [],
+  );
+  // Quando a readiness ainda está carregando ou falhou, NÃO transformamos
+  // ausência de dado em "Pendente" — exibimos "—" e preservamos a
+  // ambiguidade até a resposta chegar.
+  const readinessUnknown =
+    productIds.length > 0 &&
+    (readinessQuery.isLoading || readinessQuery.isError);
+
   // Monta as linhas unificadas obedecendo o filtro por tipo. ————————
   const microItems = microorganismsQuery.data ?? [];
   // Filtro de status também se aplica a microrganismos com produto canônico.
@@ -312,6 +329,7 @@ export default function FiscalProdutos() {
     productId: m.product_id,
     productProfile: m.product_id ? productByProductId.get(m.product_id) ?? null : null,
   }));
+
 
   const rows: UnifiedRow[] =
     kind === KIND_PRODUCT ? rowsProduto
