@@ -197,10 +197,10 @@ export default function SinefOperationsPanel({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Aprovação tributária</CardTitle>
+            <CardTitle className="text-base">Aprovação tributária (simulação)</CardTitle>
             <CardDescription>
-              A configuração de UF/regime deve ser aprovada pela contabilidade
-              antes do rascunho ser considerado válido.
+              Este marcador é apenas para a prévia. Não substitui a
+              aprovação real da contabilidade nem libera transmissão.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -212,7 +212,7 @@ export default function SinefOperationsPanel({
                 onChange={(e) => patch({ taxSetupApproved: e.target.checked })}
               />
               <Label htmlFor="sinief-approved" className="cursor-pointer">
-                Aprovada pela contabilidade
+                Simulação: configuração revisada pela contabilidade
               </Label>
             </div>
             <div>
