@@ -19,6 +19,7 @@ const mockUseAuth = vi.fn();
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mockUseAuth() }));
 
 const mockUseProductFiscalList = vi.fn();
+const mockUseProductFiscalListByIds = vi.fn();
 const mockUseProductFiscalReadiness = vi.fn();
 const mockUseProductFiscalProfile = vi.fn();
 const mockUseSaveProductFiscalProfile = vi.fn(() => ({
@@ -33,6 +34,7 @@ vi.mock("@/hooks/useProductFiscalProfiles", async () => {
   return {
     ...actual,
     useProductFiscalList: (...args: unknown[]) => mockUseProductFiscalList(...args),
+    useProductFiscalListByIds: (...args: unknown[]) => mockUseProductFiscalListByIds(...args),
     useProductFiscalReadiness: (...args: unknown[]) => mockUseProductFiscalReadiness(...args),
     useProductFiscalProfile: (...args: unknown[]) => mockUseProductFiscalProfile(...args),
     useSaveProductFiscalProfile: () => mockUseSaveProductFiscalProfile(),
@@ -118,6 +120,9 @@ beforeEach(() => {
   mockUseProductFiscalList.mockReturnValue({
     data: { items: [PRODUCT_A, PRODUCT_B], total: 2 },
     isLoading: false, isError: false, error: null,
+  });
+  mockUseProductFiscalListByIds.mockReturnValue({
+    data: [], isLoading: false, isError: false, error: null,
   });
   mockUseProductFiscalReadiness.mockReturnValue({
     data: [

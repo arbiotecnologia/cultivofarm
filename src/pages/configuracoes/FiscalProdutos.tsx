@@ -23,6 +23,7 @@ import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import {
   useProductFiscalList,
+  useProductFiscalListByIds,
   useProductFiscalReadiness,
   useProductFiscalProfile,
   useSaveProductFiscalProfile,
@@ -180,13 +181,39 @@ export default function FiscalProdutos() {
     enabled: microorganismsEnabled,
   });
 
-  const productIds = useMemo(() => {
-    const fromProducts = (listQuery.data?.items ?? []).map((it) => it.product_id);
-    const fromMicros = (microorganismsQuery.data ?? [])
-      .map((m) => m.product_id)
-      .filter((id): id is string => !!id);
-    return Array.from(new Set([...fromProducts, ...fromMicros]));
-  }, [listQuery.data, microorganismsQuery.data]);
+  const productItemsPage = useMemo(
+    () => listQuery.data?.items ?? [],
+    [listQuery.data],
+  );
+  const pageProductIds = useMemo(
+    () => new Set(productItemsPage.map((it) => it.product_id)),
+    [productItemsPage],
+  );
+  const microLinkedIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (microorganismsQuery.data ?? [])
+            .map((m) => m.product_id)
+            .filter((id): id is string => !!id),
+        ),
+      ),
+    [microorganismsQuery.data],
+  );
+  // Fonte independente: resolve produtos vinculados por microrganismos que
+  // não estejam na página/filtro atual, sem SELECT amplo.
+  const missingLinkedProductIds = useMemo(
+    () => microLinkedIds.filter((id) => !pageProductIds.has(id)),
+    [microLinkedIds, pageProductIds],
+  );
+  const resolvedLinkedQuery = useProductFiscalListByIds(missingLinkedProductIds, {
+    enabled: uiEnabled && access !== "none",
+  });
+
+  const productIds = useMemo(
+    () => Array.from(new Set([...pageProductIds, ...microLinkedIds])),
+    [pageProductIds, microLinkedIds],
+  );
 
   const readinessQuery = useProductFiscalReadiness(productIds, {
     enabled: uiEnabled && access !== "none",
@@ -195,7 +222,8 @@ export default function FiscalProdutos() {
   const permissionDenied =
     listQuery.error?.message === "permission_denied" ||
     readinessQuery.error?.message === "permission_denied" ||
-    microorganismsQuery.error?.message === "permission_denied";
+    microorganismsQuery.error?.message === "permission_denied" ||
+    resolvedLinkedQuery.error?.message === "permission_denied";
 
   // Estados de acesso/flag ————————————————————————————————
   if (access === "none") {
@@ -244,8 +272,17 @@ export default function FiscalProdutos() {
     );
   }
 
-  const productItems = listQuery.data?.items ?? [];
-  const productByProductId = new Map(productItems.map((p) => [p.product_id, p] as const));
+  const productItems = productItemsPage;
+  const productByProductId = new Map<string, ProductListItem>();
+  for (const p of productItems) productByProductId.set(p.product_id, p);
+  // Reforço da fonte independente: produtos vinculados por microrganismos
+  // que não estejam na página corrente. Não sobrescrevem itens da página
+  // atual — apenas complementam para que o vínculo seja reconhecido.
+  for (const p of resolvedLinkedQuery.data ?? []) {
+    if (!productByProductId.has(p.product_id)) {
+      productByProductId.set(p.product_id, p);
+    }
+  }
   const readinessByProduct = new Map(
     (readinessQuery.data ?? []).map((r) => [r.product_id ?? "", r] as const),
   );
