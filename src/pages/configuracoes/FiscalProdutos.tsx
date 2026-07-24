@@ -1,21 +1,17 @@
 /**
- * Fase Fiscal 3.20 — Perfis Fiscais unificados: produtos + microrganismos.
+ * Fase Fiscal 3.21 — Perfis Fiscais unificados: produtos + microrganismos.
  *
- * Regras de domínio implementadas:
- *  - Microrganismos são exibidos e gerenciados nesta mesma página; não
- *    há tela fiscal paralela.
- *  - Um microrganismo com `product_id` compartilha o MESMO
- *    `product_fiscal_profiles` do produto canônico associado. Nenhum
- *    perfil paralelo é criado. A chave de linha é distinta
- *    (`micro:<id>`) para evitar colapsar as duas visões, mas o drawer
- *    aberto por qualquer uma delas edita o MESMO perfil.
- *  - Um microrganismo sem `product_id` mostra o badge "Produto fiscal
- *    não associado" e ação "Associar produto fiscal". Nenhum perfil é
- *    criado sem associação prévia.
- *  - Somente usuário com escrita pode associar/desassociar. Leitura
- *    somente visualiza o vínculo/pendência.
- *  - Nenhuma exclusão é feita: desassociar apenas seta `product_id =
- *    null`; produto/microrganismo/perfil permanecem intactos.
+ * Mudança de contrato desta fase:
+ *  - Microrganismo pode ter PERFIL FISCAL PRÓPRIO
+ *    (`microorganism_fiscal_profiles`) e ser faturado DIRETAMENTE, sem
+ *    depender de vínculo a produto canônico.
+ *  - O vínculo `microrganismos.product_id` permanece OPCIONAL e serve
+ *    apenas como referência comercial/de composição. Nunca é requisito
+ *    fiscal.
+ *  - Colunas fiscais (NCM/CEST/CFOP/Status/Prontidão) do microrganismo
+ *    vêm SEMPRE do próprio perfil fiscal do microrganismo. O perfil do
+ *    produto vinculado NÃO é usado como fallback fiscal.
+ *  - Nenhuma nota é emitida por esta tela.
  */
 import { useMemo, useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,7 +19,6 @@ import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import {
   useProductFiscalList,
-  useProductFiscalListByIds,
   useProductFiscalReadiness,
   useProductFiscalProfile,
   useSaveProductFiscalProfile,
@@ -35,10 +30,23 @@ import {
   useAssociateMicroorganism,
 } from "@/hooks/useMicroorganismFiscalAssociation";
 import {
+  useMicroorganismFiscalProfile,
+  useMicroorganismFiscalProfileList,
+  useMicroorganismFiscalReadiness,
+  useSaveMicroorganismFiscalProfile,
+  OptimisticConflictError as MicroOptimisticConflictError,
+  type MicroorganismFiscalListItem,
+} from "@/hooks/useMicroorganismFiscalProfiles";
+import {
   productFiscalFormSchema,
-  rowToFormValues,
+  rowToFormValues as productRowToFormValues,
   type ProductFiscalFormValues,
 } from "@/lib/fiscal/productFiscalValidation";
+import {
+  microorganismFiscalFormSchema,
+  rowToFormValues as microRowToFormValues,
+  type MicroorganismFiscalFormValues,
+} from "@/lib/fiscal/microorganismFiscalValidation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -69,7 +77,7 @@ import {
 } from "@/lib/fiscal/fiscalOptions";
 
 
-const PAGE_TITLE = "Perfis Fiscais de Produtos";
+const PAGE_TITLE = "Perfis Fiscais de Produtos e Microrganismos";
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
 const PAGE_SIZE = 20;
 const STATUS_ALL = "__all__";
@@ -149,9 +157,15 @@ type UnifiedRow =
       microorganismId: string;
       microorganismNome: string;
       microorganismCodigo: string | null;
-      productId: string | null;
-      productProfile: ProductListItem | null;
+      /** Vínculo comercial opcional — jamais requisito fiscal. */
+      linkedProductId: string | null;
+      /** Resumo do PRÓPRIO perfil fiscal do microrganismo. */
+      ownProfile: MicroorganismFiscalListItem | null;
     };
+
+type EditingTarget =
+  | { entity: "produto"; productId: string; displayName: string; displayCodigo: string | null }
+  | { entity: "microrganismo"; microorganismId: string; displayName: string; displayCodigo: string | null };
 
 export default function FiscalProdutos() {
   const { role } = useAuth();
@@ -164,8 +178,7 @@ export default function FiscalProdutos() {
   const [status, setStatus] = useState<string | null>(null);
   const [kind, setKind] = useState<EntityKindFilter>(KIND_ALL);
   const [page, setPage] = useState(0);
-  const [editingProductId, setEditingProductId] =
-    useState<{ productId: string; displayName: string; displayCodigo: string | null } | null>(null);
+  const [editing, setEditing] = useState<EditingTarget | null>(null);
   const [associating, setAssociating] = useState<
     { microorganismId: string; microorganismNome: string; currentProductId: string | null } | null
   >(null);
@@ -185,37 +198,23 @@ export default function FiscalProdutos() {
     () => listQuery.data?.items ?? [],
     [listQuery.data],
   );
-  const pageProductIds = useMemo(
-    () => new Set(productItemsPage.map((it) => it.product_id)),
+  const productIds = useMemo(
+    () => productItemsPage.map((it) => it.product_id),
     [productItemsPage],
   );
-  const microLinkedIds = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          (microorganismsQuery.data ?? [])
-            .map((m) => m.product_id)
-            .filter((id): id is string => !!id),
-        ),
-      ),
-    [microorganismsQuery.data],
-  );
-  // Fonte independente: resolve produtos vinculados por microrganismos que
-  // não estejam na página/filtro atual, sem SELECT amplo.
-  const missingLinkedProductIds = useMemo(
-    () => microLinkedIds.filter((id) => !pageProductIds.has(id)),
-    [microLinkedIds, pageProductIds],
-  );
-  const resolvedLinkedQuery = useProductFiscalListByIds(missingLinkedProductIds, {
-    enabled: uiEnabled && access !== "none",
+  const readinessQuery = useProductFiscalReadiness(productIds, {
+    enabled: uiEnabled && access !== "none" && kind !== KIND_MICRO,
   });
 
-  const productIds = useMemo(
-    () => Array.from(new Set([...pageProductIds, ...microLinkedIds])),
-    [pageProductIds, microLinkedIds],
+  const microItems = useMemo(
+    () => microorganismsQuery.data ?? [],
+    [microorganismsQuery.data],
   );
-
-  const readinessQuery = useProductFiscalReadiness(productIds, {
+  const microIds = useMemo(() => microItems.map((m) => m.id), [microItems]);
+  const microProfilesQuery = useMicroorganismFiscalProfileList(microIds, {
+    enabled: uiEnabled && access !== "none",
+  });
+  const microReadinessQuery = useMicroorganismFiscalReadiness(microIds, {
     enabled: uiEnabled && access !== "none",
   });
 
@@ -223,7 +222,8 @@ export default function FiscalProdutos() {
     listQuery.error?.message === "permission_denied" ||
     readinessQuery.error?.message === "permission_denied" ||
     microorganismsQuery.error?.message === "permission_denied" ||
-    resolvedLinkedQuery.error?.message === "permission_denied";
+    microProfilesQuery.error?.message === "permission_denied" ||
+    microReadinessQuery.error?.message === "permission_denied";
 
   // Estados de acesso/flag ————————————————————————————————
   if (access === "none") {
@@ -232,7 +232,7 @@ export default function FiscalProdutos() {
         <Alert variant="destructive">
           <ShieldOff className="h-4 w-4" aria-hidden />
           <AlertTitle>Sem permissão</AlertTitle>
-          <AlertDescription>Você não tem acesso aos perfis fiscais de produtos.</AlertDescription>
+          <AlertDescription>Você não tem acesso aos perfis fiscais.</AlertDescription>
         </Alert>
       </div>
     );
@@ -272,46 +272,34 @@ export default function FiscalProdutos() {
     );
   }
 
+  // Indexes ————————————————————————————————
   const productItems = productItemsPage;
-  const productByProductId = new Map<string, ProductListItem>();
-  for (const p of productItems) productByProductId.set(p.product_id, p);
-  // Reforço da fonte independente: produtos vinculados por microrganismos
-  // que não estejam na página corrente. Não sobrescrevem itens da página
-  // atual — apenas complementam para que o vínculo seja reconhecido.
-  for (const p of resolvedLinkedQuery.data ?? []) {
-    if (!productByProductId.has(p.product_id)) {
-      productByProductId.set(p.product_id, p);
-    }
-  }
   const readinessByProduct = new Map(
     (readinessQuery.data ?? []).map((r) => [r.product_id ?? "", r] as const),
   );
-
-  // Estados globais de resolução/prontidão. Quando a resolução do produto
-  // vinculado ainda está carregando ou falhou (fora de permission_denied,
-  // que já é tratado acima), NÃO podemos declarar "não associado" nem
-  // "Pendente" para os microrganismos cujo product_id depende dessa fonte.
-  const linkResolutionPending =
-    missingLinkedProductIds.length > 0 &&
-    (resolvedLinkedQuery.isLoading || resolvedLinkedQuery.isError);
-  const unresolvedLinkedIds = new Set(
-    linkResolutionPending ? missingLinkedProductIds : [],
+  const microProfileByMicro = new Map(
+    (microProfilesQuery.data ?? []).map((p) => [p.microorganism_id, p] as const),
   );
-  // Quando a readiness ainda está carregando ou falhou, NÃO transformamos
-  // ausência de dado em "Pendente" — exibimos "—" e preservamos a
-  // ambiguidade até a resposta chegar.
+  const microReadinessByMicro = new Map(
+    (microReadinessQuery.data ?? []).map((r) => [r.microorganism_id, r] as const),
+  );
+
+  const microProfilesUnknown =
+    microIds.length > 0 &&
+    (microProfilesQuery.isLoading || microProfilesQuery.isError);
+  const microReadinessUnknown =
+    microIds.length > 0 &&
+    (microReadinessQuery.isLoading || microReadinessQuery.isError);
   const readinessUnknown =
     productIds.length > 0 &&
     (readinessQuery.isLoading || readinessQuery.isError);
 
-  // Monta as linhas unificadas obedecendo o filtro por tipo. ————————
-  const microItems = microorganismsQuery.data ?? [];
-  // Filtro de status também se aplica a microrganismos com produto canônico.
+  // Aplica filtro de status também em micros — usando o STATUS PRÓPRIO
+  // do microrganismo (não mais o do produto vinculado).
   const microFilteredByStatus = status
-    ? microItems.filter((m) => {
-        const p = m.product_id ? productByProductId.get(m.product_id) : null;
-        return (p?.profile_status ?? null) === status;
-      })
+    ? microItems.filter(
+        (m) => (microProfileByMicro.get(m.id)?.profile_status ?? null) === status,
+      )
     : microItems;
 
   const rowsProduto: UnifiedRow[] = productItems.map((p) => ({
@@ -326,10 +314,9 @@ export default function FiscalProdutos() {
     microorganismId: m.id,
     microorganismNome: m.nome,
     microorganismCodigo: m.codigo ?? null,
-    productId: m.product_id,
-    productProfile: m.product_id ? productByProductId.get(m.product_id) ?? null : null,
+    linkedProductId: m.product_id,
+    ownProfile: microProfileByMicro.get(m.id) ?? null,
   }));
-
 
   const rows: UnifiedRow[] =
     kind === KIND_PRODUCT ? rowsProduto
@@ -341,13 +328,9 @@ export default function FiscalProdutos() {
     Math.ceil((listQuery.data?.total ?? 0) / PAGE_SIZE),
   );
 
-  const readinessSummary = {
-    minimally: (readinessQuery.data ?? []).filter((r) => r.minimally_classified).length,
-    accounting: (readinessQuery.data ?? []).filter((r) => r.accounting_validated).length,
-    total: readinessQuery.data?.length ?? 0,
-  };
-
-  const microrganismosNaoAssociados = microItems.filter((m) => !m.product_id).length;
+  const microrganismosSemPerfilProprio = microItems.filter(
+    (m) => !microProfileByMicro.get(m.id),
+  ).length;
 
   return (
     <div className="p-4 md:p-6 max-w-6xl space-y-4" data-testid="fiscal-produtos-page">
@@ -355,7 +338,8 @@ export default function FiscalProdutos() {
         <h1 className="text-2xl font-semibold">{PAGE_TITLE}</h1>
         <p className="text-sm text-muted-foreground">
           Preparação fiscal do catálogo. Produtos e microrganismos comercializáveis
-          aparecem aqui. Nenhuma nota é emitida por esta tela.
+          aparecem aqui. Cada microrganismo pode ter perfil fiscal próprio e ser
+          faturado diretamente. Nenhuma nota é emitida por esta tela.
         </p>
       </header>
 
@@ -371,25 +355,30 @@ export default function FiscalProdutos() {
         <CardHeader>
           <CardTitle className="text-base">Resumo de prontidão (página atual)</CardTitle>
           <CardDescription>
-            Derivado de <code>v_product_fiscal_readiness</code>.
+            Produtos usam <code>v_product_fiscal_readiness</code>. Microrganismos usam
+            {" "}<code>v_microorganism_fiscal_readiness</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <div>
             <div className="text-muted-foreground">Produtos na página</div>
-            <div className="font-medium">{readinessSummary.total}</div>
+            <div className="font-medium">{productItems.length}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">Minimamente classificados</div>
-            <div className="font-medium">{readinessSummary.minimally}</div>
+            <div className="text-muted-foreground">Microrganismos listados</div>
+            <div className="font-medium">{microItems.length}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">Validados contabilmente</div>
-            <div className="font-medium">{readinessSummary.accounting}</div>
+            <div className="text-muted-foreground">Micro com perfil fiscal próprio</div>
+            <div className="font-medium" data-testid="micros-com-perfil-proprio">
+              {microProfilesQuery.data?.length ?? 0}
+            </div>
           </div>
           <div>
-            <div className="text-muted-foreground">Microrganismos sem produto associado</div>
-            <div className="font-medium" data-testid="micros-nao-associados">{microrganismosNaoAssociados}</div>
+            <div className="text-muted-foreground">Micro sem perfil fiscal próprio</div>
+            <div className="font-medium" data-testid="micros-sem-perfil-proprio">
+              {microrganismosSemPerfilProprio}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -438,15 +427,17 @@ export default function FiscalProdutos() {
         <CardContent className="space-y-3">
           {(listQuery.isLoading && kind !== KIND_MICRO)
             || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT)
-            || (missingLinkedProductIds.length > 0 && resolvedLinkedQuery.isLoading)
-            || (productIds.length > 0 && readinessQuery.isLoading) ? (
+            || (kind !== KIND_MICRO && productIds.length > 0 && readinessQuery.isLoading)
+            || (kind !== KIND_PRODUCT && microIds.length > 0 && microProfilesQuery.isLoading)
+            || (kind !== KIND_PRODUCT && microIds.length > 0 && microReadinessQuery.isLoading) ? (
             <div className="flex items-center gap-2 text-muted-foreground" data-testid="fiscal-produtos-loading">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Carregando…
             </div>
           ) : listQuery.isError
             || microorganismsQuery.isError
-            || resolvedLinkedQuery.isError
-            || readinessQuery.isError ? (
+            || readinessQuery.isError
+            || microProfilesQuery.isError
+            || microReadinessQuery.isError ? (
             <Alert variant="destructive" data-testid="fiscal-produtos-error">
               <AlertTriangle className="h-4 w-4" aria-hidden />
               <AlertTitle>Não foi possível carregar</AlertTitle>
@@ -470,7 +461,7 @@ export default function FiscalProdutos() {
                       <th className="p-2">CEST</th>
                       <th className="p-2">CFOP int./inter.</th>
                       <th className="p-2">Status</th>
-                      <th className="p-2" title="Verificação inicial dos campos essenciais. A revisão contábil e os demais dados fiscais continuam necessários antes da emissão.">Prontidão mínima</th>
+                      <th className="p-2" title="Verificação inicial dos campos essenciais (NCM + CFOP interno).">Prontidão mínima</th>
                       <th className="p-2 text-right">Ação</th>
                     </tr>
                   </thead>
@@ -478,23 +469,27 @@ export default function FiscalProdutos() {
                     {rows.map((r) => renderRow(
                       r,
                       readinessByProduct,
+                      microReadinessByMicro,
                       canEdit,
-                      unresolvedLinkedIds,
                       readinessUnknown,
-                      (item) => setEditingProductId({
+                      microProfilesUnknown,
+                      microReadinessUnknown,
+                      (item) => setEditing({
+                        entity: "produto",
                         productId: item.product_id,
                         displayName: item.product_nome,
                         displayCodigo: item.product_codigo ?? null,
                       }),
-                      (m) => setEditingProductId({
-                        productId: m.productProfile!.product_id,
+                      (m) => setEditing({
+                        entity: "microrganismo",
+                        microorganismId: m.microorganismId,
                         displayName: m.microorganismNome,
                         displayCodigo: m.microorganismCodigo,
                       }),
                       (m) => setAssociating({
                         microorganismId: m.microorganismId,
                         microorganismNome: m.microorganismNome,
-                        currentProductId: m.productId,
+                        currentProductId: m.linkedProductId,
                       }),
                     ))}
                   </tbody>
@@ -530,13 +525,22 @@ export default function FiscalProdutos() {
         </CardContent>
       </Card>
 
-      {editingProductId ? (
-        <EditDrawer
-          productId={editingProductId.productId}
-          displayName={editingProductId.displayName}
-          displayCodigo={editingProductId.displayCodigo}
+      {editing?.entity === "produto" ? (
+        <ProductEditDrawer
+          productId={editing.productId}
+          displayName={editing.displayName}
+          displayCodigo={editing.displayCodigo}
           canEdit={canEdit}
-          onClose={() => setEditingProductId(null)}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+      {editing?.entity === "microrganismo" ? (
+        <MicroorganismEditDrawer
+          microorganismId={editing.microorganismId}
+          displayName={editing.displayName}
+          displayCodigo={editing.displayCodigo}
+          canEdit={canEdit}
+          onClose={() => setEditing(null)}
         />
       ) : null}
 
@@ -556,17 +560,18 @@ export default function FiscalProdutos() {
 function renderRow(
   r: UnifiedRow,
   readinessByProduct: Map<string, { minimally_classified: boolean | null }>,
+  microReadinessByMicro: Map<string, { minimally_classified: boolean | null; profile_status: string | null }>,
   canEdit: boolean,
-  unresolvedLinkedIds: Set<string>,
   readinessUnknown: boolean,
+  microProfilesUnknown: boolean,
+  microReadinessUnknown: boolean,
   onEditProduct: (p: ProductListItem) => void,
-  onEditMicroLinked: (m: Extract<UnifiedRow, { kind: "microrganismo" }>) => void,
-  onAssociate: (m: Extract<UnifiedRow, { kind: "microrganismo" }>) => void,
+  onEditMicro: (m: Extract<UnifiedRow, { kind: "microrganismo" }>) => void,
+  onLinkOptional: (m: Extract<UnifiedRow, { kind: "microrganismo" }>) => void,
 ) {
   if (r.kind === "produto") {
     const p = r.product;
     const ready = readinessByProduct.get(p.product_id);
-    // Nunca virar falha/loading de readiness em "Pendente".
     const pending = readinessUnknown ? null : !ready?.minimally_classified;
     return (
       <tr key={r.rowKey} className="border-t" data-row-kind="produto" data-testid={`row-${r.rowKey}`}>
@@ -602,18 +607,15 @@ function renderRow(
       </tr>
     );
   }
-  // microrganismo
-  const linked = r.productProfile;
-  // Enquanto a resolução do product_id vinculado estiver carregando ou
-  // tiver falhado, NÃO afirmar "não associado".
-  const linkUnresolved =
-    !!r.productId && !linked && unresolvedLinkedIds.has(r.productId);
-  const ready = linked ? readinessByProduct.get(linked.product_id) : null;
-  const pending = !linked
+  // microrganismo — perfil fiscal PRÓPRIO
+  const own = r.ownProfile;
+  const ownReadiness = microReadinessByMicro.get(r.microorganismId);
+  const ownProfileUnknown = microProfilesUnknown;
+  const pending = !own
     ? null
-    : readinessUnknown
+    : microReadinessUnknown
       ? null
-      : !ready?.minimally_classified;
+      : !ownReadiness?.minimally_classified;
   return (
     <tr key={r.rowKey} className="border-t" data-row-kind="microrganismo" data-testid={`row-${r.rowKey}`}>
       <td className="p-2">
@@ -623,34 +625,43 @@ function renderRow(
       <td className="p-2">
         <div className="flex flex-wrap gap-1">
           <Badge variant="secondary">{ENTITY_KIND.label("microrganismo")}</Badge>
-          {!linked && linkUnresolved && (
-            <Badge variant="outline" data-testid="link-unresolved-badge">
-              Resolvendo vínculo…
+          {r.linkedProductId && (
+            <Badge variant="outline" data-testid="badge-vinculo-opcional" title="Vínculo comercial opcional a produto do catálogo — não interfere no perfil fiscal">
+              Vínculo comercial opcional
             </Badge>
           )}
-          {!linked && !linkUnresolved && (
-            <Badge variant="outline" className="border-amber-500/60 text-amber-700 dark:text-amber-300" data-testid="badge-nao-associado">
-              Produto fiscal não associado
+          {!own && !ownProfileUnknown && (
+            <Badge
+              variant="outline"
+              className="border-amber-500/60 text-amber-700 dark:text-amber-300"
+              data-testid="badge-perfil-fiscal-pendente"
+            >
+              Perfil fiscal pendente
+            </Badge>
+          )}
+          {ownProfileUnknown && (
+            <Badge variant="outline" data-testid="badge-perfil-desconhecido">
+              Carregando perfil…
             </Badge>
           )}
         </div>
       </td>
-      <td className="p-2">{linked?.ncm ?? "—"}</td>
-      <td className="p-2">{linked?.cest ?? "—"}</td>
+      <td className="p-2">{own?.ncm ?? "—"}</td>
+      <td className="p-2">{own?.cest ?? "—"}</td>
       <td className="p-2">
-        {(linked?.cfop_in_state ?? "—")}/{(linked?.cfop_interstate ?? "—")}
+        {(own?.cfop_in_state ?? "—")}/{(own?.cfop_interstate ?? "—")}
       </td>
       <td className="p-2">
-        {linked ? (
-          <Badge variant="outline" title={linked.profile_status ?? undefined}>
-            {getFiscalStatusLabel("product", linked.profile_status)}
+        {own ? (
+          <Badge variant="outline" title={own.profile_status ?? undefined}>
+            {getFiscalStatusLabel("product", own.profile_status)}
           </Badge>
         ) : (
           <Badge variant="outline">—</Badge>
         )}
       </td>
       <td className="p-2">
-        {!linked
+        {!own
           ? <Badge variant="outline">—</Badge>
           : pending === null
             ? <Badge variant="outline" data-testid="readiness-unknown-badge">—</Badge>
@@ -660,39 +671,35 @@ function renderRow(
       </td>
 
       <td className="p-2 text-right space-x-2">
-        {linked ? (
+        {canEdit ? (
           <>
             <Button
-              variant="outline" size="sm"
-              onClick={() => onEditMicroLinked(r)}
-              aria-label={`${canEdit ? "Editar" : "Ver"} perfil fiscal associado a ${r.microorganismNome}`}
+              variant={own ? "outline" : "default"}
+              size="sm"
+              onClick={() => onEditMicro(r)}
+              aria-label={`${own ? "Editar" : "Criar"} perfil fiscal de ${r.microorganismNome}`}
+              data-testid="btn-editar-perfil-micro"
             >
-              {canEdit ? <Pencil className="h-4 w-4" /> : "Ver"}
+              {own ? <Pencil className="h-4 w-4" /> : <><Plus className="h-4 w-4 mr-1" /> Criar perfil fiscal</>}
             </Button>
-            {canEdit && (
-              <Button
-                variant="ghost" size="sm"
-                onClick={() => onAssociate(r)}
-                aria-label={`Alterar associação de ${r.microorganismNome}`}
-                title="Alterar/desassociar produto fiscal"
-              >
-                <Link2Off className="h-4 w-4" />
-              </Button>
-            )}
+            <Button
+              variant="ghost" size="sm"
+              onClick={() => onLinkOptional(r)}
+              aria-label={`Vínculo opcional a produto — ${r.microorganismNome}`}
+              title="Vínculo comercial opcional a produto do catálogo (não afeta emissão fiscal)"
+              data-testid="btn-vinculo-opcional"
+            >
+              {r.linkedProductId ? <Link2Off className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
+            </Button>
           </>
         ) : (
-          canEdit ? (
-            <Button
-              variant="default" size="sm"
-              onClick={() => onAssociate(r)}
-              aria-label={`Associar produto fiscal a ${r.microorganismNome}`}
-              data-testid="btn-associar-produto"
-            >
-              <Link2 className="h-4 w-4 mr-1" /> Associar produto fiscal
-            </Button>
-          ) : (
-            <span className="text-xs text-muted-foreground">Sem associação</span>
-          )
+          <Button
+            variant="outline" size="sm"
+            onClick={() => onEditMicro(r)}
+            aria-label={`Ver perfil fiscal de ${r.microorganismNome}`}
+          >
+            Ver
+          </Button>
         )}
       </td>
     </tr>
@@ -720,16 +727,16 @@ function AssociateDialog({
     try {
       await associate.mutateAsync({ microorganismId, productId });
       toast({
-        title: productId ? "Associação atualizada" : "Associação removida",
+        title: productId ? "Vínculo comercial atualizado" : "Vínculo comercial removido",
         description: productId
-          ? "O microrganismo passará a usar o perfil fiscal do produto selecionado."
-          : "O vínculo foi removido. Produto, microrganismo e perfil fiscal permanecem intactos.",
+          ? "O microrganismo passa a apontar para o produto do catálogo como referência comercial. O perfil fiscal usado no faturamento continua sendo o do próprio microrganismo."
+          : "O vínculo comercial foi removido. Microrganismo, produto e perfis fiscais permanecem intactos.",
       });
       onClose();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "unknown";
       if (msg === "permission_denied") {
-        toast({ title: "Sem permissão para alterar a associação", variant: "destructive" });
+        toast({ title: "Sem permissão para alterar o vínculo", variant: "destructive" });
       } else {
         toast({ title: "Não foi possível atualizar", description: msg, variant: "destructive" });
       }
@@ -740,11 +747,12 @@ function AssociateDialog({
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Associar produto fiscal</DialogTitle>
+          <DialogTitle>Vínculo comercial opcional a produto</DialogTitle>
           <DialogDescription>
-            Vincule <strong>{microorganismNome}</strong> ao produto canônico do catálogo.
-            O microrganismo reutilizará o mesmo perfil fiscal do produto — nenhum
-            perfil paralelo é criado.
+            Vincule <strong>{microorganismNome}</strong> a um produto do catálogo por
+            motivos comerciais ou de composição. <strong>Este vínculo NÃO afeta o
+            faturamento fiscal</strong> — o perfil fiscal do microrganismo continua
+            sendo o próprio.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -796,7 +804,7 @@ function AssociateDialog({
               disabled={associate.isPending}
               data-testid="btn-desassociar"
             >
-              Desassociar
+              Remover vínculo
             </Button>
           )}
           <Button
@@ -805,7 +813,7 @@ function AssociateDialog({
             disabled={!selected || selected === currentProductId || associate.isPending}
             data-testid="btn-confirmar-associacao"
           >
-            {associate.isPending ? "Salvando…" : "Confirmar associação"}
+            {associate.isPending ? "Salvando…" : "Confirmar vínculo"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -813,8 +821,8 @@ function AssociateDialog({
   );
 }
 
-// —————————————————————————————— Drawer ——————————————————————————————
-function EditDrawer({
+// —————————————————————————— Drawer: produto ——————————————————————————
+function ProductEditDrawer({
   productId, displayName, displayCodigo, canEdit, onClose,
 }: {
   productId: string;
@@ -826,19 +834,15 @@ function EditDrawer({
   const profileQuery = useProductFiscalProfile(productId);
   const save = useSaveProductFiscalProfile();
   const [values, setValues] = useState<ProductFiscalFormValues>(() =>
-    rowToFormValues(null),
+    productRowToFormValues(null),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (profileQuery.data !== undefined) {
-      setValues(rowToFormValues(profileQuery.data));
+      setValues(productRowToFormValues(profileQuery.data));
     }
   }, [profileQuery.data]);
-
-  function setField<K extends FieldKey>(k: K, v: ProductFiscalFormValues[K]) {
-    setValues((prev) => ({ ...prev, [k]: v }));
-  }
 
   async function onSubmit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -872,31 +876,136 @@ function EditDrawer({
         return;
       }
       const msg = err instanceof Error ? err.message : "unknown";
-      if (msg === "permission_denied") {
-        toast({ title: "Sem permissão para salvar", variant: "destructive" });
-      } else if (msg === "duplicate_profile") {
-        toast({
-          title: "Perfil já existe",
-          description: "Este produto já possui um perfil fiscal.",
-          variant: "destructive",
-        });
-      } else {
-        toast({ title: "Não foi possível salvar", variant: "destructive" });
-      }
+      if (msg === "permission_denied") toast({ title: "Sem permissão para salvar", variant: "destructive" });
+      else if (msg === "duplicate_profile") toast({ title: "Perfil já existe", description: "Este produto já possui um perfil fiscal.", variant: "destructive" });
+      else toast({ title: "Não foi possível salvar", variant: "destructive" });
     }
   }
 
-  const loading = profileQuery.isLoading;
+  return (
+    <FiscalProfileDrawer
+      title={`${canEdit ? "Editar" : "Detalhes do"} perfil fiscal — produto`}
+      subtitle={`${displayName}${displayCodigo ? ` — ${displayCodigo}` : ""}`}
+      loading={profileQuery.isLoading}
+      saving={save.isPending}
+      canEdit={canEdit}
+      values={values}
+      errors={errors}
+      onChange={(k, v) => setValues((prev) => ({ ...prev, [k]: v }))}
+      onSubmit={onSubmit}
+      onClose={onClose}
+      testId="fiscal-drawer-produto"
+      footer={
+        <div className="mt-6" data-testid="fiscal-produtos-ibs-cbs">
+          <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit} />
+        </div>
+      }
+    />
+  );
+}
+
+// ————————————————————— Drawer: microrganismo (perfil próprio) —————————————————————
+function MicroorganismEditDrawer({
+  microorganismId, displayName, displayCodigo, canEdit, onClose,
+}: {
+  microorganismId: string;
+  displayName: string;
+  displayCodigo: string | null;
+  canEdit: boolean;
+  onClose: () => void;
+}) {
+  const profileQuery = useMicroorganismFiscalProfile(microorganismId);
+  const save = useSaveMicroorganismFiscalProfile();
+  const [values, setValues] = useState<MicroorganismFiscalFormValues>(() =>
+    microRowToFormValues(null),
+  );
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (profileQuery.data !== undefined) {
+      setValues(microRowToFormValues(profileQuery.data));
+    }
+  }, [profileQuery.data]);
+
+  async function onSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    setErrors({});
+    const parsed = microorganismFiscalFormSchema.safeParse(values);
+    if (!parsed.success) {
+      const flat: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0] ?? "form");
+        if (!flat[key]) flat[key] = issue.message;
+      }
+      setErrors(flat);
+      toast({ title: "Verifique os campos", variant: "destructive" });
+      return;
+    }
+    try {
+      await save.mutateAsync({
+        microorganismId,
+        current: profileQuery.data ?? null,
+        values: parsed.data,
+      });
+      toast({ title: "Perfil fiscal do microrganismo salvo." });
+      onClose();
+    } catch (err) {
+      if (err instanceof MicroOptimisticConflictError) {
+        toast({
+          title: "Conflito de atualização",
+          description: "Outro usuário alterou este perfil. Recarregue e tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const msg = err instanceof Error ? err.message : "unknown";
+      if (msg === "permission_denied") toast({ title: "Sem permissão para salvar", variant: "destructive" });
+      else if (msg === "duplicate_profile") toast({ title: "Perfil já existe", description: "Este microrganismo já possui um perfil fiscal ativo.", variant: "destructive" });
+      else toast({ title: "Não foi possível salvar", variant: "destructive" });
+    }
+  }
 
   return (
+    <FiscalProfileDrawer
+      title={`${canEdit ? "Editar" : "Detalhes do"} perfil fiscal — microrganismo`}
+      subtitle={`${displayName}${displayCodigo ? ` — ${displayCodigo}` : ""}`}
+      loading={profileQuery.isLoading}
+      saving={save.isPending}
+      canEdit={canEdit}
+      values={values}
+      errors={errors}
+      onChange={(k, v) => setValues((prev) => ({ ...prev, [k]: v }))}
+      onSubmit={onSubmit}
+      onClose={onClose}
+      testId="fiscal-drawer-microrganismo"
+    />
+  );
+}
+
+// ————————————————————— Drawer genérico compartilhado —————————————————————
+function FiscalProfileDrawer({
+  title, subtitle, loading, saving, canEdit, values, errors,
+  onChange, onSubmit, onClose, testId, footer,
+}: {
+  title: string;
+  subtitle: string;
+  loading: boolean;
+  saving: boolean;
+  canEdit: boolean;
+  values: ProductFiscalFormValues;
+  errors: Record<string, string>;
+  onChange: <K extends FieldKey>(k: K, v: ProductFiscalFormValues[K]) => void;
+  onSubmit: (ev: React.FormEvent) => void;
+  onClose: () => void;
+  testId: string;
+  footer?: React.ReactNode;
+}) {
+  return (
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto" data-testid={testId}>
         <SheetHeader>
-          <SheetTitle>{canEdit ? "Editar" : "Detalhes do"} perfil fiscal</SheetTitle>
-          <SheetDescription>
-            {displayName}
-            {displayCodigo ? ` — ${displayCodigo}` : ""}
-          </SheetDescription>
+          <SheetTitle>{title}</SheetTitle>
+          <SheetDescription>{subtitle}</SheetDescription>
         </SheetHeader>
 
         {loading ? (
@@ -905,7 +1014,7 @@ function EditDrawer({
           </div>
         ) : (
           <form onSubmit={onSubmit} className="mt-4 space-y-4" aria-label="Formulário de perfil fiscal">
-            <fieldset disabled={!canEdit || save.isPending} className="space-y-4">
+            <fieldset disabled={!canEdit || saving} className="space-y-4">
               {FIELD_ORDER.map((k) => {
                 const raw = values[k] ?? "";
                 const select = FIELD_SELECTS[k];
@@ -919,7 +1028,7 @@ function EditDrawer({
                         id={`f-${k}`}
                         className="h-10 border rounded-md px-3 bg-background disabled:opacity-60"
                         value={raw}
-                        onChange={(e) => setField(k, e.target.value)}
+                        onChange={(e) => onChange(k, e.target.value)}
                         aria-invalid={!!errors[k]}
                       >
                         <option value="">— selecione —</option>
@@ -932,7 +1041,7 @@ function EditDrawer({
                         id={`f-${k}`}
                         value={raw}
                         placeholder={placeholder}
-                        onChange={(e) => setField(k, e.target.value)}
+                        onChange={(e) => onChange(k, e.target.value)}
                         aria-invalid={!!errors[k]}
                         inputMode={
                           k === "ncm" || k === "cest" ||
@@ -956,16 +1065,14 @@ function EditDrawer({
                 {canEdit ? "Cancelar" : "Fechar"}
               </Button>
               {canEdit ? (
-                <Button type="submit" disabled={save.isPending}>
-                  {save.isPending ? "Salvando…" : "Salvar"}
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Salvando…" : "Salvar"}
                 </Button>
               ) : null}
             </SheetFooter>
           </form>
         )}
-        <div className="mt-6" data-testid="fiscal-produtos-ibs-cbs">
-          <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit} />
-        </div>
+        {footer}
       </SheetContent>
     </Sheet>
   );
