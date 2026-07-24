@@ -436,16 +436,23 @@ export default function FiscalProdutos() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(listQuery.isLoading && kind !== KIND_MICRO) || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT) ? (
+          {(listQuery.isLoading && kind !== KIND_MICRO)
+            || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT)
+            || (missingLinkedProductIds.length > 0 && resolvedLinkedQuery.isLoading)
+            || (productIds.length > 0 && readinessQuery.isLoading) ? (
             <div className="flex items-center gap-2 text-muted-foreground" data-testid="fiscal-produtos-loading">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Carregando…
             </div>
-          ) : listQuery.isError || microorganismsQuery.isError ? (
+          ) : listQuery.isError
+            || microorganismsQuery.isError
+            || resolvedLinkedQuery.isError
+            || readinessQuery.isError ? (
             <Alert variant="destructive" data-testid="fiscal-produtos-error">
               <AlertTriangle className="h-4 w-4" aria-hidden />
               <AlertTitle>Não foi possível carregar</AlertTitle>
               <AlertDescription>Tente novamente em instantes.</AlertDescription>
             </Alert>
+
           ) : rows.length === 0 ? (
             <Alert data-testid="fiscal-produtos-empty">
               <AlertTitle>Nenhum item encontrado</AlertTitle>
