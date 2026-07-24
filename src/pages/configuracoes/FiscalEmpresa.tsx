@@ -633,7 +633,7 @@ export default function FiscalEmpresa() {
                   <Switch checked={nfe.send_email_after_authorization === true} onCheckedChange={(v) => setNfe("send_email_after_authorization", v)} />
                 </div>
                 <FieldRow id="nfe_contingency_mode" label="Modo de contingência">
-                  <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCIA} onChange={(v) => setNfe("contingency_mode", v)} />
+                  <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCY.toOptions(NFE_CONTINGENCIA)} onChange={(v) => setNfe("contingency_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido" description="Ex.: 5102 — Venda de mercadoria adquirida.">
                   <Input id="nfe_cfop_in" inputMode="numeric" maxLength={4} placeholder="5102" value={(nfe.suggested_cfop_in_state as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_in_state", e.target.value)} />
