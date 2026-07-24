@@ -287,6 +287,23 @@ export default function FiscalProdutos() {
     (readinessQuery.data ?? []).map((r) => [r.product_id ?? "", r] as const),
   );
 
+  // Estados globais de resolução/prontidão. Quando a resolução do produto
+  // vinculado ainda está carregando ou falhou (fora de permission_denied,
+  // que já é tratado acima), NÃO podemos declarar "não associado" nem
+  // "Pendente" para os microrganismos cujo product_id depende dessa fonte.
+  const linkResolutionPending =
+    missingLinkedProductIds.length > 0 &&
+    (resolvedLinkedQuery.isLoading || resolvedLinkedQuery.isError);
+  const unresolvedLinkedIds = new Set(
+    linkResolutionPending ? missingLinkedProductIds : [],
+  );
+  // Quando a readiness ainda está carregando ou falhou, NÃO transformamos
+  // ausência de dado em "Pendente" — exibimos "—" e preservamos a
+  // ambiguidade até a resposta chegar.
+  const readinessUnknown =
+    productIds.length > 0 &&
+    (readinessQuery.isLoading || readinessQuery.isError);
+
   // Monta as linhas unificadas obedecendo o filtro por tipo. ————————
   const microItems = microorganismsQuery.data ?? [];
   // Filtro de status também se aplica a microrganismos com produto canônico.
@@ -312,6 +329,7 @@ export default function FiscalProdutos() {
     productId: m.product_id,
     productProfile: m.product_id ? productByProductId.get(m.product_id) ?? null : null,
   }));
+
 
   const rows: UnifiedRow[] =
     kind === KIND_PRODUCT ? rowsProduto
@@ -418,16 +436,23 @@ export default function FiscalProdutos() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(listQuery.isLoading && kind !== KIND_MICRO) || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT) ? (
+          {(listQuery.isLoading && kind !== KIND_MICRO)
+            || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT)
+            || (missingLinkedProductIds.length > 0 && resolvedLinkedQuery.isLoading)
+            || (productIds.length > 0 && readinessQuery.isLoading) ? (
             <div className="flex items-center gap-2 text-muted-foreground" data-testid="fiscal-produtos-loading">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Carregando…
             </div>
-          ) : listQuery.isError || microorganismsQuery.isError ? (
+          ) : listQuery.isError
+            || microorganismsQuery.isError
+            || resolvedLinkedQuery.isError
+            || readinessQuery.isError ? (
             <Alert variant="destructive" data-testid="fiscal-produtos-error">
               <AlertTriangle className="h-4 w-4" aria-hidden />
               <AlertTitle>Não foi possível carregar</AlertTitle>
               <AlertDescription>Tente novamente em instantes.</AlertDescription>
             </Alert>
+
           ) : rows.length === 0 ? (
             <Alert data-testid="fiscal-produtos-empty">
               <AlertTitle>Nenhum item encontrado</AlertTitle>
@@ -454,6 +479,8 @@ export default function FiscalProdutos() {
                       r,
                       readinessByProduct,
                       canEdit,
+                      unresolvedLinkedIds,
+                      readinessUnknown,
                       (item) => setEditingProductId({
                         productId: item.product_id,
                         displayName: item.product_nome,
@@ -530,6 +557,8 @@ function renderRow(
   r: UnifiedRow,
   readinessByProduct: Map<string, { minimally_classified: boolean | null }>,
   canEdit: boolean,
+  unresolvedLinkedIds: Set<string>,
+  readinessUnknown: boolean,
   onEditProduct: (p: ProductListItem) => void,
   onEditMicroLinked: (m: Extract<UnifiedRow, { kind: "microrganismo" }>) => void,
   onAssociate: (m: Extract<UnifiedRow, { kind: "microrganismo" }>) => void,
@@ -537,7 +566,8 @@ function renderRow(
   if (r.kind === "produto") {
     const p = r.product;
     const ready = readinessByProduct.get(p.product_id);
-    const pending = !ready?.minimally_classified;
+    // Nunca virar falha/loading de readiness em "Pendente".
+    const pending = readinessUnknown ? null : !ready?.minimally_classified;
     return (
       <tr key={r.rowKey} className="border-t" data-row-kind="produto" data-testid={`row-${r.rowKey}`}>
         <td className="p-2">
@@ -554,7 +584,11 @@ function renderRow(
           </Badge>
         </td>
         <td className="p-2">
-          {pending ? <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge> : <Badge>OK</Badge>}
+          {pending === null
+            ? <Badge variant="outline" data-testid="readiness-unknown-badge">—</Badge>
+            : pending
+              ? <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>
+              : <Badge>OK</Badge>}
         </td>
         <td className="p-2 text-right">
           <Button
@@ -570,8 +604,16 @@ function renderRow(
   }
   // microrganismo
   const linked = r.productProfile;
+  // Enquanto a resolução do product_id vinculado estiver carregando ou
+  // tiver falhado, NÃO afirmar "não associado".
+  const linkUnresolved =
+    !!r.productId && !linked && unresolvedLinkedIds.has(r.productId);
   const ready = linked ? readinessByProduct.get(linked.product_id) : null;
-  const pending = linked ? !ready?.minimally_classified : true;
+  const pending = !linked
+    ? null
+    : readinessUnknown
+      ? null
+      : !ready?.minimally_classified;
   return (
     <tr key={r.rowKey} className="border-t" data-row-kind="microrganismo" data-testid={`row-${r.rowKey}`}>
       <td className="p-2">
@@ -581,7 +623,12 @@ function renderRow(
       <td className="p-2">
         <div className="flex flex-wrap gap-1">
           <Badge variant="secondary">{ENTITY_KIND.label("microrganismo")}</Badge>
-          {!linked && (
+          {!linked && linkUnresolved && (
+            <Badge variant="outline" data-testid="link-unresolved-badge">
+              Resolvendo vínculo…
+            </Badge>
+          )}
+          {!linked && !linkUnresolved && (
             <Badge variant="outline" className="border-amber-500/60 text-amber-700 dark:text-amber-300" data-testid="badge-nao-associado">
               Produto fiscal não associado
             </Badge>
@@ -603,10 +650,15 @@ function renderRow(
         )}
       </td>
       <td className="p-2">
-        {linked
-          ? (pending ? <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge> : <Badge>OK</Badge>)
-          : <Badge variant="outline">—</Badge>}
+        {!linked
+          ? <Badge variant="outline">—</Badge>
+          : pending === null
+            ? <Badge variant="outline" data-testid="readiness-unknown-badge">—</Badge>
+            : pending
+              ? <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>
+              : <Badge>OK</Badge>}
       </td>
+
       <td className="p-2 text-right space-x-2">
         {linked ? (
           <>

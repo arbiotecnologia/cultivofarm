@@ -277,3 +277,80 @@ describe("FiscalProdutos — prontidão para emissão de microrganismo", () => {
     expect(within(row).getByTestId("pending-badge")).toBeInTheDocument();
   });
 });
+
+describe("FiscalProdutos — loading/erro do resolver e da readiness", () => {
+  test("loading do resolver bloqueia render como 'não associado'", () => {
+    mockUseMicroorganismList.mockReturnValue({
+      data: [MICRO_A_LINKED], isLoading: false, isError: false, error: null,
+    });
+    mockUseProductFiscalListByIds.mockReturnValue({
+      data: undefined, isLoading: true, isError: false, error: null,
+    });
+    renderWithProviders(<FiscalProdutos />);
+    expect(screen.getByTestId("fiscal-produtos-loading")).toBeInTheDocument();
+    expect(screen.queryByTestId("badge-nao-associado")).not.toBeInTheDocument();
+  });
+
+  test("erro de rede (não-permission) do resolver aciona erro genérico e não vira 'não associado'", () => {
+    mockUseMicroorganismList.mockReturnValue({
+      data: [MICRO_A_LINKED], isLoading: false, isError: false, error: null,
+    });
+    mockUseProductFiscalListByIds.mockReturnValue({
+      data: undefined, isLoading: false, isError: true,
+      error: new Error("network_error"),
+    });
+    renderWithProviders(<FiscalProdutos />);
+    expect(screen.getByTestId("fiscal-produtos-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("badge-nao-associado")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("fiscal-produtos-permission-denied"),
+    ).not.toBeInTheDocument();
+  });
+
+  test("loading da readiness bloqueia render como 'Pendente'", () => {
+    mockUseMicroorganismList.mockReturnValue({
+      data: [MICRO_A_LINKED], isLoading: false, isError: false, error: null,
+    });
+    mockUseProductFiscalListByIds.mockReturnValue({
+      data: [PRODUCT_CANONICAL], isLoading: false, isError: false, error: null,
+    });
+    mockUseProductFiscalReadiness.mockReturnValue({
+      data: undefined, isLoading: true, isError: false, error: null,
+    });
+    renderWithProviders(<FiscalProdutos />);
+    expect(screen.getByTestId("fiscal-produtos-loading")).toBeInTheDocument();
+    expect(screen.queryByTestId("pending-badge")).not.toBeInTheDocument();
+  });
+
+  test("erro de rede da readiness aciona erro genérico e não vira 'Pendente'", () => {
+    mockUseMicroorganismList.mockReturnValue({
+      data: [MICRO_A_LINKED], isLoading: false, isError: false, error: null,
+    });
+    mockUseProductFiscalListByIds.mockReturnValue({
+      data: [PRODUCT_CANONICAL], isLoading: false, isError: false, error: null,
+    });
+    mockUseProductFiscalReadiness.mockReturnValue({
+      data: undefined, isLoading: false, isError: true,
+      error: new Error("network_error"),
+    });
+    renderWithProviders(<FiscalProdutos />);
+    expect(screen.getByTestId("fiscal-produtos-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("pending-badge")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("fiscal-produtos-permission-denied"),
+    ).not.toBeInTheDocument();
+  });
+
+  test("permission_denied do resolver tem prioridade sobre o erro genérico", () => {
+    mockUseMicroorganismList.mockReturnValue({
+      data: [MICRO_A_LINKED], isLoading: false, isError: false, error: null,
+    });
+    mockUseProductFiscalListByIds.mockReturnValue({
+      data: undefined, isLoading: false, isError: true,
+      error: new Error("permission_denied"),
+    });
+    renderWithProviders(<FiscalProdutos />);
+    expect(screen.getByTestId("fiscal-produtos-permission-denied")).toBeInTheDocument();
+    expect(screen.queryByTestId("fiscal-produtos-error")).not.toBeInTheDocument();
+  });
+});
