@@ -124,8 +124,10 @@ export const DOCUMENT_STATUS = make({
 export const RECONCILIATION_STATUS = make({
   NOT_APPLICABLE: "Não aplicável",
   PENDING: "Pendente",
+  RECONCILED: "Conciliada",
   MATCHED: "Conciliada",
   DIVERGENT: "Divergente",
+  REQUIRES_REVIEW: "Requer revisão",
   MANUAL_REVIEW: "Revisão manual",
 });
 
