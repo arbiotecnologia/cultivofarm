@@ -247,19 +247,16 @@ describe("Fase 3.2 · perfil próprio libera prévia (microrganismo sem product_
       target: { value: "Bac" },
     });
     fireEvent.click(await screen.findByText(/Bacillus subtilis Lote X/));
-    const cfops = screen.getAllByLabelText("CFOP");
-    fireEvent.change(cfops[0], { target: { value: "5922" } });
-    const cnpjInputs = screen.getAllByLabelText(/CNPJ do destinatário/i);
-    fireEvent.change(cnpjInputs[0], { target: { value: "98765432000188" } });
     await waitFor(() =>
       expect(
-        screen.queryByTestId("sinief49-preview-blocked-profiles"),
-      ).not.toBeInTheDocument(),
+        screen.getAllByTestId("sinief49-perfil-status-configured").length,
+      ).toBeGreaterThan(0),
     );
-    expect(
-      screen.getAllByTestId("sinief49-perfil-status-configured").length,
-    ).toBeGreaterThan(0);
+    expect(screen.queryByTestId("sinief49-perfil-status-missing")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sinief49-perfil-status-incomplete")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sinief49-preview-blocked-profiles")).not.toBeInTheDocument();
   });
+
 
   it("microrganismo com perfil próprio ausente mantém bloqueio", async () => {
     microProfileStatus = null;
