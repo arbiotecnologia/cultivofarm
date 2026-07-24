@@ -87,6 +87,9 @@ export const DOCUMENT_MODEL = make({
 
 export const DOCUMENT_ORIGIN = make({
   MANUAL_RECORD: "Registro manual",
+  EXTERNAL_IMPORTED: "Importado externamente",
+  SYSTEM_PREPARED: "Preparado pelo sistema",
+  PROVIDER_INTEGRATED: "Integrado pelo provedor",
   PROVIDER_IMPORT: "Importado do provedor",
   IMPORTED: "Importado",
   MIGRATED: "Migrado",
@@ -99,9 +102,11 @@ export const NORMALIZED_STATUS = make({
   ISSUED: "Emitido",
   AUTHORIZED: "Autorizado",
   CANCELED: "Cancelado",
+  CANCELLED: "Cancelado",
   REJECTED: "Rejeitado",
   PENDING: "Pendente",
   ARCHIVED: "Arquivado",
+  ERROR: "Erro",
   UNKNOWN: "Desconhecido",
 });
 
@@ -109,9 +114,12 @@ export const DOCUMENT_STATUS = make({
   DRAFT: "Rascunho",
   AUTHORIZED: "Autorizado",
   CANCELED: "Cancelado",
+  CANCELLED: "Cancelado",
   REJECTED: "Rejeitado",
   PENDING: "Pendente",
+  ERROR: "Erro",
 });
+
 
 export const RECONCILIATION_STATUS = make({
   NOT_APPLICABLE: "Não aplicável",
