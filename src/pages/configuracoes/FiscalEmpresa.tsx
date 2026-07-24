@@ -607,7 +607,7 @@ export default function FiscalEmpresa() {
                 </FieldRow>
                 <FieldRow id="nfe_series" label="Série NF-e"><Input id="nfe_series" value={values.nfe_series ?? ""} onChange={(e) => set("nfe_series", e.target.value)} /></FieldRow>
                 <FieldRow id="nfe_numbering_mode" label="Modo de numeração">
-                  <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODES} onChange={(v) => setNfe("numbering_mode", v)} />
+                  <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODE.toOptions(NFE_NUMBERING_MODES)} onChange={(v) => setNfe("numbering_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_nature" label="Natureza padrão da operação">
                   <Input id="nfe_default_nature" placeholder="Ex.: Venda de mercadoria adquirida de terceiros" value={(nfe.default_nature as string) ?? ""} onChange={(e) => setNfe("default_nature", e.target.value)} />
