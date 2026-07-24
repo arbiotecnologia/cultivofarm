@@ -156,7 +156,9 @@ describe("SINIEF 4.0.1 · runner server-side prepared (não executado)", () => {
   test("usa auth.admin.createUser / deleteUser (nunca INSERT auth.users)", () => {
     expect(RUNNER).toMatch(/auth\.admin\.createUser/);
     expect(RUNNER).toMatch(/auth\.admin\.deleteUser/);
-    expect(RUNNER).not.toMatch(/INSERT\s+INTO\s+auth\.users/i);
+    // Remove comentários /* ... */ e //... antes de auditar.
+    const code = RUNNER.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(code).not.toMatch(/INSERT\s+INTO\s+auth\.users/i);
   });
   test("exige --execute; sem ele sai com código 2 e não toca Supabase", () => {
     expect(RUNNER).toMatch(/--execute/);
