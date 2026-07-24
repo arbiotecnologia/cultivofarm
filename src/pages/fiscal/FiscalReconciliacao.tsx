@@ -43,6 +43,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Lock, ShieldOff } from "lucide-react";
+import {
+  DOCUMENT_MODEL,
+  DOCUMENT_ORIGIN,
+  RECONCILIATION_STATUS,
+  NORMALIZED_STATUS,
+  DOCUMENT_STATUS,
+} from "@/lib/fiscal/labels";
 
 const ROUTE = "/fiscal/reconciliacao";
 
