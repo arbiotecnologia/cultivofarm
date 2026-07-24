@@ -8,9 +8,11 @@ Escopo: apenas modelagem de dados (DDL aditivo). Emissão real permanece bloquea
 
 | Papel | Caminho |
 |---|---|
-| Migration canônica executável | `supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql` |
-| Stub documental (não executável) | `restoration/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql` |
+| Migration canônica executável (**divergência controlada**) | `restoration/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql` |
+| Espelho a ser sincronizado externamente | `supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql` (ainda **não** criado — sandbox bloqueou) |
 | Teste estático | `src/test/fiscal/fase_sinief1.migration.static.test.ts` |
+
+> **Nota de divergência controlada.** Nas fases anteriores a fonte executável ficava em `supabase/migrations/` e `restoration/` guardava apenas stub documental. Nesta fase, o sandbox do agente rejeitou a criação de qualquer arquivo novo em `supabase/migrations/` ("Files under supabase/migrations/ are managed by the migration system") e o projeto usa Supabase externo (Lovable Cloud desabilitado → `supabase--enable` é a única ferramenta da namespace, sem migration tool). Por isso a fonte executável canônica desta fase reside em `restoration/migrations/` e o humano deve copiá-la para `supabase/migrations/` com o mesmo nome antes de aplicar pelo pipeline oficial. O teste estático valida que, enquanto a duplicata não existir, permanece uma única fonte executável; ao existir, exige conteúdo idêntico.
 
 ## Matriz de campos em `public.fiscal_invoices` (todos NULLABLE)
 
