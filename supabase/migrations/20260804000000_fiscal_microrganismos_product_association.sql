@@ -1,0 +1,13 @@
+-- =====================================================================
+-- STUB DOCUMENTAL — NÃO EXECUTÁVEL
+--
+-- A migration canônica desta fase (3.20 — associação
+-- microrganismo → produto) vive em:
+--
+--   supabase/migrations/20260804000000_fiscal_microrganismos_product_association.sql
+--
+-- Este arquivo permanece apenas como marcador histórico do racional
+-- da fase, seguindo o padrão adotado em restoration/. Nenhum comando
+-- SQL executável deve ser adicionado aqui. Ferramentas de migration
+-- devem consumir exclusivamente supabase/migrations/.
+-- =====================================================================
