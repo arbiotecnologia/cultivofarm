@@ -540,6 +540,10 @@ export default function RascunhoWizard({
             </Card>
           </TabsContent>
 
+          <TabsContent value="sinief49">
+            <SinefOperationsPanel issuerCnpj={companyCnpj} disabled={readonly} />
+          </TabsContent>
+
           <TabsContent value="revisao">
             <Card>
               <CardHeader>
