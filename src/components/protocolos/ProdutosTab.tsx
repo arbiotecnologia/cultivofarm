@@ -330,9 +330,9 @@ export function ProdutosTab() {
       b2b_enabled: form.b2b_enabled,
       e_insumo: form.e_insumo,
       estoque_minimo: form.estoque_minimo ? Number(form.estoque_minimo) : 0,
-      fornecedor: form.fornecedor.trim() || null,
-      safra_referencia: form.safra_referencia.trim() || null,
     };
+    // Nota: `fornecedor` e `safra_referencia` NÃO existem na tabela `produtos`
+    // (só em `microrganismos`). Não enviar ao Supabase — evita schema-cache error.
 
 
     let produtoNovoCriadoId: string | null = null;
