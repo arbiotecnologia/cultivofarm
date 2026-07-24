@@ -71,10 +71,18 @@ export default function RascunhoWizard({
   disabled = false,
 }: RascunhoWizardProps) {
   const [values, setValues] = useState<RascunhoFormValues>(initialValues ?? emptyRascunho());
+  const { role } = useAuth();
+  const canUseSinief = canUseSinief49Operations(role);
+  const STEPS = canUseSinief ? SINIEF_STEPS : LEGACY_STEPS;
   const [step, setStep] = useState<Step>("documento");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const saveMut = useSaveFiscalRascunho();
   const validateMut = useValidateHomologation();
+
+  // Se o usuário perder acesso ao SINIEF, retorna a uma etapa legada.
+  useEffect(() => {
+    if (!canUseSinief && step === "sinief49") setStep("documento");
+  }, [canUseSinief, step]);
 
   const readonly = disabled;
 
