@@ -59,7 +59,10 @@ describe("fiscal labels — valores canônicos traduzidos", () => {
     ["DOCUMENT_STATUS.AUTHORIZED", DOCUMENT_STATUS, "AUTHORIZED", "Autorizado"],
     ["DOCUMENT_STATUS.ERROR", DOCUMENT_STATUS, "ERROR", "Erro"],
     ["DOCUMENT_STATUS.CANCELLED", DOCUMENT_STATUS, "CANCELLED", "Cancelado"],
+    ["RECONCILIATION.RECONCILED", RECONCILIATION_STATUS, "RECONCILED", "Conciliada"],
     ["RECONCILIATION.MATCHED", RECONCILIATION_STATUS, "MATCHED", "Conciliada"],
+    ["RECONCILIATION.REQUIRES_REVIEW", RECONCILIATION_STATUS, "REQUIRES_REVIEW", "Requer revisão"],
+    ["RECONCILIATION.MANUAL_REVIEW", RECONCILIATION_STATUS, "MANUAL_REVIEW", "Revisão manual"],
     ["INVOICE_TYPE.NFE", INVOICE_TYPE, "NFE", "NF-e (produtos)"],
     ["INVOICE_TYPE.NFSE", INVOICE_TYPE, "NFSE", "NFS-e (serviços)"],
     ["INVOICE_TYPE.OTHER", INVOICE_TYPE, "OTHER", "Outro"],
@@ -90,6 +93,20 @@ describe("Reconciliação — filtros de tipo NFE/NFSE/OTHER", () => {
     expect(INVOICE_TYPE.label("NFE")).toBe("NF-e (produtos)");
     expect(INVOICE_TYPE.label("NFSE")).toBe("NFS-e (serviços)");
     expect(INVOICE_TYPE.label("OTHER")).toBe("Outro");
+  });
+});
+
+describe("Reconciliação — todos os RECONCILIATION_STATUS_VALUES têm rótulo amigável", () => {
+  it("nenhum item devolve fallback ou código cru", async () => {
+    const { RECONCILIATION_STATUS_VALUES } = await import(
+      "@/lib/fiscal/documentWorkflowValidation"
+    );
+    for (const v of RECONCILIATION_STATUS_VALUES) {
+      const label = RECONCILIATION_STATUS.label(v);
+      expect(label, `valor ${v}`).not.toMatch(/^Não mapeado/);
+      expect(label, `valor ${v}`).not.toBe(v);
+      expect(label.length).toBeGreaterThan(0);
+    }
   });
 });
 
