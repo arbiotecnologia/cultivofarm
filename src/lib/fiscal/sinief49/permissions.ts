@@ -11,7 +11,7 @@ export const SINIEF49_ALLOWED_ROLES: readonly AppRole[] = Object.freeze([
   "financeiro",
 ]);
 
-export function canUseSinief49Operations(role: AppRole | null | undefined): boolean {
+export function canUseSinief49Operations(role: AppRole | string | null | undefined): boolean {
   if (!role) return false;
   return (SINIEF49_ALLOWED_ROLES as readonly string[]).includes(role);
 }
