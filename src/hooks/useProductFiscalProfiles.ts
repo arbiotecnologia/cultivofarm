@@ -189,6 +189,59 @@ export function useProductFiscalReadiness(
   });
 }
 
+/**
+ * Fase Fiscal 3.20.1 — Fonte independente para resolver produtos canônicos
+ * por ID, sem depender da página/filtro corrente de `useProductFiscalList`.
+ *
+ * Motivação: microrganismos podem apontar para produtos que não estão na
+ * página atual (ou que estão fora do filtro "Produtos"). Sem esta consulta,
+ * o vínculo seria falsamente exibido como "não associado". Buscamos apenas
+ * pelos IDs recebidos (dataset pequeno, N ≤ dezenas), com o MESMO join a
+ * `product_fiscal_profiles` para reutilizar o mesmo perfil canônico —
+ * nenhum perfil paralelo é criado.
+ */
+export function useProductFiscalListByIds(
+  productIds: string[],
+  options: { enabled?: boolean } = {},
+) {
+  const enabled = (options.enabled ?? true) && productIds.length > 0;
+  return useQuery<ProductListItem[], Error>({
+    queryKey: PRODUCT_FISCAL_KEYS.byIds(productIds),
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select(
+          "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+        )
+        .in("id", productIds);
+      if (error) {
+        if (isPermissionError(error)) throw new Error("permission_denied");
+        throw new Error(error.message);
+      }
+      return (data ?? []).map((p) => {
+        const profileRaw = p.product_fiscal_profiles;
+        const profile = Array.isArray(profileRaw)
+          ? profileRaw[0] ?? null
+          : profileRaw ?? null;
+        return {
+          product_id: p.id,
+          product_nome: p.nome,
+          product_codigo: p.codigo ?? null,
+          profile_id: profile?.id ?? null,
+          profile_status: profile?.profile_status ?? null,
+          is_active: profile?.is_active ?? null,
+          ncm: profile?.ncm ?? null,
+          cest: profile?.cest ?? null,
+          cfop_in_state: profile?.cfop_in_state ?? null,
+          cfop_interstate: profile?.cfop_interstate ?? null,
+          updated_at: profile?.updated_at ?? null,
+        };
+      });
+    },
+  });
+}
+
 export function useProductFiscalProfile(
   productId: string | null,
   options: { enabled?: boolean } = {},
