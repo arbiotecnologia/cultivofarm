@@ -1,0 +1,17 @@
+-- =====================================================================
+-- STUB DOCUMENTAL — NÃO EXECUTÁVEL
+--
+-- Fase Fiscal 3.21 — Perfis fiscais próprios de microrganismos
+--
+-- Fonte executável única (canônica):
+--   supabase/migrations/20260806000000_fiscal_microorganism_profiles.sql
+--
+-- Este arquivo em restoration/migrations/ existe apenas como marcador
+-- histórico para rastreabilidade da fase. Todo o SQL executável
+-- (BEGIN/CREATE/ALTER/GRANT/REVOKE/COMMIT) foi intencionalmente
+-- removido para garantir uma única fonte executável no repositório e
+-- eliminar risco de divergência ou dupla aplicação.
+--
+-- Para inspecionar/aplicar a migration, consulte exclusivamente o
+-- caminho canônico acima. Não reintroduzir SQL executável aqui.
+-- =====================================================================
