@@ -753,8 +753,10 @@ export default function SinefOperationsPanel({
 
 function PreviewBlock({
   preview,
+  blockedByProfiles,
 }: {
   preview: ReturnType<typeof buildFromForm>;
+  blockedByProfiles: boolean;
 }) {
   if (!preview.ok || !preview.draft) {
     return (
@@ -777,6 +779,21 @@ function PreviewBlock({
             </li>
           ))}
         </ul>
+      </div>
+    );
+  }
+  if (blockedByProfiles) {
+    return (
+      <div className="space-y-2" data-testid="sinief49-preview-blocked-profiles">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" aria-hidden />
+          <AlertTitle>Prévia bloqueada — perfis fiscais pendentes</AlertTitle>
+          <AlertDescription>
+            Cadastre o perfil fiscal próprio de cada item selecionado antes de
+            considerar a prévia válida. canTransmit permanece{" "}
+            <strong>false</strong>.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
