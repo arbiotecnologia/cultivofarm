@@ -310,7 +310,7 @@ describe("Fase 3.2 · RascunhoWizard — etapas por papel", () => {
     expect(sinief).toBeDefined();
     fireEvent.click(sinief!);
     expect(
-      await screen.findByText(/Operações especiais — Ajuste SINIEF 49\/2025/i),
+      await screen.findByTestId("sinief49-panel"),
     ).toBeInTheDocument();
   });
 
@@ -321,7 +321,7 @@ describe("Fase 3.2 · RascunhoWizard — etapas por papel", () => {
     expect(tabs).toHaveLength(6);
     fireEvent.click(tabs.find((t) => /SINIEF/.test(t.textContent ?? ""))!);
     expect(
-      await screen.findByText(/Operações especiais — Ajuste SINIEF 49\/2025/i),
+      await screen.findByTestId("sinief49-panel"),
     ).toBeInTheDocument();
   });
 
@@ -342,7 +342,7 @@ describe("Fase 3.2 · RascunhoWizard — etapas por papel", () => {
     const tabs = screen.getAllByRole("tab");
     fireEvent.click(tabs.find((t) => /SINIEF/.test(t.textContent ?? ""))!);
     expect(
-      await screen.findByText(/Operações especiais — Ajuste SINIEF 49\/2025/i),
+      await screen.findByTestId("sinief49-panel"),
     ).toBeInTheDocument();
     // Muda papel para não elegível e re-renderiza.
     await act(async () => {
@@ -358,7 +358,7 @@ describe("Fase 3.2 · RascunhoWizard — etapas por papel", () => {
     expect(newTabs).toHaveLength(5);
     // A aba ativa não é mais 'sinief49' — o painel não aparece.
     expect(
-      screen.queryByText(/Operações especiais — Ajuste SINIEF 49\/2025/i),
+      screen.queryByTestId("sinief49-panel"),
     ).not.toBeInTheDocument();
   });
 });
