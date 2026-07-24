@@ -846,3 +846,200 @@ function PreviewBlock({
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcomponentes: pickers reutilizam hooks já existentes de leitura.
+// Nenhum destes componentes importa Supabase diretamente.
+// ────────────────────────────────────────────────────────────────────────────
+
+interface PickerBaseProps {
+  selectedName: string;
+  selectedId: string;
+  disabled?: boolean;
+  onClear: () => void;
+}
+
+function ProdutoPicker({
+  selectedName,
+  selectedId,
+  disabled,
+  onPick,
+  onClear,
+}: PickerBaseProps & { onPick: (p: FiscalProdutoLite) => void }) {
+  const [term, setTerm] = useState("");
+  const debounced = useDebounce(term, 250);
+  const [open, setOpen] = useState(false);
+  const q = useFiscalProdutosLite(debounced);
+  useEffect(() => {
+    if (debounced.trim().length >= 2) setOpen(true);
+  }, [debounced]);
+  return (
+    <div className="space-y-1" data-testid="sinief49-produto-picker">
+      <Label className="text-xs">Produto</Label>
+      {selectedId ? (
+        <div className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+          <span className="truncate" data-testid="sinief49-produto-selecionado">
+            {selectedName || "Produto selecionado"}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onClear();
+              setTerm("");
+            }}
+          >
+            Trocar
+          </Button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+          <Input
+            className="pl-8"
+            placeholder="Buscar produto por nome ou código"
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+      )}
+      {!selectedId && open && debounced.trim().length >= 2 && (
+        <div className="max-h-40 overflow-auto rounded border bg-background">
+          {q.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : q.isError ? (
+            <div className="p-2 text-xs text-destructive">Falha ao consultar produtos. Tente novamente.</div>
+          ) : (q.data ?? []).length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum produto encontrado.</div>
+          ) : (
+            <ul className="text-sm">
+              {(q.data ?? []).map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted"
+                    onClick={() => {
+                      onPick(p);
+                      setTerm("");
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-medium">{p.nome}</span>
+                    {p.codigo ? (
+                      <span className="ml-2 text-xs text-muted-foreground">{p.codigo}</span>
+                    ) : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MicrorganismoPicker({
+  selectedName,
+  selectedId,
+  disabled,
+  onPick,
+  onClear,
+}: PickerBaseProps & { onPick: (m: FiscalMicrorganismoLite) => void }) {
+  const [term, setTerm] = useState("");
+  const debounced = useDebounce(term, 250);
+  const [open, setOpen] = useState(false);
+  const q = useFiscalMicrorganismosLite(debounced);
+  useEffect(() => {
+    if (debounced.trim().length >= 2) setOpen(true);
+  }, [debounced]);
+  return (
+    <div className="space-y-1" data-testid="sinief49-microrganismo-picker">
+      <Label className="text-xs">Microrganismo (faturável direto)</Label>
+      {selectedId ? (
+        <div className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+          <span className="truncate" data-testid="sinief49-microrganismo-selecionado">
+            {selectedName || "Microrganismo selecionado"}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onClear();
+              setTerm("");
+            }}
+          >
+            Trocar
+          </Button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+          <Input
+            className="pl-8"
+            placeholder="Buscar microrganismo por nome"
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+      )}
+      {!selectedId && open && debounced.trim().length >= 2 && (
+        <div className="max-h-40 overflow-auto rounded border bg-background">
+          {q.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : q.isError ? (
+            <div className="p-2 text-xs text-destructive">Falha ao consultar microrganismos. Tente novamente.</div>
+          ) : (q.data ?? []).length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum microrganismo encontrado.</div>
+          ) : (
+            <ul className="text-sm">
+              {(q.data ?? []).map((m) => (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted"
+                    onClick={() => {
+                      onPick(m);
+                      setTerm("");
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-medium">{m.nome}</span>
+                    {m.nome_cientifico ? (
+                      <span className="ml-2 text-xs italic text-muted-foreground">
+                        {m.nome_cientifico}
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ItemProfileStatusLine({ resolution }: { resolution: ProfileResolution | undefined }) {
+  if (!resolution) return null;
+  const label = PROFILE_STATUS_LABELS[resolution.status];
+  const variant =
+    resolution.status === "configured"
+      ? "default"
+      : resolution.status === "loading"
+      ? "secondary"
+      : "destructive";
+  return (
+    <p
+      className="mt-1 text-xs"
+      data-testid={`sinief49-perfil-status-${resolution.status}`}
+    >
+      <Badge variant={variant as "default" | "secondary" | "destructive"}>{label}</Badge>
+    </p>
+  );
+}
