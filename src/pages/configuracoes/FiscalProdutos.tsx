@@ -479,6 +479,8 @@ export default function FiscalProdutos() {
                       r,
                       readinessByProduct,
                       canEdit,
+                      unresolvedLinkedIds,
+                      readinessUnknown,
                       (item) => setEditingProductId({
                         productId: item.product_id,
                         displayName: item.product_nome,
