@@ -52,13 +52,9 @@ describe("SINIEF 49/2025 · mapper futuro de persistência", () => {
     expect(res.ok).toBe(true);
     // Domínio mantém string "06".
     expect(res.draft?.tpNFDebito).toBe("06");
-    // Persistência: 6.
-    const row = mapDraftToInvoiceInsert(res.draft!);
-    expect(row.tp_nf_debito).toBe(6);
-    expect(row.tp_nf_credito).toBeNull();
-    expect(row.direction).toBe("OUT");
-    expect(row.fin_nfe).toBe(6);
-    expect(row.legal_basis).toBe("Ajuste SINIEF 49/2025 consolidado");
-    expect(row.legal_effective_date).toBe("2026-08-03");
+    // Persistência: enquanto a flag está desligada, o mapper falha explicitamente.
+    expect(() => mapDraftToInvoiceInsert(res.draft!)).toThrow(
+      /PERSISTENCE_MAPPER_ENABLED=false/,
+    );
   });
 });

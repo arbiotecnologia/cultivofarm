@@ -37,9 +37,12 @@ import { useFiscalProdutosLite, type FiscalProdutoLite } from "@/hooks/useFiscal
 import { useFiscalServicosLite, type FiscalServicoLite } from "@/hooks/useFiscalServicosLite";
 import { useDebounce } from "@/hooks/useDebounce";
 import SinefOperationsPanel from "@/components/fiscal/documentos/sinief49/SinefOperationsPanel";
+import { useAuth } from "@/hooks/useAuth";
+import { canUseSinief49Operations } from "@/lib/fiscal/sinief49/permissions";
 
-const STEPS = ["documento", "destinatario", "itens", "tributos", "sinief49", "revisao"] as const;
-type Step = (typeof STEPS)[number];
+const LEGACY_STEPS = ["documento", "destinatario", "itens", "tributos", "revisao"] as const;
+const SINIEF_STEPS = ["documento", "destinatario", "itens", "tributos", "sinief49", "revisao"] as const;
+type Step = (typeof SINIEF_STEPS)[number];
 
 const STEP_LABELS: Record<Step, string> = {
   documento: "Documento",
@@ -68,10 +71,18 @@ export default function RascunhoWizard({
   disabled = false,
 }: RascunhoWizardProps) {
   const [values, setValues] = useState<RascunhoFormValues>(initialValues ?? emptyRascunho());
+  const { role } = useAuth();
+  const canUseSinief = canUseSinief49Operations(role);
+  const STEPS = canUseSinief ? SINIEF_STEPS : LEGACY_STEPS;
   const [step, setStep] = useState<Step>("documento");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const saveMut = useSaveFiscalRascunho();
   const validateMut = useValidateHomologation();
+
+  // Se o usuário perder acesso ao SINIEF, retorna a uma etapa legada.
+  useEffect(() => {
+    if (!canUseSinief && step === "sinief49") setStep("documento");
+  }, [canUseSinief, step]);
 
   const readonly = disabled;
 
@@ -540,9 +551,11 @@ export default function RascunhoWizard({
             </Card>
           </TabsContent>
 
-          <TabsContent value="sinief49">
-            <SinefOperationsPanel issuerCnpj={companyCnpj} disabled={readonly} />
-          </TabsContent>
+          {canUseSinief ? (
+            <TabsContent value="sinief49">
+              <SinefOperationsPanel issuerCnpj={companyCnpj} disabled={readonly} />
+            </TabsContent>
+          ) : null}
 
           <TabsContent value="revisao">
             <Card>

@@ -7,7 +7,7 @@
  * - Textos em pt-BR. Produtos e microrganismos podem ser faturáveis direto.
  *   Serviços/NFS-e ficam explicitamente fora destes cenários.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ShieldOff, Info, Plus, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ShieldOff, Info, Plus, Trash2, CheckCircle2, AlertTriangle, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   buildFromForm,
@@ -27,7 +27,6 @@ import {
 } from "@/lib/fiscal/sinief49/formAdapter";
 import {
   SINIEF_LEGAL_BASIS,
-  SINIEF_LEGAL_EFFECTIVE_DATE,
 } from "@/lib/fiscal/sinief49/constants";
 import {
   SINIEF_OPERATION_LABELS,
@@ -36,6 +35,33 @@ import {
   STOCK_LOSS_REASON_LABELS,
 } from "@/lib/fiscal/sinief49/labels";
 import { canUseSinief49Operations } from "@/lib/fiscal/sinief49/permissions";
+import { useFiscalProdutosLite, type FiscalProdutoLite } from "@/hooks/useFiscalProdutosLite";
+import {
+  useFiscalMicrorganismosLite,
+  type FiscalMicrorganismoLite,
+} from "@/hooks/useFiscalMicrorganismosLite";
+import { useProductFiscalListByIds } from "@/hooks/useProductFiscalProfiles";
+import { useMicroorganismFiscalProfileList } from "@/hooks/useMicroorganismFiscalProfiles";
+import { useDebounce } from "@/hooks/useDebounce";
+
+/** Vigência exibida em pt-BR (03/08/2026); domínio mantém 2026-08-03. */
+const SINIEF_LEGAL_EFFECTIVE_DATE_PT_BR = "03/08/2026" as const;
+
+/** Rótulo pt-BR estável do status resolvido por item. */
+type ProfileResolution =
+  | { status: "loading" }
+  | { status: "missing" }
+  | { status: "incomplete"; label: string }
+  | { status: "configured"; label: string }
+  | { status: "unknown" };
+
+const PROFILE_STATUS_LABELS: Record<ProfileResolution["status"], string> = {
+  loading: "Verificando perfil fiscal…",
+  missing: "Perfil fiscal ausente",
+  incomplete: "Perfil fiscal incompleto",
+  configured: "Perfil fiscal configurado",
+  unknown: "Perfil fiscal indisponível no momento",
+};
 
 const UI_OPTIONS: readonly SinefUiOption[] = [
   "ADVANCE_PAYMENT",
@@ -85,6 +111,70 @@ export default function SinefOperationsPanel({
     [state, issuerCnpj],
   );
 
+  // Ids selecionados (nunca expostos ao usuário) para consulta em lote
+  // dos perfis fiscais próprios de produtos e microrganismos.
+  const productIds = useMemo(
+    () =>
+      state.items
+        .filter((it) => it.sourceKind === "PRODUCT" && it.sourceId.trim().length > 0)
+        .map((it) => it.sourceId),
+    [state.items],
+  );
+  const microorganismIds = useMemo(
+    () =>
+      state.items
+        .filter((it) => it.sourceKind === "MICROORGANISM" && it.sourceId.trim().length > 0)
+        .map((it) => it.sourceId),
+    [state.items],
+  );
+  const productProfilesQuery = useProductFiscalListByIds(productIds, {
+    enabled: productIds.length > 0,
+  });
+  const microorganismProfilesQuery = useMicroorganismFiscalProfileList(
+    microorganismIds,
+    { enabled: microorganismIds.length > 0 },
+  );
+
+  const itemResolutions: ProfileResolution[] = useMemo(() => {
+    return state.items.map((it): ProfileResolution => {
+      const id = it.sourceId.trim();
+      if (!id) return { status: "missing" };
+      if (it.sourceKind === "PRODUCT") {
+        if (productProfilesQuery.isLoading) return { status: "loading" };
+        if (productProfilesQuery.isError) return { status: "unknown" };
+        const row = (productProfilesQuery.data ?? []).find((r) => r.product_id === id);
+        if (!row || !row.profile_id) return { status: "missing" };
+        const label = row.profile_status ?? "PENDING";
+        if (label.toUpperCase() === "ACTIVE" || label.toUpperCase() === "READY")
+          return { status: "configured", label };
+        return { status: "incomplete", label };
+      }
+      // MICROORGANISM
+      if (microorganismProfilesQuery.isLoading) return { status: "loading" };
+      if (microorganismProfilesQuery.isError) return { status: "unknown" };
+      const row = (microorganismProfilesQuery.data ?? []).find(
+        (r) => r.microorganism_id === id,
+      );
+      if (!row) return { status: "missing" };
+      const label = row.profile_status ?? "PENDING";
+      if (label.toUpperCase() === "ACTIVE" || label.toUpperCase() === "READY")
+        return { status: "configured", label };
+      return { status: "incomplete", label };
+    });
+  }, [
+    state.items,
+    productProfilesQuery.isLoading,
+    productProfilesQuery.isError,
+    productProfilesQuery.data,
+    microorganismProfilesQuery.isLoading,
+    microorganismProfilesQuery.isError,
+    microorganismProfilesQuery.data,
+  ]);
+
+  const profilesBlockPreview = itemResolutions.some(
+    (r) => r.status === "missing" || r.status === "incomplete" || r.status === "unknown" || r.status === "loading",
+  );
+
   if (!allowed) return null;
 
   function patch(next: Partial<SinefFormState>) {
@@ -120,7 +210,7 @@ export default function SinefOperationsPanel({
           Prévia de rascunho — não transmite documento fiscal. Nenhum campo
           desta seção é salvo enquanto a modelagem SINIEF não estiver aplicada.
           <span className="block text-xs text-muted-foreground mt-1">
-            Base legal: {SINIEF_LEGAL_BASIS} · vigência {SINIEF_LEGAL_EFFECTIVE_DATE}.
+            Base legal: {SINIEF_LEGAL_BASIS} · vigência {SINIEF_LEGAL_EFFECTIVE_DATE_PT_BR}.
           </span>
         </AlertDescription>
       </Alert>
@@ -171,10 +261,10 @@ export default function SinefOperationsPanel({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Aprovação tributária</CardTitle>
+            <CardTitle className="text-base">Aprovação tributária (simulação)</CardTitle>
             <CardDescription>
-              A configuração de UF/regime deve ser aprovada pela contabilidade
-              antes do rascunho ser considerado válido.
+              Este marcador é apenas para a prévia. Não substitui a
+              aprovação real da contabilidade nem libera transmissão.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -186,7 +276,7 @@ export default function SinefOperationsPanel({
                 onChange={(e) => patch({ taxSetupApproved: e.target.checked })}
               />
               <Label htmlFor="sinief-approved" className="cursor-pointer">
-                Aprovada pela contabilidade
+                Simulação: configuração revisada pela contabilidade
               </Label>
             </div>
             <div>
@@ -598,16 +688,34 @@ export default function SinefOperationsPanel({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div className="md:col-span-2">
-                    <Label>Id do {it.sourceKind === "PRODUCT" ? "produto" : "microrganismo"}</Label>
-                    <Input
-                      value={it.sourceId}
-                      onChange={(e) => patchItem(idx, { sourceId: e.target.value })}
-                      placeholder={
-                        it.sourceKind === "MICROORGANISM"
-                          ? "Microrganismo é faturável direto — não exige product_id"
-                          : ""
-                      }
-                    />
+                    {it.sourceKind === "PRODUCT" ? (
+                      <ProdutoPicker
+                        selectedName={it.description}
+                        selectedId={it.sourceId}
+                        disabled={readonly}
+                        onPick={(p) =>
+                          patchItem(idx, {
+                            sourceId: p.id,
+                            description: p.nome,
+                          })
+                        }
+                        onClear={() => patchItem(idx, { sourceId: "", description: "" })}
+                      />
+                    ) : (
+                      <MicrorganismoPicker
+                        selectedName={it.description}
+                        selectedId={it.sourceId}
+                        disabled={readonly}
+                        onPick={(m) =>
+                          patchItem(idx, {
+                            sourceId: m.id,
+                            description: m.nome,
+                          })
+                        }
+                        onClear={() => patchItem(idx, { sourceId: "", description: "" })}
+                      />
+                    )}
+                    <ItemProfileStatusLine resolution={itemResolutions[idx]} />
                   </div>
                   <div className="flex items-end">
                     <Button
@@ -635,7 +743,7 @@ export default function SinefOperationsPanel({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <PreviewBlock preview={preview} />
+            <PreviewBlock preview={preview} blockedByProfiles={profilesBlockPreview} />
           </CardContent>
         </Card>
       </fieldset>
@@ -645,8 +753,10 @@ export default function SinefOperationsPanel({
 
 function PreviewBlock({
   preview,
+  blockedByProfiles,
 }: {
   preview: ReturnType<typeof buildFromForm>;
+  blockedByProfiles: boolean;
 }) {
   if (!preview.ok || !preview.draft) {
     return (
@@ -669,6 +779,21 @@ function PreviewBlock({
             </li>
           ))}
         </ul>
+      </div>
+    );
+  }
+  if (blockedByProfiles) {
+    return (
+      <div className="space-y-2" data-testid="sinief49-preview-blocked-profiles">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" aria-hidden />
+          <AlertTitle>Prévia bloqueada — perfis fiscais pendentes</AlertTitle>
+          <AlertDescription>
+            Cadastre o perfil fiscal próprio de cada item selecionado antes de
+            considerar a prévia válida. canTransmit permanece{" "}
+            <strong>false</strong>.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -719,5 +844,202 @@ function PreviewBlock({
         </li>
       </ul>
     </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcomponentes: pickers reutilizam hooks já existentes de leitura.
+// Nenhum destes componentes importa Supabase diretamente.
+// ────────────────────────────────────────────────────────────────────────────
+
+interface PickerBaseProps {
+  selectedName: string;
+  selectedId: string;
+  disabled?: boolean;
+  onClear: () => void;
+}
+
+function ProdutoPicker({
+  selectedName,
+  selectedId,
+  disabled,
+  onPick,
+  onClear,
+}: PickerBaseProps & { onPick: (p: FiscalProdutoLite) => void }) {
+  const [term, setTerm] = useState("");
+  const debounced = useDebounce(term, 250);
+  const [open, setOpen] = useState(false);
+  const q = useFiscalProdutosLite(debounced);
+  useEffect(() => {
+    if (debounced.trim().length >= 2) setOpen(true);
+  }, [debounced]);
+  return (
+    <div className="space-y-1" data-testid="sinief49-produto-picker">
+      <Label className="text-xs">Produto</Label>
+      {selectedId ? (
+        <div className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+          <span className="truncate" data-testid="sinief49-produto-selecionado">
+            {selectedName || "Produto selecionado"}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onClear();
+              setTerm("");
+            }}
+          >
+            Trocar
+          </Button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+          <Input
+            className="pl-8"
+            placeholder="Buscar produto por nome ou código"
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+      )}
+      {!selectedId && open && debounced.trim().length >= 2 && (
+        <div className="max-h-40 overflow-auto rounded border bg-background">
+          {q.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : q.isError ? (
+            <div className="p-2 text-xs text-destructive">Falha ao consultar produtos. Tente novamente.</div>
+          ) : (q.data ?? []).length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum produto encontrado.</div>
+          ) : (
+            <ul className="text-sm">
+              {(q.data ?? []).map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted"
+                    onClick={() => {
+                      onPick(p);
+                      setTerm("");
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-medium">{p.nome}</span>
+                    {p.codigo ? (
+                      <span className="ml-2 text-xs text-muted-foreground">{p.codigo}</span>
+                    ) : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MicrorganismoPicker({
+  selectedName,
+  selectedId,
+  disabled,
+  onPick,
+  onClear,
+}: PickerBaseProps & { onPick: (m: FiscalMicrorganismoLite) => void }) {
+  const [term, setTerm] = useState("");
+  const debounced = useDebounce(term, 250);
+  const [open, setOpen] = useState(false);
+  const q = useFiscalMicrorganismosLite(debounced);
+  useEffect(() => {
+    if (debounced.trim().length >= 2) setOpen(true);
+  }, [debounced]);
+  return (
+    <div className="space-y-1" data-testid="sinief49-microrganismo-picker">
+      <Label className="text-xs">Microrganismo (faturável direto)</Label>
+      {selectedId ? (
+        <div className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+          <span className="truncate" data-testid="sinief49-microrganismo-selecionado">
+            {selectedName || "Microrganismo selecionado"}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onClear();
+              setTerm("");
+            }}
+          >
+            Trocar
+          </Button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+          <Input
+            className="pl-8"
+            placeholder="Buscar microrganismo por nome"
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+      )}
+      {!selectedId && open && debounced.trim().length >= 2 && (
+        <div className="max-h-40 overflow-auto rounded border bg-background">
+          {q.isLoading ? (
+            <div className="p-2 text-xs text-muted-foreground">Buscando…</div>
+          ) : q.isError ? (
+            <div className="p-2 text-xs text-destructive">Falha ao consultar microrganismos. Tente novamente.</div>
+          ) : (q.data ?? []).length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">Nenhum microrganismo encontrado.</div>
+          ) : (
+            <ul className="text-sm">
+              {(q.data ?? []).map((m) => (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-muted"
+                    onClick={() => {
+                      onPick(m);
+                      setTerm("");
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-medium">{m.nome}</span>
+                    {m.nome_cientifico ? (
+                      <span className="ml-2 text-xs italic text-muted-foreground">
+                        {m.nome_cientifico}
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ItemProfileStatusLine({ resolution }: { resolution: ProfileResolution | undefined }) {
+  if (!resolution) return null;
+  const label = PROFILE_STATUS_LABELS[resolution.status];
+  const variant =
+    resolution.status === "configured"
+      ? "default"
+      : resolution.status === "loading"
+      ? "secondary"
+      : "destructive";
+  return (
+    <p
+      className="mt-1 text-xs"
+      data-testid={`sinief49-perfil-status-${resolution.status}`}
+    >
+      <Badge variant={variant as "default" | "secondary" | "destructive"}>{label}</Badge>
+    </p>
   );
 }
