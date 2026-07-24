@@ -248,7 +248,7 @@ function ProtectedRoutes() {
 }
 
 function PortalGuard() {
-  const { user, role, loading, error, refresh, signOut } = useAuth();
+  const { user, roles, loading, error, refresh, signOut } = useAuth();
 
   if (loading) {
     return (
@@ -263,9 +263,9 @@ function PortalGuard() {
 
   if (error) {
     return (
-      <ErrorRecovery 
-        message={error} 
-        onRetry={refresh} 
+      <ErrorRecovery
+        message={error}
+        onRetry={refresh}
         onSignOut={signOut}
       />
     );
@@ -273,8 +273,19 @@ function PortalGuard() {
 
   if (!user) return <Navigate to="/auth" replace />;
 
+  // Autorização de contexto: /portal/* é exclusivo do Portal Produtor.
+  // Admin mantém acesso legado (suporte/impersonação). Multipapel funciona
+  // porque a checagem é feita na lista completa de roles — nunca em
+  // primaryRole nem em local/session storage.
+  const isProducer = roles.includes("cliente_produtor");
+  const isAdmin = roles.includes("administrador");
+  if (!isProducer && !isAdmin) {
+    return <Navigate to="/sem-permissao" replace />;
+  }
+
   return <PortalLayout />;
 }
+
 
 // Roles cuja Home depende de RPC de contextos (Bloco 2 — multiportal).
 // Demais roles (admin, gestor, financeiro, gestor_comercial, administrativo,
