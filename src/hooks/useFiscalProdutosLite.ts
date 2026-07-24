@@ -49,7 +49,9 @@ export function useFiscalProdutosLite(search: string) {
         q = q.or(`nome.ilike.%${term}%,codigo.ilike.%${term}%`);
       }
       const { data, error } = await q;
-      if (error) return [];
+      if (error) {
+        throw new Error("Falha ao consultar produtos.");
+      }
       return ((data ?? []) as Array<Record<string, unknown>>).map((row) => {
         const profileRaw = row.product_fiscal_profiles;
         const profile = Array.isArray(profileRaw) ? profileRaw[0] : profileRaw;
