@@ -181,7 +181,10 @@ export default function FiscalProdutos() {
     enabled: microorganismsEnabled,
   });
 
-  const productItemsPage = listQuery.data?.items ?? [];
+  const productItemsPage = useMemo(
+    () => listQuery.data?.items ?? [],
+    [listQuery.data],
+  );
   const pageProductIds = useMemo(
     () => new Set(productItemsPage.map((it) => it.product_id)),
     [productItemsPage],
