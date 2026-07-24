@@ -77,7 +77,6 @@ function log(msg: string, extra: Record<string, unknown> = {}) {
     }
     safe[k] = v;
   }
-  // eslint-disable-next-line no-console
   console.log(`[sinief49-runner] ${msg}`, safe);
 }
 
@@ -286,7 +285,6 @@ async function runRlsMatrix(
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error(`[sinief49-runner] FAIL ${(err as Error).message}`);
   process.exit(1);
 });
