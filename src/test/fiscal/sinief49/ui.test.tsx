@@ -138,15 +138,10 @@ describe("SinefOperationsPanel · pickers com catálogo real", () => {
 
   it("microrganismo faturável direto: seleção por nome, sem product_id", async () => {
     renderPanel();
-    // Alterna a origem do item para MICROORGANISM
-    const kindSelect = screen.getAllByRole("combobox").find((el) =>
-      /Produto|Microrganismo/i.test(el.textContent ?? ""),
-    );
-    expect(kindSelect).toBeTruthy();
-    // Muda para microrganismo via clique no combobox nativo do shadcn:
-    fireEvent.click(kindSelect!);
-    const microOption = await screen.findByRole("option", { name: /Microrganismo/i });
-    fireEvent.click(microOption);
+    // O primeiro item começa como PRODUCT; troca para MICROORGANISM via
+    // <select> nativo (o painel usa select nativo para o tipo de item).
+    const tipoSelects = screen.getAllByDisplayValue("Produto");
+    fireEvent.change(tipoSelects[0], { target: { value: "MICROORGANISM" } });
 
     const input = await screen.findByPlaceholderText(/Buscar microrganismo/i);
     fireEvent.change(input, { target: { value: "Bac" } });
