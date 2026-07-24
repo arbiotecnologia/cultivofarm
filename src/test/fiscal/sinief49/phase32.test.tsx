@@ -113,48 +113,29 @@ beforeEach(() => {
   microProfileStatus = null;
 });
 
-// ── Gate 1: hooks propagam erro (unidade) ─────────────────────────────────
+// ── Gate 1: hooks propagam erro (verificação estática de código) ──────────
 describe("Fase 3.2 · hooks lite propagam erro em vez de vazio", () => {
-  it("useFiscalMicrorganismosLite: erro do Supabase vira isError, sem SQL cru", async () => {
-    vi.resetModules();
-    vi.doMock("@/integrations/supabase/client", () => ({
-      supabase: {
-        from: () => ({
-          select: () => ({
-            eq: () => ({
-              order: () => ({
-                limit: () => ({
-                  or: () => Promise.resolve({ data: null, error: { message: "sql-detail" } }),
-                  then: (r: (v: unknown) => unknown) =>
-                    r({ data: null, error: { message: "sql-detail" } }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      },
-    }));
-    const { useFiscalMicrorganismosLite } = await import(
-      "@/hooks/useFiscalMicrorganismosLite"
+  it("useFiscalMicrorganismosLite não retorna [] em caso de erro", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(
+      new URL("../../../hooks/useFiscalMicrorganismosLite.ts", import.meta.url),
+      "utf8",
     );
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const client = qc.getQueryCache();
-    const key = ["fiscal", "microrganismos-lite", ""];
-    // Executa queryFn diretamente
-    await expect(
-      qc.fetchQuery({
-        queryKey: key,
-        queryFn: () => {
-          // Reproduz a lógica: chama o hook seria necessário render. Em vez
-          // disso, verificamos que a mensagem lançada é a amigável.
-          return Promise.reject(new Error("Falha ao consultar microrganismos."));
-        },
-      }),
-    ).rejects.toThrow(/Falha ao consultar microrganismos/);
-    expect(client).toBeDefined();
-    vi.doUnmock("@/integrations/supabase/client");
+    expect(src).not.toMatch(/if\s*\(\s*error\s*\)\s*return\s*\[\]/);
+    expect(src).toMatch(/throw new Error\("Falha ao consultar microrganismos/);
+  });
+
+  it("useFiscalProdutosLite não retorna [] em caso de erro", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(
+      new URL("../../../hooks/useFiscalProdutosLite.ts", import.meta.url),
+      "utf8",
+    );
+    expect(src).not.toMatch(/if\s*\(\s*error\s*\)\s*return\s*\[\]/);
+    expect(src).toMatch(/throw new Error\("Falha ao consultar produtos/);
   });
 });
+
 
 // ── Gate 3: estados carregando / erro / vazio no picker ───────────────────
 describe("Fase 3.2 · estados do catálogo no ProdutoPicker", () => {
