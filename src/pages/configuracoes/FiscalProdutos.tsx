@@ -557,6 +557,8 @@ function renderRow(
   r: UnifiedRow,
   readinessByProduct: Map<string, { minimally_classified: boolean | null }>,
   canEdit: boolean,
+  unresolvedLinkedIds: Set<string>,
+  readinessUnknown: boolean,
   onEditProduct: (p: ProductListItem) => void,
   onEditMicroLinked: (m: Extract<UnifiedRow, { kind: "microrganismo" }>) => void,
   onAssociate: (m: Extract<UnifiedRow, { kind: "microrganismo" }>) => void,
