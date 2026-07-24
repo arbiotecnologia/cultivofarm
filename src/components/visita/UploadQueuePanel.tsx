@@ -28,8 +28,6 @@ export function UploadQueuePanel({
   onCancelItem,
   onCancelAll,
 }: UploadQueuePanelProps) {
-  if (progress.total === 0 && items.length === 0) return null;
-
   const pct =
     progress.total > 0
       ? Math.round(((progress.completed + progress.failed) / progress.total) * 100)
@@ -48,6 +46,10 @@ export function UploadQueuePanel({
       return () => clearTimeout(timer);
     }
   }, [isActive, failedItems.length, pendingItems.length, items.length, onClearFinished]);
+
+  if (progress.total === 0 && items.length === 0) return null;
+
+
 
 
   return (
