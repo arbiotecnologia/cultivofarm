@@ -4,12 +4,17 @@
  *
  * ─────────────────────────────────────────────────────────────────────
  * TIPOS
- *   A coluna `product_id` (aditiva pela migration 20260804000000) ainda
- *   NÃO está no arquivo canônico `src/integrations/supabase/types.ts` —
- *   `types.ts` só regenera após a migration ser promovida. Para evitar
- *   casts amplos (`as any`) em toda a UI, este módulo define tipos
- *   NARROWS locais que ESTENDEM os oficiais e são aplicados APENAS no
- *   contorno da chamada Supabase (uma única linha por operação).
+ *   A coluna `product_id` (aditiva pela migration canônica
+ *   `supabase/migrations/20260804000000_fiscal_microrganismos_product_association.sql`)
+ *   ainda NÃO está no arquivo canônico
+ *   `src/integrations/supabase/types.ts` — `types.ts` só regenera após
+ *   a migration ser promovida pelo mecanismo oficial. Para evitar
+ *   `as any` e casts espalhados na UI, este módulo confina o boundary
+ *   de tipagem a uma única linha por operação (select/update), via
+ *   `as unknown as ...` estritamente local.
+ *
+ *   AÇÃO AO REGENERAR `types.ts`: remover as interfaces narrow abaixo
+ *   e substituir os casts por acesso direto ao Row/Update oficial.
  *
  * SEGURANÇA
  *   - Nenhum join por nome; associação exige `product_id` explícito.
@@ -18,6 +23,13 @@
  *     microrganismo é alterado aqui.
  *   - Erros de RLS/permissão são propagados como `permission_denied`
  *     (nunca convertidos em sucesso silencioso).
+ *
+ * CARDINALIDADE
+ *   A migration NÃO impõe UNIQUE em `product_id`. Vários microrganismos
+ *   podem apontar para o mesmo produto canônico. Este hook, portanto,
+ *   não trata 23505 como conflito específico de associação — tal código
+ *   só chegaria por outra restrição não relacionada e é propagado com
+ *   a mensagem original.
  * ─────────────────────────────────────────────────────────────────────
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,8 +41,8 @@ type MicroorganismRowOfficial =
 
 /**
  * Extensão narrow — reflete a coluna aditiva definida em
- * restoration/20260804000000_fiscal_microrganismos_product_association.sql.
- * Manter esta interface até a regeneração canônica de `types.ts`.
+ * `supabase/migrations/20260804000000_fiscal_microrganismos_product_association.sql`.
+ * Remover após regeneração canônica de `types.ts`.
  */
 export interface MicroorganismRow extends MicroorganismRowOfficial {
   product_id: string | null;
@@ -75,8 +87,8 @@ export function useMicroorganismList(
     enabled,
     queryFn: async () => {
       const term = search.trim().replace(/[,()]/g, " ").slice(0, 100);
-      // Cast narrow no CONTORNO: apenas o retorno do select é reformado
-      // para incluir product_id, coluna aditiva ainda não regenerada em
+      // Boundary narrow: apenas o retorno do select é reformado para
+      // incluir product_id, coluna aditiva ainda não regenerada em
       // types.ts. Nenhuma outra parte da UI toca o cast.
       let q = supabase
         .from("microrganismos")
@@ -109,16 +121,12 @@ export function useMicroorganismList(
   });
 }
 
-export class MicroorganismAssociationConflictError extends Error {
-  constructor() {
-    super("association_conflict");
-    this.name = "MicroorganismAssociationConflictError";
-  }
-}
-
 /**
  * Associa (ou desassocia com `productId = null`) um microrganismo a um
  * produto canônico. NÃO altera nenhum outro campo do microrganismo.
+ *
+ * Nenhum código de erro específico é convertido em conflito de
+ * associação: a migration não impõe unicidade em `product_id`.
  */
 export function useAssociateMicroorganism() {
   const qc = useQueryClient();
@@ -128,7 +136,7 @@ export function useAssociateMicroorganism() {
     { microorganismId: string; productId: string | null }
   >({
     mutationFn: async ({ microorganismId, productId }) => {
-      // Cast narrow no CONTORNO: payload contém apenas product_id (uuid|null).
+      // Boundary narrow: payload contém apenas product_id (uuid|null).
       const payload = { product_id: productId } as unknown as Database["public"]["Tables"]["microrganismos"]["Update"];
       const { data, error } = await supabase
         .from("microrganismos")
@@ -138,10 +146,6 @@ export function useAssociateMicroorganism() {
         .maybeSingle();
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
-        // Violação de unique index parcial (dois microrganismos para o
-        // mesmo produto) chega como 23505.
-        const code = (error as { code?: string }).code;
-        if (code === "23505") throw new MicroorganismAssociationConflictError();
         throw new Error(error.message);
       }
       if (!data) throw new Error("not_found");
