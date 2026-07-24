@@ -2,12 +2,15 @@
  * Fase Fiscal 3.21 — Auditoria estática da migration canônica.
  *
  * Fonte canônica ÚNICA (aditiva, transacional):
+ *   supabase/migrations/20260806000000_fiscal_microorganism_profiles.sql
+ *
+ * Espelho documental (SEM SQL executável):
  *   restoration/migrations/20260806000000_fiscal_microorganism_profiles.sql
  *
  * Regras verificadas:
- *  - Existe exatamente UMA cópia executável em restoration/migrations/.
- *  - Nenhuma cópia executável em supabase/migrations/ (guardas por bloqueio
- *    do sandbox — evita fonte dupla).
+ *  - Existe exatamente UMA cópia executável (em supabase/migrations/).
+ *  - restoration/ contém apenas stub documental — sem BEGIN/CREATE/ALTER/
+ *    GRANT/REVOKE/COMMIT.
  *  - Aditiva: sem DROP TABLE/COLUMN, sem TRUNCATE, sem DELETE.
  *  - Contém CREATE TABLE microorganism_fiscal_profiles + FK para
  *    public.microrganismos + is_active + índice único parcial.
@@ -22,12 +25,20 @@ import path from "node:path";
 
 const CANON = path.resolve(
   process.cwd(),
+  "supabase/migrations/20260806000000_fiscal_microorganism_profiles.sql",
+);
+const STUB = path.resolve(
+  process.cwd(),
   "restoration/migrations/20260806000000_fiscal_microorganism_profiles.sql",
 );
 
 const sql = fs.readFileSync(CANON, "utf-8");
 
 describe("Fase 3.21 — migration canônica microorganism_fiscal_profiles", () => {
+  test("canônica existe em supabase/migrations/", () => {
+    expect(fs.existsSync(CANON)).toBe(true);
+  });
+
   test("aditiva: sem operações destrutivas", () => {
     expect(sql).not.toMatch(/\bDROP\s+TABLE\b/i);
     expect(sql).not.toMatch(/\bDROP\s+COLUMN\b/i);
@@ -68,16 +79,21 @@ describe("Fase 3.21 — migration canônica microorganism_fiscal_profiles", () =
     expect(sql).toMatch(/GRANT\s+SELECT\s+ON\s+public\.v_microorganism_fiscal_readiness\s+TO\s+authenticated/i);
   });
 
-  test("fonte executável única: stub sem SQL executável em supabase/migrations/", () => {
-    const mirror = path.resolve(process.cwd(), "supabase/migrations/20260806000000_fiscal_microorganism_profiles.sql");
-    if (fs.existsSync(mirror)) {
-      const body = fs.readFileSync(mirror, "utf-8");
-      // Se existir, deve ser stub documental — sem BEGIN/CREATE/GRANT/ALTER.
-      expect(body).not.toMatch(/\bBEGIN;/);
-      expect(body).not.toMatch(/\bCREATE\s+(TABLE|VIEW|POLICY)/i);
-      expect(body).not.toMatch(/\bGRANT\b/i);
-    }
-    // Se não existir, garantir que a canônica em restoration/ está preservada
-    expect(fs.existsSync(CANON)).toBe(true);
+  test("fonte executável única: restoration/ é stub documental sem SQL executável", () => {
+    expect(fs.existsSync(STUB)).toBe(true);
+    const raw = fs.readFileSync(STUB, "utf-8");
+    // Remove linhas de comentário SQL antes de validar ausência de statements.
+    const body = raw
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("--"))
+      .join("\n");
+    expect(body).not.toMatch(/\bBEGIN\s*;/i);
+    expect(body).not.toMatch(/\bCOMMIT\s*;/i);
+    expect(body).not.toMatch(/\bCREATE\s+(TABLE|VIEW|POLICY|INDEX|TRIGGER|OR\s+REPLACE)/i);
+    expect(body).not.toMatch(/\bALTER\s+(TABLE|VIEW)/i);
+    expect(body).not.toMatch(/\bGRANT\b/i);
+    expect(body).not.toMatch(/\bREVOKE\b/i);
+    // Aponta para o caminho canônico
+    expect(raw).toMatch(/supabase\/migrations\/20260806000000_fiscal_microorganism_profiles\.sql/);
   });
 });
