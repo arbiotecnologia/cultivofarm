@@ -81,14 +81,19 @@ describe("Fase 3.21 — migration canônica microorganism_fiscal_profiles", () =
 
   test("fonte executável única: restoration/ é stub documental sem SQL executável", () => {
     expect(fs.existsSync(STUB)).toBe(true);
-    const body = fs.readFileSync(STUB, "utf-8");
-    expect(body).not.toMatch(/\bBEGIN;/);
-    expect(body).not.toMatch(/\bCOMMIT;/);
+    const raw = fs.readFileSync(STUB, "utf-8");
+    // Remove linhas de comentário SQL antes de validar ausência de statements.
+    const body = raw
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("--"))
+      .join("\n");
+    expect(body).not.toMatch(/\bBEGIN\s*;/i);
+    expect(body).not.toMatch(/\bCOMMIT\s*;/i);
     expect(body).not.toMatch(/\bCREATE\s+(TABLE|VIEW|POLICY|INDEX|TRIGGER|OR\s+REPLACE)/i);
     expect(body).not.toMatch(/\bALTER\s+(TABLE|VIEW)/i);
     expect(body).not.toMatch(/\bGRANT\b/i);
     expect(body).not.toMatch(/\bREVOKE\b/i);
     // Aponta para o caminho canônico
-    expect(body).toMatch(/supabase\/migrations\/20260806000000_fiscal_microorganism_profiles\.sql/);
+    expect(raw).toMatch(/supabase\/migrations\/20260806000000_fiscal_microorganism_profiles\.sql/);
   });
 });
