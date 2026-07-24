@@ -1,0 +1,102 @@
+/**
+ * Fase SINIEF 4.0 — Testes do verificador de types.ts SINIEF 49.
+ * Gate permanece PENDING enquanto types.ts real não é regenerado.
+ */
+import { describe, test, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import {
+  SINIEF49_FISCAL_INVOICES_COLS,
+  SINIEF49_TABLES,
+  classifyVerdict,
+  verifySinief49Types,
+} from "../../../../../scripts/verify-fiscal-types-sinief49";
+
+function buildFakeTypes(): string {
+  // Constrói um types.ts sintético contendo as entidades esperadas.
+  const invoicesRows = SINIEF49_FISCAL_INVOICES_COLS.map(
+    (c) => `          ${c.name}: ${c.tsType} | null`,
+  ).join("\n");
+
+  const invoicesBlock = `
+      fiscal_invoices: {
+        Row: {
+          id: string
+${invoicesRows}
+        }
+        Insert: { id?: string }
+        Update: { id?: string }
+        Relationships: []
+      }`;
+
+  const newTables = SINIEF49_TABLES.map((t) => {
+    const cols = t.columns
+      .map((c) => `          ${c.name}: ${c.tsType}${c.nullable ? " | null" : ""}`)
+      .join("\n");
+    const rels = (t.relationships ?? [])
+      .map(
+        (r) => `          {
+            foreignKeyName: "${t.name}_${r.columns.join("_")}_fkey"
+            columns: [${r.columns.map((c) => `"${c}"`).join(", ")}]
+            isOneToOne: false
+            referencedRelation: "${r.referencedRelation}"
+            referencedColumns: [${r.referencedColumns.map((c) => `"${c}"`).join(", ")}]
+          },`,
+      )
+      .join("\n");
+    return `
+      ${t.name}: {
+        Row: {
+${cols}
+        }
+        Insert: { id?: string }
+        Update: { id?: string }
+        Relationships: [
+${rels}
+        ]
+      }`;
+  }).join("\n");
+
+  return `export type Database = { public: { Tables: {${invoicesBlock}\n${newTables}
+      }, Views: {}, Functions: {}, Enums: {}, CompositeTypes: {} } }
+`;
+}
+
+describe("verify-fiscal-types-sinief49", () => {
+  test("classifica PENDING quando types.ts real ainda não expõe as entidades", () => {
+    const real = fs.readFileSync(
+      path.resolve(process.cwd(), "src/integrations/supabase/types.ts"),
+      "utf8",
+    );
+    const misses = verifySinief49Types(real);
+    const verdict = classifyVerdict(real, misses);
+    expect(verdict).toBe("PENDING");
+  });
+
+  test("classifica PASS quando types.ts sintético cobre 100% do contrato", () => {
+    const fake = buildFakeTypes();
+    const misses = verifySinief49Types(fake);
+    expect(misses).toEqual([]);
+    expect(classifyVerdict(fake, misses)).toBe("PASS");
+  });
+
+  test("classifica FAIL quando alguma tabela está incompleta (parcial)", () => {
+    const broken = buildFakeTypes().replace(
+      /fiscal_invoice_item_id: string/,
+      "fiscal_invoice_item_id?: string",
+    );
+    const misses = verifySinief49Types(broken);
+    // Detecta divergência de nullability.
+    expect(misses.some((m) => m.kind === "nullable")).toBe(true);
+    expect(classifyVerdict(broken, misses)).toBe("FAIL");
+  });
+
+  test("relationships obrigatórios são cobrados", () => {
+    const stripped = buildFakeTypes().replace(
+      /referencedRelation: "fiscal_invoices"/g,
+      'referencedRelation: "other"',
+    );
+    const misses = verifySinief49Types(stripped);
+    expect(misses.some((m) => m.kind === "relationship")).toBe(true);
+  });
+});
