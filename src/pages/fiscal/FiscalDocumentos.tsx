@@ -163,7 +163,7 @@ export default function FiscalDocumentos() {
             Recursos previstos: consulta paginada de <em>fiscal_invoices</em>,
             detalhe com itens, eventos e trilha de auditoria mascarados,
             criação/edição manual restrita a ambiente seguro
-            (NOT_CONFIGURED/HOMOLOGATION) e provider NONE.
+            (Não configurado/Homologação) e provedor Nenhum.
           </CardContent>
         </Card>
       </div>
