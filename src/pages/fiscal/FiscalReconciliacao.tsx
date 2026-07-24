@@ -198,9 +198,9 @@ export default function FiscalReconciliacao() {
               <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">Todos</SelectItem>
-                <SelectItem value="NFE">NFE</SelectItem>
-                <SelectItem value="NFSE">NFSE</SelectItem>
-                <SelectItem value="OTHER">OTHER</SelectItem>
+                <SelectItem value="NFE">{DOCUMENT_MODEL.label("NFE")}</SelectItem>
+                <SelectItem value="NFSE">{DOCUMENT_MODEL.label("NFSE")}</SelectItem>
+                <SelectItem value="OTHER">{DOCUMENT_MODEL.label("OTHER")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -213,10 +213,10 @@ export default function FiscalReconciliacao() {
               <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">Todas</SelectItem>
-                <SelectItem value="MANUAL_RECORD">MANUAL_RECORD</SelectItem>
-                <SelectItem value="EXTERNAL_IMPORTED">EXTERNAL_IMPORTED</SelectItem>
-                <SelectItem value="SYSTEM_PREPARED">SYSTEM_PREPARED</SelectItem>
-                <SelectItem value="PROVIDER_INTEGRATED">PROVIDER_INTEGRATED</SelectItem>
+                <SelectItem value="MANUAL_RECORD">{DOCUMENT_ORIGIN.label("MANUAL_RECORD")}</SelectItem>
+                <SelectItem value="EXTERNAL_IMPORTED">{DOCUMENT_ORIGIN.label("EXTERNAL_IMPORTED")}</SelectItem>
+                <SelectItem value="SYSTEM_PREPARED">{DOCUMENT_ORIGIN.label("SYSTEM_PREPARED")}</SelectItem>
+                <SelectItem value="PROVIDER_INTEGRATED">{DOCUMENT_ORIGIN.label("PROVIDER_INTEGRATED")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -230,7 +230,7 @@ export default function FiscalReconciliacao() {
               <SelectContent>
                 <SelectItem value="__all__">Todos</SelectItem>
                 {RECONCILIATION_STATUS_VALUES.map((v) => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                  <SelectItem key={v} value={v}>{RECONCILIATION_STATUS.label(v)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
