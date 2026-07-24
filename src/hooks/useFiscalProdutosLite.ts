@@ -1,7 +1,11 @@
 /**
- * Fase Fiscal 3.16.2-B — Hook leve de produtos com perfil fiscal para o
- * wizard. Retorna apenas metadados sanitizados; nunca senha, chave ou
- * campos administrativos. Se a RLS negar, devolve [].
+ * Fase Fiscal 3.16.2-B / SINIEF 3.2 — Hook leve de produtos com perfil fiscal
+ * para o wizard. Retorna apenas metadados sanitizados; nunca senha, chave ou
+ * campos administrativos.
+ *
+ * 3.2: falhas do Supabase são propagadas como erro amigável (sem SQL cru).
+ * Nunca converte falha em `[]` — isso confundiria catálogo vazio com
+ * indisponibilidade e impediria `isError` de acionar UI de erro.
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
