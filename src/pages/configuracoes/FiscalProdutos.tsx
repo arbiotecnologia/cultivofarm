@@ -182,26 +182,35 @@ export default function FiscalProdutos() {
   });
 
   const productItemsPage = listQuery.data?.items ?? [];
-  const pageProductIds = new Set(productItemsPage.map((it) => it.product_id));
-  const microLinkedIds = Array.from(
-    new Set(
-      (microorganismsQuery.data ?? [])
-        .map((m) => m.product_id)
-        .filter((id): id is string => !!id),
-    ),
+  const pageProductIds = useMemo(
+    () => new Set(productItemsPage.map((it) => it.product_id)),
+    [productItemsPage],
+  );
+  const microLinkedIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (microorganismsQuery.data ?? [])
+            .map((m) => m.product_id)
+            .filter((id): id is string => !!id),
+        ),
+      ),
+    [microorganismsQuery.data],
   );
   // Fonte independente: resolve produtos vinculados por microrganismos que
   // não estejam na página/filtro atual, sem SELECT amplo.
-  const missingLinkedProductIds = microLinkedIds.filter(
-    (id) => !pageProductIds.has(id),
+  const missingLinkedProductIds = useMemo(
+    () => microLinkedIds.filter((id) => !pageProductIds.has(id)),
+    [microLinkedIds, pageProductIds],
   );
   const resolvedLinkedQuery = useProductFiscalListByIds(missingLinkedProductIds, {
     enabled: uiEnabled && access !== "none",
   });
 
-  const productIds = useMemo(() => {
-    return Array.from(new Set([...pageProductIds, ...microLinkedIds]));
-  }, [pageProductIds, microLinkedIds]);
+  const productIds = useMemo(
+    () => Array.from(new Set([...pageProductIds, ...microLinkedIds])),
+    [pageProductIds, microLinkedIds],
+  );
 
   const readinessQuery = useProductFiscalReadiness(productIds, {
     enabled: uiEnabled && access !== "none",
