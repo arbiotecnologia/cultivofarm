@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, Filter, FlaskConical, Download, Layers, Trash2, FileDown, Check, ChevronsUpDown, FileText, Droplets, Info, RefreshCcw, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { wipeCatalogoProdutos, importCatalogoARBioV13, isCatalogoARBioV13Aplicado, auditProdutosOrfaos, previewOrphanCleanup, executeOrphanCleanup, type OrphanCleanupPlan } from "@/lib/protocolos/seedCatalogoARBioV13";
+import { wipeCatalogoProdutos, importCatalogoARBioV13, isCatalogoARBioV13Aplicado } from "@/lib/protocolos/seedCatalogoARBioV13";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateCatalogoProdutosPdf } from "@/lib/pdf/catalogoProdutosPdf";
 import { generateFichaTecnicaProdutoPdf } from "@/lib/pdf/fichaTecnicaProdutoPdf";
@@ -98,71 +98,8 @@ export function ProdutosTab() {
   const isAdmin = roles.includes("administrador");
   const [reloadOpen, setReloadOpen] = useState(false);
   const [reloading, setReloading] = useState(false);
-  const [auditing, setAuditing] = useState(false);
-  const [cleanupOpen, setCleanupOpen] = useState(false);
-  const [cleanupLoading, setCleanupLoading] = useState(false);
-  const [cleanupExecuting, setCleanupExecuting] = useState(false);
-  const [cleanupPlan, setCleanupPlan] = useState<OrphanCleanupPlan | null>(null);
 
-  const handleAuditarOrfaos = async () => {
-    setAuditing(true);
-    try {
-      const data = await auditProdutosOrfaos();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `produtos-orfaos-audit-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      const resumo = data.resumo;
-      toast.success(
-        `Auditoria concluída: ${resumo.tabelas_com_orfaos ?? 0} tabelas com órfãos, ${resumo.distinct_ids_orfaos_global ?? 0} IDs órfãos distintos.`,
-        {
-          description: resumo.mode === "client-fallback" ? "Executada pelo cliente autenticado porque a Edge Function ainda não está disponível no projeto." : undefined,
-        },
-      );
-    } catch (e) {
-      toast.error(`Falha na auditoria: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setAuditing(false);
-    }
-  };
 
-  const handleAbrirLimpezaOrfaos = async () => {
-    setCleanupOpen(true);
-    setCleanupPlan(null);
-    setCleanupLoading(true);
-    try {
-      const plan = await previewOrphanCleanup();
-      setCleanupPlan(plan);
-    } catch (e) {
-      toast.error(`Falha no dry-run: ${e instanceof Error ? e.message : String(e)}`);
-      setCleanupOpen(false);
-    } finally {
-      setCleanupLoading(false);
-    }
-  };
-
-  const handleConfirmarLimpezaOrfaos = async () => {
-    setCleanupExecuting(true);
-    try {
-      const result = await executeOrphanCleanup();
-      if (!result.ok) {
-        toast.error(`Limpeza interrompida em ${result.failedAt?.tabela}.${result.failedAt?.coluna}`, {
-          description: result.failedAt?.detail,
-        });
-        return;
-      }
-      toast.success(`Órfãos removidos: ${result.totalDeleted} linhas apagadas, ${result.totalNullified} nulificadas.`);
-      setCleanupOpen(false);
-      setCleanupPlan(null);
-    } catch (e) {
-      toast.error(`Erro na limpeza: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setCleanupExecuting(false);
-    }
-  };
 
   const [catalogoAplicado, setCatalogoAplicado] = useState(false);
 
@@ -621,112 +558,8 @@ export function ProdutosTab() {
             Exportar PDF
           </Button>
 
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden md:flex"
-              onClick={handleAuditarOrfaos}
-              disabled={auditing}
-            >
-              {auditing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}
-              Auditar órfãos
-            </Button>
-          )}
 
-          {isAdmin && (
-            <AlertDialog open={cleanupOpen} onOpenChange={(v) => { setCleanupOpen(v); if (!v) setCleanupPlan(null); }}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden md:flex"
-                  onClick={(e) => { e.preventDefault(); handleAbrirLimpezaOrfaos(); }}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Limpar órfãos
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="max-w-2xl">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Limpar referências órfãs a produtos</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div className="space-y-3 text-sm">
-                      <p>
-                        Dry-run: nenhum <code>DELETE</code>/<code>UPDATE</code> foi executado ainda.
-                        Revise o plano abaixo antes de confirmar.
-                      </p>
-                      {cleanupLoading && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" /> Coletando dados…
-                        </div>
-                      )}
-                      {cleanupPlan && (
-                        <>
-                          <div className="rounded border p-3 bg-muted/30">
-                            <p><strong>IDs órfãos distintos:</strong> {cleanupPlan.total_ids_orfaos}</p>
-                            <p><strong>Linhas a apagar:</strong> {cleanupPlan.total_linhas_a_remover}</p>
-                            <p><strong>Linhas a nulificar (preservam histórico):</strong> {cleanupPlan.total_linhas_a_nulificar}</p>
-                          </div>
-                          {cleanupPlan.steps.length === 0 ? (
-                            <p className="text-muted-foreground">
-                              Nenhuma referência órfã encontrada — nada a fazer.
-                            </p>
-                          ) : (
-                            <div className="max-h-72 overflow-auto rounded border">
-                              <table className="w-full text-xs">
-                                <thead className="bg-muted sticky top-0">
-                                  <tr>
-                                    <th className="text-left p-2">Tabela</th>
-                                    <th className="text-left p-2">Coluna</th>
-                                    <th className="text-left p-2">Ação</th>
-                                    <th className="text-right p-2">Linhas</th>
-                                    <th className="text-right p-2">IDs distintos</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {cleanupPlan.steps.map((s) => (
-                                    <tr key={`${s.tabela}.${s.coluna}`} className="border-t">
-                                      <td className="p-2 font-mono">{s.tabela}</td>
-                                      <td className="p-2 font-mono">{s.coluna}</td>
-                                      <td className="p-2">
-                                        <Badge variant={s.acao === "delete" ? "destructive" : "secondary"}>
-                                          {s.acao === "delete" ? "DELETE" : "SET NULL"}
-                                        </Badge>
-                                      </td>
-                                      <td className="p-2 text-right">{s.linhas_afetadas}</td>
-                                      <td className="p-2 text-right">{s.distinct_ids}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                          <p className="text-destructive text-xs">
-                            Confirmar executará DELETE/UPDATE nas linhas listadas. Ação irreversível.
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={cleanupExecuting}>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={(e) => { e.preventDefault(); handleConfirmarLimpezaOrfaos(); }}
-                    disabled={cleanupExecuting || cleanupLoading || !cleanupPlan || cleanupPlan.steps.length === 0}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {cleanupExecuting ? (
-                      <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Removendo…</>
-                    ) : (
-                      "Confirmar remoção"
-                    )}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+
 
           {isAdmin && !catalogoAplicado && (
             <AlertDialog open={reloadOpen} onOpenChange={setReloadOpen}>
