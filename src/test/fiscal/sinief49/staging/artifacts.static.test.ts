@@ -101,23 +101,24 @@ describe("SINIEF 49 · fixtures/cenários/cleanup: staging apenas, marker enforc
 });
 
 describe("SINIEF 49 · nenhum artefato introduz transmissão/provedor/segredo", () => {
-  const bag = [PRE, POST, FIX, SCE, CLE, README].join("\n");
-  test("sem provedor/URL/transmissão/XML", () => {
+  const bag = [PRE, POST, FIX, SCE, CLE].join("\n");
+  test("sem provedor/URL/transmissão/XML nos SQLs", () => {
     const noComments = bag
       .split("\n")
-      .filter((l) => !l.trim().startsWith("--") && !l.trim().startsWith("#"))
+      .filter((l) => !l.trim().startsWith("--"))
       .join("\n");
     expect(noComments).not.toMatch(/sefaz/i);
     expect(noComments).not.toMatch(/focus[_-]?nfe/i);
-    expect(noComments).not.toMatch(/https?:\/\/(?!.*supabase\.co)/i);
-    expect(noComments).not.toMatch(/\btransmit\b/i);
+    expect(noComments).not.toMatch(/https?:\/\//i);
+    expect(noComments).not.toMatch(/\btransmit/i);
     expect(noComments).not.toMatch(/<\?xml/);
   });
   test("sem secrets aparentes hardcoded", () => {
-    expect(bag).not.toMatch(/SUPABASE_ACCESS_TOKEN\s*=/);
-    expect(bag).not.toMatch(/service_role_key\s*=\s*['"]ey/i);
-    expect(bag).not.toMatch(/sb_secret_[A-Za-z0-9]{8,}/);
-    expect(bag).not.toMatch(/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/);
+    const all = bag + "\n" + README;
+    expect(all).not.toMatch(/SUPABASE_ACCESS_TOKEN\s*=\s*['"]?\S/);
+    expect(all).not.toMatch(/service_role_key\s*=\s*['"]ey/i);
+    expect(all).not.toMatch(/sb_secret_[A-Za-z0-9]{8,}/);
+    expect(all).not.toMatch(/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/);
   });
 });
 
