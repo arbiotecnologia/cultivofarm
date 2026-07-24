@@ -566,7 +566,8 @@ function renderRow(
   if (r.kind === "produto") {
     const p = r.product;
     const ready = readinessByProduct.get(p.product_id);
-    const pending = !ready?.minimally_classified;
+    // Nunca virar falha/loading de readiness em "Pendente".
+    const pending = readinessUnknown ? null : !ready?.minimally_classified;
     return (
       <tr key={r.rowKey} className="border-t" data-row-kind="produto" data-testid={`row-${r.rowKey}`}>
         <td className="p-2">
@@ -583,7 +584,11 @@ function renderRow(
           </Badge>
         </td>
         <td className="p-2">
-          {pending ? <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge> : <Badge>OK</Badge>}
+          {pending === null
+            ? <Badge variant="outline" data-testid="readiness-unknown-badge">—</Badge>
+            : pending
+              ? <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>
+              : <Badge>OK</Badge>}
         </td>
         <td className="p-2 text-right">
           <Button
@@ -599,8 +604,16 @@ function renderRow(
   }
   // microrganismo
   const linked = r.productProfile;
+  // Enquanto a resolução do product_id vinculado estiver carregando ou
+  // tiver falhado, NÃO afirmar "não associado".
+  const linkUnresolved =
+    !!r.productId && !linked && unresolvedLinkedIds.has(r.productId);
   const ready = linked ? readinessByProduct.get(linked.product_id) : null;
-  const pending = linked ? !ready?.minimally_classified : true;
+  const pending = !linked
+    ? null
+    : readinessUnknown
+      ? null
+      : !ready?.minimally_classified;
   return (
     <tr key={r.rowKey} className="border-t" data-row-kind="microrganismo" data-testid={`row-${r.rowKey}`}>
       <td className="p-2">
@@ -610,7 +623,12 @@ function renderRow(
       <td className="p-2">
         <div className="flex flex-wrap gap-1">
           <Badge variant="secondary">{ENTITY_KIND.label("microrganismo")}</Badge>
-          {!linked && (
+          {!linked && linkUnresolved && (
+            <Badge variant="outline" data-testid="link-unresolved-badge">
+              Resolvendo vínculo…
+            </Badge>
+          )}
+          {!linked && !linkUnresolved && (
             <Badge variant="outline" className="border-amber-500/60 text-amber-700 dark:text-amber-300" data-testid="badge-nao-associado">
               Produto fiscal não associado
             </Badge>
@@ -632,10 +650,15 @@ function renderRow(
         )}
       </td>
       <td className="p-2">
-        {linked
-          ? (pending ? <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge> : <Badge>OK</Badge>)
-          : <Badge variant="outline">—</Badge>}
+        {!linked
+          ? <Badge variant="outline">—</Badge>
+          : pending === null
+            ? <Badge variant="outline" data-testid="readiness-unknown-badge">—</Badge>
+            : pending
+              ? <Badge variant="destructive" data-testid="pending-badge">Pendente</Badge>
+              : <Badge>OK</Badge>}
       </td>
+
       <td className="p-2 text-right space-x-2">
         {linked ? (
           <>
