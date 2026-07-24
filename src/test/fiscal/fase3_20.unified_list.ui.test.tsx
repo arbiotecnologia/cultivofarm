@@ -49,7 +49,7 @@ vi.mock("@/hooks/useMicroorganismFiscalAssociation", async () => {
   };
 });
 
-const mockUseMicroorganismFiscalProfile = vi.fn(() => ({ data: null, isLoading: false }));
+const mockUseMicroorganismFiscalProfile = vi.fn();
 const mockUseMicroorganismFiscalProfileList = vi.fn();
 const mockUseMicroorganismFiscalReadiness = vi.fn();
 const mockUseSaveMicroorganismFiscalProfile = vi.fn(() => ({
