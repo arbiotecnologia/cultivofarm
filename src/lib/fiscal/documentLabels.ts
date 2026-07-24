@@ -1,80 +1,52 @@
 /**
  * Fase Fiscal 3.16.2-B — Mapas pt-BR para os enums usados na tela de
- * Documentos Fiscais. Nenhum enum técnico deve vazar para o usuário.
+ * Documentos Fiscais.
  *
- * A chave `value` técnica permanece inalterada nos payloads/RPCs; a
- * apresentação é a única coisa afetada.
+ * Compatibilidade: continua exportando os símbolos originais, agora
+ * delegando à fonte única em `@/lib/fiscal/labels`.
  */
 
-export const DOCUMENT_MODEL_LABELS: Record<string, string> = {
-  "55": "NF-e (modelo 55)",
-  "65": "NFC-e (modelo 65)",
-  NFSE: "NFS-e",
-  OTHER: "Outro",
-};
+import {
+  DOCUMENT_MODEL,
+  DOCUMENT_ORIGIN,
+  NORMALIZED_STATUS,
+  DOCUMENT_STATUS,
+  FISCAL_ENVIRONMENT,
+  RECONCILIATION_STATUS,
+  INVOICE_TYPE,
+  ITEM_KIND,
+} from "@/lib/fiscal/labels";
 
-export const DOCUMENT_ORIGIN_LABELS: Record<string, string> = {
-  MANUAL_RECORD: "Registro manual",
-  PROVIDER_IMPORT: "Importado do provedor",
-  IMPORTED: "Importado",
-  MIGRATED: "Migrado",
-  OTHER: "Outro",
-};
+export const DOCUMENT_MODEL_LABELS: Record<string, string> = Object.fromEntries(
+  DOCUMENT_MODEL.map,
+);
+export const DOCUMENT_ORIGIN_LABELS: Record<string, string> = Object.fromEntries(
+  DOCUMENT_ORIGIN.map,
+);
+export const NORMALIZED_STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  NORMALIZED_STATUS.map,
+);
+export const STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  DOCUMENT_STATUS.map,
+);
+export const ENVIRONMENT_LABELS: Record<string, string> = Object.fromEntries(
+  FISCAL_ENVIRONMENT.map,
+);
+export const RECONCILIATION_STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  RECONCILIATION_STATUS.map,
+);
+export const INVOICE_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  INVOICE_TYPE.map,
+);
+export const ITEM_KIND_LABELS: Record<string, string> = Object.fromEntries(
+  ITEM_KIND.map,
+);
 
-export const NORMALIZED_STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Rascunho",
-  HOMOLOGATION: "Em homologação",
-  ISSUED: "Emitido",
-  CANCELED: "Cancelado",
-  REJECTED: "Rejeitado",
-  ARCHIVED: "Arquivado",
-  UNKNOWN: "Desconhecido",
-};
-
-export const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Rascunho",
-  AUTHORIZED: "Autorizado",
-  CANCELED: "Cancelado",
-  REJECTED: "Rejeitado",
-  PENDING: "Pendente",
-};
-
-export const ENVIRONMENT_LABELS: Record<string, string> = {
-  NOT_CONFIGURED: "Não configurado",
-  HOMOLOGATION: "Homologação",
-  PRODUCTION: "Produção",
-};
-
-export const RECONCILIATION_STATUS_LABELS: Record<string, string> = {
-  NOT_APPLICABLE: "Não aplicável",
-  PENDING: "Pendente",
-  MATCHED: "Conciliada",
-  DIVERGENT: "Divergente",
-  MANUAL_REVIEW: "Revisão manual",
-};
-
-export const INVOICE_TYPE_LABELS: Record<string, string> = {
-  NFE: "NF-e (produtos)",
-  NFSE: "NFS-e (serviços)",
-  OTHER: "Outro",
-};
-
-export const ITEM_KIND_LABELS: Record<string, string> = {
-  PRODUCT: "Produto",
-  SERVICE: "Serviço",
-};
-
-function pick(map: Record<string, string>, key: string | null | undefined): string {
-  if (key === null || key === undefined || key === "") return "—";
-  return map[key] ?? key;
-}
-
-export const labelDocumentModel = (v: string | null | undefined) => pick(DOCUMENT_MODEL_LABELS, v);
-export const labelDocumentOrigin = (v: string | null | undefined) => pick(DOCUMENT_ORIGIN_LABELS, v);
-export const labelNormalizedStatus = (v: string | null | undefined) => pick(NORMALIZED_STATUS_LABELS, v);
-export const labelStatus = (v: string | null | undefined) => pick(STATUS_LABELS, v);
-export const labelEnvironment = (v: string | null | undefined) => pick(ENVIRONMENT_LABELS, v);
-export const labelReconciliationStatus = (v: string | null | undefined) =>
-  pick(RECONCILIATION_STATUS_LABELS, v);
-export const labelInvoiceType = (v: string | null | undefined) => pick(INVOICE_TYPE_LABELS, v);
-export const labelItemKind = (v: string | null | undefined) => pick(ITEM_KIND_LABELS, v);
+export const labelDocumentModel = DOCUMENT_MODEL.label;
+export const labelDocumentOrigin = DOCUMENT_ORIGIN.label;
+export const labelNormalizedStatus = NORMALIZED_STATUS.label;
+export const labelStatus = DOCUMENT_STATUS.label;
+export const labelEnvironment = FISCAL_ENVIRONMENT.label;
+export const labelReconciliationStatus = RECONCILIATION_STATUS.label;
+export const labelInvoiceType = INVOICE_TYPE.label;
+export const labelItemKind = ITEM_KIND.label;
