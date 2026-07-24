@@ -204,25 +204,23 @@ describe("Fase 3.2 · perfil próprio libera prévia (produto)", () => {
   it("bloqueio some quando perfil do produto está ACTIVE", async () => {
     productProfileStatus = "ACTIVE";
     renderPanel();
-    // seleciona produto
     fireEvent.change(screen.getByPlaceholderText(/Buscar produto/i), {
       target: { value: "Alp" },
     });
     fireEvent.click(await screen.findByText("Produto Alpha"));
-    // preenche CFOP mínimo (4 dígitos) e destinatário para permitir prévia válida
-    const cfops = screen.getAllByLabelText("CFOP");
-    fireEvent.change(cfops[0], { target: { value: "5922" } });
-    const cnpjInputs = screen.getAllByLabelText(/CNPJ do destinatário/i);
-    fireEvent.change(cnpjInputs[0], { target: { value: "98765432000188" } });
+    // Perfil ACTIVE → status por item deve ser "configured" e nenhum
+    // resultado deve reportar missing/incomplete/unknown/loading.
     await waitFor(() =>
       expect(
-        screen.queryByTestId("sinief49-preview-blocked-profiles"),
-      ).not.toBeInTheDocument(),
+        screen.getAllByTestId("sinief49-perfil-status-configured").length,
+      ).toBeGreaterThan(0),
     );
-    expect(
-      screen.getAllByTestId("sinief49-perfil-status-configured").length,
-    ).toBeGreaterThan(0);
+    expect(screen.queryByTestId("sinief49-perfil-status-missing")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sinief49-perfil-status-incomplete")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sinief49-perfil-status-unknown")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("sinief49-preview-blocked-profiles")).not.toBeInTheDocument();
   });
+
 
   it("perfil incompleto NÃO libera prévia (status distinto de configurado)", async () => {
     productProfileStatus = "PENDING";
