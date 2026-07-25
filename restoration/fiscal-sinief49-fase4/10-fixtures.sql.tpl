@@ -59,13 +59,16 @@ ON CONFLICT (user_id, role) DO NOTHING;
 --   invoice_type NOT NULL (NFE|NFSE|NFCE|OUTRO)
 --   status       NOT NULL DEFAULT 'PENDING' CHECK IN (PENDING|ISSUED|CANCELED|ERROR)
 --   created_by   uuid NOT NULL
+-- normalized_status='DRAFT' é obrigatório porque o trigger de items
+-- (20260802000000_fiscal_invoice_items_state_guard.sql) bloqueia INSERTs
+-- de fiscal_invoice_items quando o pai não está em DRAFT/VALIDATING/READY/…
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by,
+  (id, invoice_type, status, normalized_status, created_by,
    direction, fiscal_operation_type,
    legal_basis, legal_version, tax_authority_notes)
 VALUES
   ('00000000-0000-4000-8000-000000000f01',
-   'NFE', 'PENDING', :'seed_user_id'::uuid,
+   'NFE', 'PENDING', 'DRAFT', :'seed_user_id'::uuid,
    'OUT', 'NORMAL',
    'FIXTURE sinief49-fx', 'FIXTURE', 'sinief49-fx-target')
 ON CONFLICT (id) DO NOTHING;
