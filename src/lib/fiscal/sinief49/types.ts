@@ -264,6 +264,10 @@ export interface CanonicalDraft {
   documentReferences: readonly DocumentReferenceInput[];
   stockLossContext: StockLossContextInput | null;
   icmsApprovalState: IcmsApprovalState | null;
+  /** SINIEF 20/2026 — situação de ICMS declarada (null quando não avaliada). */
+  icms: IcmsEvaluation | null;
+  /** SINIEF 20/2026 — snapshot imutável do `<dest>` da NF-e original. */
+  originalRecipientSnapshot: OriginalRecipientSnapshot | null;
   taxAuthorityNotes: string | null;
   legal: LegalMetadata;
   idempotencyKey: string;
