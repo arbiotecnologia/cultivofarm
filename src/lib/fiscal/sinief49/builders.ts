@@ -155,6 +155,8 @@ function baseDraft(
     recipient: PartyRef;
     stockLossContext: CanonicalDraft["stockLossContext"];
     icmsApprovalState: CanonicalDraft["icmsApprovalState"];
+    icms: CanonicalDraft["icms"];
+    originalRecipientSnapshot: CanonicalDraft["originalRecipientSnapshot"];
     taxAuthorityNotes: string | null;
     origin: { source: string; sourceId: string };
   },
@@ -173,6 +175,8 @@ function baseDraft(
     documentReferences,
     stockLossContext: extras.stockLossContext,
     icmsApprovalState: extras.icmsApprovalState,
+    icms: extras.icms,
+    originalRecipientSnapshot: extras.originalRecipientSnapshot,
     taxAuthorityNotes: extras.taxAuthorityNotes,
     legal: {
       basis: SINIEF_LEGAL_BASIS,
