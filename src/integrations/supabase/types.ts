@@ -6165,6 +6165,8 @@ export type Database = {
           homologation_validation_at: string | null
           homologation_validation_status: string
           homologation_validation_summary: Json
+          icms_amount: number | null
+          icms_due: boolean | null
           id: string
           idempotency_key: string | null
           invoice_number: string | null
@@ -6174,6 +6176,7 @@ export type Database = {
           locked_by: string | null
           normalized_status: string | null
           notes: string | null
+          original_recipient_snapshot: Json | null
           parent_invoice_id: string | null
           payload_schema_version: number | null
           provider: string | null
@@ -6214,6 +6217,8 @@ export type Database = {
           homologation_validation_at?: string | null
           homologation_validation_status?: string
           homologation_validation_summary?: Json
+          icms_amount?: number | null
+          icms_due?: boolean | null
           id?: string
           idempotency_key?: string | null
           invoice_number?: string | null
@@ -6223,6 +6228,7 @@ export type Database = {
           locked_by?: string | null
           normalized_status?: string | null
           notes?: string | null
+          original_recipient_snapshot?: Json | null
           parent_invoice_id?: string | null
           payload_schema_version?: number | null
           provider?: string | null
@@ -6263,6 +6269,8 @@ export type Database = {
           homologation_validation_at?: string | null
           homologation_validation_status?: string
           homologation_validation_summary?: Json
+          icms_amount?: number | null
+          icms_due?: boolean | null
           id?: string
           idempotency_key?: string | null
           invoice_number?: string | null
@@ -6272,6 +6280,7 @@ export type Database = {
           locked_by?: string | null
           normalized_status?: string | null
           notes?: string | null
+          original_recipient_snapshot?: Json | null
           parent_invoice_id?: string | null
           payload_schema_version?: number | null
           provider?: string | null
