@@ -81,7 +81,7 @@ function synthPassword(): string {
 
 async function ensureEnvGuard(): Promise<void> {
   if (resolveSinief49GuardMode() !== "enforce") {
-    throw new Error("ABORT: modo skip nao permitido em --execute; configure todas as variaveis STAGING.");
+    throw new Error("ABORT: modo skip não permitido em --execute; configure todas as variaveis STAGING.");
   }
   const g = assertSinief49StagingOnly(loadSinief49GuardInput());
   if (!g.ok) throw new Error(`ABORT: guard ambiente — ${g.reason}`);
