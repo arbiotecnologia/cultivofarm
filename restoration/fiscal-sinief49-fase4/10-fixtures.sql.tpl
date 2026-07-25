@@ -42,9 +42,12 @@ BEGIN
 END
 $guard$;
 
--- === user_roles (papéis atribuídos aos usuários criados pelo runner) ==
--- Fonte canônica de papéis. Runner cria auth.users antes; template só
--- amarra papel×user_id via user_roles (nunca escreve em profiles).
+-- === user_roles (papeis atribuidos aos usuarios criados pelo runner) ==
+-- Fonte canonica de papeis. IMPORTANTE: o runner ja executou o setup
+-- clientes -> user_clientes(is_active=true) para :u_prod ANTES de invocar
+-- este template, porque o trigger real exige vinculo cliente ANTES de
+-- atribuir a role cliente_produtor. Este INSERT e idempotente (ON CONFLICT)
+-- e nunca escreve em profiles.
 INSERT INTO public.user_roles (user_id, role) VALUES
   (:'u_admin'::uuid,  'administrador'),
   (:'u_fin'::uuid,    'financeiro'),
