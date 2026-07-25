@@ -126,6 +126,12 @@ BEGIN
   IF v_left <> 0 THEN
     RAISE EXCEPTION 'ABORT[cleanup]: fixture residual em fiscal_stock_loss_contexts';
   END IF;
+
+  SELECT count(*) INTO v_left FROM public.clientes
+   WHERE nome LIKE 'FIXTURE sinief49-fx%' OR observacoes LIKE 'FIXTURE sinief49-fx%';
+  IF v_left <> 0 THEN
+    RAISE EXCEPTION 'ABORT[cleanup]: fixture residual em clientes';
+  END IF;
 END
 $verify$;
 
