@@ -95,6 +95,62 @@ async function ensureGuards(): Promise<void> {
   // O consumidor real injeta pg client; aqui usamos supabase-js RPC quando disponível.
 }
 
+/**
+ * Fase SINIEF 4.0.2 — Consulta REAL do marker via psql em PGURL_STAGING
+ * antes de qualquer escrita. Aborta em:
+ *   - marker ausente/duplicado;
+ *   - marker.project_ref = navfzbwgwzruipouyfnk (produção);
+ *   - marker.project_ref != FISCAL_TEST_PROJECT_REF ou !=
+ *     ref extraído de PGREST_STAGING.
+ * Nunca imprime a string de conexão nem o project_ref completo em falhas.
+ */
+function verifyStagingMarkerViaPsql(
+  pgUrl: string,
+  expectedRef: string,
+  restUrl: string,
+): void {
+  const r = spawnSync(
+    "psql",
+    [
+      pgUrl,
+      "-v", "ON_ERROR_STOP=1",
+      "-tA", "-F", "|",
+      "-c",
+      "SELECT count(*)::text || '|' || coalesce(max(project_ref),'') " +
+      "FROM public._fiscal_staging_marker WHERE marker='STAGING'",
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  if (r.status !== 0) {
+    // Não vaza stderr do psql (pode conter DSN); reporta código apenas.
+    throw new Error(`ABORT: psql marker check falhou (exit ${r.status ?? "?"})`);
+  }
+  const line = (r.stdout ?? "").trim().split("\n").pop() ?? "";
+  const [countStr, projectRef] = line.split("|");
+  const count = Number.parseInt(countStr ?? "0", 10);
+  if (!Number.isFinite(count) || count === 0) {
+    throw new Error("ABORT: marker STAGING ausente em _fiscal_staging_marker");
+  }
+  if (count > 1) {
+    throw new Error(`ABORT: marker STAGING duplicado (${count} linhas)`);
+  }
+  if (!projectRef) {
+    throw new Error("ABORT: marker sem project_ref");
+  }
+  if (projectRef === SINIEF49_PROD_PROJECT_REF) {
+    throw new Error("ABORT: marker aponta PRODUÇÃO");
+  }
+  if (projectRef !== expectedRef) {
+    throw new Error("ABORT: marker.project_ref diverge de FISCAL_TEST_PROJECT_REF");
+  }
+  // Coerência com PGREST_STAGING: URL deve conter o ref esperado.
+  if (!restUrl.toLowerCase().includes(expectedRef.toLowerCase())) {
+    throw new Error("ABORT: PGREST_STAGING não corresponde ao ref do marker");
+  }
+  if (restUrl.toLowerCase().includes(SINIEF49_PROD_PROJECT_REF.toLowerCase())) {
+    throw new Error("ABORT: PGREST_STAGING contém ref de PRODUÇÃO");
+  }
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const execute = args.includes("--execute");
