@@ -113,6 +113,43 @@ export interface OriginalInvoiceContext {
   originalInvoiceId?: string;
   originalRecipient: PartyRef;
   originalItems: readonly OriginalItemBalance[];
+  /**
+   * Ajuste SINIEF 20/2026 — snapshot IMUTÁVEL do grupo XML `<dest>` da NF-e
+   * original. Se omitido, é derivado de `originalRecipient` (kind/cnpj/name).
+   * Persistido em `fiscal_invoices.original_recipient_snapshot`.
+   */
+  originalRecipientSnapshot?: OriginalRecipientSnapshot;
+}
+
+/** Snapshot do grupo XML `<dest>` da NF-e original. Estritamente imutável. */
+export interface OriginalRecipientSnapshot {
+  kind: PartyRef["kind"];
+  /** CNPJ/CPF em dígitos (ou alfanumérico já validado externamente). */
+  cnpjCpf: string;
+  name?: string;
+  ie?: string;
+  address?: Readonly<{
+    logradouro?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    municipio?: string;
+    uf?: string;
+    cep?: string;
+  }>;
+  /** Instante UTC ISO-8601 da captura do snapshot. */
+  capturedAt: string;
+  /** Origem literal (ex.: 'xml.dest', 'manual', 'api.provider'). */
+  source: string;
+}
+
+/**
+ * Ajuste SINIEF 20/2026 — avaliação explícita de ICMS.
+ * `amount` só pode existir quando `due === true` (senão validador rejeita).
+ */
+export interface IcmsEvaluation {
+  due: boolean;
+  amount?: number;
 }
 
 export interface StockLossContextInput {
