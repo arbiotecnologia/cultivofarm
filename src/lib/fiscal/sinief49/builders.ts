@@ -126,6 +126,17 @@ function validateCommon(
       issues.push(issue(E.ITEM_UNIT_VALUE_NON_POSITIVE, `${p}.unitValue`));
     }
   });
+  // SINIEF 20/2026 — ICMS somente quando há imposto devido.
+  if (input.icms) {
+    const amt = input.icms.amount;
+    if (amt !== undefined) {
+      if (typeof amt !== "number" || !Number.isFinite(amt) || amt < 0) {
+        issues.push(issue(E.ICMS_AMOUNT_INVALID, "icms.amount"));
+      } else if (amt > 0 && input.icms.due !== true) {
+        issues.push(issue(E.ICMS_AMOUNT_WITHOUT_DUE, "icms.amount"));
+      }
+    }
+  }
 }
 
 function normalizeItems(items: readonly DraftItemInput[]): CanonicalDraftItem[] {
