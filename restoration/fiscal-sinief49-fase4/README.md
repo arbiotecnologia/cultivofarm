@@ -55,7 +55,29 @@ bunx tsx scripts/verify-fiscal-types-sinief49.ts
 bun run typecheck && bun run build && bunx vitest run
 ```
 
+## Fase 4.0.2 — adendos
+
+- A migration `20260807000000_fiscal_sinief_49_scaffolding.sql` foi aplicada
+  manualmente no staging fora do pipeline `supabase db push`; portanto NÃO
+  há registro correspondente em `supabase_migrations.schema_migrations`.
+  **Não usar** `supabase migration repair` — a divergência é esperada e
+  documentada. Reaplicação futura é bloqueada pelos guards `IF NOT EXISTS`
+  e `DO $$ RAISE EXCEPTION` embutidos nos scripts.
+- SINIEF 20/2026 é entregue como migration incremental separada em
+  `restoration/migrations/20260808000000_fiscal_sinief_20_2026.sql`
+  (aditiva; adiciona `icms_due`, `icms_amount`, `original_recipient_snapshot`,
+  CHECKs, trigger de imutabilidade e 2 novos event types). A migration
+  20260807000000 permanece intocada.
+- O runner agora consulta `public._fiscal_staging_marker` via `psql`
+  (`PGURL_STAGING`) ANTES de qualquer escrita, além do check via PostgREST.
+  Falhas não vazam DSN nem project_ref completo.
+- Setup `cliente_produtor` na ordem cliente → user_clientes (principal/ativo)
+  → user_roles; teardown em ordem reversa via `99-cleanup.sql`.
+  Esperado nas 3 novas tabelas: zero visibilidade e nenhuma escrita para
+  `cliente_produtor` e para o usuário sem papel.
+
 ## Regras inegociáveis
+
 
 - `supabase migration repair` é proibido sem divergência comprovada em
   `supabase migration list`.

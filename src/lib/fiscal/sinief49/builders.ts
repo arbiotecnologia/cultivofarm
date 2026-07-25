@@ -126,6 +126,17 @@ function validateCommon(
       issues.push(issue(E.ITEM_UNIT_VALUE_NON_POSITIVE, `${p}.unitValue`));
     }
   });
+  // SINIEF 20/2026 — ICMS somente quando há imposto devido.
+  if (input.icms) {
+    const amt = input.icms.amount;
+    if (amt !== undefined) {
+      if (typeof amt !== "number" || !Number.isFinite(amt) || amt < 0) {
+        issues.push(issue(E.ICMS_AMOUNT_INVALID, "icms.amount"));
+      } else if (amt > 0 && input.icms.due !== true) {
+        issues.push(issue(E.ICMS_AMOUNT_WITHOUT_DUE, "icms.amount"));
+      }
+    }
+  }
 }
 
 function normalizeItems(items: readonly DraftItemInput[]): CanonicalDraftItem[] {
@@ -155,6 +166,8 @@ function baseDraft(
     recipient: PartyRef;
     stockLossContext: CanonicalDraft["stockLossContext"];
     icmsApprovalState: CanonicalDraft["icmsApprovalState"];
+    icms?: CanonicalDraft["icms"];
+    originalRecipientSnapshot?: CanonicalDraft["originalRecipientSnapshot"];
     taxAuthorityNotes: string | null;
     origin: { source: string; sourceId: string };
   },
@@ -173,6 +186,8 @@ function baseDraft(
     documentReferences,
     stockLossContext: extras.stockLossContext,
     icmsApprovalState: extras.icmsApprovalState,
+    icms: extras.icms ?? input.icms ?? null,
+    originalRecipientSnapshot: extras.originalRecipientSnapshot ?? null,
     taxAuthorityNotes: extras.taxAuthorityNotes,
     legal: {
       basis: SINIEF_LEGAL_BASIS,
@@ -445,6 +460,18 @@ export function buildValueQuantityReductionDraft(
     return fail(issues);
   }
   validateOriginalItems(input.original, input.items, "REDUCTION", issues);
+  // SINIEF 20/2026 — snapshot imutável do destinatário original é obrigatório.
+  const snapshot =
+    input.original.originalRecipientSnapshot ??
+    deriveRecipientSnapshot(recipient);
+  if (!snapshot || !snapshot.cnpjCpf) {
+    issues.push(
+      issue(
+        E.REDUCTION_ORIGINAL_RECIPIENT_SNAPSHOT_REQUIRED,
+        "original.originalRecipientSnapshot",
+      ),
+    );
+  }
   if (issues.length) return fail(issues);
   const docRefs: DocumentReferenceInput[] = [
     {
@@ -457,10 +484,39 @@ export function buildValueQuantityReductionDraft(
     recipient,
     stockLossContext: null,
     icmsApprovalState: null,
+    originalRecipientSnapshot: snapshot,
     taxAuthorityNotes: "Redução de valores/quantidades da NF-e original.",
     origin: { source: "INVOICE", sourceId: input.original.originalAccessKey },
   });
   return success(draft);
+}
+
+/**
+ * Deriva um snapshot mínimo do destinatário original quando o chamador não
+ * forneceu um. O snapshot é IMUTÁVEL após persistência (garantido em DB pela
+ * migration `20260808000000_fiscal_sinief_20_2026.sql`).
+ */
+function deriveRecipientSnapshot(
+  recipient: PartyRef,
+): import("./types").OriginalRecipientSnapshot | null {
+  if (recipient.kind === "EXTERNAL") {
+    return {
+      kind: "EXTERNAL",
+      cnpjCpf: recipient.cnpj,
+      name: recipient.name,
+      capturedAt: new Date().toISOString(),
+      source: "derived.originalRecipient",
+    };
+  }
+  if (recipient.kind === "INTERNAL") {
+    return {
+      kind: "INTERNAL",
+      cnpjCpf: recipient.id,
+      capturedAt: new Date().toISOString(),
+      source: "derived.originalRecipient",
+    };
+  }
+  return null;
 }
 
 function buildRefusal(

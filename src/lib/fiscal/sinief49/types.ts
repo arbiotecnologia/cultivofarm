@@ -113,6 +113,43 @@ export interface OriginalInvoiceContext {
   originalInvoiceId?: string;
   originalRecipient: PartyRef;
   originalItems: readonly OriginalItemBalance[];
+  /**
+   * Ajuste SINIEF 20/2026 — snapshot IMUTÁVEL do grupo XML `<dest>` da NF-e
+   * original. Se omitido, é derivado de `originalRecipient` (kind/cnpj/name).
+   * Persistido em `fiscal_invoices.original_recipient_snapshot`.
+   */
+  originalRecipientSnapshot?: OriginalRecipientSnapshot;
+}
+
+/** Snapshot do grupo XML `<dest>` da NF-e original. Estritamente imutável. */
+export interface OriginalRecipientSnapshot {
+  kind: PartyRef["kind"];
+  /** CNPJ/CPF em dígitos (ou alfanumérico já validado externamente). */
+  cnpjCpf: string;
+  name?: string;
+  ie?: string;
+  address?: Readonly<{
+    logradouro?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    municipio?: string;
+    uf?: string;
+    cep?: string;
+  }>;
+  /** Instante UTC ISO-8601 da captura do snapshot. */
+  capturedAt: string;
+  /** Origem literal (ex.: 'xml.dest', 'manual', 'api.provider'). */
+  source: string;
+}
+
+/**
+ * Ajuste SINIEF 20/2026 — avaliação explícita de ICMS.
+ * `amount` só pode existir quando `due === true` (senão validador rejeita).
+ */
+export interface IcmsEvaluation {
+  due: boolean;
+  amount?: number;
 }
 
 export interface StockLossContextInput {
@@ -137,6 +174,8 @@ interface BaseInput {
   issuerCnpj: string;
   taxSetupApproval: TaxSetupApproval;
   items: readonly DraftItemInput[];
+  /** Ajuste SINIEF 20/2026 — declaração explícita da situação de ICMS. */
+  icms?: IcmsEvaluation;
 }
 
 export interface AdvancePaymentInput extends BaseInput {
@@ -225,6 +264,10 @@ export interface CanonicalDraft {
   documentReferences: readonly DocumentReferenceInput[];
   stockLossContext: StockLossContextInput | null;
   icmsApprovalState: IcmsApprovalState | null;
+  /** SINIEF 20/2026 — situação de ICMS declarada (null quando não avaliada). */
+  icms: IcmsEvaluation | null;
+  /** SINIEF 20/2026 — snapshot imutável do `<dest>` da NF-e original. */
+  originalRecipientSnapshot: OriginalRecipientSnapshot | null;
   taxAuthorityNotes: string | null;
   legal: LegalMetadata;
   idempotencyKey: string;

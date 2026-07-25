@@ -95,6 +95,62 @@ async function ensureGuards(): Promise<void> {
   // O consumidor real injeta pg client; aqui usamos supabase-js RPC quando disponível.
 }
 
+/**
+ * Fase SINIEF 4.0.2 — Consulta REAL do marker via psql em PGURL_STAGING
+ * antes de qualquer escrita. Aborta em:
+ *   - marker ausente/duplicado;
+ *   - marker.project_ref = navfzbwgwzruipouyfnk (produção);
+ *   - marker.project_ref != FISCAL_TEST_PROJECT_REF ou !=
+ *     ref extraído de PGREST_STAGING.
+ * Nunca imprime a string de conexão nem o project_ref completo em falhas.
+ */
+function verifyStagingMarkerViaPsql(
+  pgUrl: string,
+  expectedRef: string,
+  restUrl: string,
+): void {
+  const r = spawnSync(
+    "psql",
+    [
+      pgUrl,
+      "-v", "ON_ERROR_STOP=1",
+      "-tA", "-F", "|",
+      "-c",
+      "SELECT count(*)::text || '|' || coalesce(max(project_ref),'') " +
+      "FROM public._fiscal_staging_marker WHERE marker='STAGING'",
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  if (r.status !== 0) {
+    // Não vaza stderr do psql (pode conter DSN); reporta código apenas.
+    throw new Error(`ABORT: psql marker check falhou (exit ${r.status ?? "?"})`);
+  }
+  const line = (r.stdout ?? "").trim().split("\n").pop() ?? "";
+  const [countStr, projectRef] = line.split("|");
+  const count = Number.parseInt(countStr ?? "0", 10);
+  if (!Number.isFinite(count) || count === 0) {
+    throw new Error("ABORT: marker STAGING ausente em _fiscal_staging_marker");
+  }
+  if (count > 1) {
+    throw new Error(`ABORT: marker STAGING duplicado (${count} linhas)`);
+  }
+  if (!projectRef) {
+    throw new Error("ABORT: marker sem project_ref");
+  }
+  if (projectRef === SINIEF49_PROD_PROJECT_REF) {
+    throw new Error("ABORT: marker aponta PRODUÇÃO");
+  }
+  if (projectRef !== expectedRef) {
+    throw new Error("ABORT: marker.project_ref diverge de FISCAL_TEST_PROJECT_REF");
+  }
+  // Coerência com PGREST_STAGING: URL deve conter o ref esperado.
+  if (!restUrl.toLowerCase().includes(expectedRef.toLowerCase())) {
+    throw new Error("ABORT: PGREST_STAGING não corresponde ao ref do marker");
+  }
+  if (restUrl.toLowerCase().includes(SINIEF49_PROD_PROJECT_REF.toLowerCase())) {
+    throw new Error("ABORT: PGREST_STAGING contém ref de PRODUÇÃO");
+  }
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const execute = args.includes("--execute");
@@ -174,13 +230,37 @@ async function main(): Promise<void> {
 
   // 3) Aplicar fixtures + scenarios via psql com \set.
   const pgUrl = process.env.PGURL_STAGING!;
+  // 3.a) Consulta REAL do marker via psql em PGURL_STAGING antes de escrever.
+  verifyStagingMarkerViaPsql(pgUrl, projectRef, url);
   const seed = users.find((u) => u.key === "admin")!.userId!;
+  const prodUserId = users.find((u) => u.key === "prod")!.userId!;
+
+  // 3.b) Setup cliente_produtor: cliente → user_clientes (principal, ativo).
+  //      user_roles já foi atribuído no passo 2. O vínculo aqui garante que
+  //      um cliente_produtor real exista para o teste de visibilidade zero.
+  const { data: cliRow, error: cliErr } = await admin
+    .from("clientes")
+    .insert({
+      nome: "FIXTURE sinief49-fx cliente produtor",
+      observacoes: "FIXTURE sinief49-fx",
+    })
+    .select("id")
+    .single();
+  if (cliErr || !cliRow) throw new Error(`ABORT: clientes insert: ${cliErr?.message ?? "sem id"}`);
+  const { error: ucErr } = await admin.from("user_clientes").insert({
+    user_id: prodUserId,
+    cliente_id: cliRow.id,
+    principal: true,
+    ativo: true,
+  });
+  if (ucErr) throw new Error(`ABORT: user_clientes insert: ${ucErr.message}`);
+
   const psqlVars = [
     `-v`, `u_admin=${users.find((u) => u.key === "admin")!.userId!}`,
     `-v`, `u_fin=${users.find((u) => u.key === "fin")!.userId!}`,
     `-v`, `u_gestor=${users.find((u) => u.key === "gestor")!.userId!}`,
     `-v`, `u_adm=${users.find((u) => u.key === "adm")!.userId!}`,
-    `-v`, `u_prod=${users.find((u) => u.key === "prod")!.userId!}`,
+    `-v`, `u_prod=${prodUserId}`,
     `-v`, `u_none=${users.find((u) => u.key === "none")!.userId!}`,
     `-v`, `seed_user_id=${seed}`,
   ];
@@ -247,12 +327,18 @@ async function runRlsMatrix(
       global: { headers: { Authorization: `Bearer ${u.jwt}` } },
     });
     for (const t of tables) {
-      // SELECT
+      // SELECT — leitores autorizados podem receber 0..N linhas; papéis
+      // não autorizados (inclui cliente_produtor) DEVEM ver zero linhas.
       totals.planned++;
-      const { error: selErr } = await asUser.from(t).select("id").limit(1);
+      const { data: selRows, error: selErr } = await asUser.from(t).select("id");
       const canRd = u.role != null && canRead.includes(u.role);
-      const selOk = canRd ? !selErr : selErr != null || true; // ambos podem retornar 0 rows sem erro; contar como pass se policy nega via RLS/filter
-      if (selOk) totals.passed++; else totals.failed++;
+      if (canRd) {
+        if (!selErr) totals.passed++; else totals.failed++;
+      } else {
+        // Não autorizado: PostgREST retorna 0 rows (RLS filtra) sem erro.
+        if (!selErr && (selRows ?? []).length === 0) totals.passed++;
+        else totals.failed++;
+      }
 
       // UPDATE/DELETE — nunca devem afetar linhas
       totals.planned += 2;
@@ -263,14 +349,24 @@ async function runRlsMatrix(
     }
 
     // INSERT canônico apenas nas policies permitidas (payloads schema-válidos).
-    if (u.role && canInsert.includes(u.role)) {
-      totals.planned++;
-      const { error } = await asUser.from("fiscal_invoice_references").insert({
-        fiscal_invoice_id: "00000000-0000-4000-8000-000000000002",
-        referenced_invoice_id: "00000000-0000-4000-8000-000000000001",
-        relation_type: "ADVANCE_PAYMENT_OF",
-      });
-      if (!error) totals.passed++; else totals.failed++;
+    // Para papéis NÃO autorizados (cliente_produtor, none), o INSERT DEVE
+    // falhar (erro) OU não gravar linha alguma.
+    totals.planned++;
+    const payload = {
+      fiscal_invoice_id: "00000000-0000-4000-8000-000000000002",
+      referenced_invoice_id: "00000000-0000-4000-8000-000000000001",
+      relation_type: "ADVANCE_PAYMENT_OF" as const,
+    };
+    const canWr = u.role != null && canInsert.includes(u.role);
+    const { error: insErr, data: insData } = await asUser
+      .from("fiscal_invoice_references")
+      .insert(payload)
+      .select("id");
+    if (canWr) {
+      if (!insErr) totals.passed++; else totals.failed++;
+    } else {
+      if (insErr || (insData ?? []).length === 0) totals.passed++;
+      else totals.failed++;
     }
   }
 

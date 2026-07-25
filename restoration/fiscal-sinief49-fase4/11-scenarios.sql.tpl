@@ -36,10 +36,10 @@ $guard$;
 
 -- Documento "original" (referência dos cenários 2/4/5/6/7).
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by, direction, fiscal_operation_type,
+  (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000000',
-        'NFE','PENDING',:'seed_user_id'::uuid,'OUT','NORMAL',
+        'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'OUT','NORMAL',
         'FIXTURE sinief49-fx original')
 ON CONFLICT (id) DO NOTHING;
 
@@ -54,11 +54,11 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ----- 1. ADVANCE_PAYMENT --------------------------------------------
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by, direction, fiscal_operation_type,
+  (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    fin_nfe, tp_nf_debito, nature_operation,
    legal_basis, legal_version, legal_effective_date, tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000001',
-        'NFE','PENDING',:'seed_user_id'::uuid,'OUT','ADVANCE_PAYMENT',
+        'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'OUT','ADVANCE_PAYMENT',
         6, 6, 'Venda para entrega futura - Pagamento antecipado',
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 1')
@@ -73,11 +73,11 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ----- 2. EFFECTIVE_SALE_AFTER_ADVANCE -------------------------------
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by, direction, fiscal_operation_type,
+  (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    fin_nfe, nature_operation,
    legal_basis, legal_version, legal_effective_date, tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000002',
-        'NFE','PENDING',:'seed_user_id'::uuid,'OUT','EFFECTIVE_SALE_AFTER_ADVANCE',
+        'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'OUT','EFFECTIVE_SALE_AFTER_ADVANCE',
         1, 'Venda de mercadoria - Entrega efetiva referente a antecipação',
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 2')
@@ -92,11 +92,11 @@ ON CONFLICT DO NOTHING;
 
 -- ----- 3. STOCK_LOSS + fiscal_stock_loss_contexts --------------------
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by, direction, fiscal_operation_type,
+  (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    fin_nfe, tp_nf_debito, nature_operation,
    legal_basis, legal_version, legal_effective_date, tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000003',
-        'NFE','PENDING',:'seed_user_id'::uuid,'OUT','STOCK_LOSS',
+        'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'OUT','STOCK_LOSS',
         6, 7, 'Baixa de Estoque',
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 3 perecimento')
@@ -109,13 +109,22 @@ VALUES ('00000000-0000-4000-8000-000000000003','PERISHMENT',
 ON CONFLICT DO NOTHING;
 
 -- ----- 4. VALUE_QUANTITY_REDUCTION -----------------------------------
+-- SINIEF 20/2026: original_recipient_snapshot é NOT NULL para este cenário
+-- (verificado por chk_fi_sinief20_reduction_dest_snapshot).
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by, direction, fiscal_operation_type,
+  (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    fin_nfe, tp_nf_credito, nature_operation,
+   original_recipient_snapshot,
    legal_basis, legal_version, legal_effective_date, tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000004',
-        'NFE','PENDING',:'seed_user_id'::uuid,'IN','VALUE_QUANTITY_REDUCTION',
+        'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'IN','VALUE_QUANTITY_REDUCTION',
         5, 4, 'Redução de valores ou quantidades',
+        jsonb_build_object(
+          'kind','EXTERNAL',
+          'cnpjCpf','98765432000188',
+          'name','FIXTURE sinief49-fx destinatário original',
+          'capturedAt', to_char(now() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+          'source','xml.dest'),
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 4')
 ON CONFLICT (id) DO NOTHING;
@@ -143,11 +152,11 @@ ON CONFLICT DO NOTHING;
 
 -- ----- 5. DELIVERY_REFUSAL_TOTAL -------------------------------------
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by, direction, fiscal_operation_type,
+  (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    fin_nfe, tp_nf_credito, nature_operation,
    legal_basis, legal_version, legal_effective_date, tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000005',
-        'NFE','PENDING',:'seed_user_id'::uuid,'IN','DELIVERY_REFUSAL_TOTAL',
+        'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'IN','DELIVERY_REFUSAL_TOTAL',
         5, 3, 'Devolução por recusa total do destinatário',
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 5')
@@ -161,11 +170,11 @@ ON CONFLICT DO NOTHING;
 
 -- ----- 6. DELIVERY_REFUSAL_PARTIAL -----------------------------------
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by, direction, fiscal_operation_type,
+  (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    fin_nfe, tp_nf_credito, nature_operation,
    legal_basis, legal_version, legal_effective_date, tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000006',
-        'NFE','PENDING',:'seed_user_id'::uuid,'IN','DELIVERY_REFUSAL_PARTIAL',
+        'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'IN','DELIVERY_REFUSAL_PARTIAL',
         5, 6, 'Devolução por recusa parcial do destinatário',
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 6')
@@ -194,11 +203,11 @@ ON CONFLICT DO NOTHING;
 
 -- ----- 7. RECIPIENT_NOT_FOUND ----------------------------------------
 INSERT INTO public.fiscal_invoices
-  (id, invoice_type, status, created_by, direction, fiscal_operation_type,
+  (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    fin_nfe, tp_nf_credito, nature_operation,
    legal_basis, legal_version, legal_effective_date, tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000007',
-        'NFE','PENDING',:'seed_user_id'::uuid,'IN','RECIPIENT_NOT_FOUND',
+        'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'IN','RECIPIENT_NOT_FOUND',
         5, 3, 'Devolução por destinatário não localizado',
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 7')

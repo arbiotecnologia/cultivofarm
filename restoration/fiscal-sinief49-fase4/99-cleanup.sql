@@ -64,7 +64,24 @@ DELETE FROM public.fiscal_invoices
  WHERE tax_authority_notes LIKE 'FIXTURE sinief49-fx%'
     OR id::text LIKE '00000000-0000-4000-8000-0000000000%';
 
--- 3) Papéis dos usuários sintéticos criados pelo runner.
+-- 3) Vínculos cliente_produtor: user_clientes → clientes (FIXTURE).
+--    Ordem: user_clientes primeiro (FK NOT NULL → clientes), clientes depois.
+DO $prod_cleanup$
+DECLARE
+  v_uses_temp boolean;
+BEGIN
+  SELECT to_regclass('pg_temp._sinief49_fx_users') IS NOT NULL INTO v_uses_temp;
+  IF v_uses_temp THEN
+    DELETE FROM public.user_clientes
+     WHERE user_id IN (SELECT user_id FROM pg_temp._sinief49_fx_users);
+  END IF;
+  DELETE FROM public.clientes
+   WHERE nome LIKE 'FIXTURE sinief49-fx%'
+      OR observacoes LIKE 'FIXTURE sinief49-fx%';
+END
+$prod_cleanup$;
+
+-- 4) Papéis dos usuários sintéticos criados pelo runner.
 --    O runner passa a lista de user_ids sintéticos via tabela temporária
 --    _sinief49_fx_users(user_id uuid). Se a tabela não existir, cai para
 --    filtro por email do auth.users (leitura via view segura). Ambos são
@@ -108,6 +125,12 @@ BEGIN
    WHERE legal_reason_details LIKE 'FIXTURE sinief49-fx%';
   IF v_left <> 0 THEN
     RAISE EXCEPTION 'ABORT[cleanup]: fixture residual em fiscal_stock_loss_contexts';
+  END IF;
+
+  SELECT count(*) INTO v_left FROM public.clientes
+   WHERE nome LIKE 'FIXTURE sinief49-fx%' OR observacoes LIKE 'FIXTURE sinief49-fx%';
+  IF v_left <> 0 THEN
+    RAISE EXCEPTION 'ABORT[cleanup]: fixture residual em clientes';
   END IF;
 END
 $verify$;
