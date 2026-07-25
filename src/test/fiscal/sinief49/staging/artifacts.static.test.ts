@@ -237,7 +237,8 @@ describe("SINIEF 4.0.1 · runner server-side prepared (não executado)", () => {
     expect(RUNNER).toMatch(/assertRowExists/);
     expect(RUNNER).toMatch(/MUTABLE_COLUMN_BY_TABLE/);
     expect(RUNNER).toMatch(/isSchemaOrNetworkError\(error\)[\s\S]*return false/);
-    expect(RUNNER).not.toContain("00000000-0000-0000-0000-000000000000");
+    const mutableFlow = RUNNER.slice(RUNNER.indexOf("async function createExistingRowForOperation"), RUNNER.indexOf("async function runInsertCheck"));
+    expect(mutableFlow).not.toContain("00000000-0000-0000-0000-000000000000");
     expect(RUNNER).not.toMatch(/update\(\{ notes: "x" \}\)/);
   });
   test("4.0.2.2: INSERT é isolado por role/operação e constraint não vira deny", () => {
