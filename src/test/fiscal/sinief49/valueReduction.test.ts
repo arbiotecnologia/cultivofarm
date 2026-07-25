@@ -15,6 +15,14 @@ const originalCtx: OriginalInvoiceContext = {
   originalItems: [
     { sequence: 1, originalQuantity: 10, originalValue: 200, remainingQuantity: 10, remainingValue: 200 },
   ],
+  // SINIEF 20/2026 — snapshot explicito obrigatorio.
+  originalRecipientSnapshot: {
+    kind: "EXTERNAL",
+    cnpjCpf: "98765432000188",
+    name: "Original",
+    capturedAt: "2026-08-08T00:00:00Z",
+    source: "xml.dest",
+  },
 };
 
 function baseInput(over: Partial<ValueQuantityReductionInput> = {}): ValueQuantityReductionInput {
