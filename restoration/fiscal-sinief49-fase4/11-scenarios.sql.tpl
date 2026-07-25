@@ -109,13 +109,22 @@ VALUES ('00000000-0000-4000-8000-000000000003','PERISHMENT',
 ON CONFLICT DO NOTHING;
 
 -- ----- 4. VALUE_QUANTITY_REDUCTION -----------------------------------
+-- SINIEF 20/2026: original_recipient_snapshot é NOT NULL para este cenário
+-- (verificado por chk_fi_sinief20_reduction_dest_snapshot).
 INSERT INTO public.fiscal_invoices
   (id, invoice_type, status, normalized_status, created_by, direction, fiscal_operation_type,
    fin_nfe, tp_nf_credito, nature_operation,
+   original_recipient_snapshot,
    legal_basis, legal_version, legal_effective_date, tax_authority_notes)
 VALUES ('00000000-0000-4000-8000-000000000004',
         'NFE','PENDING','DRAFT',:'seed_user_id'::uuid,'IN','VALUE_QUANTITY_REDUCTION',
         5, 4, 'Redução de valores ou quantidades',
+        jsonb_build_object(
+          'kind','EXTERNAL',
+          'cnpjCpf','98765432000188',
+          'name','FIXTURE sinief49-fx destinatário original',
+          'capturedAt', to_char(now() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+          'source','xml.dest'),
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 4')
 ON CONFLICT (id) DO NOTHING;
