@@ -517,6 +517,7 @@ async function main(): Promise<void> {
   const state: CleanupState = { users, psqlEnv: buildPsqlLibpqEnv(pgUrl) };
   let originalFailure: Error | null = null;
   let report: RlsTotals | null = null;
+  let cleanupErrors: Error[] = [];
 
   try {
     await createSyntheticUsers(admin, url, anonKey, users);
@@ -528,14 +529,15 @@ async function main(): Promise<void> {
   } catch (err) {
     originalFailure = err instanceof Error ? err : new Error(String(err));
   } finally {
-    const cleanupErrors = await cleanupAll(admin, state);
+    cleanupErrors = await cleanupAll(admin, state);
     for (const err of cleanupErrors) log("cleanup warn", { err: err.message });
-    if (originalFailure) {
-      if (cleanupErrors.length > 0) log("cleanup completed with warnings after failure", { cleanup_errors: cleanupErrors.length });
-      throw originalFailure;
-    }
-    if (cleanupErrors.length > 0) throw new Error("ABORT: cleanup falhou apos execucao principal");
   }
+
+  if (originalFailure) {
+    if (cleanupErrors.length > 0) log("cleanup completed with warnings after failure", { cleanup_errors: cleanupErrors.length });
+    throw originalFailure;
+  }
+  if (cleanupErrors.length > 0) throw new Error("ABORT: cleanup falhou apos execucao principal");
 
   log("done", { verdict: report?.failed === 0 ? "PASS" : "FAIL" });
 }
