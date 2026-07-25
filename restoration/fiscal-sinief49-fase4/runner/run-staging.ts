@@ -327,12 +327,18 @@ async function runRlsMatrix(
       global: { headers: { Authorization: `Bearer ${u.jwt}` } },
     });
     for (const t of tables) {
-      // SELECT
+      // SELECT — leitores autorizados podem receber 0..N linhas; papéis
+      // não autorizados (inclui cliente_produtor) DEVEM ver zero linhas.
       totals.planned++;
-      const { error: selErr } = await asUser.from(t).select("id").limit(1);
+      const { data: selRows, error: selErr } = await asUser.from(t).select("id");
       const canRd = u.role != null && canRead.includes(u.role);
-      const selOk = canRd ? !selErr : selErr != null || true; // ambos podem retornar 0 rows sem erro; contar como pass se policy nega via RLS/filter
-      if (selOk) totals.passed++; else totals.failed++;
+      if (canRd) {
+        if (!selErr) totals.passed++; else totals.failed++;
+      } else {
+        // Não autorizado: PostgREST retorna 0 rows (RLS filtra) sem erro.
+        if (!selErr && (selRows ?? []).length === 0) totals.passed++;
+        else totals.failed++;
+      }
 
       // UPDATE/DELETE — nunca devem afetar linhas
       totals.planned += 2;
@@ -343,14 +349,24 @@ async function runRlsMatrix(
     }
 
     // INSERT canônico apenas nas policies permitidas (payloads schema-válidos).
-    if (u.role && canInsert.includes(u.role)) {
-      totals.planned++;
-      const { error } = await asUser.from("fiscal_invoice_references").insert({
-        fiscal_invoice_id: "00000000-0000-4000-8000-000000000002",
-        referenced_invoice_id: "00000000-0000-4000-8000-000000000001",
-        relation_type: "ADVANCE_PAYMENT_OF",
-      });
-      if (!error) totals.passed++; else totals.failed++;
+    // Para papéis NÃO autorizados (cliente_produtor, none), o INSERT DEVE
+    // falhar (erro) OU não gravar linha alguma.
+    totals.planned++;
+    const payload = {
+      fiscal_invoice_id: "00000000-0000-4000-8000-000000000002",
+      referenced_invoice_id: "00000000-0000-4000-8000-000000000001",
+      relation_type: "ADVANCE_PAYMENT_OF" as const,
+    };
+    const canWr = u.role != null && canInsert.includes(u.role);
+    const { error: insErr, data: insData } = await asUser
+      .from("fiscal_invoice_references")
+      .insert(payload)
+      .select("id");
+    if (canWr) {
+      if (!insErr) totals.passed++; else totals.failed++;
+    } else {
+      if (insErr || (insData ?? []).length === 0) totals.passed++;
+      else totals.failed++;
     }
   }
 
