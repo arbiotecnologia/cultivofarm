@@ -78,6 +78,13 @@ export interface SinefFormOriginal {
   originalInvoiceId?: string;
   originalRecipient: SinefFormRecipient;
   originalItems: readonly SinefFormOriginalItem[];
+  /**
+   * SINIEF 20/2026 — snapshot imutável do destinatário original da NF-e
+   * referenciada. Obrigatório em VALUE_QUANTITY_REDUCTION; deve provir do
+   * XML original (`<dest>`) ou registro fiscal equivalente e NUNCA ser
+   * derivado em runtime. O adaptador apenas encaminha o valor recebido.
+   */
+  originalRecipientSnapshot?: import("./types").OriginalRecipientSnapshot;
 }
 
 export interface SinefFormAdvanceRef {
@@ -165,6 +172,8 @@ function toOriginal(o: SinefFormOriginal | undefined) {
     originalInvoiceId: o.originalInvoiceId,
     originalRecipient: recipient,
     originalItems: o.originalItems.map((i) => ({ ...i })),
+    // SINIEF 20/2026 — snapshot repassado sem derivação.
+    originalRecipientSnapshot: o.originalRecipientSnapshot,
   };
 }
 
