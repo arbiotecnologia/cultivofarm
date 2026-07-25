@@ -460,6 +460,18 @@ export function buildValueQuantityReductionDraft(
     return fail(issues);
   }
   validateOriginalItems(input.original, input.items, "REDUCTION", issues);
+  // SINIEF 20/2026 — snapshot imutável do destinatário original é obrigatório.
+  const snapshot =
+    input.original.originalRecipientSnapshot ??
+    deriveRecipientSnapshot(recipient);
+  if (!snapshot || !snapshot.cnpjCpf) {
+    issues.push(
+      issue(
+        E.REDUCTION_ORIGINAL_RECIPIENT_SNAPSHOT_REQUIRED,
+        "original.originalRecipientSnapshot",
+      ),
+    );
+  }
   if (issues.length) return fail(issues);
   const docRefs: DocumentReferenceInput[] = [
     {
@@ -472,10 +484,39 @@ export function buildValueQuantityReductionDraft(
     recipient,
     stockLossContext: null,
     icmsApprovalState: null,
+    originalRecipientSnapshot: snapshot,
     taxAuthorityNotes: "Redução de valores/quantidades da NF-e original.",
     origin: { source: "INVOICE", sourceId: input.original.originalAccessKey },
   });
   return success(draft);
+}
+
+/**
+ * Deriva um snapshot mínimo do destinatário original quando o chamador não
+ * forneceu um. O snapshot é IMUTÁVEL após persistência (garantido em DB pela
+ * migration `20260808000000_fiscal_sinief_20_2026.sql`).
+ */
+function deriveRecipientSnapshot(
+  recipient: PartyRef,
+): import("./types").OriginalRecipientSnapshot | null {
+  if (recipient.kind === "EXTERNAL") {
+    return {
+      kind: "EXTERNAL",
+      cnpjCpf: recipient.cnpj,
+      name: recipient.name,
+      capturedAt: new Date().toISOString(),
+      source: "derived.originalRecipient",
+    };
+  }
+  if (recipient.kind === "INTERNAL") {
+    return {
+      kind: "INTERNAL",
+      cnpjCpf: recipient.id,
+      capturedAt: new Date().toISOString(),
+      source: "derived.originalRecipient",
+    };
+  }
+  return null;
 }
 
 function buildRefusal(
