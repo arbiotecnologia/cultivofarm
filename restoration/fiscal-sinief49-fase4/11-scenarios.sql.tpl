@@ -123,7 +123,7 @@ VALUES ('00000000-0000-4000-8000-000000000004',
           'kind','EXTERNAL',
           'cnpjCpf','98765432000188',
           'name','FIXTURE sinief49-fx destinatário original',
-          'capturedAt', to_char(now() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+          'capturedAt', '2026-08-08T00:00:00Z',
           'source','xml.dest'),
         'Ajuste SINIEF 49/2025 consolidado','2026-08-03/consolidado',
         DATE '2026-08-03','FIXTURE sinief49-fx cenario 4')

@@ -21,7 +21,9 @@ Supabase. Skip nunca é permitido em `--execute`.
 #    e ainda pelo runner via pacote `pg` (nunca psql com DSN em argv).
 
 # 1. Snapshot PRÉ (fail-fast + evidência estruturada k|v).
-psql "$PGURL_STAGING" -v ON_ERROR_STOP=1 -A -F '|' \
+#    Use variáveis libpq temporárias derivadas de PGURL_STAGING em memória;
+#    não passe URI/DSN em argv de psql.
+psql -v ON_ERROR_STOP=1 -A -F '|' \
   -f restoration/fiscal-sinief49-fase4/00-snapshot-pre.sql \
   > restoration/fiscal-sinief49-fase4/snapshot-pre.txt
 
@@ -34,7 +36,7 @@ sha256sum supabase/migrations/20260807000000_fiscal_sinief_49_scaffolding.sql \
 supabase db push --project-ref "$FISCAL_TEST_PROJECT_REF"
 
 # 4. Snapshot PÓS + diff estrutural.
-psql "$PGURL_STAGING" -v ON_ERROR_STOP=1 -A -F '|' \
+psql -v ON_ERROR_STOP=1 -A -F '|' \
   -f restoration/fiscal-sinief49-fase4/01-snapshot-post.sql \
   > restoration/fiscal-sinief49-fase4/snapshot-post.txt
 diff -u restoration/fiscal-sinief49-fase4/snapshot-pre.txt \

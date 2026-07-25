@@ -190,9 +190,85 @@ describe("SINIEF 4.0.1 · runner server-side prepared (não executado)", () => {
     }
     expect(RUNNER).toMatch(/key:\s*"none"[\s\S]*?role:\s*null/);
   });
-  test("matriz RLS proíbe UPDATE/DELETE para todos e checa contagem", () => {
-    expect(RUNNER).toMatch(/UPDATE\/DELETE:\s*NENHUM/);
-    expect(RUNNER).toMatch(/count:\s*"exact"/);
+  test("matriz RLS proíbe UPDATE/DELETE para todos e valida representação afetada", () => {
+    expect(RUNNER).toMatch(/runExistingUpdateDeny/);
+    expect(RUNNER).toMatch(/runExistingDeleteDeny/);
+    expect(RUNNER).toMatch(/\.select\("id"\)/);
+  });
+  test("4.0.2.2: psql nunca recebe DSN/URI em argv", () => {
+    const spawnCalls = Array.from(RUNNER.matchAll(/spawnSync\(\s*"psql"\s*,\s*\[([\s\S]*?)\]/g));
+    expect(spawnCalls.length).toBeGreaterThan(0);
+    for (const call of spawnCalls) {
+      const args = call[1] ?? "";
+      expect(args).not.toMatch(/pgUrl/);
+      expect(args).not.toMatch(/PGURL_STAGING/);
+      expect(args).not.toMatch(/postgres(?:ql)?:\/\//i);
+    }
+    expect(RUNNER).toMatch(/buildPsqlLibpqEnv/);
+    for (const key of ["PGHOST", "PGPORT", "PGUSER", "PGPASSWORD", "PGDATABASE", "PGSSLMODE"]) {
+      expect(RUNNER).toContain(key);
+    }
+    expect(RUNNER).toMatch(/delete env\.PGURL_STAGING/);
+  });
+  test("4.0.2.2: cleanup global roda em finally e preserva falha original", () => {
+    expect(RUNNER).toMatch(/let originalFailure: Error \| null = null/);
+    expect(RUNNER).toMatch(/catch \(err\)[\s\S]*originalFailure =/);
+    expect(RUNNER).toMatch(/finally \{[\s\S]*cleanupAll\(admin, state\)/);
+    expect(RUNNER).toMatch(/if \(originalFailure\)[\s\S]*throw originalFailure/);
+    expect(RUNNER).toMatch(/cleanup completed with warnings after failure/);
+  });
+  test("4.0.2.2: cleanup é seguro e ordenado", () => {
+    const cleanupFn = RUNNER.slice(RUNNER.indexOf("async function cleanupAll"));
+    expect(cleanupFn).toMatch(/runPsqlFile\(state\.psqlEnv,[\s\S]*99-cleanup\.sql/);
+    expect(cleanupFn).toMatch(/auth\.admin\.deleteUser/);
+    expect(cleanupFn.indexOf("runPsqlFile(state.psqlEnv")).toBeLessThan(cleanupFn.indexOf("auth.admin.deleteUser"));
+    expect(CLE.indexOf("DELETE FROM public.user_roles")).toBeLessThan(CLE.indexOf("DELETE FROM public.user_clientes"));
+    expect(CLE.indexOf("DELETE FROM public.user_clientes")).toBeLessThan(CLE.indexOf("DELETE FROM public.clientes"));
+  });
+  test("4.0.2.2: setup produtor usa clientes → user_clientes(is_active) → user_roles", () => {
+    const setup = RUNNER.slice(RUNNER.indexOf("async function setupProdutorAndRoles"));
+    expect(setup.indexOf('.from("clientes")')).toBeLessThan(setup.indexOf('.from("user_clientes")'));
+    expect(setup.indexOf('.from("user_clientes")')).toBeLessThan(setup.indexOf('.from("user_roles")'));
+    expect(setup).toContain("is_active: true");
+    expect(setup).not.toContain("ativo: true");
+  });
+  test("4.0.2.2: UPDATE/DELETE testam registros existentes e erro de coluna não aprova deny", () => {
+    expect(RUNNER).toMatch(/createExistingRowForOperation/);
+    expect(RUNNER).toMatch(/assertRowExists/);
+    expect(RUNNER).toMatch(/MUTABLE_COLUMN_BY_TABLE/);
+    expect(RUNNER).toMatch(/isSchemaOrNetworkError\(error\)[\s\S]*return false/);
+    expect(RUNNER).not.toContain("00000000-0000-0000-0000-000000000000");
+    expect(RUNNER).not.toMatch(/update\(\{ notes: "x" \}\)/);
+  });
+  test("4.0.2.2: INSERT é isolado por role/operação e constraint não vira deny", () => {
+    expect(RUNNER).toMatch(/runInsertCheck/);
+    expect(RUNNER).toMatch(/opTag/);
+    expect(RUNNER).toMatch(/createDisposableInvoice/);
+    expect(RUNNER).toMatch(/if \(allowed\)[\s\S]*length !== 1/);
+    expect(RUNNER).toMatch(/isExpectedRlsDeny\(error\) && !isSchemaOrNetworkError\(error\)/);
+    expect(RUNNER).not.toMatch(/const payload = \{[\s\S]*ADVANCE_PAYMENT_OF[\s\S]*\};/);
+  });
+});
+
+describe("SINIEF 4.0.2.2 · migration SINIEF 20/2026 estática", () => {
+  const MIG20 = read("supabase/migrations/20260808000000_fiscal_sinief_20_2026.sql");
+  test("snapshot CHECK rejeita whitespace, kind inválido e capturedAt não ISO/timestamptz", () => {
+    expect(MIG20).toMatch(/btrim\(coalesce\(original_recipient_snapshot->>'kind',''\)\) IN \('EXTERNAL','INTERNAL'\)/);
+    expect(MIG20).toMatch(/btrim\(coalesce\(original_recipient_snapshot->>'cnpjCpf',''\)\) <> ''/);
+    expect(MIG20).toMatch(/btrim\(coalesce\(original_recipient_snapshot->>'source',''\)\) <> ''/);
+    expect(MIG20).toMatch(/btrim\(coalesce\(original_recipient_snapshot->>'capturedAt',''\)\) <> ''/);
+    expect(MIG20).toMatch(/capturedAt[\s\S]*\\d\{4\}-\\d\{2\}-\\d\{2\}T/);
+    expect(MIG20).toMatch(/::timestamptz IS NOT NULL/);
+  });
+  test("preserva migration aditiva, 13+7+2 eventos e sem grants/policies novos", () => {
+    const eventBlock = MIG20.slice(MIG20.indexOf("ADD CONSTRAINT fiscal_events_event_type_check"));
+    const events = Array.from(eventBlock.matchAll(/'([A-Z0-9_]+)'/g)).map((m) => m[1]);
+    expect(events).toHaveLength(22);
+    for (const e of ["CREATED", "REPLACEMENT_REQUIRED", "SINIEF_ADVANCE_PAYMENT_ISSUED", "SINIEF_RECIPIENT_NOT_FOUND_ISSUED", "SINIEF20_ICMS_EVALUATED", "SINIEF20_RECIPIENT_SNAPSHOT_CAPTURED"]) {
+      expect(events).toContain(e);
+    }
+    expect(MIG20).not.toMatch(/CREATE\s+POLICY/i);
+    expect(MIG20).not.toMatch(/GRANT\s+/i);
   });
 });
 

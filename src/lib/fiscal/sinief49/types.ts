@@ -115,7 +115,8 @@ export interface OriginalInvoiceContext {
   originalItems: readonly OriginalItemBalance[];
   /**
    * Ajuste SINIEF 20/2026 — snapshot IMUTÁVEL do grupo XML `<dest>` da NF-e
-   * original. Se omitido, é derivado de `originalRecipient` (kind/cnpj/name).
+   * original. Obrigatório e explícito para VALUE_QUANTITY_REDUCTION; nunca
+   * derivado de `originalRecipient` em runtime.
    * Persistido em `fiscal_invoices.original_recipient_snapshot`.
    */
   originalRecipientSnapshot?: OriginalRecipientSnapshot;
