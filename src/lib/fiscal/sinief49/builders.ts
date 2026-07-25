@@ -446,6 +446,30 @@ function validateOriginalItems(
   });
 }
 
+/**
+ * SINIEF 20/2026 — snapshot imutável do destinatário original é OBRIGATÓRIO
+ * e deve ser explícito, determinístico e proveniente da NF-e original
+ * (mapeador XML `<dest>`) ou de registro fiscal equivalente. NUNCA
+ * derivado em runtime a partir de UUID interno ou `new Date()`.
+ * Retorna `true` quando o snapshot atende aos campos mínimos.
+ */
+function isValidRecipientSnapshot(
+  snap: unknown,
+): snap is import("./types").OriginalRecipientSnapshot {
+  if (!snap || typeof snap !== "object") return false;
+  const s = snap as Record<string, unknown>;
+  if (s.kind !== "EXTERNAL" && s.kind !== "INTERNAL") return false;
+  if (typeof s.cnpjCpf !== "string" || s.cnpjCpf.trim() === "") return false;
+  if (typeof s.source !== "string" || s.source.trim() === "") return false;
+  if (typeof s.capturedAt !== "string" || s.capturedAt.trim() === "") return false;
+  // ISO-8601 estrito (Date.parse aceita, mas exigimos formato canônico).
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/.test(s.capturedAt)) {
+    return false;
+  }
+  if (Number.isNaN(Date.parse(s.capturedAt))) return false;
+  return true;
+}
+
 export function buildValueQuantityReductionDraft(
   input: ValueQuantityReductionInput,
 ): ValidationResult {
@@ -460,11 +484,9 @@ export function buildValueQuantityReductionDraft(
     return fail(issues);
   }
   validateOriginalItems(input.original, input.items, "REDUCTION", issues);
-  // SINIEF 20/2026 — snapshot imutável do destinatário original é obrigatório.
-  const snapshot =
-    input.original.originalRecipientSnapshot ??
-    deriveRecipientSnapshot(recipient);
-  if (!snapshot || !snapshot.cnpjCpf) {
+  // SINIEF 20/2026 — snapshot explícito, determinístico, sem derivação.
+  const snapshot = input.original.originalRecipientSnapshot;
+  if (!isValidRecipientSnapshot(snapshot)) {
     issues.push(
       issue(
         E.REDUCTION_ORIGINAL_RECIPIENT_SNAPSHOT_REQUIRED,
@@ -484,39 +506,11 @@ export function buildValueQuantityReductionDraft(
     recipient,
     stockLossContext: null,
     icmsApprovalState: null,
-    originalRecipientSnapshot: snapshot,
+    originalRecipientSnapshot: snapshot!,
     taxAuthorityNotes: "Redução de valores/quantidades da NF-e original.",
     origin: { source: "INVOICE", sourceId: input.original.originalAccessKey },
   });
   return success(draft);
-}
-
-/**
- * Deriva um snapshot mínimo do destinatário original quando o chamador não
- * forneceu um. O snapshot é IMUTÁVEL após persistência (garantido em DB pela
- * migration `20260808000000_fiscal_sinief_20_2026.sql`).
- */
-function deriveRecipientSnapshot(
-  recipient: PartyRef,
-): import("./types").OriginalRecipientSnapshot | null {
-  if (recipient.kind === "EXTERNAL") {
-    return {
-      kind: "EXTERNAL",
-      cnpjCpf: recipient.cnpj,
-      name: recipient.name,
-      capturedAt: new Date().toISOString(),
-      source: "derived.originalRecipient",
-    };
-  }
-  if (recipient.kind === "INTERNAL") {
-    return {
-      kind: "INTERNAL",
-      cnpjCpf: recipient.id,
-      capturedAt: new Date().toISOString(),
-      source: "derived.originalRecipient",
-    };
-  }
-  return null;
 }
 
 function buildRefusal(
