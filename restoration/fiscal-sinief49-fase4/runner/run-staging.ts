@@ -230,13 +230,37 @@ async function main(): Promise<void> {
 
   // 3) Aplicar fixtures + scenarios via psql com \set.
   const pgUrl = process.env.PGURL_STAGING!;
+  // 3.a) Consulta REAL do marker via psql em PGURL_STAGING antes de escrever.
+  verifyStagingMarkerViaPsql(pgUrl, projectRef, url);
   const seed = users.find((u) => u.key === "admin")!.userId!;
+  const prodUserId = users.find((u) => u.key === "prod")!.userId!;
+
+  // 3.b) Setup cliente_produtor: cliente → user_clientes (principal, ativo).
+  //      user_roles já foi atribuído no passo 2. O vínculo aqui garante que
+  //      um cliente_produtor real exista para o teste de visibilidade zero.
+  const { data: cliRow, error: cliErr } = await admin
+    .from("clientes")
+    .insert({
+      nome: "FIXTURE sinief49-fx cliente produtor",
+      observacoes: "FIXTURE sinief49-fx",
+    })
+    .select("id")
+    .single();
+  if (cliErr || !cliRow) throw new Error(`ABORT: clientes insert: ${cliErr?.message ?? "sem id"}`);
+  const { error: ucErr } = await admin.from("user_clientes").insert({
+    user_id: prodUserId,
+    cliente_id: cliRow.id,
+    principal: true,
+    ativo: true,
+  });
+  if (ucErr) throw new Error(`ABORT: user_clientes insert: ${ucErr.message}`);
+
   const psqlVars = [
     `-v`, `u_admin=${users.find((u) => u.key === "admin")!.userId!}`,
     `-v`, `u_fin=${users.find((u) => u.key === "fin")!.userId!}`,
     `-v`, `u_gestor=${users.find((u) => u.key === "gestor")!.userId!}`,
     `-v`, `u_adm=${users.find((u) => u.key === "adm")!.userId!}`,
-    `-v`, `u_prod=${users.find((u) => u.key === "prod")!.userId!}`,
+    `-v`, `u_prod=${prodUserId}`,
     `-v`, `u_none=${users.find((u) => u.key === "none")!.userId!}`,
     `-v`, `seed_user_id=${seed}`,
   ];
