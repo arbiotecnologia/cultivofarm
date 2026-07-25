@@ -50,10 +50,16 @@ ALTER TABLE public.fiscal_invoices
       original_recipient_snapshot IS NOT NULL
       AND jsonb_typeof(original_recipient_snapshot) = 'object'
       AND (original_recipient_snapshot ?& array['kind','cnpjCpf','capturedAt','source'])
-      AND coalesce(nullif(original_recipient_snapshot->>'cnpjCpf',''), '') <> ''
-      AND coalesce(nullif(original_recipient_snapshot->>'source',''), '')  <> ''
-      AND coalesce(nullif(original_recipient_snapshot->>'capturedAt',''), '') <> ''
-      AND coalesce(nullif(original_recipient_snapshot->>'kind',''), '') <> ''
+      AND btrim(coalesce(original_recipient_snapshot->>'kind','')) IN ('EXTERNAL','INTERNAL')
+      AND btrim(coalesce(original_recipient_snapshot->>'cnpjCpf','')) <> ''
+      AND btrim(coalesce(original_recipient_snapshot->>'source','')) <> ''
+      AND btrim(coalesce(original_recipient_snapshot->>'capturedAt','')) <> ''
+      AND CASE
+        WHEN btrim(original_recipient_snapshot->>'capturedAt') ~
+             '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$'
+        THEN (btrim(original_recipient_snapshot->>'capturedAt'))::timestamptz IS NOT NULL
+        ELSE FALSE
+      END
     )
   );
 
