@@ -143,6 +143,13 @@ describe("SINIEF 49/2025 · adaptador de formulário → builder", () => {
       original: {
         originalAccessKey: ORIGINAL_KEY,
         originalRecipient: { kind: "EXTERNAL", cnpj: RECIPIENT_CNPJ },
+        // SINIEF 20/2026 — snapshot explícito, determinístico, sem derivação.
+        originalRecipientSnapshot: {
+          kind: "EXTERNAL",
+          cnpjCpf: RECIPIENT_CNPJ,
+          capturedAt: "2026-08-01T12:00:00Z",
+          source: "NFE_XML_DEST",
+        },
         originalItems: [
           {
             sequence: 1,
