@@ -97,6 +97,13 @@ export const SINIEF_ERROR_MESSAGES: Readonly<Record<SinefErrorCode, string>> =
       "Natureza da operação (natOp) não confere com o cenário informado.",
     ICMS_STATE_REQUIRED_EXPLICIT:
       "Estado do ICMS deve ser declarado explicitamente (APPROVED_BY_ACCOUNTING ou BLOCKED_PENDING_ACCOUNTING).",
+    ICMS_AMOUNT_WITHOUT_DUE:
+      "SINIEF 20/2026: valor de ICMS só pode ser informado quando o imposto for devido (icms.due=true).",
+    ICMS_AMOUNT_INVALID:
+      "SINIEF 20/2026: valor de ICMS inválido; deve ser um número finito não-negativo.",
+    REDUCTION_ORIGINAL_RECIPIENT_SNAPSHOT_REQUIRED:
+      "SINIEF 20/2026: snapshot imutável do destinatário da NF-e original é obrigatório na redução de valores/quantidades.",
+
 
     ADVANCE_ORDER_MISSING: "Pedido de origem obrigatório para antecipação.",
     ADVANCE_DELIVERY_DATE_MISSING:
