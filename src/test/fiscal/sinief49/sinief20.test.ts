@@ -53,7 +53,7 @@ function advanceInput(icms?: { due?: boolean; amount?: number }): AdvancePayment
     expectedDeliveryDate: "2026-09-01",
     items: [{
       sequence: 1, sourceKind: "PRODUCT", sourceId: "p1", description: "x",
-      quantity: 1, unitValue: 10, cfop: "5949",
+      quantity: 1, unitValue: 10, cfop: "5922",
     }],
     ...(icms ? { icms } as Partial<AdvancePaymentInput> : {}),
   } as AdvancePaymentInput;
