@@ -1,0 +1,14 @@
+-- =====================================================================
+-- STUB DOCUMENTAL — NÃO EXECUTÁVEL
+--
+-- Fase SINIEF 4.0.2.1 — Ajuste SINIEF 20/2026 (incremental, aditivo).
+--
+-- A migration canônica reside em:
+--   supabase/migrations/20260808000000_fiscal_sinief_20_2026.sql
+--
+-- Este arquivo permanece apenas como sinal documental na esteira
+-- órfã. Sua aplicação nunca deve ocorrer manualmente; a única forma
+-- prevista é via `supabase db push` no fluxo canônico do CLI.
+-- =====================================================================
+
+-- Intencionalmente vazio (sem SQL executável).
