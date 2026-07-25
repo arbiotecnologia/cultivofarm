@@ -174,6 +174,8 @@ interface BaseInput {
   issuerCnpj: string;
   taxSetupApproval: TaxSetupApproval;
   items: readonly DraftItemInput[];
+  /** Ajuste SINIEF 20/2026 — declaração explícita da situação de ICMS. */
+  icms?: IcmsEvaluation;
 }
 
 export interface AdvancePaymentInput extends BaseInput {
