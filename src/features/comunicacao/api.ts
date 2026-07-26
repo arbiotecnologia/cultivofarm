@@ -209,6 +209,11 @@ export const verifyCommunicationChannel = (
  * `communication-health`. Nunca retorna secrets — apenas configured/enabled.
  * Requisita apenas sob demanda. Falha ou função ausente não deve quebrar UI.
  */
+export type CommunicationHealthErrorCode =
+  | "function_unavailable"
+  | "unauthorized"
+  | "unexpected_error";
+
 export interface CommunicationHealthResult {
   ok: boolean;
   fetched_at: string;
@@ -216,8 +221,23 @@ export interface CommunicationHealthResult {
   email?: { enabled: boolean; configured: boolean };
   whatsapp?: { enabled: boolean; configured: boolean };
   in_app?: { enabled: boolean; configured: boolean };
-  error?: string;
+  /** Código genérico allowlisted — nunca contém message bruta, secrets ou PII. */
+  error?: CommunicationHealthErrorCode;
 }
+
+/**
+ * Fase 2.5: mapeia qualquer erro (Edge Function, Supabase, exception) para um
+ * código genérico allowlisted. Detalhes técnicos ficam em console.warn (fora
+ * da resposta exibida) e nunca sobem à UI, evitando vazar segredos/PII.
+ */
+function mapHealthError(status: number | undefined): CommunicationHealthErrorCode {
+  if (status === 401 || status === 403) return "unauthorized";
+  if (status === 404 || status === 405 || status === 501 || status === 503) {
+    return "function_unavailable";
+  }
+  return "unexpected_error";
+}
+
 export async function fetchCommunicationHealth(): Promise<CommunicationHealthResult> {
   const now = new Date().toISOString();
   try {
@@ -230,11 +250,15 @@ export async function fetchCommunicationHealth(): Promise<CommunicationHealthRes
     }).functions;
     const { data, error } = await sbInvoke.invoke("communication-health", { method: "POST" });
     if (error) {
-      return { ok: false, fetched_at: now, error: error.message ?? "invoke_error" };
+      // eslint-disable-next-line no-console
+      console.warn("[communication-health] invoke error", error.status);
+      return { ok: false, fetched_at: now, error: mapHealthError(error.status) };
     }
-    const d = (data ?? {}) as CommunicationHealthResult;
+    const d = (data ?? {}) as Omit<CommunicationHealthResult, "error"> & { ok?: boolean };
     return { ...d, ok: !!d.ok, fetched_at: now };
   } catch (e) {
-    return { ok: false, fetched_at: now, error: (e as Error).message };
+    // eslint-disable-next-line no-console
+    console.warn("[communication-health] exception", (e as Error).name);
+    return { ok: false, fetched_at: now, error: "unexpected_error" };
   }
 }
