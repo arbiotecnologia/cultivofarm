@@ -26,7 +26,9 @@ import {
   publishAdministrativeBroadcast,
   publishManualProdutoProntoAplicacao,
   listOrdensServicoRegularesParaComunicado,
+  setTemplateMetadata,
 } from "@/features/comunicacao/api";
+
 import type {
   ComunicacaoTemplate,
   ComunicacaoRegra,
