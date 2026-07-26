@@ -62,8 +62,6 @@ describe("MaskedInput mask=telefone", () => {
     typeSequence(input, "6");
     expect(input.value.replace(/\D/g, "")).toBe("11332244556");
   });
-    expect(input.value.replace(/\D/g, "")).toBe("11332244556");
-  });
 
   it("limita a no máximo 11 dígitos numéricos", () => {
     render(<Controlled />);
