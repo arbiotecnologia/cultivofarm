@@ -331,6 +331,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
       observacoes: form.observacoes?.trim() || null,
       telefone_comercial: telCheck.value,
       whatsapp_comercial: waCheck.value,
+      inscricao_estadual: normalizeIE(form.commercial_state ?? null, form.inscricao_estadual, { allowIsento: true }),
       client_id: form.client_id || null,
       dados_bancarios: form.dados_bancarios
         ? (typeof form.dados_bancarios === "string"
