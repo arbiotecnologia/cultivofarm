@@ -437,11 +437,21 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
                   uf={form.commercial_state ?? undefined}
                   value={form.inscricao_estadual ?? ""}
                   onChange={(e) => set("inscricao_estadual", e.target.value)}
-                  placeholder={form.commercial_state ? "Conforme UF selecionada" : "ISENTO ou selecione a UF"}
+                  onBlur={(e) => {
+                    const r = validateIE(form.commercial_state ?? null, e.target.value, { allowIsento: true });
+                    setErrors((prev) => {
+                      const next = { ...prev };
+                      if (!r.ok) next.inscricao_estadual = r.error;
+                      else delete next.inscricao_estadual;
+                      return next;
+                    });
+                  }}
+                  placeholder={form.commercial_state ? "Conforme UF selecionada (ou ISENTO)" : "ISENTO ou selecione a UF"}
                   autoCapitalize="characters"
                 />
                 {errors.inscricao_estadual && <p className="text-xs text-destructive mt-1">{errors.inscricao_estadual}</p>}
               </div>
+
               <div>
                 <Label>Inscrição Municipal</Label>
                 <Input value={form.inscricao_municipal ?? ""} onChange={(e) => set("inscricao_municipal", e.target.value)} />
