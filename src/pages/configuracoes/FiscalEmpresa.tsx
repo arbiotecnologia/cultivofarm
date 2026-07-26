@@ -542,8 +542,21 @@ export default function FiscalEmpresa() {
                     autoCapitalize="characters"
                     value={values.state_registration ?? ""}
                     onChange={(e) => set("state_registration", e.target.value)}
+                    onBlur={(e) => {
+                      const r = validateIE(values.state ?? null, e.target.value, { allowIsento: true });
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        if (!r.ok) next.state_registration = r.error;
+                        else delete next.state_registration;
+                        return next;
+                      });
+                    }}
                   />
+                  {errors.state_registration && (
+                    <p className="text-xs text-destructive mt-1">{errors.state_registration}</p>
+                  )}
                 </FieldRow>
+
               </CardContent>
             </Card>
 
