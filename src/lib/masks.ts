@@ -173,8 +173,8 @@ export const normalizePhoneBR = (
  *  - { ok: false, error } com mensagem pt-BR caso contrário.
  */
 export type PhoneValidationResult =
-  | { ok: true; value: string | null }
-  | { ok: false; error: string };
+  | { ok: true; value: string | null; error?: never }
+  | { ok: false; value?: never; error: string };
 
 export function validatePhoneBR(
   value: string | number | null | undefined,
