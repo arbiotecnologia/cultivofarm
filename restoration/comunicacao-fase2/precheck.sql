@@ -55,11 +55,13 @@ BEGIN
       -- clientes
       'clientes.id','clientes.nome','clientes.telefone',
       'clientes.telefones','clientes.email',
-      -- notificações (destinos in_app)
-      'portal_notificacoes.cliente_id','portal_notificacoes.titulo',
-      'portal_notificacoes.mensagem','portal_notificacoes.tipo',
-      'notificacoes_operacionais.user_id','notificacoes_operacionais.titulo',
-      'notificacoes_operacionais.mensagem','notificacoes_operacionais.tipo',
+      -- notificações (destinos in_app) — colunas RETURNING/INSERT usadas pelas RPCs
+      'portal_notificacoes.id','portal_notificacoes.cliente_id',
+      'portal_notificacoes.titulo','portal_notificacoes.mensagem','portal_notificacoes.tipo',
+      -- notificacoes_operacionais usa usuario_id (NÃO user_id)
+      'notificacoes_operacionais.id','notificacoes_operacionais.usuario_id',
+      'notificacoes_operacionais.titulo','notificacoes_operacionais.mensagem',
+      'notificacoes_operacionais.tipo','notificacoes_operacionais.link',
       -- user_roles usado por broadcast_role/by_role
       'user_roles.user_id','user_roles.role'
     ];
