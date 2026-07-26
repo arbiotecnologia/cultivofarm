@@ -413,6 +413,14 @@ export default function Entregas() {
         endereco_bairro, endereco_cidade, endereco_uf, endereco_cep, endereco_referencia } = payload;
       if (itens.length === 0) throw new Error("Nenhum item selecionado.");
 
+      // Validação/normalização de telefones antes da persistência.
+      const motCheck = validatePhoneBR(motorista_telefone, { fieldLabel: "Telefone do motorista" });
+      if (!motCheck.ok) throw new Error(motCheck.error);
+      const destCheck = validatePhoneBR(destinatario_telefone, { fieldLabel: "Telefone do destinatário" });
+      if (!destCheck.ok) throw new Error(destCheck.error);
+      const waCheck = validatePhoneBR(destinatario_whatsapp, { fieldLabel: "WhatsApp do destinatário" });
+      if (!waCheck.ok) throw new Error(waCheck.error);
+
       const osRef = (todasOS as any[]).find((o) => o.id === osId);
       const criadas: string[] = [];
       const reservasFeitas: { item: any; osId: string; osTipo: string }[] = [];
