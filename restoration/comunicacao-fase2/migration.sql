@@ -633,11 +633,15 @@ GRANT EXECUTE ON FUNCTION public.rpc_cancel_communication_delivery(uuid,text,tex
 
 -- Defer: devolve item a 'pending' sem consumir tentativa; agenda próximo retry.
 -- Usado quando canal está OFF/config ausente/timeout de infra transitório.
+-- IMPORTANTE: rpc_claim_communication_outbox (Fase 1) já incrementou attempts
+-- no momento do claim. Como defer não é tentativa real de provedor,
+-- devolvemos o incremento com GREATEST(r.attempts - 1, 0). Defer repetido
+-- nunca fica negativo e nunca "estoura" max_attempts.
 CREATE OR REPLACE FUNCTION public.rpc_defer_communication_delivery(
   p_outbox_id uuid, p_worker_id text, p_reason text, p_delay_seconds int DEFAULT 300
 ) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE r public.comunicacao_outbox%rowtype; v_role text; v_delay int;
+DECLARE r public.comunicacao_outbox%rowtype; v_role text; v_delay int; v_attempts int;
 BEGIN
   v_role := COALESCE(current_setting('request.jwt.claims', true)::jsonb ->> 'role', session_user);
   IF v_role IS NOT NULL AND v_role NOT IN ('service_role') AND current_user <> 'service_role' THEN
@@ -649,21 +653,29 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'outbox não encontrado'; END IF;
   IF r.status <> 'processing' THEN RAISE EXCEPTION 'outbox não estava em processing (status=%)', r.status; END IF;
   IF r.locked_by IS DISTINCT FROM p_worker_id THEN RAISE EXCEPTION 'lease pertence a outro worker'; END IF;
+  -- desfaz o incremento contabilizado pelo claim (canal OFF/config ausente
+  -- não é tentativa de provedor). Nunca abaixo de zero.
+  v_attempts := GREATEST(COALESCE(r.attempts, 0) - 1, 0);
   UPDATE public.comunicacao_outbox
      SET status = 'pending',
+         attempts = v_attempts,
          next_attempt_at = now() + make_interval(secs => v_delay),
          error_code = 'deferred',
          error_message = left(COALESCE(p_reason,''), 2000),
          locked_at = NULL, locked_by = NULL, lease_expires_at = NULL
-         -- attempts NÃO é incrementado
    WHERE id = p_outbox_id;
-  RETURN jsonb_build_object('ok',true,'status','deferred','retry_in_seconds',v_delay);
+  RETURN jsonb_build_object('ok',true,'status','deferred','retry_in_seconds',v_delay,'attempts',v_attempts);
 END$$;
 REVOKE ALL ON FUNCTION public.rpc_defer_communication_delivery(uuid,text,text,integer) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_defer_communication_delivery(uuid,text,text,integer) TO service_role;
 
 -- fail_v2: substitui a RPC de fase 1 (que continua existindo e intacta) com
 -- suporte a p_is_permanent → dead_letter imediato. lease-safe.
+-- IMPORTANTE: attempts já foi incrementado por rpc_claim_communication_outbox
+-- (Fase 1) no momento do claim. Portanto NÃO incrementamos novamente e a
+-- comparação com max_attempts usa r.attempts diretamente (paridade com a RPC
+-- da Fase 1). Backoff exponencial também usa r.attempts (número de tentativas
+-- já contabilizadas, incluindo a que acabou de falhar).
 CREATE OR REPLACE FUNCTION public.rpc_fail_communication_delivery_v2(
   p_outbox_id uuid, p_worker_id text, p_error_code text, p_error_message text, p_is_permanent boolean
 ) RETURNS jsonb
@@ -681,31 +693,32 @@ BEGIN
   IF r.status <> 'processing' THEN RAISE EXCEPTION 'outbox não estava em processing'; END IF;
   IF r.locked_by IS DISTINCT FROM p_worker_id THEN RAISE EXCEPTION 'lease pertence a outro worker'; END IF;
 
-  -- Permanente OU esgotou tentativas → dead_letter
-  IF p_is_permanent OR (r.attempts + 1) >= r.max_attempts THEN
+  -- Permanente → dead_letter imediato (sem novo incremento).
+  -- Transitório: se attempts (já incrementado pelo claim) alcançou max, também morre.
+  IF p_is_permanent OR r.attempts >= r.max_attempts THEN
     UPDATE public.comunicacao_outbox
        SET status = 'dead_letter',
-           attempts = r.attempts + 1,
            error_code = left(COALESCE(p_error_code,''),80),
            error_message = left(COALESCE(p_error_message,''),2000),
            locked_at = NULL, locked_by = NULL, lease_expires_at = NULL
      WHERE id = p_outbox_id;
-    RETURN jsonb_build_object('ok',true,'status','dead_letter');
+    RETURN jsonb_build_object('ok',true,'status','dead_letter','attempts',r.attempts);
   END IF;
 
-  v_backoff := LEAST(3600, POWER(2, r.attempts)::int * 30);
+  -- Transitório com tentativas remanescentes: reagenda sem novo incremento.
+  v_backoff := LEAST(3600, POWER(2, GREATEST(r.attempts - 1, 0))::int * 30);
   UPDATE public.comunicacao_outbox
      SET status = 'pending',
-         attempts = r.attempts + 1,
          next_attempt_at = now() + make_interval(secs => v_backoff),
          error_code = left(COALESCE(p_error_code,''),80),
          error_message = left(COALESCE(p_error_message,''),2000),
          locked_at = NULL, locked_by = NULL, lease_expires_at = NULL
    WHERE id = p_outbox_id;
-  RETURN jsonb_build_object('ok',true,'status','pending','retry_in_seconds',v_backoff);
+  RETURN jsonb_build_object('ok',true,'status','pending','retry_in_seconds',v_backoff,'attempts',r.attempts);
 END$$;
 REVOKE ALL ON FUNCTION public.rpc_fail_communication_delivery_v2(uuid,text,text,text,boolean) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_fail_communication_delivery_v2(uuid,text,text,text,boolean) TO service_role;
+
 
 -- =============================================================================
 -- 9. In-app: idempotência por outbox_id
