@@ -525,10 +525,12 @@ export default function FiscalEmpresa() {
                   <Input id="municipal_registration" value={values.municipal_registration ?? ""} onChange={(e) => set("municipal_registration", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="state_registration" label="Inscrição estadual (IE)" description="Digite ISENTO se não contribuinte.">
-                  <Input
+                  <MaskedInput
                     id="state_registration"
-                    inputMode="text"
-                    placeholder="ISENTO ou números"
+                    mask="ie"
+                    uf={values.state ?? undefined}
+                    placeholder={values.state ? "Conforme UF selecionada (ou ISENTO)" : "Selecione a UF primeiro"}
+                    autoCapitalize="characters"
                     value={values.state_registration ?? ""}
                     onChange={(e) => set("state_registration", e.target.value)}
                   />
