@@ -16,6 +16,7 @@ DROP FUNCTION IF EXISTS public._comunicacao_resolve_recipients_v2(text,public.co
 DROP FUNCTION IF EXISTS public._comunicacao_build_snapshot_v2(text,text,uuid,jsonb,uuid,uuid);
 
 -- RPCs novas
+DROP FUNCTION IF EXISTS public.rpc_publish_communication_event_v2(text,text,uuid,jsonb,text);
 DROP FUNCTION IF EXISTS public.rpc_set_communication_template_metadata(uuid,text,text,jsonb,text);
 DROP FUNCTION IF EXISTS public.rpc_preview_administrative_broadcast_count(public.app_role);
 DROP FUNCTION IF EXISTS public.rpc_resolve_outbox_address(uuid);
