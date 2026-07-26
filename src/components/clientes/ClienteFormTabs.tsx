@@ -33,6 +33,7 @@ function MaskedField({
   className,
   autoCase,
   onBlurExtra,
+  uf,
 }: {
   name: string;
   mask: any;
@@ -40,6 +41,7 @@ function MaskedField({
   className?: string;
   autoCase?: "title" | "upper" | "lower";
   onBlurExtra?: (value: string) => void;
+  uf?: string | null;
 }) {
   const { control } = useFormContext();
   return (
@@ -49,6 +51,7 @@ function MaskedField({
       render={({ field }) => (
         <MaskedInput
           mask={mask}
+          uf={uf ?? undefined}
           value={field.value ?? ""}
           onChange={(e) => field.onChange(e.target.value)}
           onBlur={(e) => {
@@ -299,7 +302,13 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
           </div>
           <div className="space-y-2">
             <Label>Inscrição Estadual</Label>
-            <MaskedField name="inscricao_estadual" mask="ie" placeholder="000000000.00-00" autoCase="upper" />
+            <MaskedField
+              name="inscricao_estadual"
+              mask="ie"
+              uf={watch("endereco_estado")}
+              placeholder={watch("endereco_estado") ? "Conforme UF selecionada" : "Selecione o Estado primeiro"}
+              autoCase="upper"
+            />
           </div>
         </div>
 

@@ -24,6 +24,7 @@ import { ClienteFormTabs } from "@/components/clientes/ClienteFormTabs";
 import { ClienteHistoricoDialog } from "@/components/clientes/ClienteHistoricoDialog";
 
 import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento, validatePhoneBR, normalizePhoneBR } from "@/lib/masks";
+import { validateIE, normalizeIE } from "@/lib/fiscal/ie";
 import { Link } from "react-router-dom";
 
 export default function ProdutoresTab() {
@@ -145,6 +146,11 @@ export default function ProdutoresTab() {
     const financeiroCheck = validatePhoneBR(values.contato_financeiro_telefone, { fieldLabel: "Telefone financeiro" });
     if (!financeiroCheck.ok) { toast.error(financeiroCheck.error); return; }
 
+    // Validação de IE por UF (do endereço do produtor).
+    const ufProdutor = (values as any).endereco_estado || null;
+    const ieCheck = validateIE(ufProdutor, values.inscricao_estadual, { allowIsento: true });
+    if (!ieCheck.ok) { toast.error(ieCheck.error); return; }
+
     const {
       telefones_adicionais,
       condicao_pagamento_valor,
@@ -162,7 +168,7 @@ export default function ProdutoresTab() {
       telefones: telefonesArray,
       endereco_cep: unmask(values.endereco_cep) || null,
       cobranca_cep: unmask(values.cobranca_cep) || null,
-      inscricao_estadual: unmask(values.inscricao_estadual) || null,
+      inscricao_estadual: normalizeIE(ufProdutor, values.inscricao_estadual, { allowIsento: true }),
       contato_financeiro_telefone: financeiroCheck.value,
     };
 

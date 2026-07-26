@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCNPJ, unmask, unmaskCnpj, validatePhoneBR } from "@/lib/masks";
+import { validateIE, normalizeIE } from "@/lib/fiscal/ie";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchCEP } from "@/lib/api/viacep";
 import { fetchCNPJ } from "@/lib/api/brasilapi";
@@ -319,6 +320,8 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
     if (!telCheck.ok) { toast.error(telCheck.error); return; }
     const waCheck = validatePhoneBR(form.whatsapp_comercial, { fieldLabel: "WhatsApp comercial" });
     if (!waCheck.ok) { toast.error(waCheck.error); return; }
+    const ieCheck = validateIE(form.commercial_state ?? null, form.inscricao_estadual, { allowIsento: true });
+    if (!ieCheck.ok) { toast.error(ieCheck.error); return; }
 
     const payload: any = {
       ...form,
@@ -328,6 +331,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
       observacoes: form.observacoes?.trim() || null,
       telefone_comercial: telCheck.value,
       whatsapp_comercial: waCheck.value,
+      inscricao_estadual: normalizeIE(form.commercial_state ?? null, form.inscricao_estadual, { allowIsento: true }),
       client_id: form.client_id || null,
       dados_bancarios: form.dados_bancarios
         ? (typeof form.dados_bancarios === "string"
@@ -428,7 +432,15 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
               </div>
               <div>
                 <Label>Inscrição Estadual</Label>
-                <Input value={form.inscricao_estadual ?? ""} onChange={(e) => set("inscricao_estadual", e.target.value)} />
+                <MaskedInput
+                  mask="ie"
+                  uf={form.commercial_state ?? undefined}
+                  value={form.inscricao_estadual ?? ""}
+                  onChange={(e) => set("inscricao_estadual", e.target.value)}
+                  placeholder={form.commercial_state ? "Conforme UF selecionada" : "ISENTO ou selecione a UF"}
+                  autoCapitalize="characters"
+                />
+                {errors.inscricao_estadual && <p className="text-xs text-destructive mt-1">{errors.inscricao_estadual}</p>}
               </div>
               <div>
                 <Label>Inscrição Municipal</Label>

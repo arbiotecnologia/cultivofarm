@@ -52,6 +52,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCNPJ, formatCEP, formatTelefone, unmask, unmaskCnpj } from "@/lib/masks";
+import { MaskedInput } from "@/components/ui/masked-input";
+import { validateIE, normalizeIE } from "@/lib/fiscal/ie";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -367,11 +369,20 @@ export default function FiscalEmpresa() {
       toast({ title: "Verifique os campos", description: "Há dados inválidos.", variant: "destructive" });
       return;
     }
+    const ieCheck = validateIE(values.state ?? null, values.state_registration, { allowIsento: true });
+    if (!ieCheck.ok) {
+      toast({ title: "Inscrição Estadual inválida", description: ieCheck.error, variant: "destructive" });
+      return;
+    }
+    const normalizedValues = {
+      ...values,
+      state_registration: normalizeIE(values.state ?? null, values.state_registration, { allowIsento: true }),
+    };
     try {
       await update.mutateAsync({
         id: settingsQuery.data.id,
         expectedVersion: settingsQuery.data.configuration_version ?? 1,
-        values,
+        values: normalizedValues,
       });
       toast({ title: "Configuração fiscal salva." });
     } catch (err) {
@@ -523,10 +534,12 @@ export default function FiscalEmpresa() {
                   <Input id="municipal_registration" value={values.municipal_registration ?? ""} onChange={(e) => set("municipal_registration", e.target.value)} />
                 </FieldRow>
                 <FieldRow id="state_registration" label="Inscrição estadual (IE)" description="Digite ISENTO se não contribuinte.">
-                  <Input
+                  <MaskedInput
                     id="state_registration"
-                    inputMode="text"
-                    placeholder="ISENTO ou números"
+                    mask="ie"
+                    uf={values.state ?? undefined}
+                    placeholder={values.state ? "Conforme UF selecionada (ou ISENTO)" : "Selecione a UF primeiro"}
+                    autoCapitalize="characters"
                     value={values.state_registration ?? ""}
                     onChange={(e) => set("state_registration", e.target.value)}
                   />

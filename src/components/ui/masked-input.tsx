@@ -2,15 +2,18 @@ import * as React from "react";
 import { useMask, format } from "@react-input/mask";
 import { cn } from "@/lib/utils";
 import { formatLiveCase, formatTitleCase } from "@/lib/text-formatters";
+import { resolveIEMaskForUF } from "@/lib/fiscal/ie";
 
 export interface MaskedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   mask: "cpf" | "cnpj" | "cpf-cnpj" | "telefone" | "cep" | "ie" | "moeda" | string;
   autoCase?: "title" | "upper" | "lower";
+  /** UF (2 letras) — usada apenas com mask="ie" para escolher a máscara oficial do Estado. */
+  uf?: string | null;
 }
 
 const replacement = { _: /\d/ };
 
-function resolveMaskPattern(mask: string, rawValue: string): string {
+function resolveMaskPattern(mask: string, rawValue: string, uf?: string | null): string {
   const clean = rawValue.replace(/\D/g, "");
   switch (mask) {
     case "cpf":
@@ -24,8 +27,11 @@ function resolveMaskPattern(mask: string, rawValue: string): string {
       return clean.length >= 10 ? "(__) _____-____" : "(__) ____-____";
     case "cep":
       return "_____-___";
-    case "ie":
-      return "_________.__-__";
+    case "ie": {
+      const perUF = resolveIEMaskForUF(uf ?? null, rawValue);
+      // Fallback genérico (retrocompatível) quando UF não informada.
+      return perUF ?? "_______________";
+    }
     default:
       return mask;
   }
@@ -42,10 +48,10 @@ function safeFormat(value: string, pattern: string): string {
 }
 
 const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
-  ({ className, mask, autoCase, onChange, onBlur, value, defaultValue, ...props }, ref) => {
+  ({ className, mask, autoCase, uf, onChange, onBlur, value, defaultValue, ...props }, ref) => {
     const isControlled = value !== undefined;
     const sourceValue = String((isControlled ? value : defaultValue) ?? "");
-    const maskPattern = resolveMaskPattern(mask, sourceValue);
+    const maskPattern = resolveMaskPattern(mask, sourceValue, uf);
 
     const inputRef = useMask({
       mask: maskPattern,
@@ -71,11 +77,11 @@ const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
       const incoming = String(defaultValue ?? "");
       if (incoming === lastDefaultRef.current) return;
       lastDefaultRef.current = incoming;
-      const formatted = safeFormat(incoming, resolveMaskPattern(mask, incoming));
+      const formatted = safeFormat(incoming, resolveMaskPattern(mask, incoming, uf));
       if (node.value !== formatted) {
         node.value = formatted;
       }
-    }, [defaultValue, isControlled, mask, inputRef]);
+    }, [defaultValue, isControlled, mask, inputRef, uf]);
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       if (autoCase === "title") {
