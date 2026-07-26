@@ -1,10 +1,5 @@
--- Rollback Fase 1 v3 — SEGURO: só drop se tabelas estiverem vazias.
--- Assinaturas alinhadas com migration.sql v3:
---   * comunicacao_evento_status SEM 'failed' (falhas na expansão fazem rollback).
---   * rpc_update_communication_preferences(canal, boolean, boolean) — 3 args.
---   * rpc_publish_communication_event(text,text,uuid,jsonb,text) — 5 args.
---   * rpc_upsert_communication_rule(...) — 11 args.
---   * rpc_claim/complete/fail com worker_id e lease.
+-- Rollback Fase 1 v3.1 — SEGURO: só drop se tabelas estiverem vazias.
+-- Assinaturas copiadas literalmente de migration.sql v3 (linhas anotadas).
 BEGIN;
 
 DO $$
@@ -25,21 +20,32 @@ BEGIN
   END LOOP;
 END$$;
 
+-- RPCs públicos (assinaturas exatas de migration.sql)
 DROP FUNCTION IF EXISTS public.rpc_fail_communication_delivery(uuid,text,text,text);
 DROP FUNCTION IF EXISTS public.rpc_complete_communication_delivery(uuid,text,text);
 DROP FUNCTION IF EXISTS public.rpc_claim_communication_outbox(integer,text,integer);
-DROP FUNCTION IF EXISTS public.rpc_verify_communication_channel(uuid,public.comunicacao_canal,boolean);
+DROP FUNCTION IF EXISTS public.rpc_verify_communication_channel(uuid,uuid,public.comunicacao_canal,boolean,boolean);
 DROP FUNCTION IF EXISTS public.rpc_update_communication_preferences(public.comunicacao_canal,boolean,boolean);
 DROP FUNCTION IF EXISTS public.rpc_publish_communication_event(text,text,uuid,jsonb,text);
 DROP FUNCTION IF EXISTS public.rpc_upsert_communication_rule(uuid,text,public.app_role,text,public.comunicacao_canal,text,integer,jsonb,integer,boolean,integer);
+DROP FUNCTION IF EXISTS public.rpc_archive_communication_template(uuid);
 DROP FUNCTION IF EXISTS public.rpc_activate_communication_template(uuid);
 DROP FUNCTION IF EXISTS public.rpc_update_communication_template(uuid,text,text,text,jsonb);
 DROP FUNCTION IF EXISTS public.rpc_create_communication_template(text,text,public.comunicacao_canal,text,text,jsonb);
-DROP FUNCTION IF EXISTS public._comunicacao_resolve_template(text,public.comunicacao_canal,integer);
-DROP FUNCTION IF EXISTS public._comunicacao_resolve_recipients(text,text,uuid,jsonb,public.app_role);
+
+-- Helpers internos
+DROP FUNCTION IF EXISTS public._comunicacao_build_snapshot(text,uuid,jsonb,uuid,uuid);
+DROP FUNCTION IF EXISTS public._comunicacao_resolve_recipients(text,public.comunicacao_regras,uuid);
 DROP FUNCTION IF EXISTS public._comunicacao_can_deliver(uuid,uuid,public.comunicacao_canal);
-DROP FUNCTION IF EXISTS public._comunicacao_build_snapshot(text,text,uuid,jsonb,uuid,uuid);
+DROP FUNCTION IF EXISTS public._comunicacao_resolve_template(text,public.comunicacao_canal,integer);
+DROP FUNCTION IF EXISTS public._comunicacao_write_consent(uuid,uuid,public.comunicacao_canal,text,text);
 DROP FUNCTION IF EXISTS public._comunicacao_write_audit(text,text,uuid,jsonb,jsonb);
+
+-- Triggers/guards
+DROP FUNCTION IF EXISTS public.comunicacao_audit_no_mutation();
+DROP FUNCTION IF EXISTS public.comunicacao_consent_no_mutation();
+DROP FUNCTION IF EXISTS public.comunicacao_outbox_touch();
+DROP FUNCTION IF EXISTS public.comunicacao_templates_guard_immutable();
 
 DROP TABLE IF EXISTS public.comunicacao_outbox;
 DROP TABLE IF EXISTS public.comunicacao_eventos;
