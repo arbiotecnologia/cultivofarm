@@ -117,7 +117,7 @@ describe("fase2 worker: contratos e ausência de rede direta", () => {
   it("worker chama resolve_outbox_address antes de disparar adapter", () => {
     expect(workerSrc).toMatch(/rpc_resolve_outbox_address/);
     const idxResolve = workerSrc.indexOf("rpc_resolve_outbox_address");
-    const idxDispatch = workerSrc.indexOf("sendEmail");
+    const idxDispatch = workerSrc.indexOf("await sendEmail(");
     expect(idxResolve).toBeGreaterThan(-1);
     expect(idxDispatch).toBeGreaterThan(idxResolve);
   });
