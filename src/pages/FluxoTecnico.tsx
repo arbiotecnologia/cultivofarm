@@ -212,7 +212,11 @@ export default function FluxoTecnico() {
             _titulo: "Recomendação Técnica Aprovada",
             _mensagem: `Uma nova recomendação técnica para o talhão ${variables.registro.talhoes?.nome || ""} está aguardando sua decisão no Portal.`,
             _link: null,
+            _source_type: "registros_consultor",
+            _source_id: variables.registro.id,
+            _idempotency_key: `fluxo-aprov-rec-${variables.registro.id}`,
           }).then();
+
 
           if (variables.registro.solicitacao_id) {
             supabase.from("portal_solicitacoes").update({

@@ -878,7 +878,11 @@ export default function VisitaTecnica() {
               _titulo: "Nova recomendação aguardando sua decisão",
               _mensagem: `O consultor emitiu ${recsToInsert.length} item(ns) de recomendação. Aprove para gerar a Ordem de Serviço.`,
               _link: null,
+              _source_type: "registros_consultor",
+              _source_id: result.id,
+              _idempotency_key: `visita-rec-liberar-${result.id}`,
             });
+
             toast.success("Recomendação liberada — aguardando decisão do produtor");
           } else {
             toast.success("Recomendação registrada");

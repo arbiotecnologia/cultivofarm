@@ -1,5 +1,10 @@
-// Fase 0.2: registro server-side por RPC (rpc_record_aplicacao_email).
-// Sem inserts do caller. Idempotência determinística.
+// Fase 0.2 (revisão bloqueante): registro server-side pela RPC.
+// Regras críticas:
+//  - Nunca retornamos success=true se o registro em aplicacao_emails falhar.
+//  - Não usamos dados do corpo para autorizar destinatário: a autorização por
+//    destinatário é feita 100% dentro de rpc_record_aplicacao_email
+//    (contra clientes.email do OS + regra staff).
+//  - Se o registro falhar antes do downloadUrl ser rastreado, fazemos cleanup do objeto.
 import {
   authenticate,
   decodePdfBase64,
@@ -54,6 +59,7 @@ Deno.serve(async (req) => {
   const decoded = decodePdfBase64(body.pdfBase64, MAX_PDF_BYTES);
   if ("error" in decoded) return json(400, { error: decoded.error });
 
+  // Vínculo do caller à aplicação (defesa em profundidade — a RPC também valida).
   if (caller.kind === "user") {
     const isStaff = hasAnyRole(caller, STAFF_ROLES);
     const { data: apl, error: aplErr } = await supabase
@@ -84,23 +90,28 @@ Deno.serve(async (req) => {
     return json(500, { error: "Falha ao armazenar PDF" });
   }
 
+  const cleanupObject = async () => {
+    await supabase.storage.from("aplicacao-evidencias").remove([path]).catch(() => {});
+  };
+
   const { data: signed, error: signErr } = await supabase.storage
     .from("aplicacao-evidencias")
     .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 dias
   if (signErr || !signed) {
-    await supabase.storage.from("aplicacao-evidencias").remove([path]).catch(() => {});
+    await cleanupObject();
     return json(500, { error: "Falha ao gerar link" });
   }
   const downloadUrl = signed.signedUrl;
 
-  // Chave de idempotência DETERMINÍSTICA (sem Date.now).
-  const dayKey = new Date().toISOString().slice(0, 10);
+  // Chave de idempotência DETERMINÍSTICA (sem Date.now, com dia BR).
+  const nowBR = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const dayKey = nowBR.toISOString().slice(0, 10);
   const idempotencyKey =
-    `aplicacao-pdf-${body.registroId}-${body.destinatarioEmail}-${dayKey}`;
+    `aplicacao-pdf-${body.registroId}-${body.destinatarioEmail.toLowerCase()}-${dayKey}`;
 
   const enviadoPor = caller.kind === "user" ? caller.userId : null;
 
-  // Tentativa best-effort de envio. `send-transactional-email` pode não existir ainda.
+  // Tentativa best-effort de envio. `send-transactional-email` pode não existir.
   let emailSent = false;
   let emailError: string | null = null;
   let transactionalPresent = false;
@@ -136,7 +147,6 @@ Deno.serve(async (req) => {
       emailError = invokeErr.message ?? "invoke error";
     } else if (invokeData && typeof invokeData === "object") {
       transactionalPresent = true;
-      // Precisamos de sinal explícito de sucesso vindo da função.
       const d = invokeData as Record<string, unknown>;
       if (d.success === true || d.sent === true || d.status === "sent") {
         emailSent = true;
@@ -150,14 +160,13 @@ Deno.serve(async (req) => {
     emailError = e instanceof Error ? e.message : String(e);
   }
 
-  // Determina status final para persistência.
   const finalStatus: string = emailSent
     ? "sent"
     : transactionalPresent
     ? "failed"
     : "link_generated_no_send";
 
-  // Registra server-side via RPC (a policy bloqueia inserts diretos).
+  // Registro server-side (RPC valida destinatário e vínculo, aceita evolução de status).
   const { data: recordRes, error: recErr } = await supabase.rpc(
     "rpc_record_aplicacao_email" as never,
     {
@@ -168,8 +177,14 @@ Deno.serve(async (req) => {
       _enviado_por: enviadoPor,
     } as never,
   );
+
   if (recErr) {
-    console.error("record rpc error");
+    // FALHA CRÍTICA: sem registro rastreável, o link não deve permanecer.
+    await cleanupObject();
+    return json(500, {
+      error: "Falha ao registrar envio",
+      details: (recErr as { message?: string }).message ?? "rpc error",
+    });
   }
 
   // Best-effort: atualiza email_envio da aplicação (não é crítico).

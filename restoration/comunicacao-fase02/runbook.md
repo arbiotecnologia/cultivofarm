@@ -1,85 +1,90 @@
-# Runbook — Comunicação Fase 0.2
+# Runbook — Comunicação Fase 0.2 (revisão bloqueante)
 
-Este runbook explica **como aplicar** a migration proposta em
-`restoration/comunicacao-fase02/migration.sql`. Enquanto a migration
-não estiver em `supabase/migrations/` e registrada no histórico oficial,
-ela **NÃO é canônica** — trate como PROPOSTA.
+Este runbook explica **como aplicar** o pacote em
+`restoration/comunicacao-fase02/`. Enquanto a migration não estiver em
+`supabase/migrations/` e registrada no histórico oficial, ela **NÃO é
+canônica** — trate como PROPOSTA.
 
 ## Escopo
 - Tabelas: `notificacoes_operacionais`, `portal_notificacoes`,
   `aplicacao_emails`, `monitoramento_avisos`.
-- Zero alteração de rotas ou dependências. Zero mudança em UI.
-- Aditivo e idempotente.
+- Nova RPC transacional: `rpc_check_monitoramento_and_notify(uuid)`.
+- Zero mudança em rotas/dependências; UI intocada além dos callers já refatorados.
 
 ## Pré-condições
-1. Ambiente destino é **staging** primeiro. Nunca produção sem verde no staging.
-2. Backup completo do schema `public` disponível.
-3. Segredo `INTERNAL_FUNCTION_SECRET` já configurado em Project Settings → Secrets.
-4. Edge Functions da Fase 0.1/0.2 já implantadas
-   (`send-push-notification`, `enviar-pdf-visita`, `enviar-pdf-aplicacao`,
-   `check-monitoramentos-vencidos`).
+1. Ambiente destino = **staging**. Nunca produção sem verde no staging.
+2. Backup completo do schema `public`.
+3. Segredo `INTERNAL_FUNCTION_SECRET` configurado em Project Settings.
+4. Edge Functions Fase 0.2 implantadas (`send-push-notification`,
+   `enviar-pdf-visita`, `enviar-pdf-aplicacao`, `check-monitoramentos-vencidos`).
 
 ## Passo a passo
 
-### 1. Precheck (leitura)
-Executar `restoration/comunicacao-fase02/precheck.sql`. Nenhum RAISE EXCEPTION.
-Salvar a saída do dump de policies/grants para diff posterior.
+### 1. Precheck
+```
+psql <staging_dsn> -f restoration/comunicacao-fase02/precheck.sql
+```
+Aborta com `RAISE EXCEPTION` se dependências ausentes. Salva enumeração de
+policies por comando e volume de dados para diff pós-aplicação. Verifica
+duplicatas que impediriam os uniques.
 
 ### 2. Aplicar como migration oficial
-A pasta `supabase/migrations/` é escrita **apenas** pelo fluxo de migration
-do projeto Lovable/Supabase. Nesta Fase 0.2, a orientação para o operador
-humano é:
+A pasta `supabase/migrations/` é escrita pelo fluxo oficial. Ações:
 
 - **Opção A (recomendada):** copiar
   `restoration/comunicacao-fase02/migration.sql` para
   `supabase/migrations/20260810000000_comunicacao_fase02_hardening.sql`
-  em um commit humano dedicado e rodar `supabase db push` no staging.
-- **Opção B:** aplicar via `psql` na branch de staging usando as mesmas
-  credenciais que rodam migrações regulares, com `\i restoration/comunicacao-fase02/migration.sql`
-  dentro de uma transação. Registrar no `supabase_migrations.schema_migrations`
-  a versão manualmente para não descasar histórico.
+  em commit humano, executar `supabase db push` em staging.
+- **Opção B:** `psql <staging_dsn> -1 -f restoration/comunicacao-fase02/migration.sql`,
+  registrar manualmente a versão em `supabase_migrations.schema_migrations`.
 
-> Enquanto a migration não estiver em `supabase/migrations/`, **não** afirme
-> em relatórios que ela foi aplicada e **não** a chame de canônica.
+> Não afirme em relatório que a migration foi aplicada enquanto ela não
+> estiver no histórico oficial.
 
-### 3. Postcheck (leitura)
-Executar `restoration/comunicacao-fase02/postcheck.sql`. Deve terminar com
-`NOTICE: Postcheck OK`. Comparar dump de policies/grants com o precheck.
+### 3. Postcheck
+```
+psql <staging_dsn> -f restoration/comunicacao-fase02/postcheck.sql
+```
+Deve terminar com `NOTICE: Postcheck OK`.
 
-### 4. Harness RLS (leitura, staging)
+### 4. Harness RLS/RPC
 Editar `restoration/comunicacao-fase02/harness-rls.sql` substituindo
-placeholders `<STAFF_UID>`, `<PRODUTOR_UID>`, `<CLIENTE_ID>`, `<REGISTRO_ID>`,
-`<APLICACAO_ID>` etc. por UUIDs reais das fixtures. Executar como
-`service_role`. Ler os `NOTICE OK` de cada seção; qualquer `FALHOU` interrompe
-a homologação.
+`<STAFF_UID>`, `<STAFF_OTHER_UID>`, `<PRODUTOR_UID>`, `<CLIENTE_ID_A>`,
+`<CLIENTE_ID_B>`, `<REGISTRO_A>` (do cliente A), `<REGISTRO_B>` (do cliente B),
+`<APLICACAO_ID_A>` por UUIDs reais. Executar como service_role.
+Cada seção termina com `NOTICE OK`; qualquer `FALHOU` interrompe homologação.
 
-### 5. Regeneração de types
-Depois da migration aplicada em staging, regerar os tipos via CLI oficial:
+### 5. Regeneração de types (obrigatório para remover `(supabase.rpc as any)`)
+Depois da migration aplicada em staging:
 ```
 supabase gen types typescript --linked --schema public > src/integrations/supabase/types.ts
 ```
-Em seguida remover os marcadores `// TODO(fase-0.2-regen)` e os `(supabase.rpc as any)`
-listados pelo teste estático `src/test/comunicacao/rpcTypesTodo.test.ts`.
+Remover **todos** os `(supabase.rpc as any)("rpc_create_notificacao_operacional"|...)`
+em `src/`. O teste estático `src/test/comunicacao/fase02-static.test.ts` falha
+enquanto casts para essas 3 RPCs permanecerem.
 
 ### 6. Certificação runtime
-- Login como staff (`consultor_tecnico`): agendar retorno de visita técnica →
-  esperada 1 notificação operacional e (se marcada) 1 notificação de portal
-  do tipo `recomendacao` (nunca `visita`/`os`).
-- Login como produtor: portal exibe a notificação; **não** consegue criar
-  novas notificações.
-- Executar `check-monitoramentos-vencidos` com header `x-internal-secret`:
-  gera 1 aviso por dia; execução duplicada devolve `skipped`.
-- Testar `enviar-pdf-aplicacao` e `enviar-pdf-visita` com usuário dono e
-  usuário sem vínculo (403).
+- Login como consultor: agendar retorno de visita → 1 notificação operacional
+  e (se marcada) 1 notificação de portal do tipo `recomendacao`.
+- Login como produtor: portal exibe a notificação; produtor **não** cria novas.
+- `check-monitoramentos-vencidos` com `x-internal-secret`: `rpc_check_monitoramento_and_notify`
+  reserva + notifica em transação única; segunda execução no mesmo dia →
+  `duplicated`.
+- Concorrência: forçar erro no INSERT da notificação dentro da RPC
+  (`SIGNAL sqlstate '99999'` manual) e comprovar que o registro em
+  `monitoramento_avisos` **não** foi persistido.
+- `enviar-pdf-aplicacao` com destinatário ≠ e-mail do cliente e caller
+  aplicador → 500 (RPC recusa). Com caller administrador → 200. Se `rpc_record_aplicacao_email`
+  falhar, resposta é 500 e o objeto de storage é removido.
 
-### 7. Rollback (apenas se necessário)
-`restoration/comunicacao-fase02/rollback.sql` remove as adições **sem**
-restaurar as policies vulneráveis anteriores. Prefere manter escrita
-bloqueada a reabrir o vetor de ataque.
+### 7. Rollback
+`restoration/comunicacao-fase02/rollback.sql` remove **apenas** as adições;
+**NÃO** restaura policies permissivas antigas. Prefere manter escrita
+bloqueada a reabrir o vetor.
 
-## Pendências externas ao repositório
+## Pendências externas
 - Confirmação humana da execução em staging antes de produção.
-- Configuração do cron real (fora do repositório) apontando para
-  `check-monitoramentos-vencidos` com `x-internal-secret`.
+- Cron produtivo apontando para `check-monitoramentos-vencidos` com
+  `x-internal-secret`.
 - Implantação de `send-transactional-email` (fora do escopo desta fase).
-- Regeneração de `src/integrations/supabase/types.ts`.
+- Regeneração de `src/integrations/supabase/types.ts` e limpeza dos casts.
