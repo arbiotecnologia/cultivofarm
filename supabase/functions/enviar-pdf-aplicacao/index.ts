@@ -1,3 +1,5 @@
+// Fase 0.2: registro server-side por RPC (rpc_record_aplicacao_email).
+// Sem inserts do caller. Idempotência determinística.
 import {
   authenticate,
   decodePdfBase64,
@@ -78,33 +80,37 @@ Deno.serve(async (req) => {
       upsert: false,
     });
   if (upErr) {
-    console.error("Upload error:", upErr);
+    console.error("Upload error");
     return json(500, { error: "Falha ao armazenar PDF" });
   }
 
   const { data: signed, error: signErr } = await supabase.storage
     .from("aplicacao-evidencias")
-    .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 dias (reduzido de 30)
+    .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 dias
   if (signErr || !signed) {
     await supabase.storage.from("aplicacao-evidencias").remove([path]).catch(() => {});
     return json(500, { error: "Falha ao gerar link" });
   }
   const downloadUrl = signed.signedUrl;
 
-  // Nota: o registro em aplicacao_emails é feito pelo caller autenticado
-  // via política RLS (Staff can record own aplicacao_emails). A RPC
-  // rpc_record_aplicacao_email existe para casos em que a Edge Function
-  // precisar registrar diretamente (ex.: chamada interna do cron).
+  // Chave de idempotência DETERMINÍSTICA (sem Date.now).
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const idempotencyKey =
+    `aplicacao-pdf-${body.registroId}-${body.destinatarioEmail}-${dayKey}`;
 
+  const enviadoPor = caller.kind === "user" ? caller.userId : null;
+
+  // Tentativa best-effort de envio. `send-transactional-email` pode não existir ainda.
   let emailSent = false;
   let emailError: string | null = null;
+  let transactionalPresent = false;
+
   try {
     const dataFormatada = body.dataAplicacao
       ? new Date(body.dataAplicacao).toLocaleDateString("pt-BR")
       : new Date().toLocaleDateString("pt-BR");
-    const idempotencyKey = `aplicacao-pdf-${body.registroId}-${body.destinatarioEmail}-${Date.now()}`;
 
-    const { error: invokeErr } = await supabase.functions.invoke(
+    const { data: invokeData, error: invokeErr } = await supabase.functions.invoke(
       "send-transactional-email",
       {
         body: {
@@ -115,7 +121,7 @@ Deno.serve(async (req) => {
             subject: body.customSubject,
             message: body.customMessage,
             destinatarioNome: body.destinatarioNome || "Produtor(a)",
-            empresaNome: body.empresaNome || "PULSE AGRÍCOLA",
+            empresaNome: body.empresaNome || "AR BIO",
             fazendaNome: body.fazendaNome || "—",
             talhaoNome: body.talhaoNome || "—",
             produtoNome: body.produtoNome || "—",
@@ -125,11 +131,59 @@ Deno.serve(async (req) => {
         },
       },
     );
-    if (invokeErr) emailError = invokeErr.message;
-    else emailSent = true;
+
+    if (invokeErr) {
+      emailError = invokeErr.message ?? "invoke error";
+    } else if (invokeData && typeof invokeData === "object") {
+      transactionalPresent = true;
+      // Precisamos de sinal explícito de sucesso vindo da função.
+      const d = invokeData as Record<string, unknown>;
+      if (d.success === true || d.sent === true || d.status === "sent") {
+        emailSent = true;
+      } else {
+        emailError = typeof d.error === "string" ? d.error : "resposta sem sinal de envio";
+      }
+    } else {
+      emailError = "resposta vazia da send-transactional-email";
+    }
   } catch (e) {
     emailError = e instanceof Error ? e.message : String(e);
   }
 
-  return json(200, { success: true, downloadUrl, emailSent, emailError });
+  // Determina status final para persistência.
+  const finalStatus: string = emailSent
+    ? "sent"
+    : transactionalPresent
+    ? "failed"
+    : "link_generated_no_send";
+
+  // Registra server-side via RPC (a policy bloqueia inserts diretos).
+  const { data: recordRes, error: recErr } = await supabase.rpc(
+    "rpc_record_aplicacao_email" as never,
+    {
+      _aplicacao_id: body.registroId,
+      _email: body.destinatarioEmail,
+      _status: finalStatus,
+      _idempotency_key: idempotencyKey,
+      _enviado_por: enviadoPor,
+    } as never,
+  );
+  if (recErr) {
+    console.error("record rpc error");
+  }
+
+  // Best-effort: atualiza email_envio da aplicação (não é crítico).
+  await supabase
+    .from("aplicacoes")
+    .update({ email_envio: body.destinatarioEmail })
+    .eq("id", body.registroId);
+
+  return json(200, {
+    success: true,
+    downloadUrl,
+    emailSent,
+    emailError,
+    status: finalStatus,
+    record: recordRes ?? null,
+  });
 });
