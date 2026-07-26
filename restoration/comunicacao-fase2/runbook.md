@@ -268,3 +268,18 @@ system-side com `source_type`.
 ### Runbook operacional
 - Nenhuma mudança em envio real: adapters permanecem desligados por padrão (flags globais + adapter-específicas).
 - Rollback: reaplicar `restoration/comunicacao-fase2/rollback.sql` (assinaturas Fase 2.4 não introduziram novos objetos).
+
+---
+
+## Fase 2.5 — Correção pontual (2026-08-11)
+
+### `fetchCommunicationHealth`
+- Nunca propaga `error.message` bruto (Edge Function/Supabase/exception) para a UI.
+- Retorna apenas códigos allowlisted: `unauthorized`, `function_unavailable`, `unexpected_error`. Detalhes técnicos ficam em `console.warn` do cliente.
+- Mapeamento: 401/403 → `unauthorized`; 404/405/501/503 → `function_unavailable`; demais → `unexpected_error`.
+
+### Verificar canal (admin)
+- UI restrita a `email` e `whatsapp` (canais com verificação externa real). `in_app`/`push` **não** são verificáveis por este fluxo.
+- O canal determina a flag: `email` → `p_email_verificado=true, p_telefone_verificado=null`; `whatsapp` → `p_email_verificado=null, p_telefone_verificado=true`.
+- Esta tela **apenas marca verificado**. Revogar/limpar verificação segue fluxo específico (RPC direta em suporte, com trilha de auditoria) e não é exposta aqui para evitar operação ambígua.
+- Continua admin-only na UI e no RPC; gestor não vê os painéis de saúde nem de verificação.
