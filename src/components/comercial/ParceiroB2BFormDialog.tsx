@@ -429,7 +429,15 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
               </div>
               <div>
                 <Label>Inscrição Estadual</Label>
-                <Input value={form.inscricao_estadual ?? ""} onChange={(e) => set("inscricao_estadual", e.target.value)} />
+                <MaskedInput
+                  mask="ie"
+                  uf={form.commercial_state ?? undefined}
+                  value={form.inscricao_estadual ?? ""}
+                  onChange={(e) => set("inscricao_estadual", e.target.value)}
+                  placeholder={form.commercial_state ? "Conforme UF selecionada" : "ISENTO ou selecione a UF"}
+                  autoCapitalize="characters"
+                />
+                {errors.inscricao_estadual && <p className="text-xs text-destructive mt-1">{errors.inscricao_estadual}</p>}
               </div>
               <div>
                 <Label>Inscrição Municipal</Label>
