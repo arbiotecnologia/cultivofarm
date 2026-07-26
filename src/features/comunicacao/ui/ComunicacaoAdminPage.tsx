@@ -834,9 +834,12 @@ function CanalHealthPanel() {
       )}
       {d && !d.ok && (
         <p className="text-xs text-amber-600">
-          Diagnóstico indisponível: {d.error ?? "erro desconhecido"}. Verifique se a função
-          communication-health está implantada e se você está autenticado como administrador.
-          (Consultado em {d.fetched_at}.)
+          {d.error === "unauthorized"
+            ? "Diagnóstico indisponível: acesso não autorizado. Faça login como administrador."
+            : d.error === "function_unavailable"
+              ? "Diagnóstico indisponível: função communication-health não implantada ou indisponível."
+              : "Diagnóstico indisponível: erro inesperado ao consultar o serviço."}
+          {" "}(Consultado em {d.fetched_at}.)
         </p>
       )}
       {d && d.ok && (
