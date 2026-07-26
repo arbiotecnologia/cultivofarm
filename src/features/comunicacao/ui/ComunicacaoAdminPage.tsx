@@ -17,6 +17,7 @@ import {
   listOutbox,
   listOwnPreferences,
   updateOwnPreference,
+  upsertRule,
 } from "@/features/comunicacao/api";
 import type {
   ComunicacaoTemplate,
@@ -212,25 +213,231 @@ function tryRender(form: { canal: Canal; assunto: string; corpo: string; variave
 // -------------------- Regras --------------------
 
 function RegrasPanel() {
+  const qc = useQueryClient();
   const q = useQuery<ComunicacaoRegra[], Error>({ queryKey: ["comm", "regras"], queryFn: () => listRules() });
+
+  const [form, setForm] = useState({
+    event_key: "produto_pronto_retirada" as
+      | "produto_pronto_retirada"
+      | "produto_pronto_aplicacao"
+      | "administrative_important_update",
+    perfil: "" as "" | "cliente_produtor" | "aplicador" | "consultor_tecnico" | "administrador" | "gestor" | "financeiro" | "operador_onfarm" | "producao" | "administrativo" | "gestor_comercial" | "parceiro_b2b" | "parceiro_b2b_tecnico" | "tecnico_agronomo",
+    estrategia: "source_participants" as "by_role" | "source_participants" | "broadcast_role",
+    canal: "in_app" as ComunicacaoCanal,
+    template_chave: "",
+    template_versao: "" as string,
+    prioridade: 100,
+    cooldown_seconds: 0,
+    enabled: false,
+  });
+
+  const mut = useMutation({
+    mutationFn: () =>
+      upsertRule({
+        p_rule_id: null,
+        p_event_key: form.event_key,
+        p_perfil: form.perfil === "" ? null : form.perfil,
+        p_estrategia: form.estrategia,
+        p_canal: form.canal,
+        p_template_chave: form.template_chave,
+        p_template_versao: form.template_versao ? Number(form.template_versao) : null,
+        p_condicoes: {},
+        p_prioridade: Number(form.prioridade),
+        p_enabled: form.enabled,
+        p_cooldown_seconds: Number(form.cooldown_seconds),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comm", "regras"] }),
+  });
+
+  const toggle = useMutation({
+    mutationFn: (r: ComunicacaoRegra) =>
+      upsertRule({
+        p_rule_id: r.id,
+        p_event_key: r.event_key,
+        p_perfil: (r.perfil ?? null) as string | null,
+        p_estrategia: r.estrategia as "by_role" | "source_participants" | "broadcast_role",
+        p_canal: r.canal,
+        p_template_chave: r.template_chave,
+        p_template_versao: r.template_versao,
+        p_condicoes: (r.condicoes ?? {}) as Record<string, unknown>,
+        p_prioridade: r.prioridade,
+        p_enabled: !r.enabled,
+        p_cooldown_seconds: r.cooldown_seconds,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comm", "regras"] }),
+  });
+
+  const isAdmEvent = form.event_key === "administrative_important_update";
+
   return (
-    <section className="rounded-md border p-4 text-sm">
-      <h2 className="font-medium mb-2">Regras por evento</h2>
-      {q.isLoading && <p className="text-muted-foreground">Carregando…</p>}
-      {q.error && <p className="text-destructive">Erro: {q.error.message}</p>}
-      {q.data && q.data.length === 0 && <p className="text-muted-foreground">Nenhuma regra cadastrada.</p>}
-      <ul className="divide-y">
-        {(q.data ?? []).map((r) => (
-          <li key={r.id} className="py-2">
-            <span className="font-mono">{r.event_key}</span> · {r.canal} · template <code>{r.template_chave}</code>
-            {r.template_versao ? ` v${r.template_versao}` : " (ativa)"} · perfil {r.perfil ?? "—"} · {r.enabled ? "ligada" : "desligada"}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-3 text-xs text-muted-foreground">
-        Upsert de regras via rpc_upsert_communication_rule (formulário completo a implementar quando migration
-        estiver aplicada em staging).
-      </p>
+    <section className="space-y-4 text-sm">
+      <div className="rounded-md border p-4 space-y-3">
+        <h2 className="font-medium">Nova regra</h2>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-xs">
+            Evento
+            <select
+              className="mt-1 w-full rounded border p-2 text-sm"
+              value={form.event_key}
+              onChange={(e) => {
+                const ev = e.target.value as typeof form.event_key;
+                setForm((f) => ({
+                  ...f,
+                  event_key: ev,
+                  estrategia:
+                    ev === "administrative_important_update" ? "broadcast_role" : "source_participants",
+                }));
+              }}
+            >
+              <option value="produto_pronto_retirada">produto_pronto_retirada</option>
+              <option value="produto_pronto_aplicacao">produto_pronto_aplicacao</option>
+              <option value="administrative_important_update">administrative_important_update</option>
+            </select>
+          </label>
+          <label className="text-xs">
+            Estratégia
+            <select
+              className="mt-1 w-full rounded border p-2 text-sm"
+              value={form.estrategia}
+              onChange={(e) => setForm({ ...form, estrategia: e.target.value as typeof form.estrategia })}
+            >
+              {isAdmEvent ? (
+                <option value="broadcast_role">broadcast_role</option>
+              ) : (
+                <>
+                  <option value="source_participants">source_participants</option>
+                  <option value="by_role">by_role</option>
+                </>
+              )}
+            </select>
+          </label>
+          <label className="text-xs">
+            Perfil {isAdmEvent || form.estrategia === "by_role" ? "(obrigatório)" : "(opcional)"}
+            <select
+              className="mt-1 w-full rounded border p-2 text-sm"
+              value={form.perfil}
+              onChange={(e) => setForm({ ...form, perfil: e.target.value as typeof form.perfil })}
+            >
+              <option value="">—</option>
+              <option value="administrador">administrador</option>
+              <option value="gestor">gestor</option>
+              <option value="tecnico_agronomo">tecnico_agronomo</option>
+              <option value="consultor_tecnico">consultor_tecnico</option>
+              <option value="aplicador">aplicador</option>
+              <option value="producao">producao</option>
+              <option value="operador_onfarm">operador_onfarm</option>
+              <option value="administrativo">administrativo</option>
+              <option value="financeiro">financeiro</option>
+              <option value="gestor_comercial">gestor_comercial</option>
+              <option value="parceiro_b2b">parceiro_b2b</option>
+              <option value="parceiro_b2b_tecnico">parceiro_b2b_tecnico</option>
+              <option value="cliente_produtor">cliente_produtor</option>
+            </select>
+          </label>
+          <label className="text-xs">
+            Canal
+            <select
+              className="mt-1 w-full rounded border p-2 text-sm"
+              value={form.canal}
+              onChange={(e) => setForm({ ...form, canal: e.target.value as ComunicacaoCanal })}
+            >
+              <option value="in_app">in_app</option>
+              <option value="email">email</option>
+              <option value="whatsapp">whatsapp</option>
+              <option value="push">push</option>
+            </select>
+          </label>
+          <label className="text-xs">
+            Template (chave)
+            <input
+              className="mt-1 w-full rounded border p-2 text-sm"
+              value={form.template_chave}
+              onChange={(e) => setForm({ ...form, template_chave: e.target.value })}
+            />
+          </label>
+          <label className="text-xs">
+            Versão (vazio = ativa)
+            <input
+              className="mt-1 w-full rounded border p-2 text-sm"
+              type="number"
+              min={1}
+              value={form.template_versao}
+              onChange={(e) => setForm({ ...form, template_versao: e.target.value })}
+            />
+          </label>
+          <label className="text-xs">
+            Prioridade
+            <input
+              className="mt-1 w-full rounded border p-2 text-sm"
+              type="number"
+              min={0}
+              max={1000}
+              value={form.prioridade}
+              onChange={(e) => setForm({ ...form, prioridade: Number(e.target.value) })}
+            />
+          </label>
+          <label className="text-xs">
+            Cooldown (segundos)
+            <input
+              className="mt-1 w-full rounded border p-2 text-sm"
+              type="number"
+              min={0}
+              max={604800}
+              value={form.cooldown_seconds}
+              onChange={(e) => setForm({ ...form, cooldown_seconds: Number(e.target.value) })}
+            />
+          </label>
+        </div>
+        <label className="flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={form.enabled}
+            onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
+          />
+          Ligar regra ao criar
+        </label>
+        <button
+          className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+          disabled={
+            mut.isPending ||
+            !form.template_chave ||
+            ((isAdmEvent || form.estrategia === "by_role") && !form.perfil)
+          }
+          onClick={() => mut.mutate()}
+        >
+          Criar regra
+        </button>
+        {mut.error && <p className="text-destructive">Erro: {(mut.error as Error).message}</p>}
+      </div>
+
+      <div className="rounded-md border p-4">
+        <h2 className="font-medium mb-2">Regras existentes</h2>
+        {q.isLoading && <p className="text-muted-foreground">Carregando…</p>}
+        {q.error && <p className="text-destructive">Erro: {q.error.message}</p>}
+        {q.data && q.data.length === 0 && <p className="text-muted-foreground">Nenhuma regra cadastrada.</p>}
+        <ul className="divide-y">
+          {(q.data ?? []).map((r) => (
+            <li key={r.id} className="py-2 flex items-center gap-3">
+              <span className="font-mono text-xs">{r.event_key}</span>
+              <span className="text-xs">{r.estrategia}</span>
+              <span className="text-xs">{r.canal}</span>
+              <code className="text-xs">
+                {r.template_chave}
+                {r.template_versao ? ` v${r.template_versao}` : " (ativa)"}
+              </code>
+              <span className="text-xs text-muted-foreground">perfil {r.perfil ?? "—"}</span>
+              <span className="ml-auto flex items-center gap-2">
+                <span className={`rounded px-1.5 py-0.5 text-xs border ${r.enabled ? "bg-primary/10" : ""}`}>
+                  {r.enabled ? "ligada" : "desligada"}
+                </span>
+                <button className="text-xs underline" onClick={() => toggle.mutate(r)}>
+                  {r.enabled ? "Desligar" : "Ligar"}
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
