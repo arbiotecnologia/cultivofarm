@@ -236,16 +236,21 @@ BEGIN
     IF _source_type NOT IN ('ordens_servico','ordens_servico_onfarm') THEN
       RAISE EXCEPTION 'source_type inválido para %: %', _event_key, _source_type;
     END IF;
+    -- NOTA: o payload usa o rótulo canônico 'data_prevista' para o template,
+    -- mas as ORIGENS diferem por tabela:
+    --   ordens_servico        → coluna data_programada
+    --   ordens_servico_onfarm → coluna data_recomendada  (não existe data_programada nesta tabela)
     CASE _source_type
       WHEN 'ordens_servico' THEN
         SELECT o.numero_os, to_char(o.data_programada,'DD/MM/YYYY')
           INTO v_codigo_os, v_data_prevista
           FROM public.ordens_servico o WHERE o.id = _source_id;
       WHEN 'ordens_servico_onfarm' THEN
-        SELECT o.numero_os, to_char(o.data_programada,'DD/MM/YYYY')
+        SELECT o.numero_os, to_char(o.data_recomendada,'DD/MM/YYYY')
           INTO v_codigo_os, v_data_prevista
           FROM public.ordens_servico_onfarm o WHERE o.id = _source_id;
     END CASE;
+
     RETURN jsonb_build_object(
       'nome_destinatario', COALESCE(v_nome_dest,''),
       'codigo_os',         COALESCE(v_codigo_os,''),
