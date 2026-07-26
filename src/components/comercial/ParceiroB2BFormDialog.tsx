@@ -26,6 +26,8 @@ import {
 import { formatCNPJ, unmask, unmaskCnpj } from "@/lib/masks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchCEP } from "@/lib/api/viacep";
+import { fetchCNPJ } from "@/lib/api/brasilapi";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { ParceiroUsuariosTab } from "@/components/comercial/ParceiroUsuariosTab";
