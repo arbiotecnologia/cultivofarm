@@ -173,3 +173,35 @@ e nunca ecoam PII no retorno.
 - Ativação real dos adapters (sequência sugerida: in_app → email → whatsapp).
 - Documentação do fluxo de aprovação de templates Meta e reprodução de
   opt-in/verificação em produção.
+
+## Correção de certificação — schema on-farm (esta iteração)
+
+**Fato:** `public.ordens_servico_onfarm` **não** possui `data_programada`
+(confirmado em `src/integrations/supabase/types.ts`). A coluna real para
+agendamento on-farm é `data_recomendada`. A versão anterior de
+`_comunicacao_build_snapshot_v2` consultava `o.data_programada` no branch
+`ordens_servico_onfarm` e era incompatível com o schema.
+
+**Ajustes:**
+- `migration.sql` · `_comunicacao_build_snapshot_v2`: branch on-farm agora
+  consulta `o.data_recomendada`; branch OS regular preserva `o.data_programada`.
+  O rótulo de payload continua `data_prevista` (contrato do template) —
+  **origem por tabela documentada em comentário SQL inline**.
+- `precheck.sql`: valida explicitamente, por par `(tabela, coluna)`, todas as
+  colunas consumidas por helpers/triggers/adapters, incluindo
+  `ordens_servico.data_programada` e `ordens_servico_onfarm.data_recomendada`.
+  Aborta com mensagem precisa `public.<tabela>.<coluna> ausente`. Adiciona
+  aviso soft se `ordens_servico_onfarm.data_programada` vier a existir no
+  futuro (contrato continua em `data_recomendada`).
+- `src/test/comunicacao/fase2-schema-onfarm.test.ts` (novo, 6 casos):
+  1. `types.ts` confirma `ordens_servico.data_programada`.
+  2. `types.ts` confirma `ordens_servico_onfarm.data_recomendada` e
+     ausência de `data_programada` nessa tabela.
+  3. Branch on-farm de `_comunicacao_build_snapshot_v2` usa
+     `data_recomendada` e nunca `data_programada`.
+  4. Branch OS regular usa `data_programada` e nunca `data_recomendada`.
+  5. `precheck.sql` contém todos os pares `(tabela, coluna)` críticos.
+  6. `precheck.sql` **não** exige `ordens_servico_onfarm.data_programada`.
+
+`_comunicacao_resolve_recipients_v2` já dependia apenas de `cliente_id` em
+ambos os branches — sem correção necessária.
