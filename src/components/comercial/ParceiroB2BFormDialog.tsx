@@ -211,32 +211,104 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
   };
 
   const [loadingCNPJ, setLoadingCNPJ] = useState(false);
+  const cnpjAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => cnpjAbortRef.current?.abort(), []);
+
   const handleCNPJLookup = async () => {
     const raw = unmaskCnpj(form.cnpj ?? "");
     if (raw.length !== 14 || !validateCNPJ(raw)) {
-      toast.error("Insira um CNPJ válido para buscar");
+      toast.error("Insira um CNPJ válido para buscar", {
+        description: "Verifique o número digitado e o dígito verificador.",
+      });
       return;
     }
+
+    cnpjAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    cnpjAbortRef.current = ctrl;
+    const timeoutId = setTimeout(() => ctrl.abort(), 12_000);
+
     setLoadingCNPJ(true);
     try {
-      const data = await fetchCNPJ(raw);
-      setForm((f) => ({
-        ...f,
-        razao_social: data.razao_social || f.razao_social,
-        nome_fantasia: data.nome_fantasia || f.nome_fantasia || data.razao_social || null,
-        cep: data.cep || f.cep,
-        endereco_logradouro: data.logradouro || f.endereco_logradouro,
-        endereco_numero: data.numero || f.endereco_numero,
-        endereco_complemento: data.complemento || f.endereco_complemento,
-        endereco_bairro: data.bairro || f.endereco_bairro,
-        commercial_city: data.municipio || f.commercial_city,
-        commercial_state: data.uf || f.commercial_state,
-        telefone_comercial: f.telefone_comercial || data.ddd_telefone_1 || null,
-      }));
-      toast.success("Dados preenchidos via BrasilAPI. Revise antes de salvar.");
+      const resp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${raw}`, {
+        signal: ctrl.signal,
+      });
+
+      if (!resp.ok) {
+        if (resp.status === 404) {
+          toast.error("CNPJ não encontrado na base pública", {
+            description:
+              "O número é válido, mas a BrasilAPI não retornou dados cadastrais. Preencha manualmente.",
+          });
+        } else if (resp.status === 429) {
+          toast.error("Muitas consultas recentes", {
+            description: "Aguarde alguns segundos e tente novamente.",
+          });
+        } else if (resp.status >= 500) {
+          toast.error("Base pública indisponível", {
+            description: "A BrasilAPI está fora do ar no momento. Tente novamente mais tarde.",
+          });
+        } else {
+          toast.error("Falha ao consultar CNPJ", {
+            description: `Resposta inesperada da BrasilAPI (HTTP ${resp.status}).`,
+          });
+        }
+        return;
+      }
+
+      const data = (await resp.json()) as Awaited<ReturnType<typeof fetchCNPJ>>;
+
+      const patch = {
+        razao_social: data.razao_social || form.razao_social,
+        nome_fantasia:
+          data.nome_fantasia || form.nome_fantasia || data.razao_social || null,
+        cep: data.cep || form.cep,
+        endereco_logradouro: data.logradouro || form.endereco_logradouro,
+        endereco_numero: data.numero || form.endereco_numero,
+        endereco_complemento: data.complemento || form.endereco_complemento,
+        endereco_bairro: data.bairro || form.endereco_bairro,
+        commercial_city: data.municipio || form.commercial_city,
+        commercial_state: data.uf || form.commercial_state,
+        telefone_comercial: form.telefone_comercial || data.ddd_telefone_1 || null,
+      };
+
+      const filledCount = [
+        data.razao_social,
+        data.nome_fantasia,
+        data.cep,
+        data.logradouro,
+        data.numero,
+        data.complemento,
+        data.bairro,
+        data.municipio,
+        data.uf,
+        data.ddd_telefone_1,
+      ].filter((v) => typeof v === "string" && v.trim().length > 0).length;
+
+      if (filledCount === 0) {
+        toast.warning("Nenhum dado utilizável retornado", {
+          description:
+            "A BrasilAPI respondeu, mas não trouxe campos cadastrais preenchíveis para este CNPJ. Preencha manualmente.",
+        });
+        return;
+      }
+
+      setForm((f) => ({ ...f, ...patch }));
+      toast.success("Dados preenchidos via BrasilAPI", {
+        description: `${filledCount} campo(s) preenchido(s). Revise antes de salvar.`,
+      });
     } catch (e: any) {
-      toast.error(e.message || "Falha ao consultar CNPJ");
+      if (ctrl.signal.aborted) {
+        toast.error("Consulta cancelada", {
+          description: "A busca demorou demais ou foi interrompida. Tente novamente.",
+        });
+      } else {
+        toast.error("Falha de rede ao consultar CNPJ", {
+          description: e?.message || "Verifique sua conexão e tente novamente.",
+        });
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoadingCNPJ(false);
     }
   };
