@@ -1,9 +1,8 @@
 // Edge Function: communication-health
-// - POST-only (mesma disciplina do módulo)
+// - POST-only
 // - Autorização: INTERNAL_FUNCTION_SECRET OU service_role JWT OU JWT com role
 //   administrador (checagem via user_roles). NUNCA anon.
-// - Retorna EXCLUSIVAMENTE booleans configured/enabled por canal. Sem segredos,
-//   sem echo de envs.
+// - Retorna EXCLUSIVAMENTE booleans configured/enabled por canal. Sem segredos.
 
 import { json, requirePost, serviceClient } from "../_shared/auth-guard.ts";
 import { healthBooleans, readWorkerEnv } from "../_shared/comunicacao/adapters.ts";

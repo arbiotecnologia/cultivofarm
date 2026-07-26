@@ -1,5 +1,7 @@
 // Adapter de e-mail (SMTP via denomailer). Desligado por padrão.
-// Sem I/O quando flags estão OFF ou envs ausentes.
+// - Config inválida (porta fora de faixa, envs faltando) → deferred, não cancel.
+// - Timeout real via Promise.race + client.close() no finally.
+// - HTML é escapado; ausência de HTML explícito envia texto puro.
 
 import type {
   AdapterDeps,
@@ -7,10 +9,25 @@ import type {
   AdapterSnapshot,
   RenderedContent,
   ResolvedAddress,
+  SmtpLikeClient,
   WorkerEnv,
 } from "./adapters-types.ts";
+import { escapeHtml, isSmtpConfigValid } from "./adapters-types.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 20_000;
+
+async function defaultSmtpClientFactory(cfg: {
+  hostname: string; port: number; tls: boolean;
+  auth: { username: string; password: string };
+}): Promise<SmtpLikeClient> {
+  // Especificador dinâmico via variável — evita resolução estática por
+  // ferramentas Node (URL válido apenas em runtime Deno).
+  const denomailerSpec = "https://deno.land/x/denomailer@1.6.0/mod.ts";
+  // @ts-ignore -- resolvido em runtime Deno
+  const mod = await import(denomailerSpec);
+  const client = new mod.SMTPClient({ connection: cfg });
+  return client as SmtpLikeClient;
+}
 
 export async function sendEmail(
   env: WorkerEnv,
@@ -22,8 +39,10 @@ export async function sendEmail(
   if (!env.DELIVERY_ENABLED || !env.EMAIL_ENABLED) {
     return { outcome: "provider_not_configured", code: "email_disabled", message: "flag OFF" };
   }
-  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD || !env.SMTP_FROM) {
-    return { outcome: "provider_not_configured", code: "email_missing_env", message: "SMTP_* ausente" };
+  if (!isSmtpConfigValid(env)) {
+    // Config inválida (porta fora de faixa, envs faltando) → defer.
+    // Não perdemos mensagens só porque o operador esqueceu de configurar.
+    return { outcome: "deferred", code: "email_config_invalid", message: "SMTP inválido" };
   }
   if (!resolved.ok || resolved.canal !== "email" || !resolved.address) {
     return { outcome: "invalid_recipient", code: "invalid_address", message: "sem endereço" };
@@ -34,62 +53,56 @@ export async function sendEmail(
   }
 
   const timeoutMs = deps.timeoutMs ?? SEND_TIMEOUT_DEFAULT_MS;
-  const controller = new AbortController();
-  const to = resolved.address;
+  const factory = deps.smtpClientFactory ?? defaultSmtpClientFactory;
+  const port = Number(env.SMTP_PORT ?? 587);
 
+  let client: SmtpLikeClient | null = null;
   try {
-    // Reuso do denomailer (já em uso por enviar-alertas-notificacoes).
-    // O import é dinâmico para permitir mock por AdapterDeps.fetch nos testes
-    // (o teste do worker faz stub em runAdapter, não neste import).
-    // Especificador dinâmico via variável — evita resolução estática por
-    // ferramentas Node (o URL é válido apenas em runtime Deno).
-    const denomailerSpec = "https://deno.land/x/denomailer@1.6.0/mod.ts";
-    // @ts-ignore -- módulo Deno resolvido só em runtime da Edge Function
-    const { SMTPClient } = await import(denomailerSpec);
-
-    const client = new SMTPClient({
-      connection: {
-        hostname: env.SMTP_HOST,
-        port: Number(env.SMTP_PORT ?? 587),
-        tls: (env.SMTP_PORT ?? "587") === "465",
-        auth: { username: env.SMTP_USER!, password: env.SMTP_PASSWORD! },
-      },
+    client = await factory({
+      hostname: env.SMTP_HOST!,
+      port,
+      tls: port === 465,
+      auth: { username: env.SMTP_USER!, password: env.SMTP_PASSWORD! },
     });
 
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const htmlBody = `<pre style="font-family:ui-monospace,monospace;white-space:pre-wrap">${escapeHtml(rendered.corpo)}</pre>`;
+
+    // Timeout real: race entre send() e um timer que rejeita explicitamente.
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error("email_send_timeout")), timeoutMs);
+    });
     try {
-      await client.send({
-        from: env.SMTP_FROM!,
-        to,
-        subject,
-        content: rendered.corpo,
-        html: rendered.corpo,
-      });
+      await Promise.race([
+        client.send({
+          from: env.SMTP_FROM!,
+          to: resolved.address,
+          subject,
+          content: rendered.corpo,
+          html: htmlBody,
+        }),
+        timeoutPromise,
+      ]);
     } finally {
-      clearTimeout(timer);
-      try { await client.close(); } catch { /* ignore */ }
+      if (timeoutId !== null) clearTimeout(timeoutId);
     }
 
-    return {
-      outcome: "sent",
-      code: "sent",
-      message: "ok",
-      provider_message_id: null,
-    };
+    return { outcome: "sent", code: "sent", message: "ok", provider_message_id: null };
   } catch (e) {
     const msg = String((e as Error)?.message ?? e).slice(0, 500);
-    const isTimeout = /abort|timeout/i.test(msg);
-    if (isTimeout) {
+    if (/timeout/i.test(msg) || /abort/i.test(msg)) {
       return { outcome: "transient_error", code: "email_timeout", message: msg };
     }
-    // Conexão/DNS/auth: tratar como transitório para permitir retry moderado.
-    if (/ECONN|EHOST|dns|network|timeout|reset/i.test(msg)) {
+    if (/ECONN|EHOST|dns|network|reset/i.test(msg)) {
       return { outcome: "transient_error", code: "email_network_error", message: msg };
     }
-    // Erros SMTP 5xx são permanentes.
     if (/5\d\d/.test(msg)) {
       return { outcome: "permanent_error", code: "email_smtp_5xx", message: msg };
     }
     return { outcome: "transient_error", code: "email_unknown_error", message: msg };
+  } finally {
+    if (client) {
+      try { await client.close(); } catch { /* ignore */ }
+    }
   }
 }

@@ -139,9 +139,9 @@ export const previewAdministrativeBroadcast = (
 ) => callRpc("rpc_preview_administrative_broadcast_count", args);
 
 /**
- * Publica broadcast administrativo (`administrative_important_update`) para um
- * `app_role`. Requer administrador (RPC valida). A `p_idempotency_key` deve ser
- * estável para o par (target_role, titulo+mensagem) na sessão do formulário.
+ * Publica broadcast administrativo (`administrative_important_update`). O
+ * `idempotency_key` deve ser um nonce UUID gerado por INTENÇÃO de envio,
+ * preservado em retries/duplo clique e renovado após sucesso ou reset.
  */
 export const publishAdministrativeBroadcast = (args: {
   target_role: string;
@@ -160,3 +160,37 @@ export const publishAdministrativeBroadcast = (args: {
     },
     p_idempotency_key: args.idempotency_key,
   });
+
+/**
+ * Publicação manual de `produto_pronto_aplicacao` para uma OS regular (não
+ * on-farm até haver definição de negócio). Servidor valida existência da OS e
+ * ignora conteúdo do payload (todos os dados vêm do banco via helpers v2).
+ * `idempotency_key` deve ser um nonce UUID por intenção do administrador.
+ */
+export const publishManualProdutoProntoAplicacao = (args: {
+  os_id: string;
+  idempotency_key: string;
+}) =>
+  callRpc("rpc_publish_communication_event", {
+    p_event_key: "produto_pronto_aplicacao",
+    p_source_type: "ordens_servico",
+    p_source_id: args.os_id,
+    p_payload: {},
+    p_idempotency_key: args.idempotency_key,
+  });
+
+/** Lista OS regulares para o seletor manual da aba Comunicados (admin). */
+export async function listOrdensServicoRegularesParaComunicado(
+  limit = 50,
+): Promise<Array<{ id: string; numero_os: string | null; status: string | null }>> {
+  const { data, error } = await sb
+    .from("ordens_servico")
+    .select("id, numero_os, status")
+    .order("created_at", { ascending: false })
+    .limit(limit) as unknown as {
+      data: Array<{ id: string; numero_os: string | null; status: string | null }> | null;
+      error: { message: string } | null;
+    };
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}

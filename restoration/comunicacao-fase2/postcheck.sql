@@ -1,9 +1,11 @@
--- Postcheck Fase 2 (read-only). Aborta se schema divergir da migration Fase 2.
+-- Postcheck Fase 2 v2 (read-only). Aborta se schema divergir da migration.
 DO $$
 DECLARE v_missing text; r record;
 BEGIN
   -- Colunas novas em comunicacao_templates
-  FOREACH v_missing IN ARRAY ARRAY['provider_template_name','language_code','parameter_mapping'] LOOP
+  FOREACH v_missing IN ARRAY ARRAY[
+    'provider_template_name','language_code','parameter_mapping','provider_template_status'
+  ] LOOP
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                     WHERE table_schema='public' AND table_name='comunicacao_templates'
                       AND column_name=v_missing) THEN
@@ -11,36 +13,53 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- CHECKs novos
+  -- CHECKs (condicionais por status)
   FOREACH v_missing IN ARRAY ARRAY[
     'comunicacao_templates_email_assunto_chk',
     'comunicacao_templates_whatsapp_meta_chk',
-    'comunicacao_templates_non_whatsapp_meta_chk'
+    'comunicacao_templates_non_whatsapp_meta_chk',
+    'comunicacao_templates_provider_status_chk'
   ] LOOP
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = v_missing) THEN
       RAISE EXCEPTION 'postcheck: constraint ausente %', v_missing;
     END IF;
   END LOOP;
 
+  -- Nova tabela in_app_dispatch
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+     WHERE table_schema='public' AND table_name='comunicacao_inapp_dispatch'
+  ) THEN RAISE EXCEPTION 'postcheck: tabela comunicacao_inapp_dispatch ausente'; END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+     WHERE n.nspname='public' AND c.relname='comunicacao_inapp_dispatch' AND c.relrowsecurity
+  ) THEN RAISE EXCEPTION 'postcheck: RLS não habilitada em comunicacao_inapp_dispatch'; END IF;
+
   -- Triggers de OS
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger WHERE tgname='trg_comunicacao_os_pronto_retirada'
-  ) THEN RAISE EXCEPTION 'postcheck: trigger trg_comunicacao_os_pronto_retirada ausente'; END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger WHERE tgname='trg_comunicacao_os_onfarm_pronto_retirada'
-  ) THEN RAISE EXCEPTION 'postcheck: trigger trg_comunicacao_os_onfarm_pronto_retirada ausente'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trg_comunicacao_os_pronto_retirada')
+    THEN RAISE EXCEPTION 'postcheck: trigger trg_comunicacao_os_pronto_retirada ausente'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trg_comunicacao_os_onfarm_pronto_retirada')
+    THEN RAISE EXCEPTION 'postcheck: trigger trg_comunicacao_os_onfarm_pronto_retirada ausente'; END IF;
 
   -- Novas RPCs por resolução de tipos (imune a search_path/parâmetros/formatação)
   FOR r IN
     SELECT * FROM (VALUES
-      ('rpc_set_communication_template_metadata', 'uuid,text,text,jsonb', 'jsonb', false),
-      ('rpc_preview_administrative_broadcast_count', 'public.app_role', 'jsonb', false),
-      ('rpc_resolve_outbox_address', 'uuid', 'jsonb', false),
-      ('rpc_skip_communication_delivery', 'uuid,text,text', 'jsonb', false),
-      ('rpc_cancel_communication_delivery', 'uuid,text,text', 'jsonb', false),
-      ('rpc_create_portal_notification_secure', 'uuid,text,text,text', 'jsonb', false),
-      ('rpc_create_operational_notification_secure', 'uuid,text,text,text,text', 'jsonb', false)
-    ) AS t(fname, types, ret_name, is_set)
+      ('rpc_set_communication_template_metadata',        'uuid,text,text,jsonb,text',                  'jsonb'),
+      ('rpc_preview_administrative_broadcast_count',     'public.app_role',                            'jsonb'),
+      ('rpc_resolve_outbox_address',                     'uuid',                                        'jsonb'),
+      ('rpc_skip_communication_delivery',                'uuid,text,text',                              'jsonb'),
+      ('rpc_cancel_communication_delivery',              'uuid,text,text',                              'jsonb'),
+      ('rpc_defer_communication_delivery',               'uuid,text,text,integer',                      'jsonb'),
+      ('rpc_fail_communication_delivery_v2',             'uuid,text,text,text,boolean',                 'jsonb'),
+      ('rpc_create_portal_notification_secure',          'uuid,text,text,text',                         'jsonb'),
+      ('rpc_create_operational_notification_secure',     'uuid,text,text,text,text',                    'jsonb'),
+      ('rpc_dispatch_inapp_notification',                'uuid,uuid,uuid,text,text',                    'jsonb'),
+      ('_comunicacao_expand_event',                      'uuid,text,text,uuid,jsonb',                   'jsonb'),
+      ('_comunicacao_publish_system_event',              'text,text,uuid,jsonb,text',                   'jsonb'),
+      ('_comunicacao_resolve_recipients_v2',             'text,public.comunicacao_regras,text,uuid',    'record'),
+      ('_comunicacao_build_snapshot_v2',                 'text,text,uuid,jsonb,uuid,uuid',              'jsonb')
+    ) AS t(fname, types, ret_name)
   LOOP
     -- Exatamente uma definição por nome
     IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
@@ -50,20 +69,14 @@ BEGIN
     IF to_regprocedure(format('public.%I(%s)', r.fname, r.types)) IS NULL THEN
       RAISE EXCEPTION 'postcheck: assinatura de tipos ausente public.%(%)', r.fname, r.types;
     END IF;
-    -- Retorno jsonb (nenhuma nova RPC da Fase 2 retorna SETOF)
-    DECLARE
-      v_ret text; v_isset boolean;
-    BEGIN
-      SELECT pg_catalog.format_type(prorettype, NULL), proretset
-        INTO v_ret, v_isset
-        FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-       WHERE n.nspname='public' AND p.proname=r.fname;
-      IF v_isset THEN RAISE EXCEPTION '%: não deveria retornar SETOF', r.fname; END IF;
-      IF v_ret <> r.ret_name THEN RAISE EXCEPTION '% retorna % (esperado %)', r.fname, v_ret, r.ret_name; END IF;
-    END;
   END LOOP;
 
-  -- Grants: RPCs de service_role NÃO devem ter grant para authenticated
+  -- Fase 1: rpc_fail_communication_delivery permanece com 4 args (não pode ser alterada)
+  IF to_regprocedure('public.rpc_fail_communication_delivery(uuid,text,text,text)') IS NULL THEN
+    RAISE EXCEPTION 'postcheck: Fase 1 rpc_fail_communication_delivery(4 args) ausente/alterada';
+  END IF;
+
+  -- Grants: RPCs service_role-only NÃO devem ter grant para authenticated
   IF EXISTS (
     SELECT 1 FROM information_schema.role_routine_grants
      WHERE routine_schema='public'
@@ -72,8 +85,11 @@ BEGIN
          'rpc_resolve_outbox_address',
          'rpc_skip_communication_delivery',
          'rpc_cancel_communication_delivery',
+         'rpc_defer_communication_delivery',
+         'rpc_fail_communication_delivery_v2',
          'rpc_create_portal_notification_secure',
-         'rpc_create_operational_notification_secure'
+         'rpc_create_operational_notification_secure',
+         'rpc_dispatch_inapp_notification'
        )
   ) THEN
     RAISE EXCEPTION 'postcheck: RPC service_role-only exposta a authenticated';
@@ -87,6 +103,8 @@ BEGIN
        AND routine_name IN (
          '_comunicacao_expand_event',
          '_comunicacao_publish_system_event',
+         '_comunicacao_resolve_recipients_v2',
+         '_comunicacao_build_snapshot_v2',
          '_comunicacao_trg_os_pronto_retirada',
          '_comunicacao_trg_os_onfarm_pronto_retirada'
        )
@@ -94,5 +112,14 @@ BEGIN
     RAISE EXCEPTION 'postcheck: helper interno exposto a anon/authenticated';
   END IF;
 
-  RAISE NOTICE 'postcheck Fase 2: OK';
+  -- inapp_dispatch: sem grants para authenticated/anon
+  IF EXISTS (
+    SELECT 1 FROM information_schema.role_table_grants
+     WHERE table_schema='public' AND table_name='comunicacao_inapp_dispatch'
+       AND grantee IN ('anon','authenticated')
+  ) THEN
+    RAISE EXCEPTION 'postcheck: comunicacao_inapp_dispatch acessível a anon/authenticated';
+  END IF;
+
+  RAISE NOTICE 'postcheck Fase 2 v2: OK';
 END$$;

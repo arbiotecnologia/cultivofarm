@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   renderTemplate,
@@ -24,6 +24,8 @@ import {
   upsertRule,
   previewAdministrativeBroadcast,
   publishAdministrativeBroadcast,
+  publishManualProdutoProntoAplicacao,
+  listOrdensServicoRegularesParaComunicado,
 } from "@/features/comunicacao/api";
 import type {
   ComunicacaoTemplate,
@@ -79,8 +81,8 @@ export default function ComunicacaoAdmin() {
         ))}
       </nav>
 
-      {aba === "templates" && <TemplatesPanel />}
-      {aba === "regras" && <RegrasPanel />}
+      {aba === "templates" && <TemplatesPanel canMutate={isAdmin} />}
+      {aba === "regras" && <RegrasPanel canMutate={isAdmin} />}
       {aba === "fila" && <FilaPanel />}
       {aba === "preferencias" && <PreferenciasPanel />}
       {aba === "comunicados" && showBroadcastTab && (
@@ -94,7 +96,9 @@ export default function ComunicacaoAdmin() {
           <li>WhatsApp: configuração via WHATSAPP_* (verificar em communication-health)</li>
           <li>In-app: adapter próprio, controlado por COMMUNICATION_INAPP_ADAPTER_ENABLED</li>
         </ul>
-        <p className="text-xs text-muted-foreground mt-2">Nenhum segredo é exibido nesta tela.</p>
+        <p className="text-xs text-muted-foreground mt-2">
+          Nenhum segredo é exibido nesta tela. Gestor vê em modo somente leitura.
+        </p>
       </section>
     </div>
   );
@@ -125,14 +129,15 @@ function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [published, setPublished] = useState<null | { event_id: string; duplicated: boolean }>(null);
 
-  // Idempotência estável para o formulário: role + hash simples de conteúdo.
-  const idemKey = useMemo(() => {
-    const raw = `${role}|${titulo}|${mensagem}`;
-    // hash simples (djb2) — estável na sessão para o mesmo conteúdo.
-    let h = 5381;
-    for (let i = 0; i < raw.length; i++) h = ((h << 5) + h) + raw.charCodeAt(i);
-    return `admin_bcast:${role}:${(h >>> 0).toString(16)}`;
-  }, [role, titulo, mensagem]);
+  // Nonce UUID persistente por INTENÇÃO — preservado em retries e duplo clique.
+  // Renovado após sucesso ou reset completo do formulário.
+  const [broadcastNonce, setBroadcastNonce] = useState<string>(() => cryptoRandomUUID());
+  const resetForm = () => {
+    setRole(""); setTitulo(""); setMensagem("");
+    setPreviewData(null); setPreviewError(null);
+    setPublished(null); setPublishError(null);
+    setBroadcastNonce(cryptoRandomUUID());
+  };
 
   const preview = useMutation({
     mutationFn: async () => {
@@ -151,12 +156,17 @@ function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
     mutationFn: async () => {
       setPublishError(null);
       const r = await publishAdministrativeBroadcast({
-        target_role: role, titulo, mensagem, idempotency_key: idemKey,
+        target_role: role, titulo, mensagem,
+        idempotency_key: `admin_bcast:${broadcastNonce}`,
       });
       setPublished({ event_id: r.event_id, duplicated: r.duplicated });
       return r;
     },
     onError: (e: Error) => setPublishError(e.message),
+    onSuccess: () => {
+      // Renova nonce após sucesso — próxima intenção terá novo idempotency key.
+      setBroadcastNonce(cryptoRandomUUID());
+    },
     onSettled: () => setConfirmOpen(false),
   });
 
@@ -203,6 +213,13 @@ function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
           >
             Publicar…
           </button>
+          <button
+            className="rounded border px-3 py-1.5 text-sm"
+            onClick={resetForm}
+            type="button"
+          >
+            Limpar / novo nonce
+          </button>
         </div>
         {previewError && <p className="text-xs text-destructive">Erro na estimativa: {previewError}</p>}
         {publishError && <p className="text-xs text-destructive">Erro na publicação: {publishError}</p>}
@@ -216,7 +233,7 @@ function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
       <aside className="rounded-md border p-4 space-y-2">
         <h3 className="font-medium">Pré-visualização</h3>
         <p className="text-xs text-muted-foreground">
-          A contagem é calculada no servidor: total no perfil + recipientes elegíveis
+          Contagem calculada no servidor: total no perfil + recipientes elegíveis
           por canal (opt-in/verificação/opt-out).
         </p>
         {previewData ? (
@@ -238,6 +255,11 @@ function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
         )}
       </aside>
 
+      {/* Ação manual: produto_pronto_aplicacao (admin, OS regular) */}
+      <div className="md:col-span-2">
+        <ManualProdutoProntoAplicacaoPanel canPublish={canPublish} />
+      </div>
+
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-md bg-background p-4 shadow-lg">
@@ -247,7 +269,7 @@ function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
               Estimativa: {previewData?.total_users_in_role ?? 0} no perfil.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Idempotency key: <code className="break-all">{idemKey}</code>
+              Nonce (idempotency): <code className="break-all">admin_bcast:{broadcastNonce}</code>
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <button className="rounded border px-3 py-1.5 text-sm" onClick={() => setConfirmOpen(false)} disabled={publish.isPending}>Cancelar</button>
@@ -263,9 +285,140 @@ function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
   );
 }
 
+/** Gera UUID via WebCrypto quando disponível; fallback determinístico caso não. */
+function cryptoRandomUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback (dev/older browsers): 128 bits via Math.random — aceitável como nonce local.
+  const s = (n: number) => Math.floor(Math.random() * n).toString(16).padStart(4, "0");
+  return `${s(0x10000)}${s(0x10000)}-${s(0x10000)}-${s(0x10000)}-${s(0x10000)}-${s(0x10000)}${s(0x10000)}${s(0x10000)}`;
+}
+
+// -------------------- Ação manual: produto_pronto_aplicacao --------------------
+
+function ManualProdutoProntoAplicacaoPanel({ canPublish }: { canPublish: boolean }) {
+  const [selectedOsId, setSelectedOsId] = useState<string>("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [nonce, setNonce] = useState<string>(() => cryptoRandomUUID());
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [published, setPublished] = useState<null | { event_id: string; duplicated: boolean }>(null);
+
+  const q = useQuery({
+    queryKey: ["comm", "os_regulares_manual"],
+    queryFn: () => listOrdensServicoRegularesParaComunicado(50),
+    staleTime: 30_000,
+  });
+
+  useEffect(() => {
+    if (published) {
+      // Renova nonce após sucesso — nova intenção precisa de novo idempotency.
+      setNonce(cryptoRandomUUID());
+    }
+  }, [published]);
+
+  const publish = useMutation({
+    mutationFn: async () => {
+      setPublishError(null);
+      const r = await publishManualProdutoProntoAplicacao({
+        os_id: selectedOsId,
+        idempotency_key: `manual_pronto_aplic:${nonce}`,
+      });
+      setPublished({ event_id: r.event_id, duplicated: r.duplicated });
+      return r;
+    },
+    onError: (e: Error) => setPublishError(e.message),
+    onSettled: () => setConfirmOpen(false),
+  });
+
+  const selectedOs = (q.data ?? []).find((o) => o.id === selectedOsId);
+
+  return (
+    <div className="rounded-md border p-4 space-y-3">
+      <h2 className="font-medium">Ação manual: produto pronto para aplicação (OS regular)</h2>
+      <p className="text-xs text-muted-foreground">
+        Publica o evento <code>produto_pronto_aplicacao</code> para uma OS regular.
+        On-farm ficará disponível quando houver definição de negócio.
+        Servidor valida existência da OS e ignora payload (dados vêm do banco).
+      </p>
+      {!canPublish && (
+        <p className="text-xs text-muted-foreground">
+          Gestor visualiza a lista mas não pode publicar.
+        </p>
+      )}
+      <label className="block text-xs">
+        Selecionar OS
+        <select
+          className="mt-1 w-full rounded border p-2"
+          value={selectedOsId}
+          onChange={(e) => { setSelectedOsId(e.target.value); setPublished(null); }}
+          disabled={q.isLoading}
+        >
+          <option value="">— escolha —</option>
+          {(q.data ?? []).map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.numero_os ?? o.id.slice(0, 8)} · status: {o.status ?? "?"}
+            </option>
+          ))}
+        </select>
+      </label>
+      {selectedOs && (
+        <p className="text-xs">
+          <strong>OS selecionada:</strong> {selectedOs.numero_os ?? selectedOs.id} · <strong>status:</strong> {selectedOs.status ?? "?"}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+          disabled={!canPublish || !selectedOsId || publish.isPending}
+          onClick={() => setConfirmOpen(true)}
+        >
+          Publicar…
+        </button>
+        <button
+          className="rounded border px-3 py-1.5 text-sm"
+          onClick={() => { setSelectedOsId(""); setPublished(null); setNonce(cryptoRandomUUID()); }}
+        >
+          Limpar / novo nonce
+        </button>
+      </div>
+      {publishError && <p className="text-xs text-destructive">Erro: {publishError}</p>}
+      {published && (
+        <p className="text-xs text-muted-foreground">
+          Publicado. event_id={published.event_id}{published.duplicated ? " (duplicado idempotente)" : ""}.
+        </p>
+      )}
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-md bg-background p-4 shadow-lg">
+            <h3 className="font-medium">Confirmar publicação manual</h3>
+            <p className="mt-2 text-sm">
+              Publicar <code>produto_pronto_aplicacao</code> para OS <strong>{selectedOs?.numero_os ?? selectedOsId}</strong>?
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Nonce (idempotency): <code className="break-all">manual_pronto_aplic:{nonce}</code>
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="rounded border px-3 py-1.5 text-sm" onClick={() => setConfirmOpen(false)} disabled={publish.isPending}>Cancelar</button>
+              <button
+                className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+                disabled={publish.isPending}
+                onClick={() => publish.mutate()}
+              >
+                {publish.isPending ? "Publicando…" : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // -------------------- Templates --------------------
 
-function TemplatesPanel() {
+function TemplatesPanel({ canMutate }: { canMutate: boolean }) {
   const qc = useQueryClient();
   const q = useQuery<ComunicacaoTemplate[], Error>({
     queryKey: ["comm", "templates"],
@@ -327,11 +480,15 @@ function TemplatesPanel() {
           <textarea className="h-32 w-full rounded border p-2 text-sm" placeholder="corpo" value={form.corpo} onChange={(e) => setForm({ ...form, corpo: e.target.value })} />
           <button
             className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
-            disabled={criar.isPending || !form.chave || !form.nome || !form.corpo}
+            disabled={!canMutate || criar.isPending || !form.chave || !form.nome || !form.corpo}
             onClick={() => criar.mutate()}
+            title={!canMutate ? "Somente administrador pode criar/alterar templates" : ""}
           >
             Criar rascunho
           </button>
+          {!canMutate && (
+            <p className="text-xs text-muted-foreground">Modo somente leitura (gestor).</p>
+          )}
           {criar.error && <p className="text-sm text-destructive">Erro: {(criar.error as Error).message}</p>}
         </div>
 
@@ -348,10 +505,10 @@ function TemplatesPanel() {
                 <span className="rounded px-1.5 py-0.5 text-xs border">{t.status}</span>
                 <span className="ml-auto flex gap-2">
                   {t.status === "draft" && (
-                    <button className="text-xs underline" onClick={() => ativar.mutate(t.id)}>Ativar</button>
+                    <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => ativar.mutate(t.id)}>Ativar</button>
                   )}
                   {t.status !== "archived" && (
-                    <button className="text-xs underline" onClick={() => arquivar.mutate(t.id)}>Arquivar</button>
+                    <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => arquivar.mutate(t.id)}>Arquivar</button>
                   )}
                 </span>
               </li>
@@ -394,7 +551,7 @@ function tryRender(form: { canal: Canal; assunto: string; corpo: string; variave
 
 // -------------------- Regras --------------------
 
-function RegrasPanel() {
+function RegrasPanel({ canMutate }: { canMutate: boolean }) {
   const qc = useQueryClient();
   const q = useQuery<ComunicacaoRegra[], Error>({ queryKey: ["comm", "regras"], queryFn: () => listRules() });
 
@@ -581,14 +738,17 @@ function RegrasPanel() {
         <button
           className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
           disabled={
+            !canMutate ||
             mut.isPending ||
             !form.template_chave ||
             ((isAdmEvent || form.estrategia === "by_role") && !form.perfil)
           }
           onClick={() => mut.mutate()}
+          title={!canMutate ? "Somente administrador pode criar/alterar regras" : ""}
         >
           Criar regra
         </button>
+        {!canMutate && <p className="text-xs text-muted-foreground">Modo somente leitura (gestor).</p>}
         {mut.error && <p className="text-destructive">Erro: {(mut.error as Error).message}</p>}
       </div>
 
@@ -612,7 +772,7 @@ function RegrasPanel() {
                 <span className={`rounded px-1.5 py-0.5 text-xs border ${r.enabled ? "bg-primary/10" : ""}`}>
                   {r.enabled ? "ligada" : "desligada"}
                 </span>
-                <button className="text-xs underline" onClick={() => toggle.mutate(r)}>
+                <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => toggle.mutate(r)}>
                   {r.enabled ? "Desligar" : "Ligar"}
                 </button>
               </span>
