@@ -21,7 +21,7 @@ import {
   type NavSection,
 } from "@/config/navigation";
 import { isNavItemActive, isNavItemActiveSelf } from "@/lib/navigation/matchActive";
-import { searchNavItems } from "@/lib/navigation/search";
+import { searchNavItems, isNavItemFeatureEnabled } from "@/lib/navigation/search";
 import { useSidebarGroupState } from "@/hooks/useSidebarGroupState";
 
 export function AppSidebar() {
