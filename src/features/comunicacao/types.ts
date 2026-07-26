@@ -205,6 +205,7 @@ export interface CommunicationRpcContracts {
       p_provider_template_name: string | null;
       p_language_code: string | null;
       p_parameter_mapping: ComunicacaoTemplateParameterMapping[];
+      p_provider_template_status?: string | null;
     };
     returns: { ok: boolean };
   };
@@ -217,4 +218,10 @@ export interface CommunicationRpcContracts {
       estimated_recipients_by_canal: Record<string, number>;
     };
   };
+}
+
+/** Payload aceito pela publicação manual `produto_pronto_aplicacao`. */
+export interface ManualProdutoProntoAplicacaoInput {
+  os_id: string;
+  idempotency_key: string;
 }
