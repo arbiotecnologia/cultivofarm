@@ -8,11 +8,13 @@ import { isComunicacaoModuleEnabled } from "@/features/comunicacao/flags";
  * Fase 1: shell somente leitura + preview seguro. Fluxos CRUD serão ligados quando a migration estiver aplicada em staging.
  */
 export default function ComunicacaoAdminPage() {
+  const [aba, setAba] = useState<"templates" | "regras" | "fila" | "preferencias">("templates");
+
   if (!isComunicacaoModuleEnabled()) {
     return null;
   }
 
-  const [aba, setAba] = useState<"templates" | "regras" | "fila" | "preferencias">("templates");
+
 
   return (
     <div className="p-6 space-y-6">

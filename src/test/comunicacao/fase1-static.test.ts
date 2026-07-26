@@ -53,7 +53,7 @@ describe("comunicação fase 1 — proibições estáticas", () => {
     for (const f of FRONT_FILES) {
       if (!/comunicacao/i.test(f)) continue;
       const txt = readFileSync(f, "utf8");
-      if (/(SERVICE_ROLE|SECRET_KEY|ACCESS_TOKEN)\s*=\s*['"][A-Za-z0-9_\-]{16,}/.test(txt)) {
+      if (/(SERVICE_ROLE|SECRET_KEY|ACCESS_TOKEN)\s*=\s*['"][A-Za-z0-9_-]{16,}/.test(txt)) {
         bad.push(f);
       }
     }
