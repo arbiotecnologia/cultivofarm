@@ -26,8 +26,8 @@ describe("normalizePhoneBR", () => {
   });
 
   it("descarta caracteres não numéricos", () => {
-    expect(normalizePhoneBR("+55 (11) 98765-4321")).toBe("5511987654321"); // 13 dígitos → null
-    expect(normalizePhoneBR("+55 (11) 98765-4321")).not.toBe("11987654321");
+    // +55 antes do DDD gera 13 dígitos → inválido (retorna null)
+    expect(normalizePhoneBR("+55 (11) 98765-4321")).toBeNull();
     // exemplo de exatamente 11 dígitos com ruído
     expect(normalizePhoneBR("11-98765-4321")).toBe("11987654321");
   });
