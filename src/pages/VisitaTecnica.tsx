@@ -732,11 +732,12 @@ export default function VisitaTecnica() {
 
             // 4. Notificar produtor se solicitado
             if (encerramento.retornoNotificarProdutor) {
-               await supabase.from("portal_notificacoes").insert({
-                 cliente_id: clienteId!,
-                 tipo: "informativo",
-                 titulo: "Visita Técnica Agendada",
-                 mensagem: `O consultor agendou um retorno para o dia ${formatDateDisplay(encerramento.dataProximaVisita)} (Turno: ${encerramento.retornoTurno}) para ${encerramento.retornoMotivo}.`
+               await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+                 _cliente_id: clienteId!,
+                 _tipo: "visita",
+                 _titulo: "Visita Técnica Agendada",
+                 _mensagem: `O consultor agendou um retorno para o dia ${formatDateDisplay(encerramento.dataProximaVisita)} (Turno: ${encerramento.retornoTurno}) para ${encerramento.retornoMotivo}.`,
+                 _link: null,
                });
             }
           }
@@ -855,11 +856,12 @@ export default function VisitaTecnica() {
               motivo: "Liberação direta ao produtor (sem aprovação técnica)",
             } as any);
 
-            await supabase.from("portal_notificacoes").insert({
-              cliente_id: clienteId,
-              tipo: "recomendacao",
-              titulo: "Nova recomendação aguardando sua decisão",
-              mensagem: `O consultor emitiu ${recsToInsert.length} item(ns) de recomendação. Aprove para gerar a Ordem de Serviço.`,
+            await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+              _cliente_id: clienteId,
+              _tipo: "recomendacao",
+              _titulo: "Nova recomendação aguardando sua decisão",
+              _mensagem: `O consultor emitiu ${recsToInsert.length} item(ns) de recomendação. Aprove para gerar a Ordem de Serviço.`,
+              _link: null,
             });
             toast.success("Recomendação liberada — aguardando decisão do produtor");
           } else {

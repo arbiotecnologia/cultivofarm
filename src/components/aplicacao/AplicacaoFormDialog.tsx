@@ -261,13 +261,14 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
       // notificação ao produtor
       if (osSel) {
-        await supabase.from("portal_notificacoes").insert({
-          cliente_id: (osSel as any).cliente_id,
-          titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
-          mensagem: rectifyId 
+        await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+          _cliente_id: (osSel as any).cliente_id,
+          _tipo: rectifyId ? "alerta" : "aplicacao",
+          _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
+          _mensagem: rectifyId
             ? `O registro de aplicação de ${(osSel as any).produtos?.nome || "produto"} foi corrigido.`
             : `Aplicação de ${(osSel as any).produtos?.nome || "produto"} registrada em ${(osSel as any).fazendas?.nome || ""} / ${(osSel as any).talhoes?.nome || ""}`,
-          tipo: rectifyId ? "alerta" : "informativo" as any,
+          _link: null,
         });
       }
 
