@@ -42,26 +42,27 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trg_comunicacao_os_onfarm_pronto_retirada')
     THEN RAISE EXCEPTION 'postcheck: trigger trg_comunicacao_os_onfarm_pronto_retirada ausente'; END IF;
 
-  -- Novas RPCs por resolução de tipos (imune a search_path/parâmetros/formatação)
+  -- Novas RPCs por resolução de tipos + validação de tipo de retorno e proretset.
+  -- ret_kind='scalar' → proretset=false; ret_kind='setof' → proretset=true.
   FOR r IN
     SELECT * FROM (VALUES
-      ('rpc_set_communication_template_metadata',        'uuid,text,text,jsonb,text',                  'jsonb'),
-      ('rpc_preview_administrative_broadcast_count',     'public.app_role',                            'jsonb'),
-      ('rpc_resolve_outbox_address',                     'uuid',                                        'jsonb'),
-      ('rpc_skip_communication_delivery',                'uuid,text,text',                              'jsonb'),
-      ('rpc_cancel_communication_delivery',              'uuid,text,text',                              'jsonb'),
-      ('rpc_defer_communication_delivery',               'uuid,text,text,integer',                      'jsonb'),
-      ('rpc_fail_communication_delivery_v2',             'uuid,text,text,text,boolean',                 'jsonb'),
-      ('rpc_create_portal_notification_secure',          'uuid,text,text,text',                         'jsonb'),
-      ('rpc_create_operational_notification_secure',     'uuid,text,text,text,text',                    'jsonb'),
-      ('rpc_dispatch_inapp_notification',                'uuid,uuid,uuid,text,text',                    'jsonb'),
-      ('_comunicacao_expand_event',                      'uuid,text,text,uuid,jsonb',                   'jsonb'),
-      ('_comunicacao_publish_system_event',              'text,text,uuid,jsonb,text',                   'jsonb'),
-      ('_comunicacao_resolve_recipients_v2',             'text,public.comunicacao_regras,text,uuid',    'record'),
-      ('_comunicacao_build_snapshot_v2',                 'text,text,uuid,jsonb,uuid,uuid',              'jsonb')
-    ) AS t(fname, types, ret_name)
+      ('rpc_publish_communication_event_v2',             'text,text,uuid,jsonb,text',                   'jsonb',  'scalar'),
+      ('rpc_set_communication_template_metadata',        'uuid,text,text,jsonb,text',                   'jsonb',  'scalar'),
+      ('rpc_preview_administrative_broadcast_count',     'public.app_role',                             'jsonb',  'scalar'),
+      ('rpc_resolve_outbox_address',                     'uuid',                                        'jsonb',  'scalar'),
+      ('rpc_skip_communication_delivery',                'uuid,text,text',                              'jsonb',  'scalar'),
+      ('rpc_cancel_communication_delivery',              'uuid,text,text',                              'jsonb',  'scalar'),
+      ('rpc_defer_communication_delivery',               'uuid,text,text,integer',                      'jsonb',  'scalar'),
+      ('rpc_fail_communication_delivery_v2',             'uuid,text,text,text,boolean',                 'jsonb',  'scalar'),
+      ('rpc_create_portal_notification_secure',          'uuid,text,text,text',                         'jsonb',  'scalar'),
+      ('rpc_create_operational_notification_secure',     'uuid,text,text,text,text',                    'jsonb',  'scalar'),
+      ('rpc_dispatch_inapp_notification',                'uuid,uuid,uuid,text,text',                    'jsonb',  'scalar'),
+      ('_comunicacao_expand_event',                      'uuid,text,text,uuid,jsonb',                   'jsonb',  'scalar'),
+      ('_comunicacao_publish_system_event',              'text,text,uuid,jsonb,text',                   'jsonb',  'scalar'),
+      ('_comunicacao_resolve_recipients_v2',             'text,public.comunicacao_regras,text,uuid',    'record', 'setof'),
+      ('_comunicacao_build_snapshot_v2',                 'text,text,uuid,jsonb,uuid,uuid',              'jsonb',  'scalar')
+    ) AS t(fname, types, ret_expected, ret_kind)
   LOOP
-    -- Exatamente uma definição por nome
     IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
          WHERE n.nspname='public' AND p.proname=r.fname) <> 1 THEN
       RAISE EXCEPTION 'postcheck: % com overload conflitante (esperado 1)', r.fname;
@@ -69,7 +70,45 @@ BEGIN
     IF to_regprocedure(format('public.%I(%s)', r.fname, r.types)) IS NULL THEN
       RAISE EXCEPTION 'postcheck: assinatura de tipos ausente public.%(%)', r.fname, r.types;
     END IF;
+    -- Valida tipo de retorno via format_type(prorettype,NULL) e proretset
+    DECLARE v_ret text; v_setof boolean;
+    BEGIN
+      SELECT format_type(p.prorettype, NULL), p.proretset
+        INTO v_ret, v_setof
+        FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+       WHERE n.nspname='public' AND p.proname=r.fname
+         AND p.oid = to_regprocedure(format('public.%I(%s)', r.fname, r.types));
+      IF r.ret_kind = 'scalar' THEN
+        IF v_setof THEN
+          RAISE EXCEPTION 'postcheck: %.% deveria ser scalar (proretset=false)', 'public', r.fname;
+        END IF;
+        IF v_ret <> r.ret_expected THEN
+          RAISE EXCEPTION 'postcheck: %.% retorno % (esperado %)', 'public', r.fname, v_ret, r.ret_expected;
+        END IF;
+      ELSE
+        IF NOT v_setof THEN
+          RAISE EXCEPTION 'postcheck: %.% deveria ser SETOF (proretset=true)', 'public', r.fname;
+        END IF;
+      END IF;
+    END;
   END LOOP;
+
+  -- publish_v2: grant positivo authenticated + negativo anon
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.role_routine_grants
+     WHERE routine_schema='public' AND grantee='authenticated'
+       AND routine_name='rpc_publish_communication_event_v2'
+  ) THEN
+    RAISE EXCEPTION 'postcheck: rpc_publish_communication_event_v2 sem grant a authenticated';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.role_routine_grants
+     WHERE routine_schema='public' AND grantee='anon'
+       AND routine_name='rpc_publish_communication_event_v2'
+  ) THEN
+    RAISE EXCEPTION 'postcheck: rpc_publish_communication_event_v2 exposta a anon';
+  END IF;
+
 
   -- Fase 1: rpc_fail_communication_delivery permanece com 4 args (não pode ser alterada)
   IF to_regprocedure('public.rpc_fail_communication_delivery(uuid,text,text,text)') IS NULL THEN
