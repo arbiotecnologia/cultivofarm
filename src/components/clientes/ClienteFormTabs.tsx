@@ -33,6 +33,7 @@ function MaskedField({
   className,
   autoCase,
   onBlurExtra,
+  uf,
 }: {
   name: string;
   mask: any;
@@ -40,6 +41,7 @@ function MaskedField({
   className?: string;
   autoCase?: "title" | "upper" | "lower";
   onBlurExtra?: (value: string) => void;
+  uf?: string | null;
 }) {
   const { control } = useFormContext();
   return (
@@ -49,6 +51,7 @@ function MaskedField({
       render={({ field }) => (
         <MaskedInput
           mask={mask}
+          uf={uf ?? undefined}
           value={field.value ?? ""}
           onChange={(e) => field.onChange(e.target.value)}
           onBlur={(e) => {
