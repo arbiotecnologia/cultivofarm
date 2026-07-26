@@ -205,3 +205,42 @@ agendamento on-farm é `data_recomendada`. A versão anterior de
 
 `_comunicacao_resolve_recipients_v2` já dependia apenas de `cliente_id` em
 ambos os branches — sem correção necessária.
+
+---
+
+## Correção pontual — precheck v2 (usuario_id + colunas RETURNING)
+
+**Fato:** `public.notificacoes_operacionais` usa a coluna `usuario_id` (não
+`user_id`), conforme `src/integrations/supabase/types.ts` (linhas 6886–6926).
+As RPCs `rpc_dispatch_inapp_notification` e
+`rpc_create_operational_notification_secure` já **inserem corretamente** em
+`usuario_id`; apenas o `precheck.sql` estava incoerente, exigindo
+`notificacoes_operacionais.user_id` — o que abortaria a aplicação em staging
+mesmo com a migration válida.
+
+**Ajustes:**
+- `restoration/comunicacao-fase2/precheck.sql`:
+  - Substituído `notificacoes_operacionais.user_id` por
+    `notificacoes_operacionais.usuario_id`.
+  - Adicionadas colunas efetivamente usadas/retornadas: `portal_notificacoes.id`,
+    `notificacoes_operacionais.id`, `notificacoes_operacionais.link`.
+- `src/test/comunicacao/fase2-schema-onfarm.test.ts`: matriz atualizada; três
+  novos casos contratuais:
+  - regressão explícita `usuario_id` × `user_id` no precheck;
+  - conferência das colunas em `types.ts` para `portal_notificacoes` e
+    `notificacoes_operacionais`;
+  - verificação de que todos os `INSERT INTO public.notificacoes_operacionais`
+    da migration usam `usuario_id` e nunca `user_id`.
+
+**Revisão global da migration contra `types.ts`:** demais referências
+(`ordens_servico(_onfarm)`, `profiles`, `clientes`, `user_roles`,
+`portal_notificacoes`) foram reconferidas coluna a coluna e estão coerentes com
+`Row` real. Nenhuma outra incompatibilidade objetiva identificada.
+
+**Validação:**
+- `tsgo --noEmit`: ✅ limpo.
+- `vitest src/test/comunicacao/`: **77/77** ✅ (5 arquivos).
+- Suíte completa: **2165/2170** ✅, 4 skipped, 1 falha pré-existente
+  não relacionada (`portalAcompanhamentoProdutor.test.tsx` — timeout flaky).
+
+**Parecer:** `PACOTE FASE 2 (v2) PRONTO PARA APLICAÇÃO EM STAGING` — mantido.

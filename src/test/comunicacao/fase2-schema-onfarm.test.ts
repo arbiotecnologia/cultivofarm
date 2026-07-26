@@ -72,10 +72,11 @@ describe("Fase 2 · schema on-farm vs regular (contratual)", () => {
       "profiles.ativo","profiles.telefone","profiles.email",
       "clientes.id","clientes.nome","clientes.telefone",
       "clientes.telefones","clientes.email",
-      "portal_notificacoes.cliente_id","portal_notificacoes.titulo",
-      "portal_notificacoes.mensagem","portal_notificacoes.tipo",
-      "notificacoes_operacionais.user_id","notificacoes_operacionais.titulo",
-      "notificacoes_operacionais.mensagem","notificacoes_operacionais.tipo",
+      "portal_notificacoes.id","portal_notificacoes.cliente_id",
+      "portal_notificacoes.titulo","portal_notificacoes.mensagem","portal_notificacoes.tipo",
+      "notificacoes_operacionais.id","notificacoes_operacionais.usuario_id",
+      "notificacoes_operacionais.titulo","notificacoes_operacionais.mensagem",
+      "notificacoes_operacionais.tipo","notificacoes_operacionais.link",
       "user_roles.user_id","user_roles.role",
     ];
     for (const pair of required) {
@@ -85,5 +86,40 @@ describe("Fase 2 · schema on-farm vs regular (contratual)", () => {
 
   it("precheck.sql: on-farm data_programada NÃO consta como coluna requerida", () => {
     expect(PRECHECK).not.toContain("'ordens_servico_onfarm.data_programada'");
+  });
+
+  it("precheck.sql: usa usuario_id e nunca user_id em notificacoes_operacionais (regressão)", () => {
+    expect(PRECHECK).toContain("'notificacoes_operacionais.usuario_id'");
+    expect(PRECHECK).not.toContain("'notificacoes_operacionais.user_id'");
+  });
+
+  it("types.ts: notificacoes_operacionais Row tem usuario_id (NÃO user_id)", () => {
+    const sec = extractSection("notificacoes_operacionais");
+    expect(sec).toMatch(/usuario_id\s*:\s*string/);
+    expect(sec).not.toMatch(/\buser_id\s*:/);
+  });
+
+  it("types.ts: portal_notificacoes Row tem colunas exigidas pelo precheck", () => {
+    const sec = extractSection("portal_notificacoes");
+    for (const col of ["id","cliente_id","titulo","mensagem","tipo"]) {
+      expect(sec, `portal_notificacoes sem ${col}`).toMatch(new RegExp(`\\b${col}\\s*[:?]`));
+    }
+  });
+
+  it("types.ts: notificacoes_operacionais Row tem colunas exigidas pelo precheck", () => {
+    const sec = extractSection("notificacoes_operacionais");
+    for (const col of ["id","usuario_id","titulo","mensagem","tipo","link"]) {
+      expect(sec, `notificacoes_operacionais sem ${col}`).toMatch(new RegExp(`\\b${col}\\s*[:?]`));
+    }
+  });
+
+  it("migration.sql: INSERT em notificacoes_operacionais usa usuario_id (nunca user_id)", () => {
+    const mig = readFileSync("restoration/comunicacao-fase2/migration.sql", "utf8");
+    const inserts = mig.match(/INSERT INTO public\.notificacoes_operacionais\s*\([^)]*\)/g) ?? [];
+    expect(inserts.length).toBeGreaterThan(0);
+    for (const stmt of inserts) {
+      expect(stmt).toContain("usuario_id");
+      expect(stmt).not.toMatch(/\buser_id\b/);
+    }
   });
 });
