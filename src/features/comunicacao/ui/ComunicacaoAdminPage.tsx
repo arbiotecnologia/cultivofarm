@@ -97,17 +97,22 @@ export default function ComunicacaoAdmin() {
         <ComunicadosPanel canPublish={isAdmin} />
       )}
 
-      <section aria-label="Estado dos canais" className="rounded-md border p-4 text-sm">
-        <h2 className="font-medium mb-1">Estado dos canais</h2>
-        <ul className="list-disc pl-5 text-muted-foreground">
-          <li>E-mail: configuração via SMTP_* (verificar em communication-health)</li>
-          <li>WhatsApp: configuração via WHATSAPP_* (verificar em communication-health)</li>
-          <li>In-app: adapter próprio, controlado por COMMUNICATION_INAPP_ADAPTER_ENABLED</li>
-        </ul>
-        <p className="text-xs text-muted-foreground mt-2">
-          Nenhum segredo é exibido nesta tela. Gestor vê em modo somente leitura.
-        </p>
-      </section>
+      {isAdmin && (
+        <>
+          <CanalHealthPanel />
+          <CanalVerificacaoPanel />
+        </>
+      )}
+
+      {!isAdmin && (
+        <section aria-label="Estado dos canais" className="rounded-md border p-4 text-sm">
+          <h2 className="font-medium mb-1">Estado dos canais</h2>
+          <p className="text-xs text-muted-foreground">
+            Diagnóstico e verificação de canais são restritos ao administrador.
+            Nenhum segredo é exibido nesta tela.
+          </p>
+        </section>
+      )}
     </div>
   );
 }
