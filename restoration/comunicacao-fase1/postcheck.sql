@@ -60,52 +60,78 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- Assinaturas críticas — verificação exata via pg_get_function_identity_arguments
-  -- e proibição de overloads legados (mais de 1 definição por nome).
+  -- Assinaturas críticas — verificação por resolução de tipos via to_regprocedure
+  -- (independe de search_path, nomes de parâmetros e formatação). Exige
+  -- exatamente uma definição por nome para impedir overload legado.
+  -- Retornos são validados separadamente (jsonb, ou SETOF quando aplicável).
   DECLARE
     r record;
-    expected text;
-    actual   text;
+    ret_is_set boolean;
+    ret_type   text;
   BEGIN
     FOR r IN
       SELECT * FROM (VALUES
         ('rpc_create_communication_template',
-         'p_chave text, p_nome text, p_canal public.comunicacao_canal, p_assunto text, p_corpo text, p_variaveis jsonb'),
+         'text,text,public.comunicacao_canal,text,text,jsonb',
+         'jsonb', false),
         ('rpc_update_communication_template',
-         'p_template_id uuid, p_nome text, p_assunto text, p_corpo text, p_variaveis jsonb'),
-        ('rpc_activate_communication_template', 'p_template_id uuid'),
-        ('rpc_archive_communication_template',  'p_template_id uuid'),
+         'uuid,text,text,text,jsonb',
+         'jsonb', false),
+        ('rpc_activate_communication_template', 'uuid', 'jsonb', false),
+        ('rpc_archive_communication_template',  'uuid', 'jsonb', false),
         ('rpc_upsert_communication_rule',
-         'p_rule_id uuid, p_event_key text, p_perfil public.app_role, p_estrategia text, p_canal public.comunicacao_canal, p_template_chave text, p_template_versao integer, p_condicoes jsonb, p_prioridade integer, p_enabled boolean, p_cooldown_seconds integer'),
+         'uuid,text,public.app_role,text,public.comunicacao_canal,text,integer,jsonb,integer,boolean,integer',
+         'jsonb', false),
         ('rpc_publish_communication_event',
-         'p_event_key text, p_source_type text, p_source_id uuid, p_payload jsonb, p_idempotency_key text'),
+         'text,text,uuid,jsonb,text',
+         'jsonb', false),
         ('rpc_update_communication_preferences',
-         'p_canal public.comunicacao_canal, p_enabled boolean, p_whatsapp_opt_in boolean'),
+         'public.comunicacao_canal,boolean,boolean',
+         'jsonb', false),
         ('rpc_verify_communication_channel',
-         'p_user_id uuid, p_cliente_id uuid, p_canal public.comunicacao_canal, p_email_verificado boolean, p_telefone_verificado boolean'),
+         'uuid,uuid,public.comunicacao_canal,boolean,boolean',
+         'jsonb', false),
         ('rpc_claim_communication_outbox',
-         'p_batch_size integer, p_worker_id text, p_lease_seconds integer'),
+         'integer,text,integer',
+         NULL, true),
         ('rpc_complete_communication_delivery',
-         'p_outbox_id uuid, p_worker_id text, p_provider_message_id text'),
+         'uuid,text,text',
+         'jsonb', false),
         ('rpc_fail_communication_delivery',
-         'p_outbox_id uuid, p_worker_id text, p_error_code text, p_error_message text')
-      ) AS t(fname, sig)
+         'uuid,text,text,text',
+         'jsonb', false)
+      ) AS t(fname, types, ret_name, is_set)
     LOOP
-      expected := r.sig;
-
       -- Overload legado: mais de uma definição para o mesmo nome é proibido.
       IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
            WHERE n.nspname='public' AND p.proname=r.fname) <> 1 THEN
-        RAISE EXCEPTION 'postcheck: % possui overload legado conflitante (esperado 1 definição)', r.fname;
+        RAISE EXCEPTION 'postcheck: % possui overload legado conflitante (esperado exatamente 1 definição)', r.fname;
       END IF;
 
-      SELECT pg_get_function_identity_arguments(p.oid) INTO actual
+      -- Resolução por tipos: independente de nomes de parâmetros/search_path.
+      IF to_regprocedure(format('public.%I(%s)', r.fname, r.types)) IS NULL THEN
+        RAISE EXCEPTION 'postcheck: assinatura de tipos de % não confere. Esperada: public.%(%)',
+          r.fname, r.fname, r.types;
+      END IF;
+
+      -- Validação de retorno.
+      SELECT p.proretset, pg_catalog.format_type(p.prorettype, NULL)
+        INTO ret_is_set, ret_type
         FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
        WHERE n.nspname='public' AND p.proname=r.fname;
 
-      IF actual IS DISTINCT FROM expected THEN
-        RAISE EXCEPTION 'postcheck: assinatura de % não confere.%  esperado: %%  atual:    %',
-          r.fname, chr(10), expected, chr(10), actual;
+      IF r.is_set THEN
+        IF NOT ret_is_set THEN
+          RAISE EXCEPTION 'postcheck: % deveria retornar SETOF', r.fname;
+        END IF;
+      ELSE
+        IF ret_is_set THEN
+          RAISE EXCEPTION 'postcheck: % não deveria retornar SETOF', r.fname;
+        END IF;
+        IF ret_type IS DISTINCT FROM r.ret_name THEN
+          RAISE EXCEPTION 'postcheck: retorno de % é % (esperado %)',
+            r.fname, ret_type, r.ret_name;
+        END IF;
       END IF;
     END LOOP;
   END;
