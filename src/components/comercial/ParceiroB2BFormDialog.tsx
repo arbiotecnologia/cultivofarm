@@ -315,14 +315,19 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
   };
 
   const handleSubmit = async () => {
+    const telCheck = validatePhoneBR(form.telefone_comercial, { fieldLabel: "Telefone comercial" });
+    if (!telCheck.ok) { toast.error(telCheck.error); return; }
+    const waCheck = validatePhoneBR(form.whatsapp_comercial, { fieldLabel: "WhatsApp comercial" });
+    if (!waCheck.ok) { toast.error(waCheck.error); return; }
+
     const payload: any = {
       ...form,
       codigo: form.codigo?.trim() || null,
       nome_fantasia: form.nome_fantasia?.trim() || null,
       cnpj: form.cnpj ? unmaskCnpj(form.cnpj) : null,
       observacoes: form.observacoes?.trim() || null,
-      telefone_comercial: form.telefone_comercial ? unmask(form.telefone_comercial) || null : null,
-      whatsapp_comercial: form.whatsapp_comercial ? unmask(form.whatsapp_comercial) || null : null,
+      telefone_comercial: telCheck.value,
+      whatsapp_comercial: waCheck.value,
       client_id: form.client_id || null,
       dados_bancarios: form.dados_bancarios
         ? (typeof form.dados_bancarios === "string"
