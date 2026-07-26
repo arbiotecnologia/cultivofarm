@@ -23,7 +23,7 @@ import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { ClienteFormTabs } from "@/components/clientes/ClienteFormTabs";
 import { ClienteHistoricoDialog } from "@/components/clientes/ClienteHistoricoDialog";
 
-import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento } from "@/lib/masks";
+import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento, validatePhoneBR, normalizePhoneBR } from "@/lib/masks";
 import { Link } from "react-router-dom";
 
 export default function ProdutoresTab() {
