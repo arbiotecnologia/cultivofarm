@@ -14,7 +14,7 @@ import type {
   RenderedContent,
   ResolvedAddress,
   WorkerEnv,
-} from "./adapters.ts";
+} from "./adapters-types.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 15_000;
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;

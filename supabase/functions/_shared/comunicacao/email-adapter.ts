@@ -8,7 +8,7 @@ import type {
   RenderedContent,
   ResolvedAddress,
   WorkerEnv,
-} from "./adapters.ts";
+} from "./adapters-types.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 20_000;
 

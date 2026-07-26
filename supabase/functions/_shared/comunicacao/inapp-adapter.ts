@@ -2,7 +2,7 @@
 // SECURITY DEFINER dedicadas (não faz INSERT direto). Ativa-se apenas com
 // COMMUNICATION_INAPP_ADAPTER_ENABLED=true.
 
-import type { AdapterResult, RenderedContent, ResolvedAddress, WorkerEnv } from "./adapters.ts";
+import type { AdapterResult, RenderedContent, ResolvedAddress, WorkerEnv } from "./adapters-types.ts";
 
 type SbLike = {
   rpc: (
