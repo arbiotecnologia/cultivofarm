@@ -1,10 +1,11 @@
-// Edge Function: process-communication-outbox (Fase 2)
+// Edge Function: process-communication-outbox (Fase 2 v2 corretiva)
 // - POST-only
 // - Autenticação: INTERNAL_FUNCTION_SECRET OU service_role JWT
 // - Se COMMUNICATION_DELIVERY_ENABLED != "true" → dry_run puro (sem claim)
-// - Integração com adapters reais (todos OFF por default via flags)
-// - Cada claim termina em: sent | skipped | cancelled | retry | dead_letter
-// - Preserva lease/worker_id em skip/cancel/fail via RPCs da Fase 1/2
+// - payload_snapshot é o objeto de variáveis DIRETAMENTE (não .payload)
+// - Canal desabilitado / config inválida → DEFER (não cancel)
+// - Falha permanente vs transitória usa rpc_fail_communication_delivery_v2
+// - Erros de TODAS as RPCs de terminação são verificados e logados sem PII
 
 import {
   corsHeaders,
@@ -38,10 +39,13 @@ type ClaimRow = {
   id: string;
   canal: ComunicacaoCanal;
   template_snapshot: AdapterSnapshot;
-  payload_snapshot: { payload?: Record<string, unknown> };
+  // Objeto de variáveis DIRETAMENTE (formato salvo pela expansão do evento).
+  payload_snapshot: Record<string, unknown>;
   recipient_user_id: string | null;
   recipient_cliente_id: string | null;
 };
+
+type SbClient = ReturnType<typeof serviceClient>;
 
 function authorize(req: Request): { ok: true } | { ok: false; res: Response } {
   const auth = req.headers.get("Authorization") ?? "";
@@ -59,19 +63,14 @@ function authorize(req: Request): { ok: true } | { ok: false; res: Response } {
 Deno.serve(async (req: Request) => {
   const pre = requirePost(req);
   if (pre) return pre;
-
   const authz = authorize(req);
   if (!authz.ok) return authz.res;
 
   const env = readWorkerEnv();
-
   if (!env.DELIVERY_ENABLED) {
     return json(200, {
-      ok: true,
-      dry_run: true,
-      disabled: true,
-      claimed: 0,
-      worker_id: WORKER_ID,
+      ok: true, dry_run: true, disabled: true,
+      claimed: 0, worker_id: WORKER_ID,
     });
   }
 
@@ -88,6 +87,10 @@ Deno.serve(async (req: Request) => {
   const results: Array<Record<string, unknown>> = [];
 
   for (const item of items) {
+    // payload_snapshot é o objeto de variáveis diretamente.
+    const variaveis = (item.payload_snapshot ?? {}) as Record<string, unknown>;
+
+    // 1) Render seguro (nunca chama rede).
     let rendered: { assunto?: string; corpo: string; missing: string[] };
     try {
       rendered = renderTemplate(
@@ -97,7 +100,7 @@ Deno.serve(async (req: Request) => {
           corpo: item.template_snapshot.corpo,
           variaveisPermitidas: item.template_snapshot.variaveis ?? [],
         },
-        { variaveis: (item.payload_snapshot?.payload ?? {}) as Record<string, unknown> },
+        { variaveis },
       );
     } catch (e) {
       const code = e instanceof TemplateRenderError ? `render:${e.code}` : "render_error";
@@ -105,61 +108,47 @@ Deno.serve(async (req: Request) => {
         outcome: "permanent_error",
         code: code.slice(0, 80),
         message: String((e as Error).message).slice(0, 2000),
-      });
-      results.push({ id: item.id, canal: item.canal, outcome: "permanent_error", code });
+      }, results, item.canal);
       continue;
     }
 
-    // 1) Resolve endereço no momento do envio (service_role-only RPC).
+    // 2) Resolve endereço no momento do envio.
     const { data: resolvedRaw, error: resErr } = await supabase.rpc(
       "rpc_resolve_outbox_address",
       { p_outbox_id: item.id },
     );
     if (resErr) {
-      await failItem(supabase, item.id, false, "resolve_error", resErr.message);
-      results.push({ id: item.id, canal: item.canal, outcome: "transient_error", code: "resolve_error" });
+      await terminate(supabase, item.id, {
+        outcome: "transient_error", code: "resolve_error",
+        message: resErr.message.slice(0, 300),
+      }, results, item.canal);
       continue;
     }
     const resolved = (resolvedRaw ?? { ok: false, canal: item.canal }) as ResolvedAddress;
 
     if (!resolved.ok) {
       const outcome = resolved.outcome ?? "skipped";
-      const rpcName = outcome === "cancelled"
-        ? "rpc_cancel_communication_delivery"
-        : "rpc_skip_communication_delivery";
-      await supabase.rpc(rpcName, {
-        p_outbox_id: item.id,
-        p_worker_id: WORKER_ID,
-        p_reason: (resolved.reason ?? "resolve_failed").slice(0, 200),
-      });
-      results.push({ id: item.id, canal: item.canal, outcome, code: resolved.reason ?? "resolve_failed" });
+      const reason = (resolved.reason ?? "resolve_failed").slice(0, 200);
+      const term: AdapterResult = outcome === "cancelled"
+        ? { outcome: "invalid_recipient", code: reason, message: reason }
+        : { outcome: "opt_out", code: reason, message: reason };
+      await terminate(supabase, item.id, term, results, item.canal);
       continue;
     }
 
-    // 2) Dispatch adapter por canal.
+    // 3) Dispatch adapter por canal.
     let adapter: AdapterResult;
-    const variaveis = (item.payload_snapshot?.payload ?? {}) as Record<string, unknown>;
-
     if (item.canal === "email") {
       adapter = await sendEmail(env, resolved, item.template_snapshot, rendered);
     } else if (item.canal === "whatsapp") {
       adapter = await sendWhatsapp(env, resolved, item.template_snapshot, rendered, variaveis);
     } else if (item.canal === "in_app") {
-      adapter = await sendInApp(env, resolved, rendered, supabase);
+      adapter = await sendInApp(env, resolved, rendered, supabase, item.id);
     } else {
-      adapter = { outcome: "provider_not_configured", code: "unsupported_canal", message: item.canal };
+      adapter = { outcome: "permanent_error", code: "unsupported_canal", message: item.canal };
     }
 
-    // 3) Terminação normalizada.
-    await terminate(supabase, item.id, adapter);
-    results.push({
-      id: item.id,
-      canal: item.canal,
-      outcome: adapter.outcome,
-      code: adapter.code,
-      // Nunca inclua adapter.message aqui (evita PII acidental). Log restrito
-      // à RPC de falha/skip/cancel (que já trunca a 2000 chars no banco).
-    });
+    await terminate(supabase, item.id, adapter, results, item.canal);
   }
 
   return json(200, {
@@ -178,58 +167,72 @@ Deno.serve(async (req: Request) => {
 });
 
 async function terminate(
-  supabase: ReturnType<typeof serviceClient>,
+  supabase: SbClient,
   outboxId: string,
   adapter: AdapterResult,
+  results: Array<Record<string, unknown>>,
+  canal: ComunicacaoCanal,
 ): Promise<void> {
+  // Nunca ecoamos adapter.message no results (evita PII acidental).
+  const push = (extra: Record<string, unknown> = {}) =>
+    results.push({ id: outboxId, canal, outcome: adapter.outcome, code: adapter.code, ...extra });
+
+  let rpcName: string;
+  let rpcArgs: Record<string, unknown>;
+
   switch (adapter.outcome) {
     case "sent":
-      await supabase.rpc("rpc_complete_communication_delivery", {
+      rpcName = "rpc_complete_communication_delivery";
+      rpcArgs = {
         p_outbox_id: outboxId,
         p_worker_id: WORKER_ID,
         p_provider_message_id: adapter.provider_message_id ?? null,
-      });
-      return;
+      };
+      break;
     case "opt_out":
-      await supabase.rpc("rpc_skip_communication_delivery", {
-        p_outbox_id: outboxId,
-        p_worker_id: WORKER_ID,
-        p_reason: adapter.code,
-      });
-      return;
-    case "provider_not_configured":
+      rpcName = "rpc_skip_communication_delivery";
+      rpcArgs = { p_outbox_id: outboxId, p_worker_id: WORKER_ID, p_reason: adapter.code };
+      break;
     case "invalid_recipient":
-      await supabase.rpc("rpc_cancel_communication_delivery", {
-        p_outbox_id: outboxId,
-        p_worker_id: WORKER_ID,
-        p_reason: adapter.code,
-      });
-      return;
+      rpcName = "rpc_cancel_communication_delivery";
+      rpcArgs = { p_outbox_id: outboxId, p_worker_id: WORKER_ID, p_reason: adapter.code };
+      break;
+    case "provider_not_configured":
+    case "deferred":
+      // Config ausente / adapter OFF → defer (não cancel).
+      rpcName = "rpc_defer_communication_delivery";
+      rpcArgs = {
+        p_outbox_id: outboxId, p_worker_id: WORKER_ID,
+        p_reason: adapter.code, p_delay_seconds: 600,
+      };
+      break;
     case "permanent_error":
-      await failItem(supabase, outboxId, true, adapter.code, adapter.message);
-      return;
+      rpcName = "rpc_fail_communication_delivery_v2";
+      rpcArgs = {
+        p_outbox_id: outboxId, p_worker_id: WORKER_ID,
+        p_error_code: adapter.code.slice(0, 80),
+        p_error_message: (adapter.message ?? "").slice(0, 2000),
+        p_is_permanent: true,
+      };
+      break;
     case "transient_error":
-      await failItem(supabase, outboxId, false, adapter.code, adapter.message);
-      return;
+      rpcName = "rpc_fail_communication_delivery_v2";
+      rpcArgs = {
+        p_outbox_id: outboxId, p_worker_id: WORKER_ID,
+        p_error_code: adapter.code.slice(0, 80),
+        p_error_message: (adapter.message ?? "").slice(0, 2000),
+        p_is_permanent: false,
+      };
+      break;
   }
-}
 
-async function failItem(
-  supabase: ReturnType<typeof serviceClient>,
-  outboxId: string,
-  permanent: boolean,
-  code: string,
-  message: string,
-) {
-  // rpc_fail_communication_delivery (Fase 1): assinatura documentada com
-  // p_is_permanent para escalar imediatamente para dead_letter.
-  await supabase.rpc("rpc_fail_communication_delivery", {
-    p_outbox_id: outboxId,
-    p_worker_id: WORKER_ID,
-    p_error_code: code.slice(0, 80),
-    p_error_message: (message ?? "").slice(0, 2000),
-    p_is_permanent: permanent,
-  });
+  const { error } = await supabase.rpc(rpcName, rpcArgs);
+  if (error) {
+    // Falha da RPC de terminação: reporte SEM PII, sem sobrescrever outcome.
+    push({ terminator_rpc: rpcName, terminator_error: error.message.slice(0, 200) });
+    return;
+  }
+  push();
 }
 
 export { corsHeaders };

@@ -1,9 +1,10 @@
 // Adapter WhatsApp Cloud API (Meta Graph). Desligado por padrão.
-// Requer:
-//  - env: WHATSAPP_DELIVERY_ENABLED=true, COMMUNICATION_DELIVERY_ENABLED=true
-//  - envs: WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_API_VERSION
-//  - template com provider_template_name + language_code + parameter_mapping
-//  - address E.164 (validado por rpc_resolve_outbox_address) e opt-in verificado
+// Requisitos:
+//   - env: WHATSAPP_DELIVERY_ENABLED=true, COMMUNICATION_DELIVERY_ENABLED=true
+//   - envs válidos: WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID (numérico),
+//     WHATSAPP_API_VERSION (allowlist explícita)
+//   - snapshot.provider_template_status === 'approved'
+//   - mapping completo; variáveis ausentes → permanent_error ANTES do fetch
 //
 // Nunca inclui token no log; erros são sanitizados.
 
@@ -15,6 +16,7 @@ import type {
   ResolvedAddress,
   WorkerEnv,
 } from "./adapters-types.ts";
+import { isWhatsappConfigValid } from "./adapters-types.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 15_000;
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
@@ -30,8 +32,8 @@ export async function sendWhatsapp(
   if (!env.DELIVERY_ENABLED || !env.WHATSAPP_ENABLED) {
     return { outcome: "provider_not_configured", code: "whatsapp_disabled", message: "flag OFF" };
   }
-  if (!env.WHATSAPP_ACCESS_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID) {
-    return { outcome: "provider_not_configured", code: "whatsapp_missing_env", message: "WA envs ausentes" };
+  if (!isWhatsappConfigValid(env)) {
+    return { outcome: "provider_not_configured", code: "whatsapp_config_invalid", message: "envs WA inválidos" };
   }
   if (!resolved.ok || resolved.canal !== "whatsapp" || !resolved.address) {
     return { outcome: "invalid_recipient", code: "invalid_address", message: "sem endereço" };
@@ -42,22 +44,36 @@ export async function sendWhatsapp(
   if (!snapshot.provider_template_name || !snapshot.language_code) {
     return { outcome: "permanent_error", code: "wa_template_meta_missing", message: "template sem metadados WA" };
   }
+  if (snapshot.provider_template_status !== "approved") {
+    return {
+      outcome: "permanent_error",
+      code: "wa_template_not_approved",
+      message: `status=${snapshot.provider_template_status ?? "unknown"}`,
+    };
+  }
   const mapping = snapshot.parameter_mapping ?? [];
   if (!Array.isArray(mapping)) {
     return { outcome: "permanent_error", code: "wa_mapping_invalid", message: "mapping inválido" };
   }
-  // Monta parâmetros na ordem exata declarada pelo mapping.
   const sorted = [...mapping].sort((a, b) => a.index - b.index);
   for (let i = 0; i < sorted.length; i++) {
     if (sorted[i].index !== i + 1) {
       return { outcome: "permanent_error", code: "wa_mapping_gap", message: "índices não sequenciais" };
     }
   }
-  const parameters = sorted.map((m) => {
+  // Variáveis ausentes/null → erro permanente ANTES da rede.
+  const parameters: Array<{ type: "text"; text: string }> = [];
+  for (const m of sorted) {
     const raw = variaveis?.[m.variavel];
-    const value = raw == null ? "" : String(raw);
-    return { type: "text" as const, text: value.slice(0, 1024) };
-  });
+    if (raw === undefined || raw === null || String(raw).length === 0) {
+      return {
+        outcome: "permanent_error",
+        code: "wa_variable_missing",
+        message: `variável obrigatória ausente: ${m.variavel}`,
+      };
+    }
+    parameters.push({ type: "text", text: String(raw).slice(0, 1024) });
+  }
 
   const url = `https://graph.facebook.com/${env.WHATSAPP_API_VERSION}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
   const body = {
@@ -67,9 +83,7 @@ export async function sendWhatsapp(
     template: {
       name: snapshot.provider_template_name,
       language: { code: snapshot.language_code },
-      components: parameters.length > 0
-        ? [{ type: "body", parameters }]
-        : [],
+      components: parameters.length > 0 ? [{ type: "body", parameters }] : [],
     },
   };
 
@@ -120,7 +134,6 @@ export async function sendWhatsapp(
   if (res.status >= 500) {
     return { outcome: "transient_error", code: `whatsapp_5xx`, message: `HTTP ${res.status}` };
   }
-  // 4xx (401/403/400) → permanente. Sanitiza mensagem para não vazar token.
   const err = (payload as { error?: { code?: number; message?: string; type?: string } })?.error;
   const safe = err ? `code=${err.code ?? "?"} type=${err.type ?? "?"}` : `HTTP ${res.status}`;
   return { outcome: "permanent_error", code: `whatsapp_${res.status}`, message: safe };
