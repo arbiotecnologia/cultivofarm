@@ -507,21 +507,53 @@ function TemplatesPanel({ canMutate }: { canMutate: boolean }) {
           {q.data && q.data.length === 0 && <p className="text-sm text-muted-foreground">Nenhum template.</p>}
           <ul className="divide-y">
             {(q.data ?? []).map((t) => (
-              <li key={t.id} className="py-2 flex items-center gap-3 text-sm">
-                <span className="font-mono">{t.chave} v{t.versao}</span>
-                <span className="text-muted-foreground">{t.canal}</span>
-                <span className="rounded px-1.5 py-0.5 text-xs border">{t.status}</span>
-                <span className="ml-auto flex gap-2">
-                  {t.status === "draft" && (
-                    <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => ativar.mutate(t.id)}>Ativar</button>
+              <li key={t.id} className="py-2 text-sm space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono">{t.chave} v{t.versao}</span>
+                  <span className="text-muted-foreground">{t.canal}</span>
+                  <span className="rounded px-1.5 py-0.5 text-xs border">{t.status}</span>
+                  {t.canal === "whatsapp" && (
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-xs border ${
+                        t.provider_template_status === "approved"
+                          ? "border-emerald-500 text-emerald-600"
+                          : "border-amber-500 text-amber-600"
+                      }`}
+                      title="Status Meta"
+                    >
+                      Meta: {t.provider_template_status ?? "draft"}
+                    </span>
                   )}
-                  {t.status !== "archived" && (
-                    <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => arquivar.mutate(t.id)}>Arquivar</button>
-                  )}
-                </span>
+                  <span className="ml-auto flex gap-2">
+                    {t.status === "draft" && (
+                      <button
+                        className="text-xs underline disabled:opacity-40"
+                        disabled={
+                          !canMutate ||
+                          (t.canal === "whatsapp" && t.provider_template_status !== "approved")
+                        }
+                        title={
+                          t.canal === "whatsapp" && t.provider_template_status !== "approved"
+                            ? "WhatsApp: só é possível ativar após template aprovado pela Meta"
+                            : ""
+                        }
+                        onClick={() => ativar.mutate(t.id)}
+                      >
+                        Ativar
+                      </button>
+                    )}
+                    {t.status !== "archived" && (
+                      <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => arquivar.mutate(t.id)}>Arquivar</button>
+                    )}
+                  </span>
+                </div>
+                {t.canal === "whatsapp" && (
+                  <WhatsappTemplateMetadataEditor template={t} canMutate={canMutate} />
+                )}
               </li>
             ))}
           </ul>
+
         </div>
       </div>
 
