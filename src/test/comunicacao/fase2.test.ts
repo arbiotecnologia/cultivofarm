@@ -351,7 +351,7 @@ describe("inapp-adapter", () => {
       { ok: true, canal: "in_app", cliente_id: "cli-1" },
       { assunto: "Pronto para retirada", corpo: "Corpo" },
       { rpc: async (n, a) => { name = n; args = a; return { data: { notification_id: "n-1" }, error: null }; } },
-      { outbox_id: "00000000-0000-0000-0000-0000000000aa" },
+      "00000000-0000-0000-0000-0000000000aa",
     );
     expect(name).toBe("rpc_dispatch_inapp_notification");
     expect((args as { p_cliente_id?: string }).p_cliente_id).toBe("cli-1");
@@ -366,7 +366,7 @@ describe("inapp-adapter", () => {
       { ok: true, canal: "in_app", user_id: "u-1" },
       { corpo: "Corpo" },
       { rpc: async (n, a) => { name = n; args = a; return { data: { notification_id: "op-1" }, error: null }; } },
-      { outbox_id: "00000000-0000-0000-0000-0000000000bb" },
+      "00000000-0000-0000-0000-0000000000bb",
     );
     expect(name).toBe("rpc_dispatch_inapp_notification");
     expect((args as { p_user_id?: string }).p_user_id).toBe("u-1");
