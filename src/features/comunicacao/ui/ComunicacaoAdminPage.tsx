@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   renderTemplate,
   TemplateRenderError,
   type Canal,
 } from "@/features/comunicacao/render/renderTemplate";
-import { isComunicacaoModuleEnabled } from "@/features/comunicacao/flags";
+import {
+  isComunicacaoModuleEnabled,
+  isComunicacaoBroadcastTabEnabled,
+} from "@/features/comunicacao/flags";
+import { useAuth } from "@/hooks/useAuth";
 import {
   listTemplates,
   createTemplate,
@@ -18,6 +22,8 @@ import {
   listOwnPreferences,
   updateOwnPreference,
   upsertRule,
+  previewAdministrativeBroadcast,
+  publishAdministrativeBroadcast,
 } from "@/features/comunicacao/api";
 import type {
   ComunicacaoTemplate,
@@ -28,24 +34,39 @@ import type {
   ComunicacaoCanal,
 } from "@/features/comunicacao/types";
 
-type AbaId = "templates" | "regras" | "fila" | "preferencias";
+type AbaId = "templates" | "regras" | "fila" | "preferencias" | "comunicados";
+
+const ROLE_OPTIONS = [
+  "administrador","gestor","tecnico_agronomo","consultor_tecnico",
+  "aplicador","producao","operador_onfarm","administrativo","financeiro",
+  "gestor_comercial","parceiro_b2b","parceiro_b2b_tecnico","cliente_produtor",
+] as const;
 
 export default function ComunicacaoAdmin() {
   const [aba, setAba] = useState<AbaId>("templates");
+  const auth = useAuth();
+  const roles = auth.roles ?? [];
+  const isAdmin = roles.includes("administrador" as never);
+  const isGestor = roles.includes("gestor" as never);
+  const broadcastTabEnabled = isComunicacaoBroadcastTabEnabled();
+  const showBroadcastTab = broadcastTabEnabled && (isAdmin || isGestor);
 
   if (!isComunicacaoModuleEnabled()) return null;
+
+  const tabs: AbaId[] = ["templates","regras","fila","preferencias"];
+  if (showBroadcastTab) tabs.push("comunicados");
 
   return (
     <div className="p-6 space-y-6">
       <header>
         <h1 className="text-2xl font-semibold">Comunicação</h1>
         <p className="text-sm text-muted-foreground">
-          Fundação Fase 1. Envios reais desativados (DELIVERY_ENABLED=false).
+          Fase 2 (proposta). Envios reais permanecem desligados até staging.
         </p>
       </header>
 
       <nav className="flex gap-2 border-b" role="tablist" aria-label="Seções">
-        {(["templates", "regras", "fila", "preferencias"] as const).map((k) => (
+        {tabs.map((k) => (
           <button
             key={k}
             role="tab"
@@ -62,14 +83,16 @@ export default function ComunicacaoAdmin() {
       {aba === "regras" && <RegrasPanel />}
       {aba === "fila" && <FilaPanel />}
       {aba === "preferencias" && <PreferenciasPanel />}
+      {aba === "comunicados" && showBroadcastTab && (
+        <ComunicadosPanel canPublish={isAdmin} />
+      )}
 
       <section aria-label="Estado dos canais" className="rounded-md border p-4 text-sm">
         <h2 className="font-medium mb-1">Estado dos canais</h2>
         <ul className="list-disc pl-5 text-muted-foreground">
-          <li>E-mail: não configurado</li>
-          <li>WhatsApp: não configurado</li>
-          <li>In-app: desativado</li>
-          <li>Push: não configurado</li>
+          <li>E-mail: configuração via SMTP_* (verificar em communication-health)</li>
+          <li>WhatsApp: configuração via WHATSAPP_* (verificar em communication-health)</li>
+          <li>In-app: adapter próprio, controlado por COMMUNICATION_INAPP_ADAPTER_ENABLED</li>
         </ul>
         <p className="text-xs text-muted-foreground mt-2">Nenhum segredo é exibido nesta tela.</p>
       </section>
@@ -78,7 +101,166 @@ export default function ComunicacaoAdmin() {
 }
 
 function label(k: AbaId) {
-  return k === "templates" ? "Templates" : k === "regras" ? "Regras" : k === "fila" ? "Fila e histórico" : "Preferências";
+  switch (k) {
+    case "templates": return "Templates";
+    case "regras": return "Regras";
+    case "fila": return "Fila e histórico";
+    case "preferencias": return "Preferências";
+    case "comunicados": return "Comunicados";
+  }
+}
+
+// -------------------- Comunicados (broadcast administrativo) --------------------
+
+function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
+  const [role, setRole] = useState<string>("");
+  const [titulo, setTitulo] = useState("");
+  const [mensagem, setMensagem] = useState("");
+  const [previewData, setPreviewData] = useState<null | {
+    total_users_in_role: number;
+    estimated_recipients_by_canal: Record<string, number>;
+  }>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [published, setPublished] = useState<null | { event_id: string; duplicated: boolean }>(null);
+
+  // Idempotência estável para o formulário: role + hash simples de conteúdo.
+  const idemKey = useMemo(() => {
+    const raw = `${role}|${titulo}|${mensagem}`;
+    // hash simples (djb2) — estável na sessão para o mesmo conteúdo.
+    let h = 5381;
+    for (let i = 0; i < raw.length; i++) h = ((h << 5) + h) + raw.charCodeAt(i);
+    return `admin_bcast:${role}:${(h >>> 0).toString(16)}`;
+  }, [role, titulo, mensagem]);
+
+  const preview = useMutation({
+    mutationFn: async () => {
+      setPreviewError(null);
+      const r = await previewAdministrativeBroadcast({ p_target_role: role });
+      setPreviewData({
+        total_users_in_role: r.total_users_in_role,
+        estimated_recipients_by_canal: r.estimated_recipients_by_canal ?? {},
+      });
+      return r;
+    },
+    onError: (e: Error) => setPreviewError(e.message),
+  });
+
+  const publish = useMutation({
+    mutationFn: async () => {
+      setPublishError(null);
+      const r = await publishAdministrativeBroadcast({
+        target_role: role, titulo, mensagem, idempotency_key: idemKey,
+      });
+      setPublished({ event_id: r.event_id, duplicated: r.duplicated });
+      return r;
+    },
+    onError: (e: Error) => setPublishError(e.message),
+    onSettled: () => setConfirmOpen(false),
+  });
+
+  const disabled =
+    !role || titulo.trim().length === 0 || mensagem.trim().length === 0;
+
+  return (
+    <section className="grid gap-4 md:grid-cols-[1fr_320px] text-sm">
+      <div className="rounded-md border p-4 space-y-3">
+        <h2 className="font-medium">Novo comunicado administrativo</h2>
+        {!canPublish && (
+          <p className="text-xs text-muted-foreground">
+            Gestor visualiza pré-visualização e contagem. Somente administrador pode publicar.
+          </p>
+        )}
+        <label className="block text-xs">
+          Perfil-alvo (app_role)
+          <select className="mt-1 w-full rounded border p-2" value={role} onChange={(e) => { setRole(e.target.value); setPreviewData(null); }}>
+            <option value="">—</option>
+            {ROLE_OPTIONS.map((r) => (<option key={r} value={r}>{r}</option>))}
+          </select>
+        </label>
+        <label className="block text-xs">
+          Título
+          <input maxLength={200} className="mt-1 w-full rounded border p-2" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+        </label>
+        <label className="block text-xs">
+          Mensagem
+          <textarea maxLength={2000} className="mt-1 h-32 w-full rounded border p-2" value={mensagem} onChange={(e) => setMensagem(e.target.value)} />
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
+            disabled={!role || preview.isPending}
+            onClick={() => preview.mutate()}
+          >
+            {preview.isPending ? "Estimando…" : "Estimar destinatários"}
+          </button>
+          <button
+            className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+            disabled={!canPublish || disabled || previewData == null || publish.isPending}
+            onClick={() => setConfirmOpen(true)}
+            title={!canPublish ? "Apenas administrador" : previewData == null ? "Estime a contagem primeiro" : ""}
+          >
+            Publicar…
+          </button>
+        </div>
+        {previewError && <p className="text-xs text-destructive">Erro na estimativa: {previewError}</p>}
+        {publishError && <p className="text-xs text-destructive">Erro na publicação: {publishError}</p>}
+        {published && (
+          <p className="text-xs text-muted-foreground">
+            Publicado. event_id={published.event_id}{published.duplicated ? " (duplicado idempotente)" : ""}.
+          </p>
+        )}
+      </div>
+
+      <aside className="rounded-md border p-4 space-y-2">
+        <h3 className="font-medium">Pré-visualização</h3>
+        <p className="text-xs text-muted-foreground">
+          A contagem é calculada no servidor: total no perfil + recipientes elegíveis
+          por canal (opt-in/verificação/opt-out).
+        </p>
+        {previewData ? (
+          <div className="text-sm space-y-1">
+            <div><strong>Perfil:</strong> {role}</div>
+            <div><strong>Total no perfil:</strong> {previewData.total_users_in_role}</div>
+            <div><strong>Elegíveis por canal:</strong></div>
+            <ul className="pl-4 list-disc">
+              {Object.entries(previewData.estimated_recipients_by_canal).map(([c, n]) => (
+                <li key={c}>{c}: {n}</li>
+              ))}
+              {Object.keys(previewData.estimated_recipients_by_canal).length === 0 && (
+                <li className="text-muted-foreground">Nenhuma regra ativa para este perfil.</li>
+              )}
+            </ul>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Sem estimativa carregada.</p>
+        )}
+      </aside>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-md bg-background p-4 shadow-lg">
+            <h3 className="font-medium">Confirmar publicação</h3>
+            <p className="mt-2 text-sm">
+              Publicar <strong>{titulo}</strong> para <code>{role}</code>?
+              Estimativa: {previewData?.total_users_in_role ?? 0} no perfil.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Idempotency key: <code className="break-all">{idemKey}</code>
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="rounded border px-3 py-1.5 text-sm" onClick={() => setConfirmOpen(false)} disabled={publish.isPending}>Cancelar</button>
+              <button className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+                      disabled={publish.isPending} onClick={() => publish.mutate()}>
+                {publish.isPending ? "Publicando…" : "Confirmar publicação"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
 }
 
 // -------------------- Templates --------------------
