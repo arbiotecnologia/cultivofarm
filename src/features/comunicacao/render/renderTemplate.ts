@@ -1,9 +1,8 @@
 /**
- * Biblioteca compartilhada de renderização de templates.
- * - Placeholders {{var}} apenas de variáveis whitelisted.
- * - Escaping HTML para canais que renderizam HTML (email).
- * - Sem execução de JS; sem URLs externas; sem HTML complexo.
- * - Limite de tamanho de saída.
+ * Renderer frontend — implementação-espelho da versão canônica em
+ * supabase/functions/_shared/communication-render.ts. Vetores de contrato
+ * em src/test/comunicacao/render-vectors.ts garantem paridade.
+ * Sem I/O, sem execução de JS, sem URLs externas.
  */
 
 export type Canal = "email" | "whatsapp" | "in_app" | "push";
@@ -17,9 +16,7 @@ export interface TemplateInput {
 
 export interface RenderInput {
   variaveis: Record<string, unknown>;
-  /** força escape HTML mesmo em texto (padrão: true para email) */
   escapeHtml?: boolean;
-  /** limite bruto de caracteres da saída */
   maxOutputChars?: number;
 }
 
@@ -29,15 +26,14 @@ export interface RenderResult {
   missing: string[];
 }
 
+export type RenderErrorCode =
+  | "VARIAVEL_NAO_PERMITIDA"
+  | "PLACEHOLDER_INVALIDO"
+  | "SAIDA_MUITO_LONGA"
+  | "HTML_PERIGOSO";
+
 export class TemplateRenderError extends Error {
-  constructor(
-    message: string,
-    public readonly code:
-      | "VARIAVEL_NAO_PERMITIDA"
-      | "PLACEHOLDER_INVALIDO"
-      | "SAIDA_MUITO_LONGA"
-      | "HTML_PERIGOSO",
-  ) {
+  constructor(message: string, public readonly code: RenderErrorCode) {
     super(message);
     this.name = "TemplateRenderError";
   }
@@ -63,20 +59,20 @@ function renderOne(
   escape: boolean,
   missing: Set<string>,
 ): string {
-  return raw.replace(PLACEHOLDER_RE, (_match, name: string) => {
+  return raw.replace(PLACEHOLDER_RE, (_m, name: string) => {
     if (!permitidas.has(name)) {
       throw new TemplateRenderError(
         `variável não permitida: ${name}`,
         "VARIAVEL_NAO_PERMITIDA",
       );
     }
-    const raw = variaveis[name];
-    if (raw === undefined || raw === null) {
+    const v = variaveis[name];
+    if (v === undefined || v === null) {
       missing.add(name);
       return "";
     }
-    const asString = String(raw);
-    return escape ? escapeHtml(asString) : asString;
+    const asStr = String(v);
+    return escape ? escapeHtml(asStr) : asStr;
   });
 }
 
@@ -85,19 +81,20 @@ export function renderTemplate(
   input: RenderInput,
 ): RenderResult {
   const permitidas = new Set(template.variaveisPermitidas);
-  const escape =
-    input.escapeHtml ?? (template.canal === "email");
+  const escape = input.escapeHtml ?? template.canal === "email";
   const missing = new Set<string>();
   const limit = input.maxOutputChars ?? DEFAULT_LIMIT;
 
-  if (DANGEROUS_HTML.test(template.corpo) || (template.assunto && DANGEROUS_HTML.test(template.assunto))) {
+  if (
+    DANGEROUS_HTML.test(template.corpo) ||
+    (template.assunto && DANGEROUS_HTML.test(template.assunto))
+  ) {
     throw new TemplateRenderError(
       "template contém HTML potencialmente perigoso",
       "HTML_PERIGOSO",
     );
   }
 
-  // Detecta placeholders com sintaxe inválida antes da substituição
   if (/\{\{[^}]*[^a-zA-Z0-9_\s{}][^}]*\}\}/.test(template.corpo)) {
     throw new TemplateRenderError(
       "placeholder com sintaxe inválida",
