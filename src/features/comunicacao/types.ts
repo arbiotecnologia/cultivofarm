@@ -28,6 +28,12 @@ export type ComunicacaoEventoStatus =
   | "skipped"
   | "failed";
 
+export interface ComunicacaoTemplateParameterMapping {
+  index: number;
+  variavel: string;
+  tipo?: string;
+}
+
 export interface ComunicacaoTemplate {
   id: string;
   chave: string;
@@ -39,6 +45,10 @@ export interface ComunicacaoTemplate {
   assunto: string | null;
   corpo: string;
   variaveis: string[];
+  /** Fase 2: metadados de canal (WhatsApp Meta). */
+  provider_template_name: string | null;
+  language_code: string | null;
+  parameter_mapping: ComunicacaoTemplateParameterMapping[];
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
@@ -187,5 +197,24 @@ export interface CommunicationRpcContracts {
       p_whatsapp_opt_in: boolean | null;
     };
     returns: { ok: boolean };
+  };
+  // ---- Fase 2 ----
+  rpc_set_communication_template_metadata: {
+    args: {
+      p_template_id: string;
+      p_provider_template_name: string | null;
+      p_language_code: string | null;
+      p_parameter_mapping: ComunicacaoTemplateParameterMapping[];
+    };
+    returns: { ok: boolean };
+  };
+  rpc_preview_administrative_broadcast_count: {
+    args: { p_target_role: string };
+    returns: {
+      ok: boolean;
+      target_role: string;
+      total_users_in_role: number;
+      estimated_recipients_by_canal: Record<string, number>;
+    };
   };
 }
