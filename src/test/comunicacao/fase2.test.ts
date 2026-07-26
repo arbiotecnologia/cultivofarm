@@ -223,7 +223,7 @@ describe("whatsapp-adapter: envio simulado (fetch mock)", () => {
     );
     expect(r.outcome).toBe("sent");
     expect(r.provider_message_id).toBe("wamid.XYZ");
-    expect(capturedUrl).toContain("/v20.0/1234567890/messages");
+    expect(capturedUrl).toContain("/v25.0/1234567890/messages");
     // "to" sem "+"
     expect((capturedBody as { to: string }).to).toBe("5511998877665");
     const params = ((capturedBody as {
