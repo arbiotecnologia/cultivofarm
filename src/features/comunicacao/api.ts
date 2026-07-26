@@ -127,3 +127,36 @@ export async function listOwnPreferences(): Promise<ComunicacaoPreferencia[]> {
 export const updateOwnPreference = (
   args: CommunicationRpcContracts["rpc_update_communication_preferences"]["args"],
 ) => callRpc("rpc_update_communication_preferences", args);
+
+// ---------------- Fase 2 ----------------
+
+export const setTemplateMetadata = (
+  args: CommunicationRpcContracts["rpc_set_communication_template_metadata"]["args"],
+) => callRpc("rpc_set_communication_template_metadata", args);
+
+export const previewAdministrativeBroadcast = (
+  args: CommunicationRpcContracts["rpc_preview_administrative_broadcast_count"]["args"],
+) => callRpc("rpc_preview_administrative_broadcast_count", args);
+
+/**
+ * Publica broadcast administrativo (`administrative_important_update`) para um
+ * `app_role`. Requer administrador (RPC valida). A `p_idempotency_key` deve ser
+ * estável para o par (target_role, titulo+mensagem) na sessão do formulário.
+ */
+export const publishAdministrativeBroadcast = (args: {
+  target_role: string;
+  titulo: string;
+  mensagem: string;
+  idempotency_key: string;
+}) =>
+  callRpc("rpc_publish_communication_event", {
+    p_event_key: "administrative_important_update",
+    p_source_type: null,
+    p_source_id: null,
+    p_payload: {
+      target_role: args.target_role,
+      titulo: args.titulo,
+      mensagem: args.mensagem,
+    },
+    p_idempotency_key: args.idempotency_key,
+  });
