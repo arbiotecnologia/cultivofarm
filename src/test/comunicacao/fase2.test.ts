@@ -163,7 +163,7 @@ const baseEnv = (over: Partial<WorkerEnv> = {}): WorkerEnv => ({
   SMTP_FROM: "no-reply@example.com",
   WHATSAPP_ACCESS_TOKEN: "TEST_TOKEN",
   WHATSAPP_PHONE_NUMBER_ID: "1234567890",
-  WHATSAPP_API_VERSION: "v20.0",
+  WHATSAPP_API_VERSION: "v25.0",
   ...over,
 });
 
