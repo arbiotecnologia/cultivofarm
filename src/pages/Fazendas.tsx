@@ -199,7 +199,7 @@ export default function Fazendas() {
       latitude: dataToInsert.latitude ? Number(dataToInsert.latitude) : null,
       longitude: dataToInsert.longitude ? Number(dataToInsert.longitude) : null,
       distancia_sede_km: dataToInsert.distancia_sede_km ? Number(dataToInsert.distancia_sede_km) : null,
-      responsavel_local_telefone: unmask(dataToInsert.responsavel_local_telefone),
+      responsavel_local_telefone: (() => { const c = validatePhoneBR(dataToInsert.responsavel_local_telefone, { fieldLabel: "Telefone do responsável local" }); if (!c.ok) throw new Error(c.error); return c.value; })(),
       inscricao_estadual_produtor: unmask(dataToInsert.inscricao_estadual_produtor),
     };
 
