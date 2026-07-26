@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCNPJ, unmask, unmaskCnpj, validatePhoneBR } from "@/lib/masks";
+import { validateIE, normalizeIE } from "@/lib/fiscal/ie";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchCEP } from "@/lib/api/viacep";
 import { fetchCNPJ } from "@/lib/api/brasilapi";
