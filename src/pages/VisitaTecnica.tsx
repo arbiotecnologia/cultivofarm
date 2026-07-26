@@ -721,25 +721,32 @@ export default function VisitaTecnica() {
               registro_origem_id: result.id,
             });
 
-            // 3. Notificação operacional
-            await supabase.from("notificacoes_operacionais").insert({
-              usuario_id: user!.id,
-              tipo: "retorno_programado",
-              titulo: "Novo retorno agendado",
-              mensagem: `Visita para ${encerramento.retornoMotivo} agendada em ${encerramento.dataProximaVisita}`,
-              link: `/agenda-tecnica?data=${encerramento.dataProximaVisita}`
+            // 3. Notificação operacional (via RPC segura)
+            await (supabase.rpc as any)("rpc_create_notificacao_operacional", {
+              _usuario_id: user!.id,
+              _tipo: "retorno_programado",
+              _titulo: "Novo retorno agendado",
+              _mensagem: `Visita para ${encerramento.retornoMotivo} agendada em ${encerramento.dataProximaVisita}`,
+              _link: `/agenda-tecnica?data=${encerramento.dataProximaVisita}`,
+              _source_type: "registros_consultor",
+              _source_id: result.id,
+              _idempotency_key: `visita-retorno-${result.id}`,
             });
 
             // 4. Notificar produtor se solicitado
             if (encerramento.retornoNotificarProdutor) {
                await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
                  _cliente_id: clienteId!,
-                 _tipo: "visita",
+                 _tipo: "recomendacao",
                  _titulo: "Visita Técnica Agendada",
                  _mensagem: `O consultor agendou um retorno para o dia ${formatDateDisplay(encerramento.dataProximaVisita)} (Turno: ${encerramento.retornoTurno}) para ${encerramento.retornoMotivo}.`,
                  _link: null,
+                 _source_type: "registros_consultor",
+                 _source_id: result.id,
+                 _idempotency_key: `visita-retorno-portal-${result.id}`,
                });
             }
+
           }
           toast.success("Retorno agendado na sua agenda");
         } catch (e: any) {
@@ -781,18 +788,23 @@ export default function VisitaTecnica() {
             .update({ status: "enviado_aprovacao" as any })
             .eq("id", result.id);
 
-          // 3. Notificar gestores
+          // 3. Notificar gestores (via RPC segura, uma por gestor)
           const { data: gestores } = await supabase.from("user_roles").select("user_id").eq("role", "gestor");
           if (gestores && gestores.length > 0) {
-            const notifs = gestores.map(g => ({
-              usuario_id: g.user_id,
-              tipo: "aprovacao_urgente",
-              titulo: "OS Multi-Produto aguardando aprovação",
-              mensagem: `Visita ${result.id} finalizada com solicitação de OS imediata (${encerramento.osItens.length} itens).`,
-              link: `/fluxo-tecnico?tab=aprovacoes`
-            }));
-            await supabase.from("notificacoes_operacionais").insert(notifs);
+            await Promise.all(gestores.map((g) =>
+              (supabase.rpc as any)("rpc_create_notificacao_operacional", {
+                _usuario_id: g.user_id,
+                _tipo: "aprovacao_urgente",
+                _titulo: "OS Multi-Produto aguardando aprovação",
+                _mensagem: `Visita ${result.id} finalizada com solicitação de OS imediata (${encerramento.osItens.length} itens).`,
+                _link: `/fluxo-tecnico?tab=aprovacoes`,
+                _source_type: "registros_consultor",
+                _source_id: result.id,
+                _idempotency_key: `visita-multios-${result.id}-${g.user_id}`,
+              })
+            ));
           }
+
 
           toast.success("Solicitação de OS enviada para aprovação");
         } catch (e) {
@@ -825,19 +837,23 @@ export default function VisitaTecnica() {
               .update({ status: "enviado_aprovacao" as any })
               .eq("id", result.id);
 
-            // Notificar gestores
+            // Notificar gestores (via RPC segura)
             const { data: gestores } = await supabase.from("user_roles").select("user_id").eq("role", "gestor");
             if (gestores && gestores.length > 0) {
-              await supabase.from("notificacoes_operacionais").insert(
-                gestores.map(g => ({
-                  usuario_id: g.user_id,
-                  tipo: "aprovacao_recomendacao",
-                  titulo: "Recomendação técnica aguardando aprovação",
-                  mensagem: `Visita finalizada com ${recsToInsert.length} item(ns) de recomendação técnica.`,
-                  link: `/fluxo-tecnico?tab=aprovacoes`,
-                }))
-              );
+              await Promise.all(gestores.map((g) =>
+                (supabase.rpc as any)("rpc_create_notificacao_operacional", {
+                  _usuario_id: g.user_id,
+                  _tipo: "aprovacao_recomendacao",
+                  _titulo: "Recomendação técnica aguardando aprovação",
+                  _mensagem: `Visita finalizada com ${recsToInsert.length} item(ns) de recomendação técnica.`,
+                  _link: `/fluxo-tecnico?tab=aprovacoes`,
+                  _source_type: "registros_consultor",
+                  _source_id: result.id,
+                  _idempotency_key: `visita-recaprov-${result.id}-${g.user_id}`,
+                })
+              ));
             }
+
             toast.success("Recomendação registrada e enviada para aprovação");
           } else if (encerramento.recLiberarAutomaticamente && clienteId) {
             // Move o registro para "aprovado" — estado canônico de "aguarda decisão do produtor".
