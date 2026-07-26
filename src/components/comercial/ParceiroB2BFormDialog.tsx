@@ -320,6 +320,8 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
     if (!telCheck.ok) { toast.error(telCheck.error); return; }
     const waCheck = validatePhoneBR(form.whatsapp_comercial, { fieldLabel: "WhatsApp comercial" });
     if (!waCheck.ok) { toast.error(waCheck.error); return; }
+    const ieCheck = validateIE(form.commercial_state ?? null, form.inscricao_estadual, { allowIsento: true });
+    if (!ieCheck.ok) { toast.error(ieCheck.error); return; }
 
     const payload: any = {
       ...form,
