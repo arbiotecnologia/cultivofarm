@@ -88,13 +88,10 @@ Deno.serve(async (req) => {
   if (signErr || !signed) return json(500, { error: "Falha ao gerar link" });
   const downloadUrl = signed.signedUrl;
 
-  // Registro seguro do envio (respeita RLS via RPC).
-  const { error: logErr } = await supabase.rpc("rpc_record_aplicacao_email", {
-    _aplicacao_id: body.registroId,
-    _email: body.destinatarioEmail,
-    _status: "queued",
-  });
-  if (logErr) console.warn("rpc_record_aplicacao_email falhou:", logErr.message);
+  // Nota: o registro em aplicacao_emails é feito pelo caller autenticado
+  // via política RLS (Staff can record own aplicacao_emails). A RPC
+  // rpc_record_aplicacao_email existe para casos em que a Edge Function
+  // precisar registrar diretamente (ex.: chamada interna do cron).
 
   let emailSent = false;
   let emailError: string | null = null;
