@@ -257,7 +257,7 @@ describe("whatsapp-adapter: envio simulado (fetch mock)", () => {
 
   it("HTTP 5xx → transient_error", async () => {
     const fakeFetch: typeof fetch = async () => new Response("", { status: 502 });
-    const r = await sendWhatsapp(baseEnv(), resolvedWA(), waSnap, { corpo: "x" }, {}, { fetch: fakeFetch });
+    const r = await sendWhatsapp(baseEnv(), resolvedWA(), waSnap, { corpo: "x" }, { nome: "a", codigo: "b" }, { fetch: fakeFetch });
     expect(r.outcome).toBe("transient_error");
     expect(r.code).toBe("whatsapp_5xx");
   });
