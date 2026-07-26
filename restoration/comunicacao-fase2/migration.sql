@@ -900,15 +900,20 @@ BEGIN
   IF length(p_titulo) > 200 THEN RAISE EXCEPTION 'titulo excede 200'; END IF;
   IF p_mensagem IS NOT NULL AND length(p_mensagem) > 4000 THEN RAISE EXCEPTION 'mensagem excede 4000'; END IF;
 
-  -- Lock por outbox_id (evita corrida entre workers)
+  -- Serialização determinística por outbox_id via advisory lock transacional.
+  -- hashtextextended(uuid_text, seed) produz bigint estável, sem SQL dinâmico
+  -- e sem risco de injeção. Bloqueia concorrentes ANTES da leitura, evitando
+  -- unique-violation por corrida no INSERT em comunicacao_inapp_dispatch.
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_outbox_id::text, 0));
+
   SELECT notification_id, target_kind
     INTO v_existing_id, v_existing_kind
     FROM public.comunicacao_inapp_dispatch
-   WHERE outbox_id = p_outbox_id
-     FOR UPDATE;
+   WHERE outbox_id = p_outbox_id;
   IF FOUND THEN
     RETURN jsonb_build_object('ok',true,'notification_id',v_existing_id,'target',v_existing_kind,'idempotent',true);
   END IF;
+
 
   IF p_cliente_id IS NOT NULL THEN
     v_tipo := 'informativo'::public.tipo_notificacao_portal;
