@@ -120,7 +120,7 @@ export function AppSidebar() {
         {/* Fase 3.2 — renderiza filhos indentados quando existirem e a sidebar
             estiver expandida. Cada filho respeita `canAccess` do próprio route. */}
         {!collapsed && hasChildren && item.children!
-          .filter((c) => canAccess(role, c.route))
+          .filter((c) => canAccess(role, c.route) && isNavItemFeatureEnabled(c))
           .map((c) => (
             <div key={c.id}>{renderItem(c, { nested: true })}</div>
           ))}
