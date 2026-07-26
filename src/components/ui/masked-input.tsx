@@ -77,11 +77,11 @@ const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
       const incoming = String(defaultValue ?? "");
       if (incoming === lastDefaultRef.current) return;
       lastDefaultRef.current = incoming;
-      const formatted = safeFormat(incoming, resolveMaskPattern(mask, incoming));
+      const formatted = safeFormat(incoming, resolveMaskPattern(mask, incoming, uf));
       if (node.value !== formatted) {
         node.value = formatted;
       }
-    }, [defaultValue, isControlled, mask, inputRef]);
+    }, [defaultValue, isControlled, mask, inputRef, uf]);
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       if (autoCase === "title") {
