@@ -269,7 +269,7 @@ function ComunicadosPanel({ canPublish }: { canPublish: boolean }) {
 
 // -------------------- Templates --------------------
 
-function TemplatesPanel() {
+function TemplatesPanel({ canMutate }: { canMutate: boolean }) {
   const qc = useQueryClient();
   const q = useQuery<ComunicacaoTemplate[], Error>({
     queryKey: ["comm", "templates"],
@@ -331,11 +331,15 @@ function TemplatesPanel() {
           <textarea className="h-32 w-full rounded border p-2 text-sm" placeholder="corpo" value={form.corpo} onChange={(e) => setForm({ ...form, corpo: e.target.value })} />
           <button
             className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
-            disabled={criar.isPending || !form.chave || !form.nome || !form.corpo}
+            disabled={!canMutate || criar.isPending || !form.chave || !form.nome || !form.corpo}
             onClick={() => criar.mutate()}
+            title={!canMutate ? "Somente administrador pode criar/alterar templates" : ""}
           >
             Criar rascunho
           </button>
+          {!canMutate && (
+            <p className="text-xs text-muted-foreground">Modo somente leitura (gestor).</p>
+          )}
           {criar.error && <p className="text-sm text-destructive">Erro: {(criar.error as Error).message}</p>}
         </div>
 
