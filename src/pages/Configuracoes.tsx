@@ -68,7 +68,9 @@ export default function Configuracoes() {
   const updateProfile = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
-      const { error } = await supabase.from("profiles").update({ nome, telefone: unmask(phone), cpf_cnpj: unmaskCpfCnpj(cpfCnpj) }).eq("user_id", user.id);
+      const chk = validatePhoneBR(phone, { fieldLabel: "Telefone" });
+      if (!chk.ok) throw new Error(chk.error);
+      const { error } = await supabase.from("profiles").update({ nome, telefone: chk.value, cpf_cnpj: unmaskCpfCnpj(cpfCnpj) }).eq("user_id", user.id);
       if (error) throw error;
     },
     onSuccess: () => {
