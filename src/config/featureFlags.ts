@@ -42,6 +42,8 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
   fiscalReadinessCenterUi: true,
   /** TRAVA DE EMISSÃO — permanece `false` em toda esta fase. */
   fiscalEmissionEnabled: false,
+  /** Módulo de Comunicação (Fase 1) — permanece `false` até staging aplicado. */
+  comunicacaoModule: false,
 };
 
 export function isFeatureEnabled(name: FeatureFlagName): boolean {
