@@ -42,9 +42,21 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
   fiscalReadinessCenterUi: true,
   /** TRAVA DE EMISSÃO — permanece `false` em toda esta fase. */
   fiscalEmissionEnabled: false,
-  /** Módulo de Comunicação (Fase 1) — permanece `false` até staging aplicado. */
-  comunicacaoModule: false,
+  /**
+   * Módulo de Comunicação (Fase 1) — fonte única de verdade.
+   * Habilita-se EXCLUSIVAMENTE via `VITE_COMUNICACAO_MODULE_ENABLED === "true"`.
+   * Ausente ou diferente disso ⇒ `false`. Rota, guard e menu consomem este valor.
+   */
+  comunicacaoModule: readComunicacaoModuleEnvFlag(),
 };
+
+function readComunicacaoModuleEnvFlag(): boolean {
+  try {
+    return import.meta.env?.VITE_COMUNICACAO_MODULE_ENABLED === "true";
+  } catch {
+    return false;
+  }
+}
 
 export function isFeatureEnabled(name: FeatureFlagName): boolean {
   return FEATURE_FLAGS[name] === true;

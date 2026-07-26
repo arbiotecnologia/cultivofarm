@@ -21,7 +21,7 @@ import {
   type NavSection,
 } from "@/config/navigation";
 import { isNavItemActive, isNavItemActiveSelf } from "@/lib/navigation/matchActive";
-import { searchNavItems } from "@/lib/navigation/search";
+import { searchNavItems, isNavItemFeatureEnabled } from "@/lib/navigation/search";
 import { useSidebarGroupState } from "@/hooks/useSidebarGroupState";
 
 export function AppSidebar() {
@@ -48,7 +48,7 @@ export function AppSidebar() {
     return desktopItemsBySection()
       .map(({ section, items }) => ({
         section,
-        items: items.filter((it) => canAccess(role, it.route)),
+        items: items.filter((it) => canAccess(role, it.route) && isNavItemFeatureEnabled(it)),
       }))
       .filter((g) => g.items.length > 0);
   }, [role]);
@@ -120,7 +120,7 @@ export function AppSidebar() {
         {/* Fase 3.2 — renderiza filhos indentados quando existirem e a sidebar
             estiver expandida. Cada filho respeita `canAccess` do próprio route. */}
         {!collapsed && hasChildren && item.children!
-          .filter((c) => canAccess(role, c.route))
+          .filter((c) => canAccess(role, c.route) && isNavItemFeatureEnabled(c))
           .map((c) => (
             <div key={c.id}>{renderItem(c, { nested: true })}</div>
           ))}

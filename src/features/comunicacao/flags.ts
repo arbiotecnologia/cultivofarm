@@ -1,11 +1,13 @@
 /**
  * Feature flag do Módulo de Comunicação (frontend).
- * Padrão: DESLIGADO. Só liga se VITE_COMUNICACAO_MODULE_ENABLED === "true".
+ *
+ * Fonte única de verdade: `FEATURE_FLAGS.comunicacaoModule`, que por sua vez
+ * lê `import.meta.env.VITE_COMUNICACAO_MODULE_ENABLED === "true"` (default
+ * `false` quando ausente). Rota, guard, menu e qualquer consumidor devem
+ * chamar `isComunicacaoModuleEnabled()` ou `isFeatureEnabled("comunicacaoModule")`.
  */
+import { isFeatureEnabled } from "@/config/featureFlags";
+
 export function isComunicacaoModuleEnabled(): boolean {
-  try {
-    return import.meta.env?.VITE_COMUNICACAO_MODULE_ENABLED === "true";
-  } catch {
-    return false;
-  }
+  return isFeatureEnabled("comunicacaoModule");
 }
