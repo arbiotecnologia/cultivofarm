@@ -149,9 +149,9 @@ export const publishAdministrativeBroadcast = (args: {
   mensagem: string;
   idempotency_key: string;
 }) =>
-  callRpc("rpc_publish_communication_event", {
+  callRpc("rpc_publish_communication_event_v2", {
     p_event_key: "administrative_important_update",
-    p_source_type: null,
+    p_source_type: "system",
     p_source_id: null,
     p_payload: {
       target_role: args.target_role,
@@ -171,13 +171,14 @@ export const publishManualProdutoProntoAplicacao = (args: {
   os_id: string;
   idempotency_key: string;
 }) =>
-  callRpc("rpc_publish_communication_event", {
+  callRpc("rpc_publish_communication_event_v2", {
     p_event_key: "produto_pronto_aplicacao",
     p_source_type: "ordens_servico",
     p_source_id: args.os_id,
     p_payload: {},
     p_idempotency_key: args.idempotency_key,
   });
+
 
 /** Lista OS regulares para o seletor manual da aba Comunicados (admin). */
 export async function listOrdensServicoRegularesParaComunicado(
