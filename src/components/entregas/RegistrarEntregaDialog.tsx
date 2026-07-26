@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MaskedInput } from "@/components/ui/masked-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -814,11 +815,11 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
               <div className="sm:col-span-3 grid grid-cols-2 gap-3">
                 <div>
                   <Label>Telefone</Label>
-                  <Input value={destinatario.destinatario_telefone} onChange={(e) => setDestField("destinatario_telefone", e.target.value)} placeholder="(00) 00000-0000" />
+                  <MaskedInput mask="telefone" value={destinatario.destinatario_telefone} onChange={(e) => setDestField("destinatario_telefone", e.target.value)} placeholder="(00) 00000-0000" />
                 </div>
                 <div>
                   <Label>WhatsApp</Label>
-                  <Input value={destinatario.destinatario_whatsapp} onChange={(e) => setDestField("destinatario_whatsapp", e.target.value)} placeholder="(00) 00000-0000" />
+                  <MaskedInput mask="telefone" value={destinatario.destinatario_whatsapp} onChange={(e) => setDestField("destinatario_whatsapp", e.target.value)} placeholder="(00) 00000-0000" />
                 </div>
               </div>
 

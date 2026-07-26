@@ -1,47 +1,38 @@
-## Problema 1 — Seletor "Tipo de Pessoa" não fixa em Novo Produtor
+## Objetivo
+Padronizar todos os campos de telefone/WhatsApp do sistema para usar `MaskedInput mask="telefone"` (já corrigido para 10/11 dígitos), garantindo consistência de entrada e persistência apenas de dígitos.
 
-**Causa raiz confirmada** em `src/components/clientes/ClienteFormTabs.tsx` (linhas 85‑96):
+## Diagnóstico atual
 
-```ts
-useEffect(() => {
-  const digits = (cpfCnpj || "").replace(/\D/g, "");
-  if (digits.length > 11) {
-    if (tipoPessoa !== "juridica") setValue("tipo_pessoa", "juridica");
-  } else if (digits.length > 0 && digits.length <= 11) {
-    if (tipoPessoa !== "fisica") setValue("tipo_pessoa", "fisica");
-  }
-}, [cpfCnpj, setValue, tipoPessoa]);
-```
+Campos que **já usam** `MaskedInput mask="telefone"` (padrão correto):
+- `src/pages/Fazendas.tsx` — responsável local
+- `src/pages/Configuracoes.tsx` — perfil, novo usuário, edição de usuário
+- `src/pages/app/MobileSolicitar.tsx` — contato do solicitante
+- `src/pages/portal/PortalSolicitacao.tsx` — contato do solicitante
+- `src/components/clientes/ClienteFormTabs.tsx` — telefone principal + adicionais do produtor
+- `src/components/clientes/ClienteContatosTab.tsx` — contatos do cliente
+- `src/pages/configuracoes/FiscalEmpresa.tsx` — telefone fiscal (usa `Input` cru, mas com `formatTelefone`/`unmask` — funcional, ainda que fora do padrão)
 
-Fluxo do bug: usuário digita CPF parcial (ex.: 3 dígitos) → efeito força `tipo_pessoa = "fisica"`. Ao trocar manualmente no Select para "Pessoa Jurídica", o `setValue` dispara re‑render, `cpfCnpj` continua com ≤11 dígitos, o efeito reexecuta e força de volta para "fisica". A seleção manual nunca "cola".
+Campos **fora do padrão** (Input cru, sem máscara reativa):
+1. `src/components/comercial/ParceiroB2BFormDialog.tsx` L595 — `telefone_comercial`
+2. `src/components/comercial/ParceiroB2BFormDialog.tsx` L599 — `whatsapp_comercial`
+3. `src/components/entregas/RegistrarEntregaDialog.tsx` L817 — `destinatario_telefone`
+4. `src/components/entregas/RegistrarEntregaDialog.tsx` L821 — `destinatario_whatsapp`
+5. `src/components/entregas/EntregaComprovantePanel.tsx` L376 — `recebedor.telefone`
 
-**Correção** (mínima, só frontend):
-1. Remover `tipoPessoa` das dependências e usar uma `ref` para lembrar o último `cpfCnpj` já classificado, aplicando a autodetecção só quando o CNPJ/CPF **muda de fato** — e apenas em transições de faixa (≤11 ↔ >11). Assim a escolha manual do usuário é preservada enquanto o número digitado não mudar de faixa.
-2. Alternativamente (equivalente e mais simples): só autoinferir quando `digits.length === 11` (CPF completo válido em tamanho) ou `digits.length === 14` (CNPJ completo). Digitação parcial não sobrescreve mais a escolha manual. Vou usar esta abordagem — é o padrão usado em outros formulários do sistema (a autodetecção só age no valor "final").
+## Alterações propostas
 
-## Problema 2 — Busca automática por CNPJ no cadastro do Parceiro B2B
+Para cada um dos 5 pontos acima:
+- Trocar `<Input>` por `<MaskedInput mask="telefone" placeholder="(00) 00000-0000" />`.
+- Onde a persistência guarda o valor bruto (RegistrarEntregaDialog, EntregaComprovantePanel, ParceiroB2B), aplicar `unmask()` no salvamento se ainda não houver — mantendo o mesmo formato de armazenamento (somente dígitos) já usado no restante do sistema.
+- Manter os placeholders `(00) 00000-0000` já existentes.
 
-Padrão de referência já em uso em `ClienteFormTabs.handleCNPJLookup` (BrasilAPI via `src/lib/api/brasilapi.ts`, botão "Buscar dados" ao lado do CNPJ). O `ParceiroB2BFormDialog` hoje só tem o input de CNPJ, sem lookup.
-
-**Alteração** em `src/components/comercial/ParceiroB2BFormDialog.tsx`:
-- Ao lado do campo CNPJ, adicionar botão "Buscar dados (BrasilAPI)" com ícone de lupa/spinner, no mesmo estilo visual usado no ClienteFormTabs.
-- Habilitado apenas quando `validateCNPJ(cnpj)` e `unmaskCnpj(cnpj).length === 14`.
-- Ao clicar, chama `fetchCNPJ(cnpj)` e preenche apenas campos existentes no formulário do parceiro, sem tocar campos protegidos (CNPJ digitado, e‑mails, dados bancários, limite/comissão, flags, classificação):
-  - `razao_social`, `nome_fantasia`
-  - `cep`, `endereco_logradouro`, `endereco_numero`, `endereco_complemento`, `endereco_bairro`
-  - `commercial_city`, `commercial_state` (municipio/UF vindos da BrasilAPI)
-  - `telefone_comercial` (se vazio)
-- Feedback via `toast.success`/`toast.error` (padrão do arquivo, `sonner`).
-- Cooldown simples e cancelamento em unmount (`AbortController`) para não permitir cliques repetidos.
-- Sem alterar validação, schema, mutations, RLS, migrations ou regras de negócio.
+Opcional (fora de escopo desta pequena correção, listar só para transparência):
+- `FiscalEmpresa.tsx` continua funcional; poderia ser migrado depois para `MaskedInput` para uniformidade total, sem alteração de comportamento visível ao usuário.
 
 ## Validação
 - `bun run typecheck`
-- `bun run build`
-- Vitest completo (não deve haver testes cobrindo estes arquivos; se houver, mantê‑los verdes).
-- Inspeção visual em `/clientes?aba=produtores` (Novo Produtor) e no dialog do Parceiro B2B.
+- Inspeção visual rápida via Playwright nos diálogos afetados (ParceiroB2B e RegistrarEntrega) para confirmar máscara dinâmica 10→11 dígitos.
 
 ## Fora de escopo
-- Não alterar regras fiscais, edge functions, migrations, RLS ou tabelas.
-- Não substituir CNPJ digitado; nunca sobrescrever campos protegidos.
-- Não trocar a fonte para a edge function fiscal (`fiscal-cnpj-lookup`) — o padrão do cadastro comercial é a `BrasilAPI` direta, igual a Produtor.
+- Nenhuma alteração de schema, RLS, migrations ou lógica de negócio.
+- Nenhuma alteração no componente `MaskedInput` (já corrigido anteriormente).

@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { MaskedInput } from "@/components/ui/masked-input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -320,6 +321,8 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
       nome_fantasia: form.nome_fantasia?.trim() || null,
       cnpj: form.cnpj ? unmaskCnpj(form.cnpj) : null,
       observacoes: form.observacoes?.trim() || null,
+      telefone_comercial: form.telefone_comercial ? unmask(form.telefone_comercial) || null : null,
+      whatsapp_comercial: form.whatsapp_comercial ? unmask(form.whatsapp_comercial) || null : null,
       client_id: form.client_id || null,
       dados_bancarios: form.dados_bancarios
         ? (typeof form.dados_bancarios === "string"
@@ -592,11 +595,11 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
               </div>
               <div>
                 <Label>Telefone comercial</Label>
-                <Input value={form.telefone_comercial ?? ""} onChange={(e) => set("telefone_comercial", e.target.value)} />
+                <MaskedInput mask="telefone" placeholder="(00) 00000-0000" value={form.telefone_comercial ?? ""} onChange={(e) => set("telefone_comercial", e.target.value)} />
               </div>
               <div>
                 <Label>WhatsApp comercial</Label>
-                <Input value={form.whatsapp_comercial ?? ""} onChange={(e) => set("whatsapp_comercial", e.target.value)} />
+                <MaskedInput mask="telefone" placeholder="(00) 00000-0000" value={form.whatsapp_comercial ?? ""} onChange={(e) => set("whatsapp_comercial", e.target.value)} />
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
