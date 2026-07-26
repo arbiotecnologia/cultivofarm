@@ -196,3 +196,45 @@ export async function listOrdensServicoRegularesParaComunicado(
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+// ---------------- Fase 2.4 ----------------
+
+/** Verificação administrativa de canal (email/telefone) — admin somente. */
+export const verifyCommunicationChannel = (
+  args: CommunicationRpcContracts["rpc_verify_communication_channel"]["args"],
+) => callRpc("rpc_verify_communication_channel", args);
+
+/**
+ * Consulta booleans de configuração dos canais via Edge Function
+ * `communication-health`. Nunca retorna secrets — apenas configured/enabled.
+ * Requisita apenas sob demanda. Falha ou função ausente não deve quebrar UI.
+ */
+export interface CommunicationHealthResult {
+  ok: boolean;
+  fetched_at: string;
+  delivery_enabled?: boolean;
+  email?: { enabled: boolean; configured: boolean };
+  whatsapp?: { enabled: boolean; configured: boolean };
+  in_app?: { enabled: boolean; configured: boolean };
+  error?: string;
+}
+export async function fetchCommunicationHealth(): Promise<CommunicationHealthResult> {
+  const now = new Date().toISOString();
+  try {
+    const sbInvoke = (supabase as unknown as {
+      functions: {
+        invoke: (name: string, opts: { method: string; body?: unknown }) => Promise<{
+          data: unknown; error: { message?: string; status?: number } | null;
+        }>;
+      };
+    }).functions;
+    const { data, error } = await sbInvoke.invoke("communication-health", { method: "POST" });
+    if (error) {
+      return { ok: false, fetched_at: now, error: error.message ?? "invoke_error" };
+    }
+    const d = (data ?? {}) as CommunicationHealthResult;
+    return { ...d, ok: !!d.ok, fetched_at: now };
+  } catch (e) {
+    return { ok: false, fetched_at: now, error: (e as Error).message };
+  }
+}
