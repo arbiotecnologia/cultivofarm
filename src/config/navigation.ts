@@ -173,6 +173,9 @@ export const navigation: NavItem[] = [
   { id: "fiscal-perfis-servicos", label: "Perfis Fiscais — Serviços", icon: ClipboardList, route: "/configuracoes/fiscal/servicos", legacyRoutes: ["/fiscal/perfis/servicos"], section: "Administração", subSection: "Fiscal", order: 12, platforms: ["desktop"], featureFlag: "fiscalServiceProfilesUi", searchKeywords: ["perfil fiscal", "serviços", "servicos", "iss", "lc116", "cnae", "nfs-e", "nfse", "/fiscal/perfis/servicos"] },
   { id: "fiscal-perfis-clientes", label: "Perfis Fiscais — Clientes", icon: Users, route: "/configuracoes/fiscal/clientes", legacyRoutes: ["/fiscal/perfis/clientes"], section: "Administração", subSection: "Fiscal", order: 13, platforms: ["desktop"], featureFlag: "fiscalCustomerProfilesUi", searchKeywords: ["perfil fiscal", "clientes", "destinatário", "destinatario", "contribuinte", "ie", "fiscal", "/fiscal/perfis/clientes"] },
   { id: "fiscal-rascunhos", label: "Rascunhos NF-e e NFS-e", icon: FileText, route: "/fiscal/documentos", section: "Administração", subSection: "Fiscal", order: 14, platforms: ["desktop"], featureFlag: "fiscalDocumentWorkflowUi", searchKeywords: ["rascunho", "rascunhos", "nf-e", "nfe", "nfs-e", "nfse", "homologação", "homologacao", "documento fiscal", "wizard fiscal"] },
+  { id: "comunicacao-admin", label: "Comunicação", icon: Bell, route: "/comunicacao", section: "Administração", order: 20, platforms: ["desktop"], featureFlag: "comunicacaoModule", allowedRoles: ["administrador", "gestor"], searchKeywords: ["comunicação", "notificações", "templates", "regras", "outbox"] },
+
+
 
 
   // ── Mobile Consultor (tabs) ────────────────────────────────────────────────
