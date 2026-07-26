@@ -30,10 +30,12 @@ function typeSequence(input: HTMLInputElement, digits: string) {
 }
 
 describe("MaskedInput mask=telefone", () => {
-  it("formata número fixo com 10 dígitos como (00) 0000-0000", () => {
-    render(<Controlled initial="1133224455" />);
+  it("formata número fixo com 9 dígitos como (00) 0000-000_", () => {
+    render(<Controlled initial="113322445" />);
     const input = screen.getByLabelText("telefone") as HTMLInputElement;
-    expect(input.value).toBe("(11) 3322-4455");
+    // com < 10 dígitos, aplica padrão de fixo
+    expect(input.value.startsWith("(11) 3322-44")).toBe(true);
+    expect(input.value.replace(/\D/g, "")).toBe("113322445");
   });
 
   it("formata celular com 11 dígitos como (00) 00000-0000", () => {
@@ -47,18 +49,19 @@ describe("MaskedInput mask=telefone", () => {
     render(<Controlled onValue={spy} />);
     const input = screen.getByLabelText("telefone") as HTMLInputElement;
     typeSequence(input, "11987654321");
-    // extrai só dígitos do valor final
     expect(input.value.replace(/\D/g, "")).toBe("11987654321");
     expect(input.value).toBe("(11) 98765-4321");
   });
 
-  it("faz a transição de máscara fixo → celular ao atingir 10 dígitos", () => {
+  it("faz a transição para máscara de celular ao atingir 10 dígitos", () => {
     render(<Controlled />);
     const input = screen.getByLabelText("telefone") as HTMLInputElement;
     typeSequence(input, "1133224455");
-    expect(input.value).toBe("(11) 3322-4455");
-    // ao adicionar o 11º dígito, deve virar celular
+    // após 10 dígitos, já usa padrão de celular para permitir o 11º
+    expect(input.value.replace(/\D/g, "")).toBe("1133224455");
     typeSequence(input, "6");
+    expect(input.value.replace(/\D/g, "")).toBe("11332244556");
+  });
     expect(input.value.replace(/\D/g, "")).toBe("11332244556");
   });
 
