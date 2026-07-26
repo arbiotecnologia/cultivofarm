@@ -106,45 +106,11 @@ describe("comunicacao: migration structural checks", () => {
   });
 });
 
-describe("comunicacao: worker (edge function) sem rede externa", () => {
-  const src = readFileSync(
-    join(process.cwd(), "supabase/functions/process-communication-outbox/index.ts"),
-    "utf8",
-  );
+// Nota: as asserções estruturais do worker (edge function
+// process-communication-outbox) foram migradas para
+// `src/test/comunicacao/fase2.test.ts`, pois a Fase 2 substitui o worker
+// por uma versão com dispatcher de adapters (mantendo dry_run e flags OFF).
 
-  it("importa renderer compartilhado real", () => {
-    expect(src).toMatch(/from "\.\.\/_shared\/communication-render\.ts"/);
-    expect(src).toMatch(/from "\.\.\/_shared\/auth-guard\.ts"/);
-  });
-
-  it("não usa fetch/https/http de rede externa", () => {
-    // permitido: apenas usos internos via SDK do Supabase (via serviceClient).
-    // Não deve haver chamadas literais fetch(...) ou URL de webhook.
-    expect(src).not.toMatch(/\bfetch\s*\(/);
-    expect(src).not.toMatch(/https?:\/\//i);
-  });
-
-  it("não usa import suspeito npm:@supabase/supabase-js@2/cors", () => {
-    expect(src).not.toMatch(/npm:@supabase\/supabase-js@2\/cors/);
-  });
-
-  it("com DELIVERY_ENABLED=false não faz claim (dry_run)", () => {
-    expect(src).toMatch(/DELIVERY_ENABLED/);
-    expect(src).toMatch(/dry_run: true/);
-    // claim só é chamado sob delivery habilitado
-    expect(src).toMatch(/if \(!DELIVERY_ENABLED\)[\s\S]{0,200}return json/);
-  });
-
-  it("adapters retornam provider_not_configured", () => {
-    expect(src).toMatch(/provider_not_configured/);
-  });
-
-  it("autorização por Bearer JWT (service role) ou secret exato, sem substring", () => {
-    expect(src).not.toMatch(/\.includes\(/);
-    expect(src).toMatch(/secret === INTERNAL_SECRET/);
-    expect(src).toMatch(/token === SERVICE_KEY/);
-  });
-});
 
 describe("comunicacao: route guard e flag", () => {
   it("flag padrão é false", async () => {

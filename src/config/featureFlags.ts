@@ -20,7 +20,8 @@ export type FeatureFlagName =
   | "fiscalReconciliationWrite"
   | "fiscalReadinessCenterUi"
   | "fiscalEmissionEnabled"
-  | "comunicacaoModule";
+  | "comunicacaoModule"
+  | "comunicacaoBroadcastTab";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
   /** Central de Configuração Fiscal (Fase 3.15). */
@@ -48,11 +49,24 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
    * Ausente ou diferente disso ⇒ `false`. Rota, guard e menu consomem este valor.
    */
   comunicacaoModule: readComunicacaoModuleEnvFlag(),
+  /**
+   * Aba de Broadcast administrativo (Fase 2). Só aparece quando o
+   * módulo estiver habilitado E esta flag específica for `true`.
+   */
+  comunicacaoBroadcastTab: readComunicacaoBroadcastTabEnvFlag(),
 };
 
 function readComunicacaoModuleEnvFlag(): boolean {
   try {
     return import.meta.env?.VITE_COMUNICACAO_MODULE_ENABLED === "true";
+  } catch {
+    return false;
+  }
+}
+
+function readComunicacaoBroadcastTabEnvFlag(): boolean {
+  try {
+    return import.meta.env?.VITE_COMUNICACAO_BROADCAST_TAB_ENABLED === "true";
   } catch {
     return false;
   }
