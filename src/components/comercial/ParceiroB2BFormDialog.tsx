@@ -210,6 +210,37 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
     }
   };
 
+  const [loadingCNPJ, setLoadingCNPJ] = useState(false);
+  const handleCNPJLookup = async () => {
+    const raw = unmaskCnpj(form.cnpj ?? "");
+    if (raw.length !== 14 || !validateCNPJ(raw)) {
+      toast.error("Insira um CNPJ válido para buscar");
+      return;
+    }
+    setLoadingCNPJ(true);
+    try {
+      const data = await fetchCNPJ(raw);
+      setForm((f) => ({
+        ...f,
+        razao_social: data.razao_social || f.razao_social,
+        nome_fantasia: data.nome_fantasia || f.nome_fantasia || data.razao_social || null,
+        cep: data.cep || f.cep,
+        endereco_logradouro: data.logradouro || f.endereco_logradouro,
+        endereco_numero: data.numero || f.endereco_numero,
+        endereco_complemento: data.complemento || f.endereco_complemento,
+        endereco_bairro: data.bairro || f.endereco_bairro,
+        commercial_city: data.municipio || f.commercial_city,
+        commercial_state: data.uf || f.commercial_state,
+        telefone_comercial: f.telefone_comercial || data.ddd_telefone_1 || null,
+      }));
+      toast.success("Dados preenchidos via BrasilAPI. Revise antes de salvar.");
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao consultar CNPJ");
+    } finally {
+      setLoadingCNPJ(false);
+    }
+  };
+
   const handleSubmit = async () => {
     const payload: any = {
       ...form,
