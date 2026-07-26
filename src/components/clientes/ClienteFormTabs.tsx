@@ -18,6 +18,8 @@ import { AcessoPortalTab } from "./AcessoPortalTab";
 import { useCanManageClienteDocs } from "@/hooks/useCanManageClienteDocs";
 import { useAuth } from "@/hooks/useAuth";
 import { MoneyInput } from "../ui/money-input";
+import { validateIE } from "@/lib/fiscal/ie";
+
 
 interface ClienteFormTabsProps {
   clienteId?: string;
