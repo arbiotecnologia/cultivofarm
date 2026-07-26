@@ -39,7 +39,7 @@ describe("Fase 2.5 · api.ts hardening", () => {
 describe("Fase 2.5 · CanalVerificacaoPanel", () => {
   it("restringe canal a email e whatsapp (sem in_app/push)", () => {
     const idx = uiSrc.indexOf("function CanalVerificacaoPanel");
-    const block = uiSrc.slice(idx, idx + 4000);
+    const block = uiSrc.slice(idx, idx + 6000);
     expect(block).toMatch(/type CanalVerificavel = "email" \| "whatsapp"/);
     // Nenhuma <option> in_app/push dentro do painel.
     expect(block).not.toMatch(/<option[^>]*value="in_app"/);
@@ -48,7 +48,7 @@ describe("Fase 2.5 · CanalVerificacaoPanel", () => {
 
   it("canal determina as flags (mutuamente adequadas) e não há checkboxes ambíguos", () => {
     const idx = uiSrc.indexOf("function CanalVerificacaoPanel");
-    const block = uiSrc.slice(idx, idx + 4000);
+    const block = uiSrc.slice(idx, idx + 6000);
     expect(block).toMatch(/p_email_verificado:\s*canal === "email" \? true : null/);
     expect(block).toMatch(/p_telefone_verificado:\s*canal === "whatsapp" \? true : null/);
     expect(block).not.toMatch(/setEmailV/);
@@ -57,7 +57,7 @@ describe("Fase 2.5 · CanalVerificacaoPanel", () => {
 
   it("mensagem de confirmação indica canal e sujeito marcados", () => {
     const idx = uiSrc.indexOf("function CanalVerificacaoPanel");
-    const block = uiSrc.slice(idx, idx + 4000);
+    const block = uiSrc.slice(idx, idx + 6000);
     expect(block).toMatch(/marcado[\s\S]{0,20}como[\s\S]{0,20}verificado/i);
     expect(block).toMatch(/lastMarked\.canal/);
     expect(block).toMatch(/lastMarked\.id/);
@@ -65,7 +65,7 @@ describe("Fase 2.5 · CanalVerificacaoPanel", () => {
 
   it("erro não exibe message bruta", () => {
     const idx = uiSrc.indexOf("function CanalVerificacaoPanel");
-    const block = uiSrc.slice(idx, idx + 4000);
+    const block = uiSrc.slice(idx, idx + 6000);
     expect(block).not.toMatch(/mut\.error as Error\)\.message/);
     expect(block).toMatch(/Não foi possível registrar a verificação\./);
   });
@@ -81,7 +81,7 @@ describe("Fase 2.5 · CanalVerificacaoPanel", () => {
 describe("Fase 2.5 · CanalHealthPanel", () => {
   it("renderiza mensagens genéricas por código, sem message bruta", () => {
     const idx = uiSrc.indexOf("function CanalHealthPanel");
-    const block = uiSrc.slice(idx, idx + 4000);
+    const block = uiSrc.slice(idx, idx + 6000);
     expect(block).toMatch(/d\.error === "unauthorized"/);
     expect(block).toMatch(/d\.error === "function_unavailable"/);
     // Nunca imprime d.error diretamente como texto.
