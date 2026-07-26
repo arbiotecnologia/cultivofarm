@@ -13,7 +13,7 @@ import type {
   AdapterSnapshot,
   ResolvedAddress,
   WorkerEnv,
-} from "../../../supabase/functions/_shared/comunicacao/adapters.ts";
+} from "../../../supabase/functions/_shared/comunicacao/adapters-types.ts";
 
 const ROOT = process.cwd();
 const migrationSql = readFileSync(
