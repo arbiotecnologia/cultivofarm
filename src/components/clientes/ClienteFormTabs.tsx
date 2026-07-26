@@ -70,7 +70,7 @@ function MaskedField({
 }
 
 export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
-  const { register, watch, setValue, control, formState: { errors } } = useFormContext();
+  const { register, watch, setValue, control, setError, clearErrors, formState: { errors } } = useFormContext();
   const [loadingCEP, setLoadingCEP] = useState(false);
   const [loadingCNPJ, setLoadingCNPJ] = useState(false);
   const canManageDocs = useCanManageClienteDocs();
