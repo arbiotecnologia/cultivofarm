@@ -96,9 +96,8 @@ Deno.serve(async (req) => {
   }
   const downloadUrl = signed.signedUrl;
 
-  // Envio de e-mail: aguarda função send-transactional-email (não implantada ainda).
-  // Mantemos a chamada tentativa como best-effort para não quebrar quando o
-  // domínio for configurado. Failure aqui NÃO invalida a operação.
+  // Envio best-effort. `send-transactional-email` pode não estar implantada.
+  // emailSent só é true quando a função responde com sinal explícito de envio.
   let emailSent = false;
   let emailError: string | null = null;
   try {
@@ -107,7 +106,7 @@ Deno.serve(async (req) => {
       : new Date().toLocaleDateString("pt-BR");
     const idempotencyKey = `visita-pdf-${body.registroId}-${body.destinatarioEmail}`;
 
-    const { error: invokeErr } = await supabase.functions.invoke(
+    const { data: invokeData, error: invokeErr } = await supabase.functions.invoke(
       "send-transactional-email",
       {
         body: {
@@ -126,9 +125,16 @@ Deno.serve(async (req) => {
       },
     );
     if (invokeErr) {
-      emailError = invokeErr.message;
+      emailError = invokeErr.message ?? "invoke error";
+    } else if (invokeData && typeof invokeData === "object") {
+      const d = invokeData as Record<string, unknown>;
+      if (d.success === true || d.sent === true || d.status === "sent") {
+        emailSent = true;
+      } else {
+        emailError = typeof d.error === "string" ? d.error : "resposta sem sinal de envio";
+      }
     } else {
-      emailSent = true;
+      emailError = "resposta vazia da send-transactional-email";
     }
     if (body.copiaConsultorEmail) {
       await supabase.functions.invoke("send-transactional-email", {
@@ -145,7 +151,7 @@ Deno.serve(async (req) => {
             downloadUrl,
           },
         },
-      }).catch((e) => console.warn("Cópia ao consultor falhou:", e));
+      }).catch(() => {});
     }
   } catch (e) {
     emailError = e instanceof Error ? e.message : String(e);
