@@ -47,7 +47,8 @@ BEGIN
   -- RPCs presentes (nomes)
   FOREACH v_missing IN ARRAY ARRAY[
     'rpc_create_communication_template','rpc_update_communication_template',
-    'rpc_activate_communication_template','rpc_upsert_communication_rule',
+    'rpc_activate_communication_template','rpc_archive_communication_template',
+    'rpc_upsert_communication_rule',
     'rpc_publish_communication_event','rpc_update_communication_preferences',
     'rpc_verify_communication_channel',
     'rpc_claim_communication_outbox','rpc_complete_communication_delivery',
@@ -59,24 +60,57 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- Assinatura de rpc_update_communication_preferences: 3 args
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-     WHERE n.nspname='public' AND p.proname='rpc_update_communication_preferences'
-       AND pronargs = 3
-  ) THEN
-    RAISE EXCEPTION 'postcheck: rpc_update_communication_preferences deve ter 3 args (canal, enabled, whatsapp_opt_in)';
-  END IF;
+  -- Assinaturas críticas — verificação exata via pg_get_function_identity_arguments
+  -- e proibição de overloads legados (mais de 1 definição por nome).
+  DECLARE
+    r record;
+    expected text;
+    actual   text;
+  BEGIN
+    FOR r IN
+      SELECT * FROM (VALUES
+        ('rpc_create_communication_template',
+         'p_chave text, p_nome text, p_canal public.comunicacao_canal, p_assunto text, p_corpo text, p_variaveis jsonb'),
+        ('rpc_update_communication_template',
+         'p_template_id uuid, p_nome text, p_assunto text, p_corpo text, p_variaveis jsonb'),
+        ('rpc_activate_communication_template', 'p_template_id uuid'),
+        ('rpc_archive_communication_template',  'p_template_id uuid'),
+        ('rpc_upsert_communication_rule',
+         'p_rule_id uuid, p_event_key text, p_perfil public.app_role, p_estrategia text, p_canal public.comunicacao_canal, p_template_chave text, p_template_versao integer, p_condicoes jsonb, p_prioridade integer, p_enabled boolean, p_cooldown_seconds integer'),
+        ('rpc_publish_communication_event',
+         'p_event_key text, p_source_type text, p_source_id uuid, p_payload jsonb, p_idempotency_key text'),
+        ('rpc_update_communication_preferences',
+         'p_canal public.comunicacao_canal, p_enabled boolean, p_whatsapp_opt_in boolean'),
+        ('rpc_verify_communication_channel',
+         'p_user_id uuid, p_cliente_id uuid, p_canal public.comunicacao_canal, p_email_verificado boolean, p_telefone_verificado boolean'),
+        ('rpc_claim_communication_outbox',
+         'p_batch_size integer, p_worker_id text, p_lease_seconds integer'),
+        ('rpc_complete_communication_delivery',
+         'p_outbox_id uuid, p_worker_id text, p_provider_message_id text'),
+        ('rpc_fail_communication_delivery',
+         'p_outbox_id uuid, p_worker_id text, p_error_code text, p_error_message text')
+      ) AS t(fname, sig)
+    LOOP
+      expected := r.sig;
 
-  -- rpc_claim_communication_outbox deve exigir worker_id (3 args)
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-     WHERE n.nspname='public' AND p.proname='rpc_claim_communication_outbox' AND pronargs = 3
-  ) THEN
-    RAISE EXCEPTION 'postcheck: rpc_claim_communication_outbox deve ter 3 args (batch, worker_id, lease_seconds)';
-  END IF;
+      -- Overload legado: mais de uma definição para o mesmo nome é proibido.
+      IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+           WHERE n.nspname='public' AND p.proname=r.fname) <> 1 THEN
+        RAISE EXCEPTION 'postcheck: % possui overload legado conflitante (esperado 1 definição)', r.fname;
+      END IF;
 
-  -- Referências obsoletas: não deve haver função/tabela usando usuarios_cliente_produtor
+      SELECT pg_get_function_identity_arguments(p.oid) INTO actual
+        FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+       WHERE n.nspname='public' AND p.proname=r.fname;
+
+      IF actual IS DISTINCT FROM expected THEN
+        RAISE EXCEPTION 'postcheck: assinatura de % não confere.%  esperado: %%  atual:    %',
+          r.fname, chr(10), expected, chr(10), actual;
+      END IF;
+    END LOOP;
+  END;
+
+  -- Higiene: nenhuma tabela funcional usuarios_cliente_produtor deve existir.
   IF EXISTS (
     SELECT 1 FROM information_schema.tables
      WHERE table_schema='public' AND table_name='usuarios_cliente_produtor'
