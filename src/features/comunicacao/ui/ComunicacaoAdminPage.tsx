@@ -27,6 +27,8 @@ import {
   publishManualProdutoProntoAplicacao,
   listOrdensServicoRegularesParaComunicado,
   setTemplateMetadata,
+  fetchCommunicationHealth,
+  verifyCommunicationChannel,
 } from "@/features/comunicacao/api";
 
 import type {
