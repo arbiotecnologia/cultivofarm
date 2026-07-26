@@ -312,15 +312,28 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
               </div>
               <div>
                 <Label>CNPJ</Label>
-                <Input
-                  inputMode="text"
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  maxLength={18}
-                  value={formatCNPJ(form.cnpj ?? "")}
-                  onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
-                  placeholder="00.000.000/0000-00"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    inputMode="text"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    maxLength={18}
+                    value={formatCNPJ(form.cnpj ?? "")}
+                    onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
+                    placeholder="00.000.000/0000-00"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCNPJLookup}
+                    disabled={loadingCNPJ || unmaskCnpj(form.cnpj ?? "").length !== 14 || !validateCNPJ(unmaskCnpj(form.cnpj ?? ""))}
+                    title="Buscar dados públicos na BrasilAPI (revise antes de salvar)"
+                  >
+                    {loadingCNPJ ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">Buscar</span>
+                  </Button>
+                </div>
 
                 {errors.cnpj && <p className="text-xs text-destructive mt-1">{errors.cnpj}</p>}
               </div>
