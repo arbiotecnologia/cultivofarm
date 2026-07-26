@@ -49,7 +49,7 @@ export interface ComunicacaoTemplate {
   provider_template_name: string | null;
   language_code: string | null;
   parameter_mapping: ComunicacaoTemplateParameterMapping[];
-  /** Fase 2: 'draft' | 'submitted' | 'approved' | 'rejected' | 'disabled' */
+  /** Fase 2.4: 'draft' | 'pending' | 'approved' | 'rejected' | 'paused' | 'disabled' */
   provider_template_status: string | null;
   created_by: string | null;
   updated_by: string | null;
