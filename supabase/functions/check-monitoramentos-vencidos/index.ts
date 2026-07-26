@@ -50,13 +50,12 @@ Deno.serve(async (req) => {
     }>) {
       if (!mon.consultor_responsavel) continue;
 
-      // Idempotência transacional: tenta reservar via unique constraint.
+      // Idempotência transacional via unique constraint.
       const { error: reserveErr } = await supabase
         .from("monitoramento_avisos")
         .insert({ registro_consultor_id: mon.id, tipo: "vencido" });
 
       if (reserveErr) {
-        // 23505 = unique_violation -> já processado hoje
         if ((reserveErr as { code?: string }).code === "23505") {
           skipped.push(mon.id);
           continue;
@@ -65,7 +64,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Notificação interna via RPC segura (bypass RLS via service_role client).
       const { error: rpcErr } = await supabase.rpc(
         "rpc_create_notificacao_operacional",
         {
@@ -88,7 +86,6 @@ Deno.serve(async (req) => {
           .eq("status", "monitoramento");
       }
 
-      // Push best-effort; falha NÃO desfaz notificação interna.
       try {
         const resp = await fetch(
           `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-push-notification`,

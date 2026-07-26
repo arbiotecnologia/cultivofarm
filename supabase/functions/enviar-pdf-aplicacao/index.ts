@@ -84,8 +84,11 @@ Deno.serve(async (req) => {
 
   const { data: signed, error: signErr } = await supabase.storage
     .from("aplicacao-evidencias")
-    .createSignedUrl(path, 60 * 60 * 24 * 30);
-  if (signErr || !signed) return json(500, { error: "Falha ao gerar link" });
+    .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 dias (reduzido de 30)
+  if (signErr || !signed) {
+    await supabase.storage.from("aplicacao-evidencias").remove([path]).catch(() => {});
+    return json(500, { error: "Falha ao gerar link" });
+  }
   const downloadUrl = signed.signedUrl;
 
   // Nota: o registro em aplicacao_emails é feito pelo caller autenticado
