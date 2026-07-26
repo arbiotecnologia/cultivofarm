@@ -815,11 +815,11 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
               <div className="sm:col-span-3 grid grid-cols-2 gap-3">
                 <div>
                   <Label>Telefone</Label>
-                  <Input value={destinatario.destinatario_telefone} onChange={(e) => setDestField("destinatario_telefone", e.target.value)} placeholder="(00) 00000-0000" />
+                  <MaskedInput mask="telefone" value={destinatario.destinatario_telefone} onChange={(e) => setDestField("destinatario_telefone", e.target.value)} placeholder="(00) 00000-0000" />
                 </div>
                 <div>
                   <Label>WhatsApp</Label>
-                  <Input value={destinatario.destinatario_whatsapp} onChange={(e) => setDestField("destinatario_whatsapp", e.target.value)} placeholder="(00) 00000-0000" />
+                  <MaskedInput mask="telefone" value={destinatario.destinatario_whatsapp} onChange={(e) => setDestField("destinatario_whatsapp", e.target.value)} placeholder="(00) 00000-0000" />
                 </div>
               </div>
 
