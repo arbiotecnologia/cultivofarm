@@ -19,11 +19,13 @@ function generateValidIE(uf: string): string {
     RR: "24", GO: "10", TO: len === 11 ? "2901" : "29",
   };
   const forcedPrefix = prefixMap[uf] ?? "";
-  const filler = "123456789012345".slice(0, len - forcedPrefix.length - 3);
-  const base = (forcedPrefix + filler).padEnd(len - 3, "0");
-  // Brute-force last 3 digits.
-  for (let i = 0; i < 1000; i++) {
-    const suffix = String(i).padStart(3, "0");
+  // SP tem 2 DVs em posições internas: precisa brute-force maior.
+  const tailLen = uf === "SP" ? 4 : 3;
+  const filler = "123456789012345".slice(0, len - forcedPrefix.length - tailLen);
+  const base = (forcedPrefix + filler).padEnd(len - tailLen, "0");
+  const max = Math.pow(10, tailLen);
+  for (let i = 0; i < max; i++) {
+    const suffix = String(i).padStart(tailLen, "0");
     const candidate = base + suffix;
     if (candidate.length !== len) continue;
     if (validateIE(uf, candidate).ok) return candidate;
