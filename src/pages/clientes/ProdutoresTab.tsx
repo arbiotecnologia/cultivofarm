@@ -23,7 +23,7 @@ import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { ClienteFormTabs } from "@/components/clientes/ClienteFormTabs";
 import { ClienteHistoricoDialog } from "@/components/clientes/ClienteHistoricoDialog";
 
-import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento } from "@/lib/masks";
+import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento, validatePhoneBR, normalizePhoneBR } from "@/lib/masks";
 import { Link } from "react-router-dom";
 
 export default function ProdutoresTab() {
@@ -129,9 +129,21 @@ export default function ProdutoresTab() {
   useEffect(() => { fetchClientes(); }, []);
 
   const handleCreateOrUpdate = async (values: ClienteSchema) => {
-    const mainPhone = unmask(values.telefone);
-    const additionalPhones = values.telefones_adicionais?.map(t => unmask(t.value)).filter(t => t.length > 0) || [];
-    const telefonesArray = [mainPhone, ...additionalPhones].filter(t => t.length > 0);
+    // Validação e normalização dos telefones antes de qualquer persistência.
+    const mainCheck = validatePhoneBR(values.telefone, { fieldLabel: "Telefone principal" });
+    if (!mainCheck.ok) { toast.error(mainCheck.error); return; }
+    const mainPhone = mainCheck.value ?? "";
+
+    const additionalPhones: string[] = [];
+    for (const [idx, t] of (values.telefones_adicionais ?? []).entries()) {
+      const chk = validatePhoneBR(t?.value, { fieldLabel: `Telefone adicional ${idx + 1}` });
+      if (!chk.ok) { toast.error(chk.error); return; }
+      if (chk.value) additionalPhones.push(chk.value);
+    }
+    const telefonesArray = [mainPhone, ...additionalPhones].filter((t) => t.length > 0);
+
+    const financeiroCheck = validatePhoneBR(values.contato_financeiro_telefone, { fieldLabel: "Telefone financeiro" });
+    if (!financeiroCheck.ok) { toast.error(financeiroCheck.error); return; }
 
     const {
       telefones_adicionais,
@@ -151,7 +163,7 @@ export default function ProdutoresTab() {
       endereco_cep: unmask(values.endereco_cep) || null,
       cobranca_cep: unmask(values.cobranca_cep) || null,
       inscricao_estadual: unmask(values.inscricao_estadual) || null,
-      contato_financeiro_telefone: unmask(values.contato_financeiro_telefone) || null,
+      contato_financeiro_telefone: financeiroCheck.value,
     };
 
     // Strings vazias viram null para evitar erro em colunas numéricas/enums.

@@ -148,6 +148,61 @@ export const formatTelefone = (value: string | number | undefined | null): strin
 };
 
 /**
+ * Normaliza telefone brasileiro para persistência (somente dígitos).
+ * Regras:
+ *  - null / undefined / string vazia (após trim) ⇒ null (campo opcional).
+ *  - 10 dígitos (fixo com DDD) ou 11 dígitos (celular com DDD) ⇒ dígitos.
+ *  - Qualquer outro comprimento ⇒ null (inválido, deve ser barrado pela
+ *    validação; nunca persistir string parcial).
+ */
+export const normalizePhoneBR = (
+  value: string | number | null | undefined,
+): string | null => {
+  if (value === null || value === undefined) return null;
+  const digits = String(value).replace(/\D/g, "");
+  if (digits.length === 0) return null;
+  if (digits.length === 10 || digits.length === 11) return digits;
+  return null;
+};
+
+/**
+ * Valida telefone brasileiro para uso em formulários.
+ * Retorna:
+ *  - { ok: true, value: null } quando vazio (permitido em campos opcionais).
+ *  - { ok: true, value: '<dígitos>' } quando 10 ou 11 dígitos.
+ *  - { ok: false, error } com mensagem pt-BR caso contrário.
+ */
+export type PhoneValidationResult =
+  | { ok: true; value: string | null; error?: never }
+  | { ok: false; value?: never; error: string };
+
+export function validatePhoneBR(
+  value: string | number | null | undefined,
+  opts: { fieldLabel?: string; required?: boolean } = {},
+): PhoneValidationResult {
+  const fieldLabel = opts.fieldLabel ?? "Telefone";
+  const required = opts.required ?? false;
+  if (value === null || value === undefined || String(value).trim() === "") {
+    if (required) {
+      const err: PhoneValidationResult = { ok: false, error: `${fieldLabel} é obrigatório.` };
+      return err;
+    }
+    const ok: PhoneValidationResult = { ok: true, value: null };
+    return ok;
+  }
+  const digits = String(value).replace(/\D/g, "");
+  if (digits.length === 10 || digits.length === 11) {
+    const ok: PhoneValidationResult = { ok: true, value: digits };
+    return ok;
+  }
+  const err: PhoneValidationResult = {
+    ok: false,
+    error: `${fieldLabel} inválido: informe DDD + número (10 ou 11 dígitos).`,
+  };
+  return err;
+}
+
+/**
  * Formata CEP
  */
 export const formatCEP = (value: string | number | undefined | null): string => {

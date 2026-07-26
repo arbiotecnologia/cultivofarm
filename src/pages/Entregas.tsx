@@ -19,6 +19,7 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { gerarReciboEntregaPDF } from "@/lib/reciboEntregaPdf";
+import { validatePhoneBR } from "@/lib/masks";
 import { useAuth } from "@/hooks/useAuth";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmarEntregaFinanceiroDialog } from "@/components/financeiro/ConfirmarEntregaFinanceiroDialog";
@@ -412,6 +413,14 @@ export default function Entregas() {
         endereco_bairro, endereco_cidade, endereco_uf, endereco_cep, endereco_referencia } = payload;
       if (itens.length === 0) throw new Error("Nenhum item selecionado.");
 
+      // Validação/normalização de telefones antes da persistência.
+      const motCheck = validatePhoneBR(motorista_telefone, { fieldLabel: "Telefone do motorista" });
+      if (!motCheck.ok) throw new Error(motCheck.error);
+      const destCheck = validatePhoneBR(destinatario_telefone, { fieldLabel: "Telefone do destinatário" });
+      if (!destCheck.ok) throw new Error(destCheck.error);
+      const waCheck = validatePhoneBR(destinatario_whatsapp, { fieldLabel: "WhatsApp do destinatário" });
+      if (!waCheck.ok) throw new Error(waCheck.error);
+
       const osRef = (todasOS as any[]).find((o) => o.id === osId);
       const criadas: string[] = [];
       const reservasFeitas: { item: any; osId: string; osTipo: string }[] = [];
@@ -460,7 +469,7 @@ export default function Entregas() {
             motorista: motorista || null,
             veiculo: veiculo || null,
             data_saida: data_saida || null,
-            motorista_telefone: motorista_telefone || null,
+            motorista_telefone: motCheck.value,
             motorista_documento: motorista_documento || null,
             veiculo_placa: veiculo_placa || null,
             veiculo_tipo: veiculo_tipo || null,
@@ -468,8 +477,8 @@ export default function Entregas() {
             data_chegada_prevista: data_chegada_prevista || null,
             hora_chegada_prevista: hora_chegada_prevista || null,
             destinatario_nome: destinatario_nome || null,
-            destinatario_telefone: destinatario_telefone || null,
-            destinatario_whatsapp: destinatario_whatsapp || null,
+            destinatario_telefone: destCheck.value,
+            destinatario_whatsapp: waCheck.value,
             endereco_origem: endereco_origem || 'cadastro',
             endereco_logradouro: endereco_logradouro || null,
             endereco_numero: endereco_numero || null,
