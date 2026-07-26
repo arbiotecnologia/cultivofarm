@@ -1,81 +1,88 @@
-# Comunicação — FASE 0.2 (Relatório)
+# Comunicação Fase 0.2 — Relatório da revisão bloqueante
 
-Data: 26/07/2026
-Escopo: hardening final de callers frontend e artefatos de migration para
-`notificacoes_operacionais`, `portal_notificacoes`, `aplicacao_emails`,
-`monitoramento_avisos` + Edge Functions correspondentes.
+Status: **NÃO APTO PARA STAGING** (bloqueado pelo teste (c) do arquivo
+`src/test/comunicacao/fase02-static.test.ts` — casts `(supabase.rpc as any)`
+para as 3 RPCs canônicas ainda existem em 5 arquivos porque `src/integrations/supabase/types.ts`
+só pode ser regenerado após a migration ser aplicada em staging).
 
-## Parecer
-**PACOTE PRONTO PARA STAGING** — código do repositório limpo de INSERTs
-diretos nas 3 tabelas restritas, todas as escritas passam por RPC. Aplicação
-da migration em `supabase/migrations/` continua sendo passo humano
-(a pasta é gerenciada pelo fluxo oficial). Enquanto a migration não estiver
-registrada no histórico, ela **NÃO é canônica**.
+## 1. Defeitos corrigidos nesta rodada
 
-## Inventário de tipos `notificacoes_operacionais.tipo`
-Sem whitelist estreita. A RPC `rpc_create_notificacao_operacional` valida
-autorização e limita conteúdo (título ≤200, mensagem ≤2000, link interno),
-mas aceita QUALQUER string de tipo para não quebrar consumidores. Tipos
-observados em migrations/frontend/Edge Functions:
+1. **rpc_create_notificacao_operacional** — autorização por evento.
+   Substituída a checagem genérica de "papel operacional" por whitelist
+   server-side em `restoration/comunicacao-fase02/migration.sql`:
+   - `retorno_programado`, `visita_finalizada`, `pre_os_gerada`,
+     `recomendacao_liberada`, `recomendacao_aprovada`: caller precisa ser o
+     `consultor_responsavel` do `registros_consultor` referenciado por
+     `source_id`; `usuario_id` = próprio caller.
+   - `aprovacao_urgente`, `aprovacao_recomendacao`: caller precisa ser
+     `consultor_responsavel` do registro; destino precisa ser gestor
+     efetivo (`has_role`); um registro por gestor.
+   - `monitoramento_vencido`, `os_atrasada`: **reservados ao service_role**.
+     Chamadas de `authenticated` retornam `insufficient_privilege`.
+   - `informativo`/`sistema`: caller = destinatário e `source_type` obrigatório.
+2. **rpc_create_portal_notification_secure** — par obrigatório e vínculo
+   caller→origem→cliente:
+   - `_source_type` e `_source_id` são **obrigatórios juntos**; whitelist
+     restrita a `registros_consultor`, `ordens_servico`, `aplicacoes`,
+     `portal_solicitacoes`.
+   - Valida que a origem pertence ao `_cliente_id` (cross-client → erro).
+   - Valida que o caller tem vínculo com a origem
+     (consultor responsável, gestor, administrador, administrativo, aplicador
+     via `aplicacoes.responsavel_id`), impedindo staff sem escopo de
+     notificar clientes arbitrários.
+   - `_tipo` ∈ enum `tipo_notificacao_portal`.
+3. **check-monitoramentos-vencidos** — refeita como
+   `rpc_check_monitoramento_and_notify(uuid)`, transacional:
+   verifica vencimento, insere `monitoramento_avisos` e cria a notificação
+   operacional dentro da MESMA transação. Se qualquer passo falhar, tudo é
+   revertido. A Edge Function passou a chamar essa RPC por registro; push é
+   best-effort pós-commit e nunca reverte o aviso.
+4. **RLS** — precheck reformulado (`precheck.sql`) enumera *todas* as
+   `pg_policies` por comando (`ALL/INSERT/UPDATE/DELETE/SELECT`) para as
+   4 tabelas alvo, com `roles`, `using` e `with_check`, além dos `GRANTs`.
+   `postcheck.sql` falha se sobrar policy `INSERT/DELETE/ALL` permissiva
+   nas 3 tabelas restritas.
+5. **aplicacao_emails** — RPC valida que o e-mail pertence ao caller/aplicador
+   ou ao cliente da OS ligada à aplicação; permite bypass apenas para
+   `administrador`/`gestor`/`administrativo`. Idempotência por
+   `idempotency_key`; evolução monotônica de status (`queued` →
+   `link_generated_no_send`/`sent` → `failed`/`bounced`).
+6. **enviar-pdf-aplicacao** — falha do RPC agora retorna **500** com corpo
+   `{ error }` e remove o objeto de storage subido (best-effort). Nunca mais
+   retorna `200 { success:true }` mascarando erro de contabilização.
+7. **Teste estático (c)** — marca honestamente o pacote como
+   `NÃO APTO PARA STAGING` enquanto o cast `(supabase.rpc as any)` existir
+   para as 3 RPCs canônicas.
 
-`alerta, informativo, recomendacao, sistema, sla, erro, retorno_programado,
-confirmacao_retorno, aprovacao_urgente, aprovacao_recomendacao,
-urgencia_critica, nova_solicitacao, nova_reserva, nova_demanda_producao,
-simulacao_enviada, b2b_payment_terms, b2b_payment_terms_pending, pedido_b2b,
-pedido_b2b_novo, pedido_b2b_aprovado, pedido_b2b_reprovado,
-pedido_b2b_previsao, pedido_b2b_itens_pendentes, em_producao, produzido,
-entregue, remarcacao_solicitada, confirmada, critica, nova_confirmacao`.
+## 2. Estado das validações locais
 
-## Inventário de tipos `portal_notificacoes` (enum)
-`informativo, alerta, entrega, recomendacao, aplicacao, sistema`. Valores
-`visita` e `os` **não existem** e foram removidos do frontend (VisitaTecnica
-agora usa `recomendacao`).
+| Validação                    | Resultado |
+| ---------------------------- | --------- |
+| `bunx tsgo --noEmit`         | ✅ verde  |
+| `bun run build`              | ✅ verde  |
+| `bunx vitest run src/test/comunicacao/` | ❌ 1 falha intencional em (c) — bloqueia certificação até regeneração de types |
+| Migration aplicada em DB     | ❌ **não aplicada** — pacote reside apenas em `restoration/` |
+| Harness RLS em staging       | ❌ **não executado** — requer service_role em staging e substituição de UUIDs |
 
-## Callers refatorados nesta fase
-| Arquivo | Alteração |
-|---|---|
-| `src/components/aplicacao/AplicacaoCard.tsx` | Removido INSERT direto em `aplicacao_emails`. Registro passa a ser gravado server-side pela Edge Function `enviar-pdf-aplicacao` via `rpc_record_aplicacao_email`, com status real (`sent`/`failed`/`link_generated_no_send`). |
-| `src/pages/VisitaTecnica.tsx` | 3 INSERTs diretos em `notificacoes_operacionais` substituídos por `rpc_create_notificacao_operacional`, incluindo `source_type/source_id/idempotency_key`. Chamada de portal corrigida: `_tipo: "visita"` → `_tipo: "recomendacao"`. |
-| `supabase/functions/enviar-pdf-aplicacao/index.ts` | Reescrito para: (a) parar de registrar `aplicacao_emails` diretamente; (b) usar `rpc_record_aplicacao_email` com `idempotencyKey` determinístico (sem `Date.now`); (c) só marcar `emailSent=true` quando `send-transactional-email` responder com sinal explícito de sucesso; (d) chave inclui data (YYYY-MM-DD) para idempotência estável. |
-| `supabase/functions/enviar-pdf-visita/index.ts` | `emailSent` só marca true quando resposta traz `success/sent/status=sent`. Sem falsa marca de envio. |
-| `src/test/comunicacao/fase02-static.test.ts` | Novo teste estático que falha CI se: (a) INSERT direto em `notificacoes_operacionais`/`portal_notificacoes`/`aplicacao_emails`; (b) uso de tipo `visita`/`os` em `rpc_create_portal_notification_secure`; (c) alguma RPC canônica ausente do código. |
+## 3. Como sair de "NÃO APTO"
 
-Callers **já compatíveis** (deixados como estão): `FluxoTecnico.tsx`,
-`AplicacaoFormDialog.tsx`, `MobileAplicacoes.tsx` já usavam
-`rpc_create_portal_notification_secure`. `MobileNotificacoes.tsx` só faz
-SELECT/UPDATE, permitido pela policy.
+1. Aplicar `restoration/comunicacao-fase02/migration.sql` em staging via
+   fluxo oficial (`supabase/migrations/...`) — passos no `runbook.md`.
+2. Rodar `precheck.sql` → `postcheck.sql` → `harness-rls.sql` (com UUIDs
+   reais).
+3. Regenerar `src/integrations/supabase/types.ts` (`supabase gen types
+   typescript --linked --schema public`).
+4. Remover os 5 casts `(supabase.rpc as any)` em:
+   `src/components/aplicacao/AplicacaoFormDialog.tsx`,
+   `src/pages/FluxoTecnico.tsx`,
+   `src/pages/VisitaTecnica.tsx` (3 ocorrências),
+   `src/pages/app/MobileAplicacoes.tsx`.
+5. Rodar novamente typecheck + build + `vitest run src/test/comunicacao/`.
+   O teste (c) precisa passar.
 
-## Artefatos de migration (propostos, NÃO canônicos)
-- `restoration/comunicacao-fase02/migration.sql` (696 linhas) — aditivo, idempotente.
-- `restoration/comunicacao-fase02/precheck.sql` — preconditions + snapshot de policies/grants.
-- `restoration/comunicacao-fase02/postcheck.sql` — valida invariantes após aplicação.
-- `restoration/comunicacao-fase02/harness-rls.sql` — matriz RLS/RPC com fixtures parametrizáveis.
-- `restoration/comunicacao-fase02/runbook.md` — passo a passo com regeneração de types.
-- `restoration/comunicacao-fase02/rollback.sql` — remove apenas as adições; NÃO restaura policies vulneráveis.
+## 4. Escopo NÃO tocado nesta fase (por design)
 
-## Validações executadas
-| Comando | Resultado |
-|---|---|
-| `bunx tsgo --noEmit` | ✅ passou |
-| `bun run build` | ✅ 34.40s |
-| `bunx vitest run src/test/comunicacao/` | ✅ 3/3 |
-| `bunx vitest run` (suíte completa) | ✅ 2089 passed / 1 skipped na execução observada; 1 falha preexistente em teste de import dinâmico de `PortalAcompanhamento` (não relacionada a esta fase). |
-
-`rg` de INSERTs diretos residuais nas 3 tabelas em `src/`: **0**.
-
-## Pendências externas (fora do escopo do agente)
-1. Copiar `restoration/comunicacao-fase02/migration.sql` para
-   `supabase/migrations/20260810000000_comunicacao_fase02_hardening.sql`
-   em commit humano e aplicar via `supabase db push` em staging.
-2. Executar `precheck.sql` → migration → `postcheck.sql` → `harness-rls.sql`.
-3. Regenerar `src/integrations/supabase/types.ts` para eliminar os
-   `(supabase.rpc as any)`. O teste estático continuará verde; a limpeza
-   dos `as any` é cosmética até que os types incluam as novas RPCs.
-4. Configurar cron externo de `check-monitoramentos-vencidos` com
-   `x-internal-secret`.
-5. Implantar `send-transactional-email` — enquanto ausente, o registro
-   final é `link_generated_no_send`, nunca `sent`.
-
-## Não avançar para Fase 1
-Este pacote encerra a Fase 0.2. UI do novo módulo, envio real de e-mail,
-push e cron produtivo permanecem desativados.
+- Rotas, dependências, permissões (`app_role`), enums existentes,
+  componentes de UI não relacionados a notificação.
+- Envios reais (SMS/e-mail transacional/push): permanecem desativados até a
+  fase seguinte.
