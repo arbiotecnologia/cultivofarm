@@ -1,37 +1,28 @@
 -- =============================================================================
--- Comunicação — Fase 1 · Fundação (PROPOSTA — v2, corretiva)
+-- Comunicação — Fase 1 · Fundação (PROPOSTA — v3 corretiva)
 -- Arquivo: restoration/comunicacao-fase1/migration.sql
 -- Estado: NÃO APLICADO. Aplicar apenas em staging após Fase 0.2 aplicada.
 --
--- Correções v2 (respondendo à revisão do commit 3d4f3dc9):
---   1. rpc_publish_communication_event expande transacionalmente para outbox
---      (regras enabled, template ativo/versão fixa, destinatários server-side,
---       snapshot imutável, idempotency_key determinística, evento processed/failed).
---   2. Autorização por evento restrita:
---        - Fase 1: publicação manual só administrador.
---        - produto_pronto_retirada: exige o.status = 'pronto_entrega' (exato).
---        - produto_pronto_aplicacao: sem mapeamento de status comprovado no
---          enum status_os_onfarm — permanece manual/admin.
---        - administrative_important_update: perfil-alvo whitelisted e apenas
---          usuários ativos daquele app_role.
---   3. comunicacao_preferencias: XOR estrito user_id/cliente_id;
---      email_verificado/telefone_verificado só por RPC administrativa
---      (verify_communication_channel). Consent (enabled/whatsapp opt) separado.
---      Cliente portal somente via has_role + get_cliente_ids_for_user.
---   4. rpc_claim_communication_outbox: usa p_lease_seconds, reclama processing
---      expirado, valida batch/worker/lease, retorna linhas atualizadas.
---   5. complete/fail exigem p_worker_id e validam locked_by/lease.
---   6. Renderização compartilhada permanece no worker (supabase/functions/_shared).
---   7. UI real (rota/guard/CRUD) fora deste artefato.
---   8. types.ts atualizado manualmente no repositório.
---   9. Audit log: before/after reais, actor server-side, tamanhos limitados,
---      helper NÃO executável por authenticated; trigger permite transições ativas
---      (ativação/arquivamento) e proíbe apenas alteração de conteúdo em active.
---  10. Testes de comportamento no repositório: state machine, expansão de outbox,
---      opt-out, RLS por papel, ausência de rede.
+-- Correções v3 (revisão do commit a58b3352):
+--   1. Joins profiles.user_id = user_roles.user_id (coluna correta).
+--   2. administrative_important_update: seleção de regras exige
+--      perfil = target_role E estrategia = 'broadcast_role' (dedup natural).
+--   3. Payload dos eventos de OS: whitelist vazia. Todos os dados vêm do banco
+--      (numero_os, data_programada, nome do destinatário). Snapshot per-recipient.
+--   4. by_role em eventos de OS: escopa por cliente da OS via profiles.cliente_id.
+--      broadcast_role NÃO permitido para eventos de OS nesta fase.
+--      source_participants: cliente + users com profiles.cliente_id = OS.cliente_id.
+--   5. Atomicidade total: falha na expansão faz rollback do evento e outbox
+--      (sem "status=failed" fantasma). Erro sanitizado retornado no RAISE.
+--   6. Contagem via GET DIAGNOSTICS ROW_COUNT (não depende de FOUND).
+--   7. Verificação de canal (email/telefone) segue só por administrador; usuário
+--      controla apenas consent/opt-in.
+--   8. Preferências XOR user_id vs cliente_id. Cliente portal via
+--      get_cliente_ids_for_user.
+--   9. Worker: lease/reclaim/worker_id (inalterado da v2).
 --
--- Convenções: schema public, RLS ligada, RPCs SECURITY DEFINER, search_path fixo,
--- revoke anon, grants mínimos. Idempotente e transacional (BEGIN/COMMIT).
+-- Convenções: schema public, RLS ligada, RPCs SECURITY DEFINER,
+-- search_path fixo, revoke anon, grants mínimos. Idempotente + transacional.
 -- =============================================================================
 
 BEGIN;
@@ -51,7 +42,8 @@ BEGIN
     CREATE TYPE public.comunicacao_outbox_status AS ENUM ('pending','processing','sent','failed','cancelled','skipped','dead_letter');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'comunicacao_evento_status') THEN
-    CREATE TYPE public.comunicacao_evento_status AS ENUM ('received','processed','skipped','failed');
+    -- Não usamos 'failed' aqui: falha na expansão faz rollback do evento inteiro.
+    CREATE TYPE public.comunicacao_evento_status AS ENUM ('received','processed','skipped');
   END IF;
 END$$;
 
@@ -84,17 +76,12 @@ CREATE TABLE IF NOT EXISTS public.comunicacao_templates (
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_comunicacao_templates_chave_canal_versao
   ON public.comunicacao_templates (chave, canal, versao);
-
 CREATE UNIQUE INDEX IF NOT EXISTS ux_comunicacao_templates_active_por_chave_canal
   ON public.comunicacao_templates (chave, canal)
   WHERE status = 'active';
 
--- Trigger: em 'active', bloqueia mudança de conteúdo; permite transição de status
--- (active -> archived) e atualização de timestamps/updated_by/archived_at.
 CREATE OR REPLACE FUNCTION public.comunicacao_templates_guard_immutable()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
+RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.status = 'active' THEN
     IF (NEW.corpo, NEW.assunto, NEW.variaveis, NEW.canal, NEW.chave, NEW.versao, NEW.locale)
@@ -141,12 +128,11 @@ CREATE TABLE IF NOT EXISTS public.comunicacao_regras (
   CONSTRAINT comunicacao_regras_cooldown_chk CHECK (cooldown_seconds BETWEEN 0 AND 604800),
   CONSTRAINT comunicacao_regras_condicoes_obj CHECK (jsonb_typeof(condicoes) = 'object' AND length(condicoes::text) <= 8000)
 );
-
 CREATE INDEX IF NOT EXISTS ix_comunicacao_regras_event_enabled
   ON public.comunicacao_regras (event_key, enabled);
 
 -- -----------------------------------------------------------------------------
--- 3. Eventos
+-- 3. Eventos (sem status=failed: falhas fazem rollback)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.comunicacao_eventos (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -159,17 +145,14 @@ CREATE TABLE IF NOT EXISTS public.comunicacao_eventos (
   idempotency_key   text NOT NULL,
   status            public.comunicacao_evento_status NOT NULL DEFAULT 'received',
   processed_at      timestamptz,
-  processing_error  text,
   outbox_enqueued   integer NOT NULL DEFAULT 0,
   outbox_skipped    integer NOT NULL DEFAULT 0,
   created_at        timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT comunicacao_eventos_event_chk CHECK (length(event_key) BETWEEN 3 AND 100),
   CONSTRAINT comunicacao_eventos_payload_obj CHECK (jsonb_typeof(payload) = 'object' AND length(payload::text) <= 8000),
   CONSTRAINT comunicacao_eventos_idem_chk CHECK (length(idempotency_key) BETWEEN 8 AND 200),
-  CONSTRAINT comunicacao_eventos_error_chk CHECK (processing_error IS NULL OR length(processing_error) <= 2000),
   CONSTRAINT comunicacao_eventos_counts_chk CHECK (outbox_enqueued >= 0 AND outbox_skipped >= 0)
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS ux_comunicacao_eventos_idem
   ON public.comunicacao_eventos (idempotency_key);
 CREATE INDEX IF NOT EXISTS ix_comunicacao_eventos_event_time
@@ -218,7 +201,6 @@ CREATE TABLE IF NOT EXISTS public.comunicacao_outbox (
   ),
   CONSTRAINT comunicacao_outbox_worker_chk CHECK (locked_by IS NULL OR length(locked_by) BETWEEN 1 AND 80)
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS ux_comunicacao_outbox_idem
   ON public.comunicacao_outbox (idempotency_key);
 CREATE INDEX IF NOT EXISTS ix_comunicacao_outbox_worker
@@ -230,14 +212,13 @@ CREATE INDEX IF NOT EXISTS ix_comunicacao_outbox_event
 CREATE OR REPLACE FUNCTION public.comunicacao_outbox_touch()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN NEW.updated_at := now(); RETURN NEW; END$$;
-
 DROP TRIGGER IF EXISTS trg_comunicacao_outbox_touch ON public.comunicacao_outbox;
 CREATE TRIGGER trg_comunicacao_outbox_touch
   BEFORE UPDATE ON public.comunicacao_outbox
   FOR EACH ROW EXECUTE FUNCTION public.comunicacao_outbox_touch();
 
 -- -----------------------------------------------------------------------------
--- 5. Preferências — XOR estrito, verificação separada de consentimento
+-- 5. Preferências — XOR, consent vs verificação separada
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.comunicacao_preferencias (
   id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -259,13 +240,11 @@ CREATE TABLE IF NOT EXISTS public.comunicacao_preferencias (
   CONSTRAINT comunicacao_preferencias_source_chk
     CHECK (source IN ('user','cliente_portal','admin','system'))
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS ux_comunicacao_preferencias_user_canal
   ON public.comunicacao_preferencias (user_id, canal) WHERE user_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_comunicacao_preferencias_cliente_canal
   ON public.comunicacao_preferencias (cliente_id, canal) WHERE cliente_id IS NOT NULL;
 
--- Histórico de opt-in/out (LGPD). Append-only.
 CREATE TABLE IF NOT EXISTS public.comunicacao_consent_log (
   id            bigserial PRIMARY KEY,
   user_id       uuid,
@@ -293,7 +272,7 @@ CREATE TRIGGER trg_comunicacao_consent_noupd
   FOR EACH ROW EXECUTE FUNCTION public.comunicacao_consent_no_mutation();
 
 -- -----------------------------------------------------------------------------
--- 6. Audit log — append-only, actor server-side
+-- 6. Audit log — append-only
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.comunicacao_audit_log (
   id            bigserial PRIMARY KEY,
@@ -314,10 +293,7 @@ CREATE INDEX IF NOT EXISTS ix_comunicacao_audit_entidade_time
 
 CREATE OR REPLACE FUNCTION public.comunicacao_audit_no_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'comunicacao_audit_log é append-only' USING ERRCODE = 'insufficient_privilege';
-END$$;
-
+BEGIN RAISE EXCEPTION 'comunicacao_audit_log é append-only' USING ERRCODE = 'insufficient_privilege'; END$$;
 DROP TRIGGER IF EXISTS trg_comunicacao_audit_noupd ON public.comunicacao_audit_log;
 CREATE TRIGGER trg_comunicacao_audit_noupd
   BEFORE UPDATE OR DELETE ON public.comunicacao_audit_log
@@ -339,6 +315,10 @@ GRANT SELECT ON public.comunicacao_templates,
                 public.comunicacao_regras,
                 public.comunicacao_preferencias
        TO authenticated;
+GRANT SELECT ON public.comunicacao_eventos,
+                public.comunicacao_outbox,
+                public.comunicacao_audit_log
+       TO authenticated; -- RLS restringe a administrador
 GRANT ALL ON public.comunicacao_templates,
              public.comunicacao_regras,
              public.comunicacao_eventos,
@@ -398,27 +378,20 @@ CREATE POLICY "comunicacao_consent_select_admin"
   USING (public.has_role(auth.uid(),'administrador'));
 
 -- -----------------------------------------------------------------------------
--- 8. Helpers internos — actor server-side, sem execução por authenticated
+-- 8. Helpers internos — actor server-side
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public._comunicacao_write_audit(
-  _acao text, _entidade text, _entity_id uuid,
-  _before jsonb, _after jsonb
+  _acao text, _entidade text, _entity_id uuid, _before jsonb, _after jsonb
 ) RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   INSERT INTO public.comunicacao_audit_log(acao, entidade, entity_id, actor_id, before_state, after_state)
-  VALUES (_acao, _entidade, _entity_id, auth.uid(),
-          CASE WHEN _before IS NULL THEN NULL ELSE _before END,
-          CASE WHEN _after  IS NULL THEN NULL ELSE _after  END);
+  VALUES (_acao, _entidade, _entity_id, auth.uid(), _before, _after);
 END$$;
 REVOKE ALL ON FUNCTION public._comunicacao_write_audit(text,text,uuid,jsonb,jsonb) FROM PUBLIC, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public._comunicacao_write_consent(
-  _user_id uuid, _cliente_id uuid, _canal public.comunicacao_canal,
-  _acao text, _source text
+  _user_id uuid, _cliente_id uuid, _canal public.comunicacao_canal, _acao text, _source text
 ) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
@@ -428,7 +401,7 @@ END$$;
 REVOKE ALL ON FUNCTION public._comunicacao_write_consent(uuid,uuid,public.comunicacao_canal,text,text) FROM PUBLIC, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
--- 9. RPCs: Templates (create/update/activate/archive)
+-- 9. RPCs: Templates
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.rpc_create_communication_template(
   p_chave text, p_nome text, p_canal public.comunicacao_canal,
@@ -443,19 +416,15 @@ BEGIN
   IF jsonb_typeof(p_variaveis) <> 'array' THEN
     RAISE EXCEPTION 'variaveis deve ser array JSON';
   END IF;
-
   SELECT COALESCE(MAX(versao),0) + 1 INTO v_versao
     FROM public.comunicacao_templates
    WHERE chave = p_chave AND canal = p_canal;
-
   INSERT INTO public.comunicacao_templates(chave,nome,canal,versao,status,assunto,corpo,variaveis,created_by,updated_by)
   VALUES (p_chave,p_nome,p_canal,v_versao,'draft',p_assunto,p_corpo,p_variaveis,auth.uid(),auth.uid())
   RETURNING id INTO v_id;
-
   PERFORM public._comunicacao_write_audit(
     'template.create','comunicacao_templates',v_id, NULL,
     jsonb_build_object('chave',p_chave,'canal',p_canal,'versao',v_versao,'nome',p_nome));
-
   RETURN jsonb_build_object('ok',true,'template_id',v_id,'versao',v_versao);
 END$$;
 REVOKE ALL ON FUNCTION public.rpc_create_communication_template(text,text,public.comunicacao_canal,text,text,jsonb) FROM PUBLIC, anon;
@@ -502,7 +471,6 @@ BEGIN
   SELECT * INTO r FROM public.comunicacao_templates WHERE id = p_template_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'template não encontrado'; END IF;
   IF r.status = 'archived' THEN RAISE EXCEPTION 'template arquivado'; END IF;
-
   SELECT * INTO prev FROM public.comunicacao_templates
     WHERE chave = r.chave AND canal = r.canal AND status = 'active' AND id <> r.id
     FOR UPDATE;
@@ -515,11 +483,9 @@ BEGIN
       to_jsonb(prev),
       jsonb_build_object('archived_by_activation_of', p_template_id));
   END IF;
-
   UPDATE public.comunicacao_templates
      SET status = 'active', updated_by = auth.uid()
    WHERE id = p_template_id;
-
   PERFORM public._comunicacao_write_audit(
     'template.activate','comunicacao_templates',p_template_id,
     to_jsonb(r),
@@ -555,7 +521,7 @@ REVOKE ALL ON FUNCTION public.rpc_archive_communication_template(uuid) FROM PUBL
 GRANT EXECUTE ON FUNCTION public.rpc_archive_communication_template(uuid) TO authenticated;
 
 -- -----------------------------------------------------------------------------
--- 10. RPC: Regras
+-- 10. RPC: Regras (com validação de compatibilidade)
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.rpc_upsert_communication_rule(
   p_rule_id uuid, p_event_key text, p_perfil public.app_role,
@@ -572,6 +538,34 @@ BEGIN
   IF p_event_key NOT IN ('produto_pronto_retirada','produto_pronto_aplicacao','administrative_important_update') THEN
     RAISE EXCEPTION 'event_key não permitido nesta fase: %', p_event_key;
   END IF;
+  IF COALESCE(p_estrategia,'by_role') NOT IN ('by_role','source_participants','broadcast_role') THEN
+    RAISE EXCEPTION 'estrategia inválida: %', p_estrategia;
+  END IF;
+
+  -- Compatibilidade evento × estratégia
+  IF p_event_key IN ('produto_pronto_retirada','produto_pronto_aplicacao')
+     AND COALESCE(p_estrategia,'by_role') = 'broadcast_role' THEN
+    RAISE EXCEPTION 'broadcast_role não permitido para eventos de OS nesta fase';
+  END IF;
+  IF p_event_key = 'administrative_important_update' THEN
+    IF COALESCE(p_estrategia,'by_role') <> 'broadcast_role' THEN
+      RAISE EXCEPTION 'administrative_important_update exige estrategia = broadcast_role';
+    END IF;
+    IF p_perfil IS NULL THEN
+      RAISE EXCEPTION 'administrative_important_update exige perfil na regra (target_role)';
+    END IF;
+  END IF;
+
+  -- Template existe (draft/active/archived — a resolução em runtime é que decide)
+  IF NOT EXISTS (
+    SELECT 1 FROM public.comunicacao_templates
+     WHERE chave = p_template_chave AND canal = p_canal
+       AND (p_template_versao IS NULL OR versao = p_template_versao)
+  ) THEN
+    RAISE EXCEPTION 'template % (canal=%, versao=%) inexistente',
+      p_template_chave, p_canal, COALESCE(p_template_versao::text,'active');
+  END IF;
+
   IF p_rule_id IS NULL THEN
     INSERT INTO public.comunicacao_regras(event_key,perfil,estrategia,canal,template_chave,template_versao,
       condicoes,prioridade,enabled,cooldown_seconds,created_by,updated_by)
@@ -581,7 +575,7 @@ BEGIN
     RETURNING id INTO v_id;
     PERFORM public._comunicacao_write_audit(
       'rule.create','comunicacao_regras',v_id, NULL,
-      jsonb_build_object('event_key',p_event_key,'canal',p_canal,'template_chave',p_template_chave));
+      (SELECT to_jsonb(r) FROM public.comunicacao_regras r WHERE r.id = v_id));
   ELSE
     SELECT * INTO prev FROM public.comunicacao_regras WHERE id = p_rule_id FOR UPDATE;
     IF NOT FOUND THEN RAISE EXCEPTION 'regra não encontrada'; END IF;
@@ -604,10 +598,8 @@ REVOKE ALL ON FUNCTION public.rpc_upsert_communication_rule(uuid,text,public.app
 GRANT EXECUTE ON FUNCTION public.rpc_upsert_communication_rule(uuid,text,public.app_role,text,public.comunicacao_canal,text,integer,jsonb,integer,boolean,integer) TO authenticated;
 
 -- -----------------------------------------------------------------------------
--- 11. Helpers internos de expansão (server-side)
+-- 11. Helpers de expansão
 -- -----------------------------------------------------------------------------
-
--- Resolve template ativo (ou versão fixa), retorna registro completo.
 CREATE OR REPLACE FUNCTION public._comunicacao_resolve_template(
   _chave text, _canal public.comunicacao_canal, _versao integer
 ) RETURNS public.comunicacao_templates
@@ -616,18 +608,15 @@ DECLARE r public.comunicacao_templates%rowtype;
 BEGIN
   IF _versao IS NULL THEN
     SELECT * INTO r FROM public.comunicacao_templates
-     WHERE chave = _chave AND canal = _canal AND status = 'active'
-     LIMIT 1;
+     WHERE chave = _chave AND canal = _canal AND status = 'active' LIMIT 1;
   ELSE
     SELECT * INTO r FROM public.comunicacao_templates
-     WHERE chave = _chave AND canal = _canal AND versao = _versao
-     LIMIT 1;
+     WHERE chave = _chave AND canal = _canal AND versao = _versao LIMIT 1;
   END IF;
-  RETURN r; -- pode ser NULL row
+  RETURN r;
 END$$;
 REVOKE ALL ON FUNCTION public._comunicacao_resolve_template(text,public.comunicacao_canal,integer) FROM PUBLIC, anon, authenticated;
 
--- Verifica se o destinatário permite envio no canal (preferência + verificação).
 CREATE OR REPLACE FUNCTION public._comunicacao_can_deliver(
   _user_id uuid, _cliente_id uuid, _canal public.comunicacao_canal
 ) RETURNS boolean
@@ -635,91 +624,135 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE p public.comunicacao_preferencias%rowtype;
 BEGIN
   IF _user_id IS NOT NULL THEN
-    SELECT * INTO p FROM public.comunicacao_preferencias
-      WHERE user_id = _user_id AND canal = _canal;
+    SELECT * INTO p FROM public.comunicacao_preferencias WHERE user_id = _user_id AND canal = _canal;
   ELSIF _cliente_id IS NOT NULL THEN
-    SELECT * INTO p FROM public.comunicacao_preferencias
-      WHERE cliente_id = _cliente_id AND canal = _canal;
+    SELECT * INTO p FROM public.comunicacao_preferencias WHERE cliente_id = _cliente_id AND canal = _canal;
   ELSE
     RETURN false;
   END IF;
-  -- Padrão: enabled=true, verificações false. In_app não requer verificação.
-  IF _canal = 'in_app' THEN
-    RETURN COALESCE(p.enabled, true);
-  END IF;
+  IF _canal = 'in_app' THEN RETURN COALESCE(p.enabled, true); END IF;
   IF NOT COALESCE(p.enabled, true) THEN RETURN false; END IF;
   IF _canal = 'whatsapp' AND p.whatsapp_opt_out_at IS NOT NULL THEN RETURN false; END IF;
   IF _canal = 'whatsapp' AND (p.whatsapp_opt_in_at IS NULL OR NOT COALESCE(p.telefone_verificado,false)) THEN
     RETURN false;
   END IF;
-  IF _canal = 'email' AND NOT COALESCE(p.email_verificado,false) THEN
-    RETURN false;
-  END IF;
+  IF _canal = 'email' AND NOT COALESCE(p.email_verificado,false) THEN RETURN false; END IF;
   IF _canal = 'push' AND _user_id IS NULL THEN RETURN false; END IF;
   RETURN true;
 END$$;
 REVOKE ALL ON FUNCTION public._comunicacao_can_deliver(uuid,uuid,public.comunicacao_canal) FROM PUBLIC, anon, authenticated;
 
--- Resolve destinatários por regra + evento. Retorna set de (user_id, cliente_id).
+-- Resolve destinatários por regra + evento.
+-- OS events:
+--   source_participants → (cliente + users com profiles.cliente_id = os.cliente_id, ativo)
+--   by_role             → users com rule.perfil E profiles.cliente_id = os.cliente_id, ativo
+--   broadcast_role      → NÃO permitido para OS events (rejeitado no upsert e ignorado aqui).
+-- administrative_important_update: SEMPRE broadcast_role; rule.perfil = target_role já
+--   validado; retornar todos os users ativos com esse role.
 CREATE OR REPLACE FUNCTION public._comunicacao_resolve_recipients(
-  _event_key text, _rule public.comunicacao_regras, _payload jsonb, _source_id uuid
+  _event_key text, _rule public.comunicacao_regras, _source_id uuid
 ) RETURNS TABLE (recipient_user_id uuid, recipient_cliente_id uuid)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  v_perfil_alvo public.app_role;
-  v_os_cliente uuid;
+DECLARE v_os_cliente uuid;
 BEGIN
   IF _event_key = 'administrative_important_update' THEN
-    -- Payload restrito: {"target_role":"<app_role>"} — apenas usuários ativos.
-    BEGIN
-      v_perfil_alvo := (_payload ->> 'target_role')::public.app_role;
-    EXCEPTION WHEN others THEN
-      RAISE EXCEPTION 'target_role inválido';
-    END;
-    IF v_perfil_alvo IS NULL THEN
-      RAISE EXCEPTION 'target_role requerido';
+    IF _rule.estrategia <> 'broadcast_role' OR _rule.perfil IS NULL THEN
+      RETURN;
     END IF;
     RETURN QUERY
-      SELECT ur.user_id, NULL::uuid
+      SELECT DISTINCT pr.user_id, NULL::uuid
         FROM public.user_roles ur
-        JOIN public.profiles pr ON pr.id = ur.user_id
-       WHERE ur.role = v_perfil_alvo
+        JOIN public.profiles pr ON pr.user_id = ur.user_id
+       WHERE ur.role = _rule.perfil
          AND COALESCE(pr.ativo, true) = true;
     RETURN;
   END IF;
 
   IF _event_key IN ('produto_pronto_retirada','produto_pronto_aplicacao') THEN
-    -- Cliente da OS
     SELECT o.cliente_id INTO v_os_cliente
       FROM public.ordens_servico o WHERE o.id = _source_id;
     IF v_os_cliente IS NULL THEN RETURN; END IF;
 
-    IF COALESCE(_rule.estrategia,'by_role') = 'source_participants' THEN
-      -- Cliente + usuários vinculados ao cliente_produtor
+    IF _rule.estrategia = 'source_participants' THEN
       RETURN QUERY
-        SELECT NULL::uuid, v_os_cliente
+        SELECT NULL::uuid AS recipient_user_id, v_os_cliente AS recipient_cliente_id
         UNION
-        SELECT ucp.user_id, NULL::uuid
-          FROM public.usuarios_cliente_produtor ucp
-         WHERE ucp.cliente_id = v_os_cliente;
+        SELECT DISTINCT pr.user_id, NULL::uuid
+          FROM public.profiles pr
+         WHERE pr.cliente_id = v_os_cliente
+           AND COALESCE(pr.ativo, true) = true;
       RETURN;
-    ELSE
-      -- by_role: usuários ativos com o perfil
+    ELSIF _rule.estrategia = 'by_role' THEN
       IF _rule.perfil IS NULL THEN RETURN; END IF;
       RETURN QUERY
-        SELECT ur.user_id, NULL::uuid
+        SELECT DISTINCT pr.user_id, NULL::uuid
           FROM public.user_roles ur
-          JOIN public.profiles pr ON pr.id = ur.user_id
+          JOIN public.profiles pr ON pr.user_id = ur.user_id
          WHERE ur.role = _rule.perfil
-           AND COALESCE(pr.ativo,true) = true;
+           AND pr.cliente_id = v_os_cliente
+           AND COALESCE(pr.ativo, true) = true;
+      RETURN;
+    ELSE
+      -- broadcast_role em OS event: bloqueado. Nada retornado.
       RETURN;
     END IF;
   END IF;
 END$$;
-REVOKE ALL ON FUNCTION public._comunicacao_resolve_recipients(text,public.comunicacao_regras,jsonb,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public._comunicacao_resolve_recipients(text,public.comunicacao_regras,uuid) FROM PUBLIC, anon, authenticated;
+
+-- Snapshot per-recipient com dados derivados do banco.
+-- Nunca aceita valores de negócio do payload — apenas contexto do evento.
+CREATE OR REPLACE FUNCTION public._comunicacao_build_snapshot(
+  _event_key text, _source_id uuid, _payload jsonb,
+  _user_id uuid, _cliente_id uuid
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_codigo_os text;
+  v_data_prevista text;
+  v_nome_dest text;
+  v_titulo text;
+  v_mensagem text;
+  v_target_role text;
+BEGIN
+  IF _user_id IS NOT NULL THEN
+    SELECT nome INTO v_nome_dest FROM public.profiles WHERE user_id = _user_id LIMIT 1;
+  ELSIF _cliente_id IS NOT NULL THEN
+    SELECT nome INTO v_nome_dest FROM public.clientes WHERE id = _cliente_id LIMIT 1;
+  END IF;
+
+  IF _event_key IN ('produto_pronto_retirada','produto_pronto_aplicacao') THEN
+    SELECT o.numero_os,
+           to_char(o.data_programada, 'DD/MM/YYYY')
+      INTO v_codigo_os, v_data_prevista
+      FROM public.ordens_servico o WHERE o.id = _source_id;
+    RETURN jsonb_build_object(
+      'nome_destinatario', COALESCE(v_nome_dest,''),
+      'codigo_os', COALESCE(v_codigo_os,''),
+      'data_prevista', COALESCE(v_data_prevista,'')
+    );
+  END IF;
+
+  IF _event_key = 'administrative_important_update' THEN
+    v_titulo := left(COALESCE(_payload ->> 'titulo',''), 200);
+    v_mensagem := left(COALESCE(_payload ->> 'mensagem',''), 2000);
+    v_target_role := _payload ->> 'target_role';
+    RETURN jsonb_build_object(
+      'nome_destinatario', COALESCE(v_nome_dest,''),
+      'titulo', v_titulo,
+      'mensagem', v_mensagem,
+      'target_role', COALESCE(v_target_role,'')
+    );
+  END IF;
+
+  RETURN '{}'::jsonb;
+END$$;
+REVOKE ALL ON FUNCTION public._comunicacao_build_snapshot(text,uuid,jsonb,uuid,uuid) FROM PUBLIC, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- 12. RPC: Publicar evento COM EXPANSÃO TRANSACIONAL PARA OUTBOX
+--   Atomicidade total: qualquer falha durante a expansão faz rollback do evento
+--   e da outbox. Nenhum registro "failed" é persistido.
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.rpc_publish_communication_event(
   p_event_key text, p_source_type text, p_source_id uuid,
@@ -728,7 +761,6 @@ CREATE OR REPLACE FUNCTION public.rpc_publish_communication_event(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_event_id uuid;
-  v_duplicated boolean := false;
   v_rule public.comunicacao_regras%rowtype;
   v_tpl  public.comunicacao_templates%rowtype;
   v_rec  record;
@@ -737,62 +769,64 @@ DECLARE
   v_idem_out text;
   v_enq int := 0;
   v_skp int := 0;
-  v_key_whitelist text[];
+  v_row int := 0;
+  v_target_role public.app_role;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'autenticação requerida' USING ERRCODE = 'insufficient_privilege';
   END IF;
-
-  -- Whitelist rígida (Fase 1)
   IF p_event_key NOT IN ('produto_pronto_retirada','produto_pronto_aplicacao','administrative_important_update') THEN
     RAISE EXCEPTION 'event_key não permitido nesta fase: %', p_event_key;
   END IF;
   IF jsonb_typeof(p_payload) <> 'object' THEN
     RAISE EXCEPTION 'payload deve ser objeto JSON';
   END IF;
-  IF length(p_payload::text) > 4000 THEN
-    RAISE EXCEPTION 'payload excede 4000 chars';
-  END IF;
-
-  -- Autorização por evento — Fase 1: publicação MANUAL só administrador.
-  -- Eventos de OS futuramente virão de trigger/RPC ligada à transição de status.
+  -- Fase 1: publicação manual só administrador.
   IF NOT public.has_role(auth.uid(),'administrador') THEN
     RAISE EXCEPTION 'apenas administrador pode publicar eventos nesta fase (manual)'
       USING ERRCODE = 'insufficient_privilege';
   END IF;
 
-  -- Validação de source/status por event_key
-  IF p_event_key = 'produto_pronto_retirada' THEN
+  -- Whitelist rígida de payload por event_key.
+  IF p_event_key IN ('produto_pronto_retirada','produto_pronto_aplicacao') THEN
+    -- Nenhuma chave aceita no payload: todos os campos são derivados do banco.
+    IF (SELECT count(*) FROM jsonb_object_keys(p_payload)) > 0 THEN
+      RAISE EXCEPTION 'payload não aceita chaves para %; dados são derivados do banco', p_event_key;
+    END IF;
     IF p_source_type <> 'ordens_servico' OR p_source_id IS NULL THEN
       RAISE EXCEPTION 'source ordens_servico/id requerido';
     END IF;
-    IF NOT EXISTS (
-      SELECT 1 FROM public.ordens_servico o
-       WHERE o.id = p_source_id AND o.status = 'pronto_entrega'
-    ) THEN
-      RAISE EXCEPTION 'ordens_servico não está em pronto_entrega';
-    END IF;
-
-  ELSIF p_event_key = 'produto_pronto_aplicacao' THEN
-    -- IMPORTANTE: não há status equivalente comprovado no enum status_os_onfarm.
-    -- Fase 1: aceita apenas publicação manual admin, source OS obrigatório e existente.
-    IF p_source_type <> 'ordens_servico' OR p_source_id IS NULL THEN
-      RAISE EXCEPTION 'source ordens_servico/id requerido';
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM public.ordens_servico o WHERE o.id = p_source_id) THEN
-      RAISE EXCEPTION 'ordem_servico inexistente';
+    IF p_event_key = 'produto_pronto_retirada' THEN
+      IF NOT EXISTS (
+        SELECT 1 FROM public.ordens_servico o
+         WHERE o.id = p_source_id AND o.status = 'pronto_entrega'
+      ) THEN
+        RAISE EXCEPTION 'ordens_servico não está em pronto_entrega';
+      END IF;
+    ELSE
+      -- produto_pronto_aplicacao: sem status equivalente comprovado.
+      -- Aceita apenas publicação manual admin com OS existente.
+      IF NOT EXISTS (SELECT 1 FROM public.ordens_servico o WHERE o.id = p_source_id) THEN
+        RAISE EXCEPTION 'ordem_servico inexistente';
+      END IF;
     END IF;
 
   ELSIF p_event_key = 'administrative_important_update' THEN
-    -- Payload whitelist estrita
-    v_key_whitelist := ARRAY['target_role','titulo','mensagem'];
-    PERFORM 1 FROM jsonb_object_keys(p_payload) k WHERE NOT (k = ANY(v_key_whitelist));
-    IF FOUND THEN
+    -- Whitelist estrita.
+    IF EXISTS (
+      SELECT 1 FROM jsonb_object_keys(p_payload) k
+       WHERE k NOT IN ('target_role','titulo','mensagem')
+    ) THEN
       RAISE EXCEPTION 'chaves de payload não permitidas para administrative_important_update';
     END IF;
     IF p_payload ->> 'target_role' IS NULL THEN
       RAISE EXCEPTION 'target_role obrigatório';
     END IF;
+    BEGIN
+      v_target_role := (p_payload ->> 'target_role')::public.app_role;
+    EXCEPTION WHEN others THEN
+      RAISE EXCEPTION 'target_role inválido (não é app_role): %', p_payload ->> 'target_role';
+    END;
     IF length(COALESCE(p_payload->>'titulo','')) > 200 THEN
       RAISE EXCEPTION 'titulo excede 200 chars';
     END IF;
@@ -809,83 +843,72 @@ BEGIN
 
   IF v_event_id IS NULL THEN
     SELECT id INTO v_event_id FROM public.comunicacao_eventos WHERE idempotency_key = p_idempotency_key;
-    v_duplicated := true;
     RETURN jsonb_build_object('ok',true,'event_id',v_event_id,'duplicated',true);
   END IF;
 
-  -- Expansão transacional: regras enabled -> template -> destinatários -> outbox
-  BEGIN
-    FOR v_rule IN
-      SELECT * FROM public.comunicacao_regras
-       WHERE event_key = p_event_key AND enabled = true
-       ORDER BY prioridade ASC
+  -- Expansão. Falhas propagam e derrubam a transação inteira (sem estado fantasma).
+  FOR v_rule IN
+    SELECT * FROM public.comunicacao_regras
+     WHERE event_key = p_event_key
+       AND enabled = true
+       AND (
+         p_event_key <> 'administrative_important_update'
+         OR (estrategia = 'broadcast_role' AND perfil = v_target_role)
+       )
+     ORDER BY prioridade ASC
+  LOOP
+    v_tpl := public._comunicacao_resolve_template(v_rule.template_chave, v_rule.canal, v_rule.template_versao);
+    IF v_tpl.id IS NULL OR v_tpl.canal <> v_rule.canal THEN
+      v_skp := v_skp + 1;
+      CONTINUE;
+    END IF;
+
+    v_snapshot := jsonb_build_object(
+      'assunto', v_tpl.assunto,
+      'corpo',   v_tpl.corpo,
+      'variaveis', v_tpl.variaveis,
+      'canal',   v_tpl.canal,
+      'locale',  v_tpl.locale
+    );
+
+    FOR v_rec IN
+      SELECT * FROM public._comunicacao_resolve_recipients(p_event_key, v_rule, p_source_id)
     LOOP
-      v_tpl := public._comunicacao_resolve_template(v_rule.template_chave, v_rule.canal, v_rule.template_versao);
-      IF v_tpl.id IS NULL THEN
-        v_skp := v_skp + 1;
-        CONTINUE;
-      END IF;
-      IF v_tpl.canal <> v_rule.canal THEN
+      IF NOT public._comunicacao_can_deliver(v_rec.recipient_user_id, v_rec.recipient_cliente_id, v_rule.canal) THEN
         v_skp := v_skp + 1;
         CONTINUE;
       END IF;
 
-      v_snapshot := jsonb_build_object(
-        'assunto', v_tpl.assunto,
-        'corpo', v_tpl.corpo,
-        'variaveis', v_tpl.variaveis,
-        'canal', v_tpl.canal,
-        'locale', v_tpl.locale
-      );
-      v_payload_snapshot := jsonb_build_object(
-        'event_key', p_event_key,
-        'source_type', p_source_type,
-        'source_id', p_source_id,
-        'payload', p_payload
+      v_payload_snapshot := public._comunicacao_build_snapshot(
+        p_event_key, p_source_id, p_payload,
+        v_rec.recipient_user_id, v_rec.recipient_cliente_id
       );
 
-      FOR v_rec IN
-        SELECT * FROM public._comunicacao_resolve_recipients(p_event_key, v_rule, p_payload, p_source_id)
-      LOOP
-        -- Preferência/opt-in do destinatário
-        IF NOT public._comunicacao_can_deliver(v_rec.recipient_user_id, v_rec.recipient_cliente_id, v_rule.canal) THEN
-          v_skp := v_skp + 1;
-          CONTINUE;
-        END IF;
+      v_idem_out := encode(digest(
+        concat_ws('|', v_event_id::text, v_rule.id::text, v_tpl.id::text,
+                  COALESCE(v_rec.recipient_user_id::text,''),
+                  COALESCE(v_rec.recipient_cliente_id::text,'')),
+        'sha256'), 'hex');
 
-        v_idem_out := encode(digest(
-          concat_ws('|', v_event_id::text, v_rule.id::text, v_tpl.id::text,
-                    COALESCE(v_rec.recipient_user_id::text,''),
-                    COALESCE(v_rec.recipient_cliente_id::text,'')),
-          'sha256'), 'hex');
+      INSERT INTO public.comunicacao_outbox(
+        event_id, rule_id, template_id, template_chave, template_versao,
+        template_snapshot, canal, recipient_user_id, recipient_cliente_id,
+        payload_snapshot, idempotency_key)
+      VALUES (
+        v_event_id, v_rule.id, v_tpl.id, v_tpl.chave, v_tpl.versao,
+        v_snapshot, v_rule.canal, v_rec.recipient_user_id, v_rec.recipient_cliente_id,
+        v_payload_snapshot, v_idem_out)
+      ON CONFLICT (idempotency_key) DO NOTHING;
 
-        INSERT INTO public.comunicacao_outbox(
-          event_id, rule_id, template_id, template_chave, template_versao,
-          template_snapshot, canal, recipient_user_id, recipient_cliente_id,
-          payload_snapshot, idempotency_key)
-        VALUES (
-          v_event_id, v_rule.id, v_tpl.id, v_tpl.chave, v_tpl.versao,
-          v_snapshot, v_rule.canal, v_rec.recipient_user_id, v_rec.recipient_cliente_id,
-          v_payload_snapshot, v_idem_out)
-        ON CONFLICT (idempotency_key) DO NOTHING;
-
-        IF FOUND THEN v_enq := v_enq + 1; ELSE v_skp := v_skp + 1; END IF;
-      END LOOP;
+      GET DIAGNOSTICS v_row = ROW_COUNT;
+      IF v_row = 1 THEN v_enq := v_enq + 1; ELSE v_skp := v_skp + 1; END IF;
     END LOOP;
+  END LOOP;
 
-    UPDATE public.comunicacao_eventos
-       SET status = 'processed', processed_at = now(),
-           outbox_enqueued = v_enq, outbox_skipped = v_skp
-     WHERE id = v_event_id;
-
-  EXCEPTION WHEN others THEN
-    -- Marca evento como failed com erro sanitizado; expansão anterior faz rollback pela transação externa
-    UPDATE public.comunicacao_eventos
-       SET status = 'failed', processed_at = now(),
-           processing_error = left(regexp_replace(SQLERRM, '\s+', ' ', 'g'), 2000)
-     WHERE id = v_event_id;
-    RAISE;
-  END;
+  UPDATE public.comunicacao_eventos
+     SET status = 'processed', processed_at = now(),
+         outbox_enqueued = v_enq, outbox_skipped = v_skp
+   WHERE id = v_event_id;
 
   PERFORM public._comunicacao_write_audit(
     'event.publish','comunicacao_eventos',v_event_id, NULL,
@@ -899,22 +922,17 @@ REVOKE ALL ON FUNCTION public.rpc_publish_communication_event(text,text,uuid,jso
 GRANT EXECUTE ON FUNCTION public.rpc_publish_communication_event(text,text,uuid,jsonb,text) TO authenticated;
 
 -- -----------------------------------------------------------------------------
--- 13. RPC: Preferências — consent (usuário) vs verificação (admin)
+-- 13. RPCs: Preferências (consent) e Verificação (admin)
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.rpc_update_communication_preferences(
-  p_canal public.comunicacao_canal,
-  p_enabled boolean,
-  p_whatsapp_opt_in boolean
+  p_canal public.comunicacao_canal, p_enabled boolean, p_whatsapp_opt_in boolean
 ) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  v_uid uuid := auth.uid();
-  v_prev public.comunicacao_preferencias%rowtype;
+DECLARE v_uid uuid := auth.uid(); v_prev public.comunicacao_preferencias%rowtype;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'autenticação requerida' USING ERRCODE = 'insufficient_privilege';
   END IF;
-
   SELECT * INTO v_prev FROM public.comunicacao_preferencias
     WHERE user_id = v_uid AND canal = p_canal;
 
@@ -932,7 +950,6 @@ BEGIN
                                    ELSE public.comunicacao_preferencias.whatsapp_opt_out_at END,
         updated_at = now();
 
-  -- Log LGPD: opt-out prevalece
   IF p_whatsapp_opt_in IS FALSE THEN
     PERFORM public._comunicacao_write_consent(v_uid, NULL, p_canal, 'opt_out','user');
   ELSIF p_whatsapp_opt_in IS TRUE THEN
@@ -950,7 +967,6 @@ END$$;
 REVOKE ALL ON FUNCTION public.rpc_update_communication_preferences(public.comunicacao_canal,boolean,boolean) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_update_communication_preferences(public.comunicacao_canal,boolean,boolean) TO authenticated;
 
--- Verificação (email/telefone): apenas service_role ou administrador com evidência externa.
 CREATE OR REPLACE FUNCTION public.rpc_verify_communication_channel(
   p_user_id uuid, p_cliente_id uuid, p_canal public.comunicacao_canal,
   p_email_verificado boolean, p_telefone_verificado boolean
@@ -964,16 +980,16 @@ BEGIN
   IF (p_user_id IS NOT NULL) = (p_cliente_id IS NOT NULL) THEN
     RAISE EXCEPTION 'informe exatamente um: user_id ou cliente_id';
   END IF;
-  INSERT INTO public.comunicacao_preferencias(user_id, cliente_id, canal, enabled,
-     email_verificado, telefone_verificado, source)
-  VALUES (p_user_id, p_cliente_id, p_canal, true,
-     COALESCE(p_email_verificado,false), COALESCE(p_telefone_verificado,false), 'admin')
-  ON CONFLICT (user_id, canal) WHERE user_id IS NOT NULL DO UPDATE
-     SET email_verificado = COALESCE(p_email_verificado, public.comunicacao_preferencias.email_verificado),
-         telefone_verificado = COALESCE(p_telefone_verificado, public.comunicacao_preferencias.telefone_verificado),
-         updated_at = now();
-  -- (cliente_id path segue índice único correspondente)
-  IF p_cliente_id IS NOT NULL THEN
+  IF p_user_id IS NOT NULL THEN
+    INSERT INTO public.comunicacao_preferencias(user_id, canal, enabled,
+       email_verificado, telefone_verificado, source)
+    VALUES (p_user_id, p_canal, true,
+       COALESCE(p_email_verificado,false), COALESCE(p_telefone_verificado,false), 'admin')
+    ON CONFLICT (user_id, canal) WHERE user_id IS NOT NULL DO UPDATE
+       SET email_verificado = COALESCE(p_email_verificado, public.comunicacao_preferencias.email_verificado),
+           telefone_verificado = COALESCE(p_telefone_verificado, public.comunicacao_preferencias.telefone_verificado),
+           updated_at = now();
+  ELSE
     INSERT INTO public.comunicacao_preferencias(cliente_id, canal, enabled,
        email_verificado, telefone_verificado, source)
     VALUES (p_cliente_id, p_canal, true,
@@ -1009,7 +1025,6 @@ DECLARE
 BEGIN
   v_role := COALESCE(current_setting('request.jwt.claims', true)::jsonb ->> 'role', session_user);
   IF v_role IS NOT NULL AND v_role NOT IN ('service_role') AND current_user <> 'service_role' THEN
-    -- Barreira dupla: GRANT já bloqueia authenticated/anon; aqui apenas defense-in-depth.
     RAISE EXCEPTION 'apenas service_role pode reivindicar itens da outbox' USING ERRCODE = 'insufficient_privilege';
   END IF;
   IF v_worker IS NULL OR length(v_worker) > 80 THEN
@@ -1066,7 +1081,6 @@ BEGIN
   IF r.lease_expires_at IS NOT NULL AND r.lease_expires_at < now() THEN
     RAISE EXCEPTION 'lease expirado';
   END IF;
-
   UPDATE public.comunicacao_outbox
      SET status = 'sent', sent_at = now(),
          provider_message_id = p_provider_message_id,
@@ -1095,7 +1109,6 @@ BEGIN
   IF r.locked_by IS DISTINCT FROM p_worker_id THEN
     RAISE EXCEPTION 'lease pertence a outro worker';
   END IF;
-
   IF r.attempts >= r.max_attempts THEN
     UPDATE public.comunicacao_outbox
        SET status = 'dead_letter', error_code = left(COALESCE(p_error_code,''),80),
@@ -1104,7 +1117,6 @@ BEGIN
      WHERE id = p_outbox_id;
     RETURN jsonb_build_object('ok',true,'status','dead_letter');
   END IF;
-
   v_backoff := LEAST(3600, POWER(2, r.attempts)::int * 30);
   UPDATE public.comunicacao_outbox
      SET status = 'pending',
@@ -1121,5 +1133,5 @@ GRANT EXECUTE ON FUNCTION public.rpc_fail_communication_delivery(uuid,text,text,
 COMMIT;
 
 -- =============================================================================
--- Fim da migration Fase 1 v2 (proposta)
+-- Fim da migration Fase 1 v3 (proposta)
 -- =============================================================================
