@@ -163,7 +163,7 @@ const baseEnv = (over: Partial<WorkerEnv> = {}): WorkerEnv => ({
   SMTP_FROM: "no-reply@example.com",
   WHATSAPP_ACCESS_TOKEN: "TEST_TOKEN",
   WHATSAPP_PHONE_NUMBER_ID: "1234567890",
-  WHATSAPP_API_VERSION: "v20.0",
+  WHATSAPP_API_VERSION: "v25.0",
   ...over,
 });
 
@@ -223,7 +223,7 @@ describe("whatsapp-adapter: envio simulado (fetch mock)", () => {
     );
     expect(r.outcome).toBe("sent");
     expect(r.provider_message_id).toBe("wamid.XYZ");
-    expect(capturedUrl).toContain("/v20.0/1234567890/messages");
+    expect(capturedUrl).toContain("/v25.0/1234567890/messages");
     // "to" sem "+"
     expect((capturedBody as { to: string }).to).toBe("5511998877665");
     const params = ((capturedBody as {
@@ -390,5 +390,128 @@ describe("fase2 flags", () => {
   it("comunicacaoBroadcastTab default é false", async () => {
     const mod = await import("@/features/comunicacao/flags");
     expect(mod.isComunicacaoBroadcastTabEnabled()).toBe(false);
+  });
+});
+
+// -------------- WhatsApp API version allowlist (v25/v24) --------------
+
+import {
+  isWhatsappConfigValid,
+  healthBooleans,
+  WHATSAPP_API_VERSION_ALLOWLIST,
+} from "../../../supabase/functions/_shared/comunicacao/adapters-types.ts";
+
+describe("whatsapp allowlist de versões (jul/2026)", () => {
+  it("allowlist contém exatamente v24.0 e v25.0", () => {
+    expect([...WHATSAPP_API_VERSION_ALLOWLIST]).toEqual(["v24.0", "v25.0"]);
+  });
+
+  it("config ausente (WHATSAPP_API_VERSION undefined) é rejeitada", () => {
+    expect(isWhatsappConfigValid(baseEnv({ WHATSAPP_API_VERSION: undefined }))).toBe(false);
+    const h = healthBooleans(baseEnv({ WHATSAPP_API_VERSION: undefined }));
+    expect(h.whatsapp.configured).toBe(false);
+  });
+
+  it("versões antigas v20/v21/v22 são rejeitadas", () => {
+    for (const v of ["v20.0", "v21.0", "v22.0"]) {
+      expect(isWhatsappConfigValid(baseEnv({ WHATSAPP_API_VERSION: v }))).toBe(false);
+    }
+  });
+
+  it("versões v24.0 e v25.0 são aceitas", () => {
+    for (const v of ["v24.0", "v25.0"]) {
+      expect(isWhatsappConfigValid(baseEnv({ WHATSAPP_API_VERSION: v }))).toBe(true);
+      expect(healthBooleans(baseEnv({ WHATSAPP_API_VERSION: v })).whatsapp.configured).toBe(true);
+    }
+  });
+
+  it("version arbitrária (ex.: v99.0, latest, banana) é rejeitada", () => {
+    for (const v of ["v99.0", "latest", "banana", "v25", "25.0", ""]) {
+      expect(isWhatsappConfigValid(baseEnv({ WHATSAPP_API_VERSION: v }))).toBe(false);
+    }
+  });
+
+  it("sendWhatsapp retorna provider_not_configured quando versão fora da allowlist", async () => {
+    const r = await sendWhatsapp(
+      baseEnv({ WHATSAPP_API_VERSION: "v20.0" }),
+      resolvedWA(), waSnap, { corpo: "x" }, { nome: "a", codigo: "b" },
+    );
+    expect(r.outcome).toBe("provider_not_configured");
+    expect(r.code).toBe("whatsapp_config_invalid");
+  });
+
+  it("adapters.ts não injeta default silencioso para WHATSAPP_API_VERSION", () => {
+    const src = readFileSync(
+      join(ROOT, "supabase/functions/_shared/comunicacao/adapters.ts"),
+      "utf8",
+    );
+    // Deve ler apenas g("WHATSAPP_API_VERSION"), sem ?? "vXX.0"
+    expect(src).toMatch(/WHATSAPP_API_VERSION:\s*g\("WHATSAPP_API_VERSION"\)\s*,/);
+    expect(src).not.toMatch(/WHATSAPP_API_VERSION[^\n]*\?\?\s*"v/);
+  });
+});
+
+// ----------------- Runbook coerente com Fase 2 v2 -----------------
+
+describe("runbook fase 2 v2 (contratual: barra v1/stale)", () => {
+  const runbook = readFileSync(
+    join(ROOT, "restoration/comunicacao-fase2/runbook.md"),
+    "utf8",
+  );
+
+  it("cita as RPCs v2 canônicas com assinaturas exatas", () => {
+    const required = [
+      "rpc_set_communication_template_metadata(uuid, text, text, jsonb, text)",
+      "rpc_defer_communication_delivery(uuid, text, text, integer)",
+      "rpc_fail_communication_delivery_v2(uuid, text, text, text, boolean)",
+      "rpc_dispatch_inapp_notification(uuid, uuid, uuid, text, text)",
+      "rpc_resolve_outbox_address(uuid)",
+      "rpc_skip_communication_delivery(uuid, text, text)",
+      "rpc_cancel_communication_delivery(uuid, text, text)",
+    ];
+    for (const sig of required) {
+      expect(runbook, `runbook sem ${sig}`).toContain(sig);
+    }
+  });
+
+  it("mapa de outcomes usa rpc_defer para provider_not_configured/deferred", () => {
+    expect(runbook).toMatch(/provider_not_configured[^\n]*rpc_defer_communication_delivery/i);
+    expect(runbook).toMatch(/deferred[^\n]*rpc_defer_communication_delivery/i);
+    expect(runbook).toMatch(/invalid_recipient[^\n]*rpc_cancel_communication_delivery/i);
+    expect(runbook).toMatch(/opt_out[^\n]*rpc_skip_communication_delivery/i);
+    expect(runbook).toMatch(/permanent_error[^\n]*rpc_fail_communication_delivery_v2[^\n]*is_permanent=true/i);
+    expect(runbook).toMatch(/transient_error[^\n]*rpc_fail_communication_delivery_v2[^\n]*is_permanent=false/i);
+  });
+
+  it("declara WHATSAPP_API_VERSION obrigatório e allowlist v24/v25", () => {
+    expect(runbook).toMatch(/WHATSAPP_API_VERSION[^\n]*obrigat[óo]ri/i);
+    expect(runbook).toContain("v24.0");
+    expect(runbook).toContain("v25.0");
+    expect(runbook).not.toMatch(/default seguro/i);
+  });
+
+  it("in_app principal via rpc_dispatch_inapp_notification(outbox_id)", () => {
+    expect(runbook).toMatch(/rpc_dispatch_inapp_notification/);
+    expect(runbook).toMatch(/outbox_id/);
+  });
+
+  it("rollback NÃO promete restaurar _comunicacao_build_snapshot", () => {
+    expect(runbook).not.toMatch(/restaura[^\n]*_comunicacao_build_snapshot/i);
+  });
+
+  it("proíbe termos v1/stale (metadata 4 args, default v20/v21/v22)", () => {
+    expect(runbook).not.toMatch(/rpc_set_communication_template_metadata\(uuid,\s*text,\s*text,\s*jsonb\)/);
+    expect(runbook).not.toMatch(/\bv20\.0\b/);
+    expect(runbook).not.toMatch(/\bv21\.0\b/);
+    expect(runbook).not.toMatch(/\bv22\.0\b/);
+    // fail (v1) só deve aparecer no contexto histórico da Fase 1
+    expect(runbook).not.toMatch(/rpc_fail_communication_delivery\(uuid,text,text,text\)/);
+  });
+
+  it("cita source-aware, payload_snapshot direto e datas regular/onfarm", () => {
+    expect(runbook).toMatch(/source[- ]aware|source_type/i);
+    expect(runbook).toMatch(/payload_snapshot/);
+    expect(runbook).toMatch(/data_programada/);
+    expect(runbook).toMatch(/data_recomendada/);
   });
 });

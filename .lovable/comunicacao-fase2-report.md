@@ -74,8 +74,10 @@ e nunca ecoam PII no retorno.
   `AdapterResult/Outcome/Snapshot/Deps`, `WorkerEnv`, `healthBooleans()`.
 - `adapters.ts` (Deno-side) — reexporta os tipos + `readWorkerEnv()`.
 - `email-adapter.ts` — SMTP via `denomailer` (import dinâmico com specifier
-  variável para não vazar em Node), timeout 20s por **race real**, classifica
-  timeout/network/5xx como transitório, 4xx como permanente.
+  variável para não vazar em Node), timeout 20s por **race real**; classifica
+  timeout/rede/TLS e SMTP 4xx (`try again later`, filas cheias) como
+  **transitório** e SMTP 5xx (falha permanente de envelope/destinatário) como
+  **permanente**, alinhado ao adapter.
 - `whatsapp-adapter.ts` — Meta Cloud API endurecido: valida E.164, exige
   `provider_template_name` + `language_code` + `parameter_mapping` ordenado +
   **`provider_template_status = 'approved'`**, timeout 15s, sanitiza 4xx/5xx/429,
@@ -241,6 +243,36 @@ mesmo com a migration válida.
 - `tsgo --noEmit`: ✅ limpo.
 - `vitest src/test/comunicacao/`: **77/77** ✅ (5 arquivos).
 - Suíte completa: **2165/2170** ✅, 4 skipped, 1 falha pré-existente
+  não relacionada (`portalAcompanhamentoProdutor.test.tsx` — timeout flaky).
+
+**Parecer:** `PACOTE FASE 2 (v2) PRONTO PARA APLICAÇÃO EM STAGING` — mantido.
+
+---
+
+## Correção — Runbook v2 e allowlist WhatsApp (jul/2026)
+
+**Fatos:**
+1. `runbook.md` estava na v1: assinatura de `rpc_set_communication_template_metadata` com 4 args; `defer`/`fail_v2`/`dispatch_inapp` ausentes; `provider_not_configured` mapeado para `cancel`; in_app descrito por RPCs antigas; rollback dizia restaurar `_comunicacao_build_snapshot` (Fase 1) — o `rollback.sql` real **não faz isso** e nem deveria (helper Fase 1 não é substituído).
+2. `adapters-types.ts` prometia “sem default silencioso”, mas `adapters.ts` fazia `WHATSAPP_API_VERSION ?? 'v20.0'`. A allowlist listava `v20/v21/v22`, versões fora da janela de suporte Meta. SDKs oficiais Meta em jul/2026 estão em `v25.0.x`; `v24.0` é o suporte estendido anterior.
+
+**Ajustes:**
+- `adapters.ts`: removido default `'v20.0'`. `WHATSAPP_API_VERSION` deve vir explicitamente do env; ausência ⇒ `isWhatsappConfigValid=false` ⇒ adapter retorna `provider_not_configured` ⇒ worker faz `rpc_defer_communication_delivery` (não conta como tentativa de provedor).
+- `adapters-types.ts`: `WHATSAPP_API_VERSION_ALLOWLIST = ["v24.0","v25.0"]` com comentário sobre revisão trimestral. Qualquer versão fora — inclusive `undefined`, `v20/v21/v22`, `"latest"`, `"v25"`, `"25.0"` — é bloqueada.
+- `runbook.md`: reescrito para refletir Fase 2 v2 real:
+  - assinaturas exatas conforme `postcheck.sql` (metadata 5 args; `defer(uuid,text,text,integer)`; `fail_v2(uuid,text,text,text,boolean)`; `dispatch_inapp(uuid,uuid,uuid,text,text)`; helpers system-side documentados);
+  - mapa `outcome → RPC`: `provider_not_configured`/`deferred` ⇒ `rpc_defer_communication_delivery`; `invalid_recipient` ⇒ `rpc_cancel_communication_delivery`; `opt_out` ⇒ `rpc_skip_communication_delivery`; `permanent_error`/`transient_error` ⇒ `rpc_fail_communication_delivery_v2` com `is_permanent` booleano;
+  - semântica de `attempts` (claim incrementa; `fail_v2` não re-incrementa; `defer` devolve `-1`);
+  - `in_app` principal via `rpc_dispatch_inapp_notification(outbox_id, ...)` com idempotência em `comunicacao_inapp_dispatch`; RPCs antigas viraram compat administrativo;
+  - `payload_snapshot` direto e resolução source-aware (`data_programada` regular / `data_recomendada` on-farm);
+  - `WHATSAPP_API_VERSION` obrigatório, allowlist `v24.0`/`v25.0`, sem default;
+  - rollback descreve apenas o que o SQL faz — sem promessa de restaurar `_comunicacao_build_snapshot`;
+  - sequência segura de ativação: in_app → e-mail → WhatsApp, um canal por vez.
+- `fase2.test.ts`: `baseEnv` migrado para `v25.0`; URL esperada `/v25.0/…`; 6 casos novos de allowlist (undefined/v20/v21/v22 rejeitadas; v24/v25 aceitas; arbitrária rejeitada; adapter → `provider_not_configured`; guarda estática impedindo default silencioso em `adapters.ts`); **8 casos contratuais barrando runbook v1/stale** (assinaturas obrigatórias, mapa de outcomes v2, WA obrigatório com v24/v25, in_app via `rpc_dispatch_inapp_notification(outbox_id)`, rollback sem promessa de restaurar snapshot, ausência de `metadata(4 args)`/`v20/v21/v22`/`fail(uuid,text,text,text)`, presença de `source_type`/`payload_snapshot`/`data_programada`/`data_recomendada`).
+
+**Validação:**
+- `tsgo --noEmit`: ✅ limpo.
+- `vitest src/test/comunicacao/`: **91/91** ✅ (5 arquivos).
+- Suíte completa: **2179/2184** ✅, 4 skipped, 1 falha pré-existente
   não relacionada (`portalAcompanhamentoProdutor.test.tsx` — timeout flaky).
 
 **Parecer:** `PACOTE FASE 2 (v2) PRONTO PARA APLICAÇÃO EM STAGING` — mantido.

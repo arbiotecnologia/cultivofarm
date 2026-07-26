@@ -93,8 +93,17 @@ export interface WorkerEnv {
   WHATSAPP_API_VERSION?: string;
 }
 
-/** Allowlist explícita das versões suportadas do WhatsApp Cloud API. */
-export const WHATSAPP_API_VERSION_ALLOWLIST = ["v20.0", "v21.0", "v22.0"] as const;
+/**
+ * Allowlist explícita das versões suportadas do WhatsApp Cloud API.
+ *
+ * Revisão: julho/2026. Os SDKs oficiais Meta estão em v25.0.x; v24.0 é a
+ * versão anterior ainda em suporte estendido. Versões v20/v21/v22 foram
+ * removidas por estarem fora do janela de suporte operacional. Qualquer
+ * versão fora desta lista é bloqueada por `isWhatsappConfigValid` e faz o
+ * adapter retornar `provider_not_configured` — nunca há default silencioso.
+ * Reavaliar trimestralmente contra a matriz de versões vigente da Meta.
+ */
+export const WHATSAPP_API_VERSION_ALLOWLIST = ["v24.0", "v25.0"] as const;
 
 /** Validação forte de config WhatsApp (sem default silencioso). */
 export function isWhatsappConfigValid(env: WorkerEnv): boolean {
