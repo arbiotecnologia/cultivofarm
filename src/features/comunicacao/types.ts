@@ -49,7 +49,7 @@ export interface ComunicacaoTemplate {
   provider_template_name: string | null;
   language_code: string | null;
   parameter_mapping: ComunicacaoTemplateParameterMapping[];
-  /** Fase 2: 'draft' | 'submitted' | 'approved' | 'rejected' | 'disabled' */
+  /** Fase 2.4: 'draft' | 'pending' | 'approved' | 'rejected' | 'paused' | 'disabled' */
   provider_template_status: string | null;
   created_by: string | null;
   updated_by: string | null;
@@ -197,7 +197,7 @@ export interface CommunicationRpcContracts {
   rpc_publish_communication_event_v2: {
     args: {
       p_event_key: string;
-      p_source_type: string;
+      p_source_type: string | null;
       p_source_id: string | null;
       p_payload: Record<string, unknown>;
       p_idempotency_key: string;
@@ -209,6 +209,17 @@ export interface CommunicationRpcContracts {
       enqueued?: number;
       skipped?: number;
     };
+  };
+  /** Fase 1: verificação administrativa de canal (email/telefone). Só admin. */
+  rpc_verify_communication_channel: {
+    args: {
+      p_user_id: string | null;
+      p_cliente_id: string | null;
+      p_canal: ComunicacaoCanal;
+      p_email_verificado: boolean | null;
+      p_telefone_verificado: boolean | null;
+    };
+    returns: { ok: boolean };
   };
 
   rpc_update_communication_preferences: {

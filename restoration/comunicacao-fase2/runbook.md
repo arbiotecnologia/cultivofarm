@@ -242,3 +242,29 @@ mapeamento automático a partir de `entregue`/`finalizada`. O acionamento
 manual está exposto no painel administrativo
 (`ManualProdutoProntoAplicacaoPanel`), usando o mesmo caminho de publish
 system-side com `source_type`.
+
+---
+
+## Fase 2.4 — Hardening operacional (2026-08-11)
+
+### rpc_set_communication_template_metadata (WA)
+- Status aceitos: `draft | pending | approved | rejected | paused | disabled` (o valor legado `submitted` foi removido; se surgir em UI antiga, mapear para `pending`).
+- `parameter_mapping`: array com objetos `{index:int>=1, variavel:text}`, índices sequenciais 1..N, sem duplicidade, `variavel ∈ comunicacao_templates.variaveis`. Template sem variáveis exige `[]`.
+- `approved` exige `provider_template_name` e `language_code` não vazios e mapping completo (N = tamanho de `variaveis`).
+- `provider_template_name` é imutável a partir do momento em que o status atinge `approved` (persiste em `paused|disabled`).
+- Máquina de estados: `draft→pending`, `pending→{draft,approved,rejected}`, `approved→{paused,disabled}`, `paused→{approved,disabled}`, `rejected→{draft,pending}`, `disabled` terminal.
+
+### rpc_publish_communication_event_v2
+- `idempotency_key` obrigatório com **8..200** caracteres.
+- `administrative_important_update` exige `source_type IS NULL AND source_id IS NULL`; `payload.titulo` e `payload.mensagem` obrigatórios e não vazios após `trim`; `target_role` obrigatório e válido.
+- Eventos de OS continuam exigindo `source_type ∈ {ordens_servico, ordens_servico_onfarm}` e `payload = {}`.
+
+### UI de comunicação (admin)
+- Novos painéis restritos a `administrador`:
+  - **Saúde dos canais** — invoca `communication-health` sob demanda. Nunca exibe segredos, apenas `configured/enabled`. Falha/função ausente é tratada como aviso (não quebra a tela). Sem polling.
+  - **Verificar canal** — chama `rpc_verify_communication_channel`. Aceita **apenas UUID colado** (`user_id` OU `cliente_id`), canal, e flags `email_verificado/telefone_verificado`. **Não** listamos perfis de terceiros na UI para evitar exposição de PII via RLS ampla; UUIDs devem ser obtidos em Gestão de Usuários/Clientes. Gestor não pode verificar terceiros (RPC restringe a admin).
+- Sem alterações em grants/RLS.
+
+### Runbook operacional
+- Nenhuma mudança em envio real: adapters permanecem desligados por padrão (flags globais + adapter-específicas).
+- Rollback: reaplicar `restoration/comunicacao-fase2/rollback.sql` (assinaturas Fase 2.4 não introduziram novos objetos).

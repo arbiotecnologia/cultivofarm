@@ -369,3 +369,30 @@ mesmo com a migration válida.
 **Parecer:** `PACOTE FASE 2 (v2 + 2.3) PRONTO PARA APLICAÇÃO EM STAGING` —
 artefatos coerentes; migration, postcheck, harness, rollback, runbook,
 worker, adapters, tipos, API e UI convergem para a mesma matriz operacional.
+
+---
+
+## Fase 2.4 — Hardening operacional
+
+**Arquivos alterados**
+- `restoration/comunicacao-fase2/migration.sql` — `rpc_set_communication_template_metadata` (state machine + mapping completo + imutabilidade do provider_template_name); `rpc_publish_communication_event_v2` (idempotency 8..200; administrative_important_update com source NULL e titulo/mensagem não vazios após trim).
+- `src/features/comunicacao/types.ts` — status atualizado (sem `submitted`); contrato `rpc_verify_communication_channel`; `p_source_type` aceita `string | null`.
+- `src/features/comunicacao/api.ts` — `verifyCommunicationChannel`, `fetchCommunicationHealth`; `publishAdministrativeBroadcast` agora envia `p_source_type: null`.
+- `src/features/comunicacao/ui/ComunicacaoAdminPage.tsx` — editor WA reescrito (STATUS_ALLOWED 6 valores, transições, nameLocked, mapping vs `template.variaveis`); painéis admin `CanalHealthPanel` e `CanalVerificacaoPanel`.
+- `restoration/comunicacao-fase2/runbook.md` — nova seção Fase 2.4.
+- `src/test/comunicacao/fase2-4-hardening.test.ts` — 20 testes de regressão; ajuste de 1 regex em `fase2-3-coerencia.test.ts` para acomodar a nova mensagem.
+
+**Decisões de segurança**
+- Não ampliamos grants nem RLS.
+- `communication-health` só expõe booleans; UI trata resposta como potencialmente ausente/erro.
+- Verificação de canais aceita apenas UUID colado — evita listar perfis (PII) na UI.
+- Envios reais permanecem desligados por padrão.
+
+**Testes**
+- `bunx vitest run src/test/comunicacao` → 135/135 aprovados (7 arquivos).
+- Suíte completa executada a seguir; timeout flaky pré-existente em `portalAcompanhamentoProdutor.test.tsx` não relacionado à Fase 2.
+
+**Bloqueios externos para ativação real**
+- Meta WhatsApp: templates com status `approved` no BSP antes de qualquer envio.
+- SMTP: credenciais confirmadas em Secrets e canal `email` habilitado em `comunicacao_flags`.
+- Aplicar `restoration/comunicacao-fase2/migration.sql` em staging (não aplicado neste PR).

@@ -27,6 +27,8 @@ import {
   publishManualProdutoProntoAplicacao,
   listOrdensServicoRegularesParaComunicado,
   setTemplateMetadata,
+  fetchCommunicationHealth,
+  verifyCommunicationChannel,
 } from "@/features/comunicacao/api";
 
 import type {
@@ -97,17 +99,22 @@ export default function ComunicacaoAdmin() {
         <ComunicadosPanel canPublish={isAdmin} />
       )}
 
-      <section aria-label="Estado dos canais" className="rounded-md border p-4 text-sm">
-        <h2 className="font-medium mb-1">Estado dos canais</h2>
-        <ul className="list-disc pl-5 text-muted-foreground">
-          <li>E-mail: configuração via SMTP_* (verificar em communication-health)</li>
-          <li>WhatsApp: configuração via WHATSAPP_* (verificar em communication-health)</li>
-          <li>In-app: adapter próprio, controlado por COMMUNICATION_INAPP_ADAPTER_ENABLED</li>
-        </ul>
-        <p className="text-xs text-muted-foreground mt-2">
-          Nenhum segredo é exibido nesta tela. Gestor vê em modo somente leitura.
-        </p>
-      </section>
+      {isAdmin && (
+        <>
+          <CanalHealthPanel />
+          <CanalVerificacaoPanel />
+        </>
+      )}
+
+      {!isAdmin && (
+        <section aria-label="Estado dos canais" className="rounded-md border p-4 text-sm">
+          <h2 className="font-medium mb-1">Estado dos canais</h2>
+          <p className="text-xs text-muted-foreground">
+            Diagnóstico e verificação de canais são restritos ao administrador.
+            Nenhum segredo é exibido nesta tela.
+          </p>
+        </section>
+      )}
     </div>
   );
 }
@@ -596,22 +603,55 @@ function WhatsappTemplateMetadataEditor({
   );
   const [status, setStatus] = useState<string>(template.provider_template_status ?? "draft");
 
-  const STATUS_ALLOWED = ["draft", "submitted", "approved", "rejected", "disabled"] as const;
+  // Fase 2.4: status aceitos pelo SQL — sem o valor legado obsoleto.
+  const STATUS_ALLOWED = ["draft", "pending", "approved", "rejected", "paused", "disabled"] as const;
 
-  // Validação client-side espelhando as CHECK constraints do banco:
-  // approved só é permitido se nome + language + mapping válidos estiverem presentes.
+  // Fase 2.4: variáveis declaradas no template — usadas para validar mapping.
+  const templateVars: string[] = template.variaveis ?? [];
+  const varsLen = templateVars.length;
+  const prevStatus = template.provider_template_status;
+  // Imutabilidade: se o template já foi aprovado alguma vez (status atual ∈
+  // approved|paused|disabled), o nome do provider não pode mudar.
+  const nameLocked = prevStatus === "approved" || prevStatus === "paused" || prevStatus === "disabled";
+
+  // Máquina de estados aceita pelo SQL (Fase 2.4). Deve espelhar a lista
+  // do CHECK/RPC para não frustrar o usuário com erros do servidor.
+  const allowedTransitions: Record<string, ReadonlyArray<typeof STATUS_ALLOWED[number]>> = {
+    draft: ["draft", "pending"],
+    pending: ["draft", "pending", "approved", "rejected"],
+    approved: ["approved", "paused", "disabled"],
+    paused: ["approved", "paused", "disabled"],
+    rejected: ["draft", "pending", "rejected"],
+    disabled: ["disabled"],
+  };
+  const selectableStatuses = allowedTransitions[prevStatus ?? "draft"] ?? STATUS_ALLOWED;
+
   const parsedMapping = (() => {
     try {
       const arr = JSON.parse(mappingTxt || "[]");
       if (!Array.isArray(arr)) return { ok: false as const, err: "mapping deve ser array" };
+      if (varsLen === 0 && arr.length !== 0) {
+        return { ok: false as const, err: "template sem variáveis exige mapping []" };
+      }
       const sorted = [...arr].sort(
         (a, b) => Number((a as { index?: number }).index) - Number((b as { index?: number }).index),
       );
+      const seenVars = new Set<string>();
       for (let i = 0; i < sorted.length; i++) {
         const m = sorted[i] as { index?: unknown; variavel?: unknown };
+        if (typeof m.index !== "number" || !Number.isInteger(m.index) || m.index <= 0) {
+          return { ok: false as const, err: `índice inválido na posição ${i + 1}` };
+        }
         if (m.index !== i + 1) return { ok: false as const, err: `índice ${i + 1} ausente/duplicado` };
         if (typeof m.variavel !== "string" || m.variavel.length === 0) {
           return { ok: false as const, err: `variavel inválida no índice ${i + 1}` };
+        }
+        if (seenVars.has(m.variavel)) {
+          return { ok: false as const, err: `variavel duplicada: ${m.variavel}` };
+        }
+        seenVars.add(m.variavel);
+        if (varsLen > 0 && !templateVars.includes(m.variavel)) {
+          return { ok: false as const, err: `variavel "${m.variavel}" não declarada no template` };
         }
       }
       return { ok: true as const, value: sorted as Array<{ index: number; variavel: string; tipo?: string }> };
@@ -620,17 +660,27 @@ function WhatsappTemplateMetadataEditor({
     }
   })();
 
-  const metaComplete =
-    name.trim().length > 0 && lang.trim().length > 0 && parsedMapping.ok;
-  const canApprove = metaComplete && parsedMapping.ok && parsedMapping.value.length > 0;
   const wantsApproved = status === "approved";
+  const mappingComplete = parsedMapping.ok && parsedMapping.value.length === varsLen;
+  const canApprove =
+    parsedMapping.ok &&
+    mappingComplete &&
+    name.trim().length > 0 &&
+    lang.trim().length > 0;
   const invalidApproval = wantsApproved && !canApprove;
+  const invalidTransition = !selectableStatuses.includes(status as typeof STATUS_ALLOWED[number]);
 
   const salvar = useMutation({
     mutationFn: async () => {
       if (!parsedMapping.ok) throw new Error(parsedMapping.err);
       if (invalidApproval) {
-        throw new Error("approved requer nome, language_code e mapping válidos");
+        throw new Error("approved exige nome, language_code e mapping completo");
+      }
+      if (invalidTransition) {
+        throw new Error(`transição de status inválida: ${prevStatus ?? "draft"} → ${status}`);
+      }
+      if (nameLocked && name !== (template.provider_template_name ?? "")) {
+        throw new Error("provider_template_name é imutável após aprovação");
       }
       return setTemplateMetadata({
         p_template_id: template.id,
@@ -657,11 +707,13 @@ function WhatsappTemplateMetadataEditor({
         <div className="mt-2 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col">
-              <span className="text-muted-foreground">provider_template_name</span>
+              <span className="text-muted-foreground">
+                provider_template_name{nameLocked ? " (imutável após aprovação)" : ""}
+              </span>
               <input
                 className="rounded border p-1"
                 value={name}
-                readOnly={!canMutate}
+                readOnly={!canMutate || nameLocked}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="produto_pronto_v1"
               />
@@ -679,7 +731,7 @@ function WhatsappTemplateMetadataEditor({
           </div>
           <label className="flex flex-col">
             <span className="text-muted-foreground">
-              parameter_mapping (JSON — [{`{"index":1,"variavel":"nome","tipo":"text"}`}])
+              parameter_mapping (JSON — variáveis declaradas: {templateVars.join(", ") || "nenhuma"})
             </span>
             <textarea
               className="h-24 rounded border p-1 font-mono"
@@ -689,6 +741,11 @@ function WhatsappTemplateMetadataEditor({
             />
             {!parsedMapping.ok && (
               <span className="text-destructive mt-1">mapping: {parsedMapping.err}</span>
+            )}
+            {parsedMapping.ok && varsLen > 0 && !mappingComplete && (
+              <span className="text-amber-600 mt-1">
+                mapping incompleto: {parsedMapping.value.length}/{varsLen} variáveis mapeadas.
+              </span>
             )}
           </label>
           <label className="flex flex-col">
@@ -700,17 +757,28 @@ function WhatsappTemplateMetadataEditor({
               onChange={(e) => setStatus(e.target.value)}
             >
               {STATUS_ALLOWED.map((s) => (
-                <option key={s} value={s}>
-                  {s}
+                <option
+                  key={s}
+                  value={s}
+                  disabled={!selectableStatuses.includes(s)}
+                >
+                  {s}{selectableStatuses.includes(s) ? "" : " (indisponível)"}
                 </option>
               ))}
             </select>
             <span className="text-muted-foreground mt-1">
               Somente <code>approved</code> permite ativação/envio via WhatsApp.
+              Transições permitidas a partir de <code>{prevStatus ?? "draft"}</code>:{" "}
+              {selectableStatuses.join(", ")}.
             </span>
+            {invalidTransition && (
+              <span className="text-destructive mt-1">
+                transição inválida: {prevStatus ?? "draft"} → {status}
+              </span>
+            )}
             {invalidApproval && (
               <span className="text-destructive mt-1">
-                approved requer nome, language_code e mapping válidos.
+                approved exige nome, language_code e mapping completo ({varsLen} variáveis).
               </span>
             )}
           </label>
@@ -718,7 +786,9 @@ function WhatsappTemplateMetadataEditor({
             <button
               type="button"
               className="rounded bg-primary px-3 py-1.5 text-primary-foreground disabled:opacity-50"
-              disabled={salvar.isPending || !parsedMapping.ok || invalidApproval}
+              disabled={
+                salvar.isPending || !parsedMapping.ok || invalidApproval || invalidTransition
+              }
               onClick={() => salvar.mutate()}
             >
               Salvar metadados
@@ -730,6 +800,170 @@ function WhatsappTemplateMetadataEditor({
         </div>
       )}
     </div>
+  );
+}
+
+// -------------------- Saúde dos canais (admin, sob demanda) --------------------
+// Chama a Edge Function `communication-health` e renderiza apenas booleans
+// configured/enabled + timestamp. Nunca exibe valores de secrets. Falha ou
+// função ainda não implantada é tratada de forma amigável (não quebra a tela).
+// Sem polling automático.
+function CanalHealthPanel() {
+  const mut = useMutation({
+    mutationFn: () => fetchCommunicationHealth(),
+  });
+  const d = mut.data;
+  return (
+    <section aria-label="Saúde dos canais" className="rounded-md border p-4 text-sm space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-medium">Saúde dos canais</h2>
+        <button
+          type="button"
+          className="rounded border px-2 py-1 text-xs disabled:opacity-50"
+          disabled={mut.isPending}
+          onClick={() => mut.mutate()}
+        >
+          {mut.isPending ? "Verificando…" : "Verificar agora"}
+        </button>
+      </div>
+      {!d && !mut.isPending && (
+        <p className="text-xs text-muted-foreground">
+          Nenhuma checagem realizada. Clique em “Verificar agora” para consultar
+          a Edge Function communication-health. Nenhum segredo é exibido.
+        </p>
+      )}
+      {d && !d.ok && (
+        <p className="text-xs text-amber-600">
+          Diagnóstico indisponível: {d.error ?? "erro desconhecido"}. Verifique se a função
+          communication-health está implantada e se você está autenticado como administrador.
+          (Consultado em {d.fetched_at}.)
+        </p>
+      )}
+      {d && d.ok && (
+        <ul className="grid gap-1 text-xs md:grid-cols-3">
+          <li>
+            <strong>E-mail:</strong>{" "}
+            {d.email?.configured ? "configurado" : "não configurado"}
+          </li>
+          <li>
+            <strong>WhatsApp:</strong>{" "}
+            {d.whatsapp?.configured ? "configurado" : "não configurado"}
+          </li>
+          <li>
+            <strong>In-app:</strong>{" "}
+            {d.in_app?.configured ? "configurado" : "não configurado"}
+          </li>
+          <li className="md:col-span-3 text-muted-foreground">
+            Consultado em {d.fetched_at}. Nenhum valor de secret é exposto.
+          </li>
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// -------------------- Verificar canal (admin, RPC Fase 1) --------------------
+// Fase 2.4: usa `rpc_verify_communication_channel` já existente. Pelo esquema
+// atual, a RPC recebe user_id OU cliente_id (mutuamente exclusivos), canal, e
+// flags email_verificado/telefone_verificado. Um seletor de perfis exigiria
+// listar profiles com contatos, o que exporia PII a operadores não autorizados
+// via RLS ampla — por isso a UI aceita apenas UUIDs colados pelo administrador
+// (obtidos na tela de Gestão de Usuários) e não busca listas de terceiros.
+// Alternativa segura documentada em restoration/comunicacao-fase2/runbook.md.
+function CanalVerificacaoPanel() {
+  const [subjectKind, setSubjectKind] = useState<"user" | "cliente">("user");
+  const [subjectId, setSubjectId] = useState("");
+  const [canal, setCanal] = useState<ComunicacaoCanal>("email");
+  const [emailV, setEmailV] = useState(false);
+  const [foneV, setFoneV] = useState(false);
+  const uuidRe = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const uuidOk = uuidRe.test(subjectId.trim());
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      if (!uuidOk) throw new Error("UUID inválido");
+      const args = {
+        p_user_id: subjectKind === "user" ? subjectId.trim() : null,
+        p_cliente_id: subjectKind === "cliente" ? subjectId.trim() : null,
+        p_canal: canal,
+        p_email_verificado: emailV,
+        p_telefone_verificado: foneV,
+      };
+      return verifyCommunicationChannel(args);
+    },
+  });
+
+  return (
+    <section aria-label="Verificar canal" className="rounded-md border p-4 text-sm space-y-2">
+      <h2 className="font-medium">Verificar canal (admin)</h2>
+      <p className="text-xs text-muted-foreground">
+        Marca verificação externa de e-mail/telefone para um usuário OU cliente.
+        Cole o UUID obtido na tela de Gestão de Usuários/Clientes — para preservar
+        privacidade, esta tela não lista perfis de terceiros. Gestor não pode
+        verificar terceiros (RPC exige administrador).
+      </p>
+      <div className="grid gap-2 md:grid-cols-4">
+        <label className="flex flex-col text-xs">
+          <span>Sujeito</span>
+          <select
+            className="rounded border p-1"
+            value={subjectKind}
+            onChange={(e) => setSubjectKind(e.target.value as "user" | "cliente")}
+          >
+            <option value="user">user_id</option>
+            <option value="cliente">cliente_id</option>
+          </select>
+        </label>
+        <label className="flex flex-col text-xs md:col-span-2">
+          <span>UUID</span>
+          <input
+            className="rounded border p-1 font-mono"
+            value={subjectId}
+            onChange={(e) => setSubjectId(e.target.value)}
+            placeholder="00000000-0000-0000-0000-000000000000"
+          />
+          {!uuidOk && subjectId.length > 0 && (
+            <span className="text-destructive mt-1">UUID inválido</span>
+          )}
+        </label>
+        <label className="flex flex-col text-xs">
+          <span>Canal</span>
+          <select
+            className="rounded border p-1"
+            value={canal}
+            onChange={(e) => setCanal(e.target.value as ComunicacaoCanal)}
+          >
+            {(["email", "whatsapp", "in_app", "push"] as ComunicacaoCanal[]).map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-3 text-xs">
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={emailV} onChange={(e) => setEmailV(e.target.checked)} />
+          email_verificado
+        </label>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={foneV} onChange={(e) => setFoneV(e.target.checked)} />
+          telefone_verificado
+        </label>
+      </div>
+      <button
+        type="button"
+        className="rounded bg-primary px-3 py-1.5 text-xs text-primary-foreground disabled:opacity-50"
+        disabled={!uuidOk || mut.isPending}
+        onClick={() => mut.mutate()}
+      >
+        {mut.isPending ? "Enviando…" : "Marcar verificação"}
+      </button>
+      {mut.error && (
+        <p className="text-xs text-destructive">Erro: {(mut.error as Error).message}</p>
+      )}
+      {mut.data && (
+        <p className="text-xs text-muted-foreground">Verificação registrada.</p>
+      )}
+    </section>
   );
 }
 
