@@ -74,8 +74,10 @@ e nunca ecoam PII no retorno.
   `AdapterResult/Outcome/Snapshot/Deps`, `WorkerEnv`, `healthBooleans()`.
 - `adapters.ts` (Deno-side) — reexporta os tipos + `readWorkerEnv()`.
 - `email-adapter.ts` — SMTP via `denomailer` (import dinâmico com specifier
-  variável para não vazar em Node), timeout 20s por **race real**, classifica
-  timeout/network/5xx como transitório, 4xx como permanente.
+  variável para não vazar em Node), timeout 20s por **race real**; classifica
+  timeout/rede/TLS e SMTP 4xx (`try again later`, filas cheias) como
+  **transitório** e SMTP 5xx (falha permanente de envelope/destinatário) como
+  **permanente**, alinhado ao adapter.
 - `whatsapp-adapter.ts` — Meta Cloud API endurecido: valida E.164, exige
   `provider_template_name` + `language_code` + `parameter_mapping` ordenado +
   **`provider_template_status = 'approved'`**, timeout 15s, sanitiza 4xx/5xx/429,
