@@ -1,5 +1,7 @@
-// Job interno: requer x-internal-secret ou administrador.
-// Idempotente: unique(registro_consultor_id, tipo, data_referencia).
+// Job interno: chama rpc_check_monitoramento_and_notify (transacional).
+// - Requer x-internal-secret ou papel administrador.
+// - Data em America/Sao_Paulo (resolvida no servidor pela RPC).
+// - Push é best-effort APÓS commit; falha de push nunca invalida a notificação.
 import { authenticate, corsHeaders, json, requirePost } from "../_shared/auth-guard.ts";
 
 Deno.serve(async (req) => {
@@ -15,20 +17,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const today = new Date().toISOString().split("T")[0];
+    // Hoje em America/Sao_Paulo (para filtro; a decisão final é feita na RPC).
+    const nowBR = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }),
+    );
+    const today = nowBR.toISOString().slice(0, 10);
 
     const { data: monitoramentos, error: fetchError } = await supabase
       .from("registros_consultor")
-      .select(`
-        id,
-        consultor_responsavel,
-        cliente_id,
-        talhao_id,
-        data_proxima_visita,
-        objetivo_visita,
-        clientes:cliente_id(nome),
-        talhoes:talhao_id(nome)
-      `)
+      .select("id, consultor_responsavel, talhao_id, data_proxima_visita, clientes:cliente_id(nome), talhoes:talhao_id(nome)")
       .eq("necessidade_intervencao", "monitorar")
       .eq("status", "finalizado")
       .lte("data_proxima_visita", today);
@@ -36,8 +33,11 @@ Deno.serve(async (req) => {
     if (fetchError) throw fetchError;
 
     const created: string[] = [];
-    const skipped: string[] = [];
+    const duplicated: string[] = [];
+    const notEligible: string[] = [];
+    const rpcFailed: string[] = [];
     const pushFailed: string[] = [];
+
     const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 
     for (const mon of (monitoramentos ?? []) as Array<{
@@ -50,34 +50,35 @@ Deno.serve(async (req) => {
     }>) {
       if (!mon.consultor_responsavel) continue;
 
-      // Idempotência transacional via unique constraint.
-      const { error: reserveErr } = await supabase
-        .from("monitoramento_avisos")
-        .insert({ registro_consultor_id: mon.id, tipo: "vencido" });
+      // Chamada transacional: reserva + notificação em uma única transação.
+      // Se a notificação falhar dentro da RPC, a reserva TAMBÉM é revertida.
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        "rpc_check_monitoramento_and_notify" as never,
+        { _registro_id: mon.id } as never,
+      );
 
-      if (reserveErr) {
-        if ((reserveErr as { code?: string }).code === "23505") {
-          skipped.push(mon.id);
-          continue;
-        }
-        console.error("reserve error", reserveErr);
+      if (rpcErr) {
+        console.error("check-monitoramentos rpc error");
+        rpcFailed.push(mon.id);
         continue;
       }
 
-      const { error: rpcErr } = await supabase.rpc(
-        "rpc_create_notificacao_operacional",
-        {
-          _usuario_id: mon.consultor_responsavel,
-          _tipo: "alerta",
-          _titulo: "Monitoramento Vencido",
-          _mensagem: `A reavaliação do talhão ${mon.talhoes?.nome ?? "—"} (${
-            mon.clientes?.nome ?? "—"
-          }) venceu em ${mon.data_proxima_visita}.`,
-          _link: `/visita-tecnica/${mon.id}`,
-        },
-      );
-      if (rpcErr) console.error("notif rpc error", rpcErr);
+      const result = (rpcData ?? {}) as {
+        created?: boolean;
+        reason?: string;
+        consultor_id?: string;
+        talhao_nome?: string;
+      };
 
+      if (!result.created) {
+        if (result.reason === "duplicate") duplicated.push(mon.id);
+        else notEligible.push(mon.id);
+        continue;
+      }
+
+      created.push(mon.id);
+
+      // Atualização de risco: best-effort APÓS commit da notificação.
       if (mon.talhao_id) {
         await supabase
           .from("alertas_agronomicos")
@@ -86,6 +87,7 @@ Deno.serve(async (req) => {
           .eq("status", "monitoramento");
       }
 
+      // Push: best-effort APÓS commit; nunca invalida a notificação interna.
       try {
         const resp = await fetch(
           `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-push-notification`,
@@ -96,9 +98,9 @@ Deno.serve(async (req) => {
               "x-internal-secret": internalSecret,
             },
             body: JSON.stringify({
-              user_ids: [mon.consultor_responsavel],
+              user_ids: [result.consultor_id ?? mon.consultor_responsavel],
               title: "Monitoramento Vencido ⚠️",
-              body: `Talhão ${mon.talhoes?.nome ?? "—"} aguarda reavaliação.`,
+              body: `Talhão ${result.talhao_nome ?? mon.talhoes?.nome ?? "—"} aguarda reavaliação.`,
               url: `/visita-tecnica/${mon.id}`,
             }),
           },
@@ -107,14 +109,14 @@ Deno.serve(async (req) => {
       } catch {
         pushFailed.push(mon.id);
       }
-
-      created.push(mon.id);
     }
 
     return new Response(
       JSON.stringify({
         processed: created.length,
-        skipped: skipped.length,
+        duplicated: duplicated.length,
+        not_eligible: notEligible.length,
+        rpc_failed: rpcFailed.length,
         push_failed: pushFailed.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
