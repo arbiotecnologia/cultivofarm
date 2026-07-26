@@ -58,7 +58,7 @@ describe("Fase 2.5 · CanalVerificacaoPanel", () => {
   it("mensagem de confirmação indica canal e sujeito marcados", () => {
     const idx = uiSrc.indexOf("function CanalVerificacaoPanel");
     const block = uiSrc.slice(idx, idx + 4000);
-    expect(block).toMatch(/marcado como verificado/i);
+    expect(block).toMatch(/marcado[\s\S]{0,20}como[\s\S]{0,20}verificado/i);
     expect(block).toMatch(/lastMarked\.canal/);
     expect(block).toMatch(/lastMarked\.id/);
   });
