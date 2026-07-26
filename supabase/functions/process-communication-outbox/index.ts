@@ -151,12 +151,21 @@ Deno.serve(async (req: Request) => {
     await terminate(supabase, item.id, adapter, results, item.canal);
   }
 
-  return json(200, {
-    ok: true,
+  // Se qualquer RPC de terminação falhou, respondemos ok:false + HTTP 500 sem
+  // vazar mensagens brutas nem PII. Itens cujo terminate falhou permanecem
+  // como 'processing' até expirar o lease e serem reclaim-ados — entrega é
+  // at-least-once para email/whatsapp e idempotente para in_app.
+  const termination_failures = results.filter(
+    (r) => (r as Record<string, unknown>).terminator === "terminalization_failed",
+  ).length;
+
+  return json(termination_failures > 0 ? 500 : 200, {
+    ok: termination_failures === 0,
     dry_run: false,
     worker_id: WORKER_ID,
     claimed: items.length,
     processed: results.length,
+    termination_failures,
     results,
     adapters: {
       email: env.EMAIL_ENABLED ? "enabled" : "disabled",
@@ -165,6 +174,15 @@ Deno.serve(async (req: Request) => {
     },
   });
 });
+
+// Allowlist explícita de nomes de RPC terminais — evita expor nomes arbitrários.
+const TERMINAL_RPC_ALLOWLIST = new Set<string>([
+  "rpc_complete_communication_delivery",
+  "rpc_skip_communication_delivery",
+  "rpc_cancel_communication_delivery",
+  "rpc_defer_communication_delivery",
+  "rpc_fail_communication_delivery_v2",
+]);
 
 async function terminate(
   supabase: SbClient,
@@ -199,7 +217,6 @@ async function terminate(
       break;
     case "provider_not_configured":
     case "deferred":
-      // Config ausente / adapter OFF → defer (não cancel).
       rpcName = "rpc_defer_communication_delivery";
       rpcArgs = {
         p_outbox_id: outboxId, p_worker_id: WORKER_ID,
@@ -226,13 +243,17 @@ async function terminate(
       break;
   }
 
+  const safeName = TERMINAL_RPC_ALLOWLIST.has(rpcName) ? rpcName : "unknown_terminal_rpc";
+
   const { error } = await supabase.rpc(rpcName, rpcArgs);
   if (error) {
-    // Falha da RPC de terminação: reporte SEM PII, sem sobrescrever outcome.
-    push({ terminator_rpc: rpcName, terminator_error: error.message.slice(0, 200) });
+    // Falha da RPC de terminação: reporta código genérico + nome allowlisted da RPC.
+    // NÃO inclui error.message bruto (pode conter PII/segredos do provedor).
+    push({ terminator: "terminalization_failed", terminator_rpc: safeName });
     return;
   }
-  push();
+  push({ terminator: "ok", terminator_rpc: safeName });
 }
+
 
 export { corsHeaders };
