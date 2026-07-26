@@ -13,7 +13,6 @@ const replacement = { _: /\d/ };
 function resolveMaskPattern(mask: string, rawValue: string): string {
   const clean = rawValue.replace(/\D/g, "");
   switch (mask) {
-    case "auto":
     case "cpf":
       return "___.___.___-__";
     case "cnpj":
