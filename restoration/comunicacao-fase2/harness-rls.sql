@@ -85,14 +85,41 @@ BEGIN
     RAISE WARNING 'trigger ordens_servico_onfarm não é AFTER UPDATE';
   END IF;
 
-  -- 6) Simulação leve: anon não consegue executar RPCs de worker
+  -- 6) Simulação estrita: anon não consegue executar RPCs de worker.
+  --    Aceita SOMENTE insufficient_privilege (42501) ou undefined_function (42883);
+  --    qualquer outro SQLSTATE conta como violação (evita mascarar erro de negócio).
   BEGIN
     SET LOCAL ROLE anon;
     PERFORM public.rpc_resolve_outbox_address('00000000-0000-0000-0000-000000000000'::uuid);
     v_bad := v_bad + 1;
     RAISE WARNING 'anon conseguiu executar rpc_resolve_outbox_address';
-  EXCEPTION WHEN OTHERS THEN NULL; END;
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+    WHEN undefined_function THEN NULL;
+    WHEN OTHERS THEN
+      v_bad := v_bad + 1;
+      RAISE WARNING 'anon rpc_resolve_outbox_address erro inesperado sqlstate=%', SQLSTATE;
+  END;
   RESET ROLE;
+
+  -- 6.b) publish_v2: authenticated GRANT positivo; anon GRANT negativo.
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.role_routine_grants
+     WHERE routine_schema='public' AND grantee='authenticated'
+       AND routine_name='rpc_publish_communication_event_v2'
+  ) THEN
+    v_bad := v_bad + 1;
+    RAISE WARNING 'authenticated deveria ter EXECUTE em rpc_publish_communication_event_v2';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.role_routine_grants
+     WHERE routine_schema='public' AND grantee='anon'
+       AND routine_name='rpc_publish_communication_event_v2'
+  ) THEN
+    v_bad := v_bad + 1;
+    RAISE WARNING 'anon NÃO deveria ter EXECUTE em rpc_publish_communication_event_v2';
+  END IF;
+
 
   IF v_bad = 0 THEN
     RAISE NOTICE 'harness Fase 2 v2: OK — matriz de segurança consistente';

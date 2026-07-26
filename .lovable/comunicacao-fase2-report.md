@@ -276,3 +276,96 @@ mesmo com a migration válida.
   não relacionada (`portalAcompanhamentoProdutor.test.tsx` — timeout flaky).
 
 **Parecer:** `PACOTE FASE 2 (v2) PRONTO PARA APLICAÇÃO EM STAGING` — mantido.
+
+---
+
+## Iteração Fase 2.3 — coerência funcional e operacional
+
+**Commit base:** `9f507e328fa7a9d992f51d5a43120a8115906342`.
+
+**Correções aplicadas (todas aditivas, flags OFF, sem migration externa, sem deploy):**
+
+- **`rpc_publish_communication_event_v2(text,text,uuid,jsonb,text) → jsonb`** —
+  nova RPC autenticada (administrador), sem overload do nome antigo. Reproduz
+  whitelist de eventos, idempotência atômica e validações rígidas da RPC Fase 1
+  (`produto_pronto_retirada` exige `status='pronto_entrega'` em OS regular ou
+  on-farm; `produto_pronto_aplicacao` só aceita OS regular existente;
+  `administrative_important_update` restringe payload a
+  `target_role|titulo|mensagem`), mas delega a expansão a
+  `_comunicacao_expand_event(... source_type ...)` v2 — assim TODO outbox
+  manual/broadcast recebe `provider_template_name`, `language_code`,
+  `parameter_mapping`, `provider_template_status` no `template_snapshot` e
+  helpers source-aware. Grants: `REVOKE PUBLIC/anon`, `GRANT authenticated`.
+  A RPC v1 permanece intacta (compat) mas **não é mais consumida pela UI**:
+  `api.ts` aponta `publishAdministrativeBroadcast` e
+  `publishManualProdutoProntoAplicacao` para a v2; `types.ts` declara o
+  contrato v2.
+- **UI de metadados WhatsApp** — novo `WhatsappTemplateMetadataEditor` na aba
+  Templates para cada linha de canal `whatsapp`: admin edita
+  `provider_template_name`, `language_code`, `parameter_mapping` (JSON com
+  índices sequenciais 1..N validados client-side) e
+  `provider_template_status` (`draft|submitted|approved|rejected|disabled`).
+  `approved` requer nome + language + mapping válidos (espelha as CHECK
+  constraints). Gestor vê em modo somente leitura. O botão “Ativar” de um
+  template WhatsApp permanece bloqueado enquanto `provider_template_status`
+  não for `approved`. Nenhum token/env é exibido.
+- **Worker `process-communication-outbox`** — `terminate` retorna resultado
+  estruturado (`terminator: "ok" | "terminalization_failed"` +
+  `terminator_rpc` allowlisted). Se ao menos uma RPC terminal falhar, a
+  resposta global vira `ok:false` com HTTP 500 e campo
+  `termination_failures` contado. `error.message` bruto **removido** do
+  payload; apenas o código genérico e o nome allowlisted da RPC são
+  emitidos. Itens cujo terminal falhou permanecem `processing` até expirar
+  o lease e serem reclaim-ados — entrega at-least-once para email/WhatsApp
+  e idempotente para in_app (garantida por `comunicacao_inapp_dispatch`).
+- **`rpc_dispatch_inapp_notification`** — substituído `SELECT ... FOR
+  UPDATE` (que não serializa linha ausente) por
+  `pg_advisory_xact_lock(hashtextextended(p_outbox_id::text, 0))`. Sem SQL
+  dinâmico; lock determinístico por outbox_id. Elimina unique-violation por
+  corrida entre workers.
+- **UI · aba Fila oculta para gestor** — Fila e histórico consulta
+  `comunicacao_eventos`/`comunicacao_outbox`, cuja RLS Fase 1 permite
+  apenas administrador. Gestor agora recebe as abas
+  `templates | regras | preferencias` (+ `comunicados` quando a flag
+  broadcast está ligada). RLS permanece admin-only (preferência do
+  operador). Preferências continua acessível a todos.
+- **`postcheck.sql`** — passou a validar retorno via
+  `format_type(prorettype, NULL)` + `proretset` (scalar vs setof) para
+  cada RPC canônica e helper. Adicionou `rpc_publish_communication_event_v2`
+  na matriz com checks positivo (`grant authenticated`) e negativo
+  (`sem grant a anon`).
+- **`harness-rls.sql`** — simulação anon **não** usa mais
+  `WHEN OTHERS THEN NULL`: aceita somente `insufficient_privilege` (42501)
+  ou `undefined_function` (42883); qualquer outro SQLSTATE vira violação
+  com `sqlstate=` no warning. Adicionou verificação de grants positivo/
+  negativo de `rpc_publish_communication_event_v2`.
+- **`runbook.md`** — assinatura de `rpc_publish_communication_event_v2`
+  documentada e observação explícita de que a UI Fase 2 usa exclusivamente
+  a v2 (v1 preservada apenas para compatibilidade).
+- **`rollback.sql`** — inclui `DROP FUNCTION IF EXISTS
+  public.rpc_publish_communication_event_v2(text,text,uuid,jsonb,text)`.
+- **Testes** — novo `src/test/comunicacao/fase2-3-coerencia.test.ts` (24
+  casos) cobrindo: assinatura/RETURNS jsonb da v2, gate de administrador,
+  whitelist de eventos, validação de `pronto_entrega` para regular +
+  on-farm, restrição do `produto_pronto_aplicacao`, whitelist de chaves do
+  broadcast, grants positivo/negativo, uso exclusivo da v2 em `api.ts` e
+  ausência de referência a v1 em `callRpc`, declaração em `types.ts`,
+  postcheck, rollback, presença de `pg_advisory_xact_lock` +
+  `hashtextextended` e ausência de `FOR UPDATE` no dispatch in_app,
+  respostas estruturadas do worker (HTTP 500 quando há falha terminal,
+  ausência de `error.message` bruto, `TERMINAL_RPC_ALLOWLIST`), gestor
+  sem aba Fila, editor WA valida `approved`, editor não expõe env/token,
+  `format_type`/`proretset` no postcheck e `WHEN insufficient_privilege /
+  undefined_function` no harness.
+
+**Validação:**
+- `tsgo --noEmit`: ✅ limpo.
+- `vitest src/test/comunicacao/`: **115/115** ✅ (6 arquivos, incluindo
+  `fase2-3-coerencia.test.ts`).
+- Suíte completa: **2203/2208** ✅, 4 skipped, 1 falha pré-existente
+  não relacionada (`portalAcompanhamentoProdutor.test.tsx` — timeout flaky,
+  mesma das iterações anteriores).
+
+**Parecer:** `PACOTE FASE 2 (v2 + 2.3) PRONTO PARA APLICAÇÃO EM STAGING` —
+artefatos coerentes; migration, postcheck, harness, rollback, runbook,
+worker, adapters, tipos, API e UI convergem para a mesma matriz operacional.

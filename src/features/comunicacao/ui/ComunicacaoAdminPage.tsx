@@ -26,7 +26,9 @@ import {
   publishAdministrativeBroadcast,
   publishManualProdutoProntoAplicacao,
   listOrdensServicoRegularesParaComunicado,
+  setTemplateMetadata,
 } from "@/features/comunicacao/api";
+
 import type {
   ComunicacaoTemplate,
   ComunicacaoRegra,
@@ -55,8 +57,14 @@ export default function ComunicacaoAdmin() {
 
   if (!isComunicacaoModuleEnabled()) return null;
 
-  const tabs: AbaId[] = ["templates","regras","fila","preferencias"];
+  // Fase 2.3: RLS de eventos/outbox permite apenas administrador. Gestor
+  // não deve ver "Fila e histórico" (evita erro previsível de permissão).
+  // Preferências permanecem para todos (dados próprios).
+  const tabs: AbaId[] = isAdmin
+    ? ["templates","regras","fila","preferencias"]
+    : ["templates","regras","preferencias"];
   if (showBroadcastTab) tabs.push("comunicados");
+
 
   return (
     <div className="p-6 space-y-6">
@@ -499,21 +507,53 @@ function TemplatesPanel({ canMutate }: { canMutate: boolean }) {
           {q.data && q.data.length === 0 && <p className="text-sm text-muted-foreground">Nenhum template.</p>}
           <ul className="divide-y">
             {(q.data ?? []).map((t) => (
-              <li key={t.id} className="py-2 flex items-center gap-3 text-sm">
-                <span className="font-mono">{t.chave} v{t.versao}</span>
-                <span className="text-muted-foreground">{t.canal}</span>
-                <span className="rounded px-1.5 py-0.5 text-xs border">{t.status}</span>
-                <span className="ml-auto flex gap-2">
-                  {t.status === "draft" && (
-                    <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => ativar.mutate(t.id)}>Ativar</button>
+              <li key={t.id} className="py-2 text-sm space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono">{t.chave} v{t.versao}</span>
+                  <span className="text-muted-foreground">{t.canal}</span>
+                  <span className="rounded px-1.5 py-0.5 text-xs border">{t.status}</span>
+                  {t.canal === "whatsapp" && (
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-xs border ${
+                        t.provider_template_status === "approved"
+                          ? "border-emerald-500 text-emerald-600"
+                          : "border-amber-500 text-amber-600"
+                      }`}
+                      title="Status Meta"
+                    >
+                      Meta: {t.provider_template_status ?? "draft"}
+                    </span>
                   )}
-                  {t.status !== "archived" && (
-                    <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => arquivar.mutate(t.id)}>Arquivar</button>
-                  )}
-                </span>
+                  <span className="ml-auto flex gap-2">
+                    {t.status === "draft" && (
+                      <button
+                        className="text-xs underline disabled:opacity-40"
+                        disabled={
+                          !canMutate ||
+                          (t.canal === "whatsapp" && t.provider_template_status !== "approved")
+                        }
+                        title={
+                          t.canal === "whatsapp" && t.provider_template_status !== "approved"
+                            ? "WhatsApp: só é possível ativar após template aprovado pela Meta"
+                            : ""
+                        }
+                        onClick={() => ativar.mutate(t.id)}
+                      >
+                        Ativar
+                      </button>
+                    )}
+                    {t.status !== "archived" && (
+                      <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => arquivar.mutate(t.id)}>Arquivar</button>
+                    )}
+                  </span>
+                </div>
+                {t.canal === "whatsapp" && (
+                  <WhatsappTemplateMetadataEditor template={t} canMutate={canMutate} />
+                )}
               </li>
             ))}
           </ul>
+
         </div>
       </div>
 
@@ -534,6 +574,165 @@ function TemplatesPanel({ canMutate }: { canMutate: boolean }) {
     </section>
   );
 }
+
+// -------------------- Editor de metadados WhatsApp (Meta Cloud API) --------------------
+// Admin edita provider_template_name, language_code, parameter_mapping e
+// provider_template_status. Gestor vê somente leitura. Envio real só é
+// habilitado quando status = 'approved' (regra reforçada no botão Ativar).
+// Nenhum token/env é exibido aqui — a config vive nas secrets do worker.
+function WhatsappTemplateMetadataEditor({
+  template,
+  canMutate,
+}: {
+  template: ComunicacaoTemplate;
+  canMutate: boolean;
+}) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(template.provider_template_name ?? "");
+  const [lang, setLang] = useState(template.language_code ?? "pt_BR");
+  const [mappingTxt, setMappingTxt] = useState(
+    JSON.stringify(template.parameter_mapping ?? [], null, 2),
+  );
+  const [status, setStatus] = useState<string>(template.provider_template_status ?? "draft");
+
+  const STATUS_ALLOWED = ["draft", "submitted", "approved", "rejected", "disabled"] as const;
+
+  // Validação client-side espelhando as CHECK constraints do banco:
+  // approved só é permitido se nome + language + mapping válidos estiverem presentes.
+  const parsedMapping = (() => {
+    try {
+      const arr = JSON.parse(mappingTxt || "[]");
+      if (!Array.isArray(arr)) return { ok: false as const, err: "mapping deve ser array" };
+      const sorted = [...arr].sort(
+        (a, b) => Number((a as { index?: number }).index) - Number((b as { index?: number }).index),
+      );
+      for (let i = 0; i < sorted.length; i++) {
+        const m = sorted[i] as { index?: unknown; variavel?: unknown };
+        if (m.index !== i + 1) return { ok: false as const, err: `índice ${i + 1} ausente/duplicado` };
+        if (typeof m.variavel !== "string" || m.variavel.length === 0) {
+          return { ok: false as const, err: `variavel inválida no índice ${i + 1}` };
+        }
+      }
+      return { ok: true as const, value: sorted as Array<{ index: number; variavel: string; tipo?: string }> };
+    } catch (e) {
+      return { ok: false as const, err: `JSON inválido: ${(e as Error).message}` };
+    }
+  })();
+
+  const metaComplete =
+    name.trim().length > 0 && lang.trim().length > 0 && parsedMapping.ok;
+  const canApprove = metaComplete && parsedMapping.ok && parsedMapping.value.length > 0;
+  const wantsApproved = status === "approved";
+  const invalidApproval = wantsApproved && !canApprove;
+
+  const salvar = useMutation({
+    mutationFn: async () => {
+      if (!parsedMapping.ok) throw new Error(parsedMapping.err);
+      if (invalidApproval) {
+        throw new Error("approved requer nome, language_code e mapping válidos");
+      }
+      return setTemplateMetadata({
+        p_template_id: template.id,
+        p_provider_template_name: name.trim() || null,
+        p_language_code: lang.trim() || null,
+        p_parameter_mapping: parsedMapping.value,
+        p_provider_template_status: status,
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comm", "templates"] }),
+  });
+
+  return (
+    <div className="rounded border bg-muted/30 p-2 text-xs">
+      <button
+        type="button"
+        className="underline"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        {open ? "▾" : "▸"} Metadados WhatsApp (Meta) — {canMutate ? "editar" : "somente leitura"}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col">
+              <span className="text-muted-foreground">provider_template_name</span>
+              <input
+                className="rounded border p-1"
+                value={name}
+                readOnly={!canMutate}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="produto_pronto_v1"
+              />
+            </label>
+            <label className="flex flex-col">
+              <span className="text-muted-foreground">language_code</span>
+              <input
+                className="rounded border p-1"
+                value={lang}
+                readOnly={!canMutate}
+                onChange={(e) => setLang(e.target.value)}
+                placeholder="pt_BR"
+              />
+            </label>
+          </div>
+          <label className="flex flex-col">
+            <span className="text-muted-foreground">
+              parameter_mapping (JSON — [{`{"index":1,"variavel":"nome","tipo":"text"}`}])
+            </span>
+            <textarea
+              className="h-24 rounded border p-1 font-mono"
+              value={mappingTxt}
+              readOnly={!canMutate}
+              onChange={(e) => setMappingTxt(e.target.value)}
+            />
+            {!parsedMapping.ok && (
+              <span className="text-destructive mt-1">mapping: {parsedMapping.err}</span>
+            )}
+          </label>
+          <label className="flex flex-col">
+            <span className="text-muted-foreground">provider_template_status</span>
+            <select
+              className="rounded border p-1"
+              value={status}
+              disabled={!canMutate}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              {STATUS_ALLOWED.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <span className="text-muted-foreground mt-1">
+              Somente <code>approved</code> permite ativação/envio via WhatsApp.
+            </span>
+            {invalidApproval && (
+              <span className="text-destructive mt-1">
+                approved requer nome, language_code e mapping válidos.
+              </span>
+            )}
+          </label>
+          {canMutate && (
+            <button
+              type="button"
+              className="rounded bg-primary px-3 py-1.5 text-primary-foreground disabled:opacity-50"
+              disabled={salvar.isPending || !parsedMapping.ok || invalidApproval}
+              onClick={() => salvar.mutate()}
+            >
+              Salvar metadados
+            </button>
+          )}
+          {salvar.error && (
+            <p className="text-destructive">Erro: {(salvar.error as Error).message}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function tryRender(form: { canal: Canal; assunto: string; corpo: string; variaveisTxt: string }):
   | { assunto?: string; corpo: string; missing: string[] }

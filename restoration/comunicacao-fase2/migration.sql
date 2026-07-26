@@ -411,6 +411,131 @@ END$$;
 REVOKE ALL ON FUNCTION public._comunicacao_publish_system_event(text,text,uuid,jsonb,text) FROM PUBLIC, anon, authenticated;
 
 -- =============================================================================
+-- 4.b. RPC autenticada v2 (substitui uso da rpc Fase 1 na UI Fase 2). Sem
+--      overload do nome antigo — nome distinto. Apenas administrador. Reproduz
+--      todas as validações rígidas/whitelist/idempotência da RPC Fase 1, mas
+--      chama _comunicacao_expand_event v2 (com source_type) para que TODO
+--      outbox manual/broadcast receba metadata WA no snapshot e helpers
+--      source-aware. A RPC antiga permanece intacta para compatibilidade.
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.rpc_publish_communication_event_v2(
+  p_event_key text, p_source_type text, p_source_id uuid,
+  p_payload jsonb, p_idempotency_key text
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_event_id uuid;
+  v_expand   jsonb;
+  v_target_role public.app_role;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'autenticação requerida' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF NOT public.has_role(auth.uid(),'administrador') THEN
+    RAISE EXCEPTION 'apenas administrador pode publicar eventos (v2)'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF p_event_key NOT IN ('produto_pronto_retirada','produto_pronto_aplicacao','administrative_important_update') THEN
+    RAISE EXCEPTION 'event_key não permitido: %', p_event_key;
+  END IF;
+  IF jsonb_typeof(COALESCE(p_payload,'{}'::jsonb)) <> 'object' THEN
+    RAISE EXCEPTION 'payload deve ser objeto JSON';
+  END IF;
+  IF p_idempotency_key IS NULL OR length(p_idempotency_key) < 8 THEN
+    RAISE EXCEPTION 'idempotency_key inválido (mín. 8 chars)';
+  END IF;
+
+  IF p_event_key IN ('produto_pronto_retirada','produto_pronto_aplicacao') THEN
+    -- payload NÃO aceita chaves (dados derivados do banco)
+    IF (SELECT count(*) FROM jsonb_object_keys(COALESCE(p_payload,'{}'::jsonb))) > 0 THEN
+      RAISE EXCEPTION 'payload não aceita chaves para %', p_event_key;
+    END IF;
+    -- source_type restrito à allowlist Fase 2 (regular + on-farm)
+    IF p_source_type NOT IN ('ordens_servico','ordens_servico_onfarm') THEN
+      RAISE EXCEPTION 'source_type inválido para %: %', p_event_key, p_source_type;
+    END IF;
+    IF p_source_id IS NULL THEN
+      RAISE EXCEPTION 'source_id obrigatório';
+    END IF;
+
+    IF p_event_key = 'produto_pronto_retirada' THEN
+      -- Manual admin sobre OS regular: exige status pronto_entrega (paridade Fase 1).
+      IF p_source_type = 'ordens_servico' THEN
+        IF NOT EXISTS (SELECT 1 FROM public.ordens_servico o
+                        WHERE o.id = p_source_id AND o.status = 'pronto_entrega'::public.status_os) THEN
+          RAISE EXCEPTION 'ordens_servico não está em pronto_entrega';
+        END IF;
+      ELSE
+        IF NOT EXISTS (SELECT 1 FROM public.ordens_servico_onfarm o
+                        WHERE o.id = p_source_id AND o.status = 'pronto_entrega'::public.status_os_onfarm) THEN
+          RAISE EXCEPTION 'ordens_servico_onfarm não está em pronto_entrega';
+        END IF;
+      END IF;
+    ELSE
+      -- produto_pronto_aplicacao: somente OS regular existente (on-farm sem definição de negócio)
+      IF p_source_type <> 'ordens_servico' THEN
+        RAISE EXCEPTION 'produto_pronto_aplicacao aceita apenas ordens_servico (regular)';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM public.ordens_servico o WHERE o.id = p_source_id) THEN
+        RAISE EXCEPTION 'ordem_servico inexistente';
+      END IF;
+    END IF;
+
+  ELSE  -- administrative_important_update
+    IF EXISTS (
+      SELECT 1 FROM jsonb_object_keys(COALESCE(p_payload,'{}'::jsonb)) k
+       WHERE k NOT IN ('target_role','titulo','mensagem')
+    ) THEN
+      RAISE EXCEPTION 'chaves de payload não permitidas para administrative_important_update';
+    END IF;
+    IF p_payload ->> 'target_role' IS NULL THEN
+      RAISE EXCEPTION 'target_role obrigatório';
+    END IF;
+    BEGIN
+      v_target_role := (p_payload ->> 'target_role')::public.app_role;
+    EXCEPTION WHEN others THEN
+      RAISE EXCEPTION 'target_role inválido: %', p_payload ->> 'target_role';
+    END;
+    IF length(COALESCE(p_payload->>'titulo','')) > 200 THEN
+      RAISE EXCEPTION 'titulo excede 200 chars';
+    END IF;
+    IF length(COALESCE(p_payload->>'mensagem','')) > 2000 THEN
+      RAISE EXCEPTION 'mensagem excede 2000 chars';
+    END IF;
+  END IF;
+
+  -- Insere evento (idempotência atômica)
+  INSERT INTO public.comunicacao_eventos(event_key,source_type,source_id,payload,created_by,idempotency_key)
+  VALUES (p_event_key, p_source_type, p_source_id, COALESCE(p_payload,'{}'::jsonb), auth.uid(), p_idempotency_key)
+  ON CONFLICT (idempotency_key) DO NOTHING
+  RETURNING id INTO v_event_id;
+
+  IF v_event_id IS NULL THEN
+    SELECT id INTO v_event_id FROM public.comunicacao_eventos WHERE idempotency_key = p_idempotency_key;
+    RETURN jsonb_build_object('ok',true,'event_id',v_event_id,'duplicated',true);
+  END IF;
+
+  -- Expansão v2 (source-aware). Falhas propagam e derrubam a transação.
+  v_expand := public._comunicacao_expand_event(
+    v_event_id, p_event_key, p_source_type, p_source_id, COALESCE(p_payload,'{}'::jsonb));
+
+  PERFORM public._comunicacao_write_audit(
+    'event.publish.v2','comunicacao_eventos', v_event_id, NULL,
+    jsonb_build_object(
+      'event_key', p_event_key,
+      'source_type', p_source_type,
+      'source_id',   p_source_id,
+      'expand', v_expand));
+
+  RETURN jsonb_build_object(
+    'ok',true,'event_id',v_event_id,'duplicated',false,
+    'enqueued', v_expand->'enqueued','skipped', v_expand->'skipped');
+END$$;
+REVOKE ALL ON FUNCTION public.rpc_publish_communication_event_v2(text,text,uuid,jsonb,text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.rpc_publish_communication_event_v2(text,text,uuid,jsonb,text) TO authenticated;
+
+
+-- =============================================================================
 -- 5. Triggers em ordens_servico e ordens_servico_onfarm
 -- =============================================================================
 CREATE OR REPLACE FUNCTION public._comunicacao_trg_os_pronto_retirada()
@@ -775,15 +900,20 @@ BEGIN
   IF length(p_titulo) > 200 THEN RAISE EXCEPTION 'titulo excede 200'; END IF;
   IF p_mensagem IS NOT NULL AND length(p_mensagem) > 4000 THEN RAISE EXCEPTION 'mensagem excede 4000'; END IF;
 
-  -- Lock por outbox_id (evita corrida entre workers)
+  -- Serialização determinística por outbox_id via advisory lock transacional.
+  -- hashtextextended(uuid_text, seed) produz bigint estável, sem SQL dinâmico
+  -- e sem risco de injeção. Bloqueia concorrentes ANTES da leitura, evitando
+  -- unique-violation por corrida no INSERT em comunicacao_inapp_dispatch.
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_outbox_id::text, 0));
+
   SELECT notification_id, target_kind
     INTO v_existing_id, v_existing_kind
     FROM public.comunicacao_inapp_dispatch
-   WHERE outbox_id = p_outbox_id
-     FOR UPDATE;
+   WHERE outbox_id = p_outbox_id;
   IF FOUND THEN
     RETURN jsonb_build_object('ok',true,'notification_id',v_existing_id,'target',v_existing_kind,'idempotent',true);
   END IF;
+
 
   IF p_cliente_id IS NOT NULL THEN
     v_tipo := 'informativo'::public.tipo_notificacao_portal;

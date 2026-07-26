@@ -56,6 +56,15 @@ parâmetros/formatação não influenciam.
 
 ### RPCs canônicas Fase 2 v2
 
+- `public.rpc_publish_communication_event_v2(text, text, uuid, jsonb, text) → jsonb`
+  **autenticada (administrador)** — usada pela UI Fase 2 tanto para
+  broadcast administrativo quanto para publicação manual de
+  `produto_pronto_aplicacao`. Chama `_comunicacao_expand_event` v2 para
+  que o snapshot receba `provider_template_name`, `language_code`,
+  `parameter_mapping` e `provider_template_status`, além dos helpers
+  source-aware. A RPC v1 `rpc_publish_communication_event` (4-arg
+  source_type) permanece intacta para compatibilidade mas **não é mais
+  consumida pela UI Fase 2**.
 - `public.rpc_set_communication_template_metadata(uuid, text, text, jsonb, text) → jsonb`
 - `public.rpc_preview_administrative_broadcast_count(public.app_role) → jsonb`
 - `public.rpc_resolve_outbox_address(uuid) → jsonb`
@@ -66,6 +75,7 @@ parâmetros/formatação não influenciam.
 - `public.rpc_dispatch_inapp_notification(uuid, uuid, uuid, text, text) → jsonb`
 - `public.rpc_create_portal_notification_secure(uuid, text, text, text) → jsonb`
 - `public.rpc_create_operational_notification_secure(uuid, text, text, text, text) → jsonb`
+
 
 ### Helpers system-side (SECURITY DEFINER, sem grant a authenticated/anon)
 
