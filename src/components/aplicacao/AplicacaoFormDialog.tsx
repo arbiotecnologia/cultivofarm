@@ -269,8 +269,12 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
             ? `O registro de aplicação de ${(osSel as any).produtos?.nome || "produto"} foi corrigido.`
             : `Aplicação de ${(osSel as any).produtos?.nome || "produto"} registrada em ${(osSel as any).fazendas?.nome || ""} / ${(osSel as any).talhoes?.nome || ""}`,
           _link: null,
+          _source_type: "aplicacao",
+          _source_id: ins.id,
+          _idempotency_key: `aplic-dialog-${ins.id}-${rectifyId ? "rect" : "new"}`,
         });
       }
+
 
       toast.success(rectifyId ? "Aplicação retificada com sucesso" : "Aplicação registrada com sucesso");
       qc.invalidateQueries({ queryKey: ["aplicacoes"] });

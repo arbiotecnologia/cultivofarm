@@ -203,8 +203,12 @@ export default function MobileAplicacoes() {
             ? `Registro corrigido: ${osSel.produtos?.nome || "Produto"} em ${osSel.talhoes?.nome}`
             : `${osSel.produtos?.nome || "Produto"} aplicado em ${osSel.fazendas?.nome} / ${osSel.talhoes?.nome}`,
           _link: null,
+          _source_type: "aplicacao",
+          _source_id: ins.id,
+          _idempotency_key: `mobile-aplic-${ins.id}-${rectifyId ? "rect" : "new"}`,
         });
       }
+
 
       toast.success(rectifyId ? "Aplicação retificada!" : "Aplicação registrada!");
       qc.invalidateQueries({ queryKey: ["aplicacoes"] });
