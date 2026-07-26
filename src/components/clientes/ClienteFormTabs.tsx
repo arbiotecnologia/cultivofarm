@@ -82,14 +82,19 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
   const cobrancaMesmoEndereco = watch("cobranca_mesmo_endereco");
   const limiteCredito = watch("limite_credito");
 
-  // Detecção automática de tipo de pessoa — só age quando o documento está
-  // COMPLETO (CPF=11 ou CNPJ=14). Digitação parcial não sobrescreve a
-  // escolha manual do usuário no seletor "Tipo de Pessoa".
+  // Detecção automática de tipo de pessoa — preserva a escolha manual.
+  // Um CNPJ passa por 11 dígitos durante a digitação; portanto, se o usuário
+  // já escolheu "Pessoa Jurídica", não podemos reclassificar como CPF nesse
+  // ponto intermediário, senão a máscara volta para CPF e bloqueia o CNPJ.
   useEffect(() => {
-    const digits = (cpfCnpj || "").replace(/\D/g, "");
-    if (digits.length === 14 && tipoPessoa !== "juridica") {
+    const raw = String(cpfCnpj || "");
+    const normalized = raw.replace(/[\s.\-/]/g, "").toUpperCase();
+    const digits = raw.replace(/\D/g, "");
+    const hasLetters = /[A-Z]/.test(normalized);
+
+    if ((hasLetters || normalized.length === 14 || digits.length > 11) && tipoPessoa !== "juridica") {
       setValue("tipo_pessoa", "juridica");
-    } else if (digits.length === 11 && tipoPessoa !== "fisica") {
+    } else if (digits.length === 11 && tipoPessoa !== "juridica" && tipoPessoa !== "fisica") {
       setValue("tipo_pessoa", "fisica");
     }
   }, [cpfCnpj, setValue, tipoPessoa]);
@@ -251,7 +256,7 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Tipo de Pessoa</Label>
-            <Select value={tipoPessoa} onValueChange={v => setValue("tipo_pessoa", v)}>
+            <Select value={tipoPessoa} onValueChange={v => setValue("tipo_pessoa", v, { shouldDirty: true })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="fisica">Pessoa Física</SelectItem>
@@ -278,10 +283,11 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
             <Label>{tipoPessoa === "juridica" ? "CNPJ" : "CPF"}</Label>
             <div className="flex gap-2 items-center">
               <MaskedField
+                key={`cpf-cnpj-${tipoPessoa === "juridica" ? "cnpj" : "cpf"}`}
                 name="cpf_cnpj"
-                mask="auto"
+                mask={tipoPessoa === "juridica" ? "cnpj" : "cpf"}
                 className="h-11 sm:h-10 text-base sm:text-sm"
-                placeholder="CPF ou CNPJ"
+                placeholder={tipoPessoa === "juridica" ? "00.000.000/0000-00" : "000.000.000-00"}
               />
               {tipoPessoa === "juridica" && (
                 <Button type="button" size="lg" variant="outline" onClick={handleCNPJLookup} disabled={loadingCNPJ} className="h-11 sm:h-10 px-3 shrink-0">
