@@ -41,9 +41,11 @@ export async function sendEmail(
     // Reuso do denomailer (já em uso por enviar-alertas-notificacoes).
     // O import é dinâmico para permitir mock por AdapterDeps.fetch nos testes
     // (o teste do worker faz stub em runAdapter, não neste import).
-    const { SMTPClient } = await import(
-      "https://deno.land/x/denomailer@1.6.0/mod.ts"
-    );
+    // Especificador dinâmico via variável — evita resolução estática por
+    // ferramentas Node (o URL é válido apenas em runtime Deno).
+    const denomailerSpec = "https://deno.land/x/denomailer@1.6.0/mod.ts";
+    // @ts-ignore -- módulo Deno resolvido só em runtime da Edge Function
+    const { SMTPClient } = await import(denomailerSpec);
 
     const client = new SMTPClient({
       connection: {

@@ -276,7 +276,7 @@ describe("whatsapp-adapter: envio simulado (fetch mock)", () => {
 
   it("timeout de fetch → transient_error (whatsapp_timeout)", async () => {
     const fakeFetch: typeof fetch = (_url, init) =>
-      new Promise((_res, rej) => {
+      new Promise<Response>((_res, rej) => {
         (init as RequestInit).signal!.addEventListener("abort", () => {
           const err = new Error("aborted");
           err.name = "AbortError";
