@@ -152,7 +152,7 @@ export const publishAdministrativeBroadcast = (args: {
   callRpc("rpc_publish_communication_event_v2", {
     p_event_key: "administrative_important_update",
     // Fase 2.4: broadcast administrativo não tem origem — source_type/source_id nulos
-    p_source_type: null as unknown as string,
+    p_source_type: null,
     p_source_id: null,
     p_payload: {
       target_role: args.target_role,
