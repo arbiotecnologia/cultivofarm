@@ -176,23 +176,31 @@ export type PhoneValidationResult =
   | { ok: true; value: string | null }
   | { ok: false; error: string };
 
-export const validatePhoneBR = (
+export function validatePhoneBR(
   value: string | number | null | undefined,
-  { fieldLabel = "Telefone", required = false }: { fieldLabel?: string; required?: boolean } = {},
-): PhoneValidationResult => {
+  opts: { fieldLabel?: string; required?: boolean } = {},
+): PhoneValidationResult {
+  const fieldLabel = opts.fieldLabel ?? "Telefone";
+  const required = opts.required ?? false;
   if (value === null || value === undefined || String(value).trim() === "") {
-    if (required) return { ok: false, error: `${fieldLabel} é obrigatório.` };
-    return { ok: true, value: null };
+    if (required) {
+      const err: PhoneValidationResult = { ok: false, error: `${fieldLabel} é obrigatório.` };
+      return err;
+    }
+    const ok: PhoneValidationResult = { ok: true, value: null };
+    return ok;
   }
   const digits = String(value).replace(/\D/g, "");
   if (digits.length === 10 || digits.length === 11) {
-    return { ok: true, value: digits };
+    const ok: PhoneValidationResult = { ok: true, value: digits };
+    return ok;
   }
-  return {
+  const err: PhoneValidationResult = {
     ok: false,
     error: `${fieldLabel} inválido: informe DDD + número (10 ou 11 dígitos).`,
   };
-};
+  return err;
+}
 
 /**
  * Formata CEP
