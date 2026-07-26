@@ -81,17 +81,15 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
   const cobrancaMesmoEndereco = watch("cobranca_mesmo_endereco");
   const limiteCredito = watch("limite_credito");
 
-  // Detecção automática de tipo de pessoa baseada no CPF/CNPJ
+  // Detecção automática de tipo de pessoa — só age quando o documento está
+  // COMPLETO (CPF=11 ou CNPJ=14). Digitação parcial não sobrescreve a
+  // escolha manual do usuário no seletor "Tipo de Pessoa".
   useEffect(() => {
     const digits = (cpfCnpj || "").replace(/\D/g, "");
-    if (digits.length > 11) {
-      if (tipoPessoa !== "juridica") {
-        setValue("tipo_pessoa", "juridica");
-      }
-    } else if (digits.length > 0 && digits.length <= 11) {
-      if (tipoPessoa !== "fisica") {
-        setValue("tipo_pessoa", "fisica");
-      }
+    if (digits.length === 14 && tipoPessoa !== "juridica") {
+      setValue("tipo_pessoa", "juridica");
+    } else if (digits.length === 11 && tipoPessoa !== "fisica") {
+      setValue("tipo_pessoa", "fisica");
     }
   }, [cpfCnpj, setValue, tipoPessoa]);
 

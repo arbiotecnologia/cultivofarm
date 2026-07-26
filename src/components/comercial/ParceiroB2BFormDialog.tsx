@@ -26,6 +26,8 @@ import {
 import { formatCNPJ, unmask, unmaskCnpj } from "@/lib/masks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchCEP } from "@/lib/api/viacep";
+import { fetchCNPJ } from "@/lib/api/brasilapi";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { ParceiroUsuariosTab } from "@/components/comercial/ParceiroUsuariosTab";
@@ -208,6 +210,37 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
     }
   };
 
+  const [loadingCNPJ, setLoadingCNPJ] = useState(false);
+  const handleCNPJLookup = async () => {
+    const raw = unmaskCnpj(form.cnpj ?? "");
+    if (raw.length !== 14 || !validateCNPJ(raw)) {
+      toast.error("Insira um CNPJ válido para buscar");
+      return;
+    }
+    setLoadingCNPJ(true);
+    try {
+      const data = await fetchCNPJ(raw);
+      setForm((f) => ({
+        ...f,
+        razao_social: data.razao_social || f.razao_social,
+        nome_fantasia: data.nome_fantasia || f.nome_fantasia || data.razao_social || null,
+        cep: data.cep || f.cep,
+        endereco_logradouro: data.logradouro || f.endereco_logradouro,
+        endereco_numero: data.numero || f.endereco_numero,
+        endereco_complemento: data.complemento || f.endereco_complemento,
+        endereco_bairro: data.bairro || f.endereco_bairro,
+        commercial_city: data.municipio || f.commercial_city,
+        commercial_state: data.uf || f.commercial_state,
+        telefone_comercial: f.telefone_comercial || data.ddd_telefone_1 || null,
+      }));
+      toast.success("Dados preenchidos via BrasilAPI. Revise antes de salvar.");
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao consultar CNPJ");
+    } finally {
+      setLoadingCNPJ(false);
+    }
+  };
+
   const handleSubmit = async () => {
     const payload: any = {
       ...form,
@@ -279,15 +312,28 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
               </div>
               <div>
                 <Label>CNPJ</Label>
-                <Input
-                  inputMode="text"
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  maxLength={18}
-                  value={formatCNPJ(form.cnpj ?? "")}
-                  onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
-                  placeholder="00.000.000/0000-00"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    inputMode="text"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    maxLength={18}
+                    value={formatCNPJ(form.cnpj ?? "")}
+                    onChange={(e) => set("cnpj", unmaskCnpj(e.target.value).slice(0, 14))}
+                    placeholder="00.000.000/0000-00"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCNPJLookup}
+                    disabled={loadingCNPJ || unmaskCnpj(form.cnpj ?? "").length !== 14 || !validateCNPJ(unmaskCnpj(form.cnpj ?? ""))}
+                    title="Buscar dados públicos na BrasilAPI (revise antes de salvar)"
+                  >
+                    {loadingCNPJ ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">Buscar</span>
+                  </Button>
+                </div>
 
                 {errors.cnpj && <p className="text-xs text-destructive mt-1">{errors.cnpj}</p>}
               </div>
