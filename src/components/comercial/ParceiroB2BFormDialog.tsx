@@ -592,11 +592,11 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
               </div>
               <div>
                 <Label>Telefone comercial</Label>
-                <Input value={form.telefone_comercial ?? ""} onChange={(e) => set("telefone_comercial", e.target.value)} />
+                <MaskedInput mask="telefone" placeholder="(00) 00000-0000" value={form.telefone_comercial ?? ""} onChange={(e) => set("telefone_comercial", e.target.value)} />
               </div>
               <div>
                 <Label>WhatsApp comercial</Label>
-                <Input value={form.whatsapp_comercial ?? ""} onChange={(e) => set("whatsapp_comercial", e.target.value)} />
+                <MaskedInput mask="telefone" placeholder="(00) 00000-0000" value={form.whatsapp_comercial ?? ""} onChange={(e) => set("whatsapp_comercial", e.target.value)} />
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
