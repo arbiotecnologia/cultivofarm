@@ -78,15 +78,29 @@ gerenciado; edição manual bloqueada por política. Enquanto migration v3 não 
 aplicada, `src/features/comunicacao/api.ts` mantém casts
 `as unknown as ...` — mudança dedicada logo após a aplicação em staging.
 
+## Correções desta rodada (v3.1) sobre o commit `feb290cbb8b0a0e9b5f016f8acffb142123c96ef`
+
+1. `rollback.sql` — assinaturas realinhadas literalmente com `migration.sql`, incluindo `rpc_verify_communication_channel(uuid, uuid, public.comunicacao_canal, boolean, boolean)`, `rpc_archive_communication_template(uuid)`, `_comunicacao_write_consent(uuid, uuid, public.comunicacao_canal, text, text)`, `_comunicacao_resolve_recipients(text, public.comunicacao_regras, uuid)` e `_comunicacao_build_snapshot(text, uuid, jsonb, uuid, uuid)`. Também dropa os guards de trigger (`comunicacao_templates_guard_immutable`, `comunicacao_outbox_touch`, `comunicacao_consent_no_mutation`, `comunicacao_audit_no_mutation`).
+2. `runbook.md` — seção "Assinaturas de RPCs" reescrita copiando nomes, ordem, tipos e retornos exatos da migration (todas `RETURNS jsonb` salvo `rpc_claim_communication_outbox` que retorna `SETOF public.comunicacao_outbox`). Assinatura correta de `rpc_verify_communication_channel` com 5 argumentos.
+3. `runbook.md`, `seeds.sql` e este relatório — removida a afirmação de que `produto_pronto_aplicacao` mapeia para `ordens_servico.status = 'entregue'`. A migration não confirma esse mapeamento e a documentação agora diz explicitamente: sem status equivalente comprovado, publicação apenas manual/admin com validação de existência da OS.
+4. `postcheck.sql` — passa a validar `pg_get_function_identity_arguments` de cada RPC pública contra a assinatura canônica e falha se houver mais de uma definição para o mesmo nome (proibição explícita de overloads legados). A assinatura de 5 argumentos de `rpc_verify_communication_channel` está entre as verificadas.
+
+## `types.ts`
+
+Regenerado automaticamente pelo pipeline de migrations ao aplicar SQL no projeto
+gerenciado; edição manual bloqueada por política. Enquanto migration v3 não é
+aplicada, `src/features/comunicacao/api.ts` mantém casts
+`as unknown as ...` — mudança dedicada logo após a aplicação em staging.
+
 ## Validações locais
 
-- Referências obsoletas — `rg` limpo:
-  - `usuarios_cliente_produtor` → nenhuma ocorrência no repo.
-  - `comunicacao_evento_status.*failed` → nenhuma ocorrência.
-  - `profiles.id = ur.user_id` (join antigo) → nenhuma ocorrência.
 - `bunx tsgo --noEmit` — sem erros.
 - `bun run build` — ok.
-- `bunx vitest run src/test/comunicacao/` — verde.
+- `bunx vitest run src/test/comunicacao/` — verde (31 testes).
+- Referências obsoletas — sem ocorrências em **código SQL executável ou chamadas funcionais** dentro do pacote da Fase 1:
+  - `usuarios_cliente_produtor` — só aparece em texto documental (runbook/postcheck/harness) descrevendo sua ausência ou em guardas defensivas que garantem que a tabela não exista; nenhum `FROM`/`JOIN`/`SELECT` real a referencia.
+  - Label `'failed'` — permanece apenas em `comunicacao_outbox_status` (canal por linha da outbox), como esperado. **Não** aparece em `comunicacao_evento_status`; o `postcheck.sql` valida essa ausência.
+  - Join antigo `profiles.id = user_roles.user_id` — sem ocorrências em código SQL executável.
 
 ## O que NÃO foi feito (intencional)
 
