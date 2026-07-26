@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { formatTelefone } from "@/lib/masks";
 import { useSearchParams } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
-import { unmask } from "@/lib/masks";
+import { unmask, validatePhoneBR } from "@/lib/masks";
 import { getCurrentPosition, parseGoogleMapsUrl, getGoogleMapsUrl, getWazeUrl, getPublicMapEmbedUrl } from "@/lib/geo";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
