@@ -603,7 +603,7 @@ function WhatsappTemplateMetadataEditor({
   );
   const [status, setStatus] = useState<string>(template.provider_template_status ?? "draft");
 
-  // Fase 2.4: status aceitos pelo SQL — SEM "submitted".
+  // Fase 2.4: status aceitos pelo SQL — sem o valor legado obsoleto.
   const STATUS_ALLOWED = ["draft", "pending", "approved", "rejected", "paused", "disabled"] as const;
 
   // Fase 2.4: variáveis declaradas no template — usadas para validar mapping.
