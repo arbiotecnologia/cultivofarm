@@ -356,10 +356,10 @@ function TemplatesPanel({ canMutate }: { canMutate: boolean }) {
                 <span className="rounded px-1.5 py-0.5 text-xs border">{t.status}</span>
                 <span className="ml-auto flex gap-2">
                   {t.status === "draft" && (
-                    <button className="text-xs underline" onClick={() => ativar.mutate(t.id)}>Ativar</button>
+                    <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => ativar.mutate(t.id)}>Ativar</button>
                   )}
                   {t.status !== "archived" && (
-                    <button className="text-xs underline" onClick={() => arquivar.mutate(t.id)}>Arquivar</button>
+                    <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => arquivar.mutate(t.id)}>Arquivar</button>
                   )}
                 </span>
               </li>
@@ -402,7 +402,7 @@ function tryRender(form: { canal: Canal; assunto: string; corpo: string; variave
 
 // -------------------- Regras --------------------
 
-function RegrasPanel() {
+function RegrasPanel({ canMutate }: { canMutate: boolean }) {
   const qc = useQueryClient();
   const q = useQuery<ComunicacaoRegra[], Error>({ queryKey: ["comm", "regras"], queryFn: () => listRules() });
 
@@ -589,14 +589,17 @@ function RegrasPanel() {
         <button
           className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
           disabled={
+            !canMutate ||
             mut.isPending ||
             !form.template_chave ||
             ((isAdmEvent || form.estrategia === "by_role") && !form.perfil)
           }
           onClick={() => mut.mutate()}
+          title={!canMutate ? "Somente administrador pode criar/alterar regras" : ""}
         >
           Criar regra
         </button>
+        {!canMutate && <p className="text-xs text-muted-foreground">Modo somente leitura (gestor).</p>}
         {mut.error && <p className="text-destructive">Erro: {(mut.error as Error).message}</p>}
       </div>
 
@@ -620,7 +623,7 @@ function RegrasPanel() {
                 <span className={`rounded px-1.5 py-0.5 text-xs border ${r.enabled ? "bg-primary/10" : ""}`}>
                   {r.enabled ? "ligada" : "desligada"}
                 </span>
-                <button className="text-xs underline" onClick={() => toggle.mutate(r)}>
+                <button className="text-xs underline disabled:opacity-40" disabled={!canMutate} onClick={() => toggle.mutate(r)}>
                   {r.enabled ? "Desligar" : "Ligar"}
                 </button>
               </span>
