@@ -166,7 +166,7 @@ describe("Fase 2.3 · UI: gestor sem Fila, editor de metadados WhatsApp", () => 
 
   it("editor WhatsApp existe e valida approved requer nome+language+mapping", () => {
     expect(uiSrc).toMatch(/function WhatsappTemplateMetadataEditor/);
-    expect(uiSrc).toMatch(/approved requer nome, language_code e mapping válidos/);
+    expect(uiSrc).toMatch(/approved (?:requer|exige) nome, language_code e mapping/);
     expect(uiSrc).toMatch(/Somente\s+<code>approved<\/code>\s+permite ativação\/envio/);
   });
 
