@@ -32,7 +32,7 @@ export function searchNavItems(
   const term = normalize(query.trim());
   // Fase 3 — achata filhos para que a busca também os alcance.
   const flat = items.flatMap((it) => (it.children ? [it, ...it.children] : [it]));
-  const allowed = flat.filter((it) => canAccess(role, it.route));
+  const allowed = flat.filter((it) => canAccess(role, it.route) && isNavItemFeatureEnabled(it));
   if (!term) return allowed;
 
   // Fase 6.1 — busca por tokens (AND). Cada token precisa aparecer no haystack,
