@@ -552,8 +552,9 @@ BEGIN
   IF jsonb_typeof(COALESCE(p_payload,'{}'::jsonb)) <> 'object' THEN
     RAISE EXCEPTION 'payload deve ser objeto JSON';
   END IF;
-  IF p_idempotency_key IS NULL OR length(p_idempotency_key) < 8 THEN
-    RAISE EXCEPTION 'idempotency_key inválido (mín. 8 chars)';
+  -- Fase 2.4: idempotency_key com limites explícitos (8..200 chars)
+  IF p_idempotency_key IS NULL OR length(p_idempotency_key) < 8 OR length(p_idempotency_key) > 200 THEN
+    RAISE EXCEPTION 'idempotency_key inválido (8..200 chars)';
   END IF;
 
   IF p_event_key IN ('produto_pronto_retirada','produto_pronto_aplicacao') THEN
@@ -592,7 +593,14 @@ BEGIN
       END IF;
     END IF;
 
-  ELSE  -- administrative_important_update
+  ELSE  -- administrative_important_update (Fase 2.4: hardened)
+    -- Fase 2.4: source deve ser NULL (broadcast administrativo não tem origem)
+    IF p_source_type IS NOT NULL THEN
+      RAISE EXCEPTION 'administrative_important_update: source_type deve ser NULL';
+    END IF;
+    IF p_source_id IS NOT NULL THEN
+      RAISE EXCEPTION 'administrative_important_update: source_id deve ser NULL';
+    END IF;
     IF EXISTS (
       SELECT 1 FROM jsonb_object_keys(COALESCE(p_payload,'{}'::jsonb)) k
        WHERE k NOT IN ('target_role','titulo','mensagem')
@@ -607,10 +615,17 @@ BEGIN
     EXCEPTION WHEN others THEN
       RAISE EXCEPTION 'target_role inválido: %', p_payload ->> 'target_role';
     END;
-    IF length(COALESCE(p_payload->>'titulo','')) > 200 THEN
+    -- Fase 2.4: titulo/mensagem obrigatórios após trim, com limites min/max
+    IF p_payload ->> 'titulo' IS NULL OR length(trim(p_payload->>'titulo')) = 0 THEN
+      RAISE EXCEPTION 'titulo obrigatório (não vazio após trim)';
+    END IF;
+    IF length(p_payload->>'titulo') > 200 THEN
       RAISE EXCEPTION 'titulo excede 200 chars';
     END IF;
-    IF length(COALESCE(p_payload->>'mensagem','')) > 2000 THEN
+    IF p_payload ->> 'mensagem' IS NULL OR length(trim(p_payload->>'mensagem')) = 0 THEN
+      RAISE EXCEPTION 'mensagem obrigatória (não vazia após trim)';
+    END IF;
+    IF length(p_payload->>'mensagem') > 2000 THEN
       RAISE EXCEPTION 'mensagem excede 2000 chars';
     END IF;
   END IF;
