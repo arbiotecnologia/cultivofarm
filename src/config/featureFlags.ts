@@ -19,7 +19,8 @@ export type FeatureFlagName =
   | "fiscalReconciliationUi"
   | "fiscalReconciliationWrite"
   | "fiscalReadinessCenterUi"
-  | "fiscalEmissionEnabled";
+  | "fiscalEmissionEnabled"
+  | "comunicacaoModule";
 
 export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
   /** Central de Configuração Fiscal (Fase 3.15). */
