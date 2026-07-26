@@ -169,7 +169,9 @@ describe("IE — amostras INVÁLIDAS por UF (DV, comprimento, prefixo, não-num�
     });
 
     it(`${uf}: rejeita comprimento acima do máximo`, () => {
-      expect(validateIE(uf, valid + "0").ok).toBe(false);
+      const maxLen = Math.max(...IE_PATTERNS[uf].digits);
+      const over = (valid + "00").slice(0, maxLen + 1);
+      expect(validateIE(uf, over).ok).toBe(false);
     });
 
     it(`${uf}: rejeita string não numérica`, () => {
