@@ -374,7 +374,7 @@ function RecebedorFields({ recebedor, setRecebedor }: { recebedor: any; setReceb
       </div>
       <div className="col-span-2">
         <Label>Telefone</Label>
-        <Input value={recebedor.telefone} maxLength={30} onChange={(e) => setRecebedor({ ...recebedor, telefone: e.target.value })} />
+        <MaskedInput mask="telefone" placeholder="(00) 00000-0000" value={recebedor.telefone} onChange={(e) => setRecebedor({ ...recebedor, telefone: e.target.value })} />
       </div>
     </div>
   );
