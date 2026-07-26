@@ -567,8 +567,11 @@ const App = () => (
                 <Route path="/configuracoes/fiscal/clientes" element={<RoleGuard><FiscalClientes /></RoleGuard>} />
                 <Route path="/fiscal/documentos" element={<RoleGuard><FiscalDocumentos /></RoleGuard>} />
                 <Route path="/fiscal/reconciliacao" element={<RoleGuard><FiscalReconciliacao /></RoleGuard>} />
-                <Route path="/fiscal/prontidao" element={<RoleGuard><FiscalProntidao /></RoleGuard>} />
-              </Route>
+                 <Route path="/fiscal/prontidao" element={<RoleGuard><FiscalProntidao /></RoleGuard>} />
+                 <Route path="/comunicacao" element={
+                   <ComunicacaoRouteGuard><ComunicacaoAdminPage /></ComunicacaoRouteGuard>
+                 } />
+               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
