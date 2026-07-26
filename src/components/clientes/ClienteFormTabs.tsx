@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useFormContext, useFieldArray, Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { MaskedInput } from "@/components/ui/masked-input";
@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Loader2, Plus, Trash2, Phone } from "lucide-react";
 import { fetchCEP } from "@/lib/api/viacep";
-import { fetchCNPJ } from "@/lib/api/brasilapi";
+import type { BrasilAPI_CNPJ } from "@/lib/api/brasilapi";
+import { validateCNPJ } from "@/lib/validators/cpfCnpj";
 import { toast } from "sonner";
 import { ClienteContatosTab } from "./ClienteContatosTab";
 import { ClienteDocumentosTab } from "./ClienteDocumentosTab";
