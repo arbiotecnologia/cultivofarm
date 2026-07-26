@@ -21,7 +21,7 @@ function resolveMaskPattern(mask: string, rawValue: string): string {
     case "cpf-cnpj":
       return clean.length > 11 ? "__.___.___/____-__" : "___.___.___-__";
     case "telefone":
-      return clean.length > 10 ? "(__) _____-____" : "(__) ____-____";
+      return clean.length >= 11 ? "(__) _____-____" : "(__) ____-____";
     case "cep":
       return "_____-___";
     case "ie":
