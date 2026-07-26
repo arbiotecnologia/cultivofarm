@@ -253,7 +253,7 @@ export default function Configuracoes() {
         roles: newUser.roles,
         partner_id: newUser.partner_id || null,
         partner_papel: hasPartnerRole(newUser.roles) ? partnerPapelFromRoles(newUser.roles) : null,
-        telefone: unmask(newUser.telefone),
+        telefone: (() => { const c = validatePhoneBR(newUser.telefone, { fieldLabel: "Telefone" }); if (!c.ok) throw new Error(c.error); return c.value; })(),
         cpf_cnpj: unmaskCpfCnpj(newUser.cpf_cnpj),
         cliente_ids: newUserVinculos.map(v => v.cliente_id),
         principal_cliente_id: principal,
