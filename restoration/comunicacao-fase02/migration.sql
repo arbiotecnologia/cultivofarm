@@ -59,17 +59,23 @@ ALTER TABLE public.notificacoes_operacionais
   ADD COLUMN IF NOT EXISTS source_id uuid,
   ADD COLUMN IF NOT EXISTS idempotency_key text;
 
--- Idempotência: apaga eventuais duplicatas legadas antes de criar unique.
---  (Nova coluna nunca terá duplicatas; guarda por segurança.)
-WITH d AS (
-  SELECT id,
-         ROW_NUMBER() OVER (PARTITION BY idempotency_key ORDER BY created_at NULLS LAST, id) AS rn
-    FROM public.notificacoes_operacionais
-   WHERE idempotency_key IS NOT NULL
-)
-DELETE FROM public.notificacoes_operacionais x
- USING d
- WHERE x.id = d.id AND d.rn > 1;
+-- Idempotência: colunas novas não devem ter duplicatas. Se um ambiente
+-- intermediário já tiver dados conflitantes, aborta para saneamento auditável.
+DO $$
+DECLARE v_dup int;
+BEGIN
+  SELECT count(*) INTO v_dup
+    FROM (
+      SELECT idempotency_key
+        FROM public.notificacoes_operacionais
+       WHERE idempotency_key IS NOT NULL
+       GROUP BY idempotency_key HAVING count(*) > 1
+    ) d;
+  IF v_dup > 0 THEN
+    RAISE EXCEPTION 'notificacoes_operacionais possui % idempotency_key(s) duplicada(s); arquive/saneie manualmente antes do unique', v_dup
+      USING ERRCODE = '23505';
+  END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -106,8 +112,8 @@ DROP FUNCTION IF EXISTS public.rpc_create_notificacao_operacional(uuid, text, te
 
 -- RPC canônica: autorização server-side por evento.
 -- Whitelist fechada de source_type. Para chamadas authenticated, source_type é OBRIGATÓRIO.
--- Chamadas SECURITY DEFINER internas (sem auth.uid()) mantêm liberdade controlada:
--- devem ser feitas apenas por outras RPCs SECURITY DEFINER auditadas nesta migration.
+-- Fluxos internos/cron devem usar RPCs específicas; esta RPC genérica não aceita
+-- caller sem identidade verificável.
 CREATE OR REPLACE FUNCTION public.rpc_create_notificacao_operacional(
   _usuario_id      uuid,
   _tipo            text,
@@ -130,10 +136,6 @@ DECLARE
   allowed_source_types text[] := ARRAY[
     'registros_consultor',  -- alias canônico
     'registro_consultor',   -- alias legado aceito
-    'ordem_servico',
-    'aplicacao',
-    'pedido_b2b',
-    'esteira_producao',
     'monitoramento_vencido',
     'internal_cron'
   ];
@@ -152,6 +154,8 @@ DECLARE
   is_staff_caller boolean := false;
   is_authorized   boolean := false;
   v_rc_owner uuid;
+  v_rc_created_by uuid;
+  v_rc_finalized_by uuid;
   v_rc_cli   uuid;
 BEGIN
   ----------------------------------------------------------------
@@ -197,8 +201,7 @@ BEGIN
   -- Autorização por papel do caller
   ----------------------------------------------------------------
   IF caller_uid IS NULL THEN
-    -- Chamada interna via SECURITY DEFINER (ex.: RPC de cron). Autorizada.
-    is_authorized := true;
+    RAISE EXCEPTION 'Identidade de usuário obrigatória para RPC operacional genérica' USING ERRCODE = '42501';
   ELSE
     is_admin_caller := has_role(caller_uid, 'administrador'::app_role);
     is_staff_caller := is_admin_caller
@@ -219,61 +222,34 @@ BEGIN
     ELSE
       -- Autorização por evento
       IF st IN ('registros_consultor','registro_consultor') THEN
-        SELECT consultor_responsavel, cliente_id
-          INTO v_rc_owner, v_rc_cli
+        SELECT consultor_responsavel, created_by, finalized_by, cliente_id
+          INTO v_rc_owner, v_rc_created_by, v_rc_finalized_by, v_rc_cli
           FROM public.registros_consultor
          WHERE id = _source_id;
         IF v_rc_owner IS NULL AND v_rc_cli IS NULL THEN
           RAISE EXCEPTION 'source_id não encontrado em registros_consultor' USING ERRCODE = '23503';
         END IF;
-        -- Caller precisa ter vínculo: dono do registro OU staff aprovador (gestor/administrativo)
+
+        -- Caller precisa ser participante real do registro. Gestor/administrativo
+        -- não é global; aprovações de gestor entram por status_log.changed_by.
         IF caller_uid = v_rc_owner
-           OR has_role(caller_uid, 'gestor'::app_role)
-           OR has_role(caller_uid, 'administrativo'::app_role)
+           OR caller_uid = v_rc_created_by
+           OR caller_uid = v_rc_finalized_by
+           OR EXISTS (
+                SELECT 1 FROM public.registros_consultor_status_log sl
+                 WHERE sl.registro_consultor_id = _source_id
+                   AND sl.changed_by = caller_uid
+              )
         THEN
-          -- Destinatário permitido: (a) o próprio caller, (b) o consultor responsável,
-          --                        (c) qualquer usuário com papel gestor/administrador/administrativo.
-          IF _usuario_id = caller_uid
-             OR _usuario_id = v_rc_owner
-             OR has_role(_usuario_id, 'gestor'::app_role)
-             OR has_role(_usuario_id, 'administrador'::app_role)
-             OR has_role(_usuario_id, 'administrativo'::app_role)
-          THEN
-            is_authorized := true;
+          IF _tipo = 'retorno_programado' THEN
+            is_authorized := (_usuario_id = caller_uid OR _usuario_id = v_rc_owner);
+          ELSIF _tipo IN ('aprovacao_urgente','aprovacao_recomendacao') THEN
+            is_authorized := has_role(_usuario_id, 'gestor'::app_role)
+              OR has_role(_usuario_id, 'administrador'::app_role)
+              OR has_role(_usuario_id, 'administrativo'::app_role);
+          ELSE
+            is_authorized := (_usuario_id = caller_uid OR _usuario_id = v_rc_owner);
           END IF;
-        END IF;
-
-      ELSIF st = 'ordem_servico' THEN
-        IF NOT EXISTS (SELECT 1 FROM public.ordens_servico WHERE id = _source_id) THEN
-          RAISE EXCEPTION 'source_id não encontrado em ordens_servico' USING ERRCODE = '23503';
-        END IF;
-        -- Apenas gestor/administrativo pode disparar notificações operacionais por OS
-        -- (fluxos de aplicador/produção rodam via triggers SECURITY DEFINER).
-        IF has_role(caller_uid, 'gestor'::app_role)
-           OR has_role(caller_uid, 'administrativo'::app_role)
-        THEN
-          is_authorized := true;
-        END IF;
-
-      ELSIF st = 'aplicacao' THEN
-        IF NOT EXISTS (SELECT 1 FROM public.aplicacoes WHERE id = _source_id) THEN
-          RAISE EXCEPTION 'source_id não encontrado em aplicacoes' USING ERRCODE = '23503';
-        END IF;
-        IF has_role(caller_uid, 'gestor'::app_role)
-           OR has_role(caller_uid, 'administrativo'::app_role)
-           OR has_role(caller_uid, 'aplicador'::app_role)
-        THEN
-          is_authorized := true;
-        END IF;
-
-      ELSIF st IN ('pedido_b2b','esteira_producao') THEN
-        -- Escopos B2B/produção: gestor/administrativo/producao/financeiro.
-        IF has_role(caller_uid, 'gestor'::app_role)
-           OR has_role(caller_uid, 'administrativo'::app_role)
-           OR has_role(caller_uid, 'producao'::app_role)
-           OR has_role(caller_uid, 'financeiro'::app_role)
-        THEN
-          is_authorized := true;
         END IF;
 
       ELSIF st IN ('monitoramento_vencido','internal_cron') THEN
@@ -351,12 +327,22 @@ ALTER TABLE public.portal_notificacoes
   ADD COLUMN IF NOT EXISTS source_id uuid,
   ADD COLUMN IF NOT EXISTS idempotency_key text;
 
--- Dedup preventivo
-WITH d AS (
-  SELECT id, ROW_NUMBER() OVER (PARTITION BY idempotency_key ORDER BY created_at NULLS LAST, id) rn
-    FROM public.portal_notificacoes WHERE idempotency_key IS NOT NULL
-)
-DELETE FROM public.portal_notificacoes x USING d WHERE x.id = d.id AND d.rn > 1;
+-- Idempotência: aborta se ambiente intermediário já contém duplicatas.
+DO $$
+DECLARE v_dup int;
+BEGIN
+  SELECT count(*) INTO v_dup
+    FROM (
+      SELECT idempotency_key
+        FROM public.portal_notificacoes
+       WHERE idempotency_key IS NOT NULL
+       GROUP BY idempotency_key HAVING count(*) > 1
+    ) d;
+  IF v_dup > 0 THEN
+    RAISE EXCEPTION 'portal_notificacoes possui % idempotency_key(s) duplicada(s); arquive/saneie manualmente antes do unique', v_dup
+      USING ERRCODE = '23505';
+  END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -418,8 +404,12 @@ DECLARE
   is_admin_caller boolean := false;
   v_rc_cli uuid;
   v_rc_owner uuid;
+  v_rc_created_by uuid;
+  v_rc_finalized_by uuid;
   v_os_cli uuid;
   v_apl_cli uuid;
+  v_apl_resp uuid;
+  v_apl_created_by uuid;
   is_authorized boolean := false;
 BEGIN
   IF caller_uid IS NULL THEN
@@ -458,7 +448,8 @@ BEGIN
   is_admin_caller := has_role(caller_uid, 'administrador'::app_role);
 
   IF st = 'registros_consultor' THEN
-    SELECT cliente_id, consultor_responsavel INTO v_rc_cli, v_rc_owner
+    SELECT cliente_id, consultor_responsavel, created_by, finalized_by
+      INTO v_rc_cli, v_rc_owner, v_rc_created_by, v_rc_finalized_by
       FROM public.registros_consultor WHERE id = _source_id;
     IF v_rc_cli IS NULL THEN
       RAISE EXCEPTION 'source_id não encontrado em registros_consultor' USING ERRCODE = '23503';
@@ -468,8 +459,13 @@ BEGIN
     END IF;
     IF is_admin_caller
        OR caller_uid = v_rc_owner
-       OR has_role(caller_uid, 'gestor'::app_role)
-       OR has_role(caller_uid, 'administrativo'::app_role)
+       OR caller_uid = v_rc_created_by
+       OR caller_uid = v_rc_finalized_by
+       OR EXISTS (
+            SELECT 1 FROM public.registros_consultor_status_log sl
+             WHERE sl.registro_consultor_id = _source_id
+               AND sl.changed_by = caller_uid
+          )
     THEN
       is_authorized := true;
     END IF;
@@ -482,17 +478,15 @@ BEGIN
     IF v_os_cli <> _cliente_id THEN
       RAISE EXCEPTION 'source_id pertence a outro cliente' USING ERRCODE = '42501';
     END IF;
-    IF is_admin_caller
-       OR has_role(caller_uid, 'gestor'::app_role)
-       OR has_role(caller_uid, 'administrativo'::app_role)
-       OR has_role(caller_uid, 'aplicador'::app_role)
-       OR has_role(caller_uid, 'producao'::app_role)
-    THEN
+    -- OS padrão não possui responsável real no schema atual. Sem escopo
+    -- operacional explícito, somente administrador pode emitir este evento.
+    IF is_admin_caller THEN
       is_authorized := true;
     END IF;
 
   ELSIF st = 'aplicacao' THEN
-    SELECT os.cliente_id INTO v_apl_cli
+    SELECT os.cliente_id, a.responsavel_id, a.created_by
+      INTO v_apl_cli, v_apl_resp, v_apl_created_by
       FROM public.aplicacoes a
       JOIN public.ordens_servico os ON os.id = a.ordem_servico_id
      WHERE a.id = _source_id;
@@ -503,9 +497,8 @@ BEGIN
       RAISE EXCEPTION 'source_id pertence a outro cliente' USING ERRCODE = '42501';
     END IF;
     IF is_admin_caller
-       OR has_role(caller_uid, 'gestor'::app_role)
-       OR has_role(caller_uid, 'administrativo'::app_role)
-       OR has_role(caller_uid, 'aplicador'::app_role)
+       OR caller_uid = v_apl_resp
+       OR caller_uid = v_apl_created_by
     THEN
       is_authorized := true;
     END IF;
@@ -559,11 +552,21 @@ ALTER TABLE public.aplicacao_emails
 ALTER TABLE public.aplicacao_emails
   ADD COLUMN IF NOT EXISTS idempotency_key text;
 
-WITH d AS (
-  SELECT id, ROW_NUMBER() OVER (PARTITION BY idempotency_key ORDER BY created_at NULLS LAST, id) rn
-    FROM public.aplicacao_emails WHERE idempotency_key IS NOT NULL
-)
-DELETE FROM public.aplicacao_emails x USING d WHERE x.id = d.id AND d.rn > 1;
+DO $$
+DECLARE v_dup int;
+BEGIN
+  SELECT count(*) INTO v_dup
+    FROM (
+      SELECT idempotency_key
+        FROM public.aplicacao_emails
+       WHERE idempotency_key IS NOT NULL
+       GROUP BY idempotency_key HAVING count(*) > 1
+    ) d;
+  IF v_dup > 0 THEN
+    RAISE EXCEPTION 'aplicacao_emails possui % idempotency_key(s) duplicada(s); arquive/saneie manualmente antes do unique', v_dup
+      USING ERRCODE = '23505';
+  END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -587,8 +590,10 @@ CREATE POLICY "Deny direct delete on aplicacao_emails"
 DROP FUNCTION IF EXISTS public.rpc_record_aplicacao_email(uuid, text, text);
 DROP FUNCTION IF EXISTS public.rpc_record_aplicacao_email(uuid, text, text, text, uuid);
 
--- RPC: valida destinatário permitido (e-mail do cliente do OS) OU staff com override.
--- Permite EVOLUÇÃO de status por idempotency_key: failed/link_generated_no_send/queued/pending → sent.
+-- RPC: valida destinatário permitido 100% contra banco.
+-- Sem override de e-mail: mesmo administrador só registra destinatários cadastrados
+-- no cliente da OS vinculada à aplicação (clientes.email ou contato_financeiro_email).
+-- Permite evolução de status por idempotency_key: queued/pending/failed/link_generated_no_send → sent.
 CREATE OR REPLACE FUNCTION public.rpc_record_aplicacao_email(
   _aplicacao_id     uuid,
   _email            text,
@@ -606,9 +611,9 @@ DECLARE
   existing_id  uuid;
   existing_status text;
   final_author uuid;
-  v_cli_email  text;
   v_cli_id     uuid;
-  can_bypass   boolean := false;
+  v_apl_resp   uuid;
+  v_apl_created_by uuid;
   allowed      text[] := ARRAY['queued','pending','sent','failed','link_generated_no_send','enviado'];
   progressable text[] := ARRAY['queued','pending','failed','link_generated_no_send'];
 BEGIN
@@ -622,90 +627,87 @@ BEGIN
     RAISE EXCEPTION 'e-mail inválido' USING ERRCODE = '22023';
   END IF;
 
-  -- Autoria: derivada server-side.
-  -- _enviado_por só é respeitado se a chamada NÃO é authenticated (service_role/internal).
-  IF caller_uid IS NOT NULL THEN
-    final_author := caller_uid;
-  ELSE
-    final_author := _enviado_por;
+  final_author := COALESCE(caller_uid, _enviado_por);
+  IF final_author IS NULL THEN
+    RAISE EXCEPTION 'enviado_por verificável é obrigatório' USING ERRCODE = '42501';
   END IF;
 
-  -- Busca cliente da aplicação
-  SELECT os.cliente_id, c.email
-    INTO v_cli_id, v_cli_email
+  SELECT os.cliente_id, a.responsavel_id, a.created_by
+    INTO v_cli_id, v_apl_resp, v_apl_created_by
     FROM public.aplicacoes a
     JOIN public.ordens_servico os ON os.id = a.ordem_servico_id
-    JOIN public.clientes c        ON c.id  = os.cliente_id
    WHERE a.id = _aplicacao_id;
   IF v_cli_id IS NULL THEN
-    RAISE EXCEPTION 'Aplicação inexistente' USING ERRCODE = '23503';
+    RAISE EXCEPTION 'Aplicação inexistente ou sem OS/cliente vinculados' USING ERRCODE = '23503';
   END IF;
 
-  -- Autorização de vínculo à aplicação
-  IF caller_uid IS NOT NULL THEN
-    IF NOT EXISTS (
-      SELECT 1 FROM public.aplicacoes a
-       WHERE a.id = _aplicacao_id
-         AND (a.responsavel_id = caller_uid OR a.created_by = caller_uid)
-    ) AND NOT (
-      has_role(caller_uid, 'administrador'::app_role)
-      OR has_role(caller_uid, 'gestor'::app_role)
-      OR has_role(caller_uid, 'administrativo'::app_role)
-      OR has_role(caller_uid, 'consultor_tecnico'::app_role)
-      OR has_role(caller_uid, 'aplicador'::app_role)
-    ) THEN
-      RAISE EXCEPTION 'Sem vínculo com a aplicação' USING ERRCODE = '42501';
-    END IF;
-    -- Regra documentada: staff (administrador/gestor/administrativo) pode enviar para qualquer email.
-    can_bypass := has_role(caller_uid, 'administrador'::app_role)
-      OR has_role(caller_uid, 'gestor'::app_role)
-      OR has_role(caller_uid, 'administrativo'::app_role);
-  ELSE
-    -- Chamada não autenticada (service_role): permite bypass.
-    can_bypass := true;
+  -- Autoria do evento: participante real ou administrador. Gestor/administrativo
+  -- não são globais aqui; sem vínculo explícito, não registram por service_role.
+  IF NOT (
+    has_role(final_author, 'administrador'::app_role)
+    OR final_author = v_apl_resp
+    OR final_author = v_apl_created_by
+  ) THEN
+    RAISE EXCEPTION 'Sem vínculo com a aplicação' USING ERRCODE = '42501';
   END IF;
 
-  -- Destinatário deve ser o email cadastrado no cliente da aplicação, OU caller bypass.
-  IF NOT can_bypass THEN
-    IF v_cli_email IS NULL OR lower(v_cli_email) <> lower(_email) THEN
-      RAISE EXCEPTION 'Destinatário não permitido para esta aplicação' USING ERRCODE = '42501';
-    END IF;
+  -- Destinatário permitido: apenas e-mails cadastrados do cliente da aplicação.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.clientes c
+     WHERE c.id = v_cli_id
+       AND lower(_email) IN (
+         lower(coalesce(c.email, '')),
+         lower(coalesce(c.contato_financeiro_email, ''))
+       )
+  ) THEN
+    RAISE EXCEPTION 'Destinatário não cadastrado para o cliente desta aplicação' USING ERRCODE = '42501';
   END IF;
 
-  -- Idempotência com evolução de status controlada.
   IF _idempotency_key IS NOT NULL THEN
+    INSERT INTO public.aplicacao_emails
+      (aplicacao_id, email, status, enviado_por, idempotency_key)
+    VALUES
+      (_aplicacao_id, lower(_email), _status, final_author, _idempotency_key)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO new_id;
+
+    IF new_id IS NOT NULL THEN
+      RETURN jsonb_build_object(
+        'created', true, 'duplicated', false, 'updated', false, 'record_id', new_id, 'status', _status);
+    END IF;
+
     SELECT id, status INTO existing_id, existing_status
       FROM public.aplicacao_emails
      WHERE idempotency_key = _idempotency_key
      LIMIT 1;
-    IF existing_id IS NOT NULL THEN
-      IF _status = 'sent' AND existing_status = ANY(progressable) THEN
-        UPDATE public.aplicacao_emails
-           SET status = 'sent',
-               email = _email,
-               enviado_por = COALESCE(enviado_por, final_author)
-         WHERE id = existing_id;
-        RETURN jsonb_build_object(
-          'created', false, 'updated', true, 'record_id', existing_id, 'status', 'sent');
-      END IF;
-      RETURN jsonb_build_object(
-        'created', false, 'duplicated', true, 'record_id', existing_id, 'status', existing_status);
+
+    IF existing_id IS NULL THEN
+      RAISE EXCEPTION 'Falha de idempotência sem registro existente' USING ERRCODE = '23505';
     END IF;
+
+    IF _status = 'sent' AND existing_status = ANY(progressable) THEN
+      UPDATE public.aplicacao_emails
+         SET status = 'sent',
+             email = lower(_email),
+             enviado_por = COALESCE(enviado_por, final_author)
+       WHERE id = existing_id
+       RETURNING status INTO existing_status;
+      RETURN jsonb_build_object(
+        'created', false, 'duplicated', false, 'updated', true, 'record_id', existing_id, 'status', existing_status);
+    END IF;
+
+    RETURN jsonb_build_object(
+      'created', false, 'duplicated', true, 'updated', false, 'record_id', existing_id, 'status', existing_status);
   END IF;
 
   INSERT INTO public.aplicacao_emails
     (aplicacao_id, email, status, enviado_por, idempotency_key)
   VALUES
-    (_aplicacao_id, _email, _status, final_author, _idempotency_key)
+    (_aplicacao_id, lower(_email), _status, final_author, NULL)
   RETURNING id INTO new_id;
 
   RETURN jsonb_build_object(
-    'created', true, 'duplicated', false, 'record_id', new_id, 'status', _status);
-EXCEPTION WHEN unique_violation THEN
-  SELECT id, status INTO existing_id, existing_status FROM public.aplicacao_emails
-   WHERE idempotency_key = _idempotency_key LIMIT 1;
-  RETURN jsonb_build_object(
-    'created', false, 'duplicated', true, 'record_id', existing_id, 'status', existing_status);
+    'created', true, 'duplicated', false, 'updated', false, 'record_id', new_id, 'status', _status);
 END;
 $$;
 
@@ -745,15 +747,22 @@ UPDATE public.monitoramento_avisos
 ALTER TABLE public.monitoramento_avisos
   ALTER COLUMN data_referencia SET NOT NULL;
 
--- Dedup antes do unique
-WITH d AS (
-  SELECT id, ROW_NUMBER() OVER (
-    PARTITION BY registro_consultor_id, tipo, data_referencia
-    ORDER BY enviado_em NULLS LAST, id
-  ) rn FROM public.monitoramento_avisos
-)
-DELETE FROM public.monitoramento_avisos x USING d
- WHERE x.id = d.id AND d.rn > 1;
+-- Não remove histórico: aborta se houver duplicatas diárias a sanear.
+DO $$
+DECLARE v_dup int;
+BEGIN
+  SELECT count(*) INTO v_dup
+    FROM (
+      SELECT registro_consultor_id, tipo, data_referencia
+        FROM public.monitoramento_avisos
+       GROUP BY registro_consultor_id, tipo, data_referencia
+      HAVING count(*) > 1
+    ) d;
+  IF v_dup > 0 THEN
+    RAISE EXCEPTION 'monitoramento_avisos possui % duplicata(s) diária(s); audite/arquive de forma reversível antes do unique', v_dup
+      USING ERRCODE = '23505';
+  END IF;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.tg_monitoramento_avisos_set_dref()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
@@ -871,13 +880,17 @@ BEGIN
     _registro_id,
     v_idem
   )
-  ON CONFLICT (idempotency_key) DO NOTHING
+  ON CONFLICT DO NOTHING
   RETURNING id INTO v_notif_id;
 
   -- Se colidiu com notificação já existente, resolve o ID
   IF v_notif_id IS NULL THEN
     SELECT id INTO v_notif_id FROM public.notificacoes_operacionais
      WHERE idempotency_key = v_idem LIMIT 1;
+  END IF;
+  IF v_notif_id IS NULL THEN
+    RAISE EXCEPTION 'Reserva de monitoramento criada sem notificação operacional; revertendo transação'
+      USING ERRCODE = '23514';
   END IF;
 
   RETURN jsonb_build_object(

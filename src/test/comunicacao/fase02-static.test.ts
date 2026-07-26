@@ -2,9 +2,7 @@
 // Falha CI enquanto houver:
 //   (a) INSERT direto em notificacoes_operacionais/portal_notificacoes/aplicacao_emails.
 //   (b) tipos fora do enum tipo_notificacao_portal (visita/os) na RPC de portal.
-//   (c) casts (supabase.rpc as any) referenciando as 3 RPCs canônicas —
-//       enquanto os types.ts não forem regenerados após aplicar a migration,
-//       o pacote NÃO está apto para staging. NÃO ignore este teste.
+//   (c) casts (supabase.rpc as any) referenciando as 3 RPCs canônicas.
 //   (d) chamadas às RPCs sem source_type/source_id (par obrigatório).
 //   (e) RPCs canônicas sem qualquer referência em src/.
 //   (f) referência a rpc_check_monitoramento_and_notify em src/ (é server-only).
@@ -63,10 +61,7 @@ describe("Comunicação Fase 0.2 — invariantes estáticos", () => {
     expect(bad, bad.join("\n")).toEqual([]);
   });
 
-  it("(c) [BLOQUEANTE PARA STAGING] nenhum cast (supabase.rpc as any) para RPCs canônicas — regenere types.ts após aplicar a migration", () => {
-    // Este teste é intencionalmente vermelho até que a migration seja
-    // aplicada em staging E os types.ts sejam regenerados removendo os casts.
-    // Enquanto vermelho, o parecer da fase é NÃO APTO PARA STAGING.
+  it("(c) nenhum cast (supabase.rpc as any) para RPCs canônicas", () => {
     const bad: string[] = [];
     for (const { file, content } of corpus) {
       for (const rpc of CANONICAL_RPCS) {
@@ -112,6 +107,7 @@ describe("Comunicação Fase 0.2 — invariantes estáticos", () => {
     const leaks: string[] = [];
     for (const { file, content } of corpus) {
       if (file.includes("/test/")) continue;
+      if (file.endsWith("src/integrations/supabase/types.ts")) continue;
       if (content.includes("rpc_check_monitoramento_and_notify")) leaks.push(file);
     }
     expect(

@@ -53,8 +53,8 @@ Deno.serve(async (req) => {
       // Chamada transacional: reserva + notificação em uma única transação.
       // Se a notificação falhar dentro da RPC, a reserva TAMBÉM é revertida.
       const { data: rpcData, error: rpcErr } = await supabase.rpc(
-        "rpc_check_monitoramento_and_notify" as never,
-        { _registro_id: mon.id } as never,
+        "rpc_check_monitoramento_and_notify",
+        { _registro_id: mon.id },
       );
 
       if (rpcErr) {

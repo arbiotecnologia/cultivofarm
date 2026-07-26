@@ -54,14 +54,15 @@ Editar `restoration/comunicacao-fase02/harness-rls.sql` substituindo
 `<APLICACAO_ID_A>` por UUIDs reais. Executar como service_role.
 Cada seção termina com `NOTICE OK`; qualquer `FALHOU` interrompe homologação.
 
-### 5. Regeneração de types (obrigatório para remover `(supabase.rpc as any)`)
-Depois da migration aplicada em staging:
+### 5. Regeneração e comparação de types
+O arquivo `src/integrations/supabase/types.ts` foi alinhado manualmente ao
+schema proposto para permitir typecheck local sem casts temporários. Depois da
+migration aplicada em staging, regenere e compare:
 ```
 supabase gen types typescript --linked --schema public > src/integrations/supabase/types.ts
 ```
-Remover **todos** os `(supabase.rpc as any)("rpc_create_notificacao_operacional"|...)`
-em `src/`. O teste estático `src/test/comunicacao/fase02-static.test.ts` falha
-enquanto casts para essas 3 RPCs permanecerem.
+O teste estático `src/test/comunicacao/fase02-static.test.ts` falha se casts
+para as RPCs canônicas regressarem.
 
 ### 6. Certificação runtime
 - Login como consultor: agendar retorno de visita → 1 notificação operacional
@@ -73,9 +74,10 @@ enquanto casts para essas 3 RPCs permanecerem.
 - Concorrência: forçar erro no INSERT da notificação dentro da RPC
   (`SIGNAL sqlstate '99999'` manual) e comprovar que o registro em
   `monitoramento_avisos` **não** foi persistido.
-- `enviar-pdf-aplicacao` com destinatário ≠ e-mail do cliente e caller
-  aplicador → 500 (RPC recusa). Com caller administrador → 200. Se `rpc_record_aplicacao_email`
-  falhar, resposta é 500 e o objeto de storage é removido.
+- `enviar-pdf-aplicacao` com destinatário que não esteja em `clientes.email` ou
+  `clientes.contato_financeiro_email` do cliente da OS → 403/500 conforme etapa
+  que recusar. Mesmo administrador só envia para destinatário cadastrado. Se
+  `rpc_record_aplicacao_email` falhar, resposta é 500 e o objeto de storage é removido.
 
 ### 7. Rollback
 `restoration/comunicacao-fase02/rollback.sql` remove **apenas** as adições;

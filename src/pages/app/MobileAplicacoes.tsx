@@ -195,7 +195,7 @@ export default function MobileAplicacoes() {
       
       if (osSel) {
         await supabase.from("ordens_servico").update({ status: "finalizada" as any }).eq("id", osId);
-        await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+        await supabase.rpc("rpc_create_portal_notification_secure", {
           _cliente_id: osSel.cliente_id,
           _tipo: rectifyId ? "alerta" : "aplicacao",
           _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",

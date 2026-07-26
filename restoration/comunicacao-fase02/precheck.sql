@@ -56,3 +56,47 @@ SELECT 'monitoramento_avisos' AS t,
  GROUP BY 1,2,3,4
 HAVING count(*) > 1
  ORDER BY n DESC LIMIT 20;
+
+
+DO $$
+DECLARE v_dup int;
+BEGIN
+  SELECT count(*) INTO v_dup
+    FROM (
+      SELECT registro_consultor_id, tipo,
+             (enviado_em AT TIME ZONE 'America/Sao_Paulo')::date AS dref
+        FROM public.monitoramento_avisos
+       GROUP BY 1,2,3 HAVING count(*) > 1
+    ) d;
+  IF v_dup > 0 THEN
+    RAISE EXCEPTION 'monitoramento_avisos contém % duplicata(s) diária(s); sanear/arquivar de forma auditável antes da migration', v_dup;
+  END IF;
+END $$;
+
+DO $$
+DECLARE v_dup int;
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='notificacoes_operacionais' AND column_name='idempotency_key') THEN
+    SELECT count(*) INTO v_dup FROM (
+      SELECT idempotency_key FROM public.notificacoes_operacionais
+       WHERE idempotency_key IS NOT NULL GROUP BY 1 HAVING count(*) > 1
+    ) d;
+    IF v_dup > 0 THEN RAISE EXCEPTION 'notificacoes_operacionais contém % idempotency_key(s) duplicada(s)', v_dup; END IF;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='portal_notificacoes' AND column_name='idempotency_key') THEN
+    SELECT count(*) INTO v_dup FROM (
+      SELECT idempotency_key FROM public.portal_notificacoes
+       WHERE idempotency_key IS NOT NULL GROUP BY 1 HAVING count(*) > 1
+    ) d;
+    IF v_dup > 0 THEN RAISE EXCEPTION 'portal_notificacoes contém % idempotency_key(s) duplicada(s)', v_dup; END IF;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='aplicacao_emails' AND column_name='idempotency_key') THEN
+    SELECT count(*) INTO v_dup FROM (
+      SELECT idempotency_key FROM public.aplicacao_emails
+       WHERE idempotency_key IS NOT NULL GROUP BY 1 HAVING count(*) > 1
+    ) d;
+    IF v_dup > 0 THEN RAISE EXCEPTION 'aplicacao_emails contém % idempotency_key(s) duplicada(s)', v_dup; END IF;
+  END IF;
+END $$;
