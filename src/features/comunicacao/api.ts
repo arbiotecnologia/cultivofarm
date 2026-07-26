@@ -1,0 +1,129 @@
+/**
+ * Data-access tipado para o Módulo de Comunicação.
+ * Todas as chamadas passam pelo cliente Supabase padrão.
+ * As tabelas/RPCs só existirão após a aplicação da migration proposta em
+ * restoration/comunicacao-fase1/migration.sql. Antes disso a UI é inacessível
+ * via feature flag.
+ *
+ * Os casts (`as unknown as ...`) existem porque `types.ts` não foi regenerado
+ * ainda. O runbook manda regenerar após staging e remover estes casts em uma
+ * mudança dedicada, sem alterar a shape declarada em `./types.ts` (fonte
+ * manual até a regeneração).
+ */
+
+import { supabase } from "@/integrations/supabase/client";
+import type {
+  CommunicationRpcContracts,
+  ComunicacaoEvento,
+  ComunicacaoOutbox,
+  ComunicacaoPreferencia,
+  ComunicacaoRegra,
+  ComunicacaoTemplate,
+} from "./types";
+
+type SbClientRpc = {
+  rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  from: (table: string) => {
+    select: (columns: string) => {
+      order: (col: string, opts: { ascending: boolean }) => {
+        limit: (n: number) => Promise<{ data: unknown; error: { message: string } | null }>;
+        range: (from: number, to: number) => Promise<{ data: unknown; error: { message: string } | null; count?: number | null }>;
+      };
+    };
+  };
+};
+
+const sb = supabase as unknown as SbClientRpc;
+
+async function callRpc<K extends keyof CommunicationRpcContracts>(
+  name: K,
+  args: CommunicationRpcContracts[K]["args"],
+): Promise<CommunicationRpcContracts[K]["returns"]> {
+  const { data, error } = await sb.rpc(name as string, args as Record<string, unknown>);
+  if (error) throw new Error(error.message);
+  return data as CommunicationRpcContracts[K]["returns"];
+}
+
+// ---------------- Templates ----------------
+
+export async function listTemplates(limit = 100): Promise<ComunicacaoTemplate[]> {
+  const { data, error } = await sb
+    .from("comunicacao_templates")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ComunicacaoTemplate[];
+}
+
+export const createTemplate = (
+  args: CommunicationRpcContracts["rpc_create_communication_template"]["args"],
+) => callRpc("rpc_create_communication_template", args);
+
+export const updateTemplate = (
+  args: CommunicationRpcContracts["rpc_update_communication_template"]["args"],
+) => callRpc("rpc_update_communication_template", args);
+
+export const activateTemplate = (id: string) =>
+  callRpc("rpc_activate_communication_template", { p_template_id: id });
+
+export const archiveTemplate = (id: string) =>
+  callRpc("rpc_archive_communication_template", { p_template_id: id });
+
+// ---------------- Regras ----------------
+
+export async function listRules(): Promise<ComunicacaoRegra[]> {
+  const { data, error } = await sb
+    .from("comunicacao_regras")
+    .select("*")
+    .order("prioridade", { ascending: true })
+    .limit(200);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ComunicacaoRegra[];
+}
+
+export const upsertRule = (
+  args: CommunicationRpcContracts["rpc_upsert_communication_rule"]["args"],
+) => callRpc("rpc_upsert_communication_rule", args);
+
+// ---------------- Fila / eventos ----------------
+
+export async function listEvents(page = 0, pageSize = 25): Promise<ComunicacaoEvento[]> {
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+  const { data, error } = await sb
+    .from("comunicacao_eventos")
+    .select("*")
+    .order("occurred_at", { ascending: false })
+    .range(from, to);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ComunicacaoEvento[];
+}
+
+export async function listOutbox(page = 0, pageSize = 25): Promise<ComunicacaoOutbox[]> {
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+  const { data, error } = await sb
+    .from("comunicacao_outbox")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ComunicacaoOutbox[];
+}
+
+// ---------------- Preferências do próprio usuário ----------------
+
+export async function listOwnPreferences(): Promise<ComunicacaoPreferencia[]> {
+  const { data, error } = await sb
+    .from("comunicacao_preferencias")
+    .select("*")
+    .order("canal", { ascending: true })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ComunicacaoPreferencia[];
+}
+
+export const updateOwnPreference = (
+  args: CommunicationRpcContracts["rpc_update_communication_preferences"]["args"],
+) => callRpc("rpc_update_communication_preferences", args);
