@@ -37,13 +37,53 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname='app_role') THEN
     RAISE EXCEPTION 'precheck: enum app_role ausente'; END IF;
 
-  PERFORM 1 FROM information_schema.columns
-   WHERE table_schema='public' AND table_name='profiles' AND column_name='user_id';
-  IF NOT FOUND THEN RAISE EXCEPTION 'precheck: profiles.user_id ausente'; END IF;
+  -- Validação por-coluna de cada tabela consumida pelos helpers/triggers.
+  -- Cada par (tabela, coluna) precisa existir. Aborta com nome preciso.
+  DECLARE
+    v_pair text; v_tbl text; v_col text;
+    v_pairs text[] := ARRAY[
+      -- ordens_servico regular
+      'ordens_servico.id','ordens_servico.status','ordens_servico.cliente_id',
+      'ordens_servico.numero_os','ordens_servico.data_programada',
+      -- ordens_servico_onfarm: NÃO tem data_programada; usa data_recomendada
+      'ordens_servico_onfarm.id','ordens_servico_onfarm.status',
+      'ordens_servico_onfarm.cliente_id','ordens_servico_onfarm.numero_os',
+      'ordens_servico_onfarm.data_recomendada',
+      -- profiles
+      'profiles.user_id','profiles.nome','profiles.cliente_id',
+      'profiles.ativo','profiles.telefone','profiles.email',
+      -- clientes
+      'clientes.id','clientes.nome','clientes.telefone',
+      'clientes.telefones','clientes.email',
+      -- notificações (destinos in_app)
+      'portal_notificacoes.cliente_id','portal_notificacoes.titulo',
+      'portal_notificacoes.mensagem','portal_notificacoes.tipo',
+      'notificacoes_operacionais.user_id','notificacoes_operacionais.titulo',
+      'notificacoes_operacionais.mensagem','notificacoes_operacionais.tipo',
+      -- user_roles usado por broadcast_role/by_role
+      'user_roles.user_id','user_roles.role'
+    ];
+  BEGIN
+    FOREACH v_pair IN ARRAY v_pairs LOOP
+      v_tbl := split_part(v_pair, '.', 1);
+      v_col := split_part(v_pair, '.', 2);
+      PERFORM 1 FROM information_schema.columns
+       WHERE table_schema='public' AND table_name=v_tbl AND column_name=v_col;
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'precheck: coluna requerida ausente — public.%.%', v_tbl, v_col;
+      END IF;
+    END LOOP;
+  END;
 
+  -- Guarda explícita: ordens_servico_onfarm NÃO deve ter data_programada
+  -- (evita futuras migrations criarem coluna homônima e mascararem bugs).
   PERFORM 1 FROM information_schema.columns
-   WHERE table_schema='public' AND table_name='ordens_servico' AND column_name='numero_os';
-  IF NOT FOUND THEN RAISE EXCEPTION 'precheck: ordens_servico.numero_os ausente'; END IF;
+   WHERE table_schema='public' AND table_name='ordens_servico_onfarm'
+     AND column_name='data_programada';
+  IF FOUND THEN
+    RAISE NOTICE 'precheck: aviso — ordens_servico_onfarm.data_programada existe; helper on-farm continua usando data_recomendada por contrato';
+  END IF;
+
 
   -- Fase 1: RPCs canônicas
   FOREACH v_missing IN ARRAY ARRAY[
