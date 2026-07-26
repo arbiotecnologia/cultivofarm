@@ -87,9 +87,25 @@ ALTER TABLE public.comunicacao_templates
   );
 
 -- =============================================================================
--- 2. RPC: definir metadados de template (mutável mesmo em active — para WA
---    apenas provider_template_status pode ser corrigido; corpo/canal continuam
---    imutáveis por trigger da Fase 1).
+-- 2. RPC: definir metadados de template (Fase 2.4 hardened)
+--    - Status aceitos: draft, pending, approved, rejected, paused, disabled
+--      (removido 'submitted' — nunca existiu no SQL; UI antiga alinhada).
+--    - parameter_mapping: array de objetos {index,variavel[,tipo]} com index
+--      inteiro positivo, único e sequencial 1..N; variavel string não vazia,
+--      única, e presente em comunicacao_templates.variaveis. Zero variáveis ⇒
+--      obrigatório mapping [].
+--    - approved: exige nome+language não vazios, status coerente e mapping
+--      completo (N itens, um por variável).
+--    - Imutabilidade: uma vez que o template já foi aprovado (status atual em
+--      approved|paused|disabled), provider_template_name não pode mudar.
+--    - Máquina de estados: transições restritas (ver tabela abaixo). Não
+--      permite retornar arbitrariamente a draft/pending após aprovação.
+--      NULL/draft → draft,pending
+--      pending    → draft,pending,approved,rejected
+--      approved   → approved,paused,disabled
+--      paused     → approved,paused,disabled
+--      rejected   → draft,pending,rejected
+--      disabled   → disabled
 -- =============================================================================
 CREATE OR REPLACE FUNCTION public.rpc_set_communication_template_metadata(
   p_template_id            uuid,
@@ -99,7 +115,19 @@ CREATE OR REPLACE FUNCTION public.rpc_set_communication_template_metadata(
   p_provider_template_status text DEFAULT NULL
 ) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE r public.comunicacao_templates%rowtype;
+DECLARE
+  r public.comunicacao_templates%rowtype;
+  v_mapping jsonb := COALESCE(p_parameter_mapping,'[]'::jsonb);
+  v_len int;
+  v_vars_len int;
+  v_item jsonb;
+  v_idx int;
+  v_var text;
+  v_seen_vars text[] := ARRAY[]::text[];
+  v_seen_idx int[] := ARRAY[]::int[];
+  v_ever_approved boolean;
+  v_prev text;
+  v_new text := p_provider_template_status;
 BEGIN
   IF NOT public.has_role(auth.uid(),'administrador') THEN
     RAISE EXCEPTION 'apenas administrador' USING ERRCODE = 'insufficient_privilege';
@@ -108,26 +136,109 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'template não encontrado'; END IF;
 
   IF r.canal = 'whatsapp' THEN
-    IF p_provider_template_name IS NULL OR length(p_provider_template_name) = 0 THEN
+    IF p_provider_template_name IS NULL OR length(trim(p_provider_template_name)) = 0 THEN
       RAISE EXCEPTION 'whatsapp: provider_template_name obrigatório';
+    END IF;
+    IF length(p_provider_template_name) > 512 THEN
+      RAISE EXCEPTION 'whatsapp: provider_template_name excede 512 chars';
     END IF;
     IF p_language_code IS NULL OR p_language_code !~ '^[a-z]{2}(_[A-Z]{2})?$' THEN
       RAISE EXCEPTION 'whatsapp: language_code inválido (ex.: pt_BR)';
     END IF;
-    IF jsonb_typeof(COALESCE(p_parameter_mapping,'[]'::jsonb)) <> 'array' THEN
+    IF jsonb_typeof(v_mapping) <> 'array' THEN
       RAISE EXCEPTION 'whatsapp: parameter_mapping deve ser array';
     END IF;
-    IF jsonb_array_length(COALESCE(p_parameter_mapping,'[]'::jsonb)) > 64 THEN
+    v_len := jsonb_array_length(v_mapping);
+    IF v_len > 64 THEN
       RAISE EXCEPTION 'whatsapp: parameter_mapping excede 64 itens';
     END IF;
-    IF p_provider_template_status IS NOT NULL
-       AND p_provider_template_status NOT IN ('draft','pending','approved','rejected','paused','disabled') THEN
+    v_vars_len := COALESCE(array_length(r.variaveis, 1), 0);
+
+    -- Valida shape item a item; exige índices 1..N únicos e sequenciais, e
+    -- variáveis não vazias, únicas e presentes em r.variaveis.
+    FOR i IN 0 .. v_len - 1 LOOP
+      v_item := v_mapping -> i;
+      IF jsonb_typeof(v_item) <> 'object' THEN
+        RAISE EXCEPTION 'whatsapp: parameter_mapping[%] deve ser objeto', i + 1;
+      END IF;
+      IF jsonb_typeof(v_item -> 'index') <> 'number' THEN
+        RAISE EXCEPTION 'whatsapp: parameter_mapping[%].index ausente/não numérico', i + 1;
+      END IF;
+      v_idx := (v_item ->> 'index')::int;
+      IF v_idx <= 0 OR v_idx > v_len THEN
+        RAISE EXCEPTION 'whatsapp: parameter_mapping[%].index fora de 1..N', i + 1;
+      END IF;
+      IF v_idx = ANY(v_seen_idx) THEN
+        RAISE EXCEPTION 'whatsapp: parameter_mapping index duplicado: %', v_idx;
+      END IF;
+      v_seen_idx := array_append(v_seen_idx, v_idx);
+
+      IF jsonb_typeof(v_item -> 'variavel') <> 'string' THEN
+        RAISE EXCEPTION 'whatsapp: parameter_mapping[%].variavel ausente/não string', i + 1;
+      END IF;
+      v_var := v_item ->> 'variavel';
+      IF length(v_var) = 0 THEN
+        RAISE EXCEPTION 'whatsapp: parameter_mapping[%].variavel vazia', i + 1;
+      END IF;
+      IF v_var = ANY(v_seen_vars) THEN
+        RAISE EXCEPTION 'whatsapp: parameter_mapping variavel duplicada: %', v_var;
+      END IF;
+      IF v_vars_len > 0 AND NOT (v_var = ANY(r.variaveis)) THEN
+        RAISE EXCEPTION 'whatsapp: variavel % não declarada em comunicacao_templates.variaveis', v_var;
+      END IF;
+      v_seen_vars := array_append(v_seen_vars, v_var);
+    END LOOP;
+
+    -- Índices devem ser exatamente 1..N (sequenciais)
+    IF v_len > 0 THEN
+      FOR i IN 1 .. v_len LOOP
+        IF NOT (i = ANY(v_seen_idx)) THEN
+          RAISE EXCEPTION 'whatsapp: parameter_mapping ausente índice %', i;
+        END IF;
+      END LOOP;
+    END IF;
+
+    -- Zero variáveis ⇒ mapping obrigatoriamente []
+    IF v_vars_len = 0 AND v_len <> 0 THEN
+      RAISE EXCEPTION 'whatsapp: template sem variáveis exige parameter_mapping = []';
+    END IF;
+
+    IF v_new IS NOT NULL
+       AND v_new NOT IN ('draft','pending','approved','rejected','paused','disabled') THEN
       RAISE EXCEPTION 'whatsapp: provider_template_status inválido';
+    END IF;
+
+    -- Aprovação: exige mapping completo N itens (ou [] se sem variáveis)
+    IF v_new = 'approved' THEN
+      IF v_len <> v_vars_len THEN
+        RAISE EXCEPTION 'whatsapp: approved exige mapping completo (esperado %, recebido %)', v_vars_len, v_len;
+      END IF;
+    END IF;
+
+    -- Máquina de estados + imutabilidade do provider_template_name
+    v_prev := r.provider_template_status;
+    v_ever_approved := v_prev IN ('approved','paused','disabled');
+
+    IF v_ever_approved AND p_provider_template_name IS DISTINCT FROM r.provider_template_name THEN
+      RAISE EXCEPTION 'whatsapp: provider_template_name é imutável após aprovação (atual=%)', r.provider_template_name;
+    END IF;
+
+    IF v_new IS NOT NULL AND v_new IS DISTINCT FROM COALESCE(v_prev,'draft') THEN
+      IF NOT (
+        (COALESCE(v_prev,'draft') IN ('draft')     AND v_new IN ('draft','pending')) OR
+        (v_prev = 'pending'  AND v_new IN ('draft','pending','approved','rejected')) OR
+        (v_prev = 'approved' AND v_new IN ('approved','paused','disabled')) OR
+        (v_prev = 'paused'   AND v_new IN ('approved','paused','disabled')) OR
+        (v_prev = 'rejected' AND v_new IN ('draft','pending','rejected')) OR
+        (v_prev = 'disabled' AND v_new IN ('disabled'))
+      ) THEN
+        RAISE EXCEPTION 'whatsapp: transição de status inválida % → %', COALESCE(v_prev,'draft'), v_new;
+      END IF;
     END IF;
   ELSE
     IF p_provider_template_name IS NOT NULL OR p_language_code IS NOT NULL
-       OR p_provider_template_status IS NOT NULL
-       OR jsonb_array_length(COALESCE(p_parameter_mapping,'[]'::jsonb)) > 0 THEN
+       OR v_new IS NOT NULL
+       OR jsonb_array_length(v_mapping) > 0 THEN
       RAISE EXCEPTION 'metadados de whatsapp não são aceitos para canal %', r.canal;
     END IF;
   END IF;
@@ -135,8 +246,8 @@ BEGIN
   UPDATE public.comunicacao_templates
      SET provider_template_name   = p_provider_template_name,
          language_code            = p_language_code,
-         parameter_mapping        = COALESCE(p_parameter_mapping,'[]'::jsonb),
-         provider_template_status = p_provider_template_status,
+         parameter_mapping        = v_mapping,
+         provider_template_status = v_new,
          updated_by = auth.uid()
    WHERE id = p_template_id;
 
