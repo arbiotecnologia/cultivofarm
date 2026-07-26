@@ -81,8 +81,8 @@ export default function ComunicacaoAdmin() {
         ))}
       </nav>
 
-      {aba === "templates" && <TemplatesPanel />}
-      {aba === "regras" && <RegrasPanel />}
+      {aba === "templates" && <TemplatesPanel canMutate={isAdmin} />}
+      {aba === "regras" && <RegrasPanel canMutate={isAdmin} />}
       {aba === "fila" && <FilaPanel />}
       {aba === "preferencias" && <PreferenciasPanel />}
       {aba === "comunicados" && showBroadcastTab && (
@@ -96,7 +96,9 @@ export default function ComunicacaoAdmin() {
           <li>WhatsApp: configuração via WHATSAPP_* (verificar em communication-health)</li>
           <li>In-app: adapter próprio, controlado por COMMUNICATION_INAPP_ADAPTER_ENABLED</li>
         </ul>
-        <p className="text-xs text-muted-foreground mt-2">Nenhum segredo é exibido nesta tela.</p>
+        <p className="text-xs text-muted-foreground mt-2">
+          Nenhum segredo é exibido nesta tela. Gestor vê em modo somente leitura.
+        </p>
       </section>
     </div>
   );
