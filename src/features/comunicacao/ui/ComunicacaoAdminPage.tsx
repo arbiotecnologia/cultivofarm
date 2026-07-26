@@ -874,25 +874,30 @@ function CanalHealthPanel() {
 // (obtidos na tela de Gestão de Usuários) e não busca listas de terceiros.
 // Alternativa segura documentada em restoration/comunicacao-fase2/runbook.md.
 function CanalVerificacaoPanel() {
+  // Fase 2.5: apenas canais com verificação externa real. in_app/push não têm
+  // artefato externo a atestar e ficam fora desta UI.
+  type CanalVerificavel = "email" | "whatsapp";
   const [subjectKind, setSubjectKind] = useState<"user" | "cliente">("user");
   const [subjectId, setSubjectId] = useState("");
-  const [canal, setCanal] = useState<ComunicacaoCanal>("email");
-  const [emailV, setEmailV] = useState(false);
-  const [foneV, setFoneV] = useState(false);
+  const [canal, setCanal] = useState<CanalVerificavel>("email");
+  const [lastMarked, setLastMarked] = useState<{ canal: CanalVerificavel; kind: string; id: string } | null>(null);
   const uuidRe = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   const uuidOk = uuidRe.test(subjectId.trim());
 
   const mut = useMutation({
     mutationFn: async () => {
       if (!uuidOk) throw new Error("UUID inválido");
+      // Fase 2.5: canal determina a flag (esta tela MARCA verificado; não revoga).
       const args = {
         p_user_id: subjectKind === "user" ? subjectId.trim() : null,
         p_cliente_id: subjectKind === "cliente" ? subjectId.trim() : null,
-        p_canal: canal,
-        p_email_verificado: emailV,
-        p_telefone_verificado: foneV,
+        p_canal: canal as ComunicacaoCanal,
+        p_email_verificado: canal === "email" ? true : null,
+        p_telefone_verificado: canal === "whatsapp" ? true : null,
       };
-      return verifyCommunicationChannel(args);
+      const res = await verifyCommunicationChannel(args);
+      setLastMarked({ canal, kind: subjectKind, id: subjectId.trim() });
+      return res;
     },
   });
 
@@ -900,10 +905,12 @@ function CanalVerificacaoPanel() {
     <section aria-label="Verificar canal" className="rounded-md border p-4 text-sm space-y-2">
       <h2 className="font-medium">Verificar canal (admin)</h2>
       <p className="text-xs text-muted-foreground">
-        Marca verificação externa de e-mail/telefone para um usuário OU cliente.
-        Cole o UUID obtido na tela de Gestão de Usuários/Clientes — para preservar
-        privacidade, esta tela não lista perfis de terceiros. Gestor não pode
-        verificar terceiros (RPC exige administrador).
+        Marca verificação externa de e-mail (canal <code>email</code>) ou telefone
+        (canal <code>whatsapp</code>) para um usuário OU cliente. Cole o UUID obtido
+        na tela de Gestão de Usuários/Clientes — para preservar privacidade, esta
+        tela não lista perfis de terceiros. Gestor não pode verificar terceiros
+        (RPC exige administrador). Esta tela apenas marca; para revogar, use o
+        fluxo específico documentado no runbook.
       </p>
       <div className="grid gap-2 md:grid-cols-4">
         <label className="flex flex-col text-xs">
@@ -934,22 +941,11 @@ function CanalVerificacaoPanel() {
           <select
             className="rounded border p-1"
             value={canal}
-            onChange={(e) => setCanal(e.target.value as ComunicacaoCanal)}
+            onChange={(e) => setCanal(e.target.value as CanalVerificavel)}
           >
-            {(["email", "whatsapp", "in_app", "push"] as ComunicacaoCanal[]).map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
+            <option value="email">email</option>
+            <option value="whatsapp">whatsapp</option>
           </select>
-        </label>
-      </div>
-      <div className="flex flex-wrap gap-3 text-xs">
-        <label className="flex items-center gap-1">
-          <input type="checkbox" checked={emailV} onChange={(e) => setEmailV(e.target.checked)} />
-          email_verificado
-        </label>
-        <label className="flex items-center gap-1">
-          <input type="checkbox" checked={foneV} onChange={(e) => setFoneV(e.target.checked)} />
-          telefone_verificado
         </label>
       </div>
       <button
@@ -958,13 +954,16 @@ function CanalVerificacaoPanel() {
         disabled={!uuidOk || mut.isPending}
         onClick={() => mut.mutate()}
       >
-        {mut.isPending ? "Enviando…" : "Marcar verificação"}
+        {mut.isPending ? "Enviando…" : `Marcar ${canal} verificado`}
       </button>
       {mut.error && (
-        <p className="text-xs text-destructive">Erro: {(mut.error as Error).message}</p>
+        <p className="text-xs text-destructive">Não foi possível registrar a verificação.</p>
       )}
-      {mut.data && (
-        <p className="text-xs text-muted-foreground">Verificação registrada.</p>
+      {mut.data && lastMarked && (
+        <p className="text-xs text-muted-foreground">
+          Canal <strong>{lastMarked.canal}</strong> marcado como verificado para{" "}
+          <strong>{lastMarked.kind}</strong> <code>{lastMarked.id}</code>.
+        </p>
       )}
     </section>
   );
