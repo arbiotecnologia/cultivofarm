@@ -55,8 +55,14 @@ export default function ComunicacaoAdmin() {
 
   if (!isComunicacaoModuleEnabled()) return null;
 
-  const tabs: AbaId[] = ["templates","regras","fila","preferencias"];
+  // Fase 2.3: RLS de eventos/outbox permite apenas administrador. Gestor
+  // não deve ver "Fila e histórico" (evita erro previsível de permissão).
+  // Preferências permanecem para todos (dados próprios).
+  const tabs: AbaId[] = isAdmin
+    ? ["templates","regras","fila","preferencias"]
+    : ["templates","regras","preferencias"];
   if (showBroadcastTab) tabs.push("comunicados");
+
 
   return (
     <div className="p-6 space-y-6">
