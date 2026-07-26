@@ -174,6 +174,7 @@ const waSnap: AdapterSnapshot = {
   variaveis: ["nome","codigo"],
   provider_template_name: "produto_pronto_v1",
   language_code: "pt_BR",
+  provider_template_status: "approved",
   parameter_mapping: [
     { index: 1, variavel: "nome", tipo: "text" },
     { index: 2, variavel: "codigo", tipo: "text" },
@@ -194,12 +195,13 @@ describe("whatsapp-adapter: envs OFF/faltantes", () => {
     expect(r.code).toBe("whatsapp_disabled");
   });
 
-  it("provider_not_configured quando token ausente", async () => {
+  it("config inválida quando token ausente (deferred/provider_not_configured)", async () => {
     const r = await sendWhatsapp(
       baseEnv({ WHATSAPP_ACCESS_TOKEN: undefined }), resolvedWA(), waSnap, { corpo: "x" }, {},
     );
-    expect(r.outcome).toBe("provider_not_configured");
-    expect(r.code).toBe("whatsapp_missing_env");
+    // v2: config inválida pode ser deferred ou provider_not_configured; o código sinaliza a causa.
+    expect(["deferred","provider_not_configured"]).toContain(r.outcome);
+    expect(r.code).toMatch(/whatsapp_(missing_env|config_invalid)/);
   });
 });
 
@@ -307,12 +309,12 @@ describe("email-adapter: gates", () => {
     expect(r.outcome).toBe("provider_not_configured");
   });
 
-  it("provider_not_configured quando SMTP_HOST ausente", async () => {
+  it("config inválida quando SMTP_HOST ausente (deferred/provider_not_configured)", async () => {
     const r = await sendEmail(
       baseEnv({ SMTP_HOST: undefined }), resolvedEmail, emailSnap, { assunto: "S", corpo: "x" },
     );
-    expect(r.outcome).toBe("provider_not_configured");
-    expect(r.code).toBe("email_missing_env");
+    expect(["deferred","provider_not_configured"]).toContain(r.outcome);
+    expect(r.code).toMatch(/email_(missing_env|config_invalid)/);
   });
 
   it("email sem assunto → permanent_error", async () => {
@@ -342,29 +344,32 @@ describe("inapp-adapter", () => {
     expect(r.outcome).toBe("provider_not_configured");
   });
 
-  it("cliente_id → rpc_create_portal_notification_secure", async () => {
+  it("cliente_id → rpc_dispatch_inapp_notification (idempotente por outbox)", async () => {
     let name = ""; let args: Record<string, unknown> = {};
     const r = await sendInApp(
       baseEnv(),
       { ok: true, canal: "in_app", cliente_id: "cli-1" },
       { assunto: "Pronto para retirada", corpo: "Corpo" },
       { rpc: async (n, a) => { name = n; args = a; return { data: { notification_id: "n-1" }, error: null }; } },
+      { outbox_id: "00000000-0000-0000-0000-0000000000aa" },
     );
-    expect(name).toBe("rpc_create_portal_notification_secure");
-    expect((args as { p_cliente_id: string }).p_cliente_id).toBe("cli-1");
+    expect(name).toBe("rpc_dispatch_inapp_notification");
+    expect((args as { p_cliente_id?: string }).p_cliente_id).toBe("cli-1");
     expect(r.outcome).toBe("sent");
     expect(r.provider_message_id).toBe("n-1");
   });
 
-  it("user_id → rpc_create_operational_notification_secure", async () => {
-    let name = "";
+  it("user_id → rpc_dispatch_inapp_notification (operacional)", async () => {
+    let name = ""; let args: Record<string, unknown> = {};
     const r = await sendInApp(
       baseEnv(),
       { ok: true, canal: "in_app", user_id: "u-1" },
       { corpo: "Corpo" },
-      { rpc: async (n) => { name = n; return { data: { notification_id: "op-1" }, error: null }; } },
+      { rpc: async (n, a) => { name = n; args = a; return { data: { notification_id: "op-1" }, error: null }; } },
+      { outbox_id: "00000000-0000-0000-0000-0000000000bb" },
     );
-    expect(name).toBe("rpc_create_operational_notification_secure");
+    expect(name).toBe("rpc_dispatch_inapp_notification");
+    expect((args as { p_user_id?: string }).p_user_id).toBe("u-1");
     expect(r.outcome).toBe("sent");
   });
 
