@@ -358,7 +358,7 @@ export default function Configuracoes() {
       const { error: profileErr } = await supabase.from("profiles")
         .update({
           nome: editUser.nome,
-          telefone: unmask(editUser.telefone),
+          telefone: (() => { const c = validatePhoneBR(editUser.telefone, { fieldLabel: "Telefone" }); if (!c.ok) throw new Error(c.error); return c.value; })(),
           cargo: editUser.cargo,
           cpf_cnpj: unmaskCpfCnpj(editUser.cpf_cnpj),
           crea: editUser.crea,
