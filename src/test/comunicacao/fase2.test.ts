@@ -479,8 +479,8 @@ describe("runbook fase 2 v2 (contratual: barra v1/stale)", () => {
     expect(runbook).toMatch(/deferred[^\n]*rpc_defer_communication_delivery/i);
     expect(runbook).toMatch(/invalid_recipient[^\n]*rpc_cancel_communication_delivery/i);
     expect(runbook).toMatch(/opt_out[^\n]*rpc_skip_communication_delivery/i);
-    expect(runbook).toMatch(/permanent_error[^\n]*fail_v2[^\n]*true/i);
-    expect(runbook).toMatch(/transient_error[^\n]*fail_v2[^\n]*false/i);
+    expect(runbook).toMatch(/permanent_error[^\n]*rpc_fail_communication_delivery_v2[^\n]*is_permanent=true/i);
+    expect(runbook).toMatch(/transient_error[^\n]*rpc_fail_communication_delivery_v2[^\n]*is_permanent=false/i);
   });
 
   it("declara WHATSAPP_API_VERSION obrigatório e allowlist v24/v25", () => {
