@@ -206,7 +206,7 @@ export default function FluxoTecnico() {
           toast.info("Gerando Ordens de Serviço solicitadas...");
           gerarOSMutation.mutate(variables.registro);
         } else if (variables.registro.proxima_acao_recomendada === "emitir_recomendação") {
-          (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+          supabase.rpc("rpc_create_portal_notification_secure", {
             _cliente_id: variables.registro.cliente_id,
             _tipo: "informativo",
             _titulo: "Recomendação Técnica Aprovada",

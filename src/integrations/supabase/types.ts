@@ -1390,6 +1390,7 @@ export type Database = {
           email: string
           enviado_por: string | null
           id: string
+          idempotency_key: string | null
           status: string | null
         }
         Insert: {
@@ -1398,6 +1399,7 @@ export type Database = {
           email: string
           enviado_por?: string | null
           id?: string
+          idempotency_key?: string | null
           status?: string | null
         }
         Update: {
@@ -1406,6 +1408,7 @@ export type Database = {
           email?: string
           enviado_por?: string | null
           id?: string
+          idempotency_key?: string | null
           status?: string | null
         }
         Relationships: [
@@ -6850,18 +6853,21 @@ export type Database = {
       }
       monitoramento_avisos: {
         Row: {
+          data_referencia: string
           enviado_em: string | null
           id: string
           registro_consultor_id: string
           tipo: string
         }
         Insert: {
+          data_referencia?: string
           enviado_em?: string | null
           id?: string
           registro_consultor_id: string
           tipo: string
         }
         Update: {
+          data_referencia?: string
           enviado_em?: string | null
           id?: string
           registro_consultor_id?: string
@@ -6881,9 +6887,12 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          idempotency_key: string | null
           lido: boolean
           link: string | null
           mensagem: string | null
+          source_id: string | null
+          source_type: string | null
           tipo: string
           titulo: string
           usuario_id: string
@@ -6891,9 +6900,12 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           lido?: boolean
           link?: string | null
           mensagem?: string | null
+          source_id?: string | null
+          source_type?: string | null
           tipo: string
           titulo: string
           usuario_id: string
@@ -6901,9 +6913,12 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           lido?: boolean
           link?: string | null
           mensagem?: string | null
+          source_id?: string | null
+          source_type?: string | null
           tipo?: string
           titulo?: string
           usuario_id?: string
@@ -9901,27 +9916,42 @@ export type Database = {
         Row: {
           cliente_id: string
           created_at: string
+          created_by: string | null
           id: string
+          idempotency_key: string | null
+          link: string | null
           lido: boolean
           mensagem: string | null
+          source_id: string | null
+          source_type: string | null
           tipo: Database["public"]["Enums"]["tipo_notificacao_portal"]
           titulo: string
         }
         Insert: {
           cliente_id: string
           created_at?: string
+          created_by?: string | null
           id?: string
+          idempotency_key?: string | null
+          link?: string | null
           lido?: boolean
           mensagem?: string | null
+          source_id?: string | null
+          source_type?: string | null
           tipo?: Database["public"]["Enums"]["tipo_notificacao_portal"]
           titulo: string
         }
         Update: {
           cliente_id?: string
           created_at?: string
+          created_by?: string | null
           id?: string
+          idempotency_key?: string | null
+          link?: string | null
           lido?: boolean
           mensagem?: string | null
+          source_id?: string | null
+          source_type?: string | null
           tipo?: Database["public"]["Enums"]["tipo_notificacao_portal"]
           titulo?: string
         }
@@ -15112,6 +15142,46 @@ export type Database = {
       }
       rpc_create_financial_title: {
         Args: { p_kind: string; p_payload: Json }
+        Returns: Json
+      }
+      rpc_check_monitoramento_and_notify: {
+        Args: { _registro_id: string }
+        Returns: Json
+      }
+      rpc_create_notificacao_operacional: {
+        Args: {
+          _idempotency_key?: string | null
+          _link?: string | null
+          _mensagem?: string | null
+          _source_id?: string | null
+          _source_type?: string | null
+          _tipo: string
+          _titulo: string
+          _usuario_id: string
+        }
+        Returns: Json
+      }
+      rpc_create_portal_notification_secure: {
+        Args: {
+          _cliente_id: string
+          _idempotency_key?: string | null
+          _link?: string | null
+          _mensagem: string
+          _source_id?: string | null
+          _source_type?: string | null
+          _tipo: string
+          _titulo: string
+        }
+        Returns: Json
+      }
+      rpc_record_aplicacao_email: {
+        Args: {
+          _aplicacao_id: string
+          _email: string
+          _enviado_por?: string | null
+          _idempotency_key?: string | null
+          _status?: string
+        }
         Returns: Json
       }
       rpc_criar_embalagens_pos_envase: {

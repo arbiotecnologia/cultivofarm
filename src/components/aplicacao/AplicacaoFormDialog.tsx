@@ -261,7 +261,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
       // notificação ao produtor
       if (osSel) {
-        await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+        await supabase.rpc("rpc_create_portal_notification_secure", {
           _cliente_id: (osSel as any).cliente_id,
           _tipo: rectifyId ? "alerta" : "aplicacao",
           _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",

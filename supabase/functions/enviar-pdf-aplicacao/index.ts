@@ -2,8 +2,7 @@
 // Regras críticas:
 //  - Nunca retornamos success=true se o registro em aplicacao_emails falhar.
 //  - Não usamos dados do corpo para autorizar destinatário: a autorização por
-//    destinatário é feita 100% dentro de rpc_record_aplicacao_email
-//    (contra clientes.email do OS + regra staff).
+//    destinatário é feita 100% contra e-mails cadastrados no cliente da OS.
 //  - Se o registro falhar antes do downloadUrl ser rastreado, fazemos cleanup do objeto.
 import {
   authenticate,
@@ -14,7 +13,6 @@ import {
   MAX_PDF_BYTES,
   requirePost,
   sanitizeFileName,
-  STAFF_ROLES,
 } from "../_shared/auth-guard.ts";
 
 interface Payload {
@@ -47,6 +45,10 @@ Deno.serve(async (req) => {
     return json(400, { error: "JSON inválido" });
   }
 
+  if (caller.kind !== "user") {
+    return json(403, { error: "Identidade de usuário obrigatória para enviar PDF de aplicação" });
+  }
+
   if (!body.pdfBase64 || !body.fileName || !body.destinatarioEmail || !body.registroId) {
     return json(400, {
       error: "Campos obrigatórios: pdfBase64, fileName, destinatarioEmail, registroId",
@@ -59,21 +61,32 @@ Deno.serve(async (req) => {
   const decoded = decodePdfBase64(body.pdfBase64, MAX_PDF_BYTES);
   if ("error" in decoded) return json(400, { error: decoded.error });
 
-  // Vínculo do caller à aplicação (defesa em profundidade — a RPC também valida).
-  if (caller.kind === "user") {
-    const isStaff = hasAnyRole(caller, STAFF_ROLES);
-    const { data: apl, error: aplErr } = await supabase
-      .from("aplicacoes")
-      .select("id, responsavel_id, created_by")
-      .eq("id", body.registroId)
-      .maybeSingle();
-    if (aplErr) return json(500, { error: "Falha ao validar aplicação" });
-    if (!apl) return json(404, { error: "Aplicação não encontrada" });
-    const isOwner =
-      apl.responsavel_id === caller.userId || apl.created_by === caller.userId;
-    if (!isStaff && !isOwner) {
-      return json(403, { error: "Sem autorização para esta aplicação" });
-    }
+  // Vínculo do caller à aplicação + destinatário cadastrado no cliente.
+  // A Edge nunca usa nome/e-mail do body como prova de autorização.
+  const { data: apl, error: aplErr } = await supabase
+    .from("aplicacoes")
+    .select("id, responsavel_id, created_by, ordens_servico!inner(cliente_id, clientes!inner(email, contato_financeiro_email))")
+    .eq("id", body.registroId)
+    .maybeSingle();
+  if (aplErr) return json(500, { error: "Falha ao validar aplicação" });
+  if (!apl) return json(404, { error: "Aplicação não encontrada" });
+
+  const linkedEmails = new Set(
+    [
+      apl.ordens_servico?.clientes?.email,
+      apl.ordens_servico?.clientes?.contato_financeiro_email,
+    ]
+      .filter((email): email is string => typeof email === "string" && email.trim().length > 0)
+      .map((email) => email.trim().toLowerCase()),
+  );
+  if (!linkedEmails.has(body.destinatarioEmail.trim().toLowerCase())) {
+    return json(403, { error: "Destinatário não cadastrado para esta aplicação" });
+  }
+
+  const isOwner = apl.responsavel_id === caller.userId || apl.created_by === caller.userId;
+  const isAdmin = hasAnyRole(caller, ["administrador"]);
+  if (!isAdmin && !isOwner) {
+    return json(403, { error: "Sem autorização para esta aplicação" });
   }
 
   const safeName = sanitizeFileName(body.fileName, "aplicacao.pdf");
@@ -109,7 +122,7 @@ Deno.serve(async (req) => {
   const idempotencyKey =
     `aplicacao-pdf-${body.registroId}-${body.destinatarioEmail.toLowerCase()}-${dayKey}`;
 
-  const enviadoPor = caller.kind === "user" ? caller.userId : null;
+  const enviadoPor = caller.userId;
 
   // Tentativa best-effort de envio. `send-transactional-email` pode não existir.
   let emailSent = false;
@@ -168,14 +181,14 @@ Deno.serve(async (req) => {
 
   // Registro server-side (RPC valida destinatário e vínculo, aceita evolução de status).
   const { data: recordRes, error: recErr } = await supabase.rpc(
-    "rpc_record_aplicacao_email" as never,
+    "rpc_record_aplicacao_email",
     {
       _aplicacao_id: body.registroId,
       _email: body.destinatarioEmail,
       _status: finalStatus,
       _idempotency_key: idempotencyKey,
       _enviado_por: enviadoPor,
-    } as never,
+    },
   );
 
   if (recErr) {

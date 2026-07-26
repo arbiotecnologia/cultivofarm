@@ -722,7 +722,7 @@ export default function VisitaTecnica() {
             });
 
             // 3. Notificação operacional (via RPC segura)
-            await (supabase.rpc as any)("rpc_create_notificacao_operacional", {
+            await supabase.rpc("rpc_create_notificacao_operacional", {
               _usuario_id: user!.id,
               _tipo: "retorno_programado",
               _titulo: "Novo retorno agendado",
@@ -735,7 +735,7 @@ export default function VisitaTecnica() {
 
             // 4. Notificar produtor se solicitado
             if (encerramento.retornoNotificarProdutor) {
-               await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+               await supabase.rpc("rpc_create_portal_notification_secure", {
                  _cliente_id: clienteId!,
                  _tipo: "recomendacao",
                  _titulo: "Visita Técnica Agendada",
@@ -792,7 +792,7 @@ export default function VisitaTecnica() {
           const { data: gestores } = await supabase.from("user_roles").select("user_id").eq("role", "gestor");
           if (gestores && gestores.length > 0) {
             await Promise.all(gestores.map((g) =>
-              (supabase.rpc as any)("rpc_create_notificacao_operacional", {
+              supabase.rpc("rpc_create_notificacao_operacional", {
                 _usuario_id: g.user_id,
                 _tipo: "aprovacao_urgente",
                 _titulo: "OS Multi-Produto aguardando aprovação",
@@ -841,7 +841,7 @@ export default function VisitaTecnica() {
             const { data: gestores } = await supabase.from("user_roles").select("user_id").eq("role", "gestor");
             if (gestores && gestores.length > 0) {
               await Promise.all(gestores.map((g) =>
-                (supabase.rpc as any)("rpc_create_notificacao_operacional", {
+                supabase.rpc("rpc_create_notificacao_operacional", {
                   _usuario_id: g.user_id,
                   _tipo: "aprovacao_recomendacao",
                   _titulo: "Recomendação técnica aguardando aprovação",
@@ -872,7 +872,7 @@ export default function VisitaTecnica() {
               motivo: "Liberação direta ao produtor (sem aprovação técnica)",
             } as any);
 
-            await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+            await supabase.rpc("rpc_create_portal_notification_secure", {
               _cliente_id: clienteId,
               _tipo: "recomendacao",
               _titulo: "Nova recomendação aguardando sua decisão",
