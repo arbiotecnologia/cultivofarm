@@ -52,6 +52,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCNPJ, formatCEP, formatTelefone, unmask, unmaskCnpj } from "@/lib/masks";
+import { MaskedInput } from "@/components/ui/masked-input";
+import { validateIE, normalizeIE } from "@/lib/fiscal/ie";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
