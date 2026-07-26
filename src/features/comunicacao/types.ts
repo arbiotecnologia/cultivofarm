@@ -193,6 +193,24 @@ export interface CommunicationRpcContracts {
       skipped?: number;
     };
   };
+  /** Fase 2.3: publish autenticado que garante expansão v2 (source-aware + metadata WA). */
+  rpc_publish_communication_event_v2: {
+    args: {
+      p_event_key: string;
+      p_source_type: string;
+      p_source_id: string | null;
+      p_payload: Record<string, unknown>;
+      p_idempotency_key: string;
+    };
+    returns: {
+      ok: boolean;
+      event_id: string;
+      duplicated: boolean;
+      enqueued?: number;
+      skipped?: number;
+    };
+  };
+
   rpc_update_communication_preferences: {
     args: {
       p_canal: ComunicacaoCanal;
