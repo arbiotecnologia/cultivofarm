@@ -48,7 +48,7 @@ export function AppSidebar() {
     return desktopItemsBySection()
       .map(({ section, items }) => ({
         section,
-        items: items.filter((it) => canAccess(role, it.route)),
+        items: items.filter((it) => canAccess(role, it.route) && isNavItemFeatureEnabled(it)),
       }))
       .filter((g) => g.items.length > 0);
   }, [role]);
