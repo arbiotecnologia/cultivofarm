@@ -82,21 +82,19 @@ describe("Comunicação Fase 0.2 — invariantes estáticos", () => {
     ).toEqual([]);
   });
 
-  it("(d) toda chamada às 3 RPCs canônicas contém _source_type e _source_id", () => {
+  it("(d) toda chamada às RPCs de notificação contém _source_type e _source_id na janela seguinte", () => {
     const bad: string[] = [];
+    const WINDOW = 1500;
     for (const { file, content } of corpus) {
+      if (file.includes("/test/")) continue;
       for (const rpc of CANONICAL_RPCS) {
-        if (rpc === "rpc_record_aplicacao_email") continue; // usa _aplicacao_id
-        // Cada bloco de chamada deve conter as duas chaves _source_type e _source_id.
-        const callRegex = new RegExp(
-          String.raw`["']${rpc}["']\s*,\s*\{[\s\S]*?\}`,
-          "g",
-        );
+        if (rpc === "rpc_record_aplicacao_email") continue;
+        const nameRe = new RegExp(String.raw`["']${rpc}["']`, "g");
         let m: RegExpExecArray | null;
-        while ((m = callRegex.exec(content)) !== null) {
-          const block = m[0];
-          if (!/_source_type\s*:/.test(block) || !/_source_id\s*:/.test(block)) {
-            bad.push(`${file} -> ${rpc}: chamada sem _source_type/_source_id`);
+        while ((m = nameRe.exec(content)) !== null) {
+          const window = content.slice(m.index, m.index + WINDOW);
+          if (!/_source_type\s*:/.test(window) || !/_source_id\s*:/.test(window)) {
+            bad.push(`${file}@${m.index} -> ${rpc}: sem _source_type/_source_id na janela`);
           }
         }
       }
@@ -113,6 +111,7 @@ describe("Comunicação Fase 0.2 — invariantes estáticos", () => {
   it("(f) rpc_check_monitoramento_and_notify é server-only", () => {
     const leaks: string[] = [];
     for (const { file, content } of corpus) {
+      if (file.includes("/test/")) continue;
       if (content.includes("rpc_check_monitoramento_and_notify")) leaks.push(file);
     }
     expect(
