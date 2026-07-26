@@ -106,7 +106,7 @@ parâmetros/formatação não influenciam.
 | `COMMUNICATION_INAPP_ADAPTER_ENABLED` | Ativa in_app adapter | ✅ para in_app |
 
 **WhatsApp API version — allowlist (jul/2026):** apenas `v24.0` e `v25.0`
-são aceitas. Versões antigas (`v20.0`/`v21.0`/`v22.0`) foram removidas por
+são aceitas. Versões anteriores foram removidas por
 saírem da janela de suporte operacional da Meta. Qualquer versão fora da
 allowlist — inclusive `undefined` — faz `isWhatsappConfigValid()` retornar
 `false` e o adapter responder `provider_not_configured`. Não há default
