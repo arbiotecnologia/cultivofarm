@@ -1,66 +1,133 @@
-## Objetivo
-Padronizar todos os campos de Inscrição Estadual (IE) do sistema para usar `MaskedInput` com **máscara e validação específicas por UF**, com fallback para o literal `ISENTO` quando aplicável, e normalização consistente antes da persistência.
+# Correção Fase 2 — Módulo de Comunicação
 
-## Diagnóstico atual
+Escopo: aplicar as 9 correções listadas pela auditoria sobre o commit `28d739e9…`, sem publicar, sem aplicar migration externa, sem ativar flags e sem envio real. Todos os artefatos permanecem em `restoration/comunicacao-fase2/` e código Deno/React em `supabase/functions/` e `src/features/comunicacao/`.
 
-Campos de IE em UI:
+## 1. Seeds e coerência de schema
 
-| # | Local | Componente atual | Situação |
-|---|---|---|---|
-| 1 | `src/components/clientes/ClienteFormTabs.tsx` L302 (`inscricao_estadual`) | `MaskedField mask="ie"` (genérica) | Precisa passar a usar máscara por UF |
-| 2 | `src/components/comercial/ParceiroB2BFormDialog.tsx` L431 (`inscricao_estadual`) | `<Input>` cru | Fora do padrão |
-| 3 | `src/pages/configuracoes/FiscalEmpresa.tsx` L525-531 (`state_registration`) | `<Input>` cru; aceita `ISENTO` | Fora do padrão |
+- `seeds.sql`: reescrever para conformidade com Fase 1
+  - trocar `ativo` por `status` ('draft'), adicionar `nome`
+  - `locale = 'pt-BR'` (com hífen)
+  - `estrategia` válida da Fase 1 (ex.: `manual`/`auto` — confirmar enum)
+  - `ON CONFLICT (chave, canal, versao)` alinhado à UNIQUE real
+  - manter regras `enabled=false`
 
-Persistência:
-- `ProdutoresTab.tsx` L165 e `Fazendas.tsx` L203 já normalizam via `unmask()`.
-- `ParceiroB2BFormDialog` e `FiscalEmpresa` não normalizam.
+## 2. Constraints de metadados WhatsApp / assunto Email
 
-Máscara atual `mask="ie"` em `masked-input.tsx` é única e rígida (`_________.__-__`, 13 dígitos), incompatível com o formato real de várias UFs (SP=12, RJ=8, MG=13, PR=10, RS=10, BA=8/9, etc.).
+- Ajustar migration para exigir metadados/assunto **apenas** quando `status = 'active'`; drafts podem ser incompletos.
+- Ativação (RPC `rpc_set_communication_template_metadata` ou similar) valida completude antes de mudar para `active`.
+- Atualizar `postcheck.sql`, `rollback.sql`, `harness-rls.sql`, `precheck.sql` para refletir constraints/objetos reais.
 
-## Alterações propostas
+## 3. Source-aware para OS on-farm
 
-### 1. Novo módulo `src/lib/fiscal/ie/` — máscara e validação por UF
+- Fase 1 `_comunicacao_resolve_recipients`/`_comunicacao_build_snapshot` só olham `ordens_servico`. UNION cego confunde OS regular com on-farm em colisão UUID.
+- Criar helpers Fase 2 internos:
+  - `_comunicacao_resolve_recipients_v2(_source_type text, _source_id uuid, …)`
+  - `_comunicacao_build_snapshot_v2(_source_type text, _source_id uuid, …)`
+  - Allowlist estrita (`ordem_servico`, `ordem_servico_onfarm`, `system`, `administrative`); dispatch por CASE (sem SQL dinâmico).
+- Triggers `pronto_entrega` (comum e on-farm) chamam a versão v2 com o source correto.
+- RPCs Fase 1 permanecem intactas.
 
-Criar módulo puro (sem dependência de UI/DB):
+## 4. Worker/Payload
 
-- `patterns.ts` — mapa `UF → { mask: string; digits: number | number[]; example: string }` cobrindo as 27 UFs. Máscaras baseadas nos formatos oficiais publicados pela SEFAZ/Sintegra:
-  - AC 13 (`__.___.___/___-__`), AL 9, AP 9, AM 9, BA 8 ou 9, CE 9, DF 13, ES 9, GO 9, MA 9, MT 11, MS 9, MG 13, PA 9, PB 9, PR 10, PE 9 (novo) / 14 (antigo), PI 9, RJ 8, RN 9 ou 10, RS 10, RO 14, RR 9, SC 9, SP 12 (industrial) / 12 iniciando por "P" (produtor rural), SE 9, TO 9 ou 11.
-  - Onde houver mais de um formato válido, aceitar o comprimento correspondente e escolher a máscara dinamicamente pelo tamanho do input (mesmo padrão já usado em `telefone` 10↔11).
-- `validators.ts` — `validateIE(uf, value)` implementando o algoritmo de dígito verificador (DV) específico de cada UF (módulo 11 com pesos por UF, regras especiais para SP produtor rural iniciando com `P`, PE novo/antigo, BA 8/9 dígitos, MG com "cascata" de DV, etc.). Retorna discriminated union `{ ok: true; value: string } | { ok: false; error: string }`. Aceita literal `ISENTO` (case-insensitive, trimmed) como válido quando `allowIsento: true`.
-- `normalize.ts` — `normalizeIE(uf, value)` retorna `ISENTO` | dígitos-apenas | `null`.
-- `index.ts` — reexport.
+- Corrigir tipo `ClaimRow.payload_snapshot`: é o próprio objeto de variáveis (não `{ payload }`).
+- Passar snapshot direto a `renderTemplate` e ao mapping do WhatsApp.
+- Criar RPC nova `rpc_fail_communication_delivery_v2(uuid, text, text, text, boolean)` service_role-only, lease-safe:
+  - permanente → `dead_letter`
+  - transitório → `retry` com backoff
+  - preserva `worker_id/lease`
+- Worker migra para v2; verifica `error` de TODAS as RPCs de terminação (complete/skip/cancel/defer/fail_v2) — se qualquer uma falhar, marca resultado como erro (sem PII) e loga.
 
-Cobertura de testes unitários (`src/test/lib/fiscal-ie.test.ts`) com pelo menos 1 caso válido + 1 inválido + 1 DV incorreto por UF, além de `ISENTO` e vazio.
+## 5. Defer em vez de cancel para canal desligado
 
-### 2. Componente `MaskedInput` — máscara IE dinâmica por UF
+- Nova RPC `rpc_defer_communication_delivery(uuid, text, text, int)` service_role-only:
+  - devolve item a `pending`, incrementa contador de defer (não de tentativa de provedor), agenda `next_attempt_at = now() + p_delay`.
+  - lease-safe (só o worker atual).
+- Worker: `provider_not_configured` e adapter OFF → chamar defer (não cancel). `invalid_recipient` continua cancel.
 
-- Estender `MaskedInputProps` com `uf?: string` opcional (usado apenas quando `mask="ie"`).
-- `resolveMaskPattern("ie", raw, { uf })` consulta `patterns.ts`; quando UF não informada ou desconhecida, mantém a máscara genérica atual como fallback (retrocompatibilidade).
-- Suporte a máscaras de múltiplos comprimentos: escolha por `clean.length` (mesmo mecanismo do `telefone`).
+## 6. In-app idempotente por outbox_id
 
-### 3. Componentes de formulário
+- Nova tabela `comunicacao_inapp_dispatch (outbox_id uuid PK, notification_id uuid NOT NULL, created_at timestamptz)` com RLS deny-all + GRANT só service_role.
+- RPC `rpc_dispatch_inapp_notification(p_outbox_id uuid, …)` faz UPSERT: se já existe, retorna notification_id existente sem novo INSERT em `notificacoes_portal`.
+- Adapter `inapp-adapter.ts` passa `outbox_id` e usa a nova RPC.
+- Atualizar `rollback.sql`, `postcheck.sql`, `harness-rls.sql`, testes.
 
-Para cada um dos 3 pontos:
-- Ler a UF do próprio formulário (`endereco_estado`, `estado`, `state_uf`, conforme já existente no schema local — sem novas colunas).
-- Passar `<MaskedInput mask="ie" uf={form.endereco_estado} placeholder={patterns[uf]?.example ?? "Inscrição estadual"} />` (ou `MaskedField` no caso do RHF em `ClienteFormTabs`).
-- No blur/submit, chamar `validateIE(uf, value, { allowIsento: true })`. Em caso de erro, exibir `toast.error` (ou `form.setError`) com mensagem pt-BR incluindo o exemplo daquela UF.
-- Persistir via `normalizeIE(uf, value)` (dígitos, `ISENTO` ou `null`).
+## 7. WhatsApp Cloud API
 
-Escopo por arquivo:
-- `src/components/clientes/ClienteFormTabs.tsx`: adicionar `uf` derivado de `endereco_estado`; validação no submit já centralizado no `ProdutoresTab.tsx` (substituir `unmask(...)` por `normalizeIE(uf, ...)` + `validateIE`).
-- `src/components/comercial/ParceiroB2BFormDialog.tsx`: trocar `<Input>` por `<MaskedInput mask="ie" uf={form.endereco_estado} />`; validar/normalizar em `handleSubmit`.
-- `src/pages/configuracoes/FiscalEmpresa.tsx`: usar `<MaskedInput mask="ie" uf={values.state} />`; `allowIsento: true`; preservar `ISENTO` uppercase no salvamento.
-- `src/pages/Fazendas.tsx` L203: sem input UI hoje; **manter apenas** a normalização — trocar `unmask(...)` por `normalizeIE(uf, ...)` usando `estado` da fazenda, para consistência.
+- Adicionar coluna `provider_template_status text CHECK IN ('draft','pending','approved','rejected','paused')` em `comunicacao_templates`, snapshot copia esse campo.
+- Adapter recusa envio se `≠ 'approved'` (`permanent_error` código `wa_template_not_approved`).
+- Validar `WHATSAPP_API_VERSION` contra allowlist em código (`['v20.0','v21.0','v22.0']`); `WHATSAPP_PHONE_NUMBER_ID` numérico via regex `^\d+$`; sem default silencioso.
+- `communication-health` reflete essas validações em `configured`.
+- Mapping: variável ausente/nula → `permanent_error` `wa_variable_missing` **antes** do fetch.
+- Manter sanitização de logs.
 
-### 4. Comportamento sem UF selecionada
-- Se a UF ainda não estiver preenchida, o input aceita dígitos livres (máscara genérica) e a validação por DV é adiada; no submit, se ainda faltar UF, exibir toast pedindo para selecionar o Estado antes de validar a IE.
+## 8. Email
 
-## Validação
-- `bun run typecheck` + `bun run build`.
-- Suíte Vitest completa + novo arquivo `fiscal-ie.test.ts` cobrindo as 27 UFs.
-- Inspeção Playwright nos 3 diálogos: trocar UF e confirmar que a máscara se ajusta e a validação bloqueia DV inválido.
+- Timeout real via `Promise.race` com abort do transport (denomailer expõe `.close()`); testes injetam client mock.
+- HTML: escape do corpo texto com helper `escapeHtml`, ou enviar somente `text`. Preferir texto puro; se HTML, escape + `<pre>` ou `<br>`.
+- Validar `SMTP_PORT` (numérica 1-65535) e modo TLS (`tls`/`starttls`); falha de configuração → **defer** (não cancel).
 
-## Fora de escopo
-- Alterações em schema, RLS, migrations, ou colunas novas para armazenar UF-da-IE (usa-se a UF do endereço já existente).
-- Consulta on-line ao Sintegra/SEFAZ.
-- Nenhuma alteração em regras de negócio fiscais além da validação sintática/DV.
+## 9. UI/UX
+
+- Aba Comunicados: adicionar ação manual `produto_pronto_aplicacao` para admin:
+  - seletor de OS regular (query filtrando `origem != 'onfarm'`), exibe código/status
+  - confirmação, servidor valida existência e `payload={}`.
+- Broadcast idempotency: gerar `crypto.randomUUID()` por intenção; preservar em `useState` durante retries; renovar após sucesso ou reset.
+- Modo somente-leitura para `gestor`: aplicar `disabled` em TODAS as áreas mutáveis (templates, regras, comunicados, ação manual OS), não só broadcast.
+
+## 10. Testes e relatório
+
+- Trocar testes regex por comportamentais:
+  - payload_snapshot direto na render
+  - fail_v2 permanente vs transitório
+  - defer de canal desabilitado (sem cancel)
+  - terminalização com erro propagado
+  - in-app reexecução retorna mesmo `notification_id`
+  - mapping ausente aborta sem fetch
+  - `WHATSAPP_API_VERSION` inválida → not configured
+  - nonce de publicação estável em retries
+  - trigger on-farm resolve destinatários on-farm
+- Sem rede real (fetch mock + client mock).
+- Rodar `bunx tsgo --noEmit`, `vitest src/test/comunicacao/`, suíte completa.
+- Atualizar `.lovable/comunicacao-fase2-report.md` com resultados honestos; listar falhas preexistentes; auditoria cruzada final; **não** declarar pronto para staging se houver divergência.
+
+## Arquivos afetados
+
+```text
+restoration/comunicacao-fase2/
+  migration.sql      (constraints condicionais, helpers v2, RPCs fail_v2/defer/dispatch_inapp, tabela inapp_dispatch, coluna provider_template_status, trigger on-farm)
+  seeds.sql          (reescrito conforme Fase 1)
+  precheck.sql       (novos objetos)
+  postcheck.sql      (novas assinaturas; to_regprocedure)
+  rollback.sql       (drop reverso completo)
+  harness-rls.sql    (RLS deny-all da nova tabela; grants)
+  runbook.md         (novas assinaturas e passos)
+
+supabase/functions/_shared/comunicacao/
+  adapters-types.ts  (payload_snapshot direto; provider_template_status)
+  email-adapter.ts   (timeout real, escape HTML, defer em config)
+  whatsapp-adapter.ts (status approved, version allowlist, mapping strict)
+  inapp-adapter.ts   (usa rpc_dispatch_inapp_notification + outbox_id)
+
+supabase/functions/process-communication-outbox/index.ts
+  (payload_snapshot direto, fail_v2, defer em canal off, verificação de erro em todas RPCs)
+
+supabase/functions/communication-health/index.ts
+  (validações wa version/phone id, smtp port/tls)
+
+src/features/comunicacao/
+  api.ts, types.ts   (provider_template_status; ação manual OS; defer)
+  ui/ComunicacaoAdminPage.tsx (ação manual, nonce UUID, gestor readonly global)
+
+src/test/comunicacao/fase2.test.ts  (testes comportamentais, sem rede)
+
+.lovable/comunicacao-fase2-report.md (relatório atualizado)
+```
+
+## Restrições invioláveis
+
+- `COMMUNICATION_DELIVERY_ENABLED=false`, adapters OFF, VITE flags OFF por default.
+- Sem secrets em código/log/UI.
+- Sem deploy/publish/migration externa.
+- `produto_pronto_aplicacao` continua sem trigger automático.
+
+Aprovação necessária antes de executar por ser mudança extensa e cross-artifact.
