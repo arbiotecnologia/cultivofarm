@@ -39,10 +39,10 @@ Ambiente externo: **NÃO IMPLANTADO** — a migration/harness ainda não foram e
 
 | Validação | Resultado |
 | --- | --- |
-| `rg` de casts/RPCs | A executar nesta rodada final |
-| `bunx tsgo --noEmit` | A executar nesta rodada final |
-| `bun run build` | A executar nesta rodada final |
-| `bunx vitest run src/test/comunicacao/` | A executar nesta rodada final |
+| `rg` de casts/RPCs bloqueados | ✅ sem ocorrências bloqueantes |
+| `bunx tsgo --noEmit` | ✅ verde |
+| `bun run build` | ✅ verde, apenas warnings existentes de chunk/dynamic import/Browserslist |
+| `bunx vitest run src/test/comunicacao/` | ✅ 6/6 testes |
 
 ## Escopo não implantado
 
