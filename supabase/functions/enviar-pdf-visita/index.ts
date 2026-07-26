@@ -87,9 +87,11 @@ Deno.serve(async (req) => {
 
   const { data: signed, error: signErr } = await supabase.storage
     .from("visitas-pdf")
-    .createSignedUrl(path, 60 * 60 * 24 * 7);
+    .createSignedUrl(path, 60 * 60 * 24 * 3); // 3 dias (reduzido de 7)
   if (signErr || !signed) {
     console.error("Sign url error:", signErr);
+    // Limpa órfão para não deixar arquivo sem link.
+    await supabase.storage.from("visitas-pdf").remove([path]).catch(() => {});
     return json(500, { error: "Falha ao gerar link" });
   }
   const downloadUrl = signed.signedUrl;

@@ -195,13 +195,14 @@ export default function MobileAplicacoes() {
       
       if (osSel) {
         await supabase.from("ordens_servico").update({ status: "finalizada" as any }).eq("id", osId);
-        await supabase.from("portal_notificacoes").insert({
-          cliente_id: osSel.cliente_id,
-          titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
-          mensagem: rectifyId 
+        await (supabase.rpc as any)("rpc_create_portal_notification_secure", {
+          _cliente_id: osSel.cliente_id,
+          _tipo: rectifyId ? "alerta" : "aplicacao",
+          _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
+          _mensagem: rectifyId
             ? `Registro corrigido: ${osSel.produtos?.nome || "Produto"} em ${osSel.talhoes?.nome}`
             : `${osSel.produtos?.nome || "Produto"} aplicado em ${osSel.fazendas?.nome} / ${osSel.talhoes?.nome}`,
-          tipo: rectifyId ? "alerta" : "informativo" as any,
+          _link: null,
         });
       }
 
