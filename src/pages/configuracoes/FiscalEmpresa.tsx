@@ -369,11 +369,20 @@ export default function FiscalEmpresa() {
       toast({ title: "Verifique os campos", description: "Há dados inválidos.", variant: "destructive" });
       return;
     }
+    const ieCheck = validateIE(values.state ?? null, values.state_registration, { allowIsento: true });
+    if (!ieCheck.ok) {
+      toast({ title: "Inscrição Estadual inválida", description: ieCheck.error, variant: "destructive" });
+      return;
+    }
+    const normalizedValues = {
+      ...values,
+      state_registration: normalizeIE(values.state ?? null, values.state_registration, { allowIsento: true }),
+    };
     try {
       await update.mutateAsync({
         id: settingsQuery.data.id,
         expectedVersion: settingsQuery.data.configuration_version ?? 1,
-        values,
+        values: normalizedValues,
       });
       toast({ title: "Configuração fiscal salva." });
     } catch (err) {
