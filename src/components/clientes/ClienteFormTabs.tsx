@@ -302,7 +302,13 @@ export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
           </div>
           <div className="space-y-2">
             <Label>Inscrição Estadual</Label>
-            <MaskedField name="inscricao_estadual" mask="ie" placeholder="000000000.00-00" autoCase="upper" />
+            <MaskedField
+              name="inscricao_estadual"
+              mask="ie"
+              uf={watch("endereco_estado")}
+              placeholder={watch("endereco_estado") ? "Conforme UF selecionada" : "Selecione o Estado primeiro"}
+              autoCase="upper"
+            />
           </div>
         </div>
 
