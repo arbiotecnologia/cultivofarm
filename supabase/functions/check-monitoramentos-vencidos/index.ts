@@ -1,30 +1,29 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Job interno: requer x-internal-secret. Executado por cron.
+import { authenticate, corsHeaders, json, requirePost } from "../_shared/auth-guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+Deno.serve(async (req) => {
+  const early = requirePost(req);
+  if (early) return early;
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const auth = await authenticate(req);
+  if ("error" in auth) return auth.error;
+  const { caller, supabase } = auth;
+
+  // Somente cron interno OU administrador podem disparar.
+  if (caller.kind !== "internal" && !caller.roles.includes("administrador")) {
+    return json(403, { error: "Somente cron interno" });
+  }
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     const today = new Date().toISOString().split("T")[0];
 
-    // 1. Buscar monitoramentos vencendo hoje ou amanhã
-    const { data: monitoramentos, error: fetchError } = await supabaseAdmin
+    const { data: monitoramentos, error: fetchError } = await supabase
       .from("registros_consultor")
       .select(`
-        id, 
-        consultor_responsavel, 
-        cliente_id, 
-        talhao_id, 
+        id,
+        consultor_responsavel,
+        cliente_id,
+        talhao_id,
         data_proxima_visita,
         objetivo_visita,
         clientes:cliente_id(nome),
@@ -36,58 +35,70 @@ serve(async (req) => {
 
     if (fetchError) throw fetchError;
 
-    const results = [];
+    const results: string[] = [];
+    const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 
-    for (const mon of monitoramentos || []) {
-      // Verificar se já avisamos hoje
-      const { data: jaAvisado } = await supabaseAdmin
+    for (const mon of (monitoramentos ?? []) as Array<{
+      id: string;
+      consultor_responsavel: string | null;
+      talhao_id: string | null;
+      data_proxima_visita: string | null;
+      clientes: { nome: string } | null;
+      talhoes: { nome: string } | null;
+    }>) {
+      if (!mon.consultor_responsavel) continue;
+
+      const { data: jaAvisado } = await supabase
         .from("monitoramento_avisos")
         .select("id")
         .eq("registro_consultor_id", mon.id)
         .eq("tipo", "vencido")
         .gte("enviado_em", today)
         .maybeSingle();
-
       if (jaAvisado) continue;
 
-      // 2. Criar notificações operacionais
-      await supabaseAdmin.from("notificacoes_operacionais").insert({
-        user_id: mon.consultor_responsavel,
-        tipo: "alerta",
-        titulo: "Monitoramento Vencido",
-        mensagem: `A reavaliação do talhão ${mon.talhoes?.nome} (${mon.clientes?.nome}) venceu em ${mon.data_proxima_visita}.`,
-        link: `/visita-tecnica/${mon.id}`,
-        urgencia: "alta"
+      // Cria notificação operacional via RPC seguro (respeita schema real).
+      await supabase.rpc("rpc_create_notificacao_operacional", {
+        _usuario_id: mon.consultor_responsavel,
+        _tipo: "alerta",
+        _titulo: "Monitoramento Vencido",
+        _mensagem: `A reavaliação do talhão ${mon.talhoes?.nome ?? "—"} (${
+          mon.clientes?.nome ?? "—"
+        }) venceu em ${mon.data_proxima_visita}.`,
+        _link: `/visita-tecnica/${mon.id}`,
       });
 
-      // 3. Atualizar alerta agronômico para risco alto
-      await supabaseAdmin
-        .from("alertas_agronomicos")
-        .update({ nivel_risco: "alto" })
-        .eq("talhao_id", mon.talhao_id)
-        .eq("status", "monitoramento");
+      if (mon.talhao_id) {
+        await supabase
+          .from("alertas_agronomicos")
+          .update({ nivel_risco: "alto" })
+          .eq("talhao_id", mon.talhao_id)
+          .eq("status", "monitoramento");
+      }
 
-      // 4. Registrar aviso enviado
-      await supabaseAdmin.from("monitoramento_avisos").insert({
+      await supabase.from("monitoramento_avisos").insert({
         registro_consultor_id: mon.id,
-        tipo: "vencido"
+        tipo: "vencido",
       });
 
-      // 5. Enviar Push Notification
+      // Push via segredo interno (sem service_role no header).
       try {
-        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-push-notification`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
+        await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-push-notification`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-secret": internalSecret,
+            },
+            body: JSON.stringify({
+              user_ids: [mon.consultor_responsavel],
+              title: "Monitoramento Vencido ⚠️",
+              body: `Talhão ${mon.talhoes?.nome ?? "—"} aguarda reavaliação.`,
+              url: `/visita-tecnica/${mon.id}`,
+            }),
           },
-          body: JSON.stringify({
-            user_ids: [mon.consultor_responsavel],
-            title: "Monitoramento Vencido ⚠️",
-            body: `Talhão ${mon.talhoes?.nome} aguarda reavaliação.`,
-            url: `/visita-tecnica/${mon.id}`
-          })
-        });
+        );
       } catch (pushErr) {
         console.error("Erro ao enviar push:", pushErr);
       }
@@ -99,9 +110,6 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json(500, { error: (error as Error).message });
   }
 });
