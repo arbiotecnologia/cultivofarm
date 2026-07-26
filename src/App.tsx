@@ -120,6 +120,8 @@ import MobileCheckin from "@/pages/app/MobileCheckin";
 import MobileVisita from "@/pages/app/MobileVisita";
 import MobileTalhaoHistorico from "@/pages/app/MobileTalhaoHistorico";
 import MobileCatalogoTecnico from "@/pages/app/MobileCatalogoTecnico";
+import { ComunicacaoRouteGuard } from "@/features/comunicacao/RouteGuard";
+import ComunicacaoAdminPage from "@/features/comunicacao/ui/ComunicacaoAdminPage";
 
 import PedidosB2B from "@/pages/comercial/PedidosB2B";
 import DashboardB2B from "@/pages/comercial/DashboardB2B";
