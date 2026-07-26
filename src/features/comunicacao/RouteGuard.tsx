@@ -9,13 +9,13 @@ import { ReactNode } from "react";
  * - Se logado sem papel administrador/gestor: redireciona para /sem-permissao.
  */
 export function ComunicacaoRouteGuard({ children }: { children: ReactNode }) {
-  const { userRole, loading } = useAuth();
+  const { role, loading } = useAuth();
 
   if (!isComunicacaoModuleEnabled()) {
     return <Navigate to="/" replace />;
   }
   if (loading) return null;
-  if (userRole !== "administrador" && userRole !== "gestor") {
+  if (role !== "administrador" && role !== "gestor") {
     return <Navigate to="/sem-permissao" replace />;
   }
   return <>{children}</>;
