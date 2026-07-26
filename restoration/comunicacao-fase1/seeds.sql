@@ -19,7 +19,10 @@ VALUES
  '["codigo_os"]'::jsonb)
 ON CONFLICT DO NOTHING;
 
--- Ocasião 2: produto pronto para aplicação (ordens_servico.status = 'entregue')
+-- Ocasião 2: produto pronto para aplicação.
+-- IMPORTANTE: não há status equivalente comprovado em status_os_onfarm.
+-- Fase 1 aceita apenas publicação MANUAL por administrador com OS existente;
+-- nenhuma transição de status dispara este evento automaticamente.
 INSERT INTO public.comunicacao_templates (chave,nome,canal,versao,status,locale,assunto,corpo,variaveis)
 VALUES
 ('produto_pronto_aplicacao','Produto pronto para aplicação — E-mail','email',1,'draft','pt-BR',
