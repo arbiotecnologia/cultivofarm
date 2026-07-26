@@ -1,5 +1,17 @@
 import type { NavItem } from "@/config/navigation";
 import { canAccess } from "@/lib/permissions";
+import { FEATURE_FLAGS, type FeatureFlagName } from "@/config/featureFlags";
+
+/**
+ * Fase 1 Comunicação — respeita `item.featureFlag`. Itens sem featureFlag
+ * seguem normalmente. Itens com flag desligada são ocultados na navegação
+ * e nos resultados de busca.
+ */
+export function isNavItemFeatureEnabled(item: Pick<NavItem, "featureFlag">): boolean {
+  if (!item.featureFlag) return true;
+  const flag = item.featureFlag as FeatureFlagName;
+  return FEATURE_FLAGS[flag] === true;
+}
 
 function normalize(s: string): string {
   return s
