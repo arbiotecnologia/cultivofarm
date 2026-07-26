@@ -1,11 +1,18 @@
+// Fase 0.1: broadcast restrito. Usuário comum NÃO pode disparar push (nem para si).
+// Assinaturas devem ser criadas via tabela push_subscriptions (RLS auth.uid()=user_id).
 import {
   authenticate,
   corsHeaders,
-  hasAnyRole,
   json,
   requirePost,
 } from "../_shared/auth-guard.ts";
 import webpush from "https://esm.sh/web-push@3.6.6";
+
+const MAX_TARGETS = 500;
+const MAX_TITLE = 120;
+const MAX_BODY = 400;
+const MAX_URL = 500;
+const MAX_TAG = 60;
 
 interface PushPayload {
   user_ids: unknown;
@@ -19,6 +26,10 @@ function isStringArray(v: unknown): v is string[] {
   return Array.isArray(v) && v.every((x) => typeof x === "string" && x.length > 0);
 }
 
+function isInternalLink(u: string): boolean {
+  return /^\/[A-Za-z0-9_\-./?=&%]{0,500}$/.test(u);
+}
+
 Deno.serve(async (req) => {
   const early = requirePost(req);
   if (early) return early;
@@ -27,6 +38,18 @@ Deno.serve(async (req) => {
   if ("error" in auth) return auth.error;
   const { caller, supabase } = auth;
 
+  // Autorização de disparo:
+  // - internal (cron/service_role via segredo): livre.
+  // - administrador autenticado: permitido (auditado nos logs).
+  // - qualquer outro: negado. Broadcast NÃO é permitido para papéis staff genéricos.
+  const canDispatch =
+    caller.kind === "internal" ||
+    (caller.kind === "user" && caller.roles.includes("administrador"));
+
+  if (!canDispatch) {
+    return json(403, { error: "Sem autorização para disparar push" });
+  }
+
   let payload: PushPayload;
   try {
     payload = (await req.json()) as PushPayload;
@@ -34,28 +57,22 @@ Deno.serve(async (req) => {
     return json(400, { error: "JSON inválido" });
   }
 
-  const title = typeof payload.title === "string" ? payload.title.slice(0, 120) : "";
-  const body = typeof payload.body === "string" ? payload.body.slice(0, 400) : "";
-  const url = typeof payload.url === "string" ? payload.url.slice(0, 500) : "/app";
-  const tag = typeof payload.tag === "string" ? payload.tag.slice(0, 60) : "default";
+  const title = typeof payload.title === "string" ? payload.title.slice(0, MAX_TITLE) : "";
+  const body = typeof payload.body === "string" ? payload.body.slice(0, MAX_BODY) : "";
+  const url = typeof payload.url === "string" ? payload.url.slice(0, MAX_URL) : "/app";
+  const tag = typeof payload.tag === "string" ? payload.tag.slice(0, MAX_TAG) : "default";
   if (!title || !body) return json(400, { error: "title e body são obrigatórios" });
+  if (!isInternalLink(url)) return json(400, { error: "url deve ser interna" });
   if (!isStringArray(payload.user_ids) || payload.user_ids.length === 0) {
     return json(400, { error: "user_ids deve ser um array de UUIDs" });
   }
-
-  // Autorização de destinatários:
-  // - internal (cron): livre.
-  // - usuário staff (administrador/gestor/administrativo): pode enviar para qualquer user_id.
-  // - qualquer outro usuário autenticado: só pode enviar para si mesmo.
-  const canBroadcast =
-    caller.kind === "internal" ||
-    hasAnyRole(caller, ["administrador", "gestor", "administrativo"]);
-
-  const targetUserIds = payload.user_ids as string[];
-  if (!canBroadcast) {
-    if (caller.kind !== "user") return json(403, { error: "Sem autorização" });
-    const onlySelf = targetUserIds.every((id) => id === caller.userId);
-    if (!onlySelf) return json(403, { error: "Sem autorização para outros usuários" });
+  const uuidRe = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const targetUserIds = Array.from(new Set(payload.user_ids as string[]));
+  if (targetUserIds.length > MAX_TARGETS) {
+    return json(400, { error: `Máximo de ${MAX_TARGETS} destinatários` });
+  }
+  if (!targetUserIds.every((id) => uuidRe.test(id))) {
+    return json(400, { error: "user_ids inválido" });
   }
 
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
@@ -71,7 +88,7 @@ Deno.serve(async (req) => {
     .select("id,endpoint,p256dh,auth")
     .in("user_id", targetUserIds);
 
-  if (subError) return json(500, { error: subError.message });
+  if (subError) return json(500, { error: "Falha ao carregar assinaturas" });
 
   const notification = JSON.stringify({ title, body, url, tag });
   const results = await Promise.all(
@@ -87,7 +104,7 @@ Deno.serve(async (req) => {
           .eq("id", sub.id);
         return { id: sub.id, success: true };
       } catch (err) {
-        const anyErr = err as { statusCode?: number; message?: string };
+        const anyErr = err as { statusCode?: number };
         if (anyErr.statusCode === 410 || anyErr.statusCode === 404) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
         }
@@ -96,8 +113,12 @@ Deno.serve(async (req) => {
     }),
   );
 
-  return new Response(JSON.stringify({ results }), {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  // Não retornar endpoints/p256dh/auth. Somente ids + success.
+  return new Response(
+    JSON.stringify({
+      dispatched: results.length,
+      succeeded: results.filter((r) => r.success).length,
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
 });
