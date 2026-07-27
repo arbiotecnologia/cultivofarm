@@ -114,6 +114,24 @@ export interface ComunicacaoOutbox {
   sent_at: string | null;
   created_at: string;
   updated_at: string;
+  /** Fase 4: recibos WhatsApp (Meta). Aditivos; nulos para outros canais. */
+  provider_delivery_status: "sent" | "delivered" | "read" | "failed" | "deleted" | null;
+  provider_status_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
+  provider_failed_at: string | null;
+}
+
+/** Fase 4: registro append-only de recibos por provedor (WhatsApp). */
+export interface ComunicacaoProviderReceipt {
+  id: string;
+  outbox_id: string | null;
+  provider: "whatsapp";
+  provider_message_id: string;
+  status: "sent" | "delivered" | "read" | "failed" | "deleted";
+  provider_timestamp: string;
+  received_at: string;
+  error_code: string | null;
 }
 
 export interface ComunicacaoPreferencia {
