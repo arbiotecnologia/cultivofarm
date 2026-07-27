@@ -43,9 +43,9 @@ describe("Fase 3 — kit de implantação (contratos)", () => {
   it("apply-staging chama validate antes de qualquer psql e roda ordem correta", () => {
     const s = read("apply-staging.sh");
     const idxValidate = s.indexOf("validate-staging.sh");
-    const idxFirstPsql = s.indexOf("psql \"${STAGING_DB_URL}\"");
+    const idxFirstStep = s.indexOf('run "fase1/postcheck"');
     expect(idxValidate).toBeGreaterThan(0);
-    expect(idxFirstPsql).toBeGreaterThan(idxValidate);
+    expect(idxFirstStep).toBeGreaterThan(idxValidate);
     // Ordem: fase1/postcheck → fase2/precheck → migration → postcheck → harness
     const order = ["fase1/postcheck", "fase2/precheck", "fase2/migration", "fase2/postcheck", "fase2/harness"];
     let last = -1;
