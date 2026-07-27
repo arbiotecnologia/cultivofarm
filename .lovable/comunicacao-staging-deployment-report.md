@@ -104,3 +104,72 @@ Método: cada script foi enviado ao `supabase--migration` (envolve a query em tr
 - 4 chamadas ao `supabase--migration` (todas revertidas pelo Postgres) + 3 queries read-only de diagnóstico.
 - Sem redeploys, sem builds, sem typecheck nesta etapa.
 - Bem abaixo do teto de 90 créditos.
+
+## 9. Correção final autorizada — GO absoluto (`2026-07-27T04:19:07Z` UTC)
+
+Escopo: staging `ikaauvsflpmamgxmkhoq` (produção `navfzbwgwzruipouyfnk` intocada; flags OFF; sem seeds, mensagens, secrets, Edge Functions ou publicação frontend).
+
+### 9.1 Correção A — Permissão na sobrecarga larga de `rpc_create_portal_notification_secure`
+
+Inspeção prévia via `pg_proc.proacl`:
+- `rpc_create_portal_notification_secure(uuid,text,text,text)` — ACL `service_role=X/postgres` (correto).
+- `rpc_create_portal_notification_secure(uuid,text,text,text,text,text,uuid,text)` — ACL `anon=X, authenticated=X, service_role=X, postgres=X` (a origem provável foi a migration histórica `20260727035330_db3902f3` que aplicava GRANT amplo).
+
+Callers legítimos no frontend logado (confirmam manter `authenticated`):
+- `src/pages/VisitaTecnica.tsx` (linhas 738 e 875)
+- `src/pages/FluxoTecnico.tsx:209`
+- `src/pages/app/MobileAplicacoes.tsx:198`
+- `src/components/aplicacao/AplicacaoFormDialog.tsx:264`
+
+Migration aplicada (mínima, idempotente, sem alterar assinatura/corpo), com precheck de existência e postcheck via `has_function_privilege` por OID:
+
+```sql
+REVOKE ALL ON FUNCTION public.rpc_create_portal_notification_secure(
+  uuid, text, text, text, text, text, uuid, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.rpc_create_portal_notification_secure(
+  uuid, text, text, text, text, text, uuid, text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.rpc_create_portal_notification_secure(
+  uuid, text, text, text, text, text, uuid, text) TO authenticated, service_role;
+```
+
+Persistida em `supabase_migrations.schema_migrations` (`506 → 507`; `last_migration=20260803000000`). Postcheck OK:
+`has_function_privilege(anon, oid, EXECUTE)=false`; `authenticated=true`; `service_role=true`.
+
+Registro canônico atualizado em `restoration/comunicacao-fase02/migration.sql` (bloco de GRANT ganhou `REVOKE ALL … FROM anon` explícito) para impedir reintrodução em futuras implantações limpas.
+
+### 9.2 Correção B — Harness F2 v3
+
+`restoration/comunicacao-fase2/harness-rls.sql` reescrito para consultar `has_function_privilege(role, oid, 'EXECUTE')` por assinatura EXATA (matriz de 16 assinaturas reais confirmadas em `pg_proc`), eliminando dependência da view `information_schema.role_routine_grants`. Matriz preserva a intenção original: `anon=false` em todas; `authenticated=true` apenas nas RPCs de UI (`publish_v2`, `set_template_metadata`, `preview_administrative_broadcast_count`, sobrecarga larga de `create_portal_notification_secure`); `service_role=true` em todas as RPCs internas/worker. Verifica também sobrecargas separadamente (não colide por nome).
+
+### 9.3 Revalidação transacional — 4/4 PASS
+
+Método idêntico à §8 (marcador `EXPECTED_TEST_PASS_ROLLBACK` + rollback automático do Postgres):
+
+| # | Teste | Resultado | Evidência |
+|---|-------|-----------|-----------|
+| 9.3.1 | `restoration/comunicacao-fase2/harness-rls.sql` (v3) | **PASS** | `P0001: EXPECTED_TEST_PASS_ROLLBACK:f2_harness_v3` — matriz de 16 assinaturas × 3 roles validada. |
+| 9.3.2 | `restoration/comunicacao-fase4/harness-rls.sql` | **PASS** | `P0001: EXPECTED_TEST_PASS_ROLLBACK:f4_harness`. |
+| 9.3.3 | `restoration/comunicacao-deploy/smoke-staging.sql` | **PASS** | `P0001: EXPECTED_TEST_PASS_ROLLBACK:smoke_staging` — check 4 (anon negativo em `rpc_create_portal_notification_secure`) agora limpo. |
+| 9.3.4 | `restoration/comunicacao-deploy/smoke-staging-fase4.sql` | **PASS** | `P0001: EXPECTED_TEST_PASS_ROLLBACK:smoke_fase4`. |
+
+Pós-checks: `receipts=0, outbox=0, templates=0, eventos=0, audit=0, consent=0`; `schema_migrations=507` (apenas a migration de correção 9.1 persistida — nenhum resíduo dos 4 testes; nenhuma migration de teste registrada; nenhum objeto auxiliar criado).
+
+### 9.4 Validação de código
+
+- `bunx tsgo --noEmit`: **PASS** (sem erros).
+- `bun run build`: **PASS** (`✓ built in 24.44s`, PWA gerado).
+
+### 9.5 Custo
+
+- 1 migration DDL (correção A) + 4 chamadas `supabase--migration` transacionais revertidas + ~5 queries read-only + typecheck + build.
+- Bem abaixo do teto de 90 créditos.
+- Commit: `314178f0882cd70cb191b83c807f4ea4ef33390b`.
+
+### 9.6 Resultado — **GO ABSOLUTO** para staging
+
+- ✅ Todos os 4 testes transacionais PASS.
+- ✅ Achado 8.1 (harness F2) resolvido via reescrita para `has_function_privilege` por assinatura exata.
+- ✅ Achado 8.3 (smoke — sobrecarga larga com `anon`) resolvido via revoke idempotente + fixação no restore canônico.
+- ✅ ACL final auditada: `anon` sem EXECUTE; `authenticated` preservada para o fluxo do frontend logado; `service_role` intacto.
+- ✅ typecheck e build PASS.
+- ✅ Produção `navfzbwgwzruipouyfnk` intocada; flags OFF; sem mudança em Edge Functions/config/secrets/frontend publicado.
