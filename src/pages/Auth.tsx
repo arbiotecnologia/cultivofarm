@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Leaf } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Leaf } from "lucide-react";
 import { toast } from "sonner";
 import sMboloArBio from "@/assets/s-mbolo-ar-bio.png";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
