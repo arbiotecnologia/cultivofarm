@@ -1,7 +1,7 @@
-# Kit de implantação — Módulo de Comunicação (Fase 3 v2)
+# Kit de implantação — Módulo de Comunicação (Fase 3 v2 + Fase 4)
 
-Scripts fail-fast e SQL somente-leitura/idempotentes para aplicar as Fases 1 e
-2 do módulo de Comunicação em um projeto **de staging** e certificar o
+Scripts fail-fast e SQL somente-leitura/idempotentes para aplicar as Fases 1,
+2 e 4 do módulo de Comunicação em um projeto **de staging** e certificar o
 resultado antes de qualquer promoção. Nada aqui roda em produção
 diretamente; nenhum segredo é gravado no repositório.
 
