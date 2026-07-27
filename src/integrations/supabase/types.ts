@@ -3130,6 +3130,382 @@ export type Database = {
         }
         Relationships: []
       }
+      comunicacao_audit_log: {
+        Row: {
+          acao: string
+          actor_id: string | null
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          entidade: string
+          entity_id: string | null
+          id: number
+        }
+        Insert: {
+          acao: string
+          actor_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          entidade: string
+          entity_id?: string | null
+          id?: number
+        }
+        Update: {
+          acao?: string
+          actor_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          entidade?: string
+          entity_id?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+      comunicacao_consent_log: {
+        Row: {
+          acao: string
+          actor_id: string | null
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          cliente_id: string | null
+          created_at: string
+          id: number
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          actor_id?: string | null
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          cliente_id?: string | null
+          created_at?: string
+          id?: number
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          actor_id?: string | null
+          canal?: Database["public"]["Enums"]["comunicacao_canal"]
+          cliente_id?: string | null
+          created_at?: string
+          id?: number
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      comunicacao_eventos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_key: string
+          id: string
+          idempotency_key: string
+          occurred_at: string
+          outbox_enqueued: number
+          outbox_skipped: number
+          payload: Json
+          processed_at: string | null
+          source_id: string | null
+          source_type: string | null
+          status: Database["public"]["Enums"]["comunicacao_evento_status"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_key: string
+          id?: string
+          idempotency_key: string
+          occurred_at?: string
+          outbox_enqueued?: number
+          outbox_skipped?: number
+          payload?: Json
+          processed_at?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: Database["public"]["Enums"]["comunicacao_evento_status"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_key?: string
+          id?: string
+          idempotency_key?: string
+          occurred_at?: string
+          outbox_enqueued?: number
+          outbox_skipped?: number
+          payload?: Json
+          processed_at?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: Database["public"]["Enums"]["comunicacao_evento_status"]
+        }
+        Relationships: []
+      }
+      comunicacao_outbox: {
+        Row: {
+          attempts: number
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          event_id: string
+          id: string
+          idempotency_key: string
+          lease_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_attempt_at: string
+          payload_snapshot: Json
+          provider_message_id: string | null
+          recipient_cliente_id: string | null
+          recipient_hash: string | null
+          recipient_user_id: string | null
+          rule_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["comunicacao_outbox_status"]
+          template_chave: string
+          template_id: string | null
+          template_snapshot: Json
+          template_versao: number
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          event_id: string
+          id?: string
+          idempotency_key: string
+          lease_expires_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          payload_snapshot?: Json
+          provider_message_id?: string | null
+          recipient_cliente_id?: string | null
+          recipient_hash?: string | null
+          recipient_user_id?: string | null
+          rule_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["comunicacao_outbox_status"]
+          template_chave: string
+          template_id?: string | null
+          template_snapshot: Json
+          template_versao: number
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          canal?: Database["public"]["Enums"]["comunicacao_canal"]
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          event_id?: string
+          id?: string
+          idempotency_key?: string
+          lease_expires_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          payload_snapshot?: Json
+          provider_message_id?: string | null
+          recipient_cliente_id?: string | null
+          recipient_hash?: string | null
+          recipient_user_id?: string | null
+          rule_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["comunicacao_outbox_status"]
+          template_chave?: string
+          template_id?: string | null
+          template_snapshot?: Json
+          template_versao?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comunicacao_outbox_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "comunicacao_eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comunicacao_outbox_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "comunicacao_regras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comunicacao_outbox_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "comunicacao_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comunicacao_preferencias: {
+        Row: {
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          cliente_id: string | null
+          created_at: string
+          email_verificado: boolean
+          enabled: boolean
+          id: string
+          source: string
+          telefone_verificado: boolean
+          updated_at: string
+          user_id: string | null
+          whatsapp_opt_in_at: string | null
+          whatsapp_opt_out_at: string | null
+        }
+        Insert: {
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          cliente_id?: string | null
+          created_at?: string
+          email_verificado?: boolean
+          enabled?: boolean
+          id?: string
+          source?: string
+          telefone_verificado?: boolean
+          updated_at?: string
+          user_id?: string | null
+          whatsapp_opt_in_at?: string | null
+          whatsapp_opt_out_at?: string | null
+        }
+        Update: {
+          canal?: Database["public"]["Enums"]["comunicacao_canal"]
+          cliente_id?: string | null
+          created_at?: string
+          email_verificado?: boolean
+          enabled?: boolean
+          id?: string
+          source?: string
+          telefone_verificado?: boolean
+          updated_at?: string
+          user_id?: string | null
+          whatsapp_opt_in_at?: string | null
+          whatsapp_opt_out_at?: string | null
+        }
+        Relationships: []
+      }
+      comunicacao_regras: {
+        Row: {
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          condicoes: Json
+          cooldown_seconds: number
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          estrategia: string
+          event_key: string
+          id: string
+          perfil: Database["public"]["Enums"]["app_role"] | null
+          prioridade: number
+          template_chave: string
+          template_versao: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          condicoes?: Json
+          cooldown_seconds?: number
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          estrategia?: string
+          event_key: string
+          id?: string
+          perfil?: Database["public"]["Enums"]["app_role"] | null
+          prioridade?: number
+          template_chave: string
+          template_versao?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          canal?: Database["public"]["Enums"]["comunicacao_canal"]
+          condicoes?: Json
+          cooldown_seconds?: number
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          estrategia?: string
+          event_key?: string
+          id?: string
+          perfil?: Database["public"]["Enums"]["app_role"] | null
+          prioridade?: number
+          template_chave?: string
+          template_versao?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      comunicacao_templates: {
+        Row: {
+          archived_at: string | null
+          assunto: string | null
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          chave: string
+          corpo: string
+          created_at: string
+          created_by: string | null
+          id: string
+          locale: string
+          nome: string
+          status: Database["public"]["Enums"]["comunicacao_template_status"]
+          updated_at: string
+          updated_by: string | null
+          variaveis: Json
+          versao: number
+        }
+        Insert: {
+          archived_at?: string | null
+          assunto?: string | null
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          chave: string
+          corpo: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          locale?: string
+          nome: string
+          status?: Database["public"]["Enums"]["comunicacao_template_status"]
+          updated_at?: string
+          updated_by?: string | null
+          variaveis?: Json
+          versao?: number
+        }
+        Update: {
+          archived_at?: string | null
+          assunto?: string | null
+          canal?: Database["public"]["Enums"]["comunicacao_canal"]
+          chave?: string
+          corpo?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          locale?: string
+          nome?: string
+          status?: Database["public"]["Enums"]["comunicacao_template_status"]
+          updated_at?: string
+          updated_by?: string | null
+          variaveis?: Json
+          versao?: number
+        }
+        Relationships: []
+      }
       configuracoes_sistema: {
         Row: {
           cor_primaria: string | null
@@ -13920,6 +14296,85 @@ export type Database = {
         Args: { p_alvo: string; p_origem: string; p_os_id: string }
         Returns: undefined
       }
+      _comunicacao_build_snapshot: {
+        Args: {
+          _cliente_id: string
+          _event_key: string
+          _payload: Json
+          _source_id: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      _comunicacao_can_deliver: {
+        Args: {
+          _canal: Database["public"]["Enums"]["comunicacao_canal"]
+          _cliente_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      _comunicacao_resolve_recipients: {
+        Args: {
+          _event_key: string
+          _rule: Database["public"]["Tables"]["comunicacao_regras"]["Row"]
+          _source_id: string
+        }
+        Returns: {
+          recipient_cliente_id: string
+          recipient_user_id: string
+        }[]
+      }
+      _comunicacao_resolve_template: {
+        Args: {
+          _canal: Database["public"]["Enums"]["comunicacao_canal"]
+          _chave: string
+          _versao: number
+        }
+        Returns: {
+          archived_at: string | null
+          assunto: string | null
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          chave: string
+          corpo: string
+          created_at: string
+          created_by: string | null
+          id: string
+          locale: string
+          nome: string
+          status: Database["public"]["Enums"]["comunicacao_template_status"]
+          updated_at: string
+          updated_by: string | null
+          variaveis: Json
+          versao: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "comunicacao_templates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _comunicacao_write_audit: {
+        Args: {
+          _acao: string
+          _after: Json
+          _before: Json
+          _entidade: string
+          _entity_id: string
+        }
+        Returns: undefined
+      }
+      _comunicacao_write_consent: {
+        Args: {
+          _acao: string
+          _canal: Database["public"]["Enums"]["comunicacao_canal"]
+          _cliente_id: string
+          _source: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       _entrega_seed_checklist: {
         Args: { _entrega_id: string }
         Returns: undefined
@@ -14911,11 +15366,19 @@ export type Database = {
         Args: { p_kind: string; p_motivo: string; p_profile_id: string }
         Returns: undefined
       }
+      rpc_activate_communication_template: {
+        Args: { p_template_id: string }
+        Returns: Json
+      }
       rpc_anexar_comprovante_entrega: {
         Args: { p_entrega_id: string; p_payload: Json }
         Returns: Json
       }
       rpc_aplicar_sla_alertas: { Args: never; Returns: Json }
+      rpc_archive_communication_template: {
+        Args: { p_template_id: string }
+        Returns: Json
+      }
       rpc_assign_visit_technician: {
         Args: { p_registro_id: string; p_role?: string; p_user_id: string }
         Returns: Json
@@ -15303,6 +15766,47 @@ export type Database = {
         Args: { _registro_id: string }
         Returns: Json
       }
+      rpc_claim_communication_outbox: {
+        Args: {
+          p_batch_size: number
+          p_lease_seconds?: number
+          p_worker_id: string
+        }
+        Returns: {
+          attempts: number
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          event_id: string
+          id: string
+          idempotency_key: string
+          lease_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_attempt_at: string
+          payload_snapshot: Json
+          provider_message_id: string | null
+          recipient_cliente_id: string | null
+          recipient_hash: string | null
+          recipient_user_id: string | null
+          rule_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["comunicacao_outbox_status"]
+          template_chave: string
+          template_id: string | null
+          template_snapshot: Json
+          template_versao: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "comunicacao_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       rpc_coletar_assinatura_digital_entrega: {
         Args: { p_entrega_id: string; p_payload: Json }
         Returns: Json
@@ -15338,6 +15842,14 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_complete_communication_delivery: {
+        Args: {
+          p_outbox_id: string
+          p_provider_message_id: string
+          p_worker_id: string
+        }
+        Returns: Json
+      }
       rpc_confirmar_entrega_embalagens: {
         Args: { p_entrega_id: string }
         Returns: Json
@@ -15352,6 +15864,17 @@ export type Database = {
       }
       rpc_converter_visita_em_os: {
         Args: { p_observacao?: string; p_registro_id: string }
+        Returns: Json
+      }
+      rpc_create_communication_template: {
+        Args: {
+          p_assunto: string
+          p_canal: Database["public"]["Enums"]["comunicacao_canal"]
+          p_chave: string
+          p_corpo: string
+          p_nome: string
+          p_variaveis?: Json
+        }
         Returns: Json
       }
       rpc_create_financial_title: {
@@ -15604,6 +16127,15 @@ export type Database = {
       rpc_executivo_resumo_geral: { Args: { p_filtros?: Json }; Returns: Json }
       rpc_executivo_timeline_operacional: {
         Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_fail_communication_delivery: {
+        Args: {
+          p_error_code: string
+          p_error_message: string
+          p_outbox_id: string
+          p_worker_id: string
+        }
         Returns: Json
       }
       rpc_finalizar_visita_v2: {
@@ -15877,6 +16409,16 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_publish_communication_event: {
+        Args: {
+          p_event_key: string
+          p_idempotency_key: string
+          p_payload: Json
+          p_source_id: string
+          p_source_type: string
+        }
+        Returns: Json
+      }
       rpc_rastreio_produto_interno: {
         Args: { p_etiqueta_id: string }
         Returns: Json
@@ -15978,6 +16520,40 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_update_communication_preferences: {
+        Args: {
+          p_canal: Database["public"]["Enums"]["comunicacao_canal"]
+          p_enabled: boolean
+          p_whatsapp_opt_in: boolean
+        }
+        Returns: Json
+      }
+      rpc_update_communication_template: {
+        Args: {
+          p_assunto: string
+          p_corpo: string
+          p_nome: string
+          p_template_id: string
+          p_variaveis: Json
+        }
+        Returns: Json
+      }
+      rpc_upsert_communication_rule: {
+        Args: {
+          p_canal: Database["public"]["Enums"]["comunicacao_canal"]
+          p_condicoes: Json
+          p_cooldown_seconds: number
+          p_enabled: boolean
+          p_estrategia: string
+          p_event_key: string
+          p_perfil: Database["public"]["Enums"]["app_role"]
+          p_prioridade: number
+          p_rule_id: string
+          p_template_chave: string
+          p_template_versao: number
+        }
+        Returns: Json
+      }
       rpc_upsert_diagnostico_visita: {
         Args: {
           p_client_uuid: string
@@ -16016,6 +16592,16 @@ export type Database = {
           }
       rpc_validar_rastreio_produto: {
         Args: { p_trace_token: string }
+        Returns: Json
+      }
+      rpc_verify_communication_channel: {
+        Args: {
+          p_canal: Database["public"]["Enums"]["comunicacao_canal"]
+          p_cliente_id: string
+          p_email_verificado: boolean
+          p_telefone_verificado: boolean
+          p_user_id: string
+        }
         Returns: Json
       }
       rpc_vincular_etiqueta_embalagem: {
@@ -16153,6 +16739,17 @@ export type Database = {
         | "comprovante_endereco"
       cliente_status: "prospect" | "ativo" | "inativo" | "bloqueado_financeiro"
       cliente_tipo_pessoa: "fisica" | "juridica"
+      comunicacao_canal: "email" | "whatsapp" | "in_app" | "push"
+      comunicacao_evento_status: "received" | "processed" | "skipped"
+      comunicacao_outbox_status:
+        | "pending"
+        | "processing"
+        | "sent"
+        | "failed"
+        | "cancelled"
+        | "skipped"
+        | "dead_letter"
+      comunicacao_template_status: "draft" | "active" | "archived"
       estrategia_manejo:
         | "biologico"
         | "manejo_integrado"
@@ -16544,6 +17141,18 @@ export const Constants = {
       ],
       cliente_status: ["prospect", "ativo", "inativo", "bloqueado_financeiro"],
       cliente_tipo_pessoa: ["fisica", "juridica"],
+      comunicacao_canal: ["email", "whatsapp", "in_app", "push"],
+      comunicacao_evento_status: ["received", "processed", "skipped"],
+      comunicacao_outbox_status: [
+        "pending",
+        "processing",
+        "sent",
+        "failed",
+        "cancelled",
+        "skipped",
+        "dead_letter",
+      ],
+      comunicacao_template_status: ["draft", "active", "archived"],
       estrategia_manejo: [
         "biologico",
         "manejo_integrado",
