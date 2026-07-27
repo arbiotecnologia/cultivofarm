@@ -219,7 +219,7 @@ describe("Fase 4 · whatsapp-webhook-parser", () => {
   it("phone_number_id mismatch é FAIL-CLOSED (invalid_phone_number_id)", () => {
     const r = parseMetaWebhookBody(buildValidBody(), "999");
     expect(r.ok).toBe(false);
-    if (r.ok) throw new Error("expected error");
+    if (r.ok) { throw new Error("expected error"); }
     expect(r.error).toBe("invalid_phone_number_id");
   });
 
@@ -268,7 +268,7 @@ describe("Fase 4 · whatsapp-webhook-parser", () => {
     };
     const r = parseMetaWebhookBody(body, PHONE);
     expect(r.ok).toBe(false);
-    if (r.ok) throw new Error("expected error");
+    if (r.ok) { throw new Error("expected error"); }
     expect(r.error).toBe("statuses_total_too_large");
   });
 
@@ -299,21 +299,21 @@ describe("Fase 4 · readBodyCapped (streaming, sem arrayBuffer)", () => {
     const chunks = [new Uint8Array(60), new Uint8Array(60), new Uint8Array(60)];
     const r = await readBodyCapped(streamOf(chunks), 128);
     expect(r.ok).toBe(false);
-    if (r.ok) throw new Error("expected error");
+    if (r.ok) { throw new Error("expected error"); }
     expect(r.error).toBe("payload_too_large");
   });
 
   it("retorna no_body quando body é null", async () => {
     const r = await readBodyCapped(null, 128);
     expect(r.ok).toBe(false);
-    if (r.ok) throw new Error("expected error");
+    if (r.ok) { throw new Error("expected error"); }
     expect(r.error).toBe("no_body");
   });
 
   it("retorna empty quando stream é vazio", async () => {
     const r = await readBodyCapped(streamOf([]), 128);
     expect(r.ok).toBe(false);
-    if (r.ok) throw new Error("expected error");
+    if (r.ok) { throw new Error("expected error"); }
     expect(r.error).toBe("empty");
   });
 });
