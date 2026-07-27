@@ -1,4 +1,4 @@
-# Checklist manual — Homologação Fase 3
+# Checklist manual — Homologação Fases 1/2/4 (Módulo de Comunicação)
 
 Executar em staging, com **destinatários de teste controlados** e ativação por
 canal sequencial (email → whatsapp → in_app). Cada bloco deve concluir com OK
