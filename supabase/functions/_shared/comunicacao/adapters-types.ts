@@ -137,6 +137,10 @@ export function escapeHtml(input: string): string {
     .replace(/'/g, "&#39;");
 }
 
+export function isWhatsappWebhookConfigValid(env: WorkerEnv): boolean {
+  return Boolean(env.WHATSAPP_APP_SECRET && env.WHATSAPP_WEBHOOK_VERIFY_TOKEN);
+}
+
 export function healthBooleans(env: WorkerEnv) {
   return {
     delivery_enabled: env.DELIVERY_ENABLED,
@@ -149,5 +153,9 @@ export function healthBooleans(env: WorkerEnv) {
       configured: isWhatsappConfigValid(env),
     },
     in_app: { enabled: env.INAPP_ENABLED, configured: env.INAPP_ENABLED },
+    whatsapp_webhook: {
+      enabled: Boolean(env.WHATSAPP_WEBHOOK_ENABLED),
+      configured: isWhatsappWebhookConfigValid(env),
+    },
   };
 }
