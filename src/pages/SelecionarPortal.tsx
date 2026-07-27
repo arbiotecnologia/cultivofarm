@@ -30,12 +30,20 @@ function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: s
 
 export default function SelecionarPortal() {
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
+  const { signOut, user, roles } = useAuth();
   const { data, isLoading, isError, refetch, isFetching } = useAvailableContexts();
   const [remember, setRemember] = useState(false);
   const [submitting, setSubmitting] = useState<PortalContext | null>(null);
 
   const firstName = useMemo(() => getFirstName(user as any), [user]);
+  const isAdmin = roles.includes("administrador");
+
+  // Admin tem acesso total ao sistema — nunca precisa escolher portal.
+  useEffect(() => {
+    if (isAdmin) {
+      navigate(getHomeForRole("administrador"), { replace: true });
+    }
+  }, [isAdmin, navigate]);
 
   // Sincroniza estado inicial do checkbox com a preferência atual (revalidada pela RPC).
   useEffect(() => {
