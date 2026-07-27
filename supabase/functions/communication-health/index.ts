@@ -8,6 +8,7 @@
 
 import { json, requirePost, serviceClient } from "../_shared/auth-guard.ts";
 import { healthBooleans } from "../_shared/comunicacao/adapters.ts";
+import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
