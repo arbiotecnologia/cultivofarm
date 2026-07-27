@@ -3,8 +3,8 @@
 //        Challenge é validado: numérico 1..512 chars. Qualquer outra coisa é 400.
 // - POST: público (Meta não envia JWT). Autenticidade via HMAC-SHA256 do RAW body
 //         (X-Hub-Signature-256) usando WHATSAPP_APP_SECRET. Constant-time compare.
-// - Body é lido em STREAMING com cap explícito (MAX_BODY_BYTES). NUNCA usa
-//   req.arrayBuffer() sem limite; content-length é pré-filtro, não defesa única.
+// - Body é lido em STREAMING com cap explícito (MAX_BODY_BYTES). Nunca acumula
+//   o corpo inteiro sem limite; content-length é pré-filtro, não defesa única.
 // - Falha em qualquer RPC (não em unmatched/duplicated) escala HTTP 500 genérico
 //   para forçar retry Meta — nunca 200 com ok:false.
 // - Nunca loga body, telefone, wamid, secrets ou detalhes de erro.
