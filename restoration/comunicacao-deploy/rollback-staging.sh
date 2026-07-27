@@ -20,19 +20,43 @@ fail() { printf '[rollback][ERRO] %s\n' "$*" >&2; exit 1; }
 
 REQUIRE_DATABASE=true bash "${HERE}/validate-staging.sh"
 
-# Detecta presença de artefatos Fase 4 no banco (read-only).
+# Detecta presença de QUALQUER artefato Fase 4 no banco (read-only, fail-closed).
+# Consulta retorna 4 booleans "t"/"f" separados por "|" na ordem:
+#   rpc | tabela receipts | coluna provider_delivery_status | índice unique parcial
+# Qualquer erro de psql, saída vazia ou formato inesperado ABORTA o script.
+# Retorna 0 se QUALQUER artefato existir (instalada/parcial); 1 se todos ausentes.
 detect_fase4_installed() {
-  local out
+  local out rc
+  set +e
   out="$(psql "${STAGING_DB_URL}" -Atc "
-    SELECT (
-      to_regprocedure('public.rpc_record_whatsapp_delivery_status(text,text,timestamptz,text)') IS NOT NULL
-      OR EXISTS (
+    SELECT
+      (to_regprocedure('public.rpc_record_whatsapp_delivery_status(text,text,timestamptz,text)') IS NOT NULL)::text
+      || '|' ||
+      (EXISTS (
         SELECT 1 FROM information_schema.tables
          WHERE table_schema='public' AND table_name='comunicacao_provider_receipts'
-      )
-    )::text;
-  " 2>/dev/null || true)"
-  [[ "${out}" == "t" ]]
+      ))::text
+      || '|' ||
+      (EXISTS (
+        SELECT 1 FROM information_schema.columns
+         WHERE table_schema='public' AND table_name='comunicacao_outbox'
+           AND column_name='provider_delivery_status'
+      ))::text
+      || '|' ||
+      (EXISTS (
+        SELECT 1 FROM pg_indexes
+         WHERE schemaname='public' AND indexname='ix_comunicacao_outbox_wa_provider_msgid'
+      ))::text;
+  " 2>/dev/null)"
+  rc=$?
+  set -e
+  if [[ ${rc} -ne 0 ]]; then
+    fail "detect_fase4_installed: consulta psql falhou (detalhe suprimido para não vazar DSN)."
+  fi
+  if [[ ! "${out}" =~ ^[tf]\|[tf]\|[tf]\|[tf]$ ]]; then
+    fail "detect_fase4_installed: saída inesperada da consulta (formato inválido)."
+  fi
+  [[ "${out}" == *t* ]]
 }
 
 FASE4_INSTALLED=false
