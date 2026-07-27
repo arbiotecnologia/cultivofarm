@@ -1,6 +1,8 @@
 -- Rollback Fase 4 — remove exclusivamente objetos criados pela Fase 4.
 -- NÃO toca em nada da Fase 1 ou Fase 2.
-BEGIN;
+-- TRANSACTION-NEUTRAL: o caller (rollback-staging.sh) usa
+-- psql --single-transaction para atomicidade real. Não abrir BEGIN/COMMIT aqui.
+\set ON_ERROR_STOP on
 
 DROP FUNCTION IF EXISTS public.rpc_record_whatsapp_delivery_status(text,text,timestamptz,text);
 
@@ -21,5 +23,3 @@ ALTER TABLE public.comunicacao_outbox
   DROP COLUMN IF EXISTS delivered_at,
   DROP COLUMN IF EXISTS read_at,
   DROP COLUMN IF EXISTS provider_failed_at;
-
-COMMIT;

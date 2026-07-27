@@ -62,6 +62,29 @@ BEGIN
     RAISE EXCEPTION 'postcheck: tabela comunicacao_provider_receipts ausente';
   END IF;
 
+  -- outbox_id: NOT NULL + FK ON DELETE RESTRICT (retenção append-only explícita).
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema='public' AND table_name='comunicacao_provider_receipts'
+       AND column_name='outbox_id' AND is_nullable='NO'
+  ) THEN
+    RAISE EXCEPTION 'postcheck: comunicacao_provider_receipts.outbox_id deve ser NOT NULL';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1
+      FROM pg_constraint c
+      JOIN pg_class rel ON rel.oid = c.conrelid
+      JOIN pg_namespace n ON n.oid = rel.relnamespace
+     WHERE n.nspname='public'
+       AND rel.relname='comunicacao_provider_receipts'
+       AND c.contype='f'
+       AND c.confdeltype='r'  -- 'r' = ON DELETE RESTRICT
+       AND (SELECT attname FROM pg_attribute
+             WHERE attrelid=rel.oid AND attnum=c.conkey[1]) = 'outbox_id'
+  ) THEN
+    RAISE EXCEPTION 'postcheck: FK outbox_id deve ser ON DELETE RESTRICT';
+  END IF;
+
   IF NOT EXISTS (
     SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
      WHERE n.nspname='public' AND c.relname='comunicacao_provider_receipts'
