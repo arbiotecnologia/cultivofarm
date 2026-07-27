@@ -3,7 +3,7 @@
 **Escopo:** notificações de solicitações do produtor — base de eventos, publisher, resolver e trigger.
 **Ambiente:** staging `ikaauvsflpmamgxmkhoq` (ar-bio-temp). Produção `navfzbwgwzruipouyfnk` proibida.
 **Baseline:** commit `bf77a1beb06042a8afad86b9295c071f7af86f6a`.
-**Custo:** 12,1 créditos (execução inicial) + 7 créditos (correção pós-auditoria) = **19,1 créditos** (teto 22).
+**Custo (corrigido pela contabilidade da plataforma):** 12,1 créditos (execução inicial) + 9,0 créditos (correção pós-auditoria) = **21,1 créditos** (teto 22). Acumulado Etapa 1 até 1B: 2 (planejamento) + 7,9 (1A) + 21,1 (1B) = **31 créditos**; saldo antes da 1C = **69 créditos**.
 **Flags:** todas OFF; test mode ON; zero envio.
 
 Este documento é o registro executivo. Detalhes técnicos completos, tabela de testes por ID, grants efetivos e histórico de migrations estão em `restoration/comunicacao-etapa1-1b/report.md`.

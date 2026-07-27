@@ -2,7 +2,7 @@
 
 **Ambiente:** staging `ikaauvsflpmamgxmkhoq` (ar-bio-temp). Produção `navfzbwgwzruipouyfnk` **não tocada**.
 **Baseline:** commit `bf77a1beb06042a8afad86b9295c071f7af86f6a`.
-**Custo real 1B:** ~12,1 créditos (execução inicial) + ~7 créditos (correção pós-auditoria) = **~19,1 créditos** (dentro do teto 22).
+**Custo real 1B (corrigido pela contabilidade da plataforma):** 12,1 créditos (execução inicial) + 9,0 créditos (correção pós-auditoria) = **21,1 créditos** (dentro do teto 22). Acumulado Etapa 1 até 1B: planejamento 2 + 1A 7,9 + 1B 21,1 = **31 créditos**; saldo antes da 1C = **69 créditos**.
 **Flags:** `COMMUNICATION_DELIVERY_ENABLED=false`, `EMAIL_DELIVERY_ENABLED=false`, `WHATSAPP_DELIVERY_ENABLED=false`, `COMMUNICATION_INAPP_ADAPTER_ENABLED=false`, `WHATSAPP_WEBHOOK_ENABLED=false`. Test mode ON. **Zero envio.**
 
 ## 1. Correções de auditoria aplicadas (nova migration de hardening — sem editar migrations anteriores)
