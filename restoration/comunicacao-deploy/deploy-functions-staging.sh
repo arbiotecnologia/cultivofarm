@@ -22,7 +22,7 @@ done
 
 for fn in "${FUNCTIONS[@]}"; do
   log "deploy: ${fn} → project-ref=${STAGING_PROJECT_REF}"
-  # --no-verify-jwt=false mantém verificação JWT padrão. Sem set-secrets.
+  # Verificação JWT padrão mantida. Nenhum segredo é configurado por este script.
   if ! supabase functions deploy "${fn}" \
         --project-ref "${STAGING_PROJECT_REF}" >/dev/null 2>&1; then
     fail "falha ao publicar ${fn} (log suprimido por segurança)."
