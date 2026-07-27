@@ -11,6 +11,8 @@ import {
 import { hasUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
+import { useAuth } from "@/hooks/useAuth";
+import { getHomeForRole } from "@/lib/permissions";
 
 /**
  * useSwitchPortal — troca de contexto B2B ↔ Técnico sem logout.
@@ -24,9 +26,16 @@ import { broadcastPortalEvent } from "@/lib/portalBroadcast";
 export function useSwitchPortal() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("administrador");
 
   return useCallback(
     async (options?: { force?: boolean }) => {
+      // Admin não passa pelo seletor — retorna direto para a home administrativa.
+      if (isAdmin) {
+        navigate(getHomeForRole("administrador"), { replace: true });
+        return true;
+      }
       const currentPath =
         typeof window !== "undefined" ? window.location.pathname : "";
       const leavingB2B = currentPath.startsWith("/portal-parceiro");
@@ -84,7 +93,7 @@ export function useSwitchPortal() {
       }
       return true;
     },
-    [navigate, queryClient]
+    [navigate, queryClient, isAdmin]
   );
 }
 

@@ -13,6 +13,7 @@ import {
 } from "@/hooks/useAvailableContexts";
 import { PORTAL_CONTEXT_HOME } from "@/lib/portalContext";
 import { setActivePortalContext } from "@/lib/activePortalContext";
+import { getHomeForRole } from "@/lib/permissions";
 import { toast } from "sonner";
 
 function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: string | null } | null): string {
@@ -29,12 +30,20 @@ function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: s
 
 export default function SelecionarPortal() {
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
+  const { signOut, user, roles } = useAuth();
   const { data, isLoading, isError, refetch, isFetching } = useAvailableContexts();
   const [remember, setRemember] = useState(false);
   const [submitting, setSubmitting] = useState<PortalContext | null>(null);
 
   const firstName = useMemo(() => getFirstName(user as any), [user]);
+  const isAdmin = roles.includes("administrador");
+
+  // Admin tem acesso total ao sistema — nunca precisa escolher portal.
+  useEffect(() => {
+    if (isAdmin) {
+      navigate(getHomeForRole("administrador"), { replace: true });
+    }
+  }, [isAdmin, navigate]);
 
   // Sincroniza estado inicial do checkbox com a preferência atual (revalidada pela RPC).
   useEffect(() => {
@@ -47,7 +56,7 @@ export default function SelecionarPortal() {
   // Não redireciona para /acesso-pendente enquanto a consulta estiver carregando,
   // revalidando (isFetching) ou em erro transitório.
   useEffect(() => {
-    if (!data || submitting || isLoading || isFetching || isError) return;
+    if (isAdmin || !data || submitting || isLoading || isFetching || isError) return;
     const ctxs = data.available_contexts;
 
     if (ctxs.length === 0) {
@@ -71,7 +80,7 @@ export default function SelecionarPortal() {
       registerLoginRedirect(pref);
       navigate(PORTAL_CONTEXT_HOME[pref], { replace: true });
     }
-  }, [data, submitting, navigate, isLoading, isFetching, isError]);
+  }, [data, submitting, navigate, isLoading, isFetching, isError, isAdmin]);
 
   async function pick(ctx: PortalContext) {
     if (submitting) return; // evita duplo clique
