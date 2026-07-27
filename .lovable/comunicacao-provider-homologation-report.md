@@ -137,5 +137,8 @@ Todas exigem ação humana em **Project Settings → Secrets** (`ikaauvsflpmamgx
 
 ## Auditoria de custo/commit
 
-- **Commit**: a preencher pelo pipeline de commit (esta sessão editou 5 arquivos e 1 novo teste).
-- **Custo**: dentro do orçamento de 60 créditos desta etapa (bem abaixo do teto de 68). Sem retentativas caras.
+- **Correção H3 (esta sessão)**: `src/test/comunicacao/fase2-3-coerencia.test.ts` (asserções semânticas do harness F2 v3) + este relatório. Sem alteração de runtime.
+- **Timestamp da correção (UTC)**: 2026-07-27T12:15:36Z.
+- **Commit**: a preencher pelo pipeline de commit.
+- **Custo**: bem abaixo do teto de 60 créditos desta correção. Sem retentativas.
+
