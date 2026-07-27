@@ -683,7 +683,11 @@ export default function ComunicacaoConfigTab() {
               </Select>
               <FieldError msg={waErrors.api_version} />
               <FieldHint>
-                Homologadas: <Chip>{view.whatsapp.allowed_api_versions.join("</Chip> · <Chip>")}</Chip>. Use a mais recente compatível com seu app na Meta.
+                Homologadas:{" "}
+                {view.whatsapp.allowed_api_versions.map((v, i) => (
+                  <span key={v}>{i > 0 ? " · " : ""}<Chip>{v}</Chip></span>
+                ))}
+                . Use a mais recente compatível com seu app na Meta.
               </FieldHint>
             </div>
           </div>
