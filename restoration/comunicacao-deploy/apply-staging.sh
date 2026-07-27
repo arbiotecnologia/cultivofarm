@@ -8,6 +8,7 @@ HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd -- "${HERE}/../.." && pwd)"
 F1="${ROOT}/restoration/comunicacao-fase1"
 F2="${ROOT}/restoration/comunicacao-fase2"
+F4="${ROOT}/restoration/comunicacao-fase4"
 
 log()  { printf '[apply] %s\n' "$*"; }
 fail() { printf '[apply][ERRO] %s\n' "$*" >&2; exit 1; }
@@ -50,7 +51,14 @@ run_files_atomic "fase2/precheck+migration+postcheck" \
 # 3) Fase 2 — harness read-only (fora da transação anterior).
 run_file "fase2/harness" "${F2}/harness-rls.sql"
 
-# 4) Seeds opcionais — SOMENTE Fase 2 e após tudo verde.
+# 4) Fase 4 — precheck + migration + postcheck em UMA transação.
+run_files_atomic "fase4/precheck+migration+postcheck" \
+  "${F4}/precheck.sql" "${F4}/migration.sql" "${F4}/postcheck.sql"
+
+# 5) Fase 4 — harness read-only.
+run_file "fase4/harness" "${F4}/harness-rls.sql"
+
+# 6) Seeds opcionais — SOMENTE Fase 2 e após tudo verde.
 if [[ "${APPLY_COMMUNICATION_SEEDS:-false}" == "true" ]]; then
   run_file "fase2/seeds" "${F2}/seeds.sql"
 else
