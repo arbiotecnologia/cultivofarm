@@ -52,7 +52,7 @@ export default function Configuracoes() {
       ? "usuarios"
       : tabParam === "financeiro" && canFin
         ? "financeiro"
-        : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b"].includes(tabParam)
+        : tabParam && ["perfil", "aparencia", "catalogos", "sla-b2b", "comunicacao"].includes(tabParam)
           ? tabParam
           : "perfil";
 
