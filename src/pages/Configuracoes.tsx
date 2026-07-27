@@ -31,6 +31,9 @@ import { History, Wallet } from "lucide-react";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
 
 import ConfiguracoesFinanceiras from "@/pages/financeiro/ConfiguracoesFinanceiras";
+import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
+import { isComunicacaoModuleEnabled } from "@/features/comunicacao/flags";
+import { MessageSquare } from "lucide-react";
 
 
 
