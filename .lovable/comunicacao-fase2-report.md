@@ -473,3 +473,49 @@ bash restoration/comunicacao-deploy/validate-staging.sh \
         -f restoration/comunicacao-deploy/smoke-staging.sql \
   && bash restoration/comunicacao-deploy/verify-staging.sh
 ```
+
+---
+
+## Fase 3 v2 — Correção crítica do kit (2026-07-27)
+
+Bugs eliminados sobre commit anterior:
+
+- `apply-staging.sh`: seed correto é `restoration/comunicacao-fase2/seeds.sql`
+  executado APÓS harness, apenas com `APPLY_COMMUNICATION_SEEDS=true`.
+  Fase 1 seeds nunca mais são invocadas por este kit.
+- `apply-staging.sh`: Fase 2 `precheck + migration + postcheck` passam em UMA
+  única invocação de `psql --single-transaction` (função `run_files_atomic`).
+  Falha do postcheck reverte a migration na mesma transação. Harness roda
+  depois, read-only.
+- `verify-staging.sh`: removida a falsa verificação em `public.feature_flags`
+  (flags são env de Edge Function). Implementado check real via `curl+jq`
+  contra `communication-health` (POST autenticado por `STAGING_TEST_ADMIN_JWT`),
+  exigindo HTTP 200, `ok=true`, `delivery_enabled=false` e
+  `email.enabled=whatsapp.enabled=in_app.enabled=false`. Sem JWT → `SKIP:`
+  explícito. Body do HTTP é gravado em `mktemp` e nunca ecoado.
+- `env.example`: removidos `STAGING_TEST_USER_EMAIL/PASSWORD`; documentado
+  apenas `STAGING_TEST_ADMIN_JWT` (vazio) como segredo fora do repositório.
+- `validate-staging.sh`: `supabase` CLI passou a ser exigida apenas quando
+  `REQUIRE_SUPABASE_CLI=true` (setado pelo deploy). `curl/jq` verificados
+  condicionalmente por `verify-staging.sh` apenas com JWT presente.
+- `smoke-staging.sql`: removidos os blocos negativos que chamavam RPCs admin
+  com `auth.uid()` nulo (testavam autorização, não validação) e todo padrão
+  `EXCEPTION … WHEN OTHERS`. Removida a referência ao event key inexistente
+  `os_pronto_entrega`. Novo smoke estritamente read-only/de contrato:
+  assinaturas via `to_regprocedure`, tipos de retorno via `pg_proc`, grants
+  positivos (authenticated para RPCs de UI, service_role para worker RPCs) e
+  negativos (anon nunca), RLS habilitada nas tabelas do módulo, triggers Fase
+  2 (`trg_comunicacao_os_pronto_retirada`/`_onfarm_`), constraints centrais
+  de `comunicacao_templates` e presença contratual determinística de
+  `idempotency_key`/`parameter_mapping` via `pg_get_functiondef`.
+
+### Testes
+- `src/test/comunicacao/fase3-deploy-kit.test.ts` reforçado (11 testes) para
+  detectar exatamente os bugs acima: proibição de `fase1/seeds`, exigência de
+  `fase2/seeds` após harness, transação única F2 via `run_files_atomic`,
+  proibição de `feature_flags` e credenciais email/password, exigência do
+  fluxo real de health check com asserções `.enabled == false`, proibição de
+  `WHEN OTHERS`/sentinelas/`os_pronto_entrega`/`PERFORM rpc_publish…` no
+  smoke, dependências condicionais (`REQUIRE_SUPABASE_CLI`).
+- Comunicação: **155/155** verdes. Suíte completa: **2244 passed, 4 skipped,
+  0 failed**.
