@@ -1,8 +1,15 @@
 -- Postcheck Fase 4 (read-only). Aborta se schema divergir da migration.
+-- Transaction-neutral: não abre BEGIN próprio; caller usa --single-transaction.
 \set ON_ERROR_STOP on
 
 DO $$
-DECLARE v_col text; v_missing text; v_ret text;
+DECLARE
+  v_col text;
+  v_missing text;
+  v_ret text;
+  v_indexdef text;
+  v_isunique boolean;
+  v_msgid_chk text;
 BEGIN
   -- Colunas novas em comunicacao_outbox
   FOREACH v_col IN ARRAY ARRAY[
@@ -25,13 +32,26 @@ BEGIN
     RAISE EXCEPTION 'postcheck: CHECK provider_delivery_status ausente';
   END IF;
 
-  -- Índice parcial de correlação
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_indexes
-     WHERE schemaname='public'
-       AND indexname='ix_comunicacao_outbox_wa_provider_msgid'
-  ) THEN
+  -- Índice UNIQUE parcial de correlação: precisa ser UNIQUE, sobre
+  -- provider_message_id, com predicado canal='whatsapp' AND provider_message_id IS NOT NULL.
+  SELECT indexdef INTO v_indexdef
+    FROM pg_indexes
+   WHERE schemaname='public'
+     AND indexname='ix_comunicacao_outbox_wa_provider_msgid';
+  IF v_indexdef IS NULL THEN
     RAISE EXCEPTION 'postcheck: índice ix_comunicacao_outbox_wa_provider_msgid ausente';
+  END IF;
+  SELECT indisunique INTO v_isunique
+    FROM pg_index i
+    JOIN pg_class c ON c.oid = i.indexrelid
+   WHERE c.relname='ix_comunicacao_outbox_wa_provider_msgid';
+  IF NOT COALESCE(v_isunique, false) THEN
+    RAISE EXCEPTION 'postcheck: índice ix_comunicacao_outbox_wa_provider_msgid deve ser UNIQUE';
+  END IF;
+  IF position('provider_message_id' IN v_indexdef) = 0
+     OR position('whatsapp' IN v_indexdef) = 0
+     OR position('IS NOT NULL' IN v_indexdef) = 0 THEN
+    RAISE EXCEPTION 'postcheck: predicado/coluna do índice divergem (indexdef=%)', v_indexdef;
   END IF;
 
   -- Tabela append-only
@@ -48,6 +68,14 @@ BEGIN
        AND c.relrowsecurity
   ) THEN
     RAISE EXCEPTION 'postcheck: RLS não habilitada em comunicacao_provider_receipts';
+  END IF;
+
+  -- CHECK de tamanho msgid alinhado a 200 chars.
+  SELECT pg_get_constraintdef(oid) INTO v_msgid_chk
+    FROM pg_constraint
+   WHERE conname='comunicacao_provider_receipts_msgid_chk';
+  IF v_msgid_chk IS NULL OR position('200' IN v_msgid_chk) = 0 THEN
+    RAISE EXCEPTION 'postcheck: CHECK msgid deve limitar a 200 chars (def=%)', v_msgid_chk;
   END IF;
 
   -- Índice de idempotência único
@@ -71,6 +99,33 @@ BEGIN
      WHERE tgname='trg_comunicacao_provider_receipts_noupd'
   ) THEN
     RAISE EXCEPTION 'postcheck: trigger append-only ausente';
+  END IF;
+
+  -- Grants na tabela: authenticated=SELECT; service_role, anon, PUBLIC NÃO
+  -- podem ter INSERT/UPDATE/DELETE diretos (escrita só via RPC SECURITY DEFINER).
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.role_table_grants
+     WHERE table_schema='public' AND table_name='comunicacao_provider_receipts'
+       AND grantee='authenticated' AND privilege_type='SELECT'
+  ) THEN
+    RAISE EXCEPTION 'postcheck: authenticated deve ter SELECT em receipts';
+  END IF;
+  FOREACH v_missing IN ARRAY ARRAY['anon','service_role','PUBLIC'] LOOP
+    IF EXISTS (
+      SELECT 1 FROM information_schema.role_table_grants
+       WHERE table_schema='public' AND table_name='comunicacao_provider_receipts'
+         AND grantee=v_missing
+         AND privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE')
+    ) THEN
+      RAISE EXCEPTION 'postcheck: % não pode ter DML direto em receipts', v_missing;
+    END IF;
+  END LOOP;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.role_table_grants
+     WHERE table_schema='public' AND table_name='comunicacao_provider_receipts'
+       AND grantee='anon'
+  ) THEN
+    RAISE EXCEPTION 'postcheck: anon não pode ter privilégio algum em receipts';
   END IF;
 
   -- RPC service_role-only presente com tipo de retorno jsonb
