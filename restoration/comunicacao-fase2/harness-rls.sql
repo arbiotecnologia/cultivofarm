@@ -1,73 +1,70 @@
--- Harness RLS/Grants Fase 2 v2 (read-only). Confere matriz de segurança.
+-- Harness RLS/Grants Fase 2 v3 (read-only). Confere matriz de segurança via
+-- has_function_privilege(role, oid, 'EXECUTE') por assinatura exata (não por nome),
+-- evitando falsos negativos da view information_schema.role_routine_grants.
 DO $$
-DECLARE r record; v_bad int := 0;
+DECLARE
+  v_bad int := 0;
+  r record;
+  v_oid oid;
+  v_role text;
+
+  -- Matriz por assinatura EXATA (com sobrecarga onde aplicável).
+  -- (signature, anon_expected, authenticated_expected, service_role_expected)
+  matrix constant text[][] := ARRAY[
+    -- Internas / worker: só service_role
+    ['public._comunicacao_expand_event(uuid)',                                       'f','f','t'],
+    ['public._comunicacao_publish_system_event(text,text,jsonb,uuid,uuid)',          'f','f','t'],
+    ['public._comunicacao_resolve_recipients_v2(uuid)',                              'f','f','t'],
+    ['public._comunicacao_build_snapshot_v2(uuid)',                                  'f','f','t'],
+    ['public.rpc_resolve_outbox_address(uuid)',                                      'f','f','t'],
+    ['public.rpc_skip_communication_delivery(uuid,text)',                            'f','f','t'],
+    ['public.rpc_cancel_communication_delivery(uuid,text)',                          'f','f','t'],
+    ['public.rpc_defer_communication_delivery(uuid,text,timestamptz)',               'f','f','t'],
+    ['public.rpc_fail_communication_delivery_v2(uuid,text,text,int,jsonb)',          'f','f','t'],
+    ['public.rpc_dispatch_inapp_notification(uuid)',                                 'f','f','t'],
+    -- RPCs de negócio expostas ao usuário logado (frontend usa):
+    ['public.rpc_create_portal_notification_secure(uuid,text,text,text,text,text,uuid,text)', 'f','t','t'],
+    ['public.rpc_create_operational_notification_secure(uuid,text,text,text,text,text,text,uuid,text)', 'f','t','t'],
+    -- Publish v2: authenticated pode publicar; anon não.
+    ['public.rpc_publish_communication_event_v2(text,text,jsonb,uuid,uuid,text)',    'f','t','t'],
+    -- Admin/config: só authenticated (RPC valida role internamente) + service_role.
+    ['public.rpc_set_communication_template_metadata(uuid,jsonb)',                   'f','t','t'],
+    ['public.rpc_preview_administrative_broadcast_count(uuid,jsonb)',                'f','t','t']
+  ];
 BEGIN
-  -- 1) Nenhuma função interna/service_role deve ter EXECUTE para anon
-  FOR r IN
-    SELECT routine_name FROM information_schema.role_routine_grants
-     WHERE routine_schema='public' AND grantee='anon'
-       AND routine_name IN (
-         '_comunicacao_expand_event','_comunicacao_publish_system_event',
-         '_comunicacao_resolve_recipients_v2','_comunicacao_build_snapshot_v2',
-         '_comunicacao_trg_os_pronto_retirada','_comunicacao_trg_os_onfarm_pronto_retirada',
-         'rpc_set_communication_template_metadata',
-         'rpc_preview_administrative_broadcast_count',
-         'rpc_resolve_outbox_address',
-         'rpc_skip_communication_delivery','rpc_cancel_communication_delivery',
-         'rpc_defer_communication_delivery','rpc_fail_communication_delivery_v2',
-         'rpc_dispatch_inapp_notification',
-         'rpc_create_portal_notification_secure','rpc_create_operational_notification_secure')
-  LOOP
-    v_bad := v_bad + 1;
-    RAISE WARNING 'anon não deveria ter EXECUTE em %', r.routine_name;
-  END LOOP;
-
-  -- 2) Nenhuma RPC service_role-only deveria ter EXECUTE para authenticated
-  FOR r IN
-    SELECT routine_name FROM information_schema.role_routine_grants
-     WHERE routine_schema='public' AND grantee='authenticated'
-       AND routine_name IN (
-         '_comunicacao_expand_event','_comunicacao_publish_system_event',
-         '_comunicacao_resolve_recipients_v2','_comunicacao_build_snapshot_v2',
-         'rpc_resolve_outbox_address',
-         'rpc_skip_communication_delivery','rpc_cancel_communication_delivery',
-         'rpc_defer_communication_delivery','rpc_fail_communication_delivery_v2',
-         'rpc_dispatch_inapp_notification',
-         'rpc_create_portal_notification_secure','rpc_create_operational_notification_secure')
-  LOOP
-    v_bad := v_bad + 1;
-    RAISE WARNING 'authenticated não deveria ter EXECUTE em %', r.routine_name;
-  END LOOP;
-
-  -- 3) service_role deve ter EXECUTE nas RPCs de worker
-  FOR r IN
-    SELECT unnest(ARRAY[
-      'rpc_resolve_outbox_address',
-      'rpc_skip_communication_delivery','rpc_cancel_communication_delivery',
-      'rpc_defer_communication_delivery','rpc_fail_communication_delivery_v2',
-      'rpc_dispatch_inapp_notification',
-      'rpc_create_portal_notification_secure','rpc_create_operational_notification_secure'
-    ]) AS routine_name
-  LOOP
-    IF NOT EXISTS (SELECT 1 FROM information_schema.role_routine_grants
-                    WHERE routine_schema='public' AND grantee='service_role'
-                      AND routine_name = r.routine_name) THEN
+  FOR i IN 1..array_length(matrix,1) LOOP
+    v_oid := to_regprocedure(matrix[i][1]);
+    IF v_oid IS NULL THEN
       v_bad := v_bad + 1;
-      RAISE WARNING 'service_role deveria ter EXECUTE em %', r.routine_name;
+      RAISE WARNING 'assinatura inexistente: %', matrix[i][1];
+      CONTINUE;
     END IF;
+    FOREACH v_role IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
+      DECLARE
+        v_expected boolean := CASE v_role
+          WHEN 'anon' THEN matrix[i][2]::boolean
+          WHEN 'authenticated' THEN matrix[i][3]::boolean
+          ELSE matrix[i][4]::boolean
+        END;
+        v_actual boolean := has_function_privilege(v_role, v_oid, 'EXECUTE');
+      BEGIN
+        IF v_actual <> v_expected THEN
+          v_bad := v_bad + 1;
+          RAISE WARNING 'grant divergente % em %: esperado=% obtido=%',
+            v_role, matrix[i][1], v_expected, v_actual;
+        END IF;
+      END;
+    END LOOP;
   END LOOP;
 
-  -- 4) Tabela inapp_dispatch: sem acesso a anon/authenticated
-  IF EXISTS (
-    SELECT 1 FROM information_schema.role_table_grants
-     WHERE table_schema='public' AND table_name='comunicacao_inapp_dispatch'
-       AND grantee IN ('anon','authenticated')
-  ) THEN
+  -- Tabela inapp_dispatch: sem acesso a anon/authenticated (ACL direta).
+  IF has_table_privilege('anon','public.comunicacao_inapp_dispatch','SELECT')
+     OR has_table_privilege('authenticated','public.comunicacao_inapp_dispatch','SELECT') THEN
     v_bad := v_bad + 1;
-    RAISE WARNING 'comunicacao_inapp_dispatch tem grants indevidos';
+    RAISE WARNING 'comunicacao_inapp_dispatch tem SELECT indevido a anon/authenticated';
   END IF;
 
-  -- 5) Triggers em OS: AFTER UPDATE
+  -- Triggers em OS: AFTER UPDATE
   IF NOT EXISTS (
     SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
      WHERE c.relname='ordens_servico' AND t.tgname='trg_comunicacao_os_pronto_retirada'
@@ -85,9 +82,7 @@ BEGIN
     RAISE WARNING 'trigger ordens_servico_onfarm não é AFTER UPDATE';
   END IF;
 
-  -- 6) Simulação estrita: anon não consegue executar RPCs de worker.
-  --    Aceita SOMENTE insufficient_privilege (42501) ou undefined_function (42883);
-  --    qualquer outro SQLSTATE conta como violação (evita mascarar erro de negócio).
+  -- Simulação estrita: anon não consegue executar RPC de worker.
   BEGIN
     SET LOCAL ROLE anon;
     PERFORM public.rpc_resolve_outbox_address('00000000-0000-0000-0000-000000000000'::uuid);
@@ -102,28 +97,9 @@ BEGIN
   END;
   RESET ROLE;
 
-  -- 6.b) publish_v2: authenticated GRANT positivo; anon GRANT negativo.
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.role_routine_grants
-     WHERE routine_schema='public' AND grantee='authenticated'
-       AND routine_name='rpc_publish_communication_event_v2'
-  ) THEN
-    v_bad := v_bad + 1;
-    RAISE WARNING 'authenticated deveria ter EXECUTE em rpc_publish_communication_event_v2';
-  END IF;
-  IF EXISTS (
-    SELECT 1 FROM information_schema.role_routine_grants
-     WHERE routine_schema='public' AND grantee='anon'
-       AND routine_name='rpc_publish_communication_event_v2'
-  ) THEN
-    v_bad := v_bad + 1;
-    RAISE WARNING 'anon NÃO deveria ter EXECUTE em rpc_publish_communication_event_v2';
-  END IF;
-
-
   IF v_bad = 0 THEN
-    RAISE NOTICE 'harness Fase 2 v2: OK — matriz de segurança consistente';
+    RAISE NOTICE 'harness Fase 2 v3: OK — matriz de segurança consistente';
   ELSE
-    RAISE EXCEPTION 'harness Fase 2 v2: % violações detectadas', v_bad;
+    RAISE EXCEPTION 'harness Fase 2 v3: % violacoes detectadas', v_bad;
   END IF;
 END$$;
