@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# deploy-functions-staging.sh — publica APENAS communication-health e
-# process-communication-outbox. Sem secrets; não habilita delivery.
+# deploy-functions-staging.sh — publica APENAS communication-health,
+# process-communication-outbox e whatsapp-status-webhook. Sem secrets; não habilita delivery.
 set -Eeuo pipefail
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
