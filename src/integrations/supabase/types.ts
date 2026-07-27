@@ -7060,18 +7060,21 @@ export type Database = {
       }
       monitoramento_avisos: {
         Row: {
+          data_referencia: string | null
           enviado_em: string | null
           id: string
           registro_consultor_id: string
           tipo: string
         }
         Insert: {
+          data_referencia?: string | null
           enviado_em?: string | null
           id?: string
           registro_consultor_id: string
           tipo: string
         }
         Update: {
+          data_referencia?: string | null
           enviado_em?: string | null
           id?: string
           registro_consultor_id?: string
@@ -15324,6 +15327,26 @@ export type Database = {
         Args: { p_kind: string; p_payload: Json }
         Returns: Json
       }
+      rpc_create_notificacao_operacional: {
+        Args: {
+          _link?: string
+          _mensagem?: string
+          _tipo: string
+          _titulo: string
+          _usuario_id: string
+        }
+        Returns: string
+      }
+      rpc_create_portal_notification_secure: {
+        Args: {
+          _cliente_id: string
+          _link?: string
+          _mensagem: string
+          _tipo: string
+          _titulo: string
+        }
+        Returns: string
+      }
       rpc_criar_embalagens_pos_envase: {
         Args: { p_payload: Json }
         Returns: Json
@@ -15864,6 +15887,10 @@ export type Database = {
       }
       rpc_recalcular_separacao_entrega: {
         Args: { p_entrega_id: string }
+        Returns: string
+      }
+      rpc_record_aplicacao_email: {
+        Args: { _aplicacao_id: string; _email: string; _status?: string }
         Returns: string
       }
       rpc_refresh_bi_operacional: { Args: never; Returns: Json }
