@@ -167,7 +167,9 @@ export function parseMetaWebhookBody(
         const errors = Array.isArray(s.errors) ? s.errors : null;
         if (errors && errors.length > 0) {
           const first = errors[0] as Record<string, unknown>;
-          errorCode = normalizeErrorCode(first?.code ?? first?.error_code ?? first?.title);
+          // Apenas `code` numérico/string ou `error_code`. NUNCA `title`
+          // (textual, localizável, PII em alguns cenários).
+          errorCode = normalizeErrorCode(first?.code ?? first?.error_code);
         }
 
         out.push({ id, status: status as ParsedStatus["status"], timestamp: ts, error_code: errorCode });

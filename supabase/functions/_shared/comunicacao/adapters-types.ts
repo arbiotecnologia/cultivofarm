@@ -138,7 +138,12 @@ export function escapeHtml(input: string): string {
 }
 
 export function isWhatsappWebhookConfigValid(env: WorkerEnv): boolean {
-  return Boolean(env.WHATSAPP_APP_SECRET && env.WHATSAPP_WEBHOOK_VERIFY_TOKEN);
+  if (!env.WHATSAPP_APP_SECRET) return false;
+  if (!env.WHATSAPP_WEBHOOK_VERIFY_TOKEN) return false;
+  // phone_number_id é obrigatório e numérico — reaproveitado do worker.
+  // Sem ele, o webhook não consegue validar phone mismatch fail-closed.
+  if (!env.WHATSAPP_PHONE_NUMBER_ID || !/^\d+$/.test(env.WHATSAPP_PHONE_NUMBER_ID)) return false;
+  return true;
 }
 
 export function healthBooleans(env: WorkerEnv) {
