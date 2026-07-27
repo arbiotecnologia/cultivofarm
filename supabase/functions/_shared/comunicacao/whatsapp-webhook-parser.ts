@@ -5,7 +5,9 @@ export const MAX_BODY_BYTES = 128 * 1024; // 128 KiB — Meta webhook payloads a
 export const MAX_ENTRIES = 50;
 export const MAX_CHANGES_PER_ENTRY = 20;
 export const MAX_STATUSES_PER_CHANGE = 200;
+export const MAX_STATUSES_TOTAL = 200;
 export const MAX_STRING = 512;
+export const MAX_CHALLENGE_LEN = 512;
 
 export type ParsedStatus = {
   id: string;
@@ -18,8 +20,55 @@ export type ParseResult =
   | { ok: true; statuses: ParsedStatus[]; ignored: number }
   | { ok: false; error: string };
 
+export type ReadBodyResult =
+  | { ok: true; body: Uint8Array }
+  | { ok: false; error: "empty" | "payload_too_large" | "no_body" };
+
 const STATUS_ALLOW = new Set(["sent", "delivered", "read", "failed", "deleted"]);
 const ERROR_CODE_RE = /^[a-z0-9_.:-]{1,80}$/;
+const CHALLENGE_RE = /^\d{1,512}$/;
+
+/** Meta GET verification challenge must be a numeric string, 1..512 chars. */
+export function isValidChallenge(v: string | null): boolean {
+  if (typeof v !== "string") return false;
+  if (v.length < 1 || v.length > MAX_CHALLENGE_LEN) return false;
+  return CHALLENGE_RE.test(v);
+}
+
+/**
+ * Stream the body with a hard byte cap. NEVER calls req.arrayBuffer() (which
+ * has no upstream limit). Cancels the stream and returns payload_too_large
+ * the instant the accumulated size would exceed `max`.
+ */
+export async function readBodyCapped(
+  body: ReadableStream<Uint8Array> | null | undefined,
+  max: number,
+): Promise<ReadBodyResult> {
+  if (!body) return { ok: false, error: "no_body" };
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!value || value.byteLength === 0) continue;
+      total += value.byteLength;
+      if (total > max) {
+        try { await reader.cancel(); } catch { /* noop */ }
+        return { ok: false, error: "payload_too_large" };
+      }
+      chunks.push(value);
+    }
+  } finally {
+    try { reader.releaseLock(); } catch { /* noop */ }
+  }
+  if (total === 0) return { ok: false, error: "empty" };
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) { out.set(c, off); off += c.byteLength; }
+  return { ok: true, body: out };
+}
 
 function truncStr(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -47,7 +96,14 @@ function toIsoTimestamp(raw: unknown): string | null {
 /**
  * Strict parser for Meta webhook body. Extracts ONLY id/status/timestamp/error_code
  * from `entry[].changes[].value.statuses[]`. Ignores incoming messages/contacts/media.
- * Enforces expected `object`, `field`, `messaging_product`, and phone_number_id match.
+ *
+ * Fail-closed on structural malformations. Content-level `phone_number_id`
+ * mismatch on a `messages`/`whatsapp` change is a HARD ERROR
+ * (`invalid_phone_number_id`) — it means Meta is delivering webhooks for a
+ * phone we don't own; treating it as "ignored" would silently swallow that.
+ *
+ * Valid inbound content with no `statuses` (e.g. incoming user messages)
+ * returns ok with statuses=[] and is safely ignored/200 by the caller.
  */
 export function parseMetaWebhookBody(
   raw: unknown,
@@ -83,7 +139,13 @@ export function parseMetaWebhookBody(
       const phoneId = metadata && typeof metadata === "object"
         ? truncStr(metadata.phone_number_id)
         : null;
-      if (!phoneId || phoneId !== expectedPhoneNumberId) { ignored++; continue; }
+      // Structural malformation (metadata/phone_number_id ausente ou não string).
+      if (!phoneId) return { ok: false, error: "invalid_body" };
+      // phone_number_id mismatch é FAIL-CLOSED. Nunca deve chegar aqui em
+      // produção; se chegar, Meta está entregando ao webhook errado.
+      if (phoneId !== expectedPhoneNumberId) {
+        return { ok: false, error: "invalid_phone_number_id" };
+      }
 
       // Ignore inbound messages/contacts/media entirely.
       const statuses = Array.isArray(value.statuses) ? value.statuses : null;
@@ -91,12 +153,15 @@ export function parseMetaWebhookBody(
       if (statuses.length > MAX_STATUSES_PER_CHANGE) return { ok: false, error: "statuses_too_large" };
 
       for (const st of statuses) {
+        if (out.length >= MAX_STATUSES_TOTAL) return { ok: false, error: "statuses_total_too_large" };
         if (!st || typeof st !== "object") { ignored++; continue; }
         const s = st as Record<string, unknown>;
         const id = truncStr(s.id);
         const status = typeof s.status === "string" ? s.status : null;
         const ts = toIsoTimestamp(s.timestamp);
         if (!id || !status || !STATUS_ALLOW.has(status) || !ts) { ignored++; continue; }
+        // Individual receipt id must fit in the DB (200 chars).
+        if (id.length > 200) { ignored++; continue; }
 
         let errorCode: string | null = null;
         const errors = Array.isArray(s.errors) ? s.errors : null;
