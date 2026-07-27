@@ -9,7 +9,7 @@ F2="${ROOT}/restoration/comunicacao-fase2"
 log()  { printf '[rollback] %s\n' "$*"; }
 fail() { printf '[rollback][ERRO] %s\n' "$*" >&2; exit 1; }
 
-bash "${HERE}/validate-staging.sh"
+REQUIRE_DATABASE=true bash "${HERE}/validate-staging.sh"
 
 if [[ "${ROLLBACK_COMMUNICATION:-false}" != "true" ]]; then
   fail "Rollback recusado: exporte ROLLBACK_COMMUNICATION=true para confirmar."

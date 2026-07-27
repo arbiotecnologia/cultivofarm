@@ -34,7 +34,7 @@ com o header interno. `INTERNAL_FUNCTION_SECRET` fica no cofre do scheduler,
 nunca em SQL.
 
 ```
-curl -X POST "https://${PROJECT_REF}.functions.supabase.co/process-communication-outbox" \
+curl -X POST "https://${PROJECT_REF}.supabase.co/functions/v1/process-communication-outbox" \
      -H "x-internal-secret: $INTERNAL_FUNCTION_SECRET" \
      -H "content-type: application/json" \
      --data '{}' \

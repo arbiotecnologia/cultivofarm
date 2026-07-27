@@ -14,9 +14,19 @@ diretamente; nenhum segredo é gravado no repositório.
 - **Segredos:** nenhum script imprime DSN, tokens, senhas ou JWT. Falhas de
   `psql`/`supabase`/`curl` são redigidas. Sem `set -x`, sem execução dinâmica,
   sem `source` arbitrário, sem `cat` do body HTTP.
-- **Dependências condicionais:** `psql` sempre; `supabase` CLI apenas quando
-  `REQUIRE_SUPABASE_CLI=true` (setado pelo deploy). `curl`/`jq` apenas quando
-  `STAGING_TEST_ADMIN_JWT` está presente (verify).
+- **Dependências condicionais:**
+  - `psql` + `STAGING_DB_URL`: exigidos quando `REQUIRE_DATABASE=true` (apply,
+    verify, rollback). `deploy-functions-staging.sh` desliga (`REQUIRE_DATABASE=false`)
+    porque publicar Edge Function não toca Postgres.
+  - `supabase` CLI: exigida apenas quando `REQUIRE_SUPABASE_CLI=true` (deploy).
+  - `curl`/`jq`: exigidos apenas quando `STAGING_TEST_ADMIN_JWT` estiver
+    presente (health check real, opcional).
+- **Endpoint da Edge Function:** derivado internamente e imutável —
+  `https://<STAGING_PROJECT_REF>.supabase.co/functions/v1/<function>`
+  (formato oficial Supabase). `STAGING_PROJECT_REF` é validado por regex
+  fechada `^[a-z0-9]{20}$` antes de compor URL/DSN/CLI. Não existe variável de
+  host/URL: qualquer tentativa de sobrescrever endpoint é impossível por
+  desenho (evita exfiltração do JWT admin).
 - **Feature flags de entrega são env de Edge Function** — verify checa via
   `communication-health` real, não em tabela SQL.
 - **Fail-fast:** `set -Eeuo pipefail`; SQL via `psql -v ON_ERROR_STOP=1
@@ -52,28 +62,37 @@ diretamente; nenhum segredo é gravado no repositório.
 7. Homologação manual conforme `checklist-manual.md`.
 8. Ativar canal a canal seguindo `scheduling.md`.
 
-## Verificação real das flags OFF (opcional)
+## Verify — SQL sempre; health opcional
 
-Se o operador exportar `STAGING_TEST_ADMIN_JWT` no shell, `verify-staging.sh`
-fará POST autenticado a `communication-health` e exigirá:
+`verify-staging.sh` roda **sempre**, na ordem:
 
-- HTTP 200 e `ok=true`;
-- `delivery_enabled=false`;
-- `email.enabled=false`, `whatsapp.enabled=false`, `in_app.enabled=false`.
+1. postcheck Fase 1;
+2. postcheck Fase 2;
+3. harness read-only Fase 2;
+4. `smoke-staging.sql` (read-only puro).
 
-Qualquer flag `true` faz o script falhar. Sem JWT, o script imprime **SKIP**
-explícito — nunca "ok".
+Se qualquer passo falhar → `FAIL`. Somente após todos verdes ele considera o
+health check:
+
+- **Com `STAGING_TEST_ADMIN_JWT` exportado:** POST autenticado a
+  `https://<ref>.supabase.co/functions/v1/communication-health` exigindo
+  HTTP 200, `ok=true`, `delivery_enabled=false` e
+  `email.enabled=whatsapp.enabled=in_app.enabled=false`. Mensagem final:
+  `verify concluído (completo: SQL/smoke/health)`.
+- **Sem JWT:** `SKIP: check communication-health` explícito. Mensagem final:
+  `verify concluído (parcial: SQL/smoke OK; health SKIP)`.
 
 ## Rollback
 
 Somente Fase 2. A Fase 1 e dados de negócio **não são** removidos. Exige
-`ROLLBACK_COMMUNICATION=true` e as mesmas confirmações de ref.
+`ROLLBACK_COMMUNICATION=true` e as mesmas confirmações de ref
+(`REQUIRE_DATABASE=true`).
 
 ## Comando inicial
 
 ```sh
-export STAGING_PROJECT_REF="<ref-staging-real>"
-export STAGING_CONFIRM_REF="<ref-staging-real>"
+export STAGING_PROJECT_REF="<ref-staging-real-20-chars>"
+export STAGING_CONFIRM_REF="<ref-staging-real-20-chars>"
 export STAGING_DB_URL="postgresql://<user>:<pwd>@<host>:5432/postgres?sslmode=require"
 # Opcional (health check real):
 # export STAGING_TEST_ADMIN_JWT="<jwt-admin-de-staging>"
