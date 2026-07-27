@@ -188,6 +188,39 @@ describe("Fase 4 · Kit", () => {
     expect(rollback).toMatch(/--single-transaction[^\n]*\n[^\n]*rollback\.sql/);
   });
 
+  it("rollback: detect_fase4_installed é fail-closed e cobre TODOS os artefatos", () => {
+    // Sem `|| true` no capture do psql — erros de consulta devem abortar.
+    const detectBlock = rollback.slice(
+      rollback.indexOf("detect_fase4_installed()"),
+      rollback.indexOf("FASE4_INSTALLED=false"),
+    );
+    expect(detectBlock.length).toBeGreaterThan(0);
+    expect(detectBlock, "não pode mascarar erro do psql com || true").not.toMatch(/\|\|\s*true/);
+    // Captura rc do psql e chama fail em erro/formato inválido.
+    expect(detectBlock).toMatch(/rc=\$\?/);
+    expect(detectBlock).toMatch(/consulta psql falhou/);
+    expect(detectBlock).toMatch(/formato inválido/);
+    // Regex estrita t|f com 4 posições.
+    expect(detectBlock).toMatch(/\^\[tf\]\\\|\[tf\]\\\|\[tf\]\\\|\[tf\]\$/);
+    // Detecta os 4 artefatos F4.
+    expect(detectBlock).toMatch(/rpc_record_whatsapp_delivery_status/);
+    expect(detectBlock).toMatch(/comunicacao_provider_receipts/);
+    expect(detectBlock).toMatch(/provider_delivery_status/);
+    expect(detectBlock).toMatch(/ix_comunicacao_outbox_wa_provider_msgid/);
+  });
+
+  it("rollback: após rollback F4, re-executa detect e FAIL se sobrarem artefatos", () => {
+    // Bloco entre execução do rollback.sql e o skip/guard F2.
+    const idxF4Run = rollback.indexOf('-f "${F4}/rollback.sql"');
+    const idxF2Skip = rollback.indexOf('skip: fase2/rollback');
+    expect(idxF4Run).toBeGreaterThan(0);
+    expect(idxF2Skip).toBeGreaterThan(idxF4Run);
+    const postBlock = rollback.slice(idxF4Run, idxF2Skip);
+    expect(postBlock).toMatch(/detect_fase4_installed/);
+    expect(postBlock).toMatch(/artefatos Fase 4 ainda presentes/);
+  });
+
+
   it("verify roda postcheck/harness Fase 4 e smoke Fase 4 quando presentes", () => {
     expect(verify).toMatch(/fase4\/postcheck/);
     expect(verify).toMatch(/fase4\/harness/);

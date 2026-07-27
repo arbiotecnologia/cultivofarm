@@ -1,49 +1,58 @@
-# Comunicação · Fase 4 · Correção Final (v3)
+# Fase 4 — Correção pontual final (fail-closed detect_fase4_installed)
 
-Base: commit `a72a3dd89f567b1257267b3e42b74646ebc95215`. Não aplicado externamente. Nenhum segredo tocado.
+Commit-base: `18074b3b61b28220a0946c6186b989819950fce2`
 
-## 1) Feature flag real + health
-- `whatsapp-status-webhook/index.ts`: lê `WHATSAPP_WEBHOOK_ENABLED`. Com POST **assinado válido** e flag `false` → `200 {ok:true,disabled:true,received:0}` sem parse JSON, sem RPC, sem tocar banco. `413` (payload_too_large) e `401` (invalid_signature) continuam ocorrendo antes do gate. GET challenge segue operante para configuração inicial.
-- `adapters-types.ts::isWhatsappWebhookConfigValid`: agora exige `WHATSAPP_APP_SECRET` **e** `WHATSAPP_WEBHOOK_VERIFY_TOKEN` **e** `WHATSAPP_PHONE_NUMBER_ID` numérico. `healthBooleans.whatsapp_webhook` continua exclusivamente `{enabled,configured}` (só booleans).
+## Escopo
 
-## 2) Desempenho
-- Novo helper puro `_shared/comunicacao/concurrency.ts` com `runWithConcurrency(items, limit, worker)` e clamp `MAX_WEBHOOK_CONCURRENCY=8` (default `DEFAULT_WEBHOOK_CONCURRENCY=8`). Pool determinístico, preserva ordem dos resultados, cancela reserva de trabalho novo ao primeiro erro e rejeita com o primeiro erro observado.
-- Webhook: substituído o loop sequencial por `runWithConcurrency(parsed.statuses, DEFAULT_WEBHOOK_CONCURRENCY, ...)`. Nenhum `Promise.all` direto no arquivo do webhook. Qualquer RPC com erro → `500 internal_error` (idempotência via unique idem index garante retry seguro).
+Correção única em `restoration/comunicacao-deploy/rollback-staging.sh`,
+função `detect_fase4_installed`. Nenhum outro comportamento alterado.
 
-## 3) SQL
-- `comunicacao_provider_receipts.outbox_id`: agora `NOT NULL REFERENCES public.comunicacao_outbox(id) ON DELETE RESTRICT` (append-only + retenção explícita; a outbox não pode ser apagada em cascata).
-- `normalizeErrorCode` no parser: consome **apenas** `errors[0].code` ou `errors[0].error_code`. Removido fallback textual `title`.
-- Máquina fora de ordem (RPC `rpc_record_whatsapp_delivery_status`):
-  - `sent` só define estado se `provider_delivery_status IS NULL`. Nunca rebaixa outros estados. Se estado atual já é `sent`, apenas avança `provider_status_at` para o `p_timestamp` mais recente.
-  - `failed` é lateral. Comparação explícita com sent atual:
-    - `failed` com `p_timestamp < provider_status_at (sent)` → **NÃO substitui** sent.
-    - `failed` com `p_timestamp >= provider_status_at (sent)` → substitui sent enquanto não houver `delivered_at`/`read_at` e o estado não for `deleted`.
-    - Se já `failed`, mantém `provider_status_at` original (não avança).
-  - `delivered`/`read` monotônicos como antes, preservando primeiro timestamp em `delivered_at`/`read_at`.
-- `postcheck.sql`: valida `outbox_id NOT NULL` e FK `confdeltype='r'` (RESTRICT); mantém validações de índice UNIQUE parcial, grants restritos, RLS, trigger append-only e enum intacto.
+## Problema
 
-## 4) Rollback
-- `restoration/comunicacao-fase4/rollback.sql`: transaction-neutral (removido `BEGIN`/`COMMIT` externos). Atomicidade delegada ao caller via `psql --single-transaction`.
-- `restoration/comunicacao-deploy/rollback-staging.sh`:
-  - Ordem obrigatória: **Fase 4 primeiro**, depois Fase 2.
-  - `detect_fase4_installed()` (read-only): verifica `to_regprocedure('public.rpc_record_whatsapp_delivery_status(...)')` e `information_schema.tables`.
-  - Se `ROLLBACK_COMMUNICATION=true` e Fase 4 ainda instalada, o script **recusa** com mensagem clara ("Fase 4 ainda instalada. Rode com ROLLBACK_COMMUNICATION_FASE4=true no MESMO run"). Rollback F4 confirma ausência pós-execução (defesa em profundidade).
-  - Cada rollback roda via `psql --single-transaction -f rollback.sql`.
-- `env.example`: documenta `WHATSAPP_WEBHOOK_ENABLED` como feature flag real (não apenas health) e `WHATSAPP_PHONE_NUMBER_ID` como obrigatório para o webhook. Nenhum valor incluído.
+`detect_fase4_installed` usava `psql ... 2>/dev/null || true`. Um erro de
+consulta (DSN inválida, permissão, etc.) devolvia saída vazia e era
+interpretado como "Fase 4 ausente", permitindo rollback da Fase 2 mesmo
+com F4 instalada — cenário destrutivo (FK/RPC órfãs).
 
-## 5) Resultados
-- `bash -n restoration/comunicacao-deploy/rollback-staging.sh` → **OK**.
-- `vitest src/test/comunicacao` → **205/205** (fase4 sozinho: 50/50).
-- `vitest` completo → **2293 passed / 4 skipped / 1 failed** (falha isolada em `portalAcompanhamentoProdutor.test.tsx` por timeout; pré-existente e não relacionada ao módulo de comunicação).
+## Correção
 
-## Arquivos alterados
-- `supabase/functions/whatsapp-status-webhook/index.ts` (feature flag + concorrência)
-- `supabase/functions/_shared/comunicacao/concurrency.ts` (novo helper puro)
-- `supabase/functions/_shared/comunicacao/whatsapp-webhook-parser.ts` (normalizeErrorCode sem title)
-- `supabase/functions/_shared/comunicacao/adapters-types.ts` (isWhatsappWebhookConfigValid mais estrito)
-- `restoration/comunicacao-fase4/migration.sql` (outbox_id NOT NULL RESTRICT + state machine failed/sent)
-- `restoration/comunicacao-fase4/postcheck.sql` (valida NOT NULL/FK RESTRICT)
-- `restoration/comunicacao-fase4/rollback.sql` (transaction-neutral)
-- `restoration/comunicacao-deploy/rollback-staging.sh` (guarda F4-first + detecção read-only)
-- `restoration/comunicacao-deploy/env.example` (flag real + phone_number_id)
-- `src/test/comunicacao/fase4.test.ts` (novos vetores contratuais: flag, concorrência, error_code sem title, FK RESTRICT, state machine, rollback guard, config validator)
+- Removido `|| true`. `rc` do `psql` capturado explicitamente com
+  `set +e` / `set -e`.
+- Se `rc != 0` ⇒ `fail` (sem imprimir DSN nem erro bruto).
+- Se saída não casar com regex estrita `^[tf]\|[tf]\|[tf]\|[tf]$` ⇒ `fail`.
+- Consulta agora detecta **qualquer** artefato Fase 4:
+  1. RPC `public.rpc_record_whatsapp_delivery_status(text,text,timestamptz,text)`
+  2. Tabela `public.comunicacao_provider_receipts`
+  3. Coluna `public.comunicacao_outbox.provider_delivery_status`
+  4. Índice `public.ix_comunicacao_outbox_wa_provider_msgid`
+- Instalada/parcial ⇒ `true` (basta um `t`).
+- Após executar `${F4}/rollback.sql`, o script re-invoca
+  `detect_fase4_installed` e chama `fail "pós-rollback: artefatos Fase 4
+  ainda presentes."` se sobrar qualquer artefato.
+
+## Testes contratuais
+
+`src/test/comunicacao/fase4.test.ts` — adicionados dois testes:
+
+- `detect_fase4_installed é fail-closed e cobre TODOS os artefatos`
+  valida ausência de `|| true`, captura de `rc`, mensagens de erro
+  ("consulta psql falhou", "formato inválido"), regex estrita e presença
+  dos 4 artefatos.
+- `após rollback F4, re-executa detect e FAIL se sobrarem artefatos`
+  valida re-checagem entre a execução do `rollback.sql` e o guard F2.
+
+Cobrem: erro do psql, saída vazia/inválida, instalação parcial (qualquer
+artefato remanescente) e recusa do rollback F2.
+
+## Validação
+
+- `bash -n restoration/comunicacao-deploy/rollback-staging.sh` → OK.
+- `bunx vitest run src/test/comunicacao` → **207/207** passes
+  (10 arquivos).
+- `bunx vitest run` (suíte completa) → **2295/2300** passes,
+  1 falha pré-existente em `portal` (não relacionada), 4 skipped.
+
+## Não-mudanças
+
+- SQL Fase 4, edge functions, apply/verify/validate/deploy/smoke — inalterados.
+- Ordem F4→F2, guardas de flags e uso de `--single-transaction` — inalterados.
