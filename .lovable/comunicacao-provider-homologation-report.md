@@ -90,16 +90,21 @@ Arquivo: `src/test/comunicacao/hom1-test-mode.test.ts` — 15 asserts:
 - flag `DELIVERY_ENABLED=false` continua interrompendo antes do gate;
 - `healthBooleans` expõe apenas contagens.
 
-## FASE H3 — Certificação
+## FASE H3 — Certificação (final, após correção do harness F2 v3)
+
+Correção pontual autorizada nesta etapa: `src/test/comunicacao/fase2-3-coerencia.test.ts` foi atualizado para validar **semanticamente** o harness F2 v3 (uso de `has_function_privilege` por OID via `to_regprocedure`, matriz `[anon, authenticated, service_role]` por assinatura exata, `publish_v2` = `f/t/t`, RPCs internas/worker = `f/f/t`, sobrecargas separadas de `rpc_create_portal_notification_secure`, admin RPCs = `f/t/t`, triggers OS AFTER UPDATE, e fail-closed via `RAISE EXCEPTION`). Nenhuma cobertura foi removida — o bloco final passou de 2 para 7 asserts. Nenhuma mudança de runtime, portanto **sem redeploy de Edge Functions** nesta etapa.
 
 | Etapa | Resultado |
 |---|---|
 | `bunx tsgo --noEmit` | ✅ PASS (0 erros) |
-| `bunx vitest run src/test/comunicacao/` | 226/227 PASS · 1 FAIL pré-existente em `fase2-3-coerencia.test.ts` (asserção sobre string do harness reescrito na etapa anterior; fora do escopo H1–H3) |
-| `bun run build` | ✅ `✓ built in 35.78s`; PWA gerado |
-| Redeploy Edge Functions | ✅ `communication-health`, `process-communication-outbox`, `whatsapp-status-webhook` (via `supabase--deploy_edge_functions`) — `verify_jwt=false` preservado apenas no webhook conforme `supabase/config.toml` |
-| Pós-deploy estrutural | `schema_migrations`, RLS/grants e RPCs certificados em §9 do relatório anterior; **nenhuma migration nova nesta etapa** |
-| Outbox processado | 0 (flags OFF continuam impedindo `rpc_claim_communication_outbox`) |
+| `bunx vitest run src/test/comunicacao/` | ✅ **233/233 PASS** (11 arquivos, 0 falha, 0 skip) — inclui `fase2-3-coerencia.test.ts` com 30 asserts |
+| `bunx vitest run` (suíte completa) | 2320 PASS · 4 skip · **2 FAIL pré-existentes fora do módulo comunicação**: `src/test/fiscal/sinief49/staging/verifier.test.ts` (verdict `FAIL` vs. `PENDING`) e `src/test/portalAcompanhamentoProdutor.test.tsx` (render 4 abas). Ambos anteriores a esta sessão e sem qualquer relação com comunicação. |
+| `bun run build` | ✅ PWA gerado (`dist/sw.js`, `dist/workbox-354287e6.js`, 20 entries · 5827.75 KiB) |
+| Redeploy Edge Functions | ❌ Não realizado (mudança apenas de teste/documentação, conforme instrução) |
+| Pós-deploy estrutural | Mantido de §9 do relatório de staging; **nenhuma migration nova nesta etapa** |
+| Outbox processado | 0 — `COMMUNICATION_DELIVERY_ENABLED`, `EMAIL_DELIVERY_ENABLED`, `WHATSAPP_DELIVERY_ENABLED`, `COMMUNICATION_INAPP_ADAPTER_ENABLED`, `WHATSAPP_WEBHOOK_ENABLED` permanecem OFF (ausentes) em `ikaauvsflpmamgxmkhoq` |
+| Produção `navfzbwgwzruipouyfnk` | ❌ Nenhum acesso, leitura ou escrita nesta sessão |
+
 
 ## Pendências para o primeiro teste controlado (ação humana requerida)
 
