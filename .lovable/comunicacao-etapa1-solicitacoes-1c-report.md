@@ -20,7 +20,7 @@ Os três documentos da 1B foram atualizados para refletir a contabilidade real i
 - Etapa 1 acumulada até 1B = 2 (planejamento) + 7,9 (1A) + 21,1 (1B) = **31 créditos**.
 - Saldo antes da 1C = **69 créditos**.
 
-Após a 1C (~11 créditos), saldo restante da Etapa 1 = ~58 créditos.
+Após a 1C inicial (12,1 créditos reais) + hardening anterior (15,5 reais) = **58,6 créditos acumulados**; saldo antes da rodada de correção final = **41,4 créditos**. Custo da rodada de correção final: **pendente do retorno da plataforma** (registrado sem estimativa).
 
 ## O que foi entregue em 1C
 
