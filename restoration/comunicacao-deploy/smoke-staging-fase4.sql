@@ -23,7 +23,7 @@ BEGIN
   END IF;
 END $$;
 
--- 3) Grants: service_role EXECUTE; anon/authenticated SEM EXECUTE.
+-- 3) Grants na RPC: service_role EXECUTE; anon/authenticated SEM EXECUTE.
 DO $$
 DECLARE v_g text;
 BEGIN
@@ -47,8 +47,10 @@ BEGIN
   END LOOP;
 END $$;
 
--- 4) Tabela de recibos: existe, RLS ON, sem GRANT p/ anon.
+-- 4) Tabela de recibos: existe, RLS ON, grants mínimos (authenticated=SELECT;
+--    anon/service_role/PUBLIC sem DML direto).
 DO $$
+DECLARE v_g text;
 BEGIN
   IF to_regclass('public.comunicacao_provider_receipts') IS NULL THEN
     RAISE EXCEPTION 'smoke-f4: tabela comunicacao_provider_receipts ausente';
@@ -67,11 +69,29 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'smoke-f4: anon NÃO deve ter privilégio em comunicacao_provider_receipts';
   END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.role_table_grants
+     WHERE table_schema='public' AND table_name='comunicacao_provider_receipts'
+       AND grantee='authenticated' AND privilege_type='SELECT'
+  ) THEN
+    RAISE EXCEPTION 'smoke-f4: authenticated deve ter SELECT em receipts';
+  END IF;
+  FOREACH v_g IN ARRAY ARRAY['service_role','PUBLIC'] LOOP
+    IF EXISTS (
+      SELECT 1 FROM information_schema.role_table_grants
+       WHERE table_schema='public' AND table_name='comunicacao_provider_receipts'
+         AND grantee=v_g
+         AND privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE')
+    ) THEN
+      RAISE EXCEPTION 'smoke-f4: % não pode ter DML direto em receipts', v_g;
+    END IF;
+  END LOOP;
 END $$;
 
--- 5) Colunas novas em outbox + CHECK do enum de status do provedor.
+-- 5) Colunas novas em outbox + CHECK do enum de status do provedor +
+--    índice UNIQUE parcial de correlação por (whatsapp, provider_message_id).
 DO $$
-DECLARE v_col text;
+DECLARE v_col text; v_isunique boolean; v_indexdef text;
 BEGIN
   FOREACH v_col IN ARRAY ARRAY[
     'provider_delivery_status','provider_status_at','delivered_at','read_at','provider_failed_at'
@@ -88,6 +108,17 @@ BEGIN
      WHERE conname='comunicacao_outbox_provider_delivery_status_chk'
   ) THEN
     RAISE EXCEPTION 'smoke-f4: CHECK provider_delivery_status ausente';
+  END IF;
+  SELECT i.indisunique, x.indexdef INTO v_isunique, v_indexdef
+    FROM pg_index i
+    JOIN pg_class c ON c.oid=i.indexrelid
+    JOIN pg_indexes x ON x.indexname=c.relname
+   WHERE c.relname='ix_comunicacao_outbox_wa_provider_msgid';
+  IF NOT COALESCE(v_isunique, false) THEN
+    RAISE EXCEPTION 'smoke-f4: índice de correlação deve ser UNIQUE (def=%)', v_indexdef;
+  END IF;
+  IF position('whatsapp' IN COALESCE(v_indexdef,'')) = 0 THEN
+    RAISE EXCEPTION 'smoke-f4: índice de correlação sem predicado whatsapp';
   END IF;
 END $$;
 
@@ -113,6 +144,9 @@ BEGIN
   END IF;
   IF position('ON CONFLICT' IN v_src) = 0 THEN
     RAISE EXCEPTION 'smoke-f4: RPC sem cláusula ON CONFLICT (idempotência)';
+  END IF;
+  IF position('RETURNING id' IN v_src) = 0 THEN
+    RAISE EXCEPTION 'smoke-f4: RPC sem RETURNING id (duplicated detection)';
   END IF;
 END $$;
 

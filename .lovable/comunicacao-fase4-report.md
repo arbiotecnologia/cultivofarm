@@ -53,3 +53,56 @@ Aditivo sobre Fase 2, respeitando as regras: o enum `comunicacao_outbox_status` 
 ## Parecer
 
 Fase 4 é aditiva, idempotente e reversível. O estado de entrega Meta fica desacoplado do aceite do provedor, sem alterar `outbox.status` nem tocar no worker. A superfície de PII no banco/logs é zero por construção — recibos armazenam apenas `provider_message_id`, `status`, `timestamp` e `error_code` sanitizado. Nenhuma flag é habilitada, nenhum segredo é comitado e nenhuma função além da webhook Meta teve `verify_jwt` alterado.
+
+---
+
+## Correção Crítica Fase 4 (v2)
+
+**Data:** 2026-07-27  
+**Base:** commit `1f364f7b4bf4e01b596f120655c475feca07e913`  
+**Estado:** verificado localmente. **NÃO aplicado**, **não publicado**, **sem flags/segredos**.
+
+### 1. Correlação/idempotência SQL
+- Índice de correlação promovido a **UNIQUE partial** em `comunicacao_outbox(provider_message_id) WHERE canal='whatsapp' AND provider_message_id IS NOT NULL`. Postcheck e smoke verificam `indisunique=true` e o predicado.
+- `provider_message_id` alinhado a **200 chars** em `comunicacao_provider_receipts` (CHECK) e nas validações da RPC.
+- `INSERT ... ON CONFLICT DO NOTHING RETURNING id`: quando não insere, retorna `{ok:true, duplicated:true, outbox_id}` **sem** `UPDATE` na outbox e **sem** novo `audit_log`.
+- Privilégios reduzidos na tabela: `REVOKE ALL FROM service_role/anon/authenticated/PUBLIC` e apenas `GRANT SELECT ... TO authenticated` (RLS restringe a admin). Escrita ocorre exclusivamente pela RPC `SECURITY DEFINER`. Postcheck e smoke bloqueiam DML direto de `anon/service_role/PUBLIC`.
+- Máquina fora de ordem endurecida:
+  - `read/delivered`: monotônicos por rank; `read_at/delivered_at` preservam o **primeiro** timestamp válido (`LEAST`).
+  - `sent`: só define estado se atual for NULL ou também `sent` mais antigo. Nunca rebaixa `failed`/`delivered`/`read`/`deleted`. Isso cobre `failed(t2)` seguido de `sent(t1<t2)`.
+  - `failed`: lateral. Só grava estado se ainda não houve `delivered/read`. Preserva menor `provider_failed_at`.
+  - `deleted`: registra evento; só define estado se atual for NULL.
+- `SELECT ... FOR UPDATE` mantido, agora com `ORDER BY id LIMIT 1` como defesa em profundidade além do índice UNIQUE.
+
+### 2. Transação real do kit
+- `restoration/comunicacao-fase2/migration.sql` e `restoration/comunicacao-fase4/migration.sql` agora são **transaction-neutral** (sem `BEGIN`/`COMMIT` externos). Apenas blocos `DO $$ ... $$` e `EXCEPTION` dentro de funções PL/pgSQL permanecem.
+- `apply-staging.sh` já aplica F2 (precheck+migration+postcheck) e F4 (precheck+migration+postcheck) em duas transações únicas via `--single-transaction`. Falha de qualquer etapa reverte tudo pelo próprio Postgres.
+- Runbooks Fase 2 e Fase 4 atualizados: execução manual só é aceita com `psql --single-transaction` agrupando os três arquivos.
+- Teste contratual novo em `src/test/comunicacao/fase4.test.ts` proíbe qualquer `BEGIN;`/`COMMIT;` no topo dos dois `migration.sql`.
+
+### 3. Webhook
+- `req.arrayBuffer()` removido. Novo helper puro `readBodyCapped(req.body, MAX_BODY_BYTES)` faz leitura **streaming** com cap; ao exceder, cancela o `ReadableStream` e retorna 413 imediatamente. `content-length` continua como pré-filtro barato.
+- GET challenge: aceita apenas `hub.challenge` numérico `1..512` chars via `isValidChallenge`; qualquer outra coisa é 400.
+- Parser: `phone_number_id` diferente do esperado é **fail-closed** (`invalid_phone_number_id`); malformações estruturais (metadata ausente etc.) retornam `invalid_body`. Payload válido sem `statuses` continua `200 ok`.
+- Limite **GLOBAL** de statuses por request (`MAX_STATUSES_TOTAL=200`) — não apenas por change.
+- Falha de RPC agora escala para HTTP **500 genérico** (`{ok:false, error:"internal_error"}`), garantindo retry Meta. `duplicated` é contabilizado separadamente de `unmatched`.
+- Zero logs no webhook (nenhum `console.*`); testes contratuais garantem isso.
+
+### 4. Deploy / rollback / postcheck / testes
+- `smoke-staging-fase4.sql` atualizado para verificar índice UNIQUE + grants restritos + `RETURNING id`.
+- `postcheck.sql` valida `indisunique`, predicado, tamanho 200 chars, e grants (ausência de DML direto para `anon/service_role/PUBLIC`).
+- `verify-staging.sh`, `rollback-staging.sh` e `deploy-functions-staging.sh` inalterados semanticamente — já cobriam a ordem correta; agora se apoiam em migrations transaction-neutral.
+- `bash -n` OK para todos os scripts.
+- **Testes**: `src/test/comunicacao/fase4.test.ts` reforçado com casos para: `TRANSACTION-NEUTRAL` (Fase 2 e Fase 4), UNIQUE partial index, msgid 200 chars, grants apertados, streaming reader (over-limit / null / empty / small), challenge inválido, phone mismatch fail-closed, cap global de statuses, RPC failure ⇒ 500, `duplicated` separado.
+
+### Resultados
+- **Typecheck**: OK (`bunx tsgo --noEmit`).
+- **Vitest comunicação**: 192/192.
+- **Vitest suíte completa**: 2280/2285 (1 falha pré-existente **não relacionada** em `src/test/portalAcompanhamentoProdutor.test.tsx`; 4 skipped).
+- **bash -n**: OK em todos os scripts do kit.
+
+### Custo estimado
+Edição única econômica: ~13 arquivos alterados/criados (5 SQL + 1 shell smoke + 2 fontes Edge Function + 1 teste + 3 runbooks/relatório + 1 patch Fase 2). Nenhuma nova dependência.
+
+### Postura de execução
+Nada foi aplicado, publicado ou tocado externamente. Segredos continuam **fora** do repositório. Flags do módulo continuam **OFF**.
