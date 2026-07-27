@@ -93,7 +93,7 @@ export function useSwitchPortal() {
       }
       return true;
     },
-    [navigate, queryClient]
+    [navigate, queryClient, isAdmin]
   );
 }
 
