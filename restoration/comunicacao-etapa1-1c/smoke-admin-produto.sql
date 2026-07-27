@@ -1,19 +1,20 @@
 -- Subfase 1C — Smoke reproduzível: _comunicacao_expand_event
--- Eventos: administrative_important_update e produto_pronto_retirada / produto_pronto_aplicacao.
+-- Eventos reais certificados: administrative_important_update, produto_pronto_retirada, produto_pronto_aplicacao.
 -- Ambiente: staging ikaauvsflpmamgxmkhoq. Produção proibida.
 -- Segurança: BEGIN ... ROLLBACK. Zero I/O de rede. Zero side-effect após rollback.
 -- Requisitos: executar com psql como service_role (o expander foi REVOKE ALL de PUBLIC/anon/authenticated).
 --
--- O que este smoke prova (sem tocar runtime, sem habilitar regras):
---   S1) A assinatura instalada é exatamente
---       (_event_id uuid, _event_key text, _source_type text, _source_id uuid, _payload jsonb) RETURNS jsonb.
---   S2) A função responde com jsonb bem-formado para administrative_important_update.
---   S3) A função responde com jsonb bem-formado para produto_pronto_retirada e _para_retirada.
---   S4) Após ROLLBACK, nenhuma linha nova em comunicacao_events / comunicacao_outbox / comunicacao_notifications_inapp.
---   S5) Nenhuma regra enabled=true para esses event_keys (evita entrega mesmo em flags OFF).
---
--- IMPORTANTE: este arquivo NÃO invoca _comunicacao_publish_system_event nem cria eventos reais.
--- Ele apenas chama o expander diretamente com um payload sintético, dentro de sentinel rollback.
+-- REGRA DE DECISÃO — LEIA ANTES DE EXECUTAR:
+--   Este smoke NÃO valida comportamento apenas pelo fato de _comunicacao_expand_event retornar jsonb não-nulo.
+--   Retornar `{}` ou lista vazia significa "nenhuma regra/destinatário resolvido" e NÃO prova que o expander
+--   está correto para o event_key. A regra é:
+--     - Se não houver regra `enabled=true` para o event_key em `comunicacao_regras`, ou não houver
+--       fixture compatível em `ordens_servico_onfarm` (para produto_pronto_*) / origem admin (para
+--       administrative_important_update), o smoke deve **abortar com HARNESS_FAIL** — permanece NO-GO.
+--     - Só passa quando a chamada resolve pelo menos 1 recipient/outbox esperado dentro da transação
+--       (revertida imediatamente pelo ROLLBACK).
+--   Enquanto a plataforma corrente não expuser psql/service_role, este arquivo permanece como plano de
+--   execução humana e o gate 1D permanece **NO-GO**.
 
 BEGIN;
 
@@ -34,64 +35,81 @@ JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname='public' AND p.proname='_comunicacao_expand_event';
 -- Esperado: (_event_id uuid, _event_key text, _source_type text, _source_id uuid, _payload jsonb) / jsonb
 
--- S5) Nenhuma regra habilitada para os event_keys deste smoke
-SELECT event_key, count(*) FILTER (WHERE enabled) AS enabled_count
-  FROM public.comunicacao_regras
- WHERE event_key IN ('administrative_important_update',
-                     'produto_pronto_retirada',
-                     'produto_pronto_aplicacao')
- GROUP BY event_key;
--- Esperado: enabled_count = 0 em todas (ou nenhuma linha).
+-- S2) Preflight: só faz sentido rodar o smoke se houver ao menos uma regra habilitada
+--     para cada event_key ou uma fixture real que possa ser resolvida.
+--     Preflight HARD-FAIL: se todos os 3 event_keys tiverem 0 regras habilitadas, o smoke aborta.
+DO $preflight$
+DECLARE
+  v_reg int;
+BEGIN
+  SELECT count(*) INTO v_reg
+    FROM public.comunicacao_regras
+   WHERE enabled = true
+     AND event_key IN ('administrative_important_update',
+                       'produto_pronto_retirada',
+                       'produto_pronto_aplicacao');
 
--- S2/S3) Chamadas sintéticas ao expander. IDs fictícios em uuid_generate_v4 — o expander é read-only.
+  IF v_reg = 0 THEN
+    RAISE EXCEPTION 'HARNESS_FAIL_PREFLIGHT_no_enabled_rules: nenhum dos event_keys de smoke possui regra enabled=true — retornos vazios do expander não são evidência de correção; gate permanece NO-GO';
+  END IF;
+END $preflight$;
+
+-- S3) Chamadas reais ao expander com asserts que exigem PELO MENOS 1 recipient/outbox,
+--     não apenas jsonb não-nulo. Se v_res for objeto/lista vazia, o assert falha.
 DO $smoke$
 DECLARE
-  v_evt uuid := gen_random_uuid();
-  v_src uuid := gen_random_uuid();
   v_res jsonb;
+  v_count int;
+
+  FUNCTION _assert_has_recipients(_res jsonb, _label text) RETURNS void AS $$
+  BEGIN
+    IF _res IS NULL THEN
+      RAISE EXCEPTION 'SMOKE_FAIL_%: retorno NULL', _label;
+    END IF;
+    IF jsonb_typeof(_res) = 'object' AND _res = '{}'::jsonb THEN
+      RAISE EXCEPTION 'SMOKE_FAIL_%: expander retornou objeto vazio — não prova comportamento', _label;
+    END IF;
+    IF jsonb_typeof(_res) = 'array' AND jsonb_array_length(_res) = 0 THEN
+      RAISE EXCEPTION 'SMOKE_FAIL_%: expander retornou array vazio — não prova comportamento', _label;
+    END IF;
+  END;
+  $$ LANGUAGE plpgsql;
 BEGIN
   -- administrative_important_update
   v_res := public._comunicacao_expand_event(
-    v_evt,
+    gen_random_uuid(),
     'administrative_important_update',
     'administrative_broadcast',
-    v_src,
-    jsonb_build_object('titulo','Smoke','mensagem','Smoke read-only','severity','info')
+    gen_random_uuid(),
+    jsonb_build_object('titulo','Smoke','mensagem','Smoke real','severity','info')
   );
   RAISE NOTICE 'expand administrative_important_update -> %', v_res::text;
-  IF v_res IS NULL OR jsonb_typeof(v_res) NOT IN ('object','array') THEN
-    RAISE EXCEPTION 'SMOKE_FAIL_admin_important_update: retorno inválido';
-  END IF;
+  PERFORM _assert_has_recipients(v_res, 'administrative_important_update');
 
-  -- produto_pronto_retirada
+  -- produto_pronto_retirada (event_key real certificado)
   v_res := public._comunicacao_expand_event(
     gen_random_uuid(),
     'produto_pronto_retirada',
     'ordens_servico_onfarm',
-    gen_random_uuid(),
-    jsonb_build_object('numero','SMOKE-1','produto','test')
+    (SELECT id FROM public.ordens_servico_onfarm ORDER BY created_at DESC LIMIT 1),
+    jsonb_build_object('numero','SMOKE-1')
   );
   RAISE NOTICE 'expand produto_pronto_retirada -> %', v_res::text;
-  IF v_res IS NULL OR jsonb_typeof(v_res) NOT IN ('object','array') THEN
-    RAISE EXCEPTION 'SMOKE_FAIL_produto_entrega: retorno inválido';
-  END IF;
+  PERFORM _assert_has_recipients(v_res, 'produto_pronto_retirada');
 
-  -- produto_pronto_aplicacao
+  -- produto_pronto_aplicacao (event_key real certificado)
   v_res := public._comunicacao_expand_event(
     gen_random_uuid(),
     'produto_pronto_aplicacao',
     'ordens_servico_onfarm',
-    gen_random_uuid(),
-    jsonb_build_object('numero','SMOKE-2','produto','test')
+    (SELECT id FROM public.ordens_servico_onfarm ORDER BY created_at DESC LIMIT 1),
+    jsonb_build_object('numero','SMOKE-2')
   );
   RAISE NOTICE 'expand produto_pronto_aplicacao -> %', v_res::text;
-  IF v_res IS NULL OR jsonb_typeof(v_res) NOT IN ('object','array') THEN
-    RAISE EXCEPTION 'SMOKE_FAIL_produto_retirada: retorno inválido';
-  END IF;
+  PERFORM _assert_has_recipients(v_res, 'produto_pronto_aplicacao');
 END $smoke$;
 
--- S4) Zero resíduo: contagens pós devem ser idênticas às pré (expander é read-only por design,
--- e nada mais foi chamado — publisher/resolver não são invocados aqui).
+-- S4) Zero resíduo: o expander é read-only por design; contagens devem permanecer iguais.
 SELECT
   (SELECT count(*) FROM public.comunicacao_events)              - (SELECT events FROM _pre_counts) AS delta_events,   -- esperado 0
   (SELECT count(*) FROM public.comunicacao_outbox)              - (SELECT outbox FROM _pre_counts) AS delta_outbox,   -- esperado 0
