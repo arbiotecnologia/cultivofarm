@@ -56,7 +56,7 @@ export default function SelecionarPortal() {
   // Não redireciona para /acesso-pendente enquanto a consulta estiver carregando,
   // revalidando (isFetching) ou em erro transitório.
   useEffect(() => {
-    if (!data || submitting || isLoading || isFetching || isError) return;
+    if (isAdmin || !data || submitting || isLoading || isFetching || isError) return;
     const ctxs = data.available_contexts;
 
     if (ctxs.length === 0) {
