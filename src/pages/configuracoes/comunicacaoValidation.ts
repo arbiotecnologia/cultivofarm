@@ -10,7 +10,7 @@ export function parseCsv(v: string): string[] {
   return v.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
 }
 
-export type ListResult = { ok: true; value: string[] } | { ok: false; value?: undefined; error: string };
+export type ListResult = { ok: true; value: string[]; error?: undefined } | { ok: false; value?: undefined; error: string };
 
 export function validateEmailsCsv(raw: string): ListResult {
   const list = parseCsv(raw);
