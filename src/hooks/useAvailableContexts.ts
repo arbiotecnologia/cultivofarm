@@ -10,6 +10,7 @@ export interface AvailableContexts {
   must_select_context: boolean;
   has_b2b_access: boolean;
   has_technical_access: boolean;
+  is_admin: boolean;
   preferred_context?: PortalContext | null;
   skip_context_selector?: boolean;
 }
