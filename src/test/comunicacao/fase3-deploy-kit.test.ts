@@ -57,11 +57,12 @@ describe("Fase 3 v2 — kit de implantação (contratos)", () => {
     expect(idxHarness).toBeGreaterThan(idxAtomic);
     expect(idxSeeds).toBeGreaterThan(idxHarness);
 
-    // Transação única para Fase 2: precheck+migration+postcheck no mesmo psql
-    // (uma linha psql seguida de -f para cada). Detectamos pelos 3 -f consecutivos.
+    // Transação única para Fase 2: a função run_files_atomic recebe os três SQL
+    // e os passa em uma única invocação de psql --single-transaction.
     expect(s).toMatch(
-      /psql[^\n]*--single-transaction[\s\S]{0,200}precheck\.sql[\s\S]{0,200}migration\.sql[\s\S]{0,200}postcheck\.sql/,
+      /run_files_atomic\s+"fase2\/precheck\+migration\+postcheck"\s+\\\s*\n\s*"\$\{F2\}\/precheck\.sql"\s+"\$\{F2\}\/migration\.sql"\s+"\$\{F2\}\/postcheck\.sql"/,
     );
+    expect(s).toMatch(/psql[^\n]*--single-transaction[\s\S]{0,120}"\$\{args\[@\]\}"/);
 
     // Proibições explícitas
     expect(/fase1\/seeds/.test(s), "não pode rodar seeds da Fase 1").toBe(false);

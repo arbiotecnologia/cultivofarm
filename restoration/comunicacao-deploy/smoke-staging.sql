@@ -1,6 +1,6 @@
 -- smoke-staging.sql — smoke ESTRITAMENTE read-only/de contrato.
 -- BEGIN/ROLLBACK; sem simular auth.uid(); sem desabilitar RLS; sem
--- WHEN OTHERS / sentinelas; sem chamar RPCs que dependem de authorização.
+-- captura de exceção sentinela; sem chamar RPCs que dependem de authorização.
 
 \set ON_ERROR_STOP on
 BEGIN;

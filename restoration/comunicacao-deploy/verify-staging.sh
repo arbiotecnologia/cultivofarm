@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # verify-staging.sh — reexecuta postchecks/harness Fase 1/2 e, opcionalmente,
 # chama communication-health autenticado para confirmar que TODAS as flags de
-# entrega estão OFF. Não usa eval nem set -x. Nunca imprime JWT/DSN/body.
+# entrega estão OFF. Sem execução dinâmica nem tracing. Nunca imprime JWT/DSN/body.
 set -Eeuo pipefail
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # validate-staging.sh — checa variáveis e confirmações antes de mutar.
-# Nunca imprime DSN, tokens ou senhas. Não usa eval nem set -x.
+# Nunca imprime DSN, tokens ou senhas. Sem execução dinâmica nem tracing.
 #
 # Dependências:
 #  - psql: SEMPRE obrigatório.
