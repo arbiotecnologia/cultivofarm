@@ -3,7 +3,7 @@
 **Ambiente:** staging `ikaauvsflpmamgxmkhoq` (ar-bio-temp). Produção `navfzbwgwzruipouyfnk` **não tocada**.
 **Baseline:** commit `ce20a8b6884905ff0fc28b79e234f2641af6bf88`.
 **Flags:** todas OFF; test mode ON; zero envio; nenhuma outbox real criada.
-**Custo real 1C (retorno da plataforma):** 12,1 créditos na execução inicial + 15,5 créditos no hardening pós-auditoria = **27,6 créditos** consumidos na subfase 1C até esta rodada. A rodada de correção final tem **custo pendente do retorno da plataforma** (não estimado). Ledger geral Etapa 1: 2 (plan) + 7,9 (1A) + 21,1 (1B) + 27,6 (1C) = **58,6 acumulados**; saldo antes da rodada de correção final = **41,4**.
+**Custo real 1C (retorno da plataforma):** 12,1 (execução inicial) + 15,5 (hardening) + 18,6 (rodada de correção final anterior) = **46,2 créditos** consumidos na subfase 1C. A microcorreção atual (ajuste final mínimo 1C) tem **custo pendente do retorno da plataforma** (não estimado). Ledger geral Etapa 1: 2 (plan) + 7,9 (1A) + 21,1 (1B) + 46,2 (1C) = **77,2 acumulados**; saldo antes desta microcorreção = **22,8**.
 
 ## 1. Migration aplicada
 
