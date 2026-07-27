@@ -12,8 +12,8 @@ readonly FUNCTIONS=("communication-health" "process-communication-outbox")
 log()  { printf '[deploy-fn] %s\n' "$*"; }
 fail() { printf '[deploy-fn][ERRO] %s\n' "$*" >&2; exit 1; }
 
-# Exige supabase CLI aqui (validate já garante psql/DSN e confirmações).
-REQUIRE_SUPABASE_CLI=true bash "${HERE}/validate-staging.sh"
+# Exige supabase CLI aqui. Deploy de Edge Functions NÃO precisa de DSN Postgres.
+REQUIRE_SUPABASE_CLI=true REQUIRE_DATABASE=false bash "${HERE}/validate-staging.sh"
 
 for fn in "${FUNCTIONS[@]}"; do
   if [[ ! -f "${ROOT}/supabase/functions/${fn}/index.ts" ]]; then

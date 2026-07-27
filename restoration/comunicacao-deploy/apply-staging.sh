@@ -37,7 +37,7 @@ run_files_atomic() {
   log "ok:   ${label}"
 }
 
-bash "${HERE}/validate-staging.sh"
+REQUIRE_DATABASE=true bash "${HERE}/validate-staging.sh"
 
 # 1) Fase 1 — apenas certificar que já está aplicada.
 run_file "fase1/postcheck" "${F1}/postcheck.sql"
