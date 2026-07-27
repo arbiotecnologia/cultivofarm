@@ -1,15 +1,17 @@
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, RefreshCw, KeyRound, Users, ClipboardCheck, CalendarClock, Wallet } from "lucide-react";
+import { ShieldCheck, RefreshCw, KeyRound, Users, ClipboardCheck, CalendarClock, Wallet, MessageSquare } from "lucide-react";
 import SyncTab from "./auditoria/SyncTab";
 import SenhasTab from "./auditoria/SenhasTab";
 import ClientesTab from "./auditoria/ClientesTab";
 import VisitasTab from "./auditoria/VisitasTab";
 import AgendaTab from "./auditoria/AgendaTab";
+import ComunicacaoTab from "./auditoria/ComunicacaoTab";
 import AuditoriaFinanceira from "./financeiro/AuditoriaFinanceira";
 import { useAuth } from "@/hooks/useAuth";
 
 const FIN_ROLES = ["administrador", "gestor", "financeiro"];
+const ADMIN_ONLY = ["administrador"];
 
 const TABS = [
   { id: "sync", label: "Sync Offline", icon: RefreshCw, Component: SyncTab, roles: null as string[] | null },
@@ -17,8 +19,10 @@ const TABS = [
   { id: "clientes", label: "Clientes", icon: Users, Component: ClientesTab, roles: null },
   { id: "visitas", label: "Visitas", icon: ClipboardCheck, Component: VisitasTab, roles: null },
   { id: "agenda", label: "Agenda", icon: CalendarClock, Component: AgendaTab, roles: null },
+  { id: "comunicacao", label: "Comunicação", icon: MessageSquare, Component: ComunicacaoTab, roles: ADMIN_ONLY },
   { id: "financeiro", label: "Financeiro", icon: Wallet, Component: AuditoriaFinanceira, roles: FIN_ROLES },
 ];
+
 
 export default function Auditoria() {
   const [searchParams, setSearchParams] = useSearchParams();
