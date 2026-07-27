@@ -1,53 +1,33 @@
-## Diagnóstico
+## Problema
 
-Consulta em `auth.users` no staging `ikaauvsflpmamgxmkhoq` confirma: **o usuário `admin@arbio.com` não existe**. Só há os seeds `tecnico_agronomo@`, `gestor@`, `comercial@` e `financeiro@arbio.com`. Por isso o Supabase retorna `invalid_credentials` (400) — não é senha errada, é usuário inexistente. Ele foi criado em uma sessão anterior porém no banco de produção (proibido) ou em um snapshot que não sobreviveu. Preciso recriá-lo em staging.
+A aba **Comunicação** em `/configuracoes` está oculta porque depende da flag `VITE_COMUNICACAO_MODULE_ENABLED=true`, que não está definida no `.env`. Sem ela, `isComunicacaoModuleEnabled()` retorna `false` e tanto o `TabsTrigger` quanto o `TabsContent` são omitidos em `src/pages/Configuracoes.tsx` (linhas 471 e 478).
+
+O código da aba já existe e está pronto (`src/pages/configuracoes/ComunicacaoConfigTab.tsx`) — só precisa ser habilitado no ambiente.
 
 ## Plano
 
-### 1. Recriar `admin@arbio.com` em staging (`ikaauvsflpmamgxmkhoq`)
-- Inserir usuário em `auth.users` com senha `Bio#2026` (hash bcrypt via `crypt`), `email_confirmed_at=now()`, provider `email`.
-- Inserir linha em `public.profiles` (`nome='Administrador'`, `ativo=true`, `email='admin@arbio.com'`).
-- Inserir linha em `public.user_roles` com `role='administrador'`.
-- Idempotente: usa `ON CONFLICT DO NOTHING` / verificação prévia.
-- Produção `navfzbwgwzruipouyfnk` permanece intocada.
+1. **Adicionar a flag no `.env`** (staging `ikaauvsflpmamgxmkhoq`):
+   ```
+   VITE_COMUNICACAO_MODULE_ENABLED=true
+   ```
+   Isso ativa a aba **Comunicação** em `/configuracoes` para usuários com papel `administrador`.
 
-### 2. Toggle mostrar/ocultar senha no login (`src/pages/Auth.tsx`)
-- Adicionar estado `showPassword`.
-- Trocar `type="password"` por `type={showPassword ? "text" : "password"}`.
-- Botão ícone (`Eye`/`EyeOff` do lucide-react) posicionado dentro do input à direita, seguindo o mesmo padrão já usado em `src/pages/app/MobileLogin.tsx` (consistência visual).
-- Apenas mudança de UI/apresentação; nenhum efeito em lógica de auth.
-- `MobileLogin.tsx` já tem o toggle — nenhuma mudança lá.
+2. **Reiniciar o dev server** para o Vite reprocessar as variáveis `VITE_*` (elas são inlined em build time / dev startup).
+
+3. **Validar** via Playwright com o login `admin@arbio.com`:
+   - Navegar até `/configuracoes?tab=comunicacao`.
+   - Confirmar que a aba aparece e o formulário de provedores (Email/WhatsApp) renderiza.
+   - Screenshot para evidência.
+
+## Fora do escopo
+
+- **Não** habilitar `VITE_COMUNICACAO_BROADCAST_TAB_ENABLED` (broadcast/comunicados) — o pedido é apenas configurar Email/WhatsApp.
+- **Não** ativar as flags de entrega no backend (`COMMUNICATION_DELIVERY_ENABLED`, `EMAIL_DELIVERY_ENABLED`, `WHATSAPP_DELIVERY_ENABLED`, `WHATSAPP_WEBHOOK_ENABLED`). Elas permanecem OFF, conforme regras de projeto. A aba apenas persiste as credenciais no Vault; o envio real continua bloqueado até autorização explícita.
+- **Não** tocar em produção (`navfzbwgwzruipouyfnk`).
+- **Não** inserir segredos reais — o usuário fará isso pela própria UI depois que a aba aparecer.
 
 ## Detalhes técnicos
 
-SQL (via `supabase--insert`, aplicado somente em `ikaauvsflpmamgxmkhoq`):
-```sql
--- cria user em auth.users com senha bcrypt
-INSERT INTO auth.users (
-  instance_id, id, aud, role, email, encrypted_password,
-  email_confirmed_at, created_at, updated_at,
-  raw_app_meta_data, raw_user_meta_data, is_super_admin
-) VALUES (
-  '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated','authenticated',
-  'admin@arbio.com', crypt('Bio#2026', gen_salt('bf')),
-  now(), now(), now(),
-  '{"provider":"email","providers":["email"]}'::jsonb,
-  '{"nome":"Administrador"}'::jsonb, false
-) ON CONFLICT (email) DO NOTHING;
-
--- profile + role
-INSERT INTO public.profiles (user_id, nome, email, ativo)
-SELECT id, 'Administrador', 'admin@arbio.com', true FROM auth.users WHERE email='admin@arbio.com'
-ON CONFLICT (user_id) DO NOTHING;
-
-INSERT INTO public.user_roles (user_id, role)
-SELECT id, 'administrador' FROM auth.users WHERE email='admin@arbio.com'
-ON CONFLICT (user_id, role) DO NOTHING;
-```
-
-Credenciais finais: `admin@arbio.com` / `Bio#2026`.
-
-## Validação
-- Consultar `auth.users` + `profiles` + `user_roles` para confirmar criação.
-- `tsgo --noEmit` e `bun run build` após a edição do `Auth.tsx`.
-- Sem alterações de RLS, edge functions, flags ou produção.
+- Arquivo alterado: `.env` (1 linha adicionada).
+- Gate de permissão real (admin-only) já é aplicado por RLS/RPC no backend e pelo condicional `isAdmin && isComunicacaoModuleEnabled()` no `Configuracoes.tsx` — não é necessária mudança de código.
+- O dev server precisa ser reiniciado porque o Vite lê `.env` apenas na inicialização.
