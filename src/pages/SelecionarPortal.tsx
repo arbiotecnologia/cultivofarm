@@ -80,7 +80,7 @@ export default function SelecionarPortal() {
       registerLoginRedirect(pref);
       navigate(PORTAL_CONTEXT_HOME[pref], { replace: true });
     }
-  }, [data, submitting, navigate, isLoading, isFetching, isError]);
+  }, [data, submitting, navigate, isLoading, isFetching, isError, isAdmin]);
 
   async function pick(ctx: PortalContext) {
     if (submitting) return; // evita duplo clique
