@@ -8,6 +8,7 @@
 
 import { json, requirePost, serviceClient } from "../_shared/auth-guard.ts";
 import { healthBooleans } from "../_shared/comunicacao/adapters.ts";
+import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
@@ -40,7 +41,7 @@ Deno.serve(async (req: Request) => {
   if (!az.ok) return az.res;
 
   const sb = serviceClient();
-  const cfg = await loadRuntimeConfig(sb);
+  const cfg = await loadRuntimeConfig(sb, readWorkerEnv);
   return json(200, {
     ok: true,
     source: cfg.source,   // "db" | "env" | "fail_closed"

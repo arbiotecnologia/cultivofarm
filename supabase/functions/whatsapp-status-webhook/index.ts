@@ -10,6 +10,7 @@ import {
   isValidChallenge, MAX_BODY_BYTES, parseMetaWebhookBody, readBodyCapped, verifyMetaSignature,
 } from "../_shared/comunicacao/whatsapp-webhook-parser.ts";
 import { DEFAULT_WEBHOOK_CONCURRENCY, runWithConcurrency } from "../_shared/comunicacao/concurrency.ts";
+import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 
 const SUPABASE_URL    = Deno.env.get("SUPABASE_URL") ?? "";
@@ -31,7 +32,7 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const cfg = await loadRuntimeConfig(supabase);
+    const cfg = await loadRuntimeConfig(supabase, readWorkerEnv);
     const APP_SECRET = cfg.WHATSAPP_APP_SECRET ?? "";
     const VERIFY_TOKEN = cfg.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? "";
     const PHONE_NUMBER_ID = cfg.WHATSAPP_PHONE_NUMBER_ID ?? "";

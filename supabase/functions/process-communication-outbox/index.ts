@@ -20,6 +20,7 @@ import type {
   AdapterSnapshot,
   ResolvedAddress,
 } from "../_shared/comunicacao/adapters.ts";
+import { readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
 import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { sendWhatsapp } from "../_shared/comunicacao/whatsapp-adapter.ts";
@@ -61,7 +62,7 @@ Deno.serve(async (req: Request) => {
   if (!authz.ok) return authz.res;
 
   const supabase = serviceClient();
-  const env = await loadRuntimeConfig(supabase);
+  const env = await loadRuntimeConfig(supabase, readWorkerEnv);
 
   if (!env.DELIVERY_ENABLED) {
     return json(200, {
