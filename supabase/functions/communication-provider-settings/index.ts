@@ -306,7 +306,7 @@ async function handlePut(sb: ReturnType<typeof createClient>, userId: string, bo
 async function handleClearSecret(sb: ReturnType<typeof createClient>, userId: string, body: { slot?: string; confirm?: string }) {
   if (body.confirm !== "REMOVE") return json(400, { ok: false, error: "confirmation_required" });
   const slot = body.slot as SecretSlot;
-  if (!slot || !(slot in SLOT_TO_COLUMN)) return json(400, { ok: false, error: "invalid_slot" });
+  if (!slot || !VALID_SLOTS.includes(slot)) return json(400, { ok: false, error: "invalid_slot" });
   await clearSecretViaRpc(sb, slot, userId);
   await sb.from("communication_provider_settings_audit").insert({
     actor_id: userId, action: "clear_secret", secret_field: slot, changed_fields: [`secret_${slot}`],
