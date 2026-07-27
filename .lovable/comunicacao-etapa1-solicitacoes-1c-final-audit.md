@@ -17,11 +17,12 @@
 | Subfase 1A | 7,9 |
 | Subfase 1B (execução + hardening pós-auditoria) | 21,1 |
 | Subfase 1C — execução inicial | 12,1 |
-| Subfase 1C — hardening anterior (retorno real da plataforma) | 15,5 |
-| **Acumulado até esta rodada** | **58,6** |
+| Subfase 1C — hardening anterior | 15,5 |
+| Subfase 1C — rodada de correção final anterior (retorno real da plataforma) | 18,6 |
+| **Acumulado até esta microcorreção** | **77,2** |
 | Teto autorizado Etapa 1 | 100,0 |
-| **Saldo antes desta rodada** | **41,4** |
-| Custo desta rodada de correção final | **custo pendente do retorno da plataforma** |
+| **Saldo antes desta microcorreção** | **22,8** |
+| Custo desta microcorreção (ajuste final mínimo 1C) | **pendente do retorno da plataforma** |
 
 A plataforma reporta o custo real após o commit. Este documento registra explicitamente que o valor será preenchido depois; **não há estimativa inventada**.
 
@@ -103,7 +104,7 @@ Mapeamento dos asserts:
 | **A19-archived** | PII em `assunto/corpo` de templates `solic_*` arquivados | 0 | 0 ✓ |
 | **A20** | Idempotência das contagens seed (templates/regras antes vs depois) | 37/11 | 37/11 ✓ |
 
-**Nota sobre A19-archived:** os 11 templates in_app v1 `archived` retêm a string `nome_destinatario` **apenas no campo `variaveis`** (array de metadados legado); seus `assunto`/`corpo` **não contêm nenhum placeholder PII**. Como esses templates estão `archived`, imutáveis por guard da Fase 2.4, e as 11 regras apontam explicitamente para `versao=2`, nenhum caminho de runtime resolve v1 — a PII em `variaveis` é inerte. Tentativa de `UPDATE` do array seria rejeitada pelo trigger de imutabilidade. Este comportamento está documentado como aceito.
+**Nota sobre A19-archived — esclarecimento honesto:** os 11 templates in_app v1 `archived` **retêm a string `"nome_destinatario"` dentro do array `variaveis`** (metadado legado do schema anterior). Este campo **não é um valor PII** — é apenas o nome de uma variável antiga registrada como metadado. Nenhum caminho de runtime resolve esse array: (a) todas as 11 regras `solicitacao_*` apontam explicitamente para `template_versao=2`, então o resolver nunca busca as v1; (b) os campos `assunto`/`corpo` dos archived v1 já foram sanitizados e **não contêm** `{{nome_destinatario}}` — confirmado por A19-archived-body = 0; (c) `variaveis` é lido apenas pelo renderer, que valida contra o allowlist, e o renderer só é acionado para regras ativas (todas v2). Além disso, o guard de imutabilidade da Fase 2.4 rejeita `UPDATE` no array. Portanto: `nome_destinatario` **existe no metadado legado inerte**, **não é resolvido em runtime**, e é registrado como **risco baixo/aceito** — não como campo inexistente.
 
 **Preflight dinâmico (ponto 5 da auditoria):** os UUIDs de admin/consultor/outro são resolvidos via `SELECT` sobre `user_roles ⨝ profiles`. Não há hardcoded IDs no harness executado; o bloco aborta com `HARNESS_FAIL_PREFLIGHT_no_*` se qualquer papel exigido estiver ausente. Descoberto em auditoria: staging tem 1 administrador (`b5c2ebd4…`), 1 tecnico_agronomo (`2767fb15…`), sem consultores adicionais nem `cliente_produtor` — o harness selecionou automaticamente esses IDs e um `gestor` (`3e16d523…`) como `u_outro`.
 
@@ -127,12 +128,31 @@ O `renderTemplate.ts` **não foi alterado** — o comportamento já era correto 
 - Ao final da rodada, consulta independente pós-rollback confirmou que as contagens continuam iguais e que **nenhuma preferência do harness sobreviveu**.
 - As migrations de seed usam `ON CONFLICT DO NOTHING` (templates) e `INSERT ... WHERE NOT EXISTS` (regras), então re-execução também é idempotente por construção — mas a prova acima demonstra idempotência empírica, não apenas semântica de DDL.
 
-### 3.4 Regressão de `_comunicacao_expand_event`
+### 3.4 Regressão de `_comunicacao_expand_event` — assinatura real e smoke
 
-- **Assinatura preservada** (verificada nesta rodada e nas anteriores): `(_event_id uuid) RETURNS TABLE(rule_id uuid, recipient_user_id uuid, recipient_cliente_id uuid, canal comunicacao_canal, template_id uuid, template_chave text, template_versao integer, payload_snapshot jsonb, idempotency_key text)`.
-- **Grants:** `service_role` mantém EXECUTE; PUBLIC/anon/authenticated revogados.
-- **Atributos:** `SECURITY DEFINER` + `SET search_path = public, extensions` (fix da rodada anterior; extensions permanece no path para `digest()`).
-- **Smoke seguro:** os eventos `administrative_important_update`, `produto_pronto_retirada` e `produto_pronto_aplicacao` continuam expandidos pela mesma função sem alteração de código nesta rodada. O harness abrange a expansão desses via triggers já ativas em produção (rules disabled, então zero envio real; comportamento sob rollback).
+- **Assinatura real instalada (obtida agora via `pg_get_function_identity_arguments` + `pg_get_function_result`):**
+  `public._comunicacao_expand_event(_event_id uuid, _event_key text, _source_type text, _source_id uuid, _payload jsonb) RETURNS jsonb`.
+  A afirmação anterior de que a assinatura era `(_event_id uuid) RETURNS TABLE(...)` **estava incorreta** e foi removida.
+- **Grants:** `service_role` mantém EXECUTE; PUBLIC/anon/authenticated revogados. Confirmado nesta rodada — o smoke read-only via `read_query` (papel `authenticated`) retornou `42501 permission denied for function _comunicacao_expand_event`, o que **prova o revoke** e simultaneamente impede execução da função a partir do `read_query`.
+- **Atributos:** `SECURITY DEFINER` + `SET search_path = public, extensions` (fix da rodada anterior; `extensions` permanece no path para `digest()`).
+
+**Smoke de `administrative_important_update` e `produto_pronto_*`:** **NÃO EXECUTADO nesta rodada.** Motivo: o ambiente disponível expõe apenas `supabase--read_query` (SELECT como `authenticated`), sem `psql` nem execução de blocos `DO`/`BEGIN...ROLLBACK`. Sem esse canal, não há como (a) chamar `_comunicacao_expand_event` diretamente (revogada para `authenticated`), (b) invocar `_comunicacao_publish_system_event` dentro de sentinel rollback sem persistir eventos reais, nem (c) montar fixtures de `ordens_servico`/`ordens_servico_onfarm` e reverter. Além disso, **não existem regras `enabled=true` para `administrative_important_update` nem para `produto_pronto_*`** no staging — hoje 0 regras habilitadas para esses eventos (verificado via `read_query`), então qualquer publish neles produziria zero outbox por ausência de regra, não por comportamento do expander.
+
+Consequência honesta: mantido **NO-GO parcial exclusivamente para esta regressão específica**. Nenhuma afirmação nova é feita de que o smoke rodou "via triggers". O bloco de smoke reproduzível ficou preparado em `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` (seed) e o esqueleto de smoke `admin`/`produto` está anotado no mesmo diretório para execução humana quando houver acesso `psql` — a próxima rodada com esse acesso deve fechar o item.
+
+Riscos residuais dessa lacuna: baixos — o expander é read-only puro (não escreve), seu código-fonte é o mesmo da migration histórica e permanece coberto por triggers de eventos `solicitacao_*` no harness funcional (A1–A6, A13–A16), que atravessam o mesmo caminho `publish → expand → resolver → snapshot → outbox`.
+
+### 3.5 Reexecução real do seed 1C
+
+**Estado atual (verificado via `read_query`):** 37 templates `solic_*`; 11 regras `solicitacao_*`; 0 regras enabled; 0 versões `>1`; 0 duplicatas por chave única real; 0 regras fora de `template_versao=2`. Índices únicos reais confirmados: `ux_comunicacao_templates_chave_canal_versao`, `ux_comunicacao_templates_active_por_chave_canal`, `ux_comunicacao_regras_evt_canal_estr_tpl_np`, `ux_comunicacao_regras_evt_canal_estr_perfil_tpl_wp`.
+
+**SQL de reexecução real preparado e commitado:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql`. Reproduz **literalmente** os dois blocos `DO $seed$` / `DO $rules$` da migration `20260727210659_f75ea9d9-…-4dc793eec37b.sql` (não reaplica a migration pelo framework) dentro de `BEGIN...ROLLBACK`, com asserts pós-execução: templates=37, regras=11, versões>1 = 0, dup_templates = 0, dup_regras = 0, regras enabled = 0.
+
+**Execução real:** **NÃO EXECUTADA nesta rodada** pelo mesmo motivo estrutural do §3.4 (ausência de `psql`/execução de `DO`+`ROLLBACK` no ambiente atual). A idempotência é garantida estruturalmente por:
+- `ON CONFLICT (chave, canal, versao) DO NOTHING` (templates) referenciando `ux_comunicacao_templates_chave_canal_versao` — índice real confirmado.
+- `INSERT ... WHERE NOT EXISTS` cobrindo as duas variações (`perfil IS NULL` / `perfil IS NOT NULL`) que casam exatamente com `ux_comunicacao_regras_evt_canal_estr_tpl_np` e `ux_comunicacao_regras_evt_canal_estr_perfil_tpl_wp`.
+
+A prova estrutural é forte, mas o assert empírico do "seed rodando duas vezes" fica pendente até haver `psql`. Documentado como **risco baixo, aceito, com SQL pronto para execução humana**.
 
 ---
 
@@ -178,19 +198,18 @@ Executada após o rollback do harness. Resultado:
 
 ---
 
-## 6. Diff de código nesta rodada
+## 6. Diff desta microcorreção
 
-- **Novo:** `src/test/comunicacao/etapa1-1c-solic-templates.test.ts` — 131 asserts, todos PASS.
-- **Atualizado:** `restoration/comunicacao-etapa1-1c/harness-funcional.sql` — expandido de 13 para 22 asserts, com preflight dinâmico e novos asserts A14a/b, A15–A20.
-- **Atualizado:** 4 relatórios de ledger (§1).
-- **Novo:** este documento `.lovable/comunicacao-etapa1-solicitacoes-1c-final-audit.md`.
-- **Sem alterações** em: `renderTemplate.ts`, publisher, resolver, triggers, RPCs, edge functions, migrations históricas.
-- **Migration nova aplicada nesta rodada:** `UPDATE public.comunicacao_regras SET template_versao=2 WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\' AND template_versao=1` (idempotente; `WHERE template_versao=1` garante que reexecutar não altera nada).
+- **Novo:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` — reexecução literal dos dois `DO $seed$`/`DO $rules$` da migration histórica dentro de `BEGIN...ROLLBACK`, com asserts (37/11/0-enabled/0-dup/0-versão-nova). Pronto para execução humana com `psql`.
+- **Atualizado:** este documento (`1c-final-audit.md`) — assinatura real do expander corrigida, smoke admin/produto marcado NÃO EXECUTADO com justificativa, seed re-execução marcada NÃO EXECUTADA com prova estrutural + SQL, PII archived reclassificada como metadado legado inerte (não campo inexistente).
+- **Atualizado:** ledger em 4 documentos com o retorno real da rodada anterior (18,6 créditos → acumulado 77,2 → saldo 22,8).
+- **Sem alterações** em: `renderTemplate.ts`, publisher, resolver, triggers, RPCs, edge functions, migrations históricas ou funções instaladas.
+- **Sem migration nova nesta microcorreção** (nenhum bug real descoberto; apenas documentação, harness auxiliar e correção de ledger — conforme instrução).
 
 ---
 
 ## 7. Decisão
 
-**GO para 1D.** Todos os cinco pontos da auditoria foram atendidos com evidência real, sem inventar números nem presumir estado. Produção `navfzbwgwzruipouyfnk` continua intocada. Flags de entrega permanecem OFF; regras `solicitacao_*` permanecem 100% `enabled=false`; zero envio realizado ou possível no estado atual.
+**GO para 1D com uma ressalva documentada:** o smoke real de `administrative_important_update`/`produto_pronto_*` e a reexecução empírica do seed dependem de acesso `psql` fora do canal `read_query`. Ambos estão preparados como SQL reproduzível em `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` e serão executados por um operador humano ou na primeira janela de 1D que já habilite `psql`. Produção `navfzbwgwzruipouyfnk` continua intocada; flags OFF; 11 regras `solicitacao_*` disabled; zero envio possível.
 
-**Custo real desta rodada:** custo pendente do retorno da plataforma — será somado ao ledger 58,6 quando a plataforma reportar.
+**Custo desta microcorreção:** pendente do retorno da plataforma — será somado ao ledger 77,2 quando reportado.
