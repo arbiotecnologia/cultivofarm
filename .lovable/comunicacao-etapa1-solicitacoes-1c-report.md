@@ -10,7 +10,7 @@ Este é o registro executivo. Detalhes técnicos completos (migration passo a pa
 
 ## Resultado
 
-**GO parcial para 1D**, condicionado a executar o harness funcional com fixtures autorizadas antes de habilitar qualquer regra.
+**NO-GO para 1D** até execução empírica real de `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` (idempotência por delta contra baseline 37/11) e `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` (`_comunicacao_expand_event` para `administrative_important_update` e `produto_pronto_*`) via `psql` como `service_role` em sentinel `BEGIN...ROLLBACK`.
 
 ## Correção documental (0) — encerrada
 
@@ -20,7 +20,7 @@ Os três documentos da 1B foram atualizados para refletir a contabilidade real i
 - Etapa 1 acumulada até 1B = 2 (planejamento) + 7,9 (1A) + 21,1 (1B) = **31 créditos**.
 - Saldo antes da 1C = **69 créditos**.
 
-Após a 1C inicial (12,1) + hardening anterior (15,5) + rodada de correção final anterior (18,6, real da plataforma) = **77,2 créditos acumulados**; saldo antes desta microcorreção = **22,8 créditos**. Custo desta microcorreção (ajuste final mínimo 1C): **pendente do retorno da plataforma** (sem estimativa).
+Após a 1C inicial (12,1) + hardening anterior (15,5) + rodada de correção final anterior (18,6) + ajuste final mínimo 1C (8,1, retorno real) = **85,3 créditos acumulados**; saldo antes desta microcorreção documental = **14,7 créditos**. Custo desta microcorreção documental/SQL: **pendente do retorno da plataforma** (sem estimativa).
 
 ## O que foi entregue em 1C
 

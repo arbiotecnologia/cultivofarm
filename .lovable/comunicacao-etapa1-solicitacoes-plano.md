@@ -395,7 +395,7 @@ Aguardo autorização explícita para iniciar 1C.
 
 ## 20. Encerramento 1C — 2026-07-27 (após auditoria final corretiva)
 
-**Resultado:** GO para 1D. **Ambiente:** staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` intocada. Flags OFF, zero envio, 11 regras `solicitacao_*` persistem `enabled=false`.
+**Resultado:** **NO-GO para 1D** até execução empírica real de `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` e `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` via `psql`/`service_role` em sentinel `BEGIN...ROLLBACK`. **Ambiente:** staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` intocada. Flags OFF, zero envio, 11 regras `solicitacao_*` persistem `enabled=false`.
 
 **Ledger real corrigido pela contabilidade da plataforma:**
 - Planejamento: 2,0
@@ -404,8 +404,9 @@ Aguardo autorização explícita para iniciar 1C.
 - 1C inicial: 12,1
 - Hardening 1C anterior: 15,5
 - 1C rodada de correção final anterior (retorno real da plataforma): 18,6
-- **Acumulado 1A→1C correção final anterior: 77,2 créditos**
-- Saldo antes desta microcorreção: 100 − 77,2 = **22,8 créditos**
+- Ajuste final mínimo 1C (retorno real da plataforma): 8,1
+- **Acumulado 1A→ajuste final mínimo 1C: 85,3 créditos**
+- Saldo antes desta microcorreção documental/SQL: 100 − 85,3 = **14,7 créditos**
 - Custo desta microcorreção (ajuste final mínimo 1C): **pendente do retorno da plataforma** (não estimado)
 
 **Entregas da rodada de correção final:**

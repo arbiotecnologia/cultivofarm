@@ -3,7 +3,7 @@
 **Ambiente:** staging `ikaauvsflpmamgxmkhoq` (ar-bio-temp). Produção `navfzbwgwzruipouyfnk` **não tocada**.
 **Baseline:** commit `ce20a8b6884905ff0fc28b79e234f2641af6bf88`.
 **Flags:** todas OFF; test mode ON; zero envio; nenhuma outbox real criada.
-**Custo real 1C (retorno da plataforma):** 12,1 (execução inicial) + 15,5 (hardening) + 18,6 (rodada de correção final anterior) = **46,2 créditos** consumidos na subfase 1C. A microcorreção atual (ajuste final mínimo 1C) tem **custo pendente do retorno da plataforma** (não estimado). Ledger geral Etapa 1: 2 (plan) + 7,9 (1A) + 21,1 (1B) + 46,2 (1C) = **77,2 acumulados**; saldo antes desta microcorreção = **22,8**.
+**Custo real 1C (retorno da plataforma):** 12,1 (execução inicial) + 15,5 (hardening) + 18,6 (rodada de correção final anterior) + 8,1 (ajuste final mínimo 1C, retorno real) = **54,3 créditos** consumidos na subfase 1C até aqui. A microcorreção documental/SQL atual tem **custo pendente do retorno da plataforma** (não estimado). Ledger geral Etapa 1: 2 (plan) + 7,9 (1A) + 21,1 (1B) + 54,3 (1C) = **85,3 acumulados**; saldo antes desta microcorreção documental = **14,7**.
 
 ## 1. Migration aplicada
 
@@ -125,7 +125,7 @@ ALTER TABLE public.comunicacao_regras
 
 ## 7. GO / NO-GO para 1D
 
-**GO parcial**: estrutura, seeds, funções e segurança da 1C estão em conformidade — 15/15 asserts do harness em PASS. **A execução da 1D deve incluir, como pré-requisito interno, o harness funcional com fixtures autorizadas** (item 4 acima) antes de habilitar qualquer regra `solicitacao_*`.
+**NO-GO para 1D.** Estrutura, seeds, funções e segurança estruturais da 1C estão em conformidade (15/15 asserts do harness PASS; 22/22 asserts do harness funcional PASS em rodada anterior). Porém, dois itens permanecem sem execução empírica: (a) reexecução real do seed via `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` com asserts por delta contra o baseline 37/11; (b) smoke reproduzível de `_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_para_entrega` e `produto_pronto_para_retirada` via `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql`. Ambos exigem `psql` como `service_role` em sentinel `BEGIN...ROLLBACK`. Enquanto essa execução real não for anexada como evidência, o gate permanece **NO-GO**; a 1D não deve ser iniciada.
 
 ## 8. Artefatos
 
