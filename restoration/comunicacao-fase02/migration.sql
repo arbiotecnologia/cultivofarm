@@ -535,6 +535,9 @@ $$;
 REVOKE ALL ON FUNCTION public.rpc_create_portal_notification_secure(
   uuid, text, text, text, text, text, uuid, text
 ) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.rpc_create_portal_notification_secure(
+  uuid, text, text, text, text, text, uuid, text
+) FROM anon;
 GRANT EXECUTE ON FUNCTION public.rpc_create_portal_notification_secure(
   uuid, text, text, text, text, text, uuid, text
 ) TO authenticated, service_role;
