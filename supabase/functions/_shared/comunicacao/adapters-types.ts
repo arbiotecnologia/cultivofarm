@@ -97,6 +97,12 @@ export interface WorkerEnv {
   WHATSAPP_WEBHOOK_ENABLED?: boolean;
   WHATSAPP_APP_SECRET?: string;
   WHATSAPP_WEBHOOK_VERIFY_TOKEN?: string;
+  // Homologação H2 — Test mode e allowlists. Default fail-closed:
+  // quando TEST_MODE_ENABLED=true (default se ausente) e a lista
+  // correspondente ao canal estiver vazia, nenhum envio sai.
+  TEST_MODE_ENABLED?: boolean;
+  TEST_ALLOWED_EMAILS?: string[];
+  TEST_ALLOWED_PHONES?: string[];
 }
 
 /**
@@ -147,6 +153,7 @@ export function isWhatsappWebhookConfigValid(env: WorkerEnv): boolean {
 }
 
 export function healthBooleans(env: WorkerEnv) {
+  const testMode = isTestModeEnabled(env);
   return {
     delivery_enabled: env.DELIVERY_ENABLED,
     email: {
@@ -162,5 +169,79 @@ export function healthBooleans(env: WorkerEnv) {
       enabled: Boolean(env.WHATSAPP_WEBHOOK_ENABLED),
       configured: isWhatsappWebhookConfigValid(env),
     },
+    // Homologação — expõe apenas booleans/contagens, jamais valores.
+    test_mode: {
+      enabled: testMode,
+      allowlist_emails_count: (env.TEST_ALLOWED_EMAILS ?? []).length,
+      allowlist_phones_count: (env.TEST_ALLOWED_PHONES ?? []).length,
+    },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Homologação H2 — Test mode + allowlists (fail-closed em staging/prod).
+// ---------------------------------------------------------------------------
+
+/**
+ * true apenas quando explicitamente configurado. `readWorkerEnv` traduz
+ * ausência de env var em `true` (fail-closed em runtime); consumidores que
+ * constroem WorkerEnv manualmente controlam o campo explicitamente.
+ */
+export function isTestModeEnabled(env: WorkerEnv): boolean {
+  return env.TEST_MODE_ENABLED === true;
+}
+
+export function normalizeEmail(raw: string): string {
+  return String(raw ?? "").trim().toLowerCase();
+}
+
+/** Normaliza para E.164: preserva '+' inicial, remove tudo que não é dígito. */
+export function normalizePhoneE164(raw: string): string {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  const digits = s.replace(/\D+/g, "");
+  if (!digits) return "";
+  return `+${digits}`;
+}
+
+/** Parse CSV de allowlist: split por vírgula/ponto-e-vírgula/espaço, normaliza. */
+export function parseAllowlist(
+  raw: string | undefined,
+  kind: "email" | "phone",
+): string[] {
+  if (!raw) return [];
+  const parts = raw.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
+  const norm = kind === "email" ? normalizeEmail : normalizePhoneE164;
+  const set = new Set<string>();
+  for (const p of parts) {
+    const n = norm(p);
+    if (n) set.add(n);
+  }
+  return [...set];
+}
+
+export interface TestModeGateResult {
+  allowed: boolean;
+  reason?: string;
+}
+
+/** Fail-closed: test mode ativo + lista vazia → sempre bloqueia. */
+export function isRecipientAllowedInTestMode(
+  env: WorkerEnv,
+  canal: "email" | "whatsapp",
+  address: string,
+): TestModeGateResult {
+  if (!isTestModeEnabled(env)) return { allowed: true };
+  const list = canal === "email"
+    ? (env.TEST_ALLOWED_EMAILS ?? [])
+    : (env.TEST_ALLOWED_PHONES ?? []);
+  if (list.length === 0) {
+    return { allowed: false, reason: "test_mode_allowlist_empty" };
+  }
+  const norm = canal === "email" ? normalizeEmail(address) : normalizePhoneE164(address);
+  if (!list.includes(norm)) {
+    return { allowed: false, reason: "test_mode_not_allowlisted" };
+  }
+  return { allowed: true };
+}
+
