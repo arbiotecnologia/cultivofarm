@@ -19,10 +19,11 @@
 | Subfase 1C — execução inicial | 12,1 |
 | Subfase 1C — hardening anterior | 15,5 |
 | Subfase 1C — rodada de correção final anterior (retorno real da plataforma) | 18,6 |
-| **Acumulado até esta microcorreção** | **77,2** |
+| Subfase 1C — ajuste final mínimo (retorno real da plataforma) | 8,1 |
+| **Acumulado até esta microcorreção documental/SQL** | **85,3** |
 | Teto autorizado Etapa 1 | 100,0 |
-| **Saldo antes desta microcorreção** | **22,8** |
-| Custo desta microcorreção (ajuste final mínimo 1C) | **pendente do retorno da plataforma** |
+| **Saldo antes desta microcorreção documental/SQL** | **14,7** |
+| Custo desta microcorreção documental/SQL | **pendente do retorno da plataforma** |
 
 A plataforma reporta o custo real após o commit. Este documento registra explicitamente que o valor será preenchido depois; **não há estimativa inventada**.
 
