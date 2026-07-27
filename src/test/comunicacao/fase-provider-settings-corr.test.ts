@@ -159,10 +159,10 @@ describe("F-CORR (2) fromDbPayload — mapeamento e ausência de vazamento", () 
   });
 
   it("test_mode_enabled ausente/null/qualquer coisa != false → TRUE (fail-closed)", () => {
-    for (const v of [undefined, null, "true", 0, "false"]) {
-      const p = { ...dbPayloadFull(), test_mode_enabled: v as unknown };
+    for (const v of [undefined, null, "true", 0, "false"] as unknown[]) {
+      const p = { ...dbPayloadFull(), test_mode_enabled: v };
       const cfg = fromDbPayload(p as Record<string, unknown>);
-      expect(cfg.TEST_MODE_ENABLED).toBe(v === false ? false : true);
+      expect(cfg.TEST_MODE_ENABLED).toBe(true);
     }
     expect(fromDbPayload({ ...dbPayloadFull(), test_mode_enabled: false }).TEST_MODE_ENABLED).toBe(false);
   });
