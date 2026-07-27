@@ -82,6 +82,12 @@ health check:
 - **Sem JWT:** `SKIP: check communication-health` explícito. Mensagem final:
   `verify concluído (parcial: SQL/smoke OK; health SKIP)`.
 
+## Rollback
+
+Somente Fase 2. A Fase 1 e dados de negócio **não são** removidos. Exige
+`ROLLBACK_COMMUNICATION=true` e as mesmas confirmações de ref
+(`REQUIRE_DATABASE=true`).
+
 ## Comando inicial
 
 ```sh
