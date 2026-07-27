@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, Save, ShieldAlert, Trash2 } from "lucide-react";
+import {
+  Copy, Eye, EyeOff, Info, Mail, MessageCircle, Save, ShieldAlert,
+  ShieldCheck, Trash2, Webhook,
+} from "lucide-react";
 import {
   smtpSchema,
   whatsappSchemaFor,
@@ -44,20 +50,70 @@ type ProviderView = {
 const ERROR_MESSAGES: Record<string, string> = {
   unauthorized: "Sessão expirada ou sem permissão.",
   forbidden: "Apenas administradores podem alterar essa configuração.",
-  rate_limited: "Muitas tentativas em pouco tempo. Aguarde alguns segundos.",
+  rate_limited: "Muitas tentativas em pouco tempo. Aguarde alguns segundos e tente novamente.",
   invalid_payload: "Dados inválidos — revise os campos destacados.",
+  invalid_json: "Payload inválido.",
   invalid_smtp: "Configuração SMTP inválida.",
+  invalid_smtp_from: "Remetente SMTP inválido — informe um e-mail válido.",
+  invalid_smtp_port: "Porta SMTP inválida — use um número entre 1 e 65535.",
   invalid_whatsapp: "Configuração WhatsApp inválida.",
+  invalid_phone_number_id: "Phone Number ID inválido — use somente dígitos.",
+  invalid_api_version: "Versão da API não suportada.",
   invalid_webhook: "Configuração de webhook inválida.",
-  invalid_emails: "Um ou mais e-mails são inválidos.",
-  invalid_phones: "Um ou mais telefones são inválidos (use E.164).",
+  invalid_allowed_emails: "Lista de e-mails inválida.",
+  invalid_allowed_phones: "Lista de telefones inválida (use E.164).",
+  invalid_slot: "Slot de segredo inválido.",
+  smtp_password_too_long: "Senha SMTP acima do limite (máx 4096).",
+  access_token_too_long: "Access Token acima do limite (máx 8192).",
+  app_secret_too_long: "App Secret acima do limite (máx 4096).",
+  verify_token_too_long: "Verify Token acima do limite (máx 1024).",
+  confirmation_required: "Confirmação explícita obrigatória para ativar esta opção.",
+  confirmation_required_disable_test_mode: "Confirmação obrigatória para desativar o Test mode.",
+  test_mode_off_requires_email_provider: "Configure o provedor de e-mail antes de desativar o Test mode.",
+  test_mode_off_requires_whatsapp_provider: "Configure o provedor de WhatsApp antes de desativar o Test mode.",
+  email_enabled_requires_provider_configured: "Configure host, porta, usuário, remetente e senha SMTP antes de ativar a entrega de e-mail.",
+  whatsapp_enabled_requires_provider_configured: "Configure Phone Number ID, versão e Access Token antes de ativar a entrega de WhatsApp.",
+  settings_row_missing: "Registro de configuração ausente. Contate o suporte.",
   vault_error: "Falha ao gravar segredo com segurança. Tente novamente.",
+  atomic_apply_failed: "Falha ao aplicar as alterações. Nenhuma mudança foi persistida.",
+  empty_payload: "Nada para salvar.",
+  origin_not_allowed: "Origem não autorizada.",
+  not_configured: "Serviço não configurado no ambiente.",
   unknown_error: "Erro inesperado. Tente novamente.",
 };
 
 function friendlyError(code: string): string {
   return ERROR_MESSAGES[code] ?? code;
 }
+
+const FLAG_LABELS: Record<string, { title: string; help: string }> = {
+  delivery_enabled: {
+    title: "Entrega global",
+    help: "Chave-mestra. Se estiver desligada, nenhum canal envia mensagens, independentemente das flags específicas.",
+  },
+  email_delivery_enabled: {
+    title: "Entrega por e-mail (SMTP)",
+    help: "Autoriza o worker a enviar e-mails pelo provedor SMTP configurado.",
+  },
+  whatsapp_delivery_enabled: {
+    title: "Entrega por WhatsApp",
+    help: "Autoriza o worker a enviar mensagens pela WhatsApp Cloud API (Meta).",
+  },
+  inapp_delivery_enabled: {
+    title: "Notificações in-app",
+    help: "Habilita entrega para o sino de notificações dentro do próprio sistema.",
+  },
+  whatsapp_webhook_enabled: {
+    title: "Recibos do WhatsApp (webhook)",
+    help: "Permite a Meta enviar recibos de entrega/leitura no endpoint público listado abaixo.",
+  },
+};
+
+const SMTP_PRESETS: Array<{ label: string; port: string; hint: string }> = [
+  { label: "587 · STARTTLS (recomendado)", port: "587", hint: "Padrão da maioria dos provedores modernos (SendGrid, SES, Mailgun, Gmail)." },
+  { label: "465 · SSL/TLS implícito", port: "465", hint: "Utilizado por alguns provedores legados." },
+  { label: "2525 · Alternativa", port: "2525", hint: "Fallback quando 587 é bloqueado pelo hosting." },
+];
 
 async function callSettings(method: "GET" | "PUT", body?: unknown): Promise<ProviderView> {
   const { data, error } = await supabase.functions.invoke("communication-provider-settings", {
@@ -80,13 +136,58 @@ async function callSettings(method: "GET" | "PUT", body?: unknown): Promise<Prov
 
 function SecretStatus({ configured }: { configured: boolean }) {
   return configured
-    ? <Badge variant="default">Configurado</Badge>
+    ? <Badge variant="default" className="gap-1"><ShieldCheck className="h-3 w-3" />Configurado</Badge>
     : <Badge variant="outline">Não configurado</Badge>;
 }
 
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
   return <p className="text-xs text-destructive mt-1">{msg}</p>;
+}
+
+function FieldHint({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs text-muted-foreground mt-1 flex items-start gap-1"><Info className="h-3 w-3 mt-0.5 shrink-0" /><span>{children}</span></p>;
+}
+
+function SecretInput(props: {
+  id?: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  ariaInvalid?: boolean;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        id={props.id}
+        type={show ? "text" : "password"}
+        autoComplete="new-password"
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value)}
+        placeholder={props.placeholder}
+        aria-invalid={props.ariaInvalid}
+        className="pr-10"
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        aria-label={show ? "Ocultar" : "Mostrar"}
+        tabIndex={-1}
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-md border bg-muted px-2 py-0.5 text-xs font-mono">
+      {children}
+    </span>
+  );
 }
 
 export default function ComunicacaoConfigTab() {
@@ -145,7 +246,6 @@ export default function ComunicacaoConfigTab() {
       const v = await callSettings("PUT", payload);
       setView(v);
       toast.success(successMsg, successDesc ? { description: successDesc } : undefined);
-      // limpa campos secretos após save (segredos são write-only)
       setSmtpPassword(""); setWaAccessToken(""); setWebhookAppSecret(""); setWebhookVerifyToken("");
       setEmailsText(""); setPhonesText("");
       return true;
@@ -166,7 +266,7 @@ export default function ComunicacaoConfigTab() {
     const r = validateEmailsCsv(emailsText);
     if (r.ok) {
       setEmailsErr("");
-      void save({ allowed_emails: r.value }, "Allowlist de e-mails atualizada", `${r.value.length} destinatário(s) permitido(s).`);
+      void save({ allowed_emails: r.value }, "Lista de e-mails atualizada", `${r.value.length} destinatário(s) permitido(s) em homologação.`);
     } else {
       setEmailsErr(r.error);
       toast.error("Lista de e-mails inválida", { description: r.error });
@@ -177,7 +277,7 @@ export default function ComunicacaoConfigTab() {
     const r = validatePhonesCsv(phonesText);
     if (r.ok) {
       setPhonesErr("");
-      void save({ allowed_phones: r.value }, "Allowlist de telefones atualizada", `${r.value.length} número(s) permitido(s).`);
+      void save({ allowed_phones: r.value }, "Lista de telefones atualizada", `${r.value.length} número(s) permitido(s) em homologação.`);
     } else {
       setPhonesErr(r.error);
       toast.error("Lista de telefones inválida", { description: r.error });
@@ -192,13 +292,13 @@ export default function ComunicacaoConfigTab() {
     if (!parsed.success) {
       const errs = zodToFieldErrors(parsed.error) as SmtpFieldErrors;
       setSmtpErrors(errs);
-      toast.error("Revise os campos do SMTP", { description: "Há campos obrigatórios ou inválidos." });
+      toast.error("Revise os campos do provedor de e-mail", { description: "Há campos obrigatórios ou inválidos." });
       return;
     }
     setSmtpErrors({});
     const desc = parsed.data.password
-      ? "Host, porta, usuário, remetente e nova senha aplicados."
-      : "Host, porta, usuário e remetente aplicados. Senha atual preservada.";
+      ? "Host, porta, usuário, remetente e nova senha foram aplicados."
+      : "Host, porta, usuário e remetente aplicados. A senha atual foi preservada.";
     void save(
       {
         smtp: {
@@ -209,7 +309,7 @@ export default function ComunicacaoConfigTab() {
           ...(parsed.data.password ? { password: parsed.data.password } : {}),
         },
       },
-      "Configurações SMTP salvas",
+      "Provedor de e-mail salvo",
       desc,
     );
   }
@@ -230,8 +330,8 @@ export default function ComunicacaoConfigTab() {
     }
     setWaErrors({});
     const desc = parsed.data.access_token
-      ? "Phone Number ID, versão e novo Access Token aplicados."
-      : "Phone Number ID e versão aplicados. Access Token atual preservado.";
+      ? "Phone Number ID, versão e novo Access Token foram aplicados."
+      : "Phone Number ID e versão aplicados. O Access Token atual foi preservado.";
     void save(
       {
         whatsapp: {
@@ -240,7 +340,7 @@ export default function ComunicacaoConfigTab() {
           ...(parsed.data.access_token ? { access_token: parsed.data.access_token } : {}),
         },
       },
-      "Configurações WhatsApp salvas",
+      "WhatsApp Cloud API salvo",
       desc,
     );
   }
@@ -258,7 +358,7 @@ export default function ComunicacaoConfigTab() {
       else setWebhookVerifyErr("");
     } else setWebhookVerifyErr("");
     if (!webhookAppSecret && !webhookVerifyToken) {
-      toast.error("Nada a salvar", { description: "Preencha App Secret e/ou Verify Token." });
+      toast.error("Nada a salvar", { description: "Preencha o App Secret e/ou o Verify Token." });
       return;
     }
     if (hasErr) {
@@ -274,17 +374,22 @@ export default function ComunicacaoConfigTab() {
         },
       },
       "Webhook atualizado",
-      `${changed} gravado(s) com segurança.`,
+      `${changed} gravado(s) com segurança no cofre.`,
     );
   }
+
+  const anyFlagOn = useMemo(() => {
+    if (!view) return false;
+    return view.flags.delivery_enabled || view.flags.email_delivery_enabled ||
+      view.flags.whatsapp_delivery_enabled || view.flags.inapp_delivery_enabled ||
+      view.flags.whatsapp_webhook_enabled;
+  }, [view]);
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Carregando configurações…</div>;
   if (!view) return <div className="p-6 text-sm text-destructive">Falha ao carregar.</div>;
 
-  const anyFlagOn =
-    view.flags.delivery_enabled || view.flags.email_delivery_enabled ||
-    view.flags.whatsapp_delivery_enabled || view.flags.inapp_delivery_enabled ||
-    view.flags.whatsapp_webhook_enabled;
+  const emailsList = emailsText.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
+  const phonesList = phonesText.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
 
   return (
     <div className="space-y-4">
@@ -292,51 +397,131 @@ export default function ComunicacaoConfigTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-4 w-4" /> Estado dos provedores</CardTitle>
-          <CardDescription>Somente booleanos e contagens. Segredos nunca são exibidos.</CardDescription>
+          <CardDescription>
+            Painel somente-leitura. As senhas e tokens ficam no cofre e nunca são exibidos — apenas o status
+            <em> configurado / não configurado</em> aparece aqui.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <div>Test mode: <Badge variant={view.test_mode_enabled ? "default" : "destructive"}>{view.test_mode_enabled ? "ON (fail-closed)" : "OFF"}</Badge></div>
-          <div>Allowlist e-mails: <Badge variant="outline">{view.allowed_emails_count}</Badge></div>
-          <div>Allowlist telefones: <Badge variant="outline">{view.allowed_phones_count}</Badge></div>
-          <div>Delivery global: <Badge variant={view.flags.delivery_enabled ? "default" : "outline"}>{view.flags.delivery_enabled ? "ON" : "OFF"}</Badge></div>
-          <div>E-mail: <Badge variant={view.flags.email_delivery_enabled ? "default" : "outline"}>{view.flags.email_delivery_enabled ? "ON" : "OFF"}</Badge></div>
-          <div>WhatsApp: <Badge variant={view.flags.whatsapp_delivery_enabled ? "default" : "outline"}>{view.flags.whatsapp_delivery_enabled ? "ON" : "OFF"}</Badge></div>
-          <div>In-app: <Badge variant={view.flags.inapp_delivery_enabled ? "default" : "outline"}>{view.flags.inapp_delivery_enabled ? "ON" : "OFF"}</Badge></div>
-          <div>Webhook WhatsApp: <Badge variant={view.flags.whatsapp_webhook_enabled ? "default" : "outline"}>{view.flags.whatsapp_webhook_enabled ? "ON" : "OFF"}</Badge></div>
+          <div className="flex items-center justify-between md:justify-start md:gap-2">
+            <span>Modo homologação (Test mode):</span>
+            <Badge variant={view.test_mode_enabled ? "default" : "destructive"}>
+              {view.test_mode_enabled ? "Ativo — envios restritos" : "DESATIVADO — envios reais"}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between md:justify-start md:gap-2">
+            <span>E-mails permitidos:</span> <Badge variant="outline">{view.allowed_emails_count}</Badge>
+          </div>
+          <div className="flex items-center justify-between md:justify-start md:gap-2">
+            <span>Telefones permitidos:</span> <Badge variant="outline">{view.allowed_phones_count}</Badge>
+          </div>
+          <div className="flex items-center justify-between md:justify-start md:gap-2">
+            <span>Entrega global:</span>
+            <Badge variant={view.flags.delivery_enabled ? "default" : "outline"}>{view.flags.delivery_enabled ? "ON" : "OFF"}</Badge>
+          </div>
+          <div className="flex items-center justify-between md:justify-start md:gap-2">
+            <span>E-mail:</span>
+            <Badge variant={view.flags.email_delivery_enabled ? "default" : "outline"}>{view.flags.email_delivery_enabled ? "ON" : "OFF"}</Badge>
+          </div>
+          <div className="flex items-center justify-between md:justify-start md:gap-2">
+            <span>WhatsApp:</span>
+            <Badge variant={view.flags.whatsapp_delivery_enabled ? "default" : "outline"}>{view.flags.whatsapp_delivery_enabled ? "ON" : "OFF"}</Badge>
+          </div>
+          <div className="flex items-center justify-between md:justify-start md:gap-2">
+            <span>In-app (sino):</span>
+            <Badge variant={view.flags.inapp_delivery_enabled ? "default" : "outline"}>{view.flags.inapp_delivery_enabled ? "ON" : "OFF"}</Badge>
+          </div>
+          <div className="flex items-center justify-between md:justify-start md:gap-2">
+            <span>Webhook WhatsApp:</span>
+            <Badge variant={view.flags.whatsapp_webhook_enabled ? "default" : "outline"}>{view.flags.whatsapp_webhook_enabled ? "ON" : "OFF"}</Badge>
+          </div>
         </CardContent>
       </Card>
 
       {/* Homologação */}
       <Card>
         <CardHeader>
-          <CardTitle>Homologação (allowlists)</CardTitle>
-          <CardDescription>Quando o Test mode está ON e a lista correspondente ao canal está vazia, nada sai.</CardDescription>
+          <CardTitle>Modo homologação e listas permitidas</CardTitle>
+          <CardDescription>
+            Enquanto o <strong>Test mode</strong> estiver ativo, o sistema só envia para os e-mails e telefones cadastrados
+            abaixo. Se a lista do canal estiver vazia, nada sai — nem em produção. Ideal para testes controlados antes de liberar
+            envios reais.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Test mode ativo</Label>
+        <CardContent className="space-y-5">
+          <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+            <div>
+              <Label className="font-medium">Test mode</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Recomendado durante a homologação. Desative apenas quando estiver pronto para envios reais em produção.
+              </p>
+            </div>
             <Switch checked={view.test_mode_enabled} onCheckedChange={(b) => {
               if (!b) {
                 if (!confirm("Desativar o Test mode permite envios REAIS a qualquer destinatário. Confirmar?")) return;
-                void save({ test_mode_enabled: false, confirm_disable_test_mode: "I_UNDERSTAND_REAL_SENDS" }, "Test mode desativado", "Envios reais liberados — atenção às allowlists.");
+                void save({ test_mode_enabled: false, confirm_disable_test_mode: "I_UNDERSTAND_REAL_SENDS" }, "Test mode desativado", "Envios reais liberados — revise as flags e as allowlists.");
               } else {
-                void save({ test_mode_enabled: true }, "Test mode ativado", "Envios ficam restritos à allowlist.");
+                void save({ test_mode_enabled: true }, "Test mode ativado", "Envios ficam restritos aos destinatários da allowlist.");
               }
             }} />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="emails-allow">Adicionar/substituir e-mails permitidos (separe por vírgula)</Label>
-            <Textarea id="emails-allow" value={emailsText} onChange={(e) => { setEmailsText(e.target.value); if (emailsErr) setEmailsErr(""); }} placeholder="alvo1@ex.com, alvo2@ex.com" rows={2} aria-invalid={!!emailsErr} />
+            <Label htmlFor="emails-allow">E-mails permitidos em homologação</Label>
+            <Textarea
+              id="emails-allow"
+              value={emailsText}
+              onChange={(e) => { setEmailsText(e.target.value); if (emailsErr) setEmailsErr(""); }}
+              placeholder="fulano@empresa.com, ciclano@empresa.com"
+              rows={2}
+              aria-invalid={!!emailsErr}
+            />
             <FieldError msg={emailsErr} />
-            <div className="text-xs text-muted-foreground">Atuais mascarados: {view.allowed_emails_masked.join(", ") || "—"}</div>
-            <Button size="sm" disabled={saving || !emailsText.trim()} onClick={handleSaveEmails}>Substituir e-mails</Button>
+            <FieldHint>
+              Separe por vírgula, ponto-e-vírgula ou espaço. Máximo 100 endereços. <strong>Salvar substitui</strong> a lista atual.
+            </FieldHint>
+            {emailsList.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {emailsList.slice(0, 20).map((e) => <Chip key={e}>{e}</Chip>)}
+                {emailsList.length > 20 && <Chip>+{emailsList.length - 20}</Chip>}
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground">
+              Cadastrados hoje (mascarados): {view.allowed_emails_masked.length > 0 ? view.allowed_emails_masked.join(", ") : "— nenhum —"}
+            </div>
+            <Button size="sm" disabled={saving || !emailsText.trim()} onClick={handleSaveEmails}>
+              Substituir lista de e-mails
+            </Button>
           </div>
+
+          <Separator />
+
           <div className="space-y-2">
-            <Label htmlFor="phones-allow">Adicionar/substituir telefones permitidos (E.164)</Label>
-            <Textarea id="phones-allow" value={phonesText} onChange={(e) => { setPhonesText(e.target.value); if (phonesErr) setPhonesErr(""); }} placeholder="+5511999999999, +5511888888888" rows={2} aria-invalid={!!phonesErr} />
+            <Label htmlFor="phones-allow">Telefones permitidos em homologação (formato E.164)</Label>
+            <Textarea
+              id="phones-allow"
+              value={phonesText}
+              onChange={(e) => { setPhonesText(e.target.value); if (phonesErr) setPhonesErr(""); }}
+              placeholder="+5511999999999, +5511888888888"
+              rows={2}
+              aria-invalid={!!phonesErr}
+            />
             <FieldError msg={phonesErr} />
-            <div className="text-xs text-muted-foreground">Atuais mascarados: {view.allowed_phones_masked.join(", ") || "—"}</div>
-            <Button size="sm" disabled={saving || !phonesText.trim()} onClick={handleSavePhones}>Substituir telefones</Button>
+            <FieldHint>
+              E.164 = sinal <code>+</code>, código do país e DDD sem espaços (ex.: <code>+5511987654321</code>). Máximo 100 números.
+            </FieldHint>
+            {phonesList.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {phonesList.slice(0, 20).map((p) => <Chip key={p}>{p}</Chip>)}
+                {phonesList.length > 20 && <Chip>+{phonesList.length - 20}</Chip>}
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground">
+              Cadastrados hoje (mascarados): {view.allowed_phones_masked.length > 0 ? view.allowed_phones_masked.join(", ") : "— nenhum —"}
+            </div>
+            <Button size="sm" disabled={saving || !phonesText.trim()} onClick={handleSavePhones}>
+              Substituir lista de telefones
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -344,108 +529,274 @@ export default function ComunicacaoConfigTab() {
       {/* SMTP */}
       <Card>
         <CardHeader>
-          <CardTitle>SMTP (e-mail)</CardTitle>
-          <CardDescription>Senha é write-only: em branco = preservar valor atual.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><Mail className="h-4 w-4" /> Provedor de e-mail (SMTP)</CardTitle>
+          <CardDescription>
+            Preencha os dados do seu servidor SMTP (ex.: SendGrid, Amazon SES, Mailgun, Zoho, Google Workspace).
+            A senha fica em cofre criptografado — ao editar, deixe em branco para <strong>preservar</strong> a senha atual.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="smtp-host">Host</Label>
-              <Input id="smtp-host" value={smtpHost} onChange={(e) => { setSmtpHost(e.target.value); if (smtpErrors.host) setSmtpErrors({ ...smtpErrors, host: undefined }); }} placeholder="smtp.exemplo.com" aria-invalid={!!smtpErrors.host} />
+              <Label htmlFor="smtp-host">Servidor (host)</Label>
+              <Input
+                id="smtp-host"
+                value={smtpHost}
+                onChange={(e) => { setSmtpHost(e.target.value); if (smtpErrors.host) setSmtpErrors({ ...smtpErrors, host: undefined }); }}
+                placeholder="smtp.seuprovedor.com.br"
+                aria-invalid={!!smtpErrors.host}
+                autoComplete="off"
+              />
               <FieldError msg={smtpErrors.host} />
+              <FieldHint>Endereço fornecido pelo seu provedor — normalmente começa com <code>smtp.</code>.</FieldHint>
             </div>
             <div>
               <Label htmlFor="smtp-port">Porta</Label>
-              <Input id="smtp-port" type="number" inputMode="numeric" min={1} max={65535} value={smtpPort} onChange={(e) => { setSmtpPort(e.target.value); if (smtpErrors.port) setSmtpErrors({ ...smtpErrors, port: undefined }); }} placeholder="587" aria-invalid={!!smtpErrors.port} />
+              <Input
+                id="smtp-port"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={65535}
+                value={smtpPort}
+                onChange={(e) => { setSmtpPort(e.target.value); if (smtpErrors.port) setSmtpErrors({ ...smtpErrors, port: undefined }); }}
+                placeholder="587"
+                aria-invalid={!!smtpErrors.port}
+              />
               <FieldError msg={smtpErrors.port} />
+              <div className="flex flex-wrap gap-1 mt-2">
+                {SMTP_PRESETS.map((p) => (
+                  <Button
+                    key={p.port}
+                    type="button"
+                    size="sm"
+                    variant={smtpPort === p.port ? "default" : "outline"}
+                    className="h-7 text-xs"
+                    onClick={() => { setSmtpPort(p.port); if (smtpErrors.port) setSmtpErrors({ ...smtpErrors, port: undefined }); }}
+                    title={p.hint}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
             </div>
             <div>
-              <Label htmlFor="smtp-user">Usuário</Label>
-              <Input id="smtp-user" value={smtpUser} onChange={(e) => { setSmtpUser(e.target.value); if (smtpErrors.user) setSmtpErrors({ ...smtpErrors, user: undefined }); }} autoComplete="username" aria-invalid={!!smtpErrors.user} />
+              <Label htmlFor="smtp-user">Usuário (login SMTP)</Label>
+              <Input
+                id="smtp-user"
+                value={smtpUser}
+                onChange={(e) => { setSmtpUser(e.target.value); if (smtpErrors.user) setSmtpErrors({ ...smtpErrors, user: undefined }); }}
+                autoComplete="username"
+                placeholder="apikey ou usuário@dominio.com"
+                aria-invalid={!!smtpErrors.user}
+              />
               <FieldError msg={smtpErrors.user} />
+              <FieldHint>Alguns provedores usam a palavra fixa <code>apikey</code> (ex.: SendGrid). Outros pedem o e-mail completo.</FieldHint>
             </div>
             <div>
-              <Label htmlFor="smtp-from">Remetente (from)</Label>
-              <Input id="smtp-from" type="email" value={smtpFrom} onChange={(e) => { setSmtpFrom(e.target.value); if (smtpErrors.from) setSmtpErrors({ ...smtpErrors, from: undefined }); }} placeholder="no-reply@arbio.com.br" aria-invalid={!!smtpErrors.from} />
+              <Label htmlFor="smtp-from">E-mail remetente (from)</Label>
+              <Input
+                id="smtp-from"
+                type="email"
+                value={smtpFrom}
+                onChange={(e) => { setSmtpFrom(e.target.value); if (smtpErrors.from) setSmtpErrors({ ...smtpErrors, from: undefined }); }}
+                placeholder="nao-responda@suaempresa.com.br"
+                aria-invalid={!!smtpErrors.from}
+                autoComplete="email"
+              />
               <FieldError msg={smtpErrors.from} />
+              <FieldHint>
+                Endereço que aparece para o destinatário. Precisa estar verificado no seu provedor (SPF/DKIM) para evitar caixa de spam.
+              </FieldHint>
             </div>
           </div>
+
           <Separator />
-          <div className="flex items-center gap-3">
-            <Label className="min-w-40">Senha SMTP</Label>
-            <SecretStatus configured={view.smtp.password_configured} />
-            {view.smtp.password_configured && (
-              <Button size="sm" variant="outline" onClick={() => clearSecret("smtp_password", "Senha SMTP")}><Trash2 className="h-3 w-3 mr-1" />Remover</Button>
-            )}
+
+          <div>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <Label htmlFor="smtp-password" className="min-w-40">Senha ou API Key</Label>
+              <SecretStatus configured={view.smtp.password_configured} />
+              {view.smtp.password_configured && (
+                <Button size="sm" variant="outline" onClick={() => clearSecret("smtp_password", "Senha SMTP")}>
+                  <Trash2 className="h-3 w-3 mr-1" />Remover
+                </Button>
+              )}
+            </div>
+            <SecretInput
+              id="smtp-password"
+              value={smtpPassword}
+              onChange={setSmtpPassword}
+              placeholder={view.smtp.password_configured ? "•••••••• (deixe em branco para preservar)" : "Cole a senha SMTP ou API Key"}
+            />
+            <FieldHint>
+              A senha é gravada no cofre <code>vault</code> do Supabase e nunca sai do servidor. O worker só a lê no momento do envio.
+            </FieldHint>
           </div>
-          <Input id="smtp-password" type="password" autoComplete="new-password" placeholder="Deixe em branco para preservar" value={smtpPassword} onChange={(e) => setSmtpPassword(e.target.value)} />
-          <Button disabled={saving} onClick={handleSaveSmtp}><Save className="h-4 w-4 mr-1" />Salvar SMTP</Button>
+
+          <Button disabled={saving} onClick={handleSaveSmtp}>
+            <Save className="h-4 w-4 mr-1" />Salvar provedor de e-mail
+          </Button>
         </CardContent>
       </Card>
 
       {/* WhatsApp */}
       <Card>
         <CardHeader>
-          <CardTitle>WhatsApp Cloud API (Meta)</CardTitle>
-          <CardDescription>Versões suportadas: {view.whatsapp.allowed_api_versions.join(", ")}.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><MessageCircle className="h-4 w-4" /> WhatsApp Cloud API (Meta)</CardTitle>
+          <CardDescription>
+            Integração oficial da Meta via <a href="https://developers.facebook.com/docs/whatsapp/cloud-api" target="_blank" rel="noreferrer" className="underline">WhatsApp Cloud API</a>.
+            Você precisa de uma conta WhatsApp Business no Meta for Developers com o número de telefone já verificado.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="wa-phone">Phone Number ID</Label>
-              <Input id="wa-phone" inputMode="numeric" value={waPhoneId} onChange={(e) => { setWaPhoneId(e.target.value); if (waErrors.phone_number_id) setWaErrors({ ...waErrors, phone_number_id: undefined }); }} placeholder="Ex.: 123456789012345" aria-invalid={!!waErrors.phone_number_id} />
+              <Input
+                id="wa-phone"
+                inputMode="numeric"
+                value={waPhoneId}
+                onChange={(e) => { setWaPhoneId(e.target.value); if (waErrors.phone_number_id) setWaErrors({ ...waErrors, phone_number_id: undefined }); }}
+                placeholder="Ex.: 123456789012345"
+                aria-invalid={!!waErrors.phone_number_id}
+              />
               <FieldError msg={waErrors.phone_number_id} />
+              <FieldHint>
+                Localizado em <em>Meta for Developers → seu app → WhatsApp → API Setup</em>. É um número longo, apenas dígitos.
+              </FieldHint>
             </div>
             <div>
-              <Label htmlFor="wa-version">API Version</Label>
-              <Input id="wa-version" list="wa-versions" value={waApiVersion} onChange={(e) => { setWaApiVersion(e.target.value); if (waErrors.api_version) setWaErrors({ ...waErrors, api_version: undefined }); }} placeholder={view.whatsapp.allowed_api_versions[0] ?? "v25.0"} aria-invalid={!!waErrors.api_version} />
-              <datalist id="wa-versions">{view.whatsapp.allowed_api_versions.map(v => <option key={v} value={v} />)}</datalist>
+              <Label htmlFor="wa-version">Versão da API</Label>
+              <Select
+                value={waApiVersion || undefined}
+                onValueChange={(v) => { setWaApiVersion(v); if (waErrors.api_version) setWaErrors({ ...waErrors, api_version: undefined }); }}
+              >
+                <SelectTrigger id="wa-version" aria-invalid={!!waErrors.api_version}>
+                  <SelectValue placeholder="Selecione a versão" />
+                </SelectTrigger>
+                <SelectContent>
+                  {view.whatsapp.allowed_api_versions.map((v) => (
+                    <SelectItem key={v} value={v}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FieldError msg={waErrors.api_version} />
+              <FieldHint>
+                Homologadas:{" "}
+                {view.whatsapp.allowed_api_versions.map((v, i) => (
+                  <span key={v}>{i > 0 ? " · " : ""}<Chip>{v}</Chip></span>
+                ))}
+                . Use a mais recente compatível com seu app na Meta.
+              </FieldHint>
             </div>
           </div>
+
           <Separator />
-          <div className="flex items-center gap-3">
-            <Label className="min-w-40">Access Token</Label>
-            <SecretStatus configured={view.whatsapp.access_token_configured} />
-            {view.whatsapp.access_token_configured && (
-              <Button size="sm" variant="outline" onClick={() => clearSecret("whatsapp_access_token", "Access Token")}><Trash2 className="h-3 w-3 mr-1" />Remover</Button>
-            )}
+
+          <div>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <Label htmlFor="wa-token" className="min-w-40">Access Token</Label>
+              <SecretStatus configured={view.whatsapp.access_token_configured} />
+              {view.whatsapp.access_token_configured && (
+                <Button size="sm" variant="outline" onClick={() => clearSecret("whatsapp_access_token", "Access Token")}>
+                  <Trash2 className="h-3 w-3 mr-1" />Remover
+                </Button>
+              )}
+            </div>
+            <SecretInput
+              id="wa-token"
+              value={waAccessToken}
+              onChange={setWaAccessToken}
+              placeholder={view.whatsapp.access_token_configured ? "•••••••• (deixe em branco para preservar)" : "Cole o Access Token permanente"}
+            />
+            <FieldHint>
+              Utilize preferencialmente um token <strong>permanente do System User</strong>, com escopo <code>whatsapp_business_messaging</code>.
+              Tokens temporários (24h) só servem para teste inicial.
+            </FieldHint>
           </div>
-          <Input id="wa-token" type="password" autoComplete="new-password" placeholder="Deixe em branco para preservar" value={waAccessToken} onChange={(e) => setWaAccessToken(e.target.value)} />
-          <Button disabled={saving} onClick={handleSaveWhatsapp}><Save className="h-4 w-4 mr-1" />Salvar WhatsApp</Button>
+
+          <Button disabled={saving} onClick={handleSaveWhatsapp}>
+            <Save className="h-4 w-4 mr-1" />Salvar WhatsApp
+          </Button>
         </CardContent>
       </Card>
 
       {/* Webhook */}
       <Card>
         <CardHeader>
-          <CardTitle>Webhook de recibos WhatsApp</CardTitle>
-          <CardDescription>Configure o App Secret e o Verify Token antes de ativar a flag do webhook.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><Webhook className="h-4 w-4" /> Webhook de recibos do WhatsApp</CardTitle>
+          <CardDescription>
+            Permite que a Meta notifique o AR Bio sobre entrega, leitura e falhas de cada mensagem. Configure os segredos
+            <strong> antes</strong> de ativar a flag de webhook.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Input readOnly value={view.webhook.url} />
-            <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(view.webhook.url); toast.success("URL copiada."); }}><Copy className="h-4 w-4" /></Button>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>URL pública para colar na Meta</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <Input readOnly value={view.webhook.url} className="font-mono text-xs" />
+              <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(view.webhook.url); toast.success("URL copiada."); }} title="Copiar URL">
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <FieldHint>
+              No painel da Meta, em <em>WhatsApp → Configuration → Webhook</em>, cole essa URL, informe o Verify Token abaixo
+              e assine o campo <code>messages</code>.
+            </FieldHint>
           </div>
-          <div className="flex items-center gap-3">
-            <Label className="min-w-40">App Secret</Label>
-            <SecretStatus configured={view.webhook.app_secret_configured} />
-            {view.webhook.app_secret_configured && (
-              <Button size="sm" variant="outline" onClick={() => clearSecret("whatsapp_app_secret", "App Secret")}><Trash2 className="h-3 w-3 mr-1" />Remover</Button>
-            )}
+
+          <Separator />
+
+          <div>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <Label className="min-w-40">App Secret</Label>
+              <SecretStatus configured={view.webhook.app_secret_configured} />
+              {view.webhook.app_secret_configured && (
+                <Button size="sm" variant="outline" onClick={() => clearSecret("whatsapp_app_secret", "App Secret")}>
+                  <Trash2 className="h-3 w-3 mr-1" />Remover
+                </Button>
+              )}
+            </div>
+            <SecretInput
+              value={webhookAppSecret}
+              onChange={(v) => { setWebhookAppSecret(v); if (webhookAppSecretErr) setWebhookAppSecretErr(""); }}
+              placeholder={view.webhook.app_secret_configured ? "•••••••• (deixe em branco para preservar)" : "16–512 caracteres"}
+              ariaInvalid={!!webhookAppSecretErr}
+            />
+            <FieldError msg={webhookAppSecretErr} />
+            <FieldHint>
+              Encontrado em <em>Meta for Developers → seu app → Configurações → Básico → Chave secreta do app</em>.
+              É usado para validar a assinatura HMAC das notificações.
+            </FieldHint>
           </div>
-          <Input type="password" autoComplete="new-password" placeholder="Deixe em branco para preservar (16–512 caracteres)" value={webhookAppSecret} onChange={(e) => { setWebhookAppSecret(e.target.value); if (webhookAppSecretErr) setWebhookAppSecretErr(""); }} aria-invalid={!!webhookAppSecretErr} />
-          <FieldError msg={webhookAppSecretErr} />
-          <div className="flex items-center gap-3">
-            <Label className="min-w-40">Verify Token</Label>
-            <SecretStatus configured={view.webhook.verify_token_configured} />
-            {view.webhook.verify_token_configured && (
-              <Button size="sm" variant="outline" onClick={() => clearSecret("whatsapp_verify_token", "Verify Token")}><Trash2 className="h-3 w-3 mr-1" />Remover</Button>
-            )}
+
+          <div>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <Label className="min-w-40">Verify Token</Label>
+              <SecretStatus configured={view.webhook.verify_token_configured} />
+              {view.webhook.verify_token_configured && (
+                <Button size="sm" variant="outline" onClick={() => clearSecret("whatsapp_verify_token", "Verify Token")}>
+                  <Trash2 className="h-3 w-3 mr-1" />Remover
+                </Button>
+              )}
+            </div>
+            <SecretInput
+              value={webhookVerifyToken}
+              onChange={(v) => { setWebhookVerifyToken(v); if (webhookVerifyErr) setWebhookVerifyErr(""); }}
+              placeholder={view.webhook.verify_token_configured ? "•••••••• (deixe em branco para preservar)" : "16–512 caracteres"}
+              ariaInvalid={!!webhookVerifyErr}
+            />
+            <FieldError msg={webhookVerifyErr} />
+            <FieldHint>
+              Você <strong>define</strong> esse valor e informa o mesmo texto na tela de configuração do webhook na Meta —
+              use uma string aleatória e forte.
+            </FieldHint>
           </div>
-          <Input type="password" autoComplete="new-password" placeholder="Deixe em branco para preservar (16–512 caracteres)" value={webhookVerifyToken} onChange={(e) => { setWebhookVerifyToken(e.target.value); if (webhookVerifyErr) setWebhookVerifyErr(""); }} aria-invalid={!!webhookVerifyErr} />
-          <FieldError msg={webhookVerifyErr} />
-          <Button disabled={saving || (!webhookAppSecret && !webhookVerifyToken)} onClick={handleSaveWebhook}><Save className="h-4 w-4 mr-1" />Salvar Webhook</Button>
+
+          <Button disabled={saving || (!webhookAppSecret && !webhookVerifyToken)} onClick={handleSaveWebhook}>
+            <Save className="h-4 w-4 mr-1" />Salvar webhook
+          </Button>
         </CardContent>
       </Card>
 
@@ -453,23 +804,41 @@ export default function ComunicacaoConfigTab() {
       <Card>
         <CardHeader>
           <CardTitle>Flags de entrega</CardTitle>
-          <CardDescription>Ativar qualquer flag exige confirmação explícita. Salvar credenciais NUNCA ativa entrega.</CardDescription>
+          <CardDescription>
+            Ativar qualquer flag exige confirmação explícita. Salvar credenciais <strong>nunca</strong> ativa entrega automaticamente.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(["delivery_enabled","email_delivery_enabled","whatsapp_delivery_enabled","inapp_delivery_enabled","whatsapp_webhook_enabled"] as const).map((k) => (
-            <div key={k} className="flex items-center justify-between">
-              <Label>{k}</Label>
-              <Switch checked={(view.flags as any)[k]} onCheckedChange={(b) => {
-                if (b && !confirm(`Ativar "${k}"? Isso pode iniciar envios reais.`)) return;
-                void save({ flags: { [k]: b, confirm_enable: b ? "I_UNDERSTAND" : undefined } }, b ? `Flag "${k}" ativada` : `Flag "${k}" desativada`);
-              }} />
+          {(["delivery_enabled","email_delivery_enabled","whatsapp_delivery_enabled","inapp_delivery_enabled","whatsapp_webhook_enabled"] as const).map((k) => {
+            const meta = FLAG_LABELS[k];
+            const enabled = (view.flags as Record<string, boolean>)[k];
+            return (
+              <div key={k} className="flex items-start justify-between gap-4 rounded-md border p-3">
+                <div>
+                  <Label className="font-medium">{meta.title}</Label>
+                  <p className="text-xs text-muted-foreground mt-1">{meta.help}</p>
+                </div>
+                <Switch checked={enabled} onCheckedChange={(b) => {
+                  if (b && !confirm(`Ativar "${meta.title}"? Isso pode iniciar envios/recebimentos reais.`)) return;
+                  void save(
+                    { flags: { [k]: b, confirm_enable: b ? "I_UNDERSTAND" : undefined } },
+                    b ? `${meta.title} ativada` : `${meta.title} desativada`,
+                  );
+                }} />
+              </div>
+            );
+          })}
+          {anyFlagOn && (
+            <div className="text-xs text-amber-600 border border-amber-200 bg-amber-50 rounded-md p-2">
+              ⚠️ Uma ou mais flags estão ativas — envios reais podem ocorrer conforme o Test mode e as allowlists.
             </div>
-          ))}
-          {anyFlagOn && <div className="text-xs text-amber-600">Uma ou mais flags estão ativas — envios reais podem ocorrer.</div>}
+          )}
         </CardContent>
       </Card>
 
-      <div className="text-xs text-muted-foreground">Última atualização: {view.updated_at ?? "—"}</div>
+      <div className="text-xs text-muted-foreground">
+        Última atualização das configurações: {view.updated_at ?? "—"}
+      </div>
     </div>
   );
 }
