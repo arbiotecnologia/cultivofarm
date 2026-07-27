@@ -2971,6 +2971,105 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_provider_settings: {
+        Row: {
+          allowed_emails: string[]
+          allowed_phones: string[]
+          delivery_enabled: boolean
+          email_delivery_enabled: boolean
+          id: number
+          inapp_delivery_enabled: boolean
+          secret_smtp_password: string | null
+          secret_whatsapp_access_token: string | null
+          secret_whatsapp_app_secret: string | null
+          secret_whatsapp_verify_token: string | null
+          smtp_from: string | null
+          smtp_host: string | null
+          smtp_port: number | null
+          smtp_user: string | null
+          test_mode_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          whatsapp_api_version: string | null
+          whatsapp_delivery_enabled: boolean
+          whatsapp_phone_number_id: string | null
+          whatsapp_webhook_enabled: boolean
+        }
+        Insert: {
+          allowed_emails?: string[]
+          allowed_phones?: string[]
+          delivery_enabled?: boolean
+          email_delivery_enabled?: boolean
+          id?: number
+          inapp_delivery_enabled?: boolean
+          secret_smtp_password?: string | null
+          secret_whatsapp_access_token?: string | null
+          secret_whatsapp_app_secret?: string | null
+          secret_whatsapp_verify_token?: string | null
+          smtp_from?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          test_mode_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_api_version?: string | null
+          whatsapp_delivery_enabled?: boolean
+          whatsapp_phone_number_id?: string | null
+          whatsapp_webhook_enabled?: boolean
+        }
+        Update: {
+          allowed_emails?: string[]
+          allowed_phones?: string[]
+          delivery_enabled?: boolean
+          email_delivery_enabled?: boolean
+          id?: number
+          inapp_delivery_enabled?: boolean
+          secret_smtp_password?: string | null
+          secret_whatsapp_access_token?: string | null
+          secret_whatsapp_app_secret?: string | null
+          secret_whatsapp_verify_token?: string | null
+          smtp_from?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          test_mode_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_api_version?: string | null
+          whatsapp_delivery_enabled?: boolean
+          whatsapp_phone_number_id?: string | null
+          whatsapp_webhook_enabled?: boolean
+        }
+        Relationships: []
+      }
+      communication_provider_settings_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          changed_fields: string[]
+          created_at: string
+          id: number
+          secret_field: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          changed_fields?: string[]
+          created_at?: string
+          id?: number
+          secret_field?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          changed_fields?: string[]
+          created_at?: string
+          id?: number
+          secret_field?: string | null
+        }
+        Relationships: []
+      }
       company_fiscal_settings: {
         Row: {
           accounting_validated_at: string | null
@@ -16741,6 +16840,7 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_service_load_provider_runtime_config: { Args: never; Returns: Json }
       rpc_set_communication_template_metadata: {
         Args: {
           p_language_code: string
