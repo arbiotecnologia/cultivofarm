@@ -28,5 +28,8 @@ export function readWorkerEnv(): WorkerEnv {
     // provider_not_configured. Isso força configuração explícita e
     // impede envios com versão obsoleta implícita.
     WHATSAPP_API_VERSION: g("WHATSAPP_API_VERSION"),
+    WHATSAPP_WEBHOOK_ENABLED: Deno.env.get("WHATSAPP_WEBHOOK_ENABLED") === "true",
+    WHATSAPP_APP_SECRET: g("WHATSAPP_APP_SECRET"),
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN: g("WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
   };
 }
