@@ -174,8 +174,8 @@ BEGIN
     100,                         -- prioridade
     true,                        -- enabled
     0,                           -- cooldown_seconds
-    now(), now(),                -- created_at, updated_at
-    NULL, NULL                   -- created_by, updated_by
+    NULL, NULL,                  -- created_by, updated_by
+    now(), now()                 -- created_at, updated_at
   )::public.comunicacao_regras;
 
   SELECT
