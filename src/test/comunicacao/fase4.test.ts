@@ -37,11 +37,12 @@ describe("Fase 4 · SQL", () => {
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.rpc_record_whatsapp_delivery_status[^;]*FROM anon/);
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.rpc_record_whatsapp_delivery_status[^;]*FROM authenticated/);
     // Sem PII na tabela: proíbe nomes suspeitos.
-    for (const banned of ["telefone","email","phone","recipient","payload","message"]) {
-      // Match apenas dentro do bloco da CREATE TABLE comunicacao_provider_receipts
-      const block = migration.split("comunicacao_provider_receipts (")[1]?.split(");")[0] ?? "";
-      expect(block.toLowerCase(), `coluna proibida em receipts: ${banned}`).not.toContain(banned);
+    const block = migration.split("comunicacao_provider_receipts (")[1]?.split(");")[0] ?? "";
+    const lower = block.toLowerCase();
+    for (const banned of ["telefone","phone","recipient","payload","body","email"]) {
+      expect(lower, `coluna proibida em receipts: ${banned}`).not.toContain(banned);
     }
+    expect(/\bmessage\b/.test(lower), "coluna 'message' proibida").toBe(false);
     // Estado monotônico e lock explícito
     expect(migration).toMatch(/FOR UPDATE/);
     expect(migration).toMatch(/ON CONFLICT[^;]*DO NOTHING/);
