@@ -1,15 +1,35 @@
--- Subfase 1C — Reexecução real do seed (idempotência)
--- Executar SOMENTE em staging ikaauvsflpmamgxmkhoq dentro de sentinel rollback.
--- Reproduz a lógica dos blocos DO $seed$ / DO $rules$ da migration
--- 20260727210659_f75ea9d9-d440-494e-b309-4dc793eec37b.sql sem reaplicar
--- migration histórica pelo framework.
+-- Subfase 1C — Reexecução real do seed (idempotência empírica)
+-- Executar SOMENTE em staging ikaauvsflpmamgxmkhoq com psql, dentro de BEGIN...ROLLBACK.
+-- Objetivo: provar que reexecutar literalmente os blocos DO $seed$ / DO $rules$ da
+-- migration 20260727210659_f75ea9d9-…-4dc793eec37b.sql NÃO cria linhas adicionais.
+-- Estado esperado ANTES e DEPOIS (baseline confirmado via read_query):
+--   * comunicacao_templates chave 'solic_*'      = 37 (11 in_app v2 active + 11 in_app v1 archived + 11 email draft v1 + 4 whatsapp draft v1)
+--   * comunicacao_regras   event_key 'solicitacao_*' = 11, todas enabled=false, todas template_versao=2
+--   * Chave única real de templates: (chave, canal, versao) — v1 e v2 legítimos NÃO são duplicata
+--   * Chave única real de regras: (event_key, canal, estrategia, template_chave [, perfil]) via índices únicos parciais
+-- Assert: PRE e POST devem ser IDÊNTICOS (delta = 0). Não se exige ausência de v2.
+
 BEGIN;
 
--- Baseline
-SELECT count(*) AS templates_before FROM public.comunicacao_templates WHERE chave LIKE 'solic\_%' ESCAPE '\';
-SELECT count(*) AS regras_before FROM public.comunicacao_regras WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\';
+-- Snapshot PRE (materializado em temp table para diff determinístico)
+CREATE TEMP TABLE _pre_templates ON COMMIT DROP AS
+SELECT chave, canal, versao, status, count(*) AS n
+  FROM public.comunicacao_templates
+ WHERE chave LIKE 'solic\_%' ESCAPE '\'
+ GROUP BY chave, canal, versao, status;
 
--- Bloco 1: templates (idêntico ao seed original)
+CREATE TEMP TABLE _pre_regras ON COMMIT DROP AS
+SELECT event_key, canal, estrategia, coalesce(perfil::text,'∅') AS perfil,
+       template_chave, template_versao, enabled, count(*) AS n
+  FROM public.comunicacao_regras
+ WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\'
+ GROUP BY event_key, canal, estrategia, coalesce(perfil::text,'∅'),
+          template_chave, template_versao, enabled;
+
+SELECT (SELECT sum(n) FROM _pre_templates) AS templates_pre,   -- esperado 37
+       (SELECT sum(n) FROM _pre_regras)    AS regras_pre;      -- esperado 11
+
+-- Bloco 1: templates (idêntico ao seed original — versao=1)
 DO $seed$
 DECLARE
   r RECORD;
@@ -52,7 +72,7 @@ BEGIN
   END LOOP;
 END $seed$;
 
--- Bloco 2: regras (idêntico ao seed original — todas enabled=false via NOT EXISTS)
+-- Bloco 2: regras (idêntico ao seed original — enabled=false via NOT EXISTS + índices únicos parciais)
 DO $rules$
 DECLARE r RECORD;
 BEGIN
@@ -89,15 +109,59 @@ BEGIN
   END LOOP;
 END $rules$;
 
--- Assertivas pós-reexecução
-SELECT count(*) AS templates_after FROM public.comunicacao_templates WHERE chave LIKE 'solic\_%' ESCAPE '\';
-SELECT count(*) AS regras_after FROM public.comunicacao_regras WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\';
-SELECT count(*) AS regras_enabled FROM public.comunicacao_regras WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\' AND enabled=true;
-SELECT count(*) AS versoes_novas FROM public.comunicacao_templates WHERE chave LIKE 'solic\_%' ESCAPE '\' AND versao > 1;
-SELECT chave, canal, count(*) AS dup FROM public.comunicacao_templates WHERE chave LIKE 'solic\_%' ESCAPE '\'
-  GROUP BY chave, canal HAVING count(*) > 1;
-SELECT event_key, canal, estrategia, coalesce(perfil::text,'∅') AS perfil, template_chave, count(*) AS dup
-  FROM public.comunicacao_regras WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\'
-  GROUP BY 1,2,3,4,5 HAVING count(*) > 1;
+-- Snapshot POST + asserts empíricos por DELTA (não por ausência de v2)
+CREATE TEMP TABLE _post_templates ON COMMIT DROP AS
+SELECT chave, canal, versao, status, count(*) AS n
+  FROM public.comunicacao_templates
+ WHERE chave LIKE 'solic\_%' ESCAPE '\'
+ GROUP BY chave, canal, versao, status;
+
+CREATE TEMP TABLE _post_regras ON COMMIT DROP AS
+SELECT event_key, canal, estrategia, coalesce(perfil::text,'∅') AS perfil,
+       template_chave, template_versao, enabled, count(*) AS n
+  FROM public.comunicacao_regras
+ WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\'
+ GROUP BY event_key, canal, estrategia, coalesce(perfil::text,'∅'),
+          template_chave, template_versao, enabled;
+
+-- Totais devem permanecer idênticos ao baseline (37 templates / 11 regras)
+SELECT (SELECT sum(n) FROM _post_templates)                            AS templates_post,        -- esperado 37
+       (SELECT sum(n) FROM _post_regras)                               AS regras_post,           -- esperado 11
+       (SELECT sum(n) FROM _post_templates) - (SELECT sum(n) FROM _pre_templates) AS delta_templates, -- esperado 0
+       (SELECT sum(n) FROM _post_regras)    - (SELECT sum(n) FROM _pre_regras)    AS delta_regras;   -- esperado 0
+
+-- Distribuição por (canal, versao, status) deve ser idêntica antes e depois
+SELECT 'templates_distribuicao_diff' AS check,
+       coalesce((SELECT count(*) FROM (
+         SELECT canal, versao, status, sum(n) AS n FROM _pre_templates  GROUP BY canal, versao, status
+         EXCEPT
+         SELECT canal, versao, status, sum(n) FROM _post_templates GROUP BY canal, versao, status
+       ) d), 0) AS pre_minus_post,   -- esperado 0
+       coalesce((SELECT count(*) FROM (
+         SELECT canal, versao, status, sum(n) AS n FROM _post_templates GROUP BY canal, versao, status
+         EXCEPT
+         SELECT canal, versao, status, sum(n) FROM _pre_templates  GROUP BY canal, versao, status
+       ) d), 0) AS post_minus_pre;   -- esperado 0
+
+-- Regras: 11 totais, todas disabled, todas template_versao=2 (mesmo perfil pré e pós)
+SELECT count(*) FILTER (WHERE enabled)              AS regras_enabled_post,    -- esperado 0
+       count(*) FILTER (WHERE template_versao <> 2) AS regras_versao_nao_v2,   -- esperado 0
+       count(*)                                     AS regras_total_post       -- esperado 11
+  FROM public.comunicacao_regras
+ WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\';
+
+-- Duplicidade agrupada pela chave única REAL (chave, canal, versao) — v1+v2 legítimos NÃO contam
+SELECT chave, canal, versao, count(*) AS n
+  FROM public.comunicacao_templates
+ WHERE chave LIKE 'solic\_%' ESCAPE '\'
+ GROUP BY chave, canal, versao
+HAVING count(*) > 1;   -- esperado: 0 linhas
+
+-- Duplicidade de regras pela chave única real (índices parciais)
+SELECT event_key, canal, estrategia, coalesce(perfil::text,'∅') AS perfil, template_chave, count(*) AS n
+  FROM public.comunicacao_regras
+ WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\'
+ GROUP BY 1,2,3,4,5
+HAVING count(*) > 1;   -- esperado: 0 linhas
 
 ROLLBACK;
