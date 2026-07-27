@@ -196,15 +196,82 @@ describe("Fase 2.3 · postcheck valida retorno via format_type + proretset", () 
   });
 });
 
-describe("Fase 2.3 · harness anon não usa WHEN OTHERS permissivo", () => {
-  it("simulação anon aceita apenas insufficient_privilege ou undefined_function", () => {
+describe("Fase 2.3 · harness F2 v3 (matriz por assinatura exata)", () => {
+  it("usa has_function_privilege por OID/assinatura exata (to_regprocedure)", () => {
+    expect(harness).toMatch(/has_function_privilege\s*\(\s*v_role\s*,\s*v_oid\s*,\s*'EXECUTE'\s*\)/);
+    expect(harness).toMatch(/to_regprocedure\(\s*v_sig\s*\)/);
+    // assinatura exata inclui os tipos entre parênteses (não apenas o nome)
+    expect(harness).toMatch(/public\.rpc_publish_communication_event_v2\(text,text,uuid,jsonb,text\)/);
+  });
+
+  it("simulação anon não usa WHEN OTHERS permissivo", () => {
     expect(harness).toMatch(/WHEN\s+insufficient_privilege\s+THEN\s+NULL/);
     expect(harness).toMatch(/WHEN\s+undefined_function\s+THEN\s+NULL/);
     expect(harness).toMatch(/erro inesperado sqlstate=/);
   });
 
-  it("harness valida grant positivo (authenticated) e negativo (anon) para publish_v2", () => {
-    expect(harness).toMatch(/authenticated deveria ter EXECUTE em rpc_publish_communication_event_v2/);
-    expect(harness).toMatch(/anon NÃO deveria ter EXECUTE em rpc_publish_communication_event_v2/);
+  // Extrai a linha da matriz para uma assinatura exata e retorna [anon, authenticated, service_role].
+  function matrixRow(sig: string): [string, string, string] {
+    const escaped = sig.replace(/[.()[\]|\\+?*^$]/g, (c) => `\\${c}`);
+    const re = new RegExp(
+      String.raw`\[\s*'${escaped}'\s*,\s*'([tf])'\s*,\s*'([tf])'\s*,\s*'([tf])'\s*\]`,
+    );
+    const m = harness.match(re);
+    if (!m) throw new Error(`assinatura ausente na matriz do harness: ${sig}`);
+    return [m[1], m[2], m[3]];
+  }
+
+  it("publish_v2: anon negado, authenticated permitido, service_role permitido", () => {
+    expect(matrixRow("public.rpc_publish_communication_event_v2(text,text,uuid,jsonb,text)"))
+      .toEqual(["f", "t", "t"]);
+  });
+
+  it("RPCs internas / de worker são exclusivas de service_role", () => {
+    const workerOnly = [
+      "public._comunicacao_expand_event(uuid,text,text,uuid,jsonb)",
+      "public._comunicacao_publish_system_event(text,text,uuid,jsonb,text)",
+      "public._comunicacao_resolve_recipients_v2(text,comunicacao_regras,text,uuid)",
+      "public._comunicacao_build_snapshot_v2(text,text,uuid,jsonb,uuid,uuid)",
+      "public.rpc_resolve_outbox_address(uuid)",
+      "public.rpc_skip_communication_delivery(uuid,text,text)",
+      "public.rpc_cancel_communication_delivery(uuid,text,text)",
+      "public.rpc_defer_communication_delivery(uuid,text,text,integer)",
+      "public.rpc_fail_communication_delivery_v2(uuid,text,text,text,boolean)",
+      "public.rpc_dispatch_inapp_notification(uuid,uuid,uuid,text,text)",
+    ];
+    for (const sig of workerOnly) {
+      expect(matrixRow(sig)).toEqual(["f", "f", "t"]);
+    }
+  });
+
+  it("sobrecargas de rpc_create_portal_notification_secure estão separadas com privilégios distintos", () => {
+    // sobrecarga interna (4 args): apenas service_role
+    expect(matrixRow("public.rpc_create_portal_notification_secure(uuid,text,text,text)"))
+      .toEqual(["f", "f", "t"]);
+    // sobrecarga larga (8 args) usada pelo frontend logado: authenticated + service_role
+    expect(matrixRow(
+      "public.rpc_create_portal_notification_secure(uuid,text,text,text,text,text,uuid,text)",
+    )).toEqual(["f", "t", "t"]);
+    // notificação operacional: apenas service_role
+    expect(matrixRow("public.rpc_create_operational_notification_secure(uuid,text,text,text,text)"))
+      .toEqual(["f", "f", "t"]);
+  });
+
+  it("RPCs administrativas (metadata/preview) exigem authenticated + service_role; anon negado", () => {
+    expect(matrixRow("public.rpc_set_communication_template_metadata(uuid,text,text,jsonb,text)"))
+      .toEqual(["f", "t", "t"]);
+    expect(matrixRow("public.rpc_preview_administrative_broadcast_count(app_role)"))
+      .toEqual(["f", "t", "t"]);
+  });
+
+  it("valida grants de tabela inapp_dispatch e triggers AFTER UPDATE das OS", () => {
+    expect(harness).toMatch(/comunicacao_inapp_dispatch[\s\S]{0,120}anon\/authenticated/);
+    expect(harness).toMatch(/trg_comunicacao_os_pronto_retirada[\s\S]{0,120}AFTER UPDATE/);
+    expect(harness).toMatch(/trg_comunicacao_os_onfarm_pronto_retirada[\s\S]{0,120}AFTER UPDATE/);
+  });
+
+  it("falha com RAISE EXCEPTION quando há qualquer violação (fail-closed)", () => {
+    expect(harness).toMatch(/RAISE\s+EXCEPTION\s+'harness Fase 2 v3:/);
   });
 });
+
