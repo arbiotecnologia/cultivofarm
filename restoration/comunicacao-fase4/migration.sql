@@ -7,9 +7,23 @@
 -- do send Meta com messages[].id). O ESTADO DE ENTREGA posterior (webhooks
 -- Meta sent/delivered/read/failed/deleted) vive em colunas separadas do
 -- outbox e é imutavelmente registrado em comunicacao_provider_receipts.
+--
+-- CORREÇÃO CRÍTICA v2:
+--   * Arquivo é TRANSACTION-NEUTRAL: sem BEGIN/COMMIT externos. A transação
+--     é imposta pelo caller (apply-staging.sh via psql --single-transaction),
+--     agrupando precheck+migration+postcheck em UMA única transação.
+--   * Índice de correlação é UNIQUE partial (canal='whatsapp' AND
+--     provider_message_id IS NOT NULL) — não meramente auxiliar.
+--   * Limite de provider_message_id alinhado a 200 caracteres em receipts e RPC.
+--   * INSERT ... ON CONFLICT DO NOTHING RETURNING id — se não inseriu,
+--     retorna { ok:true, duplicated:true } sem UPDATE e sem novo audit.
+--   * Grants diretos reduzidos: service_role NÃO tem GRANT ALL na tabela.
+--     Escrita ocorre exclusivamente via RPC SECURITY DEFINER (executada como
+--     owner da função). authenticated tem SELECT apenas; RLS decide.
+--   * Máquina fora de ordem: falhas não são substituídas por sent mais antigo;
+--     delivered/read continuam monotônicos e preservam primeiro timestamp;
+--     deleted nunca rebaixa.
 -- =============================================================================
-
-BEGIN;
 
 -- -----------------------------------------------------------------------------
 -- 1. Campos de recibo na outbox (aditivo)
@@ -31,11 +45,14 @@ ALTER TABLE public.comunicacao_outbox
     OR provider_delivery_status IN ('sent','delivered','read','failed','deleted')
   );
 
--- Índice parcial para correlação por canal + provider_message_id.
--- Não unique: linhas legadas podem coexistir; precheck aborta se houver
--- colisão que impeça correlação inequívoca em produção.
-CREATE INDEX IF NOT EXISTS ix_comunicacao_outbox_wa_provider_msgid
-  ON public.comunicacao_outbox (canal, provider_message_id)
+-- Índice UNIQUE parcial para correlação inequívoca por
+-- (canal='whatsapp', provider_message_id). O precheck garante que não
+-- existem duplicidades legadas antes de tentar aplicar este índice.
+-- Um índice não-unique aqui deixaria buraco: retiramos qualquer versão
+-- não-unique previamente aplicada antes de criar a UNIQUE.
+DROP INDEX IF EXISTS public.ix_comunicacao_outbox_wa_provider_msgid;
+CREATE UNIQUE INDEX IF NOT EXISTS ix_comunicacao_outbox_wa_provider_msgid
+  ON public.comunicacao_outbox (provider_message_id)
   WHERE canal = 'whatsapp' AND provider_message_id IS NOT NULL;
 
 -- -----------------------------------------------------------------------------
@@ -55,7 +72,7 @@ CREATE TABLE IF NOT EXISTS public.comunicacao_provider_receipts (
   CONSTRAINT comunicacao_provider_receipts_status_chk
     CHECK (status IN ('sent','delivered','read','failed','deleted')),
   CONSTRAINT comunicacao_provider_receipts_msgid_chk
-    CHECK (length(provider_message_id) BETWEEN 1 AND 255),
+    CHECK (length(provider_message_id) BETWEEN 1 AND 200),
   CONSTRAINT comunicacao_provider_receipts_error_code_chk
     CHECK (error_code IS NULL OR error_code ~ '^[a-z0-9_.:-]{1,80}$')
 );
@@ -67,15 +84,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_comunicacao_provider_receipts_idem
 CREATE INDEX IF NOT EXISTS ix_comunicacao_provider_receipts_outbox
   ON public.comunicacao_provider_receipts (outbox_id, received_at DESC);
 
--- Grants explícitos. anon sem acesso; authenticated apenas SELECT (RLS decide).
+-- Grants mínimos. anon sem qualquer acesso. authenticated apenas SELECT
+-- (RLS restringe a admin). service_role NÃO recebe GRANT ALL: escrita
+-- é feita exclusivamente pela RPC SECURITY DEFINER (executa como owner
+-- da função, que possui a tabela). Revogamos DML direto explicitamente.
 REVOKE ALL ON public.comunicacao_provider_receipts FROM PUBLIC;
 REVOKE ALL ON public.comunicacao_provider_receipts FROM anon;
+REVOKE ALL ON public.comunicacao_provider_receipts FROM authenticated;
+REVOKE ALL ON public.comunicacao_provider_receipts FROM service_role;
 GRANT SELECT ON public.comunicacao_provider_receipts TO authenticated;
-GRANT ALL    ON public.comunicacao_provider_receipts TO service_role;
 
 ALTER TABLE public.comunicacao_provider_receipts ENABLE ROW LEVEL SECURITY;
 
--- Apenas administrador lê; escrita SOMENTE via service_role (bypassa RLS).
+-- Apenas administrador lê; escrita SOMENTE via RPC SECURITY DEFINER.
 DROP POLICY IF EXISTS "admins read receipts" ON public.comunicacao_provider_receipts;
 CREATE POLICY "admins read receipts"
   ON public.comunicacao_provider_receipts
@@ -83,7 +104,7 @@ CREATE POLICY "admins read receipts"
   TO authenticated
   USING (public.has_role(auth.uid(), 'administrador'));
 
--- Append-only: trigger bloqueia UPDATE/DELETE mesmo para service_role.
+-- Append-only: trigger bloqueia UPDATE/DELETE mesmo para o owner da tabela.
 CREATE OR REPLACE FUNCTION public.comunicacao_provider_receipts_no_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -112,19 +133,20 @@ SET search_path = public
 AS $$
 DECLARE
   v_outbox           public.comunicacao_outbox;
-  v_current_rank     int;
-  v_new_rank         int;
   v_error_code_norm  text;
-  v_status_upgrades  boolean;
+  v_inserted_id      uuid;
   v_state_after      text;
   v_ts_after         timestamptz;
   v_delivered_after  timestamptz;
   v_read_after       timestamptz;
   v_failed_after     timestamptz;
+  v_upgraded         boolean := false;
+  v_current_state    text;
+  v_current_ts       timestamptz;
 BEGIN
   -- Validações de contrato (sem PII em mensagens).
   IF p_provider_message_id IS NULL OR length(p_provider_message_id) < 1
-     OR length(p_provider_message_id) > 255 THEN
+     OR length(p_provider_message_id) > 200 THEN
     RAISE EXCEPTION 'invalid_provider_message_id' USING ERRCODE = '22023';
   END IF;
   IF p_status IS NULL OR p_status NOT IN ('sent','delivered','read','failed','deleted') THEN
@@ -146,83 +168,105 @@ BEGIN
     v_error_code_norm := p_error_code;
   END IF;
 
-  -- Localiza a linha WhatsApp com FOR UPDATE (correlação inequívoca).
+  -- Localiza UNIVOCAMENTE a linha WhatsApp com FOR UPDATE.
+  -- O índice UNIQUE parcial garante 0 ou 1 linha. LIMIT 1 é defesa em
+  -- profundidade caso o índice seja removido acidentalmente.
   SELECT *
     INTO v_outbox
     FROM public.comunicacao_outbox
    WHERE canal = 'whatsapp'
      AND provider_message_id = p_provider_message_id
-   FOR UPDATE;
+   ORDER BY id
+   FOR UPDATE
+   LIMIT 1;
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', true, 'ignored', true, 'reason', 'unmatched');
   END IF;
 
-  -- Registro imutável (idempotente por índice único).
+  -- Registro append-only idempotente. Se já existe (mesmo provider+id+status+ts),
+  -- retorna duplicated=true SEM tocar em outbox e SEM emitir novo audit.
   INSERT INTO public.comunicacao_provider_receipts
     (outbox_id, provider, provider_message_id, status, provider_timestamp, error_code)
   VALUES
     (v_outbox.id, 'whatsapp', p_provider_message_id, p_status, p_timestamp, v_error_code_norm)
-  ON CONFLICT (provider, provider_message_id, status, provider_timestamp) DO NOTHING;
+  ON CONFLICT (provider, provider_message_id, status, provider_timestamp) DO NOTHING
+  RETURNING id INTO v_inserted_id;
 
-  -- Máquina monotônica tolerante a fora de ordem:
-  --   sent=1 < delivered=2 < read=3. failed é lateral: só define
-  --   provider_delivery_status quando ainda não há delivered/read; um
-  --   delivered/read posterior supera failed. deleted é registrado como
-  --   evento mas nunca rebaixa o estado atual.
-  v_current_rank := CASE v_outbox.provider_delivery_status
-                      WHEN 'sent'      THEN 1
-                      WHEN 'delivered' THEN 2
-                      WHEN 'read'      THEN 3
-                      WHEN 'failed'    THEN 1  -- lateral; permite promoção posterior
-                      WHEN 'deleted'   THEN COALESCE(
-                        CASE WHEN v_outbox.read_at      IS NOT NULL THEN 3
-                             WHEN v_outbox.delivered_at IS NOT NULL THEN 2
-                             ELSE 1 END, 1)
-                      ELSE 0
-                    END;
+  IF v_inserted_id IS NULL THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'duplicated', true,
+      'outbox_id', v_outbox.id
+    );
+  END IF;
 
-  v_new_rank := CASE p_status
-                  WHEN 'sent'      THEN 1
-                  WHEN 'delivered' THEN 2
-                  WHEN 'read'      THEN 3
-                  ELSE 0
-                END;
-
-  v_status_upgrades := false;
-  v_state_after     := v_outbox.provider_delivery_status;
-  v_ts_after        := v_outbox.provider_status_at;
+  -- Máquina fora de ordem (tolerante a atrasos de rede).
+  -- Regras:
+  --   * delivered/read: monotônicos por rank; preserva PRIMEIRO timestamp válido
+  --     em delivered_at/read_at (LEAST). Estado do provider avança e ts avança.
+  --   * sent: só define estado se ainda não houver estado; nunca rebaixa failed
+  --     (usa comparação de rank + timestamp).
+  --   * failed: lateral. Só grava no estado se ainda não houver delivered/read.
+  --     Sent MAIS ANTIGO chegando depois de failed(t2>t1) NÃO substitui failed.
+  --     Failed mais antigo chegando após sent também não rebaixa se timestamp
+  --     do failed for anterior ao provider_status_at atual.
+  --   * deleted: registra evento e provider_failed_at pertinente ao histórico;
+  --     nunca rebaixa. Só define estado se ainda for NULL.
+  v_current_state   := v_outbox.provider_delivery_status;
+  v_current_ts      := v_outbox.provider_status_at;
+  v_state_after     := v_current_state;
+  v_ts_after        := v_current_ts;
   v_delivered_after := v_outbox.delivered_at;
   v_read_after      := v_outbox.read_at;
   v_failed_after    := v_outbox.provider_failed_at;
 
-  IF p_status IN ('sent','delivered','read') THEN
-    IF v_new_rank > v_current_rank
-       OR (v_new_rank = v_current_rank AND v_outbox.provider_delivery_status IS DISTINCT FROM p_status) THEN
-      v_status_upgrades := true;
-      v_state_after     := p_status;
-      v_ts_after        := p_timestamp;
+  IF p_status = 'read' THEN
+    v_read_after := LEAST(COALESCE(v_outbox.read_at, p_timestamp), p_timestamp);
+    IF v_current_state IS DISTINCT FROM 'read' THEN
+      v_state_after := 'read';
+      v_ts_after    := p_timestamp;
+      v_upgraded    := true;
     END IF;
-    IF p_status = 'delivered' THEN
-      v_delivered_after := LEAST(COALESCE(v_outbox.delivered_at, p_timestamp), p_timestamp);
-    ELSIF p_status = 'read' THEN
-      v_read_after := LEAST(COALESCE(v_outbox.read_at, p_timestamp), p_timestamp);
+  ELSIF p_status = 'delivered' THEN
+    v_delivered_after := LEAST(COALESCE(v_outbox.delivered_at, p_timestamp), p_timestamp);
+    IF v_current_state NOT IN ('read','delivered') OR v_current_state IS NULL THEN
+      v_state_after := 'delivered';
+      v_ts_after    := p_timestamp;
+      v_upgraded    := true;
     END IF;
+  ELSIF p_status = 'sent' THEN
+    -- Só define 'sent' se não há estado ou o estado atual também é 'sent'
+    -- com timestamp mais antigo. Nunca rebaixa delivered/read/failed.
+    IF v_current_state IS NULL THEN
+      v_state_after := 'sent';
+      v_ts_after    := p_timestamp;
+      v_upgraded    := true;
+    ELSIF v_current_state = 'sent'
+          AND (v_current_ts IS NULL OR p_timestamp > v_current_ts) THEN
+      v_ts_after := p_timestamp;
+      v_upgraded := true;
+    END IF;
+    -- 'failed'/'delivered'/'read'/'deleted' presentes → sent é ignorado
+    -- (registro imutável já ficou em receipts).
   ELSIF p_status = 'failed' THEN
     v_failed_after := LEAST(COALESCE(v_outbox.provider_failed_at, p_timestamp), p_timestamp);
-    -- Só grava failed no estado se ainda não houve delivered/read
-    IF COALESCE(v_outbox.delivered_at, v_outbox.read_at) IS NULL THEN
-      v_status_upgrades := true;
-      v_state_after     := 'failed';
-      v_ts_after        := p_timestamp;
+    -- failed é lateral: só grava estado se ainda não houve delivered/read.
+    IF v_outbox.delivered_at IS NULL AND v_outbox.read_at IS NULL
+       AND v_current_state IS DISTINCT FROM 'deleted' THEN
+      -- Se já é failed, mantém timestamp mais antigo (não avança).
+      IF v_current_state IS DISTINCT FROM 'failed' THEN
+        v_state_after := 'failed';
+        v_ts_after    := p_timestamp;
+        v_upgraded    := true;
+      END IF;
     END IF;
   ELSIF p_status = 'deleted' THEN
-    -- Registro do evento não rebaixa; apenas atualiza provider_status_at
-    -- se o estado atual já for 'deleted' ou nulo.
-    IF v_outbox.provider_delivery_status IS NULL THEN
-      v_status_upgrades := true;
-      v_state_after     := 'deleted';
-      v_ts_after        := p_timestamp;
+    -- Nunca rebaixa. Só grava estado se ainda for NULL.
+    IF v_current_state IS NULL THEN
+      v_state_after := 'deleted';
+      v_ts_after    := p_timestamp;
+      v_upgraded    := true;
     END IF;
   END IF;
 
@@ -244,7 +288,7 @@ BEGIN
     jsonb_build_object(
       'status', p_status,
       'error_code', v_error_code_norm,
-      'upgraded', v_status_upgrades
+      'upgraded', v_upgraded
     )
   );
 
@@ -253,7 +297,7 @@ BEGIN
     'outbox_id', v_outbox.id,
     'status', p_status,
     'state', v_state_after,
-    'upgraded', v_status_upgrades
+    'upgraded', v_upgraded
   );
 END$$;
 
@@ -261,5 +305,3 @@ REVOKE ALL ON FUNCTION public.rpc_record_whatsapp_delivery_status(text,text,time
 REVOKE ALL ON FUNCTION public.rpc_record_whatsapp_delivery_status(text,text,timestamptz,text) FROM anon;
 REVOKE ALL ON FUNCTION public.rpc_record_whatsapp_delivery_status(text,text,timestamptz,text) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_record_whatsapp_delivery_status(text,text,timestamptz,text) TO service_role;
-
-COMMIT;

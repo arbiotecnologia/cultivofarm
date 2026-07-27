@@ -23,7 +23,12 @@
 -- exposta a anon/authenticated.
 -- =============================================================================
 
-BEGIN;
+-- CORREÇÃO CRÍTICA v2: arquivo TRANSACTION-NEUTRAL. Sem BEGIN/COMMIT externos.
+-- A transação é imposta pelo caller (apply-staging.sh via psql
+-- --single-transaction), agrupando precheck+migration+postcheck em UMA
+-- transação — se qualquer arquivo falhar, tudo é revertido.
+-- Blocos internos DO $$ ... $$ e BEGIN..EXCEPTION dentro de funções são
+-- PL/pgSQL, não transacionais.
 
 -- =============================================================================
 -- 1. Colunas em comunicacao_templates (aditivo, idempotente)
@@ -1106,7 +1111,7 @@ END$$;
 REVOKE ALL ON FUNCTION public.rpc_create_operational_notification_secure(uuid,text,text,text,text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_create_operational_notification_secure(uuid,text,text,text,text) TO service_role;
 
-COMMIT;
+-- (Transaction-neutral: nenhum COMMIT externo. Caller usa --single-transaction.)
 
 -- =============================================================================
 -- Fim da migration Fase 2 v2 corretiva (proposta) — NÃO APLICADA.
