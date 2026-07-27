@@ -3244,6 +3244,27 @@ export type Database = {
         }
         Relationships: []
       }
+      comunicacao_inapp_dispatch: {
+        Row: {
+          created_at: string
+          notification_id: string
+          outbox_id: string
+          target_kind: string
+        }
+        Insert: {
+          created_at?: string
+          notification_id: string
+          outbox_id: string
+          target_kind: string
+        }
+        Update: {
+          created_at?: string
+          notification_id?: string
+          outbox_id?: string
+          target_kind?: string
+        }
+        Relationships: []
+      }
       comunicacao_outbox: {
         Row: {
           attempts: number
@@ -3462,8 +3483,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          language_code: string | null
           locale: string
           nome: string
+          parameter_mapping: Json
+          provider_template_name: string | null
+          provider_template_status: string | null
           status: Database["public"]["Enums"]["comunicacao_template_status"]
           updated_at: string
           updated_by: string | null
@@ -3479,8 +3504,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          language_code?: string | null
           locale?: string
           nome: string
+          parameter_mapping?: Json
+          provider_template_name?: string | null
+          provider_template_status?: string | null
           status?: Database["public"]["Enums"]["comunicacao_template_status"]
           updated_at?: string
           updated_by?: string | null
@@ -3496,8 +3525,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          language_code?: string | null
           locale?: string
           nome?: string
+          parameter_mapping?: Json
+          provider_template_name?: string | null
+          provider_template_status?: string | null
           status?: Database["public"]["Enums"]["comunicacao_template_status"]
           updated_at?: string
           updated_by?: string | null
@@ -14306,6 +14339,17 @@ export type Database = {
         }
         Returns: Json
       }
+      _comunicacao_build_snapshot_v2: {
+        Args: {
+          _cliente_id: string
+          _event_key: string
+          _payload: Json
+          _source_id: string
+          _source_type: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       _comunicacao_can_deliver: {
         Args: {
           _canal: Database["public"]["Enums"]["comunicacao_canal"]
@@ -14314,11 +14358,43 @@ export type Database = {
         }
         Returns: boolean
       }
+      _comunicacao_expand_event: {
+        Args: {
+          _event_id: string
+          _event_key: string
+          _payload: Json
+          _source_id: string
+          _source_type: string
+        }
+        Returns: Json
+      }
+      _comunicacao_publish_system_event: {
+        Args: {
+          _event_key: string
+          _idempotency_key: string
+          _payload: Json
+          _source_id: string
+          _source_type: string
+        }
+        Returns: Json
+      }
       _comunicacao_resolve_recipients: {
         Args: {
           _event_key: string
           _rule: Database["public"]["Tables"]["comunicacao_regras"]["Row"]
           _source_id: string
+        }
+        Returns: {
+          recipient_cliente_id: string
+          recipient_user_id: string
+        }[]
+      }
+      _comunicacao_resolve_recipients_v2: {
+        Args: {
+          _event_key: string
+          _rule: Database["public"]["Tables"]["comunicacao_regras"]["Row"]
+          _source_id: string
+          _source_type: string
         }
         Returns: {
           recipient_cliente_id: string
@@ -14340,8 +14416,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          language_code: string | null
           locale: string
           nome: string
+          parameter_mapping: Json
+          provider_template_name: string | null
+          provider_template_status: string | null
           status: Database["public"]["Enums"]["comunicacao_template_status"]
           updated_at: string
           updated_by: string | null
@@ -15750,6 +15830,10 @@ export type Database = {
         Args: { p_id: string; p_reason: string }
         Returns: undefined
       }
+      rpc_cancel_communication_delivery: {
+        Args: { p_outbox_id: string; p_reason: string; p_worker_id: string }
+        Returns: Json
+      }
       rpc_cancel_financial_installment: {
         Args: { p_installment_id: string; p_kind: string; p_reason: string }
         Returns: undefined
@@ -15894,19 +15978,39 @@ export type Database = {
         }
         Returns: Json
       }
-      rpc_create_portal_notification_secure: {
+      rpc_create_operational_notification_secure: {
         Args: {
-          _cliente_id: string
-          _idempotency_key?: string
-          _link?: string
-          _mensagem: string
-          _source_id?: string
-          _source_type?: string
-          _tipo: string
-          _titulo: string
+          p_link: string
+          p_mensagem: string
+          p_tipo: string
+          p_titulo: string
+          p_usuario_id: string
         }
         Returns: Json
       }
+      rpc_create_portal_notification_secure:
+        | {
+            Args: {
+              _cliente_id: string
+              _idempotency_key?: string
+              _link?: string
+              _mensagem: string
+              _source_id?: string
+              _source_type?: string
+              _tipo: string
+              _titulo: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_cliente_id: string
+              p_mensagem: string
+              p_tipo: string
+              p_titulo: string
+            }
+            Returns: Json
+          }
       rpc_criar_embalagens_pos_envase: {
         Args: { p_payload: Json }
         Returns: Json
@@ -15924,6 +16028,15 @@ export type Database = {
           p_solicitacao_id?: string
           p_talhao_id: string
           p_tipo_visita: Database["public"]["Enums"]["tipo_visita"]
+        }
+        Returns: Json
+      }
+      rpc_defer_communication_delivery: {
+        Args: {
+          p_delay_seconds?: number
+          p_outbox_id: string
+          p_reason: string
+          p_worker_id: string
         }
         Returns: Json
       }
@@ -15957,6 +16070,16 @@ export type Database = {
       }
       rpc_desvincular_etiqueta_entrega: {
         Args: { p_entrega_id: string; p_etiqueta_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_dispatch_inapp_notification: {
+        Args: {
+          p_cliente_id: string
+          p_mensagem: string
+          p_outbox_id: string
+          p_titulo: string
+          p_user_id: string
+        }
         Returns: Json
       }
       rpc_dispensar_assinatura_entrega: {
@@ -16133,6 +16256,16 @@ export type Database = {
         Args: {
           p_error_code: string
           p_error_message: string
+          p_outbox_id: string
+          p_worker_id: string
+        }
+        Returns: Json
+      }
+      rpc_fail_communication_delivery_v2: {
+        Args: {
+          p_error_code: string
+          p_error_message: string
+          p_is_permanent: boolean
           p_outbox_id: string
           p_worker_id: string
         }
@@ -16409,7 +16542,21 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_preview_administrative_broadcast_count: {
+        Args: { p_target_role: Database["public"]["Enums"]["app_role"] }
+        Returns: Json
+      }
       rpc_publish_communication_event: {
+        Args: {
+          p_event_key: string
+          p_idempotency_key: string
+          p_payload: Json
+          p_source_id: string
+          p_source_type: string
+        }
+        Returns: Json
+      }
+      rpc_publish_communication_event_v2: {
         Args: {
           p_event_key: string
           p_idempotency_key: string
@@ -16507,6 +16654,10 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_resolve_outbox_address: {
+        Args: { p_outbox_id: string }
+        Returns: Json
+      }
       rpc_resolver_alerta_operacional: {
         Args: { p_alerta_id: string; p_observacao?: string }
         Returns: Json
@@ -16518,6 +16669,20 @@ export type Database = {
           p_registro_consultor_id: string
           p_versao: number
         }
+        Returns: Json
+      }
+      rpc_set_communication_template_metadata: {
+        Args: {
+          p_language_code: string
+          p_parameter_mapping: Json
+          p_provider_template_name: string
+          p_provider_template_status?: string
+          p_template_id: string
+        }
+        Returns: Json
+      }
+      rpc_skip_communication_delivery: {
+        Args: { p_outbox_id: string; p_reason: string; p_worker_id: string }
         Returns: Json
       }
       rpc_update_communication_preferences: {
