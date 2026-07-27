@@ -61,7 +61,6 @@ DECLARE
   v_res jsonb;
   v_osf uuid := (SELECT id FROM public.ordens_servico_onfarm ORDER BY created_at DESC LIMIT 1);
 
-  PROCEDURE_STUB text := '';  -- placeholder para leitura humana; asserts inline abaixo
 BEGIN
   IF v_osf IS NULL THEN
     RAISE EXCEPTION 'HARNESS_FAIL_PREFLIGHT_no_ordens_servico_onfarm: sem fixture compatível — gate NO-GO';
