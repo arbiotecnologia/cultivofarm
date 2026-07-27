@@ -16840,7 +16840,15 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_service_clear_provider_secret: {
+        Args: { p_actor: string; p_slot: string }
+        Returns: undefined
+      }
       rpc_service_load_provider_runtime_config: { Args: never; Returns: Json }
+      rpc_service_set_provider_secret: {
+        Args: { p_actor: string; p_slot: string; p_value: string }
+        Returns: undefined
+      }
       rpc_set_communication_template_metadata: {
         Args: {
           p_language_code: string
