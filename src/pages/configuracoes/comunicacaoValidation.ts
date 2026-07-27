@@ -10,7 +10,9 @@ export function parseCsv(v: string): string[] {
   return v.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
 }
 
-export function validateEmailsCsv(raw: string): { ok: true; value: string[] } | { ok: false; error: string } {
+export type ListResult = { ok: true; value: string[] } | { ok: false; value?: undefined; error: string };
+
+export function validateEmailsCsv(raw: string): ListResult {
   const list = parseCsv(raw);
   if (list.length === 0) return { ok: false, error: "Informe ao menos um e-mail." };
   if (list.length > 100) return { ok: false, error: "Máximo de 100 e-mails por atualização." };
@@ -25,7 +27,7 @@ export function validateEmailsCsv(raw: string): { ok: true; value: string[] } | 
   return { ok: true, value: Array.from(new Set(parsed)) };
 }
 
-export function validatePhonesCsv(raw: string): { ok: true; value: string[] } | { ok: false; error: string } {
+export function validatePhonesCsv(raw: string): ListResult {
   const list = parseCsv(raw);
   if (list.length === 0) return { ok: false, error: "Informe ao menos um telefone." };
   if (list.length > 100) return { ok: false, error: "Máximo de 100 telefones por atualização." };
