@@ -245,7 +245,7 @@ system-side com `source_type`.
 
 ---
 
-## Fase 2.4 — Hardening operacional (2026-08-11)
+## Fase 2.4 — Hardening operacional (2026-07-27)
 
 ### rpc_set_communication_template_metadata (WA)
 - Status aceitos: `draft | pending | approved | rejected | paused | disabled` (o valor legado `submitted` foi removido; se surgir em UI antiga, mapear para `pending`).
@@ -271,7 +271,7 @@ system-side com `source_type`.
 
 ---
 
-## Fase 2.5 — Correção pontual (2026-08-11)
+## Fase 2.5 — Correção pontual (2026-07-27)
 
 ### `fetchCommunicationHealth`
 - Nunca propaga `error.message` bruto (Edge Function/Supabase/exception) para a UI.
