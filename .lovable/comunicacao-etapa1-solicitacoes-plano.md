@@ -368,7 +368,7 @@ Aguardando aprovação das decisões pendentes (§14) e dos gates (§15) para in
 
 **Resultado:** GO para 1C. **Ambiente:** staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` não tocada. Flags OFF, zero envio.
 
-**Custo real 1B:** 12,1 (execução inicial) + 7,0 (correção pós-auditoria) = **19,1 créditos** (teto 22). Saldo Etapa 1: ≈93 − 19,1 ≈ **73,9**. Reserva ≥20 preservada.
+**Custo real 1B (corrigido pela contabilidade da plataforma):** 12,1 (execução inicial) + 9,0 (correção pós-auditoria) = **21,1 créditos** (teto 22). Acumulado Etapa 1 até 1B: planejamento 2 + 1A 7,9 + 1B 21,1 = **31 créditos**. Saldo antes da 1C: 100 − 31 = **69 créditos**.
 
 **Migrations aplicadas na 1B (nenhuma editada retroativamente):**
 1. 1B inicial (publisher/resolver `solicitacao_*`, trigger canônico, drop legado, função legada preservada).
