@@ -7,7 +7,7 @@ HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd -- "${HERE}/../.." && pwd)"
 
 # Lista fechada, hard-coded — sem override por env/args.
-readonly FUNCTIONS=("communication-health" "process-communication-outbox")
+readonly FUNCTIONS=("communication-health" "process-communication-outbox" "whatsapp-status-webhook")
 
 log()  { printf '[deploy-fn] %s\n' "$*"; }
 fail() { printf '[deploy-fn][ERRO] %s\n' "$*" >&2; exit 1; }

@@ -1,1 +1,7 @@
 project_id = "navfzbwgwzruipouyfnk"
+
+# Fase 4 — webhook público Meta (WhatsApp). Meta não envia JWT Supabase;
+# a autenticidade é garantida por HMAC-SHA256 do raw body dentro da função.
+# Nenhuma outra função da plataforma deve desligar verify_jwt.
+[functions.whatsapp-status-webhook]
+verify_jwt = false

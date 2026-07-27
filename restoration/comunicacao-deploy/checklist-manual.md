@@ -63,3 +63,23 @@ explícito antes do próximo.
 - [ ] `rollback-staging.sh` com `ROLLBACK_COMMUNICATION=true` remove somente
       objetos Fase 2; Fase 1 e dados de negócio intactos; `verify-staging.sh`
       para Fase 1 continua verde.
+
+## 10) Fase 4 — Webhook WhatsApp e recibos
+- [ ] `GET /whatsapp-status-webhook?hub.mode=subscribe&hub.verify_token=<TOKEN>&hub.challenge=<X>`
+      devolve `<X>` (text/plain, 200) apenas quando o token bate exatamente.
+- [ ] `POST` sem `X-Hub-Signature-256` retorna 401; com assinatura inválida idem.
+- [ ] `POST` com assinatura válida e payload legítimo grava recibo `sent` e
+      atualiza `provider_delivery_status='sent'`.
+- [ ] Sequência `sent → delivered → read` promove estado monotonicamente e
+      preenche `delivered_at`/`read_at`.
+- [ ] Recebimento fora de ordem (`read` antes de `delivered`) mantém `state='read'`
+      e não rebaixa quando `delivered` chegar depois.
+- [ ] `failed` só define `provider_delivery_status='failed'` se `delivered_at` for
+      NULL; `delivered/read` posterior supera `failed`.
+- [ ] `deleted` grava recibo e não rebaixa estado atual.
+- [ ] Reenvio do mesmo `(id,status,timestamp)` NÃO cria duplicata (índice único).
+- [ ] `id` desconhecido retorna `{ignored:true, reason:'unmatched'}` e NÃO gera
+      linha em `comunicacao_provider_receipts`.
+- [ ] Payload de **mensagem recebida** (não status) é ignorado sem erro.
+- [ ] Health admin exibe `whatsapp_webhook: {configured, enabled}` sem valores.
+- [ ] Logs do webhook não contêm telefone, wamid completo, corpo Meta ou token.

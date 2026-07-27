@@ -1223,8 +1223,15 @@ function RegrasPanel({ canMutate }: { canMutate: boolean }) {
 
 function FilaPanel() {
   const [page, setPage] = useState(0);
+  // Fase 4: filtros locais por canal e provider_delivery_status (dados já em memória).
+  const [fCanal, setFCanal] = useState<"" | ComunicacaoCanal>("");
+  const [fDelivery, setFDelivery] = useState<"" | "sent" | "delivered" | "read" | "failed" | "deleted">("");
   const evs = useQuery<ComunicacaoEvento[], Error>({ queryKey: ["comm", "eventos", page], queryFn: () => listEvents(page) });
   const out = useQuery<ComunicacaoOutbox[], Error>({ queryKey: ["comm", "outbox", page], queryFn: () => listOutbox(page) });
+  const rows = (out.data ?? []).filter((o) =>
+    (fCanal === "" || o.canal === fCanal) &&
+    (fDelivery === "" || (o.provider_delivery_status ?? null) === fDelivery),
+  );
   return (
     <section className="grid gap-4 md:grid-cols-2 text-sm">
       <div className="rounded-md border p-4">
@@ -1241,14 +1248,49 @@ function FilaPanel() {
         </ul>
       </div>
       <div className="rounded-md border p-4">
-        <h2 className="font-medium mb-2">Outbox</h2>
+        <div className="mb-2 flex items-center gap-2">
+          <h2 className="font-medium">Outbox</h2>
+          <select
+            className="ml-auto rounded border bg-background px-1 py-0.5 text-xs"
+            value={fCanal}
+            onChange={(e) => setFCanal(e.target.value as "" | ComunicacaoCanal)}
+            aria-label="Filtrar por canal"
+          >
+            <option value="">canal: todos</option>
+            <option value="email">email</option>
+            <option value="whatsapp">whatsapp</option>
+            <option value="in_app">in_app</option>
+            <option value="push">push</option>
+          </select>
+          <select
+            className="rounded border bg-background px-1 py-0.5 text-xs"
+            value={fDelivery}
+            onChange={(e) => setFDelivery(e.target.value as typeof fDelivery)}
+            aria-label="Filtrar por status do provedor"
+          >
+            <option value="">provedor: todos</option>
+            <option value="sent">sent</option>
+            <option value="delivered">delivered</option>
+            <option value="read">read</option>
+            <option value="failed">failed</option>
+            <option value="deleted">deleted</option>
+          </select>
+        </div>
         {out.isLoading && <p className="text-muted-foreground">Carregando…</p>}
         {out.error && <p className="text-destructive">Erro: {out.error.message}</p>}
         <ul className="divide-y">
-          {(out.data ?? []).map((o) => (
-            <li key={o.id} className="py-1 flex justify-between">
+          {rows.map((o) => (
+            <li key={o.id} className="py-1 flex justify-between gap-2">
               <span className="font-mono text-xs">{o.template_chave} v{o.template_versao}</span>
-              <span className="text-xs">{o.canal} · {o.status} · tent={o.attempts}</span>
+              <span className="text-xs">
+                {o.canal} · {o.status} · tent={o.attempts}
+                {o.provider_delivery_status ? (
+                  <> · <span title={o.provider_status_at ?? ""}>prov:{o.provider_delivery_status}</span></>
+                ) : null}
+                {o.canal === "whatsapp" && o.error_code ? (
+                  <> · <span className="text-destructive">{o.error_code}</span></>
+                ) : null}
+              </span>
             </li>
           ))}
         </ul>
