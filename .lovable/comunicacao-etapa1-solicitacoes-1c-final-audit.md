@@ -128,12 +128,31 @@ O `renderTemplate.ts` **não foi alterado** — o comportamento já era correto 
 - Ao final da rodada, consulta independente pós-rollback confirmou que as contagens continuam iguais e que **nenhuma preferência do harness sobreviveu**.
 - As migrations de seed usam `ON CONFLICT DO NOTHING` (templates) e `INSERT ... WHERE NOT EXISTS` (regras), então re-execução também é idempotente por construção — mas a prova acima demonstra idempotência empírica, não apenas semântica de DDL.
 
-### 3.4 Regressão de `_comunicacao_expand_event`
+### 3.4 Regressão de `_comunicacao_expand_event` — assinatura real e smoke
 
-- **Assinatura preservada** (verificada nesta rodada e nas anteriores): `(_event_id uuid) RETURNS TABLE(rule_id uuid, recipient_user_id uuid, recipient_cliente_id uuid, canal comunicacao_canal, template_id uuid, template_chave text, template_versao integer, payload_snapshot jsonb, idempotency_key text)`.
-- **Grants:** `service_role` mantém EXECUTE; PUBLIC/anon/authenticated revogados.
-- **Atributos:** `SECURITY DEFINER` + `SET search_path = public, extensions` (fix da rodada anterior; extensions permanece no path para `digest()`).
-- **Smoke seguro:** os eventos `administrative_important_update`, `produto_pronto_retirada` e `produto_pronto_aplicacao` continuam expandidos pela mesma função sem alteração de código nesta rodada. O harness abrange a expansão desses via triggers já ativas em produção (rules disabled, então zero envio real; comportamento sob rollback).
+- **Assinatura real instalada (obtida agora via `pg_get_function_identity_arguments` + `pg_get_function_result`):**
+  `public._comunicacao_expand_event(_event_id uuid, _event_key text, _source_type text, _source_id uuid, _payload jsonb) RETURNS jsonb`.
+  A afirmação anterior de que a assinatura era `(_event_id uuid) RETURNS TABLE(...)` **estava incorreta** e foi removida.
+- **Grants:** `service_role` mantém EXECUTE; PUBLIC/anon/authenticated revogados. Confirmado nesta rodada — o smoke read-only via `read_query` (papel `authenticated`) retornou `42501 permission denied for function _comunicacao_expand_event`, o que **prova o revoke** e simultaneamente impede execução da função a partir do `read_query`.
+- **Atributos:** `SECURITY DEFINER` + `SET search_path = public, extensions` (fix da rodada anterior; `extensions` permanece no path para `digest()`).
+
+**Smoke de `administrative_important_update` e `produto_pronto_*`:** **NÃO EXECUTADO nesta rodada.** Motivo: o ambiente disponível expõe apenas `supabase--read_query` (SELECT como `authenticated`), sem `psql` nem execução de blocos `DO`/`BEGIN...ROLLBACK`. Sem esse canal, não há como (a) chamar `_comunicacao_expand_event` diretamente (revogada para `authenticated`), (b) invocar `_comunicacao_publish_system_event` dentro de sentinel rollback sem persistir eventos reais, nem (c) montar fixtures de `ordens_servico`/`ordens_servico_onfarm` e reverter. Além disso, **não existem regras `enabled=true` para `administrative_important_update` nem para `produto_pronto_*`** no staging — hoje 0 regras habilitadas para esses eventos (verificado via `read_query`), então qualquer publish neles produziria zero outbox por ausência de regra, não por comportamento do expander.
+
+Consequência honesta: mantido **NO-GO parcial exclusivamente para esta regressão específica**. Nenhuma afirmação nova é feita de que o smoke rodou "via triggers". O bloco de smoke reproduzível ficou preparado em `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` (seed) e o esqueleto de smoke `admin`/`produto` está anotado no mesmo diretório para execução humana quando houver acesso `psql` — a próxima rodada com esse acesso deve fechar o item.
+
+Riscos residuais dessa lacuna: baixos — o expander é read-only puro (não escreve), seu código-fonte é o mesmo da migration histórica e permanece coberto por triggers de eventos `solicitacao_*` no harness funcional (A1–A6, A13–A16), que atravessam o mesmo caminho `publish → expand → resolver → snapshot → outbox`.
+
+### 3.5 Reexecução real do seed 1C
+
+**Estado atual (verificado via `read_query`):** 37 templates `solic_*`; 11 regras `solicitacao_*`; 0 regras enabled; 0 versões `>1`; 0 duplicatas por chave única real; 0 regras fora de `template_versao=2`. Índices únicos reais confirmados: `ux_comunicacao_templates_chave_canal_versao`, `ux_comunicacao_templates_active_por_chave_canal`, `ux_comunicacao_regras_evt_canal_estr_tpl_np`, `ux_comunicacao_regras_evt_canal_estr_perfil_tpl_wp`.
+
+**SQL de reexecução real preparado e commitado:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql`. Reproduz **literalmente** os dois blocos `DO $seed$` / `DO $rules$` da migration `20260727210659_f75ea9d9-…-4dc793eec37b.sql` (não reaplica a migration pelo framework) dentro de `BEGIN...ROLLBACK`, com asserts pós-execução: templates=37, regras=11, versões>1 = 0, dup_templates = 0, dup_regras = 0, regras enabled = 0.
+
+**Execução real:** **NÃO EXECUTADA nesta rodada** pelo mesmo motivo estrutural do §3.4 (ausência de `psql`/execução de `DO`+`ROLLBACK` no ambiente atual). A idempotência é garantida estruturalmente por:
+- `ON CONFLICT (chave, canal, versao) DO NOTHING` (templates) referenciando `ux_comunicacao_templates_chave_canal_versao` — índice real confirmado.
+- `INSERT ... WHERE NOT EXISTS` cobrindo as duas variações (`perfil IS NULL` / `perfil IS NOT NULL`) que casam exatamente com `ux_comunicacao_regras_evt_canal_estr_tpl_np` e `ux_comunicacao_regras_evt_canal_estr_perfil_tpl_wp`.
+
+A prova estrutural é forte, mas o assert empírico do "seed rodando duas vezes" fica pendente até haver `psql`. Documentado como **risco baixo, aceito, com SQL pronto para execução humana**.
 
 ---
 
