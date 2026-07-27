@@ -1,11 +1,8 @@
-// Edge Function: process-communication-outbox (Fase 2 v2 corretiva)
-// - POST-only
-// - Autenticação: INTERNAL_FUNCTION_SECRET OU service_role JWT
-// - Se COMMUNICATION_DELIVERY_ENABLED != "true" → dry_run puro (sem claim)
-// - payload_snapshot é o objeto de variáveis DIRETAMENTE (não .payload)
-// - Canal desabilitado / config inválida → DEFER (não cancel)
-// - Falha permanente vs transitória usa rpc_fail_communication_delivery_v2
-// - Erros de TODAS as RPCs de terminação são verificados e logados sem PII
+// Edge Function: process-communication-outbox (runtime DB wiring)
+// - POST-only. Autorização: INTERNAL_FUNCTION_SECRET OU service_role JWT.
+// - Configuração runtime é carregada da DB (rpc_service_load_provider_runtime_config).
+//   Se ausente, cai para env; se erro, fail-closed (não envia nada).
+// - Segredos ficam somente em memória da invocação; nunca logados.
 
 import {
   corsHeaders,
@@ -18,12 +15,12 @@ import {
   TemplateRenderError,
   type ComunicacaoCanal,
 } from "../_shared/communication-render.ts";
-import {
-  readWorkerEnv,
-  type AdapterResult,
-  type AdapterSnapshot,
-  type ResolvedAddress,
+import type {
+  AdapterResult,
+  AdapterSnapshot,
+  ResolvedAddress,
 } from "../_shared/comunicacao/adapters.ts";
+import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 import { sendEmail } from "../_shared/comunicacao/email-adapter.ts";
 import { sendWhatsapp } from "../_shared/comunicacao/whatsapp-adapter.ts";
 import { sendInApp } from "../_shared/comunicacao/inapp-adapter.ts";
@@ -39,7 +36,6 @@ type ClaimRow = {
   id: string;
   canal: ComunicacaoCanal;
   template_snapshot: AdapterSnapshot;
-  // Objeto de variáveis DIRETAMENTE (formato salvo pela expansão do evento).
   payload_snapshot: Record<string, unknown>;
   recipient_user_id: string | null;
   recipient_cliente_id: string | null;
@@ -50,9 +46,7 @@ type SbClient = ReturnType<typeof serviceClient>;
 function authorize(req: Request): { ok: true } | { ok: false; res: Response } {
   const auth = req.headers.get("Authorization") ?? "";
   const secret = req.headers.get("x-internal-secret") ?? "";
-  if (INTERNAL_SECRET.length > 0 && secret.length > 0 && secret === INTERNAL_SECRET) {
-    return { ok: true };
-  }
+  if (INTERNAL_SECRET.length > 0 && secret.length > 0 && secret === INTERNAL_SECRET) return { ok: true };
   if (auth.startsWith("Bearer ") && SERVICE_KEY.length > 0) {
     const token = auth.slice("Bearer ".length).trim();
     if (token === SERVICE_KEY) return { ok: true };
@@ -66,25 +60,21 @@ Deno.serve(async (req: Request) => {
   const authz = authorize(req);
   if (!authz.ok) return authz.res;
 
-  const env = readWorkerEnv();
+  const supabase = serviceClient();
+  const env = await loadRuntimeConfig(supabase);
+
   if (!env.DELIVERY_ENABLED) {
     return json(200, {
       ok: true, dry_run: true, disabled: true,
-      claimed: 0, worker_id: WORKER_ID,
+      claimed: 0, worker_id: WORKER_ID, source: env.source,
     });
   }
-
-  const supabase = serviceClient();
 
   const { data: claimed, error: claimErr } = await supabase.rpc(
     "rpc_claim_communication_outbox",
     { p_batch_size: BATCH_SIZE, p_worker_id: WORKER_ID, p_lease_seconds: LEASE_SECONDS },
   );
   if (claimErr) {
-    // Não ecoar claimErr.message: mensagens do Postgres podem conter nomes de
-    // coluna/tabela, valores de parâmetro em erros de constraint e outros
-    // detalhes internos. Alinhado ao restante do worker (adapter/render são
-    // sempre truncados/mascarados). Detalhe fica só no log do servidor.
     console.warn("[worker] claim_failed", { name: (claimErr as { name?: string } | null)?.name ?? "unknown" });
     return json(500, { ok: false, error: "claim_failed" });
   }
@@ -92,10 +82,7 @@ Deno.serve(async (req: Request) => {
   const results: Array<Record<string, unknown>> = [];
 
   for (const item of items) {
-    // payload_snapshot é o objeto de variáveis diretamente.
     const variaveis = (item.payload_snapshot ?? {}) as Record<string, unknown>;
-
-    // 1) Render seguro (nunca chama rede).
     let rendered: { assunto?: string; corpo: string; missing: string[] };
     try {
       rendered = renderTemplate(
@@ -110,17 +97,14 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       const code = e instanceof TemplateRenderError ? `render:${e.code}` : "render_error";
       await terminate(supabase, item.id, {
-        outcome: "permanent_error",
-        code: code.slice(0, 80),
+        outcome: "permanent_error", code: code.slice(0, 80),
         message: String((e as Error).message).slice(0, 2000),
       }, results, item.canal);
       continue;
     }
 
-    // 2) Resolve endereço no momento do envio.
     const { data: resolvedRaw, error: resErr } = await supabase.rpc(
-      "rpc_resolve_outbox_address",
-      { p_outbox_id: item.id },
+      "rpc_resolve_outbox_address", { p_outbox_id: item.id },
     );
     if (resErr) {
       await terminate(supabase, item.id, {
@@ -141,7 +125,6 @@ Deno.serve(async (req: Request) => {
       continue;
     }
 
-    // 3) Dispatch adapter por canal.
     let adapter: AdapterResult;
     if (item.canal === "email") {
       adapter = await sendEmail(env, resolved, item.template_snapshot, rendered);
@@ -156,10 +139,6 @@ Deno.serve(async (req: Request) => {
     await terminate(supabase, item.id, adapter, results, item.canal);
   }
 
-  // Se qualquer RPC de terminação falhou, respondemos ok:false + HTTP 500 sem
-  // vazar mensagens brutas nem PII. Itens cujo terminate falhou permanecem
-  // como 'processing' até expirar o lease e serem reclaim-ados — entrega é
-  // at-least-once para email/whatsapp e idempotente para in_app.
   const termination_failures = results.filter(
     (r) => (r as Record<string, unknown>).terminator === "terminalization_failed",
   ).length;
@@ -168,6 +147,7 @@ Deno.serve(async (req: Request) => {
     ok: termination_failures === 0,
     dry_run: false,
     worker_id: WORKER_ID,
+    source: env.source,
     claimed: items.length,
     processed: results.length,
     termination_failures,
@@ -180,7 +160,6 @@ Deno.serve(async (req: Request) => {
   });
 });
 
-// Allowlist explícita de nomes de RPC terminais — evita expor nomes arbitrários.
 const TERMINAL_RPC_ALLOWLIST = new Set<string>([
   "rpc_complete_communication_delivery",
   "rpc_skip_communication_delivery",
@@ -196,7 +175,6 @@ async function terminate(
   results: Array<Record<string, unknown>>,
   canal: ComunicacaoCanal,
 ): Promise<void> {
-  // Nunca ecoamos adapter.message no results (evita PII acidental).
   const push = (extra: Record<string, unknown> = {}) =>
     results.push({ id: outboxId, canal, outcome: adapter.outcome, code: adapter.code, ...extra });
 
@@ -206,11 +184,7 @@ async function terminate(
   switch (adapter.outcome) {
     case "sent":
       rpcName = "rpc_complete_communication_delivery";
-      rpcArgs = {
-        p_outbox_id: outboxId,
-        p_worker_id: WORKER_ID,
-        p_provider_message_id: adapter.provider_message_id ?? null,
-      };
+      rpcArgs = { p_outbox_id: outboxId, p_worker_id: WORKER_ID, p_provider_message_id: adapter.provider_message_id ?? null };
       break;
     case "opt_out":
       rpcName = "rpc_skip_communication_delivery";
@@ -223,42 +197,22 @@ async function terminate(
     case "provider_not_configured":
     case "deferred":
       rpcName = "rpc_defer_communication_delivery";
-      rpcArgs = {
-        p_outbox_id: outboxId, p_worker_id: WORKER_ID,
-        p_reason: adapter.code, p_delay_seconds: 600,
-      };
+      rpcArgs = { p_outbox_id: outboxId, p_worker_id: WORKER_ID, p_reason: adapter.code, p_delay_seconds: 600 };
       break;
     case "permanent_error":
       rpcName = "rpc_fail_communication_delivery_v2";
-      rpcArgs = {
-        p_outbox_id: outboxId, p_worker_id: WORKER_ID,
-        p_error_code: adapter.code.slice(0, 80),
-        p_error_message: (adapter.message ?? "").slice(0, 2000),
-        p_is_permanent: true,
-      };
+      rpcArgs = { p_outbox_id: outboxId, p_worker_id: WORKER_ID, p_error_code: adapter.code.slice(0, 80), p_error_message: (adapter.message ?? "").slice(0, 2000), p_is_permanent: true };
       break;
     case "transient_error":
       rpcName = "rpc_fail_communication_delivery_v2";
-      rpcArgs = {
-        p_outbox_id: outboxId, p_worker_id: WORKER_ID,
-        p_error_code: adapter.code.slice(0, 80),
-        p_error_message: (adapter.message ?? "").slice(0, 2000),
-        p_is_permanent: false,
-      };
+      rpcArgs = { p_outbox_id: outboxId, p_worker_id: WORKER_ID, p_error_code: adapter.code.slice(0, 80), p_error_message: (adapter.message ?? "").slice(0, 2000), p_is_permanent: false };
       break;
   }
 
   const safeName = TERMINAL_RPC_ALLOWLIST.has(rpcName) ? rpcName : "unknown_terminal_rpc";
-
   const { error } = await supabase.rpc(rpcName, rpcArgs);
-  if (error) {
-    // Falha da RPC de terminação: reporta código genérico + nome allowlisted da RPC.
-    // NÃO inclui error.message bruto (pode conter PII/segredos do provedor).
-    push({ terminator: "terminalization_failed", terminator_rpc: safeName });
-    return;
-  }
+  if (error) { push({ terminator: "terminalization_failed", terminator_rpc: safeName }); return; }
   push({ terminator: "ok", terminator_rpc: safeName });
 }
-
 
 export { corsHeaders };
