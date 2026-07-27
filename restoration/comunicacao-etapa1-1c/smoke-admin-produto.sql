@@ -1,5 +1,5 @@
 -- Subfase 1C — Smoke reproduzível: _comunicacao_expand_event
--- Eventos: administrative_important_update e produto_pronto_para_entrega / produto_pronto_para_retirada.
+-- Eventos: administrative_important_update e produto_pronto_retirada / produto_pronto_aplicacao.
 -- Ambiente: staging ikaauvsflpmamgxmkhoq. Produção proibida.
 -- Segurança: BEGIN ... ROLLBACK. Zero I/O de rede. Zero side-effect após rollback.
 -- Requisitos: executar com psql como service_role (o expander foi REVOKE ALL de PUBLIC/anon/authenticated).
@@ -8,7 +8,7 @@
 --   S1) A assinatura instalada é exatamente
 --       (_event_id uuid, _event_key text, _source_type text, _source_id uuid, _payload jsonb) RETURNS jsonb.
 --   S2) A função responde com jsonb bem-formado para administrative_important_update.
---   S3) A função responde com jsonb bem-formado para produto_pronto_para_entrega e _para_retirada.
+--   S3) A função responde com jsonb bem-formado para produto_pronto_retirada e _para_retirada.
 --   S4) Após ROLLBACK, nenhuma linha nova em comunicacao_events / comunicacao_outbox / comunicacao_notifications_inapp.
 --   S5) Nenhuma regra enabled=true para esses event_keys (evita entrega mesmo em flags OFF).
 --
@@ -38,8 +38,8 @@ WHERE n.nspname='public' AND p.proname='_comunicacao_expand_event';
 SELECT event_key, count(*) FILTER (WHERE enabled) AS enabled_count
   FROM public.comunicacao_regras
  WHERE event_key IN ('administrative_important_update',
-                     'produto_pronto_para_entrega',
-                     'produto_pronto_para_retirada')
+                     'produto_pronto_retirada',
+                     'produto_pronto_aplicacao')
  GROUP BY event_key;
 -- Esperado: enabled_count = 0 em todas (ou nenhuma linha).
 
@@ -63,28 +63,28 @@ BEGIN
     RAISE EXCEPTION 'SMOKE_FAIL_admin_important_update: retorno inválido';
   END IF;
 
-  -- produto_pronto_para_entrega
+  -- produto_pronto_retirada
   v_res := public._comunicacao_expand_event(
     gen_random_uuid(),
-    'produto_pronto_para_entrega',
+    'produto_pronto_retirada',
     'ordens_servico_onfarm',
     gen_random_uuid(),
     jsonb_build_object('numero','SMOKE-1','produto','test')
   );
-  RAISE NOTICE 'expand produto_pronto_para_entrega -> %', v_res::text;
+  RAISE NOTICE 'expand produto_pronto_retirada -> %', v_res::text;
   IF v_res IS NULL OR jsonb_typeof(v_res) NOT IN ('object','array') THEN
     RAISE EXCEPTION 'SMOKE_FAIL_produto_entrega: retorno inválido';
   END IF;
 
-  -- produto_pronto_para_retirada
+  -- produto_pronto_aplicacao
   v_res := public._comunicacao_expand_event(
     gen_random_uuid(),
-    'produto_pronto_para_retirada',
+    'produto_pronto_aplicacao',
     'ordens_servico_onfarm',
     gen_random_uuid(),
     jsonb_build_object('numero','SMOKE-2','produto','test')
   );
-  RAISE NOTICE 'expand produto_pronto_para_retirada -> %', v_res::text;
+  RAISE NOTICE 'expand produto_pronto_aplicacao -> %', v_res::text;
   IF v_res IS NULL OR jsonb_typeof(v_res) NOT IN ('object','array') THEN
     RAISE EXCEPTION 'SMOKE_FAIL_produto_retirada: retorno inválido';
   END IF;

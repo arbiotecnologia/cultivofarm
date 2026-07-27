@@ -125,7 +125,7 @@ ALTER TABLE public.comunicacao_regras
 
 ## 7. GO / NO-GO para 1D
 
-**NO-GO para 1D.** Estrutura, seeds, funções e segurança estruturais da 1C estão em conformidade (15/15 asserts do harness PASS; 22/22 asserts do harness funcional PASS em rodada anterior). Porém, dois itens permanecem sem execução empírica: (a) reexecução real do seed via `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` com asserts por delta contra o baseline 37/11; (b) smoke reproduzível de `_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_para_entrega` e `produto_pronto_para_retirada` via `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql`. Ambos exigem `psql` como `service_role` em sentinel `BEGIN...ROLLBACK`. Enquanto essa execução real não for anexada como evidência, o gate permanece **NO-GO**; a 1D não deve ser iniciada.
+**NO-GO para 1D.** Estrutura, seeds, funções e segurança estruturais da 1C estão em conformidade (15/15 asserts do harness PASS; 22/22 asserts do harness funcional PASS em rodada anterior). Porém, dois itens permanecem sem execução empírica: (a) reexecução real do seed via `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` com asserts por delta contra o baseline 37/11; (b) smoke reproduzível de `_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_retirada` e `produto_pronto_aplicacao` via `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql`. Ambos exigem `psql` como `service_role` em sentinel `BEGIN...ROLLBACK`. Enquanto essa execução real não for anexada como evidência, o gate permanece **NO-GO**; a 1D não deve ser iniciada.
 
 ## 8. Artefatos
 
