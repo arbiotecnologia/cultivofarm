@@ -20,10 +20,11 @@
 | Subfase 1C — hardening anterior | 15,5 |
 | Subfase 1C — rodada de correção final anterior (retorno real da plataforma) | 18,6 |
 | Subfase 1C — ajuste final mínimo (retorno real da plataforma) | 8,1 |
-| **Acumulado até esta microcorreção documental/SQL** | **85,3** |
+| Subfase 1C — microcorreção documental/SQL anterior (retorno real da plataforma) | 7,9 |
+| **Acumulado até esta última correção cirúrgica** | **93,2** |
 | Teto autorizado Etapa 1 | 100,0 |
-| **Saldo antes desta microcorreção documental/SQL** | **14,7** |
-| Custo desta microcorreção documental/SQL | **pendente do retorno da plataforma** |
+| **Saldo antes desta última correção cirúrgica** | **6,8** |
+| Custo desta última correção cirúrgica | **pendente do retorno da plataforma** |
 
 A plataforma reporta o custo real após o commit. Este documento registra explicitamente que o valor será preenchido depois; **não há estimativa inventada**.
 
@@ -145,7 +146,7 @@ Riscos residuais dessa lacuna: baixos — o expander é read-only puro (não esc
 
 ### 3.5 Reexecução real do seed 1C
 
-**Estado atual (verificado via `read_query`):** 37 templates `solic_*`; 11 regras `solicitacao_*`; 0 regras enabled; 0 versões `>1`; 0 duplicatas por chave única real; 0 regras fora de `template_versao=2`. Índices únicos reais confirmados: `ux_comunicacao_templates_chave_canal_versao`, `ux_comunicacao_templates_active_por_chave_canal`, `ux_comunicacao_regras_evt_canal_estr_tpl_np`, `ux_comunicacao_regras_evt_canal_estr_perfil_tpl_wp`.
+**Estado atual (verificado via `read_query`):** 37 templates `solic_*` totais — 11 in_app v2 `active` + 11 in_app v1 `archived` + 11 email v1 `draft` + 4 whatsapp v1 `draft`; 11 regras `solicitacao_*`, todas com `enabled=false` e todas apontando `template_versao=2`; 0 duplicatas pela chave única real `(chave, canal, versao)`. Índices únicos reais confirmados: `ux_comunicacao_templates_chave_canal_versao`, `ux_comunicacao_templates_active_por_chave_canal`, `ux_comunicacao_regras_evt_canal_estr_tpl_np`, `ux_comunicacao_regras_evt_canal_estr_perfil_tpl_wp`.
 
 **SQL de reexecução real preparado e commitado:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql`. Reproduz **literalmente** os dois blocos `DO $seed$` / `DO $rules$` da migration `20260727210659_f75ea9d9-…-4dc793eec37b.sql` (não reaplica a migration pelo framework) dentro de `BEGIN...ROLLBACK`. Os asserts comparam PRE e POST por **contagem exata e deltas contra o baseline** (37 templates / 11 regras), agrupam duplicidade pela chave única real `(chave, canal, versao)` para templates e `(event_key, canal, estrategia, template_chave [, perfil])` para regras — **v1 + v2 legítimos não contam como duplicata** — e exigem `delta = 0`, `regras_enabled = 0`, `regras_versao_nao_v2 = 0`, distribuição por `(canal, versao, status)` idêntica pré e pós.
 
@@ -202,9 +203,9 @@ Executada após o rollback do harness. Resultado:
 ## 6. Diff desta microcorreção
 
 - **Corrigido:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` — asserts reformulados para comparar PRE/POST por contagem exata e deltas contra o baseline (37 templates / 11 regras); duplicidade agrupada pela chave única real `(chave, canal, versao)`; **não** se exige mais ausência de v2 (a expectativa correta é 11 in_app v2 active + 11 in_app v1 archived + 11 email draft v1 + 4 whatsapp draft v1, distribuição estável antes e depois).
-- **Novo:** `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` — smoke reproduzível, BEGIN/ROLLBACK, chamadas sintéticas a `_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_para_entrega` e `produto_pronto_para_retirada`, com asserts de zero delta em `comunicacao_events`/`comunicacao_outbox`/`comunicacao_notifications_inapp`. Requer execução como `service_role` (o expander foi REVOKE ALL de PUBLIC/anon/authenticated).
+- **Novo:** `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` — smoke reproduzível, BEGIN/ROLLBACK, chamadas sintéticas a `_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_retirada` e `produto_pronto_aplicacao`, com asserts de zero delta em `comunicacao_events`/`comunicacao_outbox`/`comunicacao_notifications_inapp`. Requer execução como `service_role` (o expander foi REVOKE ALL de PUBLIC/anon/authenticated).
 - **Atualizado:** este documento — A20 reclassificado como estabilidade do harness (não prova empírica de reexecução dos seeds); §3.3 e §3.5 marcam a reexecução real como pendente; §3.4 aponta ao novo `smoke-admin-produto.sql`.
-- **Atualizado:** ledger em 4 documentos com o retorno real da rodada anterior (8,1 créditos → acumulado 85,3 → saldo 14,7). Custo desta microcorreção documental/SQL: pendente do retorno da plataforma.
+- **Atualizado:** ledger em 5 documentos com o retorno real da microcorreção anterior (7,9 créditos → acumulado 93,2 → saldo 6,8). Custo desta última correção cirúrgica: pendente do retorno da plataforma.
 - **Sem alterações** em: `renderTemplate.ts`, publisher, resolver, triggers, RPCs, edge functions, migrations históricas ou funções instaladas.
 - **Sem migration nova nesta microcorreção** (apenas SQL auxiliar e documentação, conforme instrução).
 
@@ -212,6 +213,6 @@ Executada após o rollback do harness. Resultado:
 
 ## 7. Decisão
 
-**NO-GO para 1D.** Enquanto não houver execução empírica real de `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` (idempotência por delta contra baseline 37/11, agrupada pela chave única real que inclui `versao`) e de `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` (`_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_para_entrega`, `produto_pronto_para_retirada`, com zero delta em `comunicacao_events`/`outbox`/`notifications_inapp`) via `psql` como `service_role` em sentinel `BEGIN...ROLLBACK`, o gate permanece **NO-GO**. Não iniciar 1D. Produção `navfzbwgwzruipouyfnk` continua intocada; flags OFF; 11 regras `solicitacao_*` disabled; zero envio possível.
+**NO-GO para 1D.** Enquanto não houver execução empírica real de `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` (idempotência por delta contra baseline 37/11, agrupada pela chave única real que inclui `versao`) e de `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` (`_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_retirada`, `produto_pronto_aplicacao`, com zero delta em `comunicacao_events`/`outbox`/`notifications_inapp`) via `psql` como `service_role` em sentinel `BEGIN...ROLLBACK`, o gate permanece **NO-GO**. Não iniciar 1D. Produção `navfzbwgwzruipouyfnk` continua intocada; flags OFF; 11 regras `solicitacao_*` disabled; zero envio possível.
 
-**Custo desta microcorreção documental/SQL:** pendente do retorno da plataforma — será somado ao ledger 85,3 quando reportado.
+**Custo desta última correção cirúrgica:** pendente do retorno da plataforma — será somado ao ledger 93,2 quando reportado.

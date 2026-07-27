@@ -405,8 +405,9 @@ Aguardo autorização explícita para iniciar 1C.
 - Hardening 1C anterior: 15,5
 - 1C rodada de correção final anterior (retorno real da plataforma): 18,6
 - Ajuste final mínimo 1C (retorno real da plataforma): 8,1
-- **Acumulado 1A→ajuste final mínimo 1C: 85,3 créditos**
-- Saldo antes desta microcorreção documental/SQL: 100 − 85,3 = **14,7 créditos**
+- Microcorreção documental/SQL anterior (retorno real da plataforma): 7,9
+- **Acumulado 1A→microcorreção documental/SQL anterior: 93,2 créditos**
+- Saldo antes desta última correção cirúrgica: 100 − 93,2 = **6,8 créditos**
 - Custo desta microcorreção (ajuste final mínimo 1C): **pendente do retorno da plataforma** (não estimado)
 
 **Entregas da rodada de correção final:**
