@@ -403,9 +403,10 @@ Aguardo autorização explícita para iniciar 1C.
 - 1B (execução + hardening): 21,1
 - 1C inicial: 12,1
 - Hardening 1C anterior: 15,5
-- **Acumulado 1A→1C hardening anterior: 58,6 créditos**
-- Saldo antes da rodada de correção final: 100 − 58,6 = **41,4 créditos**
-- Custo da rodada de correção final: **pendente do retorno da plataforma** (não estimado)
+- 1C rodada de correção final anterior (retorno real da plataforma): 18,6
+- **Acumulado 1A→1C correção final anterior: 77,2 créditos**
+- Saldo antes desta microcorreção: 100 − 77,2 = **22,8 créditos**
+- Custo desta microcorreção (ajuste final mínimo 1C): **pendente do retorno da plataforma** (não estimado)
 
 **Entregas da rodada de correção final:**
 1. Migration nova idempotente: 11 regras `solicitacao_*` migradas de `template_versao=1` para `template_versao=2` (chave/canal preservados).
