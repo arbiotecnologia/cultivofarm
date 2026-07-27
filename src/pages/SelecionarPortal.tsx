@@ -13,6 +13,7 @@ import {
 } from "@/hooks/useAvailableContexts";
 import { PORTAL_CONTEXT_HOME } from "@/lib/portalContext";
 import { setActivePortalContext } from "@/lib/activePortalContext";
+import { getHomeForRole } from "@/lib/permissions";
 import { toast } from "sonner";
 
 function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: string | null } | null): string {
