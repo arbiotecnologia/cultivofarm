@@ -2,10 +2,13 @@
 // - POST-only
 // - Autorização: INTERNAL_FUNCTION_SECRET OU service_role JWT OU JWT com role
 //   administrador (checagem via user_roles). NUNCA anon.
-// - Retorna EXCLUSIVAMENTE booleans configured/enabled por canal. Sem segredos.
+// - Fonte primária: rpc_service_load_provider_runtime_config; fallback env
+//   apenas quando não há linha configurada; erro → fail-closed.
+// - Retorna EXCLUSIVAMENTE booleans configured/enabled + contagens + source. Sem segredos.
 
 import { json, requirePost, serviceClient } from "../_shared/auth-guard.ts";
-import { healthBooleans, readWorkerEnv } from "../_shared/comunicacao/adapters.ts";
+import { healthBooleans } from "../_shared/comunicacao/adapters.ts";
+import { loadRuntimeConfig } from "../_shared/comunicacao/runtime-config.ts";
 
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -36,6 +39,11 @@ Deno.serve(async (req: Request) => {
   const az = await authorize(req);
   if (!az.ok) return az.res;
 
-  const env = readWorkerEnv();
-  return json(200, { ok: true, ...healthBooleans(env) });
+  const sb = serviceClient();
+  const cfg = await loadRuntimeConfig(sb);
+  return json(200, {
+    ok: true,
+    source: cfg.source,   // "db" | "env" | "fail_closed"
+    ...healthBooleans(cfg),
+  });
 });
