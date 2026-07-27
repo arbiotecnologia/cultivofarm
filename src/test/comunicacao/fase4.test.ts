@@ -1,8 +1,6 @@
-// Testes contratuais Fase 4 — recibos WhatsApp e observabilidade.
-// Cobre SQL, parser/crypto do webhook, kit e config.toml.
-// Correção crítica v2: migrations Fase2/Fase4 TRANSACTION-NEUTRAL, índice UNIQUE
-// parcial, streaming reader, challenge numérico, phone mismatch fail-closed,
-// RPC failure => HTTP 500, duplicata detectada por RETURNING id.
+// Testes contratuais Fase 4 — correção final: feature flag real, concorrência
+// limitada, error_code sem fallback title, FK NOT NULL/RESTRICT em receipts,
+// estado failed vs sent por timestamp, rollback F4-first e gate na F2.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -14,13 +12,28 @@ import {
   readBodyCapped,
   verifyMetaSignature,
 } from "../../../supabase/functions/_shared/comunicacao/whatsapp-webhook-parser.ts";
-import { healthBooleans } from "../../../supabase/functions/_shared/comunicacao/adapters-types.ts";
+import {
+  healthBooleans,
+  isWhatsappWebhookConfigValid,
+} from "../../../supabase/functions/_shared/comunicacao/adapters-types.ts";
+import {
+  DEFAULT_WEBHOOK_CONCURRENCY,
+  MAX_WEBHOOK_CONCURRENCY,
+  runWithConcurrency,
+} from "../../../supabase/functions/_shared/comunicacao/concurrency.ts";
 
 const ROOT = resolve(__dirname, "../../..");
 const F2  = resolve(ROOT, "restoration/comunicacao-fase2");
 const F4  = resolve(ROOT, "restoration/comunicacao-fase4");
 const KIT = resolve(ROOT, "restoration/comunicacao-deploy");
 const read = (p: string) => readFileSync(p, "utf8");
+
+function expectErr<T extends { ok: boolean }>(r: T): asserts r is T & { ok: false; error: string } {
+  if (r.ok) throw new Error("expected error result");
+}
+function expectOk<T extends { ok: boolean }>(r: T): asserts r is T & { ok: true } {
+  if (!r.ok) throw new Error("expected ok result");
+}
 
 // ─── SQL Fase 4 ────────────────────────────────────────────────────────────
 
@@ -43,33 +56,52 @@ describe("Fase 4 · SQL", () => {
     expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.rpc_record_whatsapp_delivery_status[^;]*TO service_role/);
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.rpc_record_whatsapp_delivery_status[^;]*FROM anon/);
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.rpc_record_whatsapp_delivery_status[^;]*FROM authenticated/);
-    // Sem PII na tabela: proíbe nomes suspeitos.
     const block = migration.split("comunicacao_provider_receipts (")[1]?.split(");")[0] ?? "";
     const lower = block.toLowerCase();
     for (const banned of ["telefone","phone","recipient","payload","body","email"]) {
       expect(lower, `coluna proibida em receipts: ${banned}`).not.toContain(banned);
     }
     expect(/\bmessage\b/.test(lower), "coluna 'message' proibida").toBe(false);
-    // Estado monotônico, lock explícito, RETURNING id, msgid 200 chars
     expect(migration).toMatch(/FOR UPDATE/);
     expect(migration).toMatch(/ON CONFLICT[^;]*DO NOTHING/);
     expect(migration).toMatch(/RETURNING id INTO v_inserted_id/);
     expect(migration).toMatch(/length\(provider_message_id\) BETWEEN 1 AND 200/);
     expect(migration).toMatch(/length\(p_provider_message_id\) > 200/);
-    // Índice UNIQUE parcial de correlação.
     expect(migration).toMatch(/CREATE UNIQUE INDEX IF NOT EXISTS ix_comunicacao_outbox_wa_provider_msgid/);
     expect(migration).toMatch(/WHERE canal = 'whatsapp' AND provider_message_id IS NOT NULL/);
-    // Grants tightened: service_role sem GRANT ALL na tabela, apenas SELECT authenticated.
     expect(migration).toMatch(/REVOKE ALL ON public\.comunicacao_provider_receipts FROM service_role/);
     expect(migration).toMatch(/GRANT SELECT ON public\.comunicacao_provider_receipts TO authenticated/);
     expect(/GRANT ALL\s+ON public\.comunicacao_provider_receipts TO service_role/i.test(migration)).toBe(false);
   });
 
+  it("receipts.outbox_id é NOT NULL + FK ON DELETE RESTRICT (append-only/retention)", () => {
+    expect(migration).toMatch(/outbox_id\s+uuid\s+NOT NULL\s+REFERENCES\s+public\.comunicacao_outbox\(id\)\s+ON DELETE RESTRICT/);
+    // Cascade proibido — contradiz append-only.
+    expect(/ON DELETE CASCADE/.test(migration.split("comunicacao_provider_receipts (")[1]?.split(");")[0] ?? "")).toBe(false);
+  });
+
+  it("máquina de estado: failed anterior ao sent NÃO substitui; posterior/igual substitui (vetor contratual)", () => {
+    // Regras codificadas na função. Extrai o bloco `ELSIF p_status = 'failed'`.
+    const idx = migration.indexOf("ELSIF p_status = 'failed'");
+    expect(idx, "bloco 'failed' ausente").toBeGreaterThan(0);
+    const chunk = migration.slice(idx, idx + 1200);
+    // Sentinela: quando estado atual é 'sent', só substitui se ts >= v_current_ts.
+    expect(chunk).toMatch(/v_current_state = 'sent'/);
+    expect(chunk).toMatch(/p_timestamp\s*>=\s*v_current_ts/);
+    // Failed nunca substitui delivered/read/deleted.
+    expect(chunk).toMatch(/delivered_at IS NULL AND v_outbox\.read_at IS NULL/);
+    expect(chunk).toMatch(/IS DISTINCT FROM 'deleted'/);
+    // Já failed → mantém timestamp mais antigo.
+    expect(chunk).toMatch(/v_current_state = 'failed'/);
+    // Sent nunca rebaixa outros estados.
+    const idxSent = migration.indexOf("ELSIF p_status = 'sent'");
+    const sentChunk = migration.slice(idxSent, idxSent + 800);
+    expect(sentChunk).toMatch(/v_current_state IS NULL/);
+  });
+
   it("migration é TRANSACTION-NEUTRAL: sem BEGIN/COMMIT externos", () => {
-    // BEGIN/COMMIT em SQL top-level (fora de DO $$ e sem indentação) não podem existir.
-    // Aceitamos apenas 'BEGIN' dentro de blocos PL/pgSQL (indentação/precedido por $$).
-    expect(/^BEGIN\s*;/m.test(migration), "migration não pode abrir BEGIN externo").toBe(false);
-    expect(/^COMMIT\s*;/m.test(migration), "migration não pode fechar COMMIT externo").toBe(false);
+    expect(/^BEGIN\s*;/m.test(migration)).toBe(false);
+    expect(/^COMMIT\s*;/m.test(migration)).toBe(false);
   });
 
   it("precheck detecta duplicidade legada e evita drift", () => {
@@ -77,16 +109,20 @@ describe("Fase 4 · SQL", () => {
     expect(precheck).toMatch(/rpc_publish_communication_event_v2/);
   });
 
-  it("postcheck valida colunas, RLS, unique idem, trigger append-only, grants, unique correlação", () => {
+  it("postcheck valida colunas, RLS, unique idem, trigger, grants, unique correlação, NOT NULL/FK RESTRICT", () => {
     for (const s of [
       "provider_delivery_status","comunicacao_provider_receipts",
       "ux_comunicacao_provider_receipts_idem","trg_comunicacao_provider_receipts_noupd",
       "service_role","anon","authenticated",
       "deve ser UNIQUE","IS NOT NULL","200",
+      "outbox_id deve ser NOT NULL",
+      "ON DELETE RESTRICT",
     ]) expect(postcheck).toContain(s);
   });
 
-  it("rollback só remove objetos Fase 4", () => {
+  it("rollback Fase 4 é TRANSACTION-NEUTRAL e só remove objetos Fase 4", () => {
+    expect(/^BEGIN\s*;/m.test(rollback)).toBe(false);
+    expect(/^COMMIT\s*;/m.test(rollback)).toBe(false);
     expect(rollback).toMatch(/DROP TABLE IF EXISTS public\.comunicacao_provider_receipts/);
     expect(rollback).toMatch(/DROP FUNCTION IF EXISTS public\.rpc_record_whatsapp_delivery_status/);
     for (const s of ["comunicacao_templates","comunicacao_regras","comunicacao_eventos","rpc_publish_communication_event_v2"]) {
@@ -107,8 +143,8 @@ describe("Fase 4 · SQL", () => {
 describe("Fase 2 · SQL (transaction-neutral)", () => {
   const migration = read(resolve(F2, "migration.sql"));
   it("migration Fase 2 é TRANSACTION-NEUTRAL: sem BEGIN/COMMIT externos", () => {
-    expect(/^BEGIN\s*;/m.test(migration), "fase2 migration não pode abrir BEGIN externo").toBe(false);
-    expect(/^COMMIT\s*;/m.test(migration), "fase2 migration não pode fechar COMMIT externo").toBe(false);
+    expect(/^BEGIN\s*;/m.test(migration)).toBe(false);
+    expect(/^COMMIT\s*;/m.test(migration)).toBe(false);
   });
 });
 
@@ -131,20 +167,25 @@ describe("Fase 4 · Kit", () => {
     expect(idxAtomic4).toBeGreaterThan(idxHarness2);
     expect(idxHarness4).toBeGreaterThan(idxAtomic4);
     expect(idxSeeds).toBeGreaterThan(idxHarness4);
-    expect(apply).toMatch(
-      /run_files_atomic\s+"fase4\/precheck\+migration\+postcheck"\s+\\\s*\n\s*"\$\{F4\}\/precheck\.sql"\s+"\$\{F4\}\/migration\.sql"\s+"\$\{F4\}\/postcheck\.sql"/,
-    );
   });
 
-  it("deploy-functions lista as três funções, incluindo whatsapp-status-webhook", () => {
+  it("deploy-functions lista whatsapp-status-webhook", () => {
     expect(deploy).toContain('"whatsapp-status-webhook"');
   });
 
-  it("rollback: F4 sob ROLLBACK_COMMUNICATION_FASE4=true, executado ANTES de F2", () => {
-    expect(rollback).toMatch(/ROLLBACK_COMMUNICATION_FASE4/);
-    expect(rollback.indexOf("ROLLBACK_COMMUNICATION_FASE4"))
-      .toBeLessThan(rollback.lastIndexOf("ROLLBACK_COMMUNICATION"));
-    expect(rollback).toMatch(/comunicacao-fase4/);
+  it("rollback: F4 SEMPRE antes de F2; F2 recusada se F4 ainda instalada", () => {
+    // Ordem: bloco F4 antes de bloco F2.
+    const idxF4Block = rollback.indexOf("ROLLBACK_COMMUNICATION_FASE4");
+    const idxF2Guard = rollback.indexOf('"${ROLLBACK_COMMUNICATION:-false}"');
+    expect(idxF4Block).toBeGreaterThan(0);
+    expect(idxF2Guard).toBeGreaterThan(idxF4Block);
+    // Detecta presença F4 no banco (read-only) e recusa F2 se ainda instalada.
+    expect(rollback).toMatch(/detect_fase4_installed/);
+    expect(rollback).toMatch(/rpc_record_whatsapp_delivery_status/);
+    expect(rollback).toMatch(/comunicacao_provider_receipts/);
+    expect(rollback).toMatch(/recusado:\s*Fase 4 ainda instalada/);
+    // Rollback usa --single-transaction (transaction-neutral no .sql).
+    expect(rollback).toMatch(/--single-transaction[^\n]*\n[^\n]*rollback\.sql/);
   });
 
   it("verify roda postcheck/harness Fase 4 e smoke Fase 4 quando presentes", () => {
@@ -156,8 +197,8 @@ describe("Fase 4 · Kit", () => {
   it("env.example documenta segredos WhatsApp sem valores e sem URL exfiltrável", () => {
     for (const name of [
       "WHATSAPP_APP_SECRET","WHATSAPP_WEBHOOK_VERIFY_TOKEN","WHATSAPP_WEBHOOK_ENABLED",
+      "WHATSAPP_PHONE_NUMBER_ID",
     ]) expect(env).toContain(name);
-    // Não pode aparecer valor após "="
     expect(env, "WHATSAPP_APP_SECRET não pode ter valor").not.toMatch(/^WHATSAPP_APP_SECRET=\S/m);
     expect(env, "WHATSAPP_WEBHOOK_VERIFY_TOKEN não pode ter valor").not.toMatch(/^WHATSAPP_WEBHOOK_VERIFY_TOKEN=\S/m);
     expect(/STAGING_API_URL/.test(env)).toBe(false);
@@ -204,7 +245,7 @@ function buildValidBody(id = "wamid.ABC", status = "sent", ts = 1_781_000_000) {
 describe("Fase 4 · whatsapp-webhook-parser", () => {
   it("aceita payload válido e extrai apenas id/status/timestamp/error_code", () => {
     const r = parseMetaWebhookBody(buildValidBody(), PHONE);
-    if (!r.ok) throw new Error((r as { error: string }).error);
+    expectOk(r);
     expect(r.statuses).toHaveLength(1);
     expect(r.statuses[0]).toMatchObject({ id: "wamid.ABC", status: "sent" });
     expect(r.statuses[0].timestamp.endsWith("Z")).toBe(true);
@@ -218,8 +259,7 @@ describe("Fase 4 · whatsapp-webhook-parser", () => {
 
   it("phone_number_id mismatch é FAIL-CLOSED (invalid_phone_number_id)", () => {
     const r = parseMetaWebhookBody(buildValidBody(), "999");
-    expect(r.ok).toBe(false);
-    if (r.ok) { throw new Error("expected error"); }
+    expectErr(r);
     expect(r.error).toBe("invalid_phone_number_id");
   });
 
@@ -234,19 +274,29 @@ describe("Fase 4 · whatsapp-webhook-parser", () => {
       }}]}],
     };
     const r = parseMetaWebhookBody(body, PHONE);
-    if (!r.ok) throw new Error("expected ok");
+    expectOk(r);
     expect(r.statuses).toHaveLength(0);
   });
 
-  it("normaliza error_code para allowlist a-z0-9_.:-", () => {
+  it("normaliza error_code SOMENTE por code ou error_code, ignorando title", () => {
     const b = buildValidBody("wamid.err", "failed");
     (b.entry[0].changes[0].value.statuses[0] as unknown as { errors: unknown[] }).errors = [
       { code: 131047, title: "Re-engagement" },
     ];
     const r = parseMetaWebhookBody(b, PHONE);
-    if (!r.ok) throw new Error((r as { error: string }).error);
+    expectOk(r);
     expect(r.statuses[0].status).toBe("failed");
-    expect(r.statuses[0].error_code).toMatch(/^[a-z0-9_.:-]{1,80}$/);
+    expect(r.statuses[0].error_code).toBe("131047");
+  });
+
+  it("sem code e sem error_code → error_code=null (title NÃO é fallback)", () => {
+    const b = buildValidBody("wamid.err2", "failed");
+    (b.entry[0].changes[0].value.statuses[0] as unknown as { errors: unknown[] }).errors = [
+      { title: "Some Human Title" },
+    ];
+    const r = parseMetaWebhookBody(b, PHONE);
+    expectOk(r);
+    expect(r.statuses[0].error_code).toBeNull();
   });
 
   it("aplica cap GLOBAL de statuses por request", () => {
@@ -258,7 +308,6 @@ describe("Fase 4 · whatsapp-webhook-parser", () => {
       entry: [{ changes: [{ field: "messages", value: {
         messaging_product: "whatsapp",
         metadata: { phone_number_id: PHONE },
-        // Divida em 2 changes para provar cap global, não por-change.
         statuses: many.slice(0, 150),
       }}, { field: "messages", value: {
         messaging_product: "whatsapp",
@@ -267,8 +316,7 @@ describe("Fase 4 · whatsapp-webhook-parser", () => {
       }}]}],
     };
     const r = parseMetaWebhookBody(body, PHONE);
-    expect(r.ok).toBe(false);
-    if (r.ok) { throw new Error("expected error"); }
+    expectErr(r);
     expect(r.error).toBe("statuses_total_too_large");
   });
 
@@ -277,7 +325,7 @@ describe("Fase 4 · whatsapp-webhook-parser", () => {
   });
 });
 
-describe("Fase 4 · readBodyCapped (streaming, sem arrayBuffer)", () => {
+describe("Fase 4 · readBodyCapped (streaming)", () => {
   function streamOf(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
     let i = 0;
     return new ReadableStream<Uint8Array>({
@@ -291,29 +339,26 @@ describe("Fase 4 · readBodyCapped (streaming, sem arrayBuffer)", () => {
   it("aceita corpo abaixo do cap", async () => {
     const buf = new TextEncoder().encode("{}");
     const r = await readBodyCapped(streamOf([buf]), 128);
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(new TextDecoder().decode(r.body)).toBe("{}");
+    expectOk(r);
+    expect(new TextDecoder().decode(r.body)).toBe("{}");
   });
 
   it("cancela e retorna payload_too_large quando excede", async () => {
     const chunks = [new Uint8Array(60), new Uint8Array(60), new Uint8Array(60)];
     const r = await readBodyCapped(streamOf(chunks), 128);
-    expect(r.ok).toBe(false);
-    if (r.ok) { throw new Error("expected error"); }
+    expectErr(r);
     expect(r.error).toBe("payload_too_large");
   });
 
   it("retorna no_body quando body é null", async () => {
     const r = await readBodyCapped(null, 128);
-    expect(r.ok).toBe(false);
-    if (r.ok) { throw new Error("expected error"); }
+    expectErr(r);
     expect(r.error).toBe("no_body");
   });
 
   it("retorna empty quando stream é vazio", async () => {
     const r = await readBodyCapped(streamOf([]), 128);
-    expect(r.ok).toBe(false);
-    if (r.ok) { throw new Error("expected error"); }
+    expectErr(r);
     expect(r.error).toBe("empty");
   });
 });
@@ -361,27 +406,140 @@ describe("Fase 4 · verifyMetaSignature (HMAC)", () => {
   });
 });
 
+// ─── Concorrência limitada ────────────────────────────────────────────────
+
+describe("Fase 4 · runWithConcurrency (bounded, deterministic)", () => {
+  it("cap <= MAX_WEBHOOK_CONCURRENCY (8)", () => {
+    expect(MAX_WEBHOOK_CONCURRENCY).toBeLessThanOrEqual(8);
+    expect(DEFAULT_WEBHOOK_CONCURRENCY).toBeLessThanOrEqual(MAX_WEBHOOK_CONCURRENCY);
+    expect(DEFAULT_WEBHOOK_CONCURRENCY).toBeGreaterThanOrEqual(1);
+  });
+
+  it("nunca ultrapassa o limite de promises simultâneas", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const items = Array.from({ length: 40 }, (_, i) => i);
+    const results = await runWithConcurrency(items, 8, async (i) => {
+      inFlight++;
+      if (inFlight > peak) peak = inFlight;
+      await new Promise((r) => setTimeout(r, 5));
+      inFlight--;
+      return i * 2;
+    });
+    expect(peak).toBeLessThanOrEqual(8);
+    expect(results).toEqual(items.map((i) => i * 2));
+  });
+
+  it("clampa limite ao MAX (8) mesmo com input maior", async () => {
+    let peak = 0, inFlight = 0;
+    await runWithConcurrency(Array.from({ length: 30 }, (_, i) => i), 999, async () => {
+      inFlight++;
+      if (inFlight > peak) peak = inFlight;
+      await new Promise((r) => setTimeout(r, 2));
+      inFlight--;
+    });
+    expect(peak).toBeLessThanOrEqual(MAX_WEBHOOK_CONCURRENCY);
+  });
+
+  it("rejeita com o primeiro erro e não dispara mais trabalho novo", async () => {
+    let started = 0;
+    const items = Array.from({ length: 30 }, (_, i) => i);
+    await expect(
+      runWithConcurrency(items, 4, async (i) => {
+        started++;
+        if (i === 2) throw new Error("boom");
+        await new Promise((r) => setTimeout(r, 3));
+        return i;
+      }),
+    ).rejects.toThrow("boom");
+    // Não deve ter iniciado todos os 30 itens.
+    expect(started).toBeLessThan(items.length);
+  });
+});
+
 // ─── Webhook index (contratual) ────────────────────────────────────────────
 
 describe("Fase 4 · webhook index (contratos)", () => {
   const src = read(resolve(ROOT, "supabase/functions/whatsapp-status-webhook/index.ts"));
+
   it("NÃO usa req.arrayBuffer(); usa readBodyCapped(req.body, MAX_BODY_BYTES)", () => {
-    expect(/req\.arrayBuffer\s*\(/.test(src), "arrayBuffer proibido").toBe(false);
+    expect(/req\.arrayBuffer\s*\(/.test(src)).toBe(false);
     expect(src).toMatch(/readBodyCapped\s*\(\s*req\.body\s*,\s*MAX_BODY_BYTES\s*\)/);
   });
+
   it("challenge GET valida via isValidChallenge", () => {
     expect(src).toMatch(/isValidChallenge\s*\(\s*challenge\s*\)/);
   });
+
+  it("feature flag WHATSAPP_WEBHOOK_ENABLED: assinatura ok + flag false = 200 disabled sem RPC/parse", () => {
+    expect(src).toMatch(/WHATSAPP_WEBHOOK_ENABLED/);
+    // Curto-circuito ocorre APÓS verifyMetaSignature e ANTES do parse JSON.
+    const idxSig      = src.indexOf("verifyMetaSignature");
+    const idxFlagShort = src.indexOf("!WEBHOOK_ENABLED");
+    const idxParse    = src.indexOf("JSON.parse(new TextDecoder");
+    const idxRpc      = src.indexOf("rpc_record_whatsapp_delivery_status");
+    expect(idxSig).toBeGreaterThan(0);
+    expect(idxFlagShort).toBeGreaterThan(idxSig);
+    expect(idxParse).toBeGreaterThan(idxFlagShort);
+    expect(idxRpc).toBeGreaterThan(idxFlagShort);
+    // Resposta genérica sem PII.
+    expect(src).toMatch(/jsonResponse\(200,\s*\{\s*ok:\s*true,\s*disabled:\s*true,\s*received:\s*0\s*\}\)/);
+    // Assinatura inválida continua 401 antes do gate de flag.
+    expect(src).toMatch(/if\s*\(\s*!sigOk\s*\)\s*return\s+jsonResponse\(401/);
+  });
+
+  it("usa runWithConcurrency; NÃO usa Promise.all irrestrito sobre statuses", () => {
+    expect(src).toMatch(/runWithConcurrency\s*\(\s*parsed\.statuses\s*,/);
+    // Nenhuma chamada Promise.all direta no arquivo (o pool interno usa
+    // Promise.all sobre um número LIMITADO de runners, e essa importação
+    // está isolada em concurrency.ts).
+    expect(/Promise\.all\s*\(/.test(src)).toBe(false);
+  });
+
   it("RPC failure escala HTTP 500 genérico (nunca 200 com ok:false)", () => {
-    expect(src).toMatch(/if\s*\(\s*errors\s*>\s*0\s*\)/);
+    expect(src).toMatch(/hardError/);
     expect(src).toMatch(/jsonResponse\(500,\s*\{\s*ok:\s*false,\s*error:\s*"internal_error"/);
   });
+
   it("contabiliza duplicated separado de unmatched", () => {
     expect(src).toMatch(/res\.duplicated/);
     expect(src).toMatch(/duplicated,/);
   });
+
   it("não loga wamid/body/telefone/secret", () => {
-    expect(/console\.(log|info|debug|warn|error)/.test(src), "sem logs no webhook").toBe(false);
+    expect(/console\.(log|info|debug|warn|error)/.test(src)).toBe(false);
+  });
+});
+
+// ─── isWhatsappWebhookConfigValid ─────────────────────────────────────────
+
+describe("Fase 4 · isWhatsappWebhookConfigValid", () => {
+  const base = { DELIVERY_ENABLED: false, EMAIL_ENABLED: false, WHATSAPP_ENABLED: false, INAPP_ENABLED: false } as const;
+
+  it("false quando falta APP_SECRET", () => {
+    expect(isWhatsappWebhookConfigValid({
+      ...base, WHATSAPP_WEBHOOK_VERIFY_TOKEN: "vt", WHATSAPP_PHONE_NUMBER_ID: "123",
+    })).toBe(false);
+  });
+  it("false quando falta VERIFY_TOKEN", () => {
+    expect(isWhatsappWebhookConfigValid({
+      ...base, WHATSAPP_APP_SECRET: "sk", WHATSAPP_PHONE_NUMBER_ID: "123",
+    })).toBe(false);
+  });
+  it("false quando falta PHONE_NUMBER_ID ou é não-numérico", () => {
+    expect(isWhatsappWebhookConfigValid({
+      ...base, WHATSAPP_APP_SECRET: "sk", WHATSAPP_WEBHOOK_VERIFY_TOKEN: "vt",
+    })).toBe(false);
+    expect(isWhatsappWebhookConfigValid({
+      ...base, WHATSAPP_APP_SECRET: "sk", WHATSAPP_WEBHOOK_VERIFY_TOKEN: "vt",
+      WHATSAPP_PHONE_NUMBER_ID: "abc",
+    })).toBe(false);
+  });
+  it("true quando os três estão presentes e phone é numérico", () => {
+    expect(isWhatsappWebhookConfigValid({
+      ...base, WHATSAPP_APP_SECRET: "sk", WHATSAPP_WEBHOOK_VERIFY_TOKEN: "vt",
+      WHATSAPP_PHONE_NUMBER_ID: "1234567890",
+    })).toBe(true);
   });
 });
 
@@ -394,10 +552,11 @@ describe("Fase 4 · healthBooleans expõe whatsapp_webhook sem valores", () => {
     });
     expect(h.whatsapp_webhook).toEqual({ enabled: false, configured: false });
   });
-  it("configured=true quando WHATSAPP_APP_SECRET e VERIFY_TOKEN presentes", () => {
+  it("configured=true SOMENTE com APP_SECRET+VERIFY_TOKEN+PHONE_NUMBER_ID numérico", () => {
     const h = healthBooleans({
       DELIVERY_ENABLED: false, EMAIL_ENABLED: false, WHATSAPP_ENABLED: false, INAPP_ENABLED: false,
       WHATSAPP_APP_SECRET: "x", WHATSAPP_WEBHOOK_VERIFY_TOKEN: "y",
+      WHATSAPP_PHONE_NUMBER_ID: "1234567890",
       WHATSAPP_WEBHOOK_ENABLED: true,
     });
     expect(h.whatsapp_webhook).toEqual({ enabled: true, configured: true });

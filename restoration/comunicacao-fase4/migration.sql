@@ -60,7 +60,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_comunicacao_outbox_wa_provider_msgid
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.comunicacao_provider_receipts (
   id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  outbox_id           uuid REFERENCES public.comunicacao_outbox(id) ON DELETE CASCADE,
+  -- Append-only + retenção explícita: outbox NUNCA é apagada em cascata.
+  -- Uma tentativa de DELETE em comunicacao_outbox falha se houver receipts.
+  outbox_id           uuid NOT NULL REFERENCES public.comunicacao_outbox(id) ON DELETE RESTRICT,
   provider            text        NOT NULL,
   provider_message_id text        NOT NULL,
   status              text        NOT NULL,
@@ -202,17 +204,19 @@ BEGIN
   END IF;
 
   -- Máquina fora de ordem (tolerante a atrasos de rede).
-  -- Regras:
+  -- Regras (VETOR CONTRATUAL):
   --   * delivered/read: monotônicos por rank; preserva PRIMEIRO timestamp válido
   --     em delivered_at/read_at (LEAST). Estado do provider avança e ts avança.
-  --   * sent: só define estado se ainda não houver estado; nunca rebaixa failed
-  --     (usa comparação de rank + timestamp).
-  --   * failed: lateral. Só grava no estado se ainda não houver delivered/read.
-  --     Sent MAIS ANTIGO chegando depois de failed(t2>t1) NÃO substitui failed.
-  --     Failed mais antigo chegando após sent também não rebaixa se timestamp
-  --     do failed for anterior ao provider_status_at atual.
-  --   * deleted: registra evento e provider_failed_at pertinente ao histórico;
-  --     nunca rebaixa. Só define estado se ainda for NULL.
+  --   * sent: só define estado se ainda não houver estado. Nunca rebaixa
+  --     delivered/read/failed/deleted.
+  --   * failed: lateral. Só grava no estado se não houver delivered/read
+  --     nem deleted. Comparação com sent atual:
+  --       - failed com timestamp ANTERIOR ao provider_status_at de um sent
+  --         atual NÃO substitui sent.
+  --       - failed com timestamp POSTERIOR (ou igual) ao sent atual
+  --         substitui sent enquanto não houver delivered/read.
+  --     Se estado já é failed, mantém timestamp mais antigo (não avança).
+  --   * deleted: nunca rebaixa. Só define estado se ainda for NULL.
   v_current_state   := v_outbox.provider_delivery_status;
   v_current_ts      := v_outbox.provider_status_at;
   v_state_after     := v_current_state;
@@ -236,8 +240,7 @@ BEGIN
       v_upgraded    := true;
     END IF;
   ELSIF p_status = 'sent' THEN
-    -- Só define 'sent' se não há estado ou o estado atual também é 'sent'
-    -- com timestamp mais antigo. Nunca rebaixa delivered/read/failed.
+    -- Só define 'sent' se não há estado. Nunca rebaixa outros estados.
     IF v_current_state IS NULL THEN
       v_state_after := 'sent';
       v_ts_after    := p_timestamp;
@@ -247,18 +250,25 @@ BEGIN
       v_ts_after := p_timestamp;
       v_upgraded := true;
     END IF;
-    -- 'failed'/'delivered'/'read'/'deleted' presentes → sent é ignorado
-    -- (registro imutável já ficou em receipts).
   ELSIF p_status = 'failed' THEN
     v_failed_after := LEAST(COALESCE(v_outbox.provider_failed_at, p_timestamp), p_timestamp);
-    -- failed é lateral: só grava estado se ainda não houve delivered/read.
+    -- Failed é lateral: só toca estado se não houver delivered/read/deleted.
     IF v_outbox.delivered_at IS NULL AND v_outbox.read_at IS NULL
        AND v_current_state IS DISTINCT FROM 'deleted' THEN
-      -- Se já é failed, mantém timestamp mais antigo (não avança).
-      IF v_current_state IS DISTINCT FROM 'failed' THEN
+      IF v_current_state IS NULL THEN
         v_state_after := 'failed';
         v_ts_after    := p_timestamp;
         v_upgraded    := true;
+      ELSIF v_current_state = 'sent' THEN
+        -- failed anterior ao sent NÃO substitui; posterior/igual substitui.
+        IF v_current_ts IS NULL OR p_timestamp >= v_current_ts THEN
+          v_state_after := 'failed';
+          v_ts_after    := p_timestamp;
+          v_upgraded    := true;
+        END IF;
+      ELSIF v_current_state = 'failed' THEN
+        -- Já failed: mantém timestamp mais antigo (não avança).
+        NULL;
       END IF;
     END IF;
   ELSIF p_status = 'deleted' THEN
