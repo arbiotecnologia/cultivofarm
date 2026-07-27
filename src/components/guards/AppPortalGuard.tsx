@@ -22,7 +22,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
   const location = useLocation();
   const { data, isLoading, isError } = useAvailableContexts();
 
-  const isAdmin = roles.includes("administrador");
+  const isAdmin = roles.includes("administrador") || !!data?.is_admin;
   const isProducer = roles.includes("cliente_produtor");
   const denied =
     !loading &&
