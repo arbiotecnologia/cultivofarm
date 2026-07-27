@@ -9,7 +9,9 @@ HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd -- "${HERE}/../.." && pwd)"
 F1="${ROOT}/restoration/comunicacao-fase1"
 F2="${ROOT}/restoration/comunicacao-fase2"
+F4="${ROOT}/restoration/comunicacao-fase4"
 SMOKE="${HERE}/smoke-staging.sql"
+SMOKE_F4="${HERE}/smoke-staging-fase4.sql"
 
 log()  { printf '[verify] %s\n' "$*"; }
 fail() { printf '[verify][ERRO] %s\n' "$*" >&2; exit 1; }
@@ -32,11 +34,21 @@ run_file "fase1/postcheck" "${F1}/postcheck.sql"
 run_file "fase2/postcheck" "${F2}/postcheck.sql"
 run_file "fase2/harness"   "${F2}/harness-rls.sql"
 
+# 1b) Postchecks/harness Fase 4 (obrigatórios se Fase 4 aplicada).
+if [[ -f "${F4}/postcheck.sql" ]]; then
+  run_file "fase4/postcheck" "${F4}/postcheck.sql"
+  run_file "fase4/harness"   "${F4}/harness-rls.sql"
+fi
+
 # 2) Smoke read-only — obrigatório, mesmo sem JWT.
 if [[ ! -f "${SMOKE}" ]]; then
   fail "smoke-staging.sql ausente no kit."
 fi
 run_file "smoke-staging" "${SMOKE}"
+
+if [[ -f "${SMOKE_F4}" ]]; then
+  run_file "smoke-staging-fase4" "${SMOKE_F4}"
+fi
 
 # 3) Health check REAL contra a Edge Function — SÓ com JWT admin de staging.
 if [[ -z "${STAGING_TEST_ADMIN_JWT:-}" ]]; then
@@ -78,6 +90,7 @@ if ! jq -e '
   and .email.enabled == false
   and .whatsapp.enabled == false
   and .in_app.enabled == false
+  and .whatsapp_webhook.enabled == false
 ' "$tmp_body" >/dev/null 2>&1; then
   fail "communication-health: flags de entrega NÃO estão todas OFF ou ok!=true."
 fi
