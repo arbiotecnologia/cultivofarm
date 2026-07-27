@@ -11,6 +11,8 @@ import {
 import { hasUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { broadcastPortalEvent } from "@/lib/portalBroadcast";
+import { useAuth } from "@/hooks/useAuth";
+import { getHomeForRole } from "@/lib/permissions";
 
 /**
  * useSwitchPortal — troca de contexto B2B ↔ Técnico sem logout.
