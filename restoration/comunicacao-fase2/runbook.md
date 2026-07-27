@@ -40,10 +40,22 @@ Sobre a Fase 1 v3, a Fase 2 v2 adiciona:
 
 ## Ordem de execução em staging
 
+> **Regra transacional (v2 corretiva):** `migration.sql` da Fase 2 é
+> **transaction-neutral** (sem `BEGIN`/`COMMIT` externos). Aplicar SEMPRE
+> pelo `apply-staging.sh`, que agrupa `precheck+migration+postcheck` em
+> **uma única** transação (`psql --single-transaction`). Execução manual só
+> é aceita com `--single-transaction` e todos os arquivos na mesma chamada,
+> por exemplo:
+
 ```
-psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 -f restoration/comunicacao-fase2/precheck.sql
-psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 -f restoration/comunicacao-fase2/migration.sql
-psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 -f restoration/comunicacao-fase2/postcheck.sql
+# preferido
+bash restoration/comunicacao-deploy/apply-staging.sh
+
+# manual equivalente (uma única transação):
+psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 --single-transaction \
+  -f restoration/comunicacao-fase2/precheck.sql \
+  -f restoration/comunicacao-fase2/migration.sql \
+  -f restoration/comunicacao-fase2/postcheck.sql
 psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 -f restoration/comunicacao-fase2/harness-rls.sql
 # opcional em staging:
 psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 -f restoration/comunicacao-fase2/seeds.sql

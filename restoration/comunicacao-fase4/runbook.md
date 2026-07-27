@@ -23,12 +23,19 @@
 
 ## Ordem de aplicação (kit)
 
+> **Regra transacional (v2 corretiva):** `migration.sql` das Fases 2 e 4 é
+> **transaction-neutral** (sem `BEGIN`/`COMMIT` externos). A transação é
+> imposta pelo `apply-staging.sh` (`psql --single-transaction`), unindo
+> `precheck+migration+postcheck` em UMA única transação por fase. Se qualquer
+> etapa falhar, tudo é revertido pelo próprio Postgres. Execução manual só é
+> aceita com `--single-transaction` agrupando os três arquivos.
+
 ```
 apply-staging.sh
   → fase1 postcheck
-  → fase2 (precheck+migration+postcheck) atômica
+  → fase2 (precheck+migration+postcheck) atômica (--single-transaction)
   → fase2 harness
-  → fase4 (precheck+migration+postcheck) atômica
+  → fase4 (precheck+migration+postcheck) atômica (--single-transaction)
   → fase4 harness
   → seeds Fase 2 opcionais
 ```
