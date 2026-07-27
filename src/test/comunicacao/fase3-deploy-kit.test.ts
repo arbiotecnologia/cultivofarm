@@ -77,9 +77,9 @@ describe("Fase 3 v2 — kit de implantação (contratos)", () => {
     expect(s).toMatch(/--single-transaction/);
   });
 
-  it("deploy-functions-staging publica apenas as duas funções, exige CLI e NÃO exige DB", () => {
+  it("deploy-functions-staging publica as três funções (Fase 4 incluída), exige CLI e NÃO exige DB", () => {
     const s = read("deploy-functions-staging.sh");
-    expect(s).toMatch(/readonly FUNCTIONS=\("communication-health" "process-communication-outbox"\)/);
+    expect(s).toMatch(/readonly FUNCTIONS=\("communication-health" "process-communication-outbox" "whatsapp-status-webhook"\)/);
     // CLI obrigatória e DB desligado — deploy não precisa de DSN Postgres.
     expect(s).toMatch(/REQUIRE_SUPABASE_CLI=true\s+REQUIRE_DATABASE=false\s+bash[^\n]*validate-staging\.sh/);
     expect(/\$\{?FUNCTIONS_OVERRIDE/.test(s)).toBe(false);
