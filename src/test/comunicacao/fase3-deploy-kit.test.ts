@@ -1,4 +1,4 @@
-// Testes contratuais Fase 3 — kit de implantação do Módulo de Comunicação.
+// Testes contratuais Fase 3 (v2) — kit de implantação do Módulo de Comunicação.
 // Somente leitura de arquivos; nenhum script é executado.
 import { describe, it, expect } from "vitest";
 import { readFileSync, statSync } from "node:fs";
@@ -18,13 +18,12 @@ const SHELLS = [
   "rollback-staging.sh",
 ];
 
-describe("Fase 3 — kit de implantação (contratos)", () => {
-  it("todos os scripts existem, são executáveis e usam bash estrito", () => {
+describe("Fase 3 v2 — kit de implantação (contratos)", () => {
+  it("scripts existem, executáveis, bash estrito, sem set -x/eval/source arbitrário", () => {
     for (const f of SHELLS) {
       const s = read(f);
       expect(s.startsWith("#!/usr/bin/env bash"), `${f} shebang`).toBe(true);
       expect(s.includes("set -Eeuo pipefail"), `${f} strict mode`).toBe(true);
-      // Sem set -x, eval, source arbitrário
       expect(/^\s*set\s+-x/m.test(s), `${f} sem set -x`).toBe(false);
       expect(/\beval\b/.test(s), `${f} sem eval`).toBe(false);
       expect(/^\s*(source|\.)\s+["$]/m.test(s), `${f} sem source arbitrário`).toBe(false);
@@ -33,42 +32,59 @@ describe("Fase 3 — kit de implantação (contratos)", () => {
     }
   });
 
-  it("validate-staging recusa o ref configurado por padrão", () => {
+  it("validate-staging: dependências condicionais (supabase só sob REQUIRE_SUPABASE_CLI)", () => {
     const s = read("validate-staging.sh");
     expect(s).toMatch(/CONFIGURED_REF="navfzbwgwzruipouyfnk"/);
     expect(s).toMatch(/I_UNDERSTAND_CONFIGURED_REF_IS_STAGING/);
     expect(s).toMatch(/STAGING_PROJECT_REF.*!=.*STAGING_CONFIRM_REF/);
+    // psql sempre; supabase apenas se REQUIRE_SUPABASE_CLI=true
+    expect(s).toMatch(/command -v psql[^\n]*\n[\s\S]*REQUIRE_SUPABASE_CLI/);
+    expect(s).toMatch(/REQUIRE_SUPABASE_CLI:-false.*==.*"true"/s);
   });
 
-  it("apply-staging chama validate antes de qualquer psql e roda ordem correta", () => {
+  it("apply-staging: F1 postcheck; F2 precheck+migration+postcheck em transação única; harness depois; seeds SÓ Fase 2 e SÓ após harness", () => {
     const s = read("apply-staging.sh");
-    const idxValidate = s.indexOf("validate-staging.sh");
-    const idxFirstStep = s.indexOf('run "fase1/postcheck"');
+
+    // Ordem obrigatória
+    const idxValidate  = s.indexOf("validate-staging.sh");
+    const idxF1Post    = s.indexOf('fase1/postcheck');
+    const idxAtomic    = s.indexOf('fase2/precheck+migration+postcheck');
+    const idxHarness   = s.indexOf('fase2/harness');
+    const idxSeeds     = s.indexOf('fase2/seeds');
     expect(idxValidate).toBeGreaterThan(0);
-    expect(idxFirstStep).toBeGreaterThan(idxValidate);
-    // Ordem: fase1/postcheck → fase2/precheck → migration → postcheck → harness
-    const order = ["fase1/postcheck", "fase2/precheck", "fase2/migration", "fase2/postcheck", "fase2/harness"];
-    let last = -1;
-    for (const step of order) {
-      const i = s.indexOf(step);
-      expect(i, `passo ${step}`).toBeGreaterThan(last);
-      last = i;
-    }
+    expect(idxF1Post).toBeGreaterThan(idxValidate);
+    expect(idxAtomic).toBeGreaterThan(idxF1Post);
+    expect(idxHarness).toBeGreaterThan(idxAtomic);
+    expect(idxSeeds).toBeGreaterThan(idxHarness);
+
+    // Transação única para Fase 2: a função run_files_atomic recebe os três SQL
+    // e os passa em uma única invocação de psql --single-transaction.
+    expect(s).toMatch(
+      /run_files_atomic\s+"fase2\/precheck\+migration\+postcheck"\s+\\\s*\n\s*"\$\{F2\}\/precheck\.sql"\s+"\$\{F2\}\/migration\.sql"\s+"\$\{F2\}\/postcheck\.sql"/,
+    );
+    expect(s).toMatch(/psql[^\n]*--single-transaction[\s\S]{0,120}"\$\{args\[@\]\}"/);
+
+    // Proibições explícitas
+    expect(/fase1\/seeds/.test(s), "não pode rodar seeds da Fase 1").toBe(false);
+    expect(/F1.*seeds\.sql|comunicacao-fase1\/seeds\.sql/.test(s)).toBe(false);
+
+    // Flags e psql seguros
     expect(s).toMatch(/APPLY_COMMUNICATION_SEEDS/);
     expect(s).toMatch(/ON_ERROR_STOP=1/);
     expect(s).toMatch(/--single-transaction/);
   });
 
-  it("deploy-functions-staging publica apenas as duas funções autorizadas", () => {
+  it("deploy-functions-staging publica apenas as duas funções e exige supabase CLI", () => {
     const s = read("deploy-functions-staging.sh");
     expect(s).toMatch(/readonly FUNCTIONS=\("communication-health" "process-communication-outbox"\)/);
-    // Sem set-secrets nem override por env
-    expect(/set-secrets/.test(s)).toBe(false);
+    expect(s).toMatch(/REQUIRE_SUPABASE_CLI=true[\s\S]{0,60}validate-staging\.sh/);
+    // Sem override por env/args; sem configuração de secrets
     expect(/\$\{?FUNCTIONS_OVERRIDE/.test(s)).toBe(false);
-    expect(s).toMatch(/validate-staging\.sh/);
+    expect(/supabase secrets set/.test(s)).toBe(false);
+    expect(/--set-secrets/.test(s)).toBe(false);
   });
 
-  it("rollback-staging exige ROLLBACK_COMMUNICATION=true e só roda Fase 2", () => {
+  it("rollback-staging: exige ROLLBACK_COMMUNICATION=true, só Fase 2, não menciona seeds Fase 1", () => {
     const s = read("rollback-staging.sh");
     expect(s).toMatch(/ROLLBACK_COMMUNICATION.*!=.*"true"/);
     expect(s).toMatch(/comunicacao-fase2/);
@@ -76,38 +92,71 @@ describe("Fase 3 — kit de implantação (contratos)", () => {
     expect(/comunicacao-fase1/.test(s)).toBe(false);
   });
 
-  it("verify-staging faz SKIP explícito quando credencial de teste ausente", () => {
+  it("verify-staging: SEM tabela feature_flags; SEM STAGING_TEST_USER_*; usa STAGING_TEST_ADMIN_JWT", () => {
     const s = read("verify-staging.sh");
-    expect(s).toMatch(/STAGING_TEST_USER_EMAIL/);
-    expect(s).toMatch(/SKIP:/);
-    expect(s).toMatch(/flags OFF/);
+    // BUG antigo eliminado
+    expect(/feature_flags/.test(s), "não deve consultar public.feature_flags").toBe(false);
+    expect(/STAGING_TEST_USER_EMAIL/.test(s)).toBe(false);
+    expect(/STAGING_TEST_USER_PASSWORD/.test(s)).toBe(false);
+
+    // Novo fluxo real
+    expect(s).toMatch(/STAGING_TEST_ADMIN_JWT/);
+    expect(s).toMatch(/SKIP:.*communication-health/);
+    expect(s).toMatch(/command -v curl/);
+    expect(s).toMatch(/command -v jq/);
+    expect(s).toMatch(/communication-health/);
+    expect(s).toMatch(/Authorization: Bearer \$\{STAGING_TEST_ADMIN_JWT\}/);
+    expect(s).toMatch(/-X POST/);
+    expect(s).toMatch(/https:\/\/\$\{STAGING_PROJECT_REF\}\.functions\.supabase\.co/);
+    // Validação estrita das flags OFF via jq
+    expect(s).toMatch(/\.ok == true/);
+    expect(s).toMatch(/\.delivery_enabled == false/);
+    expect(s).toMatch(/\.email\.enabled == false/);
+    expect(s).toMatch(/\.whatsapp\.enabled == false/);
+    expect(s).toMatch(/\.in_app\.enabled == false/);
+    // Nunca imprime JWT/body
+    expect(/echo.*STAGING_TEST_ADMIN_JWT/.test(s)).toBe(false);
+    expect(/printf.*STAGING_TEST_ADMIN_JWT/.test(s)).toBe(false);
+    expect(/cat +"\$tmp_body"/.test(s)).toBe(false);
   });
 
-  it("nenhum script imprime DSN, tokens ou senhas", () => {
-    for (const f of SHELLS) {
-      const s = read(f);
-      expect(/echo\s+["'].*\$\{?STAGING_DB_URL/.test(s), `${f} não ecoa DSN`).toBe(false);
-      expect(/echo\s+["'].*\$\{?INTERNAL_FUNCTION_SECRET/.test(s), `${f} não ecoa secret`).toBe(false);
-      expect(/printf.*\$\{?STAGING_DB_URL/.test(s), `${f} não printfa DSN`).toBe(false);
-    }
-  });
-
-  it("env.example lista apenas nomes/valores fictícios", () => {
+  it("env.example: sem credenciais email/password; apenas STAGING_TEST_ADMIN_JWT vazio", () => {
     const s = read("env.example");
     expect(s).toMatch(/STAGING_PROJECT_REF=example-staging-ref/);
     expect(s).toMatch(/STAGING_CONFIRM_REF=example-staging-ref/);
     expect(s).toMatch(/I_UNDERSTAND_CONFIGURED_REF_IS_STAGING=false/);
     expect(s).toMatch(/ROLLBACK_COMMUNICATION=false/);
+    expect(s).toMatch(/^STAGING_TEST_ADMIN_JWT=\s*$/m);
+    expect(/STAGING_TEST_USER_EMAIL/.test(s)).toBe(false);
+    expect(/STAGING_TEST_USER_PASSWORD/.test(s)).toBe(false);
   });
 
-  it("smoke-staging.sql roda em transação com ROLLBACK e não desabilita RLS", () => {
+  it("smoke-staging.sql: read-only puro; sem WHEN OTHERS, sem os_pronto_entrega, sem RPCs admin", () => {
     const s = read("smoke-staging.sql");
     expect(s).toMatch(/BEGIN;/);
     expect(s).toMatch(/ROLLBACK;\s*$/);
     expect(/DISABLE ROW LEVEL SECURITY/i.test(s)).toBe(false);
     expect(/set_config\('request\.jwt/i.test(s)).toBe(false);
-    expect(s).toMatch(/rpc_publish_communication_event_v2/);
-    expect(s).toMatch(/rpc_set_communication_template_metadata/);
+
+    // Proibições dos bugs anteriores
+    expect(/WHEN OTHERS/i.test(s), "não pode capturar WHEN OTHERS").toBe(false);
+    expect(/os_pronto_entrega/.test(s), "event key inexistente proibido").toBe(false);
+    expect(/PERFORM +public\.rpc_publish_communication_event_v2/.test(s)).toBe(false);
+    expect(/PERFORM +public\.rpc_set_communication_template_metadata/.test(s)).toBe(false);
+
+    // Contratos exigidos
+    expect(s).toMatch(/to_regprocedure/);
+    expect(s).toMatch(/pg_proc/);
+    expect(s).toMatch(/routine_privileges/);
+    expect(s).toMatch(/grantee='authenticated'/);
+    expect(s).toMatch(/grantee='service_role'/);
+    expect(s).toMatch(/grantee='anon'/);
+    expect(s).toMatch(/relrowsecurity/);
+    expect(s).toMatch(/pg_trigger/);
+    expect(s).toMatch(/pg_constraint/);
+    expect(s).toMatch(/pg_get_functiondef/);
+    expect(s).toMatch(/idempotency_key/);
+    expect(s).toMatch(/parameter_mapping/);
   });
 
   it("scheduling.md documenta as duas opções POST-only sem secret em SQL", () => {
@@ -120,7 +169,7 @@ describe("Fase 3 — kit de implantação (contratos)", () => {
     expect(s).toMatch(/rollback/i);
   });
 
-  it("checklist manual cobre health, WA zero/N vars, opt-in, evento OS, worker, idempotência, dead-letter e in-app", () => {
+  it("checklist manual cobre health, WA zero/N vars, opt-in, evento OS, worker, idempotência, dead-letter, in-app", () => {
     const s = read("checklist-manual.md");
     for (const kw of [
       "Saúde dos canais", "sem variáveis", "N variáveis",
