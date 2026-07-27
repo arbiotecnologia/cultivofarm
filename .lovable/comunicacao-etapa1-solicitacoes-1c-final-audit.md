@@ -3,7 +3,7 @@
 **Ambiente:** staging `ar-bio-temp` / ref `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` intocada.
 **Baseline:** commit `925fb7248a06b8ca634e138e2ad673ad6da8f79d`.
 **Autorização:** "prossiga e faça o que for preciso, pode utilizar os créditos necessários para correção".
-**Resultado:** **GO** — todos os 5 pontos da auditoria atendidos, 22/22 asserts do harness funcional aprovados, renderer TS validado em 131/131 casos, zero resíduo pós-rollback, flags de entrega OFF.
+**Resultado:** **NO-GO para 1D** — pendente execução empírica real de `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` (idempotência por delta contra baseline 37/11) e de `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` (`_comunicacao_expand_event` para `administrative_important_update` e `produto_pronto_*`) via `psql`/`service_role`. Os demais pontos da auditoria continuam atendidos: 22/22 asserts do harness funcional aprovados, renderer TS validado em 131/131 casos, zero resíduo pós-rollback, flags de entrega OFF.
 
 ---
 
@@ -103,7 +103,7 @@ Mapeamento dos asserts:
 | **A18** | Paridade `placeholders(assunto+corpo)` × `variaveis` em templates não arquivados | 0 divergências | 0 ✓ |
 | **A19-active** | PII proibida em `assunto/corpo/variaveis` de templates `solic_*` não arquivados | 0 | 0 ✓ |
 | **A19-archived** | PII em `assunto/corpo` de templates `solic_*` arquivados | 0 | 0 ✓ |
-| **A20** | Idempotência das contagens seed (templates/regras antes vs depois) | 37/11 | 37/11 ✓ |
+| **A20** | Estabilidade do harness: contagens de templates/regras antes vs depois do bloco do harness funcional permanecem idênticas ao baseline (37/11) | 37/11 estáveis | 37/11 ✓ (**não é prova empírica da reexecução dos seeds; ver §3.5**) |
 
 **Nota sobre A19-archived — esclarecimento honesto:** os 11 templates in_app v1 `archived` **retêm a string `"nome_destinatario"` dentro do array `variaveis`** (metadado legado do schema anterior). Este campo **não é um valor PII** — é apenas o nome de uma variável antiga registrada como metadado. Nenhum caminho de runtime resolve esse array: (a) todas as 11 regras `solicitacao_*` apontam explicitamente para `template_versao=2`, então o resolver nunca busca as v1; (b) os campos `assunto`/`corpo` dos archived v1 já foram sanitizados e **não contêm** `{{nome_destinatario}}` — confirmado por A19-archived-body = 0; (c) `variaveis` é lido apenas pelo renderer, que valida contra o allowlist, e o renderer só é acionado para regras ativas (todas v2). Além disso, o guard de imutabilidade da Fase 2.4 rejeita `UPDATE` no array. Portanto: `nome_destinatario` **existe no metadado legado inerte**, **não é resolvido em runtime**, e é registrado como **risco baixo/aceito** — não como campo inexistente.
 
@@ -123,11 +123,11 @@ Cobertura por fixture (26 templates × 5 asserts + 1 assert de cardinalidade = 1
 
 O `renderTemplate.ts` **não foi alterado** — o comportamento já era correto e o teste é o mínimo reproduzível pedido pela auditoria.
 
-### 3.3 Idempotência dos seeds (assert A20 + prova estrutural)
+### 3.3 Idempotência dos seeds (A20 é estabilidade do harness; reexecução real pendente)
 
-- Contagens antes/depois da transação do harness (que inseriu regras temporárias, preferências, fixtures e disparou triggers): `comunicacao_templates` chave `solic_*` = **37 → 37**; `comunicacao_regras` `solicitacao_*` = **11 → 11**.
-- Ao final da rodada, consulta independente pós-rollback confirmou que as contagens continuam iguais e que **nenhuma preferência do harness sobreviveu**.
-- As migrations de seed usam `ON CONFLICT DO NOTHING` (templates) e `INSERT ... WHERE NOT EXISTS` (regras), então re-execução também é idempotente por construção — mas a prova acima demonstra idempotência empírica, não apenas semântica de DDL.
+- **A20 esclarecido:** o assert compara contagens antes vs depois **do bloco do harness funcional** (que insere regras temporárias, preferências e fixtures e as reverte). A20 prova que o harness não deixa resíduo em `comunicacao_templates`/`comunicacao_regras` — as contagens `solic_*` permanecem 37 e `solicitacao_*` permanecem 11 sob rollback do harness. **A20 não é prova empírica de que reexecutar os blocos `DO $seed$` / `DO $rules$` da migration histórica é idempotente.**
+- **Prova estrutural (aceita como risco baixo):** os seeds usam `ON CONFLICT (chave, canal, versao) DO NOTHING` (templates) e `INSERT ... WHERE NOT EXISTS` guardado pelos índices únicos parciais `ux_comunicacao_regras_evt_canal_estr_tpl_np` e `ux_comunicacao_regras_evt_canal_estr_perfil_tpl_wp` (regras). Reexecução por construção não pode criar linhas adicionais.
+- **Prova empírica: pendente.** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` executa a reexecução literal em `BEGIN...ROLLBACK` e afirma deltas contra o baseline por grupo `(chave, canal, versao, status)` — **não** exige ausência de v2. Enquanto essa execução real não for anexada como evidência, o gate 1D permanece NO-GO.
 
 ### 3.4 Regressão de `_comunicacao_expand_event` — assinatura real e smoke
 
@@ -139,7 +139,7 @@ O `renderTemplate.ts` **não foi alterado** — o comportamento já era correto 
 
 **Smoke de `administrative_important_update` e `produto_pronto_*`:** **NÃO EXECUTADO nesta rodada.** Motivo: o ambiente disponível expõe apenas `supabase--read_query` (SELECT como `authenticated`), sem `psql` nem execução de blocos `DO`/`BEGIN...ROLLBACK`. Sem esse canal, não há como (a) chamar `_comunicacao_expand_event` diretamente (revogada para `authenticated`), (b) invocar `_comunicacao_publish_system_event` dentro de sentinel rollback sem persistir eventos reais, nem (c) montar fixtures de `ordens_servico`/`ordens_servico_onfarm` e reverter. Além disso, **não existem regras `enabled=true` para `administrative_important_update` nem para `produto_pronto_*`** no staging — hoje 0 regras habilitadas para esses eventos (verificado via `read_query`), então qualquer publish neles produziria zero outbox por ausência de regra, não por comportamento do expander.
 
-Consequência honesta: mantido **NO-GO parcial exclusivamente para esta regressão específica**. Nenhuma afirmação nova é feita de que o smoke rodou "via triggers". O bloco de smoke reproduzível ficou preparado em `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` (seed) e o esqueleto de smoke `admin`/`produto` está anotado no mesmo diretório para execução humana quando houver acesso `psql` — a próxima rodada com esse acesso deve fechar o item.
+Consequência honesta: mantido **NO-GO parcial exclusivamente para esta regressão específica**. Nenhuma afirmação nova é feita de que o smoke rodou "via triggers". O smoke reproduzível está preparado em `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` (BEGIN/ROLLBACK, chamadas sintéticas ao expander, asserts de zero delta em `comunicacao_events`/`comunicacao_outbox`/`comunicacao_notifications_inapp`) para execução humana com `psql` como `service_role` — a próxima rodada com esse acesso deve fechar o item.
 
 Riscos residuais dessa lacuna: baixos — o expander é read-only puro (não escreve), seu código-fonte é o mesmo da migration histórica e permanece coberto por triggers de eventos `solicitacao_*` no harness funcional (A1–A6, A13–A16), que atravessam o mesmo caminho `publish → expand → resolver → snapshot → outbox`.
 
@@ -147,7 +147,7 @@ Riscos residuais dessa lacuna: baixos — o expander é read-only puro (não esc
 
 **Estado atual (verificado via `read_query`):** 37 templates `solic_*`; 11 regras `solicitacao_*`; 0 regras enabled; 0 versões `>1`; 0 duplicatas por chave única real; 0 regras fora de `template_versao=2`. Índices únicos reais confirmados: `ux_comunicacao_templates_chave_canal_versao`, `ux_comunicacao_templates_active_por_chave_canal`, `ux_comunicacao_regras_evt_canal_estr_tpl_np`, `ux_comunicacao_regras_evt_canal_estr_perfil_tpl_wp`.
 
-**SQL de reexecução real preparado e commitado:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql`. Reproduz **literalmente** os dois blocos `DO $seed$` / `DO $rules$` da migration `20260727210659_f75ea9d9-…-4dc793eec37b.sql` (não reaplica a migration pelo framework) dentro de `BEGIN...ROLLBACK`, com asserts pós-execução: templates=37, regras=11, versões>1 = 0, dup_templates = 0, dup_regras = 0, regras enabled = 0.
+**SQL de reexecução real preparado e commitado:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql`. Reproduz **literalmente** os dois blocos `DO $seed$` / `DO $rules$` da migration `20260727210659_f75ea9d9-…-4dc793eec37b.sql` (não reaplica a migration pelo framework) dentro de `BEGIN...ROLLBACK`. Os asserts comparam PRE e POST por **contagem exata e deltas contra o baseline** (37 templates / 11 regras), agrupam duplicidade pela chave única real `(chave, canal, versao)` para templates e `(event_key, canal, estrategia, template_chave [, perfil])` para regras — **v1 + v2 legítimos não contam como duplicata** — e exigem `delta = 0`, `regras_enabled = 0`, `regras_versao_nao_v2 = 0`, distribuição por `(canal, versao, status)` idêntica pré e pós.
 
 **Execução real:** **NÃO EXECUTADA nesta rodada** pelo mesmo motivo estrutural do §3.4 (ausência de `psql`/execução de `DO`+`ROLLBACK` no ambiente atual). A idempotência é garantida estruturalmente por:
 - `ON CONFLICT (chave, canal, versao) DO NOTHING` (templates) referenciando `ux_comunicacao_templates_chave_canal_versao` — índice real confirmado.
@@ -201,16 +201,17 @@ Executada após o rollback do harness. Resultado:
 
 ## 6. Diff desta microcorreção
 
-- **Novo:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` — reexecução literal dos dois `DO $seed$`/`DO $rules$` da migration histórica dentro de `BEGIN...ROLLBACK`, com asserts (37/11/0-enabled/0-dup/0-versão-nova). Pronto para execução humana com `psql`.
-- **Atualizado:** este documento (`1c-final-audit.md`) — assinatura real do expander corrigida, smoke admin/produto marcado NÃO EXECUTADO com justificativa, seed re-execução marcada NÃO EXECUTADA com prova estrutural + SQL, PII archived reclassificada como metadado legado inerte (não campo inexistente).
-- **Atualizado:** ledger em 4 documentos com o retorno real da rodada anterior (18,6 créditos → acumulado 77,2 → saldo 22,8).
+- **Corrigido:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` — asserts reformulados para comparar PRE/POST por contagem exata e deltas contra o baseline (37 templates / 11 regras); duplicidade agrupada pela chave única real `(chave, canal, versao)`; **não** se exige mais ausência de v2 (a expectativa correta é 11 in_app v2 active + 11 in_app v1 archived + 11 email draft v1 + 4 whatsapp draft v1, distribuição estável antes e depois).
+- **Novo:** `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` — smoke reproduzível, BEGIN/ROLLBACK, chamadas sintéticas a `_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_para_entrega` e `produto_pronto_para_retirada`, com asserts de zero delta em `comunicacao_events`/`comunicacao_outbox`/`comunicacao_notifications_inapp`. Requer execução como `service_role` (o expander foi REVOKE ALL de PUBLIC/anon/authenticated).
+- **Atualizado:** este documento — A20 reclassificado como estabilidade do harness (não prova empírica de reexecução dos seeds); §3.3 e §3.5 marcam a reexecução real como pendente; §3.4 aponta ao novo `smoke-admin-produto.sql`.
+- **Atualizado:** ledger em 4 documentos com o retorno real da rodada anterior (8,1 créditos → acumulado 85,3 → saldo 14,7). Custo desta microcorreção documental/SQL: pendente do retorno da plataforma.
 - **Sem alterações** em: `renderTemplate.ts`, publisher, resolver, triggers, RPCs, edge functions, migrations históricas ou funções instaladas.
-- **Sem migration nova nesta microcorreção** (nenhum bug real descoberto; apenas documentação, harness auxiliar e correção de ledger — conforme instrução).
+- **Sem migration nova nesta microcorreção** (apenas SQL auxiliar e documentação, conforme instrução).
 
 ---
 
 ## 7. Decisão
 
-**GO para 1D com uma ressalva documentada:** o smoke real de `administrative_important_update`/`produto_pronto_*` e a reexecução empírica do seed dependem de acesso `psql` fora do canal `read_query`. Ambos estão preparados como SQL reproduzível em `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` e serão executados por um operador humano ou na primeira janela de 1D que já habilite `psql`. Produção `navfzbwgwzruipouyfnk` continua intocada; flags OFF; 11 regras `solicitacao_*` disabled; zero envio possível.
+**NO-GO para 1D.** Enquanto não houver execução empírica real de `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` (idempotência por delta contra baseline 37/11, agrupada pela chave única real que inclui `versao`) e de `restoration/comunicacao-etapa1-1c/smoke-admin-produto.sql` (`_comunicacao_expand_event` para `administrative_important_update`, `produto_pronto_para_entrega`, `produto_pronto_para_retirada`, com zero delta em `comunicacao_events`/`outbox`/`notifications_inapp`) via `psql` como `service_role` em sentinel `BEGIN...ROLLBACK`, o gate permanece **NO-GO**. Não iniciar 1D. Produção `navfzbwgwzruipouyfnk` continua intocada; flags OFF; 11 regras `solicitacao_*` disabled; zero envio possível.
 
-**Custo desta microcorreção:** pendente do retorno da plataforma — será somado ao ledger 77,2 quando reportado.
+**Custo desta microcorreção documental/SQL:** pendente do retorno da plataforma — será somado ao ledger 85,3 quando reportado.
