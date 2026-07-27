@@ -396,3 +396,80 @@ worker, adapters, tipos, API e UI convergem para a mesma matriz operacional.
 - Meta WhatsApp: templates com status `approved` no BSP antes de qualquer envio.
 - SMTP: credenciais confirmadas em Secrets e canal `email` habilitado em `comunicacao_flags`.
 - Aplicar `restoration/comunicacao-fase2/migration.sql` em staging (não aplicado neste PR).
+
+---
+
+## Fase 3 — Kit de implantação e homologação (2026-07-27)
+
+Diretório `restoration/comunicacao-deploy/` com scripts fail-fast (`set -Eeuo
+pipefail`, sem `set -x`, sem `eval`, sem `source` arbitrário) e SQL de smoke
+em transação com `ROLLBACK`.
+
+### Arquivos novos
+- `restoration/comunicacao-deploy/README.md`
+- `restoration/comunicacao-deploy/env.example`
+- `restoration/comunicacao-deploy/validate-staging.sh`
+- `restoration/comunicacao-deploy/apply-staging.sh`
+- `restoration/comunicacao-deploy/deploy-functions-staging.sh`
+- `restoration/comunicacao-deploy/verify-staging.sh`
+- `restoration/comunicacao-deploy/rollback-staging.sh`
+- `restoration/comunicacao-deploy/smoke-staging.sql`
+- `restoration/comunicacao-deploy/checklist-manual.md`
+- `restoration/comunicacao-deploy/scheduling.md`
+- `src/test/comunicacao/fase3-deploy-kit.test.ts`
+
+### Decisões de segurança
+- Ref `navfzbwgwzruipouyfnk` é tratado como produção por padrão em todos os
+  scripts; requer `I_UNDERSTAND_CONFIGURED_REF_IS_STAGING=true` para override.
+- `STAGING_PROJECT_REF` e `STAGING_CONFIRM_REF` devem ser idênticos; a
+  ausência ou divergência aborta a execução.
+- Nenhum script imprime DSN, tokens ou secrets. Erros de `psql`/`supabase`
+  são redigidos com "log suprimido por segurança".
+- `deploy-functions-staging.sh` publica **apenas** `communication-health` e
+  `process-communication-outbox` (lista `readonly`, sem override por env).
+- `rollback-staging.sh` exige `ROLLBACK_COMMUNICATION=true`; toca apenas
+  Fase 2. Fase 1 e dados de negócio são preservados.
+- `smoke-staging.sql` roda em transação com `ROLLBACK`; verifica assinaturas
+  via `to_regprocedure`, grants por `information_schema.routine_privileges` e
+  cenários negativos (idempotency_key curto, OS sem source, status legado).
+  Não desabilita RLS, não usa `set_config('request.jwt...')` e não simula
+  auth.uid() de forma insegura.
+- `scheduling.md` documenta duas opções POST-only (cron externo autenticado
+  por `INTERNAL_FUNCTION_SECRET` OU scheduler nativo), sem gravar segredo em
+  SQL ou repositório.
+
+### Datas corrigidas
+- Fases 2.4 e 2.5 anteriormente datadas 2026-08-11 → **2026-07-27** (data
+  real deste commit) no runbook e neste relatório.
+
+### Testes
+- `src/test/comunicacao/fase3-deploy-kit.test.ts` — 12 testes contratuais
+  (bash estrito, recusa do ref configurado, ordem fail-fast, apenas duas
+  funções deployadas, flags OFF, rollback restrito, ausência de `set -x`,
+  `eval` e vazamento de DSN, transação com ROLLBACK no smoke).
+- Suíte de comunicação: **156/156** verdes.
+- Suíte completa: **2245 passed, 4 skipped, 0 failed** (o flaky historicamente
+  conhecido não reproduziu nesta rodada; nenhuma tentativa de "corrigir"
+  código não relacionado foi feita).
+
+### Bloqueios externos remanescentes (para ativação real)
+1. Ref real de STAGING fornecido pelo operador (nunca `navfzbwgwzruipouyfnk`
+   sem override consciente).
+2. Configuração de `INTERNAL_FUNCTION_SECRET` em Project Settings → Secrets do
+   projeto de staging (fora do repositório).
+3. Configuração dos secrets do provedor (SMTP, Meta WA) — não fazem parte
+   deste kit e permanecem OFF por padrão.
+4. Homologação manual do `checklist-manual.md` antes de ativar canal por canal.
+
+### Comando inicial exato
+```sh
+export STAGING_PROJECT_REF="<ref-staging-real>"
+export STAGING_CONFIRM_REF="<ref-staging-real>"
+export STAGING_DB_URL="postgresql://<user>:<pwd>@<host>:5432/postgres?sslmode=require"
+bash restoration/comunicacao-deploy/validate-staging.sh \
+  && bash restoration/comunicacao-deploy/apply-staging.sh \
+  && bash restoration/comunicacao-deploy/deploy-functions-staging.sh \
+  && psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 \
+        -f restoration/comunicacao-deploy/smoke-staging.sql \
+  && bash restoration/comunicacao-deploy/verify-staging.sh
+```
