@@ -132,3 +132,79 @@ Fluxo em `/configuracoes?tab=comunicacao` (admin):
 - Commit desta rodada: a ser preenchido pelo pipeline após merge (baseline `4ce26ec`).
 - Custo real estimado: dentro do orçamento de 24 créditos (auditoria + 1 migration + 1 arquivo de teste + relatório; nenhum redeploy de Edge Function).
 - **NÃO** há alegação de cobertura total do módulo — apenas fundação realtime + correções P0/P1 dessa rodada. P1–P3 explicitamente pendentes conforme §6.
+
+## 10. Correção final da auditoria (rodada follow-up)
+
+Baseline follow-up: `e38ea2dbd1338fd32aed9d4fa5480829d29c1cbd`. Ambiente: **staging `ikaauvsflpmamgxmkhoq`** exclusivo. Produção `navfzbwgwzruipouyfnk` não tocada. Sem publicação, sem credenciais, sem ativar flags, zero mensagens reais.
+
+### 10.1 Achado que a rodada anterior não corrigiu
+
+A rodada §1–§9 criou a policy `provider_settings_audit_select_admin`, mas policy RLS **não substitui privilégio SQL de tabela**. Auditoria de `pg_class.relacl` revelou:
+
+| Tabela | authenticated SELECT | anon SELECT | anon full ACL | Diagnóstico |
+|---|---|---|---|---|
+| `communication_provider_settings_audit` (antes) | ✅ true | ❌ **true** | ❌ `arwdDxtm` | anon com privilégio SQL de leitura/escrita (RLS bloqueava leitura porque só há policy admin, mas superfície de ataque desnecessária) |
+| `comunicacao_audit_log` | ✅ true | ✅ false | — | Já correto — **não alterado nesta rodada** |
+
+`comunicacao_audit_log` já tinha grants corretos + policy `comunicacao_audit_select_admin` + RLS ON; admin vê, não-admin negado, anon sem grant. Instrução do usuário: só mexer se a aba admin estivesse bloqueada, o que não é o caso. Preservado como está.
+
+### 10.2 Migration mínima aplicada
+
+Idempotente, escopo restrito a **uma única tabela**:
+
+```sql
+REVOKE ALL ON public.communication_provider_settings_audit FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON public.communication_provider_settings_audit FROM authenticated;
+GRANT SELECT ON public.communication_provider_settings_audit TO authenticated;
+GRANT ALL   ON public.communication_provider_settings_audit TO service_role;
+ALTER TABLE public.communication_provider_settings_audit ENABLE ROW LEVEL SECURITY;
+```
+
+Preservados: RLS ON, policy `provider_settings_audit_select_admin` (has_role administrador), INSERT/UPDATE/DELETE restritos a `service_role`.
+
+### 10.3 Postchecks reais (staging, pós-migration)
+
+```
+has_table_privilege('authenticated', 'public.communication_provider_settings_audit', 'SELECT') = true
+has_table_privilege('authenticated', 'public.communication_provider_settings_audit', 'INSERT') = false
+has_table_privilege('anon',          'public.communication_provider_settings_audit', 'SELECT') = false
+has_table_privilege('service_role',  'public.communication_provider_settings_audit', 'INSERT') = true
+pg_class.relrowsecurity                                                                       = true
+count(pg_policy)                                                                              = 1  (admin-only)
+tabelas na publication supabase_realtime (notif_op + portal + inapp_dispatch)                 = 3
+```
+
+Efeito prático: admin autenticado consegue ler o audit; usuário `authenticated` não-admin recebe zero linhas (RLS + policy admin-only); `anon` é bloqueado tanto pelo GRANT quanto pela policy; escritas continuam exclusivas de `service_role`.
+
+### 10.4 Teste ajustado (elimina o falso positivo anterior)
+
+`src/test/comunicacao/realtime-inapp-audit.test.ts` teve o caso `matriz privilege+RLS de communication_provider_settings_audit` adicionado, exigindo **simultaneamente**:
+
+- `GRANT SELECT ... TO authenticated`;
+- `REVOKE ALL ... FROM anon`;
+- `REVOKE INSERT/UPDATE/DELETE ... FROM authenticated`;
+- `GRANT ALL ... TO service_role`;
+- `ENABLE ROW LEVEL SECURITY` em algum ponto da história de migrations;
+- policy admin-only (`provider_settings_audit_select_admin` com `has_role(auth.uid(), 'administrador')`).
+
+Isso quebra futuras regressões que "adicionem só a policy" ou "só o grant".
+
+### 10.5 Validação de código
+
+- `bunx vitest run src/test/comunicacao` → **13 arquivos, 273/273 PASS** (era 272; +1 novo caso).
+- `bunx tsgo --noEmit` → limpo (sem output de erro).
+- `bun run build` → **✓ built in 24.19s** (dist + PWA v1.2.0 gerados; warnings pré-existentes de chunk-size não bloqueantes).
+
+### 10.6 Estado seguro reafirmado
+
+- Flags `COMMUNICATION_DELIVERY_ENABLED`, `EMAIL_DELIVERY_ENABLED`, `WHATSAPP_DELIVERY_ENABLED`, `COMMUNICATION_INAPP_ADAPTER_ENABLED`, `WHATSAPP_WEBHOOK_ENABLED`: **OFF**.
+- `test_mode_enabled=true`; allowlists e segredos vazios.
+- Zero linhas novas em `comunicacao_outbox`, `comunicacao_inapp_dispatch`, `notificacoes_operacionais`, `portal_notificacoes` provenientes desta rodada.
+- Nenhuma Edge Function alterada ⇒ **nenhum redeploy** feito.
+- Produção `navfzbwgwzruipouyfnk`: sem leitura, sem escrita, sem deploy.
+
+### 10.7 Commit e custo
+
+- Commit desta rodada: preenchido pelo pipeline após merge (baseline `e38ea2d`).
+- Custo real: dentro do orçamento de 10 créditos (1 migration mínima + 1 teste ajustado + relatório; sem Edge Function, sem redeploy, sem publicação).
