@@ -91,40 +91,9 @@ type SecretSlot =
   | "whatsapp_app_secret"
   | "whatsapp_verify_token";
 
-const SLOT_TO_COLUMN: Record<SecretSlot, string> = {
-  smtp_password: "secret_smtp_password",
-  whatsapp_access_token: "secret_whatsapp_access_token",
-  whatsapp_app_secret: "secret_whatsapp_app_secret",
-  whatsapp_verify_token: "secret_whatsapp_verify_token",
-};
-const VAULT_NAMES: Record<SecretSlot, string> = {
-  smtp_password: "comm_smtp_password",
-  whatsapp_access_token: "comm_whatsapp_access_token",
-  whatsapp_app_secret: "comm_whatsapp_app_secret",
-  whatsapp_verify_token: "comm_whatsapp_verify_token",
-};
-
-async function upsertVaultSecret(sb: ReturnType<typeof createClient>, slot: SecretSlot, existingId: string | null, value: string): Promise<string> {
-  if (existingId) {
-    const { error } = await sb.rpc("vault_update_secret" as never, {}) as unknown as { error: unknown };
-    // Fallback: use SQL via rpc doesn't exist for vault.update; use vault.update_secret via a wrapper if unavailable.
-    // Simpler: delete + recreate.
-    if (error) {
-      await sb.from("vault.secrets" as never).delete().eq("id", existingId as never);
-    } else {
-      return existingId;
-    }
-  }
-  // Create new secret.
-  const { data, error: cErr } = await sb.rpc("vault_create_secret" as never, {
-    p_secret: value, p_name: `${VAULT_NAMES[slot]}_${Date.now()}`,
-  }) as unknown as { data: string | null; error: unknown };
-  if (cErr || !data) {
-    // Fallback: raw SQL via PostgREST is not supported. Use vault.create_secret through sql RPC.
-    throw new Error("vault_error");
-  }
-  return data;
-}
+const VALID_SLOTS: readonly SecretSlot[] = [
+  "smtp_password", "whatsapp_access_token", "whatsapp_app_secret", "whatsapp_verify_token",
+] as const;
 
 // The RPCs vault_create_secret / vault_update_secret don't exist by default.
 // Simpler safe approach: create tiny SECURITY DEFINER wrappers inline via SQL is not possible here.
