@@ -139,6 +139,7 @@ describe("Fase 3 v2 — kit de implantação (contratos)", () => {
     expect(s).toMatch(/\.email\.enabled == false/);
     expect(s).toMatch(/\.whatsapp\.enabled == false/);
     expect(s).toMatch(/\.in_app\.enabled == false/);
+    expect(s).toMatch(/\.whatsapp_webhook\.enabled == false/);
     // Mensagens finais indicam completo/parcial
     expect(s).toMatch(/verify concluído \(parcial/);
     expect(s).toMatch(/verify concluído \(completo/);
