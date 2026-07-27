@@ -1,33 +1,36 @@
-## Problema
+## Objetivo
 
-A aba **Comunicação** em `/configuracoes` está oculta porque depende da flag `VITE_COMUNICACAO_MODULE_ENABLED=true`, que não está definida no `.env`. Sem ela, `isComunicacaoModuleEnabled()` retorna `false` e tanto o `TabsTrigger` quanto o `TabsContent` são omitidos em `src/pages/Configuracoes.tsx` (linhas 471 e 478).
+Garantir que o usuário `administrador` acesse todo o sistema sem passar pelo seletor de portal nem cair em `/acesso-pendente`, independentemente do caminho de entrada (login, deep link, troca de portal, cache antigo).
 
-O código da aba já existe e está pronto (`src/pages/configuracoes/ComunicacaoConfigTab.tsx`) — só precisa ser habilitado no ambiente.
+## Diagnóstico
 
-## Plano
+- `AuthRoute` (`src/App.tsx`) já redireciona admin para `getHomeForRole("administrador")`. OK.
+- Porém `/selecionar-portal` e `/acesso-pendente` **não têm bypass para admin**. Se o admin cair nessas rotas (deep link, `useSwitchPortal`, refresh após um estado antigo), o `SelecionarPortal` chama a RPC de contextos — que para admin retorna `available_contexts = []` — e o efeito manda para `/acesso-pendente`. Foi exatamente o estado atual (`/acesso-pendente`).
+- `AppPortalGuard` já libera admin corretamente; não precisa mexer.
 
-1. **Adicionar a flag no `.env`** (staging `ikaauvsflpmamgxmkhoq`):
-   ```
-   VITE_COMUNICACAO_MODULE_ENABLED=true
-   ```
-   Isso ativa a aba **Comunicação** em `/configuracoes` para usuários com papel `administrador`.
+## Mudanças (apenas UI/roteamento, sem backend)
 
-2. **Reiniciar o dev server** para o Vite reprocessar as variáveis `VITE_*` (elas são inlined em build time / dev startup).
+### 1. `src/pages/SelecionarPortal.tsx`
+- Adicionar, logo após obter `roles` do `useAuth`, um `useEffect` (ou early-return) que, se `roles.includes("administrador")`, faça `navigate(getHomeForRole("administrador"), { replace: true })` antes de qualquer redirecionamento baseado na RPC. Isso impede o pulo para `/acesso-pendente` quando a RPC devolve contextos vazios para admin.
 
-3. **Validar** via Playwright com o login `admin@arbio.com`:
-   - Navegar até `/configuracoes?tab=comunicacao`.
-   - Confirmar que a aba aparece e o formulário de provedores (Email/WhatsApp) renderiza.
-   - Screenshot para evidência.
+### 2. `src/pages/AcessoPendente.tsx`
+- Mesmo bypass: se `roles.includes("administrador")`, redirecionar para `getHomeForRole("administrador")` imediatamente (evita a tela travada em "Acesso pendente" caso o admin caia lá por qualquer motivo).
 
-## Fora do escopo
+### 3. (Defensivo) `src/hooks/useSwitchPortal.ts`
+- No início do callback, se o usuário for admin, apenas navegar para `getHomeForRole("administrador")` em vez de `/selecionar-portal`. Mantém a troca funcionando para B2B/Técnico e evita empurrar admin ao seletor.
 
-- **Não** habilitar `VITE_COMUNICACAO_BROADCAST_TAB_ENABLED` (broadcast/comunicados) — o pedido é apenas configurar Email/WhatsApp.
-- **Não** ativar as flags de entrega no backend (`COMMUNICATION_DELIVERY_ENABLED`, `EMAIL_DELIVERY_ENABLED`, `WHATSAPP_DELIVERY_ENABLED`, `WHATSAPP_WEBHOOK_ENABLED`). Elas permanecem OFF, conforme regras de projeto. A aba apenas persiste as credenciais no Vault; o envio real continua bloqueado até autorização explícita.
-- **Não** tocar em produção (`navfzbwgwzruipouyfnk`).
-- **Não** inserir segredos reais — o usuário fará isso pela própria UI depois que a aba aparecer.
+Nada mais é alterado: RPCs, migrations, guards de `/app` e `/portal-parceiro`, permissões e demais roles seguem inalterados.
 
-## Detalhes técnicos
+## Validação
 
-- Arquivo alterado: `.env` (1 linha adicionada).
-- Gate de permissão real (admin-only) já é aplicado por RLS/RPC no backend e pelo condicional `isAdmin && isComunicacaoModuleEnabled()` no `Configuracoes.tsx` — não é necessária mudança de código.
-- O dev server precisa ser reiniciado porque o Vite lê `.env` apenas na inicialização.
+- `tsgo` + `bun run build`.
+- Fluxo manual (Playwright) com `admin@arbio.com`:
+  1. Login → cai direto em `/dashboard/geral`.
+  2. Navegar manualmente para `/selecionar-portal` → redireciona para `/dashboard/geral`.
+  3. Navegar para `/acesso-pendente` → redireciona para `/dashboard/geral`.
+- Vitest da suíte `src/test/comunicacao` continua 273/273 (não depende dessas telas).
+
+## Fora de escopo
+
+- Nenhuma alteração em RPCs, RLS, Edge Functions, migrations ou banco (staging/produção intocados).
+- Comportamento de `cliente_produtor`, `parceiro_b2b*`, `tecnico_agronomo` etc. permanece idêntico.
