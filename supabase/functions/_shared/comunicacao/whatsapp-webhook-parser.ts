@@ -135,7 +135,7 @@ export async function verifyMetaSignature(
     false,
     ["sign"],
   );
-  const sigBuf = new Uint8Array(await crypto.subtle.sign("HMAC", key, rawBody));
+  const sigBuf = new Uint8Array(await crypto.subtle.sign("HMAC", key, rawBody as BufferSource));
   const expected = Array.from(sigBuf).map((b) => b.toString(16).padStart(2, "0")).join("");
 
   // Constant-time compare on same-length hex strings.

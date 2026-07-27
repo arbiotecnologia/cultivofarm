@@ -167,7 +167,7 @@ function buildValidBody(id = "wamid.ABC", status = "sent", ts = 1_781_000_000) {
 describe("Fase 4 · whatsapp-webhook-parser", () => {
   it("aceita payload válido e extrai apenas id/status/timestamp/error_code", () => {
     const r = parseMetaWebhookBody(buildValidBody(), PHONE);
-    if (!r.ok) throw new Error(r.error);
+    if (!r.ok) throw new Error((r as { error: string }).error);
     expect(r.statuses).toHaveLength(1);
     expect(r.statuses[0]).toMatchObject({ id: "wamid.ABC", status: "sent" });
     expect(r.statuses[0].timestamp.endsWith("Z")).toBe(true);
@@ -208,7 +208,7 @@ describe("Fase 4 · whatsapp-webhook-parser", () => {
       { code: 131047, title: "Re-engagement" },
     ];
     const r = parseMetaWebhookBody(b, PHONE);
-    if (!r.ok) throw new Error(r.error);
+    if (!r.ok) throw new Error((r as { error: string }).error);
     expect(r.statuses[0].status).toBe("failed");
     expect(r.statuses[0].error_code).toMatch(/^[a-z0-9_.:-]{1,80}$/);
   });
@@ -223,7 +223,7 @@ describe("Fase 4 · verifyMetaSignature (HMAC)", () => {
     const key = await crypto.subtle.importKey(
       "raw", new TextEncoder().encode(secret),
       { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    const buf = new Uint8Array(await crypto.subtle.sign("HMAC", key, body));
+    const buf = new Uint8Array(await crypto.subtle.sign("HMAC", key, body as BufferSource));
     return "sha256=" + Array.from(buf).map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
