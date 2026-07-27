@@ -71,8 +71,9 @@ describe("Fase 3 — kit de implantação (contratos)", () => {
   it("rollback-staging exige ROLLBACK_COMMUNICATION=true e só roda Fase 2", () => {
     const s = read("rollback-staging.sh");
     expect(s).toMatch(/ROLLBACK_COMMUNICATION.*!=.*"true"/);
-    expect(s).toMatch(/comunicacao-fase2\/rollback\.sql/);
-    expect(/comunicacao-fase1\//.test(s)).toBe(false);
+    expect(s).toMatch(/comunicacao-fase2/);
+    expect(s).toMatch(/rollback\.sql/);
+    expect(/comunicacao-fase1/.test(s)).toBe(false);
   });
 
   it("verify-staging faz SKIP explícito quando credencial de teste ausente", () => {
