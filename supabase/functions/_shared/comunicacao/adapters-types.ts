@@ -91,6 +91,12 @@ export interface WorkerEnv {
   WHATSAPP_ACCESS_TOKEN?: string;
   WHATSAPP_PHONE_NUMBER_ID?: string;
   WHATSAPP_API_VERSION?: string;
+  // Fase 4 — webhook de recibos WhatsApp (Meta). O worker de outbox não
+  // usa esses valores; existem aqui para permitir que communication-health
+  // exponha booleans configured/enabled sem revelar segredos.
+  WHATSAPP_WEBHOOK_ENABLED?: boolean;
+  WHATSAPP_APP_SECRET?: string;
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN?: string;
 }
 
 /**
