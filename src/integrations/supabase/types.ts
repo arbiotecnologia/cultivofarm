@@ -3270,6 +3270,7 @@ export type Database = {
           attempts: number
           canal: Database["public"]["Enums"]["comunicacao_canal"]
           created_at: string
+          delivered_at: string | null
           error_code: string | null
           error_message: string | null
           event_id: string
@@ -3281,7 +3282,11 @@ export type Database = {
           max_attempts: number
           next_attempt_at: string
           payload_snapshot: Json
+          provider_delivery_status: string | null
+          provider_failed_at: string | null
           provider_message_id: string | null
+          provider_status_at: string | null
+          read_at: string | null
           recipient_cliente_id: string | null
           recipient_hash: string | null
           recipient_user_id: string | null
@@ -3298,6 +3303,7 @@ export type Database = {
           attempts?: number
           canal: Database["public"]["Enums"]["comunicacao_canal"]
           created_at?: string
+          delivered_at?: string | null
           error_code?: string | null
           error_message?: string | null
           event_id: string
@@ -3309,7 +3315,11 @@ export type Database = {
           max_attempts?: number
           next_attempt_at?: string
           payload_snapshot?: Json
+          provider_delivery_status?: string | null
+          provider_failed_at?: string | null
           provider_message_id?: string | null
+          provider_status_at?: string | null
+          read_at?: string | null
           recipient_cliente_id?: string | null
           recipient_hash?: string | null
           recipient_user_id?: string | null
@@ -3326,6 +3336,7 @@ export type Database = {
           attempts?: number
           canal?: Database["public"]["Enums"]["comunicacao_canal"]
           created_at?: string
+          delivered_at?: string | null
           error_code?: string | null
           error_message?: string | null
           event_id?: string
@@ -3337,7 +3348,11 @@ export type Database = {
           max_attempts?: number
           next_attempt_at?: string
           payload_snapshot?: Json
+          provider_delivery_status?: string | null
+          provider_failed_at?: string | null
           provider_message_id?: string | null
+          provider_status_at?: string | null
+          read_at?: string | null
           recipient_cliente_id?: string | null
           recipient_hash?: string | null
           recipient_user_id?: string | null
@@ -3418,6 +3433,47 @@ export type Database = {
           whatsapp_opt_out_at?: string | null
         }
         Relationships: []
+      }
+      comunicacao_provider_receipts: {
+        Row: {
+          error_code: string | null
+          id: string
+          outbox_id: string
+          provider: string
+          provider_message_id: string
+          provider_timestamp: string
+          received_at: string
+          status: string
+        }
+        Insert: {
+          error_code?: string | null
+          id?: string
+          outbox_id: string
+          provider: string
+          provider_message_id: string
+          provider_timestamp: string
+          received_at?: string
+          status: string
+        }
+        Update: {
+          error_code?: string | null
+          id?: string
+          outbox_id?: string
+          provider?: string
+          provider_message_id?: string
+          provider_timestamp?: string
+          received_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comunicacao_provider_receipts_outbox_id_fkey"
+            columns: ["outbox_id"]
+            isOneToOne: false
+            referencedRelation: "comunicacao_outbox"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comunicacao_regras: {
         Row: {
@@ -15860,6 +15916,7 @@ export type Database = {
           attempts: number
           canal: Database["public"]["Enums"]["comunicacao_canal"]
           created_at: string
+          delivered_at: string | null
           error_code: string | null
           error_message: string | null
           event_id: string
@@ -15871,7 +15928,11 @@ export type Database = {
           max_attempts: number
           next_attempt_at: string
           payload_snapshot: Json
+          provider_delivery_status: string | null
+          provider_failed_at: string | null
           provider_message_id: string | null
+          provider_status_at: string | null
+          read_at: string | null
           recipient_cliente_id: string | null
           recipient_hash: string | null
           recipient_user_id: string | null
@@ -16622,6 +16683,15 @@ export type Database = {
           _enviado_por?: string
           _idempotency_key?: string
           _status?: string
+        }
+        Returns: Json
+      }
+      rpc_record_whatsapp_delivery_status: {
+        Args: {
+          p_error_code: string
+          p_provider_message_id: string
+          p_status: string
+          p_timestamp: string
         }
         Returns: Json
       }
