@@ -1,28 +1,53 @@
-## Plano confirmado
+## Diagnóstico
 
-Você confirmou (1) o Disconnect do Lovable Cloud e (2) forneceu a publishable key do `navfzbwgwzruipouyfnk`.
+Consulta em `auth.users` no staging `ikaauvsflpmamgxmkhoq` confirma: **o usuário `admin@arbio.com` não existe**. Só há os seeds `tecnico_agronomo@`, `gestor@`, `comercial@` e `financeiro@arbio.com`. Por isso o Supabase retorna `invalid_credentials` (400) — não é senha errada, é usuário inexistente. Ele foi criado em uma sessão anterior porém no banco de produção (proibido) ou em um snapshot que não sobreviveu. Preciso recriá-lo em staging.
 
-## Passos que executarei ao aprovar
+## Plano
 
-1. Reescrever `.env` para apontar ao Supabase externo:
-   ```
-   VITE_SUPABASE_PROJECT_ID="navfzbwgwzruipouyfnk"
-   VITE_SUPABASE_URL="https://navfzbwgwzruipouyfnk.supabase.co"
-   VITE_SUPABASE_PUBLISHABLE_KEY="sb_publishable_NPwB2bQXR7ZbgSF5zXXuqQ_PW-C8QFh"
-   ```
-2. Restaurar `src/integrations/supabase/types.ts` a partir da versão anterior (a última gerada contra o schema real do `navfzbwgwzruipouyfnk`, antes do Cloud sobrescrever o arquivo). Uso o histórico do arquivo no repositório para isso — não regenero via ferramenta do Cloud, senão ele reescreve zerado de novo.
-3. Rodar `tsgo --noEmit` e `vite build` para provar que os ~centenas de erros `never` sumiram.
-4. Reportar resultado.
+### 1. Recriar `admin@arbio.com` em staging (`ikaauvsflpmamgxmkhoq`)
+- Inserir usuário em `auth.users` com senha `Bio#2026` (hash bcrypt via `crypt`), `email_confirmed_at=now()`, provider `email`.
+- Inserir linha em `public.profiles` (`nome='Administrador'`, `ativo=true`, `email='admin@arbio.com'`).
+- Inserir linha em `public.user_roles` com `role='administrador'`.
+- Idempotente: usa `ON CONFLICT DO NOTHING` / verificação prévia.
+- Produção `navfzbwgwzruipouyfnk` permanece intocada.
 
-## Sua parte (fora das minhas ferramentas)
+### 2. Toggle mostrar/ocultar senha no login (`src/pages/Auth.tsx`)
+- Adicionar estado `showPassword`.
+- Trocar `type="password"` por `type={showPassword ? "text" : "password"}`.
+- Botão ícone (`Eye`/`EyeOff` do lucide-react) posicionado dentro do input à direita, seguindo o mesmo padrão já usado em `src/pages/app/MobileLogin.tsx` (consistência visual).
+- Apenas mudança de UI/apresentação; nenhum efeito em lógica de auth.
+- `MobileLogin.tsx` já tem o toggle — nenhuma mudança lá.
 
-- **Connectors → Lovable Cloud → Disable Cloud** (impede Cloud automático em futuros projetos).
-- **Cloud → Advanced → Disconnect** neste projeto (admin do workspace). Lembre: é irreversível e apaga o backend Cloud — no seu caso está vazio, então sem perda real. Pode fazer antes ou depois dos meus passos; o runtime já vai apontar ao Supabase certo assim que eu editar o `.env`.
+## Detalhes técnicos
 
-## O que NÃO farei
+SQL (via `supabase--insert`, aplicado somente em `ikaauvsflpmamgxmkhoq`):
+```sql
+-- cria user em auth.users com senha bcrypt
+INSERT INTO auth.users (
+  instance_id, id, aud, role, email, encrypted_password,
+  email_confirmed_at, created_at, updated_at,
+  raw_app_meta_data, raw_user_meta_data, is_super_admin
+) VALUES (
+  '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated','authenticated',
+  'admin@arbio.com', crypt('Bio#2026', gen_salt('bf')),
+  now(), now(), now(),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"nome":"Administrador"}'::jsonb, false
+) ON CONFLICT (email) DO NOTHING;
 
-- Nenhuma migration, nem no Cloud, nem no `navfzbwgwzruipouyfnk`.
-- Não mexer em `supabase/config.toml` além do project_id se necessário.
-- Não imprimir/gravar service role, DSN, tokens ou senhas.
+-- profile + role
+INSERT INTO public.profiles (user_id, nome, email, ativo)
+SELECT id, 'Administrador', 'admin@arbio.com', true FROM auth.users WHERE email='admin@arbio.com'
+ON CONFLICT (user_id) DO NOTHING;
 
-Aprove para eu executar.
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'administrador' FROM auth.users WHERE email='admin@arbio.com'
+ON CONFLICT (user_id, role) DO NOTHING;
+```
+
+Credenciais finais: `admin@arbio.com` / `Bio#2026`.
+
+## Validação
+- Consultar `auth.users` + `profiles` + `user_roles` para confirmar criação.
+- `tsgo --noEmit` e `bun run build` após a edição do `Auth.tsx`.
+- Sem alterações de RLS, edge functions, flags ou produção.
