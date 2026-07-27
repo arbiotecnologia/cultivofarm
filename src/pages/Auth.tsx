@@ -18,6 +18,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const { config, defaults, isLoading: configLoading } = useSystemConfig();
 
