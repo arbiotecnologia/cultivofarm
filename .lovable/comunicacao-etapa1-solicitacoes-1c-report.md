@@ -3,7 +3,7 @@
 **Escopo:** templates, regras e estratégias de destinatários para os 8 eventos `solicitacao_*` certificados em 1B.
 **Ambiente:** staging `ikaauvsflpmamgxmkhoq` (ar-bio-temp). Produção `navfzbwgwzruipouyfnk` proibida.
 **Baseline:** commit `ce20a8b6884905ff0fc28b79e234f2641af6bf88`.
-**Custo:** ~11 créditos (teto 14; margem 3).
+**Custo real (retorno da plataforma):** 12,1 créditos (execução inicial; teto 14; margem 1,9).
 **Flags:** todas OFF; test mode ON; zero envio; nenhuma regra habilitada em disco.
 
 Este é o registro executivo. Detalhes técnicos completos (migration passo a passo, correções de constraint, harness com todos os asserts, dívida técnica) estão em `restoration/comunicacao-etapa1-1c/report.md`.
