@@ -32,24 +32,23 @@ type ProviderView = {
 };
 
 async function callSettings(method: "GET" | "PUT", body?: unknown): Promise<ProviderView> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  if (!token) throw new Error("Sem sessão autenticada.");
-  const url = `${(supabase as any).supabaseUrl}/functions/v1/communication-provider-settings`;
-  const res = await fetch(url, {
+  const { data, error } = await supabase.functions.invoke("communication-provider-settings", {
     method,
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "apikey": (supabase as any).supabaseKey,
-    },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ?? undefined,
   });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.ok) {
-    throw new Error(json?.error || `Falha (${res.status}).`);
+  if (error) {
+    // supabase-js expõe corpo do erro em (error as any).context?.body em versões recentes
+    const ctxBody = (error as unknown as { context?: { body?: unknown } })?.context?.body;
+    let code = error.message;
+    if (typeof ctxBody === "string") {
+      try { const j = JSON.parse(ctxBody); if (j?.error) code = j.error; } catch { /* keep */ }
+    } else if (ctxBody && typeof ctxBody === "object" && "error" in ctxBody) {
+      code = String((ctxBody as { error: unknown }).error);
+    }
+    throw new Error(code);
   }
-  return json as ProviderView;
+  if (!data?.ok) throw new Error((data as { error?: string } | null)?.error ?? "unknown_error");
+  return data as ProviderView;
 }
 
 function SecretStatus({ configured }: { configured: boolean }) {
@@ -162,7 +161,14 @@ export default function ComunicacaoConfigTab() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Test mode ativo</Label>
-            <Switch checked={view.test_mode_enabled} onCheckedChange={(b) => save({ test_mode_enabled: b })} />
+            <Switch checked={view.test_mode_enabled} onCheckedChange={(b) => {
+              if (!b) {
+                if (!confirm("Desativar o Test mode permite envios REAIS a qualquer destinatário. Confirmar?")) return;
+                save({ test_mode_enabled: false, confirm_disable_test_mode: "I_UNDERSTAND_REAL_SENDS" });
+              } else {
+                save({ test_mode_enabled: true });
+              }
+            }} />
           </div>
           <div className="space-y-2">
             <Label>Adicionar/substituir e-mails permitidos (separe por vírgula)</Label>

@@ -3070,6 +3070,27 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_provider_settings_rate_limit: {
+        Row: {
+          action: string
+          count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          action: string
+          count?: number
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          action?: string
+          count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       company_fiscal_settings: {
         Row: {
           accounting_validated_at: string | null
@@ -16839,6 +16860,19 @@ export type Database = {
           p_versao: number
         }
         Returns: Json
+      }
+      rpc_service_apply_provider_settings: {
+        Args: { p_actor: string; p_payload: Json }
+        Returns: Json
+      }
+      rpc_service_check_rate_limit: {
+        Args: {
+          p_action: string
+          p_max: number
+          p_user: string
+          p_window_seconds: number
+        }
+        Returns: boolean
       }
       rpc_service_clear_provider_secret: {
         Args: { p_actor: string; p_slot: string }
