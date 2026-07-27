@@ -467,7 +467,18 @@ export default function Configuracoes() {
               <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />Financeiro
             </TabsTrigger>
           )}
+          {isAdmin && isComunicacaoModuleEnabled() && (
+            <TabsTrigger value="comunicacao" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />Comunicação
+            </TabsTrigger>
+          )}
         </TabsList>
+
+        {isAdmin && isComunicacaoModuleEnabled() && (
+          <TabsContent value="comunicacao">
+            <ComunicacaoConfigTab />
+          </TabsContent>
+        )}
 
         <TabsContent value="sla-b2b">
           <SlaB2BTab podeEditar={isAdmin || role === "gestor"} />
