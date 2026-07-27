@@ -390,3 +390,33 @@ Aguardando aprovação das decisões pendentes (§14) e dos gates (§15) para in
 - Técnico: `restoration/comunicacao-etapa1-1b/report.md`.
 
 Aguardo autorização explícita para iniciar 1C.
+
+---
+
+## 20. Encerramento 1C — 2026-07-27 (após auditoria final corretiva)
+
+**Resultado:** GO para 1D. **Ambiente:** staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` intocada. Flags OFF, zero envio, 11 regras `solicitacao_*` persistem `enabled=false`.
+
+**Ledger real corrigido pela contabilidade da plataforma:**
+- Planejamento: 2,0
+- 1A: 7,9
+- 1B (execução + hardening): 21,1
+- 1C inicial: 12,1
+- Hardening 1C anterior: 15,5
+- **Acumulado 1A→1C hardening anterior: 58,6 créditos**
+- Saldo antes da rodada de correção final: 100 − 58,6 = **41,4 créditos**
+- Custo da rodada de correção final: **pendente do retorno da plataforma** (não estimado)
+
+**Entregas da rodada de correção final:**
+1. Migration nova idempotente: 11 regras `solicitacao_*` migradas de `template_versao=1` para `template_versao=2` (chave/canal preservados).
+2. Harness funcional expandido para 22 asserts com preflight dinâmico de UUIDs (sem hardcoded IDs), executado com sentinela-rollback e todos PASS.
+3. Teste TypeScript novo (`src/test/comunicacao/etapa1-1c-solic-templates.test.ts`) — 131/131 casos PASS cobrindo renderização e rejeição de placeholders proibidos nos 26 templates `solic_*`.
+4. Consulta READ-ONLY independente pós-rollback confirmando zero resíduo.
+5. Verificação de flags de entrega: todas OFF, `test_mode_enabled=true`, allowlists vazias.
+6. Relatório final: `.lovable/comunicacao-etapa1-solicitacoes-1c-final-audit.md`.
+
+**Decisões de 1A ainda pendentes** (agora para 1D/1E):
+- Definição do vínculo tenant seguro para `by_role` de gestor/consultor/parceiro (Etapa 1E).
+- Status `aguardando_decisao_produtor` (§14).
+- Habilitação controlada das regras `solicitacao_*` fora do canal `in_app` (email/wa) — depende de homologação de provedores.
+
