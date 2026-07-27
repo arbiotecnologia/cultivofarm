@@ -72,3 +72,35 @@ Legenda: PASS = verificado por consulta contra staging. SKIP = não executável 
 
 - **GO CONDICIONADO** para staging estrutural: todos os artefatos F1/F2/F4 e as três Edge Functions estão instalados/deployados corretamente; `search_path` blindado; RLS ativa; endpoint público restrito ao webhook.
 - **Pendências para GO absoluto**: executar harnesses RLS (2.17, 2.18) e smokes transacionais (2.19, 2.20) via runbook oficial `restoration/comunicacao-deploy/*.sh` com `psql --single-transaction`, fora deste canal read-only.
+
+## 8. Execução transacional dos 4 testes (adendo `2026-07-27T04:11:50Z` UTC, commit `273bbd18a6dde03a220c51e038796bd6a1541e58`)
+
+Método: cada script foi enviado ao `supabase--migration` (envolve a query em transação); o `BEGIN;/ROLLBACK;` top-level foi removido e um `DO $$ RAISE EXCEPTION 'EXPECTED_TEST_PASS_ROLLBACK:<nome>'; END $$;` foi anexado ao final. PASS = a migration falhou EXATAMENTE no marcador (todos os asserts anteriores passaram; Postgres fez rollback automático). FAIL = a migration falhou em assert anterior. Baseline pré-execução: `receipts=0, outbox=0, templates=0, eventos=0, audit=0, consent=0, schema_migrations=506`. Pós-checks confirmaram identidade com o baseline após cada teste — atualiza os itens 2.17–2.20 anteriores.
+
+| # | Teste | Resultado | Evidência sanitizada |
+|---|-------|-----------|----------------------|
+| 8.1 | `restoration/comunicacao-fase2/harness-rls.sql` | **FAIL** | Postgres: `P0001: harness Fase 2 v2: 2 violacoes detectadas` (linha 116). Diagnóstico read-only pós-falha: (a) check 3 usa `information_schema.role_routine_grants` e retorna vazio para `service_role` nas 8 RPCs de worker, enquanto `pg_proc.proacl` mostra `service_role=X/postgres` em todas; (b) check 6.b positivo para `authenticated` em `rpc_publish_communication_event_v2` também retorna vazio na view, mas `proacl` mostra `authenticated=X/postgres`. ACL real está correta; falha é lacuna de método do harness (view `information_schema.role_routine_grants` não enumera as grants que `pg_proc.proacl` confirma existirem nesta instância). Nenhuma correção aplicada nesta etapa (fora de escopo — proibido tocar config/EF/flags/secrets/frontend). **Rollback confirmado**. |
+| 8.2 | `restoration/comunicacao-fase4/harness-rls.sql` | **PASS** | Postgres: `P0001: EXPECTED_TEST_PASS_ROLLBACK:f4_harness`. Marcador terminal alcançado; todos os asserts com `set_config('role','authenticated'/'anon')` e as tentativas negativas de INSERT/EXECUTE passaram. **Rollback confirmado**. |
+| 8.3 | `restoration/comunicacao-deploy/smoke-staging.sql` | **FAIL** | Postgres: `P0001: smoke: anon possui EXECUTE indevido em rpc_create_portal_notification_secure` (check 4). Diagnóstico: existem DUAS sobrecargas homônimas — `rpc_create_portal_notification_secure(uuid,text,text,text)` (service_role-only, correta) e `rpc_create_portal_notification_secure(uuid,text,text,text,text,text,uuid,text)` com ACL `anon=X, authenticated=X, service_role=X`. A sobrecarga larga é artefato pré-existente de outro módulo (portal_notificacoes) e NÃO foi introduzida por F1/F2/F4 — mas o smoke casa por nome de rotina e sinaliza. Achado legítimo a triar (revoke da sobrecarga larga OU rename da RPC-alvo do módulo de comunicação para evitar colisão por nome), fora desta etapa. **Rollback confirmado**. |
+| 8.4 | `restoration/comunicacao-deploy/smoke-staging-fase4.sql` | **PASS** | Postgres: `P0001: EXPECTED_TEST_PASS_ROLLBACK:smoke_fase4`. Todos os checks contratuais F4 passaram: assinatura e retorno `jsonb` de `rpc_record_whatsapp_delivery_status`, grants `service_role`-only, RLS ligada em `comunicacao_provider_receipts`, `authenticated` com SELECT, ausência de DML direto a `service_role/PUBLIC`, colunas novas em `comunicacao_outbox`, CHECK do enum, índice UNIQUE parcial `ix_comunicacao_outbox_wa_provider_msgid` com predicado `whatsapp`, trigger append-only, e presença de `FOR UPDATE`/`ON CONFLICT`/`RETURNING id` no fonte da RPC. **Rollback confirmado**. |
+
+### 8.5 Pós-checks agregados e resíduos
+
+- Contagens após os 4 testes: `receipts=0, outbox=0, templates=0, eventos=0, audit=0, consent=0` — idênticas ao baseline.
+- `supabase_migrations.schema_migrations = 506` antes e depois — nenhuma migration de teste registrada.
+- Zero objetos auxiliares criados (nenhuma função/tabela temporária), zero Edge Functions alteradas nesta etapa, flags OFF preservadas.
+- Produção `navfzbwgwzruipouyfnk` intocada. Frontend não publicado.
+
+### 8.6 Resultado consolidado
+
+- **PASS**: 8.2 (harness F4) e 8.4 (smoke F4).
+- **FAIL** com achados classificados e não corrigidos nesta etapa:
+  - 8.1 — harness F2 depende de `information_schema.role_routine_grants`, que nesta instância não enumera grants que `pg_proc.proacl` confirma existirem. Não é regressão de segurança. Recomendação: reescrever o harness usando `has_function_privilege(role, oid, 'EXECUTE')` ou consulta direta a `pg_proc.proacl`.
+  - 8.3 — smoke F1/F2 detectou sobrecarga larga pré-existente de `rpc_create_portal_notification_secure` com EXECUTE para `anon` e `authenticated`. Recomendação: revogar EXECUTE de `anon`/`authenticated` da sobrecarga `(uuid,text,text,text,text,text,uuid,text)` ou renomear a RPC-alvo do módulo de comunicação.
+- **Status**: os itens 2.17–2.20 do relatório principal ficam substituídos por 8.1–8.4 (2 PASS, 2 FAIL a triar). GO absoluto pendente das duas correções acima; F4 fica certificado ponta a ponta.
+
+### 8.7 Custo
+
+- 4 chamadas ao `supabase--migration` (todas revertidas pelo Postgres) + 3 queries read-only de diagnóstico.
+- Sem redeploys, sem builds, sem typecheck nesta etapa.
+- Bem abaixo do teto de 90 créditos.
