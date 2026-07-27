@@ -221,6 +221,8 @@ export interface CommunicationHealthResult {
   email?: { enabled: boolean; configured: boolean };
   whatsapp?: { enabled: boolean; configured: boolean };
   in_app?: { enabled: boolean; configured: boolean };
+  /** Fase 4: webhook de entrega WhatsApp (Meta). Só booleans, nunca segredos. */
+  whatsapp_webhook?: { enabled: boolean; configured: boolean };
   /** Código genérico allowlisted — nunca contém message bruta, secrets ou PII. */
   error?: CommunicationHealthErrorCode;
 }

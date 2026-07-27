@@ -1,7 +1,7 @@
-# Kit de implantação — Módulo de Comunicação (Fase 3 v2)
+# Kit de implantação — Módulo de Comunicação (Fase 3 v2 + Fase 4)
 
-Scripts fail-fast e SQL somente-leitura/idempotentes para aplicar as Fases 1 e
-2 do módulo de Comunicação em um projeto **de staging** e certificar o
+Scripts fail-fast e SQL somente-leitura/idempotentes para aplicar as Fases 1,
+2 e 4 do módulo de Comunicação em um projeto **de staging** e certificar o
 resultado antes de qualquer promoção. Nada aqui roda em produção
 diretamente; nenhum segredo é gravado no repositório.
 
@@ -44,7 +44,7 @@ diretamente; nenhum segredo é gravado no repositório.
 | `env.example`                  | Nomes de variáveis obrigatórias; valores fictícios.              |
 | `validate-staging.sh`          | Valida CLI/vars/confirmações; **não** muta banco.                |
 | `apply-staging.sh`             | F1 postcheck → F2 (precheck+migration+postcheck TX única) → F2 harness → F2 seeds opcional. |
-| `deploy-functions-staging.sh`  | Publica só `communication-health` e `process-communication-outbox`. |
+| `deploy-functions-staging.sh`  | Publica só `communication-health`, `process-communication-outbox` e `whatsapp-status-webhook`. |
 | `verify-staging.sh`            | Reexecuta postchecks/harness; health check REAL se JWT admin.    |
 | `rollback-staging.sh`          | Desfaz apenas Fase 2 (requer `ROLLBACK_COMMUNICATION=true`).     |
 | `smoke-staging.sql`            | Smoke read-only de assinaturas, grants (+/-), RLS, triggers, constraints e presença contratual das validações. |

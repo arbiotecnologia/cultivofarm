@@ -843,7 +843,7 @@ function CanalHealthPanel() {
         </p>
       )}
       {d && d.ok && (
-        <ul className="grid gap-1 text-xs md:grid-cols-3">
+        <ul className="grid gap-1 text-xs md:grid-cols-2 lg:grid-cols-4">
           <li>
             <strong>E-mail:</strong>{" "}
             {d.email?.configured ? "configurado" : "não configurado"}
@@ -856,7 +856,13 @@ function CanalHealthPanel() {
             <strong>In-app:</strong>{" "}
             {d.in_app?.configured ? "configurado" : "não configurado"}
           </li>
-          <li className="md:col-span-3 text-muted-foreground">
+          <li>
+            <strong>Webhook WhatsApp:</strong>{" "}
+            {d.whatsapp_webhook?.configured ? "configurado" : "não configurado"}
+            {" · "}
+            {d.whatsapp_webhook?.enabled ? "flag ON" : "flag OFF"}
+          </li>
+          <li className="md:col-span-2 lg:col-span-4 text-muted-foreground">
             Consultado em {d.fetched_at}. Nenhum valor de secret é exposto.
           </li>
         </ul>

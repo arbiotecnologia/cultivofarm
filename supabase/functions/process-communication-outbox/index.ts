@@ -81,7 +81,12 @@ Deno.serve(async (req: Request) => {
     { p_batch_size: BATCH_SIZE, p_worker_id: WORKER_ID, p_lease_seconds: LEASE_SECONDS },
   );
   if (claimErr) {
-    return json(500, { ok: false, error: "claim_failed", detail: claimErr.message });
+    // Não ecoar claimErr.message: mensagens do Postgres podem conter nomes de
+    // coluna/tabela, valores de parâmetro em erros de constraint e outros
+    // detalhes internos. Alinhado ao restante do worker (adapter/render são
+    // sempre truncados/mascarados). Detalhe fica só no log do servidor.
+    console.warn("[worker] claim_failed", { name: (claimErr as { name?: string } | null)?.name ?? "unknown" });
+    return json(500, { ok: false, error: "claim_failed" });
   }
   const items = (claimed ?? []) as ClaimRow[];
   const results: Array<Record<string, unknown>> = [];

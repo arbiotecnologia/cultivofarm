@@ -253,6 +253,63 @@ describe("Fase 4 · Kit", () => {
   });
 });
 
+// ─── Fase 5 · Regressões da certificação RC ────────────────────────────────
+
+describe("Fase 5 (RC) · Regressões", () => {
+  it("worker não ecoa claimErr.message do Postgres na resposta HTTP", () => {
+    const worker = read(resolve(
+      ROOT, "supabase/functions/process-communication-outbox/index.ts",
+    ));
+    // Não pode reintroduzir vazamento do raw error do Postgres.
+    expect(worker, "claimErr.message não pode vazar para o cliente").not.toMatch(
+      /detail:\s*claimErr\.message/,
+    );
+    // Resposta claim_failed continua existindo, mas sem detail.
+    expect(worker).toMatch(/error:\s*"claim_failed"/);
+  });
+
+  it("CommunicationHealthResult inclui whatsapp_webhook e UI renderiza os booleans", () => {
+    const apiSrc = read(resolve(ROOT, "src/features/comunicacao/api.ts"));
+    expect(apiSrc).toMatch(/whatsapp_webhook\?:\s*\{\s*enabled:\s*boolean;\s*configured:\s*boolean\s*\}/);
+    const uiSrc = read(resolve(ROOT, "src/features/comunicacao/ui/ComunicacaoAdminPage.tsx"));
+    expect(uiSrc).toMatch(/whatsapp_webhook\?\.configured/);
+    expect(uiSrc).toMatch(/whatsapp_webhook\?\.enabled/);
+    expect(uiSrc).toMatch(/Webhook WhatsApp/);
+  });
+
+  it("healthBooleans retorna whatsapp_webhook (contrato Edge Function ↔ UI)", () => {
+    const hb = healthBooleans({
+      DELIVERY_ENABLED: false, EMAIL_ENABLED: false, WHATSAPP_ENABLED: false, INAPP_ENABLED: false,
+      WHATSAPP_WEBHOOK_ENABLED: false,
+      WHATSAPP_APP_SECRET: "", WHATSAPP_WEBHOOK_VERIFY_TOKEN: "", WHATSAPP_PHONE_NUMBER_ID: "",
+    } as unknown as Parameters<typeof healthBooleans>[0]);
+    expect(hb).toHaveProperty("whatsapp_webhook");
+    expect(hb.whatsapp_webhook).toEqual({ enabled: false, configured: false });
+  });
+
+  it("kit deploy: comentário do cabeçalho lista as 3 funções realmente publicadas", () => {
+    const deploySrc = read(resolve(KIT, "deploy-functions-staging.sh"));
+    // Extrair array FUNCTIONS.
+    const m = deploySrc.match(/readonly FUNCTIONS=\(([^)]+)\)/);
+    expect(m).not.toBeNull();
+    const arr = m![1].match(/"([^"]+)"/g)?.map((s) => s.slice(1, -1)) ?? [];
+    expect(arr.sort()).toEqual([
+      "communication-health", "process-communication-outbox", "whatsapp-status-webhook",
+    ].sort());
+    // Comentário deve mencionar todas as 3 (evita drift).
+    for (const fn of arr) {
+      expect(deploySrc.slice(0, 400), `cabeçalho deve mencionar ${fn}`).toContain(fn);
+    }
+  });
+
+  it("docs do kit refletem Fases 1/2/4 (sem referência solta a 'Fase 3')", () => {
+    const envEx = read(resolve(KIT, "env.example"));
+    const checklist = read(resolve(KIT, "checklist-manual.md"));
+    expect(envEx.split("\n")[0], "primeira linha do env.example").not.toMatch(/Fase 3\b/);
+    expect(checklist.split("\n")[0], "título do checklist").toMatch(/Fases?\s+1\/2\/4/);
+  });
+});
+
 // ─── Edge Function (parser + HMAC) ─────────────────────────────────────────
 
 const PHONE = "1234567890";
