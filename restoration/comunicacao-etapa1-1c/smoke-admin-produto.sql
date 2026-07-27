@@ -59,22 +59,14 @@ END $preflight$;
 DO $smoke$
 DECLARE
   v_res jsonb;
-  v_count int;
+  v_osf uuid := (SELECT id FROM public.ordens_servico_onfarm ORDER BY created_at DESC LIMIT 1);
 
-  FUNCTION _assert_has_recipients(_res jsonb, _label text) RETURNS void AS $$
-  BEGIN
-    IF _res IS NULL THEN
-      RAISE EXCEPTION 'SMOKE_FAIL_%: retorno NULL', _label;
-    END IF;
-    IF jsonb_typeof(_res) = 'object' AND _res = '{}'::jsonb THEN
-      RAISE EXCEPTION 'SMOKE_FAIL_%: expander retornou objeto vazio — não prova comportamento', _label;
-    END IF;
-    IF jsonb_typeof(_res) = 'array' AND jsonb_array_length(_res) = 0 THEN
-      RAISE EXCEPTION 'SMOKE_FAIL_%: expander retornou array vazio — não prova comportamento', _label;
-    END IF;
-  END;
-  $$ LANGUAGE plpgsql;
+  PROCEDURE_STUB text := '';  -- placeholder para leitura humana; asserts inline abaixo
 BEGIN
+  IF v_osf IS NULL THEN
+    RAISE EXCEPTION 'HARNESS_FAIL_PREFLIGHT_no_ordens_servico_onfarm: sem fixture compatível — gate NO-GO';
+  END IF;
+
   -- administrative_important_update
   v_res := public._comunicacao_expand_event(
     gen_random_uuid(),
@@ -84,29 +76,41 @@ BEGIN
     jsonb_build_object('titulo','Smoke','mensagem','Smoke real','severity','info')
   );
   RAISE NOTICE 'expand administrative_important_update -> %', v_res::text;
-  PERFORM _assert_has_recipients(v_res, 'administrative_important_update');
+  IF v_res IS NULL
+     OR (jsonb_typeof(v_res) = 'object' AND v_res = '{}'::jsonb)
+     OR (jsonb_typeof(v_res) = 'array'  AND jsonb_array_length(v_res) = 0) THEN
+    RAISE EXCEPTION 'SMOKE_FAIL_administrative_important_update: retorno NULL/vazio não prova comportamento';
+  END IF;
 
   -- produto_pronto_retirada (event_key real certificado)
   v_res := public._comunicacao_expand_event(
     gen_random_uuid(),
     'produto_pronto_retirada',
     'ordens_servico_onfarm',
-    (SELECT id FROM public.ordens_servico_onfarm ORDER BY created_at DESC LIMIT 1),
+    v_osf,
     jsonb_build_object('numero','SMOKE-1')
   );
   RAISE NOTICE 'expand produto_pronto_retirada -> %', v_res::text;
-  PERFORM _assert_has_recipients(v_res, 'produto_pronto_retirada');
+  IF v_res IS NULL
+     OR (jsonb_typeof(v_res) = 'object' AND v_res = '{}'::jsonb)
+     OR (jsonb_typeof(v_res) = 'array'  AND jsonb_array_length(v_res) = 0) THEN
+    RAISE EXCEPTION 'SMOKE_FAIL_produto_pronto_retirada: retorno NULL/vazio não prova comportamento';
+  END IF;
 
   -- produto_pronto_aplicacao (event_key real certificado)
   v_res := public._comunicacao_expand_event(
     gen_random_uuid(),
     'produto_pronto_aplicacao',
     'ordens_servico_onfarm',
-    (SELECT id FROM public.ordens_servico_onfarm ORDER BY created_at DESC LIMIT 1),
+    v_osf,
     jsonb_build_object('numero','SMOKE-2')
   );
   RAISE NOTICE 'expand produto_pronto_aplicacao -> %', v_res::text;
-  PERFORM _assert_has_recipients(v_res, 'produto_pronto_aplicacao');
+  IF v_res IS NULL
+     OR (jsonb_typeof(v_res) = 'object' AND v_res = '{}'::jsonb)
+     OR (jsonb_typeof(v_res) = 'array'  AND jsonb_array_length(v_res) = 0) THEN
+    RAISE EXCEPTION 'SMOKE_FAIL_produto_pronto_aplicacao: retorno NULL/vazio não prova comportamento';
+  END IF;
 END $smoke$;
 
 -- S4) Zero resíduo: o expander é read-only por design; contagens devem permanecer iguais.
