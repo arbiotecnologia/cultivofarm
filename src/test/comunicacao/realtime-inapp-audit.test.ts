@@ -62,6 +62,28 @@ describe("Auditoria E2E — realtime in-app", () => {
     );
   });
 
+  it("matriz privilege+RLS de communication_provider_settings_audit: GRANT SELECT authenticated, REVOKE anon, sem INSERT/UPDATE/DELETE para authenticated", () => {
+    // Policy sozinha não substitui privilégio SQL de tabela: precisa GRANT
+    // SELECT em authenticated + REVOKE em anon + RLS admin-only + escrita
+    // reservada a service_role.
+    expect(migrations).toMatch(
+      /REVOKE\s+ALL\s+ON\s+public\.communication_provider_settings_audit\s+FROM\s+anon/i,
+    );
+    expect(migrations).toMatch(
+      /REVOKE\s+INSERT[^;]*UPDATE[^;]*DELETE[^;]*ON\s+public\.communication_provider_settings_audit\s+FROM\s+authenticated/i,
+    );
+    expect(migrations).toMatch(
+      /GRANT\s+SELECT\s+ON\s+public\.communication_provider_settings_audit\s+TO\s+authenticated/i,
+    );
+    expect(migrations).toMatch(
+      /GRANT\s+ALL\s+ON\s+public\.communication_provider_settings_audit\s+TO\s+service_role/i,
+    );
+    // RLS deve continuar ativa em qualquer ponto da história.
+    expect(migrations).toMatch(
+      /ALTER TABLE public\.communication_provider_settings_audit ENABLE ROW LEVEL SECURITY/i,
+    );
+  });
+
   it("hook useNotificacoesOperacionais filtra por usuario_id e limpa o canal", () => {
     const src = readFileSync(
       join(ROOT, "src/hooks/useNotificacoesOperacionais.ts"),
