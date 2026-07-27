@@ -321,8 +321,9 @@ describe("F-CORR (4) provider-settings — shaping/validações", () => {
 // ---------- (5) Estáticos ----------
 describe("F-CORR (5) invariantes estáticos de segurança/wiring", () => {
   const feFile = "src/pages/configuracoes/ComunicacaoConfigTab.tsx";
-  const migF3 = "supabase/migrations/20260812000000-comunicacao-provider-settings.sql";
-  const migF3b = "supabase/migrations/20260813000000-comunicacao-atomic-apply.sql";
+  const migF3  = "supabase/migrations/20260727161408_f3b6bc19-55b3-473b-80aa-14481e58cbf0.sql";
+  const migF3a = "supabase/migrations/20260727161544_0316604a-f7f3-407b-ba2a-14c09d6021cb.sql";
+  const migF3b = "supabase/migrations/20260727162402_3651e2b6-d372-4ff9-b87c-295ce68b586b.sql";
   const settingsIdx = "supabase/functions/communication-provider-settings/index.ts";
   const healthIdx = "supabase/functions/communication-health/index.ts";
   const workerIdx = "supabase/functions/process-communication-outbox/index.ts";
@@ -342,7 +343,7 @@ describe("F-CORR (5) invariantes estáticos de segurança/wiring", () => {
   });
 
   it("migrations revogam service RPCs de public/anon/authenticated e concedem só service_role", () => {
-    const bodies = [read(migF3), read(migF3b)].join("\n");
+    const bodies = [read(migF3), read(migF3a), read(migF3b)].join("\n");
     const svcRpcs = [
       "rpc_service_load_provider_runtime_config",
       "rpc_service_apply_provider_settings",
@@ -351,7 +352,6 @@ describe("F-CORR (5) invariantes estáticos de segurança/wiring", () => {
       "rpc_service_check_rate_limit",
     ];
     for (const fn of svcRpcs) {
-      // cada RPC precisa aparecer com REVOKE FROM public/authenticated/anon
       const rx = new RegExp(String.raw`REVOKE\s+ALL\s+ON\s+FUNCTION[\s\S]*?${fn}[\s\S]*?FROM\s+PUBLIC`, "i");
       expect.soft(bodies, `${fn} deve ter REVOKE FROM PUBLIC`).toMatch(rx);
       const rxGrant = new RegExp(String.raw`GRANT\s+EXECUTE\s+ON\s+FUNCTION[\s\S]*?${fn}[\s\S]*?TO\s+service_role`, "i");
