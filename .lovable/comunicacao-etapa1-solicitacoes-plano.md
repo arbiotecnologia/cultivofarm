@@ -361,3 +361,32 @@ Todos obrigatórios; qualquer NO-GO reabre 1A.
 - Único artefato criado: este documento `.lovable/comunicacao-etapa1-solicitacoes-plano.md`.
 
 Aguardando aprovação das decisões pendentes (§14) e dos gates (§15) para iniciar 1B.
+
+---
+
+## 19. Encerramento 1B (após correção pós-auditoria) — 2026-07-27
+
+**Resultado:** GO para 1C. **Ambiente:** staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` não tocada. Flags OFF, zero envio.
+
+**Custo real 1B:** 12,1 (execução inicial) + 7,0 (correção pós-auditoria) = **19,1 créditos** (teto 22). Saldo Etapa 1: ≈93 − 19,1 ≈ **73,9**. Reserva ≥20 preservada.
+
+**Migrations aplicadas na 1B (nenhuma editada retroativamente):**
+1. 1B inicial (publisher/resolver `solicitacao_*`, trigger canônico, drop legado, função legada preservada).
+2. Hotfix D1 (`search_path=public,extensions` + `extensions.digest`).
+3. Hotfix D2 (payload alinhado ao contrato §10: `status_novo`, `status_anterior`, `numero_solicitacao`, `origem_solicitacao`, `ocorrido_em`, `transicao`).
+4. **Hardening pós-auditoria:** primeira atribuição por `consultor_atribuido` NULL→X com dedup joint; anti-spoof do publisher (source_id existente + cliente_id/consultor_atribuido coerentes + `solicitacao_id`=`source_id`); resolver `by_role` fail-closed (só `administrador`); `REVOKE ALL` explícito de `PUBLIC`/`anon`/`authenticated`.
+
+**Testes:** harness com 22 asserts (`restoration/comunicacao-etapa1-1b/harness.sql`) — todos PASS, sentinela `HARNESS_1B_HARDENING_OK_ROLLBACK_SENTINEL`, zero resíduo confirmado por consulta independente pós-rollback.
+
+**Grants efetivos (confirmados):** PUBLIC/anon/authenticated = false; service_role = true (herança de owner, necessário para o trigger). `SECURITY DEFINER` + `search_path` fixo nas três funções.
+
+**Decisões pendentes de 1A ainda em aberto** (serão tratadas em 1C conforme escopo):
+- Definição do vínculo tenant seguro para `by_role` de gestor/consultor/parceiro.
+- Status `aguardando_decisao_produtor` (§14 do plano).
+- Criação de `comunicacao_templates` e `comunicacao_regras` para `solicitacao_*`.
+
+**Relatórios:**
+- Executivo: `.lovable/comunicacao-etapa1-solicitacoes-1b-report.md`.
+- Técnico: `restoration/comunicacao-etapa1-1b/report.md`.
+
+Aguardo autorização explícita para iniciar 1C.
