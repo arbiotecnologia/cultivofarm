@@ -44,7 +44,7 @@ diretamente; nenhum segredo é gravado no repositório.
 | `env.example`                  | Nomes de variáveis obrigatórias; valores fictícios.              |
 | `validate-staging.sh`          | Valida CLI/vars/confirmações; **não** muta banco.                |
 | `apply-staging.sh`             | F1 postcheck → F2 (precheck+migration+postcheck TX única) → F2 harness → F2 seeds opcional. |
-| `deploy-functions-staging.sh`  | Publica só `communication-health` e `process-communication-outbox`. |
+| `deploy-functions-staging.sh`  | Publica só `communication-health`, `process-communication-outbox` e `whatsapp-status-webhook`. |
 | `verify-staging.sh`            | Reexecuta postchecks/harness; health check REAL se JWT admin.    |
 | `rollback-staging.sh`          | Desfaz apenas Fase 2 (requer `ROLLBACK_COMMUNICATION=true`).     |
 | `smoke-staging.sql`            | Smoke read-only de assinaturas, grants (+/-), RLS, triggers, constraints e presença contratual das validações. |
