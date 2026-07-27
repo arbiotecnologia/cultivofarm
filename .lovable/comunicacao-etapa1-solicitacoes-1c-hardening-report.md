@@ -34,7 +34,7 @@ Todos os 13 asserts em conformidade:
 
 ## Custo desta sessão de hardening
 
-**Custo real (retorno da plataforma):** 15,5 créditos (auditoria + migration de correção + 3 execuções do harness + docs). Ledger corrigido: 2 (plan) + 7,9 (1A) + 21,1 (1B) + 12,1 (1C inicial) + 15,5 (hardening 1C anterior) = **58,6 créditos acumulados**; saldo antes da rodada de correção final = **41,4 créditos**.
+**Custo real (retorno da plataforma):** 15,5 créditos. Ledger atualizado após a rodada de correção final (18,6 real): 2 (plan) + 7,9 (1A) + 21,1 (1B) + 12,1 (1C inicial) + 15,5 (hardening 1C anterior) + 18,6 (correção final anterior) = **77,2 créditos acumulados**; saldo antes desta microcorreção = **22,8 créditos**; custo desta microcorreção: **pendente do retorno da plataforma**.
 
 ## Riscos residuais
 
