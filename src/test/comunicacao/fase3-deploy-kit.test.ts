@@ -115,10 +115,12 @@ describe("Fase 3 v2 — kit de implantação (contratos)", () => {
     );
     expect(s).toMatch(/"\$\{API_URL\}\/communication-health"/);
 
-    // Smoke read-only obrigatório (mesmo sem JWT).
+    // Smoke read-only obrigatório (mesmo sem JWT): rodado após o harness
+    // e antes do gate de STAGING_TEST_ADMIN_JWT.
     expect(s).toMatch(/smoke-staging\.sql/);
-    const idxHarness = s.indexOf('fase2/harness');
-    const idxSmoke   = s.indexOf('smoke-staging');
+    expect(s).toMatch(/run_file\s+"smoke-staging"/);
+    const idxHarness = s.indexOf('run_file "fase2/harness"');
+    const idxSmoke   = s.indexOf('run_file "smoke-staging"');
     const idxJwtGate = s.search(/STAGING_TEST_ADMIN_JWT:-/);
     expect(idxHarness).toBeGreaterThan(0);
     expect(idxSmoke).toBeGreaterThan(idxHarness);
