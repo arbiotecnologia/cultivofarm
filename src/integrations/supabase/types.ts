@@ -12,7 +12,7 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  public: {
+  graphql_public: {
     Tables: {
       [_ in never]: never
     }
@@ -20,10 +20,16137 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
+      _fiscal_hml_context: {
+        Row: {
+          created_at: string
+          marker: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          marker: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          marker?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      _fiscal_hml_inventory: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          object_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          label: string
+          object_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          object_id?: string
+        }
+        Relationships: []
+      }
+      _fiscal_staging_marker: {
+        Row: {
+          created_at: string
+          marker: string
+          project_ref: string
+        }
+        Insert: {
+          created_at?: string
+          marker: string
+          project_ref: string
+        }
+        Update: {
+          created_at?: string
+          marker?: string
+          project_ref?: string
+        }
+        Relationships: []
+      }
+      accounts_payable: {
+        Row: {
+          auto_generated: boolean
+          category_id: string
+          cost_center_id: string | null
+          created_at: string
+          created_by: string
+          description: string
+          first_due_date: string
+          fiscal_document_number: string | null
+          id: string
+          installment_count: number
+          issue_date: string
+          notes: string | null
+          origin_id: string | null
+          origin_type: string
+          recurring_template_id: string | null
+          reference_month: string | null
+          status: string
+          supplier_id: string | null
+          supplier_invoice_date: string | null
+          supplier_name: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          auto_generated?: boolean
+          category_id: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          first_due_date: string
+          fiscal_document_number?: string | null
+          id?: string
+          installment_count?: number
+          issue_date?: string
+          notes?: string | null
+          origin_id?: string | null
+          origin_type?: string
+          recurring_template_id?: string | null
+          reference_month?: string | null
+          status?: string
+          supplier_id?: string | null
+          supplier_invoice_date?: string | null
+          supplier_name?: string | null
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          auto_generated?: boolean
+          category_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          first_due_date?: string
+          fiscal_document_number?: string | null
+          id?: string
+          installment_count?: number
+          issue_date?: string
+          notes?: string | null
+          origin_id?: string | null
+          origin_type?: string
+          recurring_template_id?: string | null
+          reference_month?: string | null
+          status?: string
+          supplier_id?: string | null
+          supplier_invoice_date?: string | null
+          supplier_name?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_payable_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_payable_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_payable_recurring_template_id_fkey"
+            columns: ["recurring_template_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_financial_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts_payable_installments: {
+        Row: {
+          created_at: string
+          discount_amount: number
+          due_date: string
+          id: string
+          installment_number: number
+          interest_amount: number
+          net_amount: number
+          original_amount: number
+          paid_amount: number
+          paid_at: string | null
+          payable_id: string
+          penalty_amount: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          discount_amount?: number
+          due_date: string
+          id?: string
+          installment_number: number
+          interest_amount?: number
+          net_amount: number
+          original_amount: number
+          paid_amount?: number
+          paid_at?: string | null
+          payable_id: string
+          penalty_amount?: number
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          discount_amount?: number
+          due_date?: string
+          id?: string
+          installment_number?: number
+          interest_amount?: number
+          net_amount?: number
+          original_amount?: number
+          paid_amount?: number
+          paid_at?: string | null
+          payable_id?: string
+          penalty_amount?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_payable_installments_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_payable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts_receivable: {
+        Row: {
+          auto_generated: boolean
+          boleto_url: string | null
+          category_id: string
+          cost_center_id: string | null
+          created_at: string
+          created_by: string
+          customer_id: string | null
+          description: string
+          external_payment_id: string | null
+          first_due_date: string
+          fiscal_access_key: string | null
+          fiscal_invoice_number: string | null
+          fiscal_invoice_required: boolean
+          fiscal_invoice_status: string
+          fiscal_issue_date: string | null
+          id: string
+          installment_count: number
+          issue_date: string
+          notes: string | null
+          origin_id: string | null
+          origin_type: string
+          partner_id: string | null
+          payment_gateway: string | null
+          payment_method_id: string | null
+          pix_copia_cola: string | null
+          pix_qr_code: string | null
+          recurring_template_id: string | null
+          reference_month: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          auto_generated?: boolean
+          boleto_url?: string | null
+          category_id: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by: string
+          customer_id?: string | null
+          description: string
+          external_payment_id?: string | null
+          first_due_date: string
+          fiscal_access_key?: string | null
+          fiscal_invoice_number?: string | null
+          fiscal_invoice_required?: boolean
+          fiscal_invoice_status?: string
+          fiscal_issue_date?: string | null
+          id?: string
+          installment_count?: number
+          issue_date?: string
+          notes?: string | null
+          origin_id?: string | null
+          origin_type: string
+          partner_id?: string | null
+          payment_gateway?: string | null
+          payment_method_id?: string | null
+          pix_copia_cola?: string | null
+          pix_qr_code?: string | null
+          recurring_template_id?: string | null
+          reference_month?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          auto_generated?: boolean
+          boleto_url?: string | null
+          category_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string
+          customer_id?: string | null
+          description?: string
+          external_payment_id?: string | null
+          first_due_date?: string
+          fiscal_access_key?: string | null
+          fiscal_invoice_number?: string | null
+          fiscal_invoice_required?: boolean
+          fiscal_invoice_status?: string
+          fiscal_issue_date?: string | null
+          id?: string
+          installment_count?: number
+          issue_date?: string
+          notes?: string | null
+          origin_id?: string | null
+          origin_type?: string
+          partner_id?: string | null
+          payment_gateway?: string | null
+          payment_method_id?: string | null
+          pix_copia_cola?: string | null
+          pix_qr_code?: string | null
+          recurring_template_id?: string | null
+          reference_month?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_receivable_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_recurring_template_id_fkey"
+            columns: ["recurring_template_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_financial_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts_receivable_installments: {
+        Row: {
+          created_at: string
+          discount_amount: number
+          due_date: string
+          id: string
+          installment_number: number
+          interest_amount: number
+          net_amount: number
+          original_amount: number
+          paid_at: string | null
+          penalty_amount: number
+          receivable_id: string
+          received_amount: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          discount_amount?: number
+          due_date: string
+          id?: string
+          installment_number: number
+          interest_amount?: number
+          net_amount: number
+          original_amount: number
+          paid_at?: string | null
+          penalty_amount?: number
+          receivable_id: string
+          received_amount?: number
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          discount_amount?: number
+          due_date?: string
+          id?: string
+          installment_number?: number
+          interest_amount?: number
+          net_amount?: number
+          original_amount?: number
+          paid_at?: string | null
+          penalty_amount?: number
+          receivable_id?: string
+          received_amount?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_receivable_installments_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_sync_log: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          external_event_id: string | null
+          id: string
+          last_synced_at: string | null
+          provider: string
+          solicitacao_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          external_event_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          provider: string
+          solicitacao_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          external_event_id?: string | null
+          id?: string
+          last_synced_at?: string | null
+          provider?: string
+          solicitacao_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_sync_log_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "portal_solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_refresh_jobs: {
+        Row: {
+          concluido_em: string | null
+          erro: string | null
+          escopo: Json
+          id: string
+          iniciado_em: string
+          iniciado_por: string | null
+          itens_com_sugestao: number
+          itens_falhos: number
+          itens_processados: number
+          modelo_ia: string | null
+          status: string
+          total_itens: number
+        }
+        Insert: {
+          concluido_em?: string | null
+          erro?: string | null
+          escopo?: Json
+          id?: string
+          iniciado_em?: string
+          iniciado_por?: string | null
+          itens_com_sugestao?: number
+          itens_falhos?: number
+          itens_processados?: number
+          modelo_ia?: string | null
+          status?: string
+          total_itens?: number
+        }
+        Update: {
+          concluido_em?: string | null
+          erro?: string | null
+          escopo?: Json
+          id?: string
+          iniciado_em?: string
+          iniciado_por?: string | null
+          itens_com_sugestao?: number
+          itens_falhos?: number
+          itens_processados?: number
+          modelo_ia?: string | null
+          status?: string
+          total_itens?: number
+        }
+        Relationships: []
+      }
+      alertas_acoes: {
+        Row: {
+          acao: string
+          alerta_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          observacao: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          alerta_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          observacao?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          alerta_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          observacao?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_acoes_alerta_id_fkey"
+            columns: ["alerta_id"]
+            isOneToOne: false
+            referencedRelation: "alertas_operacionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alertas_agronomicos: {
+        Row: {
+          created_at: string
+          data_alerta: string
+          data_vencimento: string | null
+          descricao: string | null
+          fazenda_id: string
+          id: string
+          nivel_risco: Database["public"]["Enums"]["nivel_risco"]
+          registro_origem_id: string | null
+          status: Database["public"]["Enums"]["status_alerta"]
+          talhao_id: string | null
+          tipo_alerta: Database["public"]["Enums"]["tipo_alerta"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_alerta?: string
+          data_vencimento?: string | null
+          descricao?: string | null
+          fazenda_id: string
+          id?: string
+          nivel_risco?: Database["public"]["Enums"]["nivel_risco"]
+          registro_origem_id?: string | null
+          status?: Database["public"]["Enums"]["status_alerta"]
+          talhao_id?: string | null
+          tipo_alerta: Database["public"]["Enums"]["tipo_alerta"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_alerta?: string
+          data_vencimento?: string | null
+          descricao?: string | null
+          fazenda_id?: string
+          id?: string
+          nivel_risco?: Database["public"]["Enums"]["nivel_risco"]
+          registro_origem_id?: string | null
+          status?: Database["public"]["Enums"]["status_alerta"]
+          talhao_id?: string | null
+          tipo_alerta?: Database["public"]["Enums"]["tipo_alerta"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_agronomicos_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alertas_agronomicos_registro_origem_id_fkey"
+            columns: ["registro_origem_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alertas_agronomicos_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alertas_execucoes: {
+        Row: {
+          created_at: string
+          duracao_ms: number | null
+          erro: string | null
+          executado_por: string | null
+          finalizado_em: string | null
+          id: string
+          iniciado_em: string
+          metadata: Json
+          origem: string
+          status: string
+          tipo_execucao: string
+          total_atualizados: number
+          total_criados: number
+          total_ignorados_por_regra: number
+          total_processados: number
+          total_resolvidos_automaticamente: number
+        }
+        Insert: {
+          created_at?: string
+          duracao_ms?: number | null
+          erro?: string | null
+          executado_por?: string | null
+          finalizado_em?: string | null
+          id?: string
+          iniciado_em?: string
+          metadata?: Json
+          origem?: string
+          status?: string
+          tipo_execucao?: string
+          total_atualizados?: number
+          total_criados?: number
+          total_ignorados_por_regra?: number
+          total_processados?: number
+          total_resolvidos_automaticamente?: number
+        }
+        Update: {
+          created_at?: string
+          duracao_ms?: number | null
+          erro?: string | null
+          executado_por?: string | null
+          finalizado_em?: string | null
+          id?: string
+          iniciado_em?: string
+          metadata?: Json
+          origem?: string
+          status?: string
+          tipo_execucao?: string
+          total_atualizados?: number
+          total_criados?: number
+          total_ignorados_por_regra?: number
+          total_processados?: number
+          total_resolvidos_automaticamente?: number
+        }
+        Relationships: []
+      }
+      alertas_leituras: {
+        Row: {
+          alerta_id: string
+          id: string
+          lido_em: string
+          user_id: string
+        }
+        Insert: {
+          alerta_id: string
+          id?: string
+          lido_em?: string
+          user_id: string
+        }
+        Update: {
+          alerta_id?: string
+          id?: string
+          lido_em?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_leituras_alerta_id_fkey"
+            columns: ["alerta_id"]
+            isOneToOne: false
+            referencedRelation: "alertas_operacionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alertas_notificacao_config: {
+        Row: {
+          ativo: boolean
+          canal: string
+          cooldown_minutos: number
+          created_at: string
+          dia_semana_resumo: number | null
+          dias_semana: number[] | null
+          enviar_resumo: boolean
+          gravidades: string[]
+          horario_fim: string | null
+          horario_inicio: string | null
+          horario_resumo: string | null
+          id: string
+          incluir_alertas_media: boolean
+          incluir_informativos: boolean
+          max_envios_por_alerta: number
+          metadata: Json
+          origens: string[] | null
+          resumo_diario_ativo: boolean
+          resumo_semanal_ativo: boolean
+          tipos: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          canal?: string
+          cooldown_minutos?: number
+          created_at?: string
+          dia_semana_resumo?: number | null
+          dias_semana?: number[] | null
+          enviar_resumo?: boolean
+          gravidades?: string[]
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          horario_resumo?: string | null
+          id?: string
+          incluir_alertas_media?: boolean
+          incluir_informativos?: boolean
+          max_envios_por_alerta?: number
+          metadata?: Json
+          origens?: string[] | null
+          resumo_diario_ativo?: boolean
+          resumo_semanal_ativo?: boolean
+          tipos?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          canal?: string
+          cooldown_minutos?: number
+          created_at?: string
+          dia_semana_resumo?: number | null
+          dias_semana?: number[] | null
+          enviar_resumo?: boolean
+          gravidades?: string[]
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          horario_resumo?: string | null
+          id?: string
+          incluir_alertas_media?: boolean
+          incluir_informativos?: boolean
+          max_envios_por_alerta?: number
+          metadata?: Json
+          origens?: string[] | null
+          resumo_diario_ativo?: boolean
+          resumo_semanal_ativo?: boolean
+          tipos?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      alertas_notificacao_destinatarios: {
+        Row: {
+          ativo: boolean
+          canal: string
+          created_at: string
+          email: string | null
+          gravidades: string[] | null
+          id: string
+          metadata: Json
+          nome: string
+          origens: string[] | null
+          receber_resumo: boolean
+          roles_permitidas: string[] | null
+          telefone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          canal?: string
+          created_at?: string
+          email?: string | null
+          gravidades?: string[] | null
+          id?: string
+          metadata?: Json
+          nome: string
+          origens?: string[] | null
+          receber_resumo?: boolean
+          roles_permitidas?: string[] | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          canal?: string
+          created_at?: string
+          email?: string | null
+          gravidades?: string[] | null
+          id?: string
+          metadata?: Json
+          nome?: string
+          origens?: string[] | null
+          receber_resumo?: boolean
+          roles_permitidas?: string[] | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      alertas_notificacoes: {
+        Row: {
+          alerta_id: string
+          assunto: string | null
+          canal: string
+          created_at: string
+          destinatario_id: string | null
+          destino: string
+          enviado_em: string | null
+          erro: string | null
+          id: string
+          mensagem: string
+          metadata: Json
+          provider: string | null
+          provider_message_id: string | null
+          status: string
+          tentativa: number
+        }
+        Insert: {
+          alerta_id: string
+          assunto?: string | null
+          canal: string
+          created_at?: string
+          destinatario_id?: string | null
+          destino: string
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          mensagem: string
+          metadata?: Json
+          provider?: string | null
+          provider_message_id?: string | null
+          status?: string
+          tentativa?: number
+        }
+        Update: {
+          alerta_id?: string
+          assunto?: string | null
+          canal?: string
+          created_at?: string
+          destinatario_id?: string | null
+          destino?: string
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          mensagem?: string
+          metadata?: Json
+          provider?: string | null
+          provider_message_id?: string | null
+          status?: string
+          tentativa?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_notificacoes_alerta_id_fkey"
+            columns: ["alerta_id"]
+            isOneToOne: false
+            referencedRelation: "alertas_operacionais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alertas_notificacoes_destinatario_id_fkey"
+            columns: ["destinatario_id"]
+            isOneToOne: false
+            referencedRelation: "alertas_notificacao_destinatarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alertas_operacionais: {
+        Row: {
+          chave_dedupe: string | null
+          cliente_id: string | null
+          consultor_id: string | null
+          created_at: string
+          criado_por: string | null
+          descricao: string
+          entrega_id: string | null
+          escalonado: boolean
+          escalonado_em: string | null
+          escalonado_para: string | null
+          fazenda_id: string | null
+          gravidade: string
+          id: string
+          ignorado_em: string | null
+          ignorado_por: string | null
+          lote_id: string | null
+          metadata: Json
+          origem: string
+          os_id: string | null
+          os_origem: string | null
+          primeira_resposta_em: string | null
+          prioridade_score: number
+          proxima_acao: string | null
+          referencia_id: string | null
+          referencia_tabela: string | null
+          registro_consultor_id: string | null
+          resolvido_em: string | null
+          resolvido_por: string | null
+          responsavel_id: string | null
+          sla_config_id: string | null
+          sla_primeira_resposta_em: string | null
+          sla_resolucao_em: string | null
+          sla_vencido: boolean
+          sla_vencido_em: string | null
+          solicitacao_id: string | null
+          status: string
+          talhao_id: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          chave_dedupe?: string | null
+          cliente_id?: string | null
+          consultor_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          descricao: string
+          entrega_id?: string | null
+          escalonado?: boolean
+          escalonado_em?: string | null
+          escalonado_para?: string | null
+          fazenda_id?: string | null
+          gravidade?: string
+          id?: string
+          ignorado_em?: string | null
+          ignorado_por?: string | null
+          lote_id?: string | null
+          metadata?: Json
+          origem: string
+          os_id?: string | null
+          os_origem?: string | null
+          primeira_resposta_em?: string | null
+          prioridade_score?: number
+          proxima_acao?: string | null
+          referencia_id?: string | null
+          referencia_tabela?: string | null
+          registro_consultor_id?: string | null
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          responsavel_id?: string | null
+          sla_config_id?: string | null
+          sla_primeira_resposta_em?: string | null
+          sla_resolucao_em?: string | null
+          sla_vencido?: boolean
+          sla_vencido_em?: string | null
+          solicitacao_id?: string | null
+          status?: string
+          talhao_id?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          chave_dedupe?: string | null
+          cliente_id?: string | null
+          consultor_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string
+          entrega_id?: string | null
+          escalonado?: boolean
+          escalonado_em?: string | null
+          escalonado_para?: string | null
+          fazenda_id?: string | null
+          gravidade?: string
+          id?: string
+          ignorado_em?: string | null
+          ignorado_por?: string | null
+          lote_id?: string | null
+          metadata?: Json
+          origem?: string
+          os_id?: string | null
+          os_origem?: string | null
+          primeira_resposta_em?: string | null
+          prioridade_score?: number
+          proxima_acao?: string | null
+          referencia_id?: string | null
+          referencia_tabela?: string | null
+          registro_consultor_id?: string | null
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          responsavel_id?: string | null
+          sla_config_id?: string | null
+          sla_primeira_resposta_em?: string | null
+          sla_resolucao_em?: string | null
+          sla_vencido?: boolean
+          sla_vencido_em?: string | null
+          solicitacao_id?: string | null
+          status?: string
+          talhao_id?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_operacionais_sla_config_id_fkey"
+            columns: ["sla_config_id"]
+            isOneToOne: false
+            referencedRelation: "alertas_sla_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alertas_regras: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          descricao: string | null
+          gravidade_padrao: string
+          id: string
+          nome: string
+          origem: string
+          parametros: Json
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          gravidade_padrao?: string
+          id?: string
+          nome: string
+          origem: string
+          parametros?: Json
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          gravidade_padrao?: string
+          id?: string
+          nome?: string
+          origem?: string
+          parametros?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      alertas_resumos: {
+        Row: {
+          assunto: string | null
+          canal: string
+          conteudo: string
+          created_at: string
+          destinatario_id: string | null
+          destino: string
+          enviado_em: string | null
+          erro: string | null
+          id: string
+          metadata: Json
+          periodo_fim: string
+          periodo_inicio: string
+          provider: string | null
+          provider_message_id: string | null
+          status: string
+          tipo_resumo: string
+          total_abertos: number
+          total_alertas: number
+          total_alta: number
+          total_baixa: number
+          total_criticos: number
+          total_falhas_execucao: number
+          total_informativos: number
+          total_media: number
+          total_resolvidos: number
+        }
+        Insert: {
+          assunto?: string | null
+          canal?: string
+          conteudo: string
+          created_at?: string
+          destinatario_id?: string | null
+          destino: string
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          metadata?: Json
+          periodo_fim: string
+          periodo_inicio: string
+          provider?: string | null
+          provider_message_id?: string | null
+          status?: string
+          tipo_resumo?: string
+          total_abertos?: number
+          total_alertas?: number
+          total_alta?: number
+          total_baixa?: number
+          total_criticos?: number
+          total_falhas_execucao?: number
+          total_informativos?: number
+          total_media?: number
+          total_resolvidos?: number
+        }
+        Update: {
+          assunto?: string | null
+          canal?: string
+          conteudo?: string
+          created_at?: string
+          destinatario_id?: string | null
+          destino?: string
+          enviado_em?: string | null
+          erro?: string | null
+          id?: string
+          metadata?: Json
+          periodo_fim?: string
+          periodo_inicio?: string
+          provider?: string | null
+          provider_message_id?: string | null
+          status?: string
+          tipo_resumo?: string
+          total_abertos?: number
+          total_alertas?: number
+          total_alta?: number
+          total_baixa?: number
+          total_criticos?: number
+          total_falhas_execucao?: number
+          total_informativos?: number
+          total_media?: number
+          total_resolvidos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_resumos_destinatario_id_fkey"
+            columns: ["destinatario_id"]
+            isOneToOne: false
+            referencedRelation: "alertas_notificacao_destinatarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alertas_sla_config: {
+        Row: {
+          aplica_horario_comercial: boolean
+          ativo: boolean
+          codigo: string
+          created_at: string
+          descricao: string | null
+          dias_semana: number[] | null
+          escalonar_apos_minutos: number | null
+          gravidade: string
+          horario_fim: string | null
+          horario_inicio: string | null
+          id: string
+          metadata: Json
+          nome: string
+          notificar_gestor: boolean
+          notificar_responsavel: boolean
+          nova_gravidade_apos_sla: string | null
+          origem: string | null
+          prazo_primeira_resposta_minutos: number | null
+          prazo_resolucao_minutos: number
+          tipo_alerta: string | null
+          updated_at: string
+        }
+        Insert: {
+          aplica_horario_comercial?: boolean
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          dias_semana?: number[] | null
+          escalonar_apos_minutos?: number | null
+          gravidade: string
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          metadata?: Json
+          nome: string
+          notificar_gestor?: boolean
+          notificar_responsavel?: boolean
+          nova_gravidade_apos_sla?: string | null
+          origem?: string | null
+          prazo_primeira_resposta_minutos?: number | null
+          prazo_resolucao_minutos: number
+          tipo_alerta?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aplica_horario_comercial?: boolean
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          dias_semana?: number[] | null
+          escalonar_apos_minutos?: number | null
+          gravidade?: string
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          metadata?: Json
+          nome?: string
+          notificar_gestor?: boolean
+          notificar_responsavel?: boolean
+          nova_gravidade_apos_sla?: string | null
+          origem?: string | null
+          prazo_primeira_resposta_minutos?: number | null
+          prazo_resolucao_minutos?: number
+          tipo_alerta?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      alertas_sla_eventos: {
+        Row: {
+          alerta_id: string
+          config_id: string | null
+          created_at: string
+          criado_por: string | null
+          escalonado_em: string | null
+          evento: string
+          gestor_notificado: boolean
+          gravidade_anterior: string | null
+          gravidade_nova: string | null
+          id: string
+          metadata: Json
+          observacao: string | null
+          prazo_primeira_resposta_em: string | null
+          prazo_resolucao_em: string | null
+          responsavel_id: string | null
+          vencido_em: string | null
+        }
+        Insert: {
+          alerta_id: string
+          config_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          escalonado_em?: string | null
+          evento: string
+          gestor_notificado?: boolean
+          gravidade_anterior?: string | null
+          gravidade_nova?: string | null
+          id?: string
+          metadata?: Json
+          observacao?: string | null
+          prazo_primeira_resposta_em?: string | null
+          prazo_resolucao_em?: string | null
+          responsavel_id?: string | null
+          vencido_em?: string | null
+        }
+        Update: {
+          alerta_id?: string
+          config_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          escalonado_em?: string | null
+          evento?: string
+          gestor_notificado?: boolean
+          gravidade_anterior?: string | null
+          gravidade_nova?: string | null
+          id?: string
+          metadata?: Json
+          observacao?: string | null
+          prazo_primeira_resposta_em?: string | null
+          prazo_resolucao_em?: string | null
+          responsavel_id?: string | null
+          vencido_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_sla_eventos_alerta_id_fkey"
+            columns: ["alerta_id"]
+            isOneToOne: false
+            referencedRelation: "alertas_operacionais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alertas_sla_eventos_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "alertas_sla_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aplicacao_emails: {
+        Row: {
+          aplicacao_id: string
+          created_at: string
+          email: string
+          enviado_por: string | null
+          id: string
+          idempotency_key: string | null
+          status: string | null
+        }
+        Insert: {
+          aplicacao_id: string
+          created_at?: string
+          email: string
+          enviado_por?: string | null
+          id?: string
+          idempotency_key?: string | null
+          status?: string | null
+        }
+        Update: {
+          aplicacao_id?: string
+          created_at?: string
+          email?: string
+          enviado_por?: string | null
+          id?: string
+          idempotency_key?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aplicacao_emails_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_emails_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "aplicacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacao_emails_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_emails_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_emails_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["aplicacao_id"]
+          },
+        ]
+      }
+      aplicacao_evidencias: {
+        Row: {
+          aplicacao_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          legenda: string | null
+          mime: string | null
+          storage_path: string
+          tamanho_bytes: number | null
+          tipo: string
+          url: string | null
+          versao_origem_id: string | null
+        }
+        Insert: {
+          aplicacao_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          legenda?: string | null
+          mime?: string | null
+          storage_path: string
+          tamanho_bytes?: number | null
+          tipo?: string
+          url?: string | null
+          versao_origem_id?: string | null
+        }
+        Update: {
+          aplicacao_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          legenda?: string | null
+          mime?: string | null
+          storage_path?: string
+          tamanho_bytes?: number | null
+          tipo?: string
+          url?: string | null
+          versao_origem_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aplicacao_evidencias_versao_origem_id_fkey"
+            columns: ["versao_origem_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_versao_origem_id_fkey"
+            columns: ["versao_origem_id"]
+            isOneToOne: false
+            referencedRelation: "aplicacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_versao_origem_id_fkey"
+            columns: ["versao_origem_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_versao_origem_id_fkey"
+            columns: ["versao_origem_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_versao_origem_id_fkey"
+            columns: ["versao_origem_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["aplicacao_id"]
+          },
+        ]
+      }
+      aplicacao_evidencias_vinculos: {
+        Row: {
+          aplicacao_id: string
+          created_at: string | null
+          evidencia_id: string
+        }
+        Insert: {
+          aplicacao_id: string
+          created_at?: string | null
+          evidencia_id: string
+        }
+        Update: {
+          aplicacao_id?: string
+          created_at?: string | null
+          evidencia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aplicacao_evidencias_vinculos_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_vinculos_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "aplicacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_vinculos_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_vinculos_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_vinculos_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_vinculos_evidencia_id_fkey"
+            columns: ["evidencia_id"]
+            isOneToOne: false
+            referencedRelation: "aplicacao_evidencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aplicacoes: {
+        Row: {
+          area_aplicada_ha: number | null
+          assinatura_responsavel_url: string | null
+          bico_tipo: string | null
+          condicoes_climaticas: string | null
+          created_at: string
+          created_by: string | null
+          data_aplicacao: string
+          dose_aplicada: number | null
+          email_envio: string | null
+          equipamento: string | null
+          equipamento_modelo: string | null
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          is_latest: boolean | null
+          latitude: number | null
+          longitude: number | null
+          lote_usado_id: string | null
+          modo_aplicacao: string | null
+          motivo_retificacao: string | null
+          observacoes: string | null
+          ordem_servico_id: string | null
+          ordem_servico_onfarm_id: string | null
+          parent_id: string | null
+          pressao_bar: number | null
+          produto_usado_id: string | null
+          responsavel: string | null
+          responsavel_id: string | null
+          resultado_inicial: string | null
+          temperatura_c: number | null
+          umidade_pct: number | null
+          updated_at: string
+          vento_kmh: number | null
+          versao: number | null
+          volume_calda_l_ha: number | null
+          volume_total_aplicado_ml: number | null
+        }
+        Insert: {
+          area_aplicada_ha?: number | null
+          assinatura_responsavel_url?: string | null
+          bico_tipo?: string | null
+          condicoes_climaticas?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_aplicacao?: string
+          dose_aplicada?: number | null
+          email_envio?: string | null
+          equipamento?: string | null
+          equipamento_modelo?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          is_latest?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          lote_usado_id?: string | null
+          modo_aplicacao?: string | null
+          motivo_retificacao?: string | null
+          observacoes?: string | null
+          ordem_servico_id?: string | null
+          ordem_servico_onfarm_id?: string | null
+          parent_id?: string | null
+          pressao_bar?: number | null
+          produto_usado_id?: string | null
+          responsavel?: string | null
+          responsavel_id?: string | null
+          resultado_inicial?: string | null
+          temperatura_c?: number | null
+          umidade_pct?: number | null
+          updated_at?: string
+          vento_kmh?: number | null
+          versao?: number | null
+          volume_calda_l_ha?: number | null
+          volume_total_aplicado_ml?: number | null
+        }
+        Update: {
+          area_aplicada_ha?: number | null
+          assinatura_responsavel_url?: string | null
+          bico_tipo?: string | null
+          condicoes_climaticas?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_aplicacao?: string
+          dose_aplicada?: number | null
+          email_envio?: string | null
+          equipamento?: string | null
+          equipamento_modelo?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          is_latest?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          lote_usado_id?: string | null
+          modo_aplicacao?: string | null
+          motivo_retificacao?: string | null
+          observacoes?: string | null
+          ordem_servico_id?: string | null
+          ordem_servico_onfarm_id?: string | null
+          parent_id?: string | null
+          pressao_bar?: number | null
+          produto_usado_id?: string | null
+          responsavel?: string | null
+          responsavel_id?: string | null
+          resultado_inicial?: string | null
+          temperatura_c?: number | null
+          umidade_pct?: number | null
+          updated_at?: string
+          vento_kmh?: number | null
+          versao?: number | null
+          volume_calda_l_ha?: number | null
+          volume_total_aplicado_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aplicacoes_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "mv_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico_onfarm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "vw_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "aplicacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["aplicacao_id"]
+          },
+          {
+            foreignKeyName: "aplicacoes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["aplicacao_id"]
+          },
+        ]
+      }
+      aprovacoes_tecnicas: {
+        Row: {
+          aprovado_por: string | null
+          aprovado_por_role: Database["public"]["Enums"]["app_role"] | null
+          comentario_gestor: string | null
+          created_at: string
+          data_aprovacao: string | null
+          id: string
+          override: boolean | null
+          registro_consultor_id: string
+          status_aprovacao: Database["public"]["Enums"]["status_aprovacao"]
+        }
+        Insert: {
+          aprovado_por?: string | null
+          aprovado_por_role?: Database["public"]["Enums"]["app_role"] | null
+          comentario_gestor?: string | null
+          created_at?: string
+          data_aprovacao?: string | null
+          id?: string
+          override?: boolean | null
+          registro_consultor_id: string
+          status_aprovacao?: Database["public"]["Enums"]["status_aprovacao"]
+        }
+        Update: {
+          aprovado_por?: string | null
+          aprovado_por_role?: Database["public"]["Enums"]["app_role"] | null
+          comentario_gestor?: string | null
+          created_at?: string
+          data_aprovacao?: string | null
+          id?: string
+          override?: boolean | null
+          registro_consultor_id?: string
+          status_aprovacao?: Database["public"]["Enums"]["status_aprovacao"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aprovacoes_tecnicas_aprovado_por_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "aprovacoes_tecnicas_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      arquivos: {
+        Row: {
+          arquivo_url: string
+          data_upload: string
+          descricao: string | null
+          entidade_id: string
+          entidade_tipo: string
+          id: string
+        }
+        Insert: {
+          arquivo_url: string
+          data_upload?: string
+          descricao?: string | null
+          entidade_id: string
+          entidade_tipo: string
+          id?: string
+        }
+        Update: {
+          arquivo_url?: string
+          data_upload?: string
+          descricao?: string | null
+          entidade_id?: string
+          entidade_tipo?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      audit_senha_log: {
+        Row: {
+          created_at: string
+          executor_id: string | null
+          id: string
+          target_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          executor_id?: string | null
+          id?: string
+          target_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          executor_id?: string | null
+          id?: string
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_senha_log_executor_id_fkey"
+            columns: ["executor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "audit_senha_log_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      auditoria_duplicidade: {
+        Row: {
+          client_uuid: string | null
+          created_at: string | null
+          id: string
+          item_id: string
+          motivo: string | null
+          resolvido: boolean | null
+          tabela_origem: string
+        }
+        Insert: {
+          client_uuid?: string | null
+          created_at?: string | null
+          id?: string
+          item_id: string
+          motivo?: string | null
+          resolvido?: boolean | null
+          tabela_origem: string
+        }
+        Update: {
+          client_uuid?: string | null
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          motivo?: string | null
+          resolvido?: boolean | null
+          tabela_origem?: string
+        }
+        Relationships: []
+      }
+      bank_accounts: {
+        Row: {
+          account_number: string | null
+          active: boolean
+          agency: string | null
+          bank_name: string | null
+          created_at: string
+          id: string
+          name: string
+          opening_balance: number
+          pix_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          active?: boolean
+          agency?: string | null
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          opening_balance?: number
+          pix_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          active?: boolean
+          agency?: string | null
+          bank_name?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          opening_balance?: number
+          pix_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bi_filtro_config: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          filtros: Json
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          filtros?: Json
+          id?: string
+          nome: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          filtros?: Json
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bi_refresh_audit: {
+        Row: {
+          duration_ms: number | null
+          error_message: string | null
+          executed_at: string
+          executed_by: string
+          id: string
+          success: boolean
+          target: string
+        }
+        Insert: {
+          duration_ms?: number | null
+          error_message?: string | null
+          executed_at?: string
+          executed_by: string
+          id?: string
+          success?: boolean
+          target: string
+        }
+        Update: {
+          duration_ms?: number | null
+          error_message?: string | null
+          executed_at?: string
+          executed_by?: string
+          id?: string
+          success?: boolean
+          target?: string
+        }
+        Relationships: []
+      }
+      bi_user_preferences: {
+        Row: {
+          created_at: string | null
+          filtros: Json
+          id: string
+          is_default: boolean | null
+          nome: string
+          secao: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filtros?: Json
+          id?: string
+          is_default?: boolean | null
+          nome: string
+          secao?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filtros?: Json
+          id?: string
+          is_default?: boolean | null
+          nome?: string
+          secao?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      catalog_access_events: {
+        Row: {
+          created_at: string
+          entidade_id: string
+          entidade_tipo: string
+          id: string
+          origem: string | null
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entidade_id: string
+          entidade_tipo: string
+          id?: string
+          origem?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entidade_id?: string
+          entidade_tipo?: string
+          id?: string
+          origem?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      catalog_technical_audit_logs: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          entidade_id: string
+          entidade_tipo: string
+          id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          entidade_id: string
+          entidade_tipo: string
+          id?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          entidade_id?: string
+          entidade_tipo?: string
+          id?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      catalog_technical_sources: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_consulta: string | null
+          entidade_id: string
+          entidade_tipo: string
+          fonte_tipo: string
+          fonte_titulo: string
+          fonte_url: string | null
+          id: string
+          idioma_original: string | null
+          nivel_confianca: string
+          observacoes: string | null
+          pais_origem: string | null
+          resumo_evidencia: string | null
+          source_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_consulta?: string | null
+          entidade_id: string
+          entidade_tipo: string
+          fonte_tipo: string
+          fonte_titulo: string
+          fonte_url?: string | null
+          id?: string
+          idioma_original?: string | null
+          nivel_confianca?: string
+          observacoes?: string | null
+          pais_origem?: string | null
+          resumo_evidencia?: string | null
+          source_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_consulta?: string | null
+          entidade_id?: string
+          entidade_tipo?: string
+          fonte_tipo?: string
+          fonte_titulo?: string
+          fonte_url?: string | null
+          id?: string
+          idioma_original?: string | null
+          nivel_confianca?: string
+          observacoes?: string | null
+          pais_origem?: string | null
+          resumo_evidencia?: string | null
+          source_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      catalogo_alvos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          nome_cientifico: string | null
+          nome_normalizado: string
+          sinonimos: string[]
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          nome_cientifico?: string | null
+          nome_normalizado: string
+          sinonimos?: string[]
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          nome_cientifico?: string | null
+          nome_normalizado?: string
+          sinonimos?: string[]
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      catalogo_problemas: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          created_at: string
+          criado_por: string | null
+          cultura_alvo: string | null
+          id: string
+          nome: string
+          nome_cientifico: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          created_at?: string
+          criado_por?: string | null
+          cultura_alvo?: string | null
+          id?: string
+          nome: string
+          nome_cientifico?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          criado_por?: string | null
+          cultura_alvo?: string | null
+          id?: string
+          nome?: string
+          nome_cientifico?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      catalogo_volumes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          doses_por_volume: number | null
+          id: string
+          item_tipo: string
+          microrganismo_id: string | null
+          moeda: string
+          ordem: number
+          preco_brl: number
+          preco_litro_brl: number | null
+          produto_id: string | null
+          rotulo: string | null
+          updated_at: string
+          valor_dose_100ml_brl: number | null
+          volume_ml: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          doses_por_volume?: number | null
+          id?: string
+          item_tipo: string
+          microrganismo_id?: string | null
+          moeda?: string
+          ordem?: number
+          preco_brl?: number
+          preco_litro_brl?: number | null
+          produto_id?: string | null
+          rotulo?: string | null
+          updated_at?: string
+          valor_dose_100ml_brl?: number | null
+          volume_ml: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          doses_por_volume?: number | null
+          id?: string
+          item_tipo?: string
+          microrganismo_id?: string | null
+          moeda?: string
+          ordem?: number
+          preco_brl?: number
+          preco_litro_brl?: number | null
+          produto_id?: string | null
+          rotulo?: string | null
+          updated_at?: string
+          valor_dose_100ml_brl?: number | null
+          volume_ml?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_volumes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogo_volumes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_contatos: {
+        Row: {
+          cargo: string | null
+          cliente_id: string
+          created_at: string | null
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          principal: boolean | null
+          telefone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cargo?: string | null
+          cliente_id: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          principal?: boolean | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cargo?: string | null
+          cliente_id?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          principal?: boolean | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_contatos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_documentos: {
+        Row: {
+          arquivo_path: string
+          arquivo_url: string | null
+          cliente_id: string
+          descricao: string | null
+          id: string
+          mime: string | null
+          nome: string
+          tamanho_bytes: number | null
+          tipo: Database["public"]["Enums"]["cliente_doc_tipo"] | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          arquivo_path: string
+          arquivo_url?: string | null
+          cliente_id: string
+          descricao?: string | null
+          id?: string
+          mime?: string | null
+          nome: string
+          tamanho_bytes?: number | null
+          tipo?: Database["public"]["Enums"]["cliente_doc_tipo"] | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          arquivo_path?: string
+          arquivo_url?: string | null
+          cliente_id?: string
+          descricao?: string | null
+          id?: string
+          mime?: string | null
+          nome?: string
+          tamanho_bytes?: number | null
+          tipo?: Database["public"]["Enums"]["cliente_doc_tipo"] | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_documentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_documentos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          banco_agencia: string | null
+          banco_conta: string | null
+          banco_nome: string | null
+          banco_pix_chave: string | null
+          banco_pix_tipo: string | null
+          banco_tipo_conta: string | null
+          cobranca_bairro: string | null
+          cobranca_cep: string | null
+          cobranca_complemento: string | null
+          cobranca_estado: string | null
+          cobranca_logradouro: string | null
+          cobranca_mesmo_endereco: boolean | null
+          cobranca_municipio: string | null
+          cobranca_numero: string | null
+          codigo_cliente: string
+          condicao_pagamento: string | null
+          contato_financeiro_email: string | null
+          contato_financeiro_nome: string | null
+          contato_financeiro_telefone: string | null
+          cpf_cnpj: string | null
+          created_at: string
+          email: string | null
+          endereco_bairro: string | null
+          endereco_cep: string | null
+          endereco_complemento: string | null
+          endereco_estado: string | null
+          endereco_latitude: number | null
+          endereco_logradouro: string | null
+          endereco_longitude: number | null
+          endereco_municipio: string | null
+          endereco_numero: string | null
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          limite_credito: number | null
+          nome: string
+          nome_fantasia: string | null
+          observacoes: string | null
+          razao_social: string | null
+          segmento: string | null
+          site: string | null
+          status_cliente: Database["public"]["Enums"]["cliente_status"] | null
+          tags: string[] | null
+          telefone: string | null
+          telefones: string[] | null
+          tipo_pessoa: Database["public"]["Enums"]["cliente_tipo_pessoa"] | null
+          updated_at: string
+        }
+        Insert: {
+          banco_agencia?: string | null
+          banco_conta?: string | null
+          banco_nome?: string | null
+          banco_pix_chave?: string | null
+          banco_pix_tipo?: string | null
+          banco_tipo_conta?: string | null
+          cobranca_bairro?: string | null
+          cobranca_cep?: string | null
+          cobranca_complemento?: string | null
+          cobranca_estado?: string | null
+          cobranca_logradouro?: string | null
+          cobranca_mesmo_endereco?: boolean | null
+          cobranca_municipio?: string | null
+          cobranca_numero?: string | null
+          codigo_cliente: string
+          condicao_pagamento?: string | null
+          contato_financeiro_email?: string | null
+          contato_financeiro_nome?: string | null
+          contato_financeiro_telefone?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_complemento?: string | null
+          endereco_estado?: string | null
+          endereco_latitude?: number | null
+          endereco_logradouro?: string | null
+          endereco_longitude?: number | null
+          endereco_municipio?: string | null
+          endereco_numero?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          limite_credito?: number | null
+          nome: string
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          razao_social?: string | null
+          segmento?: string | null
+          site?: string | null
+          status_cliente?: Database["public"]["Enums"]["cliente_status"] | null
+          tags?: string[] | null
+          telefone?: string | null
+          telefones?: string[] | null
+          tipo_pessoa?:
+            | Database["public"]["Enums"]["cliente_tipo_pessoa"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          banco_agencia?: string | null
+          banco_conta?: string | null
+          banco_nome?: string | null
+          banco_pix_chave?: string | null
+          banco_pix_tipo?: string | null
+          banco_tipo_conta?: string | null
+          cobranca_bairro?: string | null
+          cobranca_cep?: string | null
+          cobranca_complemento?: string | null
+          cobranca_estado?: string | null
+          cobranca_logradouro?: string | null
+          cobranca_mesmo_endereco?: boolean | null
+          cobranca_municipio?: string | null
+          cobranca_numero?: string | null
+          codigo_cliente?: string
+          condicao_pagamento?: string | null
+          contato_financeiro_email?: string | null
+          contato_financeiro_nome?: string | null
+          contato_financeiro_telefone?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_complemento?: string | null
+          endereco_estado?: string | null
+          endereco_latitude?: number | null
+          endereco_logradouro?: string | null
+          endereco_longitude?: number | null
+          endereco_municipio?: string | null
+          endereco_numero?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          limite_credito?: number | null
+          nome?: string
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          razao_social?: string | null
+          segmento?: string | null
+          site?: string | null
+          status_cliente?: Database["public"]["Enums"]["cliente_status"] | null
+          tags?: string[] | null
+          telefone?: string | null
+          telefones?: string[] | null
+          tipo_pessoa?:
+            | Database["public"]["Enums"]["cliente_tipo_pessoa"]
+            | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      clientes_audit_log: {
+        Row: {
+          action: string
+          changed_at: string | null
+          changed_by: string | null
+          cliente_id: string | null
+          diff: Json | null
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string | null
+          changed_by?: string | null
+          cliente_id?: string | null
+          diff?: Json | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string | null
+          changed_by?: string | null
+          cliente_id?: string | null
+          diff?: Json | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_audit_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      clima_dados: {
+        Row: {
+          chuva_mm: number | null
+          created_at: string
+          data_hora: string
+          fazenda_id: string
+          id: string
+          radiacao_solar: number | null
+          temperatura: number | null
+          umidade: number | null
+          vento_kmh: number | null
+        }
+        Insert: {
+          chuva_mm?: number | null
+          created_at?: string
+          data_hora?: string
+          fazenda_id: string
+          id?: string
+          radiacao_solar?: number | null
+          temperatura?: number | null
+          umidade?: number | null
+          vento_kmh?: number | null
+        }
+        Update: {
+          chuva_mm?: number | null
+          created_at?: string
+          data_hora?: string
+          fazenda_id?: string
+          id?: string
+          radiacao_solar?: number | null
+          temperatura?: number | null
+          umidade?: number | null
+          vento_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clima_dados_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      codigo_sequencias: {
+        Row: {
+          prefixo: string
+          proximo_numero: number
+          updated_at: string
+        }
+        Insert: {
+          prefixo: string
+          proximo_numero?: number
+          updated_at?: string
+        }
+        Update: {
+          prefixo?: string
+          proximo_numero?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      commercial_audit_log: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          id: string
+          order_id: string | null
+          partner_id: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          order_id?: string | null
+          partner_id?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          order_id?: string | null
+          partner_id?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      commercial_campaign_clientes: {
+        Row: {
+          campaign_id: string
+          cliente_id: string
+          created_at: string
+        }
+        Insert: {
+          campaign_id: string
+          cliente_id: string
+          created_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          cliente_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_campaign_clientes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_clientes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_clientes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_campaign_partners: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          partner_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          partner_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_campaign_partners_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_partners_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      commercial_campaign_products: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          price_table_name: string | null
+          product_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          price_table_name?: string | null
+          product_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          price_table_name?: string | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_campaign_products_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_products_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_campaign_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_campaigns: {
+        Row: {
+          ativa: boolean
+          created_at: string
+          created_by: string | null
+          data_fim: string
+          data_inicio: string
+          descricao: string | null
+          id: string
+          nome: string
+          tipo_publico: string
+          updated_at: string
+        }
+        Insert: {
+          ativa?: boolean
+          created_at?: string
+          created_by?: string | null
+          data_fim: string
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          tipo_publico?: string
+          updated_at?: string
+        }
+        Update: {
+          ativa?: boolean
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          tipo_publico?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      commercial_payment_plans: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_percent: number
+          id: string
+          installment_count: number
+          interest_type: string
+          max_days: number
+          minimum_order_amount: number | null
+          monthly_interest_percent: number
+          months_count: number
+          name: string
+          plan_type: string
+          requires_credit_approval: boolean
+          requires_financial_approval: boolean
+          requires_guarantee: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          installment_count?: number
+          interest_type?: string
+          max_days?: number
+          minimum_order_amount?: number | null
+          monthly_interest_percent?: number
+          months_count?: number
+          name: string
+          plan_type: string
+          requires_credit_approval?: boolean
+          requires_financial_approval?: boolean
+          requires_guarantee?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          installment_count?: number
+          interest_type?: string
+          max_days?: number
+          minimum_order_amount?: number | null
+          monthly_interest_percent?: number
+          months_count?: number
+          name?: string
+          plan_type?: string
+          requires_credit_approval?: boolean
+          requires_financial_approval?: boolean
+          requires_guarantee?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_fiscal_settings: {
+        Row: {
+          accounting_validated_at: string | null
+          accounting_validated_by: string | null
+          additional_cnaes: string[] | null
+          certificate_ref: string | null
+          city: string | null
+          cnpj: string | null
+          complement: string | null
+          configuration_notes: string | null
+          configuration_status: string
+          configuration_version: number
+          country_code: string | null
+          created_at: string
+          created_by: string | null
+          crt: string | null
+          fiscal_email: string | null
+          fiscal_environment: string
+          fiscal_provider: string
+          id: string
+          is_active: boolean
+          last_validation_at: string | null
+          last_validation_status: string
+          last_validation_summary: Json
+          legal_name: string | null
+          municipal_registration: string | null
+          municipality_ibge_code: string | null
+          neighborhood: string | null
+          nfe_configuration: Json
+          nfe_credential_ref: string | null
+          nfe_enabled: boolean
+          nfe_provider: string
+          nfe_series: string | null
+          nfse_configuration: Json
+          nfse_credential_ref: string | null
+          nfse_enabled: boolean
+          nfse_provider: string
+          nfse_series: string | null
+          number: string | null
+          phone: string | null
+          postal_code: string | null
+          primary_cnae: string | null
+          production_enabled: boolean
+          rtc_configuration: Json
+          state: string | null
+          state_registration: string | null
+          street: string | null
+          tax_regime: string | null
+          trade_name: string | null
+          updated_at: string
+          updated_by: string | null
+          webhook_ref: string | null
+        }
+        Insert: {
+          accounting_validated_at?: string | null
+          accounting_validated_by?: string | null
+          additional_cnaes?: string[] | null
+          certificate_ref?: string | null
+          city?: string | null
+          cnpj?: string | null
+          complement?: string | null
+          configuration_notes?: string | null
+          configuration_status?: string
+          configuration_version?: number
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          crt?: string | null
+          fiscal_email?: string | null
+          fiscal_environment?: string
+          fiscal_provider?: string
+          id?: string
+          is_active?: boolean
+          last_validation_at?: string | null
+          last_validation_status?: string
+          last_validation_summary?: Json
+          legal_name?: string | null
+          municipal_registration?: string | null
+          municipality_ibge_code?: string | null
+          neighborhood?: string | null
+          nfe_configuration?: Json
+          nfe_credential_ref?: string | null
+          nfe_enabled?: boolean
+          nfe_provider?: string
+          nfe_series?: string | null
+          nfse_configuration?: Json
+          nfse_credential_ref?: string | null
+          nfse_enabled?: boolean
+          nfse_provider?: string
+          nfse_series?: string | null
+          number?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          primary_cnae?: string | null
+          production_enabled?: boolean
+          rtc_configuration?: Json
+          state?: string | null
+          state_registration?: string | null
+          street?: string | null
+          tax_regime?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          webhook_ref?: string | null
+        }
+        Update: {
+          accounting_validated_at?: string | null
+          accounting_validated_by?: string | null
+          additional_cnaes?: string[] | null
+          certificate_ref?: string | null
+          city?: string | null
+          cnpj?: string | null
+          complement?: string | null
+          configuration_notes?: string | null
+          configuration_status?: string
+          configuration_version?: number
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          crt?: string | null
+          fiscal_email?: string | null
+          fiscal_environment?: string
+          fiscal_provider?: string
+          id?: string
+          is_active?: boolean
+          last_validation_at?: string | null
+          last_validation_status?: string
+          last_validation_summary?: Json
+          legal_name?: string | null
+          municipal_registration?: string | null
+          municipality_ibge_code?: string | null
+          neighborhood?: string | null
+          nfe_configuration?: Json
+          nfe_credential_ref?: string | null
+          nfe_enabled?: boolean
+          nfe_provider?: string
+          nfe_series?: string | null
+          nfse_configuration?: Json
+          nfse_credential_ref?: string | null
+          nfse_enabled?: boolean
+          nfse_provider?: string
+          nfse_series?: string | null
+          number?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          primary_cnae?: string | null
+          production_enabled?: boolean
+          rtc_configuration?: Json
+          state?: string | null
+          state_registration?: string | null
+          street?: string | null
+          tax_regime?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          webhook_ref?: string | null
+        }
+        Relationships: []
+      }
+      configuracoes_sistema: {
+        Row: {
+          cor_primaria: string | null
+          cor_sidebar_bg: string | null
+          cor_sidebar_primary: string | null
+          id: string
+          logo_url: string | null
+          nome_empresa: string | null
+          updated_at: string
+        }
+        Insert: {
+          cor_primaria?: string | null
+          cor_sidebar_bg?: string | null
+          cor_sidebar_primary?: string | null
+          id?: string
+          logo_url?: string | null
+          nome_empresa?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cor_primaria?: string | null
+          cor_sidebar_bg?: string | null
+          cor_sidebar_primary?: string | null
+          id?: string
+          logo_url?: string | null
+          nome_empresa?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      controle_qualidade: {
+        Row: {
+          aparencia: string | null
+          concentracao: number | null
+          contaminacao: string | null
+          created_at: string
+          data_analise: string
+          id: string
+          lote_id: string
+          odor: string | null
+          ph: number | null
+          responsavel: string | null
+          responsavel_id: string | null
+          resultado: Database["public"]["Enums"]["resultado_cq"] | null
+        }
+        Insert: {
+          aparencia?: string | null
+          concentracao?: number | null
+          contaminacao?: string | null
+          created_at?: string
+          data_analise?: string
+          id?: string
+          lote_id: string
+          odor?: string | null
+          ph?: number | null
+          responsavel?: string | null
+          responsavel_id?: string | null
+          resultado?: Database["public"]["Enums"]["resultado_cq"] | null
+        }
+        Update: {
+          aparencia?: string | null
+          concentracao?: number | null
+          contaminacao?: string | null
+          created_at?: string
+          data_analise?: string
+          id?: string
+          lote_id?: string
+          odor?: string | null
+          ph?: number | null
+          responsavel?: string | null
+          responsavel_id?: string | null
+          resultado?: Database["public"]["Enums"]["resultado_cq"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controle_qualidade_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "controle_qualidade_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "controle_qualidade_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "controle_qualidade_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "controle_qualidade_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "controle_qualidade_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cq_parametros_referencia: {
+        Row: {
+          aparencia_esperada: string | null
+          ativo: boolean
+          concentracao_min_ufc_ml: number | null
+          contaminacao_esperada: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          microrganismo_id: string
+          observacoes: string | null
+          odor_esperado: string | null
+          ph_max: number | null
+          ph_min: number | null
+          produto_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          aparencia_esperada?: string | null
+          ativo?: boolean
+          concentracao_min_ufc_ml?: number | null
+          contaminacao_esperada?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          microrganismo_id: string
+          observacoes?: string | null
+          odor_esperado?: string | null
+          ph_max?: number | null
+          ph_min?: number | null
+          produto_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aparencia_esperada?: string | null
+          ativo?: boolean
+          concentracao_min_ufc_ml?: number | null
+          contaminacao_esperada?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          microrganismo_id?: string
+          observacoes?: string | null
+          odor_esperado?: string | null
+          ph_max?: number | null
+          ph_min?: number | null
+          produto_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cq_parametros_referencia_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cq_parametros_referencia_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      culturas: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      customer_fiscal_profiles: {
+        Row: {
+          country_code: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          fiscal_city: string | null
+          fiscal_complement: string | null
+          fiscal_email: string | null
+          fiscal_municipality_ibge_code: string | null
+          fiscal_neighborhood: string | null
+          fiscal_number: string | null
+          fiscal_phone: string | null
+          fiscal_postal_code: string | null
+          fiscal_state: string | null
+          fiscal_street: string | null
+          foreign_customer_indicator: boolean
+          id: string
+          municipal_registration: string | null
+          profile_status: string
+          rural_producer_indicator: boolean
+          state_registration_status: string | null
+          taxpayer_indicator: string | null
+          updated_at: string
+          updated_by: string | null
+          use_main_address: boolean
+          validation_notes: string | null
+        }
+        Insert: {
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          fiscal_city?: string | null
+          fiscal_complement?: string | null
+          fiscal_email?: string | null
+          fiscal_municipality_ibge_code?: string | null
+          fiscal_neighborhood?: string | null
+          fiscal_number?: string | null
+          fiscal_phone?: string | null
+          fiscal_postal_code?: string | null
+          fiscal_state?: string | null
+          fiscal_street?: string | null
+          foreign_customer_indicator?: boolean
+          id?: string
+          municipal_registration?: string | null
+          profile_status?: string
+          rural_producer_indicator?: boolean
+          state_registration_status?: string | null
+          taxpayer_indicator?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          use_main_address?: boolean
+          validation_notes?: string | null
+        }
+        Update: {
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          fiscal_city?: string | null
+          fiscal_complement?: string | null
+          fiscal_email?: string | null
+          fiscal_municipality_ibge_code?: string | null
+          fiscal_neighborhood?: string | null
+          fiscal_number?: string | null
+          fiscal_phone?: string | null
+          fiscal_postal_code?: string | null
+          fiscal_state?: string | null
+          fiscal_street?: string | null
+          foreign_customer_indicator?: boolean
+          id?: string
+          municipal_registration?: string | null
+          profile_status?: string
+          rural_producer_indicator?: boolean
+          state_registration_status?: string | null
+          taxpayer_indicator?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          use_main_address?: boolean
+          validation_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_fiscal_profiles_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrega_checklist: {
+        Row: {
+          concluido: boolean
+          concluido_em: string | null
+          concluido_por: string | null
+          created_at: string
+          entrega_id: string
+          id: string
+          item: string
+          obrigatorio: boolean
+          observacao: string | null
+        }
+        Insert: {
+          concluido?: boolean
+          concluido_em?: string | null
+          concluido_por?: string | null
+          created_at?: string
+          entrega_id: string
+          id?: string
+          item: string
+          obrigatorio?: boolean
+          observacao?: string | null
+        }
+        Update: {
+          concluido?: boolean
+          concluido_em?: string | null
+          concluido_por?: string | null
+          created_at?: string
+          entrega_id?: string
+          id?: string
+          item?: string
+          obrigatorio?: boolean
+          observacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_checklist_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_checklist_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_checklist_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_checklist_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_checklist_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+        ]
+      }
+      entrega_comprovantes: {
+        Row: {
+          anexado_em: string | null
+          anexado_por: string | null
+          arquivo_mime: string | null
+          arquivo_nome: string | null
+          arquivo_path: string | null
+          arquivo_url: string | null
+          assinatura_capturada_em: string | null
+          assinatura_coletada: boolean
+          assinatura_digital_png_path: string | null
+          assinatura_digital_svg: string | null
+          assinatura_hash: string | null
+          assinatura_ip: string | null
+          assinatura_tipo: string | null
+          assinatura_user_agent: string | null
+          confirmado_em: string | null
+          confirmado_por: string | null
+          created_at: string
+          data_assinatura: string | null
+          entrega_id: string
+          gerado_em: string
+          gerado_por: string | null
+          id: string
+          metadata: Json
+          numero_formulario: string
+          observacoes: string | null
+          possui_ressalvas: boolean
+          qr_code_generated_at: string | null
+          qr_code_path: string | null
+          qr_code_payload: string | null
+          recebedor_cargo: string | null
+          recebedor_documento: string | null
+          recebedor_nome: string | null
+          recebedor_telefone: string | null
+          ressalvas: string | null
+          status: string
+          tipo: string
+          updated_at: string
+          validation_expires_at: string | null
+          validation_hash: string | null
+          validation_public_enabled: boolean
+          validation_token: string
+          validation_url: string | null
+        }
+        Insert: {
+          anexado_em?: string | null
+          anexado_por?: string | null
+          arquivo_mime?: string | null
+          arquivo_nome?: string | null
+          arquivo_path?: string | null
+          arquivo_url?: string | null
+          assinatura_capturada_em?: string | null
+          assinatura_coletada?: boolean
+          assinatura_digital_png_path?: string | null
+          assinatura_digital_svg?: string | null
+          assinatura_hash?: string | null
+          assinatura_ip?: string | null
+          assinatura_tipo?: string | null
+          assinatura_user_agent?: string | null
+          confirmado_em?: string | null
+          confirmado_por?: string | null
+          created_at?: string
+          data_assinatura?: string | null
+          entrega_id: string
+          gerado_em?: string
+          gerado_por?: string | null
+          id?: string
+          metadata?: Json
+          numero_formulario: string
+          observacoes?: string | null
+          possui_ressalvas?: boolean
+          qr_code_generated_at?: string | null
+          qr_code_path?: string | null
+          qr_code_payload?: string | null
+          recebedor_cargo?: string | null
+          recebedor_documento?: string | null
+          recebedor_nome?: string | null
+          recebedor_telefone?: string | null
+          ressalvas?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          validation_expires_at?: string | null
+          validation_hash?: string | null
+          validation_public_enabled?: boolean
+          validation_token?: string
+          validation_url?: string | null
+        }
+        Update: {
+          anexado_em?: string | null
+          anexado_por?: string | null
+          arquivo_mime?: string | null
+          arquivo_nome?: string | null
+          arquivo_path?: string | null
+          arquivo_url?: string | null
+          assinatura_capturada_em?: string | null
+          assinatura_coletada?: boolean
+          assinatura_digital_png_path?: string | null
+          assinatura_digital_svg?: string | null
+          assinatura_hash?: string | null
+          assinatura_ip?: string | null
+          assinatura_tipo?: string | null
+          assinatura_user_agent?: string | null
+          confirmado_em?: string | null
+          confirmado_por?: string | null
+          created_at?: string
+          data_assinatura?: string | null
+          entrega_id?: string
+          gerado_em?: string
+          gerado_por?: string | null
+          id?: string
+          metadata?: Json
+          numero_formulario?: string
+          observacoes?: string | null
+          possui_ressalvas?: boolean
+          qr_code_generated_at?: string | null
+          qr_code_path?: string | null
+          qr_code_payload?: string | null
+          recebedor_cargo?: string | null
+          recebedor_documento?: string | null
+          recebedor_nome?: string | null
+          recebedor_telefone?: string | null
+          ressalvas?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          validation_expires_at?: string | null
+          validation_hash?: string | null
+          validation_public_enabled?: boolean
+          validation_token?: string
+          validation_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_comprovantes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_comprovantes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_comprovantes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_comprovantes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_comprovantes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+        ]
+      }
+      entrega_documentos: {
+        Row: {
+          arquivo_path: string
+          entrega_id: string
+          id: string
+          mime_type: string | null
+          nome_arquivo: string
+          tamanho_bytes: number | null
+          tipo_documento: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          arquivo_path: string
+          entrega_id: string
+          id?: string
+          mime_type?: string | null
+          nome_arquivo: string
+          tamanho_bytes?: number | null
+          tipo_documento: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          arquivo_path?: string
+          entrega_id?: string
+          id?: string
+          mime_type?: string | null
+          nome_arquivo?: string
+          tamanho_bytes?: number | null
+          tipo_documento?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_documentos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_documentos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_documentos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_documentos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_documentos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+        ]
+      }
+      entrega_etiquetas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          desvinculado_em: string | null
+          desvinculado_por: string | null
+          entrega_id: string
+          etiqueta_id: string
+          id: string
+          motivo_desvinculacao: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          desvinculado_em?: string | null
+          desvinculado_por?: string | null
+          entrega_id: string
+          etiqueta_id: string
+          id?: string
+          motivo_desvinculacao?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          desvinculado_em?: string | null
+          desvinculado_por?: string | null
+          entrega_id?: string
+          etiqueta_id?: string
+          id?: string
+          motivo_desvinculacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_etiquetas_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "produto_etiquetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrega_ocorrencias: {
+        Row: {
+          created_at: string
+          descricao: string
+          entrega_id: string
+          gravidade: string
+          id: string
+          metadata: Json
+          registrado_em: string
+          registrado_por: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          entrega_id: string
+          gravidade?: string
+          id?: string
+          metadata?: Json
+          registrado_em?: string
+          registrado_por?: string | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          entrega_id?: string
+          gravidade?: string
+          id?: string
+          metadata?: Json
+          registrado_em?: string
+          registrado_por?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_ocorrencias_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_ocorrencias_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_ocorrencias_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_ocorrencias_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_ocorrencias_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+        ]
+      }
+      entregas: {
+        Row: {
+          assinatura_digital_capturada_em: string | null
+          assinatura_digital_capturada_por: string | null
+          assinatura_obrigatoria: boolean
+          assinatura_tipo: string | null
+          billing_generated_at: string | null
+          billing_generated_by: string | null
+          cancelada_em: string | null
+          cancelada_por: string | null
+          cliente_id: string | null
+          comprovante_anexado_em: string | null
+          comprovante_anexado_por: string | null
+          comprovante_entrega_obrigatorio: boolean
+          comprovante_id: string | null
+          comprovante_status: string
+          confirmada_em: string | null
+          confirmada_por: string | null
+          confirmado_por: string | null
+          created_at: string
+          data_chegada_prevista: string | null
+          data_saida: string | null
+          destinatario_nome: string | null
+          destinatario_telefone: string | null
+          destinatario_whatsapp: string | null
+          endereco_bairro: string | null
+          endereco_cep: string | null
+          endereco_cidade: string | null
+          endereco_complemento: string | null
+          endereco_logradouro: string | null
+          endereco_numero: string | null
+          endereco_origem: string | null
+          endereco_referencia: string | null
+          endereco_uf: string | null
+          entregue_em: string | null
+          estoque_produto_id: string | null
+          financial_status: string | null
+          formulario_gerado_em: string | null
+          formulario_gerado_por: string | null
+          grupo_entrega_id: string | null
+          hora_chegada_prevista: string | null
+          hora_saida_prevista: string | null
+          id: string
+          lote_id: string | null
+          motivo_cancelamento: string | null
+          motorista: string | null
+          motorista_documento: string | null
+          motorista_telefone: string | null
+          not_billable_reason: string | null
+          observacoes_confirmacao: string | null
+          ordem_servico_id: string | null
+          ordem_servico_onfarm_id: string | null
+          os_faturamento_base_id: string | null
+          partner_order_id: string | null
+          produto_id: string | null
+          quantidade_entregue: number | null
+          recebedor_cargo: string | null
+          recebedor_documento: string | null
+          recebedor_nome: string | null
+          recebedor_telefone: string | null
+          recebido_por_cargo: string | null
+          recebido_por_documento: string | null
+          recebido_por_nome: string | null
+          recebimento_confirmado_em: string | null
+          recebimento_confirmado_por: string | null
+          receivable_id: string | null
+          separacao_confirmada_em: string | null
+          separacao_confirmada_por: string | null
+          separacao_status: string
+          status: Database["public"]["Enums"]["status_entrega"]
+          tipo_entrega: string
+          updated_at: string
+          validation_hash: string | null
+          validation_token: string | null
+          veiculo: string | null
+          veiculo_placa: string | null
+          veiculo_tipo: string | null
+          volume_entregue_ml: number | null
+        }
+        Insert: {
+          assinatura_digital_capturada_em?: string | null
+          assinatura_digital_capturada_por?: string | null
+          assinatura_obrigatoria?: boolean
+          assinatura_tipo?: string | null
+          billing_generated_at?: string | null
+          billing_generated_by?: string | null
+          cancelada_em?: string | null
+          cancelada_por?: string | null
+          cliente_id?: string | null
+          comprovante_anexado_em?: string | null
+          comprovante_anexado_por?: string | null
+          comprovante_entrega_obrigatorio?: boolean
+          comprovante_id?: string | null
+          comprovante_status?: string
+          confirmada_em?: string | null
+          confirmada_por?: string | null
+          confirmado_por?: string | null
+          created_at?: string
+          data_chegada_prevista?: string | null
+          data_saida?: string | null
+          destinatario_nome?: string | null
+          destinatario_telefone?: string | null
+          destinatario_whatsapp?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_logradouro?: string | null
+          endereco_numero?: string | null
+          endereco_origem?: string | null
+          endereco_referencia?: string | null
+          endereco_uf?: string | null
+          entregue_em?: string | null
+          estoque_produto_id?: string | null
+          financial_status?: string | null
+          formulario_gerado_em?: string | null
+          formulario_gerado_por?: string | null
+          grupo_entrega_id?: string | null
+          hora_chegada_prevista?: string | null
+          hora_saida_prevista?: string | null
+          id?: string
+          lote_id?: string | null
+          motivo_cancelamento?: string | null
+          motorista?: string | null
+          motorista_documento?: string | null
+          motorista_telefone?: string | null
+          not_billable_reason?: string | null
+          observacoes_confirmacao?: string | null
+          ordem_servico_id?: string | null
+          ordem_servico_onfarm_id?: string | null
+          os_faturamento_base_id?: string | null
+          partner_order_id?: string | null
+          produto_id?: string | null
+          quantidade_entregue?: number | null
+          recebedor_cargo?: string | null
+          recebedor_documento?: string | null
+          recebedor_nome?: string | null
+          recebedor_telefone?: string | null
+          recebido_por_cargo?: string | null
+          recebido_por_documento?: string | null
+          recebido_por_nome?: string | null
+          recebimento_confirmado_em?: string | null
+          recebimento_confirmado_por?: string | null
+          receivable_id?: string | null
+          separacao_confirmada_em?: string | null
+          separacao_confirmada_por?: string | null
+          separacao_status?: string
+          status?: Database["public"]["Enums"]["status_entrega"]
+          tipo_entrega?: string
+          updated_at?: string
+          validation_hash?: string | null
+          validation_token?: string | null
+          veiculo?: string | null
+          veiculo_placa?: string | null
+          veiculo_tipo?: string | null
+          volume_entregue_ml?: number | null
+        }
+        Update: {
+          assinatura_digital_capturada_em?: string | null
+          assinatura_digital_capturada_por?: string | null
+          assinatura_obrigatoria?: boolean
+          assinatura_tipo?: string | null
+          billing_generated_at?: string | null
+          billing_generated_by?: string | null
+          cancelada_em?: string | null
+          cancelada_por?: string | null
+          cliente_id?: string | null
+          comprovante_anexado_em?: string | null
+          comprovante_anexado_por?: string | null
+          comprovante_entrega_obrigatorio?: boolean
+          comprovante_id?: string | null
+          comprovante_status?: string
+          confirmada_em?: string | null
+          confirmada_por?: string | null
+          confirmado_por?: string | null
+          created_at?: string
+          data_chegada_prevista?: string | null
+          data_saida?: string | null
+          destinatario_nome?: string | null
+          destinatario_telefone?: string | null
+          destinatario_whatsapp?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_logradouro?: string | null
+          endereco_numero?: string | null
+          endereco_origem?: string | null
+          endereco_referencia?: string | null
+          endereco_uf?: string | null
+          entregue_em?: string | null
+          estoque_produto_id?: string | null
+          financial_status?: string | null
+          formulario_gerado_em?: string | null
+          formulario_gerado_por?: string | null
+          grupo_entrega_id?: string | null
+          hora_chegada_prevista?: string | null
+          hora_saida_prevista?: string | null
+          id?: string
+          lote_id?: string | null
+          motivo_cancelamento?: string | null
+          motorista?: string | null
+          motorista_documento?: string | null
+          motorista_telefone?: string | null
+          not_billable_reason?: string | null
+          observacoes_confirmacao?: string | null
+          ordem_servico_id?: string | null
+          ordem_servico_onfarm_id?: string | null
+          os_faturamento_base_id?: string | null
+          partner_order_id?: string | null
+          produto_id?: string | null
+          quantidade_entregue?: number | null
+          recebedor_cargo?: string | null
+          recebedor_documento?: string | null
+          recebedor_nome?: string | null
+          recebedor_telefone?: string | null
+          recebido_por_cargo?: string | null
+          recebido_por_documento?: string | null
+          recebido_por_nome?: string | null
+          recebimento_confirmado_em?: string | null
+          recebimento_confirmado_por?: string | null
+          receivable_id?: string | null
+          separacao_confirmada_em?: string | null
+          separacao_confirmada_por?: string | null
+          separacao_status?: string
+          status?: Database["public"]["Enums"]["status_entrega"]
+          tipo_entrega?: string
+          updated_at?: string
+          validation_hash?: string | null
+          validation_token?: string | null
+          veiculo?: string | null
+          veiculo_placa?: string | null
+          veiculo_tipo?: string | null
+          volume_entregue_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_comprovante_id_fkey"
+            columns: ["comprovante_id"]
+            isOneToOne: false
+            referencedRelation: "entrega_comprovantes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "entregas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "entregas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "entregas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "entregas_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "entregas_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "mv_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "entregas_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico_onfarm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "vw_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "entregas_os_faturamento_base_id_fkey"
+            columns: ["os_faturamento_base_id"]
+            isOneToOne: false
+            referencedRelation: "os_faturamento_base"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      envase: {
+        Row: {
+          created_at: string
+          data_envase: string
+          etiqueta_gerada: boolean
+          etiqueta_gerada_em: string | null
+          etiqueta_gerada_por: string | null
+          etiqueta_id: string | null
+          id: string
+          lote_id: string
+          operador: string | null
+          quantidade: number | null
+          tipo_embalagem: Database["public"]["Enums"]["tipo_embalagem"]
+          volume_por_unidade: number | null
+        }
+        Insert: {
+          created_at?: string
+          data_envase?: string
+          etiqueta_gerada?: boolean
+          etiqueta_gerada_em?: string | null
+          etiqueta_gerada_por?: string | null
+          etiqueta_id?: string | null
+          id?: string
+          lote_id: string
+          operador?: string | null
+          quantidade?: number | null
+          tipo_embalagem: Database["public"]["Enums"]["tipo_embalagem"]
+          volume_por_unidade?: number | null
+        }
+        Update: {
+          created_at?: string
+          data_envase?: string
+          etiqueta_gerada?: boolean
+          etiqueta_gerada_em?: string | null
+          etiqueta_gerada_por?: string | null
+          etiqueta_id?: string | null
+          id?: string
+          lote_id?: string
+          operador?: string | null
+          quantidade?: number | null
+          tipo_embalagem?: Database["public"]["Enums"]["tipo_embalagem"]
+          volume_por_unidade?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envase_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "produto_etiquetas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "envase_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "envase_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "envase_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "envase_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "envase_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["lote_id"]
+          },
+        ]
+      }
+      estoque_embalagem_movimentacoes: {
+        Row: {
+          created_at: string
+          destino: string | null
+          embalagem_id: string
+          entrega_id: string | null
+          entrega_item_id: string | null
+          id: string
+          metadata: Json
+          observacao: string | null
+          origem: string | null
+          status_anterior: string | null
+          status_novo: string | null
+          tipo_movimentacao: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          destino?: string | null
+          embalagem_id: string
+          entrega_id?: string | null
+          entrega_item_id?: string | null
+          id?: string
+          metadata?: Json
+          observacao?: string | null
+          origem?: string | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          tipo_movimentacao: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          destino?: string | null
+          embalagem_id?: string
+          entrega_id?: string | null
+          entrega_item_id?: string | null
+          id?: string
+          metadata?: Json
+          observacao?: string | null
+          origem?: string | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          tipo_movimentacao?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_embalagem_movimentacoes_embalagem_id_fkey"
+            columns: ["embalagem_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_embalagens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_embalagens: {
+        Row: {
+          cancelado_em: string | null
+          cancelado_por: string | null
+          cliente_id: string | null
+          codigo_embalagem: string
+          created_at: string
+          criado_por: string | null
+          descartado_em: string | null
+          descartado_por: string | null
+          entrada_estoque_em: string | null
+          entrega_id: string | null
+          entrega_item_id: string | null
+          entregue_em: string | null
+          entregue_por: string | null
+          envase_id: string | null
+          envase_item_id: string | null
+          etiqueta_id: string | null
+          fabricado_em: string | null
+          fazenda_id: string | null
+          id: string
+          identificacao_local: string | null
+          local_estoque: string | null
+          lote_id: string
+          metadata: Json
+          motivo_cancelamento: string | null
+          motivo_descarte: string | null
+          produto_id: string | null
+          quantidade: number
+          reservado_em: string | null
+          reservado_por: string | null
+          separado_em: string | null
+          separado_por: string | null
+          status: string
+          tipo_embalagem: string | null
+          unidade: string
+          updated_at: string
+          validade_em: string | null
+          volume: number
+        }
+        Insert: {
+          cancelado_em?: string | null
+          cancelado_por?: string | null
+          cliente_id?: string | null
+          codigo_embalagem: string
+          created_at?: string
+          criado_por?: string | null
+          descartado_em?: string | null
+          descartado_por?: string | null
+          entrada_estoque_em?: string | null
+          entrega_id?: string | null
+          entrega_item_id?: string | null
+          entregue_em?: string | null
+          entregue_por?: string | null
+          envase_id?: string | null
+          envase_item_id?: string | null
+          etiqueta_id?: string | null
+          fabricado_em?: string | null
+          fazenda_id?: string | null
+          id?: string
+          identificacao_local?: string | null
+          local_estoque?: string | null
+          lote_id: string
+          metadata?: Json
+          motivo_cancelamento?: string | null
+          motivo_descarte?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          reservado_em?: string | null
+          reservado_por?: string | null
+          separado_em?: string | null
+          separado_por?: string | null
+          status?: string
+          tipo_embalagem?: string | null
+          unidade?: string
+          updated_at?: string
+          validade_em?: string | null
+          volume: number
+        }
+        Update: {
+          cancelado_em?: string | null
+          cancelado_por?: string | null
+          cliente_id?: string | null
+          codigo_embalagem?: string
+          created_at?: string
+          criado_por?: string | null
+          descartado_em?: string | null
+          descartado_por?: string | null
+          entrada_estoque_em?: string | null
+          entrega_id?: string | null
+          entrega_item_id?: string | null
+          entregue_em?: string | null
+          entregue_por?: string | null
+          envase_id?: string | null
+          envase_item_id?: string | null
+          etiqueta_id?: string | null
+          fabricado_em?: string | null
+          fazenda_id?: string | null
+          id?: string
+          identificacao_local?: string | null
+          local_estoque?: string | null
+          lote_id?: string
+          metadata?: Json
+          motivo_cancelamento?: string | null
+          motivo_descarte?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          reservado_em?: string | null
+          reservado_por?: string | null
+          separado_em?: string | null
+          separado_por?: string | null
+          status?: string
+          tipo_embalagem?: string | null
+          unidade?: string
+          updated_at?: string
+          validade_em?: string | null
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_embalagens_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "produto_etiquetas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_cliente"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_entrega"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_entrega"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_entrega"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_entrega"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_entrega"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_envase"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_envase"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "envase"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_envase"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_envase"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_envase"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_fazenda"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_lote"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_lote"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_lote"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_lote"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_lote"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_embalagens_produto"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_movimentacoes: {
+        Row: {
+          acao: string
+          cliente_id: string | null
+          created_at: string
+          estoque_produto_id: string
+          id: string
+          lote_id: string | null
+          observacao: string | null
+          os_id: string | null
+          os_tipo: string | null
+          quantidade: number | null
+          status_anterior: string | null
+          status_novo: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          cliente_id?: string | null
+          created_at?: string
+          estoque_produto_id: string
+          id?: string
+          lote_id?: string | null
+          observacao?: string | null
+          os_id?: string | null
+          os_tipo?: string | null
+          quantidade?: number | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          cliente_id?: string | null
+          created_at?: string
+          estoque_produto_id?: string
+          id?: string
+          lote_id?: string | null
+          observacao?: string | null
+          os_id?: string | null
+          os_tipo?: string | null
+          quantidade?: number | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_movimentacoes_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["lote_id"]
+          },
+        ]
+      }
+      estoque_produto: {
+        Row: {
+          created_at: string
+          envase_id: string | null
+          expedido_em: string | null
+          expedido_por: string | null
+          id: string
+          lote_id: string
+          microrganismo_id: string | null
+          observacao_reserva: string | null
+          produto_id: string | null
+          quantidade: number | null
+          quantidade_reservada: number | null
+          reservado_em: string | null
+          reservado_para_cliente_id: string | null
+          reservado_para_os_id: string | null
+          reservado_para_os_tipo: string | null
+          reservado_para_partner_id: string | null
+          reservado_para_partner_order_id: string | null
+          reservado_por: string | null
+          status: Database["public"]["Enums"]["status_estoque"]
+          updated_at: string
+          validade: string | null
+          volume_total: number | null
+        }
+        Insert: {
+          created_at?: string
+          envase_id?: string | null
+          expedido_em?: string | null
+          expedido_por?: string | null
+          id?: string
+          lote_id: string
+          microrganismo_id?: string | null
+          observacao_reserva?: string | null
+          produto_id?: string | null
+          quantidade?: number | null
+          quantidade_reservada?: number | null
+          reservado_em?: string | null
+          reservado_para_cliente_id?: string | null
+          reservado_para_os_id?: string | null
+          reservado_para_os_tipo?: string | null
+          reservado_para_partner_id?: string | null
+          reservado_para_partner_order_id?: string | null
+          reservado_por?: string | null
+          status?: Database["public"]["Enums"]["status_estoque"]
+          updated_at?: string
+          validade?: string | null
+          volume_total?: number | null
+        }
+        Update: {
+          created_at?: string
+          envase_id?: string | null
+          expedido_em?: string | null
+          expedido_por?: string | null
+          id?: string
+          lote_id?: string
+          microrganismo_id?: string | null
+          observacao_reserva?: string | null
+          produto_id?: string | null
+          quantidade?: number | null
+          quantidade_reservada?: number | null
+          reservado_em?: string | null
+          reservado_para_cliente_id?: string | null
+          reservado_para_os_id?: string | null
+          reservado_para_os_tipo?: string | null
+          reservado_para_partner_id?: string | null
+          reservado_para_partner_order_id?: string | null
+          reservado_por?: string | null
+          status?: Database["public"]["Enums"]["status_estoque"]
+          updated_at?: string
+          validade?: string | null
+          volume_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_produto_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "envase"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_cliente_id_fkey"
+            columns: ["reservado_para_cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_id_fkey"
+            columns: ["reservado_para_partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_id_fkey"
+            columns: ["reservado_para_partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_id_fkey"
+            columns: ["reservado_para_partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_id_fkey"
+            columns: ["reservado_para_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_id_fkey"
+            columns: ["reservado_para_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_id_fkey"
+            columns: ["reservado_para_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_id_fkey"
+            columns: ["reservado_para_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_id_fkey"
+            columns: ["reservado_para_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_reservado_para_partner_order_id_fkey"
+            columns: ["reservado_para_partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executivo_relatorio_eventos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          evento: string
+          id: string
+          metadata: Json
+          relatorio_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          evento: string
+          id?: string
+          metadata?: Json
+          relatorio_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          evento?: string
+          id?: string
+          metadata?: Json
+          relatorio_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executivo_relatorio_eventos_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "executivo_relatorios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executivo_relatorios: {
+        Row: {
+          alertas: Json
+          ativo: boolean
+          atualizado_em: string
+          filtros: Json
+          gargalos: Json
+          gerado_em: string
+          gerado_por: string | null
+          hash_conteudo: string | null
+          id: string
+          indicadores: Json
+          metadata: Json
+          observacoes: string | null
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          plano_acao: Json
+          ranking_clientes: Json
+          ranking_fazendas: Json
+          resumo: Json
+          status: string
+          tipo: string
+          titulo: string
+          versao: number
+        }
+        Insert: {
+          alertas?: Json
+          ativo?: boolean
+          atualizado_em?: string
+          filtros?: Json
+          gargalos?: Json
+          gerado_em?: string
+          gerado_por?: string | null
+          hash_conteudo?: string | null
+          id?: string
+          indicadores?: Json
+          metadata?: Json
+          observacoes?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          plano_acao?: Json
+          ranking_clientes?: Json
+          ranking_fazendas?: Json
+          resumo?: Json
+          status?: string
+          tipo: string
+          titulo: string
+          versao?: number
+        }
+        Update: {
+          alertas?: Json
+          ativo?: boolean
+          atualizado_em?: string
+          filtros?: Json
+          gargalos?: Json
+          gerado_em?: string
+          gerado_por?: string | null
+          hash_conteudo?: string | null
+          id?: string
+          indicadores?: Json
+          metadata?: Json
+          observacoes?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          plano_acao?: Json
+          ranking_clientes?: Json
+          ranking_fazendas?: Json
+          resumo?: Json
+          status?: string
+          tipo?: string
+          titulo?: string
+          versao?: number
+        }
+        Relationships: []
+      }
+      executivo_user_preferences: {
+        Row: {
+          cards_config: Json
+          cliente_id: string | null
+          created_at: string
+          fazenda_id: string | null
+          filtros_config: Json
+          id: string
+          layout_config: Json
+          periodo_padrao: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cards_config?: Json
+          cliente_id?: string | null
+          created_at?: string
+          fazenda_id?: string | null
+          filtros_config?: Json
+          id?: string
+          layout_config?: Json
+          periodo_padrao?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cards_config?: Json
+          cliente_id?: string | null
+          created_at?: string
+          fazenda_id?: string | null
+          filtros_config?: Json
+          id?: string
+          layout_config?: Json
+          periodo_padrao?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fazendas: {
+        Row: {
+          area_produtiva: number | null
+          area_total: number | null
+          ativo: boolean
+          car: string | null
+          cliente_id: string
+          codigo_referencia: string | null
+          consultor_responsavel_id: string | null
+          created_at: string
+          distancia_sede_km: number | null
+          endereco_acesso: string | null
+          estado: string | null
+          id: string
+          inscricao_estadual_produtor: string | null
+          latitude: number | null
+          longitude: number | null
+          municipio: string | null
+          nirf: string | null
+          nome: string
+          ponto_referencia: string | null
+          responsavel_local_nome: string | null
+          responsavel_local_telefone: string | null
+          tipo_exploracao: string | null
+          updated_at: string
+        }
+        Insert: {
+          area_produtiva?: number | null
+          area_total?: number | null
+          ativo?: boolean
+          car?: string | null
+          cliente_id: string
+          codigo_referencia?: string | null
+          consultor_responsavel_id?: string | null
+          created_at?: string
+          distancia_sede_km?: number | null
+          endereco_acesso?: string | null
+          estado?: string | null
+          id?: string
+          inscricao_estadual_produtor?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          municipio?: string | null
+          nirf?: string | null
+          nome: string
+          ponto_referencia?: string | null
+          responsavel_local_nome?: string | null
+          responsavel_local_telefone?: string | null
+          tipo_exploracao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area_produtiva?: number | null
+          area_total?: number | null
+          ativo?: boolean
+          car?: string | null
+          cliente_id?: string
+          codigo_referencia?: string | null
+          consultor_responsavel_id?: string | null
+          created_at?: string
+          distancia_sede_km?: number | null
+          endereco_acesso?: string | null
+          estado?: string | null
+          id?: string
+          inscricao_estadual_produtor?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          municipio?: string | null
+          nirf?: string | null
+          nome?: string
+          ponto_referencia?: string | null
+          responsavel_local_nome?: string | null
+          responsavel_local_telefone?: string | null
+          tipo_exploracao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fazendas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fazendas_consultor_responsavel_id_fkey"
+            columns: ["consultor_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ficha_tecnica_versoes: {
+        Row: {
+          campo: string
+          conteudo_anterior: string | null
+          conteudo_novo: string | null
+          criado_em: string
+          criado_por: string | null
+          entidade_id: string
+          entidade_tipo: string
+          id: string
+          job_id: string | null
+          modelo_ia: string | null
+          observacao: string | null
+          origem: string
+          profile_id: string | null
+          prompt_hash: string | null
+          revisado_em: string | null
+          revisado_por: string | null
+          status: string
+        }
+        Insert: {
+          campo: string
+          conteudo_anterior?: string | null
+          conteudo_novo?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          entidade_id: string
+          entidade_tipo: string
+          id?: string
+          job_id?: string | null
+          modelo_ia?: string | null
+          observacao?: string | null
+          origem: string
+          profile_id?: string | null
+          prompt_hash?: string | null
+          revisado_em?: string | null
+          revisado_por?: string | null
+          status?: string
+        }
+        Update: {
+          campo?: string
+          conteudo_anterior?: string | null
+          conteudo_novo?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          entidade_id?: string
+          entidade_tipo?: string
+          id?: string
+          job_id?: string | null
+          modelo_ia?: string | null
+          observacao?: string | null
+          origem?: string
+          profile_id?: string | null
+          prompt_hash?: string | null
+          revisado_em?: string | null
+          revisado_por?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      financial_audit_log: {
+        Row: {
+          action: string
+          entity_id: string
+          entity_type: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          performed_at: string
+          performed_by: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          performed_at?: string
+          performed_by?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          performed_at?: string
+          performed_by?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      financial_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          dre_group: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          dre_group?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          dre_group?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_cost_centers: {
+        Row: {
+          active: boolean
+          code: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_documents: {
+        Row: {
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          document_origin: string | null
+          document_type: string
+          environment: string | null
+          file_category: string | null
+          file_name: string
+          file_size: number | null
+          fiscal_event_id: string | null
+          fiscal_invoice_id: string | null
+          id: string
+          mime_type: string | null
+          owner_id: string
+          owner_type: string
+          storage_path: string
+          uploaded_at: string
+          uploaded_by: string
+          version_number: number | null
+        }
+        Insert: {
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          document_origin?: string | null
+          document_type: string
+          environment?: string | null
+          file_category?: string | null
+          file_name: string
+          file_size?: number | null
+          fiscal_event_id?: string | null
+          fiscal_invoice_id?: string | null
+          id?: string
+          mime_type?: string | null
+          owner_id: string
+          owner_type: string
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by: string
+          version_number?: number | null
+        }
+        Update: {
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          document_origin?: string | null
+          document_type?: string
+          environment?: string | null
+          file_category?: string | null
+          file_name?: string
+          file_size?: number | null
+          fiscal_event_id?: string | null
+          fiscal_invoice_id?: string | null
+          id?: string
+          mime_type?: string | null
+          owner_id?: string
+          owner_type?: string
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by?: string
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_documents_fiscal_event_id_fkey"
+            columns: ["fiscal_event_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_documents_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_documents_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+        ]
+      }
+      financial_governance_audit_log: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          id: string
+          partner_id: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          partner_id?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          partner_id?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      financial_governance_rules: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          por_credito: boolean
+          por_inadimplencia: boolean
+          por_score_critico: boolean
+          regra: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          por_credito?: boolean
+          por_inadimplencia?: boolean
+          por_score_critico?: boolean
+          regra: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          por_credito?: boolean
+          por_inadimplencia?: boolean
+          por_score_critico?: boolean
+          regra?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      financial_inconsistency_alerts: {
+        Row: {
+          acked_at: string | null
+          acked_by: string | null
+          by_severity: Json
+          id: string
+          notes: string | null
+          run_at: string
+          sample: Json
+          status: string
+          total_count: number
+        }
+        Insert: {
+          acked_at?: string | null
+          acked_by?: string | null
+          by_severity?: Json
+          id?: string
+          notes?: string | null
+          run_at?: string
+          sample?: Json
+          status?: string
+          total_count?: number
+        }
+        Update: {
+          acked_at?: string | null
+          acked_by?: string | null
+          by_severity?: Json
+          id?: string
+          notes?: string | null
+          run_at?: string
+          sample?: Json
+          status?: string
+          total_count?: number
+        }
+        Relationships: []
+      }
+      financial_receipts: {
+        Row: {
+          amount: number
+          authenticity_code: string
+          cancel_reason: string | null
+          canceled_at: string | null
+          canceled_by: string | null
+          customer_id: string | null
+          description: string | null
+          id: string
+          issued_at: string
+          issued_by: string
+          payment_date: string
+          payment_id: string
+          payment_method_id: string | null
+          public_verification_token: string
+          qr_code_enabled: boolean
+          receipt_number: string
+          receipt_seq: number
+          receipt_year: number
+          receivable_id: string | null
+          receivable_payment_id: string | null
+          status: string
+          storage_bucket: string | null
+          storage_path: string | null
+        }
+        Insert: {
+          amount: number
+          authenticity_code: string
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          canceled_by?: string | null
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          issued_at?: string
+          issued_by: string
+          payment_date: string
+          payment_id: string
+          payment_method_id?: string | null
+          public_verification_token?: string
+          qr_code_enabled?: boolean
+          receipt_number: string
+          receipt_seq: number
+          receipt_year: number
+          receivable_id?: string | null
+          receivable_payment_id?: string | null
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+        }
+        Update: {
+          amount?: number
+          authenticity_code?: string
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          canceled_by?: string | null
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          issued_at?: string
+          issued_by?: string
+          payment_date?: string
+          payment_id?: string
+          payment_method_id?: string | null
+          public_verification_token?: string
+          qr_code_enabled?: boolean
+          receipt_number?: string
+          receipt_seq?: number
+          receipt_year?: number
+          receivable_id?: string | null
+          receivable_payment_id?: string | null
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_receipts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_receipts_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "receivable_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_receipts_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_receipts_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_report_exports: {
+        Row: {
+          error_message: string | null
+          file_format: string
+          filters: Json
+          format: string
+          generated_at: string
+          generated_by: string
+          id: string
+          report_title: string
+          report_type: string
+          row_count: number | null
+          status: string
+          storage_bucket: string | null
+          storage_path: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          file_format: string
+          filters?: Json
+          format: string
+          generated_at?: string
+          generated_by: string
+          id?: string
+          report_title: string
+          report_type: string
+          row_count?: number | null
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          file_format?: string
+          filters?: Json
+          format?: string
+          generated_at?: string
+          generated_by?: string
+          id?: string
+          report_title?: string
+          report_type?: string
+          row_count?: number | null
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+        }
+        Relationships: []
+      }
+      financial_settings: {
+        Row: {
+          id: boolean
+          require_receipt_on_payable_payment: boolean
+          require_receipt_on_receivable_payment: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          require_receipt_on_payable_payment?: boolean
+          require_receipt_on_receivable_payment?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          require_receipt_on_payable_payment?: boolean
+          require_receipt_on_receivable_payment?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      fiscal_audit_log: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
+      fiscal_certificate_material: {
+        Row: {
+          certificate_id: string
+          created_at: string
+          encrypted_password: string
+          key_version: number
+          material_iv: string
+          object_path: string
+          password_iv: string
+        }
+        Insert: {
+          certificate_id: string
+          created_at?: string
+          encrypted_password: string
+          key_version?: number
+          material_iv: string
+          object_path: string
+          password_iv: string
+        }
+        Update: {
+          certificate_id?: string
+          created_at?: string
+          encrypted_password?: string
+          key_version?: number
+          material_iv?: string
+          object_path?: string
+          password_iv?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_certificate_material_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: true
+            referencedRelation: "fiscal_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_certificate_material_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: true
+            referencedRelation: "v_fiscal_certificate_readiness"
+            referencedColumns: ["certificate_id"]
+          },
+        ]
+      }
+      fiscal_certificates: {
+        Row: {
+          company_settings_id: string
+          created_at: string
+          created_by: string | null
+          display_name: string
+          environment: string
+          fingerprint_sha256: string | null
+          id: string
+          is_active: boolean
+          issuer_name: string | null
+          key_usage: string[] | null
+          native_alias: string | null
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          serial_number: string | null
+          source_type: string
+          status: string
+          subject_name: string | null
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+          version: number
+        }
+        Insert: {
+          company_settings_id: string
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          environment?: string
+          fingerprint_sha256?: string | null
+          id?: string
+          is_active?: boolean
+          issuer_name?: string | null
+          key_usage?: string[] | null
+          native_alias?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          serial_number?: string | null
+          source_type: string
+          status?: string
+          subject_name?: string | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+          version?: number
+        }
+        Update: {
+          company_settings_id?: string
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          environment?: string
+          fingerprint_sha256?: string | null
+          id?: string
+          is_active?: boolean
+          issuer_name?: string | null
+          key_usage?: string[] | null
+          native_alias?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          serial_number?: string | null
+          source_type?: string
+          status?: string
+          subject_name?: string | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_certificates_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "company_fiscal_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_certificates_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_company_readiness"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_events: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          event_source: string
+          event_type: string
+          fiscal_invoice_id: string
+          id: string
+          notes: string | null
+          performed_by: string | null
+          provider_event_id: string | null
+          request_snapshot: Json | null
+          response_snapshot: Json | null
+          status_after: string | null
+          status_before: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          event_source?: string
+          event_type: string
+          fiscal_invoice_id: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          provider_event_id?: string | null
+          request_snapshot?: Json | null
+          response_snapshot?: Json | null
+          status_after?: string | null
+          status_before?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          event_source?: string
+          event_type?: string
+          fiscal_invoice_id?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          provider_event_id?: string | null
+          request_snapshot?: Json | null
+          response_snapshot?: Json | null
+          status_after?: string | null
+          status_before?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_events_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_events_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+        ]
+      }
+      fiscal_idempotency_keys: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          environment: string | null
+          expires_at: string | null
+          fiscal_invoice_id: string | null
+          id: string
+          idempotency_key: string
+          locked_at: string | null
+          operation_type: string
+          provider: string | null
+          request_hash: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          environment?: string | null
+          expires_at?: string | null
+          fiscal_invoice_id?: string | null
+          id?: string
+          idempotency_key: string
+          locked_at?: string | null
+          operation_type: string
+          provider?: string | null
+          request_hash?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          environment?: string | null
+          expires_at?: string | null
+          fiscal_invoice_id?: string | null
+          id?: string
+          idempotency_key?: string
+          locked_at?: string | null
+          operation_type?: string
+          provider?: string | null
+          request_hash?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_idempotency_keys_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_idempotency_keys_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+        ]
+      }
+      fiscal_invoice_items: {
+        Row: {
+          commercial_unit: string | null
+          created_at: string
+          description: string | null
+          discount_value: number | null
+          fiscal_invoice_id: string
+          fiscal_profile_snapshot: Json | null
+          freight_value: number | null
+          gross_value: number | null
+          id: string
+          insurance_value: number | null
+          item_kind: string
+          item_sequence: number
+          net_value: number | null
+          other_value: number | null
+          quantity: number | null
+          source_item_id: string | null
+          source_item_type: string | null
+          tax_snapshot: Json | null
+          taxable_quantity: number | null
+          taxable_unit: string | null
+          unit_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          commercial_unit?: string | null
+          created_at?: string
+          description?: string | null
+          discount_value?: number | null
+          fiscal_invoice_id: string
+          fiscal_profile_snapshot?: Json | null
+          freight_value?: number | null
+          gross_value?: number | null
+          id?: string
+          insurance_value?: number | null
+          item_kind: string
+          item_sequence: number
+          net_value?: number | null
+          other_value?: number | null
+          quantity?: number | null
+          source_item_id?: string | null
+          source_item_type?: string | null
+          tax_snapshot?: Json | null
+          taxable_quantity?: number | null
+          taxable_unit?: string | null
+          unit_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          commercial_unit?: string | null
+          created_at?: string
+          description?: string | null
+          discount_value?: number | null
+          fiscal_invoice_id?: string
+          fiscal_profile_snapshot?: Json | null
+          freight_value?: number | null
+          gross_value?: number | null
+          id?: string
+          insurance_value?: number | null
+          item_kind?: string
+          item_sequence?: number
+          net_value?: number | null
+          other_value?: number | null
+          quantity?: number | null
+          source_item_id?: string | null
+          source_item_type?: string | null
+          tax_snapshot?: Json | null
+          taxable_quantity?: number | null
+          taxable_unit?: string | null
+          unit_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_invoice_items_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_fiscal_invoice_id_fkey"
+            columns: ["fiscal_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+        ]
+      }
+      fiscal_invoices: {
+        Row: {
+          access_key: string | null
+          authorized_at: string | null
+          cancel_reason: string | null
+          canceled_at: string | null
+          company_cnpj: string | null
+          company_snapshot: Json | null
+          created_at: string
+          created_by: string
+          customer_id: string | null
+          customer_snapshot: Json | null
+          danfe_document_id: string | null
+          delivery_id: string | null
+          document_model: string | null
+          document_origin: string | null
+          draft_version: number
+          environment: string | null
+          fiscal_profile_snapshot: Json
+          fiscal_totals_snapshot: Json | null
+          homologation_validation_at: string | null
+          homologation_validation_status: string
+          homologation_validation_summary: Json
+          icms_amount: number | null
+          icms_due: boolean | null
+          id: string
+          idempotency_key: string | null
+          invoice_number: string | null
+          invoice_type: string
+          issue_date: string | null
+          locked_at: string | null
+          locked_by: string | null
+          normalized_status: string | null
+          notes: string | null
+          original_recipient_snapshot: Json | null
+          parent_invoice_id: string | null
+          payload_schema_version: number | null
+          provider: string | null
+          provider_reference: string | null
+          provider_status_raw: string | null
+          receivable_id: string | null
+          reconciliation_status: string | null
+          rejected_at: string | null
+          series: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string
+          substitution_invoice_id: string | null
+          tax_snapshot: Json
+          total_amount: number | null
+          updated_at: string
+          xml_document_id: string | null
+        }
+        Insert: {
+          access_key?: string | null
+          authorized_at?: string | null
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          company_cnpj?: string | null
+          company_snapshot?: Json | null
+          created_at?: string
+          created_by: string
+          customer_id?: string | null
+          customer_snapshot?: Json | null
+          danfe_document_id?: string | null
+          delivery_id?: string | null
+          document_model?: string | null
+          document_origin?: string | null
+          draft_version?: number
+          environment?: string | null
+          fiscal_profile_snapshot?: Json
+          fiscal_totals_snapshot?: Json | null
+          homologation_validation_at?: string | null
+          homologation_validation_status?: string
+          homologation_validation_summary?: Json
+          icms_amount?: number | null
+          icms_due?: boolean | null
+          id?: string
+          idempotency_key?: string | null
+          invoice_number?: string | null
+          invoice_type: string
+          issue_date?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          normalized_status?: string | null
+          notes?: string | null
+          original_recipient_snapshot?: Json | null
+          parent_invoice_id?: string | null
+          payload_schema_version?: number | null
+          provider?: string | null
+          provider_reference?: string | null
+          provider_status_raw?: string | null
+          receivable_id?: string | null
+          reconciliation_status?: string | null
+          rejected_at?: string | null
+          series?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          substitution_invoice_id?: string | null
+          tax_snapshot?: Json
+          total_amount?: number | null
+          updated_at?: string
+          xml_document_id?: string | null
+        }
+        Update: {
+          access_key?: string | null
+          authorized_at?: string | null
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          company_cnpj?: string | null
+          company_snapshot?: Json | null
+          created_at?: string
+          created_by?: string
+          customer_id?: string | null
+          customer_snapshot?: Json | null
+          danfe_document_id?: string | null
+          delivery_id?: string | null
+          document_model?: string | null
+          document_origin?: string | null
+          draft_version?: number
+          environment?: string | null
+          fiscal_profile_snapshot?: Json
+          fiscal_totals_snapshot?: Json | null
+          homologation_validation_at?: string | null
+          homologation_validation_status?: string
+          homologation_validation_summary?: Json
+          icms_amount?: number | null
+          icms_due?: boolean | null
+          id?: string
+          idempotency_key?: string | null
+          invoice_number?: string | null
+          invoice_type?: string
+          issue_date?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          normalized_status?: string | null
+          notes?: string | null
+          original_recipient_snapshot?: Json | null
+          parent_invoice_id?: string | null
+          payload_schema_version?: number | null
+          provider?: string | null
+          provider_reference?: string | null
+          provider_status_raw?: string | null
+          receivable_id?: string | null
+          reconciliation_status?: string | null
+          rejected_at?: string | null
+          series?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          substitution_invoice_id?: string | null
+          tax_snapshot?: Json
+          total_amount?: number | null
+          updated_at?: string
+          xml_document_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fi_customer_id_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_danfe_document_id_fkey"
+            columns: ["danfe_document_id"]
+            isOneToOne: false
+            referencedRelation: "financial_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_parent_invoice_id_fkey"
+            columns: ["parent_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_parent_invoice_id_fkey"
+            columns: ["parent_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_substitution_invoice_id_fkey"
+            columns: ["substitution_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_substitution_invoice_id_fkey"
+            columns: ["substitution_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_document_reconciliation_pending"
+            referencedColumns: ["fiscal_invoice_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_xml_document_id_fkey"
+            columns: ["xml_document_id"]
+            isOneToOne: false
+            referencedRelation: "financial_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formulacoes: {
+        Row: {
+          component_insumo_id: string | null
+          concentracao: number | null
+          created_at: string
+          e_volume_fixo: boolean | null
+          id: string
+          microrganismo_id: string
+          produto_id: string
+          proporcao: number | null
+          unidade: string | null
+          volume_ml: number | null
+        }
+        Insert: {
+          component_insumo_id?: string | null
+          concentracao?: number | null
+          created_at?: string
+          e_volume_fixo?: boolean | null
+          id?: string
+          microrganismo_id: string
+          produto_id: string
+          proporcao?: number | null
+          unidade?: string | null
+          volume_ml?: number | null
+        }
+        Update: {
+          component_insumo_id?: string | null
+          concentracao?: number | null
+          created_at?: string
+          e_volume_fixo?: boolean | null
+          id?: string
+          microrganismo_id?: string
+          produto_id?: string
+          proporcao?: number | null
+          unidade?: string | null
+          volume_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formulacoes_component_insumo_id_fkey"
+            columns: ["component_insumo_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formulacoes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formulacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      laboratorio_esteira_eventos: {
+        Row: {
+          acao: string
+          created_at: string | null
+          etapa_anterior: string | null
+          etapa_nova: string
+          id: string
+          lote_id: string | null
+          observacao: string | null
+          origem_os: string
+          os_id: string
+          programacao_id: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string | null
+          etapa_anterior?: string | null
+          etapa_nova: string
+          id?: string
+          lote_id?: string | null
+          observacao?: string | null
+          origem_os: string
+          os_id: string
+          programacao_id?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string | null
+          etapa_anterior?: string | null
+          etapa_nova?: string
+          id?: string
+          lote_id?: string | null
+          observacao?: string | null
+          origem_os?: string
+          os_id?: string
+          programacao_id?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      lotes: {
+        Row: {
+          codigo_lote: string
+          created_at: string
+          custo_producao_estimado: number | null
+          data_producao: string
+          id: string
+          microrganismo_id: string | null
+          observacoes_tecnicas: string | null
+          produto_id: string | null
+          programacao_id: string | null
+          responsavel_producao: string | null
+          status: Database["public"]["Enums"]["status_lote"]
+          tanque: string | null
+          updated_at: string
+          volume_produzido: number | null
+        }
+        Insert: {
+          codigo_lote: string
+          created_at?: string
+          custo_producao_estimado?: number | null
+          data_producao?: string
+          id?: string
+          microrganismo_id?: string | null
+          observacoes_tecnicas?: string | null
+          produto_id?: string | null
+          programacao_id?: string | null
+          responsavel_producao?: string | null
+          status?: Database["public"]["Enums"]["status_lote"]
+          tanque?: string | null
+          updated_at?: string
+          volume_produzido?: number | null
+        }
+        Update: {
+          codigo_lote?: string
+          created_at?: string
+          custo_producao_estimado?: number | null
+          data_producao?: string
+          id?: string
+          microrganismo_id?: string | null
+          observacoes_tecnicas?: string | null
+          produto_id?: string | null
+          programacao_id?: string | null
+          responsavel_producao?: string | null
+          status?: Database["public"]["Enums"]["status_lote"]
+          tanque?: string | null
+          updated_at?: string
+          volume_produzido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lotes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lotes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lotes_programacao_id_fkey"
+            columns: ["programacao_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["programacao_id"]
+          },
+          {
+            foreignKeyName: "lotes_programacao_id_fkey"
+            columns: ["programacao_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["programacao_id"]
+          },
+          {
+            foreignKeyName: "lotes_programacao_id_fkey"
+            columns: ["programacao_id"]
+            isOneToOne: false
+            referencedRelation: "programacao_producao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lotes_programacao_id_fkey"
+            columns: ["programacao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["programacao_id"]
+          },
+          {
+            foreignKeyName: "lotes_programacao_id_fkey"
+            columns: ["programacao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["programacao_id"]
+          },
+        ]
+      }
+      microorganism_crop_recommendations: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          cultura_id: string | null
+          cultura_nome: string | null
+          fase_recomendada: string | null
+          id: string
+          microrganismo_id: string
+          objetivo_uso: string | null
+          observacao: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          cultura_id?: string | null
+          cultura_nome?: string | null
+          fase_recomendada?: string | null
+          id?: string
+          microrganismo_id: string
+          objetivo_uso?: string | null
+          observacao?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          cultura_id?: string | null
+          cultura_nome?: string | null
+          fase_recomendada?: string | null
+          id?: string
+          microrganismo_id?: string
+          objetivo_uso?: string | null
+          observacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "microorganism_crop_recommendations_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "microorganism_crop_recommendations_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      microorganism_targets: {
+        Row: {
+          alvo_nome: string
+          alvo_tipo: string
+          ativo: boolean
+          catalogo_alvo_id: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          microrganismo_id: string
+          prioridade: number
+        }
+        Insert: {
+          alvo_nome: string
+          alvo_tipo: string
+          ativo?: boolean
+          catalogo_alvo_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          microrganismo_id: string
+          prioridade?: number
+        }
+        Update: {
+          alvo_nome?: string
+          alvo_tipo?: string
+          ativo?: boolean
+          catalogo_alvo_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          microrganismo_id?: string
+          prioridade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "microorganism_targets_catalogo_alvo_id_fkey"
+            columns: ["catalogo_alvo_id"]
+            isOneToOne: false
+            referencedRelation: "catalogo_alvos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "microorganism_targets_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      microorganism_technical_profiles: {
+        Row: {
+          armazenamento: string | null
+          beneficios_agronomicos: string | null
+          compatibilidade: string | null
+          created_at: string
+          created_by: string | null
+          cuidados_aplicacao: string | null
+          explicacao_b2b: string | null
+          explicacao_produtor: string | null
+          explicacao_tecnica: string | null
+          id: string
+          indicacoes_uso: string | null
+          mecanismo_acao: string | null
+          microrganismo_id: string
+          observacoes_regulatorias: string | null
+          resumo_curto: string | null
+          status_validacao: string
+          updated_at: string
+          updated_by: string | null
+          validado_em: string | null
+          validado_por: string | null
+        }
+        Insert: {
+          armazenamento?: string | null
+          beneficios_agronomicos?: string | null
+          compatibilidade?: string | null
+          created_at?: string
+          created_by?: string | null
+          cuidados_aplicacao?: string | null
+          explicacao_b2b?: string | null
+          explicacao_produtor?: string | null
+          explicacao_tecnica?: string | null
+          id?: string
+          indicacoes_uso?: string | null
+          mecanismo_acao?: string | null
+          microrganismo_id: string
+          observacoes_regulatorias?: string | null
+          resumo_curto?: string | null
+          status_validacao?: string
+          updated_at?: string
+          updated_by?: string | null
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Update: {
+          armazenamento?: string | null
+          beneficios_agronomicos?: string | null
+          compatibilidade?: string | null
+          created_at?: string
+          created_by?: string | null
+          cuidados_aplicacao?: string | null
+          explicacao_b2b?: string | null
+          explicacao_produtor?: string | null
+          explicacao_tecnica?: string | null
+          id?: string
+          indicacoes_uso?: string | null
+          mecanismo_acao?: string | null
+          microrganismo_id?: string
+          observacoes_regulatorias?: string | null
+          resumo_curto?: string | null
+          status_validacao?: string
+          updated_at?: string
+          updated_by?: string | null
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "microorganism_technical_profiles_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      microrganismos: {
+        Row: {
+          ativo: boolean
+          b2b_enabled: boolean
+          codigo: string | null
+          concentracao_label: string | null
+          concentracao_ufc_ml: number | null
+          created_at: string
+          descricao: string | null
+          dose_ml_ha: number | null
+          fornecedor: string | null
+          funcao_agronomica: string | null
+          id: string
+          meio_cultivo: string | null
+          nome: string
+          nome_cientifico: string | null
+          observacoes: string | null
+          preco_tabela: number | null
+          producao_on_farm: boolean | null
+          safra_referencia: string | null
+          tipo: Database["public"]["Enums"]["tipo_microrganismo"]
+          valor_dose_brl: number | null
+          valor_litro_brl: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          b2b_enabled?: boolean
+          codigo?: string | null
+          concentracao_label?: string | null
+          concentracao_ufc_ml?: number | null
+          created_at?: string
+          descricao?: string | null
+          dose_ml_ha?: number | null
+          fornecedor?: string | null
+          funcao_agronomica?: string | null
+          id?: string
+          meio_cultivo?: string | null
+          nome: string
+          nome_cientifico?: string | null
+          observacoes?: string | null
+          preco_tabela?: number | null
+          producao_on_farm?: boolean | null
+          safra_referencia?: string | null
+          tipo: Database["public"]["Enums"]["tipo_microrganismo"]
+          valor_dose_brl?: number | null
+          valor_litro_brl?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          b2b_enabled?: boolean
+          codigo?: string | null
+          concentracao_label?: string | null
+          concentracao_ufc_ml?: number | null
+          created_at?: string
+          descricao?: string | null
+          dose_ml_ha?: number | null
+          fornecedor?: string | null
+          funcao_agronomica?: string | null
+          id?: string
+          meio_cultivo?: string | null
+          nome?: string
+          nome_cientifico?: string | null
+          observacoes?: string | null
+          preco_tabela?: number | null
+          producao_on_farm?: boolean | null
+          safra_referencia?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_microrganismo"]
+          valor_dose_brl?: number | null
+          valor_litro_brl?: number | null
+        }
+        Relationships: []
+      }
+      monitoramento_avisos: {
+        Row: {
+          data_referencia: string
+          enviado_em: string | null
+          id: string
+          registro_consultor_id: string
+          tipo: string
+        }
+        Insert: {
+          data_referencia?: string
+          enviado_em?: string | null
+          id?: string
+          registro_consultor_id: string
+          tipo: string
+        }
+        Update: {
+          data_referencia?: string
+          enviado_em?: string | null
+          id?: string
+          registro_consultor_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoramento_avisos_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notificacoes_operacionais: {
+        Row: {
+          created_at: string
+          id: string
+          idempotency_key: string | null
+          lido: boolean
+          link: string | null
+          mensagem: string | null
+          source_id: string | null
+          source_type: string | null
+          tipo: string
+          titulo: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          lido?: boolean
+          link?: string | null
+          mensagem?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          tipo: string
+          titulo: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          lido?: boolean
+          link?: string | null
+          mensagem?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          tipo?: string
+          titulo?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
+      objetivos_visita_sugestoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          cultura_id: string | null
+          id: string
+          ordem: number
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          cultura_id?: string | null
+          id?: string
+          ordem?: number
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          cultura_id?: string | null
+          id?: string
+          ordem?: number
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objetivos_visita_sugestoes_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ordens_servico: {
+        Row: {
+          area_hectares: number | null
+          cliente_id: string | null
+          created_at: string
+          data_programada: string | null
+          fazenda_id: string | null
+          id: string
+          microrganismo_id: string | null
+          modo_aplicacao: string | null
+          numero_os: string
+          origem: string
+          partner_order_id: string | null
+          partner_order_item_id: string | null
+          prioridade: Database["public"]["Enums"]["prioridade_os"]
+          produto_id: string | null
+          status: Database["public"]["Enums"]["status_os"]
+          talhao_id: string | null
+          tipo_item: string
+          updated_at: string
+          volume_total_ml: number | null
+        }
+        Insert: {
+          area_hectares?: number | null
+          cliente_id?: string | null
+          created_at?: string
+          data_programada?: string | null
+          fazenda_id?: string | null
+          id?: string
+          microrganismo_id?: string | null
+          modo_aplicacao?: string | null
+          numero_os: string
+          origem?: string
+          partner_order_id?: string | null
+          partner_order_item_id?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_os"]
+          produto_id?: string | null
+          status?: Database["public"]["Enums"]["status_os"]
+          talhao_id?: string | null
+          tipo_item?: string
+          updated_at?: string
+          volume_total_ml?: number | null
+        }
+        Update: {
+          area_hectares?: number | null
+          cliente_id?: string | null
+          created_at?: string
+          data_programada?: string | null
+          fazenda_id?: string | null
+          id?: string
+          microrganismo_id?: string | null
+          modo_aplicacao?: string | null
+          numero_os?: string
+          origem?: string
+          partner_order_id?: string | null
+          partner_order_item_id?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_os"]
+          produto_id?: string | null
+          status?: Database["public"]["Enums"]["status_os"]
+          talhao_id?: string | null
+          tipo_item?: string
+          updated_at?: string
+          volume_total_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_partner_order_item_id_fkey"
+            columns: ["partner_order_item_id"]
+            isOneToOne: true
+            referencedRelation: "partner_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ordens_servico_onfarm: {
+        Row: {
+          aprovacao_id: string | null
+          area_hectares: number | null
+          cliente_id: string
+          consultor_responsavel: string | null
+          created_at: string
+          created_by: string | null
+          cultura_id: string | null
+          data_recomendada: string | null
+          diagnostico: string | null
+          dose_ml_ha: number | null
+          fase_fenologica: string | null
+          fazenda_id: string
+          id: string
+          lote_pre_os_id: string | null
+          microrganismo_id: string | null
+          modo_aplicacao: string | null
+          numero_os: string
+          observacoes_adicionais: string | null
+          prioridade: Database["public"]["Enums"]["prioridade_os"]
+          problema_principal: string | null
+          produto_id: string | null
+          recomendacao_tecnica: string | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status: Database["public"]["Enums"]["status_os_onfarm"]
+          talhao_id: string
+          updated_at: string
+          volume_total_ml: number | null
+        }
+        Insert: {
+          aprovacao_id?: string | null
+          area_hectares?: number | null
+          cliente_id: string
+          consultor_responsavel?: string | null
+          created_at?: string
+          created_by?: string | null
+          cultura_id?: string | null
+          data_recomendada?: string | null
+          diagnostico?: string | null
+          dose_ml_ha?: number | null
+          fase_fenologica?: string | null
+          fazenda_id: string
+          id?: string
+          lote_pre_os_id?: string | null
+          microrganismo_id?: string | null
+          modo_aplicacao?: string | null
+          numero_os: string
+          observacoes_adicionais?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_os"]
+          problema_principal?: string | null
+          produto_id?: string | null
+          recomendacao_tecnica?: string | null
+          registro_consultor_id?: string | null
+          solicitacao_id?: string | null
+          status?: Database["public"]["Enums"]["status_os_onfarm"]
+          talhao_id: string
+          updated_at?: string
+          volume_total_ml?: number | null
+        }
+        Update: {
+          aprovacao_id?: string | null
+          area_hectares?: number | null
+          cliente_id?: string
+          consultor_responsavel?: string | null
+          created_at?: string
+          created_by?: string | null
+          cultura_id?: string | null
+          data_recomendada?: string | null
+          diagnostico?: string | null
+          dose_ml_ha?: number | null
+          fase_fenologica?: string | null
+          fazenda_id?: string
+          id?: string
+          lote_pre_os_id?: string | null
+          microrganismo_id?: string | null
+          modo_aplicacao?: string | null
+          numero_os?: string
+          observacoes_adicionais?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_os"]
+          problema_principal?: string | null
+          produto_id?: string | null
+          recomendacao_tecnica?: string | null
+          registro_consultor_id?: string | null
+          solicitacao_id?: string | null
+          status?: Database["public"]["Enums"]["status_os_onfarm"]
+          talhao_id?: string
+          updated_at?: string
+          volume_total_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_onfarm_aprovacao_id_fkey"
+            columns: ["aprovacao_id"]
+            isOneToOne: false
+            referencedRelation: "aprovacoes_tecnicas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "portal_solicitacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ordens_servico_onfarm_status_history: {
+        Row: {
+          created_at: string
+          id: string
+          os_onfarm_id: string
+          status_anterior: string | null
+          status_novo: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          os_onfarm_id: string
+          status_anterior?: string | null
+          status_novo: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          os_onfarm_id?: string
+          status_anterior?: string | null
+          status_novo?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_onfarm_status_history_os_onfarm_id_fkey"
+            columns: ["os_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_status_history_os_onfarm_id_fkey"
+            columns: ["os_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "mv_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_status_history_os_onfarm_id_fkey"
+            columns: ["os_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico_onfarm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_status_history_os_onfarm_id_fkey"
+            columns: ["os_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "vw_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          partner_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          partner_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          partner_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "organizations_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "organizations_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "organizations_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "organizations_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "organizations_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "organizations_partner_account_id_fkey"
+            columns: ["partner_account_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      os_faturamento_base: {
+        Row: {
+          acrescimo_valor: number
+          area_hectares_snapshot: number
+          cliente_id: string | null
+          condicao_pagamento_snapshot: string | null
+          created_at: string | null
+          created_by: string | null
+          desconto_valor: number
+          id: string
+          modelo_precificacao: string
+          numero_parcelas_sugerido: number
+          ordem_servico_id: string
+          origem_os_tipo: string
+          primeiro_vencimento_sugerido: string | null
+          produto_id: string | null
+          status: Database["public"]["Enums"]["faturamento_base_status"]
+          subtotal: number
+          updated_at: string | null
+          valor_ha_snapshot: number
+          valor_total_faturavel: number
+          volume_total_ml_snapshot: number
+        }
+        Insert: {
+          acrescimo_valor?: number
+          area_hectares_snapshot?: number
+          cliente_id?: string | null
+          condicao_pagamento_snapshot?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          desconto_valor?: number
+          id?: string
+          modelo_precificacao: string
+          numero_parcelas_sugerido?: number
+          ordem_servico_id: string
+          origem_os_tipo: string
+          primeiro_vencimento_sugerido?: string | null
+          produto_id?: string | null
+          status?: Database["public"]["Enums"]["faturamento_base_status"]
+          subtotal?: number
+          updated_at?: string | null
+          valor_ha_snapshot?: number
+          valor_total_faturavel?: number
+          volume_total_ml_snapshot?: number
+        }
+        Update: {
+          acrescimo_valor?: number
+          area_hectares_snapshot?: number
+          cliente_id?: string | null
+          condicao_pagamento_snapshot?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          desconto_valor?: number
+          id?: string
+          modelo_precificacao?: string
+          numero_parcelas_sugerido?: number
+          ordem_servico_id?: string
+          origem_os_tipo?: string
+          primeiro_vencimento_sugerido?: string | null
+          produto_id?: string | null
+          status?: Database["public"]["Enums"]["faturamento_base_status"]
+          subtotal?: number
+          updated_at?: string | null
+          valor_ha_snapshot?: number
+          valor_total_faturavel?: number
+          volume_total_ml_snapshot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "os_faturamento_base_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "os_faturamento_base_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_accounts: {
+        Row: {
+          ativo: boolean
+          cep: string | null
+          client_id: string | null
+          cnpj: string | null
+          codigo: string | null
+          comissao_percentual: number | null
+          commercial_city: string | null
+          commercial_region: string | null
+          commercial_state: string | null
+          condicao_pagamento_padrao: string | null
+          consultor_responsavel: string | null
+          created_at: string
+          created_by: string | null
+          dados_bancarios: Json | null
+          data_inicio_parceria: string | null
+          deleted_at: string | null
+          desconto_padrao: number
+          email_comercial: string | null
+          email_financeiro: string | null
+          email_nfe: string | null
+          endereco_bairro: string | null
+          endereco_complemento: string | null
+          endereco_entrega_igual_comercial: boolean
+          endereco_logradouro: string | null
+          endereco_numero: string | null
+          entrega_bairro: string | null
+          entrega_cep: string | null
+          entrega_cidade: string | null
+          entrega_complemento: string | null
+          entrega_estado: string | null
+          entrega_logradouro: string | null
+          entrega_numero: string | null
+          forma_pagamento_preferida: string | null
+          id: string
+          incoterm: string | null
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          limite_credito_brl: number | null
+          meta_mensal_brl: number | null
+          nome_fantasia: string | null
+          observacoes: string | null
+          origem_parceiro: string | null
+          partner_type: Database["public"]["Enums"]["partner_type_enum"] | null
+          porte: Database["public"]["Enums"]["partner_porte"] | null
+          prazo_pagamento_padrao_dias: number | null
+          razao_social: string
+          regime_tributario:
+            | Database["public"]["Enums"]["partner_regime_tributario"]
+            | null
+          segmento: Database["public"]["Enums"]["partner_segmento"] | null
+          site: string | null
+          suframa: string | null
+          telefone_comercial: string | null
+          transportadora_preferida: string | null
+          updated_at: string
+          whatsapp_comercial: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          cep?: string | null
+          client_id?: string | null
+          cnpj?: string | null
+          codigo?: string | null
+          comissao_percentual?: number | null
+          commercial_city?: string | null
+          commercial_region?: string | null
+          commercial_state?: string | null
+          condicao_pagamento_padrao?: string | null
+          consultor_responsavel?: string | null
+          created_at?: string
+          created_by?: string | null
+          dados_bancarios?: Json | null
+          data_inicio_parceria?: string | null
+          deleted_at?: string | null
+          desconto_padrao?: number
+          email_comercial?: string | null
+          email_financeiro?: string | null
+          email_nfe?: string | null
+          endereco_bairro?: string | null
+          endereco_complemento?: string | null
+          endereco_entrega_igual_comercial?: boolean
+          endereco_logradouro?: string | null
+          endereco_numero?: string | null
+          entrega_bairro?: string | null
+          entrega_cep?: string | null
+          entrega_cidade?: string | null
+          entrega_complemento?: string | null
+          entrega_estado?: string | null
+          entrega_logradouro?: string | null
+          entrega_numero?: string | null
+          forma_pagamento_preferida?: string | null
+          id?: string
+          incoterm?: string | null
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          limite_credito_brl?: number | null
+          meta_mensal_brl?: number | null
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          origem_parceiro?: string | null
+          partner_type?: Database["public"]["Enums"]["partner_type_enum"] | null
+          porte?: Database["public"]["Enums"]["partner_porte"] | null
+          prazo_pagamento_padrao_dias?: number | null
+          razao_social: string
+          regime_tributario?:
+            | Database["public"]["Enums"]["partner_regime_tributario"]
+            | null
+          segmento?: Database["public"]["Enums"]["partner_segmento"] | null
+          site?: string | null
+          suframa?: string | null
+          telefone_comercial?: string | null
+          transportadora_preferida?: string | null
+          updated_at?: string
+          whatsapp_comercial?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          cep?: string | null
+          client_id?: string | null
+          cnpj?: string | null
+          codigo?: string | null
+          comissao_percentual?: number | null
+          commercial_city?: string | null
+          commercial_region?: string | null
+          commercial_state?: string | null
+          condicao_pagamento_padrao?: string | null
+          consultor_responsavel?: string | null
+          created_at?: string
+          created_by?: string | null
+          dados_bancarios?: Json | null
+          data_inicio_parceria?: string | null
+          deleted_at?: string | null
+          desconto_padrao?: number
+          email_comercial?: string | null
+          email_financeiro?: string | null
+          email_nfe?: string | null
+          endereco_bairro?: string | null
+          endereco_complemento?: string | null
+          endereco_entrega_igual_comercial?: boolean
+          endereco_logradouro?: string | null
+          endereco_numero?: string | null
+          entrega_bairro?: string | null
+          entrega_cep?: string | null
+          entrega_cidade?: string | null
+          entrega_complemento?: string | null
+          entrega_estado?: string | null
+          entrega_logradouro?: string | null
+          entrega_numero?: string | null
+          forma_pagamento_preferida?: string | null
+          id?: string
+          incoterm?: string | null
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          limite_credito_brl?: number | null
+          meta_mensal_brl?: number | null
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          origem_parceiro?: string | null
+          partner_type?: Database["public"]["Enums"]["partner_type_enum"] | null
+          porte?: Database["public"]["Enums"]["partner_porte"] | null
+          prazo_pagamento_padrao_dias?: number | null
+          razao_social?: string
+          regime_tributario?:
+            | Database["public"]["Enums"]["partner_regime_tributario"]
+            | null
+          segmento?: Database["public"]["Enums"]["partner_segmento"] | null
+          site?: string | null
+          suframa?: string | null
+          telefone_comercial?: string | null
+          transportadora_preferida?: string | null
+          updated_at?: string
+          whatsapp_comercial?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_accounts_consultor_responsavel_fkey"
+            columns: ["consultor_responsavel"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_audit_logs: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          id: string
+          partner_id: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          partner_id?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          partner_id?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      partner_catalog_access_logs: {
+        Row: {
+          action: string
+          cliente_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          order_id: string | null
+          partner_id: string | null
+          role: string | null
+          simulation_id: string | null
+          target_user_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          cliente_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          order_id?: string | null
+          partner_id?: string | null
+          role?: string | null
+          simulation_id?: string | null
+          target_user_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          cliente_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          order_id?: string | null
+          partner_id?: string | null
+          role?: string | null
+          simulation_id?: string | null
+          target_user_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      partner_clients: {
+        Row: {
+          active: boolean
+          assigned_at: string
+          assigned_by: string | null
+          cliente_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          partner_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          cliente_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          cliente_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_clients_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_contacts: {
+        Row: {
+          cargo: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          is_principal: boolean
+          nome: string
+          observacoes: string | null
+          partner_id: string
+          setor: Database["public"]["Enums"]["partner_contact_setor"] | null
+          telefone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          cargo?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_principal?: boolean
+          nome: string
+          observacoes?: string | null
+          partner_id: string
+          setor?: Database["public"]["Enums"]["partner_contact_setor"] | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          cargo?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_principal?: boolean
+          nome?: string
+          observacoes?: string | null
+          partner_id?: string
+          setor?: Database["public"]["Enums"]["partner_contact_setor"] | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_contacts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_documents: {
+        Row: {
+          created_at: string
+          id: string
+          mime_type: string | null
+          nome: string
+          observacoes: string | null
+          partner_id: string
+          storage_path: string
+          tamanho_bytes: number | null
+          tipo: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          nome: string
+          observacoes?: string | null
+          partner_id: string
+          storage_path: string
+          tamanho_bytes?: number | null
+          tipo: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          nome?: string
+          observacoes?: string | null
+          partner_id?: string
+          storage_path?: string
+          tamanho_bytes?: number | null
+          tipo?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_documents_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_documents_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_documents_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_documents_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_documents_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_documents_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_documents_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_documents_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_engagement_metrics: {
+        Row: {
+          campanhas_usadas: Json
+          dias_sem_compra: number | null
+          partner_id: string
+          pedidos_30d: number
+          pedidos_90d: number
+          top_produtos: Json
+          ultima_compra: string | null
+          updated_at: string
+        }
+        Insert: {
+          campanhas_usadas?: Json
+          dias_sem_compra?: number | null
+          partner_id: string
+          pedidos_30d?: number
+          pedidos_90d?: number
+          top_produtos?: Json
+          ultima_compra?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campanhas_usadas?: Json
+          dias_sem_compra?: number | null
+          partner_id?: string
+          pedidos_30d?: number
+          pedidos_90d?: number
+          top_produtos?: Json
+          ultima_compra?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_engagement_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_engagement_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_engagement_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_engagement_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_engagement_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_engagement_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_engagement_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_engagement_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_financial_settings: {
+        Row: {
+          active: boolean
+          auto_generate_receivable: boolean
+          billing_trigger: string
+          block_if_overdue: boolean
+          created_at: string
+          credit_alert_threshold_1: number
+          credit_alert_threshold_2: number
+          credit_limit: number | null
+          credit_limit_action: string
+          default_payment_method: string | null
+          id: string
+          overdue_tolerance_days: number
+          partner_id: string
+          payment_terms_days: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          auto_generate_receivable?: boolean
+          billing_trigger?: string
+          block_if_overdue?: boolean
+          created_at?: string
+          credit_alert_threshold_1?: number
+          credit_alert_threshold_2?: number
+          credit_limit?: number | null
+          credit_limit_action?: string
+          default_payment_method?: string | null
+          id?: string
+          overdue_tolerance_days?: number
+          partner_id: string
+          payment_terms_days?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          auto_generate_receivable?: boolean
+          billing_trigger?: string
+          block_if_overdue?: boolean
+          created_at?: string
+          credit_alert_threshold_1?: number
+          credit_alert_threshold_2?: number
+          credit_limit?: number | null
+          credit_limit_action?: string
+          default_payment_method?: string | null
+          id?: string
+          overdue_tolerance_days?: number
+          partner_id?: string
+          payment_terms_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_financial_settings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_financial_settings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_financial_settings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_financial_settings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_financial_settings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_financial_settings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_financial_settings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_financial_settings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_order_audit_logs: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          id: string
+          order_id: string | null
+          partner_id: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          order_id?: string | null
+          partner_id?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          order_id?: string | null
+          partner_id?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      partner_order_financial_links: {
+        Row: {
+          billing_trigger: string | null
+          created_at: string
+          created_by: string | null
+          financial_status: string
+          id: string
+          partner_id: string
+          partner_order_id: string
+          receivable_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_trigger?: string | null
+          created_at?: string
+          created_by?: string | null
+          financial_status?: string
+          id?: string
+          partner_id: string
+          partner_order_id: string
+          receivable_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_trigger?: string | null
+          created_at?: string
+          created_by?: string | null
+          financial_status?: string
+          id?: string
+          partner_id?: string
+          partner_order_id?: string
+          receivable_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_financial_links_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: true
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_financial_links_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_order_items: {
+        Row: {
+          created_at: string
+          desconto_percentual: number
+          desconto_percentual_snapshot: number | null
+          id: string
+          microrganismo_id: string | null
+          order_id: string
+          preco_tabela_snapshot: number | null
+          preco_unitario: number
+          preco_unitario_final_snapshot: number | null
+          product_id: string | null
+          produto_codigo_snapshot: string | null
+          produto_nome_snapshot: string | null
+          quantidade: number
+          subtotal: number
+          unidade_medida: string
+          volume_ml: number | null
+        }
+        Insert: {
+          created_at?: string
+          desconto_percentual?: number
+          desconto_percentual_snapshot?: number | null
+          id?: string
+          microrganismo_id?: string | null
+          order_id: string
+          preco_tabela_snapshot?: number | null
+          preco_unitario?: number
+          preco_unitario_final_snapshot?: number | null
+          product_id?: string | null
+          produto_codigo_snapshot?: string | null
+          produto_nome_snapshot?: string | null
+          quantidade: number
+          subtotal?: number
+          unidade_medida?: string
+          volume_ml?: number | null
+        }
+        Update: {
+          created_at?: string
+          desconto_percentual?: number
+          desconto_percentual_snapshot?: number | null
+          id?: string
+          microrganismo_id?: string | null
+          order_id?: string
+          preco_tabela_snapshot?: number | null
+          preco_unitario?: number
+          preco_unitario_final_snapshot?: number | null
+          product_id?: string | null
+          produto_codigo_snapshot?: string | null
+          produto_nome_snapshot?: string | null
+          quantidade?: number
+          subtotal?: number
+          unidade_medida?: string
+          volume_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_items_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_order_message_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          message_id: string
+          mime_type: string | null
+          size_bytes: number | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          message_id: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          message_id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "partner_order_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_order_messages: {
+        Row: {
+          autor_id: string | null
+          autor_tipo: Database["public"]["Enums"]["order_message_author"]
+          created_at: string
+          id: string
+          mensagem: string
+          order_id: string
+          status: string
+          status_updated_at: string | null
+        }
+        Insert: {
+          autor_id?: string | null
+          autor_tipo: Database["public"]["Enums"]["order_message_author"]
+          created_at?: string
+          id?: string
+          mensagem: string
+          order_id: string
+          status?: string
+          status_updated_at?: string | null
+        }
+        Update: {
+          autor_id?: string | null
+          autor_tipo?: Database["public"]["Enums"]["order_message_author"]
+          created_at?: string
+          id?: string
+          mensagem?: string
+          order_id?: string
+          status?: string
+          status_updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_order_payment_schedule: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          id: string
+          installment_number: number
+          interest_amount: number | null
+          partner_order_id: string
+          payment_terms_id: string
+          principal_amount: number | null
+          receivable_installment_id: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_number: number
+          interest_amount?: number | null
+          partner_order_id: string
+          payment_terms_id: string
+          principal_amount?: number | null
+          receivable_installment_id?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          interest_amount?: number | null
+          partner_order_id?: string
+          payment_terms_id?: string
+          principal_amount?: number | null
+          receivable_installment_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_payment_schedule_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_payment_schedule_payment_terms_id_fkey"
+            columns: ["payment_terms_id"]
+            isOneToOne: false
+            referencedRelation: "partner_order_payment_terms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_payment_schedule_receivable_installment_id_fkey"
+            columns: ["receivable_installment_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable_installments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_order_payment_terms: {
+        Row: {
+          approval_notes: string | null
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          discount_amount: number
+          discount_percent_snapshot: number
+          final_amount: number
+          financial_interest_amount: number
+          first_due_date: string
+          id: string
+          installment_count: number
+          interest_type_snapshot: string
+          monthly_interest_percent_snapshot: number
+          months_count_snapshot: number
+          net_amount_after_discount: number
+          partner_order_id: string
+          payment_plan_id: string | null
+          plan_code_snapshot: string
+          plan_name_snapshot: string
+          table_amount: number
+          updated_at: string
+        }
+        Insert: {
+          approval_notes?: string | null
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number
+          discount_percent_snapshot: number
+          final_amount?: number
+          financial_interest_amount?: number
+          first_due_date: string
+          id?: string
+          installment_count?: number
+          interest_type_snapshot?: string
+          monthly_interest_percent_snapshot: number
+          months_count_snapshot: number
+          net_amount_after_discount?: number
+          partner_order_id: string
+          payment_plan_id?: string | null
+          plan_code_snapshot: string
+          plan_name_snapshot: string
+          table_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          approval_notes?: string | null
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number
+          discount_percent_snapshot?: number
+          final_amount?: number
+          financial_interest_amount?: number
+          first_due_date?: string
+          id?: string
+          installment_count?: number
+          interest_type_snapshot?: string
+          monthly_interest_percent_snapshot?: number
+          months_count_snapshot?: number
+          net_amount_after_discount?: number
+          partner_order_id?: string
+          payment_plan_id?: string | null
+          plan_code_snapshot?: string
+          plan_name_snapshot?: string
+          table_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_payment_terms_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_payment_terms_payment_plan_id_fkey"
+            columns: ["payment_plan_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_order_sla_config: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          fase: string
+          id: string
+          prazo_horas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          fase: string
+          id?: string
+          prazo_horas: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          fase?: string
+          id?: string
+          prazo_horas?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      partner_order_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          favorito: boolean
+          id: string
+          itens: Json
+          nome: string
+          partner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          favorito?: boolean
+          id?: string
+          itens?: Json
+          nome: string
+          partner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          favorito?: boolean
+          id?: string
+          itens?: Json
+          nome?: string
+          partner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_templates_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_orders: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          area_total_ha: number | null
+          cliente_id: string | null
+          commercial_discount_amount: number | null
+          commercial_notes: string | null
+          created_at: string
+          created_by: string | null
+          credit_approval_notes: string | null
+          credit_approved_at: string | null
+          credit_approved_by: string | null
+          credit_block_reason: string | null
+          cultura: string | null
+          desconto_total: number
+          estimated_delivery_date: string | null
+          final_amount_with_interest: number | null
+          financial_approval_status: string
+          financial_interest_amount: number | null
+          financial_status: string
+          future_financial_link: string | null
+          id: string
+          itens_pendentes_motivo: string | null
+          itens_pendentes_resolvido_em: string | null
+          itens_pendentes_solicitado_em: string | null
+          itens_pendentes_solicitado_por: string | null
+          net_amount_after_discount: number | null
+          numero: string
+          observacoes: string | null
+          origin_simulation_id: string | null
+          partner_id: string
+          payment_condition_status: string
+          payment_due_date: string | null
+          payment_method: string | null
+          payment_plan_id: string | null
+          payment_terms_id: string | null
+          priority: Database["public"]["Enums"]["partner_order_priority"]
+          ready_for_production: boolean
+          receivable_generated: boolean
+          receivable_generated_at: string | null
+          receivable_generated_by: string | null
+          requested_delivery_date: string | null
+          requires_financial_approval: boolean
+          status: Database["public"]["Enums"]["partner_order_status"]
+          subtotal: number
+          table_amount: number | null
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          area_total_ha?: number | null
+          cliente_id?: string | null
+          commercial_discount_amount?: number | null
+          commercial_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_approval_notes?: string | null
+          credit_approved_at?: string | null
+          credit_approved_by?: string | null
+          credit_block_reason?: string | null
+          cultura?: string | null
+          desconto_total?: number
+          estimated_delivery_date?: string | null
+          final_amount_with_interest?: number | null
+          financial_approval_status?: string
+          financial_interest_amount?: number | null
+          financial_status?: string
+          future_financial_link?: string | null
+          id?: string
+          itens_pendentes_motivo?: string | null
+          itens_pendentes_resolvido_em?: string | null
+          itens_pendentes_solicitado_em?: string | null
+          itens_pendentes_solicitado_por?: string | null
+          net_amount_after_discount?: number | null
+          numero?: string
+          observacoes?: string | null
+          origin_simulation_id?: string | null
+          partner_id: string
+          payment_condition_status?: string
+          payment_due_date?: string | null
+          payment_method?: string | null
+          payment_plan_id?: string | null
+          payment_terms_id?: string | null
+          priority?: Database["public"]["Enums"]["partner_order_priority"]
+          ready_for_production?: boolean
+          receivable_generated?: boolean
+          receivable_generated_at?: string | null
+          receivable_generated_by?: string | null
+          requested_delivery_date?: string | null
+          requires_financial_approval?: boolean
+          status?: Database["public"]["Enums"]["partner_order_status"]
+          subtotal?: number
+          table_amount?: number | null
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          area_total_ha?: number | null
+          cliente_id?: string | null
+          commercial_discount_amount?: number | null
+          commercial_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_approval_notes?: string | null
+          credit_approved_at?: string | null
+          credit_approved_by?: string | null
+          credit_block_reason?: string | null
+          cultura?: string | null
+          desconto_total?: number
+          estimated_delivery_date?: string | null
+          final_amount_with_interest?: number | null
+          financial_approval_status?: string
+          financial_interest_amount?: number | null
+          financial_status?: string
+          future_financial_link?: string | null
+          id?: string
+          itens_pendentes_motivo?: string | null
+          itens_pendentes_resolvido_em?: string | null
+          itens_pendentes_solicitado_em?: string | null
+          itens_pendentes_solicitado_por?: string | null
+          net_amount_after_discount?: number | null
+          numero?: string
+          observacoes?: string | null
+          origin_simulation_id?: string | null
+          partner_id?: string
+          payment_condition_status?: string
+          payment_due_date?: string | null
+          payment_method?: string | null
+          payment_plan_id?: string | null
+          payment_terms_id?: string | null
+          priority?: Database["public"]["Enums"]["partner_order_priority"]
+          ready_for_production?: boolean
+          receivable_generated?: boolean
+          receivable_generated_at?: string | null
+          receivable_generated_by?: string | null
+          requested_delivery_date?: string | null
+          requires_financial_approval?: boolean
+          status?: Database["public"]["Enums"]["partner_order_status"]
+          subtotal?: number
+          table_amount?: number | null
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_orders_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_orders_origin_simulation_id_fkey"
+            columns: ["origin_simulation_id"]
+            isOneToOne: false
+            referencedRelation: "partner_simulations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_orders_payment_plan_id_fkey"
+            columns: ["payment_plan_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_orders_payment_terms_id_fkey"
+            columns: ["payment_terms_id"]
+            isOneToOne: false
+            referencedRelation: "partner_order_payment_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_product_prices: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          desconto_percentual: number
+          id: string
+          is_current: boolean
+          microrganismo_id: string | null
+          partner_id: string
+          preco_final: number | null
+          preco_tabela: number
+          price_table_name: string | null
+          product_id: string | null
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          desconto_percentual?: number
+          id?: string
+          is_current?: boolean
+          microrganismo_id?: string | null
+          partner_id: string
+          preco_final?: number | null
+          preco_tabela?: number
+          price_table_name?: string | null
+          product_id?: string | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          desconto_percentual?: number
+          id?: string
+          is_current?: boolean
+          microrganismo_id?: string | null
+          partner_id?: string
+          preco_final?: number | null
+          preco_tabela?: number
+          price_table_name?: string | null
+          product_id?: string | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_product_prices_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_risk_scores: {
+        Row: {
+          calculado_em: string
+          created_at: string
+          dias_medio_atraso: number
+          freq_compras_30d: number
+          id: string
+          meses_relacionamento: number
+          partner_id: string
+          pct_credito_utilizado: number
+          risk_level: string
+          score: number
+          titulos_vencidos: number
+          updated_at: string
+        }
+        Insert: {
+          calculado_em?: string
+          created_at?: string
+          dias_medio_atraso?: number
+          freq_compras_30d?: number
+          id?: string
+          meses_relacionamento?: number
+          partner_id: string
+          pct_credito_utilizado?: number
+          risk_level?: string
+          score?: number
+          titulos_vencidos?: number
+          updated_at?: string
+        }
+        Update: {
+          calculado_em?: string
+          created_at?: string
+          dias_medio_atraso?: number
+          freq_compras_30d?: number
+          id?: string
+          meses_relacionamento?: number
+          partner_id?: string
+          pct_credito_utilizado?: number
+          risk_level?: string
+          score?: number
+          titulos_vencidos?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_risk_scores_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_risk_scores_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_risk_scores_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_risk_scores_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_risk_scores_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_risk_scores_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_risk_scores_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_risk_scores_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_simulation_items: {
+        Row: {
+          area_ha: number | null
+          created_at: string
+          desconto_percentual: number | null
+          id: string
+          item_id: string
+          item_tipo: string
+          microrganismo_id: string | null
+          nome: string
+          preco_tabela_snapshot: number | null
+          preco_unitario: number | null
+          product_id: string | null
+          produto_codigo_snapshot: string | null
+          produto_nome_snapshot: string | null
+          quantidade: number
+          simulation_id: string
+          subtotal: number
+          unidade_medida: string | null
+          valor_unitario_cheio: number
+          volume_id: string | null
+          volume_ml: number | null
+          volume_rotulo: string | null
+        }
+        Insert: {
+          area_ha?: number | null
+          created_at?: string
+          desconto_percentual?: number | null
+          id?: string
+          item_id: string
+          item_tipo: string
+          microrganismo_id?: string | null
+          nome: string
+          preco_tabela_snapshot?: number | null
+          preco_unitario?: number | null
+          product_id?: string | null
+          produto_codigo_snapshot?: string | null
+          produto_nome_snapshot?: string | null
+          quantidade?: number
+          simulation_id: string
+          subtotal?: number
+          unidade_medida?: string | null
+          valor_unitario_cheio?: number
+          volume_id?: string | null
+          volume_ml?: number | null
+          volume_rotulo?: string | null
+        }
+        Update: {
+          area_ha?: number | null
+          created_at?: string
+          desconto_percentual?: number | null
+          id?: string
+          item_id?: string
+          item_tipo?: string
+          microrganismo_id?: string | null
+          nome?: string
+          preco_tabela_snapshot?: number | null
+          preco_unitario?: number | null
+          product_id?: string | null
+          produto_codigo_snapshot?: string | null
+          produto_nome_snapshot?: string | null
+          quantidade?: number
+          simulation_id?: string
+          subtotal?: number
+          unidade_medida?: string | null
+          valor_unitario_cheio?: number
+          volume_id?: string | null
+          volume_ml?: number | null
+          volume_rotulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_simulation_items_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_simulation_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_simulation_items_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "partner_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_simulations: {
+        Row: {
+          area_total_ha: number | null
+          cliente_cidade_snapshot: string | null
+          cliente_id: string | null
+          cliente_nome_snapshot: string | null
+          cliente_uf_snapshot: string | null
+          converted_at: string | null
+          converted_by: string | null
+          converted_order_id: string | null
+          created_at: string
+          created_by: string
+          cultura: string | null
+          id: string
+          objetivo_tecnico: string | null
+          observacoes: string | null
+          partner_id: string
+          propriedade_nome_snapshot: string | null
+          status: string
+          titulo: string | null
+          total_cheio: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          area_total_ha?: number | null
+          cliente_cidade_snapshot?: string | null
+          cliente_id?: string | null
+          cliente_nome_snapshot?: string | null
+          cliente_uf_snapshot?: string | null
+          converted_at?: string | null
+          converted_by?: string | null
+          converted_order_id?: string | null
+          created_at?: string
+          created_by: string
+          cultura?: string | null
+          id?: string
+          objetivo_tecnico?: string | null
+          observacoes?: string | null
+          partner_id: string
+          propriedade_nome_snapshot?: string | null
+          status?: string
+          titulo?: string | null
+          total_cheio?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          area_total_ha?: number | null
+          cliente_cidade_snapshot?: string | null
+          cliente_id?: string | null
+          cliente_nome_snapshot?: string | null
+          cliente_uf_snapshot?: string | null
+          converted_at?: string | null
+          converted_by?: string | null
+          converted_order_id?: string | null
+          created_at?: string
+          created_by?: string
+          cultura?: string | null
+          id?: string
+          objetivo_tecnico?: string | null
+          observacoes?: string | null
+          partner_id?: string
+          propriedade_nome_snapshot?: string | null
+          status?: string
+          titulo?: string | null
+          total_cheio?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_simulations_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_converted_order_id_fkey"
+            columns: ["converted_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_simulations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_technician_clients: {
+        Row: {
+          active: boolean
+          assigned_at: string
+          assigned_by: string | null
+          cliente_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          partner_id: string
+          technician_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          cliente_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id: string
+          technician_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          cliente_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id?: string
+          technician_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_technician_clients_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_technician_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_technician_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_technician_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_technician_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_technician_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_technician_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_technician_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_technician_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_user_clients: {
+        Row: {
+          active: boolean
+          assigned_at: string
+          assigned_by: string | null
+          assignment_type: string
+          can_create_simulation: boolean
+          can_monitor: boolean
+          cliente_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          partner_id: string
+          updated_at: string
+          user_id: string
+          user_role: string | null
+        }
+        Insert: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_type?: string
+          can_create_simulation?: boolean
+          can_monitor?: boolean
+          cliente_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id: string
+          updated_at?: string
+          user_id: string
+          user_role?: string | null
+        }
+        Update: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_type?: string
+          can_create_simulation?: boolean
+          can_monitor?: boolean
+          cliente_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          partner_id?: string
+          updated_at?: string
+          user_id?: string
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_user_clients_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_user_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_user_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_user_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_user_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_user_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_user_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_user_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_user_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      partner_users: {
+        Row: {
+          created_at: string
+          id: string
+          papel: string
+          partner_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          papel?: string
+          partner_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          papel?: string
+          partner_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
+      payable_payments: {
+        Row: {
+          amount_paid: number
+          bank_account_id: string | null
+          created_at: string
+          created_by: string
+          discount_amount: number
+          id: string
+          installment_id: string
+          interest_amount: number
+          is_reversal: boolean
+          notes: string | null
+          payment_date: string
+          payment_method_id: string
+          penalty_amount: number
+          reversal_reason: string | null
+          reversed_payment_id: string | null
+        }
+        Insert: {
+          amount_paid: number
+          bank_account_id?: string | null
+          created_at?: string
+          created_by: string
+          discount_amount?: number
+          id?: string
+          installment_id: string
+          interest_amount?: number
+          is_reversal?: boolean
+          notes?: string | null
+          payment_date?: string
+          payment_method_id: string
+          penalty_amount?: number
+          reversal_reason?: string | null
+          reversed_payment_id?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          bank_account_id?: string | null
+          created_at?: string
+          created_by?: string
+          discount_amount?: number
+          id?: string
+          installment_id?: string
+          interest_amount?: number
+          is_reversal?: boolean
+          notes?: string | null
+          payment_date?: string
+          payment_method_id?: string
+          penalty_amount?: number
+          reversal_reason?: string | null
+          reversed_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payable_payments_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payable_payments_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_payable_installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payable_payments_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payable_payments_reversed_payment_id_fkey"
+            columns: ["reversed_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payable_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      portal_notificacoes: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          link: string | null
+          lido: boolean
+          mensagem: string | null
+          source_id: string | null
+          source_type: string | null
+          tipo: Database["public"]["Enums"]["tipo_notificacao_portal"]
+          titulo: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          link?: string | null
+          lido?: boolean
+          mensagem?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_notificacao_portal"]
+          titulo: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          link?: string | null
+          lido?: boolean
+          mensagem?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_notificacao_portal"]
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_notificacoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_solicitacoes: {
+        Row: {
+          audio_inicial_path: string | null
+          audio_inicial_url: string | null
+          cliente_id: string
+          confirmacao_produtor: string | null
+          consultor_atribuido: string | null
+          created_at: string
+          created_by: string | null
+          data_prevista_atendimento: string | null
+          descricao: string | null
+          duracao_estimada: number | null
+          external_event_id: string | null
+          fazenda_id: string | null
+          fotos_iniciais: string[] | null
+          fotos_paths: string[] | null
+          id: string
+          numero_solicitacao: string | null
+          origem_solicitacao: string | null
+          registro_origem_id: string | null
+          solicitante_contato: string | null
+          solicitante_nome: string | null
+          status: string
+          talhao_id: string | null
+          tipo_demanda: string
+          updated_at: string
+          urgencia: string
+          user_id: string
+        }
+        Insert: {
+          audio_inicial_path?: string | null
+          audio_inicial_url?: string | null
+          cliente_id: string
+          confirmacao_produtor?: string | null
+          consultor_atribuido?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_prevista_atendimento?: string | null
+          descricao?: string | null
+          duracao_estimada?: number | null
+          external_event_id?: string | null
+          fazenda_id?: string | null
+          fotos_iniciais?: string[] | null
+          fotos_paths?: string[] | null
+          id?: string
+          numero_solicitacao?: string | null
+          origem_solicitacao?: string | null
+          registro_origem_id?: string | null
+          solicitante_contato?: string | null
+          solicitante_nome?: string | null
+          status?: string
+          talhao_id?: string | null
+          tipo_demanda: string
+          updated_at?: string
+          urgencia?: string
+          user_id: string
+        }
+        Update: {
+          audio_inicial_path?: string | null
+          audio_inicial_url?: string | null
+          cliente_id?: string
+          confirmacao_produtor?: string | null
+          consultor_atribuido?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_prevista_atendimento?: string | null
+          descricao?: string | null
+          duracao_estimada?: number | null
+          external_event_id?: string | null
+          fazenda_id?: string | null
+          fotos_iniciais?: string[] | null
+          fotos_paths?: string[] | null
+          id?: string
+          numero_solicitacao?: string | null
+          origem_solicitacao?: string | null
+          registro_origem_id?: string | null
+          solicitante_contato?: string | null
+          solicitante_nome?: string | null
+          status?: string
+          talhao_id?: string | null
+          tipo_demanda?: string
+          updated_at?: string
+          urgencia?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_solicitacoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_solicitacoes_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_solicitacoes_registro_origem_id_fkey"
+            columns: ["registro_origem_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_solicitacoes_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_crop_recommendations: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          cultura_id: string | null
+          cultura_nome: string | null
+          dose_recomendada: string | null
+          fase_recomendada: string | null
+          id: string
+          objetivo_uso: string | null
+          observacao: string | null
+          produto_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          cultura_id?: string | null
+          cultura_nome?: string | null
+          dose_recomendada?: string | null
+          fase_recomendada?: string | null
+          id?: string
+          objetivo_uso?: string | null
+          observacao?: string | null
+          produto_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          cultura_id?: string | null
+          cultura_nome?: string | null
+          dose_recomendada?: string | null
+          fase_recomendada?: string | null
+          id?: string
+          objetivo_uso?: string | null
+          observacao?: string | null
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_crop_recommendations_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_crop_recommendations_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_fiscal_profiles: {
+        Row: {
+          accounting_notes: string | null
+          accounting_validated_at: string | null
+          accounting_validated_by: string | null
+          approximate_tax_source: string | null
+          cest: string | null
+          cfop_in_state: string | null
+          cfop_interstate: string | null
+          cofins_cst: string | null
+          commercial_unit: string | null
+          created_at: string
+          created_by: string | null
+          fiscal_description: string | null
+          gtin: string | null
+          ibs_cbs_configuration: Json
+          icms_csosn: string | null
+          icms_cst: string | null
+          id: string
+          ipi_cst: string | null
+          is_active: boolean
+          ncm: string | null
+          origin_code: string | null
+          pis_cst: string | null
+          product_id: string
+          profile_status: string
+          tax_benefit_code: string | null
+          taxable_gtin: string | null
+          taxable_unit: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          accounting_notes?: string | null
+          accounting_validated_at?: string | null
+          accounting_validated_by?: string | null
+          approximate_tax_source?: string | null
+          cest?: string | null
+          cfop_in_state?: string | null
+          cfop_interstate?: string | null
+          cofins_cst?: string | null
+          commercial_unit?: string | null
+          created_at?: string
+          created_by?: string | null
+          fiscal_description?: string | null
+          gtin?: string | null
+          ibs_cbs_configuration?: Json
+          icms_csosn?: string | null
+          icms_cst?: string | null
+          id?: string
+          ipi_cst?: string | null
+          is_active?: boolean
+          ncm?: string | null
+          origin_code?: string | null
+          pis_cst?: string | null
+          product_id: string
+          profile_status?: string
+          tax_benefit_code?: string | null
+          taxable_gtin?: string | null
+          taxable_unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accounting_notes?: string | null
+          accounting_validated_at?: string | null
+          accounting_validated_by?: string | null
+          approximate_tax_source?: string | null
+          cest?: string | null
+          cfop_in_state?: string | null
+          cfop_interstate?: string | null
+          cofins_cst?: string | null
+          commercial_unit?: string | null
+          created_at?: string
+          created_by?: string | null
+          fiscal_description?: string | null
+          gtin?: string | null
+          ibs_cbs_configuration?: Json
+          icms_csosn?: string | null
+          icms_cst?: string | null
+          id?: string
+          ipi_cst?: string | null
+          is_active?: boolean
+          ncm?: string | null
+          origin_code?: string | null
+          pis_cst?: string | null
+          product_id?: string
+          profile_status?: string
+          tax_benefit_code?: string | null
+          taxable_gtin?: string | null
+          taxable_unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_fiscal_profiles_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_target_recommendations: {
+        Row: {
+          alvo_nome: string
+          alvo_tipo: string
+          ativo: boolean
+          catalogo_alvo_id: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          prioridade: number
+          produto_id: string
+        }
+        Insert: {
+          alvo_nome: string
+          alvo_tipo: string
+          ativo?: boolean
+          catalogo_alvo_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          prioridade?: number
+          produto_id: string
+        }
+        Update: {
+          alvo_nome?: string
+          alvo_tipo?: string
+          ativo?: boolean
+          catalogo_alvo_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          prioridade?: number
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_target_recommendations_catalogo_alvo_id_fkey"
+            columns: ["catalogo_alvo_id"]
+            isOneToOne: false
+            referencedRelation: "catalogo_alvos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_target_recommendations_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_technical_profiles: {
+        Row: {
+          beneficio_combinado: string | null
+          compatibilidade: string | null
+          created_at: string
+          created_by: string | null
+          cuidados_aplicacao: string | null
+          explicacao_b2b: string | null
+          explicacao_produtor: string | null
+          explicacao_tecnica: string | null
+          id: string
+          indicacoes_uso: string | null
+          janela_aplicacao: string | null
+          observacoes_regulatorias: string | null
+          produto_id: string
+          resumo_curto: string | null
+          status_validacao: string
+          updated_at: string
+          updated_by: string | null
+          validado_em: string | null
+          validado_por: string | null
+        }
+        Insert: {
+          beneficio_combinado?: string | null
+          compatibilidade?: string | null
+          created_at?: string
+          created_by?: string | null
+          cuidados_aplicacao?: string | null
+          explicacao_b2b?: string | null
+          explicacao_produtor?: string | null
+          explicacao_tecnica?: string | null
+          id?: string
+          indicacoes_uso?: string | null
+          janela_aplicacao?: string | null
+          observacoes_regulatorias?: string | null
+          produto_id: string
+          resumo_curto?: string | null
+          status_validacao?: string
+          updated_at?: string
+          updated_by?: string | null
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Update: {
+          beneficio_combinado?: string | null
+          compatibilidade?: string | null
+          created_at?: string
+          created_by?: string | null
+          cuidados_aplicacao?: string | null
+          explicacao_b2b?: string | null
+          explicacao_produtor?: string | null
+          explicacao_tecnica?: string | null
+          id?: string
+          indicacoes_uso?: string | null
+          janela_aplicacao?: string | null
+          observacoes_regulatorias?: string | null
+          produto_id?: string
+          resumo_curto?: string | null
+          status_validacao?: string
+          updated_at?: string
+          updated_by?: string | null
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_technical_profiles_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_order_link: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          ordem_servico_id: string
+          partner_order_id: string
+          partner_order_item_id: string
+          planning_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ordem_servico_id: string
+          partner_order_id: string
+          partner_order_item_id: string
+          planning_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ordem_servico_id?: string
+          partner_order_id?: string
+          partner_order_item_id?: string
+          planning_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_order_link_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_link_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_link_partner_order_item_id_fkey"
+            columns: ["partner_order_item_id"]
+            isOneToOne: true
+            referencedRelation: "partner_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_link_planning_id_fkey"
+            columns: ["planning_id"]
+            isOneToOne: false
+            referencedRelation: "production_planning"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_planning: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          partner_id: string
+          partner_order_id: string
+          planned_finish_date: string | null
+          planned_start_date: string | null
+          production_notes: string | null
+          status: Database["public"]["Enums"]["production_planning_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          partner_id: string
+          partner_order_id: string
+          planned_finish_date?: string | null
+          planned_start_date?: string | null
+          production_notes?: string | null
+          status?: Database["public"]["Enums"]["production_planning_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          partner_id?: string
+          partner_order_id?: string
+          planned_finish_date?: string | null
+          planned_start_date?: string | null
+          production_notes?: string | null
+          status?: Database["public"]["Enums"]["production_planning_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_planning_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "production_planning_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "production_planning_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_planning_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "production_planning_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "production_planning_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "production_planning_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "production_planning_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "production_planning_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: true
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_timeline_events: {
+        Row: {
+          actor_id: string | null
+          event_at: string
+          event_type: string
+          id: string
+          meta: Json
+          partner_order_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          event_at?: string
+          event_type: string
+          id?: string
+          meta?: Json
+          partner_order_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          event_at?: string
+          event_type?: string
+          id?: string
+          meta?: Json
+          partner_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_timeline_events_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_etiqueta_eventos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          etiqueta_id: string
+          evento: string
+          id: string
+          metadata: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          etiqueta_id: string
+          evento: string
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          etiqueta_id?: string
+          evento?: string
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_etiqueta_eventos_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "produto_etiquetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_etiquetas: {
+        Row: {
+          cepas: string[] | null
+          cliente_id: string | null
+          codigo_etiqueta: string
+          composicao_resumida: string | null
+          conservacao: string | null
+          created_at: string
+          embalagem_id: string | null
+          entrega_id: string | null
+          entrega_item_id: string | null
+          envase_id: string | null
+          envase_item_id: string | null
+          estoque_item_id: string | null
+          fabricado_em: string | null
+          fazenda_id: string | null
+          gerada_em: string
+          gerada_por: string | null
+          id: string
+          impressa_em: string | null
+          impressa_por: string | null
+          lote_codigo: string
+          lote_id: string | null
+          metadata: Json
+          observacoes: string | null
+          produto_id: string | null
+          produto_nome: string
+          protocolo_nome: string | null
+          public_trace_enabled: boolean
+          qr_code_generated_at: string | null
+          qr_code_path: string | null
+          qr_code_payload: string | null
+          quantidade_embalagens: number | null
+          quantidade_impressoes: number
+          status: string
+          tipo_etiqueta: string
+          trace_expires_at: string | null
+          trace_hash: string | null
+          trace_token: string
+          trace_url: string | null
+          ultima_reimpressao_em: string | null
+          ultima_reimpressao_por: string | null
+          unidade: string | null
+          updated_at: string
+          uso_recomendado: string | null
+          validade_em: string | null
+          volume: number | null
+        }
+        Insert: {
+          cepas?: string[] | null
+          cliente_id?: string | null
+          codigo_etiqueta: string
+          composicao_resumida?: string | null
+          conservacao?: string | null
+          created_at?: string
+          embalagem_id?: string | null
+          entrega_id?: string | null
+          entrega_item_id?: string | null
+          envase_id?: string | null
+          envase_item_id?: string | null
+          estoque_item_id?: string | null
+          fabricado_em?: string | null
+          fazenda_id?: string | null
+          gerada_em?: string
+          gerada_por?: string | null
+          id?: string
+          impressa_em?: string | null
+          impressa_por?: string | null
+          lote_codigo: string
+          lote_id?: string | null
+          metadata?: Json
+          observacoes?: string | null
+          produto_id?: string | null
+          produto_nome: string
+          protocolo_nome?: string | null
+          public_trace_enabled?: boolean
+          qr_code_generated_at?: string | null
+          qr_code_path?: string | null
+          qr_code_payload?: string | null
+          quantidade_embalagens?: number | null
+          quantidade_impressoes?: number
+          status?: string
+          tipo_etiqueta?: string
+          trace_expires_at?: string | null
+          trace_hash?: string | null
+          trace_token?: string
+          trace_url?: string | null
+          ultima_reimpressao_em?: string | null
+          ultima_reimpressao_por?: string | null
+          unidade?: string | null
+          updated_at?: string
+          uso_recomendado?: string | null
+          validade_em?: string | null
+          volume?: number | null
+        }
+        Update: {
+          cepas?: string[] | null
+          cliente_id?: string | null
+          codigo_etiqueta?: string
+          composicao_resumida?: string | null
+          conservacao?: string | null
+          created_at?: string
+          embalagem_id?: string | null
+          entrega_id?: string | null
+          entrega_item_id?: string | null
+          envase_id?: string | null
+          envase_item_id?: string | null
+          estoque_item_id?: string | null
+          fabricado_em?: string | null
+          fazenda_id?: string | null
+          gerada_em?: string
+          gerada_por?: string | null
+          id?: string
+          impressa_em?: string | null
+          impressa_por?: string | null
+          lote_codigo?: string
+          lote_id?: string | null
+          metadata?: Json
+          observacoes?: string | null
+          produto_id?: string | null
+          produto_nome?: string
+          protocolo_nome?: string | null
+          public_trace_enabled?: boolean
+          qr_code_generated_at?: string | null
+          qr_code_path?: string | null
+          qr_code_payload?: string | null
+          quantidade_embalagens?: number | null
+          quantidade_impressoes?: number
+          status?: string
+          tipo_etiqueta?: string
+          trace_expires_at?: string | null
+          trace_hash?: string | null
+          trace_token?: string
+          trace_url?: string | null
+          ultima_reimpressao_em?: string | null
+          ultima_reimpressao_por?: string | null
+          unidade?: string | null
+          updated_at?: string
+          uso_recomendado?: string | null
+          validade_em?: string | null
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_produto_etiquetas_embalagem"
+            columns: ["embalagem_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_embalagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_embalagem_id_fkey"
+            columns: ["embalagem_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_embalagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "envase"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["envase_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "produto_etiquetas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          ativo: boolean | null
+          b2b_enabled: boolean
+          codigo: string | null
+          created_at: string
+          descricao: string | null
+          dose_ml_ha: number | null
+          e_insumo: boolean | null
+          estoque_minimo: number | null
+          funcao_completa: string | null
+          id: string
+          modo_acao: string | null
+          modo_aplicacao: string | null
+          nome: string
+          tipo: Database["public"]["Enums"]["tipo_produto"]
+          updated_at: string
+          valor_dose_brl: number | null
+          valor_ha_brl: number | null
+          valor_litro_brl: number | null
+          versao_catalogo: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          b2b_enabled?: boolean
+          codigo?: string | null
+          created_at?: string
+          descricao?: string | null
+          dose_ml_ha?: number | null
+          e_insumo?: boolean | null
+          estoque_minimo?: number | null
+          funcao_completa?: string | null
+          id?: string
+          modo_acao?: string | null
+          modo_aplicacao?: string | null
+          nome: string
+          tipo: Database["public"]["Enums"]["tipo_produto"]
+          updated_at?: string
+          valor_dose_brl?: number | null
+          valor_ha_brl?: number | null
+          valor_litro_brl?: number | null
+          versao_catalogo?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          b2b_enabled?: boolean
+          codigo?: string | null
+          created_at?: string
+          descricao?: string | null
+          dose_ml_ha?: number | null
+          e_insumo?: boolean | null
+          estoque_minimo?: number | null
+          funcao_completa?: string | null
+          id?: string
+          modo_acao?: string | null
+          modo_aplicacao?: string | null
+          nome?: string
+          tipo?: Database["public"]["Enums"]["tipo_produto"]
+          updated_at?: string
+          valor_dose_brl?: number | null
+          valor_ha_brl?: number | null
+          valor_litro_brl?: number | null
+          versao_catalogo?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          ativo: boolean
+          cargo: string | null
+          cliente_id: string | null
+          cpf_cnpj: string | null
+          crea: string | null
+          created_at: string
+          data_admissao: string | null
+          email: string | null
+          especialidade: string | null
+          id: string
+          nome: string
+          observacoes_internas: string | null
+          organization_id: string | null
+          telefone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          cargo?: string | null
+          cliente_id?: string | null
+          cpf_cnpj?: string | null
+          crea?: string | null
+          created_at?: string
+          data_admissao?: string | null
+          email?: string | null
+          especialidade?: string | null
+          id?: string
+          nome?: string
+          observacoes_internas?: string | null
+          organization_id?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          cargo?: string | null
+          cliente_id?: string | null
+          cpf_cnpj?: string | null
+          crea?: string | null
+          created_at?: string
+          data_admissao?: string | null
+          email?: string | null
+          especialidade?: string | null
+          id?: string
+          nome?: string
+          observacoes_internas?: string | null
+          organization_id?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programacao_producao: {
+        Row: {
+          created_at: string
+          data_programada: string | null
+          id: string
+          microrganismo_id: string | null
+          ordem_servico_id: string | null
+          ordem_servico_onfarm_id: string | null
+          produto_id: string | null
+          responsavel: string | null
+          responsavel_id: string | null
+          status: Database["public"]["Enums"]["status_programacao"]
+          updated_at: string
+          volume_necessario: number | null
+        }
+        Insert: {
+          created_at?: string
+          data_programada?: string | null
+          id?: string
+          microrganismo_id?: string | null
+          ordem_servico_id?: string | null
+          ordem_servico_onfarm_id?: string | null
+          produto_id?: string | null
+          responsavel?: string | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["status_programacao"]
+          updated_at?: string
+          volume_necessario?: number | null
+        }
+        Update: {
+          created_at?: string
+          data_programada?: string | null
+          id?: string
+          microrganismo_id?: string | null
+          ordem_servico_id?: string | null
+          ordem_servico_onfarm_id?: string | null
+          produto_id?: string | null
+          responsavel?: string | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["status_programacao"]
+          updated_at?: string
+          volume_necessario?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programacao_producao_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programacao_producao_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programacao_producao_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "programacao_producao_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "mv_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "programacao_producao_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico_onfarm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programacao_producao_ordem_servico_onfarm_id_fkey"
+            columns: ["ordem_servico_onfarm_id"]
+            isOneToOne: false
+            referencedRelation: "vw_fluxo_visita_tecnica"
+            referencedColumns: ["os_id"]
+          },
+          {
+            foreignKeyName: "programacao_producao_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programacao_producao_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          last_used_at: string | null
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          last_used_at?: string | null
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          last_used_at?: string | null
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      receivable_payments: {
+        Row: {
+          amount_received: number
+          bank_account_id: string | null
+          created_at: string
+          created_by: string
+          discount_amount: number
+          id: string
+          installment_id: string
+          interest_amount: number
+          is_reversal: boolean
+          notes: string | null
+          payment_date: string
+          payment_method_id: string
+          penalty_amount: number
+          reversal_reason: string | null
+          reversed_payment_id: string | null
+        }
+        Insert: {
+          amount_received: number
+          bank_account_id?: string | null
+          created_at?: string
+          created_by: string
+          discount_amount?: number
+          id?: string
+          installment_id: string
+          interest_amount?: number
+          is_reversal?: boolean
+          notes?: string | null
+          payment_date?: string
+          payment_method_id: string
+          penalty_amount?: number
+          reversal_reason?: string | null
+          reversed_payment_id?: string | null
+        }
+        Update: {
+          amount_received?: number
+          bank_account_id?: string | null
+          created_at?: string
+          created_by?: string
+          discount_amount?: number
+          id?: string
+          installment_id?: string
+          interest_amount?: number
+          is_reversal?: boolean
+          notes?: string | null
+          payment_date?: string
+          payment_method_id?: string
+          penalty_amount?: number
+          reversal_reason?: string | null
+          reversed_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receivable_payments_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivable_payments_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable_installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivable_payments_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivable_payments_reversed_payment_id_fkey"
+            columns: ["reversed_payment_id"]
+            isOneToOne: false
+            referencedRelation: "receivable_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recomendacao_comentarios: {
+        Row: {
+          autor_id: string
+          autor_nome: string
+          autor_tipo: Database["public"]["Enums"]["recomendacao_comentario_autor_tipo"]
+          created_at: string
+          id: string
+          lido_em: string | null
+          mensagem: string
+          recomendacao_id: string
+          updated_at: string
+        }
+        Insert: {
+          autor_id: string
+          autor_nome: string
+          autor_tipo: Database["public"]["Enums"]["recomendacao_comentario_autor_tipo"]
+          created_at?: string
+          id?: string
+          lido_em?: string | null
+          mensagem: string
+          recomendacao_id: string
+          updated_at?: string
+        }
+        Update: {
+          autor_id?: string
+          autor_nome?: string
+          autor_tipo?: Database["public"]["Enums"]["recomendacao_comentario_autor_tipo"]
+          created_at?: string
+          id?: string
+          lido_em?: string | null
+          mensagem?: string
+          recomendacao_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomendacao_comentarios_recomendacao_id_fkey"
+            columns: ["recomendacao_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor_recomendacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_financial_templates: {
+        Row: {
+          active: boolean
+          adjustment_index_name: string | null
+          adjustment_type: string | null
+          adjustment_value: number | null
+          amount: number
+          auto_generate: boolean
+          bank_account_id: string | null
+          category_id: string
+          cost_center_id: string | null
+          created_at: string
+          created_by: string
+          customer_id: string | null
+          description: string
+          due_day: number | null
+          end_date: string | null
+          fiscal_invoice_required: boolean | null
+          id: string
+          installment_count: number
+          last_adjustment_date: string | null
+          name: string
+          next_adjustment_date: string | null
+          next_generation_date: string
+          notes: string | null
+          paused_at: string | null
+          payment_method_id: string | null
+          recurrence_frequency: string
+          start_date: string
+          supplier_id: string | null
+          supplier_name: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          adjustment_index_name?: string | null
+          adjustment_type?: string | null
+          adjustment_value?: number | null
+          amount: number
+          auto_generate?: boolean
+          bank_account_id?: string | null
+          category_id: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by: string
+          customer_id?: string | null
+          description: string
+          due_day?: number | null
+          end_date?: string | null
+          fiscal_invoice_required?: boolean | null
+          id?: string
+          installment_count?: number
+          last_adjustment_date?: string | null
+          name: string
+          next_adjustment_date?: string | null
+          next_generation_date: string
+          notes?: string | null
+          paused_at?: string | null
+          payment_method_id?: string | null
+          recurrence_frequency: string
+          start_date: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          adjustment_index_name?: string | null
+          adjustment_type?: string | null
+          adjustment_value?: number | null
+          amount?: number
+          auto_generate?: boolean
+          bank_account_id?: string | null
+          category_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string
+          customer_id?: string | null
+          description?: string
+          due_day?: number | null
+          end_date?: string | null
+          fiscal_invoice_required?: boolean | null
+          id?: string
+          installment_count?: number
+          last_adjustment_date?: string | null
+          name?: string
+          next_adjustment_date?: string | null
+          next_generation_date?: string
+          notes?: string | null
+          paused_at?: string | null
+          payment_method_id?: string | null
+          recurrence_frequency?: string
+          start_date?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_financial_templates_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_financial_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_financial_templates_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_financial_templates_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_financial_templates_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_generation_log: {
+        Row: {
+          amount: number | null
+          error_message: string | null
+          generated_at: string
+          generated_by: string | null
+          generated_entity_id: string | null
+          generated_entity_type: string | null
+          id: string
+          reference_date: string
+          status: string
+          template_id: string
+        }
+        Insert: {
+          amount?: number | null
+          error_message?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          generated_entity_id?: string | null
+          generated_entity_type?: string | null
+          id?: string
+          reference_date: string
+          status: string
+          template_id: string
+        }
+        Update: {
+          amount?: number | null
+          error_message?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          generated_entity_id?: string | null
+          generated_entity_type?: string | null
+          id?: string
+          reference_date?: string
+          status?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_generation_log_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_financial_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_consultor: {
+        Row: {
+          acao_realizada: string | null
+          area_hectares: number | null
+          categoria_problema:
+            | Database["public"]["Enums"]["categoria_problema_consultor"]
+            | null
+          client_uuid: string | null
+          cliente_id: string | null
+          codigo_visita: string | null
+          condicoes_climaticas_observadas: string | null
+          consultor_profile_id: string | null
+          consultor_responsavel: string | null
+          created_at: string
+          created_by: string | null
+          cultura_id: string | null
+          data_proxima_visita: string | null
+          data_vistoria: string
+          duracao_estimada: number | null
+          fase_fenologica: string | null
+          fazenda_id: string | null
+          finalized_at: string | null
+          finalized_by: string | null
+          historico_resumido: string | null
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          latitude: number | null
+          localizacao_na_area: string | null
+          longitude: number | null
+          natureza_registro: Database["public"]["Enums"]["natureza_registro_consultor"]
+          necessidade_intervencao:
+            | Database["public"]["Enums"]["necessidade_intervencao"]
+            | null
+          nivel_pressao: Database["public"]["Enums"]["nivel_pressao"] | null
+          objetivo_visita: string | null
+          observacoes_tecnicas: string | null
+          pdf_status: string | null
+          percentual_area_afetada: number | null
+          problema_principal: string | null
+          problema_secundario: string | null
+          proxima_acao_recomendada: string | null
+          registro_origem_id: string | null
+          risco_produtivo: Database["public"]["Enums"]["risco_produtivo"] | null
+          safra: string | null
+          solicitacao_id: string | null
+          status: Database["public"]["Enums"]["status_registro_consultor"]
+          talhao_id: string | null
+          tipo_demanda:
+            | Database["public"]["Enums"]["tipo_demanda_consultor"]
+            | null
+          tipo_visita: Database["public"]["Enums"]["tipo_visita"] | null
+          updated_at: string
+          urgencia: Database["public"]["Enums"]["urgencia_consultor"] | null
+          version: number
+        }
+        Insert: {
+          acao_realizada?: string | null
+          area_hectares?: number | null
+          categoria_problema?:
+            | Database["public"]["Enums"]["categoria_problema_consultor"]
+            | null
+          client_uuid?: string | null
+          cliente_id?: string | null
+          codigo_visita?: string | null
+          condicoes_climaticas_observadas?: string | null
+          consultor_profile_id?: string | null
+          consultor_responsavel?: string | null
+          created_at?: string
+          created_by?: string | null
+          cultura_id?: string | null
+          data_proxima_visita?: string | null
+          data_vistoria?: string
+          duracao_estimada?: number | null
+          fase_fenologica?: string | null
+          fazenda_id?: string | null
+          finalized_at?: string | null
+          finalized_by?: string | null
+          historico_resumido?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          latitude?: number | null
+          localizacao_na_area?: string | null
+          longitude?: number | null
+          natureza_registro?: Database["public"]["Enums"]["natureza_registro_consultor"]
+          necessidade_intervencao?:
+            | Database["public"]["Enums"]["necessidade_intervencao"]
+            | null
+          nivel_pressao?: Database["public"]["Enums"]["nivel_pressao"] | null
+          objetivo_visita?: string | null
+          observacoes_tecnicas?: string | null
+          pdf_status?: string | null
+          percentual_area_afetada?: number | null
+          problema_principal?: string | null
+          problema_secundario?: string | null
+          proxima_acao_recomendada?: string | null
+          registro_origem_id?: string | null
+          risco_produtivo?:
+            | Database["public"]["Enums"]["risco_produtivo"]
+            | null
+          safra?: string | null
+          solicitacao_id?: string | null
+          status?: Database["public"]["Enums"]["status_registro_consultor"]
+          talhao_id?: string | null
+          tipo_demanda?:
+            | Database["public"]["Enums"]["tipo_demanda_consultor"]
+            | null
+          tipo_visita?: Database["public"]["Enums"]["tipo_visita"] | null
+          updated_at?: string
+          urgencia?: Database["public"]["Enums"]["urgencia_consultor"] | null
+          version?: number
+        }
+        Update: {
+          acao_realizada?: string | null
+          area_hectares?: number | null
+          categoria_problema?:
+            | Database["public"]["Enums"]["categoria_problema_consultor"]
+            | null
+          client_uuid?: string | null
+          cliente_id?: string | null
+          codigo_visita?: string | null
+          condicoes_climaticas_observadas?: string | null
+          consultor_profile_id?: string | null
+          consultor_responsavel?: string | null
+          created_at?: string
+          created_by?: string | null
+          cultura_id?: string | null
+          data_proxima_visita?: string | null
+          data_vistoria?: string
+          duracao_estimada?: number | null
+          fase_fenologica?: string | null
+          fazenda_id?: string | null
+          finalized_at?: string | null
+          finalized_by?: string | null
+          historico_resumido?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          latitude?: number | null
+          localizacao_na_area?: string | null
+          longitude?: number | null
+          natureza_registro?: Database["public"]["Enums"]["natureza_registro_consultor"]
+          necessidade_intervencao?:
+            | Database["public"]["Enums"]["necessidade_intervencao"]
+            | null
+          nivel_pressao?: Database["public"]["Enums"]["nivel_pressao"] | null
+          objetivo_visita?: string | null
+          observacoes_tecnicas?: string | null
+          pdf_status?: string | null
+          percentual_area_afetada?: number | null
+          problema_principal?: string | null
+          problema_secundario?: string | null
+          proxima_acao_recomendada?: string | null
+          registro_origem_id?: string | null
+          risco_produtivo?:
+            | Database["public"]["Enums"]["risco_produtivo"]
+            | null
+          safra?: string | null
+          solicitacao_id?: string | null
+          status?: Database["public"]["Enums"]["status_registro_consultor"]
+          talhao_id?: string | null
+          tipo_demanda?:
+            | Database["public"]["Enums"]["tipo_demanda_consultor"]
+            | null
+          tipo_visita?: Database["public"]["Enums"]["tipo_visita"] | null
+          updated_at?: string
+          urgencia?: Database["public"]["Enums"]["urgencia_consultor"] | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_consultor_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_consultor_consultor_profile_id_fkey"
+            columns: ["consultor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_consultor_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_consultor_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_consultor_registro_origem_id_fkey"
+            columns: ["registro_origem_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_consultor_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_consultor_arquivos: {
+        Row: {
+          arquivo_path: string | null
+          arquivo_url: string | null
+          capturado_em: string | null
+          categoria_arquivo:
+            | Database["public"]["Enums"]["categoria_arquivo_consultor"]
+            | null
+          client_uuid: string | null
+          duracao_segundos: number | null
+          foto_principal: boolean | null
+          id: string
+          latitude: number | null
+          legenda: string | null
+          longitude: number | null
+          nome_arquivo: string | null
+          ponto_area: Database["public"]["Enums"]["ponto_area_consultor"] | null
+          registro_consultor_id: string
+          tipo_arquivo: string | null
+          tipo_midia:
+            | Database["public"]["Enums"]["tipo_arquivo_consultor"]
+            | null
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          arquivo_path?: string | null
+          arquivo_url?: string | null
+          capturado_em?: string | null
+          categoria_arquivo?:
+            | Database["public"]["Enums"]["categoria_arquivo_consultor"]
+            | null
+          client_uuid?: string | null
+          duracao_segundos?: number | null
+          foto_principal?: boolean | null
+          id?: string
+          latitude?: number | null
+          legenda?: string | null
+          longitude?: number | null
+          nome_arquivo?: string | null
+          ponto_area?:
+            | Database["public"]["Enums"]["ponto_area_consultor"]
+            | null
+          registro_consultor_id: string
+          tipo_arquivo?: string | null
+          tipo_midia?:
+            | Database["public"]["Enums"]["tipo_arquivo_consultor"]
+            | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          arquivo_path?: string | null
+          arquivo_url?: string | null
+          capturado_em?: string | null
+          categoria_arquivo?:
+            | Database["public"]["Enums"]["categoria_arquivo_consultor"]
+            | null
+          client_uuid?: string | null
+          duracao_segundos?: number | null
+          foto_principal?: boolean | null
+          id?: string
+          latitude?: number | null
+          legenda?: string | null
+          longitude?: number | null
+          nome_arquivo?: string | null
+          ponto_area?:
+            | Database["public"]["Enums"]["ponto_area_consultor"]
+            | null
+          registro_consultor_id?: string
+          tipo_arquivo?: string | null
+          tipo_midia?:
+            | Database["public"]["Enums"]["tipo_arquivo_consultor"]
+            | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_consultor_arquivos_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_consultor_pdf_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_path: string
+          id: string
+          metadata: Json | null
+          pdf_url: string
+          registro_consultor_id: string
+          version_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_path: string
+          id?: string
+          metadata?: Json | null
+          pdf_url: string
+          registro_consultor_id: string
+          version_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_path?: string
+          id?: string
+          metadata?: Json | null
+          pdf_url?: string
+          registro_consultor_id?: string
+          version_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_consultor_pdf_versions_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_consultor_recomendacoes: {
+        Row: {
+          client_uuid: string | null
+          compatibilidade_observacoes: string | null
+          created_at: string
+          created_by: string | null
+          cuidados_operacionais: string | null
+          dose_recomendada_unidade: string | null
+          dose_recomendada_valor: number | null
+          encaminhar_para_os: boolean | null
+          estrategia_manejo:
+            | Database["public"]["Enums"]["estrategia_manejo"]
+            | null
+          id: string
+          intervalo_aplicacoes: string | null
+          microrganismo_id: string | null
+          modo_aplicacao:
+            | Database["public"]["Enums"]["modo_aplicacao_consultor"]
+            | null
+          momento_aplicacao: string | null
+          numero_aplicacoes: number | null
+          objetivo_recomendacao:
+            | Database["public"]["Enums"]["objetivo_recomendacao"]
+            | null
+          observacoes_finais: string | null
+          produto_biologico_sugerido_id: string | null
+          recomendacao_tecnica: string | null
+          registro_consultor_id: string
+          updated_at: string
+          versao: number
+          volume_calda: string | null
+          volume_total_recomendado: number | null
+        }
+        Insert: {
+          client_uuid?: string | null
+          compatibilidade_observacoes?: string | null
+          created_at?: string
+          created_by?: string | null
+          cuidados_operacionais?: string | null
+          dose_recomendada_unidade?: string | null
+          dose_recomendada_valor?: number | null
+          encaminhar_para_os?: boolean | null
+          estrategia_manejo?:
+            | Database["public"]["Enums"]["estrategia_manejo"]
+            | null
+          id?: string
+          intervalo_aplicacoes?: string | null
+          microrganismo_id?: string | null
+          modo_aplicacao?:
+            | Database["public"]["Enums"]["modo_aplicacao_consultor"]
+            | null
+          momento_aplicacao?: string | null
+          numero_aplicacoes?: number | null
+          objetivo_recomendacao?:
+            | Database["public"]["Enums"]["objetivo_recomendacao"]
+            | null
+          observacoes_finais?: string | null
+          produto_biologico_sugerido_id?: string | null
+          recomendacao_tecnica?: string | null
+          registro_consultor_id: string
+          updated_at?: string
+          versao?: number
+          volume_calda?: string | null
+          volume_total_recomendado?: number | null
+        }
+        Update: {
+          client_uuid?: string | null
+          compatibilidade_observacoes?: string | null
+          created_at?: string
+          created_by?: string | null
+          cuidados_operacionais?: string | null
+          dose_recomendada_unidade?: string | null
+          dose_recomendada_valor?: number | null
+          encaminhar_para_os?: boolean | null
+          estrategia_manejo?:
+            | Database["public"]["Enums"]["estrategia_manejo"]
+            | null
+          id?: string
+          intervalo_aplicacoes?: string | null
+          microrganismo_id?: string | null
+          modo_aplicacao?:
+            | Database["public"]["Enums"]["modo_aplicacao_consultor"]
+            | null
+          momento_aplicacao?: string | null
+          numero_aplicacoes?: number | null
+          objetivo_recomendacao?:
+            | Database["public"]["Enums"]["objetivo_recomendacao"]
+            | null
+          observacoes_finais?: string | null
+          produto_biologico_sugerido_id?: string | null
+          recomendacao_tecnica?: string | null
+          registro_consultor_id?: string
+          updated_at?: string
+          versao?: number
+          volume_calda?: string | null
+          volume_total_recomendado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_consultor_recomenda_produto_biologico_sugerido_i_fkey"
+            columns: ["produto_biologico_sugerido_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_consultor_recomendacoes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_consultor_recomendacoes_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_consultor_status_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          motivo: string | null
+          registro_consultor_id: string
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          motivo?: string | null
+          registro_consultor_id: string
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          motivo?: string | null
+          registro_consultor_id?: string
+          status_anterior?: string | null
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_consultor_status_log_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reservas_auditoria: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          entrega_id: string | null
+          envase_id: string | null
+          estoque_produto_id: string | null
+          id: string
+          lote_id: string | null
+          motivo: string | null
+          ordem_servico_id: string | null
+          os_tipo: string | null
+          quantidade_solicitada: number | null
+          reservado_para_os_id_existente: string | null
+          reservado_por_existente: string | null
+          resultado: string
+          status_estoque_no_momento: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          entrega_id?: string | null
+          envase_id?: string | null
+          estoque_produto_id?: string | null
+          id?: string
+          lote_id?: string | null
+          motivo?: string | null
+          ordem_servico_id?: string | null
+          os_tipo?: string | null
+          quantidade_solicitada?: number | null
+          reservado_para_os_id_existente?: string | null
+          reservado_por_existente?: string | null
+          resultado: string
+          status_estoque_no_momento?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          entrega_id?: string | null
+          envase_id?: string | null
+          estoque_produto_id?: string | null
+          id?: string
+          lote_id?: string | null
+          motivo?: string | null
+          ordem_servico_id?: string | null
+          os_tipo?: string | null
+          quantidade_solicitada?: number | null
+          reservado_para_os_id_existente?: string | null
+          reservado_por_existente?: string | null
+          resultado?: string
+          status_estoque_no_momento?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      service_fiscal_profiles: {
+        Row: {
+          accounting_notes: string | null
+          accounting_validated_at: string | null
+          accounting_validated_by: string | null
+          cnae: string | null
+          created_at: string
+          created_by: string | null
+          federal_withholding_defaults: Json | null
+          fiscal_description_template: string | null
+          ibs_cbs_configuration: Json
+          id: string
+          incidence_municipality_ibge_code: string | null
+          is_active: boolean
+          iss_rate: number | null
+          iss_withheld_default: boolean
+          lc116_item: string | null
+          municipal_taxation_code: string | null
+          national_taxation_code: string | null
+          profile_status: string
+          requirement_status: string | null
+          service_id: string | null
+          service_name: string | null
+          source_reference: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          accounting_notes?: string | null
+          accounting_validated_at?: string | null
+          accounting_validated_by?: string | null
+          cnae?: string | null
+          created_at?: string
+          created_by?: string | null
+          federal_withholding_defaults?: Json | null
+          fiscal_description_template?: string | null
+          ibs_cbs_configuration?: Json
+          id?: string
+          incidence_municipality_ibge_code?: string | null
+          is_active?: boolean
+          iss_rate?: number | null
+          iss_withheld_default?: boolean
+          lc116_item?: string | null
+          municipal_taxation_code?: string | null
+          national_taxation_code?: string | null
+          profile_status?: string
+          requirement_status?: string | null
+          service_id?: string | null
+          service_name?: string | null
+          source_reference?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accounting_notes?: string | null
+          accounting_validated_at?: string | null
+          accounting_validated_by?: string | null
+          cnae?: string | null
+          created_at?: string
+          created_by?: string | null
+          federal_withholding_defaults?: Json | null
+          fiscal_description_template?: string | null
+          ibs_cbs_configuration?: Json
+          id?: string
+          incidence_municipality_ibge_code?: string | null
+          is_active?: boolean
+          iss_rate?: number | null
+          iss_withheld_default?: boolean
+          lc116_item?: string | null
+          municipal_taxation_code?: string | null
+          national_taxation_code?: string | null
+          profile_status?: string
+          requirement_status?: string | null
+          service_id?: string | null
+          service_name?: string | null
+          source_reference?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      sla_configuracoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          etapa: string
+          id: string
+          prazo_horas: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          etapa: string
+          id?: string
+          prazo_horas: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          etapa?: string
+          id?: string
+          prazo_horas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      solicitacoes_atribuicoes: {
+        Row: {
+          atribuido_por: string | null
+          consultor_id: string
+          created_at: string
+          data_atribuicao: string
+          id: string
+          observacoes: string | null
+          solicitacao_id: string
+          status: Database["public"]["Enums"]["status_atribuicao"]
+        }
+        Insert: {
+          atribuido_por?: string | null
+          consultor_id: string
+          created_at?: string
+          data_atribuicao?: string
+          id?: string
+          observacoes?: string | null
+          solicitacao_id: string
+          status?: Database["public"]["Enums"]["status_atribuicao"]
+        }
+        Update: {
+          atribuido_por?: string | null
+          consultor_id?: string
+          created_at?: string
+          data_atribuicao?: string
+          id?: string
+          observacoes?: string | null
+          solicitacao_id?: string
+          status?: Database["public"]["Enums"]["status_atribuicao"]
+        }
+        Relationships: []
+      }
+      solicitacoes_timeline: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          metadata: Json | null
+          solicitacao_id: string
+          tipo_evento: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          solicitacao_id: string
+          tipo_evento: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          solicitacao_id?: string
+          tipo_evento?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      sync_log: {
+        Row: {
+          created_at: string
+          id: string
+          item_local_id: string
+          item_remoto_id: string | null
+          mensagem_erro: string | null
+          payload_resumo: Json | null
+          status: string
+          tentativa: number
+          tipo_item: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_local_id: string
+          item_remoto_id?: string | null
+          mensagem_erro?: string | null
+          payload_resumo?: Json | null
+          status: string
+          tentativa?: number
+          tipo_item: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_local_id?: string
+          item_remoto_id?: string | null
+          mensagem_erro?: string | null
+          payload_resumo?: Json | null
+          status?: string
+          tentativa?: number
+          tipo_item?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      talhao_safras: {
+        Row: {
+          created_at: string
+          cultura_id: string
+          data_colheita_real: string | null
+          data_plantio: string
+          data_previsao_colheita: string | null
+          id: string
+          observacoes: string | null
+          periodo_safra: string | null
+          produtividade: number | null
+          safra: string
+          status: string
+          talhao_id: string
+          unidade_produtividade: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cultura_id: string
+          data_colheita_real?: string | null
+          data_plantio: string
+          data_previsao_colheita?: string | null
+          id?: string
+          observacoes?: string | null
+          periodo_safra?: string | null
+          produtividade?: number | null
+          safra: string
+          status?: string
+          talhao_id: string
+          unidade_produtividade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cultura_id?: string
+          data_colheita_real?: string | null
+          data_plantio?: string
+          data_previsao_colheita?: string | null
+          id?: string
+          observacoes?: string | null
+          periodo_safra?: string | null
+          produtividade?: number | null
+          safra?: string
+          status?: string
+          talhao_id?: string
+          unidade_produtividade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talhao_safras_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talhao_safras_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talhoes: {
+        Row: {
+          area_hectares: number | null
+          ativo: boolean
+          created_at: string
+          cultura_id: string | null
+          fazenda_id: string
+          historico_pragas: string | null
+          id: string
+          latitude: number | null
+          localizacao_referencia: string | null
+          longitude: number | null
+          nome: string
+          observacoes: string | null
+          safra_atual_id: string | null
+          tipo_manejo_agua: string
+          updated_at: string
+        }
+        Insert: {
+          area_hectares?: number | null
+          ativo?: boolean
+          created_at?: string
+          cultura_id?: string | null
+          fazenda_id: string
+          historico_pragas?: string | null
+          id?: string
+          latitude?: number | null
+          localizacao_referencia?: string | null
+          longitude?: number | null
+          nome: string
+          observacoes?: string | null
+          safra_atual_id?: string | null
+          tipo_manejo_agua?: string
+          updated_at?: string
+        }
+        Update: {
+          area_hectares?: number | null
+          ativo?: boolean
+          created_at?: string
+          cultura_id?: string | null
+          fazenda_id?: string
+          historico_pragas?: string | null
+          id?: string
+          latitude?: number | null
+          localizacao_referencia?: string | null
+          longitude?: number | null
+          nome?: string
+          observacoes?: string | null
+          safra_atual_id?: string | null
+          tipo_manejo_agua?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talhoes_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talhoes_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talhoes_safra_atual_id_fkey"
+            columns: ["safra_atual_id"]
+            isOneToOne: false
+            referencedRelation: "talhao_safras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technical_visit_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          registro_consultor_id: string
+          removal_reason: string | null
+          removed_at: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          registro_consultor_id: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          registro_consultor_id?: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_visit_assignments_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_access_preferences: {
+        Row: {
+          created_at: string
+          last_context: string | null
+          preferred_context: string | null
+          skip_context_selector: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          last_context?: string | null
+          preferred_context?: string | null
+          skip_context_selector?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          last_context?: string | null
+          preferred_context?: string | null
+          skip_context_selector?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_clientes: {
+        Row: {
+          access_level: Database["public"]["Enums"]["access_level_tecnico"]
+          assigned_by: string | null
+          cliente_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          principal: boolean
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          access_level?: Database["public"]["Enums"]["access_level_tecnico"]
+          assigned_by?: string | null
+          cliente_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          principal?: boolean
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          access_level?: Database["public"]["Enums"]["access_level_tecnico"]
+          assigned_by?: string | null
+          cliente_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          principal?: boolean
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_clientes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_context_access_logs: {
+        Row: {
+          action: string
+          context_code: string
+          created_at: string
+          id: string
+          metadata: Json
+          previous_context: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          context_code: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          previous_context?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          context_code?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          previous_context?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      visita_diagnosticos: {
+        Row: {
+          categoria: string | null
+          client_uuid: string | null
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          id: string
+          incidencia: number | null
+          intervencao: string | null
+          localizacao: string | null
+          problema: string | null
+          registro_id: string
+          risco: string | null
+          severidade: string | null
+          updated_at: string | null
+          urgencia: string | null
+          versao: number
+        }
+        Insert: {
+          categoria?: string | null
+          client_uuid?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          incidencia?: number | null
+          intervencao?: string | null
+          localizacao?: string | null
+          problema?: string | null
+          registro_id: string
+          risco?: string | null
+          severidade?: string | null
+          updated_at?: string | null
+          urgencia?: string | null
+          versao?: number
+        }
+        Update: {
+          categoria?: string | null
+          client_uuid?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          incidencia?: number | null
+          intervencao?: string | null
+          localizacao?: string | null
+          problema?: string | null
+          registro_id?: string
+          risco?: string | null
+          severidade?: string | null
+          updated_at?: string | null
+          urgencia?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visita_diagnosticos_registro_id_fkey"
+            columns: ["registro_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitas_campo: {
+        Row: {
+          area_avaliada_ha: number | null
+          client_uuid: string | null
+          cliente_id: string
+          created_at: string
+          created_by: string
+          cultura_id: string | null
+          dados_extras: Json
+          estande_plantas_ha: number | null
+          fase_fenologica: string | null
+          id: string
+          observacoes_campo: string | null
+          registro_consultor_id: string
+          talhao_id: string | null
+          uniformidade: string | null
+          updated_at: string
+          versao: number
+        }
+        Insert: {
+          area_avaliada_ha?: number | null
+          client_uuid?: string | null
+          cliente_id: string
+          created_at?: string
+          created_by: string
+          cultura_id?: string | null
+          dados_extras?: Json
+          estande_plantas_ha?: number | null
+          fase_fenologica?: string | null
+          id?: string
+          observacoes_campo?: string | null
+          registro_consultor_id: string
+          talhao_id?: string | null
+          uniformidade?: string | null
+          updated_at?: string
+          versao?: number
+        }
+        Update: {
+          area_avaliada_ha?: number | null
+          client_uuid?: string | null
+          cliente_id?: string
+          created_at?: string
+          created_by?: string
+          cultura_id?: string | null
+          dados_extras?: Json
+          estande_plantas_ha?: number | null
+          fase_fenologica?: string | null
+          id?: string
+          observacoes_campo?: string | null
+          registro_consultor_id?: string
+          talhao_id?: string | null
+          uniformidade?: string | null
+          updated_at?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitas_campo_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_campo_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "culturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_campo_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: true
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_campo_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitas_checkin: {
+        Row: {
+          audio_path: string | null
+          audio_url: string | null
+          client_uuid: string | null
+          cliente_id: string | null
+          consultor_id: string
+          created_at: string
+          data_hora_checkin: string
+          fazenda_id: string | null
+          foto_path: string | null
+          foto_url: string | null
+          id: string
+          justificativa_sem_gps: string | null
+          latitude: number | null
+          longitude: number | null
+          observacoes: string | null
+          precisao_gps: number | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status: Database["public"]["Enums"]["status_checkin"]
+          talhao_id: string | null
+          tipo_checkin: Database["public"]["Enums"]["tipo_checkin"]
+        }
+        Insert: {
+          audio_path?: string | null
+          audio_url?: string | null
+          client_uuid?: string | null
+          cliente_id?: string | null
+          consultor_id: string
+          created_at?: string
+          data_hora_checkin?: string
+          fazenda_id?: string | null
+          foto_path?: string | null
+          foto_url?: string | null
+          id?: string
+          justificativa_sem_gps?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          observacoes?: string | null
+          precisao_gps?: number | null
+          registro_consultor_id?: string | null
+          solicitacao_id?: string | null
+          status?: Database["public"]["Enums"]["status_checkin"]
+          talhao_id?: string | null
+          tipo_checkin?: Database["public"]["Enums"]["tipo_checkin"]
+        }
+        Update: {
+          audio_path?: string | null
+          audio_url?: string | null
+          client_uuid?: string | null
+          cliente_id?: string | null
+          consultor_id?: string
+          created_at?: string
+          data_hora_checkin?: string
+          fazenda_id?: string | null
+          foto_path?: string | null
+          foto_url?: string | null
+          id?: string
+          justificativa_sem_gps?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          observacoes?: string | null
+          precisao_gps?: number | null
+          registro_consultor_id?: string | null
+          solicitacao_id?: string | null
+          status?: Database["public"]["Enums"]["status_checkin"]
+          talhao_id?: string | null
+          tipo_checkin?: Database["public"]["Enums"]["tipo_checkin"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitas_checkin_registro_consultor_id_fkey"
+            columns: ["registro_consultor_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitas_logs: {
+        Row: {
+          acao: string
+          created_at: string
+          data_hora: string
+          descricao: string | null
+          id: string
+          metadata: Json | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          data_hora?: string
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          registro_consultor_id?: string | null
+          solicitacao_id?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          data_hora?: string
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          registro_consultor_id?: string | null
+          solicitacao_id?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      _src_vw_esteira_laboratorio: {
+        Row: {
+          aplicacao_bloqueante: boolean | null
+          aplicacao_id: string | null
+          atrasado: boolean | null
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_lote: string | null
+          cq_id: string | null
+          cq_resultado: string | null
+          created_at: string | null
+          data_aplicacao: string | null
+          data_cq: string | null
+          data_entrega: string | null
+          data_envase: string | null
+          data_estoque: string | null
+          data_estoque_reservado: string | null
+          data_inicio_producao: string | null
+          data_lote: string | null
+          data_programada: string | null
+          entrega_confirmada: boolean | null
+          entrega_id: string | null
+          entrega_status: string | null
+          envase_id: string | null
+          estoque_id: string | null
+          estoque_reservado_id: string | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          lote_id: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          origem_os: string | null
+          os_id: string | null
+          partner_id: string | null
+          partner_nome: string | null
+          partner_numero: string | null
+          pendencias_informativas: string[] | null
+          pode_finalizar: boolean | null
+          prioridade: string | null
+          produto_id: string | null
+          produto_nome: string | null
+          programacao_id: string | null
+          proxima_acao: string | null
+          status_esteira_oficial: string | null
+          status_lote: string | null
+          status_os: string | null
+          status_programacao: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_cq_ate_envase: number | null
+          tempo_envase_ate_entrega: number | null
+          tempo_lote_ate_cq: number | null
+          tempo_os_ate_entrega: number | null
+          tempo_os_ate_programacao: number | null
+          tempo_programacao_ate_lote: number | null
+          titular_nome: string | null
+          titular_tipo: string | null
+          volume_solicitado_l: number | null
+          volume_total_ml: number | null
+        }
+        Relationships: []
+      }
+      _src_vw_fluxo_visita_tecnica: {
+        Row: {
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_visita: string | null
+          consultor_id: string | null
+          consultor_nome: string | null
+          created_at: string | null
+          cultura_id: string | null
+          cultura_nome: string | null
+          data_checkin: string | null
+          data_conversao_os: string | null
+          data_finalizacao: string | null
+          data_liberacao_recomendacao: string | null
+          data_prevista_atendimento: string | null
+          data_vistoria: string | null
+          dias_em_aberto: number | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          numero_solicitacao: string | null
+          origem_fluxo: string | null
+          os_id: string | null
+          possui_checkin: boolean | null
+          possui_diagnostico: boolean | null
+          possui_evidencias: boolean | null
+          possui_os: boolean | null
+          possui_recomendacao: boolean | null
+          proxima_acao: string | null
+          quantidade_diagnosticos: number | null
+          quantidade_evidencias: number | null
+          quantidade_recomendacoes: number | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status_aprovacao: string | null
+          status_os: string | null
+          status_solicitacao: string | null
+          status_visita: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_aprovacao_ate_os: number | null
+          tempo_checkin_ate_finalizacao: number | null
+          tempo_finalizacao_ate_aprovacao: number | null
+          tempo_solicitacao_ate_checkin: number | null
+          tipo_demanda: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_onfarm_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mv_esteira_laboratorio: {
+        Row: {
+          aplicacao_bloqueante: boolean | null
+          aplicacao_id: string | null
+          atrasado: boolean | null
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_lote: string | null
+          cq_id: string | null
+          cq_resultado: string | null
+          created_at: string | null
+          data_aplicacao: string | null
+          data_cq: string | null
+          data_entrega: string | null
+          data_envase: string | null
+          data_estoque: string | null
+          data_estoque_reservado: string | null
+          data_inicio_producao: string | null
+          data_lote: string | null
+          data_programada: string | null
+          entrega_confirmada: boolean | null
+          entrega_id: string | null
+          entrega_status: string | null
+          envase_id: string | null
+          estoque_id: string | null
+          estoque_reservado_id: string | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          lote_id: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          origem_os: string | null
+          os_id: string | null
+          partner_id: string | null
+          partner_nome: string | null
+          partner_numero: string | null
+          pendencias_informativas: string[] | null
+          pode_finalizar: boolean | null
+          prioridade: string | null
+          produto_id: string | null
+          produto_nome: string | null
+          programacao_id: string | null
+          proxima_acao: string | null
+          status_esteira_oficial: string | null
+          status_lote: string | null
+          status_os: string | null
+          status_programacao: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_cq_ate_envase: number | null
+          tempo_envase_ate_entrega: number | null
+          tempo_lote_ate_cq: number | null
+          tempo_os_ate_entrega: number | null
+          tempo_os_ate_programacao: number | null
+          tempo_programacao_ate_lote: number | null
+          titular_nome: string | null
+          titular_tipo: string | null
+          volume_solicitado_l: number | null
+          volume_total_ml: number | null
+        }
+        Relationships: []
+      }
+      mv_fluxo_visita_tecnica: {
+        Row: {
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_visita: string | null
+          consultor_id: string | null
+          consultor_nome: string | null
+          created_at: string | null
+          cultura_id: string | null
+          cultura_nome: string | null
+          data_checkin: string | null
+          data_conversao_os: string | null
+          data_finalizacao: string | null
+          data_liberacao_recomendacao: string | null
+          data_prevista_atendimento: string | null
+          data_vistoria: string | null
+          dias_em_aberto: number | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          numero_solicitacao: string | null
+          origem_fluxo: string | null
+          os_id: string | null
+          possui_checkin: boolean | null
+          possui_diagnostico: boolean | null
+          possui_evidencias: boolean | null
+          possui_os: boolean | null
+          possui_recomendacao: boolean | null
+          proxima_acao: string | null
+          quantidade_diagnosticos: number | null
+          quantidade_evidencias: number | null
+          quantidade_recomendacoes: number | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status_aprovacao: string | null
+          status_os: string | null
+          status_solicitacao: string | null
+          status_visita: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_aprovacao_ate_os: number | null
+          tempo_checkin_ate_finalizacao: number | null
+          tempo_finalizacao_ate_aprovacao: number | null
+          tempo_solicitacao_ate_checkin: number | null
+          tipo_demanda: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_onfarm_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_customer_fiscal_readiness: {
+        Row: {
+          customer_id: string | null
+          has_ibge: boolean | null
+          profile_status: string | null
+        }
+        Insert: {
+          customer_id?: string | null
+          has_ibge?: never
+          profile_status?: string | null
+        }
+        Update: {
+          customer_id?: string | null
+          has_ibge?: never
+          profile_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_fiscal_profiles_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_fiscal_certificate_readiness: {
+        Row: {
+          certificate_id: string | null
+          company_settings_id: string | null
+          days_until_expiration: number | null
+          display_name: string | null
+          environment: string | null
+          fingerprint_sha256: string | null
+          is_active: boolean | null
+          issuer_name: string | null
+          revoked_at: string | null
+          source_type: string | null
+          status: string | null
+          subject_name: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          certificate_id?: string | null
+          company_settings_id?: string | null
+          days_until_expiration?: never
+          display_name?: string | null
+          environment?: string | null
+          fingerprint_sha256?: string | null
+          is_active?: boolean | null
+          issuer_name?: string | null
+          revoked_at?: string | null
+          source_type?: string | null
+          status?: string | null
+          subject_name?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          certificate_id?: string | null
+          company_settings_id?: string | null
+          days_until_expiration?: never
+          display_name?: string | null
+          environment?: string | null
+          fingerprint_sha256?: string | null
+          is_active?: boolean | null
+          issuer_name?: string | null
+          revoked_at?: string | null
+          source_type?: string | null
+          status?: string | null
+          subject_name?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_certificates_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "company_fiscal_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_certificates_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_company_readiness"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_fiscal_company_readiness: {
+        Row: {
+          accounting_validated: boolean | null
+          configuration_status: string | null
+          configuration_version: number | null
+          filled_score: number | null
+          fiscal_environment: string | null
+          fiscal_provider: string | null
+          id: string | null
+          last_validation_at: string | null
+          last_validation_status: string | null
+          max_score: number | null
+          nfe_configuration_field_count: number | null
+          nfe_enabled: boolean | null
+          nfe_provider: string | null
+          nfse_configuration_field_count: number | null
+          nfse_enabled: boolean | null
+          nfse_provider: string | null
+          production_enabled: boolean | null
+        }
+        Insert: {
+          accounting_validated?: never
+          configuration_status?: string | null
+          configuration_version?: number | null
+          filled_score?: never
+          fiscal_environment?: string | null
+          fiscal_provider?: string | null
+          id?: string | null
+          last_validation_at?: string | null
+          last_validation_status?: string | null
+          max_score?: never
+          nfe_configuration_field_count?: never
+          nfe_enabled?: boolean | null
+          nfe_provider?: string | null
+          nfse_configuration_field_count?: never
+          nfse_enabled?: boolean | null
+          nfse_provider?: string | null
+          production_enabled?: boolean | null
+        }
+        Update: {
+          accounting_validated?: never
+          configuration_status?: string | null
+          configuration_version?: number | null
+          filled_score?: never
+          fiscal_environment?: string | null
+          fiscal_provider?: string | null
+          id?: string | null
+          last_validation_at?: string | null
+          last_validation_status?: string | null
+          max_score?: never
+          nfe_configuration_field_count?: never
+          nfe_enabled?: boolean | null
+          nfe_provider?: string | null
+          nfse_configuration_field_count?: never
+          nfse_enabled?: boolean | null
+          nfse_provider?: string | null
+          production_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      v_fiscal_document_reconciliation_pending: {
+        Row: {
+          document_model: string | null
+          document_origin: string | null
+          fiscal_invoice_id: string | null
+          normalized_status: string | null
+          receivable_id: string | null
+          reconciliation_status: string | null
+          status: string | null
+        }
+        Insert: {
+          document_model?: string | null
+          document_origin?: string | null
+          fiscal_invoice_id?: string | null
+          normalized_status?: string | null
+          receivable_id?: string | null
+          reconciliation_status?: string | null
+          status?: string | null
+        }
+        Update: {
+          document_model?: string | null
+          document_origin?: string | null
+          fiscal_invoice_id?: string | null
+          normalized_status?: string | null
+          receivable_id?: string | null
+          reconciliation_status?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_invoices_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_product_fiscal_readiness: {
+        Row: {
+          accounting_validated: boolean | null
+          minimally_classified: boolean | null
+          product_id: string | null
+          profile_status: string | null
+        }
+        Insert: {
+          accounting_validated?: never
+          minimally_classified?: never
+          product_id?: string | null
+          profile_status?: string | null
+        }
+        Update: {
+          accounting_validated?: never
+          minimally_classified?: never
+          product_id?: string | null
+          profile_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_fiscal_profiles_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_service_fiscal_readiness: {
+        Row: {
+          accounting_validated: boolean | null
+          id: string | null
+          minimally_classified: boolean | null
+          profile_status: string | null
+          service_id: string | null
+          source_reference: string | null
+        }
+        Insert: {
+          accounting_validated?: never
+          id?: string | null
+          minimally_classified?: never
+          profile_status?: string | null
+          service_id?: string | null
+          source_reference?: string | null
+        }
+        Update: {
+          accounting_validated?: never
+          id?: string | null
+          minimally_classified?: never
+          profile_status?: string | null
+          service_id?: string | null
+          source_reference?: string | null
+        }
+        Relationships: []
+      }
+      vw_bi_commercial_campaigns: {
+        Row: {
+          ativa: boolean | null
+          data_fim: string | null
+          data_inicio: string | null
+          id: string | null
+          nome: string | null
+          qtd_parceiros: number | null
+          qtd_produtos: number | null
+        }
+        Insert: {
+          ativa?: boolean | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string | null
+          nome?: string | null
+          qtd_parceiros?: never
+          qtd_produtos?: never
+        }
+        Update: {
+          ativa?: boolean | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string | null
+          nome?: string | null
+          qtd_parceiros?: never
+          qtd_produtos?: never
+        }
+        Relationships: []
+      }
+      vw_bi_commercial_engagement: {
+        Row: {
+          commercial_region: string | null
+          dias_sem_compra: number | null
+          partner_id: string | null
+          partner_type: Database["public"]["Enums"]["partner_type_enum"] | null
+          pedidos_30d: number | null
+          pedidos_90d: number | null
+          razao_social: string | null
+          ultima_compra: string | null
+        }
+        Relationships: []
+      }
+      vw_bi_commercial_revenue: {
+        Row: {
+          commercial_region: string | null
+          mes: string | null
+          partner_id: string | null
+          partner_type: Database["public"]["Enums"]["partner_type_enum"] | null
+          qtd_pedidos: number | null
+          razao_social: string | null
+          receita_aprovada: number | null
+          receita_faturada: number | null
+          receita_total: number | null
+        }
+        Relationships: []
+      }
+      vw_bi_estoque_produto: {
+        Row: {
+          id: string | null
+          microrganismo_id: string | null
+          nome_microrganismo: string | null
+          nome_produto: string | null
+          produto_id: string | null
+          updated_at: string | null
+          volume_total: number | null
+          volume_total_l: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_produto_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lotes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_bi_movimentacoes: {
+        Row: {
+          created_at: string | null
+          estoque_produto_id: string | null
+          id: string | null
+          microrganismo_id: string | null
+          motivo: string | null
+          produto_id: string | null
+          tipo_movimentacao: string | null
+          volume_alteracao: number | null
+          volume_anterior: string | null
+          volume_novo: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_produto_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lotes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_esteira_laboratorio: {
+        Row: {
+          aplicacao_bloqueante: boolean | null
+          aplicacao_id: string | null
+          atrasado: boolean | null
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_lote: string | null
+          cq_id: string | null
+          cq_resultado: string | null
+          created_at: string | null
+          data_aplicacao: string | null
+          data_cq: string | null
+          data_entrega: string | null
+          data_envase: string | null
+          data_estoque: string | null
+          data_estoque_reservado: string | null
+          data_inicio_producao: string | null
+          data_lote: string | null
+          data_programada: string | null
+          entrega_confirmada: boolean | null
+          entrega_id: string | null
+          entrega_status: string | null
+          envase_id: string | null
+          estoque_id: string | null
+          estoque_reservado_id: string | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          lote_id: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          origem_os: string | null
+          os_id: string | null
+          partner_id: string | null
+          partner_nome: string | null
+          partner_numero: string | null
+          pendencias_informativas: string[] | null
+          pode_finalizar: boolean | null
+          prioridade: string | null
+          produto_id: string | null
+          produto_nome: string | null
+          programacao_id: string | null
+          proxima_acao: string | null
+          status_esteira_oficial: string | null
+          status_lote: string | null
+          status_os: string | null
+          status_programacao: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_cq_ate_envase: number | null
+          tempo_envase_ate_entrega: number | null
+          tempo_lote_ate_cq: number | null
+          tempo_os_ate_entrega: number | null
+          tempo_os_ate_programacao: number | null
+          tempo_programacao_ate_lote: number | null
+          titular_nome: string | null
+          titular_tipo: string | null
+          volume_solicitado_l: number | null
+          volume_total_ml: number | null
+        }
+        Relationships: []
+      }
+      vw_fluxo_visita_tecnica: {
+        Row: {
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_visita: string | null
+          consultor_id: string | null
+          consultor_nome: string | null
+          created_at: string | null
+          cultura_id: string | null
+          cultura_nome: string | null
+          data_checkin: string | null
+          data_conversao_os: string | null
+          data_finalizacao: string | null
+          data_liberacao_recomendacao: string | null
+          data_prevista_atendimento: string | null
+          data_vistoria: string | null
+          dias_em_aberto: number | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          numero_solicitacao: string | null
+          origem_fluxo: string | null
+          os_id: string | null
+          possui_checkin: boolean | null
+          possui_diagnostico: boolean | null
+          possui_evidencias: boolean | null
+          possui_os: boolean | null
+          possui_recomendacao: boolean | null
+          proxima_acao: string | null
+          quantidade_diagnosticos: number | null
+          quantidade_evidencias: number | null
+          quantidade_recomendacoes: number | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status_aprovacao: string | null
+          status_os: string | null
+          status_solicitacao: string | null
+          status_visita: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_aprovacao_ate_os: number | null
+          tempo_checkin_ate_finalizacao: number | null
+          tempo_finalizacao_ate_aprovacao: number | null
+          tempo_solicitacao_ate_checkin: number | null
+          tipo_demanda: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_onfarm_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_os_integridade_esteira: {
+        Row: {
+          aplicacao_bloqueante: boolean | null
+          aplicacao_id: string | null
+          atrasado: boolean | null
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_lote: string | null
+          cq_id: string | null
+          cq_resultado: string | null
+          created_at: string | null
+          data_aplicacao: string | null
+          data_cq: string | null
+          data_entrega: string | null
+          data_envase: string | null
+          data_estoque: string | null
+          data_estoque_reservado: string | null
+          data_inicio_producao: string | null
+          data_lote: string | null
+          data_programada: string | null
+          entrega_confirmada: boolean | null
+          entrega_id: string | null
+          entrega_status: string | null
+          envase_id: string | null
+          estoque_id: string | null
+          estoque_reservado_id: string | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          lote_id: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          origem_os: string | null
+          os_id: string | null
+          partner_id: string | null
+          partner_nome: string | null
+          partner_numero: string | null
+          pendencias_informativas: string[] | null
+          pode_finalizar: boolean | null
+          prioridade: string | null
+          produto_id: string | null
+          produto_nome: string | null
+          programacao_id: string | null
+          status_esteira_oficial: string | null
+          status_lote: string | null
+          status_os: string | null
+          status_programacao: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_cq_ate_envase: number | null
+          tempo_envase_ate_entrega: number | null
+          tempo_lote_ate_cq: number | null
+          tempo_os_ate_entrega: number | null
+          tempo_os_ate_programacao: number | null
+          tempo_programacao_ate_lote: number | null
+          titular_nome: string | null
+          titular_tipo: string | null
+          volume_solicitado_l: number | null
+          volume_total_ml: number | null
+        }
+        Relationships: []
+      }
+      vw_partner_commercial_metrics: {
+        Row: {
+          partner_id: string | null
+          qtd_pedidos: number | null
+          razao_social: string | null
+          ticket_medio: number | null
+          total_aprovado: number | null
+          total_comprado: number | null
+          total_entregue: number | null
+          total_faturado: number | null
+          ultima_compra: string | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      _assert_visita_editavel: {
+        Args: { p_registro_id: string }
+        Returns: {
+          acao_realizada: string | null
+          area_hectares: number | null
+          categoria_problema:
+            | Database["public"]["Enums"]["categoria_problema_consultor"]
+            | null
+          client_uuid: string | null
+          cliente_id: string | null
+          codigo_visita: string | null
+          condicoes_climaticas_observadas: string | null
+          consultor_profile_id: string | null
+          consultor_responsavel: string | null
+          created_at: string
+          created_by: string | null
+          cultura_id: string | null
+          data_proxima_visita: string | null
+          data_vistoria: string
+          duracao_estimada: number | null
+          fase_fenologica: string | null
+          fazenda_id: string | null
+          finalized_at: string | null
+          finalized_by: string | null
+          historico_resumido: string | null
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          latitude: number | null
+          localizacao_na_area: string | null
+          longitude: number | null
+          natureza_registro: Database["public"]["Enums"]["natureza_registro_consultor"]
+          necessidade_intervencao:
+            | Database["public"]["Enums"]["necessidade_intervencao"]
+            | null
+          nivel_pressao: Database["public"]["Enums"]["nivel_pressao"] | null
+          objetivo_visita: string | null
+          observacoes_tecnicas: string | null
+          pdf_status: string | null
+          percentual_area_afetada: number | null
+          problema_principal: string | null
+          problema_secundario: string | null
+          proxima_acao_recomendada: string | null
+          registro_origem_id: string | null
+          risco_produtivo: Database["public"]["Enums"]["risco_produtivo"] | null
+          safra: string | null
+          solicitacao_id: string | null
+          status: Database["public"]["Enums"]["status_registro_consultor"]
+          talhao_id: string | null
+          tipo_demanda:
+            | Database["public"]["Enums"]["tipo_demanda_consultor"]
+            | null
+          tipo_visita: Database["public"]["Enums"]["tipo_visita"] | null
+          updated_at: string
+          urgencia: Database["public"]["Enums"]["urgencia_consultor"] | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "registros_consultor"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _avancar_os_status: {
+        Args: { p_alvo: string; p_origem: string; p_os_id: string }
+        Returns: undefined
+      }
+      _entrega_seed_checklist: {
+        Args: { _entrega_id: string }
+        Returns: undefined
+      }
+      _fiscal_rtc_assert_payload: {
+        Args: { kind: string; payload: Json }
+        Returns: undefined
+      }
+      _fiscal_rtc_can_read: { Args: { uid: string }; Returns: boolean }
+      _notify_role: {
+        Args: {
+          p_link: string
+          p_mensagem: string
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_tipo: string
+          p_titulo: string
+        }
+        Returns: undefined
+      }
+      _portal_cliente_user_has_link: {
+        Args: { p_cliente: string; p_user: string }
+        Returns: boolean
+      }
+      _rpc_avancar_esteira_laboratorio_internal: {
+        Args: {
+          p_etapa_destino: string
+          p_origem_os: string
+          p_os_id: string
+          p_programacao_id?: string
+        }
+        Returns: Json
+      }
+      _validate_planning_integrity: {
+        Args: { p_partner_order_id: string }
+        Returns: undefined
+      }
+      add_b2b_payment_terms_note_secure: {
+        Args: { p_note: string; p_partner_order_id: string }
+        Returns: Json
+      }
+      approve_b2b_credit: {
+        Args: { p_notes?: string; p_partner_order_id: string }
+        Returns: Json
+      }
+      approve_b2b_payment_terms_secure: {
+        Args: { p_notes?: string; p_partner_order_id: string }
+        Returns: Json
+      }
+      approve_microorganism_profile_with_audit: {
+        Args: {
+          p_aprovado_sem_fonte?: boolean
+          p_checklist: Json
+          p_profile_id: string
+        }
+        Returns: undefined
+      }
+      approve_partner_order: {
+        Args: {
+          p_approval_notes?: string
+          p_estimated_delivery_date?: string
+          p_order_id: string
+        }
+        Returns: undefined
+      }
+      approve_product_profile_with_audit: {
+        Args: {
+          p_aprovado_sem_fonte?: boolean
+          p_checklist: Json
+          p_profile_id: string
+        }
+        Returns: undefined
+      }
+      aprovar_ficha_versao: {
+        Args: { p_versao_id: string }
+        Returns: undefined
+      }
+      archive_partner_simulation_secure: {
+        Args: { p_reason?: string; p_simulation_id: string }
+        Returns: undefined
+      }
+      assign_b2b_user_client_secure: {
+        Args: {
+          p_assignment_type?: string
+          p_can_create_simulation?: boolean
+          p_can_monitor?: boolean
+          p_cliente_id: string
+          p_notes?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      auto_reject_partner_orders_no_items: {
+        Args: { p_horas?: number }
+        Returns: number
+      }
+      bulk_inserir_alvos: {
+        Args: { p_alvos: Json; p_kind: string; p_parent_id: string }
+        Returns: Json
+      }
+      calculate_valor_dose_from_litro: {
+        Args: { p_valor_litro: number }
+        Returns: number
+      }
+      calculate_valor_ha_from_dose: {
+        Args: { p_dose_ml_ha: number; p_valor_dose: number }
+        Returns: number
+      }
+      calculate_valor_litro_from_dose: {
+        Args: { p_valor_dose: number }
+        Returns: number
+      }
+      can_checkin_technical_visit: {
+        Args: { p_registro_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      can_checkout_technical_visit: {
+        Args: { p_registro_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      can_manage_catalog_tecnico: { Args: { _uid: string }; Returns: boolean }
+      can_manage_technical_visit: {
+        Args: { p_registro_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      can_user_access_alerta: {
+        Args: { p_alerta_id: string }
+        Returns: boolean
+      }
+      can_user_access_cliente:
+        | { Args: { _cliente_id: string }; Returns: boolean }
+        | { Args: { _cliente_id: string; _user_id: string }; Returns: boolean }
+      can_user_access_estoque_embalagem: {
+        Args: { p_embalagem_id: string }
+        Returns: boolean
+      }
+      can_user_access_fazenda: {
+        Args: { _fazenda_id: string }
+        Returns: boolean
+      }
+      can_user_access_produto_etiqueta: {
+        Args: { p_etiqueta_id: string }
+        Returns: boolean
+      }
+      can_user_manage_estoque_embalagem: {
+        Args: { p_embalagem_id: string }
+        Returns: boolean
+      }
+      can_view_bi_operacional: { Args: { _uid: string }; Returns: boolean }
+      can_view_catalog_internal: { Args: { _uid: string }; Returns: boolean }
+      can_view_technical_visit: {
+        Args: { p_registro_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      cancel_b2b_receivable_secure: {
+        Args: { p_motivo: string; p_partner_order_id: string }
+        Returns: Json
+      }
+      cancel_financial_receipt: {
+        Args: { _reason: string; _receipt_id: string }
+        Returns: undefined
+      }
+      check_cliente_dependencies: {
+        Args: { _cliente_id: string }
+        Returns: Json
+      }
+      check_fazenda_dependencies: {
+        Args: { _fazenda_id: string }
+        Returns: Json
+      }
+      check_partner_order_sla: { Args: never; Returns: undefined }
+      check_talhao_dependencies: { Args: { _talhao_id: string }; Returns: Json }
+      convert_partner_simulation_to_order_secure: {
+        Args: {
+          p_first_due_date?: string
+          p_installment_count?: number
+          p_observacoes?: string
+          p_payment_plan_id?: string
+          p_simulation_id: string
+        }
+        Returns: string
+      }
+      create_partner_order_secure: {
+        Args: {
+          p_first_due_date?: string
+          p_installment_count?: number
+          p_items?: Json
+          p_observacoes?: string
+          p_partner_id: string
+          p_payment_plan_id?: string
+          p_requested_delivery_date?: string
+        }
+        Returns: Json
+      }
+      create_technical_visit_secure: {
+        Args: {
+          p_client_uuid?: string
+          p_cliente_id: string
+          p_fazenda_id: string
+          p_initial_notes?: string
+          p_priority?: Database["public"]["Enums"]["urgencia_consultor"]
+          p_scheduled_at?: string
+          p_solicitacao_origem_id?: string
+          p_talhao_id?: string
+          p_visit_type?: Database["public"]["Enums"]["tipo_visita"]
+        }
+        Returns: {
+          is_new: boolean
+          registro_id: string
+        }[]
+      }
+      finish_technical_visit_secure: {
+        Args: {
+          p_client_uuid?: string
+          p_foto_path?: string
+          p_foto_url?: string
+          p_latitude?: number
+          p_longitude?: number
+          p_observacoes?: string
+          p_precisao_gps?: number
+          p_registro_id: string
+        }
+        Returns: {
+          checkout_id: string
+          finalized_at: string
+          registro_id: string
+        }[]
+      }
+      fiscal_json_has_sensitive_key: { Args: { p: Json }; Returns: boolean }
+      fiscal_rtc_has_sensitive_key: {
+        Args: { payload: Json }
+        Returns: boolean
+      }
+      fiscal_validate_key_usage: { Args: { p_arr: Json }; Returns: undefined }
+      fiscal_validate_snapshot_keys: {
+        Args: { p_allowed: string[]; p_label: string; p_obj: Json }
+        Returns: undefined
+      }
+      fn_avancar_etapa_esteira: {
+        Args: {
+          p_etapa_destino: string
+          p_origem: string
+          p_os_id: string
+          p_programacao_id: string
+          p_usuario_id?: string
+        }
+        Returns: Json
+      }
+      fn_calc_next_generation_date: {
+        Args: { _due_day: number; _freq: string; _from_date: string }
+        Returns: string
+      }
+      fn_fin_aging: {
+        Args: { _type?: string }
+        Returns: {
+          bucket: string
+          qtd: number
+          total: number
+        }[]
+      }
+      fn_fin_cashflow: {
+        Args: {
+          _from: string
+          _granularity?: string
+          _mode?: string
+          _to: string
+        }
+        Returns: {
+          bucket: string
+          entradas: number
+          saidas: number
+          saldo: number
+        }[]
+      }
+      fn_fin_dashboard_kpis: {
+        Args: { _from: string; _to: string }
+        Returns: Json
+      }
+      fn_fin_dre_summary: {
+        Args: { _from: string; _regime?: string; _to: string }
+        Returns: {
+          dre_group: string
+          qtd: number
+          total: number
+        }[]
+      }
+      fn_fin_expense_by_category: {
+        Args: { _from: string; _limit?: number; _regime?: string; _to: string }
+        Returns: {
+          category_id: string
+          category_name: string
+          dre_group: string
+          total: number
+        }[]
+      }
+      fn_fin_inadimplencia: {
+        Args: never
+        Returns: {
+          amount: number
+          customer_id: string
+          customer_name: string
+          dias_atraso: number
+          due_date: string
+          installment_id: string
+          receivable_id: string
+        }[]
+      }
+      fn_fin_revenue_by_category: {
+        Args: { _from: string; _limit?: number; _regime?: string; _to: string }
+        Returns: {
+          category_id: string
+          category_name: string
+          dre_group: string
+          total: number
+        }[]
+      }
+      fn_fin_revenue_by_customer: {
+        Args: { _from: string; _limit?: number; _regime?: string; _to: string }
+        Returns: {
+          customer_id: string
+          customer_name: string
+          total: number
+        }[]
+      }
+      fn_financial_inconsistencies: {
+        Args: never
+        Returns: {
+          code: string
+          description: string
+          entity_id: string
+          entity_type: string
+          recommended_action: string
+          severity: string
+        }[]
+      }
+      fn_generate_receivable_from_entrega: {
+        Args: { _entrega_id: string; _payload: Json }
+        Returns: string
+      }
+      fn_generate_recurring_title: {
+        Args: {
+          _is_manual?: boolean
+          _reference_date: string
+          _template_id: string
+        }
+        Returns: string
+      }
+      fn_mark_entrega_not_billable: {
+        Args: { _entrega_id: string; _reason: string }
+        Returns: undefined
+      }
+      fn_mark_financial_overdue: { Args: never; Returns: undefined }
+      fn_reverse_payment: {
+        Args: { _kind: string; _payment_id: string; _reason: string }
+        Returns: string
+      }
+      fn_revert_recurring_generation: {
+        Args: { p_log_id: string }
+        Returns: undefined
+      }
+      fn_run_financial_inconsistency_check: { Args: never; Returns: string }
+      fn_run_recurring_generation: {
+        Args: never
+        Returns: {
+          message: string
+          status: string
+          template_id: string
+        }[]
+      }
+      fn_upsert_alerta_operacional: {
+        Args: {
+          p_cliente_id: string
+          p_consultor_id: string
+          p_descricao: string
+          p_entrega_id: string
+          p_fazenda_id: string
+          p_gravidade: string
+          p_lote_id: string
+          p_metadata: Json
+          p_origem: string
+          p_os_id: string
+          p_proxima_acao: string
+          p_referencia_id: string
+          p_referencia_tabela: string
+          p_registro_consultor_id: string
+          p_solicitacao_id: string
+          p_talhao_id: string
+          p_tipo: string
+          p_titulo: string
+        }
+        Returns: string
+      }
+      generate_b2b_receivable_secure: {
+        Args: { p_partner_order_id: string }
+        Returns: Json
+      }
+      generate_production_orders_from_partner: {
+        Args: { p_partner_order_id: string }
+        Returns: Json
+      }
+      gerar_codigo_lote: { Args: { _ano?: number }; Returns: string }
+      gerar_codigo_visita: { Args: { _ano: number }; Returns: string }
+      get_b2b_partner_clients_for_assignment_secure: {
+        Args: { p_search?: string }
+        Returns: {
+          active: boolean
+          cidade: string
+          cliente_id: string
+          documento_mascarado: string
+          estado: string
+          ja_vinculado_ao_parceiro: boolean
+          nome: string
+          nome_fantasia: string
+          razao_social: string
+        }[]
+      }
+      get_b2b_technician_client_detail_secure: {
+        Args: { p_cliente_id: string }
+        Returns: {
+          bairro: string
+          cidade: string
+          cliente_id: string
+          documento_mascarado: string
+          email: string
+          estado: string
+          logradouro: string
+          nome: string
+          nome_fantasia: string
+          observacoes: string
+          razao_social: string
+          telefone: string
+          tipo_pessoa: string
+          total_simulacoes: number
+          ultima_simulacao_at: string
+        }[]
+      }
+      get_b2b_technician_clients_secure: {
+        Args: { p_partner_id?: string; p_technician_user_id?: string }
+        Returns: {
+          assigned_at: string
+          cidade: string
+          cliente_id: string
+          documento_mascarado: string
+          estado: string
+          nome: string
+          nome_fantasia: string
+          razao_social: string
+          telefone: string
+          tipo_pessoa: string
+          total_simulacoes: number
+          ultima_simulacao_at: string
+        }[]
+      }
+      get_b2b_user_client_detail_secure: {
+        Args: { p_cliente_id: string; p_scope?: string }
+        Returns: {
+          assigned_at: string
+          assignment_type: string
+          can_create_simulation: boolean
+          cidade: string
+          cliente_id: string
+          documento_mascarado: string
+          email: string
+          estado: string
+          nome: string
+          nome_fantasia: string
+          razao_social: string
+          telefone: string
+          tipo_pessoa: string
+        }[]
+      }
+      get_b2b_user_client_simulations_secure: {
+        Args: { p_cliente_id: string }
+        Returns: {
+          created_at: string
+          created_by: string
+          id: string
+          status: string
+          titulo: string
+          total_cheio: number
+        }[]
+      }
+      get_b2b_user_clients_secure: {
+        Args: { p_search?: string; p_user_id?: string }
+        Returns: {
+          assigned_at: string
+          assignment_type: string
+          can_create_simulation: boolean
+          can_monitor: boolean
+          cidade: string
+          cliente_id: string
+          documento_mascarado: string
+          estado: string
+          nome: string
+          nome_fantasia: string
+          razao_social: string
+          telefone: string
+          tipo_pessoa: string
+          total_simulacoes: number
+          ultima_simulacao_at: string
+        }[]
+      }
+      get_b2b_user_role_for_partner: {
+        Args: { p_partner_id: string; p_user_id: string }
+        Returns: string
+      }
+      get_cliente_id_for_user: { Args: { _user_id: string }; Returns: string }
+      get_cliente_ids_for_user: {
+        Args: { _user_id: string }
+        Returns: string[]
+      }
+      get_financial_alerts: {
+        Args: { p_reference_date?: string }
+        Returns: {
+          action_key: string
+          alert_type: string
+          amount: number
+          count: number
+          description: string
+          severity: string
+          title: string
+        }[]
+      }
+      get_financial_cashflow: {
+        Args: {
+          p_end_date: string
+          p_group_by?: string
+          p_start_date: string
+          p_view_mode?: string
+        }
+        Returns: {
+          accumulated_projected_balance: number
+          accumulated_realized_balance: number
+          expected_inflows: number
+          expected_outflows: number
+          period_label: string
+          period_start: string
+          projected_balance: number
+          realized_balance: number
+          realized_inflows: number
+          realized_outflows: number
+        }[]
+      }
+      get_financial_dashboard_summary: {
+        Args: {
+          p_category_id?: string
+          p_cost_center_id?: string
+          p_customer_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_financial_dre_summary: {
+        Args: {
+          p_cost_center_id?: string
+          p_end_date: string
+          p_regime?: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_financial_report_data: {
+        Args: {
+          p_category_id?: string
+          p_cost_center_id?: string
+          p_customer_id?: string
+          p_end_date: string
+          p_regime?: string
+          p_report_type: string
+          p_start_date: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      get_my_available_portal_contexts: { Args: never; Returns: Json }
+      get_partner_catalog_secure: {
+        Args: { p_partner_id: string }
+        Returns: {
+          beneficios_principais: string
+          desconto_percentual: number
+          descricao_curta: string
+          explicacao_b2b: string
+          ficha_aprovada: boolean
+          ficha_status: string
+          item_id: string
+          item_tipo: string
+          preco_parceiro: number
+          preco_tabela: number
+          product_id: string
+          produto_ativo: boolean
+          produto_codigo: string
+          produto_nome: string
+          resumo_curto: string
+          unidade_preco_principal: string
+          valor_dose_brl: number
+          valor_ha_brl: number
+          valor_litro_brl: number
+        }[]
+      }
+      get_partner_catalog_tecnico_secure: {
+        Args: never
+        Returns: {
+          beneficios_principais: string
+          codigo: string
+          descricao_curta: string
+          dose_ml_ha: number
+          explicacao_b2b: string
+          ficha_aprovada: boolean
+          ficha_status: string
+          funcao: string
+          item_id: string
+          item_tipo: string
+          nome: string
+          nome_cientifico: string
+          preco_tabela_dose: number
+          preco_tabela_ha: number
+          preco_tabela_litro: number
+          resumo_curto: string
+          tipo: string
+          unidade_preco_principal: string
+          valor_dose_brl: number
+          valor_ha_brl: number
+          valor_litro_brl: number
+        }[]
+      }
+      get_partner_papel: { Args: { _user_id: string }; Returns: string }
+      get_portal_cliente_b2b_order_detail_secure: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
+      get_portal_cliente_b2b_orders_secure: {
+        Args: { p_cliente_id: string }
+        Returns: {
+          approved_at: string
+          area_total_ha: number
+          created_at: string
+          cultura: string
+          estimated_delivery_date: string
+          id: string
+          numero: string
+          origin_simulation_id: string
+          partner_id: string
+          partner_nome: string
+          requested_delivery_date: string
+          status: string
+          total: number
+        }[]
+      }
+      get_portal_cliente_b2b_simulation_detail_secure: {
+        Args: { p_simulation_id: string }
+        Returns: Json
+      }
+      get_portal_cliente_b2b_simulations_secure: {
+        Args: { p_cliente_id: string }
+        Returns: {
+          area_total_ha: number
+          converted_order_id: string
+          created_at: string
+          cultura: string
+          id: string
+          objetivo_tecnico: string
+          partner_id: string
+          partner_nome: string
+          status: string
+          titulo: string
+          total_cheio: number
+          updated_at: string
+        }[]
+      }
+      get_production_planning_detail: {
+        Args: { p_planning_id: string }
+        Returns: Json
+      }
+      get_report_accountability: { Args: { _scope: Json }; Returns: Json }
+      get_report_customer_statement: {
+        Args: { _customer_id: string; _from: string; _to: string }
+        Returns: Json
+      }
+      get_report_delinquency: {
+        Args: { _as_of?: string }
+        Returns: {
+          amount: number
+          balance: number
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          days_overdue: number
+          description: string
+          due_date: string
+          installment_id: string
+        }[]
+      }
+      get_report_deliveries_billing_status: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          billed: boolean
+          customer_name: string
+          delivery_date: string
+          delivery_id: string
+          receivable_id: string
+          total_value: number
+        }[]
+      }
+      get_report_monthly_financial: {
+        Args: {
+          _cost_center?: string
+          _from: string
+          _regime?: string
+          _to: string
+        }
+        Returns: Json
+      }
+      get_report_nfe_pending: {
+        Args: { _filters?: Json }
+        Returns: {
+          customer_name: string
+          description: string
+          fiscal_invoice_required: boolean
+          fiscal_invoice_status: string
+          issue_date: string
+          origin_type: string
+          receivable_id: string
+          total_amount: number
+        }[]
+      }
+      get_report_payables: {
+        Args: { _filters?: Json }
+        Returns: {
+          amount: number
+          balance: number
+          category: string
+          description: string
+          due_date: string
+          installment_id: string
+          paid: number
+          payable_id: string
+          status: string
+          supplier: string
+        }[]
+      }
+      get_report_receivables: {
+        Args: { _filters?: Json }
+        Returns: {
+          amount: number
+          balance: number
+          category: string
+          customer_name: string
+          description: string
+          due_date: string
+          installment_id: string
+          paid: number
+          receivable_id: string
+          status: string
+        }[]
+      }
+      get_top_financial_rankings: {
+        Args: { p_end_date: string; p_limit?: number; p_start_date: string }
+        Returns: Json
+      }
+      get_user_partner_id: { Args: never; Returns: string }
+      get_visit_organization_id: {
+        Args: { p_registro_id: string }
+        Returns: string
+      }
+      has_active_user_cliente_access: {
+        Args: { _cliente_id: string; _levels?: string[]; _user_id: string }
+        Returns: boolean
+      }
+      has_completed_visit_presence: {
+        Args: { p_registro_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      insert_partner_catalog_access_log_internal: {
+        Args: {
+          p_action: string
+          p_cliente_id?: string
+          p_details?: Json
+          p_order_id?: string
+          p_partner_id: string
+          p_simulation_id?: string
+          p_target_user_id?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      is_active_visit_participant: {
+        Args: { p_registro_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_delivery_staff: { Args: { _uid: string }; Returns: boolean }
+      is_executivo: { Args: { _uid: string }; Returns: boolean }
+      is_financial_staff: { Args: { _uid: string }; Returns: boolean }
+      is_technical_visit_editable_status: {
+        Args: { p_status: string }
+        Returns: boolean
+      }
+      is_valid_b2b_partner_user: {
+        Args: { p_partner_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_visit_org_manager: {
+        Args: { p_registro_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_visit_responsible: {
+        Args: { p_registro_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      issue_financial_receipt: {
+        Args: { _description?: string; _payment_id: string }
+        Returns: Json
+      }
+      jsonb_get_array_safe: {
+        Args: { p_key: string; p_payload: Json }
+        Returns: Json
+      }
+      jsonb_object_keys_count: { Args: { p: Json }; Returns: number }
+      lab_request_replanning: {
+        Args: { p_motivo: string; p_os_id: string }
+        Returns: Json
+      }
+      link_partner_user: {
+        Args: { p_papel?: string; p_partner_id: string; p_user_id: string }
+        Returns: string
+      }
+      log_my_access_denied_secure: {
+        Args: { p_context: string; p_route_group?: string }
+        Returns: Json
+      }
+      log_partner_catalog_access_secure: {
+        Args: {
+          p_action: string
+          p_cliente_id?: string
+          p_details?: Json
+          p_item_id?: string
+          p_item_tipo?: string
+          p_order_id?: string
+          p_partner_id?: string
+          p_simulation_id?: string
+          p_target_user_id?: string
+        }
+        Returns: string
+      }
+      log_report_export: {
+        Args: {
+          _error?: string
+          _filters: Json
+          _format: string
+          _report_type: string
+          _row_count?: number
+          _status?: string
+          _storage_bucket: string
+          _storage_path: string
+        }
+        Returns: string
+      }
+      log_report_view: {
+        Args: { p_filters?: Json; p_report_type: string }
+        Returns: undefined
+      }
+      lote_volume_envasado: { Args: { _lote_id: string }; Returns: number }
+      mask_sensitive_jsonb: { Args: { v: Json }; Returns: Json }
+      normalizar_alvo: { Args: { p_nome: string }; Returns: string }
+      partner_apply_default_discount: {
+        Args: { p_partner_id: string }
+        Returns: number
+      }
+      partner_order_has_production: {
+        Args: { _order_id: string }
+        Returns: boolean
+      }
+      partner_order_sla_status: {
+        Args: { p_order_id: string }
+        Returns: {
+          atrasada: boolean
+          fase: string
+          fase_inicio: string
+          horas_decorridas: number
+          prazo_horas: number
+        }[]
+      }
+      partner_reset_prices_to_default: {
+        Args: { p_partner_id: string }
+        Returns: number
+      }
+      pode_acessar_recomendacao: {
+        Args: { _recomendacao_id: string; _user_id: string }
+        Returns: boolean
+      }
+      prefixo_para_microrganismo: { Args: { _tipo: string }; Returns: string }
+      prefixo_para_produto: { Args: { _tipo: string }; Returns: string }
+      proximo_codigo: {
+        Args: { _prefixo: string; _tabela: string }
+        Returns: string
+      }
+      publish_planning_to_lab: {
+        Args: { p_planning_id: string }
+        Returns: Json
+      }
+      recalc_partner_order_production: {
+        Args: { p_partner_order_id: string }
+        Returns: undefined
+      }
+      recalc_partner_risk_score: {
+        Args: { p_partner_id: string }
+        Returns: {
+          calculado_em: string
+          created_at: string
+          dias_medio_atraso: number
+          freq_compras_30d: number
+          id: string
+          meses_relacionamento: number
+          partner_id: string
+          pct_credito_utilizado: number
+          risk_level: string
+          score: number
+          titulos_vencidos: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "partner_risk_scores"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      refresh_esteira_laboratorio: { Args: never; Returns: undefined }
+      refresh_partner_engagement: {
+        Args: { p_partner_id: string }
+        Returns: undefined
+      }
+      register_financial_report_export: {
+        Args: {
+          p_error_message?: string
+          p_file_format: string
+          p_filters: Json
+          p_report_title: string
+          p_report_type: string
+          p_status?: string
+          p_storage_path?: string
+        }
+        Returns: string
+      }
+      register_my_login_redirect_secure: {
+        Args: { p_context: string }
+        Returns: Json
+      }
+      reject_b2b_payment_terms_secure: {
+        Args: { p_partner_order_id: string; p_reason: string }
+        Returns: Json
+      }
+      reject_partner_order: {
+        Args: { p_approval_notes: string; p_order_id: string }
+        Returns: undefined
+      }
+      rejeitar_ficha_versao: {
+        Args: { p_observacao?: string; p_versao_id: string }
+        Returns: undefined
+      }
+      request_b2b_payment_terms_adjustment_secure: {
+        Args: { p_notes: string; p_partner_order_id: string }
+        Returns: Json
+      }
+      request_partner_order_items: {
+        Args: { p_motivo: string; p_order_id: string }
+        Returns: undefined
+      }
+      reservar_estoque_item: {
+        Args: {
+          p_cliente_id?: string
+          p_item_id: string
+          p_observacao?: string
+          p_os_id: string
+          p_os_tipo: string
+          p_partner_id?: string
+          p_partner_order_id?: string
+          p_qty: number
+        }
+        Returns: string
+      }
+      return_catalog_profile_to_review: {
+        Args: { p_kind: string; p_motivo: string; p_profile_id: string }
+        Returns: undefined
+      }
+      rpc_anexar_comprovante_entrega: {
+        Args: { p_entrega_id: string; p_payload: Json }
+        Returns: Json
+      }
+      rpc_aplicar_sla_alertas: { Args: never; Returns: Json }
+      rpc_assign_visit_technician: {
+        Args: { p_registro_id: string; p_role?: string; p_user_id: string }
+        Returns: Json
+      }
+      rpc_assumir_alerta: { Args: { p_alerta_id: string }; Returns: Json }
+      rpc_atualizar_checklist_entrega: {
+        Args: {
+          p_checklist_id: string
+          p_concluido: boolean
+          p_observacao?: string
+        }
+        Returns: Json
+      }
+      rpc_avancar_esteira_laboratorio: {
+        Args: {
+          p_etapa_destino: string
+          p_origem: string
+          p_os_id: string
+          p_programacao_id?: string
+        }
+        Returns: Json
+      }
+      rpc_b2b_aging: {
+        Args: { p_partner_id?: string }
+        Returns: {
+          faixa: string
+          parceiros: number
+          qtd_titulos: number
+          valor: number
+        }[]
+      }
+      rpc_b2b_aging_detalhado: {
+        Args: {
+          p_from?: string
+          p_partner_id?: string
+          p_status?: string
+          p_to?: string
+        }
+        Returns: {
+          faixa: string
+          pct_carteira: number
+          qtd_parceiros: number
+          qtd_titulos: number
+          valor: number
+          valor_medio_parceiro: number
+        }[]
+      }
+      rpc_b2b_capacity_kpis: { Args: never; Returns: Json }
+      rpc_b2b_carteira_kpis: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: Json
+      }
+      rpc_b2b_check_governance_block: {
+        Args: { p_acao: string; p_partner_id: string }
+        Returns: Json
+      }
+      rpc_b2b_executive_alerts: { Args: never; Returns: Json }
+      rpc_b2b_executive_dashboard: { Args: never; Returns: Json }
+      rpc_b2b_financial_kpis: {
+        Args: { p_from?: string; p_partner_id?: string; p_to?: string }
+        Returns: Json
+      }
+      rpc_b2b_governance_kpis: { Args: never; Returns: Json }
+      rpc_b2b_integrity_check: { Args: never; Returns: Json }
+      rpc_b2b_partner_credit: { Args: { p_partner_id: string }; Returns: Json }
+      rpc_b2b_partner_profitability: {
+        Args: { p_from?: string; p_partner_id?: string; p_to?: string }
+        Returns: {
+          inadimplencia_pct: number
+          partner_id: string
+          partner_name: string
+          prazo_medio_pgto: number
+          qtd_pedidos: number
+          risk_level: string
+          risk_score: number
+          ticket_medio: number
+          total_aberto: number
+          total_comprado: number
+          total_recebido: number
+        }[]
+      }
+      rpc_b2b_revenue_forecast: {
+        Args: { p_partner_id?: string }
+        Returns: Json
+      }
+      rpc_bi_esteira_resumo: {
+        Args: {
+          p_cliente_id?: string
+          p_data_fim?: string
+          p_data_inicio?: string
+          p_fazenda_id?: string
+          p_microrganismo_id?: string
+          p_origem_os?: string
+          p_produto_id?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      rpc_bi_fluxo_visitas_resumo: {
+        Args: {
+          p_cliente_id?: string
+          p_consultor_id?: string
+          p_data_fim?: string
+          p_data_inicio?: string
+          p_fazenda_id?: string
+          p_status_solicitacao?: string
+          p_status_visita?: string
+        }
+        Returns: Json
+      }
+      rpc_bi_visitas_por_cliente: {
+        Args: {
+          p_cliente_id: string
+          p_data_fim?: string
+          p_data_inicio?: string
+        }
+        Returns: {
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_visita: string | null
+          consultor_id: string | null
+          consultor_nome: string | null
+          created_at: string | null
+          cultura_id: string | null
+          cultura_nome: string | null
+          data_checkin: string | null
+          data_conversao_os: string | null
+          data_finalizacao: string | null
+          data_liberacao_recomendacao: string | null
+          data_prevista_atendimento: string | null
+          data_vistoria: string | null
+          dias_em_aberto: number | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          numero_solicitacao: string | null
+          origem_fluxo: string | null
+          os_id: string | null
+          possui_checkin: boolean | null
+          possui_diagnostico: boolean | null
+          possui_evidencias: boolean | null
+          possui_os: boolean | null
+          possui_recomendacao: boolean | null
+          proxima_acao: string | null
+          quantidade_diagnosticos: number | null
+          quantidade_evidencias: number | null
+          quantidade_recomendacoes: number | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status_aprovacao: string | null
+          status_os: string | null
+          status_solicitacao: string | null
+          status_visita: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_aprovacao_ate_os: number | null
+          tempo_checkin_ate_finalizacao: number | null
+          tempo_finalizacao_ate_aprovacao: number | null
+          tempo_solicitacao_ate_checkin: number | null
+          tipo_demanda: string | null
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "_src_vw_fluxo_visita_tecnica"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_bi_visitas_por_consultor: {
+        Args: {
+          p_consultor_id: string
+          p_data_fim?: string
+          p_data_inicio?: string
+        }
+        Returns: {
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_visita: string | null
+          consultor_id: string | null
+          consultor_nome: string | null
+          created_at: string | null
+          cultura_id: string | null
+          cultura_nome: string | null
+          data_checkin: string | null
+          data_conversao_os: string | null
+          data_finalizacao: string | null
+          data_liberacao_recomendacao: string | null
+          data_prevista_atendimento: string | null
+          data_vistoria: string | null
+          dias_em_aberto: number | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          numero_solicitacao: string | null
+          origem_fluxo: string | null
+          os_id: string | null
+          possui_checkin: boolean | null
+          possui_diagnostico: boolean | null
+          possui_evidencias: boolean | null
+          possui_os: boolean | null
+          possui_recomendacao: boolean | null
+          proxima_acao: string | null
+          quantidade_diagnosticos: number | null
+          quantidade_evidencias: number | null
+          quantidade_recomendacoes: number | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status_aprovacao: string | null
+          status_os: string | null
+          status_solicitacao: string | null
+          status_visita: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_aprovacao_ate_os: number | null
+          tempo_checkin_ate_finalizacao: number | null
+          tempo_finalizacao_ate_aprovacao: number | null
+          tempo_solicitacao_ate_checkin: number | null
+          tipo_demanda: string | null
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "_src_vw_fluxo_visita_tecnica"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_bi_visitas_por_fazenda: {
+        Args: {
+          p_data_fim?: string
+          p_data_inicio?: string
+          p_fazenda_id: string
+        }
+        Returns: {
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_visita: string | null
+          consultor_id: string | null
+          consultor_nome: string | null
+          created_at: string | null
+          cultura_id: string | null
+          cultura_nome: string | null
+          data_checkin: string | null
+          data_conversao_os: string | null
+          data_finalizacao: string | null
+          data_liberacao_recomendacao: string | null
+          data_prevista_atendimento: string | null
+          data_vistoria: string | null
+          dias_em_aberto: number | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          numero_solicitacao: string | null
+          origem_fluxo: string | null
+          os_id: string | null
+          possui_checkin: boolean | null
+          possui_diagnostico: boolean | null
+          possui_evidencias: boolean | null
+          possui_os: boolean | null
+          possui_recomendacao: boolean | null
+          proxima_acao: string | null
+          quantidade_diagnosticos: number | null
+          quantidade_evidencias: number | null
+          quantidade_recomendacoes: number | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status_aprovacao: string | null
+          status_os: string | null
+          status_solicitacao: string | null
+          status_visita: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_aprovacao_ate_os: number | null
+          tempo_checkin_ate_finalizacao: number | null
+          tempo_finalizacao_ate_aprovacao: number | null
+          tempo_solicitacao_ate_checkin: number | null
+          tipo_demanda: string | null
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "_src_vw_fluxo_visita_tecnica"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_bi_visitas_por_talhao: {
+        Args: {
+          p_data_fim?: string
+          p_data_inicio?: string
+          p_talhao_id: string
+        }
+        Returns: {
+          bloqueios: string[] | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          codigo_visita: string | null
+          consultor_id: string | null
+          consultor_nome: string | null
+          created_at: string | null
+          cultura_id: string | null
+          cultura_nome: string | null
+          data_checkin: string | null
+          data_conversao_os: string | null
+          data_finalizacao: string | null
+          data_liberacao_recomendacao: string | null
+          data_prevista_atendimento: string | null
+          data_vistoria: string | null
+          dias_em_aberto: number | null
+          fazenda_id: string | null
+          fazenda_nome: string | null
+          microrganismo_id: string | null
+          microrganismo_nome: string | null
+          numero_os: string | null
+          numero_solicitacao: string | null
+          origem_fluxo: string | null
+          os_id: string | null
+          possui_checkin: boolean | null
+          possui_diagnostico: boolean | null
+          possui_evidencias: boolean | null
+          possui_os: boolean | null
+          possui_recomendacao: boolean | null
+          proxima_acao: string | null
+          quantidade_diagnosticos: number | null
+          quantidade_evidencias: number | null
+          quantidade_recomendacoes: number | null
+          registro_consultor_id: string | null
+          solicitacao_id: string | null
+          status_aprovacao: string | null
+          status_os: string | null
+          status_solicitacao: string | null
+          status_visita: string | null
+          talhao_id: string | null
+          talhao_nome: string | null
+          tempo_aprovacao_ate_os: number | null
+          tempo_checkin_ate_finalizacao: number | null
+          tempo_finalizacao_ate_aprovacao: number | null
+          tempo_solicitacao_ate_checkin: number | null
+          tipo_demanda: string | null
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "_src_vw_fluxo_visita_tecnica"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_campaign_delete: { Args: { p_id: string }; Returns: undefined }
+      rpc_campaign_upsert: {
+        Args: { p_id?: string; p_payload: Json }
+        Returns: string
+      }
+      rpc_cancel_accounts_payable: {
+        Args: { p_id: string; p_reason: string }
+        Returns: undefined
+      }
+      rpc_cancel_accounts_receivable: {
+        Args: { p_id: string; p_reason: string }
+        Returns: undefined
+      }
+      rpc_cancel_financial_installment: {
+        Args: { p_installment_id: string; p_kind: string; p_reason: string }
+        Returns: undefined
+      }
+      rpc_cancelar_embalagem: {
+        Args: { p_embalagem_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_cancelar_etiqueta_produto: {
+        Args: { p_etiqueta_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_coletar_assinatura_digital_entrega: {
+        Args: { p_entrega_id: string; p_payload: Json }
+        Returns: Json
+      }
+      rpc_commercial_alerts: { Args: never; Returns: Json }
+      rpc_commercial_consolidated_dashboard: {
+        Args: {
+          p_consultor?: string
+          p_from?: string
+          p_partner_id?: string
+          p_partner_type?: string
+          p_region?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      rpc_commercial_kpis: {
+        Args: {
+          p_consultor?: string
+          p_from?: string
+          p_partner_id?: string
+          p_region?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      rpc_commercial_simulator: {
+        Args: {
+          p_desconto: number
+          p_partner_id: string
+          p_product_id: string
+          p_quantidade: number
+        }
+        Returns: Json
+      }
+      rpc_confirmar_entrega_embalagens: {
+        Args: { p_entrega_id: string }
+        Returns: Json
+      }
+      rpc_confirmar_recebimento_entrega: {
+        Args: { p_entrega_id: string; p_payload?: Json }
+        Returns: Json
+      }
+      rpc_confirmar_separacao_embalagem: {
+        Args: { p_embalagem_id: string }
+        Returns: Json
+      }
+      rpc_converter_visita_em_os: {
+        Args: { p_observacao?: string; p_registro_id: string }
+        Returns: Json
+      }
+      rpc_create_financial_title: {
+        Args: { p_kind: string; p_payload: Json }
+        Returns: Json
+      }
+      rpc_check_monitoramento_and_notify: {
+        Args: { _registro_id: string }
+        Returns: Json
+      }
+      rpc_create_notificacao_operacional: {
+        Args: {
+          _idempotency_key?: string | null
+          _link?: string | null
+          _mensagem?: string | null
+          _source_id?: string | null
+          _source_type?: string | null
+          _tipo: string
+          _titulo: string
+          _usuario_id: string
+        }
+        Returns: Json
+      }
+      rpc_create_portal_notification_secure: {
+        Args: {
+          _cliente_id: string
+          _idempotency_key?: string | null
+          _link?: string | null
+          _mensagem: string
+          _source_id?: string | null
+          _source_type?: string | null
+          _tipo: string
+          _titulo: string
+        }
+        Returns: Json
+      }
+      rpc_record_aplicacao_email: {
+        Args: {
+          _aplicacao_id: string
+          _email: string
+          _enviado_por?: string | null
+          _idempotency_key?: string | null
+          _status?: string
+        }
+        Returns: Json
+      }
+      rpc_criar_embalagens_pos_envase: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      rpc_criar_visita_idempotente: {
+        Args: {
+          p_client_uuid: string
+          p_cliente_id: string
+          p_cultura_id: string
+          p_data_vistoria: string
+          p_fase_fenologica?: string
+          p_fazenda_id: string
+          p_objetivo_visita?: string
+          p_safra?: string
+          p_solicitacao_id?: string
+          p_talhao_id: string
+          p_tipo_visita: Database["public"]["Enums"]["tipo_visita"]
+        }
+        Returns: Json
+      }
+      rpc_delete_diagnostico_visita: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      rpc_delete_recomendacao_visita: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      rpc_desativar_bank_account: {
+        Args: { p_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      rpc_desativar_cost_center: {
+        Args: { p_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      rpc_desativar_financial_category: {
+        Args: { p_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      rpc_desativar_payment_method: {
+        Args: { p_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      rpc_descartar_embalagem: {
+        Args: { p_embalagem_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_desvincular_etiqueta_entrega: {
+        Args: { p_entrega_id: string; p_etiqueta_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_dispensar_assinatura_entrega: {
+        Args: { p_entrega_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_enviar_visita_aprovacao: {
+        Args: { p_expected_version: number; p_registro_id: string }
+        Returns: Json
+      }
+      rpc_executar_motor_alertas: {
+        Args: { p_origem?: string; p_tipo_execucao?: string }
+        Returns: Json
+      }
+      rpc_executivo_alertas_prioridades: {
+        Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_executivo_alertas_resumo: {
+        Args: { p_filtros?: Json }
+        Returns: Json
+      }
+      rpc_executivo_arquivar_relatorio: {
+        Args: { p_motivo?: string; p_relatorio_id: string }
+        Returns: {
+          alertas: Json
+          ativo: boolean
+          atualizado_em: string
+          filtros: Json
+          gargalos: Json
+          gerado_em: string
+          gerado_por: string | null
+          hash_conteudo: string | null
+          id: string
+          indicadores: Json
+          metadata: Json
+          observacoes: string | null
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          plano_acao: Json
+          ranking_clientes: Json
+          ranking_fazendas: Json
+          resumo: Json
+          status: string
+          tipo: string
+          titulo: string
+          versao: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "executivo_relatorios"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      rpc_executivo_cliente_detalhe: {
+        Args: { p_cliente_id: string; p_filtros?: Json }
+        Returns: Json
+      }
+      rpc_executivo_clientes_ranking: {
+        Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_executivo_clientes_resumo: {
+        Args: { p_filtros?: Json }
+        Returns: Json
+      }
+      rpc_executivo_exportar_relatorio_evento: {
+        Args: { p_relatorio_id: string; p_tipo_exportacao: string }
+        Returns: {
+          created_at: string
+          descricao: string | null
+          evento: string
+          id: string
+          metadata: Json
+          relatorio_id: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "executivo_relatorio_eventos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      rpc_executivo_fazenda_detalhe: {
+        Args: { p_fazenda_id: string; p_filtros?: Json }
+        Returns: Json
+      }
+      rpc_executivo_financeiro_gargalos: {
+        Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_executivo_financeiro_ranking_clientes: {
+        Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_executivo_financeiro_resumo: {
+        Args: { p_filtros?: Json }
+        Returns: Json
+      }
+      rpc_executivo_gargalos: {
+        Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_executivo_gerar_relatorio: {
+        Args: { p_filtros?: Json; p_tipo: string; p_titulo?: string }
+        Returns: {
+          alertas: Json
+          ativo: boolean
+          atualizado_em: string
+          filtros: Json
+          gargalos: Json
+          gerado_em: string
+          gerado_por: string | null
+          hash_conteudo: string | null
+          id: string
+          indicadores: Json
+          metadata: Json
+          observacoes: string | null
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          plano_acao: Json
+          ranking_clientes: Json
+          ranking_fazendas: Json
+          resumo: Json
+          status: string
+          tipo: string
+          titulo: string
+          versao: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "executivo_relatorios"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      rpc_executivo_listar_relatorios: {
+        Args: { p_filtros?: Json }
+        Returns: {
+          ativo: boolean
+          gerado_em: string
+          gerado_por: string
+          gerado_por_nome: string
+          id: string
+          observacoes: string
+          periodo_fim: string
+          periodo_inicio: string
+          status: string
+          tipo: string
+          titulo: string
+          versao: number
+        }[]
+      }
+      rpc_executivo_obter_relatorio: {
+        Args: { p_relatorio_id: string }
+        Returns: Json
+      }
+      rpc_executivo_plano_acao: {
+        Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_executivo_responsaveis_pendencias: {
+        Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_executivo_resumo_geral: { Args: { p_filtros?: Json }; Returns: Json }
+      rpc_executivo_timeline_operacional: {
+        Args: { p_filtros?: Json; p_limit?: number }
+        Returns: Json
+      }
+      rpc_finalizar_visita_v2: {
+        Args: { p_expected_version: number; p_registro_id: string }
+        Returns: Json
+      }
+      rpc_financial_document_soft_delete: {
+        Args: { p_document_id: string; p_reason: string }
+        Returns: string
+      }
+      rpc_fiscal_certificate_register_a1: {
+        Args: {
+          p_company_settings_id: string
+          p_created_by: string
+          p_display_name: string
+          p_encrypted_password_b64: string
+          p_fingerprint_sha256: string
+          p_issuer_name: string
+          p_key_usage: string[]
+          p_key_version: number
+          p_material_iv_b64: string
+          p_object_path: string
+          p_password_iv_b64: string
+          p_serial_number: string
+          p_subject_name: string
+          p_valid_from: string
+          p_valid_until: string
+        }
+        Returns: string
+      }
+      rpc_fiscal_certificate_register_os: {
+        Args: { p_company_settings_id: string; p_metadata: Json }
+        Returns: string
+      }
+      rpc_fiscal_certificate_revoke: {
+        Args: { p_certificate_id: string; p_reason: string }
+        Returns: undefined
+      }
+      rpc_fiscal_company_rtc_get: { Args: never; Returns: Json }
+      rpc_fiscal_company_rtc_save: {
+        Args: { expected_revision?: string; payload: Json }
+        Returns: Json
+      }
+      rpc_fiscal_company_settings_init: {
+        Args: never
+        Returns: {
+          accounting_validated_at: string | null
+          accounting_validated_by: string | null
+          additional_cnaes: string[] | null
+          certificate_ref: string | null
+          city: string | null
+          cnpj: string | null
+          complement: string | null
+          configuration_notes: string | null
+          configuration_status: string
+          configuration_version: number
+          country_code: string | null
+          created_at: string
+          created_by: string | null
+          crt: string | null
+          fiscal_email: string | null
+          fiscal_environment: string
+          fiscal_provider: string
+          id: string
+          is_active: boolean
+          last_validation_at: string | null
+          last_validation_status: string
+          last_validation_summary: Json
+          legal_name: string | null
+          municipal_registration: string | null
+          municipality_ibge_code: string | null
+          neighborhood: string | null
+          nfe_configuration: Json
+          nfe_credential_ref: string | null
+          nfe_enabled: boolean
+          nfe_provider: string
+          nfe_series: string | null
+          nfse_configuration: Json
+          nfse_credential_ref: string | null
+          nfse_enabled: boolean
+          nfse_provider: string
+          nfse_series: string | null
+          number: string | null
+          phone: string | null
+          postal_code: string | null
+          primary_cnae: string | null
+          production_enabled: boolean
+          rtc_configuration: Json
+          state: string | null
+          state_registration: string | null
+          street: string | null
+          tax_regime: string | null
+          trade_name: string | null
+          updated_at: string
+          updated_by: string | null
+          webhook_ref: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "company_fiscal_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      rpc_fiscal_draft_save: {
+        Args: {
+          p_expected_version: number
+          p_invoice: Json
+          p_invoice_id: string
+          p_items: Json
+        }
+        Returns: Json
+      }
+      rpc_fiscal_draft_validate_homologation: {
+        Args: { p_invoice_id: string }
+        Returns: Json
+      }
+      rpc_fiscal_event_manual: {
+        Args: { p_event_type: string; p_invoice_id: string; p_notes?: string }
+        Returns: string
+      }
+      rpc_fiscal_homologation_readiness: { Args: never; Returns: Json }
+      rpc_fiscal_homologation_readiness_rtc_check: {
+        Args: never
+        Returns: boolean
+      }
+      rpc_fiscal_homologation_readiness_v2: { Args: never; Returns: Json }
+      rpc_fiscal_product_ibs_cbs_get: {
+        Args: { p_product_id: string }
+        Returns: Json
+      }
+      rpc_fiscal_product_ibs_cbs_save: {
+        Args: {
+          expected_revision?: string
+          p_product_id: string
+          payload: Json
+        }
+        Returns: Json
+      }
+      rpc_fiscal_service_ibs_cbs_get: {
+        Args: { p_service_id: string }
+        Returns: Json
+      }
+      rpc_fiscal_service_ibs_cbs_save: {
+        Args: {
+          expected_revision?: string
+          p_service_id: string
+          payload: Json
+        }
+        Returns: Json
+      }
+      rpc_fiscal_service_profile_ibs_cbs_get: {
+        Args: { p_profile_id: string }
+        Returns: Json
+      }
+      rpc_fiscal_service_profile_ibs_cbs_save: {
+        Args: {
+          expected_revision?: string
+          p_profile_id: string
+          payload: Json
+        }
+        Returns: Json
+      }
+      rpc_force_checkout_visita: {
+        Args: {
+          p_reason: string
+          p_registro_id: string
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
+      rpc_gerar_alertas_operacionais: { Args: never; Returns: Json }
+      rpc_gerar_etiqueta_produto: { Args: { p_payload: Json }; Returns: Json }
+      rpc_gerar_formulario_entrega: {
+        Args: { p_entrega_id: string }
+        Returns: Json
+      }
+      rpc_get_my_visit_by_client_uuid: {
+        Args: { p_client_uuid: string }
+        Returns: Json
+      }
+      rpc_ignorar_alerta_operacional: {
+        Args: { p_alerta_id: string; p_observacao?: string }
+        Returns: Json
+      }
+      rpc_ler_embalagem_por_qr: {
+        Args: { p_codigo_ou_token: string }
+        Returns: Json
+      }
+      rpc_liberar_recomendacao_produtor: {
+        Args: { p_registro_id: string }
+        Returns: Json
+      }
+      rpc_marcar_etiqueta_impressa: {
+        Args: { p_etiqueta_id: string }
+        Returns: Json
+      }
+      rpc_marcar_notificacao_enviada: {
+        Args: {
+          p_notificacao_id: string
+          p_provider: string
+          p_provider_message_id?: string
+        }
+        Returns: undefined
+      }
+      rpc_marcar_notificacao_falhou: {
+        Args: { p_erro: string; p_notificacao_id: string }
+        Returns: undefined
+      }
+      rpc_marcar_resumo_enviado: {
+        Args: {
+          p_provider: string
+          p_provider_message_id?: string
+          p_resumo_id: string
+        }
+        Returns: undefined
+      }
+      rpc_marcar_resumo_falhou: {
+        Args: { p_erro: string; p_resumo_id: string }
+        Returns: undefined
+      }
+      rpc_message_set_status: {
+        Args: { p_id: string; p_status: string }
+        Returns: undefined
+      }
+      rpc_partner_commercial_history: {
+        Args: { p_from?: string; p_partner_id: string; p_to?: string }
+        Returns: Json
+      }
+      rpc_partner_dashboard: { Args: { p_partner_id?: string }; Returns: Json }
+      rpc_partner_message_counters: {
+        Args: { p_partner_id?: string }
+        Returns: Json
+      }
+      rpc_portal_partner_credit_status: { Args: never; Returns: Json }
+      rpc_portal_partner_financial:
+        | {
+            Args: never
+            Returns: {
+              ar_status: string
+              financial_status: string
+              installments: Json
+              numero: string
+              partner_order_id: string
+              payment_method: string
+              receivable_id: string
+              total: number
+              vencimento: string
+            }[]
+          }
+        | {
+            Args: { p_partner_id?: string }
+            Returns: {
+              ar_status: string
+              financial_status: string
+              installments: Json
+              numero: string
+              partner_order_id: string
+              payment_method: string
+              receivable_id: string
+              total: number
+              vencimento: string
+            }[]
+          }
+      rpc_preparar_notificacoes_alertas: { Args: never; Returns: Json }
+      rpc_preparar_resumos_alertas: {
+        Args: {
+          p_periodo_fim?: string
+          p_periodo_inicio?: string
+          p_tipo_resumo?: string
+        }
+        Returns: Json
+      }
+      rpc_rastreio_produto_interno: {
+        Args: { p_etiqueta_id: string }
+        Returns: Json
+      }
+      rpc_reabrir_alerta_operacional: {
+        Args: { p_alerta_id: string; p_observacao?: string }
+        Returns: Json
+      }
+      rpc_realizar_checkin_visita: {
+        Args: {
+          p_captured_at_local: string
+          p_client_uuid: string
+          p_cliente_id: string
+          p_fazenda_id: string
+          p_foto_path: string
+          p_justificativa_sem_gps: string
+          p_latitude: number
+          p_longitude: number
+          p_observacoes: string
+          p_precisao: number
+          p_registro_id: string
+          p_solicitacao_id: string
+          p_talhao_id: string
+          p_tipo: Database["public"]["Enums"]["tipo_checkin"]
+        }
+        Returns: Json
+      }
+      rpc_realizar_checkout_visita: {
+        Args: {
+          p_captured_at_local: string
+          p_client_uuid: string
+          p_foto_path: string
+          p_justificativa_sem_gps: string
+          p_latitude: number
+          p_longitude: number
+          p_observacoes: string
+          p_precisao: number
+          p_registro_id: string
+        }
+        Returns: Json
+      }
+      rpc_recalcular_prioridade_alerta: {
+        Args: { p_alerta_id: string }
+        Returns: number
+      }
+      rpc_recalcular_separacao_entrega: {
+        Args: { p_entrega_id: string }
+        Returns: string
+      }
+      rpc_refresh_bi_operacional: { Args: never; Returns: Json }
+      rpc_register_payable_payment: {
+        Args: { p_installment_id: string; p_payload: Json }
+        Returns: string
+      }
+      rpc_register_receivable_payment: {
+        Args: { p_installment_id: string; p_payload: Json }
+        Returns: string
+      }
+      rpc_registrar_ocorrencia_entrega: {
+        Args: { p_entrega_id: string; p_payload: Json }
+        Returns: Json
+      }
+      rpc_registrar_primeira_resposta_alerta: {
+        Args: { p_alerta_id: string }
+        Returns: Json
+      }
+      rpc_remove_visit_technician: {
+        Args: { p_reason?: string; p_registro_id: string; p_user_id: string }
+        Returns: Json
+      }
+      rpc_reservar_embalagem_entrega: {
+        Args: {
+          p_embalagem_id: string
+          p_entrega_id: string
+          p_entrega_item_id?: string
+        }
+        Returns: Json
+      }
+      rpc_resolver_alerta_operacional: {
+        Args: { p_alerta_id: string; p_observacao?: string }
+        Returns: Json
+      }
+      rpc_salvar_campo_visita: {
+        Args: {
+          p_client_uuid: string
+          p_payload: Json
+          p_registro_consultor_id: string
+          p_versao: number
+        }
+        Returns: Json
+      }
+      rpc_upsert_diagnostico_visita: {
+        Args: {
+          p_client_uuid: string
+          p_expected_versao: number
+          p_payload: Json
+          p_registro_id: string
+        }
+        Returns: Json
+      }
+      rpc_upsert_fiscal_invoice_manual: {
+        Args: { p_payload: Json; p_receivable_id: string }
+        Returns: Json
+      }
+      rpc_upsert_recomendacao_visita: {
+        Args: {
+          p_client_uuid: string
+          p_expected_versao: number
+          p_payload: Json
+          p_registro_id: string
+        }
+        Returns: Json
+      }
+      rpc_validar_comprovante_entrega: {
+        Args: { p_validation_token: string }
+        Returns: Json
+      }
+      rpc_validar_integridade_esteira:
+        | { Args: { p_origem: string; p_os_id: string }; Returns: Json }
+        | {
+            Args: {
+              p_acao_solicitada: string
+              p_origem_os: string
+              p_os_id: string
+            }
+            Returns: Json
+          }
+      rpc_validar_rastreio_produto: {
+        Args: { p_trace_token: string }
+        Returns: Json
+      }
+      rpc_vincular_etiqueta_embalagem: {
+        Args: { p_embalagem_id: string; p_etiqueta_id: string }
+        Returns: Json
+      }
+      seed_cockpit_fixtures: { Args: { p_prefix?: string }; Returns: Json }
+      send_partner_simulation_to_manager_secure: {
+        Args: { p_simulation_id: string }
+        Returns: undefined
+      }
+      set_my_context_preference: {
+        Args: { p_context: string; p_remember?: boolean }
+        Returns: Json
+      }
+      set_partner_order_delivery_date: {
+        Args: { p_estimated_delivery_date: string; p_order_id: string }
+        Returns: undefined
+      }
+      set_partner_user_papel: {
+        Args: { p_link_id: string; p_papel: string }
+        Returns: undefined
+      }
+      simulate_b2b_payment_plan_secure: {
+        Args: {
+          p_first_due_date?: string
+          p_items: Json
+          p_partner_id: string
+          p_payment_plan_id: string
+        }
+        Returns: Json
+      }
+      start_technical_visit_secure: {
+        Args: {
+          p_client_uuid?: string
+          p_foto_path?: string
+          p_foto_url?: string
+          p_justificativa_sem_gps?: string
+          p_latitude?: number
+          p_longitude?: number
+          p_observacoes?: string
+          p_precisao_gps?: number
+          p_registro_id: string
+        }
+        Returns: {
+          checkin_id: string
+          is_new: boolean
+        }[]
+      }
+      unassign_b2b_user_client_secure: {
+        Args: { p_cliente_id: string; p_reason?: string; p_user_id: string }
+        Returns: boolean
+      }
+      update_microorganism_b2b_description: {
+        Args: { p_explicacao_b2b: string; p_profile_id: string }
+        Returns: undefined
+      }
+      update_partner_order_notes: {
+        Args: { p_commercial_notes: string; p_order_id: string }
+        Returns: undefined
+      }
+      update_partner_order_status: {
+        Args: {
+          p_motivo?: string
+          p_order_id: string
+          p_status: Database["public"]["Enums"]["partner_order_status"]
+        }
+        Returns: undefined
+      }
+      update_product_b2b_description: {
+        Args: { p_explicacao_b2b: string; p_profile_id: string }
+        Returns: undefined
+      }
+      validate_catalog_approval_checklist: {
+        Args: {
+          p_aprovado_sem_fonte: boolean
+          p_b2b_enabled: boolean
+          p_checklist: Json
+          p_has_sources: boolean
+          p_kind: string
+        }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      access_level_tecnico: "read" | "execute" | "manage"
+      app_role:
+        | "administrador"
+        | "tecnico_agronomo"
+        | "producao"
+        | "administrativo"
+        | "gestor"
+        | "cliente_produtor"
+        | "consultor_tecnico"
+        | "aplicador"
+        | "operador_onfarm"
+        | "financeiro"
+        | "gestor_comercial"
+        | "parceiro_b2b"
+        | "parceiro_b2b_tecnico"
+      categoria_arquivo_consultor:
+        | "praga"
+        | "doenca"
+        | "planta_daninha"
+        | "nematoide"
+        | "solo"
+        | "aplicacao"
+        | "geral"
+        | "laudo"
+        | "documento_cliente"
+        | "recomendacao_anexa"
+        | "checkin"
+        | "vistoria"
+        | "retorno"
+      categoria_problema_consultor:
+        | "insetos_praga"
+        | "doencas_fungicas"
+        | "doencas_bacterianas"
+        | "nematoides"
+        | "plantas_daninhas"
+        | "desequilibrio_biologico_solo"
+        | "baixa_vitalidade"
+        | "falha_estande"
+        | "fitotoxidade"
+        | "outro"
+      cliente_doc_tipo:
+        | "contrato_social"
+        | "procuracao"
+        | "car_mapa"
+        | "outro"
+        | "cnh"
+        | "cartao_cnpj"
+        | "inscricao_produtor"
+        | "rg"
+        | "comprovante_endereco"
+      cliente_status: "prospect" | "ativo" | "inativo" | "bloqueado_financeiro"
+      cliente_tipo_pessoa: "fisica" | "juridica"
+      estrategia_manejo:
+        | "biologico"
+        | "manejo_integrado"
+        | "monitoramento"
+        | "correcao_operacional"
+        | "ajuste_aplicacao"
+        | "ajuste_janela"
+        | "outro"
+      faturamento_base_status:
+        | "PENDENTE"
+        | "LIBERADO_FATURAMENTO"
+        | "FATURADO_PARCIAL"
+        | "FATURADO_TOTAL"
+        | "CANCELADO"
+      modo_aplicacao_consultor:
+        | "foliar"
+        | "aplicacao_no_colo_da_planta"
+        | "via_solo"
+        | "tratamento_semente"
+        | "sulco_plantio"
+        | "jato_dirigido"
+        | "outro"
+      natureza_registro_consultor: "ocorrencia" | "visita"
+      necessidade_intervencao:
+        | "monitorar"
+        | "intervir_ate_7_dias"
+        | "intervir_ate_3_dias"
+        | "intervir_imediatamente"
+      nivel_pressao: "baixo" | "medio" | "alto" | "severo"
+      nivel_risco: "baixo" | "medio" | "alto" | "critico"
+      nivel_severidade: "baixo" | "medio" | "alto"
+      objetivo_recomendacao:
+        | "preventivo"
+        | "corretivo"
+        | "reducao_pressao"
+        | "tratamento_solo"
+        | "reequilibrio_biologico"
+        | "suporte_fisiologico"
+        | "manejo_integrado"
+      order_message_author: "parceiro" | "comercial" | "admin"
+      partner_contact_setor:
+        | "comercial"
+        | "financeiro"
+        | "operacional"
+        | "tecnico"
+        | "administrativo"
+        | "outro"
+      partner_order_priority: "normal" | "urgente" | "programado"
+      partner_order_status:
+        | "rascunho"
+        | "pendente"
+        | "solicitado"
+        | "em_analise_comercial"
+        | "aprovado"
+        | "reprovado"
+        | "em_producao"
+        | "produzido"
+        | "aguardando_entrega"
+        | "confirmado"
+        | "em_separacao"
+        | "enviado"
+        | "entregue"
+        | "faturado"
+        | "cancelado"
+        | "aguardando_aprovacao_credito"
+        | "aguardando_ajuste_comercial"
+        | "aguardando_itens"
+        | "reprovado_sem_itens"
+      partner_porte: "pequeno" | "medio" | "grande"
+      partner_regime_tributario:
+        | "simples"
+        | "lucro_presumido"
+        | "lucro_real"
+        | "mei"
+        | "isento"
+      partner_segmento:
+        | "cooperativa"
+        | "revenda_agro"
+        | "consultoria"
+        | "industria"
+        | "produtor_direto"
+        | "outro"
+      partner_type_enum:
+        | "distribuidor"
+        | "revenda"
+        | "cooperativa"
+        | "produtor_parceiro"
+        | "canal_estrategico"
+        | "representante"
+      ponto_area_consultor:
+        | "entrada_talhao"
+        | "bordadura"
+        | "centro_area"
+        | "reboleira"
+        | "outro"
+      prioridade_os: "baixa" | "media" | "alta"
+      production_planning_status:
+        | "aguardando_planejamento"
+        | "planejado"
+        | "em_producao"
+        | "produzido"
+        | "entregue"
+        | "cancelado"
+        | "replanejar"
+      recomendacao_comentario_autor_tipo:
+        | "produtor"
+        | "tecnico"
+        | "gestor"
+        | "admin"
+      resultado_cq: "aprovado" | "reprovado"
+      risco_produtivo: "baixo" | "medio" | "alto" | "critico"
+      status_alerta: "ativo" | "monitoramento" | "encerrado"
+      status_aprovacao:
+        | "pendente"
+        | "aprovado"
+        | "reprovado"
+        | "solicitar_ajuste"
+        | "ajuste_solicitado"
+        | "reaberto"
+      status_atribuicao: "atribuida" | "aceita" | "recusada" | "concluida"
+      status_checkin: "realizado" | "inconsistente" | "validado"
+      status_diagnostico: "novo" | "em_analise" | "diagnostico_concluido"
+      status_entrega: "separado" | "em_rota" | "entregue" | "cancelada"
+      status_estoque: "disponivel" | "reservado" | "expedido" | "estornado"
+      status_lote: "em_producao" | "aguardando_cq" | "aprovado" | "reprovado"
+      status_os:
+        | "aberta"
+        | "aprovada"
+        | "programada"
+        | "em_producao"
+        | "em_cq"
+        | "envase"
+        | "aguardando_reserva"
+        | "pronto_entrega"
+        | "entregue"
+        | "finalizada"
+      status_os_onfarm:
+        | "aberta"
+        | "aprovada"
+        | "programada"
+        | "em_producao"
+        | "em_cq"
+        | "envase"
+        | "aguardando_reserva"
+        | "pronto_entrega"
+        | "entregue"
+        | "finalizada"
+        | "cancelada"
+      status_programacao:
+        | "aguardando"
+        | "em_producao"
+        | "aguardando_cq"
+        | "aprovado"
+      status_registro_consultor:
+        | "rascunho"
+        | "em_andamento"
+        | "finalizado"
+        | "enviado_aprovacao"
+        | "aprovado"
+        | "convertido_os"
+        | "arquivado"
+        | "reprovado"
+      tipo_alerta:
+        | "praga"
+        | "doenca"
+        | "daninha"
+        | "nematoide"
+        | "estresse_hidrico"
+      tipo_arquivo_consultor: "foto" | "audio" | "pdf"
+      tipo_checkin:
+        | "chegada_fazenda"
+        | "chegada_talhao"
+        | "inicio_visita"
+        | "checkout"
+      tipo_demanda_consultor:
+        | "praga"
+        | "doenca"
+        | "planta_daninha"
+        | "nematoide"
+        | "solo"
+        | "nutricao_biologica"
+        | "manejo_preventivo"
+        | "manejo_corretivo"
+        | "outro"
+      tipo_embalagem: "frasco_1L" | "bombona_5L" | "bombona_20L"
+      tipo_microrganismo: "bacteria" | "fungo" | "levedura" | "consorcio"
+      tipo_notificacao_portal:
+        | "informativo"
+        | "alerta"
+        | "entrega"
+        | "recomendacao"
+        | "aplicacao"
+        | "sistema"
+      tipo_problema: "praga" | "doenca" | "solo" | "nutricao" | "nematoide"
+      tipo_produto:
+        | "inseticida"
+        | "fungicida"
+        | "solo"
+        | "inoculante"
+        | "solubilizador"
+      tipo_visita:
+        | "vistoria_inicial"
+        | "retorno"
+        | "monitoramento"
+        | "pos_aplicacao"
+        | "emergencia"
+        | "acompanhamento_programado"
+      urgencia_consultor: "baixa" | "media" | "alta" | "critica"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -149,7 +16276,299 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  graphql_public: {
     Enums: {},
+  },
+  public: {
+    Enums: {
+      access_level_tecnico: ["read", "execute", "manage"],
+      app_role: [
+        "administrador",
+        "tecnico_agronomo",
+        "producao",
+        "administrativo",
+        "gestor",
+        "cliente_produtor",
+        "consultor_tecnico",
+        "aplicador",
+        "operador_onfarm",
+        "financeiro",
+        "gestor_comercial",
+        "parceiro_b2b",
+        "parceiro_b2b_tecnico",
+      ],
+      categoria_arquivo_consultor: [
+        "praga",
+        "doenca",
+        "planta_daninha",
+        "nematoide",
+        "solo",
+        "aplicacao",
+        "geral",
+        "laudo",
+        "documento_cliente",
+        "recomendacao_anexa",
+        "checkin",
+        "vistoria",
+        "retorno",
+      ],
+      categoria_problema_consultor: [
+        "insetos_praga",
+        "doencas_fungicas",
+        "doencas_bacterianas",
+        "nematoides",
+        "plantas_daninhas",
+        "desequilibrio_biologico_solo",
+        "baixa_vitalidade",
+        "falha_estande",
+        "fitotoxidade",
+        "outro",
+      ],
+      cliente_doc_tipo: [
+        "contrato_social",
+        "procuracao",
+        "car_mapa",
+        "outro",
+        "cnh",
+        "cartao_cnpj",
+        "inscricao_produtor",
+        "rg",
+        "comprovante_endereco",
+      ],
+      cliente_status: ["prospect", "ativo", "inativo", "bloqueado_financeiro"],
+      cliente_tipo_pessoa: ["fisica", "juridica"],
+      estrategia_manejo: [
+        "biologico",
+        "manejo_integrado",
+        "monitoramento",
+        "correcao_operacional",
+        "ajuste_aplicacao",
+        "ajuste_janela",
+        "outro",
+      ],
+      faturamento_base_status: [
+        "PENDENTE",
+        "LIBERADO_FATURAMENTO",
+        "FATURADO_PARCIAL",
+        "FATURADO_TOTAL",
+        "CANCELADO",
+      ],
+      modo_aplicacao_consultor: [
+        "foliar",
+        "aplicacao_no_colo_da_planta",
+        "via_solo",
+        "tratamento_semente",
+        "sulco_plantio",
+        "jato_dirigido",
+        "outro",
+      ],
+      natureza_registro_consultor: ["ocorrencia", "visita"],
+      necessidade_intervencao: [
+        "monitorar",
+        "intervir_ate_7_dias",
+        "intervir_ate_3_dias",
+        "intervir_imediatamente",
+      ],
+      nivel_pressao: ["baixo", "medio", "alto", "severo"],
+      nivel_risco: ["baixo", "medio", "alto", "critico"],
+      nivel_severidade: ["baixo", "medio", "alto"],
+      objetivo_recomendacao: [
+        "preventivo",
+        "corretivo",
+        "reducao_pressao",
+        "tratamento_solo",
+        "reequilibrio_biologico",
+        "suporte_fisiologico",
+        "manejo_integrado",
+      ],
+      order_message_author: ["parceiro", "comercial", "admin"],
+      partner_contact_setor: [
+        "comercial",
+        "financeiro",
+        "operacional",
+        "tecnico",
+        "administrativo",
+        "outro",
+      ],
+      partner_order_priority: ["normal", "urgente", "programado"],
+      partner_order_status: [
+        "rascunho",
+        "pendente",
+        "solicitado",
+        "em_analise_comercial",
+        "aprovado",
+        "reprovado",
+        "em_producao",
+        "produzido",
+        "aguardando_entrega",
+        "confirmado",
+        "em_separacao",
+        "enviado",
+        "entregue",
+        "faturado",
+        "cancelado",
+        "aguardando_aprovacao_credito",
+        "aguardando_ajuste_comercial",
+        "aguardando_itens",
+        "reprovado_sem_itens",
+      ],
+      partner_porte: ["pequeno", "medio", "grande"],
+      partner_regime_tributario: [
+        "simples",
+        "lucro_presumido",
+        "lucro_real",
+        "mei",
+        "isento",
+      ],
+      partner_segmento: [
+        "cooperativa",
+        "revenda_agro",
+        "consultoria",
+        "industria",
+        "produtor_direto",
+        "outro",
+      ],
+      partner_type_enum: [
+        "distribuidor",
+        "revenda",
+        "cooperativa",
+        "produtor_parceiro",
+        "canal_estrategico",
+        "representante",
+      ],
+      ponto_area_consultor: [
+        "entrada_talhao",
+        "bordadura",
+        "centro_area",
+        "reboleira",
+        "outro",
+      ],
+      prioridade_os: ["baixa", "media", "alta"],
+      production_planning_status: [
+        "aguardando_planejamento",
+        "planejado",
+        "em_producao",
+        "produzido",
+        "entregue",
+        "cancelado",
+        "replanejar",
+      ],
+      recomendacao_comentario_autor_tipo: [
+        "produtor",
+        "tecnico",
+        "gestor",
+        "admin",
+      ],
+      resultado_cq: ["aprovado", "reprovado"],
+      risco_produtivo: ["baixo", "medio", "alto", "critico"],
+      status_alerta: ["ativo", "monitoramento", "encerrado"],
+      status_aprovacao: [
+        "pendente",
+        "aprovado",
+        "reprovado",
+        "solicitar_ajuste",
+        "ajuste_solicitado",
+        "reaberto",
+      ],
+      status_atribuicao: ["atribuida", "aceita", "recusada", "concluida"],
+      status_checkin: ["realizado", "inconsistente", "validado"],
+      status_diagnostico: ["novo", "em_analise", "diagnostico_concluido"],
+      status_entrega: ["separado", "em_rota", "entregue", "cancelada"],
+      status_estoque: ["disponivel", "reservado", "expedido", "estornado"],
+      status_lote: ["em_producao", "aguardando_cq", "aprovado", "reprovado"],
+      status_os: [
+        "aberta",
+        "aprovada",
+        "programada",
+        "em_producao",
+        "em_cq",
+        "envase",
+        "aguardando_reserva",
+        "pronto_entrega",
+        "entregue",
+        "finalizada",
+      ],
+      status_os_onfarm: [
+        "aberta",
+        "aprovada",
+        "programada",
+        "em_producao",
+        "em_cq",
+        "envase",
+        "aguardando_reserva",
+        "pronto_entrega",
+        "entregue",
+        "finalizada",
+        "cancelada",
+      ],
+      status_programacao: [
+        "aguardando",
+        "em_producao",
+        "aguardando_cq",
+        "aprovado",
+      ],
+      status_registro_consultor: [
+        "rascunho",
+        "em_andamento",
+        "finalizado",
+        "enviado_aprovacao",
+        "aprovado",
+        "convertido_os",
+        "arquivado",
+        "reprovado",
+      ],
+      tipo_alerta: [
+        "praga",
+        "doenca",
+        "daninha",
+        "nematoide",
+        "estresse_hidrico",
+      ],
+      tipo_arquivo_consultor: ["foto", "audio", "pdf"],
+      tipo_checkin: [
+        "chegada_fazenda",
+        "chegada_talhao",
+        "inicio_visita",
+        "checkout",
+      ],
+      tipo_demanda_consultor: [
+        "praga",
+        "doenca",
+        "planta_daninha",
+        "nematoide",
+        "solo",
+        "nutricao_biologica",
+        "manejo_preventivo",
+        "manejo_corretivo",
+        "outro",
+      ],
+      tipo_embalagem: ["frasco_1L", "bombona_5L", "bombona_20L"],
+      tipo_microrganismo: ["bacteria", "fungo", "levedura", "consorcio"],
+      tipo_notificacao_portal: [
+        "informativo",
+        "alerta",
+        "entrega",
+        "recomendacao",
+        "aplicacao",
+        "sistema",
+      ],
+      tipo_problema: ["praga", "doenca", "solo", "nutricao", "nematoide"],
+      tipo_produto: [
+        "inseticida",
+        "fungicida",
+        "solo",
+        "inoculante",
+        "solubilizador",
+      ],
+      tipo_visita: [
+        "vistoria_inicial",
+        "retorno",
+        "monitoramento",
+        "pos_aplicacao",
+        "emergencia",
+        "acompanhamento_programado",
+      ],
+      urgencia_consultor: ["baixa", "media", "alta", "critica"],
+    },
   },
 } as const
