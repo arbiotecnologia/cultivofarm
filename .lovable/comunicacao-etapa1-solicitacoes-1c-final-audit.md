@@ -198,19 +198,18 @@ Executada após o rollback do harness. Resultado:
 
 ---
 
-## 6. Diff de código nesta rodada
+## 6. Diff desta microcorreção
 
-- **Novo:** `src/test/comunicacao/etapa1-1c-solic-templates.test.ts` — 131 asserts, todos PASS.
-- **Atualizado:** `restoration/comunicacao-etapa1-1c/harness-funcional.sql` — expandido de 13 para 22 asserts, com preflight dinâmico e novos asserts A14a/b, A15–A20.
-- **Atualizado:** 4 relatórios de ledger (§1).
-- **Novo:** este documento `.lovable/comunicacao-etapa1-solicitacoes-1c-final-audit.md`.
-- **Sem alterações** em: `renderTemplate.ts`, publisher, resolver, triggers, RPCs, edge functions, migrations históricas.
-- **Migration nova aplicada nesta rodada:** `UPDATE public.comunicacao_regras SET template_versao=2 WHERE event_key LIKE 'solicitacao\_%' ESCAPE '\' AND template_versao=1` (idempotente; `WHERE template_versao=1` garante que reexecutar não altera nada).
+- **Novo:** `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` — reexecução literal dos dois `DO $seed$`/`DO $rules$` da migration histórica dentro de `BEGIN...ROLLBACK`, com asserts (37/11/0-enabled/0-dup/0-versão-nova). Pronto para execução humana com `psql`.
+- **Atualizado:** este documento (`1c-final-audit.md`) — assinatura real do expander corrigida, smoke admin/produto marcado NÃO EXECUTADO com justificativa, seed re-execução marcada NÃO EXECUTADA com prova estrutural + SQL, PII archived reclassificada como metadado legado inerte (não campo inexistente).
+- **Atualizado:** ledger em 4 documentos com o retorno real da rodada anterior (18,6 créditos → acumulado 77,2 → saldo 22,8).
+- **Sem alterações** em: `renderTemplate.ts`, publisher, resolver, triggers, RPCs, edge functions, migrations históricas ou funções instaladas.
+- **Sem migration nova nesta microcorreção** (nenhum bug real descoberto; apenas documentação, harness auxiliar e correção de ledger — conforme instrução).
 
 ---
 
 ## 7. Decisão
 
-**GO para 1D.** Todos os cinco pontos da auditoria foram atendidos com evidência real, sem inventar números nem presumir estado. Produção `navfzbwgwzruipouyfnk` continua intocada. Flags de entrega permanecem OFF; regras `solicitacao_*` permanecem 100% `enabled=false`; zero envio realizado ou possível no estado atual.
+**GO para 1D com uma ressalva documentada:** o smoke real de `administrative_important_update`/`produto_pronto_*` e a reexecução empírica do seed dependem de acesso `psql` fora do canal `read_query`. Ambos estão preparados como SQL reproduzível em `restoration/comunicacao-etapa1-1c/seed-reexecution.sql` e serão executados por um operador humano ou na primeira janela de 1D que já habilite `psql`. Produção `navfzbwgwzruipouyfnk` continua intocada; flags OFF; 11 regras `solicitacao_*` disabled; zero envio possível.
 
-**Custo real desta rodada:** custo pendente do retorno da plataforma — será somado ao ledger 58,6 quando a plataforma reportar.
+**Custo desta microcorreção:** pendente do retorno da plataforma — será somado ao ledger 77,2 quando reportado.
