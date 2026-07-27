@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
   if (!az.ok) return az.res;
 
   const sb = serviceClient();
-  const cfg = await loadRuntimeConfig(sb);
+  const cfg = await loadRuntimeConfig(sb, readWorkerEnv);
   return json(200, {
     ok: true,
     source: cfg.source,   // "db" | "env" | "fail_closed"
