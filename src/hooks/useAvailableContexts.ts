@@ -39,6 +39,7 @@ export function useAvailableContexts() {
         must_select_context: raw.must_select_context === true,
         has_b2b_access: !!raw.has_b2b_access,
         has_technical_access: !!raw.has_technical_access,
+        is_admin: !!raw.is_admin,
         preferred_context: raw.preferred_context ?? null,
         skip_context_selector: !!raw.skip_context_selector,
       };
