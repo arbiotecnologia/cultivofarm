@@ -164,16 +164,24 @@ export default function ComunicacaoConfigTab() {
 
   function handleSaveEmails() {
     const r = validateEmailsCsv(emailsText);
-    if (!r.ok) { setEmailsErr(r.error); toast.error("Lista de e-mails inválida", { description: r.error }); return; }
-    setEmailsErr("");
-    void save({ allowed_emails: r.value }, "Allowlist de e-mails atualizada", `${r.value.length} destinatário(s) permitido(s).`);
+    if (r.ok) {
+      setEmailsErr("");
+      void save({ allowed_emails: r.value }, "Allowlist de e-mails atualizada", `${r.value.length} destinatário(s) permitido(s).`);
+    } else {
+      setEmailsErr(r.error);
+      toast.error("Lista de e-mails inválida", { description: r.error });
+    }
   }
 
   function handleSavePhones() {
     const r = validatePhonesCsv(phonesText);
-    if (!r.ok) { setPhonesErr(r.error); toast.error("Lista de telefones inválida", { description: r.error }); return; }
-    setPhonesErr("");
-    void save({ allowed_phones: r.value }, "Allowlist de telefones atualizada", `${r.value.length} número(s) permitido(s).`);
+    if (r.ok) {
+      setPhonesErr("");
+      void save({ allowed_phones: r.value }, "Allowlist de telefones atualizada", `${r.value.length} número(s) permitido(s).`);
+    } else {
+      setPhonesErr(r.error);
+      toast.error("Lista de telefones inválida", { description: r.error });
+    }
   }
 
   function handleSaveSmtp() {
