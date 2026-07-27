@@ -12,7 +12,7 @@ import type {
   SmtpLikeClient,
   WorkerEnv,
 } from "./adapters-types.ts";
-import { escapeHtml, isSmtpConfigValid } from "./adapters-types.ts";
+import { escapeHtml, isRecipientAllowedInTestMode, isSmtpConfigValid } from "./adapters-types.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 20_000;
 
@@ -46,6 +46,11 @@ export async function sendEmail(
   }
   if (!resolved.ok || resolved.canal !== "email" || !resolved.address) {
     return { outcome: "invalid_recipient", code: "invalid_address", message: "sem endereço" };
+  }
+  // Homologação — test mode gate ANTES de qualquer chamada externa.
+  const gate = isRecipientAllowedInTestMode(env, "email", resolved.address);
+  if (!gate.allowed) {
+    return { outcome: "deferred", code: gate.reason, message: "test mode block" };
   }
   const subject = (rendered.assunto ?? snapshot.assunto ?? "").trim();
   if (!subject) {

@@ -16,7 +16,7 @@ import type {
   ResolvedAddress,
   WorkerEnv,
 } from "./adapters-types.ts";
-import { isWhatsappConfigValid } from "./adapters-types.ts";
+import { isRecipientAllowedInTestMode, isWhatsappConfigValid } from "./adapters-types.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 15_000;
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
@@ -40,6 +40,11 @@ export async function sendWhatsapp(
   }
   if (!E164_REGEX.test(resolved.address)) {
     return { outcome: "invalid_recipient", code: "invalid_e164", message: "telefone não é E.164" };
+  }
+  // Homologação — test mode gate ANTES do template/rede.
+  const gate = isRecipientAllowedInTestMode(env, "whatsapp", resolved.address);
+  if (!gate.allowed) {
+    return { outcome: "deferred", code: gate.reason, message: "test mode block" };
   }
   if (!snapshot.provider_template_name || !snapshot.language_code) {
     return { outcome: "permanent_error", code: "wa_template_meta_missing", message: "template sem metadados WA" };
