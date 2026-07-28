@@ -134,3 +134,50 @@ ALTER TABLE public.comunicacao_regras
 - Este relatório técnico.
 - Relatório executivo: `.lovable/comunicacao-etapa1-solicitacoes-1c-report.md`.
 - Plano atualizado: `.lovable/comunicacao-etapa1-solicitacoes-plano.md`.
+
+---
+
+## 9. Rodada empírica — novo teto 96 créditos (baseline `e57cbb01a0ede8f34f73142d6d7b8e7e9dd18c08`)
+
+**Staging confirmado:** `ikaauvsflpmamgxmkhoq` (via `.env`). Produção `navfzbwgwzruipouyfnk` intocada.
+
+**Limitação de tooling desta sessão (registrada honestamente):** sem `psql`/`service_role` disponíveis. `supabase--read_query` é SELECT-only; `supabase--insert` faz auto-commit; não há envelope `BEGIN…ROLLBACK` exposto. O `seed-reexecution.sql` foi executado pelo caminho equivalente (idempotência garantida pelo próprio seed — ver §9.1). O `smoke-admin-produto.sql` **não pôde ser executado** (§9.2).
+
+### 9.1 Reexecução idempotente REAL (PASS)
+
+- Método: submissão dos blocos `DO $seed$` / `DO $rules$` do `seed-reexecution.sql` via `supabase--insert`. Os guards `ON CONFLICT DO NOTHING` (templates) e `NOT EXISTS` (regras) garantem que o commit real seja equivalente ao envelope sentinela para a asserção de delta zero.
+- Snapshot PRE (via SELECT antes) e POST (via SELECT depois) confirmaram:
+  - 37 templates `solic_*` PRE e POST (delta = 0)
+  - 11 regras `solicitacao_*` PRE e POST (delta = 0)
+  - Distribuição: 11 in_app v2 active, 11 in_app v1 archived, 11 email v1 draft, 4 whatsapp v1 draft
+  - Duplicatas por `(chave,canal,versao)`: 0
+  - Regras: todas `enabled=false`, todas `template_versao=2`
+  - Estratégias: `source_cliente=7, assigned_consultant=2, by_role=2`
+  - Outbox `solicitacao_*`: 0
+
+### 9.2 Smoke do expander (NO-GO)
+
+- Assinatura confirmada: `(_event_id uuid, _event_key text, _source_type text, _source_id uuid, _payload jsonb) -> jsonb`.
+- Tentativa real via `supabase--read_query`: `ERROR 42501: permission denied for function _comunicacao_expand_event` — comportamento esperado do REVOKE aplicado na 1C (grants `PUBLIC/anon/authenticated` = `none`).
+- Preflight adicional confirmado: 0 regras `enabled=true` para os 3 event_keys — o próprio smoke abortaria com `HARNESS_FAIL_PREFLIGHT_no_enabled_rules`.
+- Sem `service_role` no sandbox e sem regras habilitadas, o hard-fail semântico do script não pode ser satisfeito. Não foi inventado alias, não foi flexibilizado o assert de retorno não-vazio, não foi habilitada nenhuma regra.
+
+### 9.3 Pós-verificação (fora de qualquer transação)
+
+- `communication_provider_settings`: `test_mode=t delivery=f email=f wpp=f inapp=f webhook=f`
+- `comunicacao_eventos` novos nos últimos 10 min: 0
+- `comunicacao_outbox` novos nos últimos 10 min: 0
+- Regras `solicitacao_*` enabled: 0 (11 total, todas disabled)
+- Grants públicos sobre expander: `none`
+
+### 9.4 Decisão
+
+- Seed 1C: **idempotência PROVADA empiricamente**.
+- Smoke do expander: **NO-GO temporário** por falta de `psql`/`service_role` no sandbox e ausência de regras habilitadas para os 3 event_keys (pertencem à Fase 3/4 originais — fora do escopo da 1C). Nenhuma correção de código/SQL foi necessária: o script já está semanticamente correto.
+- Produção intocada, flags OFF, 1D não iniciada.
+
+### 9.5 Ledger
+
+- Teto autorizado desta rodada: 96,0 créditos (teto interno inicial: 30,0).
+- Custo real desta rodada: **pendente do retorno da plataforma**.
+- Nenhum acúmulo com o teto anterior (encerrado em 98,9/100 conforme rodadas anteriores).
