@@ -124,16 +124,8 @@ export async function sendEmail(
     return { outcome: "sent", code: "sent", message: "ok", provider_message_id: null };
   } catch (e) {
     const msg = String((e as Error)?.message ?? e).slice(0, 500);
-    if (/timeout/i.test(msg) || /abort/i.test(msg)) {
-      return { outcome: "transient_error", code: "email_timeout", message: msg };
-    }
-    if (/ECONN|EHOST|dns|network|reset/i.test(msg)) {
-      return { outcome: "transient_error", code: "email_network_error", message: msg };
-    }
-    if (/5\d\d/.test(msg)) {
-      return { outcome: "permanent_error", code: "email_smtp_5xx", message: msg };
-    }
-    return { outcome: "transient_error", code: "email_unknown_error", message: msg };
+    const cls = classifyEmailError(msg);
+    return { outcome: cls.outcome, code: cls.code, message: msg };
   } finally {
     if (client) {
       try { await client.close(); } catch { /* ignore */ }
