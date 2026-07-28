@@ -214,7 +214,21 @@ export default function ComunicacaoConfigTab() {
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<ProviderView | null>(null);
   const [testEmailTo, setTestEmailTo] = useState("");
+  const [testEmailError, setTestEmailError] = useState<string | undefined>(undefined);
   const [testingEmail, setTestingEmail] = useState(false);
+
+  const testEmailSchema = z
+    .string()
+    .trim()
+    .min(1, "Informe o e-mail do destinatário")
+    .max(254, "E-mail muito longo (máx. 254 caracteres)")
+    .email("E-mail inválido. Ex.: destinatario@exemplo.com");
+
+  function validateTestEmail(value: string): string | undefined {
+    const result = testEmailSchema.safeParse(value);
+    return result.success ? undefined : result.error.issues[0]?.message;
+  }
+  const testEmailValid = !testEmailError && testEmailTo.trim().length > 0 && validateTestEmail(testEmailTo) === undefined;
 
   // Editable state
   const [emailsText, setEmailsText] = useState("");
