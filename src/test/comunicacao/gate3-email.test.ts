@@ -234,10 +234,14 @@ describe("gate3 email-adapter: caminhos com SMTP mock", () => {
 
 function findLatestGate3Migration(): string {
   const dir = "supabase/migrations";
-  const files = readdirSync(dir).filter((f) => /comunicacao-gate3-email\.sql$/.test(f));
-  if (files.length === 0) throw new Error("migration Gate 3 não encontrada");
-  files.sort();
-  return readFileSync(join(dir, files[files.length - 1]), "utf8");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".sql"));
+  for (const f of files.sort().reverse()) {
+    const body = readFileSync(join(dir, f), "utf8");
+    if (/rpc_admin_replay_communication_dead_letter/.test(body) && /rpc_admin_communication_outbox_metrics/.test(body)) {
+      return body;
+    }
+  }
+  throw new Error("migration Gate 3 não encontrada");
 }
 
 describe("gate3 migration: retry+jitter, DLQ replay, métricas", () => {
