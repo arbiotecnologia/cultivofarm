@@ -390,6 +390,7 @@ export default function ComunicacaoConfigTab() {
         });
       } else {
         const errorCode = String(parsed.error ?? "erro_desconhecido");
+        const hint = typeof parsed.hint === "string" ? parsed.hint : "";
         const detailStr = typeof parsed.detail === "string" && parsed.detail.length > 0
           ? parsed.detail
           : (raw && raw !== JSON.stringify(parsed) ? raw : "");
@@ -397,11 +398,33 @@ export default function ComunicacaoConfigTab() {
           ? " · faltando: " + Object.entries(parsed.missing as Record<string, boolean>)
               .filter(([, v]) => v).map(([k]) => k).join(", ")
           : "";
-        const hostInfo = parsed.host ? ` · host: ${parsed.host}:${parsed.port}` : "";
+        const hostInfo = parsed.host ? ` · ${parsed.host}:${parsed.port}` : "";
         const elapsedInfo = parsed.elapsed_ms ? ` · ${parsed.elapsed_ms}ms` : "";
-        toast.error(`Falha no envio · HTTP ${resp.status} · ${errorCode}`, {
-          description: `${detailStr || "(sem detalhe adicional)"}${missingStr}${hostInfo}${elapsedInfo}`,
-          duration: 15000,
+        const humanTitle: Record<string, string> = {
+          timeout: "Tempo esgotado ao conectar no SMTP",
+          tls_hostname_mismatch: "Certificado TLS não cobre o hostname",
+          tls_cert_untrusted: "Certificado TLS não confiável",
+          tls_handshake_failed: "Falha no handshake TLS",
+          smtp_auth_failed: "Credenciais SMTP rejeitadas",
+          smtp_auth_required: "Servidor exige autenticação",
+          smtp_sender_rejected: "Remetente rejeitado pelo servidor",
+          smtp_message_rejected: "Mensagem rejeitada (spam/bloqueio)",
+          connection_refused: "Conexão recusada pelo servidor",
+          connection_reset: "Conexão encerrada pelo servidor",
+          dns_resolution_failed: "Hostname SMTP não resolvido",
+          network_unreachable: "Rota de rede indisponível",
+          smtp_incomplete: "Configuração SMTP incompleta",
+          smtp_send_failed: "Falha ao enviar via SMTP",
+        };
+        const title = humanTitle[errorCode] ?? `Falha no envio (${errorCode})`;
+        const description = [
+          hint,
+          detailStr ? `Detalhe do servidor: ${detailStr}` : "",
+          `HTTP ${resp.status}${hostInfo}${elapsedInfo}${missingStr}`,
+        ].filter(Boolean).join("\n");
+        toast.error(title, {
+          description,
+          duration: 20000,
         });
       }
     } catch (e) {
