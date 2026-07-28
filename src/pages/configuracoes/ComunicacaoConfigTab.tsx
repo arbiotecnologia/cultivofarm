@@ -794,19 +794,32 @@ export default function ComunicacaoConfigTab() {
                     id="smtp-test-to"
                     type="email"
                     value={testEmailTo}
-                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setTestEmailTo(v);
+                      if (testEmailError) setTestEmailError(undefined);
+                    }}
+                    onBlur={() => {
+                      if (testEmailTo.trim().length > 0) {
+                        setTestEmailError(validateTestEmail(testEmailTo));
+                      }
+                    }}
                     placeholder="destinatario@exemplo.com"
                     autoComplete="off"
+                    maxLength={254}
+                    aria-invalid={!!testEmailError}
+                    aria-describedby={testEmailError ? "smtp-test-to-error" : undefined}
                   />
                   <Button
                     variant="outline"
-                    disabled={testingEmail || !testEmailTo.trim()}
+                    disabled={testingEmail || !testEmailValid}
                     onClick={handleTestEmail}
                   >
                     <Mail className="h-4 w-4 mr-1" />
                     {testingEmail ? "Enviando..." : "Enviar teste"}
                   </Button>
                 </div>
+                <FieldError msg={testEmailError} />
               </div>
             </>
           )}
