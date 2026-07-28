@@ -253,3 +253,38 @@ Nenhum resíduo. Rollback completo confirmado.
 - Teto autorizado desta janela nova: **96,0 créditos** (independente do teto anterior encerrado em ~98,9/100).
 - Teto interno inicial desta rodada: **30,0 créditos**.
 - Custo real desta rodada: **pendente do retorno da plataforma** (não estimado).
+
+---
+
+## Adendo 6 — Smoke conclusivo do expander (rollback obrigatório)
+
+**Data:** 2026-07-28. **Ambiente:** staging `ikaauvsflpmamgxmkhoq`. **Produção intocada.**
+**Rodada anterior (`{enqueued:0,skipped:0}` nos 3 eventos):** revogada — não certificava expansão, apenas ausência de crash.
+
+### Fixtures criadas dentro da transação (todas revertidas)
+- 1 `clientes` (`codigo_cliente='SMK1C'`), 1 `fazendas`, 1 `talhoes`, 1 `ordens_servico_onfarm` (`numero_os='SMK-1C-…'`, `status='aberta'`).
+- 3 `comunicacao_templates` in_app v2 active para `administrative_important_update`, `produto_pronto_retirada`, `produto_pronto_aplicacao` (chaves não seedadas em 1C, cujo escopo era apenas `solicitacao_*`).
+- 3 `comunicacao_regras` `enabled=true` só nesta transação: `broadcast_role`/`administrador` para o evento administrativo e `source_participants` para os dois `produto_pronto_*`.
+- 3 `comunicacao_eventos` sentinelas (`idempotency_key` prefixadas com `smk`).
+
+### Resultado por evento (retorno real do `_comunicacao_expand_event`)
+| event_key | retorno | destinatário |
+|---|---|---|
+| `administrative_important_update` | `{"skipped":0,"enqueued":1}` | user_id `b5c2ebd4-7cdf-4647-a585-6ec49f1b583a` (admin ativo real) |
+| `produto_pronto_retirada` | `{"skipped":0,"enqueued":1}` | cliente_id `857eb876-0dd5-4149-af6d-68a7e09c83d3` (fixture sintética) |
+| `produto_pronto_aplicacao` | `{"skipped":0,"enqueued":1}` | cliente_id `857eb876-0dd5-4149-af6d-68a7e09c83d3` (fixture sintética) |
+
+Critério do gate atendido: `enqueued>=1` em todos e destinatário compatível com a estratégia da regra. Nenhuma chamada de rede/Edge Function; nenhuma flag global habilitada; `test_mode` permaneceu ON.
+
+### Verificação pós-rollback (consulta independente)
+- 37 `comunicacao_templates` / 11 `comunicacao_regras` — baseline preservada.
+- 0 regras `solicitacao_*` habilitadas; 0 regras persistidas para os 3 event_keys do smoke.
+- 0 clientes/fazendas/talhões/OSF sentinelas; 0 `comunicacao_eventos` com `smk%`; 0 outbox residual.
+- 0 preferências in_app persistidas para o admin.
+- Flags: `delivery_enabled=false`, `email_delivery_enabled=false`, `whatsapp_delivery_enabled=false`, `inapp_delivery_enabled=false`, `whatsapp_webhook_enabled=false`, `test_mode_enabled=true`.
+
+### Decisão
+**GO empírico para encerramento da Subfase 1C.**
+Anti-decisão anterior (baseada em `enqueued=0`) fica **revogada** — aquele resultado provava apenas que a função não crashava. O novo smoke prova expansão real com destinatário correto sob rollback obrigatório.
+
+Nenhuma migration permanente foi criada nesta rodada — não houve bug de runtime; a ausência anterior de templates para os 3 event_keys era o único bloqueio e foi resolvida temporariamente dentro da transação, sem persistir.
