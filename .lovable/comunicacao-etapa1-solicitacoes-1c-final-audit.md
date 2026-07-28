@@ -298,3 +298,23 @@ Executado via `supabase--read_query` imediatamente após o INSERT idempotente:
 | Saldo restante | pendente |
 
 Sem estimativas inventadas. Nenhum canal habilitado, nenhum deploy, nenhuma migration nova, nenhum frontend publicado, 1D não iniciada.
+
+## §9 Certificação empírica final — nova janela 96 créditos (2026-07-28)
+
+Ambiente confirmado: staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` intocada.
+
+**Idempotência do seed 1C (item 1):** GO empírico. Reexecutados via `supabase--insert` os blocos `DO $seed$` e `DO $rules$`. PRE=POST=37 templates / 11 regras; 0 duplicatas por chave real; 0 regras enabled; 0 regras com template_versao<>2; distribuição inalterada `active/in_app/v2=11, archived/in_app/v1=11, draft/email/v1=11, draft/whatsapp/v1=4`.
+
+**Smoke transacional do expander (item 2):** executado com rollback completo (RAISE EXCEPTION `SMOKE_RESULTS_ROLLBACK`). Fixtures temporárias de 3 regras `enabled=true` para os event_keys certificados e chamadas reais a `public._comunicacao_expand_event(...)`. Resultados observados:
+
+- `administrative_important_update` → `{"skipped":0,"enqueued":0}`
+- `produto_pronto_retirada`        → `{"skipped":0,"enqueued":0}`
+- `produto_pronto_aplicacao`       → `{"skipped":0,"enqueued":0}`
+
+Expander é chamável, contratado e não crasha. `enqueued=0` reflete lacuna documentada de fixtures reais em staging: `ordens_servico_onfarm` com 0 linhas e nenhum admin com preferência in_app resolvível para `by_role/administrador`. Não é bug do expander — é fixture ausente pertencente a 1D/homologação.
+
+**Pós-rollback (item 3):** 0 novos eventos/outbox/inapp_dispatch nos últimos 10 min; 0 regras residuais para os 3 event_keys; 0 regras `solicitacao_*` enabled; flags `test_mode=t, delivery=f, email=f, whatsapp=f, inapp=f, webhook=f`; 37 templates / 11 regras `solicitacao_*` preservados.
+
+**Decisão final:** **GO para encerramento da 1C.** 1D permanece **não iniciada** e requer fixtures autorizadas para validação empírica end-to-end.
+
+**Ledger (nova janela):** teto 96,0; teto interno 30,0; custo real desta rodada pendente do retorno da plataforma.

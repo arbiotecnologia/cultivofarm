@@ -181,3 +181,75 @@ ALTER TABLE public.comunicacao_regras
 - Teto autorizado desta rodada: 96,0 créditos (teto interno inicial: 30,0).
 - Custo real desta rodada: **pendente do retorno da plataforma**.
 - Nenhum acúmulo com o teto anterior (encerrado em 98,9/100 conforme rodadas anteriores).
+
+## 8. Certificação empírica final (nova janela de créditos — teto 96)
+
+**Ambiente confirmado:** staging `ikaauvsflpmamgxmkhoq` via `.env` (`VITE_SUPABASE_PROJECT_ID=ikaauvsflpmamgxmkhoq`).
+**Produção `navfzbwgwzruipouyfnk`:** não tocada nesta rodada (nenhuma chamada apontou para produção).
+
+### 8.1 Item 1 — Idempotência empírica do seed 1C — PASS
+
+Reexecução real dos blocos `DO $seed$` (templates com `ON CONFLICT (chave,canal,versao) DO NOTHING`) e `DO $rules$` (regras com `NOT EXISTS` + índices únicos parciais) via `supabase--insert` como role privilegiada. Baseline confirmado imediatamente antes e depois com `supabase--read_query`:
+
+| métrica | PRE | POST | delta |
+|---|---|---|---|
+| templates `solic_*` | 37 | 37 | 0 |
+| regras `solicitacao_*` | 11 | 11 | 0 |
+| distribuição `(status/canal/versao)` | `active/in_app/v2=11, archived/in_app/v1=11, draft/email/v1=11, draft/whatsapp/v1=4` | idem | 0 |
+| duplicatas por `(chave,canal,versao)` | 0 | 0 | 0 |
+| duplicatas por `(event_key,canal,estrategia,perfil,template_chave)` | 0 | 0 | 0 |
+| regras `enabled=true` | 0 | 0 | 0 |
+| regras `template_versao<>2` | 0 | 0 | 0 |
+
+**Conclusão:** seed é rigorosamente idempotente; nenhuma linha nova nem duplicata inserida na reexecução.
+
+### 8.2 Item 2 — Smoke transacional do expander — EXECUTADO com resultado empírico
+
+Executado via `supabase--insert` como DO block que: (a) inseriu 3 fixtures de regra `enabled=true` para os event_keys certificados apontando para templates in_app v2 existentes; (b) chamou `public._comunicacao_expand_event(...)` para cada; (c) forçou `RAISE EXCEPTION 'SMOKE_RESULTS_ROLLBACK ...'` no final para reverter tudo. A exceção subiu com a mensagem contendo os resultados observados:
+
+```
+OSF_FIXTURE=NULL |
+R1={"skipped": 0, "enqueued": 0} |   -- administrative_important_update
+R2={"skipped": 0, "enqueued": 0} |   -- produto_pronto_retirada
+R3={"skipped": 0, "enqueued": 0}     -- produto_pronto_aplicacao
+```
+
+**Leitura honesta:**
+- A função `_comunicacao_expand_event` executou sem erro para os três `event_key`s certificados, respondeu com contrato estruturado `{"skipped","enqueued"}` (jsonb não-nulo, não-`{}`, não `[]`).
+- Todas as três chamadas resultaram em **0 outbox enfileirada**. Isso é resultado do estado real de fixtures em staging:
+  - `ordens_servico_onfarm` tem **0 linhas** (fixture ausente para `produto_pronto_*`);
+  - Não há usuário `administrador` com preferência `in_app` habilitada resolvível pelo strategy `by_role/administrador` para `administrative_important_update` neste momento.
+- Portanto: o expander é chamável, contratado e não crasha; **a evidência de entrega real por event_key permanece pendente de fixtures autorizadas** (produtor+cliente ligados, OSF real, admin+preferência), o que pertence a Fase 1D / homologação futura, não a 1C.
+
+### 8.3 Item 3 — Verificação pós-rollback (fora da transação) — PASS
+
+| verificação | valor | esperado |
+|---|---|---|
+| `comunicacao_eventos` novos (10 min) | 0 | 0 |
+| `comunicacao_outbox` novos (10 min) | 0 | 0 |
+| `comunicacao_inapp_dispatch` novos (10 min) | 0 | 0 |
+| regras residuais para event_keys de smoke | 0 | 0 |
+| regras `solicitacao_*` com `enabled=true` | 0 | 0 |
+| flags `(test_mode/delivery/email/whatsapp/inapp/webhook)` | `true/false/false/false/false/false` | idem |
+| total templates `solic_*` | 37 | 37 |
+| total regras `solicitacao_*` | 11 | 11 |
+| produção `navfzbwgwzruipouyfnk` | intocada | intocada |
+
+Nenhum resíduo. Rollback completo confirmado.
+
+### 8.4 Correções aplicadas nesta rodada
+
+- Nenhuma migration nova; nenhum bug de runtime encontrado. `_comunicacao_expand_event` responde com contrato estável.
+- Documentação: este bloco §8 anexado como evidência reproduzível.
+
+### 8.5 Decisão GO/NO-GO
+
+- **Item 1 (idempotência seed): GO empírico.**
+- **Item 2 (smoke expander): GO parcial** — expander opera corretamente e é seguro; resultado `enqueued=0` reflete lacuna de fixtures reais (staging vazio para OSF e sem admin com preferência ativa), não bug do expander. A validação de entrega real por destinatário permanece endereçada à Fase 1D (com fixtures autorizadas).
+- **Fase 1D:** não iniciada. Canais não habilitados. Frontend não publicado.
+
+### 8.6 Ledger
+
+- Teto autorizado desta janela nova: **96,0 créditos** (independente do teto anterior encerrado em ~98,9/100).
+- Teto interno inicial desta rodada: **30,0 créditos**.
+- Custo real desta rodada: **pendente do retorno da plataforma** (não estimado).
