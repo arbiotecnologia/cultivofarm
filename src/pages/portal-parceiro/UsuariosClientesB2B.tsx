@@ -185,7 +185,7 @@ export default function UsuariosClientesB2B() {
                   variant={userSel === u.user_id ? "default" : "outline"}
                   onClick={() => setUserSel(u.user_id)}
                 >
-                  {u.nome || u.email || u.user_id.slice(0, 8)}
+                  {displayPartnerUserName(u.nome || u.email ? { user_id: u.user_id, nome: u.nome, email: u.email } : undefined, u.user_id)}
                   <Badge variant="secondary" className="ml-2">{u.papel}</Badge>
                   {contagemPorUser.has(u.user_id) && (
                     <Badge variant="outline" className="ml-1">{contagemPorUser.get(u.user_id)}</Badge>
