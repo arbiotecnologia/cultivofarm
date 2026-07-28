@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchProfilesByUserIds, displayPartnerUserName } from "@/lib/partnerUserProfiles";
+
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,16 +33,17 @@ export default function TecnicosProdutores() {
         .select("user_id, papel")
         .eq("partner_id", partner.id);
       if (error) throw error;
-      const ids = (pu ?? []).map((p: any) => p.user_id);
+      const ids = (pu ?? []).map((p: any) => p.user_id as string);
       if (ids.length === 0) return [] as Tecnico[];
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, nome, email")
-        .in("id", ids);
-      // Somente técnicos (papel do partner_user ou role global) — mostra todos os users do parceiro
-      return (profs ?? []).map((p: any) => ({ user_id: p.id, nome: p.nome, email: p.email })) as Tecnico[];
+      // partner_users é a fonte da verdade do vínculo; profiles apenas enriquece nome/email.
+      const byId = await fetchProfilesByUserIds(ids);
+      return ids.map((uid) => {
+        const prof = byId.get(uid);
+        return { user_id: uid, nome: prof?.nome ?? null, email: prof?.email ?? null };
+      }) as Tecnico[];
     },
   });
+
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["b2b-partner-clientes-all"],
@@ -141,7 +144,7 @@ export default function TecnicosProdutores() {
                   variant={tecSel === t.user_id ? "default" : "outline"}
                   onClick={() => setTecSel(t.user_id)}
                 >
-                  {t.nome || t.email || t.user_id.slice(0, 8)}
+                  {displayPartnerUserName(t.nome || t.email ? { user_id: t.user_id, nome: t.nome, email: t.email } : undefined, t.user_id)}
                   <Badge variant="secondary" className="ml-2">{contagemPorTecnico.get(t.user_id) ?? 0}</Badge>
                 </Button>
               ))}

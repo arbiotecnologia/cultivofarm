@@ -15,7 +15,7 @@ type Assignment = {
   role: string;
   is_active: boolean;
   assigned_at: string;
-  profile?: { full_name: string | null; email: string | null } | null;
+  profile?: { nome: string | null; email: string | null } | null;
 };
 
 const ROLES = [
@@ -46,9 +46,9 @@ export function EquipeVisitaCard({ registroId, canManage }: { registroId: string
       const ids = rows.map((r) => r.user_id);
       const { data: profs } = await supabase
         .from("profiles")
-        .select("id,full_name,email")
-        .in("id", ids);
-      const map = new Map((profs || []).map((p: any) => [p.id, p]));
+        .select("user_id,nome,email")
+        .in("user_id", ids);
+      const map = new Map((profs || []).map((p: any) => [p.user_id, p]));
       return rows.map((r) => ({ ...r, profile: map.get(r.user_id) || null }));
     },
   });
@@ -60,8 +60,8 @@ export function EquipeVisitaCard({ registroId, canManage }: { registroId: string
       const term = `%${search.trim()}%`;
       const { data, error } = await supabase
         .from("profiles")
-        .select("id,full_name,email")
-        .or(`full_name.ilike.${term},email.ilike.${term}`)
+        .select("user_id,nome,email")
+        .or(`nome.ilike.${term},email.ilike.${term}`)
         .limit(8);
       if (error) throw error;
       return data || [];
@@ -139,7 +139,7 @@ export function EquipeVisitaCard({ registroId, canManage }: { registroId: string
               <div className="flex items-center gap-2 min-w-0">
                 <Badge variant="secondary" className="text-[10px] uppercase">{a.role}</Badge>
                 <span className="truncate">
-                  {a.profile?.full_name || a.profile?.email || a.user_id.slice(0, 8)}
+                  {a.profile?.nome || a.profile?.email || a.user_id.slice(0, 8)}
                 </span>
               </div>
               {canManage && (
@@ -179,12 +179,12 @@ export function EquipeVisitaCard({ registroId, canManage }: { registroId: string
               <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md max-h-48 overflow-auto">
                 {searchResults.map((p: any) => (
                   <button
-                    key={p.id}
+                    key={p.user_id}
                     type="button"
                     className="w-full text-left px-2 py-1.5 text-sm hover:bg-accent"
-                    onClick={() => setSelectedUser({ id: p.id, label: p.full_name || p.email || p.id })}
+                    onClick={() => setSelectedUser({ id: p.user_id, label: p.nome || p.email || p.user_id })}
                   >
-                    <div className="truncate">{p.full_name || "—"}</div>
+                    <div className="truncate">{p.nome || "—"}</div>
                     <div className="text-[10px] text-muted-foreground truncate">{p.email}</div>
                   </button>
                 ))}

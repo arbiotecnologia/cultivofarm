@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchProfilesByUserIds, displayPartnerUserName } from "@/lib/partnerUserProfiles";
+
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +42,7 @@ export default function UsuariosClientesB2B() {
   const [busca, setBusca] = useState("");
   const [assignmentType, setAssignmentType] = useState<string>("monitoramento");
 
-  // Lista usuários B2B do parceiro (via partner_users + profiles)
+  // Lista usuários B2B do parceiro (via partner_users + profiles, casando por user_id)
   const { data: usuarios = [] } = useQuery({
     queryKey: ["b2b-partner-users", partner?.id],
     enabled: !!partner?.id,
@@ -52,14 +54,19 @@ export default function UsuariosClientesB2B() {
       if (error) throw error;
       const ids = (pu ?? []).map((p) => p.user_id);
       if (ids.length === 0) return [] as Usuario[];
-      const { data: profs } = await supabase.from("profiles").select("id, nome, email").in("id", ids);
-      const byId = new Map((profs ?? []).map((p: any) => [p.id, p]));
+      const byId = await fetchProfilesByUserIds(ids);
       return (pu ?? []).map((p: any) => {
         const prof = byId.get(p.user_id);
-        return { user_id: p.user_id, nome: prof?.nome ?? null, email: prof?.email ?? null, papel: p.papel };
+        return {
+          user_id: p.user_id,
+          nome: prof?.nome ?? null,
+          email: prof?.email ?? null,
+          papel: p.papel,
+        };
       }) as Usuario[];
     },
   });
+
 
   const usuariosFiltrados = useMemo(() => {
     if (papelFiltro === "todos") return usuarios;
@@ -178,7 +185,7 @@ export default function UsuariosClientesB2B() {
                   variant={userSel === u.user_id ? "default" : "outline"}
                   onClick={() => setUserSel(u.user_id)}
                 >
-                  {u.nome || u.email || u.user_id.slice(0, 8)}
+                  {displayPartnerUserName(u.nome || u.email ? { user_id: u.user_id, nome: u.nome, email: u.email } : undefined, u.user_id)}
                   <Badge variant="secondary" className="ml-2">{u.papel}</Badge>
                   {contagemPorUser.has(u.user_id) && (
                     <Badge variant="outline" className="ml-1">{contagemPorUser.get(u.user_id)}</Badge>
