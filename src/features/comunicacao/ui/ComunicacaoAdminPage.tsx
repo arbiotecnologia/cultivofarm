@@ -35,6 +35,8 @@ import {
   verifyCommunicationChannel,
 } from "@/features/comunicacao/api";
 import ConsentimentoWhatsappPanel from "@/features/comunicacao/ui/ConsentimentoWhatsappPanel";
+import ObservabilidadePanel from "@/features/comunicacao/ui/ObservabilidadePanel";
+
 
 import type {
   ComunicacaoTemplate,
@@ -112,10 +114,12 @@ export default function ComunicacaoAdmin() {
 
       {isAdmin && (
         <>
+          <ObservabilidadePanel />
           <CanalHealthPanel />
           <CanalVerificacaoPanel />
         </>
       )}
+
 
       {!isAdmin && (
         <section aria-label="Estado dos canais" className="rounded-md border p-4 text-sm">

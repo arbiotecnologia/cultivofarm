@@ -169,15 +169,46 @@ export async function replayDeadLetterBatch(limit = 10): Promise<{ ok: boolean; 
 export interface ComunicacaoHealthSnapshot {
   ok: boolean;
   generated_at: string;
+  flags: {
+    delivery_enabled: boolean;
+    email_enabled: boolean;
+    whatsapp_enabled: boolean;
+    in_app_enabled: boolean;
+    whatsapp_webhook_enabled: boolean;
+    test_mode_enabled: boolean;
+  };
+  providers: {
+    email: { configured: boolean; enabled: boolean };
+    whatsapp: { configured: boolean; enabled: boolean; webhook_configured: boolean; webhook_enabled: boolean };
+    in_app: { configured: boolean; enabled: boolean };
+  };
   queue: {
     by_status: Record<string, number>;
     by_canal: Record<string, number>;
+    by_event_key_7d: Record<string, { total: number; sent: number; pending: number; failed: number; dead_letter: number }>;
+    by_canal_status_7d: Record<string, number>;
     pending: number;
+    processing: number;
     dead_letter: number;
     oldest_pending_age_seconds: number;
     oldest_processing_age_seconds: number;
   };
-  throughput_24h: { sent: number; failed_or_dlq: number; success_rate_pct: number | null };
+  throughput_24h: {
+    sent: number;
+    failed_or_dlq: number;
+    success_rate_pct: number | null;
+    avg_attempts_sent: number | null;
+    avg_attempts_terminal: number | null;
+    max_attempts: number | null;
+    avg_latency_ms: number | null;
+    p95_latency_ms: number | null;
+  };
+  worker: {
+    status: "active" | "idle" | "stale" | "unknown";
+    last_activity_at: string | null;
+    last_activity_age_seconds: number | null;
+    last_sent_at: string | null;
+  };
   realtime: { ready: boolean };
   dlq_admin: { last_replay_at: string | null };
 }
@@ -187,6 +218,7 @@ export async function fetchHealthSnapshot(): Promise<ComunicacaoHealthSnapshot> 
   if (error) throw new Error(error.message);
   return data as ComunicacaoHealthSnapshot;
 }
+
 
 
 
