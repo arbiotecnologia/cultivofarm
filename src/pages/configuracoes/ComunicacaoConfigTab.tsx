@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -214,7 +215,21 @@ export default function ComunicacaoConfigTab() {
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<ProviderView | null>(null);
   const [testEmailTo, setTestEmailTo] = useState("");
+  const [testEmailError, setTestEmailError] = useState<string | undefined>(undefined);
   const [testingEmail, setTestingEmail] = useState(false);
+
+  const testEmailSchema = z
+    .string()
+    .trim()
+    .min(1, "Informe o e-mail do destinatário")
+    .max(254, "E-mail muito longo (máx. 254 caracteres)")
+    .email("E-mail inválido. Ex.: destinatario@exemplo.com");
+
+  function validateTestEmail(value: string): string | undefined {
+    const result = testEmailSchema.safeParse(value);
+    return result.success ? undefined : result.error.issues[0]?.message;
+  }
+  const testEmailValid = !testEmailError && testEmailTo.trim().length > 0 && validateTestEmail(testEmailTo) === undefined;
 
   // Editable state
   const [emailsText, setEmailsText] = useState("");
@@ -336,11 +351,14 @@ export default function ComunicacaoConfigTab() {
   }
 
   async function handleTestEmail() {
-    const to = testEmailTo.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
-      toast.error("Informe um e-mail válido", { description: "Ex.: destinatario@exemplo.com" });
+    const err = validateTestEmail(testEmailTo);
+    if (err) {
+      setTestEmailError(err);
+      toast.error("Destinatário inválido", { description: err });
       return;
     }
+    setTestEmailError(undefined);
+    const to = testEmailTo.trim().toLowerCase();
     setTestingEmail(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -776,19 +794,32 @@ export default function ComunicacaoConfigTab() {
                     id="smtp-test-to"
                     type="email"
                     value={testEmailTo}
-                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setTestEmailTo(v);
+                      if (testEmailError) setTestEmailError(undefined);
+                    }}
+                    onBlur={() => {
+                      if (testEmailTo.trim().length > 0) {
+                        setTestEmailError(validateTestEmail(testEmailTo));
+                      }
+                    }}
                     placeholder="destinatario@exemplo.com"
                     autoComplete="off"
+                    maxLength={254}
+                    aria-invalid={!!testEmailError}
+                    aria-describedby={testEmailError ? "smtp-test-to-error" : undefined}
                   />
                   <Button
                     variant="outline"
-                    disabled={testingEmail || !testEmailTo.trim()}
+                    disabled={testingEmail || !testEmailValid}
                     onClick={handleTestEmail}
                   >
                     <Mail className="h-4 w-4 mr-1" />
                     {testingEmail ? "Enviando..." : "Enviar teste"}
                   </Button>
                 </div>
+                <FieldError msg={testEmailError} />
               </div>
             </>
           )}
