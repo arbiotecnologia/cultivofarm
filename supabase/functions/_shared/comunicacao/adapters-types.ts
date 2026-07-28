@@ -293,14 +293,15 @@ export function computeBackoffSeconds(
 
 /**
  * Classificação determinística de erro de provedor em outcome do adapter.
- * Regras:
- *  - timeout/abort → transient_error (retry)
- *  - rede/DNS/reset → transient_error
- *  - 5xx → permanent_error (o worker mesmo assim vai para pending até
- *    esgotar max_attempts; para 5xx transientes, o worker de retry ainda
- *    protege com backoff+jitter na DB)
- *  - 4xx → permanent_error (não faz sentido reenviar payload inválido)
- *  - qualquer outro → transient_error (fail-safe: prefere retentar)
+ * RFC 5321 §4.2.1:
+ *  - 4yz (Transient Negative Completion) → retentar (transient_error).
+ *    Inclui 421 (serviço indisponível), 450 (mailbox busy), 451 (erro local),
+ *    452 (armazenamento insuficiente), etc.
+ *  - 5yz (Permanent Negative Completion) → permanent_error. Não inventamos
+ *    exceções: se o provider quiser tratar algum 5xx como transitório, isso
+ *    exige documentação explícita antes de mudar esta função.
+ *  - timeout/abort e falhas de rede/DNS/reset/refused → transient_error.
+ *  - qualquer outro → transient_error (fail-safe: prefere retentar).
  */
 export type EmailErrorClass = "transient_error" | "permanent_error";
 export function classifyEmailError(message: string): { outcome: EmailErrorClass; code: string } {
@@ -310,8 +311,9 @@ export function classifyEmailError(message: string): { outcome: EmailErrorClass;
     return { outcome: "transient_error", code: "email_network_error" };
   }
   if (/\b5\d\d\b/.test(msg)) return { outcome: "permanent_error", code: "email_smtp_5xx" };
-  if (/\b4\d\d\b/.test(msg)) return { outcome: "permanent_error", code: "email_smtp_4xx" };
+  if (/\b4\d\d\b/.test(msg)) return { outcome: "transient_error", code: "email_smtp_4xx" };
   return { outcome: "transient_error", code: "email_unknown_error" };
 }
+
 
 
