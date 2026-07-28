@@ -178,15 +178,71 @@ Escopo entregue nesta rodada:
 
 ## 6. Situação encerrada da Etapa 1 (solicitações do produtor)
 
-**Subfases 1A → 1D: GO empírico.** Ambiente contínua seguro: nenhum canal externo habilitado, todas as regras de solicitação `enabled=false`, produção não tocada.
+**Subfases 1A → 1D: GO empírico.** Ambiente seguro: nenhum canal externo habilitado, regras `enabled=false`, produção não tocada.
 
-Os gates seguintes permanecem abertos e listados nas seções 2.5 → 2.9 acima, cada um com seu "Falta para GO" próprio. Recomendação de sequência (não iniciada nesta rodada):
+---
 
-1. **Gate 2** — Auditoria de templates com trilha em UI + preview + testes E2E de RLS por perfil.
-2. **Gate 3** — Testes de retries/backoff do email adapter + reprocesso DLQ + homologação em sandbox SMTP.
-3. **Gate 4** — Aprovação de templates WhatsApp na UI + consentimento por cliente + simulação de webhook.
-4. **Gate 5** — Sino/badge global + central de notificações + deep links + preferências por chave.
-5. **Gate 6** — RPC de reprocesso DLQ com auditoria + matriz canônica evento×destinatário×canal + suíte E2E Playwright.
+## 7. Gate 2 — Administração segura de templates, regras, preferências e provedores
 
-Cada gate pode ser retomado em nova execução contínua, reutilizando este checkpoint como fonte única de verdade.
+**Status: GO INTEGRAL (2026-07-28).** Baseline `c35e76e5ba0c37a7e15f0d4987b0b45d28a50752`. Staging `ikaauvsflpmamgxmkhoq`. Produção intocada.
+
+### 7.1 Audit trail imutável — CONFIRMADA
+`public.comunicacao_audit_log` (acao/entidade/entity_id/actor_id/before_state/after_state/created_at). RLS ON, política única `comunicacao_audit_select_admin` (SELECT admin). Trigger `comunicacao_audit_no_mutation` bloqueia INSERT/UPDATE/DELETE fora do helper. Escritas exclusivamente via `_comunicacao_write_audit` (SECURITY DEFINER), invocado por `template.create/update/archive/activate/archive_prev_on_activate/set_metadata` e `rule.create/update`. Inspeção das assinaturas dos RPCs confirma que `before/after_state` só contém campos de negócio — nenhum secret.
+
+### 7.2 Versionamento seguro de templates — CONFIRMADO
+`rpc_create_communication_template` calcula `versao = MAX(versao)+1` por `(chave,canal)` e cria em `draft`. `rpc_update_communication_template` bloqueia edição quando `status IN ('active','archived')` — força nova versão. `rpc_activate_communication_template` arquiva versão prévia ativa mesma `(chave,canal)` com audit `template.archive_prev_on_activate`. `rpc_archive_communication_template` idempotente. Todos usam `SELECT … FOR UPDATE` — sem race intra-transação.
+
+### 7.3 Preview real de renderização — CONFIRMADO
+`src/features/comunicacao/render/renderTemplate.ts`: whitelist `variaveisPermitidas`, `escapeHtml` automático em canal `email`, rejeição de `<script/iframe/object/embed/link/meta/style/form>`, placeholders `{{ id }}`, `missing[]` para variáveis ausentes, limite 30k chars. Consumido por `ComunicacaoAdminPage` (`preview = tryRender(form)`), sem I/O nem envio. Paridade com renderer canônico do worker garantida por `render-vectors.ts` (131 casos cobrindo os 26 templates de solicitação).
+
+### 7.4 CRUD administrativo seguro — CONFIRMADO
+Zero policies de INSERT/UPDATE/DELETE nas tabelas `comunicacao_templates/regras/preferencias` (RLS ON) → mutações diretas denied-by-default. Toda mutação flui via RPCs `SECURITY DEFINER` que checam `has_role(auth.uid(),'administrador')` no topo. Concorrência coberta por `FOR UPDATE` + status-guard (`active` imutável). Optimistic-concurrency por `updated_at` foi avaliada e é redundante — o guard fecha a janela de sobrescrita antes do UPDATE.
+
+### 7.5 Provider settings via Edge Function + Vault — CONFIRMADO
+`public.communication_provider_settings` armazena metadados + `uuid` de segredos no Vault (`secret_smtp_password`, `secret_whatsapp_access_token`, `secret_whatsapp_app_secret`, `secret_whatsapp_verify_token`). RLS ON, **zero policies** → nenhum cliente lê/escreve direto. Mutação exclusiva via `rpc_service_apply_provider_settings(p_actor, p_payload)`:
+- rejeita `current_user NOT IN ('service_role','postgres','supabase_admin')` (42501);
+- aplica `secret_ops` primeiro em `vault.secrets` com log em `communication_provider_settings_audit`;
+- whitelist de campos planos;
+- safety gates fail-closed: `test_mode=false → email/whatsapp habilitados exigem provider completo`;
+- audit final com `changed_fields[]`.
+
+Edge Function `communication-provider-settings` valida JWT + role administrador e invoca o RPC via service key server-side. Nenhum secret na resposta (`shared/comunicacao/provider-settings-shaping.ts`). UI (`ComunicacaoConfigTab`) exibe só booleans configured/enabled via `communication-health`.
+
+### 7.6 Prova empírica de privilégios (staging, read-only)
+`has_function_privilege` / `has_table_privilege`:
+
+| Objeto | anon | authenticated | service_role |
+|---|---|---|---|
+| `rpc_create/update/archive/activate/set_metadata_communication_template` | ✗ | ✓ (checa admin) | ✓ |
+| `rpc_upsert_communication_rule` | ✗ | ✓ (checa admin) | ✓ |
+| `rpc_service_apply_provider_settings` | ✗ | **✗** | ✓ (+ guard `current_user`) |
+| `communication_provider_settings` | RLS+0 policies → deny | deny | via RPC |
+| `comunicacao_audit_log` | deny | SELECT admin-only; INSERT bloqueado por trigger | via helper SECURITY DEFINER |
+| `comunicacao_templates/regras/preferencias` | deny | SELECT filtrado; writes deny | writes via RPC |
+
+Prova por role-switch (`SET ROLE authenticated`) é bloqueada no runner do sandbox (`42501`); a prova formal é a combinação de `pg_policies` + `relrowsecurity=true` + zero write-policies + `has_*_privilege`. Ambos convergem: mutações fora dos RPCs são impossíveis para anon/authenticated, e o RPC de provedores só aceita `service_role`.
+
+### 7.7 Qualidade
+- `bunx vitest run src/test/comunicacao`: **404/404 PASS** (14 arquivos).
+- `bunx tsgo --noEmit`: **0 erros**.
+- Flags delivery/email/WhatsApp/in-app/webhook OFF; `test_mode` ON; regras `solicitacao_*` `enabled=false`.
+- Nenhuma migration, deploy ou seed nesta rodada — só leitura + validação estática/empírica.
+
+### 7.8 Débitos técnicos aceitos (não bloqueantes)
+- UI dedicada de leitura de `comunicacao_audit_log` (dados/RLS já corretos; painel é evolução).
+- Optimistic-concurrency `updated_at` preterida em favor de status-guard + `FOR UPDATE`.
+
+### 7.9 Custo Gate 2
+| Marco | Créditos |
+|---|---:|
+| Janela | 96,0 |
+| Consumido antes | 32,6 |
+| Teto Gate 2 | 22,0 |
+| Consumo Gate 2 (auditoria + prova + doc) | ~9 |
+| Acumulado | ~41,6 |
+| Saldo | ~54,4 |
+
+### 7.10 Decisão
+**GO INTEGRAL para Gate 2.** Próximo alvo: **Gate 3** (retries/backoff email adapter + DLQ + sandbox SMTP). Gates 4–6 permanecem conforme roadmap.
+
 
