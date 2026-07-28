@@ -26,6 +26,7 @@ import {
   type SmtpFieldErrors,
   type WhatsappFieldErrors,
 } from "./comunicacaoValidation";
+import { useAuth } from "@/hooks/useAuth";
 
 type ProviderView = {
   ok: boolean;
@@ -207,9 +208,13 @@ function Chip({ children }: { children: React.ReactNode }) {
 }
 
 export default function ComunicacaoConfigTab() {
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("administrador");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<ProviderView | null>(null);
+  const [testEmailTo, setTestEmailTo] = useState("");
+  const [testingEmail, setTestingEmail] = useState(false);
 
   // Editable state
   const [emailsText, setEmailsText] = useState("");
@@ -328,6 +333,52 @@ export default function ComunicacaoConfigTab() {
       "Provedor de e-mail salvo",
       desc,
     );
+  }
+
+  async function handleTestEmail() {
+    const to = testEmailTo.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      toast.error("Informe um e-mail válido", { description: "Ex.: destinatario@exemplo.com" });
+      return;
+    }
+    setTestingEmail(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        toast.error("Sessão expirada", { description: "Faça login novamente como administrador." });
+        return;
+      }
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-communication-email`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+        },
+        body: JSON.stringify({ to, subject: "Teste SMTP AR Bio", message: "E-mail de teste enviado pela aba Comunicação." }),
+      });
+      const raw = await resp.text();
+      let parsed: Record<string, unknown> = {};
+      try { parsed = raw ? JSON.parse(raw) : {}; } catch { /* ignore */ }
+      if (resp.ok && parsed.ok) {
+        toast.success("E-mail de teste enviado", {
+          description: `Entregue via ${parsed.host}:${parsed.port} em ${parsed.elapsed_ms}ms. Verifique caixa de entrada e spam.`,
+        });
+      } else {
+        const detail = typeof parsed.detail === "string" ? parsed.detail : raw.slice(0, 300);
+        toast.error(`Falha no envio (HTTP ${resp.status})`, {
+          description: `${parsed.error ?? "erro_desconhecido"}${detail ? ` — ${detail}` : ""}`,
+        });
+        console.error("[test-email] falha", { status: resp.status, body: parsed || raw });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Erro de rede ao testar SMTP", { description: msg });
+    } finally {
+      setTestingEmail(false);
+    }
   }
 
   function handleSaveWhatsapp() {
@@ -653,6 +704,38 @@ export default function ComunicacaoConfigTab() {
           <Button disabled={saving} onClick={handleSaveSmtp}>
             <Save className="h-4 w-4 mr-1" />Salvar provedor de e-mail
           </Button>
+
+          {isAdmin && view.smtp.password_configured && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <Label htmlFor="smtp-test-to" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />Enviar e-mail de teste
+                </Label>
+                <FieldHint>
+                  Ignora a fila e as flags de entrega. Usa as credenciais SMTP salvas para enviar um e-mail sintético diretamente do servidor. Restrito a administradores.
+                </FieldHint>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    id="smtp-test-to"
+                    type="email"
+                    value={testEmailTo}
+                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    placeholder="destinatario@exemplo.com"
+                    autoComplete="off"
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={testingEmail || !testEmailTo.trim()}
+                    onClick={handleTestEmail}
+                  >
+                    <Mail className="h-4 w-4 mr-1" />
+                    {testingEmail ? "Enviando..." : "Enviar teste"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
