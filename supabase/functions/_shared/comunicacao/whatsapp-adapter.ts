@@ -21,6 +21,31 @@ import { isRecipientAllowedInTestMode, isWhatsappConfigValid } from "./adapters-
 const SEND_TIMEOUT_DEFAULT_MS = 15_000;
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
+/**
+ * Classificador PURO do resultado HTTP do envio de template WhatsApp Cloud API.
+ * - 429 → transient (rate limit)
+ * - 5xx → transient (Meta indisponível)
+ * - 401/403 → permanent (credencial inválida / conta suspensa)
+ * - 404 → permanent (template ou phone-number-id inexistente)
+ * - 400 e outros 4xx → permanent (payload/template/param inválidos)
+ * Nunca inclui token/body; usa apenas `error.code` e `error.type` do Meta.
+ */
+export function classifyWhatsappHttpError(
+  status: number,
+  metaError?: { code?: number | string; type?: string } | null,
+): { outcome: "transient_error" | "permanent_error"; code: string; message: string } {
+  const safe = metaError
+    ? `code=${metaError.code ?? "?"} type=${metaError.type ?? "?"}`
+    : `HTTP ${status}`;
+  if (status === 429) return { outcome: "transient_error", code: "whatsapp_rate_limited", message: `HTTP 429` };
+  if (status >= 500) return { outcome: "transient_error", code: "whatsapp_5xx", message: `HTTP ${status}` };
+  if (status === 401 || status === 403) return { outcome: "permanent_error", code: "whatsapp_auth", message: safe };
+  if (status === 404) return { outcome: "permanent_error", code: "whatsapp_not_found", message: safe };
+  if (status === 400) return { outcome: "permanent_error", code: "whatsapp_bad_request", message: safe };
+  return { outcome: "permanent_error", code: `whatsapp_${status}`, message: safe };
+}
+
+
 export async function sendWhatsapp(
   env: WorkerEnv,
   resolved: ResolvedAddress,
