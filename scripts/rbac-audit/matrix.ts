@@ -199,6 +199,8 @@ export const LANCAMENTO_PROBES: LancamentoProbe[] = [
     route: "/portal-parceiro/pedidos",
     payload: { partner_id: FAKE_UUID },
     altWriteRoutes: ["/portal-parceiro/novo", "/comercial/pedidos-b2b"],
-    expectedRoles: ["administrador", "gestor_comercial", "parceiro_b2b", "parceiro_b2b_tecnico"],
+    // parceiro_b2b_tecnico NÃO cria pedido (apenas acompanha) — a UI e o banco
+    // devem concordar em bloqueá-lo.
+    expectedRoles: ["administrador", "gestor_comercial", "parceiro_b2b"],
   },
 ];
