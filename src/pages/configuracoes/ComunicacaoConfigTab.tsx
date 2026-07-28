@@ -335,6 +335,52 @@ export default function ComunicacaoConfigTab() {
     );
   }
 
+  async function handleTestEmail() {
+    const to = testEmailTo.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      toast.error("Informe um e-mail válido", { description: "Ex.: destinatario@exemplo.com" });
+      return;
+    }
+    setTestingEmail(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        toast.error("Sessão expirada", { description: "Faça login novamente como administrador." });
+        return;
+      }
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-communication-email`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+        },
+        body: JSON.stringify({ to, subject: "Teste SMTP AR Bio", message: "E-mail de teste enviado pela aba Comunicação." }),
+      });
+      const raw = await resp.text();
+      let parsed: Record<string, unknown> = {};
+      try { parsed = raw ? JSON.parse(raw) : {}; } catch { /* ignore */ }
+      if (resp.ok && parsed.ok) {
+        toast.success("E-mail de teste enviado", {
+          description: `Entregue via ${parsed.host}:${parsed.port} em ${parsed.elapsed_ms}ms. Verifique caixa de entrada e spam.`,
+        });
+      } else {
+        const detail = typeof parsed.detail === "string" ? parsed.detail : raw.slice(0, 300);
+        toast.error(`Falha no envio (HTTP ${resp.status})`, {
+          description: `${parsed.error ?? "erro_desconhecido"}${detail ? ` — ${detail}` : ""}`,
+        });
+        console.error("[test-email] falha", { status: resp.status, body: parsed || raw });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Erro de rede ao testar SMTP", { description: msg });
+    } finally {
+      setTestingEmail(false);
+    }
+  }
+
   function handleSaveWhatsapp() {
     if (!view) return;
     const schema = whatsappSchemaFor(view.whatsapp.allowed_api_versions);
