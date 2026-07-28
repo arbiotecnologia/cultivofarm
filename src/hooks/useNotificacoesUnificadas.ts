@@ -242,22 +242,24 @@ export function parseCompositeId(
 export function dedupAndSort(items: NotificacaoUnificada[]): NotificacaoUnificada[] {
   const seen = new Map<string, NotificacaoUnificada>();
   for (const it of items) {
-    // Dedup por (origem, tipo, titulo, mensagem) dentro de janela de 5s
     const bucket = `${it.origem}|${it.tipo}|${it.titulo}|${it.mensagem ?? ""}|${
       Math.floor(new Date(it.created_at).getTime() / 5000)
     }`;
     const existing = seen.get(bucket);
     if (!existing) {
       seen.set(bucket, it);
-    } else {
-      // Preserva o mais recente e a versão "não lida" quando houver dúvida.
-      const preferNew =
-        new Date(it.created_at).getTime() > new Date(existing.created_at).getTime() ||
-        (!it.lido && existing.lido);
-      if (preferNew) seen.set(bucket, it);
+      continue;
+    }
+    // Regras: preservar não-lido sempre; em empate, preferir o mais recente.
+    if (!it.lido && existing.lido) {
+      seen.set(bucket, it);
+    } else if (it.lido === existing.lido) {
+      const newer = new Date(it.created_at).getTime() > new Date(existing.created_at).getTime();
+      if (newer) seen.set(bucket, it);
     }
   }
   return Array.from(seen.values()).sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 }
+

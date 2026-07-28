@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 /**
@@ -65,19 +65,16 @@ describe("Gate 4 UI · painel de templates WhatsApp", () => {
   });
 });
 
-describe("Gate 4 · migration admin de consentimento existe", () => {
-  const dir = readdirSync(path.join(process.cwd(), "supabase/migrations"));
-  const match = dir.find((f) => /gate4_whatsapp_consent/.test(f));
-  it("migration presente", () => {
-    expect(match).toBeTruthy();
-  });
+describe("Gate 4 · snapshot documental da RPC admin de consentimento", () => {
+  const p = path.join(process.cwd(), "restoration/comunicacao-gate4/rpc_admin_set_whatsapp_consent.sql");
+  const sql = readFileSync(p, "utf8");
   it("RPC restrita a administrador e revoga público/anon", () => {
-    if (!match) throw new Error("migration ausente");
-    const sql = readFileSync(path.join(process.cwd(), "supabase/migrations", match), "utf8");
     expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.rpc_admin_set_whatsapp_consent/);
     expect(sql).toMatch(/SECURITY DEFINER/);
     expect(sql).toMatch(/has_role\([^,]+,\s*'administrador'/);
     expect(sql).toMatch(/REVOKE ALL[\s\S]{0,120}FROM PUBLIC/i);
     expect(sql).toMatch(/REVOKE ALL[\s\S]{0,120}anon/);
+    expect(sql).toMatch(/GRANT EXECUTE[\s\S]{0,120}authenticated/);
   });
 });
+

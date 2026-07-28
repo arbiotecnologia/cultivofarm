@@ -160,9 +160,10 @@ describe("Fase 2.3 · worker: terminação estruturada e HTTP 500 sem PII", () =
 describe("Fase 2.3 · UI: gestor sem Fila, editor de metadados WhatsApp", () => {
   it("gestor não recebe a aba 'fila'", () => {
     expect(uiSrc).toMatch(
-      /isAdmin[\s\S]{0,80}\?\s*\[\s*"templates","regras","fila","preferencias"\s*\][\s\S]{0,80}:\s*\[\s*"templates","regras","preferencias"\s*\]/,
+      /isAdmin[\s\S]{0,120}\?\s*\[\s*"templates","regras","fila","preferencias"(?:,"consentimentos")?\s*\][\s\S]{0,80}:\s*\[\s*"templates","regras","preferencias"\s*\]/,
     );
   });
+
 
   it("editor WhatsApp existe e valida approved requer nome+language+mapping", () => {
     expect(uiSrc).toMatch(/function WhatsappTemplateMetadataEditor/);
