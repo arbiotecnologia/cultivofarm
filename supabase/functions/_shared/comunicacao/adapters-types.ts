@@ -245,3 +245,73 @@ export function isRecipientAllowedInTestMode(
   return { allowed: true };
 }
 
+// ---------------------------------------------------------------------------
+// Gate 3 — Helpers puros para e-mail e política de retry (auditáveis, testáveis).
+// ---------------------------------------------------------------------------
+
+/** Limite máx. do corpo do e-mail (10 MiB — evita abuso e explosão de memória). */
+export const MAX_EMAIL_BODY_BYTES = 10 * 1024 * 1024;
+/** Limite RFC 5322 razoável para assunto renderizado. */
+export const MAX_EMAIL_SUBJECT_LEN = 300;
+/** Limite RFC 5321 para endereços. */
+export const MAX_EMAIL_ADDRESS_LEN = 320;
+
+/**
+ * Detecta CR/LF/NUL — vetor clássico de header injection SMTP.
+ * Fail-closed: qualquer sequência com \r, \n ou \0 é considerada inválida.
+ */
+export function hasHeaderInjection(value: string | null | undefined): boolean {
+  if (value == null) return false;
+  return /[\r\n\0]/.test(String(value));
+}
+
+/** Tamanho em bytes de uma string UTF-8. */
+export function utf8ByteLength(input: string): number {
+  // TextEncoder está disponível tanto em Deno quanto em Node/jsdom.
+  return new TextEncoder().encode(input ?? "").length;
+}
+
+/**
+ * Backoff exponencial determinístico com jitter simétrico ±20%.
+ * Espelha exatamente a lógica de `rpc_fail_communication_delivery_v2`
+ * (base = 30s, capa em 3600s). `jitter01` deve estar em [0,1); use
+ * `Math.random()` em produção e valores fixos em testes.
+ */
+export function computeBackoffSeconds(
+  attempts: number,
+  jitter01: number,
+  baseSeconds = 30,
+  capSeconds = 3600,
+): number {
+  const safeAttempts = Math.max(0, Math.floor(attempts));
+  const exp = Math.pow(2, Math.max(0, safeAttempts - 1));
+  const base = Math.max(1, Math.min(capSeconds, Math.floor(baseSeconds * exp)));
+  const j = Math.max(0, Math.min(0.999999, jitter01));
+  const jittered = Math.floor(base * (0.8 + 0.4 * j));
+  return Math.max(1, Math.min(capSeconds, jittered));
+}
+
+/**
+ * Classificação determinística de erro de provedor em outcome do adapter.
+ * Regras:
+ *  - timeout/abort → transient_error (retry)
+ *  - rede/DNS/reset → transient_error
+ *  - 5xx → permanent_error (o worker mesmo assim vai para pending até
+ *    esgotar max_attempts; para 5xx transientes, o worker de retry ainda
+ *    protege com backoff+jitter na DB)
+ *  - 4xx → permanent_error (não faz sentido reenviar payload inválido)
+ *  - qualquer outro → transient_error (fail-safe: prefere retentar)
+ */
+export type EmailErrorClass = "transient_error" | "permanent_error";
+export function classifyEmailError(message: string): { outcome: EmailErrorClass; code: string } {
+  const msg = String(message ?? "").slice(0, 500);
+  if (/timeout|abort/i.test(msg)) return { outcome: "transient_error", code: "email_timeout" };
+  if (/ECONN|EHOST|dns|network|reset|refused/i.test(msg)) {
+    return { outcome: "transient_error", code: "email_network_error" };
+  }
+  if (/\b5\d\d\b/.test(msg)) return { outcome: "permanent_error", code: "email_smtp_5xx" };
+  if (/\b4\d\d\b/.test(msg)) return { outcome: "permanent_error", code: "email_smtp_4xx" };
+  return { outcome: "transient_error", code: "email_unknown_error" };
+}
+
+

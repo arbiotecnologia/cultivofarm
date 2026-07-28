@@ -14554,6 +14554,7 @@ export type Database = {
         }
         Returns: Json
       }
+      _comunicacao_require_admin: { Args: never; Returns: undefined }
       _comunicacao_resolve_recipients: {
         Args: {
           _event_key: string
@@ -15624,6 +15625,32 @@ export type Database = {
       }
       rpc_activate_communication_template: {
         Args: { p_template_id: string }
+        Returns: Json
+      }
+      rpc_admin_communication_outbox_metrics: { Args: never; Returns: Json }
+      rpc_admin_list_communication_dead_letter: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          attempts: number
+          canal: Database["public"]["Enums"]["comunicacao_canal"]
+          created_at: string
+          error_code: string
+          error_message: string
+          id: string
+          max_attempts: number
+          recipient_cliente_id: string
+          recipient_user_id: string
+          template_chave: string
+          template_versao: number
+          updated_at: string
+        }[]
+      }
+      rpc_admin_replay_communication_dead_letter: {
+        Args: { p_outbox_id: string }
+        Returns: Json
+      }
+      rpc_admin_replay_communication_dead_letter_batch: {
+        Args: { p_limit?: number }
         Returns: Json
       }
       rpc_anexar_comprovante_entrega: {

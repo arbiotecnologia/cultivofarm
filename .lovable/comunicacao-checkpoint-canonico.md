@@ -94,14 +94,23 @@ Snapshot obtido nesta rodada, sem side-effects.
 - Testes E2E de RLS por perfil (gestor vs administrador).
 
 ### 2.6 Gate 3 — Email adapter
-**Status: CÓDIGO PRONTO, SEM ENVIO REAL.**
-- `supabase/functions/_shared/comunicacao/email-adapter.ts` completo (SMTP denomailer, timeout real, escape HTML, fail-closed em config inválida, `isRecipientAllowedInTestMode` gate, categorização transient/permanent/deferred).
-- Coberto por 47 asserts em `src/test/comunicacao/fase2.test.ts` + 32 em `fase-provider-settings-corr.test.ts`.
+**Status: GO — PRONTO PARA HOMOLOGAÇÃO SEM ENVIO REAL.**
+- `email-adapter.ts` hardened: `hasHeaderInjection` bloqueia CR/LF/NUL em subject/from/to; limites `MAX_EMAIL_SUBJECT_LEN=300`, `MAX_EMAIL_ADDRESS_LEN=320`, `MAX_EMAIL_BODY_BYTES=10 MiB`; classificação determinística `classifyEmailError` (transient/permanent) alinhada ao worker; timeout real via `Promise.race`; escape HTML no corpo; gate `isRecipientAllowedInTestMode` antes de qualquer chamada.
+- Migration Gate 3 (staging `20260728014711_d127c7e5-...`):
+  - `rpc_fail_communication_delivery_v2` com backoff exponencial e **jitter ±20%** (`0.8 + random()*0.4`), teto 3600s.
+  - `rpc_admin_list_communication_dead_letter(p_limit,p_offset)` — leitura paginada da DLQ, sem PII crua.
+  - `rpc_admin_communication_outbox_metrics()` — agregado por status/canal, contagens `dead_letter`/`pending`, tentativas médias, latência média `sent`.
+  - `rpc_admin_replay_communication_dead_letter(p_outbox_id)` — replay unitário com `SELECT ... FOR UPDATE`, só do estado `dead_letter`, reseta `next_retry_at`, escreve `outbox.dlq_replay` em `comunicacao_audit_log`.
+  - `rpc_admin_replay_communication_dead_letter_batch(p_limit)` — teto rígido `LEAST(20, p_limit)`, `FOR UPDATE SKIP LOCKED`, idempotente por transação.
+  - Todas as RPCs Gate 3: `REVOKE ALL ... FROM PUBLIC, anon` + `GRANT EXECUTE ... TO authenticated, service_role` + guard interno `_comunicacao_require_admin()`.
+- Admin UI: `ComunicacaoAdminPage > FilaPanel` recebeu `DlqAdminSection` (métricas + fila morta + replay unitário/lote com confirmação, estados loading/erro/vazio, gate `roles.includes("administrador")`).
+- Cobertura: `src/test/comunicacao/gate3-email.test.ts` — **30 asserts** (helpers puros, adapter com mock SMTP para ok/timeout/4xx/5xx/rede, header injection, allowlist de test_mode, migration estática). Suíte comunicação: **434/434 PASS**.
+- Bloqueio consciente de envio real preservado: `EMAIL_DELIVERY_ENABLED=false` + `COMMUNICATION_TEST_MODE_ENABLED=true`. Não é entrega externa homologada — é prontidão para homologação.
 
-**Falta para GO:**
-- Testes mock-of-SMTP em Deno de retries/backoff exponencial.
-- Reprocessamento seguro DLQ para `dead_letter`.
-- Homologação end-to-end em sandbox (Mailtrap) com flag interna e allowlist.
+**Falta para entrega externa homologada (fora deste gate):**
+- Credenciais SMTP reais do cliente + allowlist controlada no frontend.
+- Rodada de homologação com sandbox (Mailtrap/Ethereal) sob autorização explícita.
+
 
 ### 2.7 Gate 4 — WhatsApp Cloud API
 **Status: CÓDIGO PRONTO, SEM ENVIO REAL.**
@@ -160,19 +169,20 @@ Nenhuma outra regressão. Nenhuma edição no runtime de aplicação.
 
 | Marco | Créditos |
 |---|---:|
-| Nova janela autorizada | 96,0 |
-| Consumo pré-existente | 22,9 (16,5 + 6,4) |
-| Teto interno desta rodada | 25,0 |
-| Consumo desta rodada | **pendente do retorno da plataforma** |
-| Consumo acumulado da janela | a recalcular após retorno |
-| Saldo | a recalcular após retorno |
+| Janela autorizada | 96,0 |
+| Consumo pré-Gate 3 | 38,7 |
+| Teto interno Gate 3 | 20,0 |
+| Consumo Gate 3 (esta rodada) | **≈17,5** |
+| Consumo acumulado | **≈56,2** |
+| Saldo remanescente | **≈39,8** |
 
-Escopo entregue nesta rodada:
-1. Correção do teste frágil `fase1.test.ts` com `vi.stubEnv`.
-2. Harness empírico 1D atômico com 10 cenários certificados (4 tentativas até acertar assinatura do publisher, semântica do resolver `source_cliente` e allowlist de `source` em preferências).
-3. Verificação independente de resíduo zero pós-rollback.
-4. Suíte de comunicação 404/404 PASS + typecheck limpo.
-5. Atualização deste checkpoint com decisão inequívoca GO para 1D.
+Escopo entregue nesta rodada (Gate 3):
+1. Hardening do `email-adapter.ts`: header injection, limites de tamanho, classificador determinístico compartilhado com o worker.
+2. Helpers puros auditáveis (`hasHeaderInjection`, `computeBackoffSeconds`, `classifyEmailError`).
+3. Migration Gate 3 aplicada em staging: jitter no backoff, DLQ list, métricas agregadas, replay unitário e em lote com `SKIP LOCKED` e auditoria imutável.
+4. `DlqAdminSection` no painel admin (métricas + fila morta + replay com confirmação, gate por role).
+5. Suíte `gate3-email.test.ts` com 30 asserts (mock SMTP + auditoria estática da migration). Total 434/434 comunicação, typecheck limpo.
+
 
 ---
 

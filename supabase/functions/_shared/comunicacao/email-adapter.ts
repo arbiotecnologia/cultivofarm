@@ -12,7 +12,17 @@ import type {
   SmtpLikeClient,
   WorkerEnv,
 } from "./adapters-types.ts";
-import { escapeHtml, isRecipientAllowedInTestMode, isSmtpConfigValid } from "./adapters-types.ts";
+import {
+  classifyEmailError,
+  escapeHtml,
+  hasHeaderInjection,
+  isRecipientAllowedInTestMode,
+  isSmtpConfigValid,
+  MAX_EMAIL_ADDRESS_LEN,
+  MAX_EMAIL_BODY_BYTES,
+  MAX_EMAIL_SUBJECT_LEN,
+  utf8ByteLength,
+} from "./adapters-types.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 20_000;
 
@@ -56,6 +66,25 @@ export async function sendEmail(
   if (!subject) {
     return { outcome: "permanent_error", code: "email_missing_subject", message: "assunto obrigatório" };
   }
+  if (subject.length > MAX_EMAIL_SUBJECT_LEN) {
+    return { outcome: "permanent_error", code: "email_subject_too_long", message: `>${MAX_EMAIL_SUBJECT_LEN}` };
+  }
+  // Header injection: CR/LF/NUL em assunto, from ou to → bloqueio imediato.
+  if (hasHeaderInjection(subject)) {
+    return { outcome: "permanent_error", code: "email_header_injection_subject", message: "CR/LF em assunto" };
+  }
+  if (hasHeaderInjection(env.SMTP_FROM ?? "")) {
+    return { outcome: "permanent_error", code: "email_header_injection_from", message: "CR/LF em from" };
+  }
+  if (hasHeaderInjection(resolved.address)) {
+    return { outcome: "invalid_recipient", code: "email_header_injection_to", message: "CR/LF em to" };
+  }
+  if ((resolved.address ?? "").length > MAX_EMAIL_ADDRESS_LEN) {
+    return { outcome: "invalid_recipient", code: "email_address_too_long", message: `>${MAX_EMAIL_ADDRESS_LEN}` };
+  }
+  if (utf8ByteLength(rendered.corpo) > MAX_EMAIL_BODY_BYTES) {
+    return { outcome: "permanent_error", code: "email_body_too_large", message: `>${MAX_EMAIL_BODY_BYTES}` };
+  }
 
   const timeoutMs = deps.timeoutMs ?? SEND_TIMEOUT_DEFAULT_MS;
   const factory = deps.smtpClientFactory ?? defaultSmtpClientFactory;
@@ -95,16 +124,8 @@ export async function sendEmail(
     return { outcome: "sent", code: "sent", message: "ok", provider_message_id: null };
   } catch (e) {
     const msg = String((e as Error)?.message ?? e).slice(0, 500);
-    if (/timeout/i.test(msg) || /abort/i.test(msg)) {
-      return { outcome: "transient_error", code: "email_timeout", message: msg };
-    }
-    if (/ECONN|EHOST|dns|network|reset/i.test(msg)) {
-      return { outcome: "transient_error", code: "email_network_error", message: msg };
-    }
-    if (/5\d\d/.test(msg)) {
-      return { outcome: "permanent_error", code: "email_smtp_5xx", message: msg };
-    }
-    return { outcome: "transient_error", code: "email_unknown_error", message: msg };
+    const cls = classifyEmailError(msg);
+    return { outcome: cls.outcome, code: cls.code, message: msg };
   } finally {
     if (client) {
       try { await client.close(); } catch { /* ignore */ }
