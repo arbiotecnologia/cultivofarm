@@ -138,42 +138,47 @@ Snapshot obtido nesta rodada, sem side-effects.
 - **Deploy nesta rodada**: `process-communication-outbox` reimplantado em staging carregando o adapter com o classificador novo. Nenhum outro deploy necessário (webhook não mudou). Nenhuma invocação de envio.
 - **Estado seguro reconfirmado**: `communication_provider_settings` no staging — `delivery_enabled=false`, `email_delivery_enabled=false`, `whatsapp_delivery_enabled=false`, `inapp_delivery_enabled=false`, `whatsapp_webhook_enabled=false`, `test_mode_enabled=true`. Produção `navfzbwgwzruipouyfnk` intocada.
 
+**UI administrativa Gate 4 — entregue nesta rodada:**
+- Nova aba **Consentimentos WhatsApp** (exclusiva admin) em `ComunicacaoAdminPage` — `src/features/comunicacao/ui/ConsentimentoWhatsappPanel.tsx`. Busca cliente por nome/CNPJ/CPF; mostra estado corrente (opt_in / opt_out / verified) a partir de `comunicacao_preferencias`; registra ação via `rpc_admin_set_whatsapp_consent` com origem obrigatória (≤60 chars) e justificativa (≤500 chars, mínimo 8 chars quando `opt_out`); confirmação e feedback toast; histórico ordenado por `created_at desc` a partir de `comunicacao_consent_log` (30 eventos); telefone sempre mascarado (só os 4 últimos dígitos são renderizados); estados loading/erro/vazio.
+- Painel de **templates WhatsApp** já expõe status draft/pending/approved/rejected/paused/disabled + nome/idioma/categoria/provider id/mapping via `WhatsappTemplateMetadataEditor`. Nesta rodada adicionamos aviso visual explícito de que a sincronização de status Meta é server-side e permanece **indisponível** enquanto o token WABA não estiver configurado. Zero referência a `access_token` na UI. Ativação segue barrada quando `provider_template_status !== 'approved'`.
+- Suíte estática `src/test/comunicacao/gate4-consent-ui.test.ts` (13 asserts) prova: uso obrigatório da RPC, ausência de mutação direta em `comunicacao_preferencias`/`comunicacao_consent_log`, mascaramento do telefone, exigência de justificativa em opt_out, gate `canMutate`, ordenação do histórico, presença da aba, gate `approved` e ausência de token. Snapshot documental idempotente da RPC em `restoration/comunicacao-gate4/rpc_admin_set_whatsapp_consent.sql` (não é executado por CI — auditoria estática; a RPC real já está deployada em staging, ACL empiricamente verificada `anon=false / authenticated=true / service_role=true`).
+
 **Falta para entrega externa homologada (fora deste gate):**
-- Credenciais Meta reais + WABA verificado; sincronização de status Meta → banco (poll ou webhook de template status) para popular `provider_template_status`.
-- UI administrativa expandida para gestão visual de opt-in/opt-out por cliente (a RPC já está pronta e segura).
+- Credenciais Meta reais + WABA verificado; sincronização de status Meta → banco.
 - Rodada de homologação com sandbox Meta sob autorização explícita.
 
 
 
 ### 2.8 Gate 5 — In-app realtime nos módulos
-**Status: BASE PRONTA, INTEGRAÇÃO NÃO COMEÇOU.**
-- Tabelas `portal_notificacoes`, `notificacoes_operacionais`, `comunicacao_inapp_dispatch` publicadas em `supabase_realtime`.
-- `inapp-adapter.ts` já grava nas duas primeiras conforme `target_kind`.
-- Hooks realtime existentes: `useAlertasRealtime`, `useNotificacoesOperacionais`, `useAlertasResumo` — usados em outros módulos.
-
-**Falta para GO:**
-- Sino/badge global consumindo os 3 canais unificados.
-- Central de notificações (lista, filtros por severidade, marcar lida individual/todas).
-- Deep links por evento (`/solicitacoes?focus=<id>`, `/app/checkin/<id>`, etc.).
-- Preferências por perfil (in_app on/off por chave de evento).
-- Isolamento RLS validado por perfil.
+**Status: GO — PRONTO PARA HOMOLOGAÇÃO SEM ENVIO EXTERNO.**
+- **Hook unificado** `src/hooks/useNotificacoesUnificadas.ts`: assina Realtime em `notificacoes_operacionais` (filtro `usuario_id=auth.uid`) e em `portal_notificacoes` (filtro `cliente_id={cliente do portal ativo}`) via `useEffect` com cleanup `supabase.removeChannel` (sem vazamento). Combina os dois streams com id composto `op:<uuid>` / `portal:<uuid>`, dedup por bucket `(origem,tipo,titulo,mensagem,janela 5s)` preservando não-lidas, e fallback de refetch a cada 120 s. Contador `unreadCount` isolado por usuário/cliente ativo — RLS já força escopo, o hook não emite `select *` global. `markRead` e `markAllRead` idempotentes por tabela.
+- **Sino/badge global** `src/components/notificacoes/NotificacoesPopover.tsx` (montado em `AppLayout`, presente em todos os layouts autenticados — admin, técnico/consultor, gestor, produção, financeiro, comercial, produtor/portal) agora consome o hook unificado, mostra os 8 mais recentes com badge de origem, oferece "Marcar todas" e link explícito para a central. Ao clicar em item com deep link, valida via allowlist e cai na central quando não autorizado.
+- **Central de notificações** `/notificacoes` (`src/pages/CentralNotificacoes.tsx`): lista paginada (20/página, até 200 combinados), filtros `todas | não lidas` e `todas | operacional | portal`, marcar individual/todas, refresh manual, estado vazio/erro/loading, badge de origem por item, severidade derivada do `tipo`. Responsivo.
+- **Deep-link allowlist** `src/lib/notificacoes/deepLinkAllowlist.ts`: rejeita esquemas (`http:`, `javascript:`, `mailto:`), protocol-relative (`//`), path traversal (`..`) e links não iniciados em `/`. Autoriza por prefixos internos mapeados por perfil (admin = wildcard; técnico/consultor = `/solicitacoes,/visita,/agenda,/fluxo-tecnico,/notificacoes,/clientes,/fazendas,/talhoes[/consultor]`; produtor = `/portal,/app,/notificacoes`; etc.). Falha → fallback obrigatório à central com toast.
+- **Preferências** continuam no painel `PreferenciasPanel` existente, gravadas em `comunicacao_preferencias` (RLS já força `user_id=auth.uid`); eventos administrativos críticos permanecem enforced pelo publisher server-side.
+- **RLS/isolamento** — reconfirmado via inspeção: `notificacoes_operacionais` tem 4 policies (`usuario_id = auth.uid` para SELECT/UPDATE); `portal_notificacoes` tem 4 policies (`can_user_access_cliente(cliente_id)` + admin). Nenhum hook novo tenta bypass. A central só lê o que o usuário já enxergaria por RLS.
+- **Cobertura** — `src/test/comunicacao/gate5-inapp.test.ts` (10 asserts) prova: rejeição de deep links maliciosos e path traversal; wildcard para admin; unauthorized + fallback à central para perfis restritos; autorização por prefixo; escopo estrito para `cliente_produtor`; `parseCompositeId` bem-formado; `dedupAndSort` preserva não-lida e ordena descendente por data sem colapsar eventos distintos. Suíte comunicação total: **482/482 PASS**, `bunx tsgo --noEmit` **0 erros**.
+- **Rota registrada** em `src/App.tsx`: `/notificacoes` renderiza `CentralNotificacoes` dentro do `AppLayout` autenticado.
+- **Sem migrations nesta rodada** (todas as tabelas, RLS e RPCs necessárias já estavam presentes desde Fases 0–2). Nenhum deploy de Edge Function necessário — trabalho de frontend + hook.
 
 ### 2.9 Gate 6 — Observabilidade / DLQ / homologação E2E
-**Status: PARCIAL.**
+**Status: PARCIAL.** (inalterado nesta rodada)
 - Health via `communication-health` edge function.
-- DLQ existe como status `dead_letter` no outbox; falta RPC de reprocesso seguro (`rpc_service_replay_dlq(p_outbox_id)` com auditoria e rate limit por operador).
+- DLQ existe como status `dead_letter` no outbox; falta RPC de reprocesso seguro com auditoria/rate limit por operador.
 - Falta matriz canônica `evento × destinatário × canal × origem × deep link` no repositório.
-- Falta suíte E2E Playwright de permissões por perfil no módulo de comunicação (apenas RBAC genérico existe em `e2e/rbac-admin-vs-nao-admin.spec.ts`).
+- Falta suíte E2E Playwright de permissões por perfil no módulo de comunicação.
 
 ---
 
 ## 3. Verificação de saúde da suíte (nesta rodada)
 
-`bunx vitest run src/test/comunicacao` nesta rodada: **404 tests PASS / 0 FAIL** (14 arquivos).
+`bunx vitest run src/test/comunicacao`: **482 tests PASS / 0 FAIL** (18 arquivos).
 `bunx tsgo --noEmit`: **0 erros**.
-Correção aplicada: `src/test/comunicacao/fase1.test.ts > flag padrão é false` agora usa `vi.stubEnv` + `vi.resetModules` para isolar o teste do `.env` do sandbox (que legitimamente mantém a flag ligada em dev). Nenhuma alteração funcional no `.env`.
+
+Correções acumuladas: `fase1.test.ts` isolamento via `vi.stubEnv`; `fase2.test.ts` alinhado ao classificador unificado (`whatsapp_auth`); `fase2-3-coerencia.test.ts` regex do array de abas relaxado para aceitar `"consentimentos"`; nova lógica de dedup preserva item não-lido no bucket.
 
 Nenhuma outra regressão. Nenhuma edição no runtime de aplicação.
+
 
 ---
 
