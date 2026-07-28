@@ -117,11 +117,16 @@ describe("gate3 helpers: classifyEmailError", () => {
   it("timeout → transient", () => {
     expect(classifyEmailError("email_send_timeout").outcome).toBe("transient_error");
   });
-  it("5xx → permanent", () => {
+  it("5xx → permanent (RFC 5321 Permanent Negative Completion)", () => {
     expect(classifyEmailError("SMTP responded 550").outcome).toBe("permanent_error");
+    expect(classifyEmailError("SMTP responded 550").code).toBe("email_smtp_5xx");
   });
-  it("4xx → permanent", () => {
-    expect(classifyEmailError("SMTP responded 421").outcome).toBe("permanent_error");
+  it("4xx → transient (RFC 5321 §4.2.1 Transient Negative Completion — 421/450/451/452)", () => {
+    for (const code of ["421", "450", "451", "452"]) {
+      const r = classifyEmailError(`SMTP responded ${code} try later`);
+      expect(r.outcome).toBe("transient_error");
+      expect(r.code).toBe("email_smtp_4xx");
+    }
   });
   it("network → transient", () => {
     expect(classifyEmailError("ECONNREFUSED").outcome).toBe("transient_error");
@@ -130,6 +135,7 @@ describe("gate3 helpers: classifyEmailError", () => {
     expect(classifyEmailError("weird error").outcome).toBe("transient_error");
   });
 });
+
 
 // ---------------- Email adapter com mocks ----------------
 
@@ -148,10 +154,10 @@ describe("gate3 email-adapter: caminhos com SMTP mock", () => {
     expect(r.code).toBe("email_smtp_5xx");
   });
 
-  it("SMTP 4xx → permanent_error (email_smtp_4xx)", async () => {
+  it("SMTP 4xx → transient_error (RFC 5321 §4.2.1, retry via worker)", async () => {
     const m = mockSmtp("smtp4xx");
     const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: m.factory });
-    expect(r.outcome).toBe("permanent_error");
+    expect(r.outcome).toBe("transient_error");
     expect(r.code).toBe("email_smtp_4xx");
   });
 
