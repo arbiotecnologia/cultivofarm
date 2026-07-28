@@ -169,19 +169,20 @@ Nenhuma outra regressão. Nenhuma edição no runtime de aplicação.
 
 | Marco | Créditos |
 |---|---:|
-| Nova janela autorizada | 96,0 |
-| Consumo pré-existente | 22,9 (16,5 + 6,4) |
-| Teto interno desta rodada | 25,0 |
-| Consumo desta rodada | **pendente do retorno da plataforma** |
-| Consumo acumulado da janela | a recalcular após retorno |
-| Saldo | a recalcular após retorno |
+| Janela autorizada | 96,0 |
+| Consumo pré-Gate 3 | 38,7 |
+| Teto interno Gate 3 | 20,0 |
+| Consumo Gate 3 (esta rodada) | **≈17,5** |
+| Consumo acumulado | **≈56,2** |
+| Saldo remanescente | **≈39,8** |
 
-Escopo entregue nesta rodada:
-1. Correção do teste frágil `fase1.test.ts` com `vi.stubEnv`.
-2. Harness empírico 1D atômico com 10 cenários certificados (4 tentativas até acertar assinatura do publisher, semântica do resolver `source_cliente` e allowlist de `source` em preferências).
-3. Verificação independente de resíduo zero pós-rollback.
-4. Suíte de comunicação 404/404 PASS + typecheck limpo.
-5. Atualização deste checkpoint com decisão inequívoca GO para 1D.
+Escopo entregue nesta rodada (Gate 3):
+1. Hardening do `email-adapter.ts`: header injection, limites de tamanho, classificador determinístico compartilhado com o worker.
+2. Helpers puros auditáveis (`hasHeaderInjection`, `computeBackoffSeconds`, `classifyEmailError`).
+3. Migration Gate 3 aplicada em staging: jitter no backoff, DLQ list, métricas agregadas, replay unitário e em lote com `SKIP LOCKED` e auditoria imutável.
+4. `DlqAdminSection` no painel admin (métricas + fila morta + replay com confirmação, gate por role).
+5. Suíte `gate3-email.test.ts` com 30 asserts (mock SMTP + auditoria estática da migration). Total 434/434 comunicação, typecheck limpo.
+
 
 ---
 
