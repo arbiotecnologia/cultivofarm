@@ -157,8 +157,9 @@ export async function sendWhatsapp(
       provider_message_id: messages[0]?.id ?? null,
     };
   }
-
-  if (res.status === 429) {
+  const err = (payload as { error?: { code?: number; message?: string; type?: string } })?.error ?? null;
+  return classifyWhatsappHttpError(res.status, err);
+}
     return { outcome: "transient_error", code: "whatsapp_rate_limited", message: `HTTP 429` };
   }
   if (res.status >= 500) {
