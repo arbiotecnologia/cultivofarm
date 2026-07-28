@@ -82,8 +82,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   unknown_error: "Erro inesperado. Tente novamente.",
 };
 
-function friendlyError(code: string): string {
-  return ERROR_MESSAGES[code] ?? code;
+function friendlyError(code: string, status?: number): string {
+  const base = ERROR_MESSAGES[code];
+  if (base) return base;
+  const prefix = status ? `HTTP ${status} · ` : "";
+  return `${prefix}${code || "erro desconhecido"} — verifique o console do navegador para detalhes.`;
 }
 
 const FLAG_LABELS: Record<string, { title: string; help: string }> = {
@@ -119,16 +122,29 @@ async function callSettings(method: "GET" | "PUT", body?: unknown): Promise<Prov
   const { data, error } = await supabase.functions.invoke("communication-provider-settings", {
     method,
     body: body ?? undefined,
+    headers: { "Content-Type": "application/json" },
   });
   if (error) {
-    const ctxBody = (error as unknown as { context?: { body?: unknown } })?.context?.body;
+    const ctx = (error as unknown as { context?: { body?: unknown; status?: number } })?.context;
+    const status = ctx?.status;
     let code = error.message;
-    if (typeof ctxBody === "string") {
-      try { const j = JSON.parse(ctxBody); if (j?.error) code = j.error; } catch { /* keep */ }
-    } else if (ctxBody && typeof ctxBody === "object" && "error" in ctxBody) {
-      code = String((ctxBody as { error: unknown }).error);
+    let rawBody: string | undefined;
+    if (typeof ctx?.body === "string") {
+      rawBody = ctx.body;
+      try { const j = JSON.parse(ctx.body); if (j?.error) code = j.error; } catch { /* keep */ }
+    } else if (ctx?.body && typeof ctx.body === "object" && "error" in (ctx.body as object)) {
+      code = String((ctx.body as { error: unknown }).error);
+      rawBody = JSON.stringify(ctx.body);
     }
-    throw new Error(code);
+    // Log diagnóstico visível apenas no DevTools do usuário — sem PII / sem segredos.
+    // eslint-disable-next-line no-console
+    console.error("[comunicacao-config] falha ao chamar edge function", {
+      method, status, code, rawBody, name: error.name,
+    });
+    const err = new Error(code);
+    (err as Error & { status?: number; rawBody?: string }).status = status;
+    (err as Error & { status?: number; rawBody?: string }).rawBody = rawBody;
+    throw err;
   }
   if (!data?.ok) throw new Error((data as { error?: string } | null)?.error ?? "unknown_error");
   return data as ProviderView;
@@ -233,7 +249,7 @@ export default function ComunicacaoConfigTab() {
       setEmailsErr(""); setPhonesErr(""); setSmtpErrors({}); setWaErrors({});
       setWebhookAppSecretErr(""); setWebhookVerifyErr("");
     } catch (e: any) {
-      toast.error("Erro ao carregar configurações", { description: friendlyError(e.message) });
+      toast.error("Erro ao carregar configurações", { description: friendlyError(e.message, e?.status) });
     } finally {
       setLoading(false);
     }
@@ -250,7 +266,7 @@ export default function ComunicacaoConfigTab() {
       setEmailsText(""); setPhonesText("");
       return true;
     } catch (e: any) {
-      toast.error("Falha ao salvar", { description: friendlyError(e.message) });
+      toast.error("Falha ao salvar", { description: friendlyError(e.message, e?.status) });
       return false;
     } finally {
       setSaving(false);
