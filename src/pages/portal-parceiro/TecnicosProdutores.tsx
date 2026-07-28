@@ -31,16 +31,17 @@ export default function TecnicosProdutores() {
         .select("user_id, papel")
         .eq("partner_id", partner.id);
       if (error) throw error;
-      const ids = (pu ?? []).map((p: any) => p.user_id);
+      const ids = (pu ?? []).map((p: any) => p.user_id as string);
       if (ids.length === 0) return [] as Tecnico[];
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, nome, email")
-        .in("id", ids);
-      // Somente técnicos (papel do partner_user ou role global) — mostra todos os users do parceiro
-      return (profs ?? []).map((p: any) => ({ user_id: p.id, nome: p.nome, email: p.email })) as Tecnico[];
+      // partner_users é a fonte da verdade do vínculo; profiles apenas enriquece nome/email.
+      const byId = await fetchProfilesByUserIds(ids);
+      return ids.map((uid) => {
+        const prof = byId.get(uid);
+        return { user_id: uid, nome: prof?.nome ?? null, email: prof?.email ?? null };
+      }) as Tecnico[];
     },
   });
+
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["b2b-partner-clientes-all"],
