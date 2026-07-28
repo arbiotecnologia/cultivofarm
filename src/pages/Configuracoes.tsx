@@ -435,6 +435,14 @@ export default function Configuracoes() {
       <PageHeader
         title="Configurações"
         description="Gerenciamento do sistema e usuários"
+        action={
+          <Button asChild variant="outline" className="gap-2">
+            <a href="/docs/MANUAL-DO-USUARIO.pdf" download="MANUAL-DO-USUARIO.pdf">
+              <Download className="h-4 w-4" />
+              Baixar manual (PDF)
+            </a>
+          </Button>
+        }
       />
 
       <Tabs defaultValue={initialTab} className="w-full">
