@@ -175,17 +175,20 @@ Nenhuma outra regressão. Nenhuma edição no runtime de aplicação.
 |---|---:|
 | Janela autorizada | 96,0 |
 | Consumo pré-Gate 3 | 38,7 |
-| Teto interno Gate 3 | 20,0 |
-| Consumo Gate 3 (esta rodada) | **≈17,5** |
-| Consumo acumulado | **≈56,2** |
-| Saldo remanescente | **≈39,8** |
+| Consumo Gate 3 (primeira rodada — real) | **10,2** |
+| Consumo acumulado pré-correção 4xx | **48,9** |
+| Teto interno da correção 4xx | 6,0 |
+| Consumo da correção 4xx (esta rodada) | *pendente do retorno da plataforma* |
+| Saldo remanescente | *a recalcular após retorno* |
 
-Escopo entregue nesta rodada (Gate 3):
-1. Hardening do `email-adapter.ts`: header injection, limites de tamanho, classificador determinístico compartilhado com o worker.
-2. Helpers puros auditáveis (`hasHeaderInjection`, `computeBackoffSeconds`, `classifyEmailError`).
-3. Migration Gate 3 aplicada em staging: jitter no backoff, DLQ list, métricas agregadas, replay unitário e em lote com `SKIP LOCKED` e auditoria imutável.
-4. `DlqAdminSection` no painel admin (métricas + fila morta + replay com confirmação, gate por role).
-5. Suíte `gate3-email.test.ts` com 30 asserts (mock SMTP + auditoria estática da migration). Total 434/434 comunicação, typecheck limpo.
+Escopo entregue nesta rodada (correção Gate 3):
+1. `classifyEmailError`: 4xx SMTP (421/450/451/452) reclassificado como `transient_error` conforme RFC 5321 §4.2.1; 5xx permanece `permanent_error` sem exceções inventadas; comentário reescrito.
+2. Confirmação no worker `process-communication-outbox` de que `transient_error` já dispara `rpc_fail_communication_delivery_v2(..., p_is_permanent=false)` — backoff+jitter respeitado até `max_attempts` antes de `dead_letter`.
+3. Testes atualizados em `gate3-email.test.ts` para exigir `transient_error` em 4xx (mock SMTP + helpers puros). Suíte 434/434 PASS, typecheck limpo.
+4. Verificação empírica no staging: assinaturas + ACLs dos 5 RPCs Gate 3 conferem com a migration `20260728014711_d127c7e5-...`; coluna real de retry é `next_attempt_at` (referências no doc corrigidas).
+5. Deploy no staging `ikaauvsflpmamgxmkhoq` de `process-communication-outbox` com o adapter corrigido, sem invocação de envio. Nenhum outro deploy necessário (é o único importador do adapter).
+6. Estado seguro reverificado no staging: flags OFF, `test_mode_enabled=true`, regras `solicitacao_*` 0/11 habilitadas. Produção `navfzbwgwzruipouyfnk` intocada.
+
 
 
 ---
