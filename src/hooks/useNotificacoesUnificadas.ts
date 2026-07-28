@@ -179,28 +179,33 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
       const tasks: Promise<{ error: unknown }>[] = [];
       if (user) {
         tasks.push(
-          supabase
-            .from("notificacoes_operacionais")
-            .update({ lido: true })
-            .eq("usuario_id", user.id)
-            .eq("lido", false)
-            .then((r) => ({ error: r.error })),
+          (async () => {
+            const r = await supabase
+              .from("notificacoes_operacionais")
+              .update({ lido: true })
+              .eq("usuario_id", user.id)
+              .eq("lido", false);
+            return { error: r.error as unknown };
+          })(),
         );
       }
       if (clienteId) {
         tasks.push(
-          supabase
-            .from("portal_notificacoes")
-            .update({ lido: true })
-            .eq("cliente_id", clienteId)
-            .eq("lido", false)
-            .then((r) => ({ error: r.error })),
+          (async () => {
+            const r = await supabase
+              .from("portal_notificacoes")
+              .update({ lido: true })
+              .eq("cliente_id", clienteId)
+              .eq("lido", false);
+            return { error: r.error as unknown };
+          })(),
         );
       }
       const results = await Promise.all(tasks);
       const firstErr = results.find((r) => r.error);
       if (firstErr) throw firstErr.error;
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notif-unified", "op", user?.id] });
       qc.invalidateQueries({ queryKey: ["notif-unified", "portal", clienteId] });

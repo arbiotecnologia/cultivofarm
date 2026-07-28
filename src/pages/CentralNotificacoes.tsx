@@ -54,6 +54,7 @@ export default function CentralNotificacoes() {
       return;
     }
     navigate(decision.safePath);
+
   };
 
   return (
