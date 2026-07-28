@@ -35,9 +35,10 @@ describe("auditoria RBAC — matriz", () => {
   it("todo papel esperado em um lançamento também pode escrever na rota correspondente", () => {
     for (const probe of LANCAMENTO_PROBES) {
       for (const role of probe.expectedRoles) {
+        const routes = [probe.route, ...(probe.altWriteRoutes ?? [])];
         expect(
-          canWrite(role, probe.route),
-          `${role} deveria ter escrita em ${probe.route} (lançamento ${probe.id})`,
+          routes.some((r) => canWrite(role, r)),
+          `${role} deveria ter escrita em ${routes.join(" | ")} (lançamento ${probe.id})`,
         ).toBe(true);
       }
     }

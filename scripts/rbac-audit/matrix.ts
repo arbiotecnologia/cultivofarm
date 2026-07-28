@@ -98,6 +98,8 @@ export interface LancamentoProbe {
   table: string;
   route: string;
   payload: Record<string, unknown>;
+  /** Rotas alternativas que também expõem este lançamento na UI. */
+  altWriteRoutes?: string[];
   /** Papéis que DEVEM conseguir lançar. Os demais devem ser bloqueados. */
   expectedRoles: AuditRole[];
 }
@@ -136,6 +138,7 @@ export const LANCAMENTO_PROBES: LancamentoProbe[] = [
     table: "ordens_servico",
     route: "/ordens-servico",
     payload: { numero_os: MARK, cliente_id: FAKE_UUID },
+    altWriteRoutes: ["/solicitacoes"],
     expectedRoles: ["administrador", "gestor", "administrativo"],
   },
   {
@@ -144,6 +147,7 @@ export const LANCAMENTO_PROBES: LancamentoProbe[] = [
     table: "lotes",
     route: "/lotes",
     payload: { codigo_lote: MARK, ordem_servico_id: FAKE_UUID },
+    altWriteRoutes: ["/cockpit-laboratorio"],
     expectedRoles: ["administrador", "gestor", "producao", "operador_onfarm"],
   },
   {
@@ -152,6 +156,7 @@ export const LANCAMENTO_PROBES: LancamentoProbe[] = [
     table: "controle_qualidade",
     route: "/controle-qualidade",
     payload: { lote_id: FAKE_UUID },
+    altWriteRoutes: ["/cockpit-laboratorio"],
     expectedRoles: ["administrador", "gestor", "producao", "operador_onfarm"],
   },
   {
@@ -160,6 +165,7 @@ export const LANCAMENTO_PROBES: LancamentoProbe[] = [
     table: "envase",
     route: "/envase",
     payload: { lote_id: FAKE_UUID, tipo_embalagem: "frasco_1L" },
+    altWriteRoutes: ["/cockpit-laboratorio"],
     expectedRoles: ["administrador", "gestor", "producao", "operador_onfarm"],
   },
   {
@@ -168,6 +174,7 @@ export const LANCAMENTO_PROBES: LancamentoProbe[] = [
     table: "portal_solicitacoes",
     route: "/portal",
     payload: { cliente_id: FAKE_UUID, tipo_demanda: MARK, user_id: FAKE_UUID },
+    altWriteRoutes: ["/app/solicitar", "/solicitacoes"],
     expectedRoles: ["administrador", "cliente_produtor"],
   },
   {
@@ -191,6 +198,7 @@ export const LANCAMENTO_PROBES: LancamentoProbe[] = [
     table: "partner_orders",
     route: "/portal-parceiro/pedidos",
     payload: { partner_id: FAKE_UUID },
+    altWriteRoutes: ["/portal-parceiro/novo", "/comercial/pedidos-b2b"],
     expectedRoles: ["administrador", "gestor_comercial", "parceiro_b2b", "parceiro_b2b_tecnico"],
   },
 ];
