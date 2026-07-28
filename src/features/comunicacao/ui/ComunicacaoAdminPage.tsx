@@ -522,6 +522,10 @@ function TemplatesPanel({ canMutate }: { canMutate: boolean }) {
 
         <div className="rounded-md border p-4">
           <h2 className="font-medium mb-2">Templates</h2>
+          <p className="text-[11px] text-muted-foreground mb-2 rounded bg-muted/50 border border-dashed p-2">
+            Sincronização automática do status Meta é aplicada server-side e permanece <strong>indisponível</strong> nesta rodada — o token WABA não está configurado. Ajuste o campo <em>Meta status</em> manualmente após validar na Business Manager.
+          </p>
+
           {q.isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
           {q.error && <p className="text-sm text-destructive">Erro: {q.error.message}</p>}
           {q.data && q.data.length === 0 && <p className="text-sm text-muted-foreground">Nenhum template.</p>}
