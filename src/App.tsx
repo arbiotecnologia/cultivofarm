@@ -122,6 +122,8 @@ import MobileTalhaoHistorico from "@/pages/app/MobileTalhaoHistorico";
 import MobileCatalogoTecnico from "@/pages/app/MobileCatalogoTecnico";
 import { ComunicacaoRouteGuard } from "@/features/comunicacao/RouteGuard";
 import ComunicacaoAdminPage from "@/features/comunicacao/ui/ComunicacaoAdminPage";
+import CentralNotificacoes from "@/pages/CentralNotificacoes";
+
 
 import PedidosB2B from "@/pages/comercial/PedidosB2B";
 import DashboardB2B from "@/pages/comercial/DashboardB2B";
@@ -573,6 +575,8 @@ const App = () => (
                  <Route path="/comunicacao" element={
                    <ComunicacaoRouteGuard><ComunicacaoAdminPage /></ComunicacaoRouteGuard>
                  } />
+                 <Route path="/notificacoes" element={<CentralNotificacoes />} />
+
                </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
