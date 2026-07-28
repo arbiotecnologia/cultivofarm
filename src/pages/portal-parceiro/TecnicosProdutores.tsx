@@ -144,7 +144,7 @@ export default function TecnicosProdutores() {
                   variant={tecSel === t.user_id ? "default" : "outline"}
                   onClick={() => setTecSel(t.user_id)}
                 >
-                  {t.nome || t.email || t.user_id.slice(0, 8)}
+                  {displayPartnerUserName(t.nome || t.email ? { user_id: t.user_id, nome: t.nome, email: t.email } : undefined, t.user_id)}
                   <Badge variant="secondary" className="ml-2">{contagemPorTecnico.get(t.user_id) ?? 0}</Badge>
                 </Button>
               ))}
