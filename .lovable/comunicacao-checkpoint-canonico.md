@@ -95,21 +95,25 @@ Snapshot obtido nesta rodada, sem side-effects.
 
 ### 2.6 Gate 3 — Email adapter
 **Status: GO — PRONTO PARA HOMOLOGAÇÃO SEM ENVIO REAL.**
-- `email-adapter.ts` hardened: `hasHeaderInjection` bloqueia CR/LF/NUL em subject/from/to; limites `MAX_EMAIL_SUBJECT_LEN=300`, `MAX_EMAIL_ADDRESS_LEN=320`, `MAX_EMAIL_BODY_BYTES=10 MiB`; classificação determinística `classifyEmailError` (transient/permanent) alinhada ao worker; timeout real via `Promise.race`; escape HTML no corpo; gate `isRecipientAllowedInTestMode` antes de qualquer chamada.
-- Migration Gate 3 (staging `20260728014711_d127c7e5-...`):
-  - `rpc_fail_communication_delivery_v2` com backoff exponencial e **jitter ±20%** (`0.8 + random()*0.4`), teto 3600s.
-  - `rpc_admin_list_communication_dead_letter(p_limit,p_offset)` — leitura paginada da DLQ, sem PII crua.
+- `email-adapter.ts` hardened: `hasHeaderInjection` bloqueia CR/LF/NUL em subject/from/to; limites `MAX_EMAIL_SUBJECT_LEN=300`, `MAX_EMAIL_ADDRESS_LEN=320`, `MAX_EMAIL_BODY_BYTES=10 MiB`; timeout real via `Promise.race`; escape HTML no corpo; gate `isRecipientAllowedInTestMode` antes de qualquer chamada.
+- `classifyEmailError` alinhado à RFC 5321 §4.2.1: **4yz → `transient_error` (retry via `p_is_permanent=false`)** cobrindo 421/450/451/452; **5yz → `permanent_error`** sem exceções inventadas; timeout/rede/DNS/reset/refused → `transient_error`; desconhecido → `transient_error` (fail-safe). Worker `process-communication-outbox/index.ts` já mapeia `transient_error` → `rpc_fail_communication_delivery_v2(..., p_is_permanent=false)`, respeitando backoff+jitter até `max_attempts` antes de qualquer `dead_letter`.
+- Migration Gate 3 (staging `20260728014711_d127c7e5-3149-47da-9e13-20f691ae482f.sql`) — **aplicada e verificada nesta rodada** via `has_function_privilege` para os 4 RPCs admin + `rpc_fail_communication_delivery_v2` (anon=false, authenticated=true nas admin, service_role=true em todas):
+  - `rpc_fail_communication_delivery_v2` com backoff exponencial e **jitter ±20%** (`0.8 + random()*0.4`), teto 3600s. Assinatura: `(uuid, text, text, text, boolean)`.
+  - `rpc_admin_list_communication_dead_letter(p_limit integer, p_offset integer)` — leitura paginada da DLQ, sem PII crua.
   - `rpc_admin_communication_outbox_metrics()` — agregado por status/canal, contagens `dead_letter`/`pending`, tentativas médias, latência média `sent`.
-  - `rpc_admin_replay_communication_dead_letter(p_outbox_id)` — replay unitário com `SELECT ... FOR UPDATE`, só do estado `dead_letter`, reseta `next_retry_at`, escreve `outbox.dlq_replay` em `comunicacao_audit_log`.
-  - `rpc_admin_replay_communication_dead_letter_batch(p_limit)` — teto rígido `LEAST(20, p_limit)`, `FOR UPDATE SKIP LOCKED`, idempotente por transação.
+  - `rpc_admin_replay_communication_dead_letter(p_outbox_id uuid)` — replay unitário com `SELECT ... FOR UPDATE`, só do estado `dead_letter`, reseta `next_attempt_at`, escreve `outbox.dlq_replay` em `comunicacao_audit_log`.
+  - `rpc_admin_replay_communication_dead_letter_batch(p_limit integer)` — teto rígido `LEAST(20, p_limit)`, `FOR UPDATE SKIP LOCKED`, idempotente por transação.
   - Todas as RPCs Gate 3: `REVOKE ALL ... FROM PUBLIC, anon` + `GRANT EXECUTE ... TO authenticated, service_role` + guard interno `_comunicacao_require_admin()`.
 - Admin UI: `ComunicacaoAdminPage > FilaPanel` recebeu `DlqAdminSection` (métricas + fila morta + replay unitário/lote com confirmação, estados loading/erro/vazio, gate `roles.includes("administrador")`).
-- Cobertura: `src/test/comunicacao/gate3-email.test.ts` — **30 asserts** (helpers puros, adapter com mock SMTP para ok/timeout/4xx/5xx/rede, header injection, allowlist de test_mode, migration estática). Suíte comunicação: **434/434 PASS**.
-- Bloqueio consciente de envio real preservado: `EMAIL_DELIVERY_ENABLED=false` + `COMMUNICATION_TEST_MODE_ENABLED=true`. Não é entrega externa homologada — é prontidão para homologação.
+- **Deploy nesta rodada:** `process-communication-outbox` reimplantado no staging (`ikaauvsflpmamgxmkhoq`) carregando o adapter com classificação 4xx=transient. Nenhuma invocação de envio. Nenhum outro deploy necessário — o adapter só é linkado por essa função (o worker é o único importador de `_shared/comunicacao/email-adapter.ts`).
+- Cobertura: `src/test/comunicacao/gate3-email.test.ts` — **30 asserts** com **4xx=transient** para 421/450/451/452 no mock SMTP e nos helpers puros. Suíte comunicação: **434/434 PASS**, typecheck limpo.
+- Bloqueio consciente de envio real preservado: verificação SQL nesta rodada em `communication_provider_settings` — `delivery_enabled=false`, `email_delivery_enabled=false`, `whatsapp_delivery_enabled=false`, `inapp_delivery_enabled=false`, `whatsapp_webhook_enabled=false`, `test_mode_enabled=true`. Regras `solicitacao_*`: 0/11 habilitadas. Produção `navfzbwgwzruipouyfnk` não recebeu conexão nesta rodada.
 
 **Falta para entrega externa homologada (fora deste gate):**
 - Credenciais SMTP reais do cliente + allowlist controlada no frontend.
 - Rodada de homologação com sandbox (Mailtrap/Ethereal) sob autorização explícita.
+
+
 
 
 ### 2.7 Gate 4 — WhatsApp Cloud API
