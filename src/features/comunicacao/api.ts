@@ -166,6 +166,30 @@ export async function replayDeadLetterBatch(limit = 10): Promise<{ ok: boolean; 
   return data as { ok: boolean; replayed: number; ids: string[] };
 }
 
+export interface ComunicacaoHealthSnapshot {
+  ok: boolean;
+  generated_at: string;
+  queue: {
+    by_status: Record<string, number>;
+    by_canal: Record<string, number>;
+    pending: number;
+    dead_letter: number;
+    oldest_pending_age_seconds: number;
+    oldest_processing_age_seconds: number;
+  };
+  throughput_24h: { sent: number; failed_or_dlq: number; success_rate_pct: number | null };
+  realtime: { ready: boolean };
+  dlq_admin: { last_replay_at: string | null };
+}
+
+export async function fetchHealthSnapshot(): Promise<ComunicacaoHealthSnapshot> {
+  const { data, error } = await sb.rpc("rpc_admin_communication_health_snapshot", {});
+  if (error) throw new Error(error.message);
+  return data as ComunicacaoHealthSnapshot;
+}
+
+
+
 
 export async function listOwnPreferences(): Promise<ComunicacaoPreferencia[]> {
   const { data, error } = await sb
