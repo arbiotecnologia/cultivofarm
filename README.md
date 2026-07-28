@@ -1,4 +1,9 @@
-# Welcome to your Lovable project
+# AR Bio Manager
+
+## Documentação
+
+- [Manual do Usuário](./docs/MANUAL-DO-USUARIO.md) — todos os recursos e processos de uso do sistema.
+- [Referência Técnica](./docs/REFERENCIA-TECNICA.md) — arquitetura, ambientes, segurança e implantação.
 
 ## Project info
 
