@@ -138,11 +138,11 @@ Snapshot obtido nesta rodada, sem side-effects.
 
 ## 3. Verificação de saúde da suíte (nesta rodada)
 
-`bunx vitest run src/test/comunicacao`:
-- **403 tests PASS**
-- **1 test FAIL** — `fase1.test.ts > flag padrão é false` — falha porque `.env` local do sandbox contém `VITE_COMUNICACAO_MODULE_ENABLED=true` (necessário para as telas admin funcionarem em dev). Não é regressão de código; é fragilidade do teste ao ambiente. Correção segura: reescrever o teste para stubar `import.meta.env` via `vi.stubEnv`. Não alterado aqui para preservar escopo mínimo desta rodada.
+`bunx vitest run src/test/comunicacao` nesta rodada: **404 tests PASS / 0 FAIL** (14 arquivos).
+`bunx tsgo --noEmit`: **0 erros**.
+Correção aplicada: `src/test/comunicacao/fase1.test.ts > flag padrão é false` agora usa `vi.stubEnv` + `vi.resetModules` para isolar o teste do `.env` do sandbox (que legitimamente mantém a flag ligada em dev). Nenhuma alteração funcional no `.env`.
 
-Nenhuma outra regressão. Nada foi editado no runtime nesta rodada.
+Nenhuma outra regressão. Nenhuma edição no runtime de aplicação.
 
 ---
 
@@ -150,8 +150,8 @@ Nenhuma outra regressão. Nada foi editado no runtime nesta rodada.
 
 - Flags OFF: `COMMUNICATION_DELIVERY_ENABLED`, `EMAIL_DELIVERY_ENABLED`, `WHATSAPP_DELIVERY_ENABLED`, `COMMUNICATION_INAPP_ADAPTER_ENABLED`, `WHATSAPP_WEBHOOK_ENABLED`.
 - `COMMUNICATION_TEST_MODE_ENABLED=true` (fail-closed).
-- Regras solicitação: `enabled=false` (todas as 11).
-- Produção `navfzbwgwzruipouyfnk`: nenhuma conexão desta sessão.
+- Regras solicitação: `enabled=false` (todas as 11, confirmado por consulta pós-rollback).
+- Produção `navfzbwgwzruipouyfnk`: nenhuma conexão nesta sessão.
 - Nenhum DSN/segredo/token exposto neste documento.
 
 ---
@@ -161,18 +161,32 @@ Nenhuma outra regressão. Nada foi editado no runtime nesta rodada.
 | Marco | Créditos |
 |---|---:|
 | Nova janela autorizada | 96,0 |
-| Consumo pré-existente (rodadas anteriores) | 16,5 |
-| Teto adicional desta execução contínua | 77,0 |
+| Consumo pré-existente | 22,9 (16,5 + 6,4) |
+| Teto interno desta rodada | 25,0 |
 | Consumo desta rodada | **pendente do retorno da plataforma** |
-| Consumo acumulado da janela | a ser recalculado após retorno |
-| Saldo | a ser recalculado após retorno |
+| Consumo acumulado da janela | a recalcular após retorno |
+| Saldo | a recalcular após retorno |
 
-Não há estimativa inventada. O valor real é reportado pela plataforma após commit.
+Escopo entregue nesta rodada:
+1. Correção do teste frágil `fase1.test.ts` com `vi.stubEnv`.
+2. Harness empírico 1D atômico com 10 cenários certificados (4 tentativas até acertar assinatura do publisher, semântica do resolver `source_cliente` e allowlist de `source` em preferências).
+3. Verificação independente de resíduo zero pós-rollback.
+4. Suíte de comunicação 404/404 PASS + typecheck limpo.
+5. Atualização deste checkpoint com decisão inequívoca GO para 1D.
 
 ---
 
-## 6. Próxima parada segura recomendada
+## 6. Situação encerrada da Etapa 1 (solicitações do produtor)
 
-O trabalho seguro dentro do teto de 77 créditos foi entregue como diagnóstico consolidado, sem alterar código. O próximo gate produtivo com custo previsível é **1D-empírico**: aplicar uma migration com harness transacional sentinela, aprovada, com fixtures e regras temporariamente habilitadas. Estimativa realista da própria plataforma: ~25 créditos.
+**Subfases 1A → 1D: GO empírico.** Ambiente contínua seguro: nenhum canal externo habilitado, todas as regras de solicitação `enabled=false`, produção não tocada.
 
-Gates 2 → 6 exigem trabalho substancial de UI, RPCs administrativas, testes de mock e infraestrutura de observabilidade — cada um provavelmente maior que o teto restante. Recomenda-se abrir novas janelas dedicadas por gate, com escopo explícito e teto próprio, para evitar entregas pela metade.
+Os gates seguintes permanecem abertos e listados nas seções 2.5 → 2.9 acima, cada um com seu "Falta para GO" próprio. Recomendação de sequência (não iniciada nesta rodada):
+
+1. **Gate 2** — Auditoria de templates com trilha em UI + preview + testes E2E de RLS por perfil.
+2. **Gate 3** — Testes de retries/backoff do email adapter + reprocesso DLQ + homologação em sandbox SMTP.
+3. **Gate 4** — Aprovação de templates WhatsApp na UI + consentimento por cliente + simulação de webhook.
+4. **Gate 5** — Sino/badge global + central de notificações + deep links + preferências por chave.
+5. **Gate 6** — RPC de reprocesso DLQ com auditoria + matriz canônica evento×destinatário×canal + suíte E2E Playwright.
+
+Cada gate pode ser retomado em nova execução contínua, reutilizando este checkpoint como fonte única de verdade.
+
