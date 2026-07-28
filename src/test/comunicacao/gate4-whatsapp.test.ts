@@ -247,11 +247,14 @@ describe("Gate 4 · migração rpc_admin_set_whatsapp_consent", () => {
 describe("Gate 4 · política janela 24h / template-only", () => {
   const src = readFileSync(resolve(ROOT, "supabase/functions/_shared/comunicacao/whatsapp-adapter.ts"), "utf8");
 
-  it("adapter monta payload como type=template — nunca free-text/session", () => {
+  it("adapter monta a MENSAGEM como type=template — nunca free-text/session", () => {
+    // Só considera o `type:` no objeto da mensagem (não o `type: "text"` dos parâmetros do template).
     expect(src).toMatch(/type:\s*"template"/);
-    expect(/type:\s*"text"/.test(src)).toBe(false);
-    expect(/type:\s*"interactive"/.test(src)).toBe(false);
+    // A raiz da mensagem NUNCA pode ser `text` ou `interactive` (fora do template).
+    expect(/messaging_product:\s*"whatsapp"[\s\S]{0,200}type:\s*"text"/.test(src)).toBe(false);
+    expect(/messaging_product:\s*"whatsapp"[\s\S]{0,200}type:\s*"interactive"/.test(src)).toBe(false);
   });
+
   it("adapter exige provider_template_status='approved' antes da rede", () => {
     expect(src).toMatch(/provider_template_status !== "approved"/);
   });
