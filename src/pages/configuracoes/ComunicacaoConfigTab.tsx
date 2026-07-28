@@ -208,9 +208,13 @@ function Chip({ children }: { children: React.ReactNode }) {
 }
 
 export default function ComunicacaoConfigTab() {
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("administrador");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<ProviderView | null>(null);
+  const [testEmailTo, setTestEmailTo] = useState("");
+  const [testingEmail, setTestingEmail] = useState(false);
 
   // Editable state
   const [emailsText, setEmailsText] = useState("");
