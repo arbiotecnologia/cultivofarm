@@ -40,7 +40,7 @@ export default function UsuariosClientesB2B() {
   const [busca, setBusca] = useState("");
   const [assignmentType, setAssignmentType] = useState<string>("monitoramento");
 
-  // Lista usuários B2B do parceiro (via partner_users + profiles)
+  // Lista usuários B2B do parceiro (via partner_users + profiles, casando por user_id)
   const { data: usuarios = [] } = useQuery({
     queryKey: ["b2b-partner-users", partner?.id],
     enabled: !!partner?.id,
@@ -52,14 +52,19 @@ export default function UsuariosClientesB2B() {
       if (error) throw error;
       const ids = (pu ?? []).map((p) => p.user_id);
       if (ids.length === 0) return [] as Usuario[];
-      const { data: profs } = await supabase.from("profiles").select("id, nome, email").in("id", ids);
-      const byId = new Map((profs ?? []).map((p: any) => [p.id, p]));
+      const byId = await fetchProfilesByUserIds(ids);
       return (pu ?? []).map((p: any) => {
         const prof = byId.get(p.user_id);
-        return { user_id: p.user_id, nome: prof?.nome ?? null, email: prof?.email ?? null, papel: p.papel };
+        return {
+          user_id: p.user_id,
+          nome: prof?.nome ?? null,
+          email: prof?.email ?? null,
+          papel: p.papel,
+        };
       }) as Usuario[];
     },
   });
+
 
   const usuariosFiltrados = useMemo(() => {
     if (papelFiltro === "todos") return usuarios;
