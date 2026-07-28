@@ -240,25 +240,52 @@ export function parseCompositeId(
 }
 
 export function dedupAndSort(items: NotificacaoUnificada[]): NotificacaoUnificada[] {
-  const seen = new Map<string, NotificacaoUnificada>();
+  const DEDUP_WINDOW_MS = 5000;
+  // Janela deslizante por grupo lógico — evita flakiness de bucketing absoluto
+  // quando dois eventos idênticos caem em janelas de 5s vizinhas.
+  const groups = new Map<string, NotificacaoUnificada[]>();
   for (const it of items) {
-    const bucket = `${it.origem}|${it.tipo}|${it.titulo}|${it.mensagem ?? ""}|${
-      Math.floor(new Date(it.created_at).getTime() / 5000)
-    }`;
-    const existing = seen.get(bucket);
-    if (!existing) {
-      seen.set(bucket, it);
-      continue;
-    }
-    // Regras: preservar não-lido sempre; em empate, preferir o mais recente.
-    if (!it.lido && existing.lido) {
-      seen.set(bucket, it);
-    } else if (it.lido === existing.lido) {
-      const newer = new Date(it.created_at).getTime() > new Date(existing.created_at).getTime();
-      if (newer) seen.set(bucket, it);
-    }
+    const key = `${it.origem}|${it.tipo}|${it.titulo}|${it.mensagem ?? ""}`;
+    const arr = groups.get(key);
+    if (arr) arr.push(it);
+    else groups.set(key, [it]);
   }
-  return Array.from(seen.values()).sort(
+
+  const kept: NotificacaoUnificada[] = [];
+  for (const arr of groups.values()) {
+    // Ordena por data ascendente para coalescer sequencialmente.
+    arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    let cluster: NotificacaoUnificada[] = [];
+    const flush = () => {
+      if (!cluster.length) return;
+      // Regras: preservar não-lido; em empate, mais recente.
+      const chosen = cluster.reduce((best, cur) => {
+        if (!cur.lido && best.lido) return cur;
+        if (cur.lido && !best.lido) return best;
+        return new Date(cur.created_at).getTime() > new Date(best.created_at).getTime()
+          ? cur
+          : best;
+      });
+      kept.push(chosen);
+      cluster = [];
+    };
+    for (const it of arr) {
+      if (!cluster.length) {
+        cluster.push(it);
+        continue;
+      }
+      const first = cluster[0];
+      const delta = new Date(it.created_at).getTime() - new Date(first.created_at).getTime();
+      if (delta <= DEDUP_WINDOW_MS) cluster.push(it);
+      else {
+        flush();
+        cluster.push(it);
+      }
+    }
+    flush();
+  }
+
+  return kept.sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 }
