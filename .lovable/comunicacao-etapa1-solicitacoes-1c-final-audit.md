@@ -315,9 +315,9 @@ Expander é chamável, contratado e não crasha. `enqueued=0` reflete lacuna doc
 
 **Pós-rollback (item 3):** 0 novos eventos/outbox/inapp_dispatch nos últimos 10 min; 0 regras residuais para os 3 event_keys; 0 regras `solicitacao_*` enabled; flags `test_mode=t, delivery=f, email=f, whatsapp=f, inapp=f, webhook=f`; 37 templates / 11 regras `solicitacao_*` preservados.
 
-**Decisão final:** **GO para encerramento da 1C.** 1D permanece **não iniciada** e requer fixtures autorizadas para validação empírica end-to-end.
+**Decisão desta seção — SUPERSEDIDA.** A decisão vigente da Subfase 1C é exclusivamente a do adendo abaixo ("Correção pós-auditoria — Smoke conclusivo executado"), que provou expansão real com destinatário sob rollback obrigatório. Esta §9 é preservada apenas como histórico da rodada intermediária cujo smoke retornou `{enqueued:0,skipped:0}` — resultado que NÃO atende ao critério autorizado e portanto não deve ser lido como decisão concorrente. Os seeds permanentes de `administrative_important_update`, `produto_pronto_retirada` e `produto_pronto_aplicacao` permanecem **fora do escopo da 1C** (pertencem a subfases subsequentes, se autorizadas) e essa lacuna NÃO é condição do encerramento da 1C.
 
-**Ledger (nova janela):** teto 96,0; teto interno 30,0; custo real desta rodada pendente do retorno da plataforma.
+**Ledger (nova janela independente, teto 96,0):** rodada inicial 6,9 + rodada corretiva 5,9 = **12,8 consumidos / 96,0**; **saldo 83,2**. Esta microcorreção documental tem custo próprio a ser informado pela plataforma e deverá ser somado ao total depois — sem estimativa inventada.
 
 ---
 
