@@ -34,6 +34,7 @@ import {
   fetchCommunicationHealth,
   verifyCommunicationChannel,
 } from "@/features/comunicacao/api";
+import ConsentimentoWhatsappPanel from "@/features/comunicacao/ui/ConsentimentoWhatsappPanel";
 
 import type {
   ComunicacaoTemplate,
@@ -44,7 +45,8 @@ import type {
   ComunicacaoCanal,
 } from "@/features/comunicacao/types";
 
-type AbaId = "templates" | "regras" | "fila" | "preferencias" | "comunicados";
+type AbaId = "templates" | "regras" | "fila" | "preferencias" | "comunicados" | "consentimentos";
+
 
 const ROLE_OPTIONS = [
   "administrador","gestor","tecnico_agronomo","consultor_tecnico",
@@ -67,9 +69,10 @@ export default function ComunicacaoAdmin() {
   // não deve ver "Fila e histórico" (evita erro previsível de permissão).
   // Preferências permanecem para todos (dados próprios).
   const tabs: AbaId[] = isAdmin
-    ? ["templates","regras","fila","preferencias"]
+    ? ["templates","regras","fila","preferencias","consentimentos"]
     : ["templates","regras","preferencias"];
   if (showBroadcastTab) tabs.push("comunicados");
+
 
 
   return (
@@ -102,6 +105,10 @@ export default function ComunicacaoAdmin() {
       {aba === "comunicados" && showBroadcastTab && (
         <ComunicadosPanel canPublish={isAdmin} />
       )}
+      {aba === "consentimentos" && isAdmin && (
+        <ConsentimentoWhatsappPanel canMutate={isAdmin} />
+      )}
+
 
       {isAdmin && (
         <>
@@ -130,8 +137,10 @@ function label(k: AbaId) {
     case "fila": return "Fila e histórico";
     case "preferencias": return "Preferências";
     case "comunicados": return "Comunicados";
+    case "consentimentos": return "Consentimentos WhatsApp";
   }
 }
+
 
 // -------------------- Comunicados (broadcast administrativo) --------------------
 
@@ -513,6 +522,10 @@ function TemplatesPanel({ canMutate }: { canMutate: boolean }) {
 
         <div className="rounded-md border p-4">
           <h2 className="font-medium mb-2">Templates</h2>
+          <p className="text-[11px] text-muted-foreground mb-2 rounded bg-muted/50 border border-dashed p-2">
+            Sincronização automática do status Meta é aplicada server-side e permanece <strong>indisponível</strong> nesta rodada — o token WABA não está configurado. Ajuste o campo <em>Meta status</em> manualmente após validar na Business Manager.
+          </p>
+
           {q.isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
           {q.error && <p className="text-sm text-destructive">Erro: {q.error.message}</p>}
           {q.data && q.data.length === 0 && <p className="text-sm text-muted-foreground">Nenhum template.</p>}
