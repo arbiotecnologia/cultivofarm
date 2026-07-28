@@ -193,19 +193,25 @@ Nenhuma outra regressão. Nenhuma edição no runtime de aplicação.
 |---|---:|
 | Janela autorizada | 96,0 |
 | Consumo pré-Gate 3 | 38,7 |
-| Consumo Gate 3 (primeira rodada — real) | **10,2** |
-| Consumo acumulado pré-correção 4xx | **48,9** |
-| Teto interno da correção 4xx | 6,0 |
-| Consumo da correção 4xx (esta rodada) | *pendente do retorno da plataforma* |
-| Saldo remanescente | *a recalcular após retorno* |
+| Gate 3 (real) | 10,2 |
+| Correção 4xx Gate 3 (rodada anterior) | 5,4 |
+| Acumulado pré-Gate 4 | **54,3** |
+| Teto interno Gate 4 | 16,0 |
+| Consumo Gate 4 (esta rodada — estimativa) | **≈13,5** |
+| Acumulado total | **≈67,8** |
+| Saldo remanescente | **≈28,2** |
 
-Escopo entregue nesta rodada (correção Gate 3):
-1. `classifyEmailError`: 4xx SMTP (421/450/451/452) reclassificado como `transient_error` conforme RFC 5321 §4.2.1; 5xx permanece `permanent_error` sem exceções inventadas; comentário reescrito.
-2. Confirmação no worker `process-communication-outbox` de que `transient_error` já dispara `rpc_fail_communication_delivery_v2(..., p_is_permanent=false)` — backoff+jitter respeitado até `max_attempts` antes de `dead_letter`.
-3. Testes atualizados em `gate3-email.test.ts` para exigir `transient_error` em 4xx (mock SMTP + helpers puros). Suíte 434/434 PASS, typecheck limpo.
-4. Verificação empírica no staging: assinaturas + ACLs dos 5 RPCs Gate 3 conferem com a migration `20260728014711_d127c7e5-...`; coluna real de retry é `next_attempt_at` (referências no doc corrigidas).
-5. Deploy no staging `ikaauvsflpmamgxmkhoq` de `process-communication-outbox` com o adapter corrigido, sem invocação de envio. Nenhum outro deploy necessário (é o único importador do adapter).
-6. Estado seguro reverificado no staging: flags OFF, `test_mode_enabled=true`, regras `solicitacao_*` 0/11 habilitadas. Produção `navfzbwgwzruipouyfnk` intocada.
+Escopo entregue nesta rodada (Gate 4):
+1. **Adapter** — extraído `classifyWhatsappHttpError` (puro), com códigos determinísticos para 401/403 (`whatsapp_auth`), 404 (`whatsapp_not_found`), 400 (`whatsapp_bad_request`), 429/5xx transient. Substituição in-place do bloco de status HTTP no `sendWhatsapp`. Nenhuma mudança de contrato para o worker.
+2. **Migração admin de consentimento** — `rpc_admin_set_whatsapp_consent` aplicada em staging `ikaauvsflpmamgxmkhoq`, com guard `has_role(...,'administrador')`, trilha imutável em `comunicacao_consent_log` e upsert idempotente em `comunicacao_preferencias`. ACL empiricamente verificada.
+3. **Confirmação arquitetural** — opt-out é bloqueado ANTES da outbox por `_comunicacao_can_deliver`, inspecionado via `pg_get_functiondef`. Nenhuma rota alternativa permite envio a destinatário com `whatsapp_opt_out_at IS NOT NULL`.
+4. **Cobertura** — novo `gate4-whatsapp.test.ts` com 28 asserts (mock fetch + auditoria estática da migração + política template-only). Correção de teste legado em `fase2.test.ts` (`whatsapp_401` → `whatsapp_auth`) para alinhar ao classificador único. Suíte comunicação: **462/462 PASS**, `bunx tsgo --noEmit` **0 erros**.
+5. **Deploy** — `process-communication-outbox` reimplantado em staging com adapter atualizado. Sem invocação de envio. Webhook e demais funções WhatsApp não requerem redeploy.
+6. **Estado seguro** — todas as 5 flags de entrega OFF, `test_mode_enabled=true`, produção intocada.
+
+**Decisão: GO — WhatsApp pronto para homologação sem envio externo real.** A ativação exige, sequencialmente, (a) publicação e verificação do WABA na Meta, (b) preenchimento dos slots Vault (`whatsapp_access_token`, `whatsapp_app_secret`, `whatsapp_verify_token`) via UI, (c) sincronização de status de templates aprovados, (d) opt-in explícito por cliente registrado via `rpc_admin_set_whatsapp_consent`, (e) autorização humana para acender `whatsapp_delivery_enabled` e `whatsapp_webhook_enabled`.
+
+
 
 
 
