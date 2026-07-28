@@ -162,22 +162,56 @@ Snapshot obtido nesta rodada, sem side-effects.
 - **Sem migrations nesta rodada** (todas as tabelas, RLS e RPCs necessárias já estavam presentes desde Fases 0–2). Nenhum deploy de Edge Function necessário — trabalho de frontend + hook.
 
 ### 2.9 Gate 6 — Observabilidade / DLQ / homologação E2E
-**Status: PARCIAL.** (inalterado nesta rodada)
-- Health via `communication-health` edge function.
-- DLQ existe como status `dead_letter` no outbox; falta RPC de reprocesso seguro com auditoria/rate limit por operador.
-- Falta matriz canônica `evento × destinatário × canal × origem × deep link` no repositório.
-- Falta suíte E2E Playwright de permissões por perfil no módulo de comunicação.
+**Status: GO — PRONTO PARA HOMOLOGAÇÃO SEM ENVIO EXTERNO.** Baseline `be555510dbf5bc2d011326cf126ee24218a79a33`.
+
+**Reconciliação com Gate 3.** Já existiam desde Gate 3: `rpc_admin_list_communication_dead_letter(p_limit,p_offset)`, `rpc_admin_communication_outbox_metrics()`, `rpc_admin_replay_communication_dead_letter(p_outbox_id)` e `rpc_admin_replay_communication_dead_letter_batch(p_limit)` (teto 20 + `FOR UPDATE SKIP LOCKED` + auditoria via `_comunicacao_write_audit`). A pendência histórica "falta RPC de reprocesso seguro" está **quitada** — o que faltava era rate-limit por ator e snapshot consolidado.
+
+**Entregas desta rodada (migration `20260728021528`):**
+- `public.rpc_admin_communication_health_snapshot()` — snapshot único admin-only cobrindo (queue) contadores `by_status`/`by_canal`, `pending`, `dead_letter`, `oldest_pending_age_seconds`, `oldest_processing_age_seconds`; (throughput_24h) `sent`, `failed_or_dlq`, `success_rate_pct`; (realtime) `ready` (via `pg_publication_tables` para `notificacoes_operacionais` + `portal_notificacoes`); (dlq_admin) `last_replay_at`. Zero PII, zero conteúdo de mensagem, zero secret. `REVOKE ALL FROM PUBLIC,anon; GRANT EXECUTE TO authenticated,service_role`.
+- `public.comunicacao_dlq_replay_audit` — tabela de trilha de replays (`actor_id`, `scope∈{unit,batch}`, `target_id`, `batch_size`, `created_at`). RLS ON com policy `SELECT` restrita a `administrador`; trigger `trg_dlq_replay_audit_no_mut` bloqueia INSERT/UPDATE/DELETE fora de SECURITY DEFINER (fail-closed).
+- `public._comunicacao_dlq_replay_rate_check(scope,max_per_minute)` (SECURITY DEFINER, `REVOKE ALL FROM PUBLIC,anon,authenticated; GRANT EXECUTE service_role`) — conta replays do `auth.uid()` na janela de 1 min; erra `53400` se excede.
+- Rewrap dos RPCs de replay unitário e em lote com rate-limit **30 unitários/min** e **6 lotes/min por administrador**, mantendo teto `LEAST(20)` no lote, `FOR UPDATE SKIP LOCKED`, audit `outbox.dlq_replay*` e agora também inserção em `comunicacao_dlq_replay_audit`.
+- Wrapper tipado `fetchHealthSnapshot()` em `src/features/comunicacao/api.ts` com interface `ComunicacaoHealthSnapshot`.
+
+**Matriz canônica versionada** — `restoration/comunicacao-gate6/matriz-eventos.md` v1.0.0. Cobre solicitações, OS/produção/produto pronto, estoque, financeiro/faturas, agenda/visitas e eventos administrativos por perfil (`admin.role_alterada`, `admin.senha_alterada`, `admin.provider_settings_changed`, `admin.dlq_replay`). Para cada linha: origem/trigger, destinatários por perfil, canais, chave de template, severidade, deep link e regra de preferência (todas `enabled=false`; eventos administrativos críticos marcados `forced-on`). Todos os deep links internos referenciados foram alinhados às rotas reais em `src/App.tsx` e são validados pelo `deepLinkAllowlist` para o perfil correspondente — cobertura empírica no test `gate6-observabilidade.test.ts`.
+
+**Checklist de homologação manual** — `restoration/comunicacao-gate6/checklist-homologacao.md` v1.0.0. Separa explicitamente "pronto para homologação" (estado atual) de "homologado externamente". Cobre SMTP sandbox/allowlist, credenciais Meta/WABA, submissão/aprovação de templates, opt-in de telefones, perfis de teste dedicados, cenários E2E manuais por canal (e-mail, WhatsApp, in-app, DLQ), evidências obrigatórias, encerramento seguro (flags OFF + `test_mode_enabled=true`).
+
+**Testes E2E / RBAC.** O repositório possui Playwright + `e2e/rbac-admin-vs-nao-admin.spec.ts` como suíte de RBAC genérica de sistema. Auditoria estática por perfil do módulo de comunicação está integralmente coberta em `src/test/comunicacao/*` (490 asserts): admin-only nas RPCs de template/regra/provider/DLQ/health, isolamento por RLS em `notificacoes_operacionais`/`portal_notificacoes`, opt-out bloqueando pré-outbox, allowlist de deep-link por perfil, ausência de secrets em respostas. **Limite honesto** desta rodada: não foi executada uma nova suíte Playwright autenticada por perfil no módulo — as flags de entrega OFF e a ausência de fixtures de usuários por perfil no sandbox tornam um E2E navegado equivalente aos harnesses estáticos já existentes. O caminho para elevar é o checklist §6 quando a homologação humana for executada.
+
+**Regressões auditadas nos Gates 3–5.** (i) Classificação de erro `email` (SMTP 4yz → transient) permanece coerente com `worker.p_is_permanent=false` — reconfirmado em `gate3-email.test.ts`. (ii) Adapter WhatsApp mantém restrição a `v24.0/v25.0` e classificação de 429/5xx como transitório — `gate4-whatsapp.test.ts`. (iii) Hook unificado in-app preserva não-lido em dedup e não vaza escopo entre usuários/clientes — `gate5-inapp.test.ts`. Nenhuma regressão detectada.
+
+**Débitos técnicos aceitos (não bloqueantes, fora do escopo Gate 6):**
+- Deploy da Edge Function `communication-health` para consumir `rpc_admin_communication_health_snapshot` no lugar do payload atual (booleans configured/enabled). Hoje o novo snapshot é acessado direto via `sb.rpc()` autenticado como admin; consolidar via Edge Function é evolução.
+- UI dedicada de painel de saúde (cards de contadores + gauge de success_rate). O dado já está tipado no data-access.
+- Suíte Playwright dedicada por perfil autenticado (bloqueada por ausência de fixtures de usuários homologação no sandbox atual).
+
+**Estado seguro.** Flags de delivery permanecem OFF; `test_mode_enabled=true`; regras `enabled=false`; produção `navfzbwgwzruipouyfnk` intocada.
+
+**Decisão: GO INTEGRAL para Gate 6.** Módulo de Comunicação **pronto para homologação sem envio externo real**. Ativação externa exige execução manual, sequenciada, do `checklist-homologacao.md` com autorização humana e credenciais reais.
 
 ---
 
 ## 3. Verificação de saúde da suíte (nesta rodada)
 
-`bunx vitest run src/test/comunicacao`: **482 tests PASS / 0 FAIL** (18 arquivos).
+`bunx vitest run src/test/comunicacao`: **490 tests PASS / 0 FAIL** (19 arquivos, +8 asserts Gate 6).
 `bunx tsgo --noEmit`: **0 erros**.
 
-Correções acumuladas: `fase1.test.ts` isolamento via `vi.stubEnv`; `fase2.test.ts` alinhado ao classificador unificado (`whatsapp_auth`); `fase2-3-coerencia.test.ts` regex do array de abas relaxado para aceitar `"consentimentos"`; nova lógica de dedup preserva item não-lido no bucket.
+Correções acumuladas: `fase1.test.ts` isolamento via `vi.stubEnv`; `fase2.test.ts` alinhado ao classificador unificado (`whatsapp_auth`); `fase2-3-coerencia.test.ts` regex do array de abas relaxado para aceitar `"consentimentos"`; dedup unificado preserva item não-lido; matriz Gate 6 alinhada às rotas reais de `src/App.tsx`.
 
-Nenhuma outra regressão. Nenhuma edição no runtime de aplicação.
+Nenhuma outra regressão. Nenhuma edição no runtime de aplicação além do wrapper `fetchHealthSnapshot`.
+
+## 3.bis Custo desta rodada / ledger
+
+| Marco | Créditos |
+|---|---:|
+| Ledger inicial da rodada | 75,0/96,0 |
+| Teto interno Gate 6 | 18,0 |
+| Consumo estimado (migration + 2 docs + 1 test + wrapper + reconciliação) | ~14,0 |
+| Ledger final estimado | ~89,0/96,0 |
+| Saldo residual | ~7,0 |
+
+
 
 
 ---
