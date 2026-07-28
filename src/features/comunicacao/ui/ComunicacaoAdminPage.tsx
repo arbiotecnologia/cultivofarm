@@ -1310,9 +1310,131 @@ function FilaPanel() {
         <button className="rounded border px-2 py-1 text-xs" onClick={() => setPage(page + 1)}>próxima →</button>
         <span className="text-xs text-muted-foreground self-center">página {page + 1}</span>
       </div>
+      <DlqAdminSection />
     </section>
   );
 }
+
+// -------------------- DLQ / Métricas (admin) --------------------
+
+function DlqAdminSection() {
+  const auth = useAuth();
+  const isAdmin = (auth.roles ?? []).includes("administrador" as never);
+  const qc = useQueryClient();
+  const metrics = useQuery({
+    queryKey: ["comm", "outbox-metrics"],
+    queryFn: () => fetchOutboxMetrics(),
+    enabled: isAdmin,
+    refetchInterval: 30_000,
+  });
+  const dlq = useQuery({
+    queryKey: ["comm", "dead-letter"],
+    queryFn: () => listDeadLetter(50, 0),
+    enabled: isAdmin,
+  });
+  const replay = useMutation({
+    mutationFn: (id: string) => replayDeadLetterItem(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["comm", "dead-letter"] });
+      qc.invalidateQueries({ queryKey: ["comm", "outbox-metrics"] });
+      qc.invalidateQueries({ queryKey: ["comm", "outbox"] });
+    },
+  });
+  const replayBatch = useMutation({
+    mutationFn: () => replayDeadLetterBatch(10),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["comm", "dead-letter"] });
+      qc.invalidateQueries({ queryKey: ["comm", "outbox-metrics"] });
+      qc.invalidateQueries({ queryKey: ["comm", "outbox"] });
+    },
+  });
+
+  if (!isAdmin) return null;
+
+  const m = metrics.data;
+  const rows = dlq.data ?? [];
+
+  return (
+    <div className="md:col-span-2 grid gap-4">
+      <div className="rounded-md border p-4">
+        <h2 className="font-medium mb-2">Métricas do outbox</h2>
+        {metrics.isLoading && <p className="text-muted-foreground text-xs">Carregando…</p>}
+        {metrics.error && <p className="text-destructive text-xs">Erro: {(metrics.error as Error).message}</p>}
+        {m && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <MetricBox label="dead_letter" value={m.dead_letter_count} tone={m.dead_letter_count > 0 ? "warn" : "ok"} />
+            <MetricBox label="pending" value={m.pending_count} />
+            <MetricBox label="tentativas média (terminal)" value={m.avg_attempts_terminal} />
+            <MetricBox label="latência média (ms) — sent" value={m.avg_latency_ms_sent} />
+            <div className="col-span-2 md:col-span-4 text-muted-foreground">
+              <span className="mr-2">por status: {formatCounts(m.by_status)}</span>
+              <span>por canal: {formatCounts(m.by_canal)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-md border p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="font-medium">Fila morta (dead-letter)</h2>
+          <button
+            className="ml-auto rounded border px-2 py-1 text-xs disabled:opacity-50"
+            disabled={replayBatch.isPending || rows.length === 0}
+            onClick={() => {
+              if (!globalThis.confirm("Reenviar até 10 itens da fila morta agora?")) return;
+              replayBatch.mutate();
+            }}
+          >
+            {replayBatch.isPending ? "Reenviando…" : "Reenviar lote (10)"}
+          </button>
+        </div>
+        {dlq.isLoading && <p className="text-muted-foreground text-xs">Carregando…</p>}
+        {dlq.error && <p className="text-destructive text-xs">Erro: {(dlq.error as Error).message}</p>}
+        {!dlq.isLoading && rows.length === 0 && (
+          <p className="text-xs text-muted-foreground">Nenhum item na fila morta.</p>
+        )}
+        <ul className="divide-y">
+          {rows.map((it) => (
+            <li key={it.id} className="py-2 flex flex-col gap-1 md:flex-row md:items-center md:gap-3">
+              <span className="font-mono text-xs">{it.template_chave} v{it.template_versao}</span>
+              <span className="text-xs">{it.canal} · tent={it.attempts}/{it.max_attempts}</span>
+              <span className="text-xs text-destructive truncate max-w-[24rem]" title={it.error_message ?? ""}>
+                {it.error_code ?? "sem_codigo"}: {(it.error_message ?? "").slice(0, 120)}
+              </span>
+              <button
+                className="md:ml-auto rounded border px-2 py-1 text-xs disabled:opacity-50"
+                disabled={replay.isPending}
+                onClick={() => {
+                  if (!globalThis.confirm(`Reenviar item ${it.template_chave}?`)) return;
+                  replay.mutate(it.id);
+                }}
+              >
+                {replay.isPending ? "…" : "Reenviar"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function MetricBox({ label, value, tone }: { label: string; value: number; tone?: "ok" | "warn" }) {
+  const cls = tone === "warn" ? "border-destructive/40" : "border-border";
+  return (
+    <div className={`rounded border ${cls} p-2`}>
+      <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
+      <div className="text-lg font-medium">{value}</div>
+    </div>
+  );
+}
+
+function formatCounts(o: Record<string, number> | undefined): string {
+  if (!o) return "—";
+  const parts = Object.entries(o).map(([k, v]) => `${k}=${v}`);
+  return parts.length ? parts.join(" · ") : "—";
+}
+
 
 // -------------------- Preferências --------------------
 
