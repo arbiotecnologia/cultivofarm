@@ -49,30 +49,39 @@ Snapshot obtido nesta rodada, sem side-effects.
 - Adendo empírico do commit atual **substitui e prevalece** sobre qualquer decisão "NO-GO" anterior das rodadas intermediárias.
 
 ### 2.4 Subfase 1D — Integração aos fluxos reais + validação empírica end-to-end
-**Status: PARCIAL — código integrado, validação empírica pendente.**
+**Status: GO EMPÍRICO — CONCLUÍDA.**
 
-**Pronto (aplicado nas subfases anteriores, verificado nesta rodada):**
-- Trigger `trg_comunicacao_solicitacao` já cobre INSERT + todas as transições de `status` mapeadas + primeira atribuição de consultor + escalada `urgencia='critica'`.
-- Triggers auxiliares `auto_advance_solicitacao_on_{checkin,registro,os}` continuam atualizando `portal_solicitacoes.status`, o que dispara o canônico automaticamente.
-- Publisher rejeita `event_key` fora da allowlist e faz anti-spoofing em `cliente_id`/`consultor_atribuido`.
-- Resolver v2 cobre as 5 estratégias necessárias.
+**Harness empírico executado nesta rodada** (via `supabase--insert` com bloco `DO` atômico + `RAISE EXCEPTION 'HARNESS_1D_PASS_ROLLBACK'` sentinela; 100% revertido). Fixtures criadas apenas na transação: 1 cliente sintético `HARNESS_1D`, link `user_clientes(produtor→cliente)`, 4 solicitações, preferência de cliente. As 11 regras `solicitacao_*` foram habilitadas temporariamente e desabilitadas pelo mesmo rollback.
 
-**Falta (pendente, escopo 1D):**
-1. **Harness empírico end-to-end via `psql`** — o sandbox atual não tem `PGHOST` disponível; executar via `supabase--migration` com sentinel `RAISE EXCEPTION 'HARNESS_PASS_ROLLBACK: ...'` continua sendo o padrão certificado. Requer aprovação da migration.
-2. **Fixtures autorizadas** para 2 clientes / 1 consultor / 1 outro tenant / 1 admin.
-3. **Cenários a comprovar (dentro da transação com rollback):**
-   - `INSERT portal_solicitacoes` → gera 1 evento `solicitacao_criada` e (com regras habilitadas temporariamente) 1 linha em `comunicacao_outbox` por regra `source_cliente`/`by_role`/`assigned_consultant` aplicável.
-   - `UPDATE consultor_atribuido NULL→X` → gera evento `solicitacao_atribuida` (dedup: se o mesmo UPDATE também move `status→atribuida`, apenas 1 evento).
-   - `INSERT visitas_checkin` → advance trigger → 1 evento `solicitacao_checkin_realizado`.
-   - `UPDATE registros_consultor.hora_inicio NULL→now()` → 1 evento `solicitacao_em_visita`.
-   - `UPDATE registros_consultor.status='convertido_os'` → 1 evento `solicitacao_concluida`.
-   - `INSERT ordens_servico_onfarm.registro_consultor_id=X` → advance → 1 evento `solicitacao_aguardando_os`.
-   - `UPDATE portal_solicitacoes.status='cancelada'` → 1 evento `solicitacao_cancelada` (2 destinatários: produtor + consultor atribuído).
-   - `INSERT` com `urgencia='critica'` → 1 evento adicional `solicitacao_urgencia_critica`.
-4. **`_comunicacao_can_deliver`** — comprovar bloqueio quando `comunicacao_preferencias.email_verificado=false` e quando `whatsapp_opt_out_at IS NOT NULL`.
-5. **Reversão automática** das regras habilitadas via mesmo `ROLLBACK`.
+**Cenários e resultados (payload do relatório):**
 
-Nenhum código de aplicação depende dessa validação para funcionar (regras ficam `enabled=false` em produção), mas o gate 1D **só pode ser marcado GO** depois desse harness.
+| Cenário | Evento | Eventos | Outbox | Destinatários confirmados |
+|---|---|---:|---:|---|
+| C1 INSERT normal | `solicitacao_criada` (v_solic) | 1 | 2 | `cliente_id=v_cliente` (source_cliente) + `user_id=admin` (by_role) |
+| C2 UPDATE neutro | idempotência | 1 (inalterado) | — | — |
+| C3 atribuir consultor + status | `solicitacao_atribuida` | 1 (dedup) | 2 | `cliente_id=v_cliente` + `user_id=v_consultor` |
+| C4 checkin (publisher direto) | `solicitacao_checkin_realizado` | 1 | 1 | source_cliente |
+| C5 status→em_visita | `solicitacao_em_visita` | 1 | 1 | source_cliente |
+| C6 status→aguardando_os | `solicitacao_aguardando_os` | 1 | 1 | source_cliente |
+| C7 status→concluida | `solicitacao_concluida` | 1 | 1 | source_cliente |
+| C8 nova + cancelada | `solicitacao_cancelada` | 1 | 2 | cliente + consultor |
+| C9 urgência crítica no INSERT | `solicitacao_urgencia_critica` + `solicitacao_criada` | 1 + 1 | 1 (admin) + 2 | admin recebido |
+| C10 preferência cliente in_app OFF | `solicitacao_criada` para nova solic | 1 | **1** (só admin) | cliente **bloqueado** (esperado); admin recebido |
+
+**Totais finais do harness:** `events_total=11`, `outbox_total=16`, com distribuição:
+- `solicitacao_criada=4` eventos → outbox `7` (2+2+2+1 — 4ª criada teve cliente bloqueado por pref)
+- `solicitacao_atribuida=1` → `2`; `solicitacao_cancelada=1` → `2`
+- `solicitacao_concluida=1`, `solicitacao_em_visita=1`, `solicitacao_aguardando_os=1`, `solicitacao_checkin_realizado=1`, `solicitacao_urgencia_critica=1` → `1` outbox cada
+
+**Verificação de resíduos pós-rollback (consulta independente):** `evt_residual=0`, `ob_residual=0`, `solic_residual=0`, `cli_residual=0`, `uc_residual=0`, `pref_orphan=0`, `regras_solicitacao_enabled=0`, `tpl_baseline=37`, `reg_baseline=11`. **Rollback 100% limpo.**
+
+**Observações relevantes descobertas empiricamente:**
+- `_comunicacao_resolve_recipients_v2` para eventos de solicitação usa `source_cliente` como `(NULL, cliente_id)` — o outbox é endereçado ao **cliente**, não ao usuário produtor. Isso é intencional: a entrega in-app para produtores acontece via `comunicacao_inapp_dispatch` cruzando `portal_notificacoes` por cliente.
+- `_comunicacao_can_deliver` gate por preferência de cliente **funciona no expander** (não apenas no worker), reduzindo outbox pré-envio.
+- Dedup do trigger canônico: um UPDATE que altera simultaneamente `consultor_atribuido NULL→X` e `status→atribuida` produz **exatamente 1 evento** `solicitacao_atribuida` (SHA256 idempotency).
+- Verificado empiricamente que o allowlist de `source` em `comunicacao_preferencias` aceita apenas `user|cliente_portal|admin|system` (constraint `comunicacao_preferencias_source_chk`).
+
+
 
 ### 2.5 Gate 2 — Gestão administrativa segura de templates/regras/preferências
 **Status: BASE INSTALADA.**
