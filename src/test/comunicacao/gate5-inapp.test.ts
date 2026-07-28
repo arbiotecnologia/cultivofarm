@@ -36,9 +36,10 @@ describe("Gate 5 · deep link allowlist", () => {
   it("perfil sem acesso vê unauthorized, com fallback à central", () => {
     const r = classifyDeepLink("/financeiro/dre", ["tecnico_agronomo"]);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toBe("unauthorized");
+    if (r.ok === false) expect(r.reason).toBe("unauthorized");
     expect(CENTRAL_NOTIFICACOES_ROUTE).toBe("/notificacoes");
   });
+
 
   it("perfil autorizado navega para prefixo permitido", () => {
     const r = classifyDeepLink("/solicitacoes/abc-123", ["tecnico_agronomo"]);
