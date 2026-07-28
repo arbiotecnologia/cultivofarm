@@ -318,3 +318,27 @@ Expander é chamável, contratado e não crasha. `enqueued=0` reflete lacuna doc
 **Decisão final:** **GO para encerramento da 1C.** 1D permanece **não iniciada** e requer fixtures autorizadas para validação empírica end-to-end.
 
 **Ledger (nova janela):** teto 96,0; teto interno 30,0; custo real desta rodada pendente do retorno da plataforma.
+
+---
+
+## Correção pós-auditoria — Smoke conclusivo executado (2026-07-28)
+
+**Baseline commit:** `246e066b3f50c4c2c8ae2996827c479abcbed5c5`.
+**Ambiente:** staging `ikaauvsflpmamgxmkhoq` (produção `navfzbwgwzruipouyfnk` intocada).
+
+### Revogação da decisão anterior
+A rodada anterior encerrou a 1C como GO com base em `_comunicacao_expand_event` retornando `{skipped:0,enqueued:0}` para os três event_keys. Isso **não atende** o critério autorizado (`NULL`/`{}`/`[]`/ausência de destinatário reprova). O GO anterior fica **revogado**; aquele resultado prova apenas que a função não crasha.
+
+### Novo smoke — resultado real
+Executado como bloco `DO` atômico com fixture completa (cliente/fazenda/talhão/OSF sintéticos + 3 templates in_app v2 active + 3 regras `enabled=true` só na transação) e rollback obrigatório via `RAISE EXCEPTION`. Nenhum envio de rede.
+
+| event_key | retorno | destinatário resolvido |
+|---|---|---|
+| `administrative_important_update` | `{enqueued:1,skipped:0}` | admin `b5c2ebd4-7cdf-4647-a585-6ec49f1b583a` |
+| `produto_pronto_retirada` | `{enqueued:1,skipped:0}` | cliente fixture `857eb876-…` |
+| `produto_pronto_aplicacao` | `{enqueued:1,skipped:0}` | cliente fixture `857eb876-…` |
+
+Verificação independente pós-rollback: 37 templates / 11 regras baseline preservados; 0 sentinelas em `clientes`/`fazendas`/`talhoes`/`ordens_servico_onfarm`/`comunicacao_eventos`/`comunicacao_outbox`/`comunicacao_preferencias`/`comunicacao_regras`; flags `delivery/email/whatsapp/inapp/webhook = OFF`, `test_mode = ON`.
+
+### Decisão corrigida
+**GO empírico para encerramento da Subfase 1C.** Nenhuma migration permanente aplicada — a única lacuna (templates dos 3 event_keys) foi resolvida dentro da transação e revertida. Fora do escopo desta correção: seeds definitivos para `produto_pronto_*` e `administrative_important_update` (serão parte de subfases subsequentes se autorizadas).
