@@ -159,3 +159,5 @@ export async function sendWhatsapp(
   }
   const err = (payload as { error?: { code?: number; message?: string; type?: string } })?.error ?? null;
   return classifyWhatsappHttpError(res.status, err);
+}
+
