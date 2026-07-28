@@ -45,15 +45,17 @@ export default function CentralNotificacoes() {
     if (!n.lido) markRead.mutate(n.id);
     if (!n.link) return;
     const decision = classifyDeepLink(n.link, roles ?? []);
-    if (decision.ok) {
+    if (decision.ok === true) {
       navigate(decision.safePath);
       return;
     }
+    const reason: "invalid" | "unauthorized" = decision.reason;
     toast.error(
-      decision.reason === "unauthorized"
+      reason === "unauthorized"
         ? "Sem acesso a este link. Abra pela central."
         : "Link inválido nesta notificação.",
     );
+
 
 
   };
