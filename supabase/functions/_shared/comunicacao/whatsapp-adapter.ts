@@ -159,13 +159,3 @@ export async function sendWhatsapp(
   }
   const err = (payload as { error?: { code?: number; message?: string; type?: string } })?.error ?? null;
   return classifyWhatsappHttpError(res.status, err);
-}
-    return { outcome: "transient_error", code: "whatsapp_rate_limited", message: `HTTP 429` };
-  }
-  if (res.status >= 500) {
-    return { outcome: "transient_error", code: `whatsapp_5xx`, message: `HTTP ${res.status}` };
-  }
-  const err = (payload as { error?: { code?: number; message?: string; type?: string } })?.error;
-  const safe = err ? `code=${err.code ?? "?"} type=${err.type ?? "?"}` : `HTTP ${res.status}`;
-  return { outcome: "permanent_error", code: `whatsapp_${res.status}`, message: safe };
-}
