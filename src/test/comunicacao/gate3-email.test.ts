@@ -154,10 +154,10 @@ describe("gate3 email-adapter: caminhos com SMTP mock", () => {
     expect(r.code).toBe("email_smtp_5xx");
   });
 
-  it("SMTP 4xx → permanent_error (email_smtp_4xx)", async () => {
+  it("SMTP 4xx → transient_error (RFC 5321 §4.2.1, retry via worker)", async () => {
     const m = mockSmtp("smtp4xx");
     const r = await sendEmail(baseEnv(), to, snap, { assunto: "S", corpo: "hi" }, { smtpClientFactory: m.factory });
-    expect(r.outcome).toBe("permanent_error");
+    expect(r.outcome).toBe("transient_error");
     expect(r.code).toBe("email_smtp_4xx");
   });
 
