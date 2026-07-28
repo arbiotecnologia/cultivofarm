@@ -26,6 +26,7 @@ import {
   type SmtpFieldErrors,
   type WhatsappFieldErrors,
 } from "./comunicacaoValidation";
+import { useAuth } from "@/hooks/useAuth";
 
 type ProviderView = {
   ok: boolean;
