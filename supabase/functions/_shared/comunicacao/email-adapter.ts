@@ -12,7 +12,17 @@ import type {
   SmtpLikeClient,
   WorkerEnv,
 } from "./adapters-types.ts";
-import { escapeHtml, isRecipientAllowedInTestMode, isSmtpConfigValid } from "./adapters-types.ts";
+import {
+  classifyEmailError,
+  escapeHtml,
+  hasHeaderInjection,
+  isRecipientAllowedInTestMode,
+  isSmtpConfigValid,
+  MAX_EMAIL_ADDRESS_LEN,
+  MAX_EMAIL_BODY_BYTES,
+  MAX_EMAIL_SUBJECT_LEN,
+  utf8ByteLength,
+} from "./adapters-types.ts";
 
 const SEND_TIMEOUT_DEFAULT_MS = 20_000;
 
