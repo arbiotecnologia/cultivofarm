@@ -182,34 +182,76 @@ Snapshot obtido nesta rodada, sem side-effects.
 **Regressões auditadas nos Gates 3–5.** (i) Classificação de erro `email` (SMTP 4yz → transient) permanece coerente com `worker.p_is_permanent=false` — reconfirmado em `gate3-email.test.ts`. (ii) Adapter WhatsApp mantém restrição a `v24.0/v25.0` e classificação de 429/5xx como transitório — `gate4-whatsapp.test.ts`. (iii) Hook unificado in-app preserva não-lido em dedup e não vaza escopo entre usuários/clientes — `gate5-inapp.test.ts`. Nenhuma regressão detectada.
 
 **Débitos técnicos aceitos (não bloqueantes, fora do escopo Gate 6):**
-- Deploy da Edge Function `communication-health` para consumir `rpc_admin_communication_health_snapshot` no lugar do payload atual (booleans configured/enabled). Hoje o novo snapshot é acessado direto via `sb.rpc()` autenticado como admin; consolidar via Edge Function é evolução.
-- UI dedicada de painel de saúde (cards de contadores + gauge de success_rate). O dado já está tipado no data-access.
-- Suíte Playwright dedicada por perfil autenticado (bloqueada por ausência de fixtures de usuários homologação no sandbox atual).
+- Suíte Playwright dedicada por perfil autenticado no módulo de comunicação segue bloqueada por ausência de fixtures de usuários homologação no sandbox atual. Auditoria estática (490 asserts em `src/test/comunicacao/*`) e RBAC genérico (`e2e/rbac-admin-vs-nao-admin.spec.ts`) permanecem como cobertura vigente. Elevação prevista no checklist §6 durante homologação humana.
 
-**Estado seguro.** Flags de delivery permanecem OFF; `test_mode_enabled=true`; regras `enabled=false`; produção `navfzbwgwzruipouyfnk` intocada.
+**Estado seguro.** Flags de delivery permanecem OFF (`delivery`, `email`, `whatsapp`, `in_app`, `webhook`); `test_mode_enabled=true`; regras `solicitacao_*`/`produto_*`/`administrative_*` com `enabled=false`; frontend não publicado; produção `navfzbwgwzruipouyfnk` intocada.
 
-**Decisão: GO INTEGRAL para Gate 6.** Módulo de Comunicação **pronto para homologação sem envio externo real**. Ativação externa exige execução manual, sequenciada, do `checklist-homologacao.md` com autorização humana e credenciais reais.
+**Decisão: PRONTO PARA HOMOLOGAÇÃO SEM ENVIO EXTERNO.** Ativação externa exige execução manual, sequenciada, do `checklist-homologacao.md` com autorização humana e credenciais reais. Este checkpoint não declara "homologado externamente".
+
+### 2.9.1 Correção final Gate 6 (auditoria pós-fechamento)
+
+Baseline `a842fac8ed871ae289f673320f69a4436781bb0c`. Aplicada idempotentemente em staging `ikaauvsflpmamgxmkhoq`; produção `navfzbwgwzruipouyfnk` intocada. Sem envio externo, sem alteração de flags, sem invocação de worker.
+
+**Ampliação do `rpc_admin_communication_health_snapshot`** (idempotente, retrocompatível):
+- `flags`: `delivery_enabled`, `email_enabled`, `whatsapp_enabled`, `in_app_enabled`, `whatsapp_webhook_enabled`, `test_mode_enabled` derivados de `public.communication_provider_settings` (colunas reais: `delivery_enabled`, `email_delivery_enabled`, `whatsapp_delivery_enabled`, `inapp_delivery_enabled`, `whatsapp_webhook_enabled`, `test_mode_enabled`). Fallback `false` quando não há linha.
+- `providers.email/whatsapp/in_app`: booleanos `configured` derivados da presença de host/from/refs de secret (nunca valores) e `enabled` da flag correspondente. WhatsApp expõe também `webhook_configured` (presença de `secret_whatsapp_verify_token` + `secret_whatsapp_app_secret`) e `webhook_enabled`. Zero UUID/valor de secret retornado.
+- `queue.by_event_key_7d`: agregação por `event_key` (join seguro `outbox.event_id → eventos.id`) com contagens `total/sent/pending/failed/dead_letter` em janela de 7 dias.
+- `queue.by_canal_status_7d`: matriz `canal.status` em 7 dias.
+- `throughput_24h`: mantém `sent/failed_or_dlq/success_rate_pct` e adiciona `avg_attempts_sent`, `avg_attempts_terminal`, `max_attempts`, `avg_latency_ms`, `p95_latency_ms` calculados só sobre `sent_at` real.
+- `worker`: `status ∈ {active,idle,stale,unknown}` derivado de timestamps reais (`max(locked_at|sent_at|updated_at)` dentro de `processing/sent/failed/dead_letter`). Sem dados → `unknown` com `last_activity_age_seconds=null` (nunca inventa saúde). Buckets: ≤300s active, ≤1800s idle, >1800s stale.
+- `realtime.ready`: `pg_publication_tables` sobre `notificacoes_operacionais` + `portal_notificacoes` (inalterado).
+- `dlq_admin.last_replay_at`: derivado de `comunicacao_dlq_replay_audit` (inalterado).
+
+**Edge Function `communication-health`** (redeploy staging):
+- Autorização: `INTERNAL_FUNCTION_SECRET` OU `service_role` JWT OU JWT de administrador (`user_roles.role='administrador'`). Nunca `anon`.
+- Consome o snapshot consolidado via `sb.rpc('rpc_admin_communication_health_snapshot')`.
+- Aplica `sanitize()` como defesa em profundidade: remove qualquer chave que case `/password|secret|token|api_key|access_token|dsn|smtp_user|smtp_host|smtp_from|phone_number_id|verify_token/i` antes de responder.
+- Nunca invoca worker, nunca altera flags.
+
+**UI administrativa `ObservabilidadePanel`** (`src/features/comunicacao/ui/ObservabilidadePanel.tsx`):
+- Consome `fetchHealthSnapshot` com `refetchInterval=30s`. React Query cobre estados `loading/error/empty` explicitamente, com botão "Tentar novamente" no erro.
+- Cards: flags, providers (email/whatsapp/in-app + webhook + realtime), fila (`pending/processing/dead_letter`, item antigo pending/processing, último replay), throughput 24h (`sent`, `failed_or_dlq`, `success_rate_pct`, `avg_attempts`, `max_attempts`, `avg_latency_ms`, `p95_latency_ms`), worker (`status/last_activity/last_sent`). Tone semântico com tokens: `emerald` (ok), `amber` (warn), `destructive` (bad), `border` (neutro).
+- Tabelas por `event_key` (7d) e `canal.status` (7d) só renderizam quando há dados; caso contrário, mensagem "Nenhum evento processado ainda".
+- Grid responsivo (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-6`). Zero valores hard-coded de secret ou UUID.
+- Renderizado apenas para `administrador` em `ComunicacaoAdminPage.tsx`, acima do `CanalHealthPanel` legado (coexistem sem regressão).
+
+**Auditoria empírica das ACLs Gate 6** (via `has_function_privilege` / `has_table_privilege`, staging):
+
+| Alvo | anon | authenticated |
+|---|---|---|
+| `rpc_admin_communication_health_snapshot()` EXECUTE | ❌ | ✅ (guard `_comunicacao_require_admin` bloqueia não-admin em runtime) |
+| `_comunicacao_dlq_replay_rate_check(text,int)` EXECUTE | ❌ | ❌ (só owner via SECURITY DEFINER) |
+| `comunicacao_dlq_replay_audit` INSERT | ❌ | ❌ (só owner via RPCs SECURITY DEFINER; trigger `trg_dlq_replay_audit_no_mut` como fail-closed) |
+| `comunicacao_dlq_replay_audit` SELECT | ❌ | ✅ (RLS ON com policy admin-only) |
+
+Rate-limit continua funcionando porque os RPCs `rpc_admin_replay_communication_dead_letter{,_batch}` chamam `_comunicacao_dlq_replay_rate_check` sob SECURITY DEFINER (owner tem EXECUTE), enquanto o cliente autenticado não pode invocar o helper diretamente. Trigger `no_mutation` fecha o vetor de INSERT direto.
+
+**Deep links da matriz × rotas reais.** Revisão em `src/App.tsx`: rotas `/notificacoes`, `/ordens-servico`, `/producao`, `/financeiro`, `/agenda`, `/estoque-embalagens`, `/solicitacoes`, `/comunicacao/admin` conferidas; `deepLinkAllowlist` valida prefixo por perfil e é testado empiricamente em `gate6-observabilidade.test.ts`. Nenhuma rota inventada na matriz. **Limite honesto preservado:** Playwright autenticado por perfil segue dependente de fixtures de homologação e não foi executado nesta rodada.
+
+**Suíte comunicação:** `bunx vitest run src/test/comunicacao` → **490/490 PASS** (19 arquivos). Correções: `fase2.test.ts` agora valida `rpc_admin_communication_health_snapshot` + `sanitize()` (health não usa mais `healthBooleans`); `fase-provider-settings-corr.test.ts` reconhece a migração da health function para RPC admin. **`bunx tsgo --noEmit`:** 0 erros. **`bun run build`:** OK (`built in 19.66s`, PWA gerado). Lint global do repo não roda (script `lint` ausente por design); os arquivos alterados desta rodada são exclusivos do módulo de comunicação e passam por typecheck strict + tests dedicados.
+
+**Confirmação de segurança pós-correção:** flags OFF, `test_mode_enabled=true`, regras disabled, frontend não publicado, produção intocada, nenhum envio externo, nenhum secret exposto no snapshot ou na Edge Function.
 
 ---
 
 ## 3. Verificação de saúde da suíte (nesta rodada)
 
-`bunx vitest run src/test/comunicacao`: **490 tests PASS / 0 FAIL** (19 arquivos, +8 asserts Gate 6).
+`bunx vitest run src/test/comunicacao`: **490 tests PASS / 0 FAIL** (19 arquivos, inclui asserts atualizados para snapshot admin consolidado).
 `bunx tsgo --noEmit`: **0 erros**.
+`bun run build`: **OK**.
 
-Correções acumuladas: `fase1.test.ts` isolamento via `vi.stubEnv`; `fase2.test.ts` alinhado ao classificador unificado (`whatsapp_auth`); `fase2-3-coerencia.test.ts` regex do array de abas relaxado para aceitar `"consentimentos"`; dedup unificado preserva item não-lido; matriz Gate 6 alinhada às rotas reais de `src/App.tsx`.
-
-Nenhuma outra regressão. Nenhuma edição no runtime de aplicação além do wrapper `fetchHealthSnapshot`.
+Correções acumuladas: `fase1.test.ts` isolamento via `vi.stubEnv`; `fase2.test.ts` alinhado ao classificador unificado + validação do sanitizador de health; `fase2-3-coerencia.test.ts` regex do array de abas relaxado para aceitar `"consentimentos"`; `fase-provider-settings-corr.test.ts` reconhece migração da health function para RPC admin; dedup unificado preserva item não-lido; matriz Gate 6 alinhada às rotas reais de `src/App.tsx`.
 
 ## 3.bis Custo desta rodada / ledger
 
 | Marco | Créditos |
 |---|---:|
-| Ledger inicial da rodada | 75,0/96,0 |
-| Teto interno Gate 6 | 18,0 |
-| Consumo estimado (migration + 2 docs + 1 test + wrapper + reconciliação) | ~14,0 |
-| Ledger final estimado | ~89,0/96,0 |
-| Saldo residual | ~7,0 |
+| Ledger pré-rodada (auditoria/correção final) | 83,3/96,0 |
+| Teto autorizado desta correção | 9,0 (preservando 3,7) |
+| Consumo real (2 migrations RPC + edge fn + painel UI + tipagem + 2 testes ajustados + doc) | a apurar após retorno real |
+| Ledger final | a apurar |
+
+
 
 
 
