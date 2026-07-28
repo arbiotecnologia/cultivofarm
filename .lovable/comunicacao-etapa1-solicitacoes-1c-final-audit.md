@@ -294,10 +294,13 @@ Executado via `supabase--read_query` imediatamente após o INSERT idempotente:
 |---|---:|
 | Teto autorizado desta rodada | 96,0 |
 | Teto interno inicial desta certificação | 30,0 |
-| Custo real desta rodada | **pendente do retorno da plataforma** |
-| Saldo restante | pendente |
+| Rodada inicial (retorno real da plataforma) | 6,9 |
+| Rodada corretiva (retorno real da plataforma) | 5,9 |
+| **Total consumido nesta janela** | **12,8 / 96,0** |
+| **Saldo restante** | **83,2** |
+| Custo desta microcorreção documental | pendente do retorno da plataforma (será somado depois; sem estimativa inventada) |
 
-Sem estimativas inventadas. Nenhum canal habilitado, nenhum deploy, nenhuma migration nova, nenhum frontend publicado, 1D não iniciada.
+Nenhum canal habilitado, nenhum deploy, nenhuma migration nova, nenhum frontend publicado, 1D não iniciada.
 
 ## §9 Certificação empírica final — nova janela 96 créditos (2026-07-28)
 
