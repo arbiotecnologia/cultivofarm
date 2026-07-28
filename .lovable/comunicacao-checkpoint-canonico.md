@@ -117,15 +117,33 @@ Snapshot obtido nesta rodada, sem side-effects.
 
 
 ### 2.7 Gate 4 — WhatsApp Cloud API
-**Status: CÓDIGO PRONTO, SEM ENVIO REAL.**
-- `supabase/functions/_shared/comunicacao/whatsapp-adapter.ts` com E.164, versão restrita v24/v25, `provider_template_status='approved'` gate, mapping sequencial, sanitização de erros, timeout real.
-- Webhook `whatsapp-status-webhook` HMAC-validado, streaming reader, idempotência via `comunicacao_provider_receipts`, gate `WHATSAPP_WEBHOOK_ENABLED`.
-- Coberto por 57 asserts em `fase4.test.ts`.
+**Status: GO — PRONTO PARA HOMOLOGAÇÃO SEM ENVIO REAL.**
+- `whatsapp-adapter.ts`: E.164, versão restrita v24/v25, `provider_template_status='approved'` obrigatório, mapping sequencial, variáveis obrigatórias validadas ANTES da rede, timeout real, mensagem sanitizada (nunca token/número), gate `isRecipientAllowedInTestMode` antes de qualquer chamada, payload sempre `type=template` (nunca free-text/session — política 24h enforced por design).
+- Novo classificador puro `classifyWhatsappHttpError(status, metaError)` — determinístico e testável:
+  - `429` → `transient_error/whatsapp_rate_limited`
+  - `5xx` → `transient_error/whatsapp_5xx`
+  - `401/403` → `permanent_error/whatsapp_auth` (credencial inválida/conta suspensa)
+  - `404` → `permanent_error/whatsapp_not_found` (template ou phone_id inexistente)
+  - `400` → `permanent_error/whatsapp_bad_request` (payload/template/param inválido)
+  - demais `4xx` → `permanent_error/whatsapp_<status>`
+  Worker mapeia `transient_error` → `rpc_fail_communication_delivery_v2(..., p_is_permanent=false)` (backoff+jitter Gate 3) e `permanent_error` → `p_is_permanent=true`. Opt-out não chega ao adapter: bloqueio ocorre em `_comunicacao_can_deliver(user,cliente,'whatsapp')` durante `_comunicacao_expand_event`, antes de qualquer inserção em `comunicacao_outbox` — verificado por inspeção de `pg_get_functiondef` nesta rodada.
+- Webhook `whatsapp-status-webhook`: HMAC-SHA256 constant-time, GET challenge numérico, streaming reader com `MAX_BODY_BYTES=128 KiB`, feature-flag `WHATSAPP_WEBHOOK_ENABLED` fail-closed, phone_number_id mismatch = hard error, idempotência SQL `(provider, provider_message_id, status, provider_timestamp)` em `comunicacao_provider_receipts`, máquina de estado monotônica com timestamps por transição, concorrência limitada (max 8), respostas sem PII, sem `console.*`.
+- Templates administrados via `rpc_create_communication_template`, `rpc_update_communication_template`, `rpc_activate_communication_template`, `rpc_archive_communication_template`, `rpc_set_communication_template_metadata` (nome/idioma/mapping/status Meta). Somente `approved` envia; snapshot congelado por versão no outbox — token nunca aparece na UI.
+- **Novo nesta rodada — migração admin de consentimento** aplicada em staging (`20260728020032`):
+  - `public.rpc_admin_set_whatsapp_consent(p_cliente_id uuid, p_user_id uuid, p_acao text, p_source text, p_justificativa text)` — SECURITY DEFINER, `search_path=public`, guard `has_role(...,'administrador')`, XOR entre `cliente_id`/`user_id`, ação enumerada (`opt_in|opt_out|verified`), origem ≤60 chars, justificativa ≤500 chars.
+  - Sempre grava linha em `comunicacao_consent_log` (append-only por trigger `comunicacao_consent_no_mutation`) com `actor_id`, `source` e `justificativa` embutida.
+  - Upsert idempotente em `comunicacao_preferencias` — reseta `whatsapp_opt_out_at` no opt-in, jamais reduz `telefone_verificado`.
+  - ACL verificada empiricamente: `anon.EXECUTE=false`, `authenticated.EXECUTE=true`, `service_role.EXECUTE=true` (`has_function_privilege`).
+- **Cobertura**: `src/test/comunicacao/fase4.test.ts` (existente, 57 asserts) + novo `gate4-whatsapp.test.ts` (**28 asserts**) cobrindo mock fetch para sucesso/400/401/403/404/429/5xx/timeout/rede, template não aprovado, E.164 inválido, variável ausente, mapping quebrado, flags OFF, migração admin (SECURITY DEFINER + guard + XOR + trilha + ACL), template-only enforced. Suíte comunicação: **462/462 PASS**, typecheck limpo.
+- **Deploy nesta rodada**: `process-communication-outbox` reimplantado em staging carregando o adapter com o classificador novo. Nenhum outro deploy necessário (webhook não mudou). Nenhuma invocação de envio.
+- **Estado seguro reconfirmado**: `communication_provider_settings` no staging — `delivery_enabled=false`, `email_delivery_enabled=false`, `whatsapp_delivery_enabled=false`, `inapp_delivery_enabled=false`, `whatsapp_webhook_enabled=false`, `test_mode_enabled=true`. Produção `navfzbwgwzruipouyfnk` intocada.
 
-**Falta para GO:**
-- Fluxo de aprovação de templates WhatsApp na UI administrativa (leitura Cloud API + estado local).
-- Consentimento explícito por cliente (janela 24h atendimento) com trilha em `comunicacao_consent_log`.
-- Simulação de webhook com mocks (sem rede).
+**Falta para entrega externa homologada (fora deste gate):**
+- Credenciais Meta reais + WABA verificado; sincronização de status Meta → banco (poll ou webhook de template status) para popular `provider_template_status`.
+- UI administrativa expandida para gestão visual de opt-in/opt-out por cliente (a RPC já está pronta e segura).
+- Rodada de homologação com sandbox Meta sob autorização explícita.
+
+
 
 ### 2.8 Gate 5 — In-app realtime nos módulos
 **Status: BASE PRONTA, INTEGRAÇÃO NÃO COMEÇOU.**
