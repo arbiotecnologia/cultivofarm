@@ -351,11 +351,14 @@ export default function ComunicacaoConfigTab() {
   }
 
   async function handleTestEmail() {
-    const to = testEmailTo.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
-      toast.error("Informe um e-mail válido", { description: "Ex.: destinatario@exemplo.com" });
+    const err = validateTestEmail(testEmailTo);
+    if (err) {
+      setTestEmailError(err);
+      toast.error("Destinatário inválido", { description: err });
       return;
     }
+    setTestEmailError(undefined);
+    const to = testEmailTo.trim().toLowerCase();
     setTestingEmail(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
