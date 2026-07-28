@@ -3316,6 +3316,33 @@ export type Database = {
         }
         Relationships: []
       }
+      comunicacao_dlq_replay_audit: {
+        Row: {
+          actor_id: string
+          batch_size: number | null
+          created_at: string
+          id: string
+          scope: string
+          target_id: string | null
+        }
+        Insert: {
+          actor_id: string
+          batch_size?: number | null
+          created_at?: string
+          id?: string
+          scope: string
+          target_id?: string | null
+        }
+        Update: {
+          actor_id?: string
+          batch_size?: number | null
+          created_at?: string
+          id?: string
+          scope?: string
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       comunicacao_eventos: {
         Row: {
           created_at: string
@@ -14534,6 +14561,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      _comunicacao_dlq_replay_rate_check: {
+        Args: { p_max_per_minute: number; p_scope: string }
+        Returns: undefined
+      }
       _comunicacao_expand_event: {
         Args: {
           _event_id: string
@@ -15627,6 +15658,7 @@ export type Database = {
         Args: { p_template_id: string }
         Returns: Json
       }
+      rpc_admin_communication_health_snapshot: { Args: never; Returns: Json }
       rpc_admin_communication_outbox_metrics: { Args: never; Returns: Json }
       rpc_admin_list_communication_dead_letter: {
         Args: { p_limit?: number; p_offset?: number }
