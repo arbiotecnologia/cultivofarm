@@ -249,7 +249,7 @@ export default function ComunicacaoConfigTab() {
       setEmailsErr(""); setPhonesErr(""); setSmtpErrors({}); setWaErrors({});
       setWebhookAppSecretErr(""); setWebhookVerifyErr("");
     } catch (e: any) {
-      toast.error("Erro ao carregar configurações", { description: friendlyError(e.message) });
+      toast.error("Erro ao carregar configurações", { description: friendlyError(e.message, e?.status) });
     } finally {
       setLoading(false);
     }
@@ -266,7 +266,7 @@ export default function ComunicacaoConfigTab() {
       setEmailsText(""); setPhonesText("");
       return true;
     } catch (e: any) {
-      toast.error("Falha ao salvar", { description: friendlyError(e.message) });
+      toast.error("Falha ao salvar", { description: friendlyError(e.message, e?.status) });
       return false;
     } finally {
       setSaving(false);
