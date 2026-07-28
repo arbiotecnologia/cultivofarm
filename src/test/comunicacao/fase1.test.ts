@@ -113,8 +113,19 @@ describe("comunicacao: migration structural checks", () => {
 
 
 describe("comunicacao: route guard e flag", () => {
-  it("flag padrão é false", async () => {
-    const { isComunicacaoModuleEnabled } = await import("@/features/comunicacao/flags");
-    expect(isComunicacaoModuleEnabled()).toBe(false);
+  it("flag padrão é false quando VITE_COMUNICACAO_MODULE_ENABLED != 'true'", async () => {
+    // Isola o teste do .env do sandbox (que legitimamente liga a flag em dev)
+    // stubando as variáveis relevantes e recarregando o módulo.
+    const { vi } = await import("vitest");
+    vi.stubEnv("VITE_COMUNICACAO_MODULE_ENABLED", "");
+    vi.stubEnv("VITE_COMUNICACAO_BROADCAST_TAB_ENABLED", "");
+    vi.resetModules();
+    try {
+      const { isComunicacaoModuleEnabled } = await import("@/features/comunicacao/flags");
+      expect(isComunicacaoModuleEnabled()).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
   });
 });
