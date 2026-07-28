@@ -112,7 +112,60 @@ export async function listOutbox(page = 0, pageSize = 25): Promise<ComunicacaoOu
   return (data ?? []) as ComunicacaoOutbox[];
 }
 
-// ---------------- Preferências do próprio usuário ----------------
+// ---------------- Gate 3 — Admin DLQ + métricas ----------------
+
+export interface ComunicacaoDeadLetterItem {
+  id: string;
+  canal: string;
+  template_chave: string;
+  template_versao: number;
+  attempts: number;
+  max_attempts: number;
+  error_code: string | null;
+  error_message: string | null;
+  recipient_user_id: string | null;
+  recipient_cliente_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComunicacaoOutboxMetrics {
+  by_status: Record<string, number>;
+  by_canal: Record<string, number>;
+  dead_letter_count: number;
+  pending_count: number;
+  last_dead_letter_at: string | null;
+  avg_attempts_terminal: number;
+  avg_latency_ms_sent: number;
+}
+
+export async function listDeadLetter(limit = 50, offset = 0): Promise<ComunicacaoDeadLetterItem[]> {
+  const { data, error } = await sb.rpc("rpc_admin_list_communication_dead_letter", {
+    p_limit: limit, p_offset: offset,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ComunicacaoDeadLetterItem[];
+}
+
+export async function fetchOutboxMetrics(): Promise<ComunicacaoOutboxMetrics> {
+  const { data, error } = await sb.rpc("rpc_admin_communication_outbox_metrics", {});
+  if (error) throw new Error(error.message);
+  return (data ?? { by_status: {}, by_canal: {}, dead_letter_count: 0, pending_count: 0,
+    last_dead_letter_at: null, avg_attempts_terminal: 0, avg_latency_ms_sent: 0 }) as ComunicacaoOutboxMetrics;
+}
+
+export async function replayDeadLetterItem(id: string): Promise<{ ok: boolean; id: string; status: string }> {
+  const { data, error } = await sb.rpc("rpc_admin_replay_communication_dead_letter", { p_outbox_id: id });
+  if (error) throw new Error(error.message);
+  return data as { ok: boolean; id: string; status: string };
+}
+
+export async function replayDeadLetterBatch(limit = 10): Promise<{ ok: boolean; replayed: number; ids: string[] }> {
+  const { data, error } = await sb.rpc("rpc_admin_replay_communication_dead_letter_batch", { p_limit: limit });
+  if (error) throw new Error(error.message);
+  return data as { ok: boolean; replayed: number; ids: string[] };
+}
+
 
 export async function listOwnPreferences(): Promise<ComunicacaoPreferencia[]> {
   const { data, error } = await sb
