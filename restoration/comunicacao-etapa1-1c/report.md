@@ -176,10 +176,13 @@ ALTER TABLE public.comunicacao_regras
 - Smoke do expander: **NO-GO temporário** por falta de `psql`/`service_role` no sandbox e ausência de regras habilitadas para os 3 event_keys (pertencem à Fase 3/4 originais — fora do escopo da 1C). Nenhuma correção de código/SQL foi necessária: o script já está semanticamente correto.
 - Produção intocada, flags OFF, 1D não iniciada.
 
-### 9.5 Ledger
+### 9.5 Ledger (nova janela independente, teto 96,0)
 
-- Teto autorizado desta rodada: 96,0 créditos (teto interno inicial: 30,0).
-- Custo real desta rodada: **pendente do retorno da plataforma**.
+- Teto autorizado desta janela: 96,0 créditos (teto interno inicial: 30,0).
+- Rodada inicial (retorno real da plataforma): **6,9**.
+- Rodada corretiva (retorno real da plataforma): **5,9**.
+- **Total consumido nesta janela: 12,8 / 96,0. Saldo: 83,2.**
+- Custo desta microcorreção documental: **pendente do retorno da plataforma** (será somado ao total depois; sem estimativa inventada).
 - Nenhum acúmulo com o teto anterior (encerrado em 98,9/100 conforme rodadas anteriores).
 
 ## 8. Certificação empírica final (nova janela de créditos — teto 96)
