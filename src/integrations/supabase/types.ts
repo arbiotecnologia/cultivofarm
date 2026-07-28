@@ -15653,6 +15653,16 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: Json
       }
+      rpc_admin_set_whatsapp_consent: {
+        Args: {
+          p_acao: string
+          p_cliente_id: string
+          p_justificativa?: string
+          p_source: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       rpc_anexar_comprovante_entrega: {
         Args: { p_entrega_id: string; p_payload: Json }
         Returns: Json
