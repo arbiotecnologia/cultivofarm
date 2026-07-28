@@ -251,11 +251,12 @@ Nenhum resíduo. Rollback completo confirmado.
 - **Item 2 (smoke expander): GO parcial** — expander opera corretamente e é seguro; resultado `enqueued=0` reflete lacuna de fixtures reais (staging vazio para OSF e sem admin com preferência ativa), não bug do expander. A validação de entrega real por destinatário permanece endereçada à Fase 1D (com fixtures autorizadas).
 - **Fase 1D:** não iniciada. Canais não habilitados. Frontend não publicado.
 
-### 8.6 Ledger
+### 8.6 Ledger (nova janela independente, teto 96,0)
 
 - Teto autorizado desta janela nova: **96,0 créditos** (independente do teto anterior encerrado em ~98,9/100).
 - Teto interno inicial desta rodada: **30,0 créditos**.
-- Custo real desta rodada: **pendente do retorno da plataforma** (não estimado).
+- Rodada inicial (retorno real): **6,9**. Rodada corretiva (retorno real): **5,9**. **Total consumido: 12,8 / 96,0. Saldo: 83,2.**
+- Custo desta microcorreção documental: **pendente do retorno da plataforma** — deverá ser somado ao total depois, sem estimativa inventada.
 
 ---
 
