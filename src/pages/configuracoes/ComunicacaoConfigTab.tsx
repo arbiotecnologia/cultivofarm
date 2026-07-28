@@ -362,20 +362,53 @@ export default function ComunicacaoConfigTab() {
       const raw = await resp.text();
       let parsed: Record<string, unknown> = {};
       try { parsed = raw ? JSON.parse(raw) : {}; } catch { /* ignore */ }
+      const diagnostic = {
+        status: resp.status,
+        statusText: resp.statusText,
+        ok: resp.ok,
+        error: parsed.error ?? null,
+        detail: parsed.detail ?? null,
+        host: parsed.host ?? null,
+        port: parsed.port ?? null,
+        elapsed_ms: parsed.elapsed_ms ?? null,
+        missing: parsed.missing ?? null,
+        rawBody: raw,
+      };
+      // Sempre logar o diagnóstico completo no console para inspeção.
+      // eslint-disable-next-line no-console
+      console.groupCollapsed(`[test-email] resposta HTTP ${resp.status}`);
+      // eslint-disable-next-line no-console
+      console.log("diagnóstico:", diagnostic);
+      // eslint-disable-next-line no-console
+      console.log("rawBody:", raw);
+      // eslint-disable-next-line no-console
+      console.groupEnd();
+
       if (resp.ok && parsed.ok) {
         toast.success("E-mail de teste enviado", {
           description: `Entregue via ${parsed.host}:${parsed.port} em ${parsed.elapsed_ms}ms. Verifique caixa de entrada e spam.`,
         });
       } else {
-        const detail = typeof parsed.detail === "string" ? parsed.detail : raw.slice(0, 300);
-        toast.error(`Falha no envio (HTTP ${resp.status})`, {
-          description: `${parsed.error ?? "erro_desconhecido"}${detail ? ` — ${detail}` : ""}`,
+        const errorCode = String(parsed.error ?? "erro_desconhecido");
+        const detailStr = typeof parsed.detail === "string" && parsed.detail.length > 0
+          ? parsed.detail
+          : (raw && raw !== JSON.stringify(parsed) ? raw : "");
+        const missingStr = parsed.missing && typeof parsed.missing === "object"
+          ? " · faltando: " + Object.entries(parsed.missing as Record<string, boolean>)
+              .filter(([, v]) => v).map(([k]) => k).join(", ")
+          : "";
+        const hostInfo = parsed.host ? ` · host: ${parsed.host}:${parsed.port}` : "";
+        const elapsedInfo = parsed.elapsed_ms ? ` · ${parsed.elapsed_ms}ms` : "";
+        toast.error(`Falha no envio · HTTP ${resp.status} · ${errorCode}`, {
+          description: `${detailStr || "(sem detalhe adicional)"}${missingStr}${hostInfo}${elapsedInfo}`,
+          duration: 15000,
         });
-        console.error("[test-email] falha", { status: resp.status, body: parsed || raw });
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Erro de rede ao testar SMTP", { description: msg });
+      const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      // eslint-disable-next-line no-console
+      console.error("[test-email] erro de rede", e);
+      toast.error("Erro de rede ao testar SMTP", { description: msg, duration: 15000 });
     } finally {
       setTestingEmail(false);
     }
