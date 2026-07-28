@@ -139,15 +139,20 @@ describe("fase2 worker: contratos e ausência de rede direta", () => {
 
 describe("fase2 health: apenas booleans, sem segredos", () => {
   it("edge function communication-health não expõe segredos", () => {
-    expect(healthSrc).toMatch(/healthBooleans/);
+    // Gate 6: health function agora consome snapshot admin consolidado
+    // (rpc_admin_communication_health_snapshot) em vez do helper legado
+    // healthBooleans. Continua bloqueando qualquer eco de segredo no response.
+    expect(healthSrc).toMatch(/rpc_admin_communication_health_snapshot/);
     for (const s of ["SMTP_PASSWORD","WHATSAPP_ACCESS_TOKEN","INTERNAL_FUNCTION_SECRET","SUPABASE_SERVICE_ROLE_KEY"]) {
-      // Referência para env é permitida; ecoar valor no response não.
-      const re = new RegExp(`${s}[^\\n]*JSON`); // heurística grosseira
+      const re = new RegExp(`${s}[^\\n]*JSON`);
       expect(healthSrc).not.toMatch(re);
     }
+    // Sanitizador de defesa em profundidade contra vazamento de secrets.
+    expect(healthSrc).toMatch(/sanitize\s*\(/);
     expect(healthSrc).toMatch(/administrador/);
   });
 });
+
 
 // ----------------------------- Adapters -----------------------------
 

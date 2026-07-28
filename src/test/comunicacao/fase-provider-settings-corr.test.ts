@@ -374,13 +374,18 @@ describe("F-CORR (5) invariantes estáticos de segurança/wiring", () => {
     expect(webhookOff).toBe(true);
   });
 
-  it("worker/health/webhook importam e chamam loadRuntimeConfig", () => {
-    for (const p of [healthIdx, workerIdx, webhookIdx]) {
+  it("worker/webhook importam e chamam loadRuntimeConfig (health migrou para RPC admin no Gate 6)", () => {
+    for (const p of [workerIdx, webhookIdx]) {
       const src = read(p);
       expect.soft(src, `${p} deve importar loadRuntimeConfig`).toContain(`from "../_shared/comunicacao/runtime-config.ts"`);
       expect.soft(src, `${p} deve chamar loadRuntimeConfig`).toMatch(/loadRuntimeConfig\s*\(/);
     }
+    // Health function deixou de depender de runtime-config: consome snapshot admin consolidado.
+    const healthSrc = read(healthIdx);
+    expect(healthSrc).toMatch(/rpc_admin_communication_health_snapshot/);
+    expect(healthSrc).not.toMatch(/loadRuntimeConfig\s*\(/);
   });
+
 
   it("worker: se DELIVERY_ENABLED=false, NÃO faz claim do outbox", () => {
     const src = read(workerIdx);
