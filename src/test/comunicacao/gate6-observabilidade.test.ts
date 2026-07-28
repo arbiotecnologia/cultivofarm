@@ -42,17 +42,18 @@ describe("Gate 6 · Matriz canônica de eventos", () => {
     const amostras: Array<[string, string[]]> = [
       ["/solicitacoes", ["tecnico_agronomo"]],
       ["/portal/solicitacoes/x", ["cliente_produtor"]],
-      ["/producao/os/x", ["producao"]],
-      ["/financeiro/faturas/x", ["financeiro"]],
+      ["/ordens-servico/x", ["producao"]],
+      ["/financeiro", ["financeiro"]],
       ["/agenda/consultor", ["consultor_tecnico"]],
       ["/notificacoes", ["cliente_produtor"]],
-      ["/fluxo-tecnico/checkin/x", ["tecnico_agronomo"]],
+      ["/fluxo-tecnico", ["tecnico_agronomo"]],
     ];
     for (const [rota, perfis] of amostras) {
       const r = classifyDeepLink(rota, perfis);
       expect(r.ok, `rota ${rota} deveria ser autorizada para ${perfis.join(",")}`).toBe(true);
     }
   });
+
 
   it("rejeita rotas do portal para perfil interno sem permissão", () => {
     const r = classifyDeepLink("/portal/financeiro", ["producao"]);
