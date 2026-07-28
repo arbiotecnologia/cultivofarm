@@ -658,6 +658,38 @@ export default function ComunicacaoConfigTab() {
           <Button disabled={saving} onClick={handleSaveSmtp}>
             <Save className="h-4 w-4 mr-1" />Salvar provedor de e-mail
           </Button>
+
+          {isAdmin && view.smtp.password_configured && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <Label htmlFor="smtp-test-to" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />Enviar e-mail de teste
+                </Label>
+                <FieldHint>
+                  Ignora a fila e as flags de entrega. Usa as credenciais SMTP salvas para enviar um e-mail sintético diretamente do servidor. Restrito a administradores.
+                </FieldHint>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    id="smtp-test-to"
+                    type="email"
+                    value={testEmailTo}
+                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    placeholder="destinatario@exemplo.com"
+                    autoComplete="off"
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={testingEmail || !testEmailTo.trim()}
+                    onClick={handleTestEmail}
+                  >
+                    <Mail className="h-4 w-4 mr-1" />
+                    {testingEmail ? "Enviando..." : "Enviar teste"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
