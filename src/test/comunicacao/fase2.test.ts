@@ -251,7 +251,7 @@ describe("whatsapp-adapter: envio simulado (fetch mock)", () => {
       { fetch: fakeFetch },
     );
     expect(r.outcome).toBe("permanent_error");
-    expect(r.code).toBe("whatsapp_401");
+    expect(r.code).toBe("whatsapp_auth");
     expect(r.message).not.toContain("TEST_TOKEN");
   });
 
