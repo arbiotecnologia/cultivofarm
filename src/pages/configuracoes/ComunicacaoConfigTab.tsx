@@ -82,8 +82,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   unknown_error: "Erro inesperado. Tente novamente.",
 };
 
-function friendlyError(code: string): string {
-  return ERROR_MESSAGES[code] ?? code;
+function friendlyError(code: string, status?: number): string {
+  const base = ERROR_MESSAGES[code];
+  if (base) return base;
+  const prefix = status ? `HTTP ${status} · ` : "";
+  return `${prefix}${code || "erro desconhecido"} — verifique o console do navegador para detalhes.`;
 }
 
 const FLAG_LABELS: Record<string, { title: string; help: string }> = {
