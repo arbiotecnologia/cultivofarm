@@ -36,6 +36,7 @@ import {
 } from "@/lib/b2bDeliveryDate";
 import { toast } from "sonner";
 import { TimelinePedidoDialog } from "@/components/portal-parceiro/TimelinePedidoDialog";
+import { ResponderCotacaoDialog } from "@/components/comercial/ResponderCotacaoDialog";
 import { FaseSlaBadge } from "@/components/comercial/FaseSlaBadge";
 import { useOrdersSlaMap } from "@/hooks/useOrdersSlaMap";
 import { b2bToast } from "@/lib/b2bToast";
@@ -48,6 +49,7 @@ import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection"
 const STATUS_OPTIONS = [
   { value: "all", label: "Todos" },
   { value: "aguardando_aprovacao_credito", label: "Aguardando aprovação de crédito" },
+  { value: "aguardando_cotacao", label: "Aguardando cotação" },
   { value: "em_analise_comercial", label: "Em análise" },
   { value: "aguardando_itens", label: "Aguardando itens" },
   { value: "aprovado", label: "Aprovado" },
@@ -77,6 +79,7 @@ export default function PedidosB2B() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
   const [creditNotes, setCreditNotes] = useState("");
 
   const { data: items = [] } = usePartnerOrderItems(detail?.id ?? null);
@@ -518,6 +521,11 @@ export default function PedidosB2B() {
                 <Button variant="outline" onClick={() => setTimelineOpen(true)}>
                   <Clock className="h-4 w-4 mr-1" /> Linha do tempo
                 </Button>
+                {detail.status === "aguardando_cotacao" && (
+                  <Button onClick={() => setQuoteOpen(true)} disabled={!hasItems}>
+                    Responder cotação
+                  </Button>
+                )}
                 {!hasItems && detail.status !== "aguardando_itens" && detail.status !== "reprovado_sem_itens" && (
                   <Button
                     variant="outline"
@@ -537,9 +545,16 @@ export default function PedidosB2B() {
                     !hasItems ||
                     detail.status === "aprovado" ||
                     detail.status === "aguardando_aprovacao_credito" ||
+                    detail.status === "aguardando_cotacao" ||
                     detail.status === "aguardando_itens"
                   }
-                  title={!hasItems ? "Adicione ao menos 1 item para aprovar" : undefined}
+                  title={
+                    !hasItems
+                      ? "Adicione ao menos 1 item para aprovar"
+                      : detail.status === "aguardando_cotacao"
+                        ? "Responda a cotação antes de aprovar"
+                        : undefined
+                  }
                 >
                   {approve.isPending ? "Aprovando..." : "Aprovar pedido"}
                 </Button>
@@ -554,6 +569,16 @@ export default function PedidosB2B() {
         open={timelineOpen}
         onOpenChange={setTimelineOpen}
       />
+
+      <ResponderCotacaoDialog
+        open={quoteOpen}
+        onOpenChange={setQuoteOpen}
+        orderId={detail?.id ?? null}
+        orderNumero={detail?.numero ?? null}
+        items={items as any}
+        onResponded={() => setDetail(null)}
+      />
+
 
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent>

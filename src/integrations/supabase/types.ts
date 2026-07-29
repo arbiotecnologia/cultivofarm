@@ -74,6 +74,36 @@ export type Database = {
         }
         Relationships: []
       }
+      _motor_b2b_fase1_quote_evidence: {
+        Row: {
+          descricao: string
+          esperado: string
+          executed_at: string
+          id: number
+          obtido: string
+          passou: boolean
+          test_code: string
+        }
+        Insert: {
+          descricao: string
+          esperado: string
+          executed_at?: string
+          id?: number
+          obtido: string
+          passou: boolean
+          test_code: string
+        }
+        Update: {
+          descricao?: string
+          esperado?: string
+          executed_at?: string
+          id?: number
+          obtido?: string
+          passou?: boolean
+          test_code?: string
+        }
+        Relationships: []
+      }
       _motor_b2b_pre_phase1_snapshot: {
         Row: {
           acl: string | null
@@ -15940,6 +15970,16 @@ export type Database = {
           p_qty: number
         }
         Returns: string
+      }
+      respond_b2b_order_quote_secure: {
+        Args: {
+          p_first_due_date?: string
+          p_installment_count?: number
+          p_lines: Json
+          p_motivo?: string
+          p_order_id: string
+        }
+        Returns: Json
       }
       return_catalog_profile_to_review: {
         Args: { p_kind: string; p_motivo: string; p_profile_id: string }

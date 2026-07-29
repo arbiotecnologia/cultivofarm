@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MatrizPrecosTab } from "@/components/comercial/MatrizPrecosTab";
 import { AlertCircle, Plus, Pencil, Trash2 } from "lucide-react";
 
 const empty: PaymentPlanInput = {
@@ -29,6 +31,7 @@ const empty: PaymentPlanInput = {
   requires_financial_approval: false,
   requires_credit_approval: false,
   requires_guarantee: false,
+  pricing_mode: "discount_from_base",
   active: true,
   sort_order: 0,
 };
@@ -99,11 +102,23 @@ export default function CommercialPaymentPlansPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">Condições de Pagamento</h1>
-          <p className="text-sm text-muted-foreground">Planos comerciais B2B configuráveis</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold">Motor Comercial B2B</h1>
+        <p className="text-sm text-muted-foreground">Condições de pagamento e matriz canônica de preços</p>
+      </div>
+
+      <Tabs defaultValue="planos" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="planos">Condições de pagamento</TabsTrigger>
+          <TabsTrigger value="matriz">Matriz de preços</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="matriz">
+          <MatrizPrecosTab />
+        </TabsContent>
+
+        <TabsContent value="planos" className="space-y-6">
+      <div className="flex items-center justify-end">
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo plano</Button>
       </div>
 
@@ -113,6 +128,8 @@ export default function CommercialPaymentPlansPage() {
           Alterações nos planos <strong>não alteram pedidos já criados</strong>, pois os pedidos mantêm snapshot financeiro.
         </AlertDescription>
       </Alert>
+
+
 
       <Card>
         <CardHeader>
@@ -227,6 +244,24 @@ export default function CommercialPaymentPlansPage() {
                 </div>
               </div>
 
+              <div>
+                <Label>Modo de precificação</Label>
+                <Select
+                  value={form.pricing_mode ?? "discount_from_base"}
+                  onValueChange={(v: any) => setForm({ ...form, pricing_mode: v })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="discount_from_base">Desconto sobre preço base</SelectItem>
+                    <SelectItem value="fixed_item_price">Preço fixo por item (exige regra na matriz)</SelectItem>
+                    <SelectItem value="quote_only">Sob consulta (pedido vai para cotação)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Define como o resolvedor do servidor precifica itens desta condição.
+                </p>
+              </div>
+
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Prazo máx (dias)</Label>
@@ -310,6 +345,8 @@ export default function CommercialPaymentPlansPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -17,6 +17,7 @@ export interface CommercialPaymentPlan {
   requires_guarantee: boolean;
   requires_financial_approval: boolean;
   minimum_order_amount: number | null;
+  pricing_mode?: "discount_from_base" | "fixed_item_price" | "quote_only";
   active: boolean;
   sort_order: number;
 }
