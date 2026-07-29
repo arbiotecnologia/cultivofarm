@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import { drawArBioFooter, drawArBioHeader } from "./arBioHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { formatConcentracaoDisplay } from "@/lib/cqFormat";
+import { formatarPrecoUnitario } from "@/lib/catalogo/formatUnidades";
 
 export interface FichaMicroOptions {
   microId: string;
@@ -62,8 +63,8 @@ export async function generateFichaTecnicaMicrorganismoPdf({ microId, mode = "do
   y += 14;
   if (isB2B && (m.valor_litro_brl || m.valor_dose_brl)) {
     const partes: string[] = [];
-    if (m.valor_litro_brl) partes.push(`R$ ${Number(m.valor_litro_brl).toFixed(2)}/L`);
-    if (m.valor_dose_brl) partes.push(`R$ ${Number(m.valor_dose_brl).toFixed(2)}/dose`);
+    if (m.valor_litro_brl) partes.push(formatarPrecoUnitario(Number(m.valor_litro_brl), "litro"));
+    if (m.valor_dose_brl) partes.push(formatarPrecoUnitario(Number(m.valor_dose_brl), "dose_100ml"));
     doc.text(`Tabela: ${partes.join("  •  ")}`, margin, y); y += 14;
   }
   doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(90, 90, 90);
