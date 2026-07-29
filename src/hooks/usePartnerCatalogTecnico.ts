@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { CatalogItem, UnidadePrecoPrincipal } from "./usePartnerCatalog";
+import { resolverUnidadePreco, valorDaUnidade } from "@/lib/catalogo/unidades";
 
 const TECNICO_CATALOG_KEY = ["partner-catalog-tecnico"] as const;
 
@@ -31,10 +32,15 @@ export function usePartnerCatalogTecnico() {
         );
         const valorHa = r.valor_ha_brl == null ? null : Number(r.valor_ha_brl);
         const isProduto = r.item_tipo === "produto";
-        const unidade: UnidadePrecoPrincipal = isProduto ? "hectare" : "dose_100ml";
-        const precoBase = isProduto
-          ? (valorHa && valorHa > 0 ? valorHa : valorDose)
-          : valorDose;
+        const unidade: UnidadePrecoPrincipal = resolverUnidadePreco({
+          tipo: isProduto ? "produto" : "microrganismo",
+          unidadeBackend: r.unidade_preco_principal,
+          valorHa,
+          valorLitro,
+          valorDose,
+        });
+        const precoBase =
+          valorDaUnidade(unidade, { valorHa, valorLitro, valorDose }) ?? 0;
         return {
           item_id: r.item_id,
           item_tipo: r.item_tipo,

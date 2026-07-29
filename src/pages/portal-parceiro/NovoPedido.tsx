@@ -43,15 +43,45 @@ import { useSimulateB2BPaymentPlan, type SimulateResult } from "@/hooks/useSimul
 import { PaymentPlanSelector } from "@/components/comercial/PaymentPlanSelector";
 import { PaymentSimulationSummary } from "@/components/comercial/PaymentSimulationSummary";
 
+import {
+  labelUnidadeCurta,
+  resolverUnidadePreco,
+  valorDaUnidade,
+  SOB_CONSULTA_LABEL,
+} from "@/lib/catalogo/unidades";
+import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
+
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
-const precoPrincipalFor = (p: CatalogItem): { valor: number; valorCheio: number; usedFallback: boolean } => {
-  if (p.item_tipo === "produto") {
-    if (p.valor_ha_brl != null && p.valor_ha_brl > 0) return { valor: p.valor_ha_brl, valorCheio: p.preco_tabela_ha ?? p.valor_ha_brl, usedFallback: false };
-    return { valor: p.preco_parceiro, valorCheio: p.preco_tabela || p.preco_parceiro, usedFallback: p.preco_parceiro > 0 };
+const precoPrincipalFor = (
+  p: CatalogItem,
+): { valor: number; valorCheio: number; usedFallback: boolean; unidade: ReturnType<typeof resolverUnidadePreco> } => {
+  const unidade = resolverUnidadePreco({
+    tipo: p.item_tipo,
+    unidadeBackend: p.unidade_preco_principal,
+    valorHa: p.valor_ha_brl,
+    valorLitro: p.valor_litro_brl,
+    valorDose: p.valor_dose_brl,
+  });
+  const valor = valorDaUnidade(unidade, {
+    valorHa: p.valor_ha_brl,
+    valorLitro: p.valor_litro_brl,
+    valorDose: p.valor_dose_brl,
+  });
+  const cheio = valorDaUnidade(unidade, {
+    valorHa: p.preco_tabela_ha,
+    valorLitro: p.preco_tabela_litro,
+    valorDose: p.preco_tabela_dose,
+  });
+  if (valor != null && valor > 0) {
+    return { valor, valorCheio: cheio ?? valor, usedFallback: false, unidade };
   }
-  if (p.valor_dose_brl > 0) return { valor: p.valor_dose_brl, valorCheio: p.preco_tabela_dose || p.valor_dose_brl, usedFallback: false };
-  return { valor: p.preco_parceiro, valorCheio: p.preco_tabela || p.preco_parceiro, usedFallback: p.preco_parceiro > 0 };
+  return {
+    valor: p.preco_parceiro,
+    valorCheio: p.preco_tabela || p.preco_parceiro,
+    usedFallback: p.preco_parceiro > 0,
+    unidade: p.preco_parceiro > 0 ? unidade : "sob_consulta",
+  };
 };
 
 /** Calcula dose referencial em L/ha quando possível, derivando de valor_ha / valor_litro. */
@@ -62,7 +92,7 @@ const doseLitroHaFor = (p: CatalogItem | undefined): number | null => {
   }
   // Microrganismo: padrão comercial AR Bio = 1 dose de 100 mL por ha (1 L = 10 doses)
   if (p.item_tipo === "microrganismo" && p.valor_dose_brl > 0) {
-    return 0.1;
+    return 1 / DOSES_POR_LITRO;
   }
   return null;
 };
@@ -438,11 +468,18 @@ export default function NovoPedido() {
     if (!p) {
       return <div className="text-[11px] text-muted-foreground italic">Sem preço configurado para este parceiro.</div>;
     }
-    const { valor, valorCheio } = precoPrincipalFor(p);
-    const unitLabel = p.item_tipo === "produto" ? "/ha" : "/dose 100 mL";
-    if (valor <= 0) {
-      return <div className="text-[11px] text-muted-foreground italic">Sob consulta</div>;
+    const { valor, valorCheio, unidade } = precoPrincipalFor(p);
+    const unitLabel = labelUnidadeCurta(unidade);
+    if (valor <= 0 || unidade === "sob_consulta") {
+      return <div className="text-[11px] text-muted-foreground italic">{SOB_CONSULTA_LABEL}</div>;
     }
+    const custoHa = resolverCustoHa({
+      tipo: p.item_tipo,
+      doseMlHa: null,
+      valorHa: p.valor_ha_brl,
+      valorDose: p.valor_dose_brl,
+      valorLitro: p.valor_litro_brl,
+    });
     return (
       <div className="text-xs space-y-0.5">
         <PrecoComDesconto
@@ -460,7 +497,12 @@ export default function NovoPedido() {
         )}
         {p.item_tipo === "microrganismo" && (p.preco_tabela_litro > 0 || p.valor_litro_brl > 0) && (
           <div className="text-muted-foreground">
-            Litro: {fmt(isSimulationMode ? p.preco_tabela_litro : p.valor_litro_brl)} · 1 L = 10 doses
+            Litro: {fmt(isSimulationMode ? p.preco_tabela_litro : p.valor_litro_brl)} · 1 L = {DOSES_POR_LITRO} doses
+          </div>
+        )}
+        {unidade !== "hectare" && custoHa != null && custoHa > 0 && (
+          <div className="text-muted-foreground">
+            Custo estimado {fmt(custoHa)}/ha (dose referencial)
           </div>
         )}
       </div>
