@@ -147,32 +147,8 @@ CREATE POLICY "OnFarm/Aplicador read ordens_servico_onfarm" ON public.ordens_ser
     OR has_role(auth.uid(), 'aplicador'::app_role)
   );
 
--- 5) Vínculos de carteira faltantes
-INSERT INTO public.user_clientes (user_id, cliente_id, principal)
-SELECT '79cdba52-f388-4f03-a919-8b6eaee2c552'::uuid, 'b05e3c22-5e4a-4443-8f3c-70505045aa5b'::uuid, true
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.user_clientes
-  WHERE user_id = '79cdba52-f388-4f03-a919-8b6eaee2c552'::uuid
-    AND cliente_id = 'b05e3c22-5e4a-4443-8f3c-70505045aa5b'::uuid
-);
-
-INSERT INTO public.partner_clients (partner_id, cliente_id, active, notes)
-SELECT '6f22d1dc-2862-4fdf-a334-cd010de06bb1'::uuid, 'b05e3c22-5e4a-4443-8f3c-70505045aa5b'::uuid, true, 'Carteira homologacao'
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.partner_clients
-  WHERE partner_id = '6f22d1dc-2862-4fdf-a334-cd010de06bb1'::uuid
-    AND cliente_id = 'b05e3c22-5e4a-4443-8f3c-70505045aa5b'::uuid
-);
-
-INSERT INTO public.partner_user_clients
-  (partner_id, user_id, user_role, cliente_id, assignment_type, can_create_simulation, can_monitor, active)
-SELECT '6f22d1dc-2862-4fdf-a334-cd010de06bb1'::uuid,
-       '08832541-8155-43d2-bc4f-6a6bc407f7ae'::uuid,
-       'parceiro_b2b_tecnico',
-       'b05e3c22-5e4a-4443-8f3c-70505045aa5b'::uuid,
-       'tecnico', true, true, true
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.partner_user_clients
-  WHERE user_id = '08832541-8155-43d2-bc4f-6a6bc407f7ae'::uuid
-    AND cliente_id = 'b05e3c22-5e4a-4443-8f3c-70505045aa5b'::uuid
-);
+-- 5) Vínculos de carteira: bloco de FIXTURE removido da cadeia de migrations
+--    (correção forward-only do checkpoint pós-Fase 1).
+--    Os vínculos já aplicados no staging são preservados; a reaplicação futura
+--    e a promoção para produção ficam impedidas.
+--    Script movido para: scripts/tests/onfarm-b2b-fixtures/vinculos-homologacao.sql
