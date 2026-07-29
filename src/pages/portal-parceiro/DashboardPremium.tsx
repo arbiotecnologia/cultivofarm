@@ -22,9 +22,12 @@ export default function DashboardPremium() {
   return (
     <div className="space-y-4 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold">Olá, {partner?.razao_social ?? "Parceiro"}</h1>
-        <p className="text-sm text-muted-foreground">Visão rápida da sua operação B2B.</p>
+        <h1 className="text-2xl font-bold">Olá, {getPrimeiroNome(profile?.nome, profile?.email)}</h1>
+        <p className="text-sm text-muted-foreground">
+          {partner?.razao_social ?? "Parceiro"} · Gestor B2B
+        </p>
       </div>
+
 
       {semPedidos && (
         <Card>
