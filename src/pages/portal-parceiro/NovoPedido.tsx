@@ -929,8 +929,13 @@ export default function NovoPedido() {
                 onClick={() => handleSubmit()}
                 disabled={createOrder.isPending || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
               >
-                {createOrder.isPending ? "Enviando..." : "Enviar pedido para análise"}
+                {createOrder.isPending
+                  ? "Enviando..."
+                  : simulation?.quote_required
+                  ? "Enviar solicitação de cotação"
+                  : "Enviar pedido para análise"}
               </Button>
+
             )}
           </DialogFooter>
         </DialogContent>
