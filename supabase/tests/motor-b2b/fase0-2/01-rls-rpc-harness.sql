@@ -139,9 +139,11 @@ BEGIN
       (ar_bb,v_cat,u_admin,'FASE02-HARNESS AR B2B B',current_date,'B2B_ORDER',100,c_b,p_b),
       (ar_da,v_cat,u_admin,'FASE02-HARNESS AR DIRETO A',current_date,'MANUAL',100,c_a,NULL),
       (ar_db,v_cat,u_admin,'FASE02-HARNESS AR DIRETO B',current_date,'MANUAL',100,c_b,NULL);
+    -- parcelas: apenas se o trigger de recebiveis nao as tiver criado
     INSERT INTO public.accounts_receivable_installments
       (receivable_id, installment_number, due_date, original_amount, net_amount)
-    SELECT x,1,current_date,100,100 FROM unnest(ARRAY[ar_ba,ar_bb,ar_da,ar_db]) x;
+    SELECT x,1,current_date,100,100 FROM unnest(ARRAY[ar_ba,ar_bb,ar_da,ar_db]) x
+    WHERE NOT EXISTS (SELECT 1 FROM public.accounts_receivable_installments i WHERE i.receivable_id = x);
 
     -- ================= T1..T15 + complementares =================
     tests := jsonb_build_array(
@@ -263,7 +265,7 @@ BEGIN
   SELECT count(*)::int INTO v_cnt FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
    WHERE n.nspname='public' AND p.proname IN ('approve_b2b_payment_terms_secure','reject_b2b_payment_terms_secure',
         'request_b2b_payment_terms_adjustment_secure','add_b2b_payment_terms_note_secure')
-     AND array_to_string(COALESCE(p.proacl,'{}')::text[],' ') LIKE '%=X/%';
+     AND EXISTS (SELECT 1 FROM unnest(COALESCE(p.proacl,'{}')::text[]) a WHERE a LIKE '=%');
   res := res || jsonb_build_array(jsonb_build_object('code','T18','desc','PUBLIC nao possui EXECUTE nas 4 RPCs',
     'ident','PUBLIC','exp','0','got',v_cnt::text,'pass',v_cnt=0));
 
