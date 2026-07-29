@@ -11,6 +11,7 @@ import { CatalogSearchFilters, CatalogTipoFiltro, CatalogStatusFiltro } from "@/
 import { MicroorganismTechnicalProfileDialog } from "@/components/protocolos/MicroorganismTechnicalProfileDialog";
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
 import { useCatalogoUnificado, CatalogoUnificadoRow, CatalogoScope, catalogoRevisionPending } from "@/hooks/useCatalogoUnificado";
+import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
