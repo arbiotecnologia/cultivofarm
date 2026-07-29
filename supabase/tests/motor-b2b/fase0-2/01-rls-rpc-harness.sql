@@ -30,7 +30,7 @@ BEGIN
   IF v_ref <> 'ikaauvsflpmamgxmkhoq' THEN RAISE EXCEPTION 'STAGING_GUARD: ref inesperado %', v_ref; END IF;
 END $guard$;
 
-CREATE TABLE IF NOT EXISTS public._motor_b2b_fase0_2_evidence (
+CREATE TEMP TABLE IF NOT EXISTS _motor_b2b_fase0_2_evidence (
   id bigserial PRIMARY KEY,
   test_code text NOT NULL,
   descricao text NOT NULL,
@@ -40,11 +40,8 @@ CREATE TABLE IF NOT EXISTS public._motor_b2b_fase0_2_evidence (
   passou boolean NOT NULL,
   executed_at timestamptz NOT NULL DEFAULT now()
 );
-REVOKE ALL ON TABLE public._motor_b2b_fase0_2_evidence FROM PUBLIC, anon, authenticated;
-GRANT ALL ON TABLE public._motor_b2b_fase0_2_evidence TO service_role;
-ALTER TABLE public._motor_b2b_fase0_2_evidence ENABLE ROW LEVEL SECURITY;
 
-DELETE FROM public._motor_b2b_fase0_2_evidence;
+DELETE FROM _motor_b2b_fase0_2_evidence;
 
 DO $main$
 DECLARE
@@ -289,12 +286,16 @@ BEGIN
   res := res || jsonb_build_array(jsonb_build_object('code','T19','desc','Checksums das 17 RPCs iguais ao snapshot Fase 0.1',
     'ident','n/a','exp','0','got',v_cnt::text,'pass',v_cnt=0));
 
-  INSERT INTO public._motor_b2b_fase0_2_evidence (test_code, descricao, identidade, esperado, obtido, passou)
+  INSERT INTO _motor_b2b_fase0_2_evidence (test_code, descricao, identidade, esperado, obtido, passou)
   SELECT e->>'code', e->>'desc', e->>'ident', e->>'exp', e->>'got', (e->>'pass')::boolean
   FROM jsonb_array_elements(res) e;
 
-  SELECT count(*)::int INTO v_fail FROM public._motor_b2b_fase0_2_evidence WHERE NOT passou;
+  SELECT count(*)::int INTO v_fail FROM _motor_b2b_fase0_2_evidence WHERE NOT passou;
   RAISE NOTICE 'FASE02 HARNESS: % teste(s) com falha', v_fail;
 END $main$;
 
-SELECT test_code, esperado, obtido, passou FROM public._motor_b2b_fase0_2_evidence ORDER BY id;
+SELECT test_code, esperado, obtido, passou FROM _motor_b2b_fase0_2_evidence ORDER BY id;
+
+-- Limpeza defensiva: a tabela de evidencia e TEMP (some no fim da sessao).
+DROP TABLE IF EXISTS _motor_b2b_fase0_2_evidence;
+DROP TABLE IF EXISTS public._motor_b2b_fase0_2_evidence;

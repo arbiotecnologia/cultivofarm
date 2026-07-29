@@ -151,7 +151,9 @@ conhecidas e deve ser seguido de reaplicação do hardening.
 
 - `tsgo` typecheck: sem erros.
 - `bun run build`: sucesso.
-- Vitest: suíte completa verde (ver seção de execução final).
+- Vitest: **2587 testes aprovados e 2 falhas preexistentes** em `verify-fiscal-types-sinief49`
+  (regeneração dos types fiscais). A suíte **não** está integralmente verde. As duas falhas são
+  anteriores a esta fase e **não** são causadas pelo hardening 0.2.
 - Lint: indisponível no projeto (regra registrada em memória).
 
 ## 10. Pendências e riscos residuais
