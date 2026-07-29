@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { AlertCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { brl } from "@/lib/financial/format";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { SOB_CONSULTA_LABEL } from "@/lib/catalogo/formatUnidades";
 
 const NONE = "__none__";
 
@@ -47,7 +48,7 @@ const emptyRule: CommercialPriceRuleInput = {
 const modeLabel: Record<string, string> = {
   fixed_item_price: "Preço fixo",
   discount_from_base: "Desconto sobre base",
-  quote_only: "Sob consulta",
+  quote_only: SOB_CONSULTA_LABEL,
 };
 
 export function MatrizPrecosTab() {
@@ -311,7 +312,7 @@ export function MatrizPrecosTab() {
                   <SelectContent>
                     <SelectItem value="fixed_item_price">Preço fixo</SelectItem>
                     <SelectItem value="discount_from_base">Desconto sobre base</SelectItem>
-                    <SelectItem value="quote_only">Sob consulta</SelectItem>
+                    <SelectItem value="quote_only">{SOB_CONSULTA_LABEL}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

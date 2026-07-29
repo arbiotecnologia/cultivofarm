@@ -42,7 +42,7 @@ export async function generateCatalogoMicrorganismosPdf(items: MicrorganismoCata
 
   autoTable(doc, {
     startY,
-    head: [["Código", "Microrganismo", "Tipo", "UFC/mL", "Dose (mL/ha)", "Dose 100 mL", "R$/L", "Custo/ha", "Função", "B2B", "Status"]],
+    head: [["Código", "Microrganismo", "Tipo", "UFC/mL", "Dose (mL/ha)", "Dose 100 mL", "R$/L", LABEL_CUSTO_HA_CURTO, "Função", "B2B", "Status"]],
     body: items.map((m) => {
       const litro = m.valor_litro_brl ?? calcularValorLitro(m.valor_dose_brl ?? null);
       const custoHa = calcularCustoHa(m.dose_ml_ha, m.valor_dose_brl);

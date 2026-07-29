@@ -20,6 +20,7 @@ import { FlaskConical, Filter, Download } from "lucide-react";
 import { generateSimulacaoPdf } from "@/lib/pdf/simulacaoPdf";
 import { useAuth } from "@/hooks/useAuth";
 import { DetalheSimulacaoDrawer } from "@/components/pedidos-b2b/DetalheSimulacaoDrawer";
+import { formatarArea, formatarMoeda } from "@/lib/catalogo/formatUnidades";
 
 const STATUS_LABEL: Record<PartnerSimulationStatus, string> = {
   rascunho: "Rascunho",
@@ -222,8 +223,8 @@ export default function SimulacoesEquipe() {
                   <span>{s.items_count} itens</span>
                   {s.cliente_nome_snapshot && <span>Produtor: <strong>{s.cliente_nome_snapshot}</strong></span>}
                   {s.cultura && <span>Cultura: {s.cultura}</span>}
-                  {s.area_total_ha != null && <span>{Number(s.area_total_ha).toFixed(2)} ha</span>}
-                  <span>Total tabela: R$ {Number(s.total_cheio ?? 0).toFixed(2)}</span>
+                  {s.area_total_ha != null && <span>{formatarArea(s.area_total_ha)}</span>}
+                  <span>Total tabela: {formatarMoeda(s.total_cheio ?? 0)}</span>
                 </div>
                 {s.objetivo_tecnico && (
                   <div className="text-xs mt-1 line-clamp-2"><strong>Objetivo:</strong> {s.objetivo_tecnico}</div>

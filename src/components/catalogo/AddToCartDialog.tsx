@@ -116,7 +116,7 @@ export function AddToCartDialog({
     if (lastEditedRef.current === "ha") {
       const ha = Number(areaHa);
       if (Number.isFinite(ha) && ha > 0) {
-        const L = Number((ha * doseRecomendadaLitroHa).toFixed(3));
+        const L = roundVolume(ha * doseRecomendadaLitroHa);
         setLitros(String(L));
       } else if (areaHa === "") {
         setLitros("");
@@ -124,7 +124,7 @@ export function AddToCartDialog({
     } else if (lastEditedRef.current === "L") {
       const L = Number(litros);
       if (Number.isFinite(L) && L > 0) {
-        const ha = Number((L / doseRecomendadaLitroHa).toFixed(3));
+        const ha = roundVolume(L / doseRecomendadaLitroHa);
         setAreaHa(String(ha));
       } else if (litros === "") {
         setAreaHa("");
