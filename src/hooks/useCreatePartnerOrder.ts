@@ -76,6 +76,7 @@ export function useCreatePartnerOrder() {
           p_payment_plan_id: input.payment_plan_id ?? null,
           p_first_due_date: input.first_due_date ?? null,
           p_installment_count: input.installment_count ?? null,
+          p_expected_cart_hash: input.expected_cart_hash ?? null,
         },
       );
       if (error) throw error;
