@@ -74,6 +74,36 @@ export type Database = {
         }
         Relationships: []
       }
+      _motor_b2b_fase1_int_evidence: {
+        Row: {
+          descricao: string
+          esperado: string
+          executed_at: string
+          id: number
+          obtido: string
+          passou: boolean
+          test_code: string
+        }
+        Insert: {
+          descricao: string
+          esperado: string
+          executed_at?: string
+          id?: number
+          obtido: string
+          passou: boolean
+          test_code: string
+        }
+        Update: {
+          descricao?: string
+          esperado?: string
+          executed_at?: string
+          id?: number
+          obtido?: string
+          passou?: boolean
+          test_code?: string
+        }
+        Relationships: []
+      }
       _motor_b2b_pre_phase1_snapshot: {
         Row: {
           acl: string | null
