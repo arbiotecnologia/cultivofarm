@@ -227,6 +227,24 @@ export default function CommercialPaymentPlansPage() {
                 </div>
               </div>
 
+              <div>
+                <Label>Modo de precificação</Label>
+                <Select
+                  value={form.pricing_mode ?? "discount_from_base"}
+                  onValueChange={(v: any) => setForm({ ...form, pricing_mode: v })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="discount_from_base">Desconto sobre preço base</SelectItem>
+                    <SelectItem value="fixed_item_price">Preço fixo por item (exige regra na matriz)</SelectItem>
+                    <SelectItem value="quote_only">Sob consulta (pedido vai para cotação)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Define como o resolvedor do servidor precifica itens desta condição.
+                </p>
+              </div>
+
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Prazo máx (dias)</Label>
