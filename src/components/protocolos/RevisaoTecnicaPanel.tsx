@@ -9,6 +9,9 @@ import { Loader2, FileCheck2, AlertTriangle, BookOpen, ShoppingCart } from "luci
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
+import { useTabParam } from "@/lib/navigation/useTabParam";
+
+const REV_TABS = ["micro", "prod"] as const;
 
 interface Item {
   id: string;
@@ -30,6 +33,7 @@ interface Item {
 export function RevisaoTecnicaPanel() {
   const [openMicro, setOpenMicro] = useState<any | null>(null);
   const [openProd, setOpenProd] = useState<any | null>(null);
+  const [rev, setRev] = useTabParam("rev", REV_TABS, "micro");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["catalogo-tecnico-revisao"],
@@ -186,7 +190,7 @@ export function RevisaoTecnicaPanel() {
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
       ) : (
-        <Tabs defaultValue="micro">
+        <Tabs value={rev} onValueChange={setRev}>
           <TabsList>
             <TabsTrigger value="micro">Microrganismos ({micros.length})</TabsTrigger>
             <TabsTrigger value="prod">Produtos ({produtos.length})</TabsTrigger>

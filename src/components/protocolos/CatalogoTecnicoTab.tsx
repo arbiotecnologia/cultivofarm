@@ -5,9 +5,13 @@ import { FileText, Sprout, FlaskConical, AlertTriangle, ShoppingCart, CheckCircl
 import { RevisaoTecnicaPanel } from "./RevisaoTecnicaPanel";
 import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
 import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
+import { useTabParam } from "@/lib/navigation/useTabParam";
+
+const SUB_TABS = ["catalogo", "revisao"] as const;
 
 export function CatalogoTecnicoTab() {
   const { data: rows = [] } = useCatalogoUnificado("admin");
+  const [sub, setSub] = useTabParam("sub", SUB_TABS, "catalogo");
 
   const kpis = useMemo(() => {
     const ativosM = rows.filter((r) => r.tipo === "microrganismo" && r.ativo).length;
@@ -21,7 +25,7 @@ export function CatalogoTecnicoTab() {
   }, [rows]);
 
   return (
-    <Tabs defaultValue="catalogo" className="space-y-4">
+    <Tabs value={sub} onValueChange={setSub} className="space-y-4">
       <TabsList>
         <TabsTrigger value="catalogo">Catálogo</TabsTrigger>
         <TabsTrigger value="revisao">Revisão Técnica</TabsTrigger>
