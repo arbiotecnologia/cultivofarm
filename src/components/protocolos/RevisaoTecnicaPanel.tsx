@@ -9,6 +9,9 @@ import { Loader2, FileCheck2, AlertTriangle, BookOpen, ShoppingCart } from "luci
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
+import { useTabParam } from "@/lib/navigation/useTabParam";
+
+const REV_TABS = ["micro", "prod"] as const;
 
 interface Item {
   id: string;
@@ -30,6 +33,7 @@ interface Item {
 export function RevisaoTecnicaPanel() {
   const [openMicro, setOpenMicro] = useState<any | null>(null);
   const [openProd, setOpenProd] = useState<any | null>(null);
+  const [rev, setRev] = useTabParam("rev", REV_TABS, "micro");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["catalogo-tecnico-revisao"],

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/lib/navigation/useTabParam";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -656,7 +657,10 @@ function ProblemasTab() {
 import { MicrorganismosTab } from "@/components/protocolos/MicrorganismosTab";
 
 // --- Main Page ---
+const MAIN_TABS = ["produtos", "microrganismos", "catalogo-tecnico", "culturas", "problemas"] as const;
+
 export default function Protocolos() {
+  const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos");
   return (
     <div className="space-y-6">
       <div>
