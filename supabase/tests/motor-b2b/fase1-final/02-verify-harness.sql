@@ -28,15 +28,17 @@ BEGIN
       v_fail := v_fail || 'V2(anon_exec:' || v_oid::regprocedure::text || ') ';
     END IF;
   END LOOP;
-  IF public.fn_b2b_cart_hash(NULL, '{"lines":[]}'::jsonb, 0)
-     IS DISTINCT FROM public.fn_b2b_cart_hash(NULL, '{"lines":[]}'::jsonb, 0) THEN
+  IF public.fn_b2b_cart_hash(NULL, NULL, '{"lines":[]}'::jsonb, 0)
+     IS DISTINCT FROM public.fn_b2b_cart_hash(NULL, NULL, '{"lines":[]}'::jsonb, 0) THEN
     v_fail := v_fail || 'V3 ';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
                  WHERE n.nspname='public' AND p.proname='create_partner_order_secure'
-                   AND pg_get_function_identity_arguments(p.oid) LIKE '%p_expected_cart_hash text%') THEN
+                   AND pg_get_function_identity_arguments(p.oid) LIKE '%p_expected_cart_hash text%'
+                   AND pg_get_function_identity_arguments(p.oid) LIKE '%p_idempotency_key text%') THEN
     v_fail := v_fail || 'V4 ';
   END IF;
+
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trg_commercial_price_rules_producer_inert' AND NOT tgisinternal) THEN
     v_fail := v_fail || 'V5a ';
   END IF;
