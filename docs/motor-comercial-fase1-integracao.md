@@ -239,12 +239,25 @@ guarda `STAGING_GUARD`, portanto a cadeia é honestamente classificada como
 
 ## 5. Prova real de concorrência — UNVERIFIED (limitação comprovada)
 
-- **A (chamadas PostgREST simultâneas com JWT `authenticated`)**: impossível
-  neste ambiente — `LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`, ou seja,
-  nenhuma sessão de usuário é injetada, e não há credenciais de usuário
-  disponíveis. `service_role` não pode ser a identidade da chamada de negócio.
+- **A (chamadas PostgREST simultâneas com JWT `authenticated`)**: tentada e
+  **impossível**, com evidência registrada:
+  1. `LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged` e
+     `LOVABLE_BROWSER_SUPABASE_SESSION_JSON` ausente — nenhuma sessão injetada;
+     `LOVABLE_BROWSER_SUPABASE_ACCESS_TOKEN` existe mas está vazio;
+  2. não há `SERVICE_ROLE_KEY` no ambiente, logo não é possível cunhar token
+     nem usar a Admin API (e `service_role` não poderia ser a identidade de
+     negócio de qualquer forma);
+  3. auto-cadastro via `anon` foi tentado: `harness.b2b.a@arbio.com` foi criado
+     (`200`), mas o login devolve `email_not_confirmed`; um segundo usuário caiu
+     em `over_email_send_rate_limit`. Confirmar o e-mail exigiria escrever em
+     `auth.users`, o que é proibido (schema reservado do Supabase) — não foi
+     feito. O usuário residual foi neutralizado: papel removido e perfil
+     desativado (ver adendo de segurança abaixo);
+  4. o harness de papéis/RLS em SQL depende de `SET ROLE authenticated`, negado
+     à identidade disponível (`permission denied to set role "authenticated"`).
 - **B (`dblink`)**: extensão ausente no staging; instalar extensão não é
-  permitido pelo escopo.
+  permitido pelo escopo. `psql` existe no sandbox, mas não há `PGHOST`/DSN.
+
 - **C (harness externo versionado)**: entregue e executável em
   `supabase/tests/motor-b2b/fase1-final/03-concorrencia.mjs` — dois clientes
   HTTP independentes com barreira/`Promise.all`, login real de dois usuários,
@@ -288,6 +301,27 @@ Riscos/custos: clientes muito antigos que ainda chamem a assinatura de 7
 argumentos passam a falhar (intencional); a exigência de simulação prévia
 adiciona uma chamada de rede por checkout; a tabela de idempotência cresce
 proporcionalmente aos checkouts e pode exigir política de expurgo futura.
+
+## 8. Adendo — build e achado de segurança fora do gate
+
+**Build (`vite build --mode development`) estava quebrado** com
+`maximumFileSizeToCacheInBytes` (5 MiB) menor que o bundle atual (5,25 MB), o
+que fazia o `vite-plugin-pwa` abortar com exit 1. Limite elevado para 12 MiB em
+`vite.config.ts`; build volta a passar (precache de 20 entradas). Fica
+registrado o débito de code-splitting do chunk principal.
+
+**Achado de segurança (não corrigido — fora do escopo do gate, exige decisão):**
+`public.handle_new_user` concede automaticamente o papel interno
+`administrativo` a qualquer usuário criado por auto-cadastro (`anon`
+`/auth/v1/signup`) sem o metadado `created_by_admin`. Isso foi observado na
+prática durante a tentativa do item 5: o usuário de teste recém-criado nasceu
+com papel interno. Em staging o impacto ficou contido (e-mail não confirmado,
+papel removido e perfil desativado por este trabalho), mas **em produção isso
+seria escalonamento de privilégio por auto-cadastro**. Recomendação: o papel
+padrão de auto-cadastro deve ser nenhum papel (fluxo "acesso pendente") ou um
+papel sem alçada, com atribuição explícita por administrador. Alterar esse
+comportamento muda o onboarding e por isso não foi feito sem autorização.
+
 
 ## Status final
 
