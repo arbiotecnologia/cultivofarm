@@ -186,7 +186,7 @@ export function RevisaoTecnicaPanel() {
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
       ) : (
-        <Tabs defaultValue="micro">
+        <Tabs value={rev} onValueChange={setRev}>
           <TabsList>
             <TabsTrigger value="micro">Microrganismos ({micros.length})</TabsTrigger>
             <TabsTrigger value="prod">Produtos ({produtos.length})</TabsTrigger>

@@ -665,7 +665,7 @@ export default function Protocolos() {
       </div>
       <Card>
         <CardContent className="pt-6">
-          <Tabs defaultValue="produtos">
+          <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="produtos">Produtos</TabsTrigger>
               <TabsTrigger value="microrganismos">Microrganismos</TabsTrigger>
