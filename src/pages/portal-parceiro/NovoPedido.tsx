@@ -122,6 +122,9 @@ export default function NovoPedido() {
   const [cashSimulation, setCashSimulation] = useState<SimulateResult | null>(null);
   const simulateSelectedPlan = useSimulateB2BPaymentPlan();
   const simulateCashReference = useSimulateB2BPaymentPlan();
+  /** Chave de idempotência do checkout corrente (server-side dedupe). */
+  const checkoutKeyRef = useRef<string | null>(null);
+
 
   // Lista de produtores vinculados ao usuário B2B (técnico ou gestor)
   const { data: meusProdutores = [] } = useQuery({
