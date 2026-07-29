@@ -15941,6 +15941,16 @@ export type Database = {
         }
         Returns: string
       }
+      respond_b2b_order_quote_secure: {
+        Args: {
+          p_first_due_date?: string
+          p_installment_count?: number
+          p_lines: Json
+          p_motivo?: string
+          p_order_id: string
+        }
+        Returns: Json
+      }
       return_catalog_profile_to_review: {
         Args: { p_kind: string; p_motivo: string; p_profile_id: string }
         Returns: undefined
