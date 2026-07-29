@@ -31,7 +31,7 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
     queryFn: async (): Promise<CatalogoUnificadoRow[]> => {
       const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await Promise.all([
         supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").order("nome"),
-        supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").order("nome"),
+        supabase.from("microrganismos").select("id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").order("nome"),
         supabase.from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,explicacao_tecnica"),
         supabase.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,mecanismo_acao,beneficios_agronomicos,explicacao_tecnica"),
         supabase.from("formulacoes").select("produto_id"),
