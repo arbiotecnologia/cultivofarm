@@ -143,7 +143,13 @@ Responda APENAS com um JSON: {"texto":"...","justificativa":"..."}`;
 
     if (aiRes.status === 429) return j({ error: 'Limite de uso atingido. Tente novamente em instantes.' }, 429);
     if (aiRes.status === 402) return j({ error: 'Créditos de IA esgotados. Adicione créditos em Configurações → Planos e créditos.' }, 402);
-    if (aiRes.status === 403) return j({ error: 'Lovable AI não está habilitado para este workspace.' }, 403);
+    if (aiRes.status === 403) {
+      const detalhe = (await aiRes.text().catch(() => '')).slice(0, 300);
+      return j({
+        error: 'Geração por IA indisponível no momento: o limite de créditos de IA do workspace foi atingido (limite diário ou saldo). Aguarde a renovação diária ou adicione créditos em Configurações → Planos e créditos.',
+        detalhe: detalhe || null,
+      }, 403);
+    }
     if (!aiRes.ok) {
       const txt = await aiRes.text();
       return j({ error: `IA falhou: ${txt.slice(0, 200)}` }, 500);
