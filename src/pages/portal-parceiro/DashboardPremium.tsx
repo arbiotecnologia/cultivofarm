@@ -5,10 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Truck, Clock, AlertCircle, Star, MessageSquare } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { useAuth } from "@/hooks/useAuth";
+import { getPrimeiroNome } from "@/components/portal-parceiro/UsuarioIdentidade";
 
 export default function DashboardPremium() {
   const { partner } = useOutletContext<{ partner: any }>();
+  const { profile } = useAuth();
   const { data, isLoading } = usePartnerDashboardPremium(partner?.id);
+
 
   if (isLoading) return <div className="text-sm text-muted-foreground">Carregando...</div>;
   if (!data) return null;

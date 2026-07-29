@@ -8,11 +8,15 @@ import { FlaskConical, FileText, Beaker, Package, Info, History, Users } from "l
 import { usePartnerCatalogTecnico } from "@/hooks/usePartnerCatalogTecnico";
 import { usePartnerSimulations } from "@/hooks/usePartnerSimulations";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { useAuth } from "@/hooks/useAuth";
+import { getPrimeiroNome } from "@/components/portal-parceiro/UsuarioIdentidade";
 
 export default function DashboardTecnico() {
   const { partner } = useOutletContext<{ partner: any }>();
+  const { profile } = useAuth();
   const { data: catalog = [], isLoading: loadingCat } = usePartnerCatalogTecnico();
   const { data: sims = [], isLoading: loadingSims } = usePartnerSimulations(partner?.id);
+
   const { data: produtores = [] } = useQuery({
     queryKey: ["b2b-user-clientes-dash"],
     queryFn: async () => {
