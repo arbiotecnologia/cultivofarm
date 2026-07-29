@@ -31,7 +31,7 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
     queryFn: async (): Promise<CatalogoUnificadoRow[]> => {
       const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await Promise.all([
         supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").order("nome"),
-        supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").order("nome"),
+        supabase.from("microrganismos").select("id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").order("nome"),
         supabase.from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,explicacao_tecnica"),
         supabase.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,mecanismo_acao,beneficios_agronomicos,explicacao_tecnica"),
         supabase.from("formulacoes").select("produto_id"),
@@ -56,46 +56,57 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
       const prodTargetMap = new Map<string, number>();
       (prodTargets.data ?? []).forEach((t: any) => prodTargetMap.set(t.produto_id, (prodTargetMap.get(t.produto_id) ?? 0) + 1));
 
+      // No escopo B2B, o conteúdo de ficha só pode aparecer quando a ficha está
+      // aprovada — mesma regra aplicada pelas RPCs canônicas
+      // get_partner_catalog_secure / get_partner_catalog_tecnico_secure.
+      const isB2B = scope === "b2b";
+      const gate = <T,>(status: string | null | undefined, value: T): T | null =>
+        !isB2B || status === "aprovado" ? value : null;
+
       const produtos: CatalogoUnificadoRow[] = (prod.data ?? []).map((p: any) => {
         const pp = ppMap.get(p.id) as any;
+        const st = pp?.status_validacao ?? null;
         return {
           id: p.id, tipo: "produto", nome: p.nome, subtitulo: p.tipo, codigo: p.codigo,
           funcao: p.funcao_completa, ativo: p.ativo, b2b_enabled: p.b2b_enabled,
-          ficha_status: pp?.status_validacao ?? null,
-          ficha_resumo: pp?.resumo_curto ?? p.descricao ?? null,
-          explicacao_b2b: pp?.explicacao_b2b ?? null,
-          explicacao_produtor: pp?.explicacao_produtor ?? null,
+          ficha_status: st,
+          ficha_resumo: gate(st, pp?.resumo_curto ?? p.descricao ?? null),
+          explicacao_b2b: gate(st, pp?.explicacao_b2b ?? null),
+          explicacao_produtor: gate(st, pp?.explicacao_produtor ?? null),
           mecanismo_acao: null,
           beneficios_agronomicos: null,
-          explicacao_tecnica: pp?.explicacao_tecnica ?? null,
+          // Texto técnico interno nunca é exposto no escopo B2B.
+          explicacao_tecnica: isB2B ? null : (pp?.explicacao_tecnica ?? null),
           composicao_count: compMap.get(p.id) ?? 0,
           fontes_count: sourceMap.get(`produto:${p.id}`) ?? 0,
           alvos_count: prodTargetMap.get(p.id) ?? 0,
-          raw: p,
+          raw: isB2B ? { ...p, modo_acao: null } : p,
         };
       });
       const micros: CatalogoUnificadoRow[] = (micro.data ?? []).map((m: any) => {
         const mp = mpMap.get(m.id) as any;
+        const st = mp?.status_validacao ?? null;
         return {
-          id: m.id, tipo: "microrganismo", nome: m.nome, subtitulo: m.nome_cientifico, codigo: null,
+          id: m.id, tipo: "microrganismo", nome: m.nome, subtitulo: m.nome_cientifico, codigo: m.codigo ?? null,
           funcao: m.funcao_agronomica, ativo: m.ativo, b2b_enabled: m.b2b_enabled,
-          ficha_status: mp?.status_validacao ?? null,
-          ficha_resumo: mp?.resumo_curto ?? m.descricao ?? null,
-          explicacao_b2b: mp?.explicacao_b2b ?? null,
-          explicacao_produtor: mp?.explicacao_produtor ?? null,
-          mecanismo_acao: mp?.mecanismo_acao ?? null,
-          beneficios_agronomicos: mp?.beneficios_agronomicos ?? null,
-          explicacao_tecnica: mp?.explicacao_tecnica ?? null,
+          ficha_status: st,
+          ficha_resumo: gate(st, mp?.resumo_curto ?? m.descricao ?? null),
+          explicacao_b2b: gate(st, mp?.explicacao_b2b ?? null),
+          explicacao_produtor: gate(st, mp?.explicacao_produtor ?? null),
+          mecanismo_acao: gate(st, mp?.mecanismo_acao ?? null),
+          beneficios_agronomicos: gate(st, mp?.beneficios_agronomicos ?? null),
+          explicacao_tecnica: isB2B ? null : (mp?.explicacao_tecnica ?? null),
           fontes_count: sourceMap.get(`microrganismo:${m.id}`) ?? 0,
           alvos_count: microTargetMap.get(m.id) ?? 0,
           raw: m,
         };
       });
       const all = [...produtos, ...micros];
-      if (scope === "b2b") {
+      if (isB2B) {
         return all.filter((r) => r.ativo && r.b2b_enabled);
       }
       return all;
+
     },
   });
 }

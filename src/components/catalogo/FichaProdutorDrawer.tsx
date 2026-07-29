@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useLogCatalogAccess } from "@/hooks/useLogCatalogAccess";
+import { useLogCatalogAccess, type CatalogOrigem } from "@/hooks/useLogCatalogAccess";
 import { useEmbalagensPorItem, formatEmbalagens } from "@/hooks/useEmbalagensPorItem";
 import { useCatalogoVolumes, formatVolumesCatalogo } from "@/hooks/useCatalogoVolumes";
 import { brl } from "@/lib/financial/format";
@@ -14,7 +14,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   itemId: string | null;
   tipo: "produto" | "microrganismo";
-  origem?: "portal_produtor" | "recomendacao" | "ordem_servico";
+  origem?: CatalogOrigem;
 }
 
 interface Ficha {

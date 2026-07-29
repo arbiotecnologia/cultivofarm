@@ -11,6 +11,7 @@ import { CatalogSearchFilters, CatalogTipoFiltro, CatalogStatusFiltro } from "@/
 import { MicroorganismTechnicalProfileDialog } from "@/components/protocolos/MicroorganismTechnicalProfileDialog";
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
 import { useCatalogoUnificado, CatalogoUnificadoRow, CatalogoScope, catalogoRevisionPending } from "@/hooks/useCatalogoUnificado";
+import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
@@ -54,6 +55,7 @@ export function CatalogoCardsGrid({
   const [sort, setSort] = useState<SortKey>("nome_asc");
   const [openMicro, setOpenMicro] = useState<any | null>(null);
   const [openProd, setOpenProd] = useState<any | null>(null);
+  const [fichaB2B, setFichaB2B] = useState<{ id: string; tipo: "produto" | "microrganismo" } | null>(null);
   const isMobile = useIsMobile();
   const [view, setView] = useState<"cards" | "lista">(() => {
     try {
@@ -106,13 +108,20 @@ export function CatalogoCardsGrid({
       <Button
         size="sm"
         variant="outline"
-        onClick={() => r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw)}
+        onClick={() => {
+          if (scope === "b2b") {
+            setFichaB2B({ id: r.id, tipo: r.tipo });
+            return;
+          }
+          r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw);
+        }}
       >
         Ver ficha
       </Button>
       {actionSlot && actionSlot(r)}
     </div>
   );
+
 
   const rows = data ?? [];
 
@@ -341,6 +350,14 @@ export function CatalogoCardsGrid({
         produto={openProd}
         origem={fichaOrigem}
       />
+      <FichaProdutorDrawer
+        open={!!fichaB2B}
+        onOpenChange={(v) => !v && setFichaB2B(null)}
+        itemId={fichaB2B?.id ?? null}
+        tipo={fichaB2B?.tipo ?? "produto"}
+        origem="portal_parceiro"
+      />
+
 
       <p className="text-[10px] text-muted-foreground text-center italic pt-2">
         As recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.

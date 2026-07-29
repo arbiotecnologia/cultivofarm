@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import {
   Beaker,
   Droplets,
@@ -570,6 +571,13 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
 
 function ProdutoRecomendadoItem({ rec }: { rec: any }) {
   const [open, setOpen] = useState(false);
+  const [fichaOpen, setFichaOpen] = useState(false);
+  const fichaItem: { id: string; tipo: "produto" | "microrganismo" } | null =
+    rec.produto_biologico_sugerido_id
+      ? { id: rec.produto_biologico_sugerido_id, tipo: "produto" }
+      : rec.microrganismo_id
+      ? { id: rec.microrganismo_id, tipo: "microrganismo" }
+      : null;
   const produto =
     rec.produtos?.nome ||
     rec.microrganismos?.nome ||
@@ -635,17 +643,39 @@ function ProdutoRecomendadoItem({ rec }: { rec: any }) {
           </div>
         </div>
 
-        {hasDetalhes && (
-          <button
-            type="button"
-            onClick={() => setOpen(!open)}
-            className="mt-3 text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"
-          >
-            {open ? "Ocultar detalhes" : "Ver detalhes da aplicação"}
-            {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
-        )}
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          {hasDetalhes && (
+            <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"
+            >
+              {open ? "Ocultar detalhes" : "Ver detalhes da aplicação"}
+              {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+          )}
+          {fichaItem && (
+            <button
+              type="button"
+              onClick={() => setFichaOpen(true)}
+              className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"
+            >
+              Entender este bioinsumo
+            </button>
+          )}
+        </div>
       </div>
+
+      {fichaItem && (
+        <FichaProdutorDrawer
+          open={fichaOpen}
+          onOpenChange={setFichaOpen}
+          itemId={fichaItem.id}
+          tipo={fichaItem.tipo}
+          origem="recomendacao"
+        />
+      )}
+
 
       {open && hasDetalhes && (
         <div className="px-3 sm:px-4 pb-4 pt-1 border-t bg-muted/20">
