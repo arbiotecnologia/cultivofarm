@@ -141,21 +141,25 @@ export default function PortalParceiroLayout() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      <header className="md:hidden border-b flex items-center justify-between px-4 py-3 sticky top-0 bg-background z-10">
-        <div className="flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5 text-primary" />
-          <span className="font-semibold">Portal Parceiro</span>
+      <header className="md:hidden border-b flex items-center justify-between px-4 py-3 sticky top-0 bg-background z-10 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <ShoppingCart className="h-5 w-5 text-primary shrink-0" />
+          <span className="font-semibold truncate">Portal Parceiro</span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-12 w-12"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? "Fechar menu" : "Abrir menu"}
-        >
-          <Menu className="h-6 w-6" />
-        </Button>
+        <div className="flex items-center gap-2 min-w-0">
+          <UsuarioIdentidade papel={papelVisual} variant="compact" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-12 w-12 shrink-0"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Fechar menu" : "Abrir menu"}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </div>
       </header>
+
 
       <aside
         className={cn(
