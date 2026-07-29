@@ -15389,6 +15389,11 @@ export type Database = {
         Returns: undefined
       }
       fn_mark_financial_overdue: { Args: never; Returns: undefined }
+      fn_onfarm_scope_cliente: {
+        Args: { _cliente_id: string }
+        Returns: boolean
+      }
+      fn_onfarm_scope_lote: { Args: { _lote_id: string }; Returns: boolean }
       fn_resolve_b2b_cart: {
         Args: {
           p_items: Json
