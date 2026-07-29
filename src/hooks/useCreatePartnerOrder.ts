@@ -35,6 +35,11 @@ export interface CreateOrderInput {
   payment_plan_id?: string | null;
   first_due_date?: string | null;
   installment_count?: number | null;
+  /**
+   * Assinatura da simulação autoritativa devolvida pelo servidor.
+   * Sem ela (ou divergente), o backend recusa o pedido com `price_changed`.
+   */
+  expected_cart_hash?: string | null;
 }
 
 const mapUnidadeMedida = (u: UnidadePedido): string => {
