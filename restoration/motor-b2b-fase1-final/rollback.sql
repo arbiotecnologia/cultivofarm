@@ -1,25 +1,29 @@
 -- =====================================================================
--- FASE 1 (correcao consolidada final) — ROLLBACK FORWARD-SAFE
+-- FASE 1 (correcao de gate) — ROLLBACK FORWARD-SAFE
 -- Somente staging ikaauvsflpmamgxmkhoq. Producao recusada.
 --
 -- PRESERVA INTEGRALMENTE: pedidos, itens, snapshots, condicoes de
 -- pagamento, parcelas, recebiveis, producao, entrega, fiscal, BI e
 -- comunicacao. Nenhum DELETE/UPDATE de dado operacional.
 --
--- O rollback neutraliza apenas as GUARDAS introduzidas na correcao
--- consolidada, restaurando o contrato anterior de chamada:
+-- ESCOPO DO ROLLBACK (apenas o que pode voltar sem reabrir falha):
 --   1. remove a trava de inercia do produtor direto na matriz de precos;
---   2. recria a assinatura antiga (7 argumentos) de
---      create_partner_order_secure como delegacao para a versao atual,
---      com validacao de hash desativada;
---   3. torna a validacao de hash inoperante (chamadas sem hash ja sao
---      aceitas; o passo 2 garante compatibilidade de assinatura).
+--   2. libera a tabela de idempotencia de checkout (mantida, apenas deixa
+--      de ser exigida por novas chaves — os registros existentes ficam).
 --
--- NAO E REVERTIDO POR DECISAO DE SEGURANCA (documentado no relatorio):
+-- NAO E REVERTIDO POR DECISAO DE SEGURANCA (auditado no gate):
+--   * obrigatoriedade de `p_expected_cart_hash` em
+--     create_partner_order_secure — recriar a assinatura antiga de 7
+--     argumentos permitiria criar pedido sem paridade de preco;
+--   * bloqueio `forbidden_financial_terms` para parceiro_b2b_tecnico em
+--     simulate_b2b_payment_plan_secure e a recusa de conversao por
+--     tecnico-only;
+--   * reavaliacao de credito dentro de respond_b2b_order_quote_secure;
 --   * REVOKE de EXECUTE do papel `anon` nas funcoes comerciais B2B;
---   * exigencia de papel/vinculo em rpc_b2b_partner_credit;
---   * ocultacao de dados de credito para parceiro_b2b_tecnico.
--- Reverter esses itens reabriria exposicao de dado financeiro.
+--   * exigencia de autenticacao/papel/vinculo em rpc_b2b_partner_credit.
+-- Reverter qualquer um desses itens reabriria exposicao financeira ou
+-- permitiria pedido sem preco autoritativo; exige decisao explicita
+-- fora deste kit.
 -- =====================================================================
 \set ON_ERROR_STOP on
 
@@ -38,30 +42,10 @@ BEGIN;
 DROP TRIGGER IF EXISTS trg_commercial_price_rules_producer_inert ON public.commercial_price_rules;
 DROP FUNCTION IF EXISTS public.tg_commercial_price_rules_producer_inert();
 
--- 2. compatibilidade de assinatura (7 argumentos) -----------------------
-CREATE OR REPLACE FUNCTION public.create_partner_order_secure(
-  p_partner_id uuid,
-  p_observacoes text DEFAULT NULL::text,
-  p_items jsonb DEFAULT '[]'::jsonb,
-  p_requested_delivery_date date DEFAULT NULL::date,
-  p_payment_plan_id uuid DEFAULT NULL::uuid,
-  p_first_due_date date DEFAULT NULL::date,
-  p_installment_count integer DEFAULT NULL::integer)
-RETURNS jsonb
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $fn$
-  SELECT public.create_partner_order_secure(
-    p_partner_id, p_observacoes, p_items, p_requested_delivery_date,
-    p_payment_plan_id, p_first_due_date, p_installment_count, NULL::text);
-$fn$;
-REVOKE ALL ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer) FROM anon;
-GRANT EXECUTE ON FUNCTION public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer)
-  TO authenticated, service_role;
-
--- 3. assinatura do carrinho passa a ser meramente informativa -----------
---    (mantida a funcao; a validacao so ocorre quando o cliente envia hash)
+-- 2. idempotencia de checkout -------------------------------------------
+--    A tabela e os registros sao preservados (rastreabilidade). Apenas o
+--    indice unico e afrouxado nao e uma opcao segura: sem ele o mesmo
+--    checkout poderia duplicar pedido. Por isso este rollback NAO remove
+--    a unicidade; ele apenas documenta o ponto.
 
 COMMIT;
