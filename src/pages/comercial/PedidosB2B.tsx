@@ -36,6 +36,7 @@ import {
 } from "@/lib/b2bDeliveryDate";
 import { toast } from "sonner";
 import { TimelinePedidoDialog } from "@/components/portal-parceiro/TimelinePedidoDialog";
+import { ResponderCotacaoDialog } from "@/components/comercial/ResponderCotacaoDialog";
 import { FaseSlaBadge } from "@/components/comercial/FaseSlaBadge";
 import { useOrdersSlaMap } from "@/hooks/useOrdersSlaMap";
 import { b2bToast } from "@/lib/b2bToast";
