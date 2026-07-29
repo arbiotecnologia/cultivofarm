@@ -67,3 +67,92 @@ Fixtures em subtransação sempre revertida; nenhum dado operacional criado ou a
 - CRUD da matriz canônica (`commercial_price_rules`) e edição do `pricing_mode` por plano
   ainda não têm tela dedicada — hoje são mantidos por SQL pela equipe comercial.
 - Fluxo de resposta à cotação (`aguardando_cotacao` → preço definido) não tem UI própria.
+
+---
+
+# Fase 1 — Correção consolidada final (staging `ikaauvsflpmamgxmkhoq`)
+
+Produção `navfzbwgwzruipouyfnk` não foi acessada. Nada foi publicado ou deployado.
+Nenhum pedido, item, snapshot, parcela, recebível, dado de produção, entrega,
+fiscal, BI ou comunicação foi alterado.
+
+## 1. Higiene da cadeia de migrations
+
+Três migrations de fixture/teste (criavam `_motor_b2b_fase1_int_evidence` e
+`_motor_b2b_fase1_quote_evidence`) foram retiradas de `supabase/migrations/`
+para `restoration/motor-b2b-fase1-final/migrations-removidas/`. As tabelas de
+evidência foram removidas do banco pela migration operacional consolidada, que
+começa com guarda fail-fast de staging (`_fiscal_staging_marker`).
+
+## 2. Produtor direto inerte até a Fase 5
+
+- `rpc_resolve_commercial_prices`: qualquer escopo `customer`/`producer` ou
+  `customer_id` informado → `PRODUCER_DIRECT_NOT_ENABLED`; `cliente_produtor`
+  não passa da porta.
+- `create_partner_order_secure`: produtor sem papel interno/parceiro →
+  `PRODUCER_DIRECT_NOT_ENABLED`.
+- `commercial_price_rules`: gatilho `trg_commercial_price_rules_producer_inert`
+  recusa regra vigente de escopo produtor.
+- RLS mantém a matriz invisível para técnico e produtor (asserts R7).
+
+## 3. Hardening de crédito e dado financeiro
+
+- `rpc_b2b_partner_credit` passou a exigir autenticação + papel
+  (`administrador`/`financeiro`/`gestor_comercial`) ou vínculo real em
+  `partner_users`; antes delegava sem qualquer checagem.
+- `simulate_b2b_payment_plan_secure` não devolve mais bloco `credit` nem avisos
+  de crédito para `parceiro_b2b_tecnico` (`financial_visible=false`).
+- `anon` perdeu `EXECUTE` em todas as funções comerciais B2B.
+
+## 4. Preço autoritativo no frontend
+
+- A simulação devolve `cart_hash` (assinatura canônica de plano + linhas
+  resolvidas + total, calculada no servidor).
+- `create_partner_order_secure` recebe `p_expected_cart_hash`; divergência →
+  `price_changed`, com registro em `partner_order_audit_logs`.
+- `NovoPedido` bloqueia o envio sem `cart_hash` e envia sempre o hash da
+  simulação; pedidos `quote_only` são gravados com totais zerados.
+
+## 5. Cotação (`aguardando_cotacao`)
+
+`respond_b2b_order_quote_secure` ganhou `pg_advisory_xact_lock` por pedido,
+`FOR UPDATE` nos itens, recusa de linhas duplicadas (`quote_duplicate_line`),
+validação de escala/limite de preço (`invalid_quote_price_scale`) e auditoria
+com `dados_anteriores` (snapshot dos itens antes da resposta). Terms e
+schedule são recalculados na mesma transação.
+
+## 6. Evidência executada
+
+Estruturais (V1–V8) e de papel/RLS (R1–R9) executados no staging:
+higiene, ausência de `anon`, hash determinístico e parametrizado, produtor
+inerte, crédito com papel/vínculo, cotação com lock e duplicidade, simulação
+sem crédito para técnico. **17/17 asserts PASS.** Scripts versionados em
+`restoration/motor-b2b-fase1-final/verify.sql` e
+`supabase/tests/motor-b2b/fase1-final/01-papeis-rls-harness.sql`.
+
+Regressão: typecheck OK, build OK (aviso pré-existente de bundle PWA),
+Vitest **2587 passed / 2 failed** — as duas falhas são as regressões
+pré-existentes já registradas (verificador SINIEF 49 e acompanhamento do
+portal do produtor).
+
+## 7. Rollback
+
+`restoration/motor-b2b-fase1-final/` com `precheck.sql`, `verify.sql`,
+`rollback.sql` e README. O rollback é forward-safe: remove a inércia do
+produtor e recria a assinatura de 7 argumentos de `create_partner_order_secure`
+sem tocar em dado operacional. Por decisão de segurança ele **não** reverte a
+revogação de `anon` nem as checagens de crédito.
+
+## 8. Status do gate — NÃO APTO (bloqueio técnico declarado)
+
+Item 6 do escopo exige prova de concorrência com **duas sessões Postgres reais
+e simultâneas** respondendo à mesma cotação/pedido. Este ambiente de execução
+não oferece acesso `psql` nem duas conexões concorrentes controláveis — só há
+um executor SQL transacional por chamada. A serialização foi implementada e
+verificada estaticamente (`pg_advisory_xact_lock` em `create_partner_order_secure`
+e em `respond_b2b_order_quote_secure`), mas **a prova empírica de concorrência
+permanece UNVERIFIED**. Pelos critérios do próprio escopo, a Fase 1 não é
+declarada APTO até que essa prova seja executada externamente com duas sessões
+reais contra o staging.
+
+Todos os demais itens (1–5, 7–10) estão implementados e evidenciados.
