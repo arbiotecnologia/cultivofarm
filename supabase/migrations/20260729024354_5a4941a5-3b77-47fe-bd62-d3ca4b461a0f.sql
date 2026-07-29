@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public._motor_b2b_fase1_int_evidence;
