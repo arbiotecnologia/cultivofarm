@@ -18,7 +18,7 @@ import { Plus, Trash2, Sparkles, Wand2 } from "lucide-react";
 import { useCatalogoVolumes, CatalogoVolume, formatVolumeLabel } from "@/hooks/useCatalogoVolumes";
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 import { brl } from "@/lib/financial/format";
-import { round2, labelUnidadeCurta } from "@/lib/catalogo/formatUnidades";
+import { round2, roundVolume, labelUnidadeCurta } from "@/lib/catalogo/formatUnidades";
 import { PrecoComDesconto } from "@/components/comercial/PrecoComDesconto";
 import { TotaisCarrinho } from "@/components/comercial/TotaisCarrinho";
 import { suggestVasilhames, sameLinhas, type LinhaVasilhame } from "@/lib/vasilhameSelection";
