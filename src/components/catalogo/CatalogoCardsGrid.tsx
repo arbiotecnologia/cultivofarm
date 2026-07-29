@@ -349,6 +349,14 @@ export function CatalogoCardsGrid({
         produto={openProd}
         origem={fichaOrigem}
       />
+      <FichaProdutorDrawer
+        open={!!fichaB2B}
+        onOpenChange={(v) => !v && setFichaB2B(null)}
+        itemId={fichaB2B?.id ?? null}
+        tipo={fichaB2B?.tipo ?? "produto"}
+        origem="portal_parceiro"
+      />
+
 
       <p className="text-[10px] text-muted-foreground text-center italic pt-2">
         As recomendações de bioinsumos exigem avaliação técnica e prescrição agronômica conforme cultura, alvo, ambiente, histórico da área e manejo adotado.
