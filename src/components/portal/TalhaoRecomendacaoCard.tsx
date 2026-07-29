@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import {
   Beaker,
   Droplets,
