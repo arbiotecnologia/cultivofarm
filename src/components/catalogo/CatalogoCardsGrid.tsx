@@ -54,6 +54,7 @@ export function CatalogoCardsGrid({
   const [sort, setSort] = useState<SortKey>("nome_asc");
   const [openMicro, setOpenMicro] = useState<any | null>(null);
   const [openProd, setOpenProd] = useState<any | null>(null);
+  const [fichaB2B, setFichaB2B] = useState<{ id: string; tipo: "produto" | "microrganismo" } | null>(null);
   const isMobile = useIsMobile();
   const [view, setView] = useState<"cards" | "lista">(() => {
     try {
