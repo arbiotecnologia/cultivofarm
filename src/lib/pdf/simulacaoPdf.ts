@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { drawArBioHeader, drawArBioFooter } from "./arBioHeader";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { formatarArea, formatarMoeda, formatarOuTraco, PLACEHOLDER_VAZIO } from "@/lib/catalogo/formatUnidades";
 
 export interface SimulacaoPdfInput {
   simulacao: {
@@ -42,15 +43,15 @@ export async function generateSimulacaoPdf(input: SimulacaoPdfInput): Promise<{
 
   const info: [string, string][] = [
     ["Data", formatDateDisplay(input.simulacao.created_at)],
-    ["Parceiro", input.parceiro_nome ?? "—"],
-    ["Cliente", input.cliente_nome ?? "—"],
-    ["Técnico", input.tecnico_nome ?? "—"],
-    ["Cultura", input.simulacao.cultura ?? "—"],
+    ["Parceiro", formatarOuTraco(input.parceiro_nome)],
+    ["Cliente", formatarOuTraco(input.cliente_nome)],
+    ["Técnico", formatarOuTraco(input.tecnico_nome)],
+    ["Cultura", formatarOuTraco(input.simulacao.cultura)],
     [
       "Área",
       input.simulacao.area_total_ha != null
-        ? `${Number(input.simulacao.area_total_ha).toFixed(2)} ha`
-        : "—",
+        ? formatarArea(input.simulacao.area_total_ha)
+        : PLACEHOLDER_VAZIO,
     ],
   ];
 
@@ -79,7 +80,7 @@ export async function generateSimulacaoPdf(input: SimulacaoPdfInput): Promise<{
     doc.setFontSize(9);
     const b = input.baixado_por;
     const linha = [b.nome, b.email, b.perfil].filter(Boolean).join(" · ");
-    doc.text(linha || "—", margin, y);
+    doc.text(linha || PLACEHOLDER_VAZIO, margin, y);
     y += 10;
     doc.text(`Download em ${new Date().toLocaleString("pt-BR")}`, margin, y);
     y += 14;
@@ -104,14 +105,14 @@ export async function generateSimulacaoPdf(input: SimulacaoPdfInput): Promise<{
     body: input.itens.map((i) => [
       i.nome,
       String(i.quantidade),
-      `R$ ${Number(i.valor_unitario_cheio ?? 0).toFixed(2)}`,
-      `R$ ${Number(i.subtotal ?? 0).toFixed(2)}`,
+      formatarMoeda(i.valor_unitario_cheio),
+      formatarMoeda(i.subtotal),
     ]),
     foot: [[
       "Total (tabela)",
       "",
       "",
-      `R$ ${Number(input.simulacao.total_cheio ?? 0).toFixed(2)}`,
+      formatarMoeda(input.simulacao.total_cheio),
     ]],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [20, 60, 35] },

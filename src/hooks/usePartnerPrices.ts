@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { round2 } from "@/lib/catalogo/formatUnidades";
 
 export type PartnerPriceItemTipo = "produto" | "microrganismo";
 
@@ -95,9 +96,9 @@ export function usePartnerPrices(partnerId: string | null | undefined) {
           valorHa > 0
             ? valorHa
             : valorDose > 0 && doseMlHa > 0
-              ? Number(((doseMlHa / 100) * valorDose).toFixed(2))
+              ? round2((doseMlHa / 100) * valorDose)
               : valorLitro > 0 && doseMlHa > 0
-                ? Number(((doseMlHa / 1000) * valorLitro).toFixed(2))
+                ? round2((doseMlHa / 1000) * valorLitro)
                 : 0;
         return {
           tipo: "produto",

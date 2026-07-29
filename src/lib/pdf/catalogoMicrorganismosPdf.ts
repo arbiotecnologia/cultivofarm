@@ -1,9 +1,15 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { drawArBioFooter, drawArBioHeader } from "./arBioHeader";
-import { brl } from "@/lib/financial/format";
 import { formatConcentracaoDisplay } from "@/lib/cqFormat";
-import { calcularValorLitro, calcularCustoHa } from "@/lib/catalogo/pricing";
+import {
+  calcularValorLitro,
+  calcularCustoHa,
+  formatarMoedaOuTraco,
+  formatarOuTraco,
+  formatarDose,
+  REFERENCIA_DOSE_LITRO,
+} from "@/lib/catalogo/formatUnidades";
 
 export interface MicrorganismoCatalogoItem {
   codigo: string | null;
@@ -41,15 +47,15 @@ export async function generateCatalogoMicrorganismosPdf(items: MicrorganismoCata
       const litro = m.valor_litro_brl ?? calcularValorLitro(m.valor_dose_brl ?? null);
       const custoHa = calcularCustoHa(m.dose_ml_ha, m.valor_dose_brl);
       return [
-        m.codigo || "—",
+        formatarOuTraco(m.codigo),
         m.nome_cientifico ? `${m.nome}\n${m.nome_cientifico}` : m.nome,
-        tipoLabels[m.tipo] || m.tipo,
-        formatConcentracaoDisplay(m.concentracao_ufc_ml) || "—",
-        m.dose_ml_ha != null ? String(m.dose_ml_ha) : "—",
-        m.valor_dose_brl != null ? brl(m.valor_dose_brl) : "—",
-        litro != null ? brl(litro) : "—",
-        custoHa != null ? brl(custoHa) : "—",
-        m.funcao_agronomica || "—",
+        formatarOuTraco(tipoLabels[m.tipo] || m.tipo),
+        formatarOuTraco(formatConcentracaoDisplay(m.concentracao_ufc_ml)),
+        formatarDose(m.dose_ml_ha, { comSufixo: false }),
+        formatarMoedaOuTraco(m.valor_dose_brl),
+        formatarMoedaOuTraco(litro),
+        formatarMoedaOuTraco(custoHa),
+        formatarOuTraco(m.funcao_agronomica),
         m.b2b_enabled ? "Sim" : "Não",
         m.ativo ? "Ativo" : "Inativo",
       ];
@@ -67,7 +73,7 @@ export async function generateCatalogoMicrorganismosPdf(items: MicrorganismoCata
     didDrawPage: () => {
       doc.setFontSize(8);
       doc.setTextColor(100);
-      doc.text("Referência: 1 L = 10 doses de 100 mL.", 40, doc.internal.pageSize.getHeight() - 70);
+      doc.text(REFERENCIA_DOSE_LITRO, 40, doc.internal.pageSize.getHeight() - 70);
     },
   });
 

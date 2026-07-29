@@ -18,6 +18,7 @@ import { Plus, Trash2, Sparkles, Wand2 } from "lucide-react";
 import { useCatalogoVolumes, CatalogoVolume, formatVolumeLabel } from "@/hooks/useCatalogoVolumes";
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 import { brl } from "@/lib/financial/format";
+import { round2, labelUnidadeCurta } from "@/lib/catalogo/formatUnidades";
 import { PrecoComDesconto } from "@/components/comercial/PrecoComDesconto";
 import { TotaisCarrinho } from "@/components/comercial/TotaisCarrinho";
 import { suggestVasilhames, sameLinhas, type LinhaVasilhame } from "@/lib/vasilhameSelection";
@@ -81,7 +82,7 @@ export function AddToCartDialog({
     if (override != null) return override;
     // Fonte única: valor_litro_brl da tabela mestre (exibido no card).
     if (valorLitroBase && valorLitroBase > 0 && v.volume_ml > 0) {
-      return Number((valorLitroBase * (v.volume_ml / 1000)).toFixed(2));
+      return round2(valorLitroBase * (v.volume_ml / 1000));
     }
     // Fallback: preço cadastrado no vasilhame.
     return v.preco_brl;
@@ -89,10 +90,10 @@ export function AddToCartDialog({
 
   const precoVolumeCheio = (v: CatalogoVolume, finalVol: number): number => {
     if (valorLitroCheio && valorLitroCheio > 0 && v.volume_ml > 0) {
-      return Number((valorLitroCheio * (v.volume_ml / 1000)).toFixed(2));
+      return round2(valorLitroCheio * (v.volume_ml / 1000));
     }
     if (descPct > 0.0001 && descPct < 100) {
-      return Number((finalVol / (1 - descPct / 100)).toFixed(2));
+      return round2(finalVol / (1 - descPct / 100));
     }
     return finalVol;
   };
@@ -218,8 +219,8 @@ export function AddToCartDialog({
         if (!v) return null;
         const unit = precoVolume(v);
         const unitCheio = precoVolumeCheio(v, unit);
-        const subtotal = Number((unit * l.qtd).toFixed(2));
-        const subtotalCheio = Number((unitCheio * l.qtd).toFixed(2));
+        const subtotal = round2(unit * l.qtd);
+        const subtotalCheio = round2(unitCheio * l.qtd);
         return { linha: l, v, unit, unitCheio, subtotal, subtotalCheio };
       })
       .filter((x): x is NonNullable<typeof x> => !!x);
@@ -374,7 +375,7 @@ export function AddToCartDialog({
                             <SelectValue asChild>
                               <span className="inline-flex items-center gap-1.5 whitespace-nowrap truncate">
                                 <span className="font-medium">{formatVolumeLabel(d.v)}</span>
-                                <span className="text-muted-foreground">· {brl(plAtual)}/L</span>
+                                <span className="text-muted-foreground">· {brl(plAtual)}{labelUnidadeCurta("litro")}</span>
                               </span>
                             </SelectValue>
                           </SelectTrigger>
@@ -391,7 +392,7 @@ export function AddToCartDialog({
                                     <span className="text-muted-foreground">—</span>
                                     {disc && <span className="line-through text-muted-foreground">{brl(pCheio)}</span>}
                                     <span className="font-semibold">{brl(p)}</span>
-                                    <span className="text-muted-foreground">· {brl(pl)}/L</span>
+                                    <span className="text-muted-foreground">· {brl(pl)}{labelUnidadeCurta("litro")}</span>
                                   </span>
                                 </SelectItem>
                               );

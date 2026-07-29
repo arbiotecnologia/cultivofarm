@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { brl } from "@/lib/financial/format";
 import { cn } from "@/lib/utils";
+import { SOB_CONSULTA_LABEL, round2, formatarPercentual } from "@/lib/catalogo/formatUnidades";
 
 export interface PrecoComDescontoProps {
   /** Preço cheio (sem desconto), por unidade exibida. Quando ausente/igual ao final, exibe apenas o final. */
@@ -40,7 +41,7 @@ export function PrecoComDesconto({
   const hasDiscount = pct > 0.01 && cheio != null && cheio > valorFinal + 0.005;
 
   if (valorFinal <= 0) {
-    return <span className={cn("text-xs text-muted-foreground italic", className)}>Sob consulta</span>;
+    return <span className={cn("text-xs text-muted-foreground italic", className)}>{SOB_CONSULTA_LABEL}</span>;
   }
 
   return (
@@ -58,7 +59,7 @@ export function PrecoComDesconto({
         </span>
         {hasDiscount && mostrarChip && (
           <Badge variant="secondary" className={cn(styles.chip, "px-1.5")}>
-            −{pct.toFixed(pct % 1 === 0 ? 0 : 1)}%
+            −{formatarPercentual(pct)}
           </Badge>
         )}
       </span>
@@ -71,5 +72,5 @@ export function cheioFromFinal(final: number, descontoPct?: number | null): numb
   const pct = Number(descontoPct ?? 0);
   if (!Number.isFinite(final) || final <= 0) return 0;
   if (pct <= 0.0001 || pct >= 100) return final;
-  return Number((final / (1 - pct / 100)).toFixed(2));
+  return round2(final / (1 - pct / 100));
 }
