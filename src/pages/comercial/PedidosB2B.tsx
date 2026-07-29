@@ -77,6 +77,7 @@ export default function PedidosB2B() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
   const [creditNotes, setCreditNotes] = useState("");
 
   const { data: items = [] } = usePartnerOrderItems(detail?.id ?? null);
