@@ -302,6 +302,27 @@ argumentos passam a falhar (intencional); a exigência de simulação prévia
 adiciona uma chamada de rede por checkout; a tabela de idempotência cresce
 proporcionalmente aos checkouts e pode exigir política de expurgo futura.
 
+## 8. Adendo — build e achado de segurança fora do gate
+
+**Build (`vite build --mode development`) estava quebrado** com
+`maximumFileSizeToCacheInBytes` (5 MiB) menor que o bundle atual (5,25 MB), o
+que fazia o `vite-plugin-pwa` abortar com exit 1. Limite elevado para 12 MiB em
+`vite.config.ts`; build volta a passar (precache de 20 entradas). Fica
+registrado o débito de code-splitting do chunk principal.
+
+**Achado de segurança (não corrigido — fora do escopo do gate, exige decisão):**
+`public.handle_new_user` concede automaticamente o papel interno
+`administrativo` a qualquer usuário criado por auto-cadastro (`anon`
+`/auth/v1/signup`) sem o metadado `created_by_admin`. Isso foi observado na
+prática durante a tentativa do item 5: o usuário de teste recém-criado nasceu
+com papel interno. Em staging o impacto ficou contido (e-mail não confirmado,
+papel removido e perfil desativado por este trabalho), mas **em produção isso
+seria escalonamento de privilégio por auto-cadastro**. Recomendação: o papel
+padrão de auto-cadastro deve ser nenhum papel (fluxo "acesso pendente") ou um
+papel sem alçada, com atribuição explícita por administrador. Alterar esse
+comportamento muda o onboarding e por isso não foi feito sem autorização.
+
+
 ## Status final
 
 **APTO COM RESSALVA TÉCNICA** — todos os bloqueios críticos (1–4, 6, 7) estão
