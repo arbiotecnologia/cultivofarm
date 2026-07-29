@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,6 +122,9 @@ export default function NovoPedido() {
   const [cashSimulation, setCashSimulation] = useState<SimulateResult | null>(null);
   const simulateSelectedPlan = useSimulateB2BPaymentPlan();
   const simulateCashReference = useSimulateB2BPaymentPlan();
+  /** Chave de idempotência do checkout corrente (server-side dedupe). */
+  const checkoutKeyRef = useRef<string | null>(null);
+
 
   // Lista de produtores vinculados ao usuário B2B (técnico ou gestor)
   const { data: meusProdutores = [] } = useQuery({
@@ -386,6 +389,14 @@ export default function NovoPedido() {
       toast.error("Aguarde a validação de preços pelo servidor antes de enviar o pedido.");
       return;
     }
+    // Chave de idempotência do checkout: mantida entre reenvios/cliques repetidos
+    // e descartada apenas quando o pedido é efetivamente criado.
+    if (!checkoutKeyRef.current) {
+      checkoutKeyRef.current =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
     createOrder.mutate(
       {
         partner_id: partner.id,
@@ -396,9 +407,11 @@ export default function NovoPedido() {
         first_due_date: simulation?.schedule?.[0]?.due_date ?? null,
         installment_count: selectedPlan?.installment_count ?? null,
         expected_cart_hash: simulation.cart_hash,
+        idempotency_key: checkoutKeyRef.current,
       },
       {
         onSuccess: () => {
+          checkoutKeyRef.current = null;
           setCart({});
           setObs("");
           setRequestedDate("");
@@ -410,6 +423,7 @@ export default function NovoPedido() {
         },
       },
     );
+
   };
 
   const renderTipoBadge = (tipo: CatalogItemTipo) =>

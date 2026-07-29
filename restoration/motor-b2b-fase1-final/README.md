@@ -1,4 +1,4 @@
-# Fase 1 — Kit de restauracao da correcao consolidada final (Motor Comercial B2B)
+# Fase 1 — Kit de restauracao / correcao de gate (Motor Comercial B2B)
 
 Ambiente unico autorizado: **staging `ikaauvsflpmamgxmkhoq`**.
 Producao `navfzbwgwzruipouyfnk` e recusada por guarda fail-fast em todos os scripts.
@@ -8,9 +8,9 @@ Producao `navfzbwgwzruipouyfnk` e recusada por guarda fail-fast em todos os scri
 ```bash
 psql "$STAGING_DSN" --single-transaction -v ON_ERROR_STOP=1 -f precheck.sql
 psql "$STAGING_DSN" --single-transaction -v ON_ERROR_STOP=1 -f verify.sql
-# somente se for necessario reverter:
+# somente se for necessario reverter (escopo reduzido, ver abaixo):
 psql "$STAGING_DSN" --single-transaction -v ON_ERROR_STOP=1 -f rollback.sql
-psql "$STAGING_DSN" --single-transaction -v ON_ERROR_STOP=1 -f verify.sql   # deve falhar em V4/V5
+psql "$STAGING_DSN" --single-transaction -v ON_ERROR_STOP=1 -f verify.sql   # deve falhar em V5
 ```
 
 Nunca exponha o DSN em log, terminal compartilhado ou commit.
@@ -19,31 +19,26 @@ Nunca exponha o DSN em log, terminal compartilhado ou commit.
 
 | Arquivo | Papel |
 |---------|-------|
-| `precheck.sql` | Guarda de staging + verificacao de pre-requisitos + inventario read-only |
-| `verify.sql` | 8 asserts da correcao consolidada (higiene, anon, hash, produtor inerte, credito, cotacao, simulacao) |
-| `rollback.sql` | Rollback forward-safe, sem tocar em dado operacional |
-| `migrations-removidas/` | Migrations de fixture/teste retiradas da cadeia operacional (ver abaixo) |
+| `precheck.sql` | Guarda de staging + pre-requisitos + inventario read-only |
+| `verify.sql` | 12 asserts do gate (higiene, anon, hash v2 obrigatorio, idempotencia, produtor inerte, credito, cotacao, tecnico) |
+| `rollback.sql` | Rollback forward-safe, sem reabrir falhas de seguranca |
+| `INVENTARIO-MIGRATIONS.md` | Classificacao operacional x teste e status de promovibilidade |
+| `migrations-removidas/` | Migrations de fixture/harness retiradas da cadeia operacional |
 
-## Higiene da cadeia de migrations
+## Harness fora da cadeia de migrations
 
-As migrations abaixo criavam tabelas de evidencia (`_motor_b2b_fase1_int_evidence`,
-`_motor_b2b_fase1_quote_evidence`) usadas apenas como harness de teste e foram
-retiradas de `supabase/migrations/` para este diretorio:
-
-- `20260729024115_da3ffea7-27bb-421b-9b17-e1690e54b6de.sql`
-- `20260729024354_5a4941a5-3b77-47fe-bd62-d3ca4b461a0f.sql`
-- `20260729024929_e409c643-c43d-4419-88cd-8bf754cf7bad.sql`
-
-Reconciliacao: as tabelas de evidencia foram removidas do banco de staging pela
-migration consolidada `20260729031837`. O conteudo funcional dessas migrations
-(RPC `respond_b2b_order_quote_secure` e afins) permanece na cadeia operacional
-nas migrations subsequentes — nenhuma regra de negocio foi perdida.
+- `supabase/tests/motor-b2b/fase1-final/01-papeis-rls-harness.sql` — matriz de papeis/RLS
+- `supabase/tests/motor-b2b/fase1-final/02-verify-harness.sql` — verify migrado da migration `20260729032912`
+- `supabase/tests/motor-b2b/fase1-final/03-concorrencia.mjs` — prova de concorrencia/idempotencia (execucao externa)
 
 ## O que o rollback NAO reverte (decisao de seguranca)
 
+- obrigatoriedade de `p_expected_cart_hash` em `create_partner_order_secure`;
+- bloqueio `forbidden_financial_terms` para `parceiro_b2b_tecnico`;
+- reavaliacao de credito dentro de `respond_b2b_order_quote_secure`;
 - `REVOKE` de `EXECUTE` do papel `anon` nas funcoes comerciais B2B;
 - exigencia de autenticacao/papel/vinculo em `rpc_b2b_partner_credit`;
-- ocultacao de dados de credito para `parceiro_b2b_tecnico`.
+- unicidade da tabela de idempotencia de checkout.
 
-Reverter qualquer um desses itens reabriria exposicao de dado financeiro e
-deve ser feito apenas por decisao explicita, fora deste kit.
+Reverter qualquer um desses itens reabriria exposicao financeira ou permitiria
+pedido sem preco autoritativo — exige decisao explicita fora deste kit.

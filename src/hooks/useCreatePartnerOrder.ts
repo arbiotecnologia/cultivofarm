@@ -37,10 +37,16 @@ export interface CreateOrderInput {
   installment_count?: number | null;
   /**
    * Assinatura da simulação autoritativa devolvida pelo servidor.
-   * Sem ela (ou divergente), o backend recusa o pedido com `price_changed`.
+   * Obrigatória: sem ela o backend recusa o pedido com `cart_hash_required`.
    */
-  expected_cart_hash?: string | null;
+  expected_cart_hash: string;
+  /**
+   * Chave de idempotência do checkout. Reenvios com a mesma chave e o mesmo
+   * carrinho devolvem o pedido já criado; carrinho diferente é recusado.
+   */
+  idempotency_key: string;
 }
+
 
 const mapUnidadeMedida = (u: UnidadePedido): string => {
   switch (u) {
@@ -57,6 +63,8 @@ export function useCreatePartnerOrder() {
   return useMutation({
     mutationFn: async (input: CreateOrderInput) => {
       if (!input.items.length) throw new Error("Carrinho vazio");
+      if (!input.expected_cart_hash) throw new Error("cart_hash_required");
+      if (!input.idempotency_key) throw new Error("idempotency_key_required");
 
       const payload = input.items.map((i) => ({
         item_id: i.item_id,
@@ -76,12 +84,14 @@ export function useCreatePartnerOrder() {
           p_payment_plan_id: input.payment_plan_id ?? null,
           p_first_due_date: input.first_due_date ?? null,
           p_installment_count: input.installment_count ?? null,
-          p_expected_cart_hash: input.expected_cart_hash ?? null,
+          p_expected_cart_hash: input.expected_cart_hash,
+          p_idempotency_key: input.idempotency_key,
         },
       );
       if (error) throw error;
       return data as { id: string; numero: string; total: number };
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["partner-orders"] });
       toast.success("Pedido enviado para análise comercial!");
@@ -99,6 +109,12 @@ export function useCreatePartnerOrder() {
       else if (msg.includes("PRICE_RULE_MISSING")) toast.error("Item sem preço definido para esta condição comercial. Solicite a configuração à AR Bio.");
       else if (msg.includes("QUOTE_REQUIRED") || msg.includes("quote_required")) toast.error("Esta condição é sob consulta — o pedido segue para cotação comercial.");
       else if (msg.includes("price_changed") || msg.includes("PRICE_CHANGED")) toast.error("Os preços foram atualizados desde a simulação. Revise o carrinho e confirme novamente.");
+      else if (msg.includes("cart_hash_required")) toast.error("Simulação de preços obrigatória. Refaça a simulação antes de enviar o pedido.");
+      else if (msg.includes("idempotency_conflict")) toast.error("O carrinho mudou depois do envio. Refaça a simulação e confirme novamente.");
+      else if (msg.includes("idempotency_key_required") || msg.includes("invalid_idempotency_key")) toast.error("Falha ao identificar o checkout. Recarregue a página e tente novamente.");
+      else if (msg.includes("credit_limit_exceeded")) toast.error("Pedido excede o limite de crédito disponível do parceiro.");
+      else if (msg.includes("forbidden_financial_terms")) toast.error("Seu perfil técnico não tem acesso a condições financeiras.");
+
       else if (msg.includes("product_unavailable")) toast.error("Um dos itens não está disponível");
       else if (msg.includes("price_unavailable")) toast.error("Item sem preço configurado. Solicite à AR Bio.");
 

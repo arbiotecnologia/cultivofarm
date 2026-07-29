@@ -9399,6 +9399,106 @@ export type Database = {
           },
         ]
       }
+      partner_order_idempotency: {
+        Row: {
+          cart_hash: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string
+          order_id: string | null
+          partner_id: string
+          result_snapshot: Json
+          updated_at: string
+        }
+        Insert: {
+          cart_hash: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key: string
+          order_id?: string | null
+          partner_id: string
+          result_snapshot?: Json
+          updated_at?: string
+        }
+        Update: {
+          cart_hash?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string
+          order_id?: string | null
+          partner_id?: string
+          result_snapshot?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_idempotency_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "partner_order_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+        ]
+      }
       partner_order_items: {
         Row: {
           base_price_snapshot: number | null
@@ -15094,6 +15194,7 @@ export type Database = {
         Args: {
           p_expected_cart_hash?: string
           p_first_due_date?: string
+          p_idempotency_key?: string
           p_installment_count?: number
           p_items?: Json
           p_observacoes?: string
@@ -15167,7 +15268,12 @@ export type Database = {
         Returns: number
       }
       fn_b2b_cart_hash: {
-        Args: { p_cart: Json; p_final: number; p_plan_id: string }
+        Args: {
+          p_cart: Json
+          p_final: number
+          p_partner_id: string
+          p_plan_id: string
+        }
         Returns: string
       }
       fn_b2b_credit_exposure: {

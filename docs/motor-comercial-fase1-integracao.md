@@ -156,3 +156,144 @@ declarada APTO até que essa prova seja executada externamente com duas sessões
 reais contra o staging.
 
 Todos os demais itens (1–5, 7–10) estão implementados e evidenciados.
+
+---
+
+# Correção de gate da Fase 1 (auditoria independente)
+
+Ambiente: staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk`
+**não foi acessada**. Nada publicado/deployado. Nenhum dado operacional
+(pedidos, itens, snapshots, recebíveis, parcelas, produção, entrega, fiscal,
+BI, comunicação) foi alterado ou removido.
+
+## 1. Vazamento financeiro ao técnico B2B — CORRIGIDO
+
+`simulate_b2b_payment_plan_secure` é uma RPC exclusivamente financeira/checkout.
+O bloqueio deixou de ser "credit = NULL" e passou a ser **runtime, antes de
+resolver ou retornar qualquer preço**: usuário com `parceiro_b2b_tecnico` e sem
+papel interno autorizado nem `parceiro_b2b` recebe `forbidden_financial_terms`.
+Nenhum `payment_plan`, `discount_percent`, `monthly_interest_percent`,
+`amounts`, `final_amount`, `schedule`, `first_due_date`, `pricing_mode` ou linha
+precificada é montado antes do bloqueio, e nenhum log operacional de preço é
+gravado para o técnico.
+
+- Gestor B2B (`parceiro_b2b`) do próprio parceiro: preservado.
+- `parceiro_b2b_tecnico` + papel interno autorizado: segue a alçada interna.
+- Parceiro A não alcança B (`forbidden_partner`); produtor e usuário sem vínculo
+  falham antes da resolução.
+- Caminho indireto fechado: `convert_partner_simulation_to_order_secure` recusa
+  técnico-only com `forbidden_role_tecnico_cannot_convert` e não devolve
+  snapshot financeiro; `rpc_b2b_partner_credit` exige papel ou vínculo real.
+
+## 2. `cart_hash` obrigatório no backend — CORRIGIDO
+
+- `create_partner_order_secure` recusa hash nulo/vazio com `cart_hash_required`.
+- **Assinatura única de 9 argumentos** (`p_expected_cart_hash`,
+  `p_idempotency_key`). O overload antigo de 7 argumentos foi removido — não há
+  caminho de bypass (`V4(overload_residual)` no verify).
+- Hash canônico v2 (sha256) sobre `partner_id`, `plan_id`, e por linha
+  ordenada deterministicamente: `item_tipo`, `item_id`, `unidade_medida`,
+  `volume_ml`, `quantidade`, `pricing_mode`, `price_source`/`rule_id`, preço
+  unitário — mais o total final. O mesmo item em volumes/unidades diferentes
+  produz assinaturas distintas.
+- O hash **não** é usado como autorização: os preços continuam sendo
+  re-resolvidos server-side e comparados; divergência devolve `price_changed`.
+- Exceção interna auditada: `convert_partner_simulation_to_order_secure`
+  (SECURITY DEFINER) calcula o hash com `fn_b2b_cart_hash` a partir do carrinho
+  recém-resolvido e usa `idempotency_key = 'sim:<simulation_id>'`, de modo que
+  a conversão repetida não duplica pedido.
+- Callsites atualizados: `src/hooks/useCreatePartnerOrder.ts`
+  (`expected_cart_hash` e `idempotency_key` obrigatórios em tipo e em runtime) e
+  `src/pages/portal-parceiro/NovoPedido.tsx` (bloqueia envio sem simulação e
+  reutiliza a mesma chave de checkout em cliques repetidos, descartando-a só
+  após sucesso).
+
+## 3. Crédito após resposta de cotação — CORRIGIDO
+
+Dentro da **mesma transação** de `respond_b2b_order_quote_secure`:
+`pg_advisory_xact_lock` em ordem determinística (pedido → crédito do parceiro),
+`FOR UPDATE` nos itens, recálculo de `fn_b2b_credit_exposure` com
+`p_exclude_order_id` = o próprio pedido (evita contagem dupla), considerando
+recebíveis abertos + pedidos comprometidos sem recebível + o novo total cotado.
+Resultados: vencido com `block_if_overdue` → transação revertida; limite
+excedido com `action=block` → itens/terms/schedule/pedido revertidos;
+`action=approval_required` → grava totais/snapshots e move para
+`aguardando_aprovacao_credito` com `credit_block_reason`; aprovado → segue para
+`em_analise_comercial`. `credit_decision_snapshot` e auditoria são gravados sem
+expor dados ao técnico. A decisão **não** depende de trigger — a avaliação é
+explícita na RPC.
+
+## 4. Higiene da cadeia de migrations — CORRIGIDO
+
+`supabase/migrations/20260729032912_*.sql` (verify/harness com UUIDs fixos) foi
+retirada da cadeia e arquivada em
+`restoration/motor-b2b-fase1-final/migrations-removidas/`; o conteúdo passou a
+viver em `supabase/tests/motor-b2b/fase1-final/02-verify-harness.sql`. Todas as
+migrations da Fase 1 foram revisadas; o inventário completo (operacional x
+teste/restauração) e a reconciliação com o histórico remoto estão em
+`restoration/motor-b2b-fase1-final/INVENTARIO-MIGRATIONS.md`. Nenhum downgrade
+nem edição de histórico do banco foi feito. As migrations operacionais mantêm
+guarda `STAGING_GUARD`, portanto a cadeia é honestamente classificada como
+**operacional em staging, NÃO promovível**; o pacote de promoção está descrito
+(e **não** executado) no mesmo inventário.
+
+## 5. Prova real de concorrência — UNVERIFIED (limitação comprovada)
+
+- **A (chamadas PostgREST simultâneas com JWT `authenticated`)**: impossível
+  neste ambiente — `LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`, ou seja,
+  nenhuma sessão de usuário é injetada, e não há credenciais de usuário
+  disponíveis. `service_role` não pode ser a identidade da chamada de negócio.
+- **B (`dblink`)**: extensão ausente no staging; instalar extensão não é
+  permitido pelo escopo.
+- **C (harness externo versionado)**: entregue e executável em
+  `supabase/tests/motor-b2b/fase1-final/03-concorrencia.mjs` — dois clientes
+  HTTP independentes com barreira/`Promise.all`, login real de dois usuários,
+  `service_role` restrito a fixture/limpeza, cobrindo: crédito concorrente,
+  idempotência do mesmo checkout e duas respostas simultâneas da mesma cotação
+  (esperado: uma vence, outra recebe `order_not_in_quote_state`, um único
+  `payment_terms`). Registra timestamps, status, contagens antes/depois e faz
+  limpeza dos pedidos criados.
+
+Nenhum PASS é declarado para este item.
+
+## 6. Testes e regressão
+
+- Estrutura verificada em runtime no staging: `V1..V12` — sem tabelas de
+  evidência, `anon` sem EXECUTE nas 11 funções comerciais, assinatura única de
+  `create_partner_order_secure`, gatilho de produtor inerte presente,
+  `partner_order_idempotency` com RLS, dois índices únicos, sem acesso `anon`,
+  e `authenticated` sem INSERT/UPDATE/DELETE direto; `commercial_price_rules`
+  com RLS e invisível a `anon`.
+- Typecheck: OK. Build: OK.
+- Vitest: **2587 passed / 2 failed** (2593 total).
+  - `src/test/portalAcompanhamentoProdutor.test.tsx` — *flaky por timeout de
+    5s sob carga da suíte completa*. Executado isoladamente: **10/10 PASS em
+    776 ms**. Não é regressão da Fase 1 e não toca o motor comercial.
+  - `src/test/fiscal/sinief49/staging/verifier.test.ts` — o teste espera
+    `PENDING` de um `types.ts` ainda **não** regenerado; o `types.ts` real já
+    contém parcialmente as entidades SINIEF 4.0 (introduzidas pelas migrations
+    fiscais `20260807`/`20260808`, anteriores à Fase 1), então o classificador
+    devolve `FAIL`. É débito do módulo fiscal, sem relação com o motor B2B e
+    sem contradizer a inércia do produtor direto até a Fase 5.
+
+## 7. Rollback e riscos
+
+`restoration/motor-b2b-fase1-final/` atualizado: `verify.sql` com 12 asserts
+coerentes com hash v2/idempotência, `rollback.sql` **reduzido** — reverte apenas
+a inércia do produtor direto e **não** recria a assinatura de 7 argumentos
+(fazê-lo reabriria criação de pedido sem paridade de preço), `README.md` e
+`INVENTARIO-MIGRATIONS.md`.
+
+Riscos/custos: clientes muito antigos que ainda chamem a assinatura de 7
+argumentos passam a falhar (intencional); a exigência de simulação prévia
+adiciona uma chamada de rede por checkout; a tabela de idempotência cresce
+proporcionalmente aos checkouts e pode exigir política de expurgo futura.
+
+## Status final
+
+**APTO COM RESSALVA TÉCNICA** — todos os bloqueios críticos (1–4, 6, 7) estão
+resolvidos e evidenciados; a única pendência é a prova empírica de concorrência
+(item 5), impossível neste ambiente por ausência comprovada de identidade
+`authenticated` e de segunda sessão Postgres, com harness executável entregue e
+mantido como **UNVERIFIED**.
+
