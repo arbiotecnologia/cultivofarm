@@ -14,9 +14,33 @@ export function PaymentSimulationSummary({ simulation, cashReferenceAmount }: Pr
     cashReferenceAmount != null && cashReferenceAmount > 0
       ? amounts.final_amount - cashReferenceAmount
       : null;
+
+  if (simulation.quote_required) {
+    return (
+      <div className="space-y-2 text-sm">
+        <Alert className="py-2">
+          <AlertDescription className="text-xs">
+            Esta condição comercial é <strong>sob consulta</strong>. O pedido será enviado para
+            cotação e o valor final será definido pela equipe comercial da AR Bio.
+          </AlertDescription>
+        </Alert>
+        {warnings.length > 0 && (
+          <div className="space-y-1">
+            {warnings.map((w, i) => (
+              <Alert key={i} className="py-2">
+                <AlertDescription className="text-xs">{w}</AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2 text-sm">
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 border rounded-md p-2 bg-muted/20">
+
         <span className="text-muted-foreground">Valor de tabela</span>
         <span className="text-right">{brl(amounts.table_amount)}</span>
         <span className="text-muted-foreground">Desconto comercial</span>

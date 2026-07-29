@@ -2970,6 +2970,7 @@ export type Database = {
           months_count: number
           name: string
           plan_type: string
+          pricing_mode: string
           requires_credit_approval: boolean
           requires_financial_approval: boolean
           requires_guarantee: boolean
@@ -2992,6 +2993,7 @@ export type Database = {
           months_count?: number
           name: string
           plan_type: string
+          pricing_mode?: string
           requires_credit_approval?: boolean
           requires_financial_approval?: boolean
           requires_guarantee?: boolean
@@ -3014,6 +3016,7 @@ export type Database = {
           months_count?: number
           name?: string
           plan_type?: string
+          pricing_mode?: string
           requires_credit_approval?: boolean
           requires_financial_approval?: boolean
           requires_guarantee?: boolean
@@ -9398,58 +9401,82 @@ export type Database = {
       }
       partner_order_items: {
         Row: {
+          base_price_snapshot: number | null
+          condition_price_snapshot: number | null
           created_at: string
           desconto_percentual: number
           desconto_percentual_snapshot: number | null
           id: string
           microrganismo_id: string | null
           order_id: string
+          plan_discount_percent_snapshot: number | null
           preco_tabela_snapshot: number | null
           preco_unitario: number
           preco_unitario_final_snapshot: number | null
+          price_rule_id_snapshot: string | null
+          price_source_snapshot: string | null
+          pricing_mode_snapshot: string | null
           product_id: string | null
           produto_codigo_snapshot: string | null
           produto_nome_snapshot: string | null
           quantidade: number
           subtotal: number
           unidade_medida: string
+          unit_type_snapshot: string | null
           volume_ml: number | null
+          volume_ml_snapshot: number | null
         }
         Insert: {
+          base_price_snapshot?: number | null
+          condition_price_snapshot?: number | null
           created_at?: string
           desconto_percentual?: number
           desconto_percentual_snapshot?: number | null
           id?: string
           microrganismo_id?: string | null
           order_id: string
+          plan_discount_percent_snapshot?: number | null
           preco_tabela_snapshot?: number | null
           preco_unitario?: number
           preco_unitario_final_snapshot?: number | null
+          price_rule_id_snapshot?: string | null
+          price_source_snapshot?: string | null
+          pricing_mode_snapshot?: string | null
           product_id?: string | null
           produto_codigo_snapshot?: string | null
           produto_nome_snapshot?: string | null
           quantidade: number
           subtotal?: number
           unidade_medida?: string
+          unit_type_snapshot?: string | null
           volume_ml?: number | null
+          volume_ml_snapshot?: number | null
         }
         Update: {
+          base_price_snapshot?: number | null
+          condition_price_snapshot?: number | null
           created_at?: string
           desconto_percentual?: number
           desconto_percentual_snapshot?: number | null
           id?: string
           microrganismo_id?: string | null
           order_id?: string
+          plan_discount_percent_snapshot?: number | null
           preco_tabela_snapshot?: number | null
           preco_unitario?: number
           preco_unitario_final_snapshot?: number | null
+          price_rule_id_snapshot?: string | null
+          price_source_snapshot?: string | null
+          pricing_mode_snapshot?: string | null
           product_id?: string | null
           produto_codigo_snapshot?: string | null
           produto_nome_snapshot?: string | null
           quantidade?: number
           subtotal?: number
           unidade_medida?: string
+          unit_type_snapshot?: string | null
           volume_ml?: number | null
+          volume_ml_snapshot?: number | null
         }
         Relationships: [
           {
@@ -9471,6 +9498,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_price_rule_snapshot_fk"
+            columns: ["price_rule_id_snapshot"]
+            isOneToOne: false
+            referencedRelation: "commercial_price_rules"
             referencedColumns: ["id"]
           },
         ]
@@ -9629,6 +9663,7 @@ export type Database = {
           approved_by: string | null
           created_at: string
           created_by: string | null
+          credit_decision_snapshot: Json | null
           discount_amount: number
           discount_percent_snapshot: number
           final_amount: number
@@ -9644,6 +9679,7 @@ export type Database = {
           payment_plan_id: string | null
           plan_code_snapshot: string
           plan_name_snapshot: string
+          pricing_mode_snapshot: string | null
           table_amount: number
           updated_at: string
         }
@@ -9654,6 +9690,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          credit_decision_snapshot?: Json | null
           discount_amount?: number
           discount_percent_snapshot: number
           final_amount?: number
@@ -9669,6 +9706,7 @@ export type Database = {
           payment_plan_id?: string | null
           plan_code_snapshot: string
           plan_name_snapshot: string
+          pricing_mode_snapshot?: string | null
           table_amount?: number
           updated_at?: string
         }
@@ -9679,6 +9717,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          credit_decision_snapshot?: Json | null
           discount_amount?: number
           discount_percent_snapshot?: number
           final_amount?: number
@@ -9694,6 +9733,7 @@ export type Database = {
           payment_plan_id?: string | null
           plan_code_snapshot?: string
           plan_name_snapshot?: string
+          pricing_mode_snapshot?: string | null
           table_amount?: number
           updated_at?: string
         }
@@ -15041,6 +15081,7 @@ export type Database = {
       check_talhao_dependencies: { Args: { _talhao_id: string }; Returns: Json }
       convert_partner_simulation_to_order_secure: {
         Args: {
+          p_confirm_price_change?: boolean
           p_first_due_date?: string
           p_installment_count?: number
           p_observacoes?: string
@@ -15115,6 +15156,15 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_b2b_apply_interest: {
+        Args: {
+          p_interest_type: string
+          p_monthly_pct: number
+          p_months: number
+          p_net: number
+        }
+        Returns: number
+      }
       fn_b2b_credit_exposure: {
         Args: {
           p_exclude_order_id?: string
@@ -15123,6 +15173,7 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_b2b_order_priceable: { Args: { p_order_id: string }; Returns: boolean }
       fn_calc_next_generation_date: {
         Args: { _due_day: number; _freq: string; _from_date: string }
         Returns: string
@@ -15227,6 +15278,15 @@ export type Database = {
         Returns: undefined
       }
       fn_mark_financial_overdue: { Args: never; Returns: undefined }
+      fn_resolve_b2b_cart: {
+        Args: {
+          p_items: Json
+          p_partner_id: string
+          p_plan_id: string
+          p_ref_date?: string
+        }
+        Returns: Json
+      }
       fn_resolve_commercial_price: {
         Args: {
           p_buyer_scope: string
@@ -15282,6 +15342,10 @@ export type Database = {
         Returns: string
       }
       generate_b2b_receivable_secure: {
+        Args: { p_partner_order_id: string }
+        Returns: Json
+      }
+      generate_b2b_receivable_secure_impl: {
         Args: { p_partner_order_id: string }
         Returns: Json
       }
@@ -17508,6 +17572,7 @@ export type Database = {
         | "aguardando_ajuste_comercial"
         | "aguardando_itens"
         | "reprovado_sem_itens"
+        | "aguardando_cotacao"
       partner_porte: "pequeno" | "medio" | "grande"
       partner_regime_tributario:
         | "simples"
@@ -17917,6 +17982,7 @@ export const Constants = {
         "aguardando_ajuste_comercial",
         "aguardando_itens",
         "reprovado_sem_itens",
+        "aguardando_cotacao",
       ],
       partner_porte: ["pequeno", "medio", "grande"],
       partner_regime_tributario: [
