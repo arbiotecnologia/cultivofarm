@@ -24,7 +24,7 @@ BEGIN
   END IF;
 END $guard$;
 
-CREATE TABLE IF NOT EXISTS public._motor_b2b_fase0_2_evidence (
+CREATE TEMP TABLE IF NOT EXISTS _motor_b2b_fase0_2_evidence (
   id bigserial PRIMARY KEY,
   test_code text NOT NULL,
   descricao text NOT NULL,
@@ -34,9 +34,6 @@ CREATE TABLE IF NOT EXISTS public._motor_b2b_fase0_2_evidence (
   passou boolean NOT NULL,
   executed_at timestamptz NOT NULL DEFAULT now()
 );
-REVOKE ALL ON TABLE public._motor_b2b_fase0_2_evidence FROM PUBLIC, anon, authenticated;
-GRANT ALL ON TABLE public._motor_b2b_fase0_2_evidence TO service_role;
-ALTER TABLE public._motor_b2b_fase0_2_evidence ENABLE ROW LEVEL SECURITY;
 
 DO $cycle$
 DECLARE
@@ -201,12 +198,16 @@ BEGIN
     'exp','identica','got',CASE WHEN fp_hard_fim = fp_hard_ini THEN 'identica' ELSE 'divergente' END,
     'pass', fp_hard_fim = fp_hard_ini));
 
-  INSERT INTO public._motor_b2b_fase0_2_evidence (test_code, descricao, identidade, esperado, obtido, passou)
+  INSERT INTO _motor_b2b_fase0_2_evidence (test_code, descricao, identidade, esperado, obtido, passou)
   SELECT e->>'code', e->>'desc', e->>'ident', e->>'exp', e->>'got', (e->>'pass')::boolean
   FROM jsonb_array_elements(res) e;
 END $cycle$;
 
 SELECT test_code, esperado, obtido, passou
-FROM public._motor_b2b_fase0_2_evidence
+FROM _motor_b2b_fase0_2_evidence
 WHERE test_code LIKE 'T20%'
 ORDER BY id;
+
+-- Limpeza defensiva: a tabela de evidencia e TEMP (some no fim da sessao).
+DROP TABLE IF EXISTS _motor_b2b_fase0_2_evidence;
+DROP TABLE IF EXISTS public._motor_b2b_fase0_2_evidence;
