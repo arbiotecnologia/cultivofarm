@@ -27,7 +27,7 @@ END $guard$;
 BEGIN;
 
 -- 1. Funcoes novas da Fase 1 -------------------------------------------------
-DROP FUNCTION IF EXISTS public.rpc_resolve_commercial_prices(jsonb, uuid, date);
+DROP FUNCTION IF EXISTS public.rpc_resolve_commercial_prices(jsonb, uuid, date, jsonb);
 DROP FUNCTION IF EXISTS public.fn_resolve_commercial_price(text, uuid, uuid, uuid, uuid, uuid, text, numeric, date);
 DROP FUNCTION IF EXISTS public.rpc_b2b_credit_exposure(uuid, numeric, uuid);
 DROP FUNCTION IF EXISTS public.fn_b2b_credit_exposure(uuid, numeric, uuid);
