@@ -182,6 +182,17 @@ export function ParceiroPrecosTab({ partnerId, defaultDiscount = 0 }: Props) {
         </AlertDescription>
       </Alert>
 
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription className="text-xs">
+          Esta tabela é a <strong>prioridade 2</strong> do motor comercial (preço por parceiro).
+          Regras da matriz canônica por condição de pagamento (preço fixo ou "sob consulta") têm
+          precedência sobre estes valores e são mantidas pela equipe comercial na matriz de
+          condições. O preço efetivo de cada pedido é sempre recalculado no servidor.
+        </AlertDescription>
+      </Alert>
+
+
       <Card className="p-3 flex flex-col sm:flex-row gap-3 sm:items-end">
         <div className="flex-1">
           <Label>Desconto global (%)</Label>
