@@ -7,7 +7,7 @@ import { useLogCatalogAccess, type CatalogOrigem } from "@/hooks/useLogCatalogAc
 import { useEmbalagensPorItem, formatEmbalagens } from "@/hooks/useEmbalagensPorItem";
 import { useCatalogoVolumes, formatVolumesCatalogo } from "@/hooks/useCatalogoVolumes";
 import { brl } from "@/lib/financial/format";
-import { calcularCustoHa, DOSES_POR_LITRO } from "@/lib/catalogo/pricing";
+import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
 
 interface Props {
   open: boolean;
@@ -156,7 +156,7 @@ export function FichaProdutorDrawer({ open, onOpenChange, itemId, tipo, origem =
                   )}
                   <div className="text-xs text-muted-foreground">1 litro rende {DOSES_POR_LITRO} doses de 100 mL.</div>
                   {(ficha.dose_ml_ha != null || ficha.valor_ha_brl != null) && (
-                    <div>Custo estimado por hectare: <span className="font-semibold">{brl(resolverCustoHa({ tipo: ficha.item_tipo as any, doseMlHa: ficha.dose_ml_ha, valorHa: ficha.valor_ha_brl, valorDose: ficha.valor_dose_brl, valorLitro: ficha.valor_litro_brl }) ?? 0)}</span> <span className="text-xs text-muted-foreground">({ficha.dose_ml_ha} mL/ha)</span></div>
+                    <div>Custo estimado por hectare: <span className="font-semibold">{brl(resolverCustoHa({ tipo: ficha.item_tipo as any, doseMlHa: ficha.dose_ml_ha, valorHa: ficha.valor_ha_brl, valorDose: ficha.valor_dose_brl, valorLitro: ficha.valor_litro_brl }) ?? 0)}</span>{ficha.dose_ml_ha != null && <span className="text-xs text-muted-foreground"> ({ficha.dose_ml_ha} mL/ha)</span>}</div>
                   )}
                   <div className="text-[11px] text-muted-foreground italic">O custo por hectare pode variar conforme dose recomendada, cultura, alvo e orientação técnica.</div>
                 </div>
