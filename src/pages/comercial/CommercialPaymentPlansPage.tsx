@@ -100,11 +100,23 @@ export default function CommercialPaymentPlansPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">Condições de Pagamento</h1>
-          <p className="text-sm text-muted-foreground">Planos comerciais B2B configuráveis</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold">Motor Comercial B2B</h1>
+        <p className="text-sm text-muted-foreground">Condições de pagamento e matriz canônica de preços</p>
+      </div>
+
+      <Tabs defaultValue="planos" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="planos">Condições de pagamento</TabsTrigger>
+          <TabsTrigger value="matriz">Matriz de preços</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="matriz">
+          <MatrizPrecosTab />
+        </TabsContent>
+
+        <TabsContent value="planos" className="space-y-6">
+      <div className="flex items-center justify-end">
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo plano</Button>
       </div>
 
@@ -114,6 +126,8 @@ export default function CommercialPaymentPlansPage() {
           Alterações nos planos <strong>não alteram pedidos já criados</strong>, pois os pedidos mantêm snapshot financeiro.
         </AlertDescription>
       </Alert>
+
+
 
       <Card>
         <CardHeader>
