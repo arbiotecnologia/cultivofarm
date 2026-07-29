@@ -543,9 +543,16 @@ export default function PedidosB2B() {
                     !hasItems ||
                     detail.status === "aprovado" ||
                     detail.status === "aguardando_aprovacao_credito" ||
+                    detail.status === "aguardando_cotacao" ||
                     detail.status === "aguardando_itens"
                   }
-                  title={!hasItems ? "Adicione ao menos 1 item para aprovar" : undefined}
+                  title={
+                    !hasItems
+                      ? "Adicione ao menos 1 item para aprovar"
+                      : detail.status === "aguardando_cotacao"
+                        ? "Responda a cotação antes de aprovar"
+                        : undefined
+                  }
                 >
                   {approve.isPending ? "Aprovando..." : "Aprovar pedido"}
                 </Button>
@@ -560,6 +567,16 @@ export default function PedidosB2B() {
         open={timelineOpen}
         onOpenChange={setTimelineOpen}
       />
+
+      <ResponderCotacaoDialog
+        open={quoteOpen}
+        onOpenChange={setQuoteOpen}
+        orderId={detail?.id ?? null}
+        orderNumero={detail?.numero ?? null}
+        items={items as any}
+        onResponded={() => setDetail(null)}
+      />
+
 
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent>
