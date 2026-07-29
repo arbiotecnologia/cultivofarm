@@ -49,6 +49,7 @@ import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection"
 const STATUS_OPTIONS = [
   { value: "all", label: "Todos" },
   { value: "aguardando_aprovacao_credito", label: "Aguardando aprovação de crédito" },
+  { value: "aguardando_cotacao", label: "Aguardando cotação" },
   { value: "em_analise_comercial", label: "Em análise" },
   { value: "aguardando_itens", label: "Aguardando itens" },
   { value: "aprovado", label: "Aprovado" },
