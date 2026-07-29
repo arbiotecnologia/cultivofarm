@@ -29,10 +29,17 @@ psql "$PGURL_STAGING" -v ON_ERROR_STOP=1 -f supabase/tests/motor-b2b/fase0-2/02-
 
 ## Histórico
 
-As versões anteriores destes testes foram aplicadas ao staging como migrations
-(`20260729010528_*` e `20260729010619_*`) e continham fixtures, `TRUNCATE`, UUIDs de contas de
-homologação reais e limpeza destrutiva. Esses arquivos foram **removidos da cadeia canônica** e
-substituídos por estes scripts. As duas versões permanecem registradas no histórico remoto do
-staging (`supabase_migrations.schema_migrations`) — não foi feito downgrade no banco; a
-reconciliação foi feita pela migration `20260729015000_motor_b2b_fase0_2_reconciliacao.sql`,
-que reafirma de forma idempotente apenas o schema/segurança apto a promoção.
+Versões anteriores destes testes chegaram a ser aplicadas ao staging como migrations e continham
+fixtures, `TRUNCATE`, UUIDs de contas de homologação reais e limpeza destrutiva. Esses arquivos
+foram **removidos da cadeia canônica** e substituídos por estes scripts.
+
+Cadeia canônica remanescente da Fase 0.2 (apta a promoção):
+
+- `supabase/migrations/20260729010220_motor_b2b_fase0_2_hardening_rls.sql` — hardening.
+- `supabase/migrations/20260729014307_motor_b2b_fase0_2_reconciliacao.sql` — reafirmação
+  idempotente de policies, revogações de `anon` e índice.
+- `supabase/migrations/20260729015203_motor_b2b_fase0_2_drop_evidence_table.sql` — remoção da
+  tabela técnica de evidências após exportação para `docs/`.
+
+As execuções antigas permanecem registradas no histórico remoto do staging
+(`supabase_migrations.schema_migrations`); não foi feito downgrade no banco.
