@@ -7,7 +7,13 @@ import { useLogCatalogAccess, type CatalogOrigem } from "@/hooks/useLogCatalogAc
 import { useEmbalagensPorItem, formatEmbalagens } from "@/hooks/useEmbalagensPorItem";
 import { useCatalogoVolumes, formatVolumesCatalogo } from "@/hooks/useCatalogoVolumes";
 import { brl } from "@/lib/financial/format";
-import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
+import {
+  DOSES_POR_LITRO,
+  formatarCustoHa,
+  formatarMoeda,
+  LABEL_CUSTO_HA,
+  AVISO_CUSTO_HA_VARIAVEL,
+} from "@/lib/catalogo/formatUnidades";
 
 interface Props {
   open: boolean;
@@ -149,16 +155,16 @@ export function FichaProdutorDrawer({ open, onOpenChange, itemId, tipo, origem =
               <Section title="Valores e volume">
                 <div className="space-y-1">
                   {ficha.valor_litro_brl != null && (
-                    <div>Valor por litro: <span className="font-semibold">{brl(ficha.valor_litro_brl)}</span></div>
+                    <div>Valor por litro: <span className="font-semibold">{formatarMoeda(ficha.valor_litro_brl)}</span></div>
                   )}
                   {ficha.valor_dose_brl != null && (
-                    <div>Valor da dose (100 mL): <span className="font-semibold">{brl(ficha.valor_dose_brl)}</span></div>
+                    <div>Valor da dose (100 mL): <span className="font-semibold">{formatarMoeda(ficha.valor_dose_brl)}</span></div>
                   )}
                   <div className="text-xs text-muted-foreground">1 litro rende {DOSES_POR_LITRO} doses de 100 mL.</div>
                   {(ficha.dose_ml_ha != null || ficha.valor_ha_brl != null) && (
-                    <div>Custo estimado por hectare: <span className="font-semibold">{brl(resolverCustoHa({ tipo, doseMlHa: ficha.dose_ml_ha, valorHa: ficha.valor_ha_brl, valorDose: ficha.valor_dose_brl, valorLitro: ficha.valor_litro_brl }) ?? 0)}</span>{ficha.dose_ml_ha != null && <span className="text-xs text-muted-foreground"> ({ficha.dose_ml_ha} mL/ha)</span>}</div>
+                    <CustoHaLinha tipo={tipo} ficha={ficha} />
                   )}
-                  <div className="text-[11px] text-muted-foreground italic">O custo por hectare pode variar conforme dose recomendada, cultura, alvo e orientação técnica.</div>
+                  <div className="text-[11px] text-muted-foreground italic">{AVISO_CUSTO_HA_VARIAVEL}</div>
                 </div>
               </Section>
             )}
@@ -174,6 +180,24 @@ export function FichaProdutorDrawer({ open, onOpenChange, itemId, tipo, origem =
   );
 }
 
+function CustoHaLinha({ tipo, ficha }: { tipo: "produto" | "microrganismo"; ficha: Ficha }) {
+  const custo = formatarCustoHa({
+    tipo,
+    doseMlHa: ficha.dose_ml_ha,
+    valorHa: ficha.valor_ha_brl,
+    valorDose: ficha.valor_dose_brl,
+    valorLitro: ficha.valor_litro_brl,
+  });
+  return (
+    <div>
+      {LABEL_CUSTO_HA}: <span className="font-semibold">{custo.texto}</span>
+      {custo.doseTexto && (
+        <span className="text-xs text-muted-foreground"> ({custo.doseTexto})</span>
+      )}
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
@@ -182,3 +206,4 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     </div>
   );
 }
+

@@ -1,8 +1,14 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { drawArBioFooter, drawArBioHeader } from "./arBioHeader";
-import { brl } from "@/lib/financial/format";
-import { calcularValorLitro } from "@/lib/catalogo/pricing";
+import {
+  calcularValorLitro,
+  formatarMoedaOuTraco,
+  formatarOuTraco,
+  formatarDose,
+  PLACEHOLDER_VAZIO,
+  REFERENCIA_DOSE_LITRO,
+} from "@/lib/catalogo/formatUnidades";
 
 export interface ProdutoCatalogoItem {
   codigo: string | null;
@@ -31,14 +37,14 @@ export async function generateCatalogoProdutosPdf(items: ProdutoCatalogoItem[]) 
     body: items.map((p) => {
       const litro = p.valor_litro_brl ?? calcularValorLitro(p.valor_dose_brl ?? null);
       return [
-        p.codigo || "—",
+        formatarOuTraco(p.codigo),
         p.nome,
-        p.tipo || "—",
-        p.dose_ml_ha != null ? String(p.dose_ml_ha) : "—",
-        p.modo_aplicacao || "—",
-        p.valor_dose_brl != null ? brl(p.valor_dose_brl) : "—",
-        litro != null ? brl(litro) : "—",
-        p.valor_ha_brl != null ? brl(p.valor_ha_brl) : "—",
+        formatarOuTraco(p.tipo),
+        formatarDose(p.dose_ml_ha, { comSufixo: false }),
+        formatarOuTraco(p.modo_aplicacao),
+        formatarMoedaOuTraco(p.valor_dose_brl),
+        formatarMoedaOuTraco(litro),
+        formatarMoedaOuTraco(p.valor_ha_brl),
         p.b2b_enabled ? "Sim" : "Não",
         p.ativo ? "Ativo" : "Inativo",
       ];
@@ -56,7 +62,7 @@ export async function generateCatalogoProdutosPdf(items: ProdutoCatalogoItem[]) 
     didDrawPage: (data) => {
       doc.setFontSize(8);
       doc.setTextColor(100);
-      doc.text("Referência: 1 L = 10 doses de 100 mL.", 40, doc.internal.pageSize.getHeight() - 70);
+      doc.text(REFERENCIA_DOSE_LITRO, 40, doc.internal.pageSize.getHeight() - 70);
     },
   });
 

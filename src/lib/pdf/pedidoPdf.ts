@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import { drawArBioHeader, drawArBioFooter } from "./arBioHeader";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { brl } from "@/lib/financial/format";
+import { formatarArea, formatarOuTraco, formatarPercentual, PLACEHOLDER_VAZIO } from "@/lib/catalogo/formatUnidades";
 
 export interface PedidoPdfInput {
   pedido: {
@@ -59,33 +60,33 @@ export async function generatePedidoPdf(input: PedidoPdfInput): Promise<{
       "Entrega desejada",
       input.pedido.requested_delivery_date
         ? formatDateDisplay(input.pedido.requested_delivery_date)
-        : "—",
+        : PLACEHOLDER_VAZIO,
     ],
     [
       "Entrega prevista",
       input.pedido.estimated_delivery_date
         ? formatDateDisplay(input.pedido.estimated_delivery_date)
-        : "—",
+        : PLACEHOLDER_VAZIO,
     ],
     [
       "Aprovado em",
-      input.pedido.approved_at ? formatDateDisplay(input.pedido.approved_at) : "—",
+      input.pedido.approved_at ? formatDateDisplay(input.pedido.approved_at) : PLACEHOLDER_VAZIO,
     ],
-    ["Parceiro", input.parceiro_nome ?? "—"],
-    ["Cliente", input.cliente_nome ?? "—"],
-    ["Cultura", input.pedido.cultura ?? "—"],
+    ["Parceiro", formatarOuTraco(input.parceiro_nome)],
+    ["Cliente", formatarOuTraco(input.cliente_nome)],
+    ["Cultura", formatarOuTraco(input.pedido.cultura)],
     [
       "Área",
       input.pedido.area_total_ha != null
-        ? `${Number(input.pedido.area_total_ha).toFixed(2)} ha`
-        : "—",
+        ? formatarArea(input.pedido.area_total_ha)
+        : PLACEHOLDER_VAZIO,
     ],
-    ["Pagamento", input.pedido.payment_method ?? "—"],
+    ["Pagamento", formatarOuTraco(input.pedido.payment_method)],
     [
       "Vencimento",
       input.pedido.payment_due_date
         ? formatDateDisplay(input.pedido.payment_due_date)
-        : "—",
+        : PLACEHOLDER_VAZIO,
     ],
   ];
 
@@ -113,7 +114,7 @@ export async function generatePedidoPdf(input: PedidoPdfInput): Promise<{
     doc.setFontSize(9);
     const b = input.baixado_por;
     const linha = [b.nome, b.email, b.perfil].filter(Boolean).join(" · ");
-    doc.text(linha || "—", margin, y);
+    doc.text(linha || PLACEHOLDER_VAZIO, margin, y);
     y += 10;
     doc.text(`Download em ${new Date().toLocaleString("pt-BR")}`, margin, y);
     y += 14;
@@ -128,11 +129,11 @@ export async function generatePedidoPdf(input: PedidoPdfInput): Promise<{
       const descPct = Number(i.desconto_percentual ?? 0);
       const unidade = i.unidade_medida ? ` ${i.unidade_medida}` : "";
       return [
-        i.produto_codigo_snapshot ?? "—",
+        formatarOuTraco(i.produto_codigo_snapshot),
         i.produto_nome_snapshot ?? i.nome ?? "Item",
         `${i.quantidade}${unidade}`,
         brl(cheio),
-        descPct > 0 ? `${descPct.toFixed(2)}%` : "—",
+        descPct > 0 ? formatarPercentual(descPct) : PLACEHOLDER_VAZIO,
         brl(Number(i.subtotal ?? 0)),
       ];
     }),
