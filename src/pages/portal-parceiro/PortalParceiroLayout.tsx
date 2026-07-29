@@ -61,6 +61,8 @@ export default function PortalParceiroLayout() {
   const isStaff = role === "administrador" || role === "gestor_comercial";
   const isTecnico = role === "parceiro_b2b_tecnico";
   const menu = isTecnico ? menuTecnico : menuGestor;
+  const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
+
 
   const { data: allPartners = [] } = useQuery({
     queryKey: ["partner-accounts-active"],
