@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { resolverUnidadePreco, type UnidadePreco } from "@/lib/catalogo/unidades";
 
 export type CatalogItemTipo = "produto" | "microrganismo";
-export type UnidadePrecoPrincipal = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
+/** Unidade canônica de preço (ver src/lib/catalogo/unidades.ts). */
+export type UnidadePrecoPrincipal = UnidadePreco;
 
 export interface CatalogItem {
   item_id: string;
@@ -57,9 +59,13 @@ export function usePartnerCatalog(partnerId: string | null | undefined) {
         const valorDose = Number(r.valor_dose_brl ?? 0);
         const valorLitro = Number(r.valor_litro_brl ?? (valorDose > 0 ? valorDose * 10 : 0));
         const valorHaRaw = r.valor_ha_brl == null ? null : Number(r.valor_ha_brl);
-        const unidade: UnidadePrecoPrincipal =
-          (r.unidade_preco_principal as UnidadePrecoPrincipal) ??
-          (tipo === "produto" ? "hectare" : "dose_100ml");
+        const unidade: UnidadePrecoPrincipal = resolverUnidadePreco({
+          tipo,
+          unidadeBackend: r.unidade_preco_principal,
+          valorHa: valorHaRaw,
+          valorLitro: valorLitro,
+          valorDose: valorDose,
+        });
         const descPct = Number(r.desconto_percentual ?? 0);
         return {
           item_id: r.item_id,
