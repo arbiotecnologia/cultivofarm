@@ -343,6 +343,8 @@ export default function CommercialPaymentPlansPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
