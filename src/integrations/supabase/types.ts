@@ -15345,6 +15345,10 @@ export type Database = {
         Args: { p_partner_order_id: string }
         Returns: Json
       }
+      generate_b2b_receivable_secure_impl: {
+        Args: { p_partner_order_id: string }
+        Returns: Json
+      }
       generate_production_orders_from_partner: {
         Args: { p_partner_order_id: string }
         Returns: Json
