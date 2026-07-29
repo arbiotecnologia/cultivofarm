@@ -849,7 +849,22 @@ export default function NovoPedido() {
                 </div>
               </div>
             )}
-            <TotaisCarrinho subtotalCheio={totalCheio} totalFinal={isSimulationMode ? totalCheio : total} />
+            {/* Totais: em modo pedido, o valor autoritativo vem do motor comercial (RPC). */}
+            {!isSimulationMode && simulation?.quote_required ? (
+              <Alert className="py-2">
+                <AlertDescription className="text-xs">
+                  Itens sob consulta — o valor final será definido pela equipe comercial após a cotação.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <TotaisCarrinho
+                subtotalCheio={isSimulationMode ? totalCheio : simulation?.amounts.table_amount ?? totalCheio}
+                totalFinal={
+                  isSimulationMode ? totalCheio : simulation?.amounts.final_amount ?? total
+                }
+              />
+            )}
+
             {!isSimulationMode && (
               <div className="space-y-2 border rounded-md p-3 bg-background">
                 <div className="text-xs font-semibold uppercase text-muted-foreground">
