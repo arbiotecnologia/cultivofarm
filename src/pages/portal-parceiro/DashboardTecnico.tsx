@@ -38,11 +38,12 @@ export default function DashboardTecnico() {
   return (
     <div className="space-y-4 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold">Portal Técnico B2B</h1>
+        <h1 className="text-2xl font-bold">Olá, {getPrimeiroNome(profile?.nome, profile?.email)}</h1>
         <p className="text-sm text-muted-foreground">
-          Consulte catálogo e monte simulações agronômicas para o gestor B2B.
+          {partner?.razao_social ?? "Parceiro"} · Técnico B2B
         </p>
       </div>
+
 
       <Alert>
         <Info className="h-4 w-4" />
