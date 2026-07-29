@@ -570,6 +570,13 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
 
 function ProdutoRecomendadoItem({ rec }: { rec: any }) {
   const [open, setOpen] = useState(false);
+  const [fichaOpen, setFichaOpen] = useState(false);
+  const fichaItem: { id: string; tipo: "produto" | "microrganismo" } | null =
+    rec.produto_biologico_sugerido_id
+      ? { id: rec.produto_biologico_sugerido_id, tipo: "produto" }
+      : rec.microrganismo_id
+      ? { id: rec.microrganismo_id, tipo: "microrganismo" }
+      : null;
   const produto =
     rec.produtos?.nome ||
     rec.microrganismos?.nome ||
