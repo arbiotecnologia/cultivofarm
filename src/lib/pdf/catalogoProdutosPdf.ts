@@ -4,6 +4,7 @@ import { drawArBioFooter, drawArBioHeader } from "./arBioHeader";
 import {
   calcularValorLitro,
   formatarMoedaOuTraco,
+  LABEL_CUSTO_HA_CURTO,
   formatarOuTraco,
   formatarDose,
   PLACEHOLDER_VAZIO,

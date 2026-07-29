@@ -6,6 +6,7 @@ import {
   calcularValorLitro,
   calcularCustoHa,
   formatarMoedaOuTraco,
+  LABEL_CUSTO_HA_CURTO,
   formatarOuTraco,
   formatarDose,
   REFERENCIA_DOSE_LITRO,
