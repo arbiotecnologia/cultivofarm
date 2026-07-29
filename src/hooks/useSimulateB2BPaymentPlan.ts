@@ -44,6 +44,13 @@ export interface SimulateResult {
   pricing_mode: PricingMode;
   /** Quando true, o pedido segue como cotação (sem preço definitivo). */
   quote_required: boolean;
+  /**
+   * Assinatura canônica calculada no servidor (plano + linhas resolvidas + total).
+   * É reenviada na criação do pedido: se o preço mudar no servidor, o pedido é recusado.
+   */
+  cart_hash?: string | null;
+  /** false para técnico de parceiro — dados de crédito não são expostos. */
+  financial_visible?: boolean;
   items?: SimulateLine[];
   payment_plan: {
     id: string;
