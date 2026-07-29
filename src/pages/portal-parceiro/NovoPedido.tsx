@@ -50,6 +50,7 @@ import {
   SOB_CONSULTA_LABEL,
 } from "@/lib/catalogo/unidades";
 import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
+import { round2 } from "@/lib/catalogo/formatUnidades";
 
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
@@ -208,8 +209,8 @@ export default function NovoPedido() {
         const litros = volumeMl > 0 ? volumeMl / 1000 : 0;
         const valorLitro = Number(p.valor_litro_brl ?? 0);
         const valorLitroCheio = Number(p.preco_tabela_litro ?? valorLitro);
-        const preco = litros > 0 && valorLitro > 0 ? Number((litros * valorLitro).toFixed(2)) : 0;
-        const precoCheio = litros > 0 && valorLitroCheio > 0 ? Number((litros * valorLitroCheio).toFixed(2)) : preco;
+        const preco = litros > 0 && valorLitro > 0 ? round2(litros * valorLitro) : 0;
+        const precoCheio = litros > 0 && valorLitroCheio > 0 ? round2(litros * valorLitroCheio) : preco;
         const qtd = Math.max(1, Number(it.quantidade ?? 1));
         const key = cartKey(it.item_id, it.volume_id ?? null);
         next[key] = {
@@ -220,9 +221,9 @@ export default function NovoPedido() {
           quantidade: qtd,
           preco_unitario: preco,
           desconto_percentual: Number(p.desconto_percentual ?? 0),
-          subtotal: Number((preco * qtd).toFixed(2)),
+          subtotal: round2(preco * qtd),
           preco_unitario_cheio: precoCheio,
-          subtotal_cheio: Number((precoCheio * qtd).toFixed(2)),
+          subtotal_cheio: round2(precoCheio * qtd),
           unidade_pedido: (it.unidade_pedido ?? "volume_comercial"),
           volume_id: it.volume_id ?? null,
           volume_ml: volumeMl || null,
@@ -264,8 +265,8 @@ export default function NovoPedido() {
         [key]: {
           ...item,
           quantidade: safeQty,
-          subtotal: Number((safeQty * item.preco_unitario).toFixed(2)),
-          subtotal_cheio: Number((safeQty * (item.preco_unitario_cheio ?? item.preco_unitario)).toFixed(2)),
+          subtotal: round2(safeQty * item.preco_unitario),
+          subtotal_cheio: round2(safeQty * (item.preco_unitario_cheio ?? item.preco_unitario)),
         },
       };
     });
@@ -760,8 +761,8 @@ export default function NovoPedido() {
               const key = cartKey(addRow.id, payload.volume.id);
               const existing = next[key];
               const quantidade = (existing?.quantidade ?? 0) + payload.quantidade;
-              const subtotal = Number((payload.preco_unitario * quantidade).toFixed(2));
-              const subtotalCheio = Number((payload.preco_unitario_cheio * quantidade).toFixed(2));
+              const subtotal = round2(payload.preco_unitario * quantidade);
+              const subtotalCheio = round2(payload.preco_unitario_cheio * quantidade);
               next[key] = {
                 item_id: addRow.id,
                 item_tipo: addRowCatalogItem.item_tipo,
