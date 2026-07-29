@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MatrizPrecosTab } from "@/components/comercial/MatrizPrecosTab";
 import { AlertCircle, Plus, Pencil, Trash2 } from "lucide-react";
 
 const empty: PaymentPlanInput = {
