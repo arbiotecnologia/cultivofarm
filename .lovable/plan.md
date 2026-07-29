@@ -1,37 +1,59 @@
-## Problema
+## Objetivo
 
-No Portal Parceiro B2B (`src/pages/portal-parceiro/PortalParceiroLayout.tsx`) a barra lateral mostra apenas o bloco "Parceiro → razão social". Não há em nenhum ponto do layout o nome do usuário logado, seu e-mail ou o papel (Gestor/Técnico). O dashboard (`DashboardPremium.tsx`) ainda saúda com a razão social do parceiro ("Olá, {partner.razao_social}"), reforçando a ambiguidade sobre quem está usando a conta.
+Hoje cada tela decide por conta própria qual unidade mostrar ("/ha", "/dose 100 mL", "/dose", "/un"), como converter dose ↔ litro ↔ hectare e o que fazer quando não há preço. O resultado é divergência entre catálogo B2B, simulador, precificação comercial, ficha do produtor e PDFs. A proposta é criar uma fonte única de verdade para unidade + conversão + rótulo, e ligá-la em todas as telas, incluindo o caso "sob consulta".
 
-## Ajuste proposto (somente frontend/apresentação)
+## Estado atual verificado
 
-### 1. Bloco de identidade do usuário na sidebar
-No `PortalParceiroLayout.tsx`, acima do bloco "Parceiro", incluir um cartão de identidade com:
-- Avatar circular com iniciais do nome (fallback: inicial do e-mail).
-- Nome do usuário (`profile.nome`, fallback `profile.email`), truncado.
-- E-mail em texto secundário menor.
-- Badge do papel: "Gestor B2B" ou "Técnico B2B" (derivado de `usePartnerPapel()` / `role`), e "Visão interna" quando `isStaff` (admin/gestor_comercial simulando um parceiro).
+- `get_partner_catalog_secure` (gestor parceiro) devolve apenas `hectare` e `dose_100ml` — nunca `litro` nem `sob_consulta`.
+- `get_partner_catalog_tecnico_secure` já devolve `hectare`, `litro`, `dose_100ml` e `sob_consulta` (corrigida na última entrega).
+- `usePartnerCatalogTecnico` ignora a unidade vinda do banco e recalcula pelo tipo do item ("produto → hectare, senão dose").
+- `NovoPedido` ignora `unidade_preco_principal` e usa `p.item_tipo === "produto" ? "/ha" : "/dose 100 mL"`; trata "Sob consulta" apenas quando o valor é ≤ 0.
+- `ParceiroPrecosTab` usa rótulos fixos `/ha` (produtos) e `/dose` (microrganismos).
+- `usePartnerPrices` deriva a base sugerida de produto por três caminhos, mas para microrganismo usa só `valor_dose_brl` e força `dose_ml_ha: null`, mesmo quando o microrganismo tem dose cadastrada.
+- `FichaProdutorDrawer` só mostra custo/ha quando existem dose e valor da dose; se o item tiver apenas `valor_ha_brl`, o custo não aparece.
+- PDFs (`catalogoProdutosPdf`, `catalogoMicrorganismosPdf`, `fichaTecnicaProdutoPdf`, `fichaTecnicaMicrorganismoPdf`, `pedidoPdf`) têm cabeçalhos e formatações próprias, e `pedidoPdf` imprime a unidade crua do banco ("dose", "unidade").
+- Nenhum ponto do sistema exibe "Sob consulta" de forma consistente: em algumas telas aparece preço zerado.
 
-O bloco "Parceiro" atual permanece logo abaixo, deixando clara a separação entre **quem sou** e **qual empresa estou representando**.
+## O que será feito
 
-### 2. Cabeçalho mobile
-O header mobile hoje só mostra "Portal Parceiro". Adicionar, à direita do título, o nome curto do usuário (primeiro nome) e o badge de papel em formato compacto, antes do botão de menu — mantendo o toque do menu com área mínima de 44px.
+### 1. Módulo canônico de unidades (`src/lib/catalogo/unidades.ts`)
 
-### 3. Saudação do dashboard
-Em `DashboardPremium.tsx` e `DashboardTecnico.tsx`, trocar "Olá, {razão social}" por:
-- Título: "Olá, {primeiro nome do usuário}"
-- Subtítulo: "{razão social do parceiro} · {papel}"
+Uma única definição usada por telas, PDFs e hooks:
 
-### 4. Aviso de modo simulação (staff)
-Quando `isStaff` estiver visualizando como parceiro, exibir uma faixa discreta no topo do conteúdo: "Você está visualizando como {razão social} (visão interna)". Isso evita que um admin confunda a sessão com a de um parceiro real.
+- Tipo `UnidadePreco = "hectare" | "litro" | "dose_100ml" | "volume_comercial" | "sob_consulta"`.
+- Rótulos padronizados: curto (`/ha`, `/L`, `/dose 100 mL`, `/un`), longo ("por hectare", "por litro", "por dose de 100 mL", "por volume comercial") e o texto único "Sob consulta".
+- `resolveUnidadePreco(item)`: usa a unidade vinda do backend quando existir; senão aplica a mesma precedência do banco (ha > litro > dose > volume) e cai em `sob_consulta` quando nenhum valor positivo existe.
+- `mapUnidadeParaPedido()`: conversão única para o `unidade_medida` aceito pelo pedido/simulação (`hectare | litro | dose | unidade`), hoje duplicada em três lugares.
+- `formatPrecoUnidade(valor, unidade)`: devolve "Sob consulta" quando não há valor, evitando "R$ 0,00".
 
-## Detalhes técnicos
+### 2. Conversões unificadas
 
-- Fonte dos dados: `useAuth()` já expõe `profile.nome`, `profile.email`, `role` e `roles`; `usePartnerPapel()` (em `src/hooks/useMyPartner.ts`) já devolve `papel: "gestor" | "tecnico"`. Nenhuma nova consulta ao banco é necessária.
-- Rótulos de papel reutilizam `ROLE_LABELS` / `getPortalDisplayLabel` (`src/lib/portalDisplayLabel.ts`) para manter coerência com os demais portais; se necessário, acrescentar apenas o mapeamento visual "Gestor B2B"/"Técnico B2B" na camada de apresentação.
-- Novo componente pequeno `src/components/portal-parceiro/UsuarioIdentidade.tsx` com as variantes `sidebar` e `compact` (mobile), evitando duplicação de markup.
-- Uso exclusivo de tokens semânticos do design system (`text-muted-foreground`, `bg-primary/10`, `text-primary`), sem cores hardcoded.
-- Sem alterações em rotas, guards, RLS, RPCs ou permissões — apenas apresentação.
+Estender `src/lib/catalogo/pricing.ts` (já tem dose ↔ litro ↔ ha) com o que hoje está espalhado:
 
-## Validação
-- `typecheck`, `build` e `vitest` (suite completa) após a alteração.
-- Verificação visual via Playwright do layout em 1280px e em viewport mobile.
+- `custoHaDeLitro(doseMlHa, valorLitro)` (usado hoje só dentro de `usePartnerPrices`).
+- `resolverCustoHa(item)`: ordem única — `valor_ha_brl` explícito → dose × valor da dose → dose × valor do litro → `null`.
+- `doseHaReferencial(item)`: substitui o cálculo ad-hoc de `NovoPedido`, incluindo o padrão de 1 dose/ha para microrganismos sem dose cadastrada.
+- Arredondamento único em 2 casas para valores monetários derivados.
+
+### 3. Backend: alinhar a RPC do gestor parceiro
+
+Migration em staging para `get_partner_catalog_secure` devolver a mesma escala de unidades da RPC do técnico (`hectare`, `litro`, `dose_100ml`, `sob_consulta`) e o custo por hectare de microrganismos derivado da dose, para as duas telas nunca discordarem sobre o mesmo item.
+
+### 4. Telas ligadas ao módulo
+
+| Tela | Ajuste |
+| --- | --- |
+| Catálogo/Novo Pedido/Simulador B2B | Unidade vinda do backend, bloco de preço com "Sob consulta" real e linhas de equivalência (dose/litro/ha) montadas pelo helper |
+| Catálogo do técnico | Deixa de recalcular a unidade e passa a respeitar a do backend |
+| Preços do parceiro (comercial) | Rótulos vindos do helper em vez de `/ha` e `/dose` fixos; base sugerida de microrganismo passa a considerar dose cadastrada |
+| Ficha técnica do produtor | Custo/ha via `resolverCustoHa`, exibindo também quando só existe valor por hectare, e "Sob consulta" quando não houver preço |
+| Meus Pedidos / Histórico de Simulações | Quantidade acompanhada do rótulo padronizado da unidade |
+| PDFs de catálogo, ficha, pedido e simulação | Mesmos cabeçalhos e mesma formatação de unidade/"Sob consulta" das telas |
+
+### 5. Testes
+
+Novo arquivo de testes cobrindo: precedência de unidade, fallback para `sob_consulta`, conversões dose ↔ litro ↔ ha nos dois sentidos, custo/ha de microrganismo por dose, e mapeamento para `unidade_medida` do pedido. Rodada completa de typecheck, build e Vitest ao final.
+
+## Fora do escopo
+
+Não muda regra de precificação, desconto, motor comercial, política de cotação nem qualquer permissão/RLS — apenas a unidade exibida, a conversão e o texto de indisponibilidade de preço.
