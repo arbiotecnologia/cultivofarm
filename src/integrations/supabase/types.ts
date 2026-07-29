@@ -15081,6 +15081,7 @@ export type Database = {
       check_talhao_dependencies: { Args: { _talhao_id: string }; Returns: Json }
       convert_partner_simulation_to_order_secure: {
         Args: {
+          p_confirm_price_change?: boolean
           p_first_due_date?: string
           p_installment_count?: number
           p_observacoes?: string
@@ -15155,6 +15156,15 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_b2b_apply_interest: {
+        Args: {
+          p_interest_type: string
+          p_monthly_pct: number
+          p_months: number
+          p_net: number
+        }
+        Returns: number
+      }
       fn_b2b_credit_exposure: {
         Args: {
           p_exclude_order_id?: string
@@ -15163,6 +15173,7 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_b2b_order_priceable: { Args: { p_order_id: string }; Returns: boolean }
       fn_calc_next_generation_date: {
         Args: { _due_day: number; _freq: string; _from_date: string }
         Returns: string
@@ -15267,6 +15278,15 @@ export type Database = {
         Returns: undefined
       }
       fn_mark_financial_overdue: { Args: never; Returns: undefined }
+      fn_resolve_b2b_cart: {
+        Args: {
+          p_items: Json
+          p_partner_id: string
+          p_plan_id: string
+          p_ref_date?: string
+        }
+        Returns: Json
+      }
       fn_resolve_commercial_price: {
         Args: {
           p_buyer_scope: string
