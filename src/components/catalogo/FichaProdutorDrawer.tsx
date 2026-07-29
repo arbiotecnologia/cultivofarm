@@ -156,7 +156,7 @@ export function FichaProdutorDrawer({ open, onOpenChange, itemId, tipo, origem =
                   )}
                   <div className="text-xs text-muted-foreground">1 litro rende {DOSES_POR_LITRO} doses de 100 mL.</div>
                   {(ficha.dose_ml_ha != null || ficha.valor_ha_brl != null) && (
-                    <div>Custo estimado por hectare: <span className="font-semibold">{brl(resolverCustoHa({ tipo: ficha.item_tipo as any, doseMlHa: ficha.dose_ml_ha, valorHa: ficha.valor_ha_brl, valorDose: ficha.valor_dose_brl, valorLitro: ficha.valor_litro_brl }) ?? 0)}</span>{ficha.dose_ml_ha != null && <span className="text-xs text-muted-foreground"> ({ficha.dose_ml_ha} mL/ha)</span>}</div>
+                    <div>Custo estimado por hectare: <span className="font-semibold">{brl(resolverCustoHa({ tipo, doseMlHa: ficha.dose_ml_ha, valorHa: ficha.valor_ha_brl, valorDose: ficha.valor_dose_brl, valorLitro: ficha.valor_litro_brl }) ?? 0)}</span>{ficha.dose_ml_ha != null && <span className="text-xs text-muted-foreground"> ({ficha.dose_ml_ha} mL/ha)</span>}</div>
                   )}
                   <div className="text-[11px] text-muted-foreground italic">O custo por hectare pode variar conforme dose recomendada, cultura, alvo e orientação técnica.</div>
                 </div>
