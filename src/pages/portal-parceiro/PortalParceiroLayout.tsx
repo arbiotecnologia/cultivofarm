@@ -9,6 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useSwitchPortal } from "@/hooks/useSwitchPortal";
+import { UsuarioIdentidade } from "@/components/portal-parceiro/UsuarioIdentidade";
+
 import {
   Select,
   SelectContent,
@@ -59,6 +61,8 @@ export default function PortalParceiroLayout() {
   const isStaff = role === "administrador" || role === "gestor_comercial";
   const isTecnico = role === "parceiro_b2b_tecnico";
   const menu = isTecnico ? menuTecnico : menuGestor;
+  const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
+
 
   const { data: allPartners = [] } = useQuery({
     queryKey: ["partner-accounts-active"],
@@ -141,21 +145,25 @@ export default function PortalParceiroLayout() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      <header className="md:hidden border-b flex items-center justify-between px-4 py-3 sticky top-0 bg-background z-10">
-        <div className="flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5 text-primary" />
-          <span className="font-semibold">Portal Parceiro</span>
+      <header className="md:hidden border-b flex items-center justify-between px-4 py-3 sticky top-0 bg-background z-10 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <ShoppingCart className="h-5 w-5 text-primary shrink-0" />
+          <span className="font-semibold truncate">Portal Parceiro</span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-12 w-12"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? "Fechar menu" : "Abrir menu"}
-        >
-          <Menu className="h-6 w-6" />
-        </Button>
+        <div className="flex items-center gap-2 min-w-0">
+          <UsuarioIdentidade papel={papelVisual} variant="compact" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-12 w-12 shrink-0"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Fechar menu" : "Abrir menu"}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </div>
       </header>
+
 
       <aside
         className={cn(
@@ -179,7 +187,10 @@ export default function PortalParceiroLayout() {
           </span>
         </div>
 
+        <UsuarioIdentidade papel={papelVisual} />
+
         {isStaff ? (
+
           <div className="px-4 py-3 border-b space-y-1">
             <div className="text-xs text-muted-foreground">Visualizar como parceiro</div>
             <Select value={simulatedId ?? ""} onValueChange={(v) => setSimulatedId(v)}>
@@ -248,7 +259,16 @@ export default function PortalParceiroLayout() {
       </aside>
 
       <main className="flex-1 p-4 md:p-6 overflow-x-auto">
+        {isStaff && partner && (
+          <div
+            className="mb-4 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+            role="status"
+          >
+            Você está visualizando como <span className="font-medium text-foreground">{partner.razao_social}</span> (visão interna).
+          </div>
+        )}
         {!partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
+
           <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
             Seu usuário ainda não está vinculado a um parceiro B2B. Entre em contato com a AR Bio.
           </div>

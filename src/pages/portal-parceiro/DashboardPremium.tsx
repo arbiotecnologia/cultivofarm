@@ -5,10 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Truck, Clock, AlertCircle, Star, MessageSquare } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { useAuth } from "@/hooks/useAuth";
+import { getPrimeiroNome } from "@/components/portal-parceiro/UsuarioIdentidade";
 
 export default function DashboardPremium() {
   const { partner } = useOutletContext<{ partner: any }>();
+  const { profile } = useAuth();
   const { data, isLoading } = usePartnerDashboardPremium(partner?.id);
+
 
   if (isLoading) return <div className="text-sm text-muted-foreground">Carregando...</div>;
   if (!data) return null;
@@ -22,9 +26,12 @@ export default function DashboardPremium() {
   return (
     <div className="space-y-4 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold">Olá, {partner?.razao_social ?? "Parceiro"}</h1>
-        <p className="text-sm text-muted-foreground">Visão rápida da sua operação B2B.</p>
+        <h1 className="text-2xl font-bold">Olá, {getPrimeiroNome(profile?.nome, profile?.email)}</h1>
+        <p className="text-sm text-muted-foreground">
+          {partner?.razao_social ?? "Parceiro"} · Gestor B2B
+        </p>
       </div>
+
 
       {semPedidos && (
         <Card>
