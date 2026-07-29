@@ -37,10 +37,16 @@ export interface CreateOrderInput {
   installment_count?: number | null;
   /**
    * Assinatura da simulação autoritativa devolvida pelo servidor.
-   * Sem ela (ou divergente), o backend recusa o pedido com `price_changed`.
+   * Obrigatória: sem ela o backend recusa o pedido com `cart_hash_required`.
    */
-  expected_cart_hash?: string | null;
+  expected_cart_hash: string;
+  /**
+   * Chave de idempotência do checkout. Reenvios com a mesma chave e o mesmo
+   * carrinho devolvem o pedido já criado; carrinho diferente é recusado.
+   */
+  idempotency_key: string;
 }
+
 
 const mapUnidadeMedida = (u: UnidadePedido): string => {
   switch (u) {
@@ -57,6 +63,8 @@ export function useCreatePartnerOrder() {
   return useMutation({
     mutationFn: async (input: CreateOrderInput) => {
       if (!input.items.length) throw new Error("Carrinho vazio");
+      if (!input.expected_cart_hash) throw new Error("cart_hash_required");
+      if (!input.idempotency_key) throw new Error("idempotency_key_required");
 
       const payload = input.items.map((i) => ({
         item_id: i.item_id,
@@ -76,12 +84,14 @@ export function useCreatePartnerOrder() {
           p_payment_plan_id: input.payment_plan_id ?? null,
           p_first_due_date: input.first_due_date ?? null,
           p_installment_count: input.installment_count ?? null,
-          p_expected_cart_hash: input.expected_cart_hash ?? null,
+          p_expected_cart_hash: input.expected_cart_hash,
+          p_idempotency_key: input.idempotency_key,
         },
       );
       if (error) throw error;
       return data as { id: string; numero: string; total: number };
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["partner-orders"] });
       toast.success("Pedido enviado para análise comercial!");
