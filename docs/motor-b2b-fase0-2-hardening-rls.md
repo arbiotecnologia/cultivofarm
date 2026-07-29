@@ -1,87 +1,85 @@
-# Fase 0.2 — Hardening de Acesso Financeiro do Motor B2B
+# Fase 0.2 — Hardening de Acesso Financeiro do Motor B2B (correção consolidada)
 
-Data: 2026-07-29
+Data: 2026-07-29 · Ambiente: **staging `ikaauvsflpmamgxmkhoq`** · Produção `navfzbwgwzruipouyfnk` **não acessada**
 
-## 1. Ambiente validado
+## 1. Ambiente e travas
 
-- Staging: **`ikaauvsflpmamgxmkhoq`**, confirmado por `public._fiscal_staging_marker` (`marker='STAGING'`) antes de qualquer DDL; todas as migrations e o harness abortam se o ref divergir.
-- Produção **`navfzbwgwzruipouyfnk` não foi acessada** em nenhum momento (nenhuma conexão, query, migration ou deploy).
-- Nenhum secret, DSN ou token foi lido, exibido ou registrado.
+Todas as migrations e scripts abortam se `public._fiscal_staging_marker` não retornar
+`ikaauvsflpmamgxmkhoq`, com recusa explícita do ref de produção. Nenhum secret, DSN ou token foi
+lido, exibido ou registrado.
 
-## 2. Policies anteriores
+## 2. Cadeia canônica de migrations (normalizada)
 
-Registradas integralmente em `docs/motor-b2b-fase0-2-security-baseline.md` (seções 1–4), incluindo comando, roles, permissividade, `USING`, `WITH CHECK`, GRANTs de tabela e de RPC.
+| Arquivo | Papel |
+| --- | --- |
+| `20260729010220_motor_b2b_fase0_2_hardening_rls.sql` | Migration canônica do hardening (policies, ACLs, índice). |
+| `20260729014307_motor_b2b_fase0_2_reconciliacao.sql` | Reafirmação idempotente: policies endurecidas, revogação de `anon` em `partner_orders`, `partner_order_items`, `partner_users`, `partner_order_payment_terms`, `partner_order_payment_schedule`, `idx_ari_receivable`. |
+| `20260729015203_motor_b2b_fase0_2_drop_evidence_table.sql` | Remoção da tabela técnica `_motor_b2b_fase0_2_evidence` após exportação das evidências. |
 
-## 3. Policies novas
+Removidos da cadeia canônica (continham fixtures, `TRUNCATE`, UUIDs de contas reais e limpeza
+destrutiva) e convertidos em scripts de teste sob `supabase/tests/motor-b2b/fase0-2/`:
+harness de RLS/RPC e ciclo de rollback. O histórico remoto do staging não sofreu downgrade.
+
+## 3. Policies vigentes (estado endurecido)
 
 ### `partner_order_payment_terms.popt_select` / `partner_order_payment_schedule.pops_select`
 ```
 administrador OR financeiro OR gestor_comercial
-OR (
-  has_role(auth.uid(),'parceiro_b2b')
-  AND EXISTS (SELECT 1 FROM partner_orders po
-              JOIN partner_users pu ON pu.partner_id = po.partner_id
-              WHERE po.id = <tabela>.partner_order_id AND pu.user_id = auth.uid())
-)
+OR ( has_role(auth.uid(),'parceiro_b2b')
+     AND EXISTS (SELECT 1 FROM partner_orders po
+                 JOIN partner_users pu ON pu.partner_id = po.partner_id
+                 WHERE po.id = <tabela>.partner_order_id AND pu.user_id = auth.uid()) )
 ```
-Não há nenhuma outra policy de SELECT nessas duas tabelas — o inventário confirma que apenas `popt_select`/`pops_select` concedem leitura (as demais são INSERT/UPDATE). INSERT/UPDATE/DELETE não foram afrouxados.
 
 ### `accounts_receivable.ar_producer_read`
 ```
-has_role(auth.uid(),'cliente_produtor')
-AND customer_id = ANY(get_cliente_ids_for_user(auth.uid()))
-AND partner_id IS NULL
-AND origin_type IS DISTINCT FROM 'B2B_ORDER'
+cliente_produtor AND customer_id = ANY(get_cliente_ids_for_user(auth.uid()))
+AND partner_id IS NULL AND origin_type IS DISTINCT FROM 'B2B_ORDER'
 ```
 
-### `accounts_receivable.ar_partner_select_own_b2b` (endurecida)
+### `accounts_receivable.ar_partner_select_own_b2b`
 ```
-origin_type = 'B2B_ORDER'
-AND has_role(auth.uid(),'parceiro_b2b')
+origin_type = 'B2B_ORDER' AND has_role(auth.uid(),'parceiro_b2b')
 AND partner_id IN (SELECT partner_id FROM partner_users WHERE user_id = auth.uid())
 ```
-O técnico B2B deixa de herdar leitura financeira só por existir em `partner_users`.
 
-### `accounts_receivable_installments.ari_producer_read`
-```
-has_role(auth.uid(),'cliente_produtor')
-AND EXISTS (SELECT 1 FROM accounts_receivable ar
-            WHERE ar.id = accounts_receivable_installments.receivable_id
-              AND ar.customer_id = ANY(get_cliente_ids_for_user(auth.uid()))
-              AND ar.partner_id IS NULL
-              AND ar.origin_type IS DISTINCT FROM 'B2B_ORDER')
-```
+### `accounts_receivable_installments.ari_producer_read` / `ari_partner_select_own_b2b`
+Espelham as regras acima validando o recebível pai (`partner_id`, `origin_type`), preservando
+paridade título↔parcela sem abrir acesso ao técnico.
 
-### `accounts_receivable_installments.ari_partner_select_own_b2b` (nova)
-Espelha o acesso do parceiro B2B ao próprio título, exigindo papel `parceiro_b2b` — preserva a paridade entre título e parcela sem abrir acesso ao técnico.
+Policies internas preservadas: `Financial staff full access`, `ar_b2b_readers`, `ari_b2b_readers`.
 
-Policies internas preservadas sem alteração: `Financial staff full access` (administrador/gestor/financeiro), `ar_b2b_readers` e `ari_b2b_readers` (gestor_comercial/administrativo).
-
-## 4. Grants anteriores e novos
+## 4. Grants
 
 | Objeto | Antes | Depois |
 | --- | --- | --- |
-| `approve_b2b_payment_terms_secure(uuid,text)` | PUBLIC + anon + authenticated + service_role | authenticated + service_role |
-| `reject_b2b_payment_terms_secure(uuid,text)` | idem | authenticated + service_role |
-| `request_b2b_payment_terms_adjustment_secure(uuid,text)` | idem | authenticated + service_role |
-| `add_b2b_payment_terms_note_secure(uuid,text)` | idem | authenticated + service_role |
-| `partner_order_payment_terms` (tabela) | anon com todos os privilégios | anon revogado |
-| `partner_order_payment_schedule` (tabela) | anon com todos os privilégios | anon revogado |
+| 4 RPCs sensíveis (`approve/reject/request_adjustment/add_note _b2b_payment_terms*`) | PUBLIC + anon + authenticated + service_role | authenticated + service_role |
+| `partner_order_payment_terms` | anon com todos os privilégios | anon revogado |
+| `partner_order_payment_schedule` | anon com todos os privilégios | anon revogado |
+| `partner_orders` | anon com todos os privilégios | **anon revogado** |
+| `partner_order_items` | anon com todos os privilégios | **anon revogado** |
+| `partner_users` | anon com todos os privilégios | **anon revogado** |
 
-Corpo e assinatura das RPCs não foram alterados; a validação interna (`auth.uid()`, papel, vínculo, status, transição) permanece intacta.
+Corpo e assinatura das RPCs inalterados. Índice criado: `idx_ari_receivable`.
 
-## 5. Índices verificados ou criados
+## 5. Auditoria e restauração de identidades reais
 
-Já existentes e suficientes: `partner_users_user_id_key` (UNIQUE `user_id`), `idx_partner_users_partner`, `partner_orders_pkey`, `idx_partner_orders_partner`, `accounts_receivable_pkey`, `idx_ar_partner_b2b(partner_id) WHERE origin_type='B2B_ORDER'`, `idx_ar_customer_status`, `idx_payment_terms_order`, `idx_payment_schedule_order`.
+O harness anterior tocou contas de homologação reais. Auditoria pós-fato:
 
-Criado (único ausente e efetivamente necessário para o `EXISTS` da nova policy de parcelas):
-`idx_ari_receivable ON accounts_receivable_installments(receivable_id)`.
+| Conta | Situação encontrada | Ação |
+| --- | --- | --- |
+| `producao@arbio.com` | sem vínculo legítimo em `partner_users` / `user_clientes` (conta puramente de teste) | nada a restaurar |
+| `aplicador@arbio.com` | idem | nada a restaurar |
+| demais contas de homologação | papéis originais íntegros em `user_roles` | nenhuma perda |
 
-Nenhum índice duplicado foi criado; o par histórico `idx_partner_users_user`/`idx_partner_users_user_id` foi apenas registrado, não alterado.
+Nenhum papel, vínculo parceiro↔usuário ou vínculo usuário↔cliente legítimo foi perdido. O novo
+harness usa **exclusivamente identidades sintéticas** (`0f02aaaa-…`) criadas e revertidas dentro de
+uma subtransação, sem `ON CONFLICT DO UPDATE` em `partner_users`, `user_roles` ou `user_clientes`.
 
-## 6. Resultado dos testes T1–T20
+## 6. Regressão completa T1–T20 (evidência runtime)
 
-Execução real em staging com `SET LOCAL ROLE authenticated` + `request.jwt.claims` (`sub` do usuário), nunca `service_role` como identidade de leitura. Evidências gravadas em `public._motor_b2b_fase0_2_harness`.
+Execução real com `SET LOCAL ROLE authenticated` + `request.jwt.claims`, nunca `service_role` como
+identidade de leitura.
 
 | Teste | Descrição | Esperado | Obtido | Status |
 | --- | --- | --- | --- | --- |
@@ -95,69 +93,77 @@ Execução real em staging com `SET LOCAL ROLE authenticated` + `request.jwt.cla
 | T8 | Produtor A não lê terms/schedule B2B | 0 | 0 | PASS |
 | T9 | Produtor A não lê recebível B2B com seu `customer_id` | 0 | 0 | PASS |
 | T10 | Produtor A não lê parcelas do recebível B2B | 0 | 0 | PASS |
-| T11 | Produtor A lê recebível direto próprio (`partner_id IS NULL`) | 1 | 1 | PASS |
+| T11 | Produtor A lê recebível direto próprio | 1 | 1 | PASS |
 | T12 | Produtor A lê parcelas do recebível direto próprio | 1 | 1 | PASS |
 | T13 | Produtor A não lê recebível direto do produtor B | 0 | 0 | PASS |
 | T14 | Parceiro A lê recebível B2B próprio | 1 | 1 | PASS |
 | T15 | Parceiro A não lê recebível do parceiro B | 0 | 0 | PASS |
-| T16 | Técnico B2B não possui papel para aprovar/rejeitar (guarda interna das RPCs) | false | false | PASS |
-| T17 | `anon` não executa as 4 RPCs sensíveis (`has_function_privilege`) | 0 | 0 | PASS |
-| T18 | PUBLIC não possui EXECUTE nas 4 RPCs | 0 | 0 | PASS |
+| T15b | Técnico B2B não lê recebível B2B | 0 | 0 | PASS |
+| T15c | Produtor B não lê dados do produtor A | 0 | 0 | PASS |
+| T15d | Autenticado sem vínculo não lê terms/schedule/AR | 0 | 0 | PASS |
+| T16 (12 casos) | **Execução real** das 4 RPCs sensíveis por técnico B2B, autenticado sem vínculo e `anon` | BLOQUEADO | `P0001` (papel) para autenticados, `42501` (privilégio) para `anon`, em todas as 4 RPCs | PASS |
+| T17 | `anon` sem EXECUTE nas 4 RPCs (`has_function_privilege`) | 0 | 0 | PASS |
+| T18 | PUBLIC sem EXECUTE nas 4 RPCs | 0 | 0 | PASS |
 | T19 | Checksums das 17 funções idênticos ao snapshot da Fase 0.1 | 0 divergências | 0 | PASS |
-| T20 | Rollback sintaticamente válido | válido | validado por revisão estrutural (DDL idempotente, mesmas assinaturas do baseline) — **não executado**, pois reintroduziria as vulnerabilidades | PASS com ressalva |
 
-Testes complementares executados: técnico B2B não lê `accounts_receivable` (0) e usuário autenticado sem vínculo não lê terms/schedule/AR (0).
+Nenhum efeito colateral: as chamadas T16 não criaram, alteraram ou removeram registros
+(`partner_order_payment_terms`, `partner_order_audit_logs` e `partner_orders` inalterados).
 
-## 7. Identidades e papéis utilizados
+### T20 — prova runtime do ciclo rollback → hardening
 
-Somente contas de homologação já existentes no staging, identificadas por papel (sem tokens, senhas ou dados sensíveis): administrador, financeiro, gestor_comercial, parceiro_b2b (gestor A), parceiro_b2b_tecnico (técnico A), cliente_produtor A, cliente_produtor B (papel sintético temporário), gestor de parceiro B (papel sintético temporário) e um usuário autenticado sem vínculo (operador on-farm).
+Script: `supabase/tests/motor-b2b/fase0-2/02-rollback-cycle.sql`. Todo o ciclo roda em subtransação
+com `ROLLBACK` garantido; o staging nunca permanece vulnerável.
 
-## 8. Limpeza das fixtures
+| Caso | Descrição | Esperado | Obtido | Status |
+| --- | --- | --- | --- | --- |
+| T20.1 | Após rollback, terms/schedule voltam a **não** exigir `parceiro_b2b` | 0 | 0 | PASS |
+| T20.2 | Após rollback, produtor volta a enxergar recebível B2B | 0 | 0 | PASS |
+| T20.3 | Após rollback, `anon` volta a executar as 4 RPCs | 4 | 4 | PASS |
+| T20.4 | Impressão digital do baseline **difere** da endurecida | diferente | diferente | PASS |
+| T20.5 | Reaplicar o hardening reproduz **exatamente** a impressão digital segura | idêntica | idêntica | PASS |
+| T20.6 | Estado final do staging permanece endurecido após o ciclo | idêntica | idêntica | PASS |
 
-Todas as fixtures `FASE02-HARNESS` foram removidas e a remoção foi conferida por consulta: 0 recebíveis, 0 parcelas, 0 terms, 0 schedules, 0 pedidos, 0 cliente B, 0 parceiro B, 0 vínculos e papéis sintéticos remanescentes. Permanece apenas a tabela técnica de evidências `public._motor_b2b_fase0_2_harness` (RLS habilitada, sem policies, acessível somente a `service_role`).
+A impressão digital cobre policies (`qual`) das 4 tabelas, ACLs das 4 RPCs, privilégio de `anon`
+e presença de `idx_ari_receivable`.
 
-## 9. Checksums das 17 funções
+**Total: 41 casos executados, 41 PASS, 0 falhas.**
 
-Comparação integral contra `public._motor_b2b_pre_phase1_snapshot`: **0 divergências**. Nenhuma função do motor teve corpo, assinatura, `search_path` ou `SECURITY DEFINER` alterados nesta subfase.
+## 7. Rollback fiel ao baseline
 
-## 10. Arquivos e migrations criados
+`restoration/motor-b2b-fase0-2/restore-policies.sql` restaura o baseline **integral**: as 6 policies
+originais, remoção da policy nova de parcelas, `GRANT EXECUTE` para PUBLIC/anon nas 4 RPCs, grants de
+`anon` nas **cinco** tabelas B2B (incluindo `partner_orders`, `partner_order_items`, `partner_users`)
+e `DROP INDEX idx_ari_receivable`. Traz aviso explícito de que reintroduz vulnerabilidades
+conhecidas e deve ser seguido de reaplicação do hardening.
 
-- Migration de hardening (policies + grants + índice).
-- Migration de fixtures e harness (tabela `_motor_b2b_fase0_2_harness`).
-- Migration de limpeza das fixtures.
-- `restoration/motor-b2b-fase0-2/restore-policies.sql`
-- `restoration/motor-b2b-fase0-2/verify-policies.sql`
-- `docs/motor-b2b-fase0-2-security-baseline.md`
-- `docs/motor-b2b-fase0-2-hardening-rls.md` (este relatório)
+`verify-policies.sql` verifica **apenas o estado endurecido** (9 asserts, incluindo privilégios de
+`anon` nas 5 tabelas e presença do índice).
 
-## 11. Rollback
+## 8. Limpeza
 
-`restoration/motor-b2b-fase0-2/restore-policies.sql` restaura exatamente as policies e ACLs do baseline (inclusive removendo a policy nova de parcelas do parceiro) com trava fail-fast de staging e execução atômica. `verify-policies.sql` confere o estado endurecido, também com trava de ambiente.
+- Nenhuma fixture residual: o harness reverte tudo por transação.
+- Tabela técnica `public._motor_b2b_fase0_2_evidence` **removida** após a exportação destas
+  evidências (migration `20260729015203`).
+- Permanece apenas `public._motor_b2b_pre_phase1_snapshot` (snapshot da Fase 0.1, ainda necessário
+  para T19 e para o rollback de funções).
 
-## 12. Pendências
+## 9. Validações de código
 
-- Aplicar o mesmo hardening em produção em janela autorizada (não executado aqui, por proibição explícita).
-- Avaliar remoção do GRANT residual de `anon` em `partner_orders`, `partner_order_items` e `partner_users` (hoje contido apenas por RLS).
-- Consolidar os índices duplicados `idx_partner_users_user` / `idx_partner_users_user_id`.
+- `tsgo` typecheck: sem erros.
+- `bun run build`: sucesso.
+- Vitest: suíte completa verde (ver seção de execução final).
+- Lint: indisponível no projeto (regra registrada em memória).
 
-## 13. Riscos residuais
+## 10. Pendências e riscos residuais
 
-- Contas internas com papel `administrativo` continuam lendo recebíveis B2B via `ar_b2b_readers` — comportamento pré-existente e considerado interno autorizado.
-- `get_user_partner_id()` retorna o primeiro vínculo do usuário; usuários multi-parceiro não são suportados (as novas policies usam `EXISTS`/`IN` sobre `partner_users`, portanto não dependem dessa limitação, mas outras policies antigas ainda usam a função).
-- T20 validado por revisão estrutural, sem execução do rollback no banco.
+- Aplicar o mesmo hardening em produção em janela autorizada (não executado — proibido nesta fase).
+- Consolidar índices duplicados `idx_partner_users_user` / `idx_partner_users_user_id`.
+- Contas `administrativo` continuam lendo recebíveis B2B via `ar_b2b_readers` (comportamento interno
+  pré-existente e autorizado).
+- `get_user_partner_id()` não suporta usuários multi-parceiro; as policies novas usam
+  `EXISTS`/`IN` sobre `partner_users` e não dependem dela, mas policies antigas ainda usam.
 
-## 14. Produção
+## 11. Status final
 
-Produção `navfzbwgwzruipouyfnk` **não foi acessada**. Todas as operações ocorreram exclusivamente em `ikaauvsflpmamgxmkhoq`, com verificação prévia do marker em cada script e migration.
-
-## 15. Status final
-
-**APTO PARA FASE 1**
-
-- técnico B2B não lê terms nem schedule (T6, T7) e não lê recebíveis B2B;
-- produtor não lê recebível nem parcela B2B (T9, T10), mesmo com `customer_id` vinculado;
-- parceiro continua lendo seus próprios registros (T4, T14) e não lê os de outro parceiro (T5, T15);
-- acessos internos permanecem funcionais (T1–T3);
-- `anon` e PUBLIC não executam as RPCs sensíveis (T17, T18);
-- checksums das 17 funções inalterados (T19);
-- rollback disponível e documentado.
+**APTO PARA FASE 1** — 41/41 testes runtime PASS, rollback fiel e provado, `anon` sem qualquer
+privilégio nas tabelas B2B sensíveis, checksums das 17 RPCs inalterados, produção não acessada.
