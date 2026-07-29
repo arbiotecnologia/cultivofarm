@@ -22,12 +22,34 @@ export interface SimulateScheduleRow {
   interest_amount: number;
 }
 
+export type PricingMode = "discount_from_base" | "fixed_item_price" | "quote_only";
+
+export interface SimulateLine {
+  item_id: string;
+  item_tipo: "produto" | "microrganismo";
+  quantidade: number;
+  unidade_medida: string;
+  unit_price: number | null;
+  subtotal: number | null;
+  pricing_mode: PricingMode | null;
+  price_source: string | null;
+  reason_code: string | null;
+  quote_required: boolean;
+  nome?: string | null;
+}
+
 export interface SimulateResult {
   partner_id: string;
+  /** Modo de precificação autoritativo do plano selecionado. */
+  pricing_mode: PricingMode;
+  /** Quando true, o pedido segue como cotação (sem preço definitivo). */
+  quote_required: boolean;
+  items?: SimulateLine[];
   payment_plan: {
     id: string;
     name: string;
     code: string;
+    pricing_mode?: PricingMode;
     discount_percent: number;
     monthly_interest_percent: number;
     months_count: number;
@@ -46,6 +68,7 @@ export interface SimulateResult {
   schedule: SimulateScheduleRow[];
   warnings: string[];
 }
+
 
 export function useSimulateB2BPaymentPlan() {
   return useMutation({
