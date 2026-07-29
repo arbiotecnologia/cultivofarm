@@ -30,6 +30,7 @@ import {
   type PartnerPriceRow,
 } from "@/hooks/usePartnerPrices";
 import { PrecoComDesconto } from "@/components/comercial/PrecoComDesconto";
+import { UNIDADE_LABEL_CURTA } from "@/lib/catalogo/unidades";
 
 interface Props {
   partnerId: string;
@@ -343,14 +344,14 @@ export function ParceiroPrecosTab({ partnerId, defaultDiscount = 0 }: Props) {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
-                      {formatMoedaBR(r.preco_final)}<span className="text-xs text-muted-foreground">/ha</span>
+                      {formatMoedaBR(r.preco_final)}<span className="text-xs text-muted-foreground">{UNIDADE_LABEL_CURTA.hectare}</span>
                     </TableCell>
                     <TableCell>
                       <PrecoComDesconto
                         valorCheio={r.preco_tabela}
                         valorFinal={r.preco_final}
                         descontoPct={r.desconto_percentual}
-                        unidadeLabel="/ha"
+                        unidadeLabel={UNIDADE_LABEL_CURTA.hectare}
                         size="sm"
                       />
                     </TableCell>
@@ -358,14 +359,14 @@ export function ParceiroPrecosTab({ partnerId, defaultDiscount = 0 }: Props) {
                       {dose == null ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (
-                        <>{formatMoedaBR(dose)}<span className="text-xs text-muted-foreground">/dose</span></>
+                        <>{formatMoedaBR(dose)}<span className="text-xs text-muted-foreground">{UNIDADE_LABEL_CURTA.dose_100ml}</span></>
                       )}
                     </TableCell>
                     <TableCell className="text-right text-sm">
                       {litro == null ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (
-                        <>{formatMoedaBR(litro)}<span className="text-xs text-muted-foreground">/L</span></>
+                        <>{formatMoedaBR(litro)}<span className="text-xs text-muted-foreground">{UNIDADE_LABEL_CURTA.litro}</span></>
                       )}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
@@ -478,19 +479,19 @@ export function ParceiroPrecosTab({ partnerId, defaultDiscount = 0 }: Props) {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
-                      {formatMoedaBR(r.preco_final)}<span className="text-xs text-muted-foreground">/dose</span>
+                      {formatMoedaBR(r.preco_final)}<span className="text-xs text-muted-foreground">{UNIDADE_LABEL_CURTA.dose_100ml}</span>
                     </TableCell>
                     <TableCell>
                       <PrecoComDesconto
                         valorCheio={r.preco_tabela}
                         valorFinal={r.preco_final}
                         descontoPct={r.desconto_percentual}
-                        unidadeLabel="/dose"
+                        unidadeLabel={UNIDADE_LABEL_CURTA.dose_100ml}
                         size="sm"
                       />
                     </TableCell>
                     <TableCell className="text-right text-sm">
-                      {formatMoedaBR(litro)}<span className="text-xs text-muted-foreground">/L</span>
+                      {formatMoedaBR(litro)}<span className="text-xs text-muted-foreground">{UNIDADE_LABEL_CURTA.litro}</span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {r.updated_at ? formatDateDisplay(r.updated_at) : "—"}
