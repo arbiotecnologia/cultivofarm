@@ -74,36 +74,6 @@ export type Database = {
         }
         Relationships: []
       }
-      _motor_b2b_fase1_quote_evidence: {
-        Row: {
-          descricao: string
-          esperado: string
-          executed_at: string
-          id: number
-          obtido: string
-          passou: boolean
-          test_code: string
-        }
-        Insert: {
-          descricao: string
-          esperado: string
-          executed_at?: string
-          id?: number
-          obtido: string
-          passou: boolean
-          test_code: string
-        }
-        Update: {
-          descricao?: string
-          esperado?: string
-          executed_at?: string
-          id?: number
-          obtido?: string
-          passou?: boolean
-          test_code?: string
-        }
-        Relationships: []
-      }
       _motor_b2b_pre_phase1_snapshot: {
         Row: {
           acl: string | null
@@ -15122,6 +15092,7 @@ export type Database = {
       }
       create_partner_order_secure: {
         Args: {
+          p_expected_cart_hash?: string
           p_first_due_date?: string
           p_installment_count?: number
           p_items?: Json
@@ -15194,6 +15165,10 @@ export type Database = {
           p_net: number
         }
         Returns: number
+      }
+      fn_b2b_cart_hash: {
+        Args: { p_cart: Json; p_final: number; p_plan_id: string }
+        Returns: string
       }
       fn_b2b_credit_exposure: {
         Args: {

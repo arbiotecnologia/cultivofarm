@@ -382,6 +382,10 @@ export default function NovoPedido() {
       toast.error("Selecione uma condição de pagamento antes de finalizar o pedido.");
       return;
     }
+    if (!simulation?.cart_hash) {
+      toast.error("Aguarde a validação de preços pelo servidor antes de enviar o pedido.");
+      return;
+    }
     createOrder.mutate(
       {
         partner_id: partner.id,
@@ -391,6 +395,7 @@ export default function NovoPedido() {
         payment_plan_id: selectedPlanId,
         first_due_date: simulation?.schedule?.[0]?.due_date ?? null,
         installment_count: selectedPlan?.installment_count ?? null,
+        expected_cart_hash: simulation.cart_hash,
       },
       {
         onSuccess: () => {
