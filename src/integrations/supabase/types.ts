@@ -74,6 +74,57 @@ export type Database = {
         }
         Relationships: []
       }
+      _motor_b2b_pre_phase1_snapshot: {
+        Row: {
+          acl: string | null
+          captured_at: string
+          checksum_md5: string
+          created_at: string
+          definition: string
+          id: string
+          identity_args: string
+          obj_comment: string | null
+          owner_name: string
+          proconfig: string | null
+          project_ref: string
+          proname: string
+          result_type: string
+          security_definer: boolean
+        }
+        Insert: {
+          acl?: string | null
+          captured_at?: string
+          checksum_md5: string
+          created_at?: string
+          definition: string
+          id?: string
+          identity_args: string
+          obj_comment?: string | null
+          owner_name: string
+          proconfig?: string | null
+          project_ref: string
+          proname: string
+          result_type: string
+          security_definer: boolean
+        }
+        Update: {
+          acl?: string | null
+          captured_at?: string
+          checksum_md5?: string
+          created_at?: string
+          definition?: string
+          id?: string
+          identity_args?: string
+          obj_comment?: string | null
+          owner_name?: string
+          proconfig?: string | null
+          project_ref?: string
+          proname?: string
+          result_type?: string
+          security_definer?: boolean
+        }
+        Relationships: []
+      }
       accounts_payable: {
         Row: {
           auto_generated: boolean
