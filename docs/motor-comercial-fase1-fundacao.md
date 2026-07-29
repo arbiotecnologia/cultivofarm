@@ -238,6 +238,7 @@ tabela técnica de evidência removida. Nenhum dado operacional criado, alterado
 ## 9. Validações de código
 
 - `tsgo` typecheck: sem erros.
+- `bun run build`: sucesso.
 - Vitest: **2587 aprovados, 2 falhas preexistentes** em `src/test/fiscal/sinief49/staging/verifier.test.ts`
   (`verify-fiscal-types-sinief49`), anteriores a esta fase e sem relação com o motor comercial.
 - Lint: indisponível no projeto.
