@@ -109,6 +109,12 @@ export function useCreatePartnerOrder() {
       else if (msg.includes("PRICE_RULE_MISSING")) toast.error("Item sem preço definido para esta condição comercial. Solicite a configuração à AR Bio.");
       else if (msg.includes("QUOTE_REQUIRED") || msg.includes("quote_required")) toast.error("Esta condição é sob consulta — o pedido segue para cotação comercial.");
       else if (msg.includes("price_changed") || msg.includes("PRICE_CHANGED")) toast.error("Os preços foram atualizados desde a simulação. Revise o carrinho e confirme novamente.");
+      else if (msg.includes("cart_hash_required")) toast.error("Simulação de preços obrigatória. Refaça a simulação antes de enviar o pedido.");
+      else if (msg.includes("idempotency_conflict")) toast.error("O carrinho mudou depois do envio. Refaça a simulação e confirme novamente.");
+      else if (msg.includes("idempotency_key_required") || msg.includes("invalid_idempotency_key")) toast.error("Falha ao identificar o checkout. Recarregue a página e tente novamente.");
+      else if (msg.includes("credit_limit_exceeded")) toast.error("Pedido excede o limite de crédito disponível do parceiro.");
+      else if (msg.includes("forbidden_financial_terms")) toast.error("Seu perfil técnico não tem acesso a condições financeiras.");
+
       else if (msg.includes("product_unavailable")) toast.error("Um dos itens não está disponível");
       else if (msg.includes("price_unavailable")) toast.error("Item sem preço configurado. Solicite à AR Bio.");
 
