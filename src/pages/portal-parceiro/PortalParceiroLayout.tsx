@@ -259,7 +259,16 @@ export default function PortalParceiroLayout() {
       </aside>
 
       <main className="flex-1 p-4 md:p-6 overflow-x-auto">
+        {isStaff && partner && (
+          <div
+            className="mb-4 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+            role="status"
+          >
+            Você está visualizando como <span className="font-medium text-foreground">{partner.razao_social}</span> (visão interna).
+          </div>
+        )}
         {!partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
+
           <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
             Seu usuário ainda não está vinculado a um parceiro B2B. Entre em contato com a AR Bio.
           </div>
