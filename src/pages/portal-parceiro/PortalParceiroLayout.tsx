@@ -187,7 +187,10 @@ export default function PortalParceiroLayout() {
           </span>
         </div>
 
+        <UsuarioIdentidade papel={papelVisual} />
+
         {isStaff ? (
+
           <div className="px-4 py-3 border-b space-y-1">
             <div className="text-xs text-muted-foreground">Visualizar como parceiro</div>
             <Select value={simulatedId ?? ""} onValueChange={(v) => setSimulatedId(v)}>
