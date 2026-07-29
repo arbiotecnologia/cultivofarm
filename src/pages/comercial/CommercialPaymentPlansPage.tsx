@@ -29,6 +29,7 @@ const empty: PaymentPlanInput = {
   requires_financial_approval: false,
   requires_credit_approval: false,
   requires_guarantee: false,
+  pricing_mode: "discount_from_base",
   active: true,
   sort_order: 0,
 };
