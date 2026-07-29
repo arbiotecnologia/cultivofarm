@@ -2970,6 +2970,7 @@ export type Database = {
           months_count: number
           name: string
           plan_type: string
+          pricing_mode: string
           requires_credit_approval: boolean
           requires_financial_approval: boolean
           requires_guarantee: boolean
@@ -2992,6 +2993,7 @@ export type Database = {
           months_count?: number
           name: string
           plan_type: string
+          pricing_mode?: string
           requires_credit_approval?: boolean
           requires_financial_approval?: boolean
           requires_guarantee?: boolean
@@ -3014,6 +3016,7 @@ export type Database = {
           months_count?: number
           name?: string
           plan_type?: string
+          pricing_mode?: string
           requires_credit_approval?: boolean
           requires_financial_approval?: boolean
           requires_guarantee?: boolean
@@ -9398,58 +9401,82 @@ export type Database = {
       }
       partner_order_items: {
         Row: {
+          base_price_snapshot: number | null
+          condition_price_snapshot: number | null
           created_at: string
           desconto_percentual: number
           desconto_percentual_snapshot: number | null
           id: string
           microrganismo_id: string | null
           order_id: string
+          plan_discount_percent_snapshot: number | null
           preco_tabela_snapshot: number | null
           preco_unitario: number
           preco_unitario_final_snapshot: number | null
+          price_rule_id_snapshot: string | null
+          price_source_snapshot: string | null
+          pricing_mode_snapshot: string | null
           product_id: string | null
           produto_codigo_snapshot: string | null
           produto_nome_snapshot: string | null
           quantidade: number
           subtotal: number
           unidade_medida: string
+          unit_type_snapshot: string | null
           volume_ml: number | null
+          volume_ml_snapshot: number | null
         }
         Insert: {
+          base_price_snapshot?: number | null
+          condition_price_snapshot?: number | null
           created_at?: string
           desconto_percentual?: number
           desconto_percentual_snapshot?: number | null
           id?: string
           microrganismo_id?: string | null
           order_id: string
+          plan_discount_percent_snapshot?: number | null
           preco_tabela_snapshot?: number | null
           preco_unitario?: number
           preco_unitario_final_snapshot?: number | null
+          price_rule_id_snapshot?: string | null
+          price_source_snapshot?: string | null
+          pricing_mode_snapshot?: string | null
           product_id?: string | null
           produto_codigo_snapshot?: string | null
           produto_nome_snapshot?: string | null
           quantidade: number
           subtotal?: number
           unidade_medida?: string
+          unit_type_snapshot?: string | null
           volume_ml?: number | null
+          volume_ml_snapshot?: number | null
         }
         Update: {
+          base_price_snapshot?: number | null
+          condition_price_snapshot?: number | null
           created_at?: string
           desconto_percentual?: number
           desconto_percentual_snapshot?: number | null
           id?: string
           microrganismo_id?: string | null
           order_id?: string
+          plan_discount_percent_snapshot?: number | null
           preco_tabela_snapshot?: number | null
           preco_unitario?: number
           preco_unitario_final_snapshot?: number | null
+          price_rule_id_snapshot?: string | null
+          price_source_snapshot?: string | null
+          pricing_mode_snapshot?: string | null
           product_id?: string | null
           produto_codigo_snapshot?: string | null
           produto_nome_snapshot?: string | null
           quantidade?: number
           subtotal?: number
           unidade_medida?: string
+          unit_type_snapshot?: string | null
           volume_ml?: number | null
+          volume_ml_snapshot?: number | null
         }
         Relationships: [
           {
@@ -9471,6 +9498,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_price_rule_snapshot_fk"
+            columns: ["price_rule_id_snapshot"]
+            isOneToOne: false
+            referencedRelation: "commercial_price_rules"
             referencedColumns: ["id"]
           },
         ]
@@ -9629,6 +9663,7 @@ export type Database = {
           approved_by: string | null
           created_at: string
           created_by: string | null
+          credit_decision_snapshot: Json | null
           discount_amount: number
           discount_percent_snapshot: number
           final_amount: number
@@ -9644,6 +9679,7 @@ export type Database = {
           payment_plan_id: string | null
           plan_code_snapshot: string
           plan_name_snapshot: string
+          pricing_mode_snapshot: string | null
           table_amount: number
           updated_at: string
         }
@@ -9654,6 +9690,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          credit_decision_snapshot?: Json | null
           discount_amount?: number
           discount_percent_snapshot: number
           final_amount?: number
@@ -9669,6 +9706,7 @@ export type Database = {
           payment_plan_id?: string | null
           plan_code_snapshot: string
           plan_name_snapshot: string
+          pricing_mode_snapshot?: string | null
           table_amount?: number
           updated_at?: string
         }
@@ -9679,6 +9717,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          credit_decision_snapshot?: Json | null
           discount_amount?: number
           discount_percent_snapshot?: number
           final_amount?: number
@@ -9694,6 +9733,7 @@ export type Database = {
           payment_plan_id?: string | null
           plan_code_snapshot?: string
           plan_name_snapshot?: string
+          pricing_mode_snapshot?: string | null
           table_amount?: number
           updated_at?: string
         }
@@ -17508,6 +17548,7 @@ export type Database = {
         | "aguardando_ajuste_comercial"
         | "aguardando_itens"
         | "reprovado_sem_itens"
+        | "aguardando_cotacao"
       partner_porte: "pequeno" | "medio" | "grande"
       partner_regime_tributario:
         | "simples"
@@ -17917,6 +17958,7 @@ export const Constants = {
         "aguardando_ajuste_comercial",
         "aguardando_itens",
         "reprovado_sem_itens",
+        "aguardando_cotacao",
       ],
       partner_porte: ["pequeno", "medio", "grande"],
       partner_regime_tributario: [
