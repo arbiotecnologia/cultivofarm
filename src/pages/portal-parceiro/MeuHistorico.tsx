@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { brl as fmt } from "@/lib/financial/format";
+import { formatarQuantidade } from "@/lib/catalogo/formatUnidades";
 
 export default function MeuHistorico() {
   const { partner } = useOutletContext<{ partner: any }>();
@@ -55,7 +56,7 @@ export default function MeuHistorico() {
                 {topProdutos.map((p: any, idx: number) => (
                   <TableRow key={idx}>
                     <TableCell>{p.produto ?? "—"}</TableCell>
-                    <TableCell className="text-right">{Number(p.quantidade).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{formatarQuantidade(p.quantidade)}</TableCell>
                     <TableCell className="text-right">{fmt(p.valor)}</TableCell>
                   </TableRow>
                 ))}

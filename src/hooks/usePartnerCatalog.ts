@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { resolverUnidadePreco, type UnidadePreco } from "@/lib/catalogo/unidades";
+import { round2 } from "@/lib/catalogo/formatUnidades";
 
 export type CatalogItemTipo = "produto" | "microrganismo";
 /** Unidade canônica de preço (ver src/lib/catalogo/unidades.ts). */
@@ -40,7 +41,7 @@ export interface CatalogItem {
 const cheio = (final: number, descPct: number): number => {
   if (!Number.isFinite(final) || final <= 0) return 0;
   if (descPct <= 0.0001 || descPct >= 100) return final;
-  return Number((final / (1 - descPct / 100)).toFixed(2));
+  return round2(final / (1 - descPct / 100));
 };
 
 export function usePartnerCatalog(partnerId: string | null | undefined) {

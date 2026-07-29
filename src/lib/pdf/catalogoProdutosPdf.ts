@@ -4,6 +4,7 @@ import { drawArBioFooter, drawArBioHeader } from "./arBioHeader";
 import {
   calcularValorLitro,
   formatarMoedaOuTraco,
+  LABEL_CUSTO_HA_CURTO,
   formatarOuTraco,
   formatarDose,
   PLACEHOLDER_VAZIO,
@@ -33,7 +34,7 @@ export async function generateCatalogoProdutosPdf(items: ProdutoCatalogoItem[]) 
 
   autoTable(doc, {
     startY,
-    head: [["Código", "Nome", "Tipo", "Dose (mL/ha)", "Aplicação", "Dose 100 mL", "R$/L", "Custo/ha", "B2B", "Status"]],
+    head: [["Código", "Nome", "Tipo", "Dose (mL/ha)", "Aplicação", "Dose 100 mL", "R$/L", LABEL_CUSTO_HA_CURTO, "B2B", "Status"]],
     body: items.map((p) => {
       const litro = p.valor_litro_brl ?? calcularValorLitro(p.valor_dose_brl ?? null);
       return [

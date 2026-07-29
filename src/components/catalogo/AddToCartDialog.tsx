@@ -18,7 +18,7 @@ import { Plus, Trash2, Sparkles, Wand2 } from "lucide-react";
 import { useCatalogoVolumes, CatalogoVolume, formatVolumeLabel } from "@/hooks/useCatalogoVolumes";
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 import { brl } from "@/lib/financial/format";
-import { round2, labelUnidadeCurta } from "@/lib/catalogo/formatUnidades";
+import { round2, roundVolume, labelUnidadeCurta } from "@/lib/catalogo/formatUnidades";
 import { PrecoComDesconto } from "@/components/comercial/PrecoComDesconto";
 import { TotaisCarrinho } from "@/components/comercial/TotaisCarrinho";
 import { suggestVasilhames, sameLinhas, type LinhaVasilhame } from "@/lib/vasilhameSelection";
@@ -116,7 +116,7 @@ export function AddToCartDialog({
     if (lastEditedRef.current === "ha") {
       const ha = Number(areaHa);
       if (Number.isFinite(ha) && ha > 0) {
-        const L = Number((ha * doseRecomendadaLitroHa).toFixed(3));
+        const L = roundVolume(ha * doseRecomendadaLitroHa);
         setLitros(String(L));
       } else if (areaHa === "") {
         setLitros("");
@@ -124,7 +124,7 @@ export function AddToCartDialog({
     } else if (lastEditedRef.current === "L") {
       const L = Number(litros);
       if (Number.isFinite(L) && L > 0) {
-        const ha = Number((L / doseRecomendadaLitroHa).toFixed(3));
+        const ha = roundVolume(L / doseRecomendadaLitroHa);
         setAreaHa(String(ha));
       } else if (litros === "") {
         setAreaHa("");

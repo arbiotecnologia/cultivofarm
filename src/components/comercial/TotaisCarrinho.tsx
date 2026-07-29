@@ -1,5 +1,6 @@
 import { brl } from "@/lib/financial/format";
 import { cn } from "@/lib/utils";
+import { formatarPercentual } from "@/lib/catalogo/formatUnidades";
 
 interface Props {
   subtotalCheio: number;
@@ -28,7 +29,7 @@ export function TotaisCarrinho({ subtotalCheio, totalFinal, labelTotal = "Total 
             <span>{brl(cheio)}</span>
           </div>
           <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
-            <span>Desconto ({`−${pct.toFixed(pct % 1 === 0 ? 0 : 1)}%`})</span>
+            <span>Desconto ({`−${formatarPercentual(pct)}`})</span>
             <span>−{brl(desconto)}</span>
           </div>
         </>

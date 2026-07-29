@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import { drawArBioFooter, drawArBioHeader } from "./arBioHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { formatarPrecoUnitario } from "@/lib/catalogo/formatUnidades";
 
 export interface FichaProdutoOptions {
   produtoId: string;
@@ -63,9 +64,9 @@ export async function generateFichaTecnicaProdutoPdf({ produtoId, mode = "downlo
   doc.text(`Código: ${pr.codigo || "—"}    Tipo: ${pr.tipo}    Dose: ${pr.dose_ml_ha ?? "—"} mL/ha`, margin, y); y += 14;
   if (isB2B && (pr.valor_ha_brl || pr.valor_litro_brl || pr.valor_dose_brl)) {
     const partes: string[] = [];
-    if (pr.valor_ha_brl) partes.push(`R$ ${Number(pr.valor_ha_brl).toFixed(2)}/ha`);
-    if (pr.valor_litro_brl) partes.push(`R$ ${Number(pr.valor_litro_brl).toFixed(2)}/L`);
-    if (pr.valor_dose_brl) partes.push(`R$ ${Number(pr.valor_dose_brl).toFixed(2)}/dose`);
+    if (pr.valor_ha_brl) partes.push(formatarPrecoUnitario(Number(pr.valor_ha_brl), "hectare"));
+    if (pr.valor_litro_brl) partes.push(formatarPrecoUnitario(Number(pr.valor_litro_brl), "litro"));
+    if (pr.valor_dose_brl) partes.push(formatarPrecoUnitario(Number(pr.valor_dose_brl), "dose_100ml"));
     doc.text(`Tabela: ${partes.join("  •  ")}`, margin, y); y += 14;
   }
   doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(90, 90, 90);

@@ -90,6 +90,13 @@ export const formatarDose = (
 export const formatarArea = (ha: number | null | undefined): string =>
   isNum(ha) ? `${nf(2).format(roundArea(ha))} ha` : PLACEHOLDER_VAZIO;
 
+/** Quantidade genérica (unidades, itens) com 2 casas. */
+export const formatarQuantidade = (
+  v: number | null | undefined,
+  casas = 2,
+): string => (isNum(v) ? nf(casas).format(roundTo(v, casas)) : PLACEHOLDER_VAZIO);
+
+
 /** Ex.: "1,500 L" (zeros à direita removidos). */
 export const formatarVolume = (litros: number | null | undefined): string => {
   if (!isNum(litros)) return PLACEHOLDER_VAZIO;

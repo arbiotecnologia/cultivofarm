@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { brl } from "@/lib/financial/format";
 import { cn } from "@/lib/utils";
 import type { CommercialPaymentPlan } from "@/hooks/useCommercialPaymentPlans";
+import { formatarPercentual } from "@/lib/catalogo/formatUnidades";
 
 interface Props {
   plans: CommercialPaymentPlan[];
@@ -41,8 +42,8 @@ export function PaymentPlanSelector({ plans, selectedPlanId, onSelect, finalAmou
             </div>
             <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
               <span>Prazo: {p.max_days}d</span>
-              <span>Desc.: {Number(p.discount_percent).toFixed(1)}%</span>
-              <span>Juros: {Number(p.monthly_interest_percent).toFixed(2)}% a.m.</span>
+              <span>Desc.: {formatarPercentual(p.discount_percent)}</span>
+              <span>Juros: {formatarPercentual(p.monthly_interest_percent)} a.m.</span>
               {p.installment_count > 1 && <span>{p.installment_count}x</span>}
             </div>
             <div className="flex flex-wrap gap-1">
