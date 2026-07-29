@@ -14,7 +14,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   itemId: string | null;
   tipo: "produto" | "microrganismo";
-  origem?: "portal_produtor" | "recomendacao" | "ordem_servico";
+  origem?: CatalogOrigem;
 }
 
 interface Ficha {
