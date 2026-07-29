@@ -15092,6 +15092,7 @@ export type Database = {
       }
       create_partner_order_secure: {
         Args: {
+          p_expected_cart_hash?: string
           p_first_due_date?: string
           p_installment_count?: number
           p_items?: Json
