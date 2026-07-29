@@ -106,13 +106,20 @@ export function CatalogoCardsGrid({
       <Button
         size="sm"
         variant="outline"
-        onClick={() => r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw)}
+        onClick={() => {
+          if (scope === "b2b") {
+            setFichaB2B({ id: r.id, tipo: r.tipo });
+            return;
+          }
+          r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw);
+        }}
       >
         Ver ficha
       </Button>
       {actionSlot && actionSlot(r)}
     </div>
   );
+
 
   const rows = data ?? [];
 
