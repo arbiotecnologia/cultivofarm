@@ -87,7 +87,7 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
         const mp = mpMap.get(m.id) as any;
         const st = mp?.status_validacao ?? null;
         return {
-          id: m.id, tipo: "microrganismo", nome: m.nome, subtitulo: m.nome_cientifico, codigo: null,
+          id: m.id, tipo: "microrganismo", nome: m.nome, subtitulo: m.nome_cientifico, codigo: m.codigo ?? null,
           funcao: m.funcao_agronomica, ativo: m.ativo, b2b_enabled: m.b2b_enabled,
           ficha_status: st,
           ficha_resumo: gate(st, mp?.resumo_curto ?? m.descricao ?? null),
