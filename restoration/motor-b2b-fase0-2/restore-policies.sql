@@ -1,17 +1,26 @@
 -- =====================================================================
--- MOTOR B2B — ROLLBACK DA FASE 0.2 (HARDENING DE ACESSO FINANCEIRO)
--- Restaura EXATAMENTE as policies e ACLs vigentes antes da Fase 0.2.
+-- MOTOR B2B — ROLLBACK DE EMERGENCIA DA FASE 0.2
+-- Restaura EXATAMENTE o baseline capturado ANTES da Fase 0.2
+-- (docs/motor-b2b-fase0-2-security-baseline.md, secoes 1-4).
 --
 -- Ambiente permitido: STAGING ikaauvsflpmamgxmkhoq
 -- Ambiente PROIBIDO : PRODUCAO navfzbwgwzruipouyfnk
 --
--- Uso:
 --   psql "$PGURL_STAGING" --single-transaction -v ON_ERROR_STOP=1 \
 --        -f restoration/motor-b2b-fase0-2/restore-policies.sql
 --
--- ATENCAO: este rollback REINTRODUZ as duas vulnerabilidades documentadas
--- (tecnico B2B lendo terms/schedule e produtor lendo recebivel B2B).
--- Use somente em caso de regressao funcional grave.
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!! ATENCAO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- ESTE SCRIPT REINTRODUZ VULNERABILIDADES CONHECIDAS:
+--   * tecnico de parceiro (parceiro_b2b_tecnico) volta a LER condicoes e
+--     cronogramas de pagamento e recebiveis B2B do parceiro;
+--   * produtor (cliente_produtor) volta a LER titulo e parcelas de pedidos
+--     B2B que carreguem o seu customer_id;
+--   * anon e PUBLIC voltam a ter EXECUTE nas 4 RPCs sensiveis e privilegios
+--     totais nas tabelas B2B.
+-- Use SOMENTE em emergencia, SOMENTE no staging, e reaplique o hardening
+-- (supabase/migrations/20260729010220_motor_b2b_fase0_2_hardening_rls.sql)
+-- assim que a regressao funcional for resolvida.
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -- =====================================================================
 
 \set ON_ERROR_STOP on
@@ -30,7 +39,7 @@ END;
 $guard$;
 
 -- ---------------------------------------------------------------------
--- 1. partner_order_payment_terms.popt_select (estado anterior)
+-- 1. partner_order_payment_terms.popt_select (baseline)
 -- ---------------------------------------------------------------------
 DROP POLICY IF EXISTS popt_select ON public.partner_order_payment_terms;
 CREATE POLICY popt_select ON public.partner_order_payment_terms
@@ -47,7 +56,7 @@ USING (
 );
 
 -- ---------------------------------------------------------------------
--- 2. partner_order_payment_schedule.pops_select (estado anterior)
+-- 2. partner_order_payment_schedule.pops_select (baseline)
 -- ---------------------------------------------------------------------
 DROP POLICY IF EXISTS pops_select ON public.partner_order_payment_schedule;
 CREATE POLICY pops_select ON public.partner_order_payment_schedule
@@ -64,7 +73,7 @@ USING (
 );
 
 -- ---------------------------------------------------------------------
--- 3. accounts_receivable (estado anterior)
+-- 3. accounts_receivable (baseline)
 -- ---------------------------------------------------------------------
 DROP POLICY IF EXISTS ar_producer_read ON public.accounts_receivable;
 CREATE POLICY ar_producer_read ON public.accounts_receivable
@@ -83,7 +92,7 @@ USING (
 );
 
 -- ---------------------------------------------------------------------
--- 4. accounts_receivable_installments (estado anterior)
+-- 4. accounts_receivable_installments (baseline)
 -- ---------------------------------------------------------------------
 DROP POLICY IF EXISTS ari_producer_read ON public.accounts_receivable_installments;
 CREATE POLICY ari_producer_read ON public.accounts_receivable_installments
@@ -96,11 +105,11 @@ USING (
       AND ar.customer_id = ANY (get_cliente_ids_for_user(auth.uid())))
 );
 
--- policy criada na Fase 0.2 (nao existia antes)
+-- policy criada na Fase 0.2 (nao existia no baseline)
 DROP POLICY IF EXISTS ari_partner_select_own_b2b ON public.accounts_receivable_installments;
 
 -- ---------------------------------------------------------------------
--- 5. ACLs anteriores (RPCs sensiveis e tabelas)
+-- 5. ACLs do baseline (RPCs sensiveis e tabelas)
 -- ---------------------------------------------------------------------
 GRANT EXECUTE ON FUNCTION public.approve_b2b_payment_terms_secure(uuid, text) TO PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.reject_b2b_payment_terms_secure(uuid, text) TO PUBLIC, anon, authenticated, service_role;
@@ -109,10 +118,13 @@ GRANT EXECUTE ON FUNCTION public.add_b2b_payment_terms_note_secure(uuid, text) T
 
 GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public.partner_order_payment_terms TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public.partner_order_payment_schedule TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public.partner_orders TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public.partner_order_items TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public.partner_users TO anon;
 
 -- ---------------------------------------------------------------------
--- 6. Indice criado na Fase 0.2 (opcional remover; nao afeta seguranca)
+-- 6. Indice criado na Fase 0.2 (ausente no baseline)
 -- ---------------------------------------------------------------------
--- DROP INDEX IF EXISTS public.idx_ari_receivable;
+DROP INDEX IF EXISTS public.idx_ari_receivable;
 
 COMMIT;
