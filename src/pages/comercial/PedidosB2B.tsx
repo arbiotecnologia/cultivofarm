@@ -518,6 +518,11 @@ export default function PedidosB2B() {
                 <Button variant="outline" onClick={() => setTimelineOpen(true)}>
                   <Clock className="h-4 w-4 mr-1" /> Linha do tempo
                 </Button>
+                {detail.status === "aguardando_cotacao" && (
+                  <Button onClick={() => setQuoteOpen(true)} disabled={!hasItems}>
+                    Responder cotação
+                  </Button>
+                )}
                 {!hasItems && detail.status !== "aguardando_itens" && detail.status !== "reprovado_sem_itens" && (
                   <Button
                     variant="outline"
