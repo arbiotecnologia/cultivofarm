@@ -164,4 +164,4 @@ o total snapshot; rejeição (pré-aprovação) e cancelamento (pós-aprovação
 > (recusa apenas produção comprovada; banco novo replica sem erro). Pacote de promoção
 > documentado em `restoration/promocao-b2b/README.md`.
 > 🟡 **PROMOÇÃO LIBERADA TECNICAMENTE, AGUARDANDO AUTORIZAÇÃO HUMANA** — nada executado em produção.
-> ⚫ **PRODUÇÃO: NÃO APTO.**
+> ⚫ **PRODUÇÃO `navfzbwgwzruipouyfnk`: NÃO EXECUTADA** — bloqueada por decisão, aguardando autorização.
