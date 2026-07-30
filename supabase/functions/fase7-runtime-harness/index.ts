@@ -327,51 +327,71 @@ Deno.serve(async (req) => {
     rec("fatal", false, (e as Error).message);
   } finally {
     // ---------- rollback / cleanup determinístico ----------
+    const errs: string[] = [];
+    const del = async (table: string, col: string, vals: string[]) => {
+      if (!vals.length) return;
+      const { error } = await admin.from(table).delete().in(col, vals);
+      if (error) errs.push(`${table}: ${error.message}`);
+    };
     try {
+      // varredura por prefixo do harness (inclui resíduos de execuções anteriores)
+      const { data: sweep } = await admin
+        .from("partner_accounts")
+        .select("id")
+        .like("razao_social", "h7-%");
+      const partnerIds = Array.from(
+        new Set([...(created.partners ?? []), ...((sweep ?? []).map((p: any) => p.id))]),
+      );
       const { data: orders } = await admin
         .from("partner_orders")
         .select("id")
-        .in("partner_id", created.partners);
+        .in("partner_id", partnerIds);
       const ids = (orders ?? []).map((o: any) => o.id);
       if (ids.length) {
         const { data: lk } = await admin
           .from("partner_order_financial_links")
           .select("receivable_id")
           .in("partner_order_id", ids);
-        await admin.from("partner_order_financial_links").delete().in("partner_order_id", ids);
         const recIds = (lk ?? []).map((l: any) => l.receivable_id).filter(Boolean);
+        await del("partner_order_financial_links", "partner_order_id", ids);
         if (recIds.length) {
-          await admin.from("accounts_receivable_installments").delete().in("receivable_id", recIds);
-          await admin.from("accounts_receivable").delete().in("id", recIds);
+          await del("receivable_payments", "receivable_id", recIds);
+          await del("accounts_receivable_installments", "receivable_id", recIds);
+          await del("financial_receipts", "receivable_id", recIds);
+          await del("accounts_receivable", "id", recIds);
         }
-        await admin.from("partner_order_payment_schedule").delete().in("order_id", ids);
-        await admin.from("partner_order_items").delete().in("order_id", ids);
-        await admin.from("partner_order_idempotency").delete().in("order_id", ids);
-        await admin.from("partner_orders").delete().in("id", ids);
+        await del("accounts_receivable", "origin_id", ids);
+        await del("partner_order_payment_schedule", "order_id", ids);
+        await del("partner_order_payment_terms", "partner_order_id", ids);
+        await del("partner_order_audit_logs", "order_id", ids);
+        await del("partner_order_items", "order_id", ids);
+        await del("partner_order_idempotency", "order_id", ids);
+        await del("partner_orders", "id", ids);
       }
-      await admin.from("partner_order_idempotency").delete().in("partner_id", created.partners);
-      await admin.from("partner_users").delete().in("partner_id", created.partners);
-      await admin.from("partner_accounts").delete().in("id", created.partners);
+      await del("partner_order_idempotency", "partner_id", partnerIds);
+      await del("partner_users", "partner_id", partnerIds);
+      await del("partner_financial_settings", "partner_id", partnerIds);
+      await del("partner_accounts", "id", partnerIds);
       if (created.users.length) {
-        await admin.from("user_roles").delete().in("user_id", created.users);
-        await admin.from("profiles").delete().in("user_id", created.users);
+        await del("user_roles", "user_id", created.users);
+        await del("profiles", "user_id", created.users);
         for (const id of created.users) await admin.auth.admin.deleteUser(id);
       }
       const { count: leftOrders } = await admin
         .from("partner_orders")
         .select("id", { count: "exact", head: true })
-        .in("partner_id", created.partners);
+        .in("partner_id", partnerIds);
       const { count: leftPartners } = await admin
         .from("partner_accounts")
         .select("id", { count: "exact", head: true })
-        .in("id", created.partners);
+        .like("razao_social", "h7-%");
       rec(
         "3.cleanup",
-        (leftOrders ?? 0) === 0 && (leftPartners ?? 0) === 0,
-        `pedidos=${leftOrders}, parceiros=${leftPartners}, usuários removidos=${created.users.length}`,
+        (leftOrders ?? 0) === 0 && (leftPartners ?? 0) === 0 && errs.length === 0,
+        `pedidos=${leftOrders}, parceiros=${leftPartners}, usuários removidos=${created.users.length}, erros=${errs.join(" | ") || "nenhum"}`,
       );
     } catch (e) {
-      rec("3.cleanup", false, (e as Error).message);
+      rec("3.cleanup", false, (e as Error).message + " | " + errs.join(" | "));
     }
   }
 
