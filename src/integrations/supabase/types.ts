@@ -2964,6 +2964,7 @@ export type Database = {
           id: string
           installment_count: number
           interest_type: string
+          is_default: boolean
           max_days: number
           minimum_order_amount: number | null
           monthly_interest_percent: number
@@ -2974,8 +2975,15 @@ export type Database = {
           requires_credit_approval: boolean
           requires_financial_approval: boolean
           requires_guarantee: boolean
+          root_plan_id: string | null
           sort_order: number
+          superseded_by_id: string | null
           updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+          version: number
+          version_reason: string | null
         }
         Insert: {
           active?: boolean
@@ -2987,6 +2995,7 @@ export type Database = {
           id?: string
           installment_count?: number
           interest_type?: string
+          is_default?: boolean
           max_days?: number
           minimum_order_amount?: number | null
           monthly_interest_percent?: number
@@ -2997,8 +3006,15 @@ export type Database = {
           requires_credit_approval?: boolean
           requires_financial_approval?: boolean
           requires_guarantee?: boolean
+          root_plan_id?: string | null
           sort_order?: number
+          superseded_by_id?: string | null
           updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+          version?: number
+          version_reason?: string | null
         }
         Update: {
           active?: boolean
@@ -3010,6 +3026,7 @@ export type Database = {
           id?: string
           installment_count?: number
           interest_type?: string
+          is_default?: boolean
           max_days?: number
           minimum_order_amount?: number | null
           monthly_interest_percent?: number
@@ -3020,10 +3037,32 @@ export type Database = {
           requires_credit_approval?: boolean
           requires_financial_approval?: boolean
           requires_guarantee?: boolean
+          root_plan_id?: string | null
           sort_order?: number
+          superseded_by_id?: string | null
           updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+          version?: number
+          version_reason?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "commercial_payment_plans_root_plan_id_fkey"
+            columns: ["root_plan_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plans_superseded_by_id_fkey"
+            columns: ["superseded_by_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       commercial_price_rules: {
         Row: {
@@ -15008,6 +15047,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      _cpp_audit: {
+        Args: {
+          _acao: string
+          _motivo: string
+          _new: Json
+          _old: Json
+          _plan_id: string
+        }
+        Returns: undefined
+      }
+      _cpp_validate_payload: { Args: { p: Json }; Returns: undefined }
       _entrega_seed_checklist: {
         Args: { _entrega_id: string }
         Returns: undefined
@@ -15267,6 +15317,7 @@ export type Database = {
         }
         Returns: number
       }
+      fn_b2b_can_admin_plans: { Args: { _user_id?: string }; Returns: boolean }
       fn_b2b_cart_hash: {
         Args: {
           p_cart: Json
@@ -15285,6 +15336,11 @@ export type Database = {
         Returns: Json
       }
       fn_b2b_order_priceable: { Args: { p_order_id: string }; Returns: boolean }
+      fn_b2b_plan_referenced: { Args: { _plan_id: string }; Returns: boolean }
+      fn_b2b_plan_selectable: {
+        Args: { _plan_id: string; _ref?: string }
+        Returns: boolean
+      }
       fn_calc_next_generation_date: {
         Args: { _due_day: number; _freq: string; _from_date: string }
         Returns: string
@@ -16077,6 +16133,47 @@ export type Database = {
       }
       rpc_admin_communication_health_snapshot: { Args: never; Returns: Json }
       rpc_admin_communication_outbox_metrics: { Args: never; Returns: Json }
+      rpc_admin_create_commercial_plan: {
+        Args: { p_payload: Json }
+        Returns: string
+      }
+      rpc_admin_list_commercial_plans: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: string
+        }
+        Returns: {
+          active: boolean
+          code: string
+          description: string
+          discount_percent: number
+          id: string
+          installment_count: number
+          interest_type: string
+          is_default: boolean
+          is_referenced: boolean
+          max_days: number
+          minimum_order_amount: number
+          monthly_interest_percent: number
+          months_count: number
+          name: string
+          plan_type: string
+          pricing_mode: string
+          requires_credit_approval: boolean
+          requires_financial_approval: boolean
+          requires_guarantee: boolean
+          root_plan_id: string
+          selectable: boolean
+          sort_order: number
+          superseded_by_id: string
+          total_count: number
+          valid_from: string
+          valid_until: string
+          version: number
+        }[]
+      }
       rpc_admin_list_communication_dead_letter: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
@@ -16094,6 +16191,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      rpc_admin_reorder_commercial_plans: {
+        Args: { p_orders: Json }
+        Returns: undefined
+      }
       rpc_admin_replay_communication_dead_letter: {
         Args: { p_outbox_id: string }
         Returns: Json
@@ -16101,6 +16202,14 @@ export type Database = {
       rpc_admin_replay_communication_dead_letter_batch: {
         Args: { p_limit?: number }
         Returns: Json
+      }
+      rpc_admin_set_commercial_plan_active: {
+        Args: { p_active: boolean; p_motivo?: string; p_plan_id: string }
+        Returns: undefined
+      }
+      rpc_admin_set_default_commercial_plan: {
+        Args: { p_plan_id: string }
+        Returns: undefined
       }
       rpc_admin_set_whatsapp_consent: {
         Args: {
@@ -16111,6 +16220,19 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      rpc_admin_update_commercial_plan_metadata: {
+        Args: {
+          p_description?: string
+          p_name?: string
+          p_plan_id: string
+          p_sort_order?: number
+        }
+        Returns: undefined
+      }
+      rpc_admin_version_commercial_plan: {
+        Args: { p_motivo?: string; p_payload: Json; p_plan_id: string }
+        Returns: string
       }
       rpc_anexar_comprovante_entrega: {
         Args: { p_entrega_id: string; p_payload: Json }
