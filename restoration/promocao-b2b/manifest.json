@@ -1,7 +1,7 @@
 {
   "package": "promocao-b2b",
   "version": "1.0.0",
-  "generated_at_utc": "2026-07-30T14:54:20Z",
+  "generated_at_utc": "2026-07-30T21:59:23Z",
   "repo_commit_at_generation": "357f3a495946564ebad6c983f270112b2a7ec8d5",
   "source_certified_ref": "ikaauvsflpmamgxmkhoq",
   "target_project_ref": "navfzbwgwzruipouyfnk",
@@ -318,7 +318,7 @@
     {
       "path": "../../docs/motor-b2b-promocao-gate.md",
       "sha256": "9cc4faff03ce25db8f0dd8396bec114e4451cec00c31628190539d7c74448965",
-      "bytes": 13679
+      "bytes": 15885
     },
     {
       "path": "000_preflight.sql",

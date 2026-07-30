@@ -121,17 +121,44 @@ END \$g\$;
 SQL
 
 # ---- 4. Integridade do pacote (35 artefatos permanentes) -------------------
-echo "[3/6] conferindo hashes do manifest"
+# Fail-closed: reprova se o arquivo estiver AUSENTE, ilegível, ou se o sha256
+# OU o tamanho em bytes divergirem do manifest. Mensagens sanitizadas.
+echo "[3/6] conferindo integridade do manifest (sha256 + bytes)"
 python3 - "$DIR" <<'PY'
 import hashlib, json, os, sys
 d = sys.argv[1]
-m = json.load(open(os.path.join(d, "manifest.json")))
-bad = [f["path"] for f in m["files"]
-       if hashlib.sha256(open(os.path.join(d, f["path"]), "rb").read()).hexdigest() != f["sha256"]]
-if bad:
-    print("HASH_MISMATCH:", bad); sys.exit(3)
-print(f"  OK: {len(m['files'])} arquivos integros")
+try:
+    m = json.load(open(os.path.join(d, "manifest.json")))
+except Exception as e:
+    print("MANIFEST_UNREADABLE:", type(e).__name__); sys.exit(3)
+
+missing, mismatch = [], []
+for f in m["files"]:
+    p = os.path.join(d, f["path"])
+    if not os.path.isfile(p):
+        missing.append(f["path"]); continue
+    try:
+        b = open(p, "rb").read()
+    except Exception as e:
+        missing.append(f'{f["path"]} (unreadable: {type(e).__name__})'); continue
+    h, n = hashlib.sha256(b).hexdigest(), len(b)
+    prob = []
+    if h != f["sha256"]:
+        prob.append("sha256")
+    if "bytes" in f and n != f["bytes"]:
+        prob.append(f'bytes({f["bytes"]}!={n})')
+    if prob:
+        mismatch.append(f'{f["path"]} [{",".join(prob)}]')
+
+if missing:
+    print("MANIFEST_FILE_MISSING:", "; ".join(missing))
+if mismatch:
+    print("MANIFEST_INTEGRITY_MISMATCH:", "; ".join(mismatch))
+if missing or mismatch:
+    sys.exit(3)
+print(f"  OK: {len(m['files'])} arquivos integros (sha256 e bytes conferem)")
 PY
+
 
 # ---- 5. Baseline imediatamente antes do ensaio -----------------------------
 echo "[4/6] capturando baseline pre-rehearsal"
