@@ -16,6 +16,60 @@
 
 # 🟢 APTO PARA PROMOÇÃO CONTROLADA (staging certificado)
 
+## Reexecução — ciclo de recuperação técnica (itens 3–9), staging `ikaauvsflpmamgxmkhoq`
+
+Harness interno temporário (Edge Function protegida por JWT de administrador,
+já **removida** do repositório e do projeto Supabase). Nenhum segredo impresso,
+logado ou versionado. Produção `navfzbwgwzruipouyfnk` não acessada.
+
+**Resultado: 17/17 PASS**
+
+| Item | Prova | Resultado |
+| --- | --- | --- |
+| 3 | Usuários Auth efêmeros (parceiro A, técnico A, parceiro B, admin) | PASS — 4 usuários, 2 parceiros |
+| 3 | 6 sessões autenticadas independentes | PASS |
+| 9 | Catálogo B2B do parceiro A | PASS — 16 itens, 16 precificados |
+| 6 | Simulação autoritativa + `cart_hash` | PASS — final 177,60 |
+| 9 | Paridade catálogo → simulação (`base_price` == `preco_parceiro`) | PASS |
+| 4 | Concorrência real de checkout, mesma chave/payload (`Promise.all`, 2 sessões) | PASS — 1 pedido |
+| 5 | Mesma chave, payload divergente | PASS — `idempotency_conflict`, 1 pedido |
+| 9 | Paridade simulação → snapshot do pedido | PASS — 2 itens conferidos |
+| 8 | Hash de carrinho inválido | PASS — `price_changed` |
+| 8 | Parceiro aprovando o próprio pedido | PASS — `forbidden` |
+| 8 | Técnico B2B sem dados financeiros (catálogo + simulação) | PASS — `forbidden_financial_terms` |
+| 7 | Aprovação concorrente (2 sessões admin) | PASS — 1 OK, status `aprovado` |
+| 7 | Vínculo financeiro único antes da geração | PASS — 0 vínculos |
+| 7 | Concorrência real de recebível (2 sessões admin) | PASS — 1 vínculo, 1 recebível |
+| 7 | Imutabilidade pós-aprovação | PASS — `forbidden_quote_response` |
+| 9 | RLS/isolamento (parceiro B) | PASS — 0 linhas, `forbidden_partner` |
+| 3 | Rollback/cleanup determinístico (sem `DISABLE TRIGGER`) | PASS — 0 pedidos, 0 parceiros, 4 usuários removidos, 0 erros |
+
+### Lacuna real corrigida neste ciclo
+
+O rollback canônico do vínculo financeiro era impossível: `tg_block_pofl_delete`
+bloqueava a exclusão de `partner_order_financial_links` em qualquer hipótese,
+mesmo após o cancelamento canônico via `cancel_b2b_receivable_secure`. A função
+passou a permitir a exclusão **exclusivamente** quando o vínculo está com
+`financial_status = 'cancelado'` **e** o autor tem papel `administrador`
+(`SECURITY DEFINER`, `search_path` fixo). Vínculos ativos seguem imutáveis para
+todos os perfis.
+
+### Contagens finais (staging)
+
+`usuários efêmeros = 0`, `parceiros fixture = 0`, `pedidos fixture = 0`,
+`recebíveis órfãos = 0`, `vínculos financeiros órfãos = 0`,
+segredos/credenciais versionados = 0.
+
+### Qualidade reexecutada
+
+- `tsgo --noEmit`: PASS
+- `npm run build`: PASS
+- Vitest: 2657 PASS / 4 skipped; único vermelho é o timeout conhecido de
+  `portalAcompanhamentoProdutor.test.tsx` sob carga paralela — isolado 10/10 PASS.
+
+---
+
+
 **Base do veredito:** todos os itens 1–11 foram fechados com **provas runtime
 reais** executadas em `ikaauvsflpmamgxmkhoq`, com sessões autenticadas distintas
 (parceiro A, segunda sessão do parceiro A, técnico B2B, parceiro B, admin e
