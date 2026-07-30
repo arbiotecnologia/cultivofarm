@@ -8,7 +8,11 @@ const STAGING_REF = "ikaauvsflpmamgxmkhoq";
 const URL_ = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
-const SECRET = Deno.env.get("FASE7_HARNESS_SECRET") ?? "";
+const SECRET_SHA256 = "4e34ff70dc6ccdc019b74528ad9c0a464218ef4f9b61a20d3d8050b48f37c5f3";
+async function sha256Hex(v: string) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v));
+  return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
 
 type Res = { id: string; status: "PASS" | "FAIL"; detail: string };
 
@@ -28,7 +32,8 @@ async function userClient(email: string, password: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (!SECRET || req.headers.get("x-harness-secret") !== SECRET) {
+  const provided = req.headers.get("x-harness-secret") ?? "";
+  if (!provided || (await sha256Hex(provided)) !== SECRET_SHA256) {
     return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: corsHeaders });
   }
   if (!URL_.includes(STAGING_REF)) {
