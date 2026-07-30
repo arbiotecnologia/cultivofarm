@@ -72,7 +72,7 @@ function preview(form: PaymentPlanPayload, base = 100000) {
 type Mode = "create" | "version" | "metadata";
 
 export default function CommercialPaymentPlansPage() {
-  const [tab, setTab] = useTabParam("planos", ["planos", "matriz"]);
+  const [tab, setTab] = useTabParam("tab", ["planos", "matriz"] as const, "planos");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
   const [page, setPage] = useState(0);
