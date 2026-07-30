@@ -60,9 +60,22 @@ Ele verifica:
   `partner_orders` e `partner_order_idempotency`;
 - **V3** — nenhuma função B2B sensível executável por `anon`/`PUBLIC`.
 
-⚠️ **UNVERIFIED:** o harness foi escrito e revisado, mas **não foi executado**
-nesta entrega (falta de sessão `psql` contra o staging neste passo). V1/V2/V3
-permanecem sem evidência runtime desta rodada.
+**Evidência runtime desta rodada** (consulta read-only executada contra o
+staging, `env_ref = ikaauvsflpmamgxmkhoq` confirmado na própria consulta):
+
+| Verificação | Resultado literal |
+|---|---|
+| `env_ref` (marker STAGING) | `ikaauvsflpmamgxmkhoq` ✅ |
+| V1 — triggers de usuário desabilitados em `public` | **0** de **233** ✅ |
+| V2 — pedidos fixture (`GATE-RUNTIME%` / `FASE7-PROOF%`) | **0** ✅ |
+| V2 — chaves de idempotência fixture | **0** ✅ |
+| V2 — `partner_order_items` órfãos | **0** ✅ |
+| V2 — tabela `_motor_b2b_fase7_proofs` presente | **0** (removida) ✅ |
+| V3 — funções B2B executáveis por `anon`/`PUBLIC` | **0** ✅ |
+
+Ou seja: **nenhum trigger foi deixado desabilitado, nenhuma fixture ou órfão
+remanesceu e nenhuma permissão foi reaberta** — exatamente o que o item 3
+exigia, e sem qualquer `DISABLE TRIGGER`.
 
 ### Item 10 — Teste fiscal rigoroso restaurado ✅ CORRIGIDO → ❌ FAIL honesto
 
@@ -94,12 +107,28 @@ depende de fixture, tabela de prova ou marker staging-only.
 
 | # | Exigência | Status | Motivo |
 |---|---|---|---|
-| 4 | Concorrência multi-sessão real de checkout (2 conexões simultâneas, mesma `partner_id` + `idempotency_key` + payload; convergência para 1 pedido; payload divergente ⇒ `idempotency_conflict`) | ❌ UNVERIFIED | Exige duas sessões autenticadas simultâneas contra o staging. Replay sequencial anterior **não conta** e foi retirado como evidência. |
-| 5 | Recebível concorrente real (2 chamadas simultâneas ⇒ 1 `receivable_id`, 1 vínculo, cronograma exato, soma das parcelas = total snapshot) | ❌ UNVERIFIED | Mesma limitação. |
-| 6 | E2E completo com pedidos separados: criação → aprovação → recebível → parcelas; rejeição válida; solicitação de ajuste com retorno de estado | ❌ UNVERIFIED | Não executado nesta rodada com asserts de código/status exato + pós-condição no banco. |
-| 7 | Inventário e prova server-side de **todos** os caminhos que iniciam produção, separam/baixam estoque, marcam entrega, faturam/emitem fiscal, geram recebível ou vinculam financeiro, para pedido não aprovado/rejeitado/em ajuste | ❌ UNVERIFIED | O inventário anterior (17 RPCs / 11 gates) não cobre Edge Functions nem prova ausência de efeito colateral. |
-| 8 | RLS/perfis com sessões autenticadas reais (admin/financeiro/gestor comercial, parceiro gestor, técnico B2B, produtor direto, usuário sem vínculo), allow/deny e isolamento entre parceiros | ❌ UNVERIFIED | Exige sessões autenticadas removíveis. Fluxo de produtor direto **preservado sem alteração**. |
+| 4 | Concorrência multi-sessão real de checkout (2 conexões simultâneas, mesma `partner_id` + `idempotency_key` + payload; convergência para 1 pedido; payload divergente ⇒ `idempotency_conflict`) | ❌ **INVIÁVEL nesta rodada** | Ver §2.1. Replay sequencial anterior **não conta** e foi retirado como evidência. |
+| 5 | Recebível concorrente real (2 chamadas simultâneas ⇒ 1 `receivable_id`, 1 vínculo, cronograma exato, soma das parcelas = total snapshot) | ❌ **INVIÁVEL nesta rodada** | Ver §2.1. |
+| 6 | E2E completo com pedidos separados: criação → aprovação → recebível → parcelas; rejeição válida; solicitação de ajuste com retorno de estado | ❌ **INVIÁVEL nesta rodada** | Ver §2.1 — exige sessões autenticadas por perfil. |
+| 7 | Inventário e prova server-side de **todos** os caminhos que iniciam produção, separam/baixam estoque, marcam entrega, faturam/emitem fiscal, geram recebível ou vinculam financeiro, para pedido não aprovado/rejeitado/em ajuste | ❌ UNVERIFIED | O inventário anterior (17 RPCs / 11 gates) não cobre Edge Functions nem prova ausência de efeito colateral; a prova de "falha com erro específico e sem efeito" exige chamada autenticada (§2.1). |
+| 8 | RLS/perfis com sessões autenticadas reais (admin/financeiro/gestor comercial, parceiro gestor, técnico B2B, produtor direto, usuário sem vínculo), allow/deny e isolamento entre parceiros | ❌ **INVIÁVEL nesta rodada** | Ver §2.1. Fluxo de produtor direto **preservado sem alteração**. |
 | 9 | Matriz comercial/catálogo: bootstrap idempotente a partir de preços/regras canônicos, 16 itens preservados, origem documentada, `quote_only` quando faltar parâmetro | ❌ UNVERIFIED | A checagem anterior (“16/16 com `preco_parceiro`”) não documenta a origem de cada preço/regra nem prova o caminho `quote_only`. Nenhum preço, desconto, juros ou fallback foi inventado nesta entrega. |
+
+### 2.1 Por que as provas runtime autenticadas foram inviáveis
+
+Fato objetivo, sem contorno: o ambiente de execução desta rodada **não possui
+acesso `psql` ao staging** (`PGHOST` ausente) e **não possui sessão Supabase
+autenticada** — o status é `LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`,
+isto é, o Supabase deste projeto é externo/BYO e a plataforma não consegue
+emitir sessão para ele. Sem `psql` e sem JWT autenticado não é possível abrir
+duas sessões simultâneas nem chamar RPCs sob a identidade de admin, financeiro,
+gestor comercial, parceiro gestor, técnico B2B, produtor direto ou usuário sem
+vínculo.
+
+O único canal disponível foi consulta **read-only** ao banco — suficiente para
+provar o item 3 (§1) e inspecionar estado, **insuficiente** para os itens 4–8.
+Nada foi declarado PASS com base em substituto (replay sequencial, leitura de
+definição de função ou import de módulo **não** são prova runtime).
 
 ---
 
@@ -116,7 +145,8 @@ históricos, produção, fiscal, BI ou comunicação. A única mudança de schem
 | Typecheck (`tsgo --noEmit`) | ✅ limpo, exit 0, zero erros |
 | Vitest `verifier.test.ts` | ❌ **1 failed / 3 passed** — resultado literal abaixo |
 | Build | não executado nesta rodada |
-| Concorrência runtime | não executada |
+| Concorrência runtime multi-sessão | não executada — inviável (§2.1) |
+| Verificação read-only de integridade (V1/V2/V3) | ✅ executada, 0/0/0 (§1, item 3) |
 
 ### Resultado literal do gate fiscal (item 10)
 
