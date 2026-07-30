@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     results.push({ id, ok, esperado, obtido });
 
   const tag = `hp-${crypto.randomUUID().slice(0, 8)}`;
-  const created = { users: [] as string[], partners: [] as string[], produtos: [] as string[] };
+  const created = { users: [] as string[], partners: [] as string[], produtos: [] as string[], planos: [] as string[] };
   let admSess: any = null;
 
   const mkUser = async (alias: string, roles: string[], partnerId?: string, papel = "gestor") => {
