@@ -141,3 +141,43 @@ Execução mantida dentro do limite autorizado de 40 créditos (checkpoint encer
 Não há mais: bypass de preço (fonte única canônica), fallback zero (NULL + `sob_consulta`), vazamento financeiro ao técnico, escalada de privilégio no auto cadastro, RLS global indevida em On-Farm/Aplicador, nem fixtures promovíveis em `supabase/migrations`.
 
 A ressalva é exclusivamente de **evidência**: as provas de runtime por sessão de usuário e a prova de concorrência da Fase 1 permanecem UNVERIFIED nesta sessão. Executá-las é pré-requisito para elevar o status a APTO PARA FASE 2.
+
+---
+
+## 10. Retomada e encerramento do checkpoint (execução continuada)
+
+Ambiente validado antes de qualquer leitura/escrita: `_fiscal_staging_marker` = `ikaauvsflpmamgxmkhoq` (staging). Produção `navfzbwgwzruipouyfnk` **não** foi acessada. Nenhuma migration nova foi aplicada nesta retomada — apenas verificação e documentação.
+
+### 10.1 Reverificação de estado efetivo no staging
+
+- **Checksums** das 12 funções críticas reconferidos em `pg_get_functiondef`: **idênticos** aos da seção 5 — nenhuma regressão ou redefinição posterior.
+- **`anon`/`PUBLIC` EXECUTE** nas RPCs sensíveis (`get_partner_catalog_secure`, `get_partner_catalog_tecnico_secure`, `create_partner_order_secure`, `simulate_b2b_payment_plan_secure`, `respond_b2b_order_quote_secure`, `rpc_b2b_partner_credit`, `rpc_resolve_commercial_prices`, `fn_resolve_commercial_price`): **0 ocorrências**. Só `authenticated` executa; `handle_new_user` não é executável nem por `authenticated`.
+- **Fonte de preço**: `get_partner_catalog_secure` e `get_partner_catalog_tecnico_secure` referenciam `fn_resolve_commercial_price` e o estado `sob_consulta`; nenhuma fórmula de preço duplicada permanece nas duas funções.
+- **RLS On-Farm/Aplicador** (`pg_policies`): em `lotes`, `controle_qualidade`, `envase`, `programacao_producao`, `estoque_produto`, `estoque_movimentacoes`, `ordens_servico`, `ordens_servico_onfarm` há apenas políticas **separadas por comando** (SELECT/INSERT/UPDATE) para `authenticated`, todas escopadas por `fn_onfarm_scope_cliente` / `fn_onfarm_scope_lote`. **Nenhuma política `FOR ALL` por papel On-Farm e nenhuma política de DELETE** para esses papéis.
+- **Higiene de migrations**: as 12 migrations mais recentes de `supabase/migrations` contêm **0 UUIDs fixos** (verificação por varredura de padrão UUID). As fixtures permanecem em `scripts/tests/onfarm-b2b-fixtures/vinculos-homologacao.sql`, com guard de ambiente.
+- **Rotas**: `/portal/meus-pedidos` redireciona para `/portal` (visão B2B removida do produtor). O namespace `/app/*` é o **app móvel de campo pré-existente** (técnico/produtor), anterior à Fase 1 — não é portal paralelo criado neste ciclo e permanece intocado.
+
+### 10.2 Portões de qualidade
+
+- `typecheck`: **PASS** (exit 0).
+- `vitest run` (suíte completa): **2648 passed / 4 skipped / 3 failed** em 2655. As 3 falhas estão em `src/test/fiscal/sinief49/staging/verifier.test.ts` (verificador de types SINIEF 49), **pré-existentes e fora do escopo** deste checkpoint — nenhum teste de motor comercial, catálogo, RBAC ou On-Farm falha.
+
+### 10.3 Provas de runtime — por que permanecem UNVERIFIED
+
+Três caminhos foram tentados nesta retomada, todos bloqueados pelo executor:
+
+1. `psql` indisponível (sem `PGHOST` nesta sessão);
+2. o conector SQL de leitura **não pode `SET ROLE authenticated`** (`permission denied to set role "authenticated"`);
+3. mesmo apenas com `request.jwt.claims` definido, o papel do conector **não tem EXECUTE** nas RPCs de negócio (`permission denied for function ...`) — consequência direta e desejada do hardening de grants.
+
+Portanto as provas por sessão real de usuário (técnico sem financeiro, gestor B2B próprio vs. cruzado, paridade catálogo→carrinho→simulação→checkout, autoatribuição de papel, On-Farm sem acesso externo) e a **prova de concorrência/idempotência da Fase 1** continuam **UNVERIFIED**. Nenhuma evidência foi fabricada. O harness executável já versionado (`supabase/tests/motor-b2b/fase1-final/03-concorrencia.mjs` e `01/02-*.sql`) é o meio de execução quando houver credenciais de teste ou `psql`.
+
+### 10.4 Preservações confirmadas
+
+Nenhum dado legítimo foi alterado nesta retomada: catálogo, produtos, microrganismos, protocolos, fichas/PDFs, usuários, papéis e vínculos permanecem exatamente como após o commit `2c5da4a`. Nenhum histórico, snapshot, parcela, recebível, entrega, registro fiscal, BI ou comunicação foi recalculado ou removido.
+
+### 10.5 Gate final do checkpoint
+
+**Status mantido: APTO COM RESSALVAS** — arquitetura e segurança aprovadas (sem bypass de preço, sem fallback zero, sem vazamento financeiro ao técnico, sem escalada no auto cadastro, sem RLS global indevida, sem fixtures promovíveis); ressalva exclusivamente de **evidência de runtime**, conforme 10.3.
+
+Execução encerrada dentro do limite de 40 créditos. **Fase 2 não iniciada.**
