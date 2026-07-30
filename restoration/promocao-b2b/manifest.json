@@ -316,6 +316,11 @@
   ],
   "files": [
     {
+      "path": "../../docs/motor-b2b-promocao-gate.md",
+      "sha256": "a8150285a780287fb3c015a62f3fbc77216ae6ad65cd3273a17efdd4a6109128",
+      "bytes": 7262
+    },
+    {
       "path": "000_preflight.sql",
       "sha256": "b50c0069958c9c39c1207917b11e55b27ecfa2d2e4b4cd17a52a73b6e41b273b",
       "bytes": 7809
@@ -331,14 +336,19 @@
       "bytes": 3093
     },
     {
-      "path": "rehearsal-staging.sh",
-      "sha256": "7b87ee42e19059b5bdc324318f67a5b34ea96d7292556e2a421625985646ffef",
-      "bytes": 3067
+      "path": "README.md",
+      "sha256": "24e4e568b0016cde52eaf9912a7e95fecd70af75d7e0f44ad8cd82f1ffee6e5f",
+      "bytes": 7261
     },
     {
       "path": "apply-production.sh.BLOCKED",
       "sha256": "6f520b483a5dab2158d4fc67fa0e1b012b3531238548646a295a1c847dc7d166",
       "bytes": 2944
+    },
+    {
+      "path": "rehearsal-staging.sh",
+      "sha256": "7b87ee42e19059b5bdc324318f67a5b34ea96d7292556e2a421625985646ffef",
+      "bytes": 3067
     },
     {
       "path": "steps/010_motor_b2b_fase0_2_hardening_rls.sql",
