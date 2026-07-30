@@ -11,7 +11,7 @@ Documento **único e canônico** do gate. Substitui qualquer afirmação anterio
 | Autorização humana | recebida de forma ampla; **promoção continua bloqueada pelo gate técnico** |
 | Destino | `navfzbwgwzruipouyfnk` (produção) — intocado neste ciclo |
 | Origem certificada | `ikaauvsflpmamgxmkhoq` (staging) |
-| Timestamp UTC | `2026-07-30T14:53:57Z` (4ª tentativa — secret cadastrado, autenticação falhou; manifest reidratado) |
+| Timestamp UTC | `2026-07-30T21:54:00Z` (correções pós-4ª tentativa: manifest canônico restrito a 35 artefatos permanentes, marcador fail-closed, baseline comparável) |
 | Commit base | `0469a34138181ac227328cc1b562b2372cec05c9` |
 | Responsável | Renato S. Cunha |
 | Artefato | `restoration/promocao-b2b/` (28 passos + preflight + postflight + rollback + manifest) |
@@ -41,7 +41,7 @@ restoration/promocao-b2b/rehearsal-staging.sh             (novo)
 restoration/promocao-b2b/run-rehearsal-from-secret.sh    (novo, via temporária de uso único)
 restoration/promocao-b2b/cleanup-rehearsal-executor.sh   (novo, via temporária de uso único)
 restoration/promocao-b2b/apply-production.sh.BLOCKED      (novo, bloqueado)
-restoration/promocao-b2b/manifest.json                    (novo, com hashes, 37 arquivos)
+restoration/promocao-b2b/manifest.json                    (novo, com hashes, 35 artefatos permanentes)
 restoration/promocao-b2b/steps/*.sql                      (28 passos, novos)
 restoration/promocao-b2b/README.md                        (reescrito)
 docs/motor-b2b-fase7-certificacao-final.md                (veredito corrigido)
@@ -136,8 +136,8 @@ Inventário de credenciais do sandbox nesta tentativa: apenas `SUPABASE_URL`,
 — **nenhum** DSN, `PGHOST` ou service role. Nenhum canal capaz de DDL existe
 sem persistir (proibido pelo escopo). Gate permanece `BLOCKED`.
 
-Pós-2ª tentativa (somente leitura): `transaction_read_only=on`, 209 tabelas,
-719 funções, política `popt_select` **presente** (o `DROP` não teve efeito),
+Pós-2ª tentativa (somente leitura, via `information_schema.tables` — inclui
+views): `transaction_read_only=on`, 209 relações, 719 funções, política `popt_select` **presente** (o `DROP` não teve efeito),
 0 triggers desabilitados, 0 resíduo em `partner_orders`.
 
 **Caminho de desbloqueio — via backend temporária preparada (3ª tentativa,
@@ -188,9 +188,34 @@ Nenhum SQL foi executado; nada foi persistido em staging.
 
 Durante a preparação desta tentativa, foi corrigido no executor um bug de
 referência de coluna: a verificação de resíduo em `public.partner_orders` usava
-`notes`, mas a coluna real chama-se `observacoes`. O manifest foi reidratado
-para incluir os scripts `run-rehearsal-from-secret.sh` e
-`cleanup-rehearsal-executor.sh` (37 arquivos no total).
+`notes`, mas a coluna real chama-se `observacoes`.
+
+**Correções aplicadas após a 4ª tentativa (`2026-07-30T21:54:00Z`):**
+
+1. **Manifesto.** `run-rehearsal-from-secret.sh` e `cleanup-rehearsal-executor.sh`
+   são artefatos **temporários** (o cleanup os remove) e foram **retirados** de
+   `files[]`; incluí-los invalidaria o pacote após o ensaio. O manifest canônico
+   volta a cobrir exatamente **35 artefatos permanentes**, todos com hash
+   íntegro. Hashes dos scripts temporários, apenas como evidência deste ciclo e
+   fora do manifest:
+   - `run-rehearsal-from-secret.sh` → `d0c317b75d9a3a13eff6c2b9d5d722180123fbe9f17c3ac76175b7136af9f3e8`
+   - `cleanup-rehearsal-executor.sh` → `7dfb2b013bfeec5f078bdf5a856df2d9a3070d1ddd6468181d933edc8dae98cf`
+2. **Marcador fail-closed.** O executor não aceita mais "aviso e prosseguir" com
+   base apenas no texto do DSN. Contrato real validado em
+   `public._fiscal_staging_marker` (colunas `marker`, `project_ref`,
+   `created_at`): exige **exatamente uma linha**, `marker = 'STAGING'` e
+   `project_ref = 'ikaauvsflpmamgxmkhoq'`. Ausente, ambíguo, divergente ou
+   apontando `navfzbwgwzruipouyfnk` ⇒ `MARKER_ABORT` antes de qualquer DDL.
+3. **Baseline comparável.** Uma única consulta (`BASELINE_SQL`) captura base
+   tables (`pg_class.relkind='r'`), views/matviews, funções, policies, triggers
+   desabilitados e resíduos, executada **imediatamente antes** do ensaio e
+   novamente **após o ROLLBACK**; divergência aborta com exit 5. Métricas de
+   fontes diferentes nunca são comparadas entre si.
+4. **Robustez.** `ON_ERROR_STOP` no script e na sessão propaga falha de qualquer
+   statement, inclusive dentro de `\i`; o `trap` só declara estado após rodar a
+   pós-verificação read-only (ou informa `POST_VERIFICATION_UNAVAILABLE`).
+   DSN/senha nunca são impressos.
+5. **Escopo.** `.lovable/plan.md` restaurado conforme `c41ba285`.
 
 Acionamento após corrigir o secret (Project Settings → Secrets, nome exato
 `STAGING_DSN`, conexão direta ou pooler IPv4 do Supabase, **nunca** no chat):
@@ -207,7 +232,7 @@ restoration/promocao-b2b/cleanup-rehearsal-executor.sh  # remoção da via tempo
 |---|---|---|
 | `transaction_read_only` | `on` | `on` |
 | `server_version_num` | `170006` | ≥ 150000 |
-| Tabelas em `public` | `192` | inalterado |
+| Base tables em `public` (`pg_class.relkind='r'`) | `192` | inalterado |
 | Funções em `public` | `719` | inalterado |
 | `partner_order_idempotency.request_fingerprint` | presente | presente |
 | Pedidos resíduo (`GATE-RUNTIME%`/`FASE7-PROOF%`/`%REHEARSAL%`) | `0` | `0` |
@@ -215,10 +240,14 @@ restoration/promocao-b2b/cleanup-rehearsal-executor.sh  # remoção da via tempo
 | Triggers de usuário desabilitados | `0` | `0` |
 | `_motor_b2b_fase7_proofs` | ausente | ausente |
 
-Schema íntegro, zero resíduo, zero efeito colateral. A contagem de tabelas em
-`public` pode variar ligeiramente entre leituras (ex.: 192 vs 209) conforme
-tabelas temporárias de outras sessões; nenhuma tabela de negócio foi removida ou
-adicionada neste ciclo.
+Schema íntegro, zero resíduo, zero efeito colateral **para as métricas medidas
+com a mesma consulta**. A divergência `192 vs 209` registrada anteriormente
+**não** decorre de tabelas temporárias: `192` veio de `pg_tables` (apenas base
+tables) e `209` de `information_schema.tables` (inclui views e outros tipos de
+relação). Comparar as duas era inválido e a afirmação de "baseline inalterado"
+baseada nelas fica **retirada**. O baseline autoritativo passa a ser o par
+pre/post produzido pela consulta única do executor, capturado imediatamente
+antes do rehearsal e após o `ROLLBACK`.
 
 ### 4.3 Demais pendências
 
