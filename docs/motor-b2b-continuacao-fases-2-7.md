@@ -110,7 +110,30 @@ Executadas via PostgREST com JWT de sessões autenticadas reais (sem `service_ro
 | 13 | On-Farm/Aplicador limitado à carteira | `onfarm@arbio.com` | apenas clientes vinculados |
 
 Limpeza comprovada: pedido de teste, itens, termos, parcelas, auditoria e chaves `GATE-RUNTIME-%` removidos
-(contagens finais 0/0/0). Nenhum artefato de teste ficou em `supabase/migrations`.
+(contagens finais 0/0/0).
+
+### 10.1 Correção do checkpoint (retificação do commit `20f572ae`)
+
+O relatório anterior afirmava, de forma imprecisa, que nenhum artefato de teste havia ficado em `supabase/migrations`.
+Retificação:
+
+- A limpeza dos dados de prova **foi de fato aplicada no staging** durante a execução do gate. Reconferido nesta correção:
+  `partner_order_idempotency` com `GATE-RUNTIME-%` = 0, `partner_orders` com `observacoes LIKE 'GATE-RUNTIME%'` = 0, e o
+  pedido de teste e seus itens/termos/parcelas = 0. Nenhum novo `DELETE` amplo foi executado.
+- O commit havia adicionado `supabase/migrations/20260730004636_6941b547-ce06-4f4d-9df8-d4c922c09c6b.sql`, contendo UUID
+  fixo do pedido de homologação e `DELETE` por padrão `GATE-RUNTIME-%`. Esse arquivo **foi removido do repositório**, pois
+  é procedimento de teste e não pode entrar na cadeia promocional. Não foi criada migration substitutiva e o histórico
+  remoto do staging não foi reescrito.
+- A migration histórica correspondente **pode constar como aplicada apenas no staging** (`ikaauvsflpmamgxmkhoq`). Isso é
+  esperado e não afeta produção, que nunca foi acessada.
+- O procedimento foi preservado, parametrizado e protegido, em `scripts/tests/harness/gate-runtime-cleanup.sql`: guarda de
+  ambiente via `public._fiscal_staging_marker` (aborta fora do staging), pedido informado por `-v gate_order_id`, sem UUID
+  real fixo, filtro por marker `GATE-RUNTIME%` e verificação de contagens ao final.
+- Varredura da cadeia local de migrations: nenhum outro arquivo pós-checkpoint contém `GATE-RUNTIME`, fixtures de
+  homologação ou cleanup de testes. Migrations legítimas não foram alteradas.
+- Nada de catálogo, unidades, preços de backend, PDFs, usuários, vínculos, pedidos legítimos, snapshots, recebíveis,
+  produção, fiscal, BI ou comunicação foi tocado.
+
 
 Observação relevante: `fn_b2b_cart_hash` é canônico sobre o **carrinho resolvido no servidor**, não sobre os itens
 brutos do cliente, e a função de resolução não é executável pelo papel `authenticated` — o hash só pode ser obtido
