@@ -11,7 +11,13 @@
 DO $g$
 DECLARE v text;
 BEGIN
+  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
+    RAISE EXCEPTION 'HARNESS_GUARD: ambiente nao identificado';
+  END IF;
   SELECT project_ref INTO v FROM public._fiscal_staging_marker WHERE marker = 'STAGING' LIMIT 1;
+  IF v = 'navfzbwgwzruipouyfnk' THEN
+    RAISE EXCEPTION 'HARNESS_GUARD: ambiente de PRODUCAO — execucao proibida';
+  END IF;
   IF v IS DISTINCT FROM 'ikaauvsflpmamgxmkhoq' THEN
     RAISE EXCEPTION 'HARNESS_GUARD: somente staging ikaauvsflpmamgxmkhoq';
   END IF;
