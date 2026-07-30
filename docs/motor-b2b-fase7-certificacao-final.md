@@ -7,7 +7,7 @@
 
 ## VEREDITO (início)
 
-> 🟢 **STAGING CERTIFICADO**
+> 🟢 **STAGING CERTIFICADO** — inclui o gate obrigatório E2E de paridade (15/15 PASS, seção 6).
 > 🔴 **PROMOÇÃO BLOQUEADA** — 19 migrations fiscais legadas dependentes de `_fiscal_staging_marker` impedem um pacote promocional reprodutível.
 > ⚫ **PRODUÇÃO: NÃO APTO** (consequência direta do bloqueio de promoção).
 
@@ -159,6 +159,6 @@ o total snapshot; rejeição (pré-aprovação) e cancelamento (pós-aprovação
 
 ## VEREDITO (fim)
 
-> 🟢 **STAGING CERTIFICADO**
+> 🟢 **STAGING CERTIFICADO** — inclui o gate obrigatório E2E de paridade (15/15 PASS, seção 6).
 > 🔴 **PROMOÇÃO BLOQUEADA** — 19 migrations fiscais legadas dependentes de `_fiscal_staging_marker`.
 > ⚫ **PRODUÇÃO: NÃO APTO.**
