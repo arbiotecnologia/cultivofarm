@@ -5,13 +5,14 @@ Documento **único e canônico** do gate. Substitui qualquer afirmação anterio
 
 | Campo | Valor |
 |---|---|
-| Gate | **`STAGING_REHEARSAL_PASS (parcial)`** — asserções de estado 12/12 PASS; replay transacional pendente (§4) |
+| Gate | **`BLOCKED`** — ensaio transacional **não executável** pelo conector (erro real em §4.1); asserções de estado 12/12 PASS não substituem o replay |
+| `REHEARSAL_DONE` | **não emitido** |
 | Execução em produção | **`PRODUCTION_NOT_EXECUTED`** |
-| Autorização humana | **`HUMAN_AUTHORIZATION_PENDING`** |
+| Autorização humana | recebida de forma ampla; **promoção continua bloqueada pelo gate técnico** |
 | Destino | `navfzbwgwzruipouyfnk` (produção) — intocado neste ciclo |
 | Origem certificada | `ikaauvsflpmamgxmkhoq` (staging) |
-| Timestamp UTC | `2026-07-30T04:30:40Z` |
-| Commit base | `dacdc61f3674493d26cd1364fffc4d77e5047011` |
+| Timestamp UTC | `2026-07-30T04:39:20Z` |
+| Commit base | `2217226` |
 | Responsável | Renato S. Cunha |
 | Artefato | `restoration/promocao-b2b/` (28 passos + preflight + postflight + rollback + manifest) |
 
