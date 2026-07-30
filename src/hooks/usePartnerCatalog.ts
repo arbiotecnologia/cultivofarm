@@ -44,10 +44,18 @@ export interface CatalogItem {
   ficha_aprovada: boolean;
 }
 
-const cheio = (final: number, descPct: number): number => {
-  if (!Number.isFinite(final) || final <= 0) return 0;
+/** Preço "cheio" a partir do final + desconto. `null` in → `null` out (sob consulta). */
+const cheio = (final: number | null, descPct: number): number | null => {
+  if (final == null || !Number.isFinite(final) || final <= 0) return null;
   if (descPct <= 0.0001 || descPct >= 100) return final;
   return round2(final / (1 - descPct / 100));
+};
+
+/** Converte para número preservando ausência de preço como `null` (nunca 0). */
+const num = (v: unknown): number | null => {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 };
 
 export function usePartnerCatalog(partnerId: string | null | undefined) {
@@ -62,10 +70,10 @@ export function usePartnerCatalog(partnerId: string | null | undefined) {
       if (error) throw error;
       return (data ?? []).map((r: any) => {
         const tipo = (r.item_tipo ?? "produto") as CatalogItemTipo;
-        const precoFallback = Number(r.preco_parceiro ?? 0);
-        const valorDose = Number(r.valor_dose_brl ?? 0);
-        const valorLitro = Number(r.valor_litro_brl ?? (valorDose > 0 ? valorDose * 10 : 0));
-        const valorHaRaw = r.valor_ha_brl == null ? null : Number(r.valor_ha_brl);
+        const precoFallback = num(r.preco_parceiro);
+        const valorDose = num(r.valor_dose_brl);
+        const valorLitro = num(r.valor_litro_brl) ?? (valorDose != null && valorDose > 0 ? valorDose * 10 : null);
+        const valorHaRaw = num(r.valor_ha_brl);
         const unidade: UnidadePrecoPrincipal = resolverUnidadePreco({
           tipo,
           unidadeBackend: r.unidade_preco_principal,
@@ -81,7 +89,7 @@ export function usePartnerCatalog(partnerId: string | null | undefined) {
           nome: r.produto_nome,
           codigo: r.produto_codigo,
           descricao_curta: r.descricao_curta ?? null,
-          preco_tabela: Number(r.preco_tabela ?? 0),
+          preco_tabela: num(r.preco_tabela),
           desconto_percentual: descPct,
           preco_parceiro: precoFallback,
           valor_dose_brl: valorDose,
@@ -89,7 +97,7 @@ export function usePartnerCatalog(partnerId: string | null | undefined) {
           valor_ha_brl: valorHaRaw,
           preco_tabela_dose: cheio(valorDose, descPct),
           preco_tabela_litro: cheio(valorLitro, descPct),
-          preco_tabela_ha: valorHaRaw == null ? null : cheio(valorHaRaw, descPct),
+          preco_tabela_ha: cheio(valorHaRaw, descPct),
           unidade_preco_principal: unidade,
           resumo_curto: r.resumo_curto ?? null,
           explicacao_b2b: r.explicacao_b2b ?? null,
