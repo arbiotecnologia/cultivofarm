@@ -371,9 +371,11 @@ Deno.serve(async (req) => {
       const { count: lo } = await admin.from("partner_orders").select("id", { count: "exact", head: true }).in("partner_id", pids);
       const { count: lp } = await admin.from("partner_accounts").select("id", { count: "exact", head: true }).like("razao_social", "hp-%");
       const { count: lpr } = await admin.from("produtos").select("id", { count: "exact", head: true }).like("nome", "hp-%");
-      rec("Z.cleanup", (lo ?? 0) === 0 && (lp ?? 0) === 0 && (lpr ?? 0) === 0 && errs.length === 0,
+      const { count: lpl } = await admin.from("commercial_payment_plans").select("id", { count: "exact", head: true }).like("name", "hp-%");
+      rec("Z.cleanup", (lo ?? 0) === 0 && (lp ?? 0) === 0 && (lpr ?? 0) === 0 && (lpl ?? 0) === 0 && errs.length === 0,
         "zero residuais e zero erros",
-        `pedidos=${lo}, parceiros=${lp}, produtos=${lpr}, usuários removidos=${created.users.length}, erros=${errs.join(" | ") || "nenhum"}`);
+        `pedidos=${lo}, parceiros=${lp}, produtos=${lpr}, planos=${lpl}, usuários removidos=${created.users.length}, erros=${errs.join(" | ") || "nenhum"}`);
+
     } catch (e) {
       rec("Z.cleanup", false, "zero residuais", errMsg(e));
     }
