@@ -173,11 +173,18 @@ export function verifySinief49Types(source: string): Miss[] {
     for (const c of t.columns) checkColumn(row, c, t.name, misses);
     if (t.relationships) {
       for (const rel of t.relationships) {
+        // PostgREST emite uma entrada por relação alcançável pela MESMA FK
+        // (tabela base + views que expõem a coluna). O contrato exige que a
+        // relação canônica esteja presente entre elas — por isso varremos
+        // TODAS as ocorrências, e não apenas a primeira.
         const relRe = new RegExp(
           `columns:\\s*\\[\\s*${rel.columns.map((c) => `"${c}"`).join(",\\s*")}\\s*\\][\\s\\S]{0,300}?referencedRelation:\\s*"([^"]+)"[\\s\\S]{0,300}?referencedColumns:\\s*\\[\\s*${rel.referencedColumns.map((c) => `"${c}"`).join(",\\s*")}\\s*\\]`,
+          "g",
         );
-        const m = block.match(relRe);
-        if (!m || m[1] !== rel.referencedRelation) {
+        const found = [...block.matchAll(relRe)].some(
+          (m) => m[1] === rel.referencedRelation,
+        );
+        if (!found) {
           misses.push({
             kind: "relationship",
             detail: `${t.name} → columns=[${rel.columns.join(",")}] referencedRelation=${rel.referencedRelation} referencedColumns=[${rel.referencedColumns.join(",")}]`,
@@ -185,6 +192,7 @@ export function verifySinief49Types(source: string): Miss[] {
         }
       }
     }
+
   }
   return misses;
 }
