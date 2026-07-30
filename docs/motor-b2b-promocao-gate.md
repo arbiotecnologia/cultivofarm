@@ -205,7 +205,7 @@ restoration/promocao-b2b/cleanup-rehearsal-executor.sh  # remoção da via tempo
 |---|---|---|
 | `transaction_read_only` | `on` | `on` |
 | `server_version_num` | `170006` | ≥ 150000 |
-| Tabelas em `public` | `209` | inalterado |
+| Tabelas em `public` | `192` | inalterado |
 | Funções em `public` | `719` | inalterado |
 | `partner_order_idempotency.request_fingerprint` | presente | presente |
 | Pedidos resíduo (`GATE-RUNTIME%`/`FASE7-PROOF%`/`%REHEARSAL%`) | `0` | `0` |
