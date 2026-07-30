@@ -160,5 +160,8 @@ o total snapshot; rejeição (pré-aprovação) e cancelamento (pós-aprovação
 ## VEREDITO (fim)
 
 > 🟢 **STAGING CERTIFICADO** — inclui o gate obrigatório E2E de paridade (15/15 PASS, seção 6).
-> 🔴 **PROMOÇÃO BLOQUEADA** — 19 migrations fiscais legadas dependentes de `_fiscal_staging_marker`.
+> 🟢 **MIGRATIONS FISCAIS NORMALIZADAS** — as 19 migrations passaram a usar guarda portátil
+> (recusa apenas produção comprovada; banco novo replica sem erro). Pacote de promoção
+> documentado em `restoration/promocao-b2b/README.md`.
+> 🟡 **PROMOÇÃO LIBERADA TECNICAMENTE, AGUARDANDO AUTORIZAÇÃO HUMANA** — nada executado em produção.
 > ⚫ **PRODUÇÃO: NÃO APTO.**
