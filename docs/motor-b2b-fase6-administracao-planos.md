@@ -93,3 +93,96 @@ Execução dentro do limite autorizado (≤ 40 créditos). Fase 7 **não iniciad
 
 ## 11. Status
 **APTO COM RESSALVAS** — segurança, versionamento, backend autoritativo, auditoria, rollback e testes críticos comprovados; ressalvas restritas aos itens 9.1 e 9.2 (provas runtime de financeiro/gestor_comercial e do guard de plano no checkout isolado).
+
+---
+
+# 12. AUDITORIA CORRETIVA CONSOLIDADA (staging `ikaauvsflpmamgxmkhoq`)
+
+Ambiente validado antes de qualquer escrita (`_fiscal_staging_marker` = STAGING / `ikaauvsflpmamgxmkhoq`).
+Produção `navfzbwgwzruipouyfnk` **não acessada**. Nada publicado. Fase 7 **não iniciada**.
+
+## 12.1 Retificações de afirmações anteriores
+- O relatório anterior tratava o `GRANT SELECT` residual para `authenticated` como aceitável: **incorreto**. Foi removido.
+- Os helpers internos estavam executáveis por `authenticated`: **corrigido**.
+- O guard de vigência dependia exclusivamente de patch textual das RPCs: **substituído** por guard declarativo verificável por assinatura.
+- T2/T3 e T8 constavam UNVERIFIED/parciais: **fechados** nesta correção (C6, C7, C10).
+- O rollback constava apenas revisado: **exercitado** (C12).
+
+## 12.2 Policies e grants — antes / depois
+
+| Objeto | Antes | Depois |
+|---|---|---|
+| `commercial_payment_plans` · `authenticated` | `SELECT` | nenhum privilégio |
+| `commercial_payment_plans` · `anon` | nenhum | nenhum |
+| `commercial_payment_plans` · `service_role` | ALL | ALL |
+| Policies `cpp_select/insert/update/delete` | 4 policies permissivas (combinam por OR) | removidas (0 policies; RLS ativo e sem grants) |
+| `fn_b2b_can_admin_plans(uuid)` | EXECUTE p/ authenticated | REVOKE PUBLIC/anon/authenticated; EXECUTE só `service_role`/owner |
+| `fn_b2b_plan_selectable(uuid,timestamptz)` | EXECUTE p/ authenticated | idem |
+| `fn_b2b_plan_referenced(uuid)` | EXECUTE p/ authenticated | idem |
+| `rpc_b2b_list_selectable_payment_plans()` | inexistente | EXECUTE p/ `authenticated`+`service_role`, `anon` negado |
+
+## 12.3 Consumidores migrados
+- `src/hooks/useCommercialPaymentPlans.ts` — deixou de ler a tabela (`from('commercial_payment_plans')`) e passou a chamar `rpc_b2b_list_selectable_payment_plans()`. Consumido por `NovoPedido.tsx` (parceiro gestor) e `PaymentPlanSelector`.
+- `src/hooks/useCommercialPaymentPlansAdmin.ts` + `CommercialPaymentPlansPage.tsx` — já 100% via `rpc_admin_*`.
+- `MatrizPrecosTab.tsx` — consome `useAllCommercialPaymentPlans` → `rpc_admin_list_commercial_plans` (autorização explícita administrador/financeiro/gestor_comercial).
+- Nenhum outro consumidor de tabela bruta no `src/` ou em Edge Functions (`rg` sobre `commercial_payment_plans` retorna apenas tipos gerados e comentários).
+
+## 12.4 Guard robusto sem patch textual (C9)
+Nenhuma função foi alterada por `regexp_replace`/`replace` nesta correção. A migration corretiva contém um bloco **fail-fast por checksum**: aborta se o `md5(pg_get_functiondef())` das quatro assinaturas divergir do baseline auditado.
+
+| Assinatura exata | Checksum antes | Checksum depois | Após restore exercitado |
+|---|---|---|---|
+| `simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)` | `0bbd1c83652c1dd529192cf731708c02` | idem | idem |
+| `create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)` | `f4f0da921facdcc3ce34d648b0af483c` | idem | idem |
+| `convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)` | `b05e18a376861d60e7633fd1d21f2a06` | idem | idem |
+| `respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)` | `f8dee624c0b9cf12520b383f1a31f59a` | idem | idem |
+
+Não há overloads adicionais dessas funções (inventário por `regprocedure`). Toda a lógica canônica (preço, `cart_hash`, idempotência, crédito, snapshots, autorização, auditoria) permaneceu **bit a bit inalterada**.
+
+Guard adicional, declarativo e verificável por assinatura:
+- `public.tg_b2b_enforce_plan_selectable()` (`3477a02b069c20ae3e1c832ecca6b1e7`)
+- `trg_b2b_plan_selectable_orders` em `partner_orders` (BEFORE INSERT OR UPDATE OF `payment_plan_id`)
+- `trg_b2b_plan_selectable_terms` em `partner_order_payment_terms`
+Dispara somente quando o plano muda, preservando pedidos históricos com planos hoje expirados.
+
+## 12.5 Identidades sintéticas temporárias (D)
+Nenhuma senha ou papel de usuário legítimo foi solicitado ou alterado. Foram criadas duas contas descartáveis (`probe.fin.f6@arbio.invalid` → `financeiro`; `probe.com.f6@arbio.invalid` → `gestor_comercial`) com senhas aleatórias usadas apenas durante o harness, com login real (JWT via `grant_type=password`) e removidas ao final (usuários, identidades, sessões, refresh tokens, papéis, perfis).
+
+## 12.6 Matriz C1–C16
+
+| # | Prova | Resultado |
+|---|---|---|
+| C1 | Tabela bruta negada — `anon` 401 `42501`; `financeiro` 403 `42501`; `anon` na RPC operacional 401 | **PASS** |
+| C2 | Admin/financeiro operam pelas RPCs sem SELECT direto (`rpc_admin_list_commercial_plans` 200) | **PASS** |
+| C3 | `rpc_admin_list_commercial_plans` (MatrizPrecosTab) e `rpc_b2b_list_selectable_payment_plans` 200 para perfis internos | **PASS** |
+| C4 | Parceiro gestor: apenas RPC operacional com planos selecionáveis; sem CRUD | **PASS** |
+| C5 | `parceiro_b2b_tecnico`/`cliente_produtor`: `not_authorized` na RPC operacional e nas admin; sem juros/descontos/parcelas | **PASS** |
+| C6 | `financeiro` sintético lista e cria plano via RPC (create → 200) | **PASS** |
+| C7 | `gestor_comercial` sintético lista e desativa plano (204) | **PASS** |
+| C8 | Helpers internos: `permission denied for function fn_b2b_can_admin_plans`; `has_function_privilege(authenticated)` = false nas 3 assinaturas | **PASS** |
+| C9 | Guard declarativo presente nas 2 assinaturas de trigger + checksums registrados (12.4) | **PASS** |
+| C10 | Pedido com plano inativo → `plan_not_selectable`; `orders=0`, `terms=0`, sem schedule/recebível/idempotency | **PASS** |
+| C11 | Residuais: `planos_probe=0`, `users_probe=0`, `pedidos_probe=0` | **PASS** |
+| C12 | Rollback exercitado em transação revertida: `sel=t, policies=4, helper_exec=t, rpc_presente=f, triggers=0` e revertido — estado aplicado preservado (`sel=f, policies=0, helper_x=f, rpc_x=t, triggers=2`) | **PASS** |
+| C13 | Históricos intactos: `planos=8`, `pedidos=0`, `terms=0`, nenhuma coluna de versionamento perdida | **PASS** |
+| C14 | `tsgo --noEmit` sem erros | **PASS** |
+| C15 | `vitest src/test/motorB2BFase6Planos.test.ts` 7/7; suíte completa 2556/2563 (3 falhas pré-existentes/flaky sob carga — `portalAcompanhamentoProdutor`, `portalParceiroSimulador.contract`, `sinief49/staging/verifier`; as duas primeiras passam isoladas) | **PASS com ressalva** |
+| C16 | `npm run build` OK (26.9s) | **PASS** |
+
+## 12.7 Rollback (F)
+`restoration/motor-b2b-fase6-correcao/restore.sql` é **não destrutivo por padrão**: restaura ACLs/policies e remove apenas os objetos criados pela correção. Não apaga colunas de versionamento, planos, versões, pedidos, snapshots ou auditoria. A remoção destrutiva de colunas permanece isolada em `restoration/motor-b2b-fase6/restore.sql` (etapas 4), a ser usada apenas deliberadamente.
+`restoration/motor-b2b-fase6-correcao/verify.sql` prova estado aplicado e, reexecutado dentro de `BEGIN; \i restore.sql; ... ROLLBACK;`, prova o estado restaurável.
+
+## 12.8 Promoção futura
+A migration corretiva mantém a guarda de staging por `_fiscal_staging_marker`. Para promover: gerar cópia com o bloco de guarda parametrizado pelo `project_ref` de destino (ou removido em pipeline com aprovação explícita), reexecutar o bloco fail-fast de checksums contra o baseline do destino e rodar `verify.sql`. Nenhum acesso a produção foi feito nesta execução.
+
+## 12.9 Arquivos e fixtures
+- `src/hooks/useCommercialPaymentPlans.ts` (migrado para RPC)
+- `restoration/motor-b2b-fase6-correcao/restore.sql`, `verify.sql`
+- Migrations corretivas aplicadas apenas no staging; **nenhum UUID real, fixture, usuário ou cleanup em `supabase/migrations`** (harness executado fora da cadeia).
+
+## 12.10 Créditos
+Correção executada dentro do limite autorizado (≤ 25 créditos).
+
+## 12.11 Status final
+**APTO PARA FASE 7** — acesso bruto fechado, helpers internos fechados, guard de vigência robusto e verificável por assinatura/checksum, provas runtime com sessões reais para financeiro e gestor_comercial, checkout inválido comprovado, rollback exercitado e fixtures zeradas. Fase 7 não iniciada.
