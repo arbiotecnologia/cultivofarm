@@ -9447,6 +9447,7 @@ export type Database = {
           idempotency_key: string
           order_id: string | null
           partner_id: string
+          request_fingerprint: string | null
           result_snapshot: Json
           updated_at: string
         }
@@ -9458,6 +9459,7 @@ export type Database = {
           idempotency_key: string
           order_id?: string | null
           partner_id: string
+          request_fingerprint?: string | null
           result_snapshot?: Json
           updated_at?: string
         }
@@ -9469,6 +9471,7 @@ export type Database = {
           idempotency_key?: string
           order_id?: string | null
           partner_id?: string
+          request_fingerprint?: string | null
           result_snapshot?: Json
           updated_at?: string
         }
