@@ -1,0 +1,494 @@
+{
+  "package": "promocao-b2b",
+  "version": "1.0.0",
+  "generated_at_utc": "2026-07-30T04:29:53Z",
+  "repo_commit_at_generation": "5cf8c69fc88785944b474c9f04f39177b7aa1bb2",
+  "source_certified_ref": "ikaauvsflpmamgxmkhoq",
+  "target_project_ref": "navfzbwgwzruipouyfnk",
+  "execution_status": "PRODUCTION_NOT_EXECUTED",
+  "human_authorization": {
+    "required": true,
+    "status": "HUMAN_AUTHORIZATION_PENDING",
+    "responsible": "Renato S. Cunha",
+    "granted_by": null,
+    "granted_at_utc": null,
+    "text": null
+  },
+  "baseline_expected": {
+    "server_version_num_min": 150000,
+    "extensions": [
+      "pgcrypto"
+    ],
+    "tables": [
+      "partner_accounts",
+      "partner_orders",
+      "partner_order_items",
+      "partner_order_payment_terms",
+      "partner_order_payment_schedule",
+      "partner_simulations",
+      "partner_simulation_items",
+      "partner_product_prices",
+      "commercial_payment_plans",
+      "accounts_receivable",
+      "accounts_receivable_installments",
+      "user_roles",
+      "produtos",
+      "microrganismos"
+    ],
+    "functions": [
+      "has_role(uuid, app_role)"
+    ]
+  },
+  "order": [
+    "000_preflight.sql",
+    "steps/010_motor_b2b_fase0_2_hardening_rls.sql",
+    "steps/020_motor_b2b_fase0_2_reconciliacao.sql",
+    "steps/030_motor_b2b_fase0_2_drop_evidence_table.sql",
+    "steps/040_motor_b2b_fase1_fundacao_precos_credito.sql",
+    "steps/050_3b30cdd3_2b18_4831_8210_95d729d74265.sql",
+    "steps/060_2f545695_8315_4416_b6a0_1f167380021b.sql",
+    "steps/070_96d32366_672c_4efa_a43f_0b3a39965deb.sql",
+    "steps/080_74bc95b7_7040_483e_a176_ac8a833e6b62.sql",
+    "steps/090_db21bf90_b292_4783_a40e_477128d15ee2.sql",
+    "steps/100_45b5a40f_58dd_414e_b17a_461d0a1fad07.sql",
+    "steps/110_4213a913_8f8f_4ed0_97a8_3f341812235f.sql",
+    "steps/120_1c2d1541_f796_4d9f_8d80_be06a07e2c01.sql",
+    "steps/130_76ce073e_6c11_4012_9560_b2b61c91b97d.sql",
+    "steps/140_6bb576f0_afd2_42bd_9432_62947e0c6574.sql",
+    "steps/150_ebf77872_12e0_4fda_b46d_39126d054563.sql",
+    "steps/160_ea66238b_c7b6_473b_81c0_59a4efa693af.sql",
+    "steps/170_27369904_b184_4209_81fe_d15df392fc9b.sql",
+    "steps/180_0e6b78a5_0b6c_49ec_a2cf_74be2f62905e.sql",
+    "steps/190_2f7835f8_3e7c_4331_a0c9_24348bf1ed0f.sql",
+    "steps/200_350bd365_63f1_49e2_88fd_1ac51a305cef.sql",
+    "steps/210_2399d6cb_5b57_46d1_a867_d4403b908e0c.sql",
+    "steps/220_73168e1d_e4f1_4236_a69d_1d231afb8550.sql",
+    "steps/230_6e7da193_6fa5_4e58_9237_5f3291704255.sql",
+    "steps/240_7fec38f4_af41_43c6_86f9_1765cd508292.sql",
+    "steps/250_0e732228_c200_4923_92c5_8c3907e01879.sql",
+    "steps/255_partner_order_idempotency_request_fingerprint.sql",
+    "steps/260_3fd8c89d_3e32_485c_bc81_89c70db1c853.sql",
+    "steps/270_5e3b16e2_8168_4c28_98a2_472908f8ecae.sql",
+    "090_postflight.sql"
+  ],
+  "rollback": "099_rollback_forward_safe.sql (forward-safe) + PITR para dados",
+  "rehearsal": "rehearsal-staging.sh (staging ikaauvsflpmamgxmkhoq, BEGIN..ROLLBACK, dupla passagem p/ idempotência)",
+  "apply_command_blocked": "apply-production.sh.BLOCKED (renomear manualmente; nunca executar automaticamente)",
+  "excluded_from_package": [
+    {
+      "file": "20260729004013_...sql",
+      "reason": "drill de rollback com substituição textual de função (não determinístico)"
+    },
+    {
+      "file": "20260729004107_...sql",
+      "reason": "cria tabela de evidência _motor_b2b_pre_phase1_snapshot (artefato de teste)"
+    },
+    {
+      "file": "20260730032921_...sql",
+      "reason": "patch textual via pg_get_functiondef; superseded por 260 (definição explícita)"
+    }
+  ],
+  "steps": [
+    {
+      "order": 10,
+      "file": "steps/010_motor_b2b_fase0_2_hardening_rls.sql",
+      "description": "RLS/grants base do motor B2B",
+      "source_migration": "supabase/migrations/20260729010220_motor_b2b_fase0_2_hardening_rls.sql",
+      "source_sha256": "3e1cb986393cd41b364b5ef65c30b4452ca131771f4d915ca25fb4a46d51ba61",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 20,
+      "file": "steps/020_motor_b2b_fase0_2_reconciliacao.sql",
+      "description": "Reconciliacao de policies B2B",
+      "source_migration": "supabase/migrations/20260729014307_motor_b2b_fase0_2_reconciliacao.sql",
+      "source_sha256": "67781b37fd59141a51fd5017584d00ff92cf237f01280f7fcdc7f0abdd0f7b2d",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 30,
+      "file": "steps/030_motor_b2b_fase0_2_drop_evidence_table.sql",
+      "description": "Drop idempotente de tabela de evidencia",
+      "source_migration": "supabase/migrations/20260729015203_motor_b2b_fase0_2_drop_evidence_table.sql",
+      "source_sha256": "7c717be73595fc60de3103d5d5f19f12281aa4018dec89a0ba0ece8b2ca391b3",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 40,
+      "file": "steps/040_motor_b2b_fase1_fundacao_precos_credito.sql",
+      "description": "Fundacao: precos e exposicao de credito",
+      "source_migration": "supabase/migrations/20260729021225_motor_b2b_fase1_fundacao_precos_credito.sql",
+      "source_sha256": "8f74c70fdbf136c97aa2ab98fdb4c181dc5535ad748259b736ebd83b7464fcd0",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 50,
+      "file": "steps/050_3b30cdd3_2b18_4831_8210_95d729d74265.sql",
+      "description": "Motor de precos - correcoes",
+      "source_migration": "supabase/migrations/20260729023322_3b30cdd3-2b18-4831-8210-95d729d74265.sql",
+      "source_sha256": "e12b6c639223d0c0583c7c4e8b7a951b1f96f499d3bf101afa47edd34e3ad8b2",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 60,
+      "file": "steps/060_2f545695_8315_4416_b6a0_1f167380021b.sql",
+      "description": "Resolucao canonica de carrinho/preco",
+      "source_migration": "supabase/migrations/20260729023718_2f545695-8315-4416-b6a0-1f167380021b.sql",
+      "source_sha256": "587a4fa165413e0e5fdebcb0c5f4364ab6eecafac18cf862a35b2503ebcec44f",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 70,
+      "file": "steps/070_96d32366_672c_4efa_a43f_0b3a39965deb.sql",
+      "description": "Hardening de simulacao/pedido",
+      "source_migration": "supabase/migrations/20260729023833_96d32366-672c-4efa-a43f-0b3a39965deb.sql",
+      "source_sha256": "41e707ebe971028faac8ab92327297c50a7bcd944780cfc659fb27c9b6bcfd03",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 80,
+      "file": "steps/080_74bc95b7_7040_483e_a176_ac8a833e6b62.sql",
+      "description": "Ajustes de conversao simulacao->pedido",
+      "source_migration": "supabase/migrations/20260729024657_74bc95b7-7040-483e-a176-ac8a833e6b62.sql",
+      "source_sha256": "8e824dd823f6d4e23906edd293f4511a7ed3a55983e456641ee00c76bb53d154",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 90,
+      "file": "steps/090_db21bf90_b292_4783_a40e_477128d15ee2.sql",
+      "description": "Hash de carrinho e validacao",
+      "source_migration": "supabase/migrations/20260729031837_db21bf90-b292-4783-a40e-477128d15ee2.sql",
+      "source_sha256": "a37144b0597ec0e79d704db17103c83c1741c4e41bce9e5c0ed4e571a158c089",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 100,
+      "file": "steps/100_45b5a40f_58dd_414e_b17a_461d0a1fad07.sql",
+      "description": "Idempotencia de checkout",
+      "source_migration": "supabase/migrations/20260729032021_45b5a40f-58dd-414e-b17a-461d0a1fad07.sql",
+      "source_sha256": "4a4da5b9a37d7753bac9c58e7755f4b9eb698156fd5b9cae39574ae009306325",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 110,
+      "file": "steps/110_4213a913_8f8f_4ed0_97a8_3f341812235f.sql",
+      "description": "Idempotencia - complemento",
+      "source_migration": "supabase/migrations/20260729032141_4213a913-8f8f-4ed0-97a8-3f341812235f.sql",
+      "source_sha256": "f3029c6486149e84be91f2f30807b9911e9b108bea09c41c1dc5a7a9c0ac55d7",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 120,
+      "file": "steps/120_1c2d1541_f796_4d9f_8d80_be06a07e2c01.sql",
+      "description": "Consolidacao Fase 1 do motor comercial",
+      "source_migration": "supabase/migrations/20260729034858_1c2d1541-f796-4d9f-8d80-be06a07e2c01.sql",
+      "source_sha256": "0f04f5701181e5feca1f3d5fb1daf602ec6265950faf7abfc7b6b0bb89a9eba4",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 130,
+      "file": "steps/130_76ce073e_6c11_4012_9560_b2b61c91b97d.sql",
+      "description": "Grants de partner_order_idempotency",
+      "source_migration": "supabase/migrations/20260729034935_76ce073e-6c11-4012-9560-b2b61c91b97d.sql",
+      "source_sha256": "b75411be6af422f08d5a30c836ff62322e19067118f578f2e806eb6a6230ce38",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 140,
+      "file": "steps/140_6bb576f0_afd2_42bd_9432_62947e0c6574.sql",
+      "description": "Leitura cadastral para perfis internos",
+      "source_migration": "supabase/migrations/20260729193425_6bb576f0-afd2-42bd-9432-62947e0c6574.sql",
+      "source_sha256": "ecc30d495eda1c50bad866844385ab40bf9260f2080782bbab3f3751bf150ecb",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 150,
+      "file": "steps/150_ebf77872_12e0_4fda_b46d_39126d054563.sql",
+      "description": "Catalogo tecnico B2B",
+      "source_migration": "supabase/migrations/20260729201118_ebf77872-12e0-4fda-b46d-39126d054563.sql",
+      "source_sha256": "41a589ae93afac8804e12ec09bf83527623b728d56dbeaf795ee1d2142d89e1a",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 160,
+      "file": "steps/160_ea66238b_c7b6_473b_81c0_59a4efa693af.sql",
+      "description": "Catalogo B2B do parceiro",
+      "source_migration": "supabase/migrations/20260729202644_ea66238b-c7b6-473b-81c0-59a4efa693af.sql",
+      "source_sha256": "8cd73023e1b2586a60d62de95306004feb1b38d18e0fbdf06d511890c7f0448b",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 170,
+      "file": "steps/170_27369904_b184_4209_81fe_d15df392fc9b.sql",
+      "description": "Ajustes de catalogo/precificacao",
+      "source_migration": "supabase/migrations/20260729230131_27369904-b184-4209-81fe-d15df392fc9b.sql",
+      "source_sha256": "c8a10c036a56cf68115ec27a944cc4cd439347268ee3aa2a05be1c84f6428781",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 180,
+      "file": "steps/180_0e6b78a5_0b6c_49ec_a2cf_74be2f62905e.sql",
+      "description": "Fase 6: administracao segura de planos comerciais",
+      "source_migration": "supabase/migrations/20260730014752_0e6b78a5-0b6c-49ec-a2cf-74be2f62905e.sql",
+      "source_sha256": "c6b0ddcb5e5469476682c206916abe6620c3a9ec27220e9e7aa3161abe8fea72",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 190,
+      "file": "steps/190_2f7835f8_3e7c_4331_a0c9_24348bf1ed0f.sql",
+      "description": "Guardas de plano e credito",
+      "source_migration": "supabase/migrations/20260730020619_2f7835f8-3e7c-4331-a0c9-24348bf1ed0f.sql",
+      "source_sha256": "bec4cfe8ab3cfd6814f33542780b1b332070fad0134cd780f7c6c94e3f137409",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 200,
+      "file": "steps/200_350bd365_63f1_49e2_88fd_1ac51a305cef.sql",
+      "description": "Revogacoes de planos comerciais",
+      "source_migration": "supabase/migrations/20260730020828_350bd365-63f1-49e2-88fd-1ac51a305cef.sql",
+      "source_sha256": "467ec8602d78048eafa15f2a8154a52331fa9deca5fc801e32f005446ad8a1d7",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 210,
+      "file": "steps/210_2399d6cb_5b57_46d1_a867_d4403b908e0c.sql",
+      "description": "Plano padrao - correcao",
+      "source_migration": "supabase/migrations/20260730021620_2399d6cb-5b57-46d1-a867-d4403b908e0c.sql",
+      "source_sha256": "f784cc385275751cf08ad21444751be0e5fcc89bb6dd081a0d0e123a36ca9aab",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 220,
+      "file": "steps/220_73168e1d_e4f1_4236_a69d_1d231afb8550.sql",
+      "description": "Hardening de vitrine/preco base",
+      "source_migration": "supabase/migrations/20260730024842_73168e1d-e4f1-4236-a69d-1d231afb8550.sql",
+      "source_sha256": "ae45cb4ebd492b0e1895ef67612e3fb95373ae8b6f166d40b7ad7e47084436df",
+      "guard_blocks_removed": 1
+    },
+    {
+      "order": 230,
+      "file": "steps/230_6e7da193_6fa5_4e58_9237_5f3291704255.sql",
+      "description": "Drop idempotente da tabela de provas",
+      "source_migration": "supabase/migrations/20260730030920_6e7da193-6fa5-4e58-9237-5f3291704255.sql",
+      "source_sha256": "562e001d3cd2ffd32d90f8c191cfe967a91da32c7cd05e066c7b52df7fb105cd",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 240,
+      "file": "steps/240_7fec38f4_af41_43c6_86f9_1765cd508292.sql",
+      "description": "Revogacao de EXECUTE publico em trigger de auditoria",
+      "source_migration": "supabase/migrations/20260730031821_7fec38f4-af41-43c6-86f9-1765cd508292.sql",
+      "source_sha256": "1e959647395da0d73ec1c0e7022e3906b345f17e27bec8eb1ed4a96e22dee76e",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 250,
+      "file": "steps/250_0e732228_c200_4923_92c5_8c3907e01879.sql",
+      "description": "Guarda de delete de vinculo financeiro",
+      "source_migration": "supabase/migrations/20260730034130_0e732228-c200-4923-92c5-8c3907e01879.sql",
+      "source_sha256": "11e91c0c210948f1bf1b45269540205b3b9fa8344d529af657737bb23b9990f2",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 255,
+      "file": "steps/255_partner_order_idempotency_request_fingerprint.sql",
+      "description": "Coluna request_fingerprint (parte estrutural de 20260730032921; patch textual descartado)",
+      "source_migration": "supabase/migrations/20260730032921_4834c360-9df6-4c14-9e78-51ae42c038a8.sql (somente ALTER TABLE)",
+      "source_sha256": "dba016b2aec06e0b473905acf13ba9dd54e83d5473a41917614dfdf500640520",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 260,
+      "file": "steps/260_3fd8c89d_3e32_485c_bc81_89c70db1c853.sql",
+      "description": "create_partner_order_secure v2 (reqfp_v2) - definicao explicita",
+      "source_migration": "supabase/migrations/20260730034936_3fd8c89d-3e32-485c-bc81-89c70db1c853.sql",
+      "source_sha256": "f9a17d65f34274d9ad1eb202c6a4c40ddc226a5a1216d4dd97afcf96edc282c6",
+      "guard_blocks_removed": 0
+    },
+    {
+      "order": 270,
+      "file": "steps/270_5e3b16e2_8168_4c28_98a2_472908f8ecae.sql",
+      "description": "Gates server-side: recebivel pos-aprovacao e transicoes de status",
+      "source_migration": "supabase/migrations/20260730035515_5e3b16e2-8168-4c28-98a2-472908f8ecae.sql",
+      "source_sha256": "ec2d59a8b4972b63fda3866c9278ecbf35a9899399c1e8dd326b40f4fb365715",
+      "guard_blocks_removed": 0
+    }
+  ],
+  "files": [
+    {
+      "path": "../../docs/motor-b2b-promocao-gate.md",
+      "sha256": "a8150285a780287fb3c015a62f3fbc77216ae6ad65cd3273a17efdd4a6109128",
+      "bytes": 7262
+    },
+    {
+      "path": "000_preflight.sql",
+      "sha256": "b50c0069958c9c39c1207917b11e55b27ecfa2d2e4b4cd17a52a73b6e41b273b",
+      "bytes": 7809
+    },
+    {
+      "path": "090_postflight.sql",
+      "sha256": "18b8d76d928119f7cb17c1ded6e7ef7eae8bc5035931269a32405160d9fb252a",
+      "bytes": 6453
+    },
+    {
+      "path": "099_rollback_forward_safe.sql",
+      "sha256": "6f89957c72cdcb2384e74c2438d759e0f1be05d42537357304682c3d6239840d",
+      "bytes": 3093
+    },
+    {
+      "path": "README.md",
+      "sha256": "24e4e568b0016cde52eaf9912a7e95fecd70af75d7e0f44ad8cd82f1ffee6e5f",
+      "bytes": 7261
+    },
+    {
+      "path": "apply-production.sh.BLOCKED",
+      "sha256": "6f520b483a5dab2158d4fc67fa0e1b012b3531238548646a295a1c847dc7d166",
+      "bytes": 2944
+    },
+    {
+      "path": "rehearsal-staging.sh",
+      "sha256": "7b87ee42e19059b5bdc324318f67a5b34ea96d7292556e2a421625985646ffef",
+      "bytes": 3067
+    },
+    {
+      "path": "steps/010_motor_b2b_fase0_2_hardening_rls.sql",
+      "sha256": "b5a7800ec542bcd41503e7a35a9262affbddcf77b3b95ed4980e2c7bf2ec9335",
+      "bytes": 5070
+    },
+    {
+      "path": "steps/020_motor_b2b_fase0_2_reconciliacao.sql",
+      "sha256": "98dbb5c1d273521e31c4467d63940c00b71223e41a7c411b8938bbb25b83e8e7",
+      "bytes": 5177
+    },
+    {
+      "path": "steps/030_motor_b2b_fase0_2_drop_evidence_table.sql",
+      "sha256": "16cf2d7d016ea9437283a28f6c768d54abdd9fd6b903ab787b3cb9f87873f512",
+      "bytes": 572
+    },
+    {
+      "path": "steps/040_motor_b2b_fase1_fundacao_precos_credito.sql",
+      "sha256": "868bb71ca07f888860f404a30c483fe952ccee5c1bc8340f36cf921e21fad8d1",
+      "bytes": 27269
+    },
+    {
+      "path": "steps/050_3b30cdd3_2b18_4831_8210_95d729d74265.sql",
+      "sha256": "5fb98b191268bfb6cfca6dfeb90b5554c179a798ac7e69110e5c775441337d71",
+      "bytes": 6056
+    },
+    {
+      "path": "steps/060_2f545695_8315_4416_b6a0_1f167380021b.sql",
+      "sha256": "8ed423be2e90d755c08ea7e746ba6f2f52c864cfc06a2adccafca48c59e18178",
+      "bytes": 42013
+    },
+    {
+      "path": "steps/070_96d32366_672c_4efa_a43f_0b3a39965deb.sql",
+      "sha256": "9604d63f6fa2ebabc90ce6887a04344911ac9c51c13a439b38ae4deca209f4c2",
+      "bytes": 11160
+    },
+    {
+      "path": "steps/080_74bc95b7_7040_483e_a176_ac8a833e6b62.sql",
+      "sha256": "c80cc5947719d28b4802389756e9b609c8ec7c89cfd4b96cf471235f019f0137",
+      "bytes": 10374
+    },
+    {
+      "path": "steps/090_db21bf90_b292_4783_a40e_477128d15ee2.sql",
+      "sha256": "6938e1eadb90ee78cddaa4cd033147bb9ea932a3d8b65b36686aa6ced029794a",
+      "bytes": 7698
+    },
+    {
+      "path": "steps/100_45b5a40f_58dd_414e_b17a_461d0a1fad07.sql",
+      "sha256": "3ca8efeee2f015a83262bd1c9196095007eeb1107b6ffa9c93adb867b7bf8ad1",
+      "bytes": 19607
+    },
+    {
+      "path": "steps/110_4213a913_8f8f_4ed0_97a8_3f341812235f.sql",
+      "sha256": "2273f270f51a7e12cb89b1d4128d467aaa6e1d357cd7cd8f0687696c2c22e18f",
+      "bytes": 16369
+    },
+    {
+      "path": "steps/120_1c2d1541_f796_4d9f_8d80_be06a07e2c01.sql",
+      "sha256": "8722918d70bdef9ebe8f48d6ddf4ec7be5102faa9604131f036495a652449aba",
+      "bytes": 47394
+    },
+    {
+      "path": "steps/130_76ce073e_6c11_4012_9560_b2b61c91b97d.sql",
+      "sha256": "02c558abcaf9a81017cb4233bb53e1794021f0ea084774c33375c19736db38ea",
+      "bytes": 875
+    },
+    {
+      "path": "steps/140_6bb576f0_afd2_42bd_9432_62947e0c6574.sql",
+      "sha256": "fc18159a76274b8c37e843d7c5950f5a6eb47642fe505d2e3756568cbc4433da",
+      "bytes": 6864
+    },
+    {
+      "path": "steps/150_ebf77872_12e0_4fda_b46d_39126d054563.sql",
+      "sha256": "7fe13b2cfe44cd803a5e7e632ec5d7e0f44bcd653a50e591a5382b03c9648def",
+      "bytes": 4661
+    },
+    {
+      "path": "steps/160_ea66238b_c7b6_473b_81c0_59a4efa693af.sql",
+      "sha256": "1e35250c315d8cd8be5c1616daf9eb4a2a3260aa8c90828c05c785b10f7a3b56",
+      "bytes": 7476
+    },
+    {
+      "path": "steps/170_27369904_b184_4209_81fe_d15df392fc9b.sql",
+      "sha256": "c9d633b109f8ded4e27dd5044c078bdde991807f3b9119ab127fbf4a27bbb688",
+      "bytes": 21075
+    },
+    {
+      "path": "steps/180_0e6b78a5_0b6c_49ec_a2cf_74be2f62905e.sql",
+      "sha256": "9756a5981b629906e5402b803a7961eaf7af20e32ee4264e94ef29fbabb74fcb",
+      "bytes": 22250
+    },
+    {
+      "path": "steps/190_2f7835f8_3e7c_4331_a0c9_24348bf1ed0f.sql",
+      "sha256": "40d5614f83b66ea21563ef63f740c837a95d94847f6e402c20a5802a75a4ec3a",
+      "bytes": 5656
+    },
+    {
+      "path": "steps/200_350bd365_63f1_49e2_88fd_1ac51a305cef.sql",
+      "sha256": "e227cd0c59156861b48711feea9848e37b85cdf1c33218ca015c930737309c01",
+      "bytes": 2405
+    },
+    {
+      "path": "steps/210_2399d6cb_5b57_46d1_a867_d4403b908e0c.sql",
+      "sha256": "4c8b4aa6323f6c0925ccbca2659dda1972ca0ed0754cf9018dd6a66985987200",
+      "bytes": 5621
+    },
+    {
+      "path": "steps/220_73168e1d_e4f1_4236_a69d_1d231afb8550.sql",
+      "sha256": "069efc6630a3290790d9b0e056f681a8733674a9c9d1cafa63ffcf049e1e1eef",
+      "bytes": 8670
+    },
+    {
+      "path": "steps/230_6e7da193_6fa5_4e58_9237_5f3291704255.sql",
+      "sha256": "3848ca7374cfcbef6b5ce93d1fac59b910d319a76836364f7d701d06011a5054",
+      "bytes": 801
+    },
+    {
+      "path": "steps/240_7fec38f4_af41_43c6_86f9_1765cd508292.sql",
+      "sha256": "13fd9058d564fdc619bf56a87344b6a5fa8debd27becf472015d5f8291021c92",
+      "bytes": 1129
+    },
+    {
+      "path": "steps/250_0e732228_c200_4923_92c5_8c3907e01879.sql",
+      "sha256": "0366e41633a012eae6e309560a4afae3c304cb1d5641faf5ccb9016bfc749c23",
+      "bytes": 1065
+    },
+    {
+      "path": "steps/255_partner_order_idempotency_request_fingerprint.sql",
+      "sha256": "0478a1cb237c7913273a241bcd45f02a452b84b12e402aac99a94d4343e7d6f5",
+      "bytes": 990
+    },
+    {
+      "path": "steps/260_3fd8c89d_3e32_485c_bc81_89c70db1c853.sql",
+      "sha256": "650bb82e8d7d34f0ddc4f17d952d4e19e7bce9c9d4d6be0c9bf474b469008826",
+      "bytes": 22197
+    },
+    {
+      "path": "steps/270_5e3b16e2_8168_4c28_98a2_472908f8ecae.sql",
+      "sha256": "68c29a2f0f984c3a39827641b2fbf13a54382d29dca14015e865dfddbc6dd7cf",
+      "bytes": 5434
+    }
+  ]
+}

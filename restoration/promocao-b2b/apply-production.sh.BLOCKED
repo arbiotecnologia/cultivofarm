@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# =====================================================================
+# APLICAÇÃO EM PRODUÇÃO — navfzbwgwzruipouyfnk
+# ESTE ARQUIVO ESTÁ INTENCIONALMENTE **BLOQUEADO**.
+#
+#  * Extensão .BLOCKED e sem bit de execução: não roda por engano.
+#  * Só deve ser renomeado para apply-production.sh por um humano autorizado,
+#    na janela aprovada, com PITR confirmado.
+#  * NENHUM agente automatizado deve executá-lo.
+#
+# Ordem: 000_preflight.sql -> steps/* (ordem do manifest) -> 090_postflight.sql
+# Tudo em UMA transação (--single-transaction): qualquer falha reverte tudo.
+# =====================================================================
+set -euo pipefail
+
+PROD_REF="navfzbwgwzruipouyfnk"
+STG_REF="ikaauvsflpmamgxmkhoq"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+: "${PROD_DSN:?PROD_DSN obrigatório}"
+: "${PROD_REF_DECLARED:?PROD_REF_DECLARED obrigatório}"
+: "${HUMAN_AUTHORIZATION:?HUMAN_AUTHORIZATION obrigatório (texto integral da autorização)}"
+: "${PITR_CONFIRMED:?PITR_CONFIRMED obrigatório (=yes)}"
+
+[[ "${1:-}" == "--i-have-human-authorization" ]] || {
+  echo "ABORT: passe --i-have-human-authorization explicitamente." >&2; exit 3; }
+
+# ---- verificação PRIMÁRIA de destino, no executor, ANTES da conexão --------
+# (o PostgreSQL não conhece o project_ref de forma confiável; esta é a prova real)
+[[ "$PROD_REF_DECLARED" == "$PROD_REF" ]] || { echo "ABORT: destino declarado != $PROD_REF" >&2; exit 2; }
+[[ "$PROD_DSN" == *"$PROD_REF"* ]]        || { echo "ABORT: DSN não corresponde a $PROD_REF" >&2; exit 2; }
+[[ "$PROD_DSN" != *"$STG_REF"*  ]]        || { echo "ABORT: DSN aponta staging" >&2; exit 2; }
+[[ "$PITR_CONFIRMED" == "yes"   ]]        || { echo "ABORT: PITR não confirmado" >&2; exit 2; }
+[[ ${#HUMAN_AUTHORIZATION} -ge 40 ]]      || { echo "ABORT: autorização humana incompleta" >&2; exit 2; }
+
+# ---- integridade do pacote -------------------------------------------------
+python3 - "$DIR" <<'PY'
+import hashlib, json, sys, os
+d = sys.argv[1]; m = json.load(open(os.path.join(d, "manifest.json")))
+bad = [f["path"] for f in m["files"]
+       if hashlib.sha256(open(os.path.join(d, f["path"]), "rb").read()).hexdigest() != f["sha256"]]
+if bad: print("HASH_MISMATCH:", bad); sys.exit(3)
+print(f"manifest ok: {len(m['files'])} arquivos")
+PY
+
+FILES=("$DIR/000_preflight.sql")
+while IFS= read -r s; do FILES+=("$DIR/$s"); done < <(
+  python3 -c "import json;print('\n'.join(s['file'] for s in json.load(open('$DIR/manifest.json'))['steps']))"
+)
+FILES+=("$DIR/090_postflight.sql")
+
+ARGS=()
+for f in "${FILES[@]}"; do ARGS+=(-f "$f"); done
+
+psql "$PROD_DSN" -v ON_ERROR_STOP=1 --single-transaction \
+  -c "SET LOCAL promo.mode = 'production'" \
+  -c "SET LOCAL promo.target_ref = '$PROD_REF'" \
+  -c "SET LOCAL promo.pitr_confirmed = 'yes'" \
+  -c "SET LOCAL promo.human_authorization = '$HUMAN_AUTHORIZATION'" \
+  "${ARGS[@]}"
+
+echo "PRODUCTION_APPLY_DONE"
