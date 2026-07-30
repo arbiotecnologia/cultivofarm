@@ -112,6 +112,51 @@ Plano objetivo (não executado neste ciclo, por exigir inventário e rollback pr
 
 ---
 
+## 6. ADENDO OBRIGATÓRIO — Gate E2E de paridade (staging `ikaauvsflpmamgxmkhoq`)
+
+Execução runtime com harness efêmero (`fase7-paridade-harness`, já deletado do projeto e do
+repositório), 5 usuários Auth efêmeros (admin, financeiro, gestor comercial, parceiro B2B,
+técnico B2B), 1 parceiro, 1 produto `quote_only` e 1 plano parcelado 3x — todos removidos ao
+final. Resultado: **15/15 PASS**.
+
+### Matriz esperado × obtido
+
+| ID | Esperado | Obtido | Status |
+|----|----------|--------|--------|
+| P1 | Catálogo acessível ao parceiro | 16 itens, 16 precificados | PASS |
+| P2 | Catálogo → carrinho resolvido → simulação com mesmo item, unidade, qtd, preço-base, desconto, subtotal | SOLO-2: base 98, hectare, qtd 2, desc 40% → 117,60; SOLB-1: base 50, hectare, qtd 2, desc 40% → 60,00; soma linhas 177,60 = líquido 177,60; final 177,60 (2 casas) | PASS |
+| P3 | Snapshot do pedido idêntico à simulação (preço-base, qtd, total, parcelas) | total snapshot 177,60 = simulado 177,60; parcelas 1 = 1; 2 itens conferidos | PASS |
+| P4 | Crédito comprometido = total snapshot, sem dupla contagem em replay/concorrência | pendente 0,00; após aprovação 177,60 = total snapshot; 2 replays concorrentes da mesma chave → mesmo pedido, exposição 177,60; 1 pedido criado | PASS |
+| P5 | Mudança de preço → `price_changed`, zero pedido, zero exposição | erro `price_changed`, 0 pedidos, exposição inalterada | PASS |
+| P6 | Hash de uma simulação não vale para outro plano | erro `price_changed`, 0 pedidos | PASS |
+| P7 | `quote_only` visível como “sob consulta”, nunca zero nem omitido | presente no catálogo, `unidade_preco_principal=sob_consulta`, preço `null` | PASS |
+| P8 | `quote_only` e carrinho misto (precificado + sob consulta) bloqueiam simulação conclusiva, checkout, conversão e crédito | `ITEM_WITHOUT_PRICE` nos 4 caminhos; exposição inalterada | PASS |
+| P9 | Após cotação, revalidação de preço/plano/hash/total contra snapshot | novo hash emitido, total 177,60 = snapshot 177,60 | PASS |
+| P10 | Planos à vista, parcelado e sujeito a aprovação: total > 0 e soma das parcelas = total | à vista 177,60 (1x, juros 0); parcelado 309,52 (3x, juros 13,52, soma 309,52); com aprovação 266,68 (juros 29,88, `requires_financial_approval=true`) | PASS |
+| P11 | Perfis autorizados | técnico B2B: `forbidden_financial_terms`; gestor comercial: autorizado | PASS |
+| P12 | Liberação de crédito em rejeição/cancelamento canônicos | rejeição (pré-aprovação): exposição inalterada 177,60; cancelamento de pedido aprovado: 355,20 → 177,60 (libera exatamente o total snapshot) | PASS |
+| P13 | Preservação histórica do snapshot após alteração/reversão de preço | 2 itens, `base_price_snapshot` inalterado | PASS |
+| Z | Zero residuais | 0 pedidos, 0 parceiros, 0 produtos, 0 planos, 5 usuários removidos, 0 erros | PASS |
+
+### Divergências encontradas e tratamento
+
+Nenhuma divergência real de motor foi encontrada. Os três desvios do primeiro ciclo foram do
+próprio harness e corrigidos nele, sem alterar RPCs/tabelas:
+
+1. Leitura de campos inexistentes (`subtotal`/`installments`) em vez dos canônicos
+   `line_final_amount`, `plan_discount_percent` e `schedule`.
+2. Expectativa de crédito comprometido em pedido **pendente** — a semântica canônica de
+   `fn_b2b_credit_exposure` compromete somente a partir de `aprovado`, o que é o comportamento
+   correto (evita dupla contagem com recebíveis).
+3. Rejeição aplicada a pedido já aprovado (`already_approved`, guarda correta da máquina de
+   estados); o caminho canônico de liberação pós-aprovação é o cancelamento.
+
+Semântica canônica confirmada: **pendente não compromete crédito; aprovado compromete exatamente
+o total snapshot; rejeição (pré-aprovação) e cancelamento (pós-aprovação) liberam integralmente.**
+
+---
+
+
 ## VEREDITO (fim)
 
 > 🟢 **STAGING CERTIFICADO**
