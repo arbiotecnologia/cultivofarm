@@ -155,19 +155,43 @@ que lê a conexão **exclusivamente** do secret de runtime `STAGING_DSN` (nunca
    `BEGIN → statement_timeout → preflight → 28 steps → postflight → 2ª passagem
    (28 steps + postflight) → ROLLBACK`, com `timeout` total e `trap ... EXIT`;
 5. verifica pós-ensaio: contagem de tabelas/funções, `triggers_disabled=0`,
-   tabela de provas ausente, resíduo zero;
+    tabela de provas ausente, resíduo zero;
 6. imprime `REHEARSAL_DONE` somente em sucesso integral.
 
 Cleanup: `restoration/promocao-b2b/cleanup-rehearsal-executor.sh` remove o
 executor e a si mesmo, e lembra a remoção do secret lógico.
 
-Estado nesta 3ª tentativa: `STAGING_DSN` **não existe** no runtime
-(`fetch_secrets` retorna apenas `INTERNAL_FUNCTION_SECRET` e `LOVABLE_API_KEY`).
-Nenhuma credencial foi inventada e nenhum SQL foi executado. Gate segue
-`BLOCKED`; `REHEARSAL_DONE` **não emitido**; `PRODUCTION_NOT_EXECUTED`.
+Estado na 3ª tentativa: `STAGING_DSN` **não existia** no runtime
+(`fetch_secrets` retornava apenas `INTERNAL_FUNCTION_SECRET` e `LOVABLE_API_KEY`).
+Nenhuma credencial foi inventada e nenhum SQL foi executado.
 
-Acionamento (uma única vez, após cadastrar o secret em **Project Settings →
-Secrets**, nome exato `STAGING_DSN`, conexão direta ou pooler IPv4 do Supabase):
+---
+
+**Execução da 4ª tentativa (`2026-07-30T14:49:42Z`): secret cadastrado, autenticação falhou.**
+
+Após o usuário autorizar o cadastro, `STAGING_DSN` foi adicionado via
+`secrets--add_secret` (formulário seguro, valor nunca no chat). O executor
+`run-rehearsal-from-secret.sh` foi acionado. O destino foi validado com sucesso
+(`ikaauvsflpmamgxmkhoq` presente, `navfzbwgwzruipouyfnk` ausente), mas a conexão
+com o PostgreSQL foi rejeitada antes de qualquer SQL ser executado:
+
+```
+psql: error: connection to server at "db.ikaauvsflpmamgxmkhoq.supabase.co" ...,
+port 5432 failed: FATAL:  password authentication failed for user "postgres"
+REHEARSAL_BLOCKED (exit=2) — nada persistido (transação em ROLLBACK).
+```
+
+Causa provável: senha do DSN incorreta ou formato de pooler/IPv4 não aceito.
+Nenhum SQL foi executado; nada foi persistido em staging.
+
+Durante a preparação desta tentativa, foi corrigido no executor um bug de
+referência de coluna: a verificação de resíduo em `public.partner_orders` usava
+`notes`, mas a coluna real chama-se `observacoes`. O manifest foi reidratado
+para incluir os scripts `run-rehearsal-from-secret.sh` e
+`cleanup-rehearsal-executor.sh` (37 arquivos no total).
+
+Acionamento após corrigir o secret (Project Settings → Secrets, nome exato
+`STAGING_DSN`, conexão direta ou pooler IPv4 do Supabase, **nunca** no chat):
 
 ```bash
 restoration/promocao-b2b/run-rehearsal-from-secret.sh   # esperado: REHEARSAL_DONE
