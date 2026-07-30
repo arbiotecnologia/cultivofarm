@@ -115,6 +115,29 @@ nenhum canal disponível** — registrado como `BLOCKED`, sem PASS parcial.
 Fragmentar o delta entre chamadas foi descartado: destruiria a atomicidade e a
 prova de dupla passagem.
 
+**Reexecução (2ª tentativa, `2026-07-30T04:42:13Z`) — mesmo resultado `BLOCKED`.**
+Repetida com o conteúdo real do passo 010 do pacote, no mesmo envelope
+transacional e com os quatro `SET LOCAL promo.*`:
+
+```sql
+BEGIN; SET LOCAL promo.mode='rehearsal'; SET LOCAL promo.target_ref='ikaauvsflpmamgxmkhoq';
+SET LOCAL promo.pitr_confirmed='yes'; SET LOCAL promo.human_authorization='REHEARSAL-ONLY …';
+DROP POLICY IF EXISTS popt_select ON public.partner_order_payment_terms; ROLLBACK;
+```
+
+```
+ERROR: 25006: cannot execute DROP POLICY in a read-only transaction
+```
+
+Inventário de credenciais do sandbox nesta tentativa: apenas `SUPABASE_URL`,
+`SUPABASE_PROJECT_ID`, `SUPABASE_PUBLISHABLE_KEY`/`VITE_*` e a sessão de browser
+— **nenhum** DSN, `PGHOST` ou service role. Nenhum canal capaz de DDL existe
+sem persistir (proibido pelo escopo). Gate permanece `BLOCKED`.
+
+Pós-2ª tentativa (somente leitura): `transaction_read_only=on`, 209 tabelas,
+719 funções, política `popt_select` **presente** (o `DROP` não teve efeito),
+0 triggers desabilitados, 0 resíduo em `partner_orders`.
+
 **Caminho de desbloqueio (executor humano, staging apenas):**
 
 ```bash
