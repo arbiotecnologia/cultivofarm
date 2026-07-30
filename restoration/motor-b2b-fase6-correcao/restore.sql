@@ -61,3 +61,12 @@ CREATE POLICY cpp_delete ON public.commercial_payment_plans
 --   create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text) f4f0da921facdcc3ce34d648b0af483c
 --   convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean) b05e18a376861d60e7633fd1d21f2a06
 --   respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)                  f8dee624c0b9cf12520b383f1a31f59a
+
+-- 5) Gate final (correção 2b0163c → gate): reabre EXECUTE das auxiliares internas
+GRANT EXECUTE ON FUNCTION public._cpp_validate_payload(jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public._cpp_audit(text, uuid, jsonb, jsonb, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tg_cpp_guard_financial_immutability() TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_b2b_apply_interest(numeric, text, numeric, numeric) TO PUBLIC;
+-- NOTA: rpc_admin_set_default_commercial_plan passou a auditar também a remoção do
+-- default anterior. A reversão desse comportamento é opcional e NÃO é feita aqui,
+-- por ser apenas acréscimo de trilha de auditoria (não altera dados de negócio).

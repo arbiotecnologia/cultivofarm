@@ -55,3 +55,47 @@ SELECT (SELECT count(*) FROM public.commercial_payment_plans) AS planos,
 \echo == C11 residuais de probe (esperado zero) ==
 SELECT (SELECT count(*) FROM public.commercial_payment_plans WHERE code LIKE 'PROBE-%') AS planos_probe,
        (SELECT count(*) FROM public.partner_orders WHERE observacoes LIKE 'PROBE-F6%') AS pedidos_probe;
+
+\echo == GATE FINAL · EXECUTE minimo nas auxiliares internas (esperado tudo false) ==
+SELECT f,
+       has_function_privilege('anon', f, 'execute') AS anon_x,
+       has_function_privilege('authenticated', f, 'execute') AS auth_x
+FROM unnest(ARRAY[
+  'public._cpp_validate_payload(jsonb)',
+  'public._cpp_audit(text, uuid, jsonb, jsonb, text)',
+  'public.tg_cpp_guard_financial_immutability()',
+  'public.tg_b2b_enforce_plan_selectable()',
+  'public.fn_b2b_apply_interest(numeric, text, numeric, numeric)'
+]) f;
+
+\echo == GATE FINAL · pos-condicao das 4 RPCs por assinatura (esperado guard=t nas 4 e zero overloads) ==
+SELECT s AS assinatura,
+       to_regprocedure(s) IS NOT NULL AS existe,
+       position('fn_b2b_plan_selectable' IN pg_get_functiondef(to_regprocedure(s))) > 0 AS guard
+FROM unnest(ARRAY[
+  'public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)',
+  'public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)',
+  'public.convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)',
+  'public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)'
+]) s;
+
+SELECT count(*) AS overloads_nao_auditados
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.proname IN ('simulate_b2b_payment_plan_secure','create_partner_order_secure',
+                    'convert_partner_simulation_to_order_secure','respond_b2b_order_quote_secure')
+  AND p.oid::regprocedure::text NOT IN (
+    'simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)',
+    'create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)',
+    'convert_partner_simulation_to_order_secure(uuid,text,uuid,date,integer,boolean)',
+    'respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)');
+
+\echo == GATE FINAL · auditoria de troca de plano padrao registra os dois lados ==
+SELECT position('commercial_plan_unset_default' IN
+  pg_get_functiondef('public.rpc_admin_set_default_commercial_plan(uuid)'::regprocedure)) > 0
+  AS audita_default_anterior;
+
+\echo == GATE FINAL · residuais de execucao (esperado zero) ==
+SELECT (SELECT count(*) FROM public.commercial_payment_plans WHERE code LIKE 'PROBE-%') AS planos_probe,
+       (SELECT count(*) FROM auth.users WHERE email LIKE 'eph.f6%@arbio.invalid') AS usuarios_efemeros,
+       (SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key LIKE 'PROBE%') AS idem_probe;
