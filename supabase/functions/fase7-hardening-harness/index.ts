@@ -41,8 +41,11 @@ Deno.serve(async (req) => {
     created.users.push(id);
     await admin.from("user_roles").delete().eq("user_id", id);
     for (const r of roles) await admin.from("user_roles").insert({ user_id: id, role: r });
-    if (partnerId) const { error: puErr } = await admin.from("partner_users").insert({ partner_id: partnerId, user_id: id, papel: partnerRole ?? "gestor" });
-    if (puErr) throw new Error(`partner_users ${alias}: ${puErr.message}`);
+    if (partnerId) {
+      const { error: puErr } = await admin.from("partner_users")
+        .insert({ partner_id: partnerId, user_id: id, papel: partnerRole ?? "gestor" });
+      if (puErr) throw new Error(`partner_users ${alias}: ${puErr.message}`);
+    }
     return { id, email, password, alias };
   };
   const session = async (email: string, password: string) => {
