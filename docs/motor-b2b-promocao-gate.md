@@ -5,13 +5,14 @@ Documento **único e canônico** do gate. Substitui qualquer afirmação anterio
 
 | Campo | Valor |
 |---|---|
-| Gate | **`STAGING_REHEARSAL_PASS (parcial)`** — asserções de estado 12/12 PASS; replay transacional pendente (§4) |
+| Gate | **`BLOCKED`** — ensaio transacional **não executável** pelo conector (erro real em §4.1); asserções de estado 12/12 PASS não substituem o replay |
+| `REHEARSAL_DONE` | **não emitido** |
 | Execução em produção | **`PRODUCTION_NOT_EXECUTED`** |
-| Autorização humana | **`HUMAN_AUTHORIZATION_PENDING`** |
+| Autorização humana | recebida de forma ampla; **promoção continua bloqueada pelo gate técnico** |
 | Destino | `navfzbwgwzruipouyfnk` (produção) — intocado neste ciclo |
 | Origem certificada | `ikaauvsflpmamgxmkhoq` (staging) |
-| Timestamp UTC | `2026-07-30T04:30:40Z` |
-| Commit base | `dacdc61f3674493d26cd1364fffc4d77e5047011` |
+| Timestamp UTC | `2026-07-30T04:39:20Z` |
+| Commit base | `2217226` |
 | Responsável | Renato S. Cunha |
 | Artefato | `restoration/promocao-b2b/` (28 passos + preflight + postflight + rollback + manifest) |
 
@@ -84,16 +85,69 @@ Validações do repositório: `tsc --noEmit` **PASS**, `vitest run` **PASS**,
 
 ## 4. Pendências (bloqueiam o 100% APTO)
 
-1. **Ensaio transacional completo não executado por este ciclo.** O sandbox não
-   possui client `psql` nem DSN de staging; a execução de DDL/DML de ensaio
-   exigiria `BEGIN … ROLLBACK` real. O roteiro está pronto e é obrigatório:
-   `restoration/promocao-b2b/rehearsal-staging.sh` (inclui **dupla passagem** do
-   delta na mesma transação como prova de idempotência).
-2. **Autorização humana** para produção — texto exato em §7.
-3. **Backup/PITR** confirmado por checklist na janela (validado no preflight).
+### 4.1 Ensaio transacional — tentado neste ciclo, `BLOCKED`
 
-Enquanto (1) não for executado com `REHEARSAL_DONE`, o gate permanece
-`STAGING_REHEARSAL_PASS (parcial)` e **não** `100% APTO`.
+Tentativa: chamada única `BEGIN; SET LOCAL promo.*; 000_preflight; 28 steps;
+090_postflight; 2ª passagem (28 steps + postflight); ROLLBACK;` montada inline a
+partir do conteúdo real do pacote (652.104 bytes, 28 passos, sem `\i`), via o
+conector Supabase vinculado (`supabase--read_query`). Nenhuma migration de
+harness foi criada; nada foi persistido.
+
+Prova de capacidade do conector (bloco mínimo, mesmo envelope transacional):
+
+```sql
+BEGIN; CREATE TEMP TABLE _rehearsal_probe(a int); ... ROLLBACK;
+```
+
+Erro real retornado:
+
+```
+ERROR: 25006: cannot execute CREATE TABLE in a read-only transaction
+```
+
+Confirmado por `SELECT current_setting('transaction_read_only')` → `on`. O
+conector executa **toda** consulta em transação somente-leitura, portanto não
+suporta o DDL/DML do delta nem em `BEGIN … ROLLBACK`. O sandbox tem binário
+`psql`, mas **não** possui DSN de staging (`PGHOST` ausente), e o escopo proíbe
+`supabase--migration` / persistência. Logo o ensaio **não é executável por
+nenhum canal disponível** — registrado como `BLOCKED`, sem PASS parcial.
+
+Fragmentar o delta entre chamadas foi descartado: destruiria a atomicidade e a
+prova de dupla passagem.
+
+**Caminho de desbloqueio (executor humano, staging apenas):**
+
+```bash
+STAGING_DSN='postgresql://…ikaauvsflpmamgxmkhoq…' \
+STAGING_REF=ikaauvsflpmamgxmkhoq \
+  restoration/promocao-b2b/rehearsal-staging.sh    # esperado: REHEARSAL_DONE
+```
+
+### 4.2 Verificação pós-tentativa (somente leitura, staging)
+
+| Item | Obtido | Esperado |
+|---|---|---|
+| `transaction_read_only` | `on` | `on` |
+| `server_version_num` | `170006` | ≥ 150000 |
+| Tabelas em `public` | `209` | inalterado |
+| Funções em `public` | `719` | inalterado |
+| `partner_order_idempotency.request_fingerprint` | presente | presente |
+| Pedidos resíduo (`GATE-RUNTIME%`/`FASE7-PROOF%`/`%REHEARSAL%`) | `0` | `0` |
+| Idempotência resíduo | `0` | `0` |
+| Triggers de usuário desabilitados | `0` | `0` |
+| `_motor_b2b_fase7_proofs` | ausente | ausente |
+
+Schema íntegro, zero resíduo, zero efeito colateral.
+
+### 4.3 Demais pendências
+
+1. **Autorização humana** para produção — texto exato em §7 (autorização ampla
+   recebida, mas o gate técnico §4.1 precede a execução).
+2. **Backup/PITR** de produção confirmado por checklist na janela (validado no
+   preflight) e auditoria independente do pacote.
+
+Enquanto §4.1 não emitir `REHEARSAL_DONE`, o gate permanece **`BLOCKED`** e a
+promoção **não** pode ser executada.
 
 ## 5. Riscos
 
