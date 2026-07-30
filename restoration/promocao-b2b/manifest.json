@@ -1,8 +1,8 @@
 {
   "package": "promocao-b2b",
   "version": "1.0.0",
-  "generated_at_utc": "2026-07-30T14:49:32Z",
-  "repo_commit_at_generation": "f7e20548e8c40d99a0089ceffc38465fe5484d5b",
+  "generated_at_utc": "2026-07-30T14:53:57Z",
+  "repo_commit_at_generation": "0469a34138181ac227328cc1b562b2372cec05c9",
   "source_certified_ref": "ikaauvsflpmamgxmkhoq",
   "target_project_ref": "navfzbwgwzruipouyfnk",
   "execution_status": "PRODUCTION_NOT_EXECUTED",
@@ -317,8 +317,8 @@
   "files": [
     {
       "path": "../../docs/motor-b2b-promocao-gate.md",
-      "sha256": "225fd00538d1c766c8f48fcd194f6d15c5ab2a5941c92813db77080e96b19d76",
-      "bytes": 12088
+      "sha256": "745b3ea2bc009fbc0f75a0a60bd4e6a04bad1a4f252f0734820e1bd33d8ed7ca",
+      "bytes": 13658
     },
     {
       "path": "000_preflight.sql",
