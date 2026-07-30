@@ -93,20 +93,25 @@ Deno.serve(async (req) => {
     for (const l of l1) {
       const c = items.find((i) => i.item_id === l.item_id);
       const q = cart.find((x) => x.item_id === l.item_id)?.quantidade ?? 0;
-      const base = Number(l.base_price ?? l.preco_base ?? 0);
-      const sub = Number(l.subtotal ?? l.total ?? 0);
+      const base = Number(l.base_price ?? 0);
+      const sub = Number(l.line_final_amount ?? 0);
+      const desc = Number(l.plan_discount_percent ?? 0);
       const catPrice = Number(c?.preco_parceiro ?? -1);
-      const okItem = !!c && Math.abs(catPrice - base) < 0.005 && Number(l.quantidade ?? l.quantity ?? q) === q &&
-        Math.abs(sub - base * q * (1 - Number(l.discount_percent ?? l.desconto_percentual ?? 0) / 100)) < 0.05;
+      const esperadoSub = Math.round(base * (1 - desc / 100) * 100) / 100 * q;
+      const okItem = !!c && Math.abs(catPrice - base) < 0.005 &&
+        Number(l.quantidade) === q && l.unidade_medida === "hectare" &&
+        Math.abs(sub - esperadoSub) < 0.05;
       if (!okItem) parOk = false;
-      cmp.push(`${c?.produto_codigo ?? l.item_id}: catálogo=${catPrice} base=${base} qtd=${q} desc=${l.discount_percent ?? l.desconto_percentual ?? 0}% subtotal=${sub}`);
+      cmp.push(`${l.codigo}: catálogo=${catPrice} base=${base} un=${l.unidade_medida} qtd=${l.quantidade} desc=${desc}% subtotal=${sub} (esperado ${esperadoSub.toFixed(2)})`);
     }
-    const sumLines = l1.reduce((a: number, l: any) => a + Number(l.subtotal ?? l.total ?? 0), 0);
+    const sumLines = l1.reduce((a: number, l: any) => a + Number(l.line_final_amount ?? 0), 0);
+    const netAmt = Number(s1?.net_amount_after_discount ?? 0);
     const finalAmt = Number(s1?.final_amount ?? 0);
-    const arred = Math.abs(finalAmt - Math.round(finalAmt * 100) / 100) < 1e-9;
+    const arred = Math.abs(finalAmt * 100 - Math.round(finalAmt * 100)) < 1e-6 &&
+      Math.abs(sumLines - netAmt) < 0.02;
     rec("P2.paridade_catalogo_carrinho_simulacao", parOk && arred,
-      "mesmo preço-base/unidade/qtd/desconto/subtotal do catálogo, total arredondado a 2 casas",
-      `${cmp.join(" | ")} | soma_linhas=${sumLines.toFixed(2)} final=${finalAmt.toFixed(2)} arredondamento_ok=${arred}`);
+      "mesmo preço-base/unidade/qtd/desconto/subtotal do catálogo; soma das linhas = líquido; total com 2 casas",
+      `${cmp.join(" | ")} | soma_linhas=${sumLines.toFixed(2)} liquido=${netAmt.toFixed(2)} juros=${s1?.financial_interest_amount} final=${finalAmt.toFixed(2)} arredondamento_ok=${arred}`);
 
     // ---------- P3: pedido — snapshot idêntico à simulação ----------
     const ord = await sPar.rpc("create_partner_order_secure", {
@@ -121,18 +126,21 @@ Deno.serve(async (req) => {
     const snapOk = !ord.error && (snap ?? []).length === cart.length &&
       l1.every((l: any) => {
         const s = (snap ?? []).find((x: any) => x.product_id === l.item_id || x.microrganismo_id === l.item_id);
-        return s && Math.abs(Number(s.base_price_snapshot) - Number(l.base_price ?? l.preco_base)) < 0.005;
-      }) && Math.abs(Number(terms?.final_amount ?? -1) - finalAmt) < 0.01;
+        return s && Math.abs(Number(s.base_price_snapshot) - Number(l.base_price)) < 0.005 &&
+          Number(s.quantidade) === Number(l.quantidade);
+      }) && Math.abs(Number(terms?.final_amount ?? -1) - finalAmt) < 0.01 &&
+      Number(terms?.installment_count) === (s1?.schedule ?? []).length;
     rec("P3.snapshot_pedido", snapOk,
       "snapshot do pedido = simulação (preço-base, qtd, subtotal, total, parcelas)",
-      `itens=${(snap ?? []).length}, total_snapshot=${terms?.final_amount}, total_simulado=${finalAmt.toFixed(2)}, parcelas=${terms?.installment_count}, erro=${errMsg(ord.error) || "nenhum"}`);
+      `itens=${(snap ?? []).length}, total_snapshot=${terms?.final_amount}, total_simulado=${finalAmt.toFixed(2)}, parcelas_snapshot=${terms?.installment_count}, parcelas_simuladas=${(s1?.schedule ?? []).length}, erro=${errMsg(ord.error) || "nenhum"}`);
 
     // ---------- P4: crédito comprometido = total snapshot, sem dupla contagem ----------
     const exposure = async () => {
       const { data } = await sFin.rpc("rpc_b2b_partner_credit", { p_partner_id: pid });
       const d: any = Array.isArray(data) ? data[0] : data;
-      return Number(d?.exposicao_total ?? d?.exposure ?? d?.committed ?? d?.exposicao ?? 0);
+      return Number(d?.exposicao_atual ?? 0);
     };
+
     const expAfter = await exposure();
     const replay = await sPar.rpc("create_partner_order_secure", {
       p_partner_id: pid, p_observacoes: "paridade", p_items: cart, p_payment_plan_id: plan.id,
