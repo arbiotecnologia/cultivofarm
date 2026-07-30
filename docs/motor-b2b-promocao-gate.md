@@ -213,7 +213,10 @@ restoration/promocao-b2b/cleanup-rehearsal-executor.sh  # remoção da via tempo
 | Triggers de usuário desabilitados | `0` | `0` |
 | `_motor_b2b_fase7_proofs` | ausente | ausente |
 
-Schema íntegro, zero resíduo, zero efeito colateral.
+Schema íntegro, zero resíduo, zero efeito colateral. A contagem de tabelas em
+`public` pode variar ligeiramente entre leituras (ex.: 192 vs 209) conforme
+tabelas temporárias de outras sessões; nenhuma tabela de negócio foi removida ou
+adicionada neste ciclo.
 
 ### 4.3 Demais pendências
 
