@@ -224,7 +224,7 @@ Deno.serve(async (req) => {
     const recId1 = gr1.data?.receivable_id ?? gr1.data?.id;
     const recId2 = gr2.data?.receivable_id ?? gr2.data?.id;
     const { data: links } = await admin.from("partner_order_financial_links").select("receivable_id").eq("partner_order_id", orderA);
-    const { data: ars } = await admin.from("accounts_receivable").select("id, total_amount").eq("origin_id", orderA);
+    const { data: ars } = await admin.from("accounts_receivable").select("id, total_amount, due_date").eq("origin_id", orderA);
     const arId = (ars ?? [])[0]?.id ?? (links ?? [])[0]?.receivable_id;
     const { data: insts } = await admin.from("accounts_receivable_installments")
       .select("installment_number, amount, due_date").eq("receivable_id", arId).order("installment_number");
@@ -236,8 +236,11 @@ Deno.serve(async (req) => {
     const sumS = (sched ?? []).reduce((a: number, r: any) => a + Number(r.amount), 0);
     const total = Number(terms?.final_amount ?? 0);
     const sameRec = !!recId1 && !!recId2 && recId1 === recId2;
-    const dueOk = (insts ?? []).length === (sched ?? []).length &&
-      (insts ?? []).every((r: any, k: number) => String(r.due_date) === String((sched ?? [])[k]?.due_date));
+    const arDue = String((ars ?? [])[0]?.due_date ?? "");
+    const dueOk = (insts ?? []).length > 0
+      ? (insts ?? []).length === (sched ?? []).length &&
+        (insts ?? []).every((r: any, k: number) => String(r.due_date) === String((sched ?? [])[k]?.due_date))
+      : (sched ?? []).length === 1 && arDue === String((sched ?? [])[0]?.due_date);
     const arTotal = Number((ars ?? [])[0]?.total_amount ?? 0);
     const hasInst = (insts ?? []).length > 0;
     const okRec = sameRec && (ars ?? []).length === 1 && (links ?? []).length === 1 && dueOk &&
@@ -359,7 +362,11 @@ Deno.serve(async (req) => {
           }
         }
         void cleaner; void admUser;
-        await del("partner_order_financial_links", "partner_order_id", ids);
+        {
+          const client = admSess ?? admin;
+          const { error } = await client.from("partner_order_financial_links").delete().in("partner_order_id", ids);
+          if (error) errs.push(`partner_order_financial_links: ${error.message}`);
+        }
         if (recIds.length) {
           await del("financial_receipts", "receivable_id", recIds);
           await del("accounts_receivable_installments", "receivable_id", recIds);
