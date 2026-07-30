@@ -81,6 +81,7 @@ Deno.serve(async (req) => {
     rec("F.fixtures", true, `2 parceiros + 8 usuários efêmeros (${tag})`);
 
     const sAdm = await session(uAdm.email, uAdm.password);
+    (globalThis as any).__harnessAdminSession = sAdm;
     const sAdm2 = await session(uAdm.email, uAdm.password);
     const sFin = await session(uFin.email, uFin.password);
     const sCom = await session(uCom.email, uCom.password);
