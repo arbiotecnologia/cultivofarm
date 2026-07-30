@@ -62,8 +62,8 @@ Deno.serve(async (req) => {
       const { data, error } = await a.from("partner_accounts").insert({
         razao_social: `HARNESS ${tag}-${suffix}`,
         nome_fantasia: `HARNESS ${tag}-${suffix}`,
-        status: "ativo",
-        limite_credito: 1000000,
+        ativo: true,
+        limite_credito_brl: 1000000,
       }).select("id").single();
       if (error) throw new Error(`partner_accounts: ${error.message}`);
       return data.id as string;
@@ -102,8 +102,8 @@ Deno.serve(async (req) => {
     // ---------- item 9: catalogo (origem e paridade) ----------
     const { data: cat, error: catErr } = await cP.rpc("get_partner_catalog_secure", { p_partner_id: partnerId });
     const items = (cat ?? []) as Record<string, unknown>[];
-    const priced = items.filter((i) => Number(i.unit_price ?? i.preco_unitario ?? 0) > 0);
-    const quoteOnly = items.filter((i) => i.quote_only === true);
+    const priced = items.filter((i) => Number(i.preco_parceiro ?? 0) > 0 || Number(i.valor_dose_brl ?? 0) > 0 || Number(i.valor_litro_brl ?? 0) > 0);
+    const quoteOnly = items.filter((i) => !(Number(i.preco_parceiro ?? 0) > 0 || Number(i.valor_dose_brl ?? 0) > 0 || Number(i.valor_litro_brl ?? 0) > 0));
     push("P9-catalogo", !catErr && items.length > 0 && priced.length + quoteOnly.length === items.length,
       { erro: catErr?.message, total: items.length, precificados: priced.length, quote_only: quoteOnly.length });
 
@@ -112,12 +112,15 @@ Deno.serve(async (req) => {
     const planId = (plans ?? [])[0]?.id as string | undefined;
 
     const src = priced[0] as Record<string, unknown> | undefined;
+    const unidade = src?.item_tipo === "microrganismo"
+      ? "litro"
+      : (Number(src?.valor_dose_brl ?? 0) > 0 ? "dose" : "litro");
     const buildCart = (qty: number) => [{
-      product_id: src?.product_id ?? null,
-      microrganismo_id: src?.microrganismo_id ?? null,
-      unit_type: src?.unit_type ?? "unit",
-      volume_ml: src?.volume_ml ?? null,
-      quantity: qty,
+      item_id: src?.item_id,
+      item_tipo: src?.item_tipo,
+      quantidade: qty,
+      unidade_medida: unidade,
+      volume_ml: null,
     }];
 
     if (!src || !planId) {
@@ -127,13 +130,11 @@ Deno.serve(async (req) => {
       const { data: sim, error: simErr } = await cP.rpc("simulate_b2b_payment_plan_secure", {
         p_partner_id: partnerId, p_payment_plan_id: planId, p_items: cart, p_first_due_date: null,
       });
-      const simObj = (Array.isArray(sim) ? sim[0] : sim) as Record<string, unknown> | null;
-      const finalTotal = Number(simObj?.total_final ?? simObj?.final_total ?? simObj?.total ?? 0);
-      push("P4-simulacao", !simErr && finalTotal > 0, { erro: simErr?.message, total: finalTotal });
-
-      const { data: hash } = await a.rpc("fn_b2b_cart_hash", {
-        p_partner_id: partnerId, p_plan_id: planId, p_cart: cart, p_final: finalTotal,
-      });
+      const simObj = (Array.isArray(sim) ? sim[0] : sim) as Record<string, any> | null;
+      const finalTotal = Number(simObj?.amounts?.final_amount ?? 0);
+      const hash = simObj?.cart_hash ?? null;
+      push("P4-simulacao", !simErr && finalTotal > 0 && !!hash,
+        { erro: simErr?.message, total: finalTotal, hash_presente: !!hash, quote: simObj?.quote_required });
 
       const key = `${tag}-idem`;
       const call = (c: typeof cP, k: string, cartX: unknown[], h: unknown) => c.rpc("create_partner_order_secure", {
