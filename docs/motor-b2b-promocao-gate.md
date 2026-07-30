@@ -138,13 +138,42 @@ Pós-2ª tentativa (somente leitura): `transaction_read_only=on`, 209 tabelas,
 719 funções, política `popt_select` **presente** (o `DROP` não teve efeito),
 0 triggers desabilitados, 0 resíduo em `partner_orders`.
 
-**Caminho de desbloqueio (executor humano, staging apenas):**
+**Caminho de desbloqueio — via backend temporária preparada (3ª tentativa,
+`2026-07-30T04:52:00Z`): preparação concluída, execução `BLOCKED` por secret
+ausente.**
+
+Foi criado o executor de uso único `restoration/promocao-b2b/run-rehearsal-from-secret.sh`,
+que lê a conexão **exclusivamente** do secret de runtime `STAGING_DSN` (nunca
+`VITE_*`, nunca em código, log, diff ou relatório) e:
+
+1. recusa qualquer DSN contendo `navfzbwgwzruipouyfnk` e qualquer destino que não
+   contenha `ikaauvsflpmamgxmkhoq`; valida o esquema `postgresql://`;
+2. reconfirma o destino já conectado (identificador não sensível) e checa o
+   marcador de staging;
+3. confere os 35 hashes do `manifest.json`;
+4. monta a ordem canônica do manifest e executa **uma única transação**:
+   `BEGIN → statement_timeout → preflight → 28 steps → postflight → 2ª passagem
+   (28 steps + postflight) → ROLLBACK`, com `timeout` total e `trap ... EXIT`;
+5. verifica pós-ensaio: contagem de tabelas/funções, `triggers_disabled=0`,
+   tabela de provas ausente, resíduo zero;
+6. imprime `REHEARSAL_DONE` somente em sucesso integral.
+
+Cleanup: `restoration/promocao-b2b/cleanup-rehearsal-executor.sh` remove o
+executor e a si mesmo, e lembra a remoção do secret lógico.
+
+Estado nesta 3ª tentativa: `STAGING_DSN` **não existe** no runtime
+(`fetch_secrets` retorna apenas `INTERNAL_FUNCTION_SECRET` e `LOVABLE_API_KEY`).
+Nenhuma credencial foi inventada e nenhum SQL foi executado. Gate segue
+`BLOCKED`; `REHEARSAL_DONE` **não emitido**; `PRODUCTION_NOT_EXECUTED`.
+
+Acionamento (uma única vez, após cadastrar o secret em **Project Settings →
+Secrets**, nome exato `STAGING_DSN`, conexão direta ou pooler IPv4 do Supabase):
 
 ```bash
-STAGING_DSN='postgresql://…ikaauvsflpmamgxmkhoq…' \
-STAGING_REF=ikaauvsflpmamgxmkhoq \
-  restoration/promocao-b2b/rehearsal-staging.sh    # esperado: REHEARSAL_DONE
+restoration/promocao-b2b/run-rehearsal-from-secret.sh   # esperado: REHEARSAL_DONE
+restoration/promocao-b2b/cleanup-rehearsal-executor.sh  # remoção da via temporária
 ```
+
 
 ### 4.2 Verificação pós-tentativa (somente leitura, staging)
 
