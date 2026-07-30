@@ -224,3 +224,12 @@ export function planErrorMessage(err: unknown): string {
   if (raw.includes("uq_cpp_single_default")) return "Já existe um plano padrão definido.";
   return raw || "Erro inesperado.";
 }
+
+/**
+ * Compat: lista completa (até 100) para seletores administrativos
+ * (ex.: matriz de preços). Usa a mesma RPC segura.
+ */
+export function useAllCommercialPaymentPlans() {
+  const q = useAdminCommercialPlans({ pageSize: 100 });
+  return { ...q, data: q.data?.rows ?? [] };
+}
