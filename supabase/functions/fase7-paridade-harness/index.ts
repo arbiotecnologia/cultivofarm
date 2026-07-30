@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
       "erro price_changed/hash inválido, zero pedido e zero exposição adicional",
       `erro=${staleMsg || "PERMITIDO"}, pedidos_criados=${cntStale}, exposição=${expStale.toFixed(2)} (inalterada=${Math.abs(expStale - expAfter) < 0.01})`);
 
-    const planAlt = allPlans[1];
+    const planAlt = allPlans.find((p: any) => p.id !== plan.id);
     let planSwapDetail = "sem plano alternativo";
     let planSwapOk = true;
     if (planAlt) {
