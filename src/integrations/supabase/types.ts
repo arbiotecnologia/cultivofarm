@@ -15355,6 +15355,14 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_b2b_status_is_approved_or_later: {
+        Args: { p_status: Database["public"]["Enums"]["partner_order_status"] }
+        Returns: boolean
+      }
+      fn_b2b_status_is_operational: {
+        Args: { p_status: Database["public"]["Enums"]["partner_order_status"] }
+        Returns: boolean
+      }
       fn_calc_next_generation_date: {
         Args: { _due_day: number; _freq: string; _from_date: string }
         Returns: string
