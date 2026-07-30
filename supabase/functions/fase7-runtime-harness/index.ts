@@ -73,6 +73,7 @@ Deno.serve(async (req) => {
 
   const tag = "h7-" + rnd();
   const created: { users: string[]; partners: string[] } = { users: [], partners: [] };
+  let sAdmClean: any = null;
 
   try {
     // ---------- Item 3: ephemeral partners + auth users ----------
@@ -116,6 +117,7 @@ Deno.serve(async (req) => {
     const sB = await session(uB.email, uB.password);
     const sAdm1 = await session(uAdm.email, uAdm.password);
     const sAdm2 = await session(uAdm.email, uAdm.password);
+    sAdmClean = sAdm1;
     rec("3.sessions", true, "6 sessões autenticadas independentes");
 
     // ---------- Item 9: catálogo ----------
@@ -353,11 +355,23 @@ Deno.serve(async (req) => {
           .select("receivable_id")
           .in("partner_order_id", ids);
         const recIds = (lk ?? []).map((l: any) => l.receivable_id).filter(Boolean);
+        // rollback canônico: cancela o recebível antes de remover o vínculo
+        if (sAdmClean) {
+          for (const id of ids) {
+            const { error } = await sAdmClean.rpc("cancel_b2b_receivable_secure", {
+              p_partner_order_id: id,
+              p_motivo: "rollback harness",
+            });
+            if (error && !/nao encontrado|não encontrado|not_found/i.test(error.message)) {
+              errs.push(`cancel(${id.slice(0, 8)}): ${error.message}`);
+            }
+          }
+          await sAdmClean.from("partner_order_financial_links").delete().in("partner_order_id", ids);
+        }
         await del("partner_order_financial_links", "partner_order_id", ids);
         if (recIds.length) {
-          await del("receivable_payments", "receivable_id", recIds);
-          await del("accounts_receivable_installments", "receivable_id", recIds);
           await del("financial_receipts", "receivable_id", recIds);
+          await del("accounts_receivable_installments", "receivable_id", recIds);
           await del("accounts_receivable", "id", recIds);
         }
         await del("accounts_receivable", "origin_id", ids);
