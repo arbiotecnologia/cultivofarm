@@ -297,16 +297,20 @@ vínculos legítimos, históricos, produção, fiscal, BI e comunicação.
 
 ---
 
-## Pendências obrigatórias para reabrir o gate
+## Pendências remanescentes (não bloqueiam o gate de staging)
 
-1. `SUPABASE_SERVICE_ROLE_KEY` do staging **ou** `PGHOST/PGUSER/PGPASSWORD` do
-   staging, como secret temporário revogável.
-2. Com isso: itens 3, 4, 5, 6 (execução), 7 e 8 (paridade) podem ser provados em
-   runtime real, mais a execução dos pacotes de rollback (item 9).
-3. Normalização das 19 migrations fiscais legadas que dependem de
-   `_fiscal_staging_marker`, antes de qualquer promoção.
+1. Normalização das 19 migrations fiscais legadas que dependem de
+   `_fiscal_staging_marker`, antes de qualquer promoção a produção.
+2. Execução dos pacotes de rollback (`harness-rollback-only.sql`) no momento da
+   janela de promoção, conforme o kit em `restoration/audit/motor-b2b-fase7/`.
 
-**Riscos abertos:** nenhum risco crítico/alto introduzido por este ciclo. O
-risco dominante é de **cobertura de prova**, não de defeito conhecido.
+**Riscos abertos:** nenhum risco crítico/alto conhecido. A lacuna de
+idempotência com payload divergente, única falha real encontrada em runtime,
+foi corrigida e reprovada com sucesso neste mesmo ciclo.
+
+> Nota histórica: as seções 3–8 abaixo descrevem o estado **anterior**
+> (UNVERIFIED por ausência de credenciais). Foram superadas pela execução
+> runtime registrada no topo deste documento.
+
 
 **Status final: 🔴 BLOQUEADO — NÃO APTO PARA PROMOÇÃO CONTROLADA.**
