@@ -214,12 +214,14 @@ Deno.serve(async (req) => {
       const { data: strayOrders } = await a.from("partner_orders").select("id").ilike("observacoes", "HARNESS %");
       for (const o of (strayOrders ?? []) as { id: string }[]) if (!orderIds.includes(o.id)) orderIds.push(o.id);
       for (const id of orderIds) {
-        const arIds = ((await a.from("partner_order_financial_links").select("accounts_receivable_id")
-          .eq("partner_order_id", id)).data ?? []).map((r: { accounts_receivable_id: string }) => r.accounts_receivable_id).filter(Boolean);
+        const arIds = ((await a.from("partner_order_financial_links").select("receivable_id")
+          .eq("partner_order_id", id)).data ?? []).map((r: { receivable_id: string }) => r.receivable_id).filter(Boolean);
         await a.from("partner_order_financial_links").delete().eq("partner_order_id", id);
         if (arIds.length) {
-          await a.from("accounts_receivable_installments").delete().in("accounts_receivable_id", arIds);
-          await a.from("receivable_payments").delete().in("accounts_receivable_id", arIds);
+          const instIds = ((await a.from("accounts_receivable_installments").select("id")
+            .in("receivable_id", arIds)).data ?? []).map((r: { id: string }) => r.id);
+          if (instIds.length) await a.from("receivable_payments").delete().in("installment_id", instIds);
+          await a.from("accounts_receivable_installments").delete().in("receivable_id", arIds);
           await a.from("accounts_receivable").delete().in("id", arIds);
         }
         await a.from("production_timeline_events").delete().eq("partner_order_id", id);
