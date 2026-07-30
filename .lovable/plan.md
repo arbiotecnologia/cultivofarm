@@ -1,41 +1,47 @@
-## Problema
+# Desbloqueio do Rehearsal de Promoção B2B em Staging
 
-Em `src/pages/Protocolos.tsx` (linha 668) as abas são **não controladas**:
+## Objetivo
+Cadastrar o secret `STAGING_DSN` de conexão PostgreSQL direta com o staging `ikaauvsflpmamgxmkhoq` e executar, uma única vez, o rehearsal transacional do pacote de promoção do Motor B2B (`restoration/promocao-b2b/rehearsal-staging.sh`), sem tocar em produção (`navfzbwgwzruipouyfnk`).
 
-```tsx
-<Tabs defaultValue="produtos">
-```
+## Escopo
+- Ambiente exclusivo: staging `ikaauvsflpmamgxmkhoq`.
+- Nenhuma alteração em produção.
+- O secret será lido apenas em runtime pela edge function/executor temporário; não será gravado em código nem em logs.
 
-Com `defaultValue`, a aba ativa vive apenas em estado interno do Radix. Qualquer remontagem da árvore da página (atualização de sessão/role no `useAuth`, remonte do layout, refresh do preview, HMR, ou navegação de volta) descarta esse estado e a UI volta para "Produtos". O mesmo padrão existe nas subabas: `CatalogoTecnicoTab.tsx` (`defaultValue="catalogo"`), `RevisaoTecnicaPanel.tsx` (`defaultValue="micro"`) e `ProdutosTab.tsx` (`defaultValue="geral"`).
+## Passos
 
-## Solução proposta
+1. **Cadastrar secret de runtime**
+   - Usar a ferramenta `add_secret` para criar o secret `STAGING_DSN`.
+   - O usuário preencherá o valor em formulário seguro (nunca no chat).
+   - Formato esperado: `postgresql://[user]:[pass]@[host]:[port]/postgres` ou pooler IPv4 do Supabase (ex.: `postgresql://postgres:[pass]@db.[ref].supabase.co:5432/postgres` ou `aws-0-[region].pooler.supabase.com:5432/postgres`).
+   - A referência do projeto deve ser exclusivamente `ikaauvsflpmamgxmkhoq`.
 
-Tornar a aba ativa parte da **URL**, que é a única fonte que sobrevive a remontagens, deep link, F5 e botão voltar — coerente com a regra do projeto de preservar query strings nas rotas.
+2. **Validar secret e destino antes da execução**
+   - Confirmar via `fetch_secrets` que `STAGING_DSN` existe.
+   - Verificar que o DSN não contém `navfzbwgwzruipouyfnk`.
 
-### 1. Aba principal controlada por query param
-- Em `Protocolos.tsx`, usar `useSearchParams` para ler `?tab=` com fallback `"produtos"`.
-- Validar contra a lista permitida (`produtos | microrganismos | catalogo-tecnico | culturas | problemas`); valor inválido cai no default sem quebrar.
-- `onValueChange` atualiza o param com `replace: true` (não polui o histórico com cada clique de aba) e preserva os demais params existentes.
+3. **Executar o rehearsal transacional**
+   - Rodar `restoration/promocao-b2b/run-rehearsal-from-secret.sh`.
+   - O script valida hashes do manifest, monta a ordem canônica e executa `BEGIN → preflight → delta → postflight → 2ª passagem de idempotência → ROLLBACK`.
+   - Não faz COMMIT; nunca desabilita triggers.
 
-### 2. Subabas também preservadas
-- `CatalogoTecnicoTab`: param `?sub=` (`catalogo | revisao`).
-- `RevisaoTecnicaPanel`: param `?rev=` (`micro | produto`).
-- Mesmo helper de leitura/escrita, para não duplicar lógica.
-- As abas internas de diálogos (`ProdutosTab` linha 620, e os dialogs de perfil técnico) **não** vão para a URL: são efêmeras e fecham junto com o modal.
+4. **Registrar evidência sanitizada**
+   - Se `REHEARSAL_DONE`: registrar timestamp UTC, commit, hash do manifest, resultado das 12 asserções do postflight e prova de ausência de resíduo.
+   - Se falha: registrar `BLOCKED` com o erro real, sem mascarar.
 
-### 3. Utilitário compartilhado
-- Novo `src/lib/navigation/useTabParam.ts`: hook `useTabParam(key, allowed, fallback)` que devolve `[value, setValue]`, valida o valor e escreve na URL com `replace`, mantendo os outros parâmetros intactos.
+5. **Limpar via de uso único**
+   - Remover `run-rehearsal-from-secret.sh` e `cleanup-rehearsal-executor.sh`.
+   - Instruir/desativar o secret `STAGING_DSN` após o uso (Project Settings → Secrets).
 
-### 4. Testes
-- Teste unitário do `useTabParam`: valor default, valor inválido, troca de aba, preservação de outros params.
-- Teste de render do `Protocolos` com `MemoryRouter` em `/protocolos?tab=culturas` confirmando que a aba correta abre e que uma remontagem mantém a aba.
+6. **Atualizar gate de promoção**
+   - Atualizar `docs/motor-b2b-promocao-gate.md` com veredito único:
+     - `STAGING_REHEARSAL_PASS` (se OK) ou `BLOCKED` (se falha).
+     - `PRODUCTION_NOT_EXECUTED` inalterado.
+   - Re-hidratar `manifest.json` se houver mudança de arquivo.
 
-## Detalhes técnicos
+7. **Validar repositório**
+   - `typecheck`, `build` e, se pertinente, testes do pacote (sem tocar no banco).
+   - Verificar que nenhum secret/UUID de fixture vazou para o diff.
 
-- Nenhuma alteração de rota, permissão, dependência ou backend.
-- Arquivos tocados: `src/pages/Protocolos.tsx`, `src/components/protocolos/CatalogoTecnicoTab.tsx`, `src/components/protocolos/RevisaoTecnicaPanel.tsx`, novo `src/lib/navigation/useTabParam.ts`, novo arquivo de teste.
-- Validações finais: typecheck, build e vitest.
-
-## Observação
-
-Não foi confirmado *o que* dispara a remontagem (pode ser refresh do preview, atualização de sessão ou invalidação que derruba um gate de loading acima da página). A correção acima resolve o sintoma de forma definitiva independentemente da causa; se você quiser, posso incluir uma investigação da origem da remontagem como primeiro passo.
+## Resultado esperado
+- Gate de staging desbloqueado (ou bloqueado com causa clara), mantendo a barreira de produção intacta até novo gate específico.
