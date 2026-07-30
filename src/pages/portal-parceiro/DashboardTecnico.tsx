@@ -41,7 +41,7 @@ export default function DashboardTecnico() {
       <div>
         <h1 className="text-2xl font-bold">Olá, {getPrimeiroNome(profile?.nome, profile?.email)}</h1>
         <p className="text-sm text-muted-foreground">
-          {partner?.razao_social ?? "Parceiro"} · Técnico B2B
+          {partner?.razao_social ?? "Parceiro"} · Portal Técnico B2B
         </p>
       </div>
 
