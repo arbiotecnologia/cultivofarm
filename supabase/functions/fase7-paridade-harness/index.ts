@@ -247,11 +247,14 @@ Deno.serve(async (req) => {
     for (const [rot, pl] of [["à_vista", planVista], ["parcelado", planParc], ["com_aprovação", planAprov]] as any[]) {
       if (!pl) { planDet.push(`${rot}=inexistente no catálogo de planos`); continue; }
       const { data: sp, error: spe } = await sim(sPar, pl);
-      const n = Number(sp?.installment_count ?? pl.installment_count ?? 1);
-      const soma = (sp?.installments ?? sp?.parcelas ?? []).reduce((a: number, r: any) => a + Number(r.amount ?? r.valor ?? 0), 0);
-      const ok = !spe && Number(sp?.final_amount ?? 0) > 0 && (soma === 0 || Math.abs(soma - Number(sp.final_amount)) < 0.05);
+      const sched = (sp?.schedule ?? []) as any[];
+      const n = sched.length;
+      const soma = sched.reduce((a: number, r: any) => a + Number(r.amount ?? 0), 0);
+      const ok = !spe && Number(sp?.final_amount ?? 0) > 0 &&
+        n === Number(pl.installment_count ?? 1) && Math.abs(soma - Number(sp.final_amount)) < 0.02;
       if (!ok) planOk = false;
-      planDet.push(`${rot}: total=${sp?.final_amount}, parcelas=${n}, soma_parcelas=${soma.toFixed(2)}, erro=${errMsg(spe) || "nenhum"}`);
+      planDet.push(`${rot}: total=${sp?.final_amount}, juros=${sp?.financial_interest_amount}, parcelas=${n}/${pl.installment_count}, soma_parcelas=${soma.toFixed(2)}, aprovação_exigida=${pl.requires_financial_approval}, erro=${errMsg(spe) || "nenhum"}`);
+
     }
     rec("P10.planos_vista_parcelado_aprovacao", planOk,
       "cada modalidade simula com total>0 e soma de parcelas = total", planDet.join(" | "));
