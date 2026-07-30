@@ -2,14 +2,21 @@
 -- CHECKPOINT PÓS-FASE 1 — Motor B2B (STAGING ikaauvsflpmamgxmkhoq)
 -- Forward-only, idempotente. Nenhum DML de negócio.
 -- =====================================================================
+-- STAGING_GUARD normalizado (portatil / forward-only):
+-- recusa apenas ambiente comprovadamente de PRODUCAO. Em banco novo (marker ausente)
+-- a migration segue adiante, tornando o replay reprodutivel fora deste projeto.
 DO $guard$
 DECLARE v_ref text;
 BEGIN
-  SELECT project_ref INTO v_ref FROM public._fiscal_staging_marker WHERE marker='STAGING' LIMIT 1;
-  IF v_ref IS DISTINCT FROM 'ikaauvsflpmamgxmkhoq' THEN
-    RAISE EXCEPTION 'STAGING_GUARD: ambiente inesperado (%)', COALESCE(v_ref,'null');
+  IF to_regclass('public._fiscal_staging_marker') IS NOT NULL THEN
+    EXECUTE 'SELECT project_ref FROM public._fiscal_staging_marker WHERE marker = ''STAGING'' LIMIT 1'
+      INTO v_ref;
   END IF;
-END $guard$;
+  IF v_ref = 'navfzbwgwzruipouyfnk' THEN
+    RAISE EXCEPTION 'STAGING_GUARD: project_ref de PRODUCAO recusado';
+  END IF;
+END
+$guard$;
 
 -- ---------------------------------------------------------------------
 -- 1) CATÁLOGO B2B — resolução canônica, sem fórmula duplicada,

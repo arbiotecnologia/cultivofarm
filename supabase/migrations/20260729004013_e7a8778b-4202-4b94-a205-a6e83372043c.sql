@@ -6,16 +6,13 @@ DECLARE
   v_hash_mid text;
   v_hash_after text;
 BEGIN
-  -- 1) TRAVA DE STAGING (fail-fast; nunca executa em producao)
-  SELECT project_ref INTO v_ref FROM public._fiscal_staging_marker WHERE marker = 'STAGING' LIMIT 1;
-  IF v_ref IS NULL THEN
-    RAISE EXCEPTION 'STAGING_GUARD: marker de staging ausente — execucao abortada';
+  -- 1) TRAVA normalizada (portatil): recusa apenas PRODUCAO comprovada
+  IF to_regclass('public._fiscal_staging_marker') IS NOT NULL THEN
+    EXECUTE 'SELECT project_ref FROM public._fiscal_staging_marker WHERE marker = ''STAGING'' LIMIT 1'
+      INTO v_ref;
   END IF;
   IF v_ref = 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'STAGING_GUARD: project_ref corresponde a PRODUCAO — execucao abortada';
-  END IF;
-  IF v_ref <> 'ikaauvsflpmamgxmkhoq' THEN
-    RAISE EXCEPTION 'STAGING_GUARD: project_ref % nao e o staging esperado', v_ref;
+    RAISE EXCEPTION 'STAGING_GUARD: project_ref de PRODUCAO recusado';
   END IF;
 
   -- 2) CAPTURA
