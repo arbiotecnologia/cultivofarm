@@ -41,7 +41,8 @@ Deno.serve(async (req) => {
     created.users.push(id);
     await admin.from("user_roles").delete().eq("user_id", id);
     for (const r of roles) await admin.from("user_roles").insert({ user_id: id, role: r });
-    if (partnerId) await admin.from("partner_users").insert({ partner_id: partnerId, user_id: id, role: partnerRole ?? "gestor" });
+    if (partnerId) const { error: puErr } = await admin.from("partner_users").insert({ partner_id: partnerId, user_id: id, papel: partnerRole ?? "gestor" });
+    if (puErr) throw new Error(`partner_users ${alias}: ${puErr.message}`);
     return { id, email, password, alias };
   };
   const session = async (email: string, password: string) => {
@@ -96,7 +97,7 @@ Deno.serve(async (req) => {
     const isQuote = (i: any) => i.quote_only === true || i.preco_parceiro == null || Number(i.preco_parceiro) === 0;
     const quoteOnly = items.filter(isQuote);
     rec("C.catalogo_composicao", !catErr && items.length > 0,
-      `total=${items.length} (produtos=${prods.length}, microrganismos=${micros.length}), quote_only=${quoteOnly.length}; ` +
+      `erro=${errMsg(catErr) || "nenhum"}; total=${items.length} (produtos=${prods.length}, microrganismos=${micros.length}), quote_only=${quoteOnly.length}; ` +
       `codigos_produto=[${prods.map((i) => i.codigo).join(",")}]; codigos_micro=[${micros.map((i) => i.codigo).join(",")}]`);
 
     // quote_only via fixture temporária (rollback-only) se não houver item real incompleto
@@ -104,8 +105,8 @@ Deno.serve(async (req) => {
     let quoteProofOk = quoteOnly.length > 0;
     if (!quoteProofOk) {
       const { data: pf, error: pfErr } = await admin.from("produtos").insert({
-        nome: `${tag}-sem-preco`, codigo: `${tag.toUpperCase()}-QO`, tipo: "inoculante",
-        unidade_medida: "L", ativo: true, preco_litro: null,
+        nome: `${tag}-sem-preco`, codigo: `${tag.toUpperCase()}-QO`,
+        tipo: "inoculante", ativo: true, b2b_enabled: true, valor_litro_brl: null, valor_ha_brl: null, valor_dose_brl: null,
       }).select("id").single();
       if (pfErr) {
         quoteProofDetail = `fixture quote_only não criada: ${pfErr.message}`;
