@@ -113,10 +113,29 @@ históricos, produção, fiscal, BI ou comunicação. A única mudança de schem
 
 | Gate | Resultado |
 |---|---|
-| Typecheck | ver seção de execução abaixo |
-| Vitest (suite fiscal SINIEF 49) | **FAIL esperado** — expectativa canônica restaurada (item 10) |
+| Typecheck (`tsgo --noEmit`) | ✅ limpo, exit 0, zero erros |
+| Vitest `verifier.test.ts` | ❌ **1 failed / 3 passed** — resultado literal abaixo |
 | Build | não executado nesta rodada |
 | Concorrência runtime | não executada |
+
+### Resultado literal do gate fiscal (item 10)
+
+```
+FAIL src/test/fiscal/sinief49/staging/verifier.test.ts
+ > types.ts real cobre 100% do contrato SINIEF 49 → veredito canônico PASS
+AssertionError: expected [ { kind: 'relationship', …(1) } ] to deeply equal []
++ [ { "kind": "relationship",
++     "detail": "fiscal_stock_loss_contexts → columns=[lote_id] referencedRelation=lotes referencedColumns=[id]" } ]
+
+Test Files  1 failed (1)
+     Tests  1 failed | 3 passed (4)
+```
+
+Divergência única e precisa: o relacionamento
+`fiscal_stock_loss_contexts.lote_id → lotes.id` não está declarado em
+`src/integrations/supabase/types.ts`. **Nenhuma regra fiscal foi alterada para
+o teste passar.** Enquanto essa divergência existir, o gate permanece
+REJEITADO.
 
 ## 5. Próximo passo obrigatório
 
