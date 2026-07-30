@@ -22,19 +22,24 @@ export interface CommercialPaymentPlan {
   sort_order: number;
 }
 
+/**
+ * Fase 6 (correção): leitura operacional dos planos selecionáveis.
+ * A tabela `commercial_payment_plans` não é mais legível por `authenticated`;
+ * a RPC devolve apenas planos ativos e dentro da vigência, e somente para
+ * perfis autorizados (administrador, financeiro, gestor_comercial, parceiro_b2b).
+ */
 export function useCommercialPaymentPlans(enabled = true) {
   return useQuery({
-    queryKey: ["commercial-payment-plans"],
+    queryKey: ["commercial-payment-plans", "selectable"],
     enabled,
     queryFn: async (): Promise<CommercialPaymentPlan[]> => {
-      const { data, error } = await (supabase as any)
-        .from("commercial_payment_plans")
-        .select("*")
-        .eq("active", true)
-        .order("sort_order", { ascending: true });
+      const { data, error } = await (supabase as any).rpc(
+        "rpc_b2b_list_selectable_payment_plans",
+      );
       if (error) throw error;
-      return (data ?? []) as CommercialPaymentPlan[];
+      return ((data ?? []) as any[]).map((p) => ({ ...p, active: true })) as CommercialPaymentPlan[];
     },
     staleTime: 5 * 60 * 1000,
   });
 }
+
