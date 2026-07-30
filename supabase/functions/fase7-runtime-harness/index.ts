@@ -287,6 +287,25 @@ Deno.serve(async (req) => {
     );
     rec("7.receivable_unico", (links?.length ?? 0) <= 1, `vínculos=${links?.length ?? 0}`);
 
+    // concorrência real de geração de recebível (2 sessões admin)
+    const [g1, g2] = await Promise.all([
+      sAdm1.rpc("generate_b2b_receivable_secure", { p_partner_order_id: oid }),
+      sAdm2.rpc("generate_b2b_receivable_secure", { p_partner_order_id: oid }),
+    ]);
+    const { data: links2 } = await admin
+      .from("partner_order_financial_links")
+      .select("id, receivable_id")
+      .eq("partner_order_id", oid);
+    const { count: recCount } = await admin
+      .from("accounts_receivable")
+      .select("id", { count: "exact", head: true })
+      .eq("origin_id", oid);
+    rec(
+      "7.receivable_concurrency",
+      (links2?.length ?? 0) <= 1 && (recCount ?? 0) <= 1,
+      `links=${links2?.length ?? 0}, recebíveis=${recCount ?? 0}, erros=${[g1, g2].filter((r) => r.error).map((r) => r.error!.message).join(" | ") || "nenhum"}`,
+    );
+
     const reopen = await sA1.rpc("respond_b2b_order_quote_secure", {
       p_order_id: oid,
       p_lines: [],
