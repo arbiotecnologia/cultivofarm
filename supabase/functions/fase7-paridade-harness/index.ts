@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
 
     // fixture efêmero: plano parcelado (ausente no catálogo de staging)
     const { data: planFix, error: planFixErr } = await admin.from("commercial_payment_plans").insert({
-      name: `${tag}-parcelado-3x`, code: `${tag.toUpperCase()}-3X`, plan_type: "parcelado",
+      name: `${tag}-parcelado-3x`, code: `${tag.toUpperCase()}-3X`, plan_type: "medium_term",
       max_days: 30, months_count: 3, installment_count: 3, discount_percent: 0,
       monthly_interest_percent: 1.5, interest_type: "compound", active: true,
     }).select("id").single();
