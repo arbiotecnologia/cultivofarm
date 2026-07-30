@@ -25,12 +25,19 @@ export function usePartnerCatalogTecnico() {
       if (error) throw error;
       const rows = (data ?? []) as any[];
 
+      /** `null` = sem preço resolvido / papel sem visibilidade financeira. Nunca 0. */
+      const num = (v: unknown): number | null => {
+        if (v == null || v === "") return null;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+      };
+
       return rows.map((r) => {
-        const valorDose = Number(r.valor_dose_brl ?? 0);
-        const valorLitro = Number(
-          r.valor_litro_brl ?? (valorDose > 0 ? valorDose * 10 : 0),
-        );
-        const valorHa = r.valor_ha_brl == null ? null : Number(r.valor_ha_brl);
+        const valorDose = num(r.valor_dose_brl);
+        const valorLitro =
+          num(r.valor_litro_brl) ??
+          (valorDose != null && valorDose > 0 ? valorDose * 10 : null);
+        const valorHa = num(r.valor_ha_brl);
         const isProduto = r.item_tipo === "produto";
         const unidade: UnidadePrecoPrincipal = resolverUnidadePreco({
           tipo: isProduto ? "produto" : "microrganismo",
@@ -40,7 +47,7 @@ export function usePartnerCatalogTecnico() {
           valorDose,
         });
         const precoBase =
-          valorDaUnidade(unidade, { valorHa, valorLitro, valorDose }) ?? 0;
+          valorDaUnidade(unidade, { valorHa, valorLitro, valorDose }) ?? null;
         return {
           item_id: r.item_id,
           item_tipo: r.item_tipo,
@@ -54,9 +61,9 @@ export function usePartnerCatalogTecnico() {
           valor_dose_brl: valorDose,
           valor_litro_brl: valorLitro,
           valor_ha_brl: valorHa,
-          preco_tabela_dose: Number(r.preco_tabela_dose ?? 0),
-          preco_tabela_litro: Number(r.preco_tabela_litro ?? 0),
-          preco_tabela_ha: r.preco_tabela_ha == null ? null : Number(r.preco_tabela_ha),
+          preco_tabela_dose: num(r.preco_tabela_dose),
+          preco_tabela_litro: num(r.preco_tabela_litro),
+          preco_tabela_ha: num(r.preco_tabela_ha),
           unidade_preco_principal: unidade,
           resumo_curto: r.resumo_curto ?? null,
           explicacao_b2b: r.explicacao_b2b ?? null,

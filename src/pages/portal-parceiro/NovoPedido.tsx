@@ -77,22 +77,29 @@ const precoPrincipalFor = (
   if (valor != null && valor > 0) {
     return { valor, valorCheio: cheio ?? valor, usedFallback: false, unidade };
   }
+  // Sem preço resolvido pelo motor canônico: NUNCA exibir/enviar 0 como preço válido.
+  // `valor: 0` aqui é sentinela de "sem preço" (bloqueia checkout) e a unidade vira sob_consulta.
+  const fallback = p.preco_parceiro ?? 0;
   return {
-    valor: p.preco_parceiro,
-    valorCheio: p.preco_tabela || p.preco_parceiro,
-    usedFallback: p.preco_parceiro > 0,
-    unidade: p.preco_parceiro > 0 ? unidade : "sob_consulta",
+    valor: fallback,
+    valorCheio: (p.preco_tabela ?? 0) || fallback,
+    usedFallback: fallback > 0,
+    unidade: fallback > 0 ? unidade : "sob_consulta",
   };
 };
 
 /** Calcula dose referencial em L/ha quando possível, derivando de valor_ha / valor_litro. */
 const doseLitroHaFor = (p: CatalogItem | undefined): number | null => {
   if (!p) return null;
-  if (p.item_tipo === "produto" && p.valor_ha_brl != null && p.valor_ha_brl > 0 && p.valor_litro_brl > 0) {
+  if (
+    p.item_tipo === "produto" &&
+    p.valor_ha_brl != null && p.valor_ha_brl > 0 &&
+    p.valor_litro_brl != null && p.valor_litro_brl > 0
+  ) {
     return p.valor_ha_brl / p.valor_litro_brl;
   }
   // Microrganismo: padrão comercial AR Bio = 1 dose de 100 mL por ha (1 L = 10 doses)
-  if (p.item_tipo === "microrganismo" && p.valor_dose_brl > 0) {
+  if (p.item_tipo === "microrganismo" && (p.valor_dose_brl ?? 0) > 0) {
     return 1 / DOSES_POR_LITRO;
   }
   return null;
