@@ -63,14 +63,19 @@ ${rels}
 }
 
 describe("verify-fiscal-types-sinief49", () => {
-  test("classifica PENDING quando types.ts real ainda não expõe as entidades", () => {
+  test("types.ts real ainda não cobre 100% do contrato SINIEF 49 (PENDING ou FAIL, nunca PASS)", () => {
     const real = fs.readFileSync(
       path.resolve(process.cwd(), "src/integrations/supabase/types.ts"),
       "utf8",
     );
     const misses = verifySinief49Types(real);
     const verdict = classifyVerdict(real, misses);
-    expect(verdict).toBe("PENDING");
+    // O types.ts é regenerado a partir do banco: conforme as entidades vão sendo
+    // criadas em staging, o veredito evolui de PENDING (nenhuma) para FAIL
+    // (cobertura parcial). O invariante estável é: enquanto houver `misses`,
+    // nunca pode ser PASS.
+    expect(misses.length).toBeGreaterThan(0);
+    expect(["PENDING", "FAIL"]).toContain(verdict);
   });
 
   test("classifica PASS quando types.ts sintético cobre 100% do contrato", () => {
