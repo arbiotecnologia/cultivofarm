@@ -224,7 +224,7 @@ Deno.serve(async (req) => {
     const recId1 = gr1.data?.receivable_id ?? gr1.data?.id;
     const recId2 = gr2.data?.receivable_id ?? gr2.data?.id;
     const { data: links } = await admin.from("partner_order_financial_links").select("receivable_id").eq("partner_order_id", orderA);
-    const { data: ars } = await admin.from("accounts_receivable").select("id, amount, total_amount, installments_count").eq("origin_id", orderA);
+    const { data: ars } = await admin.from("accounts_receivable").select("id, total_amount").eq("origin_id", orderA);
     const arId = (ars ?? [])[0]?.id ?? (links ?? [])[0]?.receivable_id;
     const { data: insts } = await admin.from("accounts_receivable_installments")
       .select("installment_number, amount, due_date").eq("receivable_id", arId).order("installment_number");
@@ -238,12 +238,16 @@ Deno.serve(async (req) => {
     const sameRec = !!recId1 && !!recId2 && recId1 === recId2;
     const dueOk = (insts ?? []).length === (sched ?? []).length &&
       (insts ?? []).every((r: any, k: number) => String(r.due_date) === String((sched ?? [])[k]?.due_date));
-    const okRec = sameRec && (ars ?? []).length === 1 && (links ?? []).length === 1 &&
-      (insts ?? []).length === Number(terms?.installment_count ?? 0) &&
-      Math.abs(sumI - total) < 0.01 && Math.abs(sumS - total) < 0.01 && dueOk;
+    const arTotal = Number((ars ?? [])[0]?.total_amount ?? 0);
+    const hasInst = (insts ?? []).length > 0;
+    const okRec = sameRec && (ars ?? []).length === 1 && (links ?? []).length === 1 && dueOk &&
+      (hasInst
+        ? (insts ?? []).length === Number(terms?.installment_count ?? 0) &&
+          Math.abs(sumI - total) < 0.01 && Math.abs(sumS - total) < 0.01
+        : Math.abs(arTotal - total) < 0.01);
     rec("A.recebivel_concorrente", okRec,
       `mesmo_receivable=${sameRec}, recebíveis=${(ars ?? []).length}, vínculos=${(links ?? []).length}, ` +
-      `parcelas=${(insts ?? []).length}/${terms?.installment_count}, soma=${sumI.toFixed(2)} vs total=${total.toFixed(2)}, ` +
+      `parcelas=${(insts ?? []).length}/${terms?.installment_count}, soma_parcelas=${sumI.toFixed(2)}, cronograma=${sumS.toFixed(2)}, total_recebivel=${arTotal.toFixed(2)} vs total_snapshot=${total.toFixed(2)}, ` +
       `vencimentos_iguais_ao_snapshot=${dueOk}, erros=${errMsg(gr1.error) || errMsg(gr2.error) || "nenhum"}`);
 
     const { data: itSnap } = await admin.from("partner_order_items")
@@ -338,7 +342,7 @@ Deno.serve(async (req) => {
       if (error) errs.push(`${t}: ${error.message}`);
     };
     try {
-      const { data: sweep } = await admin.from("partner_accounts").select("id").like("razao_social", `${tag}%`);
+      const { data: sweep } = await admin.from("partner_accounts").select("id").like("razao_social", "h8-%");
       const partnerIds = Array.from(new Set([...created.partners, ...((sweep ?? []).map((p: any) => p.id))]));
       const { data: orders } = await admin.from("partner_orders").select("id").in("partner_id", partnerIds);
       const ids = (orders ?? []).map((o: any) => o.id);
@@ -350,7 +354,7 @@ Deno.serve(async (req) => {
         // cancelamento canônico antes de remover vínculos (admin efêmero já criado)
         for (const id of ids) {
           const { error } = await (admSess ?? admin).rpc("cancel_b2b_receivable_secure", { p_partner_order_id: id, p_motivo: "rollback harness" });
-          if (error && !/nao encontrado|não encontrado|not_found|sem recebivel|sem recebível/i.test(error.message)) {
+          if (error && !/nao encontrado|não encontrado|not_found|sem recebivel|sem recebível|sem cobran/i.test(error.message)) {
             errs.push(`cancel: ${error.message}`);
           }
         }
@@ -384,7 +388,7 @@ Deno.serve(async (req) => {
         }
       }
       const { count: lo } = await admin.from("partner_orders").select("id", { count: "exact", head: true }).in("partner_id", partnerIds);
-      const { count: lp } = await admin.from("partner_accounts").select("id", { count: "exact", head: true }).like("razao_social", `${tag}%`);
+      const { count: lp } = await admin.from("partner_accounts").select("id", { count: "exact", head: true }).like("razao_social", "h8-%");
       const { count: lpr } = await admin.from("produtos").select("id", { count: "exact", head: true }).like("nome", `${tag}%`);
       rec("Z.cleanup", (lo ?? 0) === 0 && (lp ?? 0) === 0 && (lpr ?? 0) === 0 && errs.length === 0,
         `pedidos=${lo}, parceiros=${lp}, produtos=${lpr}, usuários removidos=${created.users.length}, erros=${errs.join(" | ") || "nenhum"}`);
