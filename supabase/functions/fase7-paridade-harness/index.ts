@@ -279,25 +279,31 @@ Deno.serve(async (req) => {
       "técnico B2B sem termos financeiros; gestor comercial autorizado", perf.join(" | "));
 
     // ---------- P12: liberação de crédito por rejeição / cancelamento canônicos ----------
-    const ciclo = async (rot: string, key: string, fim: (id: string) => Promise<any>) => {
+    const ciclo = async (rot: string, key: string, aprovar: boolean, fim: (id: string) => Promise<any>) => {
       const { data: sx } = await sim(sPar);
       const o = await sPar.rpc("create_partner_order_secure", {
         p_partner_id: pid, p_observacoes: rot, p_items: cart, p_payment_plan_id: plan.id,
         p_expected_cart_hash: (sx as any).cart_hash, p_idempotency_key: key,
       });
       const base = await exposure();
-      const ap = await sCom.rpc("approve_partner_order", { p_order_id: o.data?.id, p_approval_notes: `${tag} ${rot}` });
-      const comAprov = await exposure();
+      let ap: any = null; let comAprov = base;
+      if (aprovar) {
+        ap = await sCom.rpc("approve_partner_order", { p_order_id: o.data?.id, p_approval_notes: `${tag} ${rot}` });
+        comAprov = await exposure();
+      }
+      const esperadoAprov = aprovar ? base + totalSnap : base;
       const fimRes = await fim(o.data?.id);
       const depois = await exposure();
-      const ok = !ap.error && Math.abs(comAprov - (base + totalSnap)) < 0.05 &&
+      const ok = !ap?.error && Math.abs(comAprov - esperadoAprov) < 0.05 &&
         !fimRes?.error && Math.abs(depois - base) < 0.05;
-      return { ok, txt: `${rot}: base=${base.toFixed(2)} aprovado=${comAprov.toFixed(2)} (esperado ${(base + totalSnap).toFixed(2)}) final=${depois.toFixed(2)} (esperado ${base.toFixed(2)}) encerramento=${errMsg(fimRes?.error) || "ok"}` };
+      return { ok, txt: `${rot}(aprovado=${aprovar}): base=${base.toFixed(2)} pós_aprovação=${comAprov.toFixed(2)} (esperado ${esperadoAprov.toFixed(2)}) final=${depois.toFixed(2)} (esperado ${base.toFixed(2)}) encerramento=${errMsg(fimRes?.error) || "ok"}` };
     };
-    const cRej = await ciclo("rejeitar", `${tag}-krej`, (id) =>
+    // rejeição é canônica apenas antes da aprovação; cancelamento libera pedido já aprovado
+    const cRej = await ciclo("rejeitar", `${tag}-krej`, false, (id) =>
       sCom.rpc("reject_partner_order", { p_order_id: id, p_approval_notes: `${tag} motivo rejeicao` }));
-    const cCan = await ciclo("cancelar", `${tag}-kcan`, (id) =>
+    const cCan = await ciclo("cancelar", `${tag}-kcan`, true, (id) =>
       sCom.rpc("update_partner_order_status", { p_order_id: id, p_status: "cancelado", p_motivo: `${tag} cancelamento` }));
+
     rec("P12.credito_liberado_rejeicao_cancelamento", cRej.ok && cCan.ok,
       "aprovação compromete exatamente o total snapshot; rejeição e cancelamento canônicos liberam integralmente",
       `${cRej.txt} | ${cCan.txt}`);
