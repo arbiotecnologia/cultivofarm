@@ -113,7 +113,7 @@ select 'triggers_disabled=' || count(*) from pg_trigger t join pg_class c on c.o
   join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and t.tgenabled='D';
 select 'proofs_table_present=' || (to_regclass('public._motor_b2b_fase7_proofs') is not null)::text;
 select 'residuo_orders=' || count(*) from public.partner_orders
-  where coalesce(notes,'') ilike '%REHEARSAL%';
+  where coalesce(observacoes,'') ilike '%REHEARSAL%';
 SQL
 
 echo "REHEARSAL_DONE"
