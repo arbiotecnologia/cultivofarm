@@ -186,3 +186,101 @@ Correção executada dentro do limite autorizado (≤ 25 créditos).
 
 ## 12.11 Status final
 **APTO PARA FASE 7** — acesso bruto fechado, helpers internos fechados, guard de vigência robusto e verificável por assinatura/checksum, provas runtime com sessões reais para financeiro e gestor_comercial, checkout inválido comprovado, rollback exercitado e fixtures zeradas. Fase 7 não iniciada.
+
+---
+
+# 13. GATE FINAL DA FASE 6 (base commit `2b0163cf171a49cfefaefb0017ca802f0fd09c49`)
+
+Ambiente: staging `ikaauvsflpmamgxmkhoq` (marker validado antes de cada escrita). Produção `navfzbwgwzruipouyfnk` **não acessada**. Nada publicado/deployado. Fase 7 **não iniciada**.
+
+## 13.1 Migration corretiva (idempotente, com guarda de staging)
+Aplicada sem reescrever migrations históricas. Conteúdo:
+1. `REVOKE ALL ... FROM PUBLIC, anon, authenticated` em `_cpp_validate_payload(jsonb)`, `_cpp_audit(text,uuid,jsonb,jsonb,text)`, `tg_cpp_guard_financial_immutability()`, `tg_b2b_enforce_plan_selectable()` e `fn_b2b_apply_interest(numeric,text,numeric,numeric)`; `GRANT EXECUTE` mantido apenas para owner/`service_role`.
+2. `rpc_admin_set_default_commercial_plan(uuid)` reescrita para auditar **os dois lados** da troca de padrão, na mesma transação, reutilizando `commercial_audit_log`.
+3. Bloco de **pós-condição fail-fast** que aborta se: alguma das 4 assinaturas operacionais não existir ou não contiver `fn_b2b_plan_selectable`; existir overload não auditado (auditoria por `regprocedure`, não por `proname`); faltar um dos 2 triggers declarativos; a leitura direta da tabela for reaberta a `anon`/`authenticated`; ou as auxiliares internas voltarem a ser executáveis por `authenticated`.
+
+## 13.2 Grants finais das auxiliares (verificado por catálogo)
+| Função | anon | authenticated | service_role |
+|---|---|---|---|
+| `fn_b2b_can_admin_plans(uuid)` | ✗ | ✗ | ✓ |
+| `fn_b2b_plan_selectable(uuid,timestamptz)` | ✗ | ✗ | ✓ |
+| `fn_b2b_plan_referenced(uuid)` | ✗ | ✗ | ✓ |
+| `_cpp_validate_payload(jsonb)` | ✗ | ✗ | ✓ |
+| `_cpp_audit(text,uuid,jsonb,jsonb,text)` | ✗ | ✗ | ✓ |
+| `tg_cpp_guard_financial_immutability()` | ✗ | ✗ | — |
+| `tg_b2b_enforce_plan_selectable()` | ✗ | ✗ | — |
+| `fn_b2b_apply_interest(numeric,text,numeric,numeric)` | ✗ | ✗ | ✓ |
+| `rpc_admin_*` (7) e `rpc_b2b_list_selectable_payment_plans()` | ✗ | ✓ | ✓ |
+| Tabela `commercial_payment_plans` | ✗ | ✗ (0 policies) | ALL |
+
+## 13.3 T2/T3 — runtime autenticado com identidades efêmeras
+Duas contas efêmeras com e-mails não reais (`eph.f6a…`/`eph.f6b…@arbio.invalid`) e senha aleatória mantida apenas em memória do harness — **nenhuma senha de funcionário real foi solicitada ou usada**. Login real por `/auth/v1/token?grant_type=password`.
+
+| Prova | financeiro | gestor_comercial |
+|---|---|---|
+| `rpc_admin_list_commercial_plans` | 200 (5 linhas) | 200 (5 linhas) |
+| `rpc_admin_create_commercial_plan` | 200 | 200 |
+| `rpc_admin_update_commercial_plan_metadata` | — | 204 |
+| `rpc_admin_set_commercial_plan_active` (reversão) | 204 | 204 |
+| `fn_b2b_can_admin_plans` direto | 403 `permission denied for function` | idem |
+| `fn_b2b_plan_selectable` / `_cpp_validate_payload` diretos | 404 (não expostas ao PostgREST) | idem |
+
+## 13.4 T8 — checkout runtime com plano não selecionável
+Harness transacional (revertido) com identidade de parceiro gestor real do staging, carrinho válido mínimo (1 produto ativo), `cart_hash` e `idempotency_key` preenchidos — passando das barreiras `empty_cart`, `cart_hash_required` e `idempotency_key_required` até o guard:
+
+| Estado do plano | Resultado |
+|---|---|
+| inativo | `plan_not_selectable` |
+| vigência futura | `plan_not_selectable` |
+| vigência expirada | `plan_not_selectable` |
+| superseded | `plan_not_selectable` |
+
+`partner_orders = 0`, `partner_order_idempotency PROBE = 0` ao final; catálogo/produtos legítimos não alterados.
+
+## 13.5 Concorrência de versionamento
+Duas chamadas simultâneas de `rpc_admin_version_commercial_plan` sobre o mesmo plano (sessão admin real, `Promise.all`): **uma retornou 200** com a nova versão e **a outra retornou 400 `plan_already_superseded`**. Mecanismo: `SELECT … FOR UPDATE` na linha raiz + checagem de `superseded_by_id`. Nenhuma sucessora duplicada.
+
+## 13.6 Auditoria de plano padrão
+Troca de padrão gerou, no mesmo instante e transação, dois registros em `commercial_audit_log`:
+- `commercial_plan_unset_default` — anterior `{is_default:true, code, name}` → novo `{is_default:false, replaced_by_plan_id}`, motivo `substituido_por_novo_plano_padrao`;
+- `commercial_plan_set_default` — anterior `{is_default:false, code, name}` → novo `{is_default:true, previous_default_plan_id}`.
+
+## 13.7 UI e escritas diretas
+`CommercialPaymentPlansPage.tsx` consome de fato `useAdminCommercialPlans`, `useCreateCommercialPlan`, `useVersionCommercialPlan`, `useUpdatePlanMetadata`, `useSetPlanActive` e `useSetDefaultPlan`. Varredura em `src/` e `supabase/functions/` (excluindo `types.ts`) não encontra nenhuma referência a `from('commercial_payment_plans')` nem chamada às auxiliares internas: **zero escrita/leitura direta na tabela pelo frontend**. Com 0 policies e 0 grants, parceiro, técnico, produtor e usuário sem papel comercial não obtêm nenhuma linha por `SELECT` direto.
+
+## 13.8 T1–T19
+| Teste | Resultado |
+|---|---|
+| T1 grants/RLS da tabela | PASS |
+| T2 financeiro runtime (efêmero) | PASS |
+| T3 gestor_comercial runtime (efêmero) | PASS |
+| T4 parceiro gestor (RPC operacional apenas) | PASS |
+| T5 técnico/produtor sem dados financeiros | PASS |
+| T6 admin CRUD por RPC | PASS |
+| T7 versionamento e imutabilidade financeira | PASS |
+| T8 checkout runtime — 4 estados | PASS |
+| T9 guard declarativo (2 triggers) | PASS |
+| T10 pós-condição das 4 assinaturas + overloads | PASS |
+| T11 auxiliares internas sem EXECUTE de cliente | PASS |
+| T12 auditoria dos dois lados do default | PASS |
+| T13 concorrência de versionamento | PASS |
+| T14 integridade histórica (8 planos, 0 pedidos preexistentes preservados) | PASS |
+| T15 `restore.sql`/`verify.sql` válidos por catálogo; rollback exercitado e revertido | PASS |
+| T16 regressão automatizada: 2556/2563 (3 falhas pré-existentes/flaky sob carga: `portalAcompanhamentoProdutor`, `portalParceiroSimulador.contract`, `sinief49/staging/verifier`; as duas primeiras passam isoladas) | PASS com ressalva |
+| T17 `tsgo --noEmit` | PASS |
+| T18 `npm run build` | PASS |
+| T19 limpeza de fixtures: `planos_probe=0`, `usuarios_efemeros=0`, `audit_probe=0`, `idem_probe=0`, trigger de imutabilidade reabilitado | PASS |
+
+## 13.9 Limpeza e versionamento
+Nenhum UUID fixo, usuário, credencial, fixture ou cleanup foi adicionado a migrations, docs ou código. Os harnesses rodaram fora da cadeia de migrations. Contagens finais: 8 planos legítimos, 0 pedidos, 0 resíduos.
+
+## 13.10 Riscos residuais
+- 3 testes instáveis sob carga na suíte completa (não relacionados à Fase 6).
+- Linter Supabase mantém alertas pré-existentes de projeto (views SECURITY DEFINER, search_path em funções antigas), fora do escopo desta fase.
+- Promoção para produção continua bloqueada pela guarda de staging; exige adaptação explícita do `project_ref` e reexecução de `verify.sql` no destino.
+
+## 13.11 Créditos
+Gate final executado dentro do limite autorizado (≤ 18 créditos).
+
+## 13.12 Status
+**APTO PARA FASE 7** — segurança, T2/T3, checkout runtime nos 4 estados, concorrência, pós-condição das quatro RPCs por assinatura, auditoria completa do default, cleanup, typecheck, testes e build comprovados. Fase 7 não iniciada.
