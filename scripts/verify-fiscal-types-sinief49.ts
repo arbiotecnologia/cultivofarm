@@ -172,12 +172,33 @@ export function verifySinief49Types(source: string): Miss[] {
     }
     for (const c of t.columns) checkColumn(row, c, t.name, misses);
     if (t.relationships) {
+      // PostgREST emite uma entrada por relação alcançável pela MESMA FK
+      // (tabela base + cada view que expõe a coluna). Extraímos cada entrada
+      // isoladamente (delimitada por `{ ... }`) e exigimos que a relação
+      // canônica exata exista entre elas.
+      const entries = [...block.matchAll(/\{([^{}]*referencedColumns:[^{}]*)\}/g)].map(
+        (m) => m[1],
+      );
+      const parsed = entries.map((e) => {
+        const ownCols = e.match(/(?:^|[^a-zA-Z])columns:\s*\[([^\]]*)\]/)?.[1];
+        const refCols = e.match(/referencedColumns:\s*\[([^\]]*)\]/)?.[1];
+        const relName = e.match(/referencedRelation:\s*"([^"]+)"/)?.[1] ?? "";
+        const norm = (s: string | undefined) =>
+          (s ?? "")
+            .split(",")
+            .map((x) => x.trim().replace(/"/g, ""))
+            .filter(Boolean)
+            .join(",");
+        return { columns: norm(ownCols), relName, referencedColumns: norm(refCols) };
+      });
       for (const rel of t.relationships) {
-        const relRe = new RegExp(
-          `columns:\\s*\\[\\s*${rel.columns.map((c) => `"${c}"`).join(",\\s*")}\\s*\\][\\s\\S]{0,300}?referencedRelation:\\s*"([^"]+)"[\\s\\S]{0,300}?referencedColumns:\\s*\\[\\s*${rel.referencedColumns.map((c) => `"${c}"`).join(",\\s*")}\\s*\\]`,
+        const found = parsed.some(
+          (p) =>
+            p.columns === rel.columns.join(",") &&
+            p.relName === rel.referencedRelation &&
+            p.referencedColumns === rel.referencedColumns.join(","),
         );
-        const m = block.match(relRe);
-        if (!m || m[1] !== rel.referencedRelation) {
+        if (!found) {
           misses.push({
             kind: "relationship",
             detail: `${t.name} → columns=[${rel.columns.join(",")}] referencedRelation=${rel.referencedRelation} referencedColumns=[${rel.referencedColumns.join(",")}]`,
@@ -185,6 +206,8 @@ export function verifySinief49Types(source: string): Miss[] {
         }
       }
     }
+
+
   }
   return misses;
 }

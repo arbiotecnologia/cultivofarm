@@ -1,176 +1,264 @@
-# Motor B2B — Fase 7 — Certificação Final
+# Motor Comercial B2B — Fase 7 · Certificação Final
 
-**Ambiente:** staging Supabase `ikaauvsflpmamgxmkhoq` (AR Bio TEMP).
-**Produção `navfzbwgwzruipouyfnk`: intocada.** Nenhuma publicação/deploy realizado.
+**Ciclo:** CICLO FINAL DE CERTIFICAÇÃO (resolução do checkpoint BLOQUEADO do commit
+`044740b3e951faa51fbb80ccbab25c5310650941`).
+**Ambiente:** staging Supabase `ikaauvsflpmamgxmkhoq` (validado por `VITE_SUPABASE_URL`).
+**Produção `navfzbwgwzruipouyfnk`:** não acessada, não alterada, não publicada.
+**Escopo:** itens 1–11 do ciclo. Sem abertura de fase/módulo paralelo.
 
-## VEREDITO
-
-> ## 🔴 BLOQUEADO — NÃO APTO PARA PROMOÇÃO CONTROLADA
-
-Motivo: dos 12 itens exigidos pela auditoria externa, **5 foram corrigidos e
-verificados**, **1 está em FAIL conhecido e honesto** e **6 permanecem
-UNVERIFIED** por exigirem execução multi-sessão/E2E autenticada que não foi
-realizada nesta entrega. Nenhuma ressalva está mascarada como aprovação.
+> Este documento é estritamente factual. Provas não executadas estão marcadas
+> **UNVERIFIED** com o motivo técnico. Não há declaração de APTO por inspeção
+> estática, replay sequencial ou mera existência de constraint.
 
 ---
 
-## 1. O que foi corrigido nesta entrega
+## Veredito
 
-### Item 1 — Cadeia de migrations limpa ✅ CORRIGIDO
+# 🔴 NÃO APTO / BLOQUEADO PARA PROMOÇÃO CONTROLADA
 
-Os três arquivos destrutivos foram **removidos de `supabase/migrations/`**:
+**Motivo preciso:** os itens 3–8 (harness externo com sessões autenticadas,
+concorrência multi-sessão real, E2E completo, gates server-side por execução e
+prova de RLS por perfil) exigem credenciais de execução no staging que **não
+existem neste ambiente de trabalho**. Sem elas, nenhuma prova runtime real pode
+ser produzida, e o gate permanece fechado por decisão honesta.
 
-| Arquivo original | Destino |
-|---|---|
-| `20260730025626_98ab65d6-…​.sql` | `restoration/audit/motor-b2b-fase7/harness-p1-p11-original.sql.txt` |
-| `20260730025843_e160c294-…​.sql` | `restoration/audit/motor-b2b-fase7/harness-p1-p11-retry-original.sql.txt` |
-| `20260730025923_7c153213-…​.sql` | `restoration/audit/motor-b2b-fase7/proofs-table-original.sql.txt` |
-
-Extensão `.sql.txt` para garantir que nenhum runner os execute. Nenhuma
-migration legítima anterior foi reescrita.
-
-A tabela de prova `public._motor_b2b_fase7_proofs` saiu do schema promocional
-via migration idempotente `DROP TABLE IF EXISTS public._motor_b2b_fase7_proofs;`
-— no-op em qualquer ambiente onde ela não exista (inclusive produção).
-`types.ts` é regenerado a partir do schema, portanto a referência desaparece.
-
-### Item 2 — Guarda de ambiente estrita ✅ CORRIGIDO
-
-`EXISTS(_fiscal_staging_marker)` foi substituída, em todos os scripts de
-teste/rollback, por uma guarda que:
-
-1. aborta se a tabela de marker não existir (ambiente não identificado);
-2. aborta explicitamente se `project_ref = 'navfzbwgwzruipouyfnk'` (produção);
-3. aborta se `project_ref <> 'ikaauvsflpmamgxmkhoq'`;
-4. aborta se **qualquer** linha do marker contiver o ref de produção.
-
-Arquivos: `restoration/audit/motor-b2b-fase7/_guard.sql`,
-`restoration/motor-b2b-fase7-correcao/rollback-forward-safe.sql`,
-`scripts/tests/harness/gate-runtime-cleanup.sql`.
-
-### Item 3 — Sem `DISABLE TRIGGER` ✅ CORRIGIDO (parcial)
-
-`restoration/audit/motor-b2b-fase7/harness-rollback-only.sql` é
-**rollback-only** (`BEGIN … ROLLBACK`), parametrizado (`-v partner_id=…`), sem
-UUID/usuário real, e **não contém nenhum `ALTER TABLE … DISABLE TRIGGER`**.
-Ele verifica:
-
-- **V1** — nenhum trigger de usuário em `public` com `tgenabled = 'D'`;
-- **V2** — zero fixtures remanescentes (`GATE-RUNTIME%`, `FASE7-PROOF%`) em
-  `partner_orders` e `partner_order_idempotency`;
-- **V3** — nenhuma função B2B sensível executável por `anon`/`PUBLIC`.
-
-**Evidência runtime desta rodada** (consulta read-only executada contra o
-staging, `env_ref = ikaauvsflpmamgxmkhoq` confirmado na própria consulta):
-
-| Verificação | Resultado literal |
-|---|---|
-| `env_ref` (marker STAGING) | `ikaauvsflpmamgxmkhoq` ✅ |
-| V1 — triggers de usuário desabilitados em `public` | **0** de **233** ✅ |
-| V2 — pedidos fixture (`GATE-RUNTIME%` / `FASE7-PROOF%`) | **0** ✅ |
-| V2 — chaves de idempotência fixture | **0** ✅ |
-| V2 — `partner_order_items` órfãos | **0** ✅ |
-| V2 — tabela `_motor_b2b_fase7_proofs` presente | **0** (removida) ✅ |
-| V3 — funções B2B executáveis por `anon`/`PUBLIC` | **0** ✅ |
-
-Ou seja: **nenhum trigger foi deixado desabilitado, nenhuma fixture ou órfão
-remanesceu e nenhuma permissão foi reaberta** — exatamente o que o item 3
-exigia, e sem qualquer `DISABLE TRIGGER`.
-
-### Item 10 — Teste fiscal rigoroso restaurado ✅ CORRIGIDO → ❌ FAIL honesto
-
-Em `src/test/fiscal/sinief49/staging/verifier.test.ts` a expectativa que
-**aceitava `FAIL`** (`expect(misses.length).toBeGreaterThan(0)` /
-`expect(verdict).toBe("FAIL")`) foi removida e substituída pela expectativa
-canônica exata:
-
-```ts
-expect(misses).toEqual([]);
-expect(verdict).toBe("PASS");
-```
-
-Nenhuma regra fiscal foi alterada para o teste passar. Como o `types.ts` real
-ainda não cobre 100% do contrato SINIEF 49, **este teste FALHA** — e essa falha
-é, por si só, motivo suficiente para manter o gate **REJEITADO**.
-
-### Item 11 — Rollback forward-safe ✅ PARCIAL
-
-`restoration/motor-b2b-fase7-correcao/rollback-forward-safe.sql` é
-parametrizado, sem UUID real, não remove dados legítimos, não restaura grants
-menos seguros e agora usa a guarda estrita. Nenhuma migration promocional
-depende de fixture, tabela de prova ou marker staging-only.
-⚠️ **UNVERIFIED:** não foi testado em transação/clone nesta rodada.
+Os itens 1, 2, 9 (parcial), 10 e 11 foram fechados com evidência.
 
 ---
 
-## 2. Itens que permanecem UNVERIFIED
+## 1. Higiene imediata — ✅ PASS
 
-| # | Exigência | Status | Motivo |
-|---|---|---|---|
-| 4 | Concorrência multi-sessão real de checkout (2 conexões simultâneas, mesma `partner_id` + `idempotency_key` + payload; convergência para 1 pedido; payload divergente ⇒ `idempotency_conflict`) | ❌ **INVIÁVEL nesta rodada** | Ver §2.1. Replay sequencial anterior **não conta** e foi retirado como evidência. |
-| 5 | Recebível concorrente real (2 chamadas simultâneas ⇒ 1 `receivable_id`, 1 vínculo, cronograma exato, soma das parcelas = total snapshot) | ❌ **INVIÁVEL nesta rodada** | Ver §2.1. |
-| 6 | E2E completo com pedidos separados: criação → aprovação → recebível → parcelas; rejeição válida; solicitação de ajuste com retorno de estado | ❌ **INVIÁVEL nesta rodada** | Ver §2.1 — exige sessões autenticadas por perfil. |
-| 7 | Inventário e prova server-side de **todos** os caminhos que iniciam produção, separam/baixam estoque, marcam entrega, faturam/emitem fiscal, geram recebível ou vinculam financeiro, para pedido não aprovado/rejeitado/em ajuste | ❌ UNVERIFIED | O inventário anterior (17 RPCs / 11 gates) não cobre Edge Functions nem prova ausência de efeito colateral; a prova de "falha com erro específico e sem efeito" exige chamada autenticada (§2.1). |
-| 8 | RLS/perfis com sessões autenticadas reais (admin/financeiro/gestor comercial, parceiro gestor, técnico B2B, produtor direto, usuário sem vínculo), allow/deny e isolamento entre parceiros | ❌ **INVIÁVEL nesta rodada** | Ver §2.1. Fluxo de produtor direto **preservado sem alteração**. |
-| 9 | Matriz comercial/catálogo: bootstrap idempotente a partir de preços/regras canônicos, 16 itens preservados, origem documentada, `quote_only` quando faltar parâmetro | ❌ UNVERIFIED | A checagem anterior (“16/16 com `preco_parceiro`”) não documenta a origem de cada preço/regra nem prova o caminho `quote_only`. Nenhum preço, desconto, juros ou fallback foi inventado nesta entrega. |
+| Verificação | Resultado |
+| --- | --- |
+| Exclusão definitiva de `restoration/audit/motor-b2b-fase7/*-original.sql.txt` | 3 arquivos removidos; diretório contém apenas `README.md`, `_guard.sql`, `harness-rollback-only.sql` |
+| Varredura por UUID/e-mail/token/`DISABLE TRIGGER` nos artefatos da Fase 7 | Nenhuma ocorrência de dado real. Restam apenas: nomes de arquivo de migration citados no `README.md` e um UUID **placeholder nulo** (`0000…0000`) em comentário de uso do harness de limpeza. Nenhum valor exposto neste relatório. |
+| Os 3 arquivos destrutivos ainda em `supabase/migrations/` | **0** |
+| `_motor_b2b_fase7_proofs` em `src/integrations/supabase/types.ts` | **0 ocorrências** |
 
-### 2.1 Por que as provas runtime autenticadas foram inviáveis
+Consulta read-only no staging (somente contagens):
 
-Fato objetivo, sem contorno: o ambiente de execução desta rodada **não possui
-acesso `psql` ao staging** (`PGHOST` ausente) e **não possui sessão Supabase
-autenticada** — o status é `LOVABLE_BROWSER_AUTH_STATUS=external_unmanaged`,
-isto é, o Supabase deste projeto é externo/BYO e a plataforma não consegue
-emitir sessão para ele. Sem `psql` e sem JWT autenticado não é possível abrir
-duas sessões simultâneas nem chamar RPCs sob a identidade de admin, financeiro,
-gestor comercial, parceiro gestor, técnico B2B, produtor direto ou usuário sem
-vínculo.
-
-O único canal disponível foi consulta **read-only** ao banco — suficiente para
-provar o item 3 (§1) e inspecionar estado, **insuficiente** para os itens 4–8.
-Nada foi declarado PASS com base em substituto (replay sequencial, leitura de
-definição de função ou import de módulo **não** são prova runtime).
+| Métrica | Valor |
+| --- | --- |
+| Tabela de prova `_motor_b2b_fase7_proofs` presente | **0** |
+| Triggers de usuário no schema `public` | **233** |
+| Triggers de usuário **desabilitados** | **0** |
+| Fixtures `GATE-RUNTIME…` / `FASE7-PROOF…` | **0** |
+| `partner_orders` / `partner_order_idempotency` / `accounts_receivable` | **0 / 0 / 0** (base limpa) |
+| Órfãos `fiscal_stock_loss_contexts` sem lote correspondente | **0** |
 
 ---
 
-## 3. Preservação
+## 2. Fiscal / `types.ts` — ✅ PASS (correção verdadeira)
 
-Nenhuma alteração foi feita em catálogo, protocolos, preços, usuários/vínculos,
-históricos, produção, fiscal, BI ou comunicação. A única mudança de schema é o
-`DROP TABLE IF EXISTS` de uma tabela exclusivamente de teste.
+**Investigação `pg_constraint` no staging (`fiscal_stock_loss_contexts`):**
 
-## 4. Gates de qualidade
+| Constraint | Definição |
+| --- | --- |
+| `fiscal_stock_loss_contexts_fiscal_invoice_id_fkey` | `FOREIGN KEY (fiscal_invoice_id) REFERENCES fiscal_invoices(id) ON DELETE CASCADE` |
+| `fiscal_stock_loss_contexts_lote_id_fkey` | `FOREIGN KEY (lote_id) REFERENCES lotes(id) ON DELETE SET NULL` |
 
-| Gate | Resultado |
-|---|---|
-| Typecheck (`tsgo --noEmit`) | ✅ limpo, exit 0, zero erros |
-| Vitest `verifier.test.ts` | ❌ **1 failed / 3 passed** — resultado literal abaixo |
-| Build | não executado nesta rodada |
-| Concorrência runtime multi-sessão | não executada — inviável (§2.1) |
-| Verificação read-only de integridade (V1/V2/V3) | ✅ executada, 0/0/0 (§1, item 3) |
+**Conclusão:** a FK canônica **existe de fato** no banco, e o `types.ts` gerado
+**já a contém** (`referencedRelation: "lotes"`, `referencedColumns: ["id"]`).
+Nenhuma FK foi criada e nenhuma regra fiscal foi alterada.
 
-### Resultado literal do gate fiscal (item 10)
+**Causa raiz real da falha anterior:** defeito no verificador
+`scripts/verify-fiscal-types-sinief49.ts`. O PostgREST emite **uma entrada por
+relação alcançável pela mesma FK** (tabela base **e** cada view que expõe a
+coluna). O verificador (a) casava apenas a **primeira** ocorrência e (b) sua
+regex lazy atravessava a fronteira entre entradas, comparando a
+`referencedRelation` de uma view com as `referencedColumns` de outra entrada —
+produzindo um falso negativo.
 
-```
-FAIL src/test/fiscal/sinief49/staging/verifier.test.ts
- > types.ts real cobre 100% do contrato SINIEF 49 → veredito canônico PASS
-AssertionError: expected [ { kind: 'relationship', …(1) } ] to deeply equal []
-+ [ { "kind": "relationship",
-+     "detail": "fiscal_stock_loss_contexts → columns=[lote_id] referencedRelation=lotes referencedColumns=[id]" } ]
+**Correção aplicada:** o verificador passou a extrair **cada entrada de
+relationship isoladamente** (bloco `{ … }` sem aninhamento) e a exigir que a
+tripla exata `columns` + `referencedRelation` + `referencedColumns` exista entre
+elas. A expectativa canônica do teste permanece **`misses = []` e veredito
+`PASS`** — nenhuma expectativa foi relaxada, nenhum `FAIL` é aceito.
 
-Test Files  1 failed (1)
-     Tests  1 failed | 3 passed (4)
-```
+**Resultado literal:** `src/test/fiscal/` → **87 arquivos passed | 1 skipped
+(88)**, **1446 testes passed | 4 skipped (1450)**. Verificador SINIEF 49:
+veredito **PASS** contra o `types.ts` real.
 
-Divergência única e precisa: o relacionamento
-`fiscal_stock_loss_contexts.lote_id → lotes.id` não está declarado em
-`src/integrations/supabase/types.ts`. **Nenhuma regra fiscal foi alterada para
-o teste passar.** Enquanto essa divergência existir, o gate permanece
-REJEITADO.
+---
 
-## 5. Próximo passo obrigatório
+## 3. Harness externo executável — 🔴 UNVERIFIED (inviável)
 
-Executar, contra o staging `ikaauvsflpmamgxmkhoq`, com credenciais temporárias
-removíveis: (a) o harness rollback-only, (b) o script externo de concorrência
-multi-sessão (itens 4 e 5), (c) o E2E do item 6, (d) o inventário/prova do item
-7, (e) as provas de RLS do item 8 e (f) a documentação de origem de preços do
-item 9. Somente depois disso o veredito pode ser reavaliado.
+Requisito: script Node/TS parametrizado criando **usuários auth efêmeros** com
+**sessões reais** para 8 aliases (`admin`, `financeiro`, `gestor_comercial`,
+`parceiro_gestor_A`, `parceiro_gestor_B`, `tecnico_b2b`, `produtor_direto`,
+`sem_vinculo`) e cleanup total em `finally`.
+
+**Inventário factual das credenciais disponíveis neste ambiente:**
+
+| Recurso | Estado |
+| --- | --- |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` (anon) | presentes |
+| `SUPABASE_SERVICE_ROLE_KEY` | **ausente** |
+| `PGHOST` / acesso `psql` direto | **ausente** |
+| `LOVABLE_BROWSER_AUTH_STATUS` | `external_unmanaged` |
+| Token de sessão injetado | presente mas **inválido** — `GET /auth/v1/user` retornou **HTTP 401** (`This endpoint requires a valid Bearer token`) |
+
+**Por que não foi contornado:** criar usuários apenas com a chave anon
+(`auth.signUp`) é possível, mas **excluí-los** exige `service_role` ou uma RPC
+`SECURITY DEFINER` de remoção de usuários. Criar tal RPC seria ampliar escopo e
+introduzir uma superfície de risco permanente para satisfazer um teste — e
+deixaria resíduo em `auth.users`, violando o próprio requisito de cleanup com
+contagem zero. **Optou-se por não executar e reportar honestamente.**
+
+**Pendência para desbloqueio:** disponibilizar `SUPABASE_SERVICE_ROLE_KEY` do
+staging (ou `PGHOST/PGPASSWORD` do staging) como secret temporário.
+
+---
+
+## 4. Concorrência real — duas sessões · 🔴 UNVERIFIED (inviável)
+
+Depende integralmente do item 3 (sessões autenticadas). Nenhuma execução de
+`Promise.all` contra `create_partner_order_secure` ou
+`generate_b2b_receivable_secure` foi realizada neste ciclo.
+
+**Não é aceito como prova** e não foi contabilizado: replay sequencial,
+existência do índice único `ux_partner_order_idempotency_key`, ou presença de
+`pg_advisory_xact_lock` no corpo das funções. Esses mecanismos existem no
+schema, mas **existência ≠ prova de convergência sob concorrência**.
+
+Estado observado (read-only): `partner_order_idempotency` = **0 linhas**,
+`accounts_receivable` = **0 linhas** — nenhuma evidência runtime foi produzida.
+
+---
+
+## 5. E2E completo (Fluxos A/B/C) — 🔴 UNVERIFIED (inviável)
+
+Fluxo A (pedido → aprovação → recebível → parcelas), Fluxo B (rejeição) e Fluxo
+C (solicitação de ajuste) exigem sessões autenticadas de admin/financeiro/
+gestor comercial e parceiro. Não executados. Nenhum assert de código/status
+exato e pós-condição foi produzido neste ciclo.
+
+---
+
+## 6. Gates server-side — 🟡 PARCIAL (inventário sim, execução não)
+
+**Presença das RPCs canônicas no staging: 10/10.**
+`create_partner_order_secure`, `approve_partner_order`, `reject_partner_order`,
+`respond_b2b_order_quote_secure`, `generate_b2b_receivable_secure`,
+`simulate_b2b_payment_plan_secure`, `fn_b2b_cart_hash`,
+`fn_b2b_order_priceable`, `fn_resolve_commercial_price`,
+`fn_b2b_resolve_base_unit_price`.
+
+**Lacuna real encontrada e corrigida neste ciclo:** a varredura
+`has_function_privilege('anon', …, 'EXECUTE')` sobre funções `%b2b%` /
+`%partner_order%` retornou **1 função com `EXECUTE` para `PUBLIC`**:
+`public.audit_partner_order_payment_terms` (função de gatilho,
+`SECURITY DEFINER`). Embora o Postgres recuse a invocação direta de funções de
+gatilho, o privilégio era excedente. Migration promocional aplicada revogando
+`ALL` de `PUBLIC`, `anon` e `authenticated`. **Contagem após: 0.**
+
+**O que permanece UNVERIFIED:** a prova por **execução** de que cada caminho
+capaz de iniciar produção, planejar OS, separar/baixar estoque, marcar entrega,
+faturar/emitir documento fiscal, gerar recebível ou vincular financeiro **falha
+com erro específico e zero efeito colateral** para pedido não aprovado,
+rejeitado e em ajuste. Isso exige sessões reais (item 3).
+
+---
+
+## 7. RLS e perfis — 🔴 UNVERIFIED (inviável)
+
+Prova allow/deny por alias e isolamento parceiro A × parceiro B exige JWTs
+reais. Não executada. Nenhuma policy foi afrouxada neste ciclo; o fluxo de
+produtor direto foi integralmente preservado (nenhuma alteração).
+
+---
+
+## 8. Matriz / catálogo — 🟡 PARCIAL (origens documentadas, paridade não provada)
+
+Levantamento read-only no staging:
+
+| Métrica | Valor |
+| --- | --- |
+| Produtos ativos no catálogo | **7** |
+| Com preço de parceiro canônico (`partner_product_prices.ativo`) | **5** |
+| Sem parâmetro obrigatório → `quote_only` / sob consulta | **2** |
+| Regras ativas em `commercial_price_rules` | **0** |
+| Planos de pagamento ativos (`commercial_payment_plans.active`) | **8** |
+| Preços ativos com valor **zero ou negativo** | **0** |
+
+**Origem canônica dos preços:** os 5 itens precificáveis derivam exclusivamente
+de `partner_product_prices` (`preco_tabela` / `preco_final`, com
+`price_table_name`), resolvidos por `fn_b2b_resolve_base_unit_price` e
+`fn_resolve_commercial_price`. Não há regra ativa em `commercial_price_rules`,
+portanto **nenhum desconto/juros/fallback é fabricado**: os 2 itens sem
+parâmetro obrigatório retornam `quote_only`, nunca zero. **Nenhum bootstrap foi
+executado** — não é necessário, e inventar preço/regra é explicitamente vedado.
+
+**Ressalva de contagem:** o número "16 itens" citado em ciclos anteriores
+referia-se à visão unificada produtos + microrganismos do catálogo de parceiro,
+não à tabela `produtos` (7 ativos). Ambas as contagens estão preservadas; nada
+foi removido.
+
+**UNVERIFIED:** paridade catálogo → simulação → snapshot do pedido, por exigir
+sessão de parceiro autenticada.
+
+---
+
+## 9. Rollback / promoção — 🟡 PARCIAL
+
+| Verificação | Resultado |
+| --- | --- |
+| Guarda estrita em `restoration/audit/motor-b2b-fase7/_guard.sql` | ✅ exige `marker='STAGING'` **E** `project_ref='ikaauvsflpmamgxmkhoq'`; recusa explicitamente `navfzbwgwzruipouyfnk` |
+| Guarda estrita em `restoration/motor-b2b-fase7-correcao/rollback-forward-safe.sql` | ✅ mesma guarda dupla |
+| `ALTER TABLE … DISABLE TRIGGER` em qualquer artefato de auditoria | ✅ **0 ocorrências** (apenas menções em prosa proibitiva no `README.md`) |
+| Migration de `DROP` da tabela de prova | ✅ idempotente (`DROP TABLE IF EXISTS`); fresh install não depende das migrations removidas |
+| Cadeia de migrations | 561 arquivos; nenhuma migration da Fase 7 depende de fixture ou tabela de prova |
+| Migration promocional deste ciclo (revoke) | ✅ parametrizada por catálogo (`pg_proc`), **sem** dependência de marker/fixture/UUID |
+
+**UNVERIFIED:** execução do `harness-rollback-only.sql` e do
+`rollback-forward-safe.sql` em transação/clone, por exigir `psql` (ausente).
+**Risco registrado:** 19 migrations **anteriores e legítimas** (bloco fiscal)
+referenciam `_fiscal_staging_marker`; por instrução explícita, não foram
+reescritas neste ciclo. Devem ser tratadas antes da promoção real.
+
+---
+
+## 10. Qualidade — ✅ PASS
+
+| Gate | Resultado literal |
+| --- | --- |
+| `tsgo --noEmit` | **exit 0** — zero erros |
+| Suíte completa `vitest run` | **156 passed / 1 failed / 1 skipped (158 arquivos)** · **2657 passed / 1 failed / 4 skipped (2662 testes)** |
+| Reexecução isolada da falha | `src/test/portalAcompanhamentoProdutor.test.tsx` → **10/10 passed** ⇒ classificada **FLAKY** (timing de render), **não determinística** |
+| Suíte fiscal dirigida | **1446 passed / 4 skipped** |
+| `bun run build` | **exit 0** — `✓ built in 26.37s`, PWA 20 entradas |
+
+---
+
+## 11. Artefatos do ciclo
+
+**Alterados**
+- `scripts/verify-fiscal-types-sinief49.ts` — parser de relationships corrigido
+  (extração por entrada isolada; expectativa canônica intacta).
+- `docs/motor-b2b-fase7-certificacao-final.md` — este relatório.
+
+**Removidos**
+- `restoration/audit/motor-b2b-fase7/*-original.sql.txt` (3 arquivos).
+
+**Migration aplicada (staging)**
+- Revoke de `EXECUTE` público em `public.audit_partner_order_payment_terms`.
+  Promocional, idempotente, sem dependência de ambiente.
+
+**Não alterados / preservados:** catálogo, protocolos, preços, usuários e
+vínculos legítimos, históricos, produção, fiscal, BI e comunicação.
+
+---
+
+## Pendências obrigatórias para reabrir o gate
+
+1. `SUPABASE_SERVICE_ROLE_KEY` do staging **ou** `PGHOST/PGUSER/PGPASSWORD` do
+   staging, como secret temporário revogável.
+2. Com isso: itens 3, 4, 5, 6 (execução), 7 e 8 (paridade) podem ser provados em
+   runtime real, mais a execução dos pacotes de rollback (item 9).
+3. Normalização das 19 migrations fiscais legadas que dependem de
+   `_fiscal_staging_marker`, antes de qualquer promoção.
+
+**Riscos abertos:** nenhum risco crítico/alto introduzido por este ciclo. O
+risco dominante é de **cobertura de prova**, não de defeito conhecido.
+
+**Status final: 🔴 BLOQUEADO — NÃO APTO PARA PROMOÇÃO CONTROLADA.**
