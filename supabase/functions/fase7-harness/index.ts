@@ -108,8 +108,12 @@ Deno.serve(async (req) => {
       { erro: catErr?.message, total: items.length, precificados: priced.length, quote_only: quoteOnly.length });
 
     const { data: plans } = await a.from("commercial_payment_plans")
-      .select("id,code,is_active").eq("is_active", true).limit(1);
-    const planId = (plans ?? [])[0]?.id as string | undefined;
+      .select("id,code,active").eq("active", true).limit(5);
+    let planId: string | undefined;
+    for (const pl of (plans ?? []) as { id: string }[]) {
+      const { data: sel } = await a.rpc("fn_b2b_plan_selectable", { p_plan_id: pl.id });
+      if (sel === true) { planId = pl.id; break; }
+    }
 
     const src = priced[0] as Record<string, unknown> | undefined;
     const unidade = src?.item_tipo === "microrganismo"
