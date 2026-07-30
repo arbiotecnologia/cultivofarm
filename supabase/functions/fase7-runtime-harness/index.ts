@@ -375,12 +375,12 @@ Deno.serve(async (req) => {
           await del("accounts_receivable", "id", recIds);
         }
         await del("accounts_receivable", "origin_id", ids);
-        await del("partner_order_payment_schedule", "order_id", ids);
-        await del("partner_order_payment_terms", "partner_order_id", ids);
+        await del("partner_order_payment_schedule", "partner_order_id", ids);
         await del("partner_order_audit_logs", "order_id", ids);
         await del("partner_order_items", "order_id", ids);
         await del("partner_order_idempotency", "order_id", ids);
         await del("partner_orders", "id", ids);
+        await del("partner_order_payment_terms", "partner_order_id", ids);
       }
       await del("partner_order_idempotency", "partner_id", partnerIds);
       await del("partner_users", "partner_id", partnerIds);
