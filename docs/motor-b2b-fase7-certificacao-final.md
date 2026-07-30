@@ -161,7 +161,12 @@ o total snapshot; rejeição (pré-aprovação) e cancelamento (pós-aprovação
 
 > 🟢 **STAGING CERTIFICADO** — inclui o gate obrigatório E2E de paridade (15/15 PASS, seção 6).
 > 🟢 **MIGRATIONS FISCAIS NORMALIZADAS** — as 19 migrations passaram a usar guarda portátil
-> (recusa apenas produção comprovada; banco novo replica sem erro). Pacote de promoção
-> documentado em `restoration/promocao-b2b/README.md`.
-> 🟡 **PROMOÇÃO LIBERADA TECNICAMENTE, AGUARDANDO AUTORIZAÇÃO HUMANA** — nada executado em produção.
-> ⚫ **PRODUÇÃO `navfzbwgwzruipouyfnk`: NÃO EXECUTADA** — bloqueada por decisão, aguardando autorização.
+> (recusa produção comprovada). Elas permanecem como **registro histórico** e **não** servem
+> como pacote de produção.
+> 🟡 **PROMOÇÃO AINDA NÃO EXECUTÁVEL POR SI SÓ** — a afirmação anterior de "promoção liberada
+> tecnicamente" foi **retirada**: as migrations históricas recusam o `project_ref` de produção.
+> O artefato de promoção real é o delta forward-only em `restoration/promocao-b2b/`, cujo gate
+> vigente está em `docs/motor-b2b-promocao-gate.md` (`STAGING_REHEARSAL_PASS (parcial)` /
+> `HUMAN_AUTHORIZATION_PENDING`).
+> ⚫ **PRODUÇÃO `navfzbwgwzruipouyfnk`: NÃO EXECUTADA** (`PRODUCTION_NOT_EXECUTED`).
+
