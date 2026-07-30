@@ -74,6 +74,33 @@ export type Database = {
         }
         Relationships: []
       }
+      _motor_b2b_fase7_proofs: {
+        Row: {
+          created_at: string
+          details: Json
+          id: string
+          proof: string
+          result: string
+          run_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          id?: string
+          proof: string
+          result: string
+          run_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          id?: string
+          proof?: string
+          result?: string
+          run_id?: string
+        }
+        Relationships: []
+      }
       _motor_b2b_pre_phase1_snapshot: {
         Row: {
           acl: string | null

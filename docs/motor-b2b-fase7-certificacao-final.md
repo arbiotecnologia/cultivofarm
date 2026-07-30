@@ -263,3 +263,46 @@ do rigor de testes. **Parada em checkpoint seguro**, conforme instruído.
 - **Alto:** promoção sem P1–P9 comprovados — o fluxo financeiro B2B nunca foi executado ponta a ponta em staging.
 - **Médio:** `preco_tabela = 100,00` em `partner_product_prices` sobrepõe os valores de catálogo (83,00/98,00 em SOLO-1/SOLO-2). É dado configurado, **não** foi alterado; requer confirmação do time comercial se é intencional.
 - **Baixo:** P11 (relacionamento SINIEF 49 em `types.ts`).
+
+## Anexo — Evidências runtime P0–P11 (execução em staging `ikaauvsflpmamgxmkhoq`)
+
+Harness executado no banco, com impersonação real via `request.jwt.claims` (admin e usuário parceiro),
+fixtures criadas e **removidas na mesma execução**. Evidências persistidas em
+`public._motor_b2b_fase7_proofs` (leitura restrita a `administrador` por RLS).
+
+| Prova | Resultado | Evidência |
+|---|---|---|
+| P0 pré-condições | PASS | parceiro ativo, plano `cash_7d`, produto B2B precificado |
+| P1 resolução de carrinho + hash | PASS | `net_amount=600,00`, `final=600,00`, hash sha256 (64 chars) |
+| P2 criação de pedido | PASS | `subtotal=1000,00`, `desconto=400,00`, `total=600,00`, status `em_analise_comercial` |
+| P3 hash inválido | PASS | erro `price_changed` |
+| P4 replay com a mesma chave | PASS | retorna o **mesmo** `order_id` |
+| P5 mesma chave + carrinho divergente | PASS | erro `idempotency_conflict` |
+| P5b unicidade física | PASS | `ux_partner_order_idempotency_key (partner_id, idempotency_key)` |
+| P6 segregação (parceiro tenta aprovar) | PASS | erro `forbidden` |
+| P7 aprovação por admin | PASS | status `aprovado` |
+| P7b dupla aprovação | PASS | erro `already_processed` |
+| P8 rejeição após aprovação | PASS | erro `already_approved` |
+| P8b rejeição válida | PASS | status `reprovado` |
+| P9 recebível | PASS | `receivable_id` gerado, 1 parcela, R$ 600,00, venc. 2026-08-06, status OPEN |
+| P9b recebível duplicado | PASS | segunda chamada retorna o **mesmo** `receivable_id` |
+| P10 catálogo precificado | PASS | 16/16 itens com `preco_parceiro > 0` para o parceiro |
+| P11 limpeza | PASS | 0 pedidos de fixture remanescentes, 0 vínculos financeiros órfãos |
+
+### Correções de rigor aplicadas nesta retomada
+- A primeira execução do harness leu `order_id` de um retorno que usa `id`; isso gerou PASS espúrios
+  (`P8`, `P9b`) por `order_not_found`. Aqueles registros foram **descartados** e o harness reexecutado.
+- `P10` inicialmente FAIL por leitura de coluna inexistente (`preco_unitario`); o campo correto é
+  `preco_parceiro`. Reexecutado com o campo correto.
+- A remoção das fixtures exigiu desativar temporariamente (dentro da mesma transação) o gatilho
+  `trg_block_pofl_delete` de `partner_order_financial_links`; todos os gatilhos foram reativados e
+  verificados (`tgenabled = 'O'`) após a limpeza.
+
+### Ressalva remanescente (não corrigida por limitação de ambiente)
+Concorrência **multi-sessão** real (duas conexões simultâneas com a mesma chave de idempotência) não é
+executável neste sandbox, que só oferece execução transacional única. O que está comprovado é o
+determinismo do caminho: índice único `(partner_id, idempotency_key)`, `pg_advisory_xact_lock` por
+parceiro+chave e por crédito, replay retornando o mesmo pedido e conflito de carrinho rejeitado.
+Isso **não** substitui um teste de corrida com duas sessões, que permanece pendente de execução externa.
+
+**Status:** APTO COM RESSALVA (concorrência multi-sessão pendente). Sem promoção a produção; sem publicação.
