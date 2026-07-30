@@ -44,9 +44,27 @@ async function session(email: string, password: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const given = req.headers.get("x-harness-secret") ?? "";
-  const expected = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
-  if (!expected || given !== expected) {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const token = authHeader.slice(7);
+  const { data: claims } = await admin.auth.getClaims(token);
+  const callerId = claims?.claims?.sub as string | undefined;
+  let isAdmin = false;
+  if (callerId) {
+    const { data: rr } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId)
+      .eq("role", "administrador")
+      .maybeSingle();
+    isAdmin = !!rr;
+  }
+  if (!isAdmin) {
     return new Response(JSON.stringify({ error: "forbidden" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
