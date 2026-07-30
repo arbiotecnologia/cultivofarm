@@ -141,16 +141,24 @@ Deno.serve(async (req) => {
       return Number(d?.exposicao_atual ?? 0);
     };
 
+    const totalSnap = Number(terms?.final_amount ?? 0);
+    const expPendente = await exposure();
+    const apr = await sCom.rpc("approve_partner_order", { p_order_id: oid, p_approval_notes: `${tag} aprovacao paridade` });
     const expAfter = await exposure();
-    const replay = await sPar.rpc("create_partner_order_secure", {
+    const replays = await Promise.all([1, 2].map(() => sPar.rpc("create_partner_order_secure", {
       p_partner_id: pid, p_observacoes: "paridade", p_items: cart, p_payment_plan_id: plan.id,
       p_expected_cart_hash: s1.cart_hash, p_idempotency_key: `${tag}-k1`,
-    });
+    })));
     const expReplay = await exposure();
-    const totalSnap = Number(terms?.final_amount ?? 0);
-    rec("P4.credito_total_snapshot", Math.abs(expAfter - totalSnap) < 0.01 && Math.abs(expReplay - expAfter) < 0.01,
-      "exposição = total snapshot; replay/concorrência não duplica",
-      `exposição=${expAfter.toFixed(2)}, total_snapshot=${totalSnap.toFixed(2)}, após_replay=${expReplay.toFixed(2)}, replay_mesmo_pedido=${replay.data?.id === oid}`);
+    const { count: cntK1 } = await admin.from("partner_orders").select("id", { count: "exact", head: true })
+      .eq("partner_id", pid).eq("observacoes", "paridade");
+    rec("P4.credito_total_snapshot",
+      Math.abs(expPendente) < 0.01 && !apr.error && Math.abs(expAfter - totalSnap) < 0.01 &&
+      Math.abs(expReplay - expAfter) < 0.01 && (cntK1 ?? 0) === 1 &&
+      replays.every((r: any) => r.data?.id === oid),
+      "pendente não compromete; após aprovação exposição = total snapshot; replay/concorrência não duplica",
+      `exposição_pendente=${expPendente.toFixed(2)}, aprovação=${errMsg(apr.error) || "ok"}, exposição_aprovado=${expAfter.toFixed(2)}, total_snapshot=${totalSnap.toFixed(2)}, após_2_replays_concorrentes=${expReplay.toFixed(2)}, pedidos_com_a_chave=${cntK1}, replays_mesmo_id=${replays.every((r: any) => r.data?.id === oid)}`);
+
 
     // ---------- P5: mudança de preço/plano -> hash inválido, zero pedido/exposição ----------
     const alvo = priced[0];
