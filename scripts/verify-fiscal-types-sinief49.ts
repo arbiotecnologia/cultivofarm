@@ -172,17 +172,30 @@ export function verifySinief49Types(source: string): Miss[] {
     }
     for (const c of t.columns) checkColumn(row, c, t.name, misses);
     if (t.relationships) {
+      // PostgREST emite uma entrada por relação alcançável pela MESMA FK
+      // (tabela base + cada view que expõe a coluna). Extraímos cada entrada
+      // isoladamente (delimitada por `{ ... }`) e exigimos que a relação
+      // canônica exata exista entre elas.
+      const entries = [...block.matchAll(/\{([^{}]*referencedColumns:[^{}]*)\}/g)].map(
+        (m) => m[1],
+      );
+      const parsed = entries.map((e) => {
+        const cols = [...e.matchAll(/columns:\s*\[([^\]]*)\]/g)].map((m) => m[1]);
+        const relName = e.match(/referencedRelation:\s*"([^"]+)"/)?.[1] ?? "";
+        const norm = (s: string | undefined) =>
+          (s ?? "")
+            .split(",")
+            .map((x) => x.trim().replace(/"/g, ""))
+            .filter(Boolean)
+            .join(",");
+        return { columns: norm(cols[0]), relName, referencedColumns: norm(cols[1]) };
+      });
       for (const rel of t.relationships) {
-        // PostgREST emite uma entrada por relação alcançável pela MESMA FK
-        // (tabela base + views que expõem a coluna). O contrato exige que a
-        // relação canônica esteja presente entre elas — por isso varremos
-        // TODAS as ocorrências, e não apenas a primeira.
-        const relRe = new RegExp(
-          `columns:\\s*\\[\\s*${rel.columns.map((c) => `"${c}"`).join(",\\s*")}\\s*\\][\\s\\S]{0,300}?referencedRelation:\\s*"([^"]+)"[\\s\\S]{0,300}?referencedColumns:\\s*\\[\\s*${rel.referencedColumns.map((c) => `"${c}"`).join(",\\s*")}\\s*\\]`,
-          "g",
-        );
-        const found = [...block.matchAll(relRe)].some(
-          (m) => m[1] === rel.referencedRelation,
+        const found = parsed.some(
+          (p) =>
+            p.columns === rel.columns.join(",") &&
+            p.relName === rel.referencedRelation &&
+            p.referencedColumns === rel.referencedColumns.join(","),
         );
         if (!found) {
           misses.push({
@@ -192,6 +205,7 @@ export function verifySinief49Types(source: string): Miss[] {
         }
       }
     }
+
 
   }
   return misses;
