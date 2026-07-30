@@ -8,7 +8,7 @@ const STAGING_REF = "ikaauvsflpmamgxmkhoq";
 const URL_ = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
-const SECRET_SHA256 = "4e34ff70dc6ccdc019b74528ad9c0a464218ef4f9b61a20d3d8050b48f37c5f3";
+const SECRET_SHA256 = "bffd09518b39b49474ea86655a9a1049997a9e0568142fb83a6a3b09c69a59a6";
 async function sha256Hex(v: string) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v));
   return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
