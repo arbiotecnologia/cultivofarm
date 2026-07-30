@@ -357,6 +357,8 @@ Deno.serve(async (req) => {
       await del("partner_financial_settings", "partner_id", pids);
       await del("partner_accounts", "id", pids);
       await del("produtos", "id", created.produtos);
+      await del("commercial_payment_plans", "id", created.planos);
+
       if (created.users.length) {
         await del("user_roles", "user_id", created.users);
         await del("financial_audit_log", "performed_by", created.users);
