@@ -268,19 +268,30 @@ Deno.serve(async (req) => {
     rec("P11.perfis_autorizados", perfOk,
       "técnico B2B sem termos financeiros; gestor comercial autorizado", perf.join(" | "));
 
-    // ---------- P12: liberação de crédito por rejeição canônica ----------
-    const { data: s2 } = await sim(sPar);
-    const ordR = await sPar.rpc("create_partner_order_secure", {
-      p_partner_id: pid, p_observacoes: "rejeitar", p_items: cart, p_payment_plan_id: plan.id,
-      p_expected_cart_hash: (s2 as any).cart_hash, p_idempotency_key: `${tag}-krej`,
-    });
-    const expBefore = await exposure();
-    await sCom.rpc("reject_partner_order", { p_order_id: ordR.data?.id, p_approval_notes: `${tag} motivo rejeicao` });
-    const expAfterRej = await exposure();
-    const liberado = Math.abs(expAfterRej - (expBefore - totalSnap)) < 0.05;
-    rec("P12.credito_liberado_na_rejeicao", liberado,
-      "rejeição canônica libera exatamente o total snapshot do pedido rejeitado",
-      `antes=${expBefore.toFixed(2)}, depois=${expAfterRej.toFixed(2)}, esperado=${(expBefore - totalSnap).toFixed(2)}`);
+    // ---------- P12: liberação de crédito por rejeição / cancelamento canônicos ----------
+    const ciclo = async (rot: string, key: string, fim: (id: string) => Promise<any>) => {
+      const { data: sx } = await sim(sPar);
+      const o = await sPar.rpc("create_partner_order_secure", {
+        p_partner_id: pid, p_observacoes: rot, p_items: cart, p_payment_plan_id: plan.id,
+        p_expected_cart_hash: (sx as any).cart_hash, p_idempotency_key: key,
+      });
+      const base = await exposure();
+      const ap = await sCom.rpc("approve_partner_order", { p_order_id: o.data?.id, p_approval_notes: `${tag} ${rot}` });
+      const comAprov = await exposure();
+      const fimRes = await fim(o.data?.id);
+      const depois = await exposure();
+      const ok = !ap.error && Math.abs(comAprov - (base + totalSnap)) < 0.05 &&
+        !fimRes?.error && Math.abs(depois - base) < 0.05;
+      return { ok, txt: `${rot}: base=${base.toFixed(2)} aprovado=${comAprov.toFixed(2)} (esperado ${(base + totalSnap).toFixed(2)}) final=${depois.toFixed(2)} (esperado ${base.toFixed(2)}) encerramento=${errMsg(fimRes?.error) || "ok"}` };
+    };
+    const cRej = await ciclo("rejeitar", `${tag}-krej`, (id) =>
+      sCom.rpc("reject_partner_order", { p_order_id: id, p_approval_notes: `${tag} motivo rejeicao` }));
+    const cCan = await ciclo("cancelar", `${tag}-kcan`, (id) =>
+      sCom.rpc("update_partner_order_status", { p_order_id: id, p_status: "cancelado", p_motivo: `${tag} cancelamento` }));
+    rec("P12.credito_liberado_rejeicao_cancelamento", cRej.ok && cCan.ok,
+      "aprovação compromete exatamente o total snapshot; rejeição e cancelamento canônicos liberam integralmente",
+      `${cRej.txt} | ${cCan.txt}`);
+
 
     // ---------- P13: preservação histórica ----------
     const { data: hist } = await admin.from("partner_order_items")
