@@ -180,7 +180,8 @@ export function verifySinief49Types(source: string): Miss[] {
         (m) => m[1],
       );
       const parsed = entries.map((e) => {
-        const cols = [...e.matchAll(/columns:\s*\[([^\]]*)\]/g)].map((m) => m[1]);
+        const ownCols = e.match(/(?:^|[^a-zA-Z])columns:\s*\[([^\]]*)\]/)?.[1];
+        const refCols = e.match(/referencedColumns:\s*\[([^\]]*)\]/)?.[1];
         const relName = e.match(/referencedRelation:\s*"([^"]+)"/)?.[1] ?? "";
         const norm = (s: string | undefined) =>
           (s ?? "")
@@ -188,7 +189,7 @@ export function verifySinief49Types(source: string): Miss[] {
             .map((x) => x.trim().replace(/"/g, ""))
             .filter(Boolean)
             .join(",");
-        return { columns: norm(cols[0]), relName, referencedColumns: norm(cols[1]) };
+        return { columns: norm(ownCols), relName, referencedColumns: norm(refCols) };
       });
       for (const rel of t.relationships) {
         const found = parsed.some(
