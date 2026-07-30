@@ -15341,6 +15341,17 @@ export type Database = {
         Args: { _plan_id: string; _ref?: string }
         Returns: boolean
       }
+      fn_b2b_resolve_base_unit_price: {
+        Args: {
+          p_microrganismo_id: string
+          p_partner_id: string
+          p_product_id: string
+          p_ref_date?: string
+          p_unit_type: string
+          p_volume_ml?: number
+        }
+        Returns: Json
+      }
       fn_calc_next_generation_date: {
         Args: { _due_day: number; _freq: string; _from_date: string }
         Returns: string
