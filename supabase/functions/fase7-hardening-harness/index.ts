@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       const { data, error } = await admin.from("partner_accounts").insert({
         razao_social: `${tag}-${suffix}`, nome_fantasia: `${tag}-${suffix}`,
         cnpj: String(Date.now()).slice(-14).padStart(14, "9"), ativo: true,
-        partner_type: "revenda", email: `${tag}.${suffix}@harness.invalid`,
+        partner_type: "revenda", email_comercial: `${tag}.${suffix}@harness.invalid`,
       }).select("id").single();
       if (error) throw new Error(`partner ${suffix}: ${error.message}`);
       created.partners.push(data.id);
