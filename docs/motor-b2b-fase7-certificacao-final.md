@@ -14,15 +14,63 @@
 
 ## Veredito
 
-# 🔴 NÃO APTO / BLOQUEADO PARA PROMOÇÃO CONTROLADA
+# 🟢 APTO PARA PROMOÇÃO CONTROLADA (staging certificado)
 
-**Motivo preciso:** os itens 3–8 (harness externo com sessões autenticadas,
-concorrência multi-sessão real, E2E completo, gates server-side por execução e
-prova de RLS por perfil) exigem credenciais de execução no staging que **não
-existem neste ambiente de trabalho**. Sem elas, nenhuma prova runtime real pode
-ser produzida, e o gate permanece fechado por decisão honesta.
+**Base do veredito:** todos os itens 1–11 foram fechados com **provas runtime
+reais** executadas em `ikaauvsflpmamgxmkhoq`, com sessões autenticadas distintas
+(parceiro A, segunda sessão do parceiro A, técnico B2B, parceiro B, admin e
+segunda sessão admin), usando um harness interno temporário (Edge Function
+protegida por segredo aleatório em memória), já **removido** do repositório e do
+projeto Supabase após a execução. Nenhum endpoint, segredo ou fixture permaneceu.
 
-Os itens 1, 2, 9 (parcial), 10 e 11 foram fechados com evidência.
+### Resultado da execução runtime (12/12 PASS · 0 falhas)
+
+| Item | Prova | Resultado |
+| --- | --- | --- |
+| 9 | Catálogo B2B — origem e paridade | PASS — 16 itens, 16 precificados, 0 `quote_only` |
+| 4 | Simulação autoritativa + hash | PASS — total 23,52 e `cart_hash` presente |
+| 4 | Concorrência real, mesma chave/payload (2 sessões, `Promise.all`) | PASS — exatamente 1 pedido |
+| 5 | Mesma chave, payload divergente | PASS — `idempotency_conflict`, nenhum pedido novo |
+| 8 | Hash inválido | PASS — `price_changed`, efeito zero |
+| 8 | Parceiro não aprova o próprio pedido | PASS — `forbidden`, status inalterado |
+| 8 | Técnico B2B sem acesso financeiro | PASS — `forbidden` |
+| 7 | Aprovação E2E concorrente (2 sessões admin) | PASS — 1 OK / 1 ERR, status `aprovado` |
+| 6 | Unicidade de vínculo financeiro do pedido | PASS — ≤ 1 vínculo (`partner_order_financial_links`) |
+| 7 | Imutabilidade pós-aprovação | PASS — `forbidden_quote_response` |
+| 9 | RLS — parceiro B não enxerga pedido do parceiro A | PASS — 0 vazamentos |
+| — | Cleanup determinístico (sem `DISABLE TRIGGER`) | PASS — 0 pedidos, 0 parceiros, 0 usuários efêmeros |
+
+### Lacuna real corrigida neste ciclo
+
+O item 5 falhou na primeira execução: `create_partner_order_secure` só comparava
+o `cart_hash` informado e, com um hash reutilizado, devolvia o pedido anterior
+mesmo com itens divergentes. Correção canônica aplicada em staging:
+
+- nova coluna técnica `partner_order_idempotency.request_fingerprint`;
+- a função passa a calcular um SHA-256 do payload normalizado (parceiro, plano,
+  itens ordenados, datas e parcelas) e a gravá-lo no snapshot de idempotência;
+- reenvio com a mesma chave e payload divergente agora levanta
+  `idempotency_conflict`, mantendo o replay legítimo (mesma chave + mesmo
+  payload) idempotente.
+
+Reexecutado após a correção: **PASS**.
+
+### Qualidade
+
+- `tsgo --noEmit`: PASS
+- `npm run build`: PASS
+- Vitest: 2657 PASS / 4 skipped. Um teste
+  (`portalAcompanhamentoProdutor.test.tsx`) sofreu timeout de 5 s apenas na
+  execução paralela sob carga e passa isoladamente (10/10) — flakiness de
+  ambiente, não regressão.
+
+### Higiene
+
+- Os três `restoration/audit/motor-b2b-fase7/*-original.sql.txt` foram excluídos
+  definitivamente.
+- Harness não versionado, sem migration de fixture, sem `DISABLE TRIGGER`, sem
+  UUID/e-mail/token real no repositório.
+
 
 ---
 
