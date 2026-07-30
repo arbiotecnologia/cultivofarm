@@ -211,6 +211,16 @@ Deno.serve(async (req) => {
   } finally {
     // cleanup determinístico (sem DISABLE TRIGGER)
     try {
+      // remove usuarios efemeros residuais de execucoes anteriores
+      const { data: lu } = await a.auth.admin.listUsers({ page: 1, perPage: 200 });
+      for (const u of lu?.users ?? []) {
+        if (/harness|arbio-staging/i.test(u.email ?? "")) {
+          await a.from("user_roles").delete().eq("user_id", u.id);
+          await a.from("partner_users").delete().eq("user_id", u.id);
+          await a.from("profiles").delete().eq("user_id", u.id);
+          await a.auth.admin.deleteUser(u.id);
+        }
+      }
       const { data: strayOrders } = await a.from("partner_orders").select("id").ilike("observacoes", "HARNESS %");
       for (const o of (strayOrders ?? []) as { id: string }[]) if (!orderIds.includes(o.id)) orderIds.push(o.id);
       for (const id of orderIds) {
