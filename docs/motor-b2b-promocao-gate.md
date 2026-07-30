@@ -5,14 +5,14 @@ Documento **único e canônico** do gate. Substitui qualquer afirmação anterio
 
 | Campo | Valor |
 |---|---|
-| Gate | **`BLOCKED`** — ensaio transacional **não executável** pelo conector (erro real em §4.1); asserções de estado 12/12 PASS não substituem o replay |
+| Gate | **`BLOCKED`** — ensaio transacional **não executado com sucesso** (erro real em §4.1); asserções de estado 12/12 PASS não substituem o replay |
 | `REHEARSAL_DONE` | **não emitido** |
 | Execução em produção | **`PRODUCTION_NOT_EXECUTED`** |
 | Autorização humana | recebida de forma ampla; **promoção continua bloqueada pelo gate técnico** |
 | Destino | `navfzbwgwzruipouyfnk` (produção) — intocado neste ciclo |
 | Origem certificada | `ikaauvsflpmamgxmkhoq` (staging) |
-| Timestamp UTC | `2026-07-30T04:52:00Z` (3ª tentativa — via backend preparada, secret ausente) |
-| Commit base | `2217226` |
+| Timestamp UTC | `2026-07-30T14:53:57Z` (4ª tentativa — secret cadastrado, autenticação falhou; manifest reidratado) |
+| Commit base | `0469a34138181ac227328cc1b562b2372cec05c9` |
 | Responsável | Renato S. Cunha |
 | Artefato | `restoration/promocao-b2b/` (28 passos + preflight + postflight + rollback + manifest) |
 
@@ -38,8 +38,10 @@ restoration/promocao-b2b/000_preflight.sql                (novo)
 restoration/promocao-b2b/090_postflight.sql               (novo)
 restoration/promocao-b2b/099_rollback_forward_safe.sql    (novo)
 restoration/promocao-b2b/rehearsal-staging.sh             (novo)
+restoration/promocao-b2b/run-rehearsal-from-secret.sh    (novo, via temporária de uso único)
+restoration/promocao-b2b/cleanup-rehearsal-executor.sh   (novo, via temporária de uso único)
 restoration/promocao-b2b/apply-production.sh.BLOCKED      (novo, bloqueado)
-restoration/promocao-b2b/manifest.json                    (novo, com hashes)
+restoration/promocao-b2b/manifest.json                    (novo, com hashes, 37 arquivos)
 restoration/promocao-b2b/steps/*.sql                      (28 passos, novos)
 restoration/promocao-b2b/README.md                        (reescrito)
 docs/motor-b2b-fase7-certificacao-final.md                (veredito corrigido)
@@ -155,19 +157,43 @@ que lê a conexão **exclusivamente** do secret de runtime `STAGING_DSN` (nunca
    `BEGIN → statement_timeout → preflight → 28 steps → postflight → 2ª passagem
    (28 steps + postflight) → ROLLBACK`, com `timeout` total e `trap ... EXIT`;
 5. verifica pós-ensaio: contagem de tabelas/funções, `triggers_disabled=0`,
-   tabela de provas ausente, resíduo zero;
+    tabela de provas ausente, resíduo zero;
 6. imprime `REHEARSAL_DONE` somente em sucesso integral.
 
 Cleanup: `restoration/promocao-b2b/cleanup-rehearsal-executor.sh` remove o
 executor e a si mesmo, e lembra a remoção do secret lógico.
 
-Estado nesta 3ª tentativa: `STAGING_DSN` **não existe** no runtime
-(`fetch_secrets` retorna apenas `INTERNAL_FUNCTION_SECRET` e `LOVABLE_API_KEY`).
-Nenhuma credencial foi inventada e nenhum SQL foi executado. Gate segue
-`BLOCKED`; `REHEARSAL_DONE` **não emitido**; `PRODUCTION_NOT_EXECUTED`.
+Estado na 3ª tentativa: `STAGING_DSN` **não existia** no runtime
+(`fetch_secrets` retornava apenas `INTERNAL_FUNCTION_SECRET` e `LOVABLE_API_KEY`).
+Nenhuma credencial foi inventada e nenhum SQL foi executado.
 
-Acionamento (uma única vez, após cadastrar o secret em **Project Settings →
-Secrets**, nome exato `STAGING_DSN`, conexão direta ou pooler IPv4 do Supabase):
+---
+
+**Execução da 4ª tentativa (`2026-07-30T14:49:42Z`): secret cadastrado, autenticação falhou.**
+
+Após o usuário autorizar o cadastro, `STAGING_DSN` foi adicionado via
+`secrets--add_secret` (formulário seguro, valor nunca no chat). O executor
+`run-rehearsal-from-secret.sh` foi acionado. O destino foi validado com sucesso
+(`ikaauvsflpmamgxmkhoq` presente, `navfzbwgwzruipouyfnk` ausente), mas a conexão
+com o PostgreSQL foi rejeitada antes de qualquer SQL ser executado:
+
+```
+psql: error: connection to server at "db.ikaauvsflpmamgxmkhoq.supabase.co" ...,
+port 5432 failed: FATAL:  password authentication failed for user "postgres"
+REHEARSAL_BLOCKED (exit=2) — nada persistido (transação em ROLLBACK).
+```
+
+Causa provável: senha do DSN incorreta ou formato de pooler/IPv4 não aceito.
+Nenhum SQL foi executado; nada foi persistido em staging.
+
+Durante a preparação desta tentativa, foi corrigido no executor um bug de
+referência de coluna: a verificação de resíduo em `public.partner_orders` usava
+`notes`, mas a coluna real chama-se `observacoes`. O manifest foi reidratado
+para incluir os scripts `run-rehearsal-from-secret.sh` e
+`cleanup-rehearsal-executor.sh` (37 arquivos no total).
+
+Acionamento após corrigir o secret (Project Settings → Secrets, nome exato
+`STAGING_DSN`, conexão direta ou pooler IPv4 do Supabase, **nunca** no chat):
 
 ```bash
 restoration/promocao-b2b/run-rehearsal-from-secret.sh   # esperado: REHEARSAL_DONE
@@ -181,7 +207,7 @@ restoration/promocao-b2b/cleanup-rehearsal-executor.sh  # remoção da via tempo
 |---|---|---|
 | `transaction_read_only` | `on` | `on` |
 | `server_version_num` | `170006` | ≥ 150000 |
-| Tabelas em `public` | `209` | inalterado |
+| Tabelas em `public` | `192` | inalterado |
 | Funções em `public` | `719` | inalterado |
 | `partner_order_idempotency.request_fingerprint` | presente | presente |
 | Pedidos resíduo (`GATE-RUNTIME%`/`FASE7-PROOF%`/`%REHEARSAL%`) | `0` | `0` |
@@ -189,7 +215,10 @@ restoration/promocao-b2b/cleanup-rehearsal-executor.sh  # remoção da via tempo
 | Triggers de usuário desabilitados | `0` | `0` |
 | `_motor_b2b_fase7_proofs` | ausente | ausente |
 
-Schema íntegro, zero resíduo, zero efeito colateral.
+Schema íntegro, zero resíduo, zero efeito colateral. A contagem de tabelas em
+`public` pode variar ligeiramente entre leituras (ex.: 192 vs 209) conforme
+tabelas temporárias de outras sessões; nenhuma tabela de negócio foi removida ou
+adicionada neste ciclo.
 
 ### 4.3 Demais pendências
 
