@@ -72,10 +72,20 @@ Deno.serve(async (req) => {
       `erro=${errMsg(catErr) || "nenhum"}, total=${items.length}, precificados=${items.filter((i) => !isQuote(i)).length}`);
     if (priced.length < 2) throw new Error("catálogo insuficiente");
 
+    // fixture efêmero: plano parcelado (ausente no catálogo de staging)
+    const { data: planFix, error: planFixErr } = await admin.from("commercial_payment_plans").insert({
+      name: `${tag}-parcelado-3x`, code: `${tag.toUpperCase()}-3X`, plan_type: "parcelado",
+      max_days: 30, months_count: 3, installment_count: 3, discount_percent: 0,
+      monthly_interest_percent: 1.5, interest_type: "compound", active: true,
+    }).select("id").single();
+    if (planFixErr) throw new Error(`fixture plano: ${planFixErr.message}`);
+    created.planos.push(planFix.id);
+
     const { data: plans } = await sAdm.rpc("rpc_b2b_list_selectable_payment_plans");
     const allPlans = (plans as any[]) ?? [];
-    const plan = allPlans[0];
+    const plan = allPlans.find((p: any) => Number(p.installment_count ?? 1) <= 1) ?? allPlans[0];
     const planVista = allPlans.find((p: any) => Number(p.installment_count ?? p.parcelas ?? 1) <= 1) ?? plan;
+
     const planParc = allPlans.find((p: any) => Number(p.installment_count ?? p.parcelas ?? 1) > 1) ?? null;
     const planAprov = allPlans.find((p: any) => p.requires_financial_approval === true) ?? null;
     if (!plan) throw new Error("nenhum plano selecionável");
