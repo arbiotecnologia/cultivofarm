@@ -11,7 +11,7 @@ Documento **único e canônico** do gate. Substitui qualquer afirmação anterio
 | Autorização humana | recebida de forma ampla; **promoção continua bloqueada pelo gate técnico** |
 | Destino | `navfzbwgwzruipouyfnk` (produção) — intocado neste ciclo |
 | Origem certificada | `ikaauvsflpmamgxmkhoq` (staging) |
-| Timestamp UTC | `2026-07-30T04:39:20Z` |
+| Timestamp UTC | `2026-07-30T04:42:13Z` (2ª tentativa) |
 | Commit base | `2217226` |
 | Responsável | Renato S. Cunha |
 | Artefato | `restoration/promocao-b2b/` (28 passos + preflight + postflight + rollback + manifest) |
