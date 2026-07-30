@@ -16315,6 +16315,29 @@ export type Database = {
       }
       rpc_b2b_governance_kpis: { Args: never; Returns: Json }
       rpc_b2b_integrity_check: { Args: never; Returns: Json }
+      rpc_b2b_list_selectable_payment_plans: {
+        Args: never
+        Returns: {
+          code: string
+          description: string
+          discount_percent: number
+          id: string
+          installment_count: number
+          interest_type: string
+          is_default: boolean
+          max_days: number
+          minimum_order_amount: number
+          monthly_interest_percent: number
+          months_count: number
+          name: string
+          plan_type: string
+          pricing_mode: string
+          requires_credit_approval: boolean
+          requires_financial_approval: boolean
+          requires_guarantee: boolean
+          sort_order: number
+        }[]
+      }
       rpc_b2b_partner_credit: { Args: { p_partner_id: string }; Returns: Json }
       rpc_b2b_partner_profitability: {
         Args: { p_from?: string; p_partner_id?: string; p_to?: string }
