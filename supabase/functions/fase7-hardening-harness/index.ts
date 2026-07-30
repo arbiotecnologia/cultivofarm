@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     const quoteOnly = items.filter(isQuote);
     rec("C.catalogo_composicao", !catErr && items.length > 0,
       `erro=${errMsg(catErr) || "nenhum"}; total=${items.length} (produtos=${prods.length}, microrganismos=${micros.length}), quote_only=${quoteOnly.length}; ` +
-      `codigos_produto=[${prods.map((i) => i.codigo).join(",")}]; codigos_micro=[${micros.map((i) => i.codigo).join(",")}]`);
+      `codigos_produto=[${prods.map((i) => i.produto_codigo).join(",")}]; codigos_micro=[${micros.map((i) => i.produto_codigo).join(",")}]`);
 
     // quote_only via fixture temporária (rollback-only) se não houver item real incompleto
     let quoteProofDetail = `itens quote_only reais=${quoteOnly.length}`;
@@ -134,12 +134,13 @@ Deno.serve(async (req) => {
     const sim = async (s: any) => await s.rpc("simulate_b2b_payment_plan_secure",
       { p_partner_id: pA, p_payment_plan_id: plan.id, p_items: cartItems });
     const { data: simA, error: simErr } = await sim(sPA);
-    rec("C.simulacao", !simErr && !!simA?.cart_hash, `final=${simA?.final_amount}, itens=${(simA?.lines ?? []).length}`);
-    const parity = (simA?.lines ?? []).every((l: any) => {
+    const simLines = (o: any): any[] => (o?.lines ?? o?.items ?? o?.linhas ?? o?.itens ?? []) as any[];
+    rec("C.simulacao", !simErr && !!simA?.cart_hash && simLines(simA).length === 2, `final=${simA?.final_amount}, itens=${simLines(simA).length}`);
+    const parity = simLines(simA).length === 2 && simLines(simA).every((l: any) => {
       const c = items.find((i) => i.item_id === l.item_id);
       return c && Number(c.preco_parceiro) === Number(l.base_price);
     });
-    rec("C.paridade_catalogo_simulacao", parity, `linhas=${(simA?.lines ?? []).length} conferidas contra catálogo`);
+    rec("C.paridade_catalogo_simulacao", parity, `linhas=${simLines(simA).length} conferidas contra catálogo`);
 
     const mkOrder = async (s: any, key: string, obs: string) =>
       await s.rpc("create_partner_order_secure", {
@@ -246,13 +247,13 @@ Deno.serve(async (req) => {
 
     const { data: itSnap } = await admin.from("partner_order_items")
       .select("product_id, microrganismo_id, base_price_snapshot").eq("order_id", orderA);
-    const parity2 = (simA?.lines ?? []).every((l: any) => {
+    const parity2 = simLines(simA).length === 2 && simLines(simA).every((l: any) => {
       const s = (itSnap ?? []).find((x: any) => x.product_id === l.item_id || x.microrganismo_id === l.item_id);
       return s && Number(s.base_price_snapshot) === Number(l.base_price);
     });
     rec("C.paridade_simulacao_snapshot", parity2, `${(itSnap ?? []).length} itens snapshot conferidos`);
 
-    const imut = await sPA.rpc("respond_b2b_order_quote_secure", { p_order_id: orderA, p_items: cartItems, p_first_due_date: null, p_installment_count: 1, p_notes: "x" });
+    const imut = await sPA.rpc("respond_b2b_order_quote_secure", { p_order_id: orderA, p_lines: cartItems, p_first_due_date: null, p_installment_count: 1, p_motivo: "x" });
     rec("A.imutabilidade_pos_aprovacao", !!imut.error, `erro=${errMsg(imut.error) || "nenhum"}`);
 
     // ---------- E2E B: rejeição ----------
@@ -295,19 +296,20 @@ Deno.serve(async (req) => {
       `retorno_canônico=${reapp ? errMsg(reapp) : "ok"}, auditoria=[${(logC ?? []).map((l: any) => l.acao).join(",")}]`);
 
     // ---------- RLS / 8 aliases ----------
-    const aliases: Array<[string, any, boolean]> = [
-      ["admin", sAdm, true], ["financeiro", sFin, true], ["gestor_comercial", sCom, true],
-      ["parceiro_gestor_A", sPA, true], ["parceiro_gestor_B", sPB, false],
-      ["tecnico_b2b", sTec, true], ["produtor_direto", sProd, false], ["sem_vinculo", sNone, false],
+    // [alias, client, vê pedido A, catálogo financeiro A permitido]
+    const aliases: Array<[string, any, boolean, boolean]> = [
+      ["admin", sAdm, true, true], ["financeiro", sFin, true, false], ["gestor_comercial", sCom, true, true],
+      ["parceiro_gestor_A", sPA, true, true], ["parceiro_gestor_B", sPB, false, false],
+      ["tecnico_b2b", sTec, false, false], ["produtor_direto", sProd, false, false], ["sem_vinculo", sNone, false, false],
     ];
     const rlsOut: string[] = [];
     let rlsOk = true;
-    for (const [alias, s, allowA] of aliases) {
+    for (const [alias, s, allowA, allowCat] of aliases) {
       const { data: rows } = await s.from("partner_orders").select("id").eq("id", orderA);
       const seesA = (rows ?? []).length > 0;
       const { error: catE } = await s.rpc("get_partner_catalog_secure", { p_partner_id: pA });
       const catAllowed = !catE;
-      const ok = seesA === allowA && catAllowed === allowA;
+      const ok = seesA === allowA && catAllowed === allowCat;
       if (!ok) rlsOk = false;
       rlsOut.push(`${alias}: pedidoA=${seesA ? "visível" : "negado"}, catálogoA=${catAllowed ? "ok" : errMsg(catE)}`);
     }
@@ -328,6 +330,7 @@ Deno.serve(async (req) => {
   } finally {
     // ---------- cleanup determinístico (sem DISABLE TRIGGER) ----------
     const errs: string[] = [];
+    const admSess: any = (globalThis as any).__harnessAdminSession ?? null;
     const del = async (t: string, c: string, v: string[]) => {
       if (!v.length) return;
       const { error } = await admin.from(t).delete().in(c, v);
@@ -345,7 +348,7 @@ Deno.serve(async (req) => {
         const admUser = created.users[0];
         // cancelamento canônico antes de remover vínculos (admin efêmero já criado)
         for (const id of ids) {
-          const { error } = await admin.rpc("cancel_b2b_receivable_secure", { p_partner_order_id: id, p_motivo: "rollback harness" });
+          const { error } = await (admSess ?? admin).rpc("cancel_b2b_receivable_secure", { p_partner_order_id: id, p_motivo: "rollback harness" });
           if (error && !/nao encontrado|não encontrado|not_found|sem recebivel|sem recebível/i.test(error.message)) {
             errs.push(`cancel: ${error.message}`);
           }
