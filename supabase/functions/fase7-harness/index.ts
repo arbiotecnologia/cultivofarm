@@ -189,8 +189,8 @@ Deno.serve(async (req) => {
         });
         const r6 = await Promise.all([appr(cA), appr(cA2)]);
         const { data: st } = await a.from("partner_orders").select("status").eq("id", orderId).single();
-        const { count: recv } = await a.from("accounts_receivable").select("id", { count: "exact", head: true })
-          .eq("partner_order_id", orderId);
+        const { count: recv } = await a.from("partner_order_financial_links")
+          .select("id", { count: "exact", head: true }).eq("partner_order_id", orderId);
         push("P7-aprovacao-e2e", !!st && st.status !== "pendente",
           { status: st?.status, respostas: r6.map((r) => (r.error ? "ERR" : "OK")) });
         push("P6-recebivel-unico", (recv ?? 0) <= 1, { recebiveis: recv });
@@ -211,17 +211,30 @@ Deno.serve(async (req) => {
   } finally {
     // cleanup determinístico (sem DISABLE TRIGGER)
     try {
+      const { data: strayOrders } = await a.from("partner_orders").select("id").ilike("observacoes", "HARNESS %");
+      for (const o of (strayOrders ?? []) as { id: string }[]) if (!orderIds.includes(o.id)) orderIds.push(o.id);
       for (const id of orderIds) {
-        await a.from("accounts_receivable_installments").delete().in("accounts_receivable_id",
-          ((await a.from("accounts_receivable").select("id").eq("partner_order_id", id)).data ?? []).map((r: { id: string }) => r.id));
-        await a.from("accounts_receivable").delete().eq("partner_order_id", id);
+        const arIds = ((await a.from("partner_order_financial_links").select("accounts_receivable_id")
+          .eq("partner_order_id", id)).data ?? []).map((r: { accounts_receivable_id: string }) => r.accounts_receivable_id).filter(Boolean);
+        await a.from("partner_order_financial_links").delete().eq("partner_order_id", id);
+        if (arIds.length) {
+          await a.from("accounts_receivable_installments").delete().in("accounts_receivable_id", arIds);
+          await a.from("receivable_payments").delete().in("accounts_receivable_id", arIds);
+          await a.from("accounts_receivable").delete().in("id", arIds);
+        }
+        await a.from("production_timeline_events").delete().eq("partner_order_id", id);
+        await a.from("production_planning").delete().eq("partner_order_id", id);
+        await a.from("production_order_link").delete().eq("partner_order_id", id);
+        await a.from("partner_order_messages").delete().eq("order_id", id);
+        await a.from("partner_order_idempotency").delete().eq("order_id", id);
         await a.from("partner_order_payment_schedule").delete().eq("partner_order_id", id);
         await a.from("partner_order_payment_terms").delete().eq("partner_order_id", id);
-        await a.from("partner_order_items").delete().eq("partner_order_id", id);
-        await a.from("partner_order_audit_logs").delete().eq("partner_order_id", id);
+        await a.from("partner_order_items").delete().eq("order_id", id);
+        await a.from("partner_order_audit_logs").delete().eq("order_id", id);
         await a.from("partner_orders").delete().eq("id", id);
       }
-      for (const p of [partnerId, partnerBId]) {
+      const { data: strayPartners } = await a.from("partner_accounts").select("id").ilike("razao_social", "HARNESS %");
+      for (const p of [...new Set([partnerId, partnerBId, ...((strayPartners ?? []) as { id: string }[]).map((x) => x.id)])]) {
         if (!p) continue;
         await a.from("partner_order_idempotency").delete().eq("partner_id", p);
         await a.from("partner_users").delete().eq("partner_id", p);
