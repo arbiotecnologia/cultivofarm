@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       .select("id,code,active").eq("active", true).limit(5);
     let planId: string | undefined;
     for (const pl of (plans ?? []) as { id: string }[]) {
-      const { data: sel } = await a.rpc("fn_b2b_plan_selectable", { p_plan_id: pl.id });
+      const { data: sel } = await a.rpc("fn_b2b_plan_selectable", { _plan_id: pl.id, _ref: new Date().toISOString() });
       if (sel === true) { planId = pl.id; break; }
     }
 
