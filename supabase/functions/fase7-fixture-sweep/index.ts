@@ -30,8 +30,11 @@ Deno.serve(async (req) => {
       await admin.from("user_roles").delete().eq("user_id", u.id);
       await admin.from("partner_users").delete().eq("user_id", u.id);
       await admin.from("profiles").delete().eq("user_id", u.id);
+      await admin.from("financial_audit_log").delete().eq("performed_by", u.id);
+      await admin.from("partner_order_audit_logs").delete().eq("usuario_id", u.id);
+      await admin.from("commercial_audit_log").delete().eq("performed_by", u.id);
       const { error } = await admin.auth.admin.deleteUser(u.id);
-      if (error) errors.push(error.message);
+      if (error) errors.push(`${error.message} ${JSON.stringify(error)}`.slice(0, 200));
       else removed.push(u.id.slice(0, 8));
     }
   }
