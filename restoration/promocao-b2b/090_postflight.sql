@@ -40,11 +40,20 @@ BEGIN
   ) THEN v_fail := v_fail || 'trigger trg_b2b_block_receivable_before_approval ausente'; END IF;
 
   ---------------------------------------------------------------- 5
+  -- Exposição de crédito: só conta pedido com compromisso real (>= aprovado),
+  -- sem dupla contagem com recebível já gerado.
   IF to_regprocedure('public.fn_b2b_credit_exposure(uuid,numeric,uuid)') IS NULL THEN
     v_fail := v_fail || 'fn_b2b_credit_exposure ausente';
-  ELSIF position('fn_b2b_status_is_approved_or_later' in
-        pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)) = 0 THEN
-    v_fail := v_fail || 'fn_b2b_credit_exposure não usa o rank canônico de status aprovado';
+  ELSE
+    v_def := pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure);
+    IF position('comprometido_nao_faturado' in v_def) = 0
+       OR position('receivable_generated' in v_def) = 0
+       OR position('''aprovado''' in v_def) = 0 THEN
+      v_fail := v_fail || 'fn_b2b_credit_exposure sem semântica canônica de comprometimento';
+    END IF;
+    IF position('''pendente''' in v_def) > 0 THEN
+      v_fail := v_fail || 'fn_b2b_credit_exposure conta pedidos pendentes (dupla contagem)';
+    END IF;
   END IF;
 
   ---------------------------------------------------------------- 6
