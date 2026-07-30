@@ -63,21 +63,20 @@ ${rels}
 }
 
 describe("verify-fiscal-types-sinief49", () => {
-  test("types.ts real tem cobertura PARCIAL do contrato SINIEF 49 → veredito exato FAIL", () => {
+  test("types.ts real cobre 100% do contrato SINIEF 49 → veredito canônico PASS", () => {
     const real = fs.readFileSync(
       path.resolve(process.cwd(), "src/integrations/supabase/types.ts"),
       "utf8",
     );
     const misses = verifySinief49Types(real);
     const verdict = classifyVerdict(real, misses);
-    // Estado real auditado em staging ikaauvsflpmamgxmkhoq (Fase 7 — correção
-    // consolidada): as entidades SINIEF 49 existem em types.ts, porém há
-    // divergência remanescente. Cobertura parcial ⇒ o veredito exato é FAIL.
-    // Se o types.ts for regenerado e a divergência sumir, este teste deve
-    // falhar deliberadamente para forçar a atualização do gate para PASS.
-    expect(misses.length).toBeGreaterThan(0);
-    expect(verdict).toBe("FAIL");
+    // Expectativa canônica exata. NÃO relaxar para aceitar FAIL: qualquer
+    // divergência mantém o gate da Fase 7 REJEITADO até que types.ts seja
+    // regenerado e o contrato SINIEF 49 esteja integralmente coberto.
+    expect(misses).toEqual([]);
+    expect(verdict).toBe("PASS");
   });
+
 
 
   test("classifica PASS quando types.ts sintético cobre 100% do contrato", () => {

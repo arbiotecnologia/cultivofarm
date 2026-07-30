@@ -10,12 +10,33 @@
 -- Guarda de ambiente obrigatória.
 
 DO $guard$
+DECLARE
+  v_marker text;
+  v_ref    text;
+  c_expected constant text := 'ikaauvsflpmamgxmkhoq';
+  c_prod     constant text := 'navfzbwgwzruipouyfnk';
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public._fiscal_staging_marker
-    WHERE marker = 'STAGING' AND project_ref = 'ikaauvsflpmamgxmkhoq'
-  ) THEN
-    RAISE EXCEPTION 'ABORT: staging marker ikaauvsflpmamgxmkhoq nao encontrado';
+  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
+    RAISE EXCEPTION 'GUARD_ABORT: ambiente nao identificado (marker inexistente)';
+  END IF;
+
+  SELECT marker, project_ref INTO v_marker, v_ref
+    FROM public._fiscal_staging_marker
+   WHERE marker = 'STAGING'
+   LIMIT 1;
+
+  IF v_marker IS NULL THEN
+    RAISE EXCEPTION 'GUARD_ABORT: nenhuma linha marker=STAGING';
+  END IF;
+  IF v_ref = c_prod THEN
+    RAISE EXCEPTION 'GUARD_ABORT: ambiente de PRODUCAO (%) — execucao proibida', c_prod;
+  END IF;
+  IF v_ref IS DISTINCT FROM c_expected THEN
+    RAISE EXCEPTION 'GUARD_ABORT: project_ref % difere do staging autorizado %',
+      coalesce(v_ref,'<null>'), c_expected;
+  END IF;
+  IF EXISTS (SELECT 1 FROM public._fiscal_staging_marker WHERE project_ref = c_prod) THEN
+    RAISE EXCEPTION 'GUARD_ABORT: marker contem ref de PRODUCAO';
   END IF;
 END
 $guard$;
