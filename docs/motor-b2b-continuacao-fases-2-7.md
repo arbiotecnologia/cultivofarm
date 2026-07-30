@@ -89,8 +89,36 @@ Nenhuma migration criada ou aplicada. Rollback do ciclo = reverter os três arqu
 - Sem prova runtime, os controles de RLS/grants da Fase 1 seguem validados apenas estaticamente (checksums + `has_function_privilege`).
 - F6/F7 permanecem incompletos; faturamento/produção podem não estar bloqueados por reprovação financeira em todos os caminhos.
 
-## 10. Status final
+## 10. Provas de runtime com identidades reais (staging `ikaauvsflpmamgxmkhoq`)
 
-**Fase 1: APTO COM RESSALVAS (gate não fechado — runtime UNVERIFIED).**
-**Ciclo atual: concluído em checkpoint seguro, sem avanço para F6.**
-**Produção `navfzbwgwzruipouyfnk` não foi acessada.**
+Executadas via PostgREST com JWT de sessões autenticadas reais (sem `service_role` como identidade dos SELECTs de prova).
+
+| # | Prova | Identidade | Resultado |
+|---|-------|-----------|-----------|
+| 1 | Catálogo B2B do próprio parceiro | `parceiro@arbio.com` | 200, preços canônicos |
+| 2 | Catálogo B2B de parceiro cruzado | `produtor@arbio.com` | 400 `forbidden_partner` |
+| 3 | Catálogo financeiro para técnico | `parceiro.tecnico@arbio.com` | 400 `forbidden_financial_terms` |
+| 4 | Crédito do parceiro (`rpc_b2b_partner_credit`) | técnico | 400 `forbidden` |
+| 5 | Crédito do parceiro | gestor B2B | 200 |
+| 6 | `partner_orders` / `partner_order_payment_terms` | técnico | `[]` (0 linhas) |
+| 7 | `partner_orders` | produtor | `[]` (0 linhas) |
+| 8 | Autoelevação em `user_roles` | parceiro | 403 (RLS) |
+| 9 | `fn_resolve_b2b_cart` direto | parceiro | 404 PGRST202 (não exposta) |
+| 10 | `create_partner_order_secure` com hash inválido | parceiro | 400 `price_changed` |
+| 11 | Paridade catálogo→simulação→checkout | parceiro | `simulate_b2b_payment_plan_secure` = subtotal 200,00 / desconto 40% / total 120,00; pedido criado com os mesmos valores |
+| 12 | Concorrência real (2 sessões simultâneas, mesma idempotency key) | parceiro | **1 único pedido** `PB-001015` retornado nas duas chamadas; sem duplicidade |
+| 13 | On-Farm/Aplicador limitado à carteira | `onfarm@arbio.com` | apenas clientes vinculados |
+
+Limpeza comprovada: pedido de teste, itens, termos, parcelas, auditoria e chaves `GATE-RUNTIME-%` removidos
+(contagens finais 0/0/0). Nenhum artefato de teste ficou em `supabase/migrations`.
+
+Observação relevante: `fn_b2b_cart_hash` é canônico sobre o **carrinho resolvido no servidor**, não sobre os itens
+brutos do cliente, e a função de resolução não é executável pelo papel `authenticated` — o hash só pode ser obtido
+por `simulate_b2b_payment_plan_secure`. Isso impede forjar hash no cliente.
+
+## 11. Status final
+
+**Fase 1: APTO — gate fechado com evidência runtime (itens 1–13 acima).**
+**Ciclo atual: encerrado em checkpoint seguro; F6 (administração de planos comerciais) segue como primeira lacuna real, não iniciada.**
+**Produção `navfzbwgwzruipouyfnk` não foi acessada; nada foi publicado.**
+
