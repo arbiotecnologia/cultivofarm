@@ -439,11 +439,58 @@ async function gates(ctx: Ctx) {
     }
     if (!ctx.microItem) {
       log("FISC-05", "item de microrganismo no fluxo fiscal", "SKIP", "sem microrganismo precificado na massa");
+      log("FISC-06", "perfil fiscal de microrganismo inativo falha fechado", "SKIP", "sem microrganismo precificado na massa");
     } else {
-      const simM = await simulate(ctx, ctx.plans.B, [itemPayload(ctx.microItem, 1)]);
-      log("FISC-05", "item de microrganismo no fluxo B2B", "SKIP",
-        { motivo: "microrganismo indisponível no catálogo B2B", detalhe: simM.msg });
+      const itemsM = [itemPayload(ctx.microItem, 1)];
+      const simM = await simulate(ctx, ctx.plans.B, itemsM);
+      const hM = (simM.data as any)?.cart_hash;
+      const oM = hM ? await createOrder(ctx, ctx.plans.B, itemsM, hM, `hml-micro-${RUN}`) : null;
+      const idM = (oM?.data as any)?.id;
+      if (!idM) {
+        check("FISC-05", "item de microrganismo emite documento fiscal simulado com snapshot próprio",
+          false, { sim: simM.msg, order: oM?.msg });
+        log("FISC-06", "perfil fiscal de microrganismo inativo falha fechado", "SKIP", "pedido de microrganismo não criado");
+      } else {
+        created.orders.push(idM);
+        await rpc(clients.admin, "approve_partner_order", {
+          p_order_id: idM, p_approval_notes: `hml-${RUN}`, p_estimated_delivery_date: null,
+        });
+        const gM = await rpc(clients.financeiro, "generate_b2b_receivable_secure", { p_partner_order_id: idM });
+        const { data: lkM } = await svc.from("partner_order_financial_links")
+          .select("receivable_id").eq("partner_order_id", idM);
+        const recM = lkM?.[0]?.receivable_id;
+        if (!recM) {
+          check("FISC-05", "item de microrganismo emite documento fiscal simulado com snapshot próprio",
+            false, gM.msg);
+          log("FISC-06", "perfil fiscal de microrganismo inativo falha fechado", "SKIP", "recebível de microrganismo indisponível");
+        } else {
+          // FISC-06 primeiro: com o perfil do microrganismo inativo, deve falhar fechado
+          await svc.from("microorganism_fiscal_profiles").update({ is_active: false })
+            .eq("microorganism_id", ctx.microItem.item_id);
+          const emOff = await rpc(clients.admin, "rpc_hml_fiscal_emit_mock", { p_receivable_id: recM });
+          const { count: invOff } = await svc.from("fiscal_invoices")
+            .select("id", { count: "exact", head: true }).eq("receivable_id", recM);
+          check("FISC-06", "perfil fiscal de microrganismo inativo falha fechado sem efeitos colaterais",
+            (emOff.msg ?? "").includes("FISCAL_PROFILE_INCOMPLETE") && (invOff ?? 0) === 0,
+            { erro: emOff.msg, notas: invOff });
+
+          await svc.from("microorganism_fiscal_profiles").update({ is_active: true })
+            .eq("microorganism_id", ctx.microItem.item_id);
+          const emOn = await rpc(clients.admin, "rpc_hml_fiscal_emit_mock", { p_receivable_id: recM });
+          const invId = (emOn.data as any)?.invoice_id;
+          const { data: itensM } = await svc.from("fiscal_invoice_items")
+            .select("item_kind,ncm_snapshot,cfop_snapshot,origem_snapshot,fiscal_profile_snapshot")
+            .eq("fiscal_invoice_id", invId ?? "00000000-0000-0000-0000-000000000000");
+          const it0: any = itensM?.[0];
+          check("FISC-05", "item de microrganismo emite documento fiscal simulado com snapshot próprio",
+            !emOn.msg && !!invId && (itensM?.length ?? 0) === 1 &&
+            it0?.item_kind === "MICROORGANISM" && !!it0?.ncm_snapshot && !!it0?.cfop_snapshot &&
+            it0?.fiscal_profile_snapshot?.source === "microorganism_fiscal_profiles",
+            { erro: emOn.msg, invoice_id: invId, item: it0 });
+        }
+      }
     }
+
   }
 }
 
