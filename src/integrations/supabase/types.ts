@@ -2363,6 +2363,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "catalogo_volumes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
             foreignKeyName: "catalogo_volumes_produto_id_fkey"
             columns: ["produto_id"]
             isOneToOne: false
@@ -3123,6 +3130,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "commercial_condition_item_prices_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
             foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
@@ -3536,6 +3550,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_price_rules_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
           {
             foreignKeyName: "commercial_price_rules_partner_id_fkey"
@@ -4554,6 +4575,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cq_parametros_referencia_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
           {
             foreignKeyName: "cq_parametros_referencia_produto_id_fkey"
@@ -6134,6 +6162,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
           {
             foreignKeyName: "estoque_produto_produto_id_fkey"
@@ -8215,6 +8250,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "formulacoes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
             foreignKeyName: "formulacoes_produto_id_fkey"
             columns: ["produto_id"]
             isOneToOne: false
@@ -8413,6 +8455,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lotes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
             foreignKeyName: "lotes_produto_id_fkey"
             columns: ["produto_id"]
             isOneToOne: false
@@ -8505,6 +8554,118 @@ export type Database = {
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "microorganism_crop_recommendations_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+        ]
+      }
+      microorganism_fiscal_profiles: {
+        Row: {
+          accounting_notes: string | null
+          accounting_validated_at: string | null
+          accounting_validated_by: string | null
+          cest: string | null
+          cfop_in_state: string | null
+          cfop_interstate: string | null
+          cofins_cst: string | null
+          commercial_unit: string | null
+          created_at: string
+          created_by: string | null
+          fiscal_description: string | null
+          gtin: string | null
+          icms_csosn: string | null
+          icms_cst: string | null
+          id: string
+          ipi_cst: string | null
+          is_active: boolean
+          microorganism_id: string
+          ncm: string | null
+          origin_code: string | null
+          pis_cst: string | null
+          profile_status: string
+          tax_benefit_code: string | null
+          taxable_gtin: string | null
+          taxable_unit: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          accounting_notes?: string | null
+          accounting_validated_at?: string | null
+          accounting_validated_by?: string | null
+          cest?: string | null
+          cfop_in_state?: string | null
+          cfop_interstate?: string | null
+          cofins_cst?: string | null
+          commercial_unit?: string | null
+          created_at?: string
+          created_by?: string | null
+          fiscal_description?: string | null
+          gtin?: string | null
+          icms_csosn?: string | null
+          icms_cst?: string | null
+          id?: string
+          ipi_cst?: string | null
+          is_active?: boolean
+          microorganism_id: string
+          ncm?: string | null
+          origin_code?: string | null
+          pis_cst?: string | null
+          profile_status?: string
+          tax_benefit_code?: string | null
+          taxable_gtin?: string | null
+          taxable_unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accounting_notes?: string | null
+          accounting_validated_at?: string | null
+          accounting_validated_by?: string | null
+          cest?: string | null
+          cfop_in_state?: string | null
+          cfop_interstate?: string | null
+          cofins_cst?: string | null
+          commercial_unit?: string | null
+          created_at?: string
+          created_by?: string | null
+          fiscal_description?: string | null
+          gtin?: string | null
+          icms_csosn?: string | null
+          icms_cst?: string | null
+          id?: string
+          ipi_cst?: string | null
+          is_active?: boolean
+          microorganism_id?: string
+          ncm?: string | null
+          origin_code?: string | null
+          pis_cst?: string | null
+          profile_status?: string
+          tax_benefit_code?: string | null
+          taxable_gtin?: string | null
+          taxable_unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "microorganism_fiscal_profiles_microorganism_id_fkey"
+            columns: ["microorganism_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "microorganism_fiscal_profiles_microorganism_id_fkey"
+            columns: ["microorganism_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
         ]
       }
       microorganism_targets: {
@@ -8555,6 +8716,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "microorganism_targets_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
         ]
       }
@@ -8632,6 +8800,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "microorganism_technical_profiles_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
         ]
       }
@@ -8906,6 +9081,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ordens_servico_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
             foreignKeyName: "ordens_servico_partner_order_id_fkey"
             columns: ["partner_order_id"]
             isOneToOne: false
@@ -9061,6 +9243,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
           {
             foreignKeyName: "ordens_servico_onfarm_produto_id_fkey"
@@ -10416,6 +10605,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_order_items_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
             foreignKeyName: "partner_order_items_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -11102,6 +11298,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_product_prices_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
             foreignKeyName: "partner_product_prices_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
@@ -11345,6 +11548,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_simulation_items_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
           {
             foreignKeyName: "partner_simulation_items_product_id_fkey"
@@ -13070,6 +13280,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "programacao_producao_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
+          {
             foreignKeyName: "programacao_producao_ordem_servico_id_fkey"
             columns: ["ordem_servico_id"]
             isOneToOne: false
@@ -13919,6 +14136,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_consultor_recomendacoes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
           {
             foreignKeyName: "registros_consultor_recomendacoes_registro_consultor_id_fkey"
@@ -14948,6 +15172,13 @@ export type Database = {
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ordens_servico_onfarm_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
         ]
       }
       mv_esteira_laboratorio: {
@@ -15071,6 +15302,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
         ]
       }
@@ -15264,6 +15502,18 @@ export type Database = {
           },
         ]
       }
+      v_microorganism_fiscal_readiness: {
+        Row: {
+          ativo: boolean | null
+          codigo: string | null
+          fiscally_ready: boolean | null
+          microorganism_id: string | null
+          nome: string | null
+          profile_id: string | null
+          profile_status: string | null
+        }
+        Relationships: []
+      }
       v_product_fiscal_readiness: {
         Row: {
           accounting_validated: boolean | null
@@ -15403,6 +15653,13 @@ export type Database = {
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lotes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
+          },
         ]
       }
       vw_bi_movimentacoes: {
@@ -15432,6 +15689,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lotes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
         ]
       }
@@ -15556,6 +15820,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "microrganismos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_servico_onfarm_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "v_microorganism_fiscal_readiness"
+            referencedColumns: ["microorganism_id"]
           },
         ]
       }
