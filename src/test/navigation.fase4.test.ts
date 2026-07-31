@@ -49,7 +49,7 @@ describe("Fase 4 — reorganização declarativa Comercial/Campo/Produção", ()
     expect(route("cockpit-lab")).toBe("/cockpit-laboratorio");
     expect(route("clientes")).toBe("/clientes");
     expect(route("fazendas")).toBe("/fazendas");
-    expect(route("protocolos")).toBe("/protocolos");
+    expect(route("protocolos")).toBe("/base-tecnica");
     expect(route("equipe-tecnica")).toBe("/consultor-tecnico");
     expect(route("previsao-climatica")).toBe("/previsao-agronomica");
     expect(route("monitoramento")).toBe("/monitoramento-alertas");

@@ -20,22 +20,22 @@ function useHarness() {
 
 describe("useTabParam", () => {
   it("usa o fallback quando não há parâmetro", () => {
-    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/protocolos") });
+    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/base-tecnica") });
     expect(result.current.tab).toBe("produtos");
   });
 
   it("lê o valor válido da URL", () => {
-    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/protocolos?tab=culturas") });
+    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/base-tecnica?tab=culturas") });
     expect(result.current.tab).toBe("culturas");
   });
 
   it("cai no fallback quando o valor é inválido", () => {
-    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/protocolos?tab=inexistente") });
+    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/base-tecnica?tab=inexistente") });
     expect(result.current.tab).toBe("produtos");
   });
 
   it("grava a aba na URL e preserva os demais parâmetros", () => {
-    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/protocolos?busca=abc") });
+    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/base-tecnica?busca=abc") });
     act(() => result.current.setTab("problemas"));
     expect(result.current.tab).toBe("problemas");
     expect(result.current.search).toContain("busca=abc");
@@ -43,7 +43,7 @@ describe("useTabParam", () => {
   });
 
   it("remove o parâmetro ao voltar para o valor padrão", () => {
-    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/protocolos?tab=culturas&busca=abc") });
+    const { result } = renderHook(useHarness, { wrapper: wrapperFor("/base-tecnica?tab=culturas&busca=abc") });
     act(() => result.current.setTab("produtos"));
     expect(result.current.tab).toBe("produtos");
     expect(result.current.search).not.toContain("tab=");

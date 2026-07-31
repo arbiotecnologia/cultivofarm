@@ -68,3 +68,15 @@ Reverter três edições de texto/UI (`navigation.ts`, `Protocolos.tsx`, `CropsM
 
 ## 13. Status final
 **APTO COM RESSALVAS** — renomeação de interface completa, rota antiga funcional, cadastro de Cultura separado das visitas, integridade contra duplicidades comprovada, permissões preservadas e regressão aprovada; ressalvas apenas quanto à evidência visual autenticada e à ausência de dados de objetivos em staging.
+
+## Fase de rota canônica (staging ikaauvsflpmamgxmkhoq)
+
+- Rota canônica: `/base-tecnica` (`RoleGuard` + `Protocolos`), única implementação do módulo.
+- Compatibilidade: `/protocolos` → `PreservedNavigate to="/base-tecnica"` (preserva query/hash, ex.: `?tab=culturas&busca=`).
+- `src/config/navigation.ts`: `route: "/base-tecnica"`, label "Base Técnica", `id` técnico `protocolos` preservado, keywords legadas mantidas na busca.
+- `src/lib/permissions.ts`: matriz adicionada para `/base-tecnica`; entrada legada mantida apenas para o redirect (sem afrouxar papéis).
+- Sem DDL nesta fase. Precheck read-only em staging: 1 cultura, 0 duplicidades por `lower(trim(nome))`, índice `culturas_nome_ci_uidx` ativo, trigger `trg_culturas_block_delete_in_use` ativa, 3 colunas de soft delete presentes, 2 policies RLS em `public.culturas`.
+- Rollback: reverter `route` para `/protocolos` em navigation/App/permissions (mudança apenas de frontend, sem migration).
+- Testes: 2677 PASS / 4 skipped / 0 FAIL; typecheck PASS; build PASS.
+- Produção `navfzbwgwzruipouyfnk` intocada; nada publicado ou promovido.
+- Status: APTO COM RESSALVAS (evidência runtime de RLS por 8 perfis segue a da Fase E anterior; não reexecutada nesta fase).
