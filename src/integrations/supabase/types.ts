@@ -8223,6 +8223,69 @@ export type Database = {
           },
         ]
       }
+      hml_fixture_registry: {
+        Row: {
+          acao: string | null
+          classification: string
+          cleanup_group: string
+          created_at: string
+          created_by: string | null
+          dependencias: Json
+          environment: string
+          fixture_run_id: string
+          fixture_version: string
+          id: string
+          motivo: string
+          origem: string
+          snapshot_before: Json | null
+          target_code: string | null
+          target_id: string
+          target_table: string
+          test_only: boolean
+          updated_at: string
+        }
+        Insert: {
+          acao?: string | null
+          classification?: string
+          cleanup_group: string
+          created_at?: string
+          created_by?: string | null
+          dependencias?: Json
+          environment?: string
+          fixture_run_id: string
+          fixture_version?: string
+          id?: string
+          motivo?: string
+          origem: string
+          snapshot_before?: Json | null
+          target_code?: string | null
+          target_id: string
+          target_table: string
+          test_only?: boolean
+          updated_at?: string
+        }
+        Update: {
+          acao?: string | null
+          classification?: string
+          cleanup_group?: string
+          created_at?: string
+          created_by?: string | null
+          dependencias?: Json
+          environment?: string
+          fixture_run_id?: string
+          fixture_version?: string
+          id?: string
+          motivo?: string
+          origem?: string
+          snapshot_before?: Json | null
+          target_code?: string | null
+          target_id?: string
+          target_table?: string
+          test_only?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       laboratorio_esteira_eventos: {
         Row: {
           acao: string
