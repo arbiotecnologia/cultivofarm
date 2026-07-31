@@ -139,25 +139,54 @@ Evidência colateral de hardening: `fn_fiscal_requirement_resolve` recusa
 execução por role sem privilégio (`42501 permission denied`), confirmando que
 o revoke aplicado no bloco de segurança está ativo.
 
+## 7. Provedor fiscal simulado e compras E2E (§12–§14) — CONCLUÍDO
+
+Adapter `rpc_hml_fiscal_emit_mock` (staging-only, exige administrador, guarda
+por marker) emite documento **simulado**: `provider = mock_homologation`,
+`environment = HOMOLOGATION`, `provider_status_raw = SIMULATED`, série `900`,
+chave prefixada `MOCKHML-` e nota explícita "SEM VALOR FISCAL". Respeita o
+ciclo real do documento (DRAFT → itens → ISSUED/AUTHORIZED) e é idempotente
+por recebível (advisory lock + verificação de nota ativa).
+
+Rodada E2E transacional (tudo revertido, evidências em
+`public.hml_b2b_e2e_evidence`): **4/4 PASS**.
+
+| Cenário | Modo | Tabela | Desconto | Líquido | Final | Parcelas | Fiscal |
+|---|---|---|---|---|---|---|---|
+| A | discount_from_base | 1.750,00 | 125,00 | 1.625,00 | 1.625,00 | 1 | 1 nota, 2 itens |
+| B | fixed_item_price | 3.125,00 | 0,00 | 3.125,00 | 3.125,00 | 1 | 1 nota, 2 itens |
+| C | discount_from_base + juros 1,5% a.m. | 1.750,00 | 125,00 | 1.625,00 | 1.724,72 | 4 | 1 nota, 2 itens |
+| D | quote_only | — | — | — | — | — | recusado |
+
+Provas obtidas em todos os cenários faturáveis:
+
+- paridade exata entre motor de preços, `rpc_total` e `total_amount` do recebível;
+- `fiscal_invoice_required = true` com `fiscal_requirement_source = policy`
+  (resolvedor fail-closed usando a política nacional);
+- **um único recebível ativo por pedido** (`ar_count = 1`); segunda chamada
+  retorna `duplicado = true` em vez de criar outro;
+- **uma única nota por recebível**; segunda emissão retorna `duplicated = true`;
+- cenário C: faturamento **recusado** com `FINANCIAL_APPROVAL_PENDING` antes da
+  aprovação financeira e liberado somente após
+  `approve_b2b_payment_terms_secure`;
+- cenário D: pedido fica em `aguardando_cotacao` e o recebível é recusado com
+  `order_not_priceable_quote_required`.
+
 ## Pendências (blocos ainda não executados)
 
-§12–§13 (provedor fiscal / adapter `mock_homologation` com status
-`SIMULATED`, cenários fiscais), §14 (quatro compras ponta a ponta),
-§15 (concorrência runtime com sessões reais), §16 (RLS com JWTs reais dos
-8 perfis), §18 (cleanup pós-homologação a partir do inventário).
-
-Esses blocos dependem de usuários Auth sintéticos e de um harness Edge
-dedicado (`hml-b2b-runtime-harness`), ainda não criado.
-
+§15 (concorrência runtime com sessões HTTP simultâneas reais), §16 (RLS com
+JWTs reais dos 8 perfis via harness Edge) e §18 (cleanup pós-homologação a
+partir do inventário, quando a homologação for encerrada).
 
 ## Status atual
 
-**BLOQUEADO PARA PRODUÇÃO** · **APTO PARA CONTINUIDADE DA HOMOLOGAÇÃO INTERNA**
+**STAGING CERTIFICADO (B2B E2E)** · **BLOQUEADO PARA PRODUÇÃO**
 
 Não pode ser classificado como apto para produção enquanto: o contador não
 validar as classificações fiscais; não houver provedor fiscal homologado,
 certificado e credenciamento; os testes de autorização fiscal real não
 passarem; e as fixtures de homologação permanecerem selecionáveis.
+
 
 ## Rollback
 

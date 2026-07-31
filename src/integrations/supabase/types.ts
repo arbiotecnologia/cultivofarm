@@ -8223,6 +8223,33 @@ export type Database = {
           },
         ]
       }
+      hml_b2b_e2e_evidence: {
+        Row: {
+          created_at: string
+          details: Json
+          id: string
+          passed: boolean
+          run_id: string
+          scenario: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          id?: string
+          passed: boolean
+          run_id: string
+          scenario: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          id?: string
+          passed?: boolean
+          run_id?: string
+          scenario?: string
+        }
+        Relationships: []
+      }
       hml_fixture_registry: {
         Row: {
           acao: string | null
@@ -18279,6 +18306,10 @@ export type Database = {
       }
       rpc_get_my_visit_by_client_uuid: {
         Args: { p_client_uuid: string }
+        Returns: Json
+      }
+      rpc_hml_fiscal_emit_mock: {
+        Args: { p_receivable_id: string }
         Returns: Json
       }
       rpc_ignorar_alerta_operacional: {
