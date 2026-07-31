@@ -139,16 +139,16 @@ async function cleanup() {
   await svcDel("partner_order_items", "order_id", created.orders);
   await svcDel("partner_order_payment_schedule", "partner_order_id", created.orders);
   // cancelar recebiveis e remover vinculos financeiros (rollback canonico, como administrador)
+  const recIdsAll: string[] = [];
   for (const o of created.orders) {
+    if (adminC) {
+      const { error } = await adminC.rpc("cancel_b2b_receivable_secure", { p_partner_order_id: o, p_motivo: "fase-e cleanup" });
+      if (error) delErrors[`cancel.${o}`] = error.message;
+    }
     const { data: lks } = await svc.from("partner_order_financial_links")
       .select("id,receivable_id,financial_status").eq("partner_order_id", o);
     for (const l of lks ?? []) {
-      if (l.receivable_id && adminC) {
-        const { error } = await adminC.rpc("cancel_b2b_receivable_secure", {
-          p_receivable_id: l.receivable_id, p_motivo: "fase-e cleanup",
-        });
-        if (error) delErrors[`cancel.${l.receivable_id}`] = error.message;
-      }
+      if (l.receivable_id) recIdsAll.push(l.receivable_id);
       if (adminC) {
         const { error } = await adminC.from("partner_order_financial_links").delete().eq("id", l.id);
         if (error) delErrors[`pofl.${l.id}`] = error.message;
@@ -160,13 +160,10 @@ async function cleanup() {
   }
   await svcDel("partner_order_payment_terms", "partner_order_id", created.orders);
   await svcDel("partner_order_idempotency", "partner_id", created.partners);
-  for (const o of created.orders) {
-    const { data: lks } = await svc.from("partner_order_financial_links").select("receivable_id").eq("partner_order_id", o);
-    const ars = (lks ?? []).map((l: any) => ({ id: l.receivable_id })).filter((a: any) => a.id);
-    for (const ar of ars) {
-      await svc.from("accounts_receivable_installments").delete().eq("receivable_id", ar.id);
-      await svc.from("accounts_receivable").delete().eq("id", ar.id);
-    }
+  for (const arId of recIdsAll) {
+    await svc.from("accounts_receivable_installments").delete().eq("receivable_id", arId);
+    const { error } = await svc.from("accounts_receivable").delete().eq("id", arId);
+    if (error) delErrors[`ar.${arId}`] = error.message;
   }
   await svcDel("partner_orders", "id", created.orders);
   await svc.from("commercial_condition_audit_log").delete().in("plan_id", created.plans);
