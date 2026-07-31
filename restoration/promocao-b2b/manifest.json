@@ -337,8 +337,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "8a458f002efbb1014ba54b4a2a1a426aa526c18833d85cba77818f0ddcd33a6a",
-      "bytes": 2321
+      "sha256": "24e4e568b0016cde52eaf9912a7e95fecd70af75d7e0f44ad8cd82f1ffee6e5f",
+      "bytes": 7261
     },
     {
       "path": "apply-production.sh.BLOCKED",
