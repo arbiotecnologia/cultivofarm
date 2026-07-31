@@ -2953,6 +2953,368 @@ export type Database = {
         }
         Relationships: []
       }
+      commercial_condition_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          motivo: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          motivo?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          motivo?: string | null
+        }
+        Relationships: []
+      }
+      commercial_condition_item_prices: {
+        Row: {
+          assignment_id: string | null
+          buyer_scope: string
+          condition_price: number | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string | null
+          discount_percent: number | null
+          id: string
+          is_exception: boolean
+          microrganismo_id: string | null
+          min_quantity: number
+          motivo: string | null
+          partner_id: string | null
+          plan_id: string
+          pricing_mode: string
+          product_id: string | null
+          published_at: string | null
+          published_by: string | null
+          published_rule_id: string | null
+          status: string
+          unit_type: string
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+          volume_ml: number | null
+        }
+        Insert: {
+          assignment_id?: string | null
+          buyer_scope: string
+          condition_price?: number | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_exception?: boolean
+          microrganismo_id?: string | null
+          min_quantity?: number
+          motivo?: string | null
+          partner_id?: string | null
+          plan_id: string
+          pricing_mode: string
+          product_id?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          published_rule_id?: string | null
+          status?: string
+          unit_type: string
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+          volume_ml?: number | null
+        }
+        Update: {
+          assignment_id?: string | null
+          buyer_scope?: string
+          condition_price?: number | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_exception?: boolean
+          microrganismo_id?: string | null
+          min_quantity?: number
+          motivo?: string | null
+          partner_id?: string | null
+          plan_id?: string
+          pricing_mode?: string
+          product_id?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          published_rule_id?: string | null
+          status?: string
+          unit_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+          volume_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_condition_item_prices_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plan_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_published_rule_id_fkey"
+            columns: ["published_rule_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_price_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_payment_plan_assignments: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          buyer_scope: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          motivo: string | null
+          partner_id: string | null
+          plan_id: string
+          published_at: string | null
+          published_by: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          buyer_scope: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          motivo?: string | null
+          partner_id?: string | null
+          plan_id: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          buyer_scope?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          motivo?: string | null
+          partner_id?: string | null
+          plan_id?: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commercial_payment_plans: {
         Row: {
           active: boolean
