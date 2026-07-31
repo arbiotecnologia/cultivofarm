@@ -3,14 +3,14 @@ import { navigation, desktopItemsBySection } from "@/config/navigation";
 import { searchNavItems } from "@/lib/navigation/search";
 
 describe("Fase 4 — reorganização declarativa Comercial/Campo/Produção", () => {
-  it("Comercial e Relacionamento: 12 itens na ordem exata e subseções corretas", () => {
+  it("Comercial e Relacionamento: 13 itens na ordem exata e subseções corretas", () => {
     const g = desktopItemsBySection().find((x) => x.section === "Comercial e Relacionamento")!;
     expect(g).toBeDefined();
     expect(g.items.map((i) => i.id)).toEqual([
       "com-consolidado", "com-indicadores", "com-alertas",
       "clientes", "fazendas",
       "solicitacoes", "com-pedidos-b2b", "com-solicitacoes-b2b", "com-campanhas",
-      "com-catalogo", "protocolos", "com-simulador",
+      "com-catalogo", "protocolos", "com-simulador", "com-condicoes-pagamento",
     ]);
     const sub = (id: string) => g.items.find((i) => i.id === id)!.subSection;
     expect(sub("com-consolidado")).toBe("Visão Comercial");
