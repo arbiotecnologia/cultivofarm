@@ -24,6 +24,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatrizPrecosTab } from "@/components/comercial/MatrizPrecosTab";
+import { AtribuicoesPlanosTab } from "@/components/comercial/AtribuicoesPlanosTab";
+import { MatrizConfiguravelTab } from "@/components/comercial/MatrizConfiguravelTab";
 import { AlertCircle, Plus, Pencil, GitBranch, Star, Loader2 } from "lucide-react";
 import { useTabParam } from "@/lib/navigation/useTabParam";
 
@@ -72,7 +74,7 @@ function preview(form: PaymentPlanPayload, base = 100000) {
 type Mode = "create" | "version" | "metadata";
 
 export default function CommercialPaymentPlansPage() {
-  const [tab, setTab] = useTabParam("tab", ["planos", "matriz"] as const, "planos");
+  const [tab, setTab] = useTabParam("tab", ["planos", "matriz", "atribuicoes", "condicoes"] as const, "planos");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
   const [page, setPage] = useState(0);
@@ -218,7 +220,17 @@ export default function CommercialPaymentPlansPage() {
         <TabsList>
           <TabsTrigger value="planos">Condições de pagamento</TabsTrigger>
           <TabsTrigger value="matriz">Matriz de preços</TabsTrigger>
+          <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
+          <TabsTrigger value="condicoes">Matriz por condição</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="atribuicoes">
+          <AtribuicoesPlanosTab />
+        </TabsContent>
+
+        <TabsContent value="condicoes">
+          <MatrizConfiguravelTab />
+        </TabsContent>
 
         <TabsContent value="matriz">
           <MatrizPrecosTab />
