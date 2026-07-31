@@ -116,8 +116,17 @@ export function CropsManager({ kind, parentId, canEdit }: Props) {
               <Input value={editing.fase_recomendada ?? ""} onChange={(e) => setEditing({ ...editing, fase_recomendada: e.target.value })} />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">Objetivo agronômico</Label>
-              <Input value={editing.objetivo_uso ?? ""} onChange={(e) => setEditing({ ...editing, objetivo_uso: e.target.value })} />
+              <Label className="text-[10px]" htmlFor="objetivo-agronomico">Objetivo agronômico</Label>
+              <Input
+                id="objetivo-agronomico"
+                aria-label="Objetivo agronômico da recomendação"
+                placeholder="Ex.: controle preventivo, reequilíbrio biológico"
+                value={editing.objetivo_uso ?? ""}
+                onChange={(e) => setEditing({ ...editing, objetivo_uso: e.target.value })}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Objetivo da recomendação técnica. Não confundir com o objetivo da visita técnica.
+              </p>
             </div>
             {kind === "produto" && (
               <div className="space-y-1 col-span-2">
