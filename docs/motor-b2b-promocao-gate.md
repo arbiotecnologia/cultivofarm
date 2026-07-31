@@ -354,6 +354,59 @@ desabilitados, nenhuma tabela de provas. Nada persistido.
   do ensaio** e reativá-los ao final (é a mesma condição operacional exigida na
   janela de produção). Sem essa autorização o ciclo permanece **`BLOCKED`**.
 
+**Execução da 8ª tentativa (`2026-07-31T01:30:00Z`) — janela controlada com pausa
+temporária de `pg_cron`: `BLOCKED` por defeito real do pacote no passo 190.**
+
+Janela operacional (autorizada, apenas staging):
+
+| Item | Registro sanitizado |
+|---|---|
+| Job alvo 1 | `jobid=2` · `check-partner-order-sla` · `*/30 * * * *` · `active=true` · `cmd_sha256=fcd31eec…d358d14` |
+| Job alvo 2 | `jobid=5` · `prune-old-audit-logs` · `15 3 * * *` · `active=true` · `cmd_sha256=000652cd…8428911` |
+| Pertencem à produção? | **Não** — lidos via DSN de staging (`postgres.ikaauvsflpmamgxmkhoq`, Session pooler); `navfzbwgwzruipouyfnk` nunca acessado |
+| Pausa | `cron.alter_job(job_id, active := false)` apenas; `schedule` e `command` intocados; nenhum job excluído |
+| Restauração | `trap EXIT INT TERM` independente → `active := true` executado e confirmado |
+
+Gates do executor nesta janela: `[1/6]` conexão **PASS** · `[2/6]` marcador
+`MARKER_OK` **PASS** · `[3/6]` manifest **35/35 PASS** (sha256 + bytes) ·
+`[4/6]` baseline pré **PASS** · `[5/6]` preflight **`PREFLIGHT_OK`
+(mode=rehearsal target_ref=ikaauvsflpmamgxmkhoq)** e delta aplicando em
+transação única até o passo 190, onde abortou · `[6/6]` pós-`ROLLBACK`
+**`POST_STATE_IDENTICAL_TO_BASELINE`**.
+
+Erro sanitizado exato:
+
+```
+psql:/dev-server/restoration/promocao-b2b/steps/190_2f7835f8_3e7c_4331_a0c9_24348bf1ed0f.sql:104:
+ERROR:  cannot change return type of existing function
+DETAIL:  Row type defined by OUT parameters is different.
+HINT:  Use DROP FUNCTION rpc_b2b_list_selectable_payment_plans() first.
+REHEARSAL_BLOCKED (exit=3)
+```
+
+Diagnóstico: o passo 190 usa `CREATE OR REPLACE FUNCTION
+public.rpc_b2b_list_selectable_payment_plans()` com uma lista de colunas
+`RETURNS TABLE` diferente da função já existente no destino. `CREATE OR
+REPLACE` não pode alterar o tipo de retorno — a correção é um `DROP FUNCTION IF
+EXISTS public.rpc_b2b_list_selectable_payment_plans();` imediatamente antes do
+`CREATE`, seguido do bloco `REVOKE`/`GRANT` já presente. **O mesmo erro
+ocorreria em produção**, portanto o achado é um defeito real do pacote,
+capturado exatamente pelo propósito do ensaio.
+
+Provas pós-janela (somente leitura):
+
+- Baseline pós idêntica: `base_tables=192`, `views=19`, `functions=719`,
+  `policies=499`, `triggers_disabled=0`, `proofs_table_present=false`,
+  `residuo_orders=0`, `residuo_idem=0` → **zero resíduos, zero triggers
+  desabilitados, nenhuma tabela de provas**.
+- `cron.job` após a janela: `1:true`, `2:true`, `5:true`, `8:true`, `9:true` —
+  os 2 jobs alvo **restaurados a `active=true`**, `schedule` e
+  `cmd_sha256` inalterados (`2`→`fcd31eec…`, `5`→`000652cd…`); **nenhum outro
+  job foi tocado** (1, 8 e 9 permaneceram `true` em todo o ciclo).
+- `REHEARSAL_DONE` e `STAGING_REHEARSAL_PASS` **não emitidos**.
+- **`PRODUCTION_NOT_EXECUTED`** — `navfzbwgwzruipouyfnk` não acessado; nenhuma
+  migration persistente aplicada; nada publicado.
+
 ### 4.2 Verificação pós-tentativa (somente leitura, staging)
 
 | Item | Obtido | Esperado |
