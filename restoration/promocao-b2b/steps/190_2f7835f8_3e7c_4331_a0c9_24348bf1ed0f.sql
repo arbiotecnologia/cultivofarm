@@ -45,7 +45,49 @@ GRANT EXECUTE ON FUNCTION public.fn_b2b_plan_selectable(uuid, timestamptz) TO se
 GRANT EXECUTE ON FUNCTION public.fn_b2b_plan_referenced(uuid) TO service_role;
 
 -- A2) RPC operacional canônica de leitura de planos selecionáveis
-CREATE OR REPLACE FUNCTION public.rpc_b2b_list_selectable_payment_plans()
+--
+-- COMPATIBILIDADE DE ASSINATURA (documentada):
+--   Alterar o conjunto de colunas de RETURNS TABLE nao e suportado por
+--   CREATE OR REPLACE FUNCTION (Postgres: "cannot change return type of
+--   existing function"). Por isso o passo faz DROP explicito com a
+--   assinatura exata `public.rpc_b2b_list_selectable_payment_plans()`,
+--   SEM CASCADE, e somente apos provar que nao ha dependencia bloqueante
+--   (views/regras). Se houver, aborta fail-closed.
+--   A assinatura publica de argumentos permanece inalterada (zero args);
+--   apenas o row type de saida e normalizado. months_count e declarado
+--   numeric para espelhar public.commercial_payment_plans.months_count.
+DO $dep$
+DECLARE
+  v_oid oid;
+  v_blockers text;
+BEGIN
+  SELECT p.oid INTO v_oid
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname = 'rpc_b2b_list_selectable_payment_plans'
+    AND p.pronargs = 0;
+
+  IF v_oid IS NULL THEN
+    RETURN; -- caminho fresh: nada a remover
+  END IF;
+
+  SELECT string_agg(DISTINCT c.relname, ', ')
+    INTO v_blockers
+  FROM pg_depend d
+  JOIN pg_rewrite r ON r.oid = d.objid
+  JOIN pg_class c ON c.oid = r.ev_class
+  WHERE d.refobjid = v_oid;
+
+  IF v_blockers IS NOT NULL THEN
+    RAISE EXCEPTION 'STEP190_ABORT: dependencia bloqueante em rpc_b2b_list_selectable_payment_plans(): %', v_blockers;
+  END IF;
+
+  EXECUTE 'DROP FUNCTION public.rpc_b2b_list_selectable_payment_plans()';
+END
+$dep$;
+
+CREATE FUNCTION public.rpc_b2b_list_selectable_payment_plans()
 RETURNS TABLE (
   id uuid,
   code text,
