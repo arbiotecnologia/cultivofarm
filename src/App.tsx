@@ -477,7 +477,8 @@ const App = () => (
                 <Route path="/auditoria" element={<RoleGuard><Auditoria /></RoleGuard>} />
                 <Route path="/auditoria-sync" element={<Navigate to="/auditoria?tab=sync" replace />} />
                 
-                <Route path="/protocolos" element={<RoleGuard><Protocolos /></RoleGuard>} />
+                <Route path="/base-tecnica" element={<RoleGuard><Protocolos /></RoleGuard>} />
+                <Route path="/protocolos" element={<PreservedNavigate to="/base-tecnica" />} />
                 <Route path="/ordens-servico" element={<RoleGuard><OrdensServico /></RoleGuard>} />
                 
                 <Route path="/lotes" element={<RoleGuard><Lotes /></RoleGuard>} />
