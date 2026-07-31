@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { NAVIGATION_ITEMS } from "@/config/navigation";
+import { navigation } from "@/config/navigation";
 
 const read = (p: string) => fs.readFileSync(path.resolve(process.cwd(), p), "utf8");
 
 describe("Base Técnica Agronômica — renomeação de interface", () => {
-  const item = NAVIGATION_ITEMS.find((i) => i.id === "protocolos");
+  const item = navigation.find((i) => i.id === "protocolos");
 
   it("o menu apresenta o rótulo 'Base Técnica'", () => {
     expect(item?.label).toBe("Base Técnica");
