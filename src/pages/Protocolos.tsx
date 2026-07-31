@@ -11,12 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from "@/lib/navigation/useTabParam";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Pencil as PencilIcon } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/hooks/useAuth";
+
 
 import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import { CatalogoTecnicoTab } from "@/components/protocolos/CatalogoTecnicoTab";
