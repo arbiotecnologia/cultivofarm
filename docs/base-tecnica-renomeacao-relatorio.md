@@ -7,7 +7,8 @@
 
 ## 2. Arquivos alterados
 - `src/config/navigation.ts` — rótulo do menu e palavras-chave de busca.
-- `src/pages/Protocolos.tsx` — H1, descrição e `document.title`.
+- `src/pages/Protocolos.tsx` — H1, descrição e `document.title` (com cleanup restaurando o título anterior).
+- `src/App.tsx`, `src/lib/permissions.ts` — rota canônica `/base-tecnica` e redirect da rota legada.
 - `src/components/protocolos/catalog/CropsManager.tsx` — acessibilidade, placeholder e ajuda contextual do campo "Objetivo agronômico".
 - `src/test/protocolos/base-tecnica.rename.test.ts` — novo.
 - `docs/proposta-entidade-protocolo-agronomico.md` — novo (proposta, sem implementação).
@@ -20,10 +21,11 @@
 | Título da página | Protocolos Técnicos | **Base Técnica Agronômica** |
 | Descrição | Cadastro de produtos, culturas, problemas e microrganismos | **Produtos, microrganismos, culturas, alvos e recomendações técnicas.** |
 
-## 4. Rotas preservadas
-- `/protocolos` mantida em `src/App.tsx` sob `RoleGuard`; id do item de menu (`protocolos`) e chave de permissão `"/protocolos"` inalterados.
+## 4. Rotas
+- **Canônica:** `/base-tecnica` em `src/App.tsx` sob `RoleGuard`, única rota que monta `<Protocolos />`.
+- **Legada:** `/protocolos` existe apenas como `PreservedNavigate to="/base-tecnica"` — não renderiza o módulo, não duplica layout e não amplia permissão.
+- Id técnico do item de menu (`protocolos`) preservado; matriz de permissão adicionada para `/base-tecnica` com os mesmos papéis (entrada legada mantida sem afrouxamento).
 - Busca do menu encontra "Base Técnica", "Produtos", "Culturas", "Alvos" e ainda "Protocolos" (compatibilidade).
-- `/base-tecnica` **não criada**; permanece documentada como evolução futura com redirect compatível.
 - Sem renomeação de tabelas, colunas, funções, pastas (`src/components/protocolos/**`) ou imports.
 
 ## 5. Correção de Cultura (P1) — auditoria
@@ -67,16 +69,12 @@ Reverter três edições de texto/UI (`navigation.ts`, `Protocolos.tsx`, `CropsM
 - Nomes técnicos internos (rota, pastas, coluna `objetivo_uso`) mantidos propositalmente; divergem do nome de exibição.
 
 ## 13. Status final
-**APTO COM RESSALVAS** — renomeação de interface completa, rota antiga funcional, cadastro de Cultura separado das visitas, integridade contra duplicidades comprovada, permissões preservadas e regressão aprovada; ressalvas apenas quanto à evidência visual autenticada e à ausência de dados de objetivos em staging.
+**APTO COM RESSALVAS** — renomeação de interface completa, rota canônica `/base-tecnica` com redirect compatível de `/protocolos`, cadastro de Cultura separado das visitas, integridade contra duplicidades comprovada, permissões preservadas e regressão aprovada; ressalvas apenas quanto à evidência visual autenticada e à ausência de dados de objetivos em staging.
 
-## Fase de rota canônica (staging ikaauvsflpmamgxmkhoq)
-
-- Rota canônica: `/base-tecnica` (`RoleGuard` + `Protocolos`), única implementação do módulo.
-- Compatibilidade: `/protocolos` → `PreservedNavigate to="/base-tecnica"` (preserva query/hash, ex.: `?tab=culturas&busca=`).
-- `src/config/navigation.ts`: `route: "/base-tecnica"`, label "Base Técnica", `id` técnico `protocolos` preservado, keywords legadas mantidas na busca.
-- `src/lib/permissions.ts`: matriz adicionada para `/base-tecnica`; entrada legada mantida apenas para o redirect (sem afrouxar papéis).
-- Sem DDL nesta fase. Precheck read-only em staging: 1 cultura, 0 duplicidades por `lower(trim(nome))`, índice `culturas_nome_ci_uidx` ativo, trigger `trg_culturas_block_delete_in_use` ativa, 3 colunas de soft delete presentes, 2 policies RLS em `public.culturas`.
-- Rollback: reverter `route` para `/protocolos` em navigation/App/permissions (mudança apenas de frontend, sem migration).
-- Testes: 2677 PASS / 4 skipped / 0 FAIL; typecheck PASS; build PASS.
+## 14. Evidência da fase de rota canônica (staging `ikaauvsflpmamgxmkhoq`)
+- `src/App.tsx`: `path="/base-tecnica" element={<RoleGuard><Protocolos /></RoleGuard>}` e `path="/protocolos" element={<PreservedNavigate to="/base-tecnica" />}`; teste garante exatamente **uma** ocorrência de `<Protocolos />`.
+- Redirect validado com roteador real (`base-tecnica.redirect.test.tsx`): `/protocolos?tab=culturas&busca=abc#secao-1` → `/base-tecnica?tab=culturas&busca=abc#secao-1`; rota sem parâmetros e rota canônica também cobertas.
+- `document.title` agora salva e restaura o título anterior no cleanup do `useEffect`.
+- Sem DDL/DML nesta fase. Precheck read-only em staging: 1 cultura, 0 duplicidades por `lower(btrim(nome))`, índice `culturas_nome_ci_uidx` ativo, trigger `trg_culturas_block_delete_in_use` ativa, 3 colunas de soft delete presentes, 2 policies RLS em `public.culturas`.
+- Rollback: reverter `route` para `/protocolos` em `navigation.ts`/`App.tsx`/`permissions.ts` e remover os testes novos — mudança 100% frontend.
 - Produção `navfzbwgwzruipouyfnk` intocada; nada publicado ou promovido.
-- Status: APTO COM RESSALVAS (evidência runtime de RLS por 8 perfis segue a da Fase E anterior; não reexecutada nesta fase).
