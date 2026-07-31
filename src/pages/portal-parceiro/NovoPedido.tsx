@@ -943,6 +943,7 @@ export default function NovoPedido() {
                 </div>
                 <PaymentPlanSelector
                   plans={paymentPlans}
+                  plansLoading={paymentPlansLoading}
                   selectedPlanId={selectedPlanId}
                   onSelect={setSelectedPlanId}
                   finalAmountByPlan={
@@ -950,6 +951,7 @@ export default function NovoPedido() {
                   }
                   loading={simulateSelectedPlan.isPending}
                 />
+
                 {simulation && (
                   <PaymentSimulationSummary
                     simulation={simulation}
