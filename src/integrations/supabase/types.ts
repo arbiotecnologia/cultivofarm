@@ -15729,6 +15729,19 @@ export type Database = {
         Args: { _due_day: number; _freq: string; _from_date: string }
         Returns: string
       }
+      fn_cc_audit: {
+        Args: {
+          p_action: string
+          p_after: Json
+          p_before: Json
+          p_entity: string
+          p_entity_id: string
+          p_motivo: string
+        }
+        Returns: undefined
+      }
+      fn_cc_can_prepare: { Args: { p_uid: string }; Returns: boolean }
+      fn_cc_can_publish: { Args: { p_uid: string }; Returns: boolean }
       fn_fin_aging: {
         Args: { _type?: string }
         Returns: {
@@ -17043,6 +17056,195 @@ export type Database = {
       }
       rpc_cancelar_etiqueta_produto: {
         Args: { p_etiqueta_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_cc_archive_assignment: {
+        Args: { p_id: string; p_motivo: string }
+        Returns: undefined
+      }
+      rpc_cc_bulk_adjust_apply: {
+        Args: { p_ids: string[]; p_motivo: string; p_percent: number }
+        Returns: Json
+      }
+      rpc_cc_bulk_adjust_preview: {
+        Args: { p_ids: string[]; p_percent: number }
+        Returns: Json
+      }
+      rpc_cc_copy_default_table: {
+        Args: {
+          p_customer_id: string
+          p_motivo?: string
+          p_partner_id: string
+          p_plan_id: string
+          p_target_scope: string
+        }
+        Returns: Json
+      }
+      rpc_cc_delete_item_price: {
+        Args: { p_id: string; p_motivo?: string }
+        Returns: undefined
+      }
+      rpc_cc_history: {
+        Args: { p_entity?: string; p_entity_id?: string; p_limit?: number }
+        Returns: {
+          action: string
+          actor_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          motivo: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "commercial_condition_audit_log"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_cc_list_assignments: {
+        Args: { p_status?: string }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          buyer_scope: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          motivo: string | null
+          partner_id: string | null
+          plan_id: string
+          published_at: string | null
+          published_by: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "commercial_payment_plan_assignments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_cc_list_item_prices: {
+        Args: {
+          p_assignment_id?: string
+          p_plan_id?: string
+          p_status?: string
+        }
+        Returns: {
+          assignment_id: string | null
+          buyer_scope: string
+          condition_price: number | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string | null
+          discount_percent: number | null
+          id: string
+          is_exception: boolean
+          microrganismo_id: string | null
+          min_quantity: number
+          motivo: string | null
+          partner_id: string | null
+          plan_id: string
+          pricing_mode: string
+          product_id: string | null
+          published_at: string | null
+          published_by: string | null
+          published_rule_id: string | null
+          status: string
+          unit_type: string
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+          volume_ml: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "commercial_condition_item_prices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_cc_publish_assignment: {
+        Args: { p_id: string; p_motivo?: string }
+        Returns: undefined
+      }
+      rpc_cc_publish_item_prices: {
+        Args: { p_ids: string[]; p_motivo?: string }
+        Returns: Json
+      }
+      rpc_cc_simulate_price: {
+        Args: {
+          p_buyer_scope: string
+          p_customer_id: string
+          p_microrganismo_id: string
+          p_partner_id: string
+          p_plan_id: string
+          p_product_id: string
+          p_ref_date?: string
+          p_unit_type: string
+          p_volume_ml?: number
+        }
+        Returns: Json
+      }
+      rpc_cc_submit_assignment: {
+        Args: { p_id: string; p_motivo?: string }
+        Returns: undefined
+      }
+      rpc_cc_upsert_assignment: {
+        Args: {
+          p_buyer_scope: string
+          p_customer_id: string
+          p_id: string
+          p_motivo: string
+          p_partner_id: string
+          p_plan_id: string
+          p_valid_from: string
+          p_valid_until: string
+        }
+        Returns: string
+      }
+      rpc_cc_upsert_item_price: {
+        Args: {
+          p_assignment_id: string
+          p_buyer_scope: string
+          p_condition_price: number
+          p_customer_id: string
+          p_discount_percent: number
+          p_id: string
+          p_is_exception: boolean
+          p_microrganismo_id: string
+          p_min_quantity: number
+          p_motivo: string
+          p_partner_id: string
+          p_plan_id: string
+          p_pricing_mode: string
+          p_product_id: string
+          p_unit_type: string
+          p_valid_from: string
+          p_valid_until: string
+          p_volume_ml: number
+        }
+        Returns: string
+      }
+      rpc_cc_validate_matrix: {
+        Args: {
+          p_buyer_scope: string
+          p_customer_id?: string
+          p_partner_id?: string
+          p_plan_id: string
+        }
         Returns: Json
       }
       rpc_check_monitoramento_and_notify: {
