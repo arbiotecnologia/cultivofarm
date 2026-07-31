@@ -145,8 +145,12 @@ BEGIN
 END
 $$;
 
+-- Restauracao explicita de owner / grants / comment apos o DROP+CREATE
+ALTER FUNCTION public.rpc_b2b_list_selectable_payment_plans() OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.rpc_b2b_list_selectable_payment_plans() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_b2b_list_selectable_payment_plans() TO authenticated, service_role;
+COMMENT ON FUNCTION public.rpc_b2b_list_selectable_payment_plans() IS
+  'B2B: lista planos de pagamento selecionaveis (vigentes, nao supersedidos). SECURITY DEFINER com autorizacao interna por app_role.';
 
 -- C) Guard declarativo de vigencia (independe do texto das RPCs)
 CREATE OR REPLACE FUNCTION public.tg_b2b_enforce_plan_selectable()
