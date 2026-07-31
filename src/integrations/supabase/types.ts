@@ -291,10 +291,13 @@ export type Database = {
           external_payment_id: string | null
           first_due_date: string
           fiscal_access_key: string | null
+          fiscal_exemption_id: string | null
           fiscal_invoice_number: string | null
           fiscal_invoice_required: boolean
           fiscal_invoice_status: string
           fiscal_issue_date: string | null
+          fiscal_policy_id: string | null
+          fiscal_requirement_source: string | null
           id: string
           installment_count: number
           issue_date: string
@@ -324,10 +327,13 @@ export type Database = {
           external_payment_id?: string | null
           first_due_date: string
           fiscal_access_key?: string | null
+          fiscal_exemption_id?: string | null
           fiscal_invoice_number?: string | null
           fiscal_invoice_required?: boolean
           fiscal_invoice_status?: string
           fiscal_issue_date?: string | null
+          fiscal_policy_id?: string | null
+          fiscal_requirement_source?: string | null
           id?: string
           installment_count?: number
           issue_date?: string
@@ -357,10 +363,13 @@ export type Database = {
           external_payment_id?: string | null
           first_due_date?: string
           fiscal_access_key?: string | null
+          fiscal_exemption_id?: string | null
           fiscal_invoice_number?: string | null
           fiscal_invoice_required?: boolean
           fiscal_invoice_status?: string
           fiscal_issue_date?: string | null
+          fiscal_policy_id?: string | null
+          fiscal_requirement_source?: string | null
           id?: string
           installment_count?: number
           issue_date?: string
@@ -398,6 +407,20 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_fiscal_exemption_id_fkey"
+            columns: ["fiscal_exemption_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_requirement_exemptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_fiscal_policy_id_fkey"
+            columns: ["fiscal_policy_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_operation_policies"
             referencedColumns: ["id"]
           },
           {
@@ -2952,6 +2975,368 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      commercial_condition_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          motivo: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          motivo?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          motivo?: string | null
+        }
+        Relationships: []
+      }
+      commercial_condition_item_prices: {
+        Row: {
+          assignment_id: string | null
+          buyer_scope: string
+          condition_price: number | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string | null
+          discount_percent: number | null
+          id: string
+          is_exception: boolean
+          microrganismo_id: string | null
+          min_quantity: number
+          motivo: string | null
+          partner_id: string | null
+          plan_id: string
+          pricing_mode: string
+          product_id: string | null
+          published_at: string | null
+          published_by: string | null
+          published_rule_id: string | null
+          status: string
+          unit_type: string
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+          volume_ml: number | null
+        }
+        Insert: {
+          assignment_id?: string | null
+          buyer_scope: string
+          condition_price?: number | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_exception?: boolean
+          microrganismo_id?: string | null
+          min_quantity?: number
+          motivo?: string | null
+          partner_id?: string | null
+          plan_id: string
+          pricing_mode: string
+          product_id?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          published_rule_id?: string | null
+          status?: string
+          unit_type: string
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+          volume_ml?: number | null
+        }
+        Update: {
+          assignment_id?: string | null
+          buyer_scope?: string
+          condition_price?: number | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string | null
+          discount_percent?: number | null
+          id?: string
+          is_exception?: boolean
+          microrganismo_id?: string | null
+          min_quantity?: number
+          motivo?: string | null
+          partner_id?: string | null
+          plan_id?: string
+          pricing_mode?: string
+          product_id?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          published_rule_id?: string | null
+          status?: string
+          unit_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+          volume_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_condition_item_prices_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plan_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_condition_item_prices_published_rule_id_fkey"
+            columns: ["published_rule_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_price_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_payment_plan_assignments: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          buyer_scope: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          motivo: string | null
+          partner_id: string | null
+          plan_id: string
+          published_at: string | null
+          published_by: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          buyer_scope: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          motivo?: string | null
+          partner_id?: string | null
+          plan_id: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          buyer_scope?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          motivo?: string | null
+          partner_id?: string | null
+          plan_id?: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "commercial_payment_plan_assignments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_payment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       commercial_payment_plans: {
         Row: {
@@ -6948,20 +7333,30 @@ export type Database = {
       }
       fiscal_invoice_items: {
         Row: {
+          cest_snapshot: string | null
+          cfop_snapshot: string | null
           commercial_unit: string | null
           created_at: string
+          csosn_snapshot: string | null
+          cst_icms_snapshot: string | null
           description: string | null
           discount_value: number | null
+          entrega_id: string | null
           fiscal_invoice_id: string
           fiscal_profile_snapshot: Json | null
+          freight_apportionment_value: number | null
           freight_value: number | null
           gross_value: number | null
           id: string
           insurance_value: number | null
           item_kind: string
           item_sequence: number
+          lote_id: string | null
+          ncm_snapshot: string | null
           net_value: number | null
+          origem_snapshot: string | null
           other_value: number | null
+          partner_order_item_id: string | null
           quantity: number | null
           source_item_id: string | null
           source_item_type: string | null
@@ -6972,20 +7367,30 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cest_snapshot?: string | null
+          cfop_snapshot?: string | null
           commercial_unit?: string | null
           created_at?: string
+          csosn_snapshot?: string | null
+          cst_icms_snapshot?: string | null
           description?: string | null
           discount_value?: number | null
+          entrega_id?: string | null
           fiscal_invoice_id: string
           fiscal_profile_snapshot?: Json | null
+          freight_apportionment_value?: number | null
           freight_value?: number | null
           gross_value?: number | null
           id?: string
           insurance_value?: number | null
           item_kind: string
           item_sequence: number
+          lote_id?: string | null
+          ncm_snapshot?: string | null
           net_value?: number | null
+          origem_snapshot?: string | null
           other_value?: number | null
+          partner_order_item_id?: string | null
           quantity?: number | null
           source_item_id?: string | null
           source_item_type?: string | null
@@ -6996,20 +7401,30 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cest_snapshot?: string | null
+          cfop_snapshot?: string | null
           commercial_unit?: string | null
           created_at?: string
+          csosn_snapshot?: string | null
+          cst_icms_snapshot?: string | null
           description?: string | null
           discount_value?: number | null
+          entrega_id?: string | null
           fiscal_invoice_id?: string
           fiscal_profile_snapshot?: Json | null
+          freight_apportionment_value?: number | null
           freight_value?: number | null
           gross_value?: number | null
           id?: string
           insurance_value?: number | null
           item_kind?: string
           item_sequence?: number
+          lote_id?: string | null
+          ncm_snapshot?: string | null
           net_value?: number | null
+          origem_snapshot?: string | null
           other_value?: number | null
+          partner_order_item_id?: string | null
           quantity?: number | null
           source_item_id?: string | null
           source_item_type?: string | null
@@ -7020,6 +7435,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fiscal_invoice_items_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
           {
             foreignKeyName: "fiscal_invoice_items_fiscal_invoice_id_fkey"
             columns: ["fiscal_invoice_id"]
@@ -7033,6 +7483,48 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_fiscal_document_reconciliation_pending"
             referencedColumns: ["fiscal_invoice_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["lote_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoice_items_partner_order_item_id_fkey"
+            columns: ["partner_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "partner_order_items"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -7102,6 +7594,7 @@ export type Database = {
         Row: {
           access_key: string | null
           authorized_at: string | null
+          billing_scope: string | null
           cancel_reason: string | null
           canceled_at: string | null
           company_cnpj: string | null
@@ -7111,6 +7604,9 @@ export type Database = {
           customer_id: string | null
           customer_snapshot: Json | null
           danfe_document_id: string | null
+          debtor_customer_id: string | null
+          debtor_partner_id: string | null
+          debtor_type: string | null
           delivery_id: string | null
           direction: string | null
           document_model: string | null
@@ -7141,6 +7637,7 @@ export type Database = {
           notes: string | null
           original_recipient_snapshot: Json | null
           parent_invoice_id: string | null
+          partner_order_id: string | null
           payload_schema_version: number | null
           provider: string | null
           provider_reference: string | null
@@ -7148,6 +7645,7 @@ export type Database = {
           receivable_id: string | null
           reconciliation_status: string | null
           rejected_at: string | null
+          sales_channel: string | null
           series: string | null
           source_id: string | null
           source_type: string | null
@@ -7164,6 +7662,7 @@ export type Database = {
         Insert: {
           access_key?: string | null
           authorized_at?: string | null
+          billing_scope?: string | null
           cancel_reason?: string | null
           canceled_at?: string | null
           company_cnpj?: string | null
@@ -7173,6 +7672,9 @@ export type Database = {
           customer_id?: string | null
           customer_snapshot?: Json | null
           danfe_document_id?: string | null
+          debtor_customer_id?: string | null
+          debtor_partner_id?: string | null
+          debtor_type?: string | null
           delivery_id?: string | null
           direction?: string | null
           document_model?: string | null
@@ -7203,6 +7705,7 @@ export type Database = {
           notes?: string | null
           original_recipient_snapshot?: Json | null
           parent_invoice_id?: string | null
+          partner_order_id?: string | null
           payload_schema_version?: number | null
           provider?: string | null
           provider_reference?: string | null
@@ -7210,6 +7713,7 @@ export type Database = {
           receivable_id?: string | null
           reconciliation_status?: string | null
           rejected_at?: string | null
+          sales_channel?: string | null
           series?: string | null
           source_id?: string | null
           source_type?: string | null
@@ -7226,6 +7730,7 @@ export type Database = {
         Update: {
           access_key?: string | null
           authorized_at?: string | null
+          billing_scope?: string | null
           cancel_reason?: string | null
           canceled_at?: string | null
           company_cnpj?: string | null
@@ -7235,6 +7740,9 @@ export type Database = {
           customer_id?: string | null
           customer_snapshot?: Json | null
           danfe_document_id?: string | null
+          debtor_customer_id?: string | null
+          debtor_partner_id?: string | null
+          debtor_type?: string | null
           delivery_id?: string | null
           direction?: string | null
           document_model?: string | null
@@ -7265,6 +7773,7 @@ export type Database = {
           notes?: string | null
           original_recipient_snapshot?: Json | null
           parent_invoice_id?: string | null
+          partner_order_id?: string | null
           payload_schema_version?: number | null
           provider?: string | null
           provider_reference?: string | null
@@ -7272,6 +7781,7 @@ export type Database = {
           receivable_id?: string | null
           reconciliation_status?: string | null
           rejected_at?: string | null
+          sales_channel?: string | null
           series?: string | null
           source_id?: string | null
           source_type?: string | null
@@ -7299,6 +7809,69 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "financial_documents"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_customer_id_fkey"
+            columns: ["debtor_customer_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_partner_id_fkey"
+            columns: ["debtor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_partner_id_fkey"
+            columns: ["debtor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_partner_id_fkey"
+            columns: ["debtor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_partner_id_fkey"
+            columns: ["debtor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_engagement"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_partner_id_fkey"
+            columns: ["debtor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_commercial_revenue"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_partner_id_fkey"
+            columns: ["debtor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_partner_id_fkey"
+            columns: ["debtor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_debtor_partner_id_fkey"
+            columns: ["debtor_partner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_partner_commercial_metrics"
+            referencedColumns: ["partner_id"]
           },
           {
             foreignKeyName: "fiscal_invoices_delivery_id_fkey"
@@ -7350,6 +7923,13 @@ export type Database = {
             referencedColumns: ["fiscal_invoice_id"]
           },
           {
+            foreignKeyName: "fiscal_invoices_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fiscal_invoices_receivable_id_fkey"
             columns: ["receivable_id"]
             isOneToOne: false
@@ -7378,6 +7958,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fiscal_operation_policies: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          document_model: string | null
+          id: string
+          legal_basis: string | null
+          notes: string | null
+          operation_type: string
+          requires_invoice: boolean
+          sales_channel: string
+          uf: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          document_model?: string | null
+          id?: string
+          legal_basis?: string | null
+          notes?: string | null
+          operation_type: string
+          requires_invoice: boolean
+          sales_channel: string
+          uf?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          document_model?: string | null
+          id?: string
+          legal_basis?: string | null
+          notes?: string | null
+          operation_type?: string
+          requires_invoice?: boolean
+          sales_channel?: string
+          uf?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      fiscal_requirement_exemptions: {
+        Row: {
+          active: boolean
+          approved_at: string
+          approved_by: string
+          approved_role: string
+          created_at: string
+          id: string
+          legal_basis: string | null
+          motivo: string
+          revoked_at: string | null
+          revoked_by: string | null
+          scope_id: string
+          scope_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          approved_at?: string
+          approved_by: string
+          approved_role: string
+          created_at?: string
+          id?: string
+          legal_basis?: string | null
+          motivo: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope_id: string
+          scope_type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          approved_at?: string
+          approved_by?: string
+          approved_role?: string
+          created_at?: string
+          id?: string
+          legal_basis?: string | null
+          motivo?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope_id?: string
+          scope_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       fiscal_stock_loss_contexts: {
         Row: {
@@ -15338,6 +16020,10 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_b2b_order_billing_eligibility: {
+        Args: { p_partner_order_id: string }
+        Returns: Json
+      }
       fn_b2b_order_priceable: { Args: { p_order_id: string }; Returns: boolean }
       fn_b2b_plan_referenced: { Args: { _plan_id: string }; Returns: boolean }
       fn_b2b_plan_selectable: {
@@ -15367,6 +16053,19 @@ export type Database = {
         Args: { _due_day: number; _freq: string; _from_date: string }
         Returns: string
       }
+      fn_cc_audit: {
+        Args: {
+          p_action: string
+          p_after: Json
+          p_before: Json
+          p_entity: string
+          p_entity_id: string
+          p_motivo: string
+        }
+        Returns: undefined
+      }
+      fn_cc_can_prepare: { Args: { p_uid: string }; Returns: boolean }
+      fn_cc_can_publish: { Args: { p_uid: string }; Returns: boolean }
       fn_fin_aging: {
         Args: { _type?: string }
         Returns: {
@@ -15449,6 +16148,17 @@ export type Database = {
           recommended_action: string
           severity: string
         }[]
+      }
+      fn_fiscal_requirement_resolve: {
+        Args: {
+          p_operation_type: string
+          p_ref_date?: string
+          p_sales_channel: string
+          p_scope_id?: string
+          p_scope_type?: string
+          p_uf: string
+        }
+        Returns: Json
       }
       fn_generate_receivable_from_entrega: {
         Args: { _entrega_id: string; _payload: Json }
@@ -16681,6 +17391,195 @@ export type Database = {
       }
       rpc_cancelar_etiqueta_produto: {
         Args: { p_etiqueta_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_cc_archive_assignment: {
+        Args: { p_id: string; p_motivo: string }
+        Returns: undefined
+      }
+      rpc_cc_bulk_adjust_apply: {
+        Args: { p_ids: string[]; p_motivo: string; p_percent: number }
+        Returns: Json
+      }
+      rpc_cc_bulk_adjust_preview: {
+        Args: { p_ids: string[]; p_percent: number }
+        Returns: Json
+      }
+      rpc_cc_copy_default_table: {
+        Args: {
+          p_customer_id: string
+          p_motivo?: string
+          p_partner_id: string
+          p_plan_id: string
+          p_target_scope: string
+        }
+        Returns: Json
+      }
+      rpc_cc_delete_item_price: {
+        Args: { p_id: string; p_motivo?: string }
+        Returns: undefined
+      }
+      rpc_cc_history: {
+        Args: { p_entity?: string; p_entity_id?: string; p_limit?: number }
+        Returns: {
+          action: string
+          actor_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          motivo: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "commercial_condition_audit_log"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_cc_list_assignments: {
+        Args: { p_status?: string }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          buyer_scope: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          motivo: string | null
+          partner_id: string | null
+          plan_id: string
+          published_at: string | null
+          published_by: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "commercial_payment_plan_assignments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_cc_list_item_prices: {
+        Args: {
+          p_assignment_id?: string
+          p_plan_id?: string
+          p_status?: string
+        }
+        Returns: {
+          assignment_id: string | null
+          buyer_scope: string
+          condition_price: number | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string | null
+          discount_percent: number | null
+          id: string
+          is_exception: boolean
+          microrganismo_id: string | null
+          min_quantity: number
+          motivo: string | null
+          partner_id: string | null
+          plan_id: string
+          pricing_mode: string
+          product_id: string | null
+          published_at: string | null
+          published_by: string | null
+          published_rule_id: string | null
+          status: string
+          unit_type: string
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+          volume_ml: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "commercial_condition_item_prices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      rpc_cc_publish_assignment: {
+        Args: { p_id: string; p_motivo?: string }
+        Returns: undefined
+      }
+      rpc_cc_publish_item_prices: {
+        Args: { p_ids: string[]; p_motivo?: string }
+        Returns: Json
+      }
+      rpc_cc_simulate_price: {
+        Args: {
+          p_buyer_scope: string
+          p_customer_id: string
+          p_microrganismo_id: string
+          p_partner_id: string
+          p_plan_id: string
+          p_product_id: string
+          p_ref_date?: string
+          p_unit_type: string
+          p_volume_ml?: number
+        }
+        Returns: Json
+      }
+      rpc_cc_submit_assignment: {
+        Args: { p_id: string; p_motivo?: string }
+        Returns: undefined
+      }
+      rpc_cc_upsert_assignment: {
+        Args: {
+          p_buyer_scope: string
+          p_customer_id: string
+          p_id: string
+          p_motivo: string
+          p_partner_id: string
+          p_plan_id: string
+          p_valid_from: string
+          p_valid_until: string
+        }
+        Returns: string
+      }
+      rpc_cc_upsert_item_price: {
+        Args: {
+          p_assignment_id: string
+          p_buyer_scope: string
+          p_condition_price: number
+          p_customer_id: string
+          p_discount_percent: number
+          p_id: string
+          p_is_exception: boolean
+          p_microrganismo_id: string
+          p_min_quantity: number
+          p_motivo: string
+          p_partner_id: string
+          p_plan_id: string
+          p_pricing_mode: string
+          p_product_id: string
+          p_unit_type: string
+          p_valid_from: string
+          p_valid_until: string
+          p_volume_ml: number
+        }
+        Returns: string
+      }
+      rpc_cc_validate_matrix: {
+        Args: {
+          p_buyer_scope: string
+          p_customer_id?: string
+          p_partner_id?: string
+          p_plan_id: string
+        }
         Returns: Json
       }
       rpc_check_monitoramento_and_notify: {
