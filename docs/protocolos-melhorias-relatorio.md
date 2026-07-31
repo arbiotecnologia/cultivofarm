@@ -36,3 +36,10 @@ Produção `navfzbwgwzruipouyfnk` não foi acessada. Nada publicado. Nenhum dado
 ## Validações
 - Typecheck: PASS. Build: PASS.
 - Vitest completo: 2670 PASS / 1 falha intermitente por timeout em `portalAcompanhamentoProdutor.test.tsx` (passa isoladamente: 10/10), sem relação com este escopo.
+
+## Auditoria final (fechamento das fases 1–6)
+- Arquivos entregues conferidos: `src/hooks/useCulturas.ts`, `src/test/protocolos/*`, `supabase/tests/protocolos/culturas-rls-harness.sql`, `e2e/protocolos-culturas.spec.ts`, `docs/protocolos-decisao-modulo-vs-entidade.md`.
+- Rótulo: apenas "Objetivo agronômico" presente em `CropsManager.tsx`; nenhuma ocorrência residual de "Objetivo de uso".
+- Correção aplicada: timeout dedicado (20s) no teste `portalAcompanhamentoProdutor` que falhava de forma intermitente.
+- Typecheck PASS · Build PASS · Vitest **2671 PASS / 4 skipped / 0 FAIL** (suíte completa, sem flakes).
+- Escopo mantido em staging `ikaauvsflpmamgxmkhoq`; produção `navfzbwgwzruipouyfnk` não acessada; nada publicado.
