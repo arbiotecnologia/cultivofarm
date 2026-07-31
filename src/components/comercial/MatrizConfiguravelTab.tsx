@@ -45,7 +45,7 @@ import { toast } from "sonner";
 import { AlertCircle, Loader2, Plus, Trash2, CheckCircle2, Copy, Percent, FlaskConical, History } from "lucide-react";
 import { brl } from "@/lib/financial/format";
 import { formatDateDisplay } from "@/lib/date-utils";
-import { SOB_CONSULTA_LABEL } from "@/lib/catalogo/formatUnidades";
+import { SOB_CONSULTA_LABEL } from "@/lib/catalogo/unidades";
 
 const NONE = "__none__";
 
