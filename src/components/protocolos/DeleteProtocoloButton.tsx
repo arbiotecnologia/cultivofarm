@@ -36,7 +36,12 @@ export function DeleteProtocoloButton({
     const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) {
       const msg = (error.message || "").toLowerCase();
-      if (error.code === "23503" || msg.includes("foreign key") || msg.includes("violates")) {
+      if (msg.includes("cultura em uso")) {
+        toast.error(
+          `Não é possível excluir "${label}": cultura em uso. Desative a cultura em vez de excluir.`,
+          { duration: 6000 }
+        );
+      } else if (error.code === "23503" || msg.includes("foreign key") || msg.includes("violates")) {
         toast.error(
           `Não é possível excluir "${label}": item vinculado a lotes, OS, recomendações ou formulações.`,
           { duration: 6000 }
