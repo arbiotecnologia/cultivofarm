@@ -136,7 +136,7 @@ export function useCulturasOptions() {
   return useQuery({
     queryKey: ["culturas-options"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("culturas").select("id, nome").order("nome");
+      const { data, error } = await supabase.from("culturas").select("id, nome").eq("ativo", true).order("nome");
       if (error) throw error;
       return (data ?? []) as { id: string; nome: string }[];
     },
