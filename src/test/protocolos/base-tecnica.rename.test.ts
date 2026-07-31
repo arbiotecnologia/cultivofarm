@@ -12,10 +12,14 @@ describe("Base Técnica Agronômica — renomeação de interface", () => {
     expect(item?.label).toBe("Base Técnica");
   });
 
-  it("a rota /protocolos é preservada e o id técnico não muda", () => {
-    expect(item?.route).toBe("/protocolos");
+  it("a rota canônica é /base-tecnica e /protocolos apenas redireciona", () => {
+    expect(item?.route).toBe("/base-tecnica");
     expect(item?.id).toBe("protocolos");
-    expect(read("src/App.tsx")).toContain('path="/protocolos"');
+    const app = read("src/App.tsx");
+    expect(app).toContain('path="/base-tecnica" element={<RoleGuard><Protocolos /></RoleGuard>}');
+    expect(app).toContain('path="/protocolos" element={<PreservedNavigate to="/base-tecnica" />}');
+    // não pode existir uma segunda implementação do módulo
+    expect(app.match(/<Protocolos \/>/g)?.length).toBe(1);
   });
 
   it("a busca do menu encontra Base Técnica, Produtos, Culturas e ainda Protocolos", () => {
