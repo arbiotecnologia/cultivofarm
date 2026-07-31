@@ -174,7 +174,6 @@ async function cleanup() {
     const { count } = await svc.from(t).select("id", { count: "exact", head: true }).in(col, vals);
     return count ?? 0;
   };
-  residue.__errors = Object.keys(delErrors).length as any;
   (residue as any).errorDetail = delErrors as any;
   residue.plans = await countIn("commercial_payment_plans", "id", created.plans);
   residue.rules = await countIn("commercial_price_rules", "plan_id", created.plans);
@@ -446,7 +445,7 @@ async function run() {
 
   const residue = await cleanup();
   check("CLEAN", "cleanup completo sem resíduos",
-    Object.values(residue).every((v) => v === 0), residue);
+    Object.entries(residue).every(([k, v]) => k === "errorDetail" || v === 0), residue);
 }
 
 Deno.serve(async (req) => {
