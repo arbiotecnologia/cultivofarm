@@ -107,6 +107,8 @@ export const navigation: NavItem[] = [
   { id: "com-catalogo", label: "Catálogo", icon: FlaskConical, route: "/comercial/catalogo", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 10, platforms: ["desktop"], searchKeywords: ["catálogo", "produto", "produtos", "portfólio"] },
   { id: "protocolos", label: "Protocolos", icon: FileText, route: "/protocolos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11, platforms: ["desktop"], searchKeywords: ["protocolo", "protocolos", "manejo", "recomendação", "protocolo agronômico"] },
   { id: "com-simulador", label: "Simulador", icon: BarChart3, route: "/comercial/simulador", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 12, platforms: ["desktop"], searchKeywords: ["simulador", "simulação", "proposta", "orçamento"] },
+  { id: "com-condicoes-pagamento", label: "Condições e Preços", icon: CreditCard, route: "/comercial/condicoes-pagamento", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 13, platforms: ["desktop"], searchKeywords: ["condição de pagamento", "condicoes de pagamento", "condições financeiras", "matriz de preços", "matriz de precos", "preço por produto", "preco por microrganismo", "à vista", "a vista", "prazo", "safra", "sob consulta", "quote only", "plano de pagamento", "tabela de preços"] },
+
 
   // ── Campo e Assistência Técnica ────────────────────────────────────────────
   { id: "agenda-tecnica", label: "Agenda Técnica", icon: CalendarClock, route: "/agenda-tecnica", section: "Campo e Assistência Técnica", order: 1, platforms: ["desktop"], searchKeywords: ["calendário", "visita agendada", "agenda", "agenda técnica", "calendário técnico"] },
