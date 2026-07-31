@@ -226,6 +226,61 @@ restoration/promocao-b2b/cleanup-rehearsal-executor.sh  # remoção da via tempo
 ```
 
 
+---
+
+**Execução da 5ª tentativa (`2026-07-31T01:10:00Z`): `BLOCKED` — autenticação recusada.**
+
+Comando executado (sem secrets, valor lido apenas do runtime):
+
+```bash
+bash -n restoration/promocao-b2b/run-rehearsal-from-secret.sh
+bash    restoration/promocao-b2b/run-rehearsal-from-secret.sh
+```
+
+Resultado dos gates, na ordem do executor:
+
+| Gate | Resultado |
+|---|---|
+| Secret `STAGING_DSN` presente | PASS |
+| DSN contém `navfzbwgwzruipouyfnk` (produção) | **recusa ativa — ausente** |
+| DSN contém `ikaauvsflpmamgxmkhoq` (staging) | PASS |
+| Esquema `postgresql://` | PASS |
+| `[1/6]` autenticação / destino conectado | **FAIL** |
+| `[2/6]` marcador `_fiscal_staging_marker='STAGING'` | não alcançado |
+| `[3/6]` manifest 35 arquivos (sha256 + bytes) | não alcançado |
+| `[4/6]` baseline pré-ensaio | não alcançado |
+| `[5/6]` transação única (2 passagens + `ROLLBACK`) | não alcançado |
+| `[6/6]` comparação pós-`ROLLBACK` | não alcançado |
+
+Erro sanitizado exato:
+
+```
+psql: error: connection to server at "db.ikaauvsflpmamgxmkhoq.supabase.co", port 5432
+failed: FATAL:  password authentication failed for user "postgres"
+REHEARSAL_BLOCKED (exit=2) — falha antes de qualquer conexao; nenhum SQL enviado.
+```
+
+Consequências verificadas:
+
+- Nenhum SQL foi enviado ao staging; **não há baseline pré/pós a comparar** e não
+  há resíduo possível por este ciclo. Nada foi persistido.
+- O DSN cadastrado resolve para a **conexão direta** `db.<ref>.supabase.co:5432`,
+  não para o **Session pooler**; a senha embutida foi rejeitada pelo servidor.
+- `STAGING_REF` não é consumido por este executor (o destino é derivado e
+  validado a partir do próprio DSN e do marcador no banco).
+- `PRODUCTION_NOT_EXECUTED` — `navfzbwgwzruipouyfnk` intocado.
+
+Não houve `PASS` parcial: o veredito único do ciclo é **`BLOCKED`**.
+
+Para destravar, substituir `STAGING_DSN` (Project Settings → Secrets, formulário
+seguro, nunca no chat) pela URI copiada em **Connect → Session pooler**, porta
+**5432**, com a senha atual do banco e `sslmode=require`.
+
+`STAGING_DSN` e `STAGING_REF` **permanecem cadastrados** neste ciclo. O cleanup
+lógico (`cleanup-rehearsal-executor.sh` + remoção dos secrets) só pode ser feito
+**após** um ciclo com `REHEARSAL_DONE` e auditoria independente do pacote.
+
+
 ### 4.2 Verificação pós-tentativa (somente leitura, staging)
 
 | Item | Obtido | Esperado |
