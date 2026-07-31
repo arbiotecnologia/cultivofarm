@@ -154,7 +154,9 @@ export default function NovoPedido() {
   const [simClienteId, setSimClienteId] = useState<string>("");
 
   // Fase 5 — condição comercial
-  const { data: paymentPlans = [] } = useCommercialPaymentPlans(!isSimulationMode);
+  const { data: paymentPlans = [], isLoading: paymentPlansLoading } =
+    useCommercialPaymentPlans(!isSimulationMode);
+
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [simulation, setSimulation] = useState<SimulateResult | null>(null);
   const [cashSimulation, setCashSimulation] = useState<SimulateResult | null>(null);
