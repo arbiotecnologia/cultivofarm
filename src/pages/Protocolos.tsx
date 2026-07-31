@@ -486,11 +486,14 @@ const MAIN_TABS = ["produtos", "microrganismos", "catalogo-tecnico", "culturas",
 
 export default function Protocolos() {
   const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos");
+  useEffect(() => {
+    document.title = "Base Técnica Agronômica | AR Bio";
+  }, []);
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Protocolos Técnicos</h1>
-        <p className="text-muted-foreground">Cadastro de produtos, culturas, problemas e microrganismos</p>
+        <h1 className="text-2xl font-bold">Base Técnica Agronômica</h1>
+        <p className="text-muted-foreground">Produtos, microrganismos, culturas, alvos e recomendações técnicas.</p>
       </div>
       <Card>
         <CardContent className="pt-6">
