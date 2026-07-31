@@ -11,12 +11,32 @@ interface Props {
   onSelect: (planId: string) => void;
   finalAmountByPlan?: Record<string, number>;
   loading?: boolean;
+  /** Carregamento da lista de condições publicadas para a empresa. */
+  plansLoading?: boolean;
 }
 
-export function PaymentPlanSelector({ plans, selectedPlanId, onSelect, finalAmountByPlan, loading }: Props) {
-  if (!plans.length) {
-    return <p className="text-sm text-muted-foreground">Nenhuma condição de pagamento disponível.</p>;
+export function PaymentPlanSelector({ plans, selectedPlanId, onSelect, finalAmountByPlan, loading, plansLoading }: Props) {
+  if (plansLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2" aria-busy="true">
+        {[0, 1].map((i) => (
+          <div key={i} className="h-20 rounded-md border border-border bg-muted/40 animate-pulse" />
+        ))}
+      </div>
+    );
   }
+  if (!plans.length) {
+    return (
+      <div role="status" className="rounded-md border border-dashed border-border p-3 space-y-1">
+        <p className="text-sm font-medium">Nenhuma condição comercial disponível</p>
+        <p className="text-sm text-muted-foreground">
+          Nenhuma condição comercial está disponível para sua empresa. Entre em contato com o setor
+          comercial.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
       {plans.map((p) => {
