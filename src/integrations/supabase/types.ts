@@ -3461,6 +3461,7 @@ export type Database = {
           discount_percent: number | null
           id: string
           microrganismo_id: string | null
+          min_quantity: number
           motivo: string | null
           partner_id: string | null
           plan_id: string | null
@@ -3484,6 +3485,7 @@ export type Database = {
           discount_percent?: number | null
           id?: string
           microrganismo_id?: string | null
+          min_quantity?: number
           motivo?: string | null
           partner_id?: string | null
           plan_id?: string | null
@@ -3507,6 +3509,7 @@ export type Database = {
           discount_percent?: number | null
           id?: string
           microrganismo_id?: string | null
+          min_quantity?: number
           motivo?: string | null
           partner_id?: string | null
           plan_id?: string | null
@@ -16211,6 +16214,7 @@ export type Database = {
           p_partner_id: string
           p_plan_id: string
           p_product_id: string
+          p_quantity?: number
           p_ref_date?: string
           p_unit_type: string
           p_volume_ml: number
@@ -17539,6 +17543,7 @@ export type Database = {
           p_partner_id: string
           p_plan_id: string
           p_product_id: string
+          p_quantity?: number
           p_ref_date?: string
           p_unit_type: string
           p_volume_ml?: number

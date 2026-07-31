@@ -1,0 +1,2 @@
+DROP FUNCTION IF EXISTS public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date);
+DROP FUNCTION IF EXISTS public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date);
