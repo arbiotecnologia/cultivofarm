@@ -307,6 +307,53 @@ conexão direta da 5ª tentativa (secret não propagado / não substituído).
   pooler** (`postgresql://postgres.ikaauvsflpmamgxmkhoq:<senha>@aws-<n>-<região>.pooler.supabase.com:5432/postgres?sslmode=require`)
   e cadastrar `STAGING_REF=ikaauvsflpmamgxmkhoq`.
 
+**Execução da 7ª tentativa (`2026-07-31T01:20:00Z`): `BLOCKED` — preflight fail-closed
+por jobs `pg_cron` ativos. Primeira tentativa em que a conexão e os gates locais passaram.**
+
+Pré-validação sanitizada do secret (sem imprimir DSN/senha): host termina em
+`pooler.supabase.com` PASS · porta `5432` PASS · usuário
+`postgres.ikaauvsflpmamgxmkhoq` PASS · `STAGING_REF=ikaauvsflpmamgxmkhoq` PASS ·
+ausência de `navfzbwgwzruipouyfnk` PASS.
+
+Resultado dos gates do executor:
+
+| Gate | Resultado |
+|---|---|
+| `[1/6]` autenticação / destino conectado (Session pooler) | **PASS** |
+| `[2/6]` marcador `_fiscal_staging_marker='STAGING'` fail-closed | **PASS** (`MARKER_OK`) |
+| `[3/6]` manifest 35 arquivos (sha256 + bytes) | **PASS** (35/35 íntegros) |
+| `[4/6]` baseline pré-ensaio | **PASS** (`base_tables=192`, `views=19`, `functions=719`, `policies=499`, `triggers_disabled=0`, `proofs_table=false`, resíduos=0) |
+| `[5/6]` transação única (`BEGIN` + preflight + 2 passagens + postflight + `ROLLBACK`) | **FAIL** — abortou em `000_preflight.sql` |
+| `[6/6]` comparação pós-`ROLLBACK` | executada — `POST_STATE_IDENTICAL_TO_BASELINE` |
+
+Erro sanitizado exato:
+
+```
+psql:/dev-server/restoration/promocao-b2b/000_preflight.sql:156: ERROR:  PREFLIGHT_ABORT:
+2 job(s) pg_cron ativo(s) tocam o motor B2B — desative na janela
+CONTEXT:  PL/pgSQL function inline_code_block line 112 at RAISE
+REHEARSAL_BLOCKED (exit=3)
+```
+
+Causa: a regra **P5** do preflight exige zero jobs `cron.job` ativos cujo
+`command` case `%partner_order%`, `%b2b%` ou `%commercial_%`. Em staging há 5
+jobs ativos, dos quais **2** casam a regra (entre eles
+`check-partner-order-sla`, `*/30 * * * *`). O gate é **fail-closed por
+projeto** e comportou-se corretamente: nenhum passo do delta foi aplicado.
+
+Estado pós-`ROLLBACK` (read-only, mesma consulta da baseline):
+`base_tables=192`, `views=19`, `functions=719`, `policies=499`,
+`triggers_disabled=0`, `proofs_table_present=false`, `residuo_orders=0`,
+`residuo_idem=0` → **idêntico à baseline pré**. Zero resíduos, zero triggers
+desabilitados, nenhuma tabela de provas. Nada persistido.
+
+- `REHEARSAL_DONE` **não emitido**; `STAGING_REHEARSAL_PASS` **não emitido**.
+- `PRODUCTION_NOT_EXECUTED` — `navfzbwgwzruipouyfnk` intocado.
+- Desbloqueio requer autorização humana explícita para **desativar
+  temporariamente os 2 jobs `pg_cron` do motor B2B em staging durante a janela
+  do ensaio** e reativá-los ao final (é a mesma condição operacional exigida na
+  janela de produção). Sem essa autorização o ciclo permanece **`BLOCKED`**.
+
 ### 4.2 Verificação pós-tentativa (somente leitura, staging)
 
 | Item | Obtido | Esperado |
