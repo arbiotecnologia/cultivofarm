@@ -95,7 +95,7 @@ RETURNS TABLE (
   description text,
   plan_type text,
   max_days integer,
-  months_count integer,
+  months_count numeric,
   installment_count integer,
   discount_percent numeric,
   monthly_interest_percent numeric,
