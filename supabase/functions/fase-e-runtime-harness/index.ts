@@ -58,7 +58,24 @@ async function rpcErr(c: any, fn: string, args: Record<string, unknown>) {
 }
 
 async function setup() {
+  // parceiros e clientes precisam existir antes dos vínculos/roles
+  for (const nome of [`FaseE P1 ${RUN}`, `FaseE P2 ${RUN}`]) {
+    const { data, error } = await svc.from("partner_accounts")
+      .insert({ razao_social: nome, nome_fantasia: nome, ativo: true }).select("id").single();
+    if (error) throw new Error(`partner: ${error.message}`);
+    created.partners.push(data.id);
+  }
+  const [P1, P2] = created.partners;
+  for (let i = 1; i <= 2; i++) {
+    const { data, error } = await svc.from("clientes")
+      .insert({ nome: `FaseE Cliente ${i} ${RUN}`, codigo_cliente: `FE${RUN}${i}` })
+      .select("id").single();
+    if (error) throw new Error(`cliente: ${error.message}`);
+    created.clientes.push(data.id);
+  }
+
   for (const p of Object.keys(ROLES) as Profile[]) {
+
     const email = `fase-e-${p}-${RUN}@arbio-staging.test`;
     const { data, error } = await svc.auth.admin.createUser({
       email, password: PWD, email_confirm: true,
