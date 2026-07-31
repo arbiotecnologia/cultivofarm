@@ -25,194 +25,12 @@ import { DeleteProtocoloButton } from "@/components/protocolos/DeleteProtocoloBu
 // --- Culturas ---
 interface Cultura { id: string; nome: string; descricao: string | null; }
 
-type ObjetivoSugestao = {
-  id: string;
-  cultura_id: string | null;
-  texto: string;
-  ordem: number;
-  ativo: boolean;
-};
-
-function ObjetivosCulturaPanel({ culturaId, canManage }: { culturaId: string; canManage: boolean }) {
-  const qc = useQueryClient();
-  const [items, setItems] = useState<ObjetivoSugestao[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [novoTexto, setNovoTexto] = useState("");
-  const [novaOrdem, setNovaOrdem] = useState("0");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTexto, setEditTexto] = useState("");
-  const [editOrdem, setEditOrdem] = useState("0");
-
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ["objetivos-visita-sugestoes"] });
-    qc.invalidateQueries({ queryKey: ["objetivos-sugestoes-admin"] });
-  };
-
-  const fetchItems = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("objetivos_visita_sugestoes")
-      .select("id, cultura_id, texto, ordem, ativo")
-      .eq("cultura_id", culturaId)
-      .order("ordem")
-      .order("texto");
-    setLoading(false);
-    if (error) { toast.error(error.message); return; }
-    setItems((data || []) as ObjetivoSugestao[]);
-  };
-
-  useEffect(() => { fetchItems(); /* eslint-disable-next-line */ }, [culturaId]);
-
-  const handleAdd = async () => {
-    const texto = novoTexto.trim();
-    if (!texto) { toast.error("Informe o texto do objetivo."); return; }
-    const ordem = Number.isFinite(parseInt(novaOrdem, 10)) ? parseInt(novaOrdem, 10) : 0;
-    const { error } = await supabase.from("objetivos_visita_sugestoes").insert({
-      cultura_id: culturaId, texto, ordem, ativo: true,
-    });
-    if (error) { toast.error(error.message); return; }
-    toast.success("Objetivo adicionado");
-    setNovoTexto(""); setNovaOrdem("0");
-    invalidate(); fetchItems();
-  };
-
-  const startEdit = (s: ObjetivoSugestao) => {
-    setEditingId(s.id);
-    setEditTexto(s.texto);
-    setEditOrdem(String(s.ordem ?? 0));
-  };
-
-  const cancelEdit = () => { setEditingId(null); setEditTexto(""); setEditOrdem("0"); };
-
-  const saveEdit = async () => {
-    if (!editingId) return;
-    const texto = editTexto.trim();
-    if (!texto) { toast.error("Texto obrigatório"); return; }
-    const ordem = Number.isFinite(parseInt(editOrdem, 10)) ? parseInt(editOrdem, 10) : 0;
-    const { error } = await supabase
-      .from("objetivos_visita_sugestoes")
-      .update({ texto, ordem })
-      .eq("id", editingId);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Objetivo atualizado");
-    cancelEdit();
-    invalidate(); fetchItems();
-  };
-
-  const toggleAtivo = async (s: ObjetivoSugestao) => {
-    const { error } = await supabase
-      .from("objetivos_visita_sugestoes")
-      .update({ ativo: !s.ativo })
-      .eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    invalidate(); fetchItems();
-  };
-
-  const removeItem = async (id: string) => {
-    if (!confirm("Excluir este objetivo?")) return;
-    const { error } = await supabase.from("objetivos_visita_sugestoes").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Objetivo excluído");
-    invalidate(); fetchItems();
-  };
-
-  return (
-    <div className="space-y-3">
-      {canManage && (
-        <div className="rounded-md border p-3 space-y-2 bg-muted/30">
-          <Label className="text-xs">Novo objetivo</Label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              placeholder="Ex: Avaliar pressão de lagartas"
-              value={novoTexto}
-              onChange={(e) => setNovoTexto(e.target.value)}
-              className="flex-1"
-            />
-            <Input
-              type="number"
-              placeholder="Ordem"
-              value={novaOrdem}
-              onChange={(e) => setNovaOrdem(e.target.value)}
-              className="sm:w-24"
-            />
-            <Button type="button" onClick={handleAdd} className="gap-1.5">
-              <Plus className="h-4 w-4" /> Adicionar
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div className="border rounded-md overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Texto</TableHead>
-              <TableHead className="w-[80px] text-center">Ordem</TableHead>
-              <TableHead className="w-[90px] text-center">Ativo</TableHead>
-              {canManage && <TableHead className="w-[120px] text-right">Ações</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={canManage ? 4 : 3} className="text-center text-muted-foreground py-6">Carregando…</TableCell></TableRow>
-            ) : items.length === 0 ? (
-              <TableRow><TableCell colSpan={canManage ? 4 : 3} className="text-center text-muted-foreground py-6">Nenhum objetivo associado a esta cultura.</TableCell></TableRow>
-            ) : items.map((s) => editingId === s.id ? (
-              <TableRow key={s.id}>
-                <TableCell><Input value={editTexto} onChange={(e) => setEditTexto(e.target.value)} /></TableCell>
-                <TableCell><Input type="number" value={editOrdem} onChange={(e) => setEditOrdem(e.target.value)} className="w-20" /></TableCell>
-                <TableCell className="text-center">
-                  <Switch checked={s.ativo} onCheckedChange={() => toggleAtivo(s)} />
-                </TableCell>
-                <TableCell className="text-right space-x-1">
-                  <Button size="sm" onClick={saveEdit}>Salvar</Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit}>Cancelar</Button>
-                </TableCell>
-              </TableRow>
-            ) : (
-              <TableRow key={s.id}>
-                <TableCell className="font-medium">{s.texto}</TableCell>
-                <TableCell className="text-center">{s.ordem}</TableCell>
-                <TableCell className="text-center">
-                  {canManage ? (
-                    <Switch checked={s.ativo} onCheckedChange={() => toggleAtivo(s)} />
-                  ) : (
-                    s.ativo ? <Badge className="bg-emerald-600 hover:bg-emerald-600">Ativo</Badge> : <Badge variant="outline">Inativo</Badge>
-                  )}
-                </TableCell>
-                {canManage && (
-                  <TableCell className="text-right">
-                    <Button size="icon" variant="ghost" onClick={() => startEdit(s)}>
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => removeItem(s.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      {!canManage && (
-        <p className="text-[11px] text-muted-foreground italic">
-          Você não tem permissão para editar objetivos. Apenas administradores e gestores podem alterar esta lista.
-        </p>
-      )}
-    </div>
-  );
-}
-
 function CulturasTab() {
   const isMobile = useIsMobile();
-  const { role } = useAuth();
-  const canManageObjetivos = role === "administrador" || role === "gestor";
   const [items, setItems] = useState<Cultura[]>([]);
   const [open, setOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Cultura | null>(null);
   const [form, setForm] = useState({ nome: "", descricao: "" });
-  const [activeTab, setActiveTab] = useState<"dados" | "objetivos">("dados");
 
   const fetch = async () => {
     const { data } = await supabase.from("culturas").select("*").order("nome");
@@ -223,7 +41,6 @@ function CulturasTab() {
   const resetForm = () => {
     setForm({ nome: "", descricao: "" });
     setEditingItem(null);
-    setActiveTab("dados");
   };
 
   const handleOpenChange = (v: boolean) => {
@@ -234,7 +51,6 @@ function CulturasTab() {
   const handleEdit = (c: Cultura) => {
     setEditingItem(c);
     setForm({ nome: c.nome, descricao: c.descricao || "" });
-    setActiveTab("dados");
     setOpen(true);
   };
 
@@ -247,14 +63,14 @@ function CulturasTab() {
       toast.success("Cultura atualizada!");
       fetch();
     } else {
-      const { data, error } = await supabase.from("culturas").insert([payload]).select().single();
+      const { error } = await supabase.from("culturas").insert([payload]);
       if (error) { toast.error(error.message); return; }
-      toast.success("Cultura cadastrada! Agora você pode adicionar objetivos de visita.");
-      setEditingItem(data as Cultura);
-      setActiveTab("objetivos");
+      toast.success("Cultura cadastrada!");
+      handleOpenChange(false);
       fetch();
     }
   };
+
 
   return (
     <div className="space-y-4">
