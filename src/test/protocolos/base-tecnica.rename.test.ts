@@ -36,7 +36,8 @@ describe("Base Técnica Agronômica — renomeação de interface", () => {
     expect(src).not.toContain("Protocolos Técnicos");
   });
 
-  it("a permissão continua chaveada pela rota antiga", () => {
+  it("a permissão existe para a rota canônica e a legada", () => {
+    expect(read("src/lib/permissions.ts")).toContain('"/base-tecnica"');
     expect(read("src/lib/permissions.ts")).toContain('"/protocolos"');
   });
 
