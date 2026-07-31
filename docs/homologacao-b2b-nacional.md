@@ -211,15 +211,19 @@ Ambiente: staging `ikaa****` (validado por `_fiscal_staging_marker`). Produção
 - Migrations de harness com UUIDs fixos (`_legacy_run1..5`) excluídas.
 - Manifesto de promoção/exclusão: `supabase/tests/homologacao-b2b/MANIFESTO.md`.
 
-### B. Adapter fiscal mock v3 (staging-only)
+### B. Adapter fiscal mock v4 (staging-only)
 - Guarda de staging, exige administrador autenticado (`auth.uid()` + `has_role`); PUBLIC/anon revogados.
 - NCM/CFOP/CST/CSOSN/origem resolvidos do perfil fiscal real do item (sem fallback hardcoded);
   CFOP interno/interestadual por UF; CST vs CSOSN por CRT.
-- Fail-closed `FISCAL_PROFILE_INCOMPLETE` sem efeitos colaterais; `item_kind` distingue produto e microrganismo.
+- v4: item de produto usa `product_fiscal_profiles`; item de microrganismo usa
+  `microorganism_fiscal_profiles`. Fallback cruzado entre origens é proibido (fail-closed).
+- Fail-closed `FISCAL_PROFILE_INCOMPLETE` sem efeitos colaterais; `item_kind` distingue produto
+  (`PRODUCT`) e microrganismo (`MICROORGANISM`), agora aceito pela constraint de `fiscal_invoice_items`.
 - Marcações `HOMOLOGATION` / `mock_homologation` / "SEM VALOR FISCAL"; soma dos itens = total da nota = total do recebível.
+- Fonte versionada: `supabase/tests/homologacao-b2b/01-staging-infra/023_fiscal_mock_adapter_v4_micro.sql`.
 
 ### C–G. Execução runtime (`supabase/functions/hml-b2b-runtime-harness`)
-Execução `c2405199`: **37 asserts — 36 PASS · 0 FAIL · 1 SKIP**.
+Execução `5ccfe5a3`: **38 asserts — 38 PASS · 0 FAIL · 0 SKIP**.
 - Matriz de 8 perfis com JWT real (RLS-01..15): isolamento entre parceiros, técnico sem preço/condição/
   cronograma, produtor sem pedidos/recebíveis/notas, sem vínculo com zero linhas, anon sem RPC sensível.
 - Concorrência HTTP simultânea: 1 pedido lógico (mesma chave), 1 recebível ativo, 1 nota ativa (replay seguro).
@@ -228,20 +232,26 @@ Execução `c2405199`: **37 asserts — 36 PASS · 0 FAIL · 1 SKIP**.
 - Gates: recebível bloqueado antes da aprovação (`ORDER_NOT_APPROVED`) e sob cotação
   (`order_not_priceable_quote_required`); plano D permanece `aguardando_cotacao`.
 - Crédito liberado no cancelamento, com replay idempotente.
-- SKIP: item de microrganismo indisponível no catálogo B2B (`product_unavailable`) — pendência funcional.
+- FISC-05 (novo, PASS): microrganismo `FUN-5` percorre catálogo → simulação → pedido → aprovação →
+  recebível → nota simulada, com item `MICROORGANISM` e snapshot originado de `microorganism_fiscal_profiles`.
+- FISC-06 (novo, PASS): perfil fiscal de microrganismo inativo falha fechado, sem nota criada.
 
 ### Cleanup e resíduos
 - Cleanup automático ao final: 0 pedidos, 0 recebíveis, 0 notas simuladas, 8 usuários efêmeros removidos, 0 erros.
 - Preservados para homologação manual: planos `HML-B2B-A..D`, 4 assignments, 9 preços, política NF-e,
-  2 perfis fiscais sintéticos — inventariados em `hml_fixture_registry`.
+  3 perfis fiscais sintéticos (2 produtos + 1 microrganismo) — inventariados em `hml_fixture_registry`.
+- `microrganismos.FUN-5` com `b2b_enabled = true` registrado como `REVIEW_REQUIRED` no inventário,
+  com `snapshot_before` para reversão.
 - Cleanup final idempotente entregue e **não executado**: `supabase/tests/homologacao-b2b/99-cleanup-final.sql`.
 
 ### Riscos e pendências
-- Microrganismo ainda não comprável no catálogo B2B (bloqueia prova fiscal de item não-produto).
-- Perfis fiscais sintéticos em `DRAFT`, sem validação contábil.
+- Perfis fiscais sintéticos em `DRAFT`, sem validação contábil (produtos e microrganismo).
+- Habilitação B2B do microrganismo `FUN-5` é decisão comercial: reverter se não for oferta real.
 - Resíduos sintéticos anteriores `FaseE P1/P2` (4 parceiros) permanecem, pendentes de inventário.
 - Documento simulado não substitui provedor fiscal real.
 
 ### Status
-**APTO COM RESSALVAS** para homologação manual em staging. Não apto a produção sem provedor fiscal
-real homologado, validação do contador e ensaio/promoção controlada em rodada separada.
+**STAGING CERTIFICADO (B2B E2E, sem ressalvas funcionais)** — 38/38 asserts PASS, incluindo produto e
+microrganismo. Não apto a produção sem provedor fiscal real homologado, validação do contador e
+ensaio/promoção controlada em rodada separada.
+
