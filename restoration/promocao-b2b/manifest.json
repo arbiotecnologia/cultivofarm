@@ -317,8 +317,8 @@
   "files": [
     {
       "path": "../../docs/motor-b2b-promocao-gate.md",
-      "sha256": "b10318c36916cc55be6f10330251c416c122f996d55261dea52e61a281fdbe5a",
-      "bytes": 25229
+      "sha256": "6bcc2a364bb7a6fa78bafef8e197d8eb525d9442ab52c16edad27bab233c9888",
+      "bytes": 27680
     },
     {
       "path": "000_preflight.sql",
@@ -442,8 +442,8 @@
     },
     {
       "path": "steps/190_2f7835f8_3e7c_4331_a0c9_24348bf1ed0f.sql",
-      "sha256": "40d5614f83b66ea21563ef63f740c837a95d94847f6e402c20a5802a75a4ec3a",
-      "bytes": 5656
+      "sha256": "4443a84a1798491849a18d7469967a67a9dfa4fe9ce14e433f1c11686de757e5",
+      "bytes": 7466
     },
     {
       "path": "steps/200_350bd365_63f1_49e2_88fd_1ac51a305cef.sql",
