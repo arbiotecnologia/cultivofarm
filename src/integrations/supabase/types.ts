@@ -16206,36 +16206,21 @@ export type Database = {
         }
         Returns: Json
       }
-      fn_resolve_commercial_price:
-        | {
-            Args: {
-              p_buyer_scope: string
-              p_customer_id: string
-              p_microrganismo_id: string
-              p_partner_id: string
-              p_plan_id: string
-              p_product_id: string
-              p_ref_date?: string
-              p_unit_type: string
-              p_volume_ml: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_buyer_scope: string
-              p_customer_id: string
-              p_microrganismo_id: string
-              p_partner_id: string
-              p_plan_id: string
-              p_product_id: string
-              p_quantity?: number
-              p_ref_date?: string
-              p_unit_type: string
-              p_volume_ml: number
-            }
-            Returns: Json
-          }
+      fn_resolve_commercial_price: {
+        Args: {
+          p_buyer_scope: string
+          p_customer_id: string
+          p_microrganismo_id: string
+          p_partner_id: string
+          p_plan_id: string
+          p_product_id: string
+          p_quantity?: number
+          p_ref_date?: string
+          p_unit_type: string
+          p_volume_ml: number
+        }
+        Returns: Json
+      }
       fn_reverse_payment: {
         Args: { _kind: string; _payment_id: string; _reason: string }
         Returns: string
@@ -17550,36 +17535,21 @@ export type Database = {
         Args: { p_ids: string[]; p_motivo?: string }
         Returns: Json
       }
-      rpc_cc_simulate_price:
-        | {
-            Args: {
-              p_buyer_scope: string
-              p_customer_id: string
-              p_microrganismo_id: string
-              p_partner_id: string
-              p_plan_id: string
-              p_product_id: string
-              p_ref_date?: string
-              p_unit_type: string
-              p_volume_ml?: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_buyer_scope: string
-              p_customer_id: string
-              p_microrganismo_id: string
-              p_partner_id: string
-              p_plan_id: string
-              p_product_id: string
-              p_quantity?: number
-              p_ref_date?: string
-              p_unit_type: string
-              p_volume_ml?: number
-            }
-            Returns: Json
-          }
+      rpc_cc_simulate_price: {
+        Args: {
+          p_buyer_scope: string
+          p_customer_id: string
+          p_microrganismo_id: string
+          p_partner_id: string
+          p_plan_id: string
+          p_product_id: string
+          p_quantity?: number
+          p_ref_date?: string
+          p_unit_type: string
+          p_volume_ml?: number
+        }
+        Returns: Json
+      }
       rpc_cc_submit_assignment: {
         Args: { p_id: string; p_motivo?: string }
         Returns: undefined
