@@ -135,10 +135,30 @@ async function cleanup() {
     const { error } = await svc.from(t).delete().in(col, vals);
     if (error) delErrors[`${t}.${col}`] = error.message;
   };
+  const adminC = clients.admin;
   await svcDel("partner_order_items", "order_id", created.orders);
   await svcDel("partner_order_payment_schedule", "partner_order_id", created.orders);
+  // cancelar recebiveis e remover vinculos financeiros (rollback canonico, como administrador)
+  for (const o of created.orders) {
+    const { data: lks } = await svc.from("partner_order_financial_links")
+      .select("id,receivable_id,financial_status").eq("partner_order_id", o);
+    for (const l of lks ?? []) {
+      if (l.receivable_id && adminC) {
+        const { error } = await adminC.rpc("cancel_b2b_receivable_secure", {
+          p_receivable_id: l.receivable_id, p_motivo: "fase-e cleanup",
+        });
+        if (error) delErrors[`cancel.${l.receivable_id}`] = error.message;
+      }
+      if (adminC) {
+        const { error } = await adminC.from("partner_order_financial_links").delete().eq("id", l.id);
+        if (error) delErrors[`pofl.${l.id}`] = error.message;
+      }
+    }
+  }
+  if (created.orders.length) {
+    await svc.from("partner_orders").update({ payment_terms_id: null }).in("id", created.orders);
+  }
   await svcDel("partner_order_payment_terms", "partner_order_id", created.orders);
-  await svcDel("partner_order_financial_links", "partner_order_id", created.orders);
   await svcDel("partner_order_idempotency", "partner_id", created.partners);
   for (const o of created.orders) {
     const { data: lks } = await svc.from("partner_order_financial_links").select("receivable_id").eq("partner_order_id", o);
