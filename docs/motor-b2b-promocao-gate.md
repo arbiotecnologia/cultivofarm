@@ -407,6 +407,46 @@ Provas pós-janela (somente leitura):
 - **`PRODUCTION_NOT_EXECUTED`** — `navfzbwgwzruipouyfnk` não acessado; nenhuma
   migration persistente aplicada; nada publicado.
 
+**Execução da 9ª tentativa (`2026-07-31T01:40:00Z`) — correção do passo 190 +
+janela controlada: `REHEARSAL_DONE` / `STAGING_REHEARSAL_PASS`.**
+
+- Auditoria prévia de `public.rpc_b2b_list_selectable_payment_plans()` (staging,
+  read-only): owner `postgres`, `SECURITY DEFINER`, `search_path=public`,
+  ACL `postgres=X, authenticated=X, service_role=X`, `COMMENT` ausente,
+  **zero dependências bloqueantes** (nenhuma view/regra em `pg_depend`).
+  Divergência real de row type: `months_count` era `numeric` no banco e
+  `integer` no pacote — `public.commercial_payment_plans.months_count` é
+  `numeric`, logo o pacote estava incorreto.
+- Correção permanente no artefato `steps/190_…sql` (sem patch textual frágil):
+  bloco `DO` que (a) resolve o `oid` pela assinatura exata de 0 argumentos,
+  (b) aborta com `STEP190_ABORT` se houver dependência bloqueante,
+  (c) executa `DROP FUNCTION public.rpc_b2b_list_selectable_payment_plans()`
+  **sem `CASCADE`**, e retorna sem ação no caminho fresh; em seguida
+  `CREATE FUNCTION` completo com `months_count numeric`, seguido de
+  `ALTER FUNCTION … OWNER TO postgres`, `REVOKE`/`GRANT` originais e
+  `COMMENT`. **Assinatura pública de argumentos inalterada (zero args)**;
+  apenas o row type de saída foi normalizado — compatibilidade documentada
+  no próprio arquivo.
+- Manifest recalculado a partir dos arquivos reais: **35/35** `sha256`+`bytes`;
+  verificador offline OK; `bash -n` OK.
+- Janela `pg_cron` (staging): alvos `2 check-partner-order-sla` e
+  `5 prune-old-audit-logs` pausados apenas via
+  `cron.alter_job(job_id, active := false)`; `trap EXIT INT TERM` restaurou
+  ambos a `active=true` — `1:true 2:true 5:true 8:true 9:true`, schedule e
+  comando inalterados, nenhum outro job tocado.
+- Gates: `[1/6]` conexão PASS · `[2/6]` `MARKER_OK` PASS · `[3/6]` manifest
+  35/35 PASS · `[4/6]` baseline pré PASS · `[5/6]` `PREFLIGHT_OK` + delta +
+  2ª passagem idempotente + `POSTFLIGHT_OK: 12/12` + `ROLLBACK` PASS ·
+  `[6/6]` `BASELINE_IDENTICO · ZERO_RESIDUO · TRIGGERS_HABILITADOS`.
+- Estado pós-ROLLBACK: `base_tables=192`, `views=19`, `functions=719`,
+  `policies=499`, `triggers_disabled=0`, `proofs_table_present=false`,
+  `residuo_orders=0`, `residuo_idem=0`.
+- Veredito: **`REHEARSAL_DONE`** · **`STAGING_REHEARSAL_PASS`** ·
+  **`PRODUCTION_NOT_EXECUTED`** (nenhum acesso a `navfzbwgwzruipouyfnk`,
+  nenhuma migration persistida, nada publicado).
+
+
+
 ### 4.2 Verificação pós-tentativa (somente leitura, staging)
 
 | Item | Obtido | Esperado |
