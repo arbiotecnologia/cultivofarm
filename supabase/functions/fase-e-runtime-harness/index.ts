@@ -86,6 +86,11 @@ async function setup() {
     userIds[p] = uid;
     created.users.push(uid);
     await svc.from("user_roles").delete().eq("user_id", uid);
+    if (p === "produtorA") await svc.from("user_clientes").insert({ user_id: uid, cliente_id: created.clientes[0] });
+    if (p === "produtorB") await svc.from("user_clientes").insert({ user_id: uid, cliente_id: created.clientes[1] });
+    if (p === "parceiro_gestor" || p === "tecnico") {
+      await svc.from("partner_users").insert({ partner_id: P1, user_id: uid });
+    }
     for (const r of ROLES[p]) {
       const { error: re } = await svc.from("user_roles").insert({ user_id: uid, role: r });
       if (re) throw new Error(`role ${p}/${r}: ${re.message}`);
@@ -96,26 +101,6 @@ async function setup() {
     clients[p] = c;
   }
 
-  // parceiros
-  for (const nome of [`FaseE P1 ${RUN}`, `FaseE P2 ${RUN}`]) {
-    const { data, error } = await svc.from("partner_accounts")
-      .insert({ razao_social: nome, nome_fantasia: nome, ativo: true }).select("id").single();
-    if (error) throw new Error(`partner: ${error.message}`);
-    created.partners.push(data.id);
-  }
-  const [P1, P2] = created.partners;
-  await svc.from("partner_users").insert({ partner_id: P1, user_id: userIds.parceiro_gestor });
-  await svc.from("partner_users").insert({ partner_id: P1, user_id: userIds.tecnico });
-
-  // clientes produtores
-  for (const [i, u] of [userIds.produtorA, userIds.produtorB].entries()) {
-    const { data, error } = await svc.from("clientes")
-      .insert({ nome: `FaseE Cliente ${i + 1} ${RUN}`, codigo_cliente: `FE${RUN}${i + 1}` })
-      .select("id").single();
-    if (error) throw new Error(`cliente: ${error.message}`);
-    created.clientes.push(data.id);
-    await svc.from("user_clientes").insert({ user_id: u, cliente_id: data.id });
-  }
 
   // produtos b2b com preço
   const { data: prods, error: pe } = await svc.from("produtos")
