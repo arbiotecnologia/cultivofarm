@@ -317,8 +317,8 @@
   "files": [
     {
       "path": "../../docs/motor-b2b-promocao-gate.md",
-      "sha256": "fc85c67695ba83f9102299588cfc4ff35fc2273de8519233d0f587c38cefbe42",
-      "bytes": 19621
+      "sha256": "5d497e7f0db8498e5bb13df33a184d8dd1f84c00ef8f48d50bd0d5f5f5a5bf5b",
+      "bytes": 22225
     },
     {
       "path": "000_preflight.sql",
