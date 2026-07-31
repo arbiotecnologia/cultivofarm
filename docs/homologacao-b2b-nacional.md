@@ -200,3 +200,48 @@ passarem; e as fixtures de homologação permanecerem selecionáveis.
 
 Produção `navf****fnk` permanece **intocada**. Nenhuma credencial, certificado
 ou documento fiscal de produção foi utilizado. Nenhum secret foi exposto.
+
+## Auditoria corretiva final — runtime com identidades reais (staging)
+
+Ambiente: staging `ikaa****` (validado por `_fiscal_staging_marker`). Produção não acessada. Sem publicação.
+
+### A. Higiene da cadeia de migrations
+- Harnesses e infraestrutura de homologação retirados de `supabase/migrations/` para
+  `supabase/tests/homologacao-b2b/01-staging-infra/` (`010`, `020`, `021`, `022`).
+- Migrations de harness com UUIDs fixos (`_legacy_run1..5`) excluídas.
+- Manifesto de promoção/exclusão: `supabase/tests/homologacao-b2b/MANIFESTO.md`.
+
+### B. Adapter fiscal mock v3 (staging-only)
+- Guarda de staging, exige administrador autenticado (`auth.uid()` + `has_role`); PUBLIC/anon revogados.
+- NCM/CFOP/CST/CSOSN/origem resolvidos do perfil fiscal real do item (sem fallback hardcoded);
+  CFOP interno/interestadual por UF; CST vs CSOSN por CRT.
+- Fail-closed `FISCAL_PROFILE_INCOMPLETE` sem efeitos colaterais; `item_kind` distingue produto e microrganismo.
+- Marcações `HOMOLOGATION` / `mock_homologation` / "SEM VALOR FISCAL"; soma dos itens = total da nota = total do recebível.
+
+### C–G. Execução runtime (`supabase/functions/hml-b2b-runtime-harness`)
+Execução `c2405199`: **37 asserts — 36 PASS · 0 FAIL · 1 SKIP**.
+- Matriz de 8 perfis com JWT real (RLS-01..15): isolamento entre parceiros, técnico sem preço/condição/
+  cronograma, produtor sem pedidos/recebíveis/notas, sem vínculo com zero linhas, anon sem RPC sensível.
+- Concorrência HTTP simultânea: 1 pedido lógico (mesma chave), 1 recebível ativo, 1 nota ativa (replay seguro).
+- Paridade A/B/C: snapshots = líquido; líquido + juros = total (plano C: 607,00 + 37,25 = 644,25).
+- `cart_hash` sensível a quantidade e a plano; parcelas somam o total do recebível (2 casas).
+- Gates: recebível bloqueado antes da aprovação (`ORDER_NOT_APPROVED`) e sob cotação
+  (`order_not_priceable_quote_required`); plano D permanece `aguardando_cotacao`.
+- Crédito liberado no cancelamento, com replay idempotente.
+- SKIP: item de microrganismo indisponível no catálogo B2B (`product_unavailable`) — pendência funcional.
+
+### Cleanup e resíduos
+- Cleanup automático ao final: 0 pedidos, 0 recebíveis, 0 notas simuladas, 8 usuários efêmeros removidos, 0 erros.
+- Preservados para homologação manual: planos `HML-B2B-A..D`, 4 assignments, 9 preços, política NF-e,
+  2 perfis fiscais sintéticos — inventariados em `hml_fixture_registry`.
+- Cleanup final idempotente entregue e **não executado**: `supabase/tests/homologacao-b2b/99-cleanup-final.sql`.
+
+### Riscos e pendências
+- Microrganismo ainda não comprável no catálogo B2B (bloqueia prova fiscal de item não-produto).
+- Perfis fiscais sintéticos em `DRAFT`, sem validação contábil.
+- Resíduos sintéticos anteriores `FaseE P1/P2` (4 parceiros) permanecem, pendentes de inventário.
+- Documento simulado não substitui provedor fiscal real.
+
+### Status
+**APTO COM RESSALVAS** para homologação manual em staging. Não apto a produção sem provedor fiscal
+real homologado, validação do contador e ensaio/promoção controlada em rodada separada.
