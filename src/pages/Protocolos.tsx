@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,22 +20,16 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ProdutosTab } from "@/components/protocolos/ProdutosTab";
 import { CatalogoTecnicoTab } from "@/components/protocolos/CatalogoTecnicoTab";
 import { DeleteProtocoloButton } from "@/components/protocolos/DeleteProtocoloButton";
+import { useCulturas, useSaveCultura, useToggleCulturaAtivo, type Cultura } from "@/hooks/useCulturas";
 
 // --- Culturas ---
-interface Cultura { id: string; nome: string; descricao: string | null; }
-
 function CulturasTab() {
-  const isMobile = useIsMobile();
-  const [items, setItems] = useState<Cultura[]>([]);
+  const { data: items, isLoading, isError, error, refetch, isFetching } = useCulturas();
+  const saveCultura = useSaveCultura();
+  const toggleAtivo = useToggleCulturaAtivo();
   const [open, setOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Cultura | null>(null);
   const [form, setForm] = useState({ nome: "", descricao: "" });
-
-  const fetch = async () => {
-    const { data } = await supabase.from("culturas").select("*").order("nome");
-    if (data) setItems(data as Cultura[]);
-  };
-  useEffect(() => { fetch(); }, []);
 
   const resetForm = () => {
     setForm({ nome: "", descricao: "" });
@@ -55,21 +49,29 @@ function CulturasTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { nome: form.nome, descricao: form.descricao || null };
-    if (editingItem) {
-      const { error } = await supabase.from("culturas").update(payload).eq("id", editingItem.id);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Cultura atualizada!");
-      fetch();
-    } else {
-      const { error } = await supabase.from("culturas").insert([payload]);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Cultura cadastrada!");
+    try {
+      await saveCultura.mutateAsync({
+        id: editingItem?.id,
+        nome: form.nome,
+        descricao: form.descricao || null,
+      });
+      toast.success(editingItem ? "Cultura atualizada!" : "Cultura cadastrada!");
       handleOpenChange(false);
-      fetch();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao salvar cultura");
     }
   };
 
+  const handleToggleAtivo = async (c: Cultura) => {
+    try {
+      await toggleAtivo.mutateAsync({ id: c.id, ativo: !c.ativo });
+      toast.success(c.ativo ? "Cultura desativada" : "Cultura reativada");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao alterar situação da cultura");
+    }
+  };
+
+  const rows = items ?? [];
 
   return (
     <div className="space-y-4">
@@ -81,18 +83,33 @@ function CulturasTab() {
             <form onSubmit={handleSubmit} className="form-spacing-mobile pt-2">
               <div className="space-y-2"><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} required /></div>
               <div className="space-y-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(e) => setForm({...form, descricao: e.target.value})} rows={2} /></div>
-              <Button type="submit" className="w-full h-12 sm:h-10 font-bold">Salvar</Button>
+              <Button type="submit" className="w-full h-12 sm:h-10 font-bold" disabled={saveCultura.isPending}>
+                {saveCultura.isPending ? "Salvando..." : "Salvar"}
+              </Button>
             </form>
           </DialogContent>
 
         </Dialog>
       </div>
+
+      {isLoading ? (
+        <div className="py-8 text-center text-muted-foreground" role="status">Carregando culturas...</div>
+      ) : isError ? (
+        <div className="py-8 text-center space-y-3" role="alert">
+          <p className="text-sm text-destructive">
+            Não foi possível carregar as culturas. {(error as Error)?.message}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            Tentar novamente
+          </Button>
+        </div>
+      ) : (
       <ResponsiveTable
         mobileCards={
-          items.length === 0 ? (
+          rows.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">Nenhuma cultura cadastrada</div>
           ) : (
-            items.map((c) => (
+            rows.map((c) => (
               <MobileCard
                 key={c.id}
                 onClick={() => handleEdit(c)}
@@ -100,10 +117,14 @@ function CulturasTab() {
                 title={c.nome}
                 content={[
                   { label: "Descrição", value: c.descricao || "—" },
+                  { label: "Situação", value: c.ativo ? "Ativa" : "Inativa" },
                 ]}
                 actions={
-                  <div onClick={stopRowClick}>
-                    <DeleteProtocoloButton table="culturas" id={c.id} label={c.nome} itemLabel="cultura" onDeleted={fetch} />
+                  <div onClick={stopRowClick} className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => handleToggleAtivo(c)} disabled={toggleAtivo.isPending}>
+                      {c.ativo ? "Desativar" : "Reativar"}
+                    </Button>
+                    <DeleteProtocoloButton table="culturas" id={c.id} label={c.nome} itemLabel="cultura" onDeleted={() => refetch()} />
                   </div>
                 }
               />
@@ -112,25 +133,35 @@ function CulturasTab() {
         }
       >
         <Table>
-          <TableHeader><TableRow><TableHead>Cultura</TableHead><TableHead>Descrição</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Cultura</TableHead><TableHead>Descrição</TableHead><TableHead>Situação</TableHead><TableHead className="w-[160px]"></TableHead></TableRow></TableHeader>
           <TableBody>
-            {items.length === 0 ? (
-              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Nenhuma cultura cadastrada</TableCell></TableRow>
-            ) : items.map((c) => (
+            {rows.length === 0 ? (
+              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhuma cultura cadastrada</TableCell></TableRow>
+            ) : rows.map((c) => (
               <TableRow key={c.id} {...rowClickProps(() => handleEdit(c))}>
                 <TableCell className="font-medium">{c.nome}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{c.descricao || "—"}</TableCell>
+                <TableCell>
+                  <Badge variant={c.ativo ? "default" : "secondary"}>{c.ativo ? "Ativa" : "Inativa"}</Badge>
+                </TableCell>
                 <TableCell className="text-right" onClick={stopRowClick}>
-                  <DeleteProtocoloButton table="culturas" id={c.id} label={c.nome} itemLabel="cultura" onDeleted={fetch} />
+                  <div className="flex items-center justify-end gap-2">
+                    <Button size="sm" variant="outline" onClick={() => handleToggleAtivo(c)} disabled={toggleAtivo.isPending}>
+                      {c.ativo ? "Desativar" : "Reativar"}
+                    </Button>
+                    <DeleteProtocoloButton table="culturas" id={c.id} label={c.nome} itemLabel="cultura" onDeleted={() => refetch()} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </ResponsiveTable>
+      )}
     </div>
   );
 }
+
 
 
 // --- Problemas (Catálogo unificado) ---

@@ -116,7 +116,7 @@ export function CropsManager({ kind, parentId, canEdit }: Props) {
               <Input value={editing.fase_recomendada ?? ""} onChange={(e) => setEditing({ ...editing, fase_recomendada: e.target.value })} />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">Objetivo de uso</Label>
+              <Label className="text-[10px]">Objetivo agronômico</Label>
               <Input value={editing.objetivo_uso ?? ""} onChange={(e) => setEditing({ ...editing, objetivo_uso: e.target.value })} />
             </div>
             {kind === "produto" && (
