@@ -261,36 +261,15 @@ function CulturasTab() {
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild><Button size="sm" onClick={resetForm}><Plus className="h-4 w-4 mr-1" />Nova Cultura</Button></DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>{editingItem ? "Editar Cultura" : "Nova Cultura"}</DialogTitle></DialogHeader>
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "dados" | "objetivos")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="dados">Dados</TabsTrigger>
-                <TabsTrigger value="objetivos" disabled={!editingItem}>
-                  Objetivos de Visita
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="dados">
-                <form onSubmit={handleSubmit} className="form-spacing-mobile pt-2">
-                  <div className="space-y-2"><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} required /></div>
-                  <div className="space-y-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(e) => setForm({...form, descricao: e.target.value})} rows={2} /></div>
-                  <Button type="submit" className="w-full h-12 sm:h-10 font-bold">Salvar</Button>
-                  {!editingItem && (
-                    <p className="text-[11px] text-muted-foreground italic text-center">
-                      Salve a cultura para liberar a aba "Objetivos de Visita".
-                    </p>
-                  )}
-                </form>
-              </TabsContent>
-              <TabsContent value="objetivos" className="pt-2">
-                {editingItem ? (
-                  <ObjetivosCulturaPanel culturaId={editingItem.id} canManage={canManageObjetivos} />
-                ) : (
-                  <p className="text-sm text-muted-foreground py-4 text-center">Salve a cultura primeiro.</p>
-                )}
-              </TabsContent>
-            </Tabs>
+            <form onSubmit={handleSubmit} className="form-spacing-mobile pt-2">
+              <div className="space-y-2"><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({...form, nome: e.target.value})} required /></div>
+              <div className="space-y-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(e) => setForm({...form, descricao: e.target.value})} rows={2} /></div>
+              <Button type="submit" className="w-full h-12 sm:h-10 font-bold">Salvar</Button>
+            </form>
           </DialogContent>
+
         </Dialog>
       </div>
       <ResponsiveTable
