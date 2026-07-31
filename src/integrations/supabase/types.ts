@@ -4566,19 +4566,28 @@ export type Database = {
       }
       culturas: {
         Row: {
+          ativo: boolean
           created_at: string
+          desativada_em: string | null
+          desativada_por: string | null
           descricao: string | null
           id: string
           nome: string
         }
         Insert: {
+          ativo?: boolean
           created_at?: string
+          desativada_em?: string | null
+          desativada_por?: string | null
           descricao?: string | null
           id?: string
           nome: string
         }
         Update: {
+          ativo?: boolean
           created_at?: string
+          desativada_em?: string | null
+          desativada_por?: string | null
           descricao?: string | null
           id?: string
           nome?: string
@@ -16081,6 +16090,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_cultura_em_uso: { Args: { _cultura_id: string }; Returns: boolean }
       fn_fin_aging: {
         Args: { _type?: string }
         Returns: {
