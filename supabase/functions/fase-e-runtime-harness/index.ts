@@ -175,6 +175,8 @@ async function cleanup() {
   await svcDel("partner_accounts", "id", created.partners);
   await svcDel("user_clientes", "cliente_id", created.clientes);
   await svcDel("clientes", "id", created.clientes);
+  await svcDel("financial_audit_log", "performed_by", created.users);
+  await svcDel("commercial_audit_log", "actor_id", created.users);
   for (const u of created.users) {
     await svc.from("user_clientes").delete().eq("user_id", u);
     await svc.from("partner_users").delete().eq("user_id", u);
