@@ -281,6 +281,32 @@ lógico (`cleanup-rehearsal-executor.sh` + remoção dos secrets) só pode ser f
 **após** um ciclo com `REHEARSAL_DONE` e auditoria independente do pacote.
 
 
+**Retry controlado (6ª tentativa, `2026-07-31T01:12:00Z`): `STAGING_SECRET_CACHE_STALE`
+— parado antes de conectar, nenhum SQL enviado.**
+
+Pré-validação sanitizada do secret relido do cofre (sem imprimir DSN nem senha):
+
+| Condição exigida | Resultado |
+|---|---|
+| `STAGING_DSN` presente no runtime | PASS |
+| Ausência de `navfzbwgwzruipouyfnk` no DSN | PASS |
+| Porta `5432` | PASS |
+| Host termina em `pooler.supabase.com` | **FAIL** (host permanece `db.<ref>.supabase.co`) |
+| Usuário contém `postgres.ikaauvsflpmamgxmkhoq` | **FAIL** (usuário continua `postgres`) |
+| `STAGING_REF=ikaauvsflpmamgxmkhoq` | **FAIL** (variável ausente no runtime, comprimento 0) |
+
+Como três condições obrigatórias falharam, o executor
+`run-rehearsal-from-secret.sh` **não foi invocado**: nenhuma conexão, nenhum
+`psql`, nenhuma transação, nenhuma baseline. O valor do cofre ainda é o da
+conexão direta da 5ª tentativa (secret não propagado / não substituído).
+
+- Veredito do ciclo: **`STAGING_SECRET_CACHE_STALE`** (equivale a `BLOCKED` para
+  o gate).
+- `PRODUCTION_NOT_EXECUTED` — `navfzbwgwzruipouyfnk` intocado.
+- Ação para destravar: substituir `STAGING_DSN` pela URI de **Connect → Session
+  pooler** (`postgresql://postgres.ikaauvsflpmamgxmkhoq:<senha>@aws-<n>-<região>.pooler.supabase.com:5432/postgres?sslmode=require`)
+  e cadastrar `STAGING_REF=ikaauvsflpmamgxmkhoq`.
+
 ### 4.2 Verificação pós-tentativa (somente leitura, staging)
 
 | Item | Obtido | Esperado |
