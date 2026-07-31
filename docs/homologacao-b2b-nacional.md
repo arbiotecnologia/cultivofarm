@@ -103,13 +103,52 @@ via harness com JWTs reais.
 vazio explícito: *"Nenhuma condição comercial está disponível para sua empresa.
 Entre em contato com o setor comercial."*
 
+## 6. Massa sintética e parametrização (§5–§11) — executado
+
+Executado no staging `ikaa****hoq` com guarda fail-closed dentro do próprio
+script (aborta se `_fiscal_staging_marker` ≠ staging autorizado).
+
+Criado nesta rodada (tudo inventariado em `hml_fixture_registry`,
+`cleanup_group = 'HML-B2B'`, 27 registros):
+
+| Plano | Código | Modo de precificação | Característica |
+|---|---|---|---|
+| A | `HML-B2B-A` | `discount_from_base` | À vista 7d, desconto 5% |
+| B | `HML-B2B-B` | `fixed_item_price` | Prazo curto 30d, preço fixo por item |
+| C | `HML-B2B-C` | `discount_from_base` | 120d / 4x, juros 1,5% a.m. composto, exige crédito, aprovação financeira e garantia |
+| D | `HML-B2B-D` | `quote_only` | Sob consulta (checkout deve recusar) |
+
+- 4 atribuições `commercial_payment_plan_assignments` **publicadas** para o
+  parceiro sintético (escopo `partner`), tornando os planos efetivamente
+  selecionáveis (antes: 0 atribuições → checkout impossível).
+- 9 linhas de matriz `commercial_condition_item_prices` **publicadas**
+  (2 produtos + 1 microrganismo × 3 planos precificáveis), com
+  `min_quantity = 1` e espelhamento 1:1 em `commercial_price_rules`
+  (`published_rule_id` preenchido). O plano D não recebe matriz, por ser
+  `quote_only`.
+- Política fiscal nacional criada em `fiscal_operation_policies`:
+  `b2b_partner` / `venda_mercadoria` / UF nula (nacional) /
+  `requires_invoice = true` / modelo `55`, com base legal declarada.
+  Isso remove o estado `PENDING_PARAMETRIZATION` do resolvedor fail-closed
+  usado por `generate_b2b_receivable_secure_impl`.
+
+Verificação pós-seed (contagens reais): `plans=4`, `asg_pub=4`, `ip_pub=9`,
+`rules=9`, `pol_nfe=1`, `reg=27`.
+
+Evidência colateral de hardening: `fn_fiscal_requirement_resolve` recusa
+execução por role sem privilégio (`42501 permission denied`), confirmando que
+o revoke aplicado no bloco de segurança está ativo.
+
 ## Pendências (blocos ainda não executados)
 
-§5–§11 (massa sintética `HML-B2B-`, planos A–D, crédito, política e perfis
-fiscais, NCM/CFOP/CST/CSOSN com fonte oficial), §12–§13 (provedor fiscal /
-adapter `mock_homologation` com status `SIMULATED`, cenários fiscais),
-§14 (quatro compras), §15 (concorrência runtime), §16 (RLS com JWTs reais),
-§18 (cleanup pós-homologação).
+§12–§13 (provedor fiscal / adapter `mock_homologation` com status
+`SIMULATED`, cenários fiscais), §14 (quatro compras ponta a ponta),
+§15 (concorrência runtime com sessões reais), §16 (RLS com JWTs reais dos
+8 perfis), §18 (cleanup pós-homologação a partir do inventário).
+
+Esses blocos dependem de usuários Auth sintéticos e de um harness Edge
+dedicado (`hml-b2b-runtime-harness`), ainda não criado.
+
 
 ## Status atual
 
