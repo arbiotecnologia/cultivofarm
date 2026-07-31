@@ -227,8 +227,11 @@ async function run() {
   });
   for (const a of [aFixed, aDisc, aDraftOnly]) if (a.data) created.assignments.push(a.data as string);
 
-  const pubFixed = await rpcErr(gestor, "rpc_cc_publish_assignment", { p_id: aFixed.data, p_motivo: "fase-e" });
-  const pubDisc = await rpcErr(gestor, "rpc_cc_publish_assignment", { p_id: aDisc.data, p_motivo: "fase-e" });
+  const gestorPub = await rpcErr(gestor, "rpc_cc_publish_assignment", { p_id: aFixed.data, p_motivo: "fase-e" });
+  check("ALC-gestor-publish", "gestor comercial não publica (alçada admin/financeiro)",
+    (gestorPub.msg ?? "").includes("not_authorized_publish"), gestorPub.msg);
+  const pubFixed = await rpcErr(admin, "rpc_cc_publish_assignment", { p_id: aFixed.data, p_motivo: "fase-e" });
+  const pubDisc = await rpcErr(admin, "rpc_cc_publish_assignment", { p_id: aDisc.data, p_motivo: "fase-e" });
   check("SETUP-assign-pub", "atribuições publicadas", !pubFixed.msg && !pubDisc.msg, { pubFixed: pubFixed.msg, pubDisc: pubDisc.msg });
 
   const upItem = async (o: Record<string, unknown>) => await rpcErr(gestor, "rpc_cc_upsert_item_price", {
@@ -252,7 +255,7 @@ async function run() {
   const itDisc = await upItem({ p_assignment_id: aDisc.data, p_plan_id: planDisc, p_product_id: prodA.id, p_pricing_mode: "discount_from_base", p_discount_percent: 33 });
   const itDraft = await upItem({ p_assignment_id: aFixed.data, p_plan_id: planFixed, p_product_id: prodB.id, p_pricing_mode: "fixed_item_price", p_condition_price: 999.99 });
   for (const i of [itFixed, itDisc, itDraft]) if (i.data) created.items.push(i.data as string);
-  const pubItems = await rpcErr(gestor, "rpc_cc_publish_item_prices", { p_ids: [itFixed.data, itDisc.data], p_motivo: `fase-e ${RUN}` });
+  const pubItems = await rpcErr(admin, "rpc_cc_publish_item_prices", { p_ids: [itFixed.data, itDisc.data], p_motivo: `fase-e ${RUN}` });
   check("SETUP-items", "itens criados e publicados (1 fica draft)", !pubItems.msg, { pubItems: pubItems.data ?? pubItems.msg, draft: itDraft.data });
 
   // ---------- Precificação runtime (perfil parceiro real) ----------
@@ -299,7 +302,7 @@ async function run() {
   // assignment draft não permite publicar item
   const itOnDraft = await upItem({ p_assignment_id: aDraftOnly.data, p_plan_id: planDisc, p_partner_id: P2, p_product_id: prodA.id, p_pricing_mode: "discount_from_base", p_discount_percent: 5 });
   if (itOnDraft.data) created.items.push(itOnDraft.data as string);
-  const pubOnDraft = await rpcErr(gestor, "rpc_cc_publish_item_prices", { p_ids: [itOnDraft.data], p_motivo: "fase-e" });
+  const pubOnDraft = await rpcErr(admin, "rpc_cc_publish_item_prices", { p_ids: [itOnDraft.data], p_motivo: "fase-e" });
   check("MTX-draft-assign", "item sob atribuição draft não publica",
     pubOnDraft.msg?.includes("assignment_not_published") ?? false, pubOnDraft.msg);
 
@@ -393,6 +396,9 @@ async function run() {
     { before: itemsBefore, after: itemsAfter });
 
   // ---------- Fiscal / financeiro ----------
+  if (!orderId) {
+    log("FIN-gate", "fluxo fiscal/financeiro", "SKIP", "pedido não criado — dependência anterior falhou");
+  } else {
   const genBefore = await rpcErr(clients.financeiro!, "generate_b2b_receivable_secure", { p_partner_order_id: orderId });
   check("FIN-gate", "pedido não aprovado é bloqueado pelo gate",
     (genBefore.msg ?? "").includes("billing_not_eligible"), genBefore.msg);
@@ -420,6 +426,7 @@ async function run() {
     .select("id,numero_parcela,valor").eq("receivable_id", rec?.id ?? crypto.randomUUID());
   check("FIN-parcelas", "parcelas geradas conforme a condição", (insts?.length ?? 0) >= 1, insts);
 
+  }
   const { data: invoices } = await svc.from("fiscal_invoices").select("id").eq("partner_order_id", orderId);
   log("FISC-emissao", "emissão fiscal real (NF-e/NFS-e) para pedido B2B", "SKIP", {
     motivo: "sem pipeline de emissão B2B e sem parametrização tributária real (regime/UF/CFOP/NCM/CST/CSOSN)",
