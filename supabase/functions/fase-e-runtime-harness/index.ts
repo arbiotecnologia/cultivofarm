@@ -111,7 +111,7 @@ async function setup() {
   // planos
   const mkPlan = async (code: string, mode: string, discount: number) => {
     const { data, error } = await svc.from("commercial_payment_plans").insert({
-      name: `FaseE ${code} ${RUN}`, code: `FE-${code}-${RUN}`, plan_type: "prazo",
+      name: `FaseE ${code} ${RUN}`, code: `FE-${code}-${RUN}`, plan_type: "short_term",
       pricing_mode: mode, discount_percent: discount, monthly_interest_percent: 0,
       interest_type: "none", installment_count: 2, max_days: 30, months_count: 1,
       active: true, requires_credit_approval: false, requires_financial_approval: false,
