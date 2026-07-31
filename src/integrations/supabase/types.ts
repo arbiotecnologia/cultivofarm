@@ -3458,6 +3458,7 @@ export type Database = {
           created_by: string | null
           currency: string
           customer_id: string | null
+          discount_percent: number | null
           id: string
           microrganismo_id: string | null
           motivo: string | null
@@ -3480,6 +3481,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           customer_id?: string | null
+          discount_percent?: number | null
           id?: string
           microrganismo_id?: string | null
           motivo?: string | null
@@ -3502,6 +3504,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           customer_id?: string | null
+          discount_percent?: number | null
           id?: string
           microrganismo_id?: string | null
           motivo?: string | null
@@ -16066,6 +16069,15 @@ export type Database = {
       }
       fn_cc_can_prepare: { Args: { p_uid: string }; Returns: boolean }
       fn_cc_can_publish: { Args: { p_uid: string }; Returns: boolean }
+      fn_cc_validate_item_input: {
+        Args: {
+          p_condition_price: number
+          p_discount_percent: number
+          p_plan_id: string
+          p_pricing_mode: string
+        }
+        Returns: undefined
+      }
       fn_fin_aging: {
         Args: { _type?: string }
         Returns: {
