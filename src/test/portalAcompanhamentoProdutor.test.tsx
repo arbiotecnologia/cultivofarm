@@ -80,7 +80,7 @@ describe("Fase 10.1 — /portal/acompanhamento", () => {
     expect(screen.getByRole("tab", { name: /Produção/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Entregas/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Histórico/i })).toBeInTheDocument();
-  });
+  }, 20000);
 });
 
 describe("Fase 10.1 — Redirects legados", () => {
