@@ -129,9 +129,11 @@ async function setup() {
 }
 
 async function cleanup() {
+  const delErrors: Record<string, string> = {};
   const svcDel = async (t: string, col: string, vals: string[]) => {
     if (!vals.length) return;
-    await svc.from(t).delete().in(col, vals);
+    const { error } = await svc.from(t).delete().in(col, vals);
+    if (error) delErrors[`${t}.${col}`] = error.message;
   };
   await svcDel("partner_order_items", "order_id", created.orders);
   await svcDel("partner_order_payment_schedule", "partner_order_id", created.orders);
@@ -139,8 +141,9 @@ async function cleanup() {
   await svcDel("partner_order_financial_links", "partner_order_id", created.orders);
   await svcDel("partner_order_idempotency", "partner_id", created.partners);
   for (const o of created.orders) {
-    const { data: ars } = await svc.from("accounts_receivable").select("id").eq("partner_order_id", o);
-    for (const ar of ars ?? []) {
+    const { data: lks } = await svc.from("partner_order_financial_links").select("receivable_id").eq("partner_order_id", o);
+    const ars = (lks ?? []).map((l: any) => ({ id: l.receivable_id })).filter((a: any) => a.id);
+    for (const ar of ars) {
       await svc.from("accounts_receivable_installments").delete().eq("receivable_id", ar.id);
       await svc.from("accounts_receivable").delete().eq("id", ar.id);
     }
@@ -156,9 +159,12 @@ async function cleanup() {
   await svcDel("user_clientes", "cliente_id", created.clientes);
   await svcDel("clientes", "id", created.clientes);
   for (const u of created.users) {
+    await svc.from("user_clientes").delete().eq("user_id", u);
+    await svc.from("partner_users").delete().eq("user_id", u);
     await svc.from("user_roles").delete().eq("user_id", u);
     await svc.from("profiles").delete().eq("user_id", u);
-    await svc.auth.admin.deleteUser(u);
+    const { error } = await svc.auth.admin.deleteUser(u);
+    if (error) delErrors[`auth.${u}`] = error.message;
   }
 
   // resíduo
@@ -168,6 +174,8 @@ async function cleanup() {
     const { count } = await svc.from(t).select("id", { count: "exact", head: true }).in(col, vals);
     return count ?? 0;
   };
+  residue.__errors = Object.keys(delErrors).length as any;
+  (residue as any).errorDetail = delErrors as any;
   residue.plans = await countIn("commercial_payment_plans", "id", created.plans);
   residue.rules = await countIn("commercial_price_rules", "plan_id", created.plans);
   residue.items = await countIn("commercial_condition_item_prices", "plan_id", created.plans);
