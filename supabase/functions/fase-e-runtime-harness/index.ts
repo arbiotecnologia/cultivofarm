@@ -410,24 +410,27 @@ async function run() {
     rpcErr(clients.financeiro!, "generate_b2b_receivable_secure", { p_partner_order_id: orderId }),
     rpcErr(clients.financeiro!, "generate_b2b_receivable_secure", { p_partner_order_id: orderId }),
   ]);
-  const { data: recs } = await svc.from("accounts_receivable")
-    .select("id,partner_id,cliente_id,valor_total,fiscal_invoice_required,fiscal_invoice_status,status")
-    .eq("partner_order_id", orderId);
+  const { data: links } = await svc.from("partner_order_financial_links")
+    .select("receivable_id,partner_id").eq("partner_order_id", orderId);
+  const recIds = (links ?? []).map((l: any) => l.receivable_id).filter(Boolean);
+  const { data: recs, error: recsErr } = await svc.from("accounts_receivable")
+    .select("id,partner_id,customer_id,total_amount,fiscal_invoice_required,fiscal_invoice_status,fiscal_requirement_source,status")
+    .in("id", recIds.length ? recIds : ["00000000-0000-0000-0000-000000000000"]);
   check("FIN-receivable", "aprovação + geração concorrente produz exatamente 1 recebível",
-    (recs?.length ?? 0) === 1, { approve: appr.msg ?? "ok", g1: g1.msg, g2: g2.msg, recs });
+    (recs?.length ?? 0) === 1, { approve: appr.msg ?? "ok", g1: g1.msg, g2: g2.msg, links, recsErr: recsErr?.message, recs });
   const rec: any = recs?.[0];
   check("FIN-devedor", "recebível aponta o parceiro devedor correto", rec?.partner_id === P1, {
-    partner_id: rec?.partner_id, esperado: P1, cliente_id: rec?.cliente_id,
+    partner_id: rec?.partner_id, esperado: P1, customer_id: rec?.customer_id,
   });
   check("FIN-fiscal-flag", "exigência fiscal vem do resolvedor (não hardcoded false)",
     rec?.fiscal_invoice_required === true && rec?.fiscal_invoice_status === "PENDING_PARAMETRIZATION",
     { required: rec?.fiscal_invoice_required, status: rec?.fiscal_invoice_status });
   const { data: insts } = await svc.from("accounts_receivable_installments")
-    .select("id,numero_parcela,valor").eq("receivable_id", rec?.id ?? crypto.randomUUID());
+    .select("id,installment_number,original_amount").eq("receivable_id", rec?.id ?? crypto.randomUUID());
   check("FIN-parcelas", "parcelas geradas conforme a condição", (insts?.length ?? 0) >= 1, insts);
 
   }
-  const { data: invoices } = await svc.from("fiscal_invoices").select("id").eq("partner_order_id", orderId);
+  const { data: invoices } = await svc.from("fiscal_invoices").select("id").eq("origin_id", orderId ?? crypto.randomUUID());
   log("FISC-emissao", "emissão fiscal real (NF-e/NFS-e) para pedido B2B", "SKIP", {
     motivo: "sem pipeline de emissão B2B e sem parametrização tributária real (regime/UF/CFOP/NCM/CST/CSOSN)",
     fiscal_invoices_do_pedido: invoices?.length ?? 0,
