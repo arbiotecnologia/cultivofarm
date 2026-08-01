@@ -98,6 +98,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
     setOperador("");
     setValidade(defaultValidade());
     setNovoVolume("");
+    idempotencyKey.current = crypto.randomUUID();
     carregarSaldo();
   }, [open, target?.lote_id, carregarSaldo]);
 
