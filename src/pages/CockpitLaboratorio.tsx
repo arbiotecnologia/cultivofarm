@@ -140,7 +140,29 @@ export default function CockpitLaboratorio() {
   const [envaseTarget, setEnvaseTarget] = useState<RegistrarEnvaseTarget | null>(null);
   const [reservaTarget, setReservaTarget] = useState<ReservarEstoqueTarget | null>(null);
   const [limit, setLimit] = useState(100);
-  const [analyzedAlerts, setAnalyzedAlerts] = useState<string[]>([]);
+  // Alertas reconhecidos são persistidos por usuário no banco: marcar como
+  // "analisado" sobrevive ao recarregamento da página.
+  const { data: analyzedAlerts = [] } = useQuery({
+    queryKey: ["cockpit-alertas-reconhecidos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cockpit_alertas_reconhecidos" as any)
+        .select("alerta_key");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => r.alerta_key as string);
+    },
+  });
+
+  const reconhecerAlerta = async (alertaKey: string, osId?: string) => {
+    const { error } = await supabase
+      .from("cockpit_alertas_reconhecidos" as any)
+      .insert({ alerta_key: alertaKey, usuario_id: profile?.user_id ?? undefined, os_id: osId ?? null } as any);
+    if (error && !String(error.message).includes("duplicate")) {
+      toast.error("Não foi possível registrar o alerta como analisado.");
+      return;
+    }
+    await qc.invalidateQueries({ queryKey: ["cockpit-alertas-reconhecidos"] });
+  };
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["cockpit-laboratorio", limit],
