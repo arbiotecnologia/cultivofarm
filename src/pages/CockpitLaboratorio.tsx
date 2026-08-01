@@ -42,6 +42,7 @@ import { SeedFixturesButton } from "@/components/cockpit/SeedFixturesButton";
 
 import { useMetricasOperacionais } from "@/hooks/useMetricasOperacionais";
 import { formatMetric, formatIntervalToHours, SEM_DADOS } from "@/lib/metrics-utils";
+import { cockpitStage, STAGE_COLUMN, type CockpitStage } from "@/lib/cockpit/stage";
 
 
 
@@ -153,21 +154,10 @@ export default function CockpitLaboratorio() {
       if (error) throw error;
 
       return (data as any[]).map(item => {
-        let stage: KanbanStage = "aguardando";
-        const officialStatus = item.status_esteira_oficial;
+        // Fonte única: o estágio vem do mapa canônico espelhado de
+        // public.fn_cockpit_stage. Sem inferência divergente no frontend.
+        const stage = STAGE_COLUMN[cockpitStage(item.status_esteira_oficial)] as KanbanStage;
 
-        // Mapeamento do stage visual para o status oficial da esteira
-        // Ajustado: Aplicação agora é secundária, o fluxo termina em 'entregue' ou 'finalizada'
-        if (['finalizada', 'finalizado'].includes(officialStatus)) stage = "entrega";
-        else if (officialStatus === 'aplicado') stage = "entrega";
-        else if (['entregue', 'em_entrega', 'estoque_reservado'].includes(officialStatus)) stage = "entrega";
-        else if (['estoque_gerado', 'pronto_entrega'].includes(officialStatus)) stage = "estoque_reserva";
-
-        else if (['envase', 'em_envase'].includes(officialStatus)) stage = "envase";
-        else if (['cq_aprovado', 'aprovado_cq'].includes(officialStatus)) stage = "aprovado_cq";
-        else if (officialStatus === 'aguardando_cq' || officialStatus === 'em_cq') stage = "aguardando_cq";
-        else if (officialStatus === 'em_producao') stage = "em_producao";
-        else if (officialStatus === 'programada') stage = "aguardando";
 
 
         return {
