@@ -230,14 +230,21 @@ export default function CockpitLaboratorio() {
   };
 
 
-  const { data: osSemProgCount = 0 } = useQuery({
-    queryKey: ["os-sem-programacao"],
+  // KPIs agregados no servidor sobre TODO o universo autorizado (não sobre a
+  // página carregada). Inclui a contagem correta de OS sem programação
+  // (NOT EXISTS em programacao_producao), manual e On-Farm.
+  const { data: metricasGlobais } = useQuery({
+    queryKey: ["cockpit-metricas-globais"],
     queryFn: async () => {
-      const { count, error } = await supabase.from("ordens_servico").select("*", { count: "exact", head: true }).eq("status", "aberta");
-      if (error) return 0;
-      return count || 0;
-    }
+      const { data, error } = await (supabase as any).rpc("rpc_cockpit_metricas_v1");
+      if (error) throw error;
+      return (data ?? {}) as Record<string, number>;
+    },
+    refetchInterval: 300000,
   });
+
+  const osSemProgCount = Number(metricasGlobais?.os_sem_programacao ?? 0);
+  const totalUniverso = Number(metricasGlobais?.total ?? 0);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -297,25 +304,43 @@ export default function CockpitLaboratorio() {
     return list.filter(a => !analyzedAlerts.includes(a.id));
   }, [items, analyzedAlerts, osSemProgCount]);
 
+  // Cards: valores do agregado server-side quando disponível; a contagem local
+  // é apenas fallback enquanto a RPC não responde.
   const stats = useMemo(() => {
-    const s = {
+    const local = {
       demandas: 0, producao: 0, vol_producao: 0, aguardando_cq: 0, vol_cq: 0,
-      aprovados: 0, reprovados: 0, envase_pendente: 0, estoque_disp: 0, 
+      aprovados: 0, reprovados: 0, envase_pendente: 0, estoque_disp: 0,
       entregas: 0, aplicacoes: 0, atrasadas: 0,
     };
     items.forEach(item => {
-      if (item.stage === "aguardando") s.demandas++;
-      if (item.stage === "em_producao") { s.producao++; s.vol_producao += item.volume_solicitado; }
-      if (item.stage === "aguardando_cq") { s.aguardando_cq += 1; s.vol_cq += item.volume_solicitado; }
-      if (item.lote_status === "aprovado") s.aprovados++;
-      if (item.lote_status === "reprovado") s.reprovados++;
-      if (item.stage === "aprovado_cq") s.envase_pendente++;
-      if (item.stage === "estoque_reserva") s.estoque_disp++; 
-      if (item.stage === "entrega") s.entregas++;
-      if (item.atrasado) s.atrasadas++;
+      if (item.stage === "aguardando") local.demandas++;
+      if (item.stage === "em_producao") { local.producao++; local.vol_producao += item.volume_solicitado; }
+      if (item.stage === "aguardando_cq") { local.aguardando_cq += 1; local.vol_cq += item.volume_solicitado; }
+      if (item.lote_status === "aprovado") local.aprovados++;
+      if (item.lote_status === "reprovado") local.reprovados++;
+      if (item.stage === "aprovado_cq") local.envase_pendente++;
+      if (item.stage === "estoque_reserva") local.estoque_disp++;
+      if (item.stage === "entrega") local.entregas++;
+      if (item.atrasado) local.atrasadas++;
     });
-    return s;
-  }, [items]);
+
+    const g = metricasGlobais;
+    if (!g) return local;
+    return {
+      demandas: Number(g.demandas ?? local.demandas),
+      producao: Number(g.producao ?? local.producao),
+      vol_producao: Number(g.vol_producao ?? local.vol_producao),
+      aguardando_cq: Number(g.aguardando_cq ?? local.aguardando_cq),
+      vol_cq: Number(g.vol_cq ?? local.vol_cq),
+      aprovados: Number(g.aprovados ?? local.aprovados),
+      reprovados: Number(g.reprovados ?? local.reprovados),
+      envase_pendente: Number(g.envase_pendente ?? local.envase_pendente),
+      estoque_disp: Number(g.estoque_disponivel ?? 0) + Number(g.estoque_reservado ?? 0),
+      entregas: Number(g.em_entrega ?? 0) + Number(g.entregues ?? 0),
+      aplicacoes: local.aplicacoes,
+      atrasadas: Number(g.atrasadas ?? local.atrasadas),
+    };
+  }, [items, metricasGlobais]);
 
   // Abrir sheet diretamente quando recebemos ?os=<id>
   useEffect(() => {
