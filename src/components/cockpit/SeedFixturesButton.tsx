@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -29,7 +29,20 @@ export function SeedFixturesButton() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  if (role !== "administrador") return null;
+  // O ambiente é comprovado NO SERVIDOR (fn_cockpit_is_hml_environment).
+  // O botão só aparece quando o servidor confirma homologação; ainda assim a
+  // RPC é fail-closed (admin-only + marker de staging) e não confia na UI.
+  const { data: isHml = false } = useQuery({
+    queryKey: ["cockpit-is-hml"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("fn_cockpit_is_hml_environment");
+      if (error) return false;
+      return data === true;
+    },
+  });
+
+  if (role !== "administrador" || !isHml) return null;
 
   const executar = async () => {
     setLoading(true);

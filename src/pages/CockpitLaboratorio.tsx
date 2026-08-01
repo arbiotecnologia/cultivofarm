@@ -42,6 +42,7 @@ import { SeedFixturesButton } from "@/components/cockpit/SeedFixturesButton";
 
 import { useMetricasOperacionais } from "@/hooks/useMetricasOperacionais";
 import { formatMetric, formatIntervalToHours, SEM_DADOS } from "@/lib/metrics-utils";
+import { cockpitStage, STAGE_COLUMN, type CockpitStage } from "@/lib/cockpit/stage";
 
 
 
@@ -139,7 +140,29 @@ export default function CockpitLaboratorio() {
   const [envaseTarget, setEnvaseTarget] = useState<RegistrarEnvaseTarget | null>(null);
   const [reservaTarget, setReservaTarget] = useState<ReservarEstoqueTarget | null>(null);
   const [limit, setLimit] = useState(100);
-  const [analyzedAlerts, setAnalyzedAlerts] = useState<string[]>([]);
+  // Alertas reconhecidos são persistidos por usuário no banco: marcar como
+  // "analisado" sobrevive ao recarregamento da página.
+  const { data: analyzedAlerts = [] } = useQuery({
+    queryKey: ["cockpit-alertas-reconhecidos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cockpit_alertas_reconhecidos" as any)
+        .select("alerta_key");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => r.alerta_key as string);
+    },
+  });
+
+  const reconhecerAlerta = async (alertaKey: string, osId?: string) => {
+    const { error } = await supabase
+      .from("cockpit_alertas_reconhecidos" as any)
+      .insert({ alerta_key: alertaKey, usuario_id: profile?.user_id ?? undefined, os_id: osId ?? null } as any);
+    if (error && !String(error.message).includes("duplicate")) {
+      toast.error("Não foi possível registrar o alerta como analisado.");
+      return;
+    }
+    await qc.invalidateQueries({ queryKey: ["cockpit-alertas-reconhecidos"] });
+  };
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["cockpit-laboratorio", limit],
@@ -153,21 +176,10 @@ export default function CockpitLaboratorio() {
       if (error) throw error;
 
       return (data as any[]).map(item => {
-        let stage: KanbanStage = "aguardando";
-        const officialStatus = item.status_esteira_oficial;
+        // Fonte única: o estágio vem do mapa canônico espelhado de
+        // public.fn_cockpit_stage. Sem inferência divergente no frontend.
+        const stage = STAGE_COLUMN[cockpitStage(item.status_esteira_oficial)] as KanbanStage;
 
-        // Mapeamento do stage visual para o status oficial da esteira
-        // Ajustado: Aplicação agora é secundária, o fluxo termina em 'entregue' ou 'finalizada'
-        if (['finalizada', 'finalizado'].includes(officialStatus)) stage = "entrega";
-        else if (officialStatus === 'aplicado') stage = "entrega";
-        else if (['entregue', 'em_entrega', 'estoque_reservado'].includes(officialStatus)) stage = "entrega";
-        else if (['estoque_gerado', 'pronto_entrega'].includes(officialStatus)) stage = "estoque_reserva";
-
-        else if (['envase', 'em_envase'].includes(officialStatus)) stage = "envase";
-        else if (['cq_aprovado', 'aprovado_cq'].includes(officialStatus)) stage = "aprovado_cq";
-        else if (officialStatus === 'aguardando_cq' || officialStatus === 'em_cq') stage = "aguardando_cq";
-        else if (officialStatus === 'em_producao') stage = "em_producao";
-        else if (officialStatus === 'programada') stage = "aguardando";
 
 
         return {
@@ -240,14 +252,21 @@ export default function CockpitLaboratorio() {
   };
 
 
-  const { data: osSemProgCount = 0 } = useQuery({
-    queryKey: ["os-sem-programacao"],
+  // KPIs agregados no servidor sobre TODO o universo autorizado (não sobre a
+  // página carregada). Inclui a contagem correta de OS sem programação
+  // (NOT EXISTS em programacao_producao), manual e On-Farm.
+  const { data: metricasGlobais } = useQuery({
+    queryKey: ["cockpit-metricas-globais"],
     queryFn: async () => {
-      const { count, error } = await supabase.from("ordens_servico").select("*", { count: "exact", head: true }).eq("status", "aberta");
-      if (error) return 0;
-      return count || 0;
-    }
+      const { data, error } = await (supabase as any).rpc("rpc_cockpit_metricas_v1");
+      if (error) throw error;
+      return (data ?? {}) as Record<string, number>;
+    },
+    refetchInterval: 300000,
   });
+
+  const osSemProgCount = Number(metricasGlobais?.os_sem_programacao ?? 0);
+  const totalUniverso = Number(metricasGlobais?.total ?? 0);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -268,9 +287,12 @@ export default function CockpitLaboratorio() {
 
     items.forEach(item => {
       if (item.cliente_id) clientesMap.set(item.cliente_id, item.cliente);
-      if (item.fazenda_id) fazendasMap.set(item.fazenda_id, item.fazenda);
-      if (item.produto_id) produtosMap.set(item.produto_id, item.produto);
-      else if (item.microrganismo_id) produtosMap.set(item.microrganismo_id, item.microrganismo_nome || item.produto);
+      // Fazendas e produtos são dependentes do cliente selecionado: evita
+      // combinações de filtro que nunca retornam resultado.
+      const clienteOk = filterCliente === "all" || item.cliente_id === filterCliente;
+      if (clienteOk && item.fazenda_id) fazendasMap.set(item.fazenda_id, item.fazenda);
+      if (clienteOk && item.produto_id) produtosMap.set(item.produto_id, item.produto);
+      else if (clienteOk && item.microrganismo_id) produtosMap.set(item.microrganismo_id, item.microrganismo_nome || item.produto);
     });
 
     return {
@@ -278,7 +300,7 @@ export default function CockpitLaboratorio() {
       uniqueFazendas: Array.from(fazendasMap.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
       uniqueProdutos: Array.from(produtosMap.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
     };
-  }, [items]);
+  }, [items, filterCliente]);
 
   const alerts = useMemo(() => {
     const list: { id: string; type: string; message: string; item?: CockpitItem }[] = [];
@@ -307,25 +329,43 @@ export default function CockpitLaboratorio() {
     return list.filter(a => !analyzedAlerts.includes(a.id));
   }, [items, analyzedAlerts, osSemProgCount]);
 
+  // Cards: valores do agregado server-side quando disponível; a contagem local
+  // é apenas fallback enquanto a RPC não responde.
   const stats = useMemo(() => {
-    const s = {
+    const local = {
       demandas: 0, producao: 0, vol_producao: 0, aguardando_cq: 0, vol_cq: 0,
-      aprovados: 0, reprovados: 0, envase_pendente: 0, estoque_disp: 0, 
+      aprovados: 0, reprovados: 0, envase_pendente: 0, estoque_disp: 0,
       entregas: 0, aplicacoes: 0, atrasadas: 0,
     };
     items.forEach(item => {
-      if (item.stage === "aguardando") s.demandas++;
-      if (item.stage === "em_producao") { s.producao++; s.vol_producao += item.volume_solicitado; }
-      if (item.stage === "aguardando_cq") { s.aguardando_cq += 1; s.vol_cq += item.volume_solicitado; }
-      if (item.lote_status === "aprovado") s.aprovados++;
-      if (item.lote_status === "reprovado") s.reprovados++;
-      if (item.stage === "aprovado_cq") s.envase_pendente++;
-      if (item.stage === "estoque_reserva") s.estoque_disp++; 
-      if (item.stage === "entrega") s.entregas++;
-      if (item.atrasado) s.atrasadas++;
+      if (item.stage === "aguardando") local.demandas++;
+      if (item.stage === "em_producao") { local.producao++; local.vol_producao += item.volume_solicitado; }
+      if (item.stage === "aguardando_cq") { local.aguardando_cq += 1; local.vol_cq += item.volume_solicitado; }
+      if (item.lote_status === "aprovado") local.aprovados++;
+      if (item.lote_status === "reprovado") local.reprovados++;
+      if (item.stage === "aprovado_cq") local.envase_pendente++;
+      if (item.stage === "estoque_reserva") local.estoque_disp++;
+      if (item.stage === "entrega") local.entregas++;
+      if (item.atrasado) local.atrasadas++;
     });
-    return s;
-  }, [items]);
+
+    const g = metricasGlobais;
+    if (!g) return local;
+    return {
+      demandas: Number(g.demandas ?? local.demandas),
+      producao: Number(g.producao ?? local.producao),
+      vol_producao: Number(g.vol_producao ?? local.vol_producao),
+      aguardando_cq: Number(g.aguardando_cq ?? local.aguardando_cq),
+      vol_cq: Number(g.vol_cq ?? local.vol_cq),
+      aprovados: Number(g.aprovados ?? local.aprovados),
+      reprovados: Number(g.reprovados ?? local.reprovados),
+      envase_pendente: Number(g.envase_pendente ?? local.envase_pendente),
+      estoque_disp: Number(g.estoque_disponivel ?? 0) + Number(g.estoque_reservado ?? 0),
+      entregas: Number(g.em_entrega ?? 0) + Number(g.entregues ?? 0),
+      aplicacoes: local.aplicacoes,
+      atrasadas: Number(g.atrasadas ?? local.atrasadas),
+    };
+  }, [items, metricasGlobais]);
 
   // Abrir sheet diretamente quando recebemos ?os=<id>
   useEffect(() => {
@@ -585,7 +625,7 @@ export default function CockpitLaboratorio() {
                     <span className="font-bold text-orange-900">{a.type}</span>
                     <span className="text-muted-foreground line-clamp-1">{a.message}</span>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" onClick={() => setAnalyzedAlerts([...analyzedAlerts, a.id])}><Check className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" onClick={() => reconhecerAlerta(a.id, a.item?.os_id)}><Check className="h-3 w-3" /></Button>
                 </div>
               )) : <div className="text-center py-6 text-orange-600 italic text-[10px]">Tudo em dia!</div>}
             </ScrollArea>
@@ -598,6 +638,10 @@ export default function CockpitLaboratorio() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar OS, cliente, lote..." className="pl-9 h-9 text-xs" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <p className="text-[11px] text-muted-foreground whitespace-nowrap" aria-live="polite">
+          Mostrando <span className="font-semibold">{filteredItems.length}</span> de{" "}
+          <span className="font-semibold">{totalUniverso || items.length}</span> OS
+        </p>
         <div className="flex flex-wrap gap-2 w-full lg:flex-1 justify-end">
           <Select value={filterOrigem} onValueChange={setFilterOrigem}>
             <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue placeholder="Origem" /></SelectTrigger>

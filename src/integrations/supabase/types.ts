@@ -2721,6 +2721,57 @@ export type Database = {
           },
         ]
       }
+      cockpit_alertas_reconhecidos: {
+        Row: {
+          alerta_key: string
+          created_at: string
+          id: string
+          motivo: string | null
+          os_id: string | null
+          usuario_id: string
+        }
+        Insert: {
+          alerta_key: string
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          os_id?: string | null
+          usuario_id: string
+        }
+        Update: {
+          alerta_key?: string
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          os_id?: string | null
+          usuario_id?: string
+        }
+        Relationships: []
+      }
+      cockpit_operacao_idempotencia: {
+        Row: {
+          created_at: string
+          idempotency_key: string
+          operacao: string
+          resultado: Json
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          idempotency_key: string
+          operacao: string
+          resultado?: Json
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          idempotency_key?: string
+          operacao?: string
+          resultado?: Json
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       codigo_sequencias: {
         Row: {
           prefixo: string
@@ -16151,6 +16202,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _seed_cockpit_fixtures_impl: {
+        Args: { p_prefix?: string }
+        Returns: Json
+      }
       _validate_planning_integrity: {
         Args: { p_partner_order_id: string }
         Returns: undefined
@@ -16451,6 +16506,9 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_cockpit_assert_operador: { Args: never; Returns: undefined }
+      fn_cockpit_is_hml_environment: { Args: never; Returns: boolean }
+      fn_cockpit_stage: { Args: { p_status_oficial: string }; Returns: string }
       fn_cultura_em_uso: { Args: { _cultura_id: string }; Returns: boolean }
       fn_fin_aging: {
         Args: { _type?: string }
@@ -18019,6 +18077,33 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      rpc_cockpit_cancelar_reserva_v1: {
+        Args: {
+          p_item_id: string
+          p_motivo?: string
+          p_origem: string
+          p_os_id: string
+        }
+        Returns: Json
+      }
+      rpc_cockpit_confirmar_entrega_v1: {
+        Args: { p_entrega_id: string; p_origem: string; p_os_id: string }
+        Returns: Json
+      }
+      rpc_cockpit_metricas_v1: { Args: never; Returns: Json }
+      rpc_cockpit_registrar_envase_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_linhas: Json
+          p_lote_id: string
+          p_operador?: string
+          p_origem: string
+          p_os_id: string
+          p_programacao_id: string
+          p_validade: string
+        }
+        Returns: Json
       }
       rpc_coletar_assinatura_digital_entrega: {
         Args: { p_entrega_id: string; p_payload: Json }

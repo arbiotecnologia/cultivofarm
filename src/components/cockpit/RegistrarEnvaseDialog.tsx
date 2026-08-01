@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ const volumeDaLinha = (l: Linha) =>
   (embalagemVolumes[l.tipo_embalagem] || 0) * Number(l.quantidade || 0);
 
 export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
-  const { gerarEstoque, concluirEnvase } = useEsteiraLaboratorio();
+  const { registrarEnvaseTransacional } = useEsteiraLaboratorio();
   const [linhas, setLinhas] = useState<Linha[]>([novaLinha()]);
   const [operador, setOperador] = useState("");
   const [validade, setValidade] = useState(defaultValidade());
@@ -48,6 +48,9 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
   const [demanda, setDemanda] = useState<{ solicitadoL: number; reservadoL: number; pendenteL: number } | null>(null);
   const [novoVolume, setNovoVolume] = useState("");
   const [salvandoProducao, setSalvandoProducao] = useState(false);
+  // Chave de idempotência por abertura do diálogo: duplo clique/retry não
+  // gera envase duplicado — o servidor responde replay.
+  const idempotencyKey = useRef<string>(crypto.randomUUID());
 
   const carregarSaldo = useCallback(async () => {
     if (!target?.lote_id) return;
@@ -95,6 +98,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
     setOperador("");
     setValidade(defaultValidade());
     setNovoVolume("");
+    idempotencyKey.current = crypto.randomUUID();
     carregarSaldo();
   }, [open, target?.lote_id, carregarSaldo]);
 
@@ -184,7 +188,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!target) return;
+    if (!target || saving) return;
     if (loteSemProducao) {
       toast.error("O lote não possui volume produzido informado.");
       return;
@@ -204,70 +208,31 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
 
     setSaving(true);
     try {
-      const payload = linhas.map((l) => ({
-        lote_id: target.lote_id,
-        tipo_embalagem: l.tipo_embalagem as any,
-        volume_por_unidade: embalagemVolumes[l.tipo_embalagem] || 0,
-        quantidade: Number(l.quantidade),
+      // Uma única chamada transacional: envase + estoque reservado/livre +
+      // movimentações + auditoria + avanço da esteira. A divisão entre
+      // reservado e excedente é decidida no servidor.
+      const result = await registrarEnvaseTransacional({
+        loteId: target.lote_id,
+        osId: target.os_id,
+        origem: target.origem,
+        programacaoId: target.programacao_id,
+        linhas: linhas.map((l) => ({
+          tipo_embalagem: l.tipo_embalagem,
+          quantidade: Number(l.quantidade),
+        })),
+        validade,
         operador: operador || null,
-      }));
+        idempotencyKey: idempotencyKey.current,
+      });
 
-      const { data: envaseRows, error: envaseError } = await supabase
-        .from("envase")
-        .insert(payload)
-        .select("id, tipo_embalagem, volume_por_unidade, quantidade");
-      if (envaseError) {
-        toast.error(envaseError.message);
-        return;
-      }
+      if (!result) return;
 
-      for (let idx = 0; idx < (envaseRows ?? []).length; idx++) {
-        const ev = envaseRows![idx];
-        const volUnit = Number(ev.volume_por_unidade) || 0;
-        const qtd = Number(ev.quantidade) || 0;
-        const split = alocacao[idx] ?? { reservadas: 0, livres: qtd };
-
-        const rows: Array<{ quantidade: number; reservar: boolean }> = [];
-        if (split.reservadas > 0) rows.push({ quantidade: split.reservadas, reservar: true });
-        if (split.livres > 0) rows.push({ quantidade: split.livres, reservar: false });
-        if (rows.length === 0) rows.push({ quantidade: qtd, reservar: false });
-
-        for (const r of rows) {
-          const ok = await gerarEstoque(
-            {
-              lote_id: target.lote_id,
-              produto_id: target.produto_id || null,
-              microrganismo_id: target.microrganismo_id || null,
-              envase_id: ev.id,
-              quantidade: r.quantidade,
-              volume_total: (volUnit * r.quantidade) / 1000,
-              validade: validade || null,
-              status: "disponivel",
-              ...(r.reservar
-                ? {
-                    reservado_para_os_id: target.os_id,
-                    quantidade_reservada: r.quantidade,
-                  }
-                : {}),
-            },
-            target.os_id,
-            target.origem,
-          );
-          if (!ok) {
-            setSaving(false);
-            return;
-          }
-        }
-      }
-
-
-      await concluirEnvase(target.programacao_id, target.os_id, target.origem);
-
-      if (saldoRestante <= 0) {
+      const restanteMl = Number(result.saldo_restante_ml ?? 0);
+      if (restanteMl <= 0) {
         toast.success("Lote totalmente envasado. OS pronta para entrega!");
       } else {
         toast.success(
-          `Envase parcial registrado. Saldo de ${fmtL(saldoRestante)} disponível na página Envase para complementar.`
+          `Envase parcial registrado. Saldo de ${fmtL(restanteMl)} disponível na página Envase para complementar.`
         );
       }
 
