@@ -300,7 +300,7 @@ export default function CockpitLaboratorio() {
       uniqueFazendas: Array.from(fazendasMap.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
       uniqueProdutos: Array.from(produtosMap.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
     };
-  }, [items]);
+  }, [items, filterCliente]);
 
   const alerts = useMemo(() => {
     const list: { id: string; type: string; message: string; item?: CockpitItem }[] = [];
