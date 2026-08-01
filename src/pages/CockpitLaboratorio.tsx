@@ -287,9 +287,12 @@ export default function CockpitLaboratorio() {
 
     items.forEach(item => {
       if (item.cliente_id) clientesMap.set(item.cliente_id, item.cliente);
-      if (item.fazenda_id) fazendasMap.set(item.fazenda_id, item.fazenda);
-      if (item.produto_id) produtosMap.set(item.produto_id, item.produto);
-      else if (item.microrganismo_id) produtosMap.set(item.microrganismo_id, item.microrganismo_nome || item.produto);
+      // Fazendas e produtos são dependentes do cliente selecionado: evita
+      // combinações de filtro que nunca retornam resultado.
+      const clienteOk = filterCliente === "all" || item.cliente_id === filterCliente;
+      if (clienteOk && item.fazenda_id) fazendasMap.set(item.fazenda_id, item.fazenda);
+      if (clienteOk && item.produto_id) produtosMap.set(item.produto_id, item.produto);
+      else if (clienteOk && item.microrganismo_id) produtosMap.set(item.microrganismo_id, item.microrganismo_nome || item.produto);
     });
 
     return {
@@ -635,6 +638,10 @@ export default function CockpitLaboratorio() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar OS, cliente, lote..." className="pl-9 h-9 text-xs" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <p className="text-[11px] text-muted-foreground whitespace-nowrap" aria-live="polite">
+          Mostrando <span className="font-semibold">{filteredItems.length}</span> de{" "}
+          <span className="font-semibold">{totalUniverso || items.length}</span> OS
+        </p>
         <div className="flex flex-wrap gap-2 w-full lg:flex-1 justify-end">
           <Select value={filterOrigem} onValueChange={setFilterOrigem}>
             <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue placeholder="Origem" /></SelectTrigger>
