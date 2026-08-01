@@ -13,6 +13,38 @@ export type EsteiraStage =
   | "entrega"
   | "aplicacao";
 
+/** Mensagens seguras para os códigos de erro das RPCs canônicas do Cockpit. */
+const COCKPIT_ERROS: Record<string, string> = {
+  COCKPIT_UNAUTHENTICATED: "Sessão expirada. Entre novamente para continuar.",
+  COCKPIT_FORBIDDEN: "Seu perfil não tem autorização para esta operação.",
+  COCKPIT_ENVASE_PARAMS_INVALIDOS: "Dados insuficientes para registrar o envase.",
+  COCKPIT_ENVASE_VALIDADE_OBRIGATORIA: "Informe a validade do envase.",
+  COCKPIT_ENVASE_SEM_LINHAS: "Informe ao menos uma embalagem.",
+  COCKPIT_LOTE_NAO_ENCONTRADO: "Lote não encontrado.",
+  COCKPIT_LOTE_REPROVADO_BLOQUEIA_ENVASE: "Lote reprovado no CQ: envase bloqueado.",
+  COCKPIT_LOTE_SEM_VOLUME_PRODUZIDO: "Informe o volume produzido do lote antes de envasar.",
+  COCKPIT_ENVASE_EXIGE_CQ_APROVADO: "O envase exige CQ aprovado para este lote.",
+  COCKPIT_EMBALAGEM_INVALIDA: "Embalagem inválida.",
+  COCKPIT_QUANTIDADE_INVALIDA: "Quantidade deve ser maior que zero.",
+  COCKPIT_ENVASE_EXCEDE_PRODUZIDO: "O volume envasado excede o volume produzido do lote.",
+  COCKPIT_RESERVA_PARAMS_INVALIDOS: "Reserva inválida.",
+  COCKPIT_RESERVA_NAO_ENCONTRADA: "Reserva não encontrada.",
+  COCKPIT_RESERVA_JA_EXPEDIDA: "Reserva já expedida: não pode ser cancelada.",
+  COCKPIT_ENTREGA_PARAMS_INVALIDOS: "Entrega inválida.",
+  COCKPIT_ENTREGA_NAO_ENCONTRADA: "Entrega não encontrada.",
+  COCKPIT_ENTREGA_CANCELADA: "Entrega cancelada não pode ser confirmada.",
+  COCKPIT_SEED_FORBIDDEN: "Apenas administradores podem gerar fixtures.",
+  COCKPIT_SEED_BLOQUEADO: "Geração de fixtures indisponível fora do ambiente de homologação.",
+  COCKPIT_SEED_INDISPONIVEL: "Gerador de fixtures indisponível neste ambiente.",
+};
+
+export function traduzErroCockpit(message?: string | null): string {
+  const raw = String(message ?? "");
+  const hit = Object.keys(COCKPIT_ERROS).find((code) => raw.includes(code));
+  return hit ? COCKPIT_ERROS[hit] : raw || "Erro inesperado na esteira.";
+}
+
+
 
 export function useEsteiraLaboratorio() {
   const { user } = useAuth();
