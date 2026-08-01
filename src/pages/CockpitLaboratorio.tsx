@@ -622,7 +622,7 @@ export default function CockpitLaboratorio() {
                     <span className="font-bold text-orange-900">{a.type}</span>
                     <span className="text-muted-foreground line-clamp-1">{a.message}</span>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" onClick={() => setAnalyzedAlerts([...analyzedAlerts, a.id])}><Check className="h-3 w-3" /></Button>
+                  <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" onClick={() => reconhecerAlerta(a.id, a.item?.os_id)}><Check className="h-3 w-3" /></Button>
                 </div>
               )) : <div className="text-center py-6 text-orange-600 italic text-[10px]">Tudo em dia!</div>}
             </ScrollArea>
