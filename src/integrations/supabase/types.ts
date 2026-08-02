@@ -16544,6 +16544,7 @@ export type Database = {
       fn_cockpit_is_gestor: { Args: never; Returns: boolean }
       fn_cockpit_is_hml_environment: { Args: never; Returns: boolean }
       fn_cockpit_norm_origem: { Args: { p_origem: string }; Returns: string }
+      fn_cockpit_payload_hash: { Args: { p_payload: Json }; Returns: string }
       fn_cockpit_stage: { Args: { p_status_oficial: string }; Returns: string }
       fn_cultura_em_uso: { Args: { _cultura_id: string }; Returns: boolean }
       fn_fin_aging: {
