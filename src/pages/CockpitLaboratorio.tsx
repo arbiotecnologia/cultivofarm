@@ -275,12 +275,11 @@ export default function CockpitLaboratorio() {
 
 
   // KPIs agregados no servidor sobre TODO o universo autorizado (não sobre a
-  // página carregada). Inclui a contagem correta de OS sem programação
-  // (NOT EXISTS em programacao_producao), manual e On-Farm.
+  // página carregada) e já respeitando os filtros de busca/origem/prioridade.
   const { data: metricasGlobais } = useQuery({
-    queryKey: ["cockpit-metricas-globais"],
+    queryKey: ["cockpit-metricas-globais", listaFiltros],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("rpc_cockpit_metricas_v1");
+      const { data, error } = await (supabase as any).rpc("rpc_cockpit_metricas_v2", listaFiltros);
       if (error) throw error;
       return (data ?? {}) as Record<string, number>;
     },
@@ -288,19 +287,19 @@ export default function CockpitLaboratorio() {
   });
 
   const osSemProgCount = Number(metricasGlobais?.os_sem_programacao ?? 0);
-  const totalUniverso = Number(metricasGlobais?.total ?? 0);
+  const totalUniverso = Number(metricasGlobais?.total ?? totalFiltrado);
 
+  // Busca, prioridade e origem já vêm filtradas do servidor; aqui restam
+  // apenas os recortes locais de cliente/fazenda/produto.
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      if (search && !Object.values(item).some(v => String(v).toLowerCase().includes(search.toLowerCase()))) return false;
-      if (filterPrioridade !== "all" && item.prioridade !== filterPrioridade) return false;
-      if (filterOrigem !== "all" && item.origem !== filterOrigem) return false;
       if (filterCliente !== "all" && item.cliente_id !== filterCliente) return false;
       if (filterFazenda !== "all" && item.fazenda_id !== filterFazenda) return false;
       if (filterProduto !== "all" && item.produto_id !== filterProduto && item.microrganismo_id !== filterProduto) return false;
       return true;
     });
-  }, [items, search, filterPrioridade, filterOrigem, filterCliente, filterFazenda, filterProduto]);
+  }, [items, filterCliente, filterFazenda, filterProduto]);
+
 
   const { uniqueClientes, uniqueFazendas, uniqueProdutos } = useMemo(() => {
     const clientesMap = new Map();
