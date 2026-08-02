@@ -536,7 +536,15 @@ export default function Entregas() {
           await supabase.from("entregas").update({ status: "cancelada" as any, motivo_cancelamento: `Rollback de entrega múltipla: ${err.message}` } as any).eq("id", id);
         }
         for (const r of reservasFeitas) {
-          try { await cancelarReservaEstoque(r.item, r.osId, r.osTipo); } catch {}
+          try {
+            await cancelarReservaEstoque(
+              r.item,
+              r.osId,
+              r.osTipo,
+              `Rollback de entrega múltipla: ${err.message}`,
+            );
+          } catch {}
+
         }
         throw err;
       }
