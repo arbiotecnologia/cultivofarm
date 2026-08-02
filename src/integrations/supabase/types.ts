@@ -2750,24 +2750,36 @@ export type Database = {
       }
       cockpit_operacao_idempotencia: {
         Row: {
+          alvo_id: string | null
           created_at: string
           idempotency_key: string
           operacao: string
-          resultado: Json
+          payload_hash: string | null
+          resultado: Json | null
+          status: string
+          updated_at: string
           usuario_id: string | null
         }
         Insert: {
+          alvo_id?: string | null
           created_at?: string
           idempotency_key: string
           operacao: string
-          resultado?: Json
+          payload_hash?: string | null
+          resultado?: Json | null
+          status?: string
+          updated_at?: string
           usuario_id?: string | null
         }
         Update: {
+          alvo_id?: string | null
           created_at?: string
           idempotency_key?: string
           operacao?: string
-          resultado?: Json
+          payload_hash?: string | null
+          resultado?: Json | null
+          status?: string
+          updated_at?: string
           usuario_id?: string | null
         }
         Relationships: []
@@ -16506,8 +16518,32 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_cockpit_assert_b2b_liberado: {
+        Args: { p_partner_order_id: string }
+        Returns: undefined
+      }
       fn_cockpit_assert_operador: { Args: never; Returns: undefined }
+      fn_cockpit_assert_operador_origem: {
+        Args: { p_origem: string }
+        Returns: string
+      }
+      fn_cockpit_ctx_programacao: {
+        Args: { p_programacao_id: string }
+        Returns: {
+          cliente_id: string
+          microrganismo_id: string
+          origem: string
+          os_id: string
+          partner_order_id: string
+          produto_id: string
+          programacao_id: string
+          status_os: string
+          volume_necessario: number
+        }[]
+      }
+      fn_cockpit_is_gestor: { Args: never; Returns: boolean }
       fn_cockpit_is_hml_environment: { Args: never; Returns: boolean }
+      fn_cockpit_norm_origem: { Args: { p_origem: string }; Returns: string }
       fn_cockpit_stage: { Args: { p_status_oficial: string }; Returns: string }
       fn_cultura_em_uso: { Args: { _cultura_id: string }; Returns: boolean }
       fn_fin_aging: {
@@ -18091,15 +18127,44 @@ export type Database = {
         Args: { p_entrega_id: string; p_origem: string; p_os_id: string }
         Returns: Json
       }
+      rpc_cockpit_listar_esteira_v1: {
+        Args: {
+          p_ate?: string
+          p_atrasado?: boolean
+          p_busca?: string
+          p_de?: string
+          p_incluir_finalizadas?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_origens?: string[]
+          p_prioridades?: string[]
+          p_stages?: string[]
+        }
+        Returns: Json
+      }
       rpc_cockpit_metricas_v1: { Args: never; Returns: Json }
+      rpc_cockpit_metricas_v2: {
+        Args: {
+          p_ate?: string
+          p_atrasado?: boolean
+          p_busca?: string
+          p_de?: string
+          p_origens?: string[]
+          p_prioridades?: string[]
+          p_stages?: string[]
+        }
+        Returns: Json
+      }
       rpc_cockpit_registrar_envase_v1: {
         Args: {
           p_idempotency_key?: string
           p_linhas: Json
           p_lote_id: string
+          p_motivo_parcial?: string
           p_operador?: string
           p_origem: string
           p_os_id: string
+          p_permitir_parcial?: boolean
           p_programacao_id: string
           p_validade: string
         }
