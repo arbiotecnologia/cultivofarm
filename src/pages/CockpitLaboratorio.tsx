@@ -164,16 +164,37 @@ export default function CockpitLaboratorio() {
     await qc.invalidateQueries({ queryKey: ["cockpit-alertas-reconhecidos"] });
   };
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ["cockpit-laboratorio", limit],
+  // Filtros/paginação server-side: a busca, prioridade e origem são aplicadas
+  // na RPC (sobre TODO o universo autorizado), não apenas na página carregada.
+  const listaFiltros = useMemo(
+    () => ({
+      p_busca: search.trim() || null,
+      p_origens: filterOrigem !== "all" ? [filterOrigem] : null,
+      p_prioridades: filterPrioridade !== "all" ? [filterPrioridade] : null,
+    }),
+    [search, filterOrigem, filterPrioridade],
+  );
+
+  const { data: listaEsteira, isLoading } = useQuery({
+    queryKey: ["cockpit-laboratorio", listaFiltros, limit],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vw_esteira_laboratorio")
-        .select("*")
-        .neq("status_os", "finalizada")
-        .order("created_at", { ascending: false })
-        .limit(limit);
+      const { data, error } = await (supabase as any).rpc("rpc_cockpit_listar_esteira_v1", {
+        ...listaFiltros,
+        p_limit: limit,
+        p_offset: 0,
+      });
       if (error) throw error;
+      return (data ?? { items: [], total_count: 0 }) as {
+        items: any[];
+        total_count: number;
+      };
+    },
+    refetchInterval: 300000,
+  });
+
+  const items = useMemo(() => {
+    const data = listaEsteira?.items ?? [];
+
 
       return (data as any[]).map(item => {
         // Fonte única: o estágio vem do mapa canônico espelhado de
