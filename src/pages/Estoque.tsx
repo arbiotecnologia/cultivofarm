@@ -198,7 +198,13 @@ export default function Estoque() {
       return;
     }
 
-    const success = await cancelarReservaEstoque(item, osId, origem);
+    const success = await cancelarReservaEstoque(
+      item,
+      osId,
+      origem,
+      "Cancelamento manual da reserva pelo módulo de Estoque",
+    );
+
     if (success) {
       setCancelarItem(null);
     }

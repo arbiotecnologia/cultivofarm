@@ -291,6 +291,8 @@ export function useEsteiraLaboratorio() {
     validade: string;
     operador?: string | null;
     idempotencyKey?: string | null;
+    permitirParcial?: boolean;
+    motivoParcial?: string | null;
   }): Promise<any | null> => {
     try {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_registrar_envase_v1", {
@@ -302,6 +304,8 @@ export function useEsteiraLaboratorio() {
         p_validade: params.validade,
         p_operador: params.operador ?? null,
         p_idempotency_key: params.idempotencyKey ?? null,
+        p_permitir_parcial: params.permitirParcial ?? false,
+        p_motivo_parcial: params.motivoParcial ?? null,
       });
 
       if (error) {
@@ -311,6 +315,10 @@ export function useEsteiraLaboratorio() {
 
       if (data?.replay) {
         toast.info("Envase já registrado — operação repetida ignorada.");
+      } else if (data?.estado === "partial") {
+        toast.warning(
+          data?.message || "Envase registrado — necessidade da OS ainda não coberta.",
+        );
       } else {
         toast.success(data?.message || "Envase e estoque registrados.");
       }
@@ -321,6 +329,7 @@ export function useEsteiraLaboratorio() {
       return null;
     }
   };
+
 
   /**
    * Compatibilidade com a página Envase: converte o payload legado em uma
@@ -468,15 +477,21 @@ export function useEsteiraLaboratorio() {
     item: any,
     osId: string,
     origem: string,
-    motivo?: string,
+    motivo: string,
   ) => {
+    const motivoLimpo = (motivo ?? "").trim();
+    if (!motivoLimpo) {
+      toast.error("Informe o motivo do cancelamento da reserva.");
+      return false;
+    }
     try {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_cancelar_reserva_v1", {
         p_item_id: item?.id,
         p_os_id: osId,
         p_origem: origem,
-        p_motivo: motivo ?? null,
+        p_motivo: motivoLimpo,
       });
+
 
       if (error) {
         toast.error(traduzErroCockpit(error.message));

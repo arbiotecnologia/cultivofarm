@@ -536,7 +536,15 @@ export default function Entregas() {
           await supabase.from("entregas").update({ status: "cancelada" as any, motivo_cancelamento: `Rollback de entrega múltipla: ${err.message}` } as any).eq("id", id);
         }
         for (const r of reservasFeitas) {
-          try { await cancelarReservaEstoque(r.item, r.osId, r.osTipo); } catch {}
+          try {
+            await cancelarReservaEstoque(
+              r.item,
+              r.osId,
+              r.osTipo,
+              `Rollback de entrega múltipla: ${err.message}`,
+            );
+          } catch {}
+
         }
         throw err;
       }
@@ -584,7 +592,7 @@ export default function Entregas() {
       if (entrega.status === "entregue" && entrega.estoque_produto_id) {
         const { data: itemEstoque } = await supabase
           .from("estoque_produto")
-          .select("quantidade, status, lote_id")
+          .select("id, quantidade, status, lote_id")
           .eq("id", entrega.estoque_produto_id)
           .single();
         
@@ -593,7 +601,13 @@ export default function Entregas() {
           const { data: osOnFarm } = await supabase.from("ordens_servico_onfarm").select("id").eq("id", osId).maybeSingle();
           const origem = osOnFarm ? "onfarm" : "manual";
           
-          await cancelarReservaEstoque(itemEstoque, osId, origem);
+          await cancelarReservaEstoque(
+            itemEstoque,
+            osId,
+            origem,
+            `Estorno por cancelamento de entrega: ${motivo}`,
+          );
+
         }
       }
 
