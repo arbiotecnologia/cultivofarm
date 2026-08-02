@@ -477,15 +477,21 @@ export function useEsteiraLaboratorio() {
     item: any,
     osId: string,
     origem: string,
-    motivo?: string,
+    motivo: string,
   ) => {
+    const motivoLimpo = (motivo ?? "").trim();
+    if (!motivoLimpo) {
+      toast.error("Informe o motivo do cancelamento da reserva.");
+      return false;
+    }
     try {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_cancelar_reserva_v1", {
         p_item_id: item?.id,
         p_os_id: osId,
         p_origem: origem,
-        p_motivo: motivo ?? null,
+        p_motivo: motivoLimpo,
       });
+
 
       if (error) {
         toast.error(traduzErroCockpit(error.message));
