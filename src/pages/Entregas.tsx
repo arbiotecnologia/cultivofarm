@@ -601,7 +601,13 @@ export default function Entregas() {
           const { data: osOnFarm } = await supabase.from("ordens_servico_onfarm").select("id").eq("id", osId).maybeSingle();
           const origem = osOnFarm ? "onfarm" : "manual";
           
-          await cancelarReservaEstoque(itemEstoque, osId, origem);
+          await cancelarReservaEstoque(
+            itemEstoque,
+            osId,
+            origem,
+            `Estorno por cancelamento de entrega: ${motivo}`,
+          );
+
         }
       }
 
