@@ -592,7 +592,7 @@ export default function Entregas() {
       if (entrega.status === "entregue" && entrega.estoque_produto_id) {
         const { data: itemEstoque } = await supabase
           .from("estoque_produto")
-          .select("quantidade, status, lote_id")
+          .select("id, quantidade, status, lote_id")
           .eq("id", entrega.estoque_produto_id)
           .single();
         
