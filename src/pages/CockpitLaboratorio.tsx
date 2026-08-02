@@ -246,9 +246,10 @@ export default function CockpitLaboratorio() {
 
         } as CockpitItem;
       });
-    },
-    refetchInterval: 300000,
-  });
+  }, [listaEsteira]);
+
+  const totalFiltrado = Number(listaEsteira?.total_count ?? items.length);
+
 
   const { data: history = [] } = useQuery({
     queryKey: ["esteira-history", selectedItem?.os_id],
