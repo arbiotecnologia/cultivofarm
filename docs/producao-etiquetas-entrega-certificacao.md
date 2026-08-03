@@ -305,8 +305,11 @@ Declarado explicitamente para não haver falsa sensação de cobertura:
 
 ### 9.7 Qualidade
 
-- `tsgo --noEmit` (tsconfig.app.json): **PASS**. Nenhuma alteração de frontend neste ciclo — a UI de termo/conferência
-  ainda **não** consome as novas RPCs.
+- `tsgo --noEmit` (tsconfig.app.json): **PASS**. `vite build`: **PASS** (39.6s, PWA gerado).
+- `vitest run`: 2704 passed / 4 skipped / **3 falhas por timeout** em `fase3_8.static`, `fase3_9.static` e
+  `portalAcompanhamentoProdutor` — reexecutadas isoladamente: **129/129 PASS**. São timeouts de carga (varredura de
+  filesystem + render sob paralelismo), **não regressão**: este ciclo não alterou nenhum arquivo em `src/**`.
+- Nenhuma alteração de frontend neste ciclo — a UI de termo/conferência
 - Diff auditado: sem segredos, tokens, DSN, UUID real ou dado pessoal.
 
 ### 9.8 Pendências humanas (regulatórias) — separadas das técnicas
