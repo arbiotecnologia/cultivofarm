@@ -31,6 +31,7 @@ export default function EstoqueEmbalagens() {
   const [reservarOpen, setReservarOpen] = useState(false);
   const [gerarEtiquetaOpen, setGerarEtiquetaOpen] = useState(false);
   const [vincularExistenteOpen, setVincularExistenteOpen] = useState(false);
+  const [loteEtiquetasOpen, setLoteEtiquetasOpen] = useState(false);
   const [cancelarOpen, setCancelarOpen] = useState(false);
   const [descartarOpen, setDescartarOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -156,8 +157,27 @@ export default function EstoqueEmbalagens() {
             Sem etiqueta
           </Button>
           <Button onClick={load} disabled={loading}>Atualizar</Button>
+          <Button
+            variant="secondary"
+            className="sm:col-span-4"
+            onClick={() => setLoteEtiquetasOpen(true)}
+            disabled={loading || !items.some((i) => !i.etiqueta_id)}
+          >
+            Gerar etiquetas em lote (1 por embalagem)
+          </Button>
         </CardContent>
       </Card>
+
+      <GerarEtiquetasLoteDialog
+        open={loteEtiquetasOpen}
+        onOpenChange={setLoteEtiquetasOpen}
+        embalagens={items.map((i) => ({
+          id: i.id,
+          codigo_embalagem: i.codigo_embalagem,
+          etiqueta_id: i.etiqueta_id,
+        }))}
+        onDone={load}
+      />
 
       <ConferenciaEmbalagemQR />
 
