@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, ArrowRight, Filter, Calendar, User, X, LayoutGrid, ArrowUpDown, RefreshCw, Beaker, History, Eye, Info, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { BaseFaturamentoSection } from "@/components/faturamento/BaseFaturamentoSection";
 import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
 import { AuxiliaryScreenBanner } from "@/components/AuxiliaryScreenBanner";
@@ -128,7 +128,12 @@ export default function OrdensServico() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [microrganismos, setMicrorganismos] = useState<Microrganismo[]>([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  // Drill-down: /ordens-servico?status=<status_os_onfarm> (ex.: vindo da Visão Geral)
+  const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    const s = searchParams.get("status");
+    return s && STATUS_PIPELINE.some((p) => p.key === s) ? s : "all";
+  });
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [clienteFilter, setClienteFilter] = useState<string>("all");
   const [partnerFilter, setPartnerFilter] = useState<string>("all");
