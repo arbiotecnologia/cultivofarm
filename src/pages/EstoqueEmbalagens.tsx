@@ -11,6 +11,7 @@ import { ReservarEmbalagemEntregaDialog } from "@/components/estoque/ReservarEmb
 import { MotivoEmbalagemDialog } from "@/components/estoque/MotivoEmbalagemDialog";
 import { VincularEtiquetaEmbalagemDialog } from "@/components/estoque/VincularEtiquetaEmbalagemDialog";
 import { GerarEtiquetaEmbalagemDialog } from "@/components/estoque/GerarEtiquetaEmbalagemDialog";
+import { GerarEtiquetasLoteDialog } from "@/components/estoque/GerarEtiquetasLoteDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Package } from "lucide-react";
 
