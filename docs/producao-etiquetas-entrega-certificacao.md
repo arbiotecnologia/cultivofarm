@@ -309,7 +309,7 @@ Declarado explicitamente para não haver falsa sensação de cobertura:
 - `vitest run`: 2704 passed / 4 skipped / **3 falhas por timeout** em `fase3_8.static`, `fase3_9.static` e
   `portalAcompanhamentoProdutor` — reexecutadas isoladamente: **129/129 PASS**. São timeouts de carga (varredura de
   filesystem + render sob paralelismo), **não regressão**: este ciclo não alterou nenhum arquivo em `src/**`.
-- Nenhuma alteração de frontend neste ciclo — a UI de termo/conferência
+- Nenhuma alteração de frontend neste ciclo — a UI de termo/conferência ainda **não** consome as novas RPCs.
 - Diff auditado: sem segredos, tokens, DSN, UUID real ou dado pessoal.
 
 ### 9.8 Pendências humanas (regulatórias) — separadas das técnicas
