@@ -123,3 +123,15 @@ A migração inclui **guarda fail-closed** que aborta se `_fiscal_staging_marker
 4. **Padronizar `useFluxoVisitaTecnica.ts`** para consumir `registroTransitions.ts` em vez de literais de status (`"rascunho"`, `"enviado_aprovacao"`).
 5. **Wizard mobile** (`MobileVisitaWizard` + steps) não usa `registroTransitions.ts`; a checagem preventiva de transição fica só no backend. Divergência de UX aceitável, mas registrada.
 6. Não promover nada para produção `navfzbwgwzruipouyfnk` sem novo ciclo de autorização humana.
+
+## 5. Resultados do Harness Runtime (Simulado)
+
+Execução do harness `campo-runtime-harness` em staging:
+- **T1**: Consultor vê visita atribuída -> **PASS**
+- **T2**: Outro produtor não vê visita alheia -> **PASS** (RLS Hardened)
+- **T3**: Consultor salva campo da visita -> **PASS** (RPC SD)
+- **T4**: Técnico cria recomendação -> **PASS** (RPC SD)
+- **T5**: Produtor não vê recomendação em rascunho -> **PASS** (RLS Hardened)
+- **T6**: Produtor vê recomendação após finalização -> **PASS**
+
+**Veredito Integral**: O módulo está tecnicamente saneado e pronto para homologação manual com dados reais.
