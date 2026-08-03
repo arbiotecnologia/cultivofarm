@@ -6312,6 +6312,72 @@ export type Database = {
           },
         ]
       }
+      etiqueta_templates: {
+        Row: {
+          altura_mm: number
+          ativo: boolean
+          campos: Json
+          codigo: string
+          colunas: number
+          created_at: string
+          densidade_dpi: number
+          id: string
+          largura_mm: number
+          linhas: number
+          margem_base_mm: number
+          margem_direita_mm: number
+          margem_esquerda_mm: number
+          margem_topo_mm: number
+          midia: string
+          nome: string
+          orientacao: string
+          updated_at: string
+          versao: number
+        }
+        Insert: {
+          altura_mm: number
+          ativo?: boolean
+          campos?: Json
+          codigo: string
+          colunas?: number
+          created_at?: string
+          densidade_dpi?: number
+          id?: string
+          largura_mm: number
+          linhas?: number
+          margem_base_mm?: number
+          margem_direita_mm?: number
+          margem_esquerda_mm?: number
+          margem_topo_mm?: number
+          midia?: string
+          nome: string
+          orientacao?: string
+          updated_at?: string
+          versao?: number
+        }
+        Update: {
+          altura_mm?: number
+          ativo?: boolean
+          campos?: Json
+          codigo?: string
+          colunas?: number
+          created_at?: string
+          densidade_dpi?: number
+          id?: string
+          largura_mm?: number
+          linhas?: number
+          margem_base_mm?: number
+          margem_direita_mm?: number
+          margem_esquerda_mm?: number
+          margem_topo_mm?: number
+          midia?: string
+          nome?: string
+          orientacao?: string
+          updated_at?: string
+          versao?: number
+        }
+        Relationships: []
+      }
       executivo_relatorio_eventos: {
         Row: {
           created_at: string
@@ -12830,6 +12896,157 @@ export type Database = {
           },
         ]
       }
+      produto_conformidade_perfis: {
+        Row: {
+          advertencias: string[]
+          aprovado_em: string | null
+          aprovado_por: string | null
+          campos_obrigatorios: string[]
+          categoria: string | null
+          conservacao_texto: string | null
+          created_at: string
+          criado_por: string | null
+          documento_referencia: string | null
+          documento_validade: string | null
+          fonte_documento: string | null
+          id: string
+          identificadores_fiscais: Json
+          identificadores_regulatorios: Json
+          inativado_em: string | null
+          inativado_por: string | null
+          motivo_aprovacao: string | null
+          motivo_inativacao: string | null
+          perfil_key: string
+          politica_validade: string | null
+          produto_id: string | null
+          registro_mapa: string | null
+          responsavel_informacao: string | null
+          responsavel_tecnico_nome: string | null
+          responsavel_tecnico_registro: string | null
+          status: string
+          template_versao: string | null
+          transporte_texto: string | null
+          updated_at: string
+          uso_texto: string | null
+          validade_meses: number | null
+          versao: number
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
+        }
+        Insert: {
+          advertencias?: string[]
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          campos_obrigatorios?: string[]
+          categoria?: string | null
+          conservacao_texto?: string | null
+          created_at?: string
+          criado_por?: string | null
+          documento_referencia?: string | null
+          documento_validade?: string | null
+          fonte_documento?: string | null
+          id?: string
+          identificadores_fiscais?: Json
+          identificadores_regulatorios?: Json
+          inativado_em?: string | null
+          inativado_por?: string | null
+          motivo_aprovacao?: string | null
+          motivo_inativacao?: string | null
+          perfil_key: string
+          politica_validade?: string | null
+          produto_id?: string | null
+          registro_mapa?: string | null
+          responsavel_informacao?: string | null
+          responsavel_tecnico_nome?: string | null
+          responsavel_tecnico_registro?: string | null
+          status?: string
+          template_versao?: string | null
+          transporte_texto?: string | null
+          updated_at?: string
+          uso_texto?: string | null
+          validade_meses?: number | null
+          versao?: number
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Update: {
+          advertencias?: string[]
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          campos_obrigatorios?: string[]
+          categoria?: string | null
+          conservacao_texto?: string | null
+          created_at?: string
+          criado_por?: string | null
+          documento_referencia?: string | null
+          documento_validade?: string | null
+          fonte_documento?: string | null
+          id?: string
+          identificadores_fiscais?: Json
+          identificadores_regulatorios?: Json
+          inativado_em?: string | null
+          inativado_por?: string | null
+          motivo_aprovacao?: string | null
+          motivo_inativacao?: string | null
+          perfil_key?: string
+          politica_validade?: string | null
+          produto_id?: string | null
+          registro_mapa?: string | null
+          responsavel_informacao?: string | null
+          responsavel_tecnico_nome?: string | null
+          responsavel_tecnico_registro?: string | null
+          status?: string
+          template_versao?: string | null
+          transporte_texto?: string | null
+          updated_at?: string
+          uso_texto?: string | null
+          validade_meses?: number | null
+          versao?: number
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_conformidade_perfis_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_etiqueta_consultas: {
+        Row: {
+          consultado_em: string
+          etiqueta_id: string | null
+          id: number
+          janela_hora: string
+          resultado: string
+        }
+        Insert: {
+          consultado_em?: string
+          etiqueta_id?: string | null
+          id?: number
+          janela_hora?: string
+          resultado: string
+        }
+        Update: {
+          consultado_em?: string
+          etiqueta_id?: string | null
+          id?: number
+          janela_hora?: string
+          resultado?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_etiqueta_consultas_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "produto_etiquetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto_etiqueta_eventos: {
         Row: {
           created_at: string
@@ -16581,6 +16798,51 @@ export type Database = {
       fn_cockpit_norm_origem: { Args: { p_origem: string }; Returns: string }
       fn_cockpit_payload_hash: { Args: { p_payload: Json }; Returns: string }
       fn_cockpit_stage: { Args: { p_status_oficial: string }; Returns: string }
+      fn_conformidade_perfil_vigente: {
+        Args: { p_categoria: string; p_produto_id: string }
+        Returns: {
+          advertencias: string[]
+          aprovado_em: string | null
+          aprovado_por: string | null
+          campos_obrigatorios: string[]
+          categoria: string | null
+          conservacao_texto: string | null
+          created_at: string
+          criado_por: string | null
+          documento_referencia: string | null
+          documento_validade: string | null
+          fonte_documento: string | null
+          id: string
+          identificadores_fiscais: Json
+          identificadores_regulatorios: Json
+          inativado_em: string | null
+          inativado_por: string | null
+          motivo_aprovacao: string | null
+          motivo_inativacao: string | null
+          perfil_key: string
+          politica_validade: string | null
+          produto_id: string | null
+          registro_mapa: string | null
+          responsavel_informacao: string | null
+          responsavel_tecnico_nome: string | null
+          responsavel_tecnico_registro: string | null
+          status: string
+          template_versao: string | null
+          transporte_texto: string | null
+          updated_at: string
+          uso_texto: string | null
+          validade_meses: number | null
+          versao: number
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "produto_conformidade_perfis"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fn_cultura_em_uso: { Args: { _cultura_id: string }; Returns: boolean }
       fn_fin_aging: {
         Args: { _type?: string }
@@ -18757,6 +19019,10 @@ export type Database = {
       }
       rpc_gerar_alertas_operacionais: { Args: never; Returns: Json }
       rpc_gerar_etiqueta_produto: { Args: { p_payload: Json }; Returns: Json }
+      rpc_gerar_etiquetas_embalagens_lote: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       rpc_gerar_formulario_entrega: {
         Args: { p_entrega_id: string }
         Returns: Json
