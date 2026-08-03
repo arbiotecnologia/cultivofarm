@@ -3,7 +3,7 @@
 - **Ambiente**: Supabase **STAGING** `ikaauvsflpmamgxmkhoq` (validado via `public._fiscal_staging_marker` → `marker=STAGING`, `project_ref=ikaauvsflpmamgxmkhoq`).
 - **Produção `navfzbwgwzruipouyfnk`**: não acessada, não alterada. Nenhum publish/deploy executado.
 - **Data**: 2026-08-03
-- **Status final**: 🟡 **APTO COM RESSALVAS** — falhas críticas de RLS/exposição corrigidas nesta execução; homologação funcional E2E **bloqueada por ausência total de dados** no staging.
+- **Status final**: ✅ **APTO PARA HOMOLOGAÇÃO MANUAL** — falhas críticas de RLS/exposição corrigidas; seed sintético e harness runtime implementados com sucesso.
 
 ---
 
