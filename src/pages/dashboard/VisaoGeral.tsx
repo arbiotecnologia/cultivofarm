@@ -25,36 +25,27 @@ import { useExecutivoResumo } from "@/hooks/useExecutivoResumo";
 export default function VisaoGeral() {
   const resumoQ = useExecutivoResumo({ periodo: "30_dias" });
 
-  // Situação resumida do laboratório (regra 13) — queries agregadas leves.
+  // Situação resumida do laboratório (regra 13) — agregação server-side
+  // (rpc_dashboard_geral_lab_resumo), sem baixar linhas para o cliente.
   const labQ = useQuery({
     queryKey: ["dashboard-geral-lab-resumo"],
     queryFn: async () => {
-      const [os, lotesProd, lotesCQ, lotesEnvase, insumos, entregas] = await Promise.all([
-        supabase.from("ordens_servico_onfarm").select("id", { count: "exact", head: true }).eq("status", "aberta"),
-        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "em_producao"),
-        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "aguardando_cq"),
-        supabase.from("lotes").select("id", { count: "exact", head: true }).eq("status", "aprovado"),
-        supabase.from("produtos").select("id, estoque_minimo, estoque_produto(volume_total)").eq("e_insumo", true),
-        supabase.from("entregas").select("id", { count: "exact", head: true }).in("status", ["separado", "em_rota"]),
-      ]);
-      type InsumoRow = { estoque_minimo?: number | null; estoque_produto?: Array<{ volume_total?: number | null }> | null };
-      const insumosCriticos = ((insumos.data as InsumoRow[] | null) || []).filter((p) => {
-        const total = (p.estoque_produto || []).reduce((a, x) => a + Number(x.volume_total || 0), 0);
-        return total < Number(p.estoque_minimo || 0);
-      }).length;
-
+      const { data, error } = await supabase.rpc("rpc_dashboard_geral_lab_resumo" as never);
+      if (error) throw error;
+      const resumo = (data as { resumo?: Record<string, number> } | null)?.resumo ?? {};
       return {
-        os_aguardando: os.count ?? 0,
-        lotes_producao: lotesProd.count ?? 0,
-        cq_pendente: lotesCQ.count ?? 0,
-        envases_pendentes: lotesEnvase.count ?? 0,
-        insumos_criticos: insumosCriticos,
-        entregas_pendentes: entregas.count ?? 0,
+        os_aguardando: Number(resumo.os_aguardando ?? 0),
+        lotes_producao: Number(resumo.lotes_producao ?? 0),
+        cq_pendente: Number(resumo.cq_pendente ?? 0),
+        envases_pendentes: Number(resumo.envases_pendentes ?? 0),
+        insumos_criticos: Number(resumo.insumos_criticos ?? 0),
+        entregas_pendentes: Number(resumo.entregas_pendentes ?? 0),
       };
     },
     staleTime: 60_000,
     retry: false,
   });
+
 
   if (import.meta.env.DEV) {
     if (resumoQ.error) console.warn("[VisaoGeral] resumo executivo indisponível:", resumoQ.error);
@@ -141,17 +132,18 @@ export default function VisaoGeral() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" /> Receita bruta
+                <DollarSign className="h-4 w-4 text-primary" /> Receita recebida
               </CardTitle>
             </CardHeader>
             <CardContent>
               {resumoQ.isLoading ? <Skeleton className="h-8 w-24" /> : (
                 <div className="text-2xl font-bold">
-                  {resumo?.receita_bruta != null
-                    ? Number(resumo.receita_bruta).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
+                  {(resumo?.receita_recebida ?? resumo?.receita_bruta) != null
+                    ? Number(resumo?.receita_recebida ?? resumo?.receita_bruta).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
                     : "—"}
                 </div>
               )}
+
               <Link to="/financeiro" className="text-xs text-primary hover:underline">Abrir financeiro →</Link>
               <p className="text-[10px] text-muted-foreground">Últimos 30 dias</p>
             </CardContent>
