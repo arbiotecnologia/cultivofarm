@@ -19017,6 +19017,7 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_dashboard_geral_lab_resumo: { Args: never; Returns: Json }
       rpc_defer_communication_delivery: {
         Args: {
           p_delay_seconds?: number
