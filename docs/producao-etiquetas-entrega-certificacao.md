@@ -1,6 +1,6 @@
 # Produção → Etiquetas pós-envase → Termo de Entrega — Certificação
 
-**VEREDITO: 🟡 APTO COM RESSALVAS** (ciclo 2 — ver §8 e §9).
+**VEREDITO: 🟡 APTO COM RESSALVAS** (ciclo 3 — ver §9.6 e §9.8).
 
 Ambiente: **staging `ikaauvsflpmamgxmkhoq`** (marker `STAGING` validado antes de qualquer escrita, e novamente por guard SQL dentro da migração).
 Produção `navfzbwgwzruipouyfnk` **não acessada**. Nada publicado. Forward-only.
