@@ -132,17 +132,18 @@ export default function VisaoGeral() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" /> Receita bruta
+                <DollarSign className="h-4 w-4 text-primary" /> Receita recebida
               </CardTitle>
             </CardHeader>
             <CardContent>
               {resumoQ.isLoading ? <Skeleton className="h-8 w-24" /> : (
                 <div className="text-2xl font-bold">
-                  {resumo?.receita_bruta != null
-                    ? Number(resumo.receita_bruta).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
+                  {(resumo?.receita_recebida ?? resumo?.receita_bruta) != null
+                    ? Number(resumo?.receita_recebida ?? resumo?.receita_bruta).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
                     : "—"}
                 </div>
               )}
+
               <Link to="/financeiro" className="text-xs text-primary hover:underline">Abrir financeiro →</Link>
               <p className="text-[10px] text-muted-foreground">Últimos 30 dias</p>
             </CardContent>
