@@ -1,6 +1,6 @@
 # Produção → Etiquetas pós-envase → Termo de Entrega — Certificação
 
-**VEREDITO: 🟡 APTO COM RESSALVAS** (ciclo 2 — ver §8 e §9).
+**VEREDITO: 🟡 APTO COM RESSALVAS** (ciclo 3 — ver §9.6 e §9.8).
 
 Ambiente: **staging `ikaauvsflpmamgxmkhoq`** (marker `STAGING` validado antes de qualquer escrita, e novamente por guard SQL dentro da migração).
 Produção `navfzbwgwzruipouyfnk` **não acessada**. Nada publicado. Forward-only.
@@ -227,27 +227,104 @@ typecheck/testes/build verdes e nenhum artefato temporário pendente.
 
 ---
 
-## 9. Escopo solicitado e NÃO executado neste ciclo
+## 9. Ciclo 3 — Termo de entrega canônico e conferência por item (executado)
+
+Migração aplicada **somente** em `ikaauvsflpmamgxmkhoq` (guard SQL contra produção no topo do script), forward-only.
+
+### 9.1 Inventário antes → depois
+
+| Antes (reutilizado, nada duplicado) | Depois (acrescentado) |
+|---|---|
+| `entregas`, `entrega_comprovantes`, `entrega_checklist`, `entrega_ocorrencias`, `entrega_etiquetas`, `entrega_documentos` | `entrega_termos` (documento versionado + snapshot imutável), `entrega_conferencia_itens` (estado por item/embalagem) |
+| `rpc_gerar_formulario_entrega`, `rpc_coletar_assinatura_digital_entrega`, `rpc_anexar_comprovante_entrega`, `rpc_confirmar_recebimento_entrega`, `rpc_dispensar_assinatura_entrega`, `rpc_validar_comprovante_entrega` | `fn_entrega_build_snapshot_v1`, `fn_entrega_cobertura_v1`, `rpc_entrega_registrar_conferencia_v1`, `rpc_entrega_gerar_termo_v1`, `rpc_entrega_assinar_termo_v1`, `rpc_entrega_registrar_pdf_termo_v1`, `rpc_entrega_cancelar_termo_v1` |
+
+Nenhuma RPC anterior foi removida ou duplicada; o termo canônico é uma camada nova sobre as tabelas existentes.
+
+### 9.2 Termo canônico e snapshot
+
+- `entrega_termos`: `versao` (única por entrega), `template_versao`, `status` ∈ `rascunho|assinado|cancelado|substituido`,
+  `snapshot jsonb`, `snapshot_hash` (SHA-256 determinístico sobre `template_versao || '|' || snapshot::text`),
+  `cobertura` ∈ `integral|parcial|pendente`, recebedor, assinatura, `pdf_path`/`pdf_hash`, cancelamento e `substitui_termo_id`.
+- `fn_entrega_build_snapshot_v1` congela: entrega, cliente, OS interna, OS on-farm, pedido B2B, comprovante,
+  entregador (motorista/documento/telefone/veículo/placa), destino completo, recebedor, itens
+  (etiqueta + embalagem/serial + lote + produto/microrganismo + conferência), checklist, ocorrências e divergências.
+  Documento histórico **não** é recalculado a partir dos cadastros atuais — é lido sempre do `snapshot` gravado.
+- Índice parcial `entrega_termos_um_vivo_uk`: no máximo um termo `rascunho`/`assinado` por entrega.
+
+### 9.3 Entrega parcial por item/embalagem
+
+- `entrega_conferencia_itens`: `aceito|recusado|pendente`, `quantidade > 0`, `motivo` obrigatório (≥5 chars) na recusa,
+  unicidade por (entrega, etiqueta) e (entrega, embalagem).
+- `rpc_entrega_registrar_conferencia_v1` valida por item: vínculo ativo em `entrega_etiquetas`; e, para `aceito`,
+  etiqueta não `cancelada`/`substituida`, não vencida (`data_validade >= current_date`) e `cq_liberado = true`.
+  Falhas: `etiqueta_nao_vinculada_a_entrega`, `etiqueta_invalida_ou_vencida`, `cq_nao_liberado`.
+- `fn_entrega_cobertura_v1`: qualquer item pendente ⇒ `pendente`; algum recusado ⇒ `parcial`; caso contrário `integral`.
+  Assinatura com cobertura `pendente` é recusada (`cobertura_pendente`) salvo encerramento parcial explícito
+  (`permitir_pendencia`), que fica registrado no snapshot assinado.
+
+### 9.4 Assinatura, hash e imutabilidade
+
+- `rpc_entrega_assinar_termo_v1(p_termo_id, p_payload, p_idempotency_key)` com `pg_advisory_xact_lock` por entrega +
+  `SELECT … FOR UPDATE`. Vincula `snapshot_hash`, `template_versao`, recebedor, `assinatura_hash`, tipo, origem,
+  `now()` do servidor e `assinado_por`.
+- Idempotência: `request_fingerprint` = SHA-256(`snapshot_hash|recebedor|assinatura_hash|tipo`).
+  Replay com mesma chave e mesmo payload ⇒ mesmo documento (`replay: true`);
+  payload divergente ⇒ `idempotency_payload_mismatch`; chave reutilizada em outro termo ⇒ `idempotency_key_reutilizada`.
+- `trg_entrega_termos_immutability` bloqueia, após assinatura, alteração de `snapshot`, `snapshot_hash`, `versao`,
+  `template_versao`, `entrega_id`, recebedor, assinatura e `cobertura`; bloqueia DELETE de termo não-rascunho;
+  bloqueia troca de PDF já registrado; bloqueia transições a partir de estado terminal.
+- `trg_entrega_conf_lock` impede INSERT/UPDATE/DELETE de conferência quando existe termo assinado na entrega.
+- Correção só por `rpc_entrega_cancelar_termo_v1` (admin/gestor/administrativo, motivo ≥5 chars); a nova versão gerada
+  referencia a anterior em `substitui_termo_id`.
+
+### 9.5 Segurança / RLS / grants
+
+- `entrega_termos` e `entrega_conferencia_itens`: RLS ON, apenas policy de **SELECT** (equipe de entrega, financeiro,
+  ou cliente vinculado por `get_cliente_ids_for_user`). **Sem policy de escrita** — toda mutação passa por RPC
+  `SECURITY DEFINER` com `search_path = public` e autorização server-side.
+- `anon`/`PUBLIC` revogados em todas as novas funções. `fn_entrega_build_snapshot_v1` e
+  `rpc_entrega_registrar_pdf_termo_v1` são **exclusivas de `service_role`** (PDF só pode ser registrado pelo backend).
+- Verificação pós-migração: 2 policies, 2 triggers, 4 índices únicos criados; chamada de
+  `fn_entrega_cobertura_v1` por role não autorizada retorna `42501 permission denied` (deny-by-default confirmado).
+
+### 9.6 Escopo solicitado e NÃO executado neste ciclo
 
 Declarado explicitamente para não haver falsa sensação de cobertura:
 
-- **§4 Termo de entrega completo**: versionamento de template do termo, snapshot completo, entrega parcial por
-  item/embalagem (`aceito`/`recusado`/`pendente` com quantidade e motivo), vínculo do hash SHA-256 do snapshot
-  final à assinatura, bloqueio total pós-assinatura, geração de **PDF no backend em bucket privado com signed URL curta**
-  e evento de comunicação por referência — **não implementados**. A base existente (assinatura digital + hash + QR
-  do ciclo anterior) permanece como está.
-- **§5 Auditoria completa do motor transacional de entrega** (baixa somente de itens aceitos, retorno de recusa ao
-  estado operacional, idempotência de confirmação/baixa/PDF) — **não executada**.
-- **§6 Provas E2E de runtime** (harness temporário, dados sintéticos, 8 perfis, concorrência real, QR expirado/revogado/
-  rate limit em runtime, hash imutável, PDF privado, isolamento entre parceiros/clientes) — **não executadas**.
-  O staging permanece sem dados de produção sintéticos para estes domínios.
+- **§4 PDF privado**: a *contabilidade* do PDF está pronta e é idempotente (`pdf_path`/`pdf_hash`/`pdf_gerado_em`,
+  um único PDF ativo por versão, gravável só por `service_role`), mas a **Edge Function que renderiza o PDF a partir do
+  snapshot assinado, o bucket privado por tenant e os testes de signed URL curta/expirada/negada não foram implementados**.
+- **§2 (retorno de estoque na recusa) e §5 (auditoria completa do motor transacional legado)**: a conferência por item
+  já registra e bloqueia, mas o **estorno de reserva/estoque do item recusado, o corte de baixa somente dos aceitos e a
+  reconciliação das RPCs legadas de confirmação/faturamento não foram alterados** — `rpc_confirmar_recebimento_entrega`
+  e `fn_generate_receivable_from_entrega` permanecem como estavam.
+- **§6 Integração com comunicação**: evento pós-assinatura **não** registrado.
+- **§7 Harness E2E real (A–P)**: **não executado**. Não há dados sintéticos `TESTE_ENTREGA_E2E_` no staging;
+  logo **§8 cleanup é vacuamente satisfeito** (0 fixtures criadas, 0 arquivos em bucket, nenhuma Edge Function de harness).
+- **§10 matriz expected vs obtained de runtime**: indisponível pela ausência do harness.
 
-Por esses três itens, o veredito máximo permitido é **APTO COM RESSALVAS**.
+### 9.7 Qualidade
+
+- `tsgo --noEmit` (tsconfig.app.json): **PASS**. `vite build`: **PASS** (39.6s, PWA gerado).
+- `vitest run`: 2704 passed / 4 skipped / **3 falhas por timeout** em `fase3_8.static`, `fase3_9.static` e
+  `portalAcompanhamentoProdutor` — reexecutadas isoladamente: **129/129 PASS**. São timeouts de carga (varredura de
+  filesystem + render sob paralelismo), **não regressão**: este ciclo não alterou nenhum arquivo em `src/**`.
+- Nenhuma alteração de frontend neste ciclo — a UI de termo/conferência ainda **não** consome as novas RPCs.
+- Diff auditado: sem segredos, tokens, DSN, UUID real ou dado pessoal.
+
+### 9.8 Pendências humanas (regulatórias) — separadas das técnicas
+
+- Validade jurídica da assinatura operacional (ICP-Brasil/eIDAS) permanece **fora de escopo técnico**; decisão do negócio.
+- Política de retenção e prazo de expiração dos PDFs de termo precisa de definição formal antes da promoção.
 
 ---
 
 **VEREDITO FINAL: 🟡 APTO COM RESSALVAS.**
-Fechados neste ciclo: fallback inseguro de validade, perfil de conformidade versionado com RLS deny-by-default e
-auditoria, emissão 1:1 por embalagem com idempotência e trava de concorrência, templates configuráveis versionados,
-e segurança/rate limit do QR público. Pendentes: termo de entrega completo com PDF privado e entrega parcial,
-auditoria do motor transacional de entrega, e o conjunto de provas E2E de runtime.
+Fechados no ciclo 3: termo de entrega canônico versionado com snapshot completo e imutável, hash SHA-256 determinístico
+vinculado à assinatura, entrega parcial por item/embalagem com validação de etiqueta/validade/CQ, idempotência de
+assinatura com fingerprint, registro idempotente de PDF restrito a `service_role`, cancelamento/substituição formal e
+RLS deny-by-default. Pendentes e explicitamente não verificados: renderização do PDF em bucket privado com signed URL,
+estorno de estoque do item recusado e reconciliação do motor transacional legado de confirmação/faturamento, evento de
+comunicação pós-assinatura, consumo das novas RPCs pelo frontend e **todo o conjunto de provas E2E de runtime (A–P)**.
+Não promovido. Não publicado. Produção `navfzbwgwzruipouyfnk` intocada.
+

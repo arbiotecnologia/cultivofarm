@@ -5020,6 +5020,98 @@ export type Database = {
           },
         ]
       }
+      entrega_conferencia_itens: {
+        Row: {
+          conferido_em: string | null
+          conferido_por: string | null
+          created_at: string
+          embalagem_id: string | null
+          entrega_id: string
+          etiqueta_id: string | null
+          id: string
+          motivo: string | null
+          quantidade: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          conferido_em?: string | null
+          conferido_por?: string | null
+          created_at?: string
+          embalagem_id?: string | null
+          entrega_id: string
+          etiqueta_id?: string | null
+          id?: string
+          motivo?: string | null
+          quantidade?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          conferido_em?: string | null
+          conferido_por?: string | null
+          created_at?: string
+          embalagem_id?: string | null
+          entrega_id?: string
+          etiqueta_id?: string | null
+          id?: string
+          motivo?: string | null
+          quantidade?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_conferencia_itens_embalagem_id_fkey"
+            columns: ["embalagem_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_embalagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_conferencia_itens_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_conferencia_itens_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_conferencia_itens_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_conferencia_itens_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_conferencia_itens_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_conferencia_itens_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "produto_etiquetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entrega_documentos: {
         Row: {
           arquivo_path: string
@@ -5240,6 +5332,155 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_os_integridade_esteira"
             referencedColumns: ["entrega_id"]
+          },
+        ]
+      }
+      entrega_termos: {
+        Row: {
+          assinado_em: string | null
+          assinado_por: string | null
+          assinatura_hash: string | null
+          assinatura_origem: string | null
+          assinatura_tipo: string | null
+          cancelado_em: string | null
+          cancelado_por: string | null
+          cobertura: string
+          comprovante_id: string | null
+          created_at: string
+          created_by: string | null
+          entrega_id: string
+          id: string
+          idempotency_key: string | null
+          motivo_cancelamento: string | null
+          pdf_gerado_em: string | null
+          pdf_hash: string | null
+          pdf_path: string | null
+          recebedor_cargo: string | null
+          recebedor_documento: string | null
+          recebedor_nome: string | null
+          recebedor_telefone: string | null
+          request_fingerprint: string | null
+          snapshot: Json
+          snapshot_hash: string
+          status: string
+          substitui_termo_id: string | null
+          template_versao: string
+          updated_at: string
+          versao: number
+        }
+        Insert: {
+          assinado_em?: string | null
+          assinado_por?: string | null
+          assinatura_hash?: string | null
+          assinatura_origem?: string | null
+          assinatura_tipo?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
+          cobertura?: string
+          comprovante_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          entrega_id: string
+          id?: string
+          idempotency_key?: string | null
+          motivo_cancelamento?: string | null
+          pdf_gerado_em?: string | null
+          pdf_hash?: string | null
+          pdf_path?: string | null
+          recebedor_cargo?: string | null
+          recebedor_documento?: string | null
+          recebedor_nome?: string | null
+          recebedor_telefone?: string | null
+          request_fingerprint?: string | null
+          snapshot: Json
+          snapshot_hash: string
+          status?: string
+          substitui_termo_id?: string | null
+          template_versao?: string
+          updated_at?: string
+          versao: number
+        }
+        Update: {
+          assinado_em?: string | null
+          assinado_por?: string | null
+          assinatura_hash?: string | null
+          assinatura_origem?: string | null
+          assinatura_tipo?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
+          cobertura?: string
+          comprovante_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          entrega_id?: string
+          id?: string
+          idempotency_key?: string | null
+          motivo_cancelamento?: string | null
+          pdf_gerado_em?: string | null
+          pdf_hash?: string | null
+          pdf_path?: string | null
+          recebedor_cargo?: string | null
+          recebedor_documento?: string | null
+          recebedor_nome?: string | null
+          recebedor_telefone?: string | null
+          request_fingerprint?: string | null
+          snapshot?: Json
+          snapshot_hash?: string
+          status?: string
+          substitui_termo_id?: string | null
+          template_versao?: string
+          updated_at?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_termos_comprovante_id_fkey"
+            columns: ["comprovante_id"]
+            isOneToOne: false
+            referencedRelation: "entrega_comprovantes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_termos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_termos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_termos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_termos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_termos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_termos_substitui_termo_id_fkey"
+            columns: ["substitui_termo_id"]
+            isOneToOne: false
+            referencedRelation: "entrega_termos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -16844,6 +17085,14 @@ export type Database = {
         }
       }
       fn_cultura_em_uso: { Args: { _cultura_id: string }; Returns: boolean }
+      fn_entrega_build_snapshot_v1: {
+        Args: { p_entrega_id: string }
+        Returns: Json
+      }
+      fn_entrega_cobertura_v1: {
+        Args: { p_entrega_id: string }
+        Returns: string
+      }
       fn_fin_aging: {
         Args: { _type?: string }
         Returns: {
@@ -18661,6 +18910,26 @@ export type Database = {
       }
       rpc_dispensar_assinatura_entrega: {
         Args: { p_entrega_id: string; p_motivo: string }
+        Returns: Json
+      }
+      rpc_entrega_assinar_termo_v1: {
+        Args: { p_idempotency_key: string; p_payload: Json; p_termo_id: string }
+        Returns: Json
+      }
+      rpc_entrega_cancelar_termo_v1: {
+        Args: { p_motivo: string; p_termo_id: string }
+        Returns: Json
+      }
+      rpc_entrega_gerar_termo_v1: {
+        Args: { p_entrega_id: string; p_template_versao?: string }
+        Returns: Json
+      }
+      rpc_entrega_registrar_conferencia_v1: {
+        Args: { p_entrega_id: string; p_itens: Json }
+        Returns: Json
+      }
+      rpc_entrega_registrar_pdf_termo_v1: {
+        Args: { p_pdf_hash: string; p_pdf_path: string; p_termo_id: string }
         Returns: Json
       }
       rpc_enviar_visita_aprovacao: {
