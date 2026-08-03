@@ -53,6 +53,12 @@ export default function VisaoGeral() {
   }
 
   const resumo = resumoQ.data?.resumo;
+  // Fonte indisponível ≠ zero real: a RPC lista as origens que falharam.
+  const indisp = new Set<string>(
+    ((resumoQ.data?.dados_indisponiveis ?? []) as unknown[]).map((d) =>
+      typeof d === "string" ? d : String((d as { indicador?: string })?.indicador ?? ""),
+    ),
+  );
   const saude = resumoQ.data?.saude_operacional;
   const lab = labQ.data;
   const resumoErr = !!resumoQ.error;
@@ -122,7 +128,11 @@ export default function VisaoGeral() {
             </CardHeader>
             <CardContent>
               {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                <div className="text-3xl font-bold">{resumo?.alertas_ativos ?? 0}</div>
+                <div className="text-3xl font-bold">
+                  {indisp.has("alertas_operacionais")
+                    ? <span className="text-base font-medium text-muted-foreground">Indisponível</span>
+                    : (resumo?.alertas_ativos ?? 0)}
+                </div>
               )}
               <Link to="/alertas-operacionais" className="text-xs text-primary hover:underline">Ver alertas →</Link>
               <p className="text-[10px] text-muted-foreground">Agora</p>
@@ -138,7 +148,9 @@ export default function VisaoGeral() {
             <CardContent>
               {resumoQ.isLoading ? <Skeleton className="h-8 w-24" /> : (
                 <div className="text-2xl font-bold">
-                  {(resumo?.receita_recebida ?? resumo?.receita_bruta) != null
+                  {indisp.has("receita_recebida")
+                    ? <span className="text-base font-medium text-muted-foreground">Indisponível</span>
+                    : (resumo?.receita_recebida ?? resumo?.receita_bruta) != null
                     ? Number(resumo?.receita_recebida ?? resumo?.receita_bruta).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
                     : "—"}
                 </div>
@@ -157,7 +169,11 @@ export default function VisaoGeral() {
             </CardHeader>
             <CardContent>
               {resumoQ.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                <div className="text-3xl font-bold">{resumo?.clientes_ativos ?? 0}</div>
+                <div className="text-3xl font-bold">
+                  {indisp.has("clientes_ativos")
+                    ? <span className="text-base font-medium text-muted-foreground">Indisponível</span>
+                    : (resumo?.clientes_ativos ?? 0)}
+                </div>
               )}
               <Link to="/clientes" className="text-xs text-primary hover:underline">Ver clientes →</Link>
               <p className="text-[10px] text-muted-foreground">Agora</p>
@@ -191,7 +207,7 @@ export default function VisaoGeral() {
               </Link>
             )}
             {!resumoErr && (resumo?.visitas_atrasadas ?? 0) > 0 && (
-              <Link to="/agenda-tecnica?filtro=atrasadas" className="block border rounded p-2 hover:bg-accent">
+              <Link to="/agenda-tecnica" className="block border rounded p-2 hover:bg-accent">
                 <div className="text-sm font-medium">Visitas atrasadas</div>
                 <div className="text-xs text-muted-foreground">{resumo?.visitas_atrasadas} agendamento(s)</div>
               </Link>
@@ -204,10 +220,10 @@ export default function VisaoGeral() {
             <CardTitle className="text-base">Fluxo do dia <span className="text-[10px] font-normal text-muted-foreground">(Hoje)</span></CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
-            <StatMini label="Check-ins hoje" value={resumo?.checkins_hoje} loading={resumoQ.isLoading} error={resumoErr} />
-            <StatMini label="Visitas hoje" value={resumo?.visitas_hoje} loading={resumoQ.isLoading} error={resumoErr} />
-            <StatMini label="OS abertas" value={resumo?.os_abertas} loading={resumoQ.isLoading} error={resumoErr} />
-            <StatMini label="Recom. pendentes" value={resumo?.recomendacoes_pendentes} loading={resumoQ.isLoading} error={resumoErr} />
+            <StatMini label="Check-ins hoje" value={resumo?.checkins_hoje} loading={resumoQ.isLoading} error={resumoErr || indisp.has("checkins_hoje")} />
+            <StatMini label="Visitas hoje" value={resumo?.visitas_hoje} loading={resumoQ.isLoading} error={resumoErr || indisp.has("visitas_hoje")} />
+            <StatMini label="OS abertas" value={resumo?.os_abertas} loading={resumoQ.isLoading} error={resumoErr || indisp.has("os_abertas")} />
+            <StatMini label="Recom. pendentes" value={resumo?.recomendacoes_pendentes} loading={resumoQ.isLoading} error={resumoErr || indisp.has("recomendacoes_pendentes")} />
           </CardContent>
         </Card>
       </div>
@@ -227,7 +243,7 @@ export default function VisaoGeral() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <LabTile icon={Activity} label="OS aguardando"     value={lab?.os_aguardando}     to="/ordens-servico?status=aberta" loading={labQ.isLoading} error={labErr} />
-          <LabTile icon={Package}  label="Lotes em produção" value={lab?.lotes_producao}    to="/lotes?status=em_producao"   loading={labQ.isLoading} error={labErr} />
+          <LabTile icon={Package}  label="Lotes em produção" value={lab?.lotes_producao}    to="/lotes"   loading={labQ.isLoading} error={labErr} />
           <LabTile icon={ShieldCheck} label="CQ pendente"    value={lab?.cq_pendente}       to="/controle-qualidade"          loading={labQ.isLoading} error={labErr} />
           <LabTile icon={Warehouse} label="Envases pendentes" value={lab?.envases_pendentes} to="/envase"                     loading={labQ.isLoading} error={labErr} />
           <LabTile icon={Layers}   label="Insumos críticos"   value={lab?.insumos_criticos}  to="/estoque"                    loading={labQ.isLoading} error={labErr} />
