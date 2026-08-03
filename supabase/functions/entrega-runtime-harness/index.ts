@@ -254,12 +254,7 @@ async function run() {
     dRes.msg === null && (dRes.data as any)?.itens === 3 && (dRes.data as any)?.cobertura === "pendente",
     { msg: dRes.msg, data: dRes.data });
 
-  // ---- E: reconciliar com pendente
-  const eRes = await rpc(ent, "rpc_entrega_reconciliar_v1", { p_entrega_id: f1.entregaId, p_idempotency_key: `E-${RUN}` });
-  check("E", "reconciliacao bloqueada com item pendente",
-    (eRes.msg ?? "").includes("conferencia_pendente"), { msg: eRes.msg });
-
-  // resolve o pendente -> aceito
+  // resolve o pendente -> aceito (o gate E roda adiante, já com termo assinado)
   await rpc(ent, "rpc_entrega_registrar_conferencia_v1", {
     p_entrega_id: f1.entregaId,
     p_itens: [{ etiqueta_id: f1.etiquetas[2], status: "aceito", quantidade: 1 }],
@@ -287,6 +282,19 @@ async function run() {
     g1.msg === null && g2.msg === null && (g2.data as any)?.replay === false &&
     g3.msg === null && (g3.data as any)?.replay === true,
     { g1: g1.msg, g2: g2.msg, g3: g3.msg, cobertura: (g1.data as any)?.cobertura, replay: (g3.data as any)?.replay });
+
+  // ---- E: com termo assinado, item pendente ainda bloqueia a reconciliacao
+  await rpc(ent, "rpc_entrega_registrar_conferencia_v1", {
+    p_entrega_id: f1.entregaId,
+    p_itens: [{ etiqueta_id: f1.etiquetas[2], status: "pendente", quantidade: 1 }],
+  });
+  const eRes = await rpc(ent, "rpc_entrega_reconciliar_v1", { p_entrega_id: f1.entregaId, p_idempotency_key: `E-${RUN}` });
+  check("E", "reconciliacao bloqueada com item pendente (termo ja assinado)",
+    (eRes.msg ?? "").includes("conferencia_pendente"), { msg: eRes.msg });
+  await rpc(ent, "rpc_entrega_registrar_conferencia_v1", {
+    p_entrega_id: f1.entregaId,
+    p_itens: [{ etiqueta_id: f1.etiquetas[2], status: "aceito", quantidade: 1 }],
+  });
 
   // ---- H: reconciliação parcial — baixa dos aceitos, estorno dos recusados
   const hRes = await rpc(ent, "rpc_entrega_reconciliar_v1", { p_entrega_id: f1.entregaId, p_idempotency_key: `H-${RUN}` });
