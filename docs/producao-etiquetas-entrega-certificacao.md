@@ -328,3 +328,79 @@ estorno de estoque do item recusado e reconciliação do motor transacional lega
 comunicação pós-assinatura, consumo das novas RPCs pelo frontend e **todo o conjunto de provas E2E de runtime (A–P)**.
 Não promovido. Não publicado. Produção `navfzbwgwzruipouyfnk` intocada.
 
+
+---
+
+## 10. Ciclo 4 — PDF privado real, evento de comunicação e frontend
+
+**VEREDITO DO CICLO 4: 🟡 APTO COM RESSALVAS.** (idêntico ao veredito final abaixo)
+
+Ambiente: staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` **não** acessada. Nada publicado.
+
+### 10.1 PDF privado real (§1 — ENTREGUE)
+
+- Bucket **privado** `entrega-termos`, **sem nenhuma policy** em `storage.objects` ⇒ deny-by-default para
+  `anon`/`authenticated`; somente `service_role` (Edge Function) lê/escreve. Acesso do usuário **exclusivamente**
+  por signed URL de **120 s** emitida após checagem de vínculo.
+- Edge Function `supabase/functions/entrega-termo-pdf/index.ts`:
+  - renderiza o PDF **exclusivamente a partir de `entrega_termos.snapshot`** (nunca do estado atual das tabelas
+    nem de dados vindos do frontend);
+  - autoriza por vínculo lendo `entrega_termos` **sob RLS com o token do usuário** antes de qualquer operação
+    privilegiada; sem `Authorization` retorna `401 unauthorized` (verificado em runtime);
+  - recusa `termo_cancelado`, `termo_substituido` (existe termo posterior com `substitui_termo_id`) e
+    `termo_nao_assinado` com HTTP 409 — documento não vigente nunca é servido;
+  - caminho do objeto segmentado e **não previsível**: `{entrega_id}/{termo_id}/v{versao}/termo-{uuid v4}.pdf`;
+  - calcula **SHA-256** do arquivo e registra via `rpc_entrega_registrar_pdf_termo_v1` (`service_role`);
+  - **idempotência**: se já há `pdf_path`, baixa o objeto, recalcula o hash e retorna `replay: true`;
+    hash divergente ⇒ `pdf_hash_divergente` (409). Se perder a corrida no registro, remove o objeto órfão e
+    devolve o PDF vigente — **um único PDF ativo por termo/versão**.
+- Ação `signed_url`: mesma cadeia de validações + `createSignedUrl(120s)`.
+
+### 10.2 Evento de comunicação (§3 — ENTREGUE)
+
+Após assinatura **e** PDF válido registrado, a Edge Function publica por referência em
+`rpc_publish_communication_event_v2` (`event_key = entrega.termo_assinado`, `source_type = entrega_termo`,
+`source_id = termo_id`), com `idempotency_key = entrega_termo_pdf:{termo_id}:{versao}` — impede evento duplicado
+por termo/versão. Nenhum envio paralelo de e-mail/WhatsApp: usa a fila/outbox existente. Falha de publicação é
+capturada e **não** reverte a entrega nem o PDF.
+
+### 10.3 Frontend (§4 — ENTREGUE)
+
+`src/components/entregas/TermoEntregaPanel.tsx`, montado no diálogo de comprovação em `src/pages/Entregas.tsx`:
+conferência por item/embalagem (aceito/recusado/pendente + quantidade + motivo), resumo com contadores, etapa de
+recebedor, assinatura (hash SHA-256 no cliente + `idempotency_key` derivada), geração e download do PDF por
+signed URL, cancelamento/substituição com motivo ≥ 5 caracteres. Consome **apenas** as RPCs `*_v1` seguras —
+nenhuma RPC legada insegura é chamada por este painel. Estados de loading, vazio, erro traduzido, bloqueio
+pós-assinatura e trava de duplo clique (`busy`). Layout mobile-first (alvos ≥ 36 px, grid responsivo),
+`aria-pressed`/`aria-live`/labels associados.
+
+### 10.4 Qualidade
+
+- `tsgo --noEmit` (tsconfig.app.json): **PASS**.
+- `vite build`: **PASS** (PWA gerado).
+- Runtime: `POST /entrega-termo-pdf` sem token ⇒ `401 unauthorized` (deny-by-default confirmado).
+- Diff auditado: sem segredos, tokens, DSN, UUID real ou dado pessoal.
+
+### 10.5 Escopo NÃO executado neste ciclo (limite de créditos — parada em checkpoint seguro)
+
+- **§2 Reconciliação transacional da entrega**: `rpc_confirmar_recebimento_entrega`,
+  `fn_generate_receivable_from_entrega`, `fn_sync_entrega_financial_status` e os caminhos de reserva/baixa
+  **permanecem inalterados**. Baixa somente-aceitos, estorno auditado do recusado, bloqueio de conclusão por
+  pendente, entrega parcial sem recebível integral e reentrega do saldo **não** foram implementados.
+- **§5 Harness E2E runtime A–P**: **não executado**. Nenhuma prova de runtime A–P nesta entrega.
+- **§6 Cleanup**: vacuamente satisfeito — nenhuma fixture `TESTE_ENTREGA_E2E_` foi criada, nenhum harness/Edge
+  Function temporária existe, nenhum arquivo sintético foi gravado no bucket.
+- Suíte completa `vitest` não reexecutada neste ciclo (typecheck + build cobrem a alteração de `src/**`).
+
+### 10.6 Pendências humanas (regulatórias)
+
+Inalteradas: validade jurídica da assinatura operacional (ICP-Brasil/eIDAS) e política formal de retenção/expiração
+dos PDFs de termo.
+
+---
+
+**VEREDITO FINAL (ciclo 4): 🟡 APTO COM RESSALVAS.**
+Entregues: PDF privado real renderizado do snapshot assinado, bucket deny-by-default com signed URL curta, hash e
+idempotência de documento, evento de comunicação idempotente por referência e frontend mobile-first consumindo as
+RPCs seguras. Bloqueiam a certificação: motor transacional de baixa/recusa/faturamento não reconciliado (§2) e
+ausência total das provas E2E de runtime A–P (§5). Não promovido. Não publicado.

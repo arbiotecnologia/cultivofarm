@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ConfirmarEntregaFinanceiroDialog } from "@/components/financeiro/ConfirmarEntregaFinanceiroDialog";
 import { ConfirmarEntregaDialog } from "@/components/entregas/ConfirmarEntregaDialog";
 import { EntregaComprovantePanel } from "@/components/entregas/EntregaComprovantePanel";
+import { TermoEntregaPanel } from "@/components/entregas/TermoEntregaPanel";
 import { EmbalagensEntregaPanel } from "@/components/estoque/EmbalagensEntregaPanel";
 import { FileText } from "lucide-react";
 import { formatOS, formatOSFromId } from "@/lib/osLabel";
@@ -1002,6 +1003,7 @@ export default function Entregas() {
           <DialogHeader><DialogTitle>Comprovação de entrega</DialogTitle></DialogHeader>
           {comprovanteEntrega && <EntregaComprovantePanel entrega={comprovanteEntrega} />}
           {comprovanteEntrega && <div className="mt-4"><EmbalagensEntregaPanel entregaId={comprovanteEntrega.id} /></div>}
+          {comprovanteEntrega && <div className="mt-4"><TermoEntregaPanel entregaId={comprovanteEntrega.id} /></div>}
         </DialogContent>
       </Dialog>
     </div>
