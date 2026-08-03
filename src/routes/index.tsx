@@ -1,3 +1,3 @@
 export default function Index() {
-  return <body>continue</body>;
+  return <body>certifique que o que foi solicitado está implantado corretamente</body>;
 }
