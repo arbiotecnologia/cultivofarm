@@ -12875,6 +12875,7 @@ export type Database = {
           codigo_etiqueta: string
           composicao_resumida: string | null
           conservacao: string | null
+          cq_liberado: boolean
           created_at: string
           embalagem_id: string | null
           entrega_id: string | null
@@ -12891,7 +12892,9 @@ export type Database = {
           impressa_por: string | null
           lote_codigo: string
           lote_id: string | null
+          lote_status_na_emissao: string | null
           metadata: Json
+          motivo_ultima_reimpressao: string | null
           observacoes: string | null
           produto_id: string | null
           produto_nome: string
@@ -12902,7 +12905,11 @@ export type Database = {
           qr_code_payload: string | null
           quantidade_embalagens: number | null
           quantidade_impressoes: number
+          snapshot: Json | null
           status: string
+          substitui_etiqueta_id: string | null
+          substituida_por_id: string | null
+          template_versao: string
           tipo_etiqueta: string
           trace_expires_at: string | null
           trace_hash: string | null
@@ -12922,6 +12929,7 @@ export type Database = {
           codigo_etiqueta: string
           composicao_resumida?: string | null
           conservacao?: string | null
+          cq_liberado?: boolean
           created_at?: string
           embalagem_id?: string | null
           entrega_id?: string | null
@@ -12938,7 +12946,9 @@ export type Database = {
           impressa_por?: string | null
           lote_codigo: string
           lote_id?: string | null
+          lote_status_na_emissao?: string | null
           metadata?: Json
+          motivo_ultima_reimpressao?: string | null
           observacoes?: string | null
           produto_id?: string | null
           produto_nome: string
@@ -12949,7 +12959,11 @@ export type Database = {
           qr_code_payload?: string | null
           quantidade_embalagens?: number | null
           quantidade_impressoes?: number
+          snapshot?: Json | null
           status?: string
+          substitui_etiqueta_id?: string | null
+          substituida_por_id?: string | null
+          template_versao?: string
           tipo_etiqueta?: string
           trace_expires_at?: string | null
           trace_hash?: string | null
@@ -12969,6 +12983,7 @@ export type Database = {
           codigo_etiqueta?: string
           composicao_resumida?: string | null
           conservacao?: string | null
+          cq_liberado?: boolean
           created_at?: string
           embalagem_id?: string | null
           entrega_id?: string | null
@@ -12985,7 +13000,9 @@ export type Database = {
           impressa_por?: string | null
           lote_codigo?: string
           lote_id?: string | null
+          lote_status_na_emissao?: string | null
           metadata?: Json
+          motivo_ultima_reimpressao?: string | null
           observacoes?: string | null
           produto_id?: string | null
           produto_nome?: string
@@ -12996,7 +13013,11 @@ export type Database = {
           qr_code_payload?: string | null
           quantidade_embalagens?: number | null
           quantidade_impressoes?: number
+          snapshot?: Json | null
           status?: string
+          substitui_etiqueta_id?: string | null
+          substituida_por_id?: string | null
+          template_versao?: string
           tipo_etiqueta?: string
           trace_expires_at?: string | null
           trace_hash?: string | null
@@ -13016,6 +13037,20 @@ export type Database = {
             columns: ["embalagem_id"]
             isOneToOne: false
             referencedRelation: "estoque_embalagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_produto_etiquetas_substitui"
+            columns: ["substitui_etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "produto_etiquetas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_produto_etiquetas_substituida_por"
+            columns: ["substituida_por_id"]
+            isOneToOne: false
+            referencedRelation: "produto_etiquetas"
             referencedColumns: ["id"]
           },
           {
@@ -18747,7 +18782,7 @@ export type Database = {
         Returns: Json
       }
       rpc_marcar_etiqueta_impressa: {
-        Args: { p_etiqueta_id: string }
+        Args: { p_etiqueta_id: string; p_motivo?: string }
         Returns: Json
       }
       rpc_marcar_notificacao_enviada: {
@@ -19007,6 +19042,10 @@ export type Database = {
       }
       rpc_skip_communication_delivery: {
         Args: { p_outbox_id: string; p_reason: string; p_worker_id: string }
+        Returns: Json
+      }
+      rpc_substituir_etiqueta_produto: {
+        Args: { p_etiqueta_id: string; p_motivo: string }
         Returns: Json
       }
       rpc_update_communication_preferences: {
