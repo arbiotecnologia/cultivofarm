@@ -1002,6 +1002,7 @@ export default function Entregas() {
           <DialogHeader><DialogTitle>Comprovação de entrega</DialogTitle></DialogHeader>
           {comprovanteEntrega && <EntregaComprovantePanel entrega={comprovanteEntrega} />}
           {comprovanteEntrega && <div className="mt-4"><EmbalagensEntregaPanel entregaId={comprovanteEntrega.id} /></div>}
+          {comprovanteEntrega && <div className="mt-4"><TermoEntregaPanel entregaId={comprovanteEntrega.id} /></div>}
         </DialogContent>
       </Dialog>
     </div>
