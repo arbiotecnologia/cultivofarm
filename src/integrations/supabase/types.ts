@@ -5335,6 +5335,124 @@ export type Database = {
           },
         ]
       }
+      entrega_reconciliacoes: {
+        Row: {
+          created_at: string
+          entrega_id: string
+          faturavel: boolean
+          id: string
+          idempotency_key: string | null
+          itens_aceitos: number
+          itens_recusados: number
+          itens_total: number
+          quantidade_aceita: number
+          quantidade_recusada: number
+          ratio_aceito: number
+          reconciliado_em: string
+          reconciliado_por: string | null
+          request_fingerprint: string | null
+          resumo: Json
+          status: string
+          termo_id: string | null
+          termo_versao: number | null
+          updated_at: string
+          valor_faturavel_max: number | null
+          volume_aceito: number
+          volume_recusado: number
+        }
+        Insert: {
+          created_at?: string
+          entrega_id: string
+          faturavel?: boolean
+          id?: string
+          idempotency_key?: string | null
+          itens_aceitos?: number
+          itens_recusados?: number
+          itens_total?: number
+          quantidade_aceita?: number
+          quantidade_recusada?: number
+          ratio_aceito?: number
+          reconciliado_em?: string
+          reconciliado_por?: string | null
+          request_fingerprint?: string | null
+          resumo?: Json
+          status?: string
+          termo_id?: string | null
+          termo_versao?: number | null
+          updated_at?: string
+          valor_faturavel_max?: number | null
+          volume_aceito?: number
+          volume_recusado?: number
+        }
+        Update: {
+          created_at?: string
+          entrega_id?: string
+          faturavel?: boolean
+          id?: string
+          idempotency_key?: string | null
+          itens_aceitos?: number
+          itens_recusados?: number
+          itens_total?: number
+          quantidade_aceita?: number
+          quantidade_recusada?: number
+          ratio_aceito?: number
+          reconciliado_em?: string
+          reconciliado_por?: string | null
+          request_fingerprint?: string | null
+          resumo?: Json
+          status?: string
+          termo_id?: string | null
+          termo_versao?: number | null
+          updated_at?: string
+          valor_faturavel_max?: number | null
+          volume_aceito?: number
+          volume_recusado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_reconciliacoes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_reconciliacoes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_reconciliacoes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_reconciliacoes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_reconciliacoes_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entrega_reconciliacoes_termo_id_fkey"
+            columns: ["termo_id"]
+            isOneToOne: false
+            referencedRelation: "entrega_termos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entrega_termos: {
         Row: {
           assinado_em: string | null
@@ -5550,6 +5668,7 @@ export type Database = {
           recebimento_confirmado_em: string | null
           recebimento_confirmado_por: string | null
           receivable_id: string | null
+          reentrega_origem_id: string | null
           separacao_confirmada_em: string | null
           separacao_confirmada_por: string | null
           separacao_status: string
@@ -5628,6 +5747,7 @@ export type Database = {
           recebimento_confirmado_em?: string | null
           recebimento_confirmado_por?: string | null
           receivable_id?: string | null
+          reentrega_origem_id?: string | null
           separacao_confirmada_em?: string | null
           separacao_confirmada_por?: string | null
           separacao_status?: string
@@ -5706,6 +5826,7 @@ export type Database = {
           recebimento_confirmado_em?: string | null
           recebimento_confirmado_por?: string | null
           receivable_id?: string | null
+          reentrega_origem_id?: string | null
           separacao_confirmada_em?: string | null
           separacao_confirmada_por?: string | null
           separacao_status?: string
@@ -5831,6 +5952,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "accounts_receivable"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_reentrega_origem_id_fkey"
+            columns: ["reentrega_origem_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entregas_reentrega_origem_id_fkey"
+            columns: ["reentrega_origem_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_reentrega_origem_id_fkey"
+            columns: ["reentrega_origem_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entregas_reentrega_origem_id_fkey"
+            columns: ["reentrega_origem_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["entrega_id"]
+          },
+          {
+            foreignKeyName: "entregas_reentrega_origem_id_fkey"
+            columns: ["reentrega_origem_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["entrega_id"]
           },
         ]
       }
@@ -17093,6 +17249,10 @@ export type Database = {
         Args: { p_entrega_id: string }
         Returns: string
       }
+      fn_entrega_guard_faturamento_v1: {
+        Args: { p_entrega_id: string; p_total: number }
+        Returns: Json
+      }
       fn_fin_aging: {
         Args: { _type?: string }
         Returns: {
@@ -18924,6 +19084,14 @@ export type Database = {
         Args: { p_entrega_id: string; p_template_versao?: string }
         Returns: Json
       }
+      rpc_entrega_reconciliar_v1: {
+        Args: { p_entrega_id: string; p_idempotency_key: string }
+        Returns: Json
+      }
+      rpc_entrega_reentrega_saldo_v1: {
+        Args: { p_entrega_id: string; p_idempotency_key: string }
+        Returns: Json
+      }
       rpc_entrega_registrar_conferencia_v1: {
         Args: { p_entrega_id: string; p_itens: Json }
         Returns: Json
@@ -19298,6 +19466,10 @@ export type Database = {
       }
       rpc_get_my_visit_by_client_uuid: {
         Args: { p_client_uuid: string }
+        Returns: Json
+      }
+      rpc_harness_purge_entregas_v1: {
+        Args: { p_entrega_ids: string[] }
         Returns: Json
       }
       rpc_hml_fiscal_emit_mock: {
