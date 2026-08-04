@@ -623,38 +623,40 @@ export default function Entregas() {
         .eq("id", id);
       if (error) throw error;
 
-      // Estorno da expedição automática: se o lote estava 'expedido' e agora sobrou saldo,
-      // volta para 'reservado' e registra movimentação de estorno.
+      // Estorno da expedição automática pelo motor canônico: reverte exatamente
+      // a movimentação de expedição desta entrega, uma única vez (índice único
+      // em movimentacao_origem_id impede estorno duplicado).
       try {
         if (entrega.estoque_produto_id) {
-          const { data: itemAtual } = await supabase
-            .from("estoque_produto")
-            .select("id, status, quantidade_reservada, reservado_para_os_id, reservado_para_os_tipo, reservado_para_cliente_id")
-            .eq("id", entrega.estoque_produto_id)
+          const { data: movExpedicao } = await supabase
+            .from("estoque_movimentacoes")
+            .select("id, acao")
+            .eq("estoque_produto_id", entrega.estoque_produto_id)
+            .eq("referencia_tipo", "entrega")
+            .eq("referencia_id", id)
+            .in("acao", ["expedicao", "entrega"])
+            .order("created_at", { ascending: false })
+            .limit(1)
             .maybeSingle();
-          if (itemAtual && itemAtual.status === "expedido") {
-            const { data: entregasAtivas } = await supabase
-              .from("entregas")
-              .select("quantidade_entregue")
-              .eq("estoque_produto_id", entrega.estoque_produto_id)
-              .neq("status", "cancelada");
-            const totalEntregue = (entregasAtivas || []).reduce(
-              (s: number, e: any) => s + (Number(e.quantidade_entregue) || 0),
-              0,
+
+          if (movExpedicao?.id) {
+            await operarEstoque(
+              "estorno_expedicao",
+              entrega.estoque_produto_id,
+              null,
+              chaveIdempotencia("entrega-estorno", id),
+              {
+                origem: "entregas.cancelarEntrega",
+                referencia_tipo: "entrega",
+                referencia_id: id,
+                movimentacao_origem_id: movExpedicao.id,
+                motivo: `Estorno por cancelamento de entrega: ${motivo || "sem motivo informado"}`,
+              },
             );
-            const qtdReservada = Number(itemAtual.quantidade_reservada || 0);
-            if (totalEntregue < qtdReservada) {
-              // Estorno registrado automaticamente pelo trigger canônico
-              // (expedido → reservado = 'estorno_expedicao').
-              await supabase
-                .from("estoque_produto")
-                .update({ status: "reservado", expedido_em: null } as any)
-                .eq("id", itemAtual.id);
-            }
           }
         }
       } catch (rollbackErr) {
-        console.warn("[estorno-expedicao] falha ao reverter status do lote:", rollbackErr);
+        console.warn("[estorno-expedicao] falha ao estornar:", mensagemErroEstoque(rollbackErr));
       }
     },
     onSuccess: () => {
