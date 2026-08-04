@@ -270,7 +270,7 @@ async function cleanup() {
     await svc.from("user_roles").delete().eq("user_id", id);
     await svc.auth.admin.deleteUser(id);
   }
-  for (const id of created.clientes) await svc.from("clientes").delete().eq("id", id);
+  for (const id of created.clientes) { await svc.from("user_clientes").delete().eq("cliente_id", id); await svc.from("clientes").delete().eq("id", id); }
   const residuos: Record<string, number> = {};
   const { count: cItens } = await svc.from("estoque_produto")
     .select("id", { count: "exact", head: true }).in("id", created.itens.length ? created.itens : [crypto.randomUUID()]);
