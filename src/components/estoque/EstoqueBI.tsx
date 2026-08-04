@@ -51,11 +51,13 @@ export function EstoqueBI() {
         .select("*", { count: 'exact', head: true })
         .eq("status", "expedido");
 
-      // 6. Entregues (consumidos pelo cliente — via movimentações)
+      // 6. Entregues (fonte de verdade: entregas concluídas, excluindo canceladas).
+      // A ação 'entregue' nunca é gravada no livro de movimentações — o KPI antigo
+      // baseado nela retornava sempre zero.
       const { count: entreguesCount } = await supabase
-        .from("estoque_movimentacoes")
-        .select("*", { count: 'exact', head: true })
-        .eq("acao", "entregue");
+        .from("entregas")
+        .select("id", { count: 'exact', head: true })
+        .eq("status", "entregue");
 
       return {
         envasados: envasadosCount || 0,
