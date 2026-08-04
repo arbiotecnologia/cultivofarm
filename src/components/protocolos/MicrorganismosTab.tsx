@@ -18,6 +18,8 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { brl } from "@/lib/financial/format";
 import { recalcPricing } from "@/lib/protocolos/pricingRecalc";
 import { calcularCustoHa } from "@/lib/catalogo/pricing";
+import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
+
 import { DeleteProtocoloButton } from "./DeleteProtocoloButton";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
