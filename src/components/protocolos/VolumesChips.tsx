@@ -13,9 +13,15 @@ interface Props {
   max?: number;
 }
 
-function linha(v: CatalogoVolume): string {
-  return `${formatVolumeLabel(v)} · ${brl(v.preco_brl)}`;
+function LinhaVolume({ v, muted }: { v: CatalogoVolume; muted?: boolean }) {
+  return (
+    <div className={`grid grid-cols-[auto_1fr] gap-x-2 text-[11px] font-mono-data ${muted ? "text-muted-foreground" : "text-foreground/80"}`}>
+      <span className="whitespace-nowrap">{formatVolumeLabel(v)}</span>
+      <span className="text-right tabular-nums whitespace-nowrap">{brl(v.preco_brl)}</span>
+    </div>
+  );
 }
+
 
 export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
   if (!volumes.length) {
@@ -36,11 +42,9 @@ export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
   const extras = volumes.slice(max);
 
   return (
-    <div className="flex flex-col gap-0.5 leading-tight max-w-[210px]">
+    <div className="flex flex-col gap-0.5 leading-tight w-full max-w-[210px]">
       {visible.map((v) => (
-        <span key={v.id} className="text-[11px] font-mono-data text-foreground/80">
-          {linha(v)}
-        </span>
+        <LinhaVolume key={v.id} v={v} />
       ))}
       {extras.length > 0 && (
         <TooltipProvider>
@@ -51,11 +55,12 @@ export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 min-w-[140px]">
                 {extras.map((v) => (
-                  <div key={v.id} className="text-[11px] font-mono-data">{linha(v)}</div>
+                  <LinhaVolume key={v.id} v={v} />
                 ))}
               </div>
+
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
