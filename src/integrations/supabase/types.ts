@@ -17659,6 +17659,10 @@ export type Database = {
         }
         Returns: string
       }
+      fn_hml_purge_movimentacoes_fixture: {
+        Args: { p_marker: string }
+        Returns: Json
+      }
       fn_mark_entrega_not_billable: {
         Args: { _entrega_id: string; _reason: string }
         Returns: undefined
