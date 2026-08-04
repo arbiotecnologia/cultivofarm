@@ -678,7 +678,11 @@ export default function NovoPedido() {
               rows={isSimulationMode ? 3 : 2}
             />
 
-            <TotaisCarrinho subtotalCheio={totalCheio} totalFinal={isSimulationMode ? totalCheio : total} />
+            <TotaisCarrinho
+              subtotalCheio={totalCheio}
+              totalFinal={isSimulationMode ? totalCheio : total}
+              labelTotal={isSimulationMode ? "Total estimado" : "Subtotal do carrinho"}
+            />
 
             <Button
               className="w-full"
@@ -849,7 +853,9 @@ export default function NovoPedido() {
                 <div className="whitespace-pre-wrap">{obs}</div>
               </div>
             )}
-            <TotaisCarrinho subtotalCheio={totalCheio} totalFinal={isSimulationMode ? totalCheio : total} />
+            {isSimulationMode && (
+              <TotaisCarrinho subtotalCheio={totalCheio} totalFinal={totalCheio} labelTotal="Total estimado" />
+            )}
             {isSimulationMode && (
               <div className="space-y-2 border rounded-md p-3 bg-muted/20">
                 <div className="text-xs font-semibold uppercase text-muted-foreground">Dados agronômicos</div>
@@ -920,22 +926,6 @@ export default function NovoPedido() {
                 </div>
               </div>
             )}
-            {/* Totais: em modo pedido, o valor autoritativo vem do motor comercial (RPC). */}
-            {!isSimulationMode && simulation?.quote_required ? (
-              <Alert className="py-2">
-                <AlertDescription className="text-xs">
-                  Itens sob consulta — o valor final será definido pela equipe comercial após a cotação.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <TotaisCarrinho
-                subtotalCheio={isSimulationMode ? totalCheio : simulation?.amounts.table_amount ?? totalCheio}
-                totalFinal={
-                  isSimulationMode ? totalCheio : simulation?.amounts.final_amount ?? total
-                }
-              />
-            )}
-
             {!isSimulationMode && (
               <div className="space-y-2 border rounded-md p-3 bg-background">
                 <div className="text-xs font-semibold uppercase text-muted-foreground">
@@ -965,6 +955,24 @@ export default function NovoPedido() {
                 )}
               </div>
             )}
+
+            {/* Total único e autoritativo: em modo pedido vem do motor comercial (RPC). */}
+            {!isSimulationMode &&
+              (simulation?.quote_required ? (
+                <Alert className="py-2">
+                  <AlertDescription className="text-xs">
+                    Itens sob consulta — o valor final será definido pela equipe comercial após a cotação.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <TotaisCarrinho
+                  subtotalCheio={simulation?.amounts.table_amount ?? totalCheio}
+                  totalFinal={simulation?.amounts.final_amount ?? total}
+                  jurosValor={simulation?.amounts.financial_interest_amount}
+                  labelTotal={simulation ? "Total a pagar" : "Subtotal do carrinho"}
+                  condicaoLabel={simulation?.payment_plan.name}
+                />
+              ))}
             {isSimulationMode ? (
               <div className="rounded-md border border-dashed p-2 text-xs bg-muted/40">
                 <strong>Simulação</strong> — não gera pedido. O envio efetivo é feito pelo gestor B2B do parceiro.
