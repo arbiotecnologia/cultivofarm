@@ -14,13 +14,20 @@ interface Props {
 }
 
 function LinhaVolume({ v, muted }: { v: CatalogoVolume; muted?: boolean }) {
+  const { numero, unidade } = splitVolumeLabel(formatVolumeLabel(v));
   return (
-    <div className={`grid grid-cols-[auto_1fr] gap-x-2 text-[11px] font-mono-data ${muted ? "text-muted-foreground" : "text-foreground/80"}`}>
-      <span className="whitespace-nowrap">{formatVolumeLabel(v)}</span>
-      <span className="text-right tabular-nums whitespace-nowrap">{brl(v.preco_brl)}</span>
+    <div
+      className={`grid grid-cols-[minmax(0,auto)_0.9rem_1fr] items-baseline gap-x-1 text-[11px] font-mono-data ${
+        muted ? "text-muted-foreground" : "text-foreground/80"
+      }`}
+    >
+      <span className="text-right tabular-nums whitespace-nowrap">{numero}</span>
+      <span className="text-left whitespace-nowrap">{unidade ?? ""}</span>
+      <span className="text-right tabular-nums whitespace-nowrap pl-2">{brl(v.preco_brl)}</span>
     </div>
   );
 }
+
 
 
 export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
