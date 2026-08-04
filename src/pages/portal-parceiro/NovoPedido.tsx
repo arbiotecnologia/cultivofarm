@@ -853,7 +853,9 @@ export default function NovoPedido() {
                 <div className="whitespace-pre-wrap">{obs}</div>
               </div>
             )}
-            <TotaisCarrinho subtotalCheio={totalCheio} totalFinal={isSimulationMode ? totalCheio : total} />
+            {isSimulationMode && (
+              <TotaisCarrinho subtotalCheio={totalCheio} totalFinal={totalCheio} labelTotal="Total estimado" />
+            )}
             {isSimulationMode && (
               <div className="space-y-2 border rounded-md p-3 bg-muted/20">
                 <div className="text-xs font-semibold uppercase text-muted-foreground">Dados agronômicos</div>
