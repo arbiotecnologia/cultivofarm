@@ -6667,6 +6667,30 @@ export type Database = {
         }
         Relationships: []
       }
+      estoque_politicas: {
+        Row: {
+          created_at: string
+          id: string
+          limite_ajuste_sem_aprovacao: number
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          limite_ajuste_sem_aprovacao?: number
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          limite_ajuste_sem_aprovacao?: number
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       estoque_produto: {
         Row: {
           created_at: string
@@ -17521,6 +17545,14 @@ export type Database = {
       fn_estoque_ctx_close: { Args: never; Returns: undefined }
       fn_estoque_ctx_open: { Args: { p_ctx: Json }; Returns: undefined }
       fn_estoque_ctx_read: { Args: never; Returns: Json }
+      fn_estoque_fingerprint: {
+        Args: { p_acao: string; p_item: string; p_payload: Json; p_qtd: number }
+        Returns: string
+      }
+      fn_estoque_pode_operar: {
+        Args: { _acao: string; _uid: string }
+        Returns: boolean
+      }
       fn_fin_aging: {
         Args: { _type?: string }
         Returns: {
@@ -19371,6 +19403,16 @@ export type Database = {
       }
       rpc_enviar_visita_aprovacao: {
         Args: { p_expected_version: number; p_registro_id: string }
+        Returns: Json
+      }
+      rpc_estoque_operar_v1: {
+        Args: {
+          p_acao: string
+          p_idempotency_key?: string
+          p_item_id: string
+          p_payload?: Json
+          p_quantidade?: number
+        }
         Returns: Json
       }
       rpc_executar_motor_alertas: {
