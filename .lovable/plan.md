@@ -1,51 +1,69 @@
-# Cabeçalho do Portal do Parceiro — remover redundância
+# Padronização do cabeçalho de identidade em todos os portais
 
 ## Problema observado
 
-O topo da barra lateral empilha hoje quatro blocos separados por bordas, repetindo a mesma informação:
+Cada portal identifica usuário e contexto de um jeito diferente, e o Portal do Parceiro repete a mesma informação três vezes:
 
 ```text
-[carrinho] Portal Parceiro
-           B2B AR Bio
-           [ PORTAL PARCEIRO B2B ]   <- repete a linha acima
--------------------------------------
+PORTAL PARCEIRO (sidebar)          PORTAL DO PRODUTOR (header)      APP MOBILE
+[carrinho] Portal Parceiro         [broto] Portal do Produtor       (sem bloco de identidade)
+           B2B AR Bio              [predio] Cliente X   Fagner
+           [ PORTAL PARCEIRO B2B ] (papel do usuario nao aparece)
+------------------------------
 [FF] Fagner Furtado
      fagner@arbio.com
      [ GESTOR B2B ]
--------------------------------------
+------------------------------
 Parceiro
 FSF AGROSERVICE PRODUTOS...
--------------------------------------
 ```
 
-Redundâncias reais no código:
-- `PortalParceiroLayout.tsx` mostra "Portal Parceiro" + subtítulo "B2B AR Bio" + badge "Portal Parceiro B2B" — três formas do mesmo rótulo.
-- `UsuarioIdentidade.tsx` repete nome, e-mail e mais um badge no mesmo padrão visual do badge do portal, competindo por atenção.
-- O nome do parceiro (a informação de contexto mais importante) fica em último lugar, truncado e com peso visual menor que a marca do portal.
+Redundâncias e inconsistências confirmadas no código:
+- `PortalParceiroLayout.tsx`: título "Portal Parceiro" + subtítulo "B2B AR Bio" + badge "Portal Parceiro B2B" — três formas do mesmo rótulo, em três blocos com borda.
+- `UsuarioIdentidade.tsx`: repete nome, e-mail e mais um badge no mesmo estilo do badge do portal, competindo por atenção.
+- O nome do parceiro (contexto mais importante) aparece por último, truncado e com menos peso visual que a marca do portal.
+- `PortalLayout.tsx` (produtor) mostra cliente e nome soltos no header, sem iniciais, sem papel e sem e-mail.
+- `MobileLayout.tsx` não tem nenhum bloco de identidade — o usuário não vê em qual conta/contexto está.
+- `AppLayout.tsx` (admin) já tem o padrão mais próximo do ideal: nome + papel em badge.
 
-## Proposta
+## Proposta: um componente único de identidade
 
-Consolidar em **um único bloco de cabeçalho** com hierarquia clara:
+Criar `src/components/portal/PortalIdentityHeader.tsx`, usado por todos os portais, com hierarquia fixa em três níveis:
 
 ```text
-[carrinho] Portal Parceiro · B2B AR Bio
-           FSF AGROSERVICE PRODUTOS AGROPECUARIOS   <- destaque (contexto)
--------------------------------------
-[FF] Fagner Furtado · Gestor B2B
+[icone] Portal Parceiro                 <- 1. marca do portal (uma linha, sem badge duplicado)
+        FSF AGROSERVICE PRODUTOS AGRO   <- 2. contexto ativo (destaque)
+--------------------------------------
+[FF] Fagner Furtado · Gestor B2B        <- 3. usuario + papel (texto, nao badge)
      fagner@arbio.com
 ```
 
-Regras:
-1. Remover o badge "Portal Parceiro B2B" (duplicado do título) e o subtítulo separado; título vira uma linha só.
-2. Elevar o nome do parceiro para dentro do bloco de marca, como texto de destaque, com `title` completo no hover e quebra em duas linhas em vez de truncar agressivamente.
-3. O papel ("Gestor B2B" / "Técnico B2B" / "Visão interna") deixa de ser badge e passa a ser texto secundário na mesma linha do nome — mantendo o `aria-label` de acessibilidade.
-4. Reduzir de três divisórias para uma, diminuindo o ruído vertical.
-5. Para staff, o seletor "Visualizar como parceiro" substitui a linha do nome do parceiro dentro do mesmo bloco (sem bloco extra).
-6. No cabeçalho mobile: manter apenas "Portal Parceiro" + iniciais do usuário; nome do parceiro passa a aparecer como subtítulo compacto, evitando o mesmo texto duas vezes.
+Regras comuns a todos os portais:
+1. Marca do portal em uma linha só; sem subtítulo repetido e sem badge que repete o título.
+2. Contexto ativo (parceiro / cliente / organização) logo abaixo da marca, em destaque, com `title` completo no hover e quebra em até duas linhas em vez de truncar agressivamente.
+3. Usuário com iniciais em avatar, nome + papel na mesma linha (papel como texto secundário, não badge), e-mail em linha menor.
+4. Uma única divisória entre marca/contexto e usuário — fim dos três blocos empilhados.
+5. Variante `compact` (uma linha, avatar + nome + papel) para headers mobile e barras superiores.
+6. Quando o contexto é selecionável (staff simulando parceiro, produtor com vários clientes), o seletor ocupa o lugar da linha de contexto — sem criar bloco extra.
+
+## Aplicação por portal
+
+| Portal | Mudança |
+| --- | --- |
+| Parceiro (`PortalParceiroLayout`) | Substitui os 3 blocos do topo da sidebar por `PortalIdentityHeader`; remove badge "Portal Parceiro B2B" e o subtítulo "B2B AR Bio" como linha separada; `Select` de staff entra como slot de contexto. Header mobile usa a variante `compact`. |
+| Produtor (`PortalLayout`) | Header passa a usar a variante `compact` com avatar de iniciais, nome + papel e cliente ativo; o `Popover` de troca de cliente vira o slot de contexto, mantendo o comportamento atual. |
+| App mobile (`MobileLayout`) | Ganha uma faixa superior fina com a variante `compact` (avatar, nome, papel, contexto), hoje inexistente. |
+| Admin (`AppLayout`) | Sem alteração obrigatória. Sugestões opcionais: trocar o badge de papel por texto secundário e adicionar avatar de iniciais, apenas para ficar visualmente igual aos demais. Decisão do usuário. |
 
 ## Detalhes técnicos
 
-- `src/pages/portal-parceiro/PortalParceiroLayout.tsx`: reescrever o cabeçalho da `aside` (linhas ~174-217) para um bloco único; passar `partnerNome` para o novo layout; manter intactos guards, rotas, `useMyPartner`, `isStaff` e o `Select` de simulação.
-- `src/components/portal-parceiro/UsuarioIdentidade.tsx`: variante `sidebar` sem borda própria e com papel como texto inline; variante `compact` inalterada na lógica, apenas ajuste de espaçamento.
-- Somente apresentação: nenhuma alteração em permissões, navegação, hooks de dados ou banco.
-- Validação: `typecheck`, `build` e a suíte Vitest; conferência visual em desktop e mobile pelo preview.
+- Novo componente: `src/components/portal/PortalIdentityHeader.tsx` (marca, contexto, slot de seletor, bloco de usuário, variantes `sidebar` e `compact`).
+- `src/components/portal-parceiro/UsuarioIdentidade.tsx`: funções puras `getIniciais`, `getPrimeiroNome`, `getPapelLabel` movidas para um util compartilhado (`src/lib/portal/identidade.ts`) e reaproveitadas; o componente atual passa a ser um wrapper fino para não quebrar imports/testes existentes.
+- Rótulos de papel continuam vindo de `portalDisplayLabel.ts` / `getPapelLabel`, sem novas strings soltas.
+- Acessibilidade: `aria-label` do papel preservado, contexto com `title`, avatar `aria-hidden` com texto acessível ao lado.
+- Somente apresentação: nenhuma alteração em guards, rotas, permissões, hooks de dados, RPCs ou banco.
+- Validação: `typecheck`, `build`, suíte Vitest e conferência visual dos três portais em desktop e mobile.
+
+## Pergunta em aberto
+
+Aplico também as melhorias opcionais no portal do administrador (avatar de iniciais + papel como texto), ou mantenho o `AppLayout` exatamente como está?
