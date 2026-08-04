@@ -981,14 +981,15 @@ export function ProdutosTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Produto</TableHead>
-              <TableHead>Volumes</TableHead>
               <TableHead>Composição</TableHead>
+              <TableHead>Volumes</TableHead>
               <TableHead className="text-right">Dose (mL/ha)</TableHead>
-              <TableHead className="text-right">Valores</TableHead>
+              <TableHead className="text-right">Valor/ha</TableHead>
               <TableHead>Ref.</TableHead>
-              <TableHead></TableHead>
+              <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {filteredItems.length === 0 ? (
               <TableRow>
