@@ -1,3 +1,3 @@
 export default function Index() {
-  return <body>Padronizar o grid de volumes para manter o alinhamento do “L” e dos preços em telas menores e com zoom.</body>;
+  return <body>Revisar a formatação dos valores de volume para sempre usar as casas decimais e separadores corretos, sem quebra de linha.</body>;
 }
