@@ -57,7 +57,7 @@ async function op(c: any, acao: string, item: string, qtd: number | null, key: s
 async function setup() {
   // cliente necessário para vincular o perfil produtor (regra de negócio do portal)
   const { data: cliente, error: ce } = await svc.from("clientes")
-    .insert({ nome: `HML MOV Cliente ${RUN}`, tipo_pessoa: "juridica", status: "ativo" })
+    .insert({ nome: `HML MOV Cliente ${RUN}`, codigo_cliente: `HMLMOV-${RUN}` })
     .select("id").single();
   if (ce) throw new Error(`cliente: ${ce.message}`);
   created.clientes.push(cliente.id);
