@@ -8,7 +8,7 @@
  *
  * Apenas apresentação — não altera guards, rotas, permissões ou dados.
  */
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode, SVGProps } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { getIniciais, getNomeExibicao } from "@/lib/portal/identidade";
@@ -17,7 +17,7 @@ interface PortalIdentityHeaderProps {
   /** Nome do portal, ex.: "Portal Parceiro". Omitido na variante compact quando desnecessário. */
   brandTitle?: string;
   /** Ícone da marca do portal. */
-  brandIcon?: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  brandIcon?: ComponentType<SVGProps<SVGSVGElement>>;
   /** Texto do contexto ativo (parceiro, cliente, origem). */
   contextLabel?: string | null;
   /** Substitui a linha de contexto por um seletor (Select/Popover). */
@@ -91,7 +91,7 @@ export function PortalIdentityHeader({
         <div className="px-4 pt-4 pb-3 space-y-2">
           {brandTitle && (
             <div className="flex items-center gap-2 min-w-0">
-              {BrandIcon && <BrandIcon className="h-5 w-5 shrink-0 text-primary" aria-hidden={true} />}
+              {BrandIcon && <BrandIcon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />}
               <span className="text-sm font-semibold leading-tight truncate">{brandTitle}</span>
             </div>
           )}
