@@ -24,6 +24,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { brl } from "@/lib/financial/format";
 import { calcularValorLitro, calcularValorDose, calcularCustoHa, calcularDoseAPartirCustoHa } from "@/lib/catalogo/pricing";
+import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
+
 import { recalcPricing, numOrNullStr, fmtNumStr, type PricingField } from "@/lib/protocolos/pricingRecalc";
 import { buildFormulacoesPayload } from "@/lib/protocolos/composicaoSync";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
