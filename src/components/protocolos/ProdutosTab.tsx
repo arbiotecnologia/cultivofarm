@@ -24,6 +24,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { brl } from "@/lib/financial/format";
 import { calcularValorLitro, calcularValorDose, calcularCustoHa, calcularDoseAPartirCustoHa } from "@/lib/catalogo/pricing";
+import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
+
 import { recalcPricing, numOrNullStr, fmtNumStr, type PricingField } from "@/lib/protocolos/pricingRecalc";
 import { buildFormulacoesPayload } from "@/lib/protocolos/composicaoSync";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
@@ -981,14 +983,15 @@ export function ProdutosTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Produto</TableHead>
-              <TableHead>Volumes</TableHead>
               <TableHead>Composição</TableHead>
+              <TableHead>Volumes</TableHead>
               <TableHead className="text-right">Dose (mL/ha)</TableHead>
-              <TableHead className="text-right">Valores</TableHead>
+              <TableHead className="text-right">Valor/ha</TableHead>
               <TableHead>Ref.</TableHead>
-              <TableHead></TableHead>
+              <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {filteredItems.length === 0 ? (
               <TableRow>
@@ -1035,12 +1038,6 @@ export function ProdutosTab() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <VolumesChips
-                    volumes={volumesCat?.porProdutoId.get(p.id) ?? []}
-                    onAdd={() => setVolumesEdit(p)}
-                  />
-                </TableCell>
-                <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-2">
                       {p.formulacoes?.slice(0, 3).map((f) => (
@@ -1078,23 +1075,27 @@ export function ProdutosTab() {
                     )}
                   </div>
                 </TableCell>
+                <TableCell>
+                  <VolumesChips
+                    volumes={volumesCat?.porProdutoId.get(p.id) ?? []}
+                    onAdd={() => setVolumesEdit(p)}
+                  />
+                </TableCell>
                 <TableCell className="text-right font-mono-data">
                   {p.dose_ml_ha || "—"}
                 </TableCell>
-                <TableCell className="text-right font-mono-data text-xs">
-                  {(() => {
-                    const dose = p.valor_dose_brl ?? (p.valor_litro_brl != null ? p.valor_litro_brl / 10 : null);
-                    const litro = p.valor_litro_brl ?? (p.valor_dose_brl != null ? p.valor_dose_brl * 10 : null);
-                    const ha = p.valor_ha_brl ?? calcularCustoHa(p.dose_ml_ha, dose);
-                    if (dose == null && litro == null && ha == null) return "—";
-                    return (
-                      <div className="flex flex-col items-end leading-tight">
-                        <span className="text-primary font-semibold">{ha != null ? brl(ha) : "—"} <span className="text-muted-foreground font-normal">/ha</span></span>
-                        <span className="text-muted-foreground">{dose != null ? brl(dose) : "—"} <span className="font-normal">/100 mL</span></span>
-                      </div>
-                    );
-                  })()}
+                <TableCell className="text-right font-mono-data text-xs whitespace-nowrap">
+                  <span className="text-primary font-semibold">
+                    {formatValorHaListagem({
+                      doseMlHa: p.dose_ml_ha,
+                      valorHa: p.valor_ha_brl,
+                      valorDose: p.valor_dose_brl,
+                      valorLitro: p.valor_litro_brl,
+                    })}
+                  </span>
+                  <span className="text-muted-foreground font-normal"> /ha</span>
                 </TableCell>
+
                 <TableCell>
                   <div className="text-xs">
                     <div>{fornecedor || "—"}</div>

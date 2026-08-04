@@ -18,6 +18,8 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { brl } from "@/lib/financial/format";
 import { recalcPricing } from "@/lib/protocolos/pricingRecalc";
 import { calcularCustoHa } from "@/lib/catalogo/pricing";
+import { formatValorHaListagem } from "@/lib/catalogo/valorHaListagem";
+
 import { DeleteProtocoloButton } from "./DeleteProtocoloButton";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { TechnicalProfileStatusBadge } from "./TechnicalProfileStatusBadge";
@@ -509,19 +511,20 @@ export function MicrorganismosTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Microrganismo</TableHead>
-              <TableHead>Volumes</TableHead>
-              <TableHead className="whitespace-nowrap">
+              <TableHead className="text-right whitespace-nowrap">
                 Concentração
                 <span className="block text-[10px] font-normal text-muted-foreground normal-case">
                   (UFC/mL)
                 </span>
               </TableHead>
+              <TableHead>Volumes</TableHead>
               <TableHead className="text-right">Dose (mL/ha)</TableHead>
-              <TableHead className="text-right">Valores</TableHead>
+              <TableHead className="text-right">Valor/ha</TableHead>
               <TableHead>Ref.</TableHead>
-              <TableHead></TableHead>
+              <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {filteredItems.length === 0 ? (
               <TableRow>
@@ -550,28 +553,31 @@ export function MicrorganismosTab() {
                     )}
                   </div>
                 </TableCell>
+                <TableCell className="text-right whitespace-nowrap">
+                  <div className="font-mono-data text-xs leading-tight">
+                    {formatConcentracaoDisplay(m.concentracao_ufc_ml)}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <VolumesChips
                     volumes={volumesCat?.porMicrorganismoId.get(m.id) ?? []}
                     onAdd={() => setVolumesEdit(m)}
                   />
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <div className="font-mono-data text-xs leading-tight">
-                    {formatConcentracaoDisplay(m.concentracao_ufc_ml)}
-                  </div>
-                </TableCell>
                 <TableCell className="text-right font-mono-data">
                   {m.dose_ml_ha || "—"}
                 </TableCell>
-                <TableCell className="text-right font-mono-data text-xs">
-                  {(() => {
-                    const dose = m.valor_dose_brl ?? (m.valor_litro_brl != null ? m.valor_litro_brl / 10 : null);
-                    const ha = calcularCustoHa(m.dose_ml_ha, dose);
-                    if (dose == null && ha == null) return "—";
-                    return <span className="text-primary font-semibold">{ha != null ? brl(ha) : "—"}</span>;
-                  })()}
+                <TableCell className="text-right font-mono-data text-xs whitespace-nowrap">
+                  <span className="text-primary font-semibold">
+                    {formatValorHaListagem({
+                      doseMlHa: m.dose_ml_ha,
+                      valorDose: m.valor_dose_brl,
+                      valorLitro: m.valor_litro_brl,
+                    })}
+                  </span>
+                  <span className="text-muted-foreground font-normal"> /ha</span>
                 </TableCell>
+
                 <TableCell>
                   <div className="text-xs">
                     <div>{m.fornecedor || "—"}</div>
