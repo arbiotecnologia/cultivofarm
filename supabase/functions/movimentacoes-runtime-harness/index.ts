@@ -106,6 +106,10 @@ async function setup() {
   if (le) throw new Error(`lote: ${le.message}`);
   created.lotes.push(lote.id);
 
+  const { error: cqe } = await svc.from("controle_qualidade")
+    .insert({ lote_id: lote.id, resultado: "aprovado", ph: 6.8, contaminacao: false, aparencia: "conforme" });
+  if (cqe) throw new Error(`cq: ${cqe.message}`);
+
   const { data: env, error: ee } = await svc.from("envase")
     .insert({ lote_id: lote.id, tipo_embalagem: "bombona_20L", volume_por_unidade: 20, quantidade: 50 })
     .select("id").single();
@@ -271,6 +275,7 @@ async function cleanup() {
     await svc.from("estoque_produto").delete().eq("id", id);
   }
   for (const id of created.envases) await svc.from("envase").delete().eq("id", id);
+  for (const id of created.lotes) await svc.from("controle_qualidade").delete().eq("lote_id", id);
   for (const id of created.lotes) await svc.from("lotes").delete().eq("id", id);
   for (const id of created.produtos) await svc.from("produtos").delete().eq("id", id);
   for (const id of created.microrganismos) await svc.from("microrganismos").delete().eq("id", id);
