@@ -281,6 +281,8 @@ async function cleanup() {
     .select("id", { count: "exact", head: true }).like("nome", `%HML MOV%${RUN}%`);
 
   residuos.produtos = cProd ?? 0;
+  const { count: cCli } = await svc.from("clientes").select("id", { count: "exact", head: true }).like("nome", `%HML MOV Cliente ${RUN}%`);
+  residuos.clientes = cCli ?? 0;
   return residuos;
 }
 
