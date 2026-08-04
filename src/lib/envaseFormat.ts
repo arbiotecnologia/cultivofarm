@@ -10,8 +10,22 @@ export const embalagemVolumes: Record<string, number> = {
   bombona_20L: 20000,
 };
 
-export const fmtL = (ml: number) =>
-  `${(ml / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} L`;
+export const fmtLNumero = (ml: number) =>
+  (ml / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+
+export const fmtL = (ml: number) => `${fmtLNumero(ml)} L`;
+
+/**
+ * Separa um rótulo de volume em número + unidade para permitir
+ * alinhamento em colunas. Rótulos personalizados fora do padrão
+ * "N L" retornam unidade nula.
+ */
+export function splitVolumeLabel(label: string): { numero: string; unidade: string | null } {
+  const m = label.trim().match(/^([\d.,]+)\s*(mL|L)$/i);
+  if (!m) return { numero: label.trim(), unidade: null };
+  return { numero: m[1], unidade: m[2] };
+}
+
 
 export const defaultValidade = () => {
   const d = new Date();
