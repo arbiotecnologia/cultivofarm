@@ -3,5 +3,3 @@ project_id = "ikaauvsflpmamgxmkhoq"
 [functions.whatsapp-status-webhook]
 verify_jwt = false
 
-[functions.movimentacoes-runtime-harness]
-verify_jwt = false
