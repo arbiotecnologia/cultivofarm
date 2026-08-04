@@ -101,7 +101,7 @@ async function setup() {
   created.produtos.push(prod.id);
 
   const { data: lote, error: le } = await svc.from("lotes")
-    .insert({ codigo_lote: `HMLMOV-${RUN}`, produto_id: prod.id, microrganismo_id: micro.id, volume_produzido: 1000, status: "aprovado" })
+    .insert({ codigo_lote: `HMLMOV-${RUN}`, produto_id: prod.id, microrganismo_id: micro.id, volume_produzido: 100000, status: "aprovado" })
     .select("id").single();
   if (le) throw new Error(`lote: ${le.message}`);
   created.lotes.push(lote.id);
@@ -113,7 +113,7 @@ async function setup() {
   const itens: string[] = [];
   for (let i = 0; i < 3; i++) {
     const { data: env, error: ee } = await svc.from("envase")
-      .insert({ lote_id: lote.id, tipo_embalagem: "bombona_20L", volume_por_unidade: 20, quantidade: 50 })
+      .insert({ lote_id: lote.id, tipo_embalagem: "bombona_20L", volume_por_unidade: 20, quantidade: 5 })
       .select("id").single();
     if (ee) throw new Error(`envase: ${ee.message}`);
     created.envases.push(env.id);
