@@ -510,20 +510,13 @@ export default function Entregas() {
             const qtdReservada = Number(item.quantidade_reservada || 0);
             if (item.status === "reservado" && qtdReservada > 0 && totalEntregue >= qtdReservada) {
               const expedidoEm = data_saida ? new Date(data_saida).toISOString() : new Date().toISOString();
+              // O livro de movimentações é gravado exclusivamente pelo trigger
+              // canônico do estoque (log_estoque_movimentacao). Não inserir aqui:
+              // gravação manual duplicaria a baixa no histórico.
               await supabase
                 .from("estoque_produto")
                 .update({ status: "expedido", expedido_em: expedidoEm } as any)
                 .eq("id", item.id);
-              await supabase.from("estoque_movimentacoes").insert({
-                estoque_produto_id: item.id,
-                acao: "expedido",
-                status_anterior: "reservado",
-                status_novo: "expedido",
-                quantidade: qtdReservada,
-                os_id: itemOsId,
-                os_tipo: itemOsTipo,
-                cliente_id: itemClienteId,
-              } as any);
             }
           } catch (autoExpErr) {
             console.warn("[auto-expedir] falha ao marcar lote como expedido:", autoExpErr);
