@@ -110,14 +110,14 @@ async function setup() {
     .insert({ lote_id: lote.id, resultado: "aprovado", ph: 6.8, contaminacao: false, aparencia: "conforme" });
   if (cqe) throw new Error(`cq: ${cqe.message}`);
 
-  const { data: env, error: ee } = await svc.from("envase")
-    .insert({ lote_id: lote.id, tipo_embalagem: "bombona_20L", volume_por_unidade: 20, quantidade: 50 })
-    .select("id").single();
-  if (ee) throw new Error(`envase: ${ee.message}`);
-  created.envases.push(env.id);
-
   const itens: string[] = [];
   for (let i = 0; i < 3; i++) {
+    const { data: env, error: ee } = await svc.from("envase")
+      .insert({ lote_id: lote.id, tipo_embalagem: "bombona_20L", volume_por_unidade: 20, quantidade: 50 })
+      .select("id").single();
+    if (ee) throw new Error(`envase: ${ee.message}`);
+    created.envases.push(env.id);
+
     const { data, error } = await svc.from("estoque_produto").insert({
       produto_id: prod.id, lote_id: lote.id, microrganismo_id: micro.id,
       quantidade: 100, volume_total: 100, status: "disponivel", envase_id: env.id,
