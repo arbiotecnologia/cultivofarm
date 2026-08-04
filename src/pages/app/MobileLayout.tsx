@@ -9,6 +9,8 @@ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
 import { useEffect } from "react";
 import { itemsForPlatform } from "@/config/navigation";
+import { PortalIdentityHeader } from "@/components/portal/PortalIdentityHeader";
+import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 
 // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
 // Fase 2 preserva rotas, ícones e rótulos anteriores — apenas centraliza a fonte.
@@ -25,7 +27,7 @@ const produtorTabs = itemsForPlatform("mobile-produtor").map((it) => ({
 }));
 
 export default function MobileLayout() {
-  const { user, roles, loading } = useAuth();
+  const { user, role, roles, loading } = useAuth();
   const location = useLocation();
   const { isOnline, pendingCount, syncing, syncAll, progress } = useOfflineSync();
   const navigate = useNavigate();
@@ -81,11 +83,28 @@ export default function MobileLayout() {
         progress={progress}
       />
 
+      {/* Identidade do usuário — padrão único de todos os portais */}
+      <header
+        className={cn(
+          "sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-card px-4 py-2",
+          (!isOnline || pendingCount > 0) && "mt-10",
+        )}
+      >
+        <PortalIdentityHeader
+          variant="compact"
+          roleLabel={getPortalDisplayLabel({
+            activeCtx,
+            primaryRole: role ?? null,
+            roles,
+          })}
+          showEmail
+        />
+      </header>
+
       {/* Main content area — em desktop limita largura para evitar cartões excessivamente largos */}
       <main
         className={cn(
           "flex-1 overflow-auto pb-20 w-full mx-auto max-w-full lg:max-w-5xl xl:max-w-6xl lg:px-6",
-          (!isOnline || pendingCount > 0) && "pt-10",
         )}
       >
         <Outlet />

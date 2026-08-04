@@ -2,27 +2,20 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { NotificacoesPopover } from "@/components/notificacoes/NotificacoesPopover";
 import { AlertasNotificationBell } from "@/components/alertas/AlertasNotificationBell";
+import { PortalIdentityHeader } from "@/components/portal/PortalIdentityHeader";
+import { getRoleLabel } from "@/lib/portal/identidade";
 
 export function AppLayout() {
-  const { profile, role, signOut } = useAuth();
+  const { role, signOut } = useAuth();
 
   // Guarda inversa: produtor não pode acessar áreas internas
   if (role === "cliente_produtor") {
     return <Navigate to="/portal" replace />;
   }
-
-  const roleLabels: Record<string, string> = {
-    administrador: "Administrador",
-    tecnico_agronomo: "Técnico Agrônomo",
-    producao: "Produção",
-    administrativo: "Administrativo",
-    gestor: "Gestor",
-  };
 
   return (
     <SidebarProvider>
@@ -38,19 +31,7 @@ export function AppLayout() {
               </div>
             </div>
             <div className="flex items-center gap-1 sm:gap-3 overflow-hidden">
-              {role && (
-                <Badge variant="secondary" className="text-[10px] sm:text-xs hidden md:inline-flex px-1.5 h-5">
-                  {roleLabels[role] || role}
-                </Badge>
-              )}
-              <div className="flex flex-col items-end mr-1 min-w-0">
-                <span className="text-xs sm:text-sm font-medium truncate max-w-[80px] xs:max-w-[100px] sm:max-w-[150px]">
-                  {profile?.nome || profile?.email?.split('@')[0] || "Usuário"}
-                </span>
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground hidden xs:block">
-                  {roleLabels[role] || role}
-                </span>
-              </div>
+              <PortalIdentityHeader variant="compact" roleLabel={getRoleLabel(role)} />
               <AlertasNotificationBell />
               <NotificacoesPopover />
               <Button variant="ghost" size="icon" onClick={signOut} title="Sair" className="shrink-0 h-9 w-9">

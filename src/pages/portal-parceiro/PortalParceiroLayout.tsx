@@ -9,7 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useSwitchPortal } from "@/hooks/useSwitchPortal";
-import { UsuarioIdentidade } from "@/components/portal-parceiro/UsuarioIdentidade";
+import { PortalIdentityHeader } from "@/components/portal/PortalIdentityHeader";
+import { getPapelLabel } from "@/lib/portal/identidade";
 
 import {
   Select,
@@ -151,7 +152,11 @@ export default function PortalParceiroLayout() {
           <span className="font-semibold truncate">Portal Parceiro</span>
         </div>
         <div className="flex items-center gap-2 min-w-0">
-          <UsuarioIdentidade papel={papelVisual} variant="compact" />
+          <PortalIdentityHeader
+            variant="compact"
+            roleLabel={getPapelLabel(papelVisual)}
+            contextLabel={isStaff ? partner?.razao_social ?? null : ownPartner?.razao_social ?? null}
+          />
           <Button
             variant="ghost"
             size="icon"
@@ -171,50 +176,33 @@ export default function PortalParceiroLayout() {
           open ? "flex flex-col" : "hidden md:flex",
         )}
       >
-        <div className="hidden md:flex flex-col gap-1 px-4 py-4 border-b">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-primary" aria-hidden="true" />
-            <div>
-              <div className="font-semibold leading-tight">Portal Parceiro</div>
-              <div className="text-xs text-muted-foreground">B2B AR Bio</div>
-            </div>
-          </div>
-          <span
-            className="mt-1 inline-flex w-fit items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary"
-            aria-label="Portal ativo: Parceiro B2B"
-          >
-            Portal Parceiro B2B
-          </span>
-        </div>
+        <PortalIdentityHeader
+          className="hidden md:block"
+          brandTitle="Portal Parceiro B2B"
+          brandIcon={ShoppingCart}
+          roleLabel={getPapelLabel(papelVisual)}
+          contextLabel={isStaff ? undefined : isLoading ? "..." : ownPartner?.razao_social ?? "—"}
+          contextSlot={
+            isStaff ? (
+              <>
+                <div className="text-xs text-muted-foreground">Visualizar como parceiro</div>
+                <Select value={simulatedId ?? ""} onValueChange={(v) => setSimulatedId(v)}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allPartners.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.razao_social}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            ) : undefined
+          }
+        />
 
-        <UsuarioIdentidade papel={papelVisual} />
-
-        {isStaff ? (
-
-          <div className="px-4 py-3 border-b space-y-1">
-            <div className="text-xs text-muted-foreground">Visualizar como parceiro</div>
-            <Select value={simulatedId ?? ""} onValueChange={(v) => setSimulatedId(v)}>
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="Selecione..." />
-              </SelectTrigger>
-              <SelectContent>
-                {allPartners.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.razao_social}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : (
-          <div className="px-4 py-3 border-b text-sm space-y-1">
-            <div className="text-muted-foreground text-xs">Parceiro</div>
-            <div className="font-medium truncate">
-              {isLoading ? "..." : ownPartner?.razao_social ?? "—"}
-            </div>
-          </div>
-
-        )}
 
         <nav className="flex-1 px-2 py-2 space-y-1">
           {menu.map((m) => (
