@@ -42,6 +42,7 @@ const created = {
   lotes: [] as string[],
   itens: [] as string[],
   microrganismos: [] as string[],
+  envases: [] as string[],
   clientes: [] as string[],
 };
 
@@ -105,11 +106,17 @@ async function setup() {
   if (le) throw new Error(`lote: ${le.message}`);
   created.lotes.push(lote.id);
 
+  const { data: env, error: ee } = await svc.from("envase")
+    .insert({ lote_id: lote.id, tipo_embalagem: "bombona_20L", volume_por_unidade: 20, quantidade: 50 })
+    .select("id").single();
+  if (ee) throw new Error(`envase: ${ee.message}`);
+  created.envases.push(env.id);
+
   const itens: string[] = [];
   for (let i = 0; i < 3; i++) {
     const { data, error } = await svc.from("estoque_produto").insert({
       produto_id: prod.id, lote_id: lote.id, microrganismo_id: micro.id,
-      quantidade: 100, volume_total: 100, status: "disponivel",
+      quantidade: 100, volume_total: 100, status: "disponivel", envase_id: env.id,
       validade: new Date(Date.now() + 86400000 * 180).toISOString().slice(0, 10),
     }).select("id").single();
     if (error) throw new Error(`estoque_produto: ${error.message}`);
@@ -263,6 +270,7 @@ async function cleanup() {
     await svc.from("estoque_movimentacoes").delete().eq("estoque_produto_id", id);
     await svc.from("estoque_produto").delete().eq("id", id);
   }
+  for (const id of created.envases) await svc.from("envase").delete().eq("id", id);
   for (const id of created.lotes) await svc.from("lotes").delete().eq("id", id);
   for (const id of created.produtos) await svc.from("produtos").delete().eq("id", id);
   for (const id of created.microrganismos) await svc.from("microrganismos").delete().eq("id", id);
