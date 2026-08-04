@@ -27,6 +27,7 @@ import { ConfirmarEntregaDialog } from "@/components/entregas/ConfirmarEntregaDi
 import { EntregaComprovantePanel } from "@/components/entregas/EntregaComprovantePanel";
 import { TermoEntregaPanel } from "@/components/entregas/TermoEntregaPanel";
 import { EmbalagensEntregaPanel } from "@/components/estoque/EmbalagensEntregaPanel";
+import { operarEstoque, chaveIdempotencia, mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
 import { FileText } from "lucide-react";
 import { formatOS, formatOSFromId } from "@/lib/osLabel";
 import { getClienteLabel, getClienteFullLabel } from "@/lib/clienteLabel";
@@ -496,7 +497,8 @@ export default function Entregas() {
           if (!created || !(created as any).id) throw new Error("Falha ao gravar entrega.");
           criadas.push((created as any).id);
 
-          // Integração com estoque: se a reserva zerou, marca o lote como expedido automaticamente
+          // Integração com estoque: se a reserva zerou, expede pelo motor canônico.
+          // Nenhum UPDATE direto: `rpc_estoque_operar_v1` grava saldo + livro atomicamente.
           try {
             const { data: entregasAtivas } = await supabase
               .from("entregas")
@@ -509,18 +511,25 @@ export default function Entregas() {
             );
             const qtdReservada = Number(item.quantidade_reservada || 0);
             if (item.status === "reservado" && qtdReservada > 0 && totalEntregue >= qtdReservada) {
-              const expedidoEm = data_saida ? new Date(data_saida).toISOString() : new Date().toISOString();
-              // O livro de movimentações é gravado exclusivamente pelo trigger
-              // canônico do estoque (log_estoque_movimentacao). Não inserir aqui:
-              // gravação manual duplicaria a baixa no histórico.
-              await supabase
-                .from("estoque_produto")
-                .update({ status: "expedido", expedido_em: expedidoEm } as any)
-                .eq("id", item.id);
+              await operarEstoque(
+                "expedicao",
+                item.id,
+                qtdReservada,
+                chaveIdempotencia("entrega-expedicao", (created as any).id),
+                {
+                  origem: "entregas.registrarEntrega",
+                  referencia_tipo: "entrega",
+                  referencia_id: (created as any).id,
+                  os_id: itemOsId,
+                  cliente_id: itemClienteId,
+                  observacao: `Expedição automática pela entrega ${(created as any).id}`,
+                },
+              );
             }
           } catch (autoExpErr) {
-            console.warn("[auto-expedir] falha ao marcar lote como expedido:", autoExpErr);
+            console.warn("[auto-expedir] falha ao expedir pelo motor canônico:", mensagemErroEstoque(autoExpErr));
           }
+
         }
 
         return { grupoId, total: criadas.length };
@@ -614,38 +623,40 @@ export default function Entregas() {
         .eq("id", id);
       if (error) throw error;
 
-      // Estorno da expedição automática: se o lote estava 'expedido' e agora sobrou saldo,
-      // volta para 'reservado' e registra movimentação de estorno.
+      // Estorno da expedição automática pelo motor canônico: reverte exatamente
+      // a movimentação de expedição desta entrega, uma única vez (índice único
+      // em movimentacao_origem_id impede estorno duplicado).
       try {
         if (entrega.estoque_produto_id) {
-          const { data: itemAtual } = await supabase
-            .from("estoque_produto")
-            .select("id, status, quantidade_reservada, reservado_para_os_id, reservado_para_os_tipo, reservado_para_cliente_id")
-            .eq("id", entrega.estoque_produto_id)
+          const { data: movExpedicao } = await supabase
+            .from("estoque_movimentacoes")
+            .select("id, acao")
+            .eq("estoque_produto_id", entrega.estoque_produto_id)
+            .eq("referencia_tipo", "entrega")
+            .eq("referencia_id", id)
+            .in("acao", ["expedicao", "entrega"])
+            .order("created_at", { ascending: false })
+            .limit(1)
             .maybeSingle();
-          if (itemAtual && itemAtual.status === "expedido") {
-            const { data: entregasAtivas } = await supabase
-              .from("entregas")
-              .select("quantidade_entregue")
-              .eq("estoque_produto_id", entrega.estoque_produto_id)
-              .neq("status", "cancelada");
-            const totalEntregue = (entregasAtivas || []).reduce(
-              (s: number, e: any) => s + (Number(e.quantidade_entregue) || 0),
-              0,
+
+          if (movExpedicao?.id) {
+            await operarEstoque(
+              "estorno_expedicao",
+              entrega.estoque_produto_id,
+              null,
+              chaveIdempotencia("entrega-estorno", id),
+              {
+                origem: "entregas.cancelarEntrega",
+                referencia_tipo: "entrega",
+                referencia_id: id,
+                movimentacao_origem_id: movExpedicao.id,
+                motivo: `Estorno por cancelamento de entrega: ${motivo || "sem motivo informado"}`,
+              },
             );
-            const qtdReservada = Number(itemAtual.quantidade_reservada || 0);
-            if (totalEntregue < qtdReservada) {
-              // Estorno registrado automaticamente pelo trigger canônico
-              // (expedido → reservado = 'estorno_expedicao').
-              await supabase
-                .from("estoque_produto")
-                .update({ status: "reservado", expedido_em: null } as any)
-                .eq("id", itemAtual.id);
-            }
           }
         }
       } catch (rollbackErr) {
-        console.warn("[estorno-expedicao] falha ao reverter status do lote:", rollbackErr);
+        console.warn("[estorno-expedicao] falha ao estornar:", mensagemErroEstoque(rollbackErr));
       }
     },
     onSuccess: () => {

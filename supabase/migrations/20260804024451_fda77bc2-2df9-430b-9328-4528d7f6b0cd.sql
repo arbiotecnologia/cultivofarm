@@ -1,0 +1,9 @@
+CREATE OR REPLACE FUNCTION public.fn_estoque_ctx_open(p_ctx jsonb)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+DECLARE v_atual text := NULLIF(current_setting('app.estoque_mov_ctx', true), '');
+BEGIN
+  -- Contexto externo (operação principal) tem precedência sobre chamadas internas aninhadas
+  IF v_atual IS NOT NULL THEN RETURN; END IF;
+  PERFORM set_config('app.estoque_mov_ctx', COALESCE(p_ctx, '{}'::jsonb)::text, true);
+END; $$;
+REVOKE ALL ON FUNCTION public.fn_estoque_ctx_open(jsonb) FROM PUBLIC, anon, authenticated;
