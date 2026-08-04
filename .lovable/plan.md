@@ -21,6 +21,9 @@
 - Sem alteração de rotas, permissões, banco ou Edge Functions.
 - Validação: typecheck, build e vitest.
 
-## Ponto em aberto
+## Permissões
 
-Hoje o perfil **gestor comercial** pode editar o texto B2B, mas a função de IA só autoriza papéis técnicos. Neste plano o botão fica visível apenas para o time técnico. Se você quiser que o gestor comercial também gere com IA, isso exige liberar esse papel na Edge Function (restrito ao campo `explicacao_b2b`) — me avise e incluo.
+Administradores (e gestores, consultores técnicos e técnicos agrônomos) já são os papéis autorizados a gerar com IA nas demais abas e na função de IA do servidor. Com esta mudança, o administrador passa a ter o botão na aba B2B exatamente como nas outras abas — sem nenhuma alteração de permissão, banco ou Edge Function.
+
+O perfil gestor comercial continua podendo editar o texto B2B manualmente, mas sem o botão de IA (mesmo comportamento já vigente na ficha de produto).
+
