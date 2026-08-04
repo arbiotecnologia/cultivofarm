@@ -1073,23 +1073,27 @@ export function ProdutosTab() {
                     )}
                   </div>
                 </TableCell>
+                <TableCell>
+                  <VolumesChips
+                    volumes={volumesCat?.porProdutoId.get(p.id) ?? []}
+                    onAdd={() => setVolumesEdit(p)}
+                  />
+                </TableCell>
                 <TableCell className="text-right font-mono-data">
                   {p.dose_ml_ha || "—"}
                 </TableCell>
-                <TableCell className="text-right font-mono-data text-xs">
-                  {(() => {
-                    const dose = p.valor_dose_brl ?? (p.valor_litro_brl != null ? p.valor_litro_brl / 10 : null);
-                    const litro = p.valor_litro_brl ?? (p.valor_dose_brl != null ? p.valor_dose_brl * 10 : null);
-                    const ha = p.valor_ha_brl ?? calcularCustoHa(p.dose_ml_ha, dose);
-                    if (dose == null && litro == null && ha == null) return "—";
-                    return (
-                      <div className="flex flex-col items-end leading-tight">
-                        <span className="text-primary font-semibold">{ha != null ? brl(ha) : "—"} <span className="text-muted-foreground font-normal">/ha</span></span>
-                        <span className="text-muted-foreground">{dose != null ? brl(dose) : "—"} <span className="font-normal">/100 mL</span></span>
-                      </div>
-                    );
-                  })()}
+                <TableCell className="text-right font-mono-data text-xs whitespace-nowrap">
+                  <span className="text-primary font-semibold">
+                    {formatValorHaListagem({
+                      doseMlHa: p.dose_ml_ha,
+                      valorHa: p.valor_ha_brl,
+                      valorDose: p.valor_dose_brl,
+                      valorLitro: p.valor_litro_brl,
+                    })}
+                  </span>
+                  <span className="text-muted-foreground font-normal"> /ha</span>
                 </TableCell>
+
                 <TableCell>
                   <div className="text-xs">
                     <div>{fornecedor || "—"}</div>
