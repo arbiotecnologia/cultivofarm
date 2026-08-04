@@ -42,7 +42,9 @@ const created = {
   lotes: [] as string[],
   itens: [] as string[],
   microrganismos: [] as string[],
+  clientes: [] as string[],
 };
+
 
 async function op(c: any, acao: string, item: string, qtd: number | null, key: string, payload: unknown = {}) {
   const { data, error } = await c.rpc("rpc_estoque_operar_v1", {
