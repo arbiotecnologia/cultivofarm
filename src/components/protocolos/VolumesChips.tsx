@@ -51,9 +51,11 @@ export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
 
   return (
     <div className="flex flex-col gap-0.5 leading-tight w-full max-w-[210px]">
-      {visible.map((v) => (
-        <LinhaVolume key={v.id} v={v} />
-      ))}
+      <div className={GRID_VOLUMES}>
+        {visible.map((v) => (
+          <CelulasVolume key={v.id} v={v} />
+        ))}
+      </div>
       {extras.length > 0 && (
         <TooltipProvider>
           <Tooltip>
@@ -63,16 +65,16 @@ export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <div className="space-y-0.5 min-w-[140px]">
+              <div className={`${GRID_VOLUMES} min-w-[140px]`}>
                 {extras.map((v) => (
-                  <LinhaVolume key={v.id} v={v} />
+                  <CelulasVolume key={v.id} v={v} />
                 ))}
               </div>
-
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       )}
     </div>
+
   );
 }
