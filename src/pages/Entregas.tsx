@@ -510,20 +510,13 @@ export default function Entregas() {
             const qtdReservada = Number(item.quantidade_reservada || 0);
             if (item.status === "reservado" && qtdReservada > 0 && totalEntregue >= qtdReservada) {
               const expedidoEm = data_saida ? new Date(data_saida).toISOString() : new Date().toISOString();
+              // O livro de movimentações é gravado exclusivamente pelo trigger
+              // canônico do estoque (log_estoque_movimentacao). Não inserir aqui:
+              // gravação manual duplicaria a baixa no histórico.
               await supabase
                 .from("estoque_produto")
                 .update({ status: "expedido", expedido_em: expedidoEm } as any)
                 .eq("id", item.id);
-              await supabase.from("estoque_movimentacoes").insert({
-                estoque_produto_id: item.id,
-                acao: "expedido",
-                status_anterior: "reservado",
-                status_novo: "expedido",
-                quantidade: qtdReservada,
-                os_id: itemOsId,
-                os_tipo: itemOsTipo,
-                cliente_id: itemClienteId,
-              } as any);
             }
           } catch (autoExpErr) {
             console.warn("[auto-expedir] falha ao marcar lote como expedido:", autoExpErr);
@@ -642,20 +635,12 @@ export default function Entregas() {
             );
             const qtdReservada = Number(itemAtual.quantidade_reservada || 0);
             if (totalEntregue < qtdReservada) {
+              // Estorno registrado automaticamente pelo trigger canônico
+              // (expedido → reservado = 'estorno_expedicao').
               await supabase
                 .from("estoque_produto")
                 .update({ status: "reservado", expedido_em: null } as any)
                 .eq("id", itemAtual.id);
-              await supabase.from("estoque_movimentacoes").insert({
-                estoque_produto_id: itemAtual.id,
-                acao: "estorno_expedicao",
-                status_anterior: "expedido",
-                status_novo: "reservado",
-                quantidade: qtdReservada,
-                os_id: (itemAtual as any).reservado_para_os_id,
-                os_tipo: (itemAtual as any).reservado_para_os_tipo,
-                cliente_id: (itemAtual as any).reservado_para_cliente_id,
-              } as any);
             }
           }
         }

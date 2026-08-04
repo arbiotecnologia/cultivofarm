@@ -13,8 +13,12 @@ interface Props {
 const ACAO_LABEL: Record<string, string> = {
   entrada: "Entrada",
   reserva: "Reserva",
-  cancelamento_reserva: "Cancelamento",
+  cancelamento_reserva: "Cancelamento de reserva",
   expedicao: "Expedição",
+  estorno_expedicao: "Estorno de expedição",
+  entrega: "Entrega",
+  descarte: "Descarte",
+  ajuste: "Ajuste",
   edicao: "Edição",
 };
 

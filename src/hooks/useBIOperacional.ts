@@ -176,10 +176,12 @@ export function useBIOperacional() {
   const { data: rawMovimentacoes = [] } = useQuery({
     queryKey: ["bi-movimentacoes-real", filtros],
     queryFn: async () => {
-      let query = supabase.from("estoque_movimentacoes").select("*");
+      let query = supabase
+        .from("estoque_movimentacoes")
+        .select("id, acao, quantidade, status_anterior, status_novo, created_at, os_id, cliente_id, lote_id");
       if (filtros.periodoInicio) query = query.gte("created_at", filtros.periodoInicio);
       if (filtros.periodoFim) query = query.lte("created_at", filtros.periodoFim);
-      const { data, error } = await query.limit(1000);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(1000);
       if (error) throw error;
       return data || [];
     },

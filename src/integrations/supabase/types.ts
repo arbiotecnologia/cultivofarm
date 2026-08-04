@@ -6436,6 +6436,76 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["estoque_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["estoque_reservado_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_produto"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["estoque_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["estoque_reservado_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_estoque_produto"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["estoque_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["estoque_reservado_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["estoque_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["estoque_reservado_id"]
+          },
+          {
             foreignKeyName: "estoque_movimentacoes_lote_id_fkey"
             columns: ["lote_id"]
             isOneToOne: false
@@ -6471,6 +6541,60 @@ export type Database = {
             referencedColumns: ["lote_id"]
           },
         ]
+      }
+      estoque_movimentacoes_orfaos_backup: {
+        Row: {
+          acao: string | null
+          arquivado_em: string
+          cliente_id: string | null
+          created_at: string | null
+          estoque_produto_id: string | null
+          id: string
+          lote_id: string | null
+          motivo: string
+          observacao: string | null
+          os_id: string | null
+          os_tipo: string | null
+          quantidade: number | null
+          status_anterior: string | null
+          status_novo: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao?: string | null
+          arquivado_em?: string
+          cliente_id?: string | null
+          created_at?: string | null
+          estoque_produto_id?: string | null
+          id: string
+          lote_id?: string | null
+          motivo?: string
+          observacao?: string | null
+          os_id?: string | null
+          os_tipo?: string | null
+          quantidade?: number | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string | null
+          arquivado_em?: string
+          cliente_id?: string | null
+          created_at?: string | null
+          estoque_produto_id?: string | null
+          id?: string
+          lote_id?: string | null
+          motivo?: string
+          observacao?: string | null
+          os_id?: string | null
+          os_tipo?: string | null
+          quantidade?: number | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
       }
       estoque_produto: {
         Row: {
@@ -16388,6 +16512,76 @@ export type Database = {
           volume_novo: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["estoque_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "_src_vw_esteira_laboratorio"
+            referencedColumns: ["estoque_reservado_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_produto"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["estoque_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "mv_esteira_laboratorio"
+            referencedColumns: ["estoque_reservado_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_estoque_produto"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["estoque_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_esteira_laboratorio"
+            referencedColumns: ["estoque_reservado_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["estoque_id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
+            columns: ["estoque_produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_os_integridade_esteira"
+            referencedColumns: ["estoque_reservado_id"]
+          },
           {
             foreignKeyName: "estoque_produto_produto_id_fkey"
             columns: ["produto_id"]
