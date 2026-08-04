@@ -6393,48 +6393,110 @@ export type Database = {
           acao: string
           cliente_id: string | null
           created_at: string
+          direcao: string | null
           estoque_produto_id: string
           id: string
+          idempotency_key: string | null
           lote_id: string | null
+          metadata: Json
+          motivo: string | null
+          movimentacao_origem_id: string | null
           observacao: string | null
+          origem: string | null
           os_id: string | null
           os_tipo: string | null
           quantidade: number | null
+          referencia_id: string | null
+          referencia_tipo: string | null
+          request_fingerprint: string | null
+          reservado_anterior: number | null
+          reservado_posterior: number | null
+          saldo_anterior: number | null
+          saldo_posterior: number | null
           status_anterior: string | null
           status_novo: string | null
+          unidade: string | null
           usuario_id: string | null
+          volume_anterior: number | null
+          volume_posterior: number | null
         }
         Insert: {
           acao: string
           cliente_id?: string | null
           created_at?: string
+          direcao?: string | null
           estoque_produto_id: string
           id?: string
+          idempotency_key?: string | null
           lote_id?: string | null
+          metadata?: Json
+          motivo?: string | null
+          movimentacao_origem_id?: string | null
           observacao?: string | null
+          origem?: string | null
           os_id?: string | null
           os_tipo?: string | null
           quantidade?: number | null
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          request_fingerprint?: string | null
+          reservado_anterior?: number | null
+          reservado_posterior?: number | null
+          saldo_anterior?: number | null
+          saldo_posterior?: number | null
           status_anterior?: string | null
           status_novo?: string | null
+          unidade?: string | null
           usuario_id?: string | null
+          volume_anterior?: number | null
+          volume_posterior?: number | null
         }
         Update: {
           acao?: string
           cliente_id?: string | null
           created_at?: string
+          direcao?: string | null
           estoque_produto_id?: string
           id?: string
+          idempotency_key?: string | null
           lote_id?: string | null
+          metadata?: Json
+          motivo?: string | null
+          movimentacao_origem_id?: string | null
           observacao?: string | null
+          origem?: string | null
           os_id?: string | null
           os_tipo?: string | null
           quantidade?: number | null
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          request_fingerprint?: string | null
+          reservado_anterior?: number | null
+          reservado_posterior?: number | null
+          saldo_anterior?: number | null
+          saldo_posterior?: number | null
           status_anterior?: string | null
           status_novo?: string | null
+          unidade?: string | null
           usuario_id?: string | null
+          volume_anterior?: number | null
+          volume_posterior?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "estoque_mov_origem_fkey"
+            columns: ["movimentacao_origem_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_movimentacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_mov_origem_fkey"
+            columns: ["movimentacao_origem_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_movimentacoes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "estoque_movimentacoes_estoque_produto_id_fkey"
             columns: ["estoque_produto_id"]
@@ -6551,11 +6613,14 @@ export type Database = {
           estoque_produto_id: string | null
           id: string
           lote_id: string | null
+          migracao_ref: string | null
           motivo: string
           observacao: string | null
           os_id: string | null
           os_tipo: string | null
           quantidade: number | null
+          retencao_ate: string | null
+          snapshot_hash: string | null
           status_anterior: string | null
           status_novo: string | null
           usuario_id: string | null
@@ -6568,11 +6633,14 @@ export type Database = {
           estoque_produto_id?: string | null
           id: string
           lote_id?: string | null
+          migracao_ref?: string | null
           motivo?: string
           observacao?: string | null
           os_id?: string | null
           os_tipo?: string | null
           quantidade?: number | null
+          retencao_ate?: string | null
+          snapshot_hash?: string | null
           status_anterior?: string | null
           status_novo?: string | null
           usuario_id?: string | null
@@ -6585,11 +6653,14 @@ export type Database = {
           estoque_produto_id?: string | null
           id?: string
           lote_id?: string | null
+          migracao_ref?: string | null
           motivo?: string
           observacao?: string | null
           os_id?: string | null
           os_tipo?: string | null
           quantidade?: number | null
+          retencao_ate?: string | null
+          snapshot_hash?: string | null
           status_anterior?: string | null
           status_novo?: string | null
           usuario_id?: string | null
@@ -17447,6 +17518,9 @@ export type Database = {
         Args: { p_entrega_id: string; p_total: number }
         Returns: Json
       }
+      fn_estoque_ctx_close: { Args: never; Returns: undefined }
+      fn_estoque_ctx_open: { Args: { p_ctx: Json }; Returns: undefined }
+      fn_estoque_ctx_read: { Args: never; Returns: Json }
       fn_fin_aging: {
         Args: { _type?: string }
         Returns: {
