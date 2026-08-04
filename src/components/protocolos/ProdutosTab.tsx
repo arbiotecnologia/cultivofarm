@@ -1036,12 +1036,6 @@ export function ProdutosTab() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <VolumesChips
-                    volumes={volumesCat?.porProdutoId.get(p.id) ?? []}
-                    onAdd={() => setVolumesEdit(p)}
-                  />
-                </TableCell>
-                <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-2">
                       {p.formulacoes?.slice(0, 3).map((f) => (
