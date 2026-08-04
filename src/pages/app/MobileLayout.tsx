@@ -27,7 +27,7 @@ const produtorTabs = itemsForPlatform("mobile-produtor").map((it) => ({
 }));
 
 export default function MobileLayout() {
-  const { user, role, roles, loading } = useAuth();
+  const { user, primaryRole, roles, loading } = useAuth();
   const location = useLocation();
   const { isOnline, pendingCount, syncing, syncAll, progress } = useOfflineSync();
   const navigate = useNavigate();
@@ -94,7 +94,7 @@ export default function MobileLayout() {
           variant="compact"
           roleLabel={getPortalDisplayLabel({
             activeCtx,
-            primaryRole: role ?? null,
+            primaryRole,
             roles,
           })}
           showEmail
