@@ -1,8 +1,8 @@
-# Padronização do cabeçalho de identidade em todos os portais
+# Padronização do cabeçalho de identidade em todos os portais e perfis
 
 ## Problema observado
 
-Cada portal identifica usuário e contexto de um jeito diferente, e o Portal do Parceiro repete a mesma informação três vezes:
+Cada superfície identifica usuário e contexto de um jeito diferente, e o Portal do Parceiro repete a mesma informação três vezes:
 
 ```text
 PORTAL PARCEIRO (sidebar)          PORTAL DO PRODUTOR (header)      APP MOBILE
@@ -18,17 +18,16 @@ Parceiro
 FSF AGROSERVICE PRODUTOS...
 ```
 
-Redundâncias e inconsistências confirmadas no código:
-- `PortalParceiroLayout.tsx`: título "Portal Parceiro" + subtítulo "B2B AR Bio" + badge "Portal Parceiro B2B" — três formas do mesmo rótulo, em três blocos com borda.
-- `UsuarioIdentidade.tsx`: repete nome, e-mail e mais um badge no mesmo estilo do badge do portal, competindo por atenção.
-- O nome do parceiro (contexto mais importante) aparece por último, truncado e com menos peso visual que a marca do portal.
-- `PortalLayout.tsx` (produtor) mostra cliente e nome soltos no header, sem iniciais, sem papel e sem e-mail.
-- `MobileLayout.tsx` não tem nenhum bloco de identidade — o usuário não vê em qual conta/contexto está.
-- `AppLayout.tsx` (admin) já tem o padrão mais próximo do ideal: nome + papel em badge.
+Defeitos confirmados no código:
+- `PortalParceiroLayout.tsx`: título "Portal Parceiro" + subtítulo "B2B AR Bio" + badge "Portal Parceiro B2B" — três formas do mesmo rótulo, em três blocos com borda; o nome do parceiro (contexto mais importante) fica por último e truncado.
+- `UsuarioIdentidade.tsx`: repete nome, e-mail e mais um badge no mesmo estilo do badge do portal.
+- `PortalLayout.tsx` (produtor): cliente e nome soltos no header, sem iniciais, sem papel, sem e-mail.
+- `MobileLayout.tsx`: nenhum bloco de identidade — o usuário não vê em qual conta/contexto está.
+- `AppLayout.tsx` (perfis internos): mostra o papel duas vezes (badge + texto abaixo do nome) e o mapa `roleLabels` só cobre 5 papéis (`administrador`, `tecnico_agronomo`, `producao`, `administrativo`, `gestor`). Consultor técnico, aplicador, operador on-farm, financeiro e gestor comercial caem no fallback e veem a string crua do banco, ex.: `gestor_comercial`, `operador_onfarm`.
 
 ## Proposta: um componente único de identidade
 
-Criar `src/components/portal/PortalIdentityHeader.tsx`, usado por todos os portais, com hierarquia fixa em três níveis:
+Criar `src/components/portal/PortalIdentityHeader.tsx`, usado por todas as superfícies, com hierarquia fixa em três níveis:
 
 ```text
 [icone] Portal Parceiro                 <- 1. marca do portal (uma linha, sem badge duplicado)
@@ -38,32 +37,48 @@ Criar `src/components/portal/PortalIdentityHeader.tsx`, usado por todos os porta
      fagner@arbio.com
 ```
 
-Regras comuns a todos os portais:
+Regras comuns:
 1. Marca do portal em uma linha só; sem subtítulo repetido e sem badge que repete o título.
-2. Contexto ativo (parceiro / cliente / organização) logo abaixo da marca, em destaque, com `title` completo no hover e quebra em até duas linhas em vez de truncar agressivamente.
-3. Usuário com iniciais em avatar, nome + papel na mesma linha (papel como texto secundário, não badge), e-mail em linha menor.
-4. Uma única divisória entre marca/contexto e usuário — fim dos três blocos empilhados.
-5. Variante `compact` (uma linha, avatar + nome + papel) para headers mobile e barras superiores.
-6. Quando o contexto é selecionável (staff simulando parceiro, produtor com vários clientes), o seletor ocupa o lugar da linha de contexto — sem criar bloco extra.
+2. Contexto ativo (parceiro / cliente / organização / origem) logo abaixo da marca, em destaque, com `title` completo no hover e até duas linhas em vez de truncar agressivamente.
+3. Usuário com avatar de iniciais, nome + papel na mesma linha (papel como texto secundário, nunca duplicado em badge), e-mail em linha menor.
+4. Uma única divisória entre marca/contexto e usuário.
+5. Variante `compact` (uma linha: avatar + nome + papel) para headers mobile e barras superiores.
+6. Onde o contexto é selecionável (staff simulando parceiro, produtor com vários clientes), o seletor ocupa o lugar da linha de contexto — sem bloco extra.
 
-## Aplicação por portal
+## Cobertura por perfil
 
-| Portal | Mudança |
+Rótulo único e correto para todos os papéis, vindo de uma fonte só:
+
+| Papel | Rótulo exibido | Superfície |
+| --- | --- | --- |
+| Administrador | Administrador | AppLayout |
+| Gestor | Gestor | AppLayout |
+| Gestor comercial | Gestor Comercial | AppLayout |
+| Financeiro | Financeiro | AppLayout |
+| Produção | Produção | AppLayout |
+| Técnico agrônomo | Técnico Agrônomo | AppLayout + mobile |
+| Consultor técnico | Consultor Técnico | AppLayout + mobile |
+| Aplicador | Aplicador | AppLayout + mobile |
+| Operador on-farm | Operador On-Farm | AppLayout |
+| Administrativo | Administrativo | AppLayout |
+| Parceiro B2B (gestor) | Gestor B2B | Portal Parceiro |
+| Parceiro B2B técnico | Técnico B2B | Portal Parceiro |
+| Cliente produtor | Produtor | Portal do Produtor + mobile |
+
+## Aplicação por superfície
+
+| Superfície | Mudança |
 | --- | --- |
-| Parceiro (`PortalParceiroLayout`) | Substitui os 3 blocos do topo da sidebar por `PortalIdentityHeader`; remove badge "Portal Parceiro B2B" e o subtítulo "B2B AR Bio" como linha separada; `Select` de staff entra como slot de contexto. Header mobile usa a variante `compact`. |
-| Produtor (`PortalLayout`) | Header passa a usar a variante `compact` com avatar de iniciais, nome + papel e cliente ativo; o `Popover` de troca de cliente vira o slot de contexto, mantendo o comportamento atual. |
-| App mobile (`MobileLayout`) | Ganha uma faixa superior fina com a variante `compact` (avatar, nome, papel, contexto), hoje inexistente. |
-| Admin (`AppLayout`) | Sem alteração obrigatória. Sugestões opcionais: trocar o badge de papel por texto secundário e adicionar avatar de iniciais, apenas para ficar visualmente igual aos demais. Decisão do usuário. |
+| Parceiro (`PortalParceiroLayout`) | Substitui os 3 blocos do topo da sidebar por `PortalIdentityHeader`; remove badge "Portal Parceiro B2B" e o subtítulo como linha separada; `Select` de staff vira slot de contexto. Header mobile usa `compact`. Cobre parceiro B2B e parceiro B2B técnico. |
+| Produtor (`PortalLayout`) | Header usa `compact` com avatar, nome + papel e cliente ativo; o `Popover` de troca de cliente vira o slot de contexto, comportamento preservado. |
+| Interno (`AppLayout`) | Remove a duplicação badge + texto do papel; adota `PortalIdentityHeader` na variante `compact` com avatar de iniciais; passa a usar o mapa completo de rótulos, corrigindo a exibição crua para consultor técnico, aplicador, operador on-farm, financeiro e gestor comercial. |
+| App mobile (`MobileLayout`) | Ganha faixa superior fina com a variante `compact` (avatar, nome, papel, contexto), hoje inexistente — atende consultor técnico, técnico agrônomo, aplicador e produtor no mobile. |
 
 ## Detalhes técnicos
 
-- Novo componente: `src/components/portal/PortalIdentityHeader.tsx` (marca, contexto, slot de seletor, bloco de usuário, variantes `sidebar` e `compact`).
-- `src/components/portal-parceiro/UsuarioIdentidade.tsx`: funções puras `getIniciais`, `getPrimeiroNome`, `getPapelLabel` movidas para um util compartilhado (`src/lib/portal/identidade.ts`) e reaproveitadas; o componente atual passa a ser um wrapper fino para não quebrar imports/testes existentes.
-- Rótulos de papel continuam vindo de `portalDisplayLabel.ts` / `getPapelLabel`, sem novas strings soltas.
+- Novo componente: `src/components/portal/PortalIdentityHeader.tsx` (marca, contexto, slot de seletor, bloco de usuário; variantes `sidebar` e `compact`).
+- Novo util: `src/lib/portal/identidade.ts` com `getIniciais`, `getPrimeiroNome` e o mapa único de rótulos de papel, consolidando o `roleLabels` local do `AppLayout`, o `getPapelLabel` do portal parceiro e `portalDisplayLabel.ts`.
+- `src/components/portal-parceiro/UsuarioIdentidade.tsx` vira wrapper fino sobre o novo componente, preservando imports e testes existentes.
 - Acessibilidade: `aria-label` do papel preservado, contexto com `title`, avatar `aria-hidden` com texto acessível ao lado.
 - Somente apresentação: nenhuma alteração em guards, rotas, permissões, hooks de dados, RPCs ou banco.
-- Validação: `typecheck`, `build`, suíte Vitest e conferência visual dos três portais em desktop e mobile.
-
-## Pergunta em aberto
-
-Aplico também as melhorias opcionais no portal do administrador (avatar de iniciais + papel como texto), ou mantenho o `AppLayout` exatamente como está?
+- Validação: `typecheck`, `build`, suíte Vitest e conferência visual das quatro superfícies em desktop e mobile.
