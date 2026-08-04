@@ -210,16 +210,19 @@ export default function PortalLayout() {
             ) : clienteNome ? (
               <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                 <Building2 className="h-4 w-4" />
-                <span className="truncate max-w-[160px]">{clienteNome}</span>
+                <span className="truncate max-w-[160px]" title={clienteNome}>{clienteNome}</span>
               </div>
             ) : null}
 
-            <span className="text-sm text-muted-foreground hidden md:block truncate max-w-[120px]">
-              {(profile as any)?.nome || "Produtor"}
-            </span>
+            <PortalIdentityHeader
+              variant="compact"
+              className="hidden md:flex"
+              roleLabel={getRoleLabel(role)}
+            />
             <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sair">
               <LogOut className="h-4 w-4" />
             </Button>
+
           </div>
         </div>
       </header>
