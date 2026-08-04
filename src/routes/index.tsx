@@ -1,3 +1,3 @@
 export default function Index() {
-  return <body>Validar que a PortalIdentityHeader busca e renderiza corretamente os dados de identidade a partir do Supabase para cada tipo de usuário, cobrindo loading, vazio e erro.</body>;
+  return <body>Implementar validações de permissão adicionais para que apenas administradores e perfis técnicos habilitados consigam executar "Gerar com IA" na aba B2B.</body>;
 }
