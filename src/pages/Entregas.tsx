@@ -496,7 +496,8 @@ export default function Entregas() {
           if (!created || !(created as any).id) throw new Error("Falha ao gravar entrega.");
           criadas.push((created as any).id);
 
-          // Integração com estoque: se a reserva zerou, marca o lote como expedido automaticamente
+          // Integração com estoque: se a reserva zerou, expede pelo motor canônico.
+          // Nenhum UPDATE direto: `rpc_estoque_operar_v1` grava saldo + livro atomicamente.
           try {
             const { data: entregasAtivas } = await supabase
               .from("entregas")
@@ -509,18 +510,25 @@ export default function Entregas() {
             );
             const qtdReservada = Number(item.quantidade_reservada || 0);
             if (item.status === "reservado" && qtdReservada > 0 && totalEntregue >= qtdReservada) {
-              const expedidoEm = data_saida ? new Date(data_saida).toISOString() : new Date().toISOString();
-              // O livro de movimentações é gravado exclusivamente pelo trigger
-              // canônico do estoque (log_estoque_movimentacao). Não inserir aqui:
-              // gravação manual duplicaria a baixa no histórico.
-              await supabase
-                .from("estoque_produto")
-                .update({ status: "expedido", expedido_em: expedidoEm } as any)
-                .eq("id", item.id);
+              await operarEstoque(
+                "expedicao",
+                item.id,
+                qtdReservada,
+                chaveIdempotencia("entrega-expedicao", (created as any).id),
+                {
+                  origem: "entregas.registrarEntrega",
+                  referencia_tipo: "entrega",
+                  referencia_id: (created as any).id,
+                  os_id: itemOsId,
+                  cliente_id: itemClienteId,
+                  observacao: `Expedição automática pela entrega ${(created as any).id}`,
+                },
+              );
             }
           } catch (autoExpErr) {
-            console.warn("[auto-expedir] falha ao marcar lote como expedido:", autoExpErr);
+            console.warn("[auto-expedir] falha ao expedir pelo motor canônico:", mensagemErroEstoque(autoExpErr));
           }
+
         }
 
         return { grupoId, total: criadas.length };
