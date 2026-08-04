@@ -27,6 +27,7 @@ import { ConfirmarEntregaDialog } from "@/components/entregas/ConfirmarEntregaDi
 import { EntregaComprovantePanel } from "@/components/entregas/EntregaComprovantePanel";
 import { TermoEntregaPanel } from "@/components/entregas/TermoEntregaPanel";
 import { EmbalagensEntregaPanel } from "@/components/estoque/EmbalagensEntregaPanel";
+import { operarEstoque, chaveIdempotencia, mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
 import { FileText } from "lucide-react";
 import { formatOS, formatOSFromId } from "@/lib/osLabel";
 import { getClienteLabel, getClienteFullLabel } from "@/lib/clienteLabel";
