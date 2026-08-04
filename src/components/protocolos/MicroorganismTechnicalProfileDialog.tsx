@@ -319,13 +319,18 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
                   Microrganismo não está habilitado para B2B.
                 </p>
               )}
-              <Label className="text-xs">Linguagem para parceiro B2B</Label>
-              <Textarea
+              <ProfileFieldAI
+                label="Linguagem para parceiro B2B"
                 rows={6}
                 value={form.explicacao_b2b}
                 readOnly={!canEditFull && !canEditB2BOnly}
-                onChange={(e) => setForm({ ...form, explicacao_b2b: e.target.value })}
+                onChange={(v: string) => setForm({ ...form, explicacao_b2b: v })}
+                entidadeTipo="microrganismo"
+                entidadeId={micro.id}
+                campo="explicacao_b2b"
+                canGenerateAI={canEditFull}
               />
+
               {canEditB2BOnly && !canEditFull && (
                 <p className="text-[10px] text-muted-foreground italic">Você pode editar apenas a explicação B2B.</p>
               )}
