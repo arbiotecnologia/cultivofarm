@@ -154,7 +154,6 @@ async function setup(): Promise<string[]> {
   return itens;
 }
 
-const RES = { os_id: "", cliente_id: "", os_tipo: "interna" as const };
 const resPayload = (extra: Record<string, unknown> = {}) =>
   ({ origem: "harness", os_id: osId, cliente_id: clienteId, os_tipo: "interna", ...extra });
 
