@@ -13,9 +13,15 @@ interface Props {
   max?: number;
 }
 
-function linha(v: CatalogoVolume): string {
-  return `${formatVolumeLabel(v)} · ${brl(v.preco_brl)}`;
+function LinhaVolume({ v, muted }: { v: CatalogoVolume; muted?: boolean }) {
+  return (
+    <div className={`grid grid-cols-[auto_1fr] gap-x-2 text-[11px] font-mono-data ${muted ? "text-muted-foreground" : "text-foreground/80"}`}>
+      <span className="whitespace-nowrap">{formatVolumeLabel(v)}</span>
+      <span className="text-right tabular-nums whitespace-nowrap">{brl(v.preco_brl)}</span>
+    </div>
+  );
 }
+
 
 export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
   if (!volumes.length) {
