@@ -61,10 +61,12 @@ export function PaymentPlanSelector({ plans, selectedPlanId, onSelect, finalAmou
               )}
             </div>
             <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
-              <span>Prazo: {p.max_days}d</span>
-              <span>Desc.: {formatarPercentual(p.discount_percent)}</span>
-              <span>Juros: {formatarPercentual(p.monthly_interest_percent)} a.m.</span>
-              {p.installment_count > 1 && <span>{p.installment_count}x</span>}
+              <span>Prazo: {p.max_days === 0 ? "à vista" : `${p.max_days} dias`}</span>
+              {p.discount_percent > 0 && <span>Desconto: {formatarPercentual(p.discount_percent)}</span>}
+              {p.monthly_interest_percent > 0 && (
+                <span>Juros: {formatarPercentual(p.monthly_interest_percent)} a.m.</span>
+              )}
+              {p.installment_count > 1 && <span>{p.installment_count} parcelas</span>}
             </div>
             <div className="flex flex-wrap gap-1">
               {p.requires_financial_approval && (
@@ -77,10 +79,15 @@ export function PaymentPlanSelector({ plans, selectedPlanId, onSelect, finalAmou
                 <Badge variant="outline" className="text-[10px]">Custo financeiro incluso</Badge>
               )}
             </div>
-            {selected && finalAmount != null && (
-              <div className="text-xs pt-1 border-t">
-                Total final: <span className="font-semibold">{brl(finalAmount)}</span>
-                {loading && <span className="ml-1 text-muted-foreground">(calculando…)</span>}
+            {selected && (
+              <div className="text-xs pt-1 border-t text-muted-foreground">
+                {loading
+                  ? "Calculando condição…"
+                  : finalAmount != null
+                    ? p.installment_count > 1
+                      ? `${p.installment_count}× de ${brl(finalAmount / p.installment_count)}`
+                      : "Pagamento único"
+                    : "Condição selecionada"}
               </div>
             )}
           </Card>
