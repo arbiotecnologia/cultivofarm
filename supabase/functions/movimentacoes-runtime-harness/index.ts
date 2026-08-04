@@ -94,13 +94,13 @@ async function setup() {
   created.microrganismos.push(micro.id);
 
   const { data: prod, error: pe } = await svc.from("produtos")
-    .insert({ nome: `HML MOV Produto ${RUN}`, tipo: "inoculante", microrganismo_id: micro.id })
+    .insert({ nome: `HML MOV Produto ${RUN}`, tipo: "inoculante" })
     .select("id").single();
   if (pe) throw new Error(`produto: ${pe.message}`);
   created.produtos.push(prod.id);
 
   const { data: lote, error: le } = await svc.from("lotes")
-    .insert({ codigo: `HMLMOV-${RUN}`, microrganismo_id: micro.id, volume_litros: 1000, status: "aprovado" })
+    .insert({ codigo_lote: `HMLMOV-${RUN}`, produto_id: prod.id, microrganismo_id: micro.id, volume_produzido: 1000, status: "aprovado" })
     .select("id").single();
   if (le) throw new Error(`lote: ${le.message}`);
   created.lotes.push(lote.id);
@@ -276,7 +276,7 @@ async function cleanup() {
     .select("id", { count: "exact", head: true }).in("id", created.itens.length ? created.itens : [crypto.randomUUID()]);
   residuos.estoque_produto = cItens ?? 0;
   const { count: cLotes } = await svc.from("lotes")
-    .select("id", { count: "exact", head: true }).like("codigo", `HMLMOV-${RUN}%`);
+    .select("id", { count: "exact", head: true }).like("codigo_lote", `HMLMOV-${RUN}%`);
   residuos.lotes = cLotes ?? 0;
   const { count: cProd } = await svc.from("produtos")
     .select("id", { count: "exact", head: true }).like("nome", `%HML MOV%${RUN}%`);
