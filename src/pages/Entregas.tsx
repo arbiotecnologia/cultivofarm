@@ -635,20 +635,12 @@ export default function Entregas() {
             );
             const qtdReservada = Number(itemAtual.quantidade_reservada || 0);
             if (totalEntregue < qtdReservada) {
+              // Estorno registrado automaticamente pelo trigger canônico
+              // (expedido → reservado = 'estorno_expedicao').
               await supabase
                 .from("estoque_produto")
                 .update({ status: "reservado", expedido_em: null } as any)
                 .eq("id", itemAtual.id);
-              await supabase.from("estoque_movimentacoes").insert({
-                estoque_produto_id: itemAtual.id,
-                acao: "estorno_expedicao",
-                status_anterior: "expedido",
-                status_novo: "reservado",
-                quantidade: qtdReservada,
-                os_id: (itemAtual as any).reservado_para_os_id,
-                os_tipo: (itemAtual as any).reservado_para_os_tipo,
-                cliente_id: (itemAtual as any).reservado_para_cliente_id,
-              } as any);
             }
           }
         }
