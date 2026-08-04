@@ -678,7 +678,11 @@ export default function NovoPedido() {
               rows={isSimulationMode ? 3 : 2}
             />
 
-            <TotaisCarrinho subtotalCheio={totalCheio} totalFinal={isSimulationMode ? totalCheio : total} />
+            <TotaisCarrinho
+              subtotalCheio={totalCheio}
+              totalFinal={isSimulationMode ? totalCheio : total}
+              labelTotal={isSimulationMode ? "Total estimado" : "Subtotal do carrinho"}
+            />
 
             <Button
               className="w-full"
