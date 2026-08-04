@@ -1,3 +1,3 @@
 export default function Index() {
-  return <body>Validar todas as páginas do agrupamento em mobile e desktop, cobrindo estados de loading, vazio, erro, retry e permissão negada, e corrigir problemas de acessibilidade com fallback textual quando necessário.</body>;
+  return <body>Verificar que o texto atualizado em src/routes/index.tsx aparece corretamente em todas as telas relacionadas e em diferentes tamanhos de viewport.</body>;
 }
