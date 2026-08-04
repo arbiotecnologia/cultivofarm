@@ -53,8 +53,6 @@ export function PaymentSimulationSummary({ simulation, cashReferenceAmount }: Pr
             <span className="text-right text-amber-600">+ {brl(amounts.financial_interest_amount)}</span>
           </>
         )}
-        <span className="font-semibold">Total final</span>
-        <span className="text-right font-semibold">{brl(amounts.final_amount)}</span>
         {diffVsCash != null && diffVsCash !== 0 && (
           <>
             <span className="text-xs text-muted-foreground">vs. à vista</span>
