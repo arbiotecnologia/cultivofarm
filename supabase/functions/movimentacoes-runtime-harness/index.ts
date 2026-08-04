@@ -72,9 +72,10 @@ async function setup() {
     created.users.push(data.user!.id);
     await svc.from("user_roles").delete().eq("user_id", data.user!.id);
     if (p === "produtor") {
-      const { error: pe } = await svc.from("profiles")
-        .update({ cliente_id: cliente.id }).eq("user_id", data.user!.id);
-      if (pe) throw new Error(`profile produtor: ${pe.message}`);
+      await svc.from("profiles").update({ cliente_id: cliente.id }).eq("user_id", data.user!.id);
+      const { error: uce } = await svc.from("user_clientes")
+        .insert({ user_id: data.user!.id, cliente_id: cliente.id });
+      if (uce) throw new Error(`user_clientes: ${uce.message}`);
     }
     for (const r of ROLES[p]) {
       const { error: re } = await svc.from("user_roles").insert({ user_id: data.user!.id, role: r });
