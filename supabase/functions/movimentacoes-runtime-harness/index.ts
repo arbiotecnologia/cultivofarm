@@ -48,6 +48,8 @@ const created = {
   envases: [] as string[],
   clientes: [] as string[],
   ordens: [] as string[],
+  fazendas: [] as string[],
+  talhoes: [] as string[],
 };
 const perf: { op: string; ms: number }[] = [];
 
@@ -108,10 +110,23 @@ async function setup(): Promise<string[]> {
   if (pe) throw new Error(`produto: ${pe.message}`);
   created.produtos.push(prod.id);
 
+  // OS agronômica canônica exige cliente + fazenda + talhão (ordens_servico_origem_required_fields)
+  const { data: fazenda, error: fe } = await svc.from("fazendas")
+    .insert({ nome: `HML MOV Fazenda ${RUN}`, cliente_id: cliente.id }).select("id").single();
+  if (fe) throw new Error(`fazenda: ${fe.message}`);
+  created.fazendas.push(fazenda.id);
+
+  const { data: talhao, error: te } = await svc.from("talhoes")
+    .insert({ nome: `HML MOV Talhao ${RUN}`, fazenda_id: fazenda.id }).select("id").single();
+  if (te) throw new Error(`talhao: ${te.message}`);
+  created.talhoes.push(talhao.id);
+
   // OS canônica exigida por reservar_estoque_item / validate_estoque_reserva
   const { data: os, error: ose } = await svc.from("ordens_servico").insert({
     numero_os: `HMLMOV-${RUN}`,
     cliente_id: cliente.id,
+    fazenda_id: fazenda.id,
+    talhao_id: talhao.id,
     produto_id: prod.id,
     tipo_item: "produto",
     origem: "agronomica",
@@ -417,6 +432,8 @@ async function cleanup(marker: string) {
   }
   // 3) OS -> envase/CQ -> lote -> produto/microrganismo (ordem de FK)
   for (const id of created.ordens) await svc.from("ordens_servico").delete().eq("id", id);
+  for (const id of created.talhoes) await svc.from("talhoes").delete().eq("id", id);
+  for (const id of created.fazendas) await svc.from("fazendas").delete().eq("id", id);
   for (const id of created.envases) await svc.from("envase").delete().eq("id", id);
   for (const id of created.lotes) await svc.from("controle_qualidade").delete().eq("lote_id", id);
   for (const id of created.lotes) await svc.from("lotes").delete().eq("id", id);
@@ -445,6 +462,8 @@ async function contarResiduos() {
     microrganismos: await c("microrganismos", "nome", "HML MOV%"),
     clientes: await c("clientes", "nome", "HML MOV%"),
     ordens_servico: await c("ordens_servico", "numero_os", "HMLMOV-%"),
+    fazendas: await c("fazendas", "nome", "HML MOV Fazenda%"),
+    talhoes: await c("talhoes", "nome", "HML MOV Talhao%"),
     envase: (await svc.from("envase").select("id, lotes!inner(codigo_lote)").like("lotes.codigo_lote", "HMLMOV-%")).data?.length ?? 0,
   };
 }
@@ -476,6 +495,12 @@ Deno.serve(async (req) => {
       await svc.from("produtos").delete().eq("id", p.id);
     }
     await svc.from("microrganismos").delete().like("nome", "HML MOV%");
+    const { data: fzs } = await svc.from("fazendas").select("id").like("nome", "HML MOV Fazenda%");
+    for (const f of fzs ?? []) {
+      await svc.from("ordens_servico").delete().eq("fazenda_id", f.id);
+      await svc.from("talhoes").delete().eq("fazenda_id", f.id);
+      await svc.from("fazendas").delete().eq("id", f.id);
+    }
     const { data: cs } = await svc.from("clientes").select("id").like("nome", "HML MOV%");
     for (const cl of cs ?? []) {
       await svc.from("user_clientes").delete().eq("cliente_id", cl.id);
