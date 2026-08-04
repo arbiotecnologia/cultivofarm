@@ -116,3 +116,105 @@ Origem única por efeito confirmada: o estado de `estoque_produto`/`estoque_emba
 
 ## VEREDITO FINAL: 🟡 APTO COM RESSALVAS
 Sem risco crítico ou alto em aberto. Não promovido, não publicado.
+
+---
+
+## Ciclo final — encerramento (staging `ikaauvsflpmamgxmkhoq`)
+
+### 1. Causa da interrupção anterior
+O harness criava `os_id` sintético sem registro correspondente. `reservar_estoque_item` /
+`validate_estoque_reserva` exigem OS canônica; e `ordens_servico` possui o check
+`ordens_servico_origem_required_fields`, que para `origem='agronomica'` exige
+`cliente_id`, `fazenda_id` e `talhao_id` simultaneamente. O run abortava no setup.
+
+### 2. Resíduos removidos
+Sweep executado com função temporária `fn_hml_purge_movimentacoes_fixture` (service_role):
+- 1º sweep: 5 itens de estoque + 15 lançamentos removidos.
+- Sweep final do run certificado: 8 itens + 21 lançamentos.
+- Contagens finais de resíduo: `estoque_produto=0`, `produtos=0`, `lotes=0`,
+  `microrganismos=0`, `clientes=0`, `ordens_servico=0`, `fazendas=0`, `talhoes=0`, `envase=0`.
+
+### 3. Fixture canônica de OS
+Cadeia real criada e removida a cada run: cliente → fazenda → talhão → OS agronômica
+(`numero_os=HMLMOV-<run>`, status `aberta`) → microrganismo → produto → lote →
+CQ aprovado → envase → item de estoque. Sem UUID órfão. Cleanup em `finally`
+respeita a ordem de FKs, sem `DISABLE TRIGGER`.
+
+### 4. Defeito de motor corrigido (não era fixture)
+Reserva parcial altera duas linhas de `estoque_produto` (INSERT da linha filha +
+UPDATE da linha de origem). O trigger `log_estoque_movimentacao` gravava os dois
+lançamentos com a mesma `idempotency_key`, violando `uq_estoque_mov_idempotency` e
+derrubando a operação inteira. Correção: o lançamento principal mantém a chave da
+operação; lançamentos complementares recebem chave derivada `<chave>#<n>` e
+`metadata.desdobramento=true` + `metadata.operacao_key`. Idempotência, replay e
+detecção de payload divergente continuam ancorados na chave exata.
+
+### 5. Matriz A–Z (26 gates) — resultado final
+26 PASS · 0 FAIL · 1 N/A · 0 fatal.
+
+| Gate | Resultado |
+|---|---|
+| A reserva com snapshot | PASS |
+| B replay idempotente | PASS |
+| C conflito de payload | PASS |
+| D update direto bloqueado | PASS |
+| E livro append-only | PASS |
+| F expedição com cadeia de saldos | PASS |
+| G estorno único | PASS |
+| H concorrência real (1 vencedor) | PASS |
+| I produtor bloqueado | PASS |
+| J anônimo bloqueado | PASS |
+| K limite/alçada de ajuste | PASS |
+| L perda coerente | PASS |
+| M motivo obrigatório | PASS |
+| N devolução em quarentena | PASS |
+| O autoria/unidade/direção/origem | PASS |
+| P ação inválida rejeitada | PASS |
+| Q cancelamento de reserva | PASS |
+| R entrega com saída | PASS |
+| S ajuste de entrada | PASS |
+| T reserva acima do saldo | PASS |
+| U chave fraca/ausente | PASS |
+| V devolução sem classificação | PASS |
+| W estorno de estorno / origem cruzada | PASS |
+| X expedição sem reserva | PASS |
+| Y reserva parcial com vínculo real | PASS |
+| Z transferência entre locais | **N/A** — não existe modelo canônico de locais/depósitos (`estoque_produto` não tem `local_id`, não há tabela de locais). Não pode ser aprovado sem fluxo real. |
+
+### 6. Concorrência
+Duas requisições simultâneas sobre o mesmo saldo: exatamente um vencedor, um único
+lançamento por chave, saldo final coerente. Mesma chave em paralelo → um lançamento.
+
+### 7. Performance e plano
+Motor: 30 chamadas — p50 **144,5 ms**, p95 **209,2 ms**, máx 223,5 ms.
+`EXPLAIN (ANALYZE, BUFFERS)` da listagem paginada: 0,34 ms de execução (tabela sem
+volume real em staging — o plano ainda não é representativo de produção). Índices
+presentes e adequados: `idx_estoque_mov_cursor (created_at DESC, id DESC)`,
+`idx_estoque_mov_item`, `idx_estoque_mov_acao_created`, além de índices parciais por
+`os_id`, `cliente_id`, `lote_id`, `usuario_id`, `referencia`, e os únicos de
+idempotência e reversão.
+
+### 8. UI / acessibilidade
+`HistoricoSheet` passou a: paginar (25 por página + "Carregar mais", antes carregava
+tudo sem limite), filtrar por ação, exibir o snapshot completo (saldo e reservado
+anterior→posterior, direção, unidade, motivo, origem) e usar lista semântica com
+`aria-live`, `aria-busy` e rótulo associado ao filtro. Taxonomia de ações atualizada
+(perda, devolução, consumo). Layout responsivo em desktop e mobile.
+
+### 9. Remoção do harness
+Edge Function `movimentacoes-runtime-harness` deletada do projeto, diretório removido
+do repositório e entrada `verify_jwt=false` removida de `supabase/config.toml`.
+Verificação: `POST` ao endpoint retorna **404**. A função temporária
+`fn_hml_purge_movimentacoes_fixture` foi dropada e `fn_ledger_append_only` /
+`fn_estoque_produto_guard` voltaram a bloquear incondicionalmente (sem GUC de escape).
+
+### 10. Validações
+typecheck OK · build OK · Vitest **2709 passed / 0 failed / 4 skipped** (as duas falhas
+detectadas eram exatamente os testes-guarda de `config.toml` acusando o harness; após a
+remoção, verdes). Lint não disponível no projeto.
+
+### Veredito
+**🟢 STAGING CERTIFICADO** — zero risco crítico/alto, zero resíduo, 26/26 gates
+exercitados aprovados. Ressalva não bloqueante registrada: **Z (transferência entre
+locais) permanece N/A** por ausência de modelo canônico no schema; e o plano de consulta
+foi medido sobre tabela sem volume. Não promovido e não publicado.
