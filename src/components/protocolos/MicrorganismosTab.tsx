@@ -509,19 +509,20 @@ export function MicrorganismosTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Microrganismo</TableHead>
-              <TableHead>Volumes</TableHead>
-              <TableHead className="whitespace-nowrap">
+              <TableHead className="text-right whitespace-nowrap">
                 Concentração
                 <span className="block text-[10px] font-normal text-muted-foreground normal-case">
                   (UFC/mL)
                 </span>
               </TableHead>
+              <TableHead>Volumes</TableHead>
               <TableHead className="text-right">Dose (mL/ha)</TableHead>
-              <TableHead className="text-right">Valores</TableHead>
+              <TableHead className="text-right">Valor/ha</TableHead>
               <TableHead>Ref.</TableHead>
-              <TableHead></TableHead>
+              <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {filteredItems.length === 0 ? (
               <TableRow>
