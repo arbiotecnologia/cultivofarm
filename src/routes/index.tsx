@@ -1,3 +1,3 @@
 export default function Index() {
-  return <body>Verificar que o texto atualizado em src/routes/index.tsx aparece corretamente em todas as telas relacionadas e em diferentes tamanhos de viewport.</body>;
+  return <body>Auditar a acessibilidade do cabeçalho do PortalIdentityHeader, garantindo fallback textual e navegação por teclado em todos os portais.</body>;
 }
