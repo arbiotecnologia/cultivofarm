@@ -1,3 +1,3 @@
 export default function Index() {
-  return <body>Revisar a formatação dos valores de volume para sempre usar as casas decimais e separadores corretos, sem quebra de linha.</body>;
+  return <body>Verificar e ajustar o alinhamento do preço e do “L” nas menores larguras e em diferentes níveis de zoom para manter a mesma coluna visual.</body>;
 }
