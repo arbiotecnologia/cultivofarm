@@ -61,7 +61,6 @@ export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
                 ))}
               </div>
 
-              </div>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
