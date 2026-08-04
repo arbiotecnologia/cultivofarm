@@ -2,6 +2,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { brl } from "@/lib/financial/format";
+import { splitVolumeLabel } from "@/lib/envaseFormat";
+
 import {
   CatalogoVolume,
   formatVolumeLabel,
