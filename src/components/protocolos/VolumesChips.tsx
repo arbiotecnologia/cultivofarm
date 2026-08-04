@@ -42,11 +42,9 @@ export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
   const extras = volumes.slice(max);
 
   return (
-    <div className="flex flex-col gap-0.5 leading-tight max-w-[210px]">
+    <div className="flex flex-col gap-0.5 leading-tight w-full max-w-[210px]">
       {visible.map((v) => (
-        <span key={v.id} className="text-[11px] font-mono-data text-foreground/80">
-          {linha(v)}
-        </span>
+        <LinhaVolume key={v.id} v={v} />
       ))}
       {extras.length > 0 && (
         <TooltipProvider>
@@ -57,10 +55,12 @@ export function VolumesChips({ volumes, onAdd, max = 2 }: Props) {
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 min-w-[140px]">
                 {extras.map((v) => (
-                  <div key={v.id} className="text-[11px] font-mono-data">{linha(v)}</div>
+                  <LinhaVolume key={v.id} v={v} />
                 ))}
+              </div>
+
               </div>
             </TooltipContent>
           </Tooltip>
