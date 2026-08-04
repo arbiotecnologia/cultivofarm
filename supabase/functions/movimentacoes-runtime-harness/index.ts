@@ -55,6 +55,13 @@ async function op(c: any, acao: string, item: string, qtd: number | null, key: s
 }
 
 async function setup() {
+  // cliente necessário para vincular o perfil produtor (regra de negócio do portal)
+  const { data: cliente, error: ce } = await svc.from("clientes")
+    .insert({ nome: `HML MOV Cliente ${RUN}`, tipo_pessoa: "juridica", status: "ativo" })
+    .select("id").single();
+  if (ce) throw new Error(`cliente: ${ce.message}`);
+  created.clientes.push(cliente.id);
+
   for (const p of Object.keys(ROLES) as Perfil[]) {
     const email = `hml.mov.${p}.${RUN}@arbio.test`;
     const { data, error } = await svc.auth.admin.createUser({
@@ -64,10 +71,16 @@ async function setup() {
     users[p] = data.user!.id;
     created.users.push(data.user!.id);
     await svc.from("user_roles").delete().eq("user_id", data.user!.id);
+    if (p === "produtor") {
+      const { error: pe } = await svc.from("profiles")
+        .update({ cliente_id: cliente.id }).eq("user_id", data.user!.id);
+      if (pe) throw new Error(`profile produtor: ${pe.message}`);
+    }
     for (const r of ROLES[p]) {
       const { error: re } = await svc.from("user_roles").insert({ user_id: data.user!.id, role: r });
       if (re) throw new Error(`role ${p}/${r}: ${re.message}`);
     }
+
     const c = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
     const { error: se } = await c.auth.signInWithPassword({ email, password: PWD });
     if (se) throw new Error(`signin ${p}: ${se.message}`);
