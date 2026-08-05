@@ -50,6 +50,21 @@ const STATUS_COLORS: Record<string, string> = {
   arquivado: "bg-muted text-muted-foreground",
 };
 
+const URGENCIA_LABEL: Record<string, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+  critica: "Crítica",
+};
+
+const URGENCIA_COLORS: Record<string, string> = {
+  baixa: "bg-emerald-100 text-emerald-700",
+  media: "bg-amber-100 text-amber-700",
+  alta: "bg-orange-100 text-orange-700",
+  critica: "bg-destructive/10 text-destructive",
+};
+
+
 function statusLabel(item: AtendimentoItem) {
   if (item.kind === "demanda") return "Demanda";
   return (STATUS_LABEL_REGISTRO as Record<string, string>)[item.status] ?? item.status;
@@ -78,7 +93,7 @@ export default function MobileAtendimentos() {
 
   const contadores = useMemo<Record<AtendimentoAba, number | null>>(
     () => ({
-      todos: null,
+      todos: resumo?.todos ?? null,
       demandas: resumo?.demandas ?? null,
       ocorrencias: resumo?.ocorrencias ?? null,
       andamento: resumo?.em_andamento ?? null,
@@ -88,6 +103,7 @@ export default function MobileAtendimentos() {
     }),
     [resumo],
   );
+
 
   const trocarAba = (value: AtendimentoAba) => {
     setPage(1);
@@ -217,6 +233,20 @@ export default function MobileAtendimentos() {
                   )}
                 </div>
               </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                {item.cultura_nome && (
+                  <span className="rounded bg-muted px-1.5 py-0.5">{item.cultura_nome}</span>
+                )}
+                {item.urgencia && (
+                  <span className={cn("rounded px-1.5 py-0.5", URGENCIA_COLORS[item.urgencia] ?? "bg-muted")}>
+                    {URGENCIA_LABEL[item.urgencia] ?? item.urgencia}
+                  </span>
+                )}
+                {item.responsavel_nome && <span className="truncate">👤 {item.responsavel_nome}</span>}
+                {item.data_prevista && (
+                  <span>SLA {formatDateDisplay(item.data_prevista)}</span>
+                )}
+              </div>
               <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                 <span className="truncate">
                   {item.codigo || "—"}
@@ -226,6 +256,12 @@ export default function MobileAtendimentos() {
                   {item.data_ref ? formatDateDisplay(item.data_ref) : "—"}
                 </span>
               </div>
+              {item.proxima_acao && (
+                <p className="text-[11px] font-medium text-primary truncate">
+                  Próxima ação: {item.proxima_acao}
+                </p>
+              )}
+
             </Card>
           ))}
         </div>
