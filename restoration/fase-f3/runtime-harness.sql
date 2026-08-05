@@ -169,7 +169,7 @@ BEGIN
      nature_operation, presence_indicator, final_consumer, taxpayer_indicator, origin_uf,
      destination_uf, cfop, crt, priority, source_id, legal_basis, legal_version,
      policy_status, prepared_by, active, valid_from)
-  VALUES ('B2B','VENDA','GO',true,'55','OUT',1,'Venda de producao do estabelecimento',1,false,'1','GO','GO',
+  VALUES ('b2b_partner','VENDA','GO',true,'55','OUT',1,'Venda de producao do estabelecimento',1,false,'1','GO','GO',
           '5101','3',10, v_src_moc,'MOC NF-e 7.0 — CFOP interno de venda de producao','7.0',
           'DRAFT', U_GESTOR, true, current_date - 1)
   RETURNING id INTO v_pol_go;
@@ -208,7 +208,7 @@ BEGIN
      nature_operation, presence_indicator, final_consumer, taxpayer_indicator, origin_uf,
      destination_uf, cfop, crt, priority, source_id, legal_basis, legal_version,
      policy_status, prepared_by, active, valid_from)
-  VALUES ('B2B','VENDA','GO',true,'55','OUT',1,'Venda de producao para outra UF',1,false,'1','GO','SP',
+  VALUES ('b2b_partner','VENDA','GO',true,'55','OUT',1,'Venda de producao para outra UF',1,false,'1','GO','SP',
           '6101','3',10, v_src_moc,'MOC NF-e 7.0 — CFOP interestadual de venda de producao','7.0',
           'DRAFT', U_GESTOR, true, current_date - 1)
   RETURNING id INTO v_pol_sp;
@@ -279,7 +279,7 @@ BEGIN
   INSERT INTO public.fiscal_invoices
     (invoice_type, status, document_model, direction, sales_channel, billing_scope,
      source_type, source_id, customer_id, issue_date, created_by)
-  VALUES ('NFE','DRAFT','NFE','OUT','B2B','PEDIDO','PARTNER_ORDER', v_order, v_cliente, current_date, U_GESTOR)
+  VALUES ('NFE','DRAFT','NFE','OUT','b2b_partner','PEDIDO','PARTNER_ORDER', v_order, v_cliente, current_date, U_GESTOR)
   RETURNING id INTO v_inv;
   INSERT INTO public.fiscal_invoice_items
     (fiscal_invoice_id, item_sequence, item_kind, description, quantity, unit_value, gross_value, ncm_snapshot)
@@ -377,7 +377,7 @@ BEGIN
     INSERT INTO public.fiscal_invoices
       (invoice_type, status, document_model, direction, sales_channel, billing_scope,
        source_type, source_id, customer_id, issue_date, created_by)
-    VALUES ('NFE','DRAFT','NFE','OUT','B2B','PEDIDO','PARTNER_ORDER', v_order, v_cliente, current_date, U_GESTOR);
+    VALUES ('NFE','DRAFT','NFE','OUT','b2b_partner','PEDIDO','PARTNER_ORDER', v_order, v_cliente, current_date, U_GESTOR);
     RAISE EXCEPTION 'T26 FAIL: segunda NF-e criada para o mesmo escopo';
   EXCEPTION WHEN unique_violation THEN NULL; END;
   PERFORM pg_temp.f3_pass(26,'Uma NF-e por pedido/escopo de faturamento');
