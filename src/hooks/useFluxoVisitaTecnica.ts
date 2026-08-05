@@ -549,6 +549,8 @@ export function useFluxoVisitaTecnica() {
     enviarParaAprovacao,
     aprovarRecomendacao,
     reprovarRecomendacao,
+    solicitarAjusteVisita,
+    reabrirVisita,
     liberarRecomendacaoParaProdutor,
     converterRecomendacaoEmOS,
     programarRetorno,
