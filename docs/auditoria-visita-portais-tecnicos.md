@@ -73,32 +73,58 @@ Resultado: **ROLLBACK_REHEARSAL_PASS**.
 - CTA "Ir para Identificação" leva direto à etapa faltante.
 - Etapa 1 do wizard já validava cultura obrigatória; a revisão agora fecha o contorno.
 
-## 7. Matriz T1–T18 — certificação pendente
+## 7. Matriz T1–T18 (matriz aprovada) — status runtime
+
+Runner: `tests/harnesses/visita-atendimentos-runtime-harness/index.ts` (CLI, não é
+Edge Function). `PASS` só é registrado a partir de artefato runtime real em
+`artifacts/visita-atendimentos/`. Qualquer `FAIL`, `BLOCKED`, `test.skip` ou
+cenário não executado força **exit 1**.
 
 | # | Cenário | Resultado |
 |---|---|---|
-| T1 | Criação idempotente de visita (mesmo `client_uuid`) | PENDENTE RUNTIME |
-| T2 | Criação concorrente (advisory lock) retorna a mesma visita | PENDENTE RUNTIME |
-| T3 | Criação sem cultura via solicitação retorna rascunho com cultura pendente | PENDENTE RUNTIME |
-| T4 | Criação com cultura explícita preserva o valor | PENDENTE RUNTIME |
-| T5 | `rpc_iniciar_atendimento_solicitacao_v1` idempotente | PASS |
-| T6 | Solicitação já atendida não gera segunda visita | PASS |
-| T7 | Listagem de atendimentos: consulta relacional pura, sem N+1 | PASS |
-| T8 | Listagem expõe metadados de urgência | PASS |
-| T9 | Resumo de atendimentos bate com a listagem | PASS |
-| T10 | `is_visit_responsible` autoriza o responsável | PASS |
-| T11 | `is_visit_responsible` nega terceiro sem vínculo | PASS |
-| T12 | Nenhuma RPC de visita concede EXECUTE a `anon`/`PUBLIC` | PASS |
-| T13 | Reenvio de mídia órfã não recria a visita | PASS |
-| T14 | Reenvio de mídia com objeto já confirmado é no-op | PASS |
-| T15 | `client_uuid` de outro registro → `idempotency_conflict` | PASS |
-| T16 | Esgotamento de tentativas → `sync_error` recuperável na UI | PASS |
-| T17 | Finalização sem cultura é bloqueada | PASS |
-| T18 | Rollback + verify + reapply + postcheck (checksums) | PASS |
+| T1 | Listagem consultor | BLOCKED — credencial ausente |
+| T2 | Listagem agrônomo | BLOCKED — credencial ausente |
+| T3 | Produtor/sem vínculo negados | BLOCKED — credencial ausente |
+| T4 | Outra carteira isolada (leitura + mutações) | BLOCKED — credencial ausente |
+| T5 | Demanda sem cultura em rascunho | BLOCKED — credencial ausente |
+| T6 | Finalização bloqueada server-side sem cultura | BLOCKED (dependente de T5) |
+| T7 | Concorrência de demanda | BLOCKED — credencial ausente |
+| T8 | Ocorrência online | BLOCKED — credencial ausente |
+| T9 | Replay offline | BLOCKED — credencial ausente |
+| T10 | Falha/retry real de mídia (1 objeto, 1 referência, GPS + capturado_em) | BLOCKED — credencial ausente |
+| T11 | Claims/sync concorrentes | BLOCKED — credencial ausente (claim IndexedDB determinístico: PASS em `src/test/offlineDb.claim.test.ts`) |
+| T12 | Busca/abas/paginação/resumo | BLOCKED — credencial ausente |
+| T13 | Check-in / diagnóstico / version conflict | BLOCKED — credencial ausente |
+| T14 | Finalizar / enviar / aprovar / reprovar / ajuste | BLOCKED — credencial ausente |
+| T15 | Não atribuído negado | BLOCKED — credencial ausente |
+| T16 | Grants anon/PUBLIC (catálogo + tentativa anon com argumentos válidos) | BLOCKED — credencial ausente |
+| T17 | Endpoint 404 com e sem JWT | BLOCKED — credencial ausente |
+| T18 | Cleanup (tabelas, auth users, storage, triggers habilitados) | BLOCKED — credencial ausente |
 
-T13–T17 possuem cobertura Vitest e T18 foi reexecutado com
-`ROLLBACK_REHEARSAL_PASS`. T1–T12 permanecem pendentes até o runner completar com
-credencial administrativa de staging; itens `BLOCKED` produzem exit code 1.
+### 7.1 Execução registrada
+
+| Comando | Timestamp (UTC) | Resultado |
+|---|---|---|
+| `npx tsgo --noEmit -p tsconfig.json` | 2026-08-05T04:30:27Z | PASS (0 erros) |
+| `bunx vitest run` | 2026-08-05T04:31:31Z | PASS — 2710 testes, 163 arquivos (1 arquivo skip: harness RLS fiscal sem staging provisionado) |
+| `bun run build` | 2026-08-05T04:31:5xZ | PASS |
+| `bash restoration/visita-portais-tecnicos/rehearsal.sh` | 2026-08-05T04:33:0xZ | `ROLLBACK_REHEARSAL_PASS` — estado final → rollback → verify → reaplicar → postcheck (6 funções por assinatura, checksum, owner, SECURITY DEFINER, search_path e grants) |
+| Scanner de segredos (`rg` sobre runner/kit/artefatos) | 2026-08-05T04:31:5xZ | PASS — nenhum literal `sb_secret_`, JWT ou service_role |
+| `deno run … visita-atendimentos-runtime-harness/index.ts` | 2026-08-05T04:32:24Z | **exit 1 — GUARD_ABORT** |
+| Lint | — | indisponível no projeto (sem script `lint`); substituído por `tsgo` + build |
+| E2E mobile/desktop de visita técnica | — | não executado nesta rodada (depende das fixtures criadas pelo runner) |
+
+### 7.2 Bloqueio formal
+
+```
+BLOQUEADO
+Variáveis ausentes no executor: SUPABASE_ANON_KEY, SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY)
+```
+
+O runner resolve a credencial exclusivamente por
+`Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY")`,
+nunca imprime valor, prefixo ou tamanho, e aborta fail-closed fora de
+`ikaauvsflpmamgxmkhoq`. Nenhum valor de segredo é solicitado ou revelado aqui.
 
 ## 8. Gates H1–H12 (prontidão para homologação)
 
@@ -106,7 +132,7 @@ credencial administrativa de staging; itens `BLOCKED` produzem exit code 1.
 |---|---|---|
 | H1 | Nenhum endpoint administrativo público | ✅ |
 | H2 | `verify_jwt` sem exceções indevidas | ✅ |
-| H3 | RPCs sem EXECUTE para `anon`/`PUBLIC` | ✅ |
+| H3 | RPCs sem EXECUTE para `anon`/`PUBLIC` | ✅ estático (T16 runtime pendente) |
 | H4 | Migration canônica idempotente e fail-closed | ✅ |
 | H5 | Rollback ensaiado e verificado por checksum | ✅ |
 | H6 | Autorização de visita correta e testada | ⏳ runtime pendente |
@@ -115,9 +141,27 @@ credencial administrativa de staging; itens `BLOCKED` produzem exit code 1.
 | H9 | Perda de enfileiramento comunicada ao usuário | ✅ |
 | H10 | Cultura obrigatória na finalização | ✅ |
 | H11 | `tsgo --noEmit` sem erros | ✅ |
-| H12 | Vitest 100% verde | ⏳ suíte completa pendente |
+| H12 | Vitest 100% verde | ✅ 2710 PASS |
 
-## 9. Escopo não coberto
+## 9. Manifesto de promoção
+
+`restoration/visita-portais-tecnicos/promotion-manifest.json` lista, com ordem,
+caminho, `sha256` e tamanho: a migration canônica `20260805040000`, a
+finalizadora `20260805041601`, a auxiliar de catálogo `20260805042628`,
+`canonical-final.sql`, `rollback.sql`, `verify-restoration.sql`,
+`postcheck-final.sql`, `rehearsal.sh` e o runner. As migrations
+`20260805031852`, `20260805032753`, `20260805032904`, `20260805033027`,
+`20260805033136` e `20260805033223` estão marcadas como **superseded** e
+excluídas do pacote, com histórico preservado.
+
+## 10. Escopo não coberto
 
 - Promoção para produção `navfzbwgwzruipouyfnk`: **não executada** (proibida nesta fase).
 - Publicação do app: não realizada.
+
+## 11. Status final
+
+**NÃO APTO / BLOQUEADO** — T1–T18 não podem ser certificados sem a credencial
+administrativa de staging no executor. `PRODUCAO_NAO_ACESSADA` ✅ ·
+`NAO_PUBLICADO` ✅.
+
