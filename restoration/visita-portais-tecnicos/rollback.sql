@@ -133,7 +133,7 @@ BEGIN
       'registro_id', v_existing.id, 'client_uuid', v_existing.client_uuid,
       'status', v_existing.status::text, 'origem', v_existing.origem_atendimento,
       'version', v_existing.version,
-      'can_edit', v_existing.status IN ('rascunho','em_andamento','ajuste_solicitado','reprovado'),
+      'can_edit', v_existing.status IN ('rascunho','em_andamento','reprovado'),
       'next_route', '/app/visita/' || v_existing.id::text,
       'pdf_status', v_existing.pdf_status);
   END IF;
