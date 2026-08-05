@@ -198,7 +198,7 @@ BEGIN
     UPDATE public.fiscal_operation_policies SET cfop='6101' WHERE id=v_pol_go;
     RAISE EXCEPTION 'T14 FAIL: CFOP de politica publicada alterado';
   EXCEPTION WHEN OTHERS THEN
-    IF SQLERRM NOT LIKE 'FISCAL_OPERATION_POLICY_IMMUTABLE%' THEN RAISE; END IF;
+    IF SQLERRM NOT LIKE 'FISCAL_POLICY_IMMUTABLE%' THEN RAISE; END IF;
   END;
   PERFORM pg_temp.f3_pass(14,'Politica publicada e imutavel');
 
