@@ -1443,9 +1443,42 @@ GRANT EXECUTE ON FUNCTION public.fn_fiscal_item_profile_gate_eval(
   TO authenticated, service_role;
 
 -- =====================================================================
--- SEÇÃO 16 — VIEW DE PRONTIDÃO PASSA A CONSIDERAR O DOSSIÊ
+-- SEÇÃO 16 — VIEWS DE PRONTIDÃO SOBRE O MOTOR ÚNICO
+-- v_product_fiscal_readiness é recriada sem alteração semântica (o
+-- escopo PRODUCT não possui camada regulatória). Apenas a view de
+-- microrganismos passa a consumir os fatos do dossiê.
 -- =====================================================================
-DROP VIEW IF EXISTS public.v_microorganism_fiscal_readiness;
+CREATE VIEW public.v_product_fiscal_readiness
+WITH (security_invoker = true) AS
+SELECT
+  sel.product_id,
+  sel.id AS profile_id,
+  sel.profile_status,
+  sel.is_active AS profile_is_active,
+  (g.gate ->> 'technical_ready')::boolean AS minimally_classified,
+  sel.accounting_validated_at IS NOT NULL AS accounting_validated,
+  (g.gate ->> 'quarantined')::boolean AS quarantined,
+  (g.gate ->> 'ready')::boolean AS fiscally_ready,
+  g.gate -> 'pendencies' AS pendencies,
+  g.gate
+FROM (
+  SELECT DISTINCT ON (p.product_id) p.*
+    FROM public.product_fiscal_profiles p
+   ORDER BY p.product_id, (p.is_active AND p.profile_status = 'VALIDATED') DESC,
+            p.is_active DESC, p.updated_at DESC NULLS LAST,
+            p.created_at DESC NULLS LAST, p.id DESC) sel
+CROSS JOIN LATERAL (
+  SELECT public.fn_fiscal_item_profile_gate_eval(
+    'PRODUCT', public.fn_fiscal_company_crt(), sel.is_active, sel.profile_status,
+    sel.accounting_validated_at, sel.accounting_notes, sel.fiscal_description,
+    sel.commercial_unit, sel.taxable_unit, sel.ncm, sel.origin_code, sel.cfop_in_state,
+    sel.cfop_interstate, sel.icms_cst, sel.icms_csosn, sel.pis_cst, sel.cofins_cst,
+    NULL::jsonb) AS gate) g;
+
+REVOKE ALL ON public.v_product_fiscal_readiness FROM PUBLIC, anon;
+GRANT SELECT ON public.v_product_fiscal_readiness TO authenticated, service_role;
+
+
 CREATE VIEW public.v_microorganism_fiscal_readiness
 WITH (security_invoker = true) AS
 SELECT
