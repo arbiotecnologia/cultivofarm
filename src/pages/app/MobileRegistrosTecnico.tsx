@@ -54,8 +54,8 @@ export default function MobileRegistrosTecnico() {
     },
   });
 
-  const openRoteiro = (id: string) => navigate(`/visita-tecnica/${id}?tab=roteiro`);
-  const openEdicao = (id: string) => navigate(`/visita-tecnica/${id}`);
+  const openRoteiro = (id: string) => navigate(`/app/visita/${id}?step=7`);
+  const openEdicao = (id: string) => navigate(`/app/visita/${id}`);
 
   return (
     <div className="p-4 space-y-4">
