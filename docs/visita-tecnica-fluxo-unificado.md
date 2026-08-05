@@ -65,3 +65,26 @@ Rotas legadas preservadas como redirecionamento — nenhum link antigo quebra.
 
 - `tsgo --noEmit`: limpo
 - Vitest: **2707 passed | 4 skipped**
+
+## Certificação T1–T18 (2026-08-05)
+
+| Comando | Timestamp (UTC) | Resultado |
+| --- | --- | --- |
+| `npx tsgo --noEmit -p tsconfig.json` | 04:30:27Z | PASS |
+| `bunx vitest run` | 04:31:31Z | PASS — 2710 passed / 4 skipped |
+| `bun run build` | 04:31Z | PASS |
+| `bash restoration/visita-portais-tecnicos/rehearsal.sh` | 04:33Z | `ROLLBACK_REHEARSAL_PASS` |
+| Scanner de segredos | 04:31Z | PASS (nenhum literal) |
+| Runner T1–T18 (`deno run … tests/harnesses/visita-atendimentos-runtime-harness/index.ts`) | 04:32:24Z | **exit 1 — GUARD_ABORT** |
+
+O runner CLI implementa realmente os 18 cenários da matriz aprovada (perfis
+temporários reais: gestor, consultor, agrônomo, produtor, sem vínculo e técnico
+de outra carteira; setup/cleanup em `try/finally`; T6 vira `BLOCKED` se T5
+falhar). A credencial administrativa é resolvida só no backend por
+`SUPABASE_SERVICE_ROLE_KEY ?? SUPABASE_SECRET_KEY` e nunca é impressa.
+
+**BLOQUEADO** — variáveis ausentes no executor: `SUPABASE_ANON_KEY`,
+`SUPABASE_SECRET_KEY` (ou `SUPABASE_SERVICE_ROLE_KEY`).
+Status: **NÃO APTO**. `PRODUCAO_NAO_ACESSADA` · `NAO_PUBLICADO`.
+
+Manifesto de promoção: `restoration/visita-portais-tecnicos/promotion-manifest.json`.
