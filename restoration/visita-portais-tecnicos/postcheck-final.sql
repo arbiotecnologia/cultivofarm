@@ -19,7 +19,9 @@ DECLARE
     'rpc_listar_atendimentos_tecnicos_v1',
       '56aff563154e14d63516e41498b7dcf0152a18f46a4f91c041d29fb9a23ae52b',
     'rpc_resumo_atendimentos_tecnicos_v1',
-      'bffd7dc86c34fd1c057ff86a43a061562eb8ba9d6c1d659d8c2b57b517ef409a'
+      'bffd7dc86c34fd1c057ff86a43a061562eb8ba9d6c1d659d8c2b57b517ef409a',
+    'rpc_finalizar_visita_v2',
+      '480c8a8a97458abced69f11029fd4b28617ee4958493bf9972fdc66ec7a9e382'
   );
   v_ref text;
   r record;
@@ -38,7 +40,7 @@ BEGIN
          WHERE n.nspname='public' AND p.proname = r.fname) <> 1 THEN
       RAISE EXCEPTION 'POST FAIL: % ausente ou com overload', r.fname;
     END IF;
-    SELECT encode(digest(pg_get_functiondef(p.oid),'sha256'),'hex') INTO v_got
+    SELECT encode(extensions.digest(pg_get_functiondef(p.oid)::bytea,'sha256'),'hex') INTO v_got
       FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
      WHERE n.nspname='public' AND p.proname = r.fname;
     IF v_got IS DISTINCT FROM r.sum THEN
@@ -56,6 +58,12 @@ BEGIN
          AND a.grantee = 0 AND a.privilege_type = 'EXECUTE'
     ) THEN
       RAISE EXCEPTION 'POST FAIL: PUBLIC possui EXECUTE em %', r.fname;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+                    WHERE n.nspname='public' AND p.proname=r.fname
+                      AND p.prosecdef AND p.proconfig @> ARRAY['search_path=public']
+                      AND pg_get_userbyid(p.proowner)='postgres') THEN
+      RAISE EXCEPTION 'POST FAIL: owner/security/search_path incorretos em %', r.fname;
     END IF;
     RAISE NOTICE 'POST OK: % checksum e grants conferem', r.fname;
   END LOOP;
