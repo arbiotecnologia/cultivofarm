@@ -52,6 +52,7 @@ AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_reg public.registros_consultor;
+  v_ok boolean;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthenticated' USING ERRCODE = '42501'; END IF;
 
@@ -61,12 +62,12 @@ BEGIN
   -- can_manage_technical_visit = administrador OR responsavel OR gestor da
   -- organizacao/cliente com escopo manage. Vinculo user_clientes generico
   -- (execute/manage) de tecnico/consultor NAO autoriza por si so.
-  IF NOT (
-    public.can_manage_technical_visit(v_uid, p_registro_id)
-    OR v_reg.created_by = v_uid
-    OR v_reg.consultor_responsavel = v_uid
-    OR public.is_active_visit_participant(v_uid, p_registro_id)
-  ) THEN
+  v_ok := COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false)
+       OR COALESCE(v_reg.created_by = v_uid, false)
+       OR COALESCE(v_reg.consultor_responsavel = v_uid, false)
+       OR COALESCE(public.is_active_visit_participant(v_uid, p_registro_id), false);
+
+  IF v_ok IS NOT TRUE THEN
     RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
   END IF;
 
@@ -89,12 +90,14 @@ DECLARE
   v_uid uuid := auth.uid();
   v_existing public.registros_consultor_recomendacoes;
   v_new public.registros_consultor_recomendacoes;
+  v_ok boolean;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'unauthenticated' USING ERRCODE = '42501'; END IF;
 
   -- Defesa em profundidade explicita, antes de qualquer leitura/escrita de dados.
-  IF NOT public.can_manage_technical_visit(v_uid, p_registro_id)
-     AND NOT public.is_active_visit_participant(v_uid, p_registro_id) THEN
+  v_ok := COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false)
+       OR COALESCE(public.is_active_visit_participant(v_uid, p_registro_id), false);
+  IF v_ok IS NOT TRUE THEN
     RAISE EXCEPTION 'forbidden_visita' USING ERRCODE = '42501';
   END IF;
 
@@ -191,6 +194,7 @@ AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_reg public.registros_consultor;
+  v_ok boolean;
   v_diag_count integer;
   v_checkin_count integer;
   v_new_version integer;
@@ -206,12 +210,12 @@ BEGIN
     RAISE EXCEPTION 'registro_nao_encontrado' USING ERRCODE = 'P0002';
   END IF;
 
-  IF NOT (
-    public.can_manage_technical_visit(v_uid, p_registro_id)
-    OR v_reg.created_by = v_uid
-    OR v_reg.consultor_responsavel = v_uid
-    OR public.is_active_visit_participant(v_uid, p_registro_id)
-  ) THEN
+  v_ok := COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false)
+       OR COALESCE(v_reg.created_by = v_uid, false)
+       OR COALESCE(v_reg.consultor_responsavel = v_uid, false)
+       OR COALESCE(public.is_active_visit_participant(v_uid, p_registro_id), false);
+
+  IF v_ok IS NOT TRUE THEN
     RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
   END IF;
 
