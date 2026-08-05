@@ -77,7 +77,17 @@ const certifyBool = (id: string, cond: boolean, evidence: unknown) =>
 // ---------------------------------------------------------------------------
 // Clientes
 // ---------------------------------------------------------------------------
-const svc = createClient(SUPABASE_URL, ADMIN_KEY ?? "", { auth: { persistSession: false } });
+// Cliente administrativo criado APÓS a guarda de ambiente (setup/cleanup apenas).
+let _svc: SupabaseClient | null = null;
+const svc = new Proxy({} as SupabaseClient, {
+  get(_t, prop) {
+    if (!_svc) {
+      if (!ADMIN_KEY) throw new Error("GUARD_ABORT: credencial administrativa ausente");
+      _svc = createClient(SUPABASE_URL, ADMIN_KEY, { auth: { persistSession: false } });
+    }
+    return (_svc as unknown as Record<PropertyKey, unknown>)[prop];
+  },
+});
 const RUN = crypto.randomUUID().slice(0, 8);
 const PWD = `Visita-${crypto.randomUUID()}`;
 
