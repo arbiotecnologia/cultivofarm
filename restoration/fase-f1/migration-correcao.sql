@@ -660,3 +660,16 @@ REVOKE ALL ON FUNCTION public.fiscal_audit_trigger() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.fiscal_audit_trigger() FROM anon;
 GRANT EXECUTE ON FUNCTION public.fiscal_audit_trigger() TO service_role;
 GRANT EXECUTE ON FUNCTION public.fiscal_audit_trigger_microorganism_profiles() TO service_role;
+
+-- =====================================================================
+-- SEÇÃO 8 — PRIVILÉGIOS MÍNIMOS NAS VIEWS DE PRONTIDÃO
+-- As views recriadas herdavam TRUNCATE/REFERENCES/TRIGGER para
+-- authenticated (grant amplo histórico do projeto). No escopo desta fase
+-- elas passam a ter apenas SELECT. Nenhuma outra relação é alterada.
+-- =====================================================================
+REVOKE ALL ON public.v_product_fiscal_readiness FROM authenticated;
+REVOKE ALL ON public.v_microorganism_fiscal_readiness FROM authenticated;
+REVOKE ALL ON public.v_product_fiscal_readiness FROM PUBLIC, anon;
+REVOKE ALL ON public.v_microorganism_fiscal_readiness FROM PUBLIC, anon;
+GRANT SELECT ON public.v_product_fiscal_readiness TO authenticated, service_role;
+GRANT SELECT ON public.v_microorganism_fiscal_readiness TO authenticated, service_role;
