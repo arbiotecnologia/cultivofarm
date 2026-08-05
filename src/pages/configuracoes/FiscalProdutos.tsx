@@ -65,6 +65,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, ShieldOff, Loader2, Pencil, Plus, Link2, Link2Off } from "lucide-react";
 import { IbsCbsItemCard } from "@/components/fiscal/IbsCbsItemCard";
+import { RegulatorioMicrorganismosSecao } from "@/components/fiscal/RegulatorioMicrorganismosSecao";
 import {
   PRODUCT_FISCAL_PROFILE_STATUS_OPTIONS,
   getFiscalStatusLabel,
