@@ -89,7 +89,9 @@ BEGIN
   END IF;
 
   -- 7. zero fixtures de teste residuais
-  IF EXISTS (SELECT 1 FROM public.registros_consultor WHERE titulo LIKE 'C1\_CARTEIRA\_%' ESCAPE '\') THEN
+  IF EXISTS (SELECT 1 FROM public.registros_consultor
+              WHERE COALESCE(problema_principal,'') LIKE 'C1\_CARTEIRA\_%' ESCAPE '\'
+                 OR COALESCE(codigo_visita,'') LIKE 'C1\_CARTEIRA\_%' ESCAPE '\') THEN
     RAISE EXCEPTION 'POSTCHECK_FAIL: fixtures C1_CARTEIRA_ residuais';
   END IF;
 
