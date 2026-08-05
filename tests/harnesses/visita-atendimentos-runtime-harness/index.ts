@@ -14,6 +14,7 @@
 //     tests/harnesses/visita-atendimentos-runtime-harness/index.ts
 // ============================================================================
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { DsnAdmin } from "./dsn-admin-adapter.ts";
 
 const SUPABASE_URL =
   Deno.env.get("SUPABASE_URL") ?? Deno.env.get("VITE_SUPABASE_URL") ?? "";
@@ -26,6 +27,9 @@ const ANON_KEY =
   "";
 // Chave administrativa: service_role clássica OU secret key moderna. Backend-only.
 const ADMIN_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY");
+// Alternativa administrativa quando a service key nao esta disponivel no ambiente:
+// conexao direta ao staging (backend-only, usada somente em setup/cleanup/verificacao).
+const ADMIN_DSN = Deno.env.get("STAGING_DSN") ?? "";
 
 const EXPECTED_STAGING_REF = "ikaauvsflpmamgxmkhoq";
 const PROD_REF = "navfzbwgwzruipouyfnk";
@@ -35,7 +39,7 @@ function assertStaging() {
   const missing: string[] = [];
   if (!SUPABASE_URL) missing.push("SUPABASE_URL");
   if (!ANON_KEY) missing.push("SUPABASE_ANON_KEY");
-  if (!ADMIN_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY");
+  if (!ADMIN_KEY && !ADMIN_DSN) missing.push("SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY|STAGING_DSN");
   if (missing.length > 0) {
     throw new Error(`GUARD_ABORT: variaveis ausentes: ${missing.join(", ")}`);
   }
@@ -86,11 +90,17 @@ const certifyBool = (id: string, cond: boolean, evidence: unknown) =>
 // ---------------------------------------------------------------------------
 // Cliente administrativo criado APÓS a guarda de ambiente (setup/cleanup apenas).
 let _svc: SupabaseClient | null = null;
+let _dsnAdmin: DsnAdmin | null = null;
 const svc = new Proxy({} as SupabaseClient, {
   get(_t, prop) {
     if (!_svc) {
-      if (!ADMIN_KEY) throw new Error("GUARD_ABORT: credencial administrativa ausente");
-      _svc = createClient(SUPABASE_URL, ADMIN_KEY, { auth: { persistSession: false } });
+      if (ADMIN_KEY) {
+        _svc = createClient(SUPABASE_URL, ADMIN_KEY, { auth: { persistSession: false } });
+      } else if (_dsnAdmin) {
+        _svc = _dsnAdmin as unknown as SupabaseClient;
+      } else {
+        throw new Error("GUARD_ABORT: credencial administrativa ausente");
+      }
     }
     const value = (_svc as unknown as Record<PropertyKey, unknown>)[prop];
     return typeof value === "function" ? (value as (...a: unknown[]) => unknown).bind(_svc) : value;
@@ -1022,6 +1032,9 @@ async function writeArtifacts(startedAt: string) {
 // ---------------------------------------------------------------------------
 async function main() {
   assertStaging();
+  if (!ADMIN_KEY) {
+    _dsnAdmin = await DsnAdmin.connect(ADMIN_DSN);
+  }
   const startedAt = new Date().toISOString();
   let runtimeError: string | null = null;
 
@@ -1053,6 +1066,8 @@ async function main() {
       certify("T18", "FAIL", { erro_cleanup: (e as Error).message });
     }
   }
+
+  if (_dsnAdmin) await _dsnAdmin.close();
 
   const { summary, ordered } = await writeArtifacts(startedAt);
   console.log(JSON.stringify({
