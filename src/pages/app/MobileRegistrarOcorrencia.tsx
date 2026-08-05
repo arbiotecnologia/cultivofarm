@@ -289,6 +289,9 @@ export default function MobileRegistrarOcorrencia() {
 
       // Mídia: falhas NÃO invalidam a visita — ficam pendentes e recuperáveis.
       let midiaFalhas = 0;
+      // Mídias que falharam E não puderam ser enfileiradas para retry.
+      let midiaNaoEnfileiradas = 0;
+
       if (registroId && fotos.length > 0) {
         for (let i = 0; i < fotos.length; i++) {
           const file = fotos[i];
