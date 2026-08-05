@@ -88,8 +88,10 @@ BEGIN
          pg_get_functiondef(p.oid) ILIKE '%registros_consultor.data_aprovacao%'
          OR pg_get_functiondef(p.oid) ~* 'UPDATE\s+public\.registros_consultor[^;]*data_aprovacao'
        )
-
+  ) THEN
+    RAISE EXCEPTION 'POST FAIL: referencia a registros_consultor.data_aprovacao';
   END IF;
+
 
   RAISE NOTICE 'POSTCHECK_CONSOLIDACAO_OK';
 END
