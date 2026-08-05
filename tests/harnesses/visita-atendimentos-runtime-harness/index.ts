@@ -928,7 +928,7 @@ async function t17() {
   });
 }
 
-async function t18(mediaCleanupOk: boolean) {
+async function t18(mediaCleanupOk: boolean, storageObjetosCriados: string[]) {
   const tabelas: Record<string, number | null> = {};
   const regsPorCliente = await svc.from("registros_consultor")
     .select("id", { count: "exact", head: true }).in("cliente_id", created.clientes);
@@ -957,7 +957,7 @@ async function t18(mediaCleanupOk: boolean) {
     const { data } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
     storageRestantes += (data ?? []).length;
   }
-  storageRestantes += created.storageObjects.length;
+  storageRestantes += storageObjetosCriados.length;
 
   const catalogo = await svc.rpc("rpc_certificacao_catalogo", {
     p_functions: [] as string[],
@@ -1056,12 +1056,13 @@ async function main() {
     await t16();
     await t17();
     (globalThis as any).__mediaCleanupOk = mediaCleanupOk;
+    (globalThis as any).__storageObjects = [...created.storageObjects];
   } catch (e) {
     runtimeError = (e as Error).message;
   } finally {
     try {
       await cleanup();
-      await t18((globalThis as any).__mediaCleanupOk === true);
+      await t18((globalThis as any).__mediaCleanupOk === true, (globalThis as any).__storageObjects ?? []);
     } catch (e) {
       certify("T18", "FAIL", { erro_cleanup: (e as Error).message });
     }
