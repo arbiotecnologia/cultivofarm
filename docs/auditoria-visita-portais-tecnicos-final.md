@@ -66,3 +66,12 @@ A matriz T1–T18 permanece sustentada pela evidência externa `d5d7582f`; a ree
 local segue bloqueada pela ausência da credencial administrativa no executor CLI.
 
 `PRODUCAO_NAO_ACESSADA` · `NAO_PUBLICADO`
+
+## Manifesto de promoção
+
+`restoration/visita-portais-tecnicos/promotion-manifest.json` atualizado com os
+artefatos da consolidação (migration `20260805152009`, rollback e postcheck de
+consolidação, este relatório, `playwright.config.ts` e `playwright-fixture.ts`) e
+com o checksum atualizado do runner T1–T18.
+
+Validação sha256 + tamanho dos 15 artefatos: **`MANIFEST_VALIDATION PASS`**.
