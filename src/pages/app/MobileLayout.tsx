@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { Navigate } from "react-router-dom";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { OfflineIndicator } from "@/components/app/OfflineIndicator";
+import { PendingMediaRecovery } from "@/components/app/PendingMediaRecovery";
+
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
 import { useEffect } from "react";
