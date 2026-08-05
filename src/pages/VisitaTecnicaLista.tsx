@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InconsistenciasVisita } from "@/components/visita/InconsistenciasVisita";
 import { useAuth } from "@/hooks/useAuth";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
+import { useVisitasTecnicasLista, periodoParaIntervalo } from "@/hooks/useVisitasTecnicasLista";
+
+const PAGE_SIZE = 25;
 
 export default function VisitaTecnicaLista() {
   const isMobile = useIsMobile();
@@ -33,6 +36,11 @@ export default function VisitaTecnicaLista() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [clienteFilter, setClienteFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, dateFilter, clienteFilter]);
 
   useEffect(() => {
     if (role === "admin" || role === "gestor") {
@@ -44,68 +52,32 @@ export default function VisitaTecnicaLista() {
     }
   }, [role]);
 
-  const { data: visitas = [], isLoading } = useQuery({
-    queryKey: ["visitas-tecnicas-lista"],
-    queryFn: async () => {
-      let query = supabase
-        .from("registros_consultor")
-        .select(`
-          id,
-          codigo_visita,
-          data_vistoria, 
-          objetivo_visita, 
-          status, 
-          urgencia,
-          risco_produtivo,
-          necessidade_intervencao,
-          data_proxima_visita,
-          clientes:cliente_id(nome), 
-          fazendas:fazenda_id(nome), 
-          talhoes:talhao_id(nome), 
-          culturas:cultura_id(nome)
-        `)
-        .order("data_vistoria", { ascending: false });
+  const intervaloDatas = useMemo(() => periodoParaIntervalo(dateFilter), [dateFilter]);
 
-      if (role !== "admin" && role !== "gestor" && role !== "administrador") {
-        query = query.eq("consultor_responsavel", user?.id);
-      }
-
-      const { data, error } = await query;
-      return data || [];
-    },
+  const { data: listaVisitas, isLoading } = useVisitasTecnicasLista({
+    search: search.trim() || null,
+    status: statusFilter === "all" ? null : [statusFilter],
+    de: intervaloDatas.de,
+    ate: intervaloDatas.ate,
+    clienteId: clienteFilter === "all" ? null : clienteFilter,
+    page,
+    pageSize: PAGE_SIZE,
   });
 
-  const filteredVisitas = visitas.filter((v) => {
-    const s = search.toLowerCase();
-    const matchesSearch =
-      v.objetivo_visita?.toLowerCase().includes(s) ||
-      (v as any).codigo_visita?.toLowerCase().includes(s) ||
-      (v.clientes as any)?.nome?.toLowerCase().includes(s) ||
-      (v.fazendas as any)?.nome?.toLowerCase().includes(s) ||
-      (v.talhoes as any)?.nome?.toLowerCase().includes(s);
-    
-    
-    const matchesStatus = statusFilter === "all" || v.status === statusFilter;
-    
-    const matchesCliente = clienteFilter === "all" || v.id === clienteFilter || (v.clientes as any)?.id === clienteFilter;
-
-    let matchesDate = true;
-    if (dateFilter !== "all" && v.data_vistoria) {
-      const date = new Date(v.data_vistoria);
-      const today = new Date();
-      if (dateFilter === "today") {
-        matchesDate = date.toDateString() === today.toDateString();
-      } else if (dateFilter === "week") {
-        const lastWeek = new Date();
-        lastWeek.setDate(today.getDate() - 7);
-        matchesDate = date >= lastWeek;
-      } else if (dateFilter === "month") {
-        matchesDate = date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-      }
-    }
-
-    return matchesSearch && matchesStatus && matchesDate && matchesCliente;
-  });
+  // Shape compatível com o restante da tela (tabela e cards mobile).
+  const filteredVisitas = useMemo(
+    () =>
+      (listaVisitas?.items ?? []).map((v) => ({
+        ...v,
+        clientes: { id: v.cliente_id, nome: v.cliente_nome },
+        fazendas: { id: v.fazenda_id, nome: v.fazenda_nome },
+        talhoes: { nome: v.talhao_nome },
+        culturas: { nome: null as string | null },
+        data_proxima_visita: null as string | null,
+      })),
+    [listaVisitas],
+  );
+  const visitas = filteredVisitas;
 
   const uniqueClientes = Array.from(new Set(visitas.map(v => (v.clientes as any)?.nome).filter(Boolean)));
   const clienteOptions = Array.from(new Map(visitas.map(v => [(v.clientes as any)?.id || (v.clientes as any)?.nome, (v.clientes as any)?.nome])).entries())
