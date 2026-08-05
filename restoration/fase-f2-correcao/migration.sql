@@ -402,6 +402,8 @@ CREATE TABLE IF NOT EXISTS public.regulatory_storage_cleanup_queue (
 CREATE UNIQUE INDEX IF NOT EXISTS rscq_uq_pending_path
   ON public.regulatory_storage_cleanup_queue (storage_bucket, storage_path) WHERE state = 'PENDING';
 
+REVOKE ALL ON public.regulatory_storage_cleanup_queue FROM PUBLIC;
+REVOKE ALL ON public.regulatory_storage_cleanup_queue FROM anon;
 GRANT SELECT ON public.regulatory_storage_cleanup_queue TO authenticated;
 GRANT ALL ON public.regulatory_storage_cleanup_queue TO service_role;
 ALTER TABLE public.regulatory_storage_cleanup_queue ENABLE ROW LEVEL SECURITY;
