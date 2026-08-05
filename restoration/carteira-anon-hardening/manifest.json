@@ -10,10 +10,22 @@
   },
   "aplicado_em": "2026-08-05T19:40:00Z",
   "artefatos": [
-    { "arquivo": "migration.sql", "sha256": "994ece940d6482b8c0b5407fbaf32d9085d153bc069c8525c7891b73f91db73f" },
-    { "arquivo": "rollback.sql", "sha256": "204703e1271eb7b5df02ba37a0630b663483814a74ce400c340e733fd650cdab" },
-    { "arquivo": "postcheck.sql", "sha256": "9e64c1ac61cb3d5faf23fedd827af9f99b7281bc4e1202911492d551d3707c7f" },
-    { "arquivo": "harness-runtime.sql", "sha256": "6100b435ba02732f7598ca753174e88b14947efaf65747921e0a231bc706ce86" }
+    {
+      "arquivo": "migration.sql",
+      "sha256": "994ece940d6482b8c0b5407fbaf32d9085d153bc069c8525c7891b73f91db73f"
+    },
+    {
+      "arquivo": "rollback.sql",
+      "sha256": "204703e1271eb7b5df02ba37a0630b663483814a74ce400c340e733fd650cdab"
+    },
+    {
+      "arquivo": "postcheck.sql",
+      "sha256": "9e64c1ac61cb3d5faf23fedd827af9f99b7281bc4e1202911492d551d3707c7f"
+    },
+    {
+      "arquivo": "harness-runtime.sql",
+      "sha256": "6100b435ba02732f7598ca753174e88b14947efaf65747921e0a231bc706ce86"
+    }
   ],
   "objetos_alterados": {
     "public.can_user_access_cliente(uuid)": {
@@ -24,7 +36,10 @@
       "md5_functiondef_antes": "09dc2a16f4b20ea04140609907c4461f",
       "md5_functiondef_depois": "c0acb1dcd7f0b183f9500f4c264c1fa1"
     },
-    "policy registros_consultor_select_hardened": { "roles_antes": "public", "roles_depois": "authenticated" },
+    "policy registros_consultor_select_hardened": {
+      "roles_antes": "public",
+      "roles_depois": "authenticated"
+    },
     "acl public.registros_consultor": {
       "anon_antes": "ALL (7 privilegios)",
       "anon_depois": "nenhum",
@@ -45,6 +60,37 @@
     "vitest": "2723 passed / 4 skipped",
     "build": "PASS"
   },
-  "residuo": { "fixtures": 0, "blobs": 0, "triggers_desabilitados": 0 },
-  "divergencia_preexistente": "restoration/visita-portais-tecnicos/postcheck-consolidacao.sql falha no checksum de rpc_upsert_recomendacao_visita por desatualizacao frente a migration 20260805182000 (runtime fix). Nao relacionado a esta correcao; funcao nao foi tocada."
+  "residuo": {
+    "fixtures": 0,
+    "blobs": 0,
+    "triggers_desabilitados": 0
+  },
+  "migration_canonica": {
+    "caminho": "supabase/migrations/20260809000000_carteira_anon_hardening_canonico.sql",
+    "versao": "20260809000000",
+    "nome": "carteira_anon_hardening_canonico",
+    "sha256": "307c3b7c8bc1158edbe9f8390a43b22c9bdc7b5a07393b9b7e448e3b3993c584",
+    "bytes": 10736,
+    "idempotente": true,
+    "guard_fail_closed": true,
+    "conteudo": "identico em regra funcional a restoration/carteira-anon-hardening/migration.sql, sem comandos psql, metacomandos ou testes",
+    "aplicada_em_staging": "2026-08-05T19:55:00Z",
+    "mecanismo": "psql --single-transaction -v ON_ERROR_STOP=1 (mesmo mecanismo transacional usado pelas migrations 20260805182000 e 202608060/7/8 do projeto)",
+    "ledger_supabase_migrations": "nao registrada; nenhum INSERT manual executado. O ledger canonico do staging para no 20260805155043 e nao contem as 4 migrations posteriores do repositorio, todas aplicadas pelo mesmo mecanismo transacional.",
+    "reexecucao_idempotente": "2a execucao sem alteracao de md5 de funcoes, roles da policy ou ACLs"
+  },
+  "artefatos_fora_de_migrations": [
+    "rollback.sql",
+    "postcheck.sql",
+    "harness-runtime.sql",
+    "manifest.json"
+  ],
+  "checksum_postcheck_consolidacao_visita": {
+    "arquivo": "restoration/visita-portais-tecnicos/postcheck-consolidacao.sql",
+    "funcao": "rpc_upsert_recomendacao_visita",
+    "sha256_antes": "dc17f7b82d99c706284c3b5c87ebf38533ec1b46cf9cfbf00d4c17d703ce6107",
+    "sha256_depois": "118be4751fcd7e1e6ad3a587a30dfff89aceedf75419f9e8750e0bcee6453dbb",
+    "origem": "definicao homologada em staging apos 20260805182000 (contem version_conflict e FOR UPDATE); corpo da RPC nao alterado",
+    "resultado": "POSTCHECK_CONSOLIDACAO_OK"
+  }
 }

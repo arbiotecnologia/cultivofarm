@@ -27,7 +27,7 @@ DECLARE
     'rpc_reprovar_visita',              '9c5dbc5dd96d4eb6b0f2d49898f7bee24b4a2a01e295ac24bbe37503c0b67071',
     'rpc_solicitar_ajuste_visita',      'a4d855bbc221c7a14f0cf53b66e544e5716ae0707297ba075fea4b7246c26a1c',
     'rpc_upsert_diagnostico_visita',    'c37f9f4db3d1fa20f6a4544147f3a45cb5647833ea9ce7e1ab6610d4b905b0ed',
-    'rpc_upsert_recomendacao_visita',   'dc17f7b82d99c706284c3b5c87ebf38533ec1b46cf9cfbf00d4c17d703ce6107'
+    'rpc_upsert_recomendacao_visita',   '118be4751fcd7e1e6ad3a587a30dfff89aceedf75419f9e8750e0bcee6453dbb'
   );
   v_ref text;
   v_rows integer;
