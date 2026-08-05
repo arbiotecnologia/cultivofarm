@@ -89,7 +89,10 @@ export class DsnAdmin {
     const params = keys.map((k, i) => `${ident(k)} => $${i + 1}`).join(", ");
     const values = keys.map((k) => {
       const v = args[k];
-      return v !== null && typeof v === "object" ? JSON.stringify(v) : v;
+      if (v !== null && typeof v === "object") {
+        return Array.isArray(v) ? v : JSON.stringify(v);
+      }
+      return v;
     });
     try {
       const rows = await this.query<{ r: unknown }>(
