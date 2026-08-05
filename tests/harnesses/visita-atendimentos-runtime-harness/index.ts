@@ -10,10 +10,20 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const EXPECTED_STAGING_REF = "ikaauvsflpmamgxmkhoq";
 const PROD_REF = "navfzbwgwzruipouyfnk";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Script CLI local — NÃO é Edge Function. Sem Deno.serve, sem CORS, sem HTTP.
+// Guard fail-closed: só executa contra o staging autorizado.
+function assertStaging() {
+  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+    throw new Error("GUARD_ABORT: SUPABASE_URL/SERVICE_ROLE/ANON ausentes");
+  }
+  if (SUPABASE_URL.includes(PROD_REF)) {
+    throw new Error("GUARD_ABORT: URL de PRODUCAO — execucao proibida");
+  }
+  if (!SUPABASE_URL.includes(EXPECTED_STAGING_REF)) {
+    throw new Error(`GUARD_ABORT: ambiente nao autorizado (esperado ${EXPECTED_STAGING_REF})`);
+  }
+}
+
 
 type Status = "PASS" | "FAIL" | "BLOCKED";
 type Result = { id: string; name: string; status: Status; evidence: unknown };
@@ -373,27 +383,39 @@ async function run() {
   }
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+// ---------------------------------------------------------------------------
+// Entry point CLI (não-servidor). Uso:
+//   deno run --allow-net --allow-env tests/harnesses/visita-atendimentos-runtime-harness/index.ts
+// ---------------------------------------------------------------------------
+async function main() {
+  assertStaging();
+  let exitCode = 0;
   try {
     await setup();
-    try {
-      await run();
-    } finally {
-      await cleanup();
-    }
-    const pass = results.filter((r) => r.status === "PASS").length;
-    const fail = results.filter((r) => r.status === "FAIL").length;
-    const blocked = results.filter((r) => r.status === "BLOCKED").length;
-    return new Response(
-      JSON.stringify({ run: RUN, summary: { pass, fail, blocked, total: results.length }, results }, null, 2),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    await run();
   } catch (e) {
-    try { await cleanup(); } catch { /* best effort */ }
-    return new Response(
-      JSON.stringify({ error: (e as Error).message, results }, null, 2),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    exitCode = 1;
+    log("RUNNER", "Execucao do harness", "FAIL", (e as Error).message);
+  } finally {
+    try {
+      await cleanup();
+    } catch (e) {
+      exitCode = 1;
+      log("CLEANUP", "Limpeza de fixtures/usuarios", "FAIL", (e as Error).message);
+    }
   }
-});
+  const pass = results.filter((r) => r.status === "PASS").length;
+  const fail = results.filter((r) => r.status === "FAIL").length;
+  const blocked = results.filter((r) => r.status === "BLOCKED").length;
+  console.log(JSON.stringify(
+    { run: RUN, summary: { pass, fail, blocked, total: results.length }, results },
+    null,
+    2,
+  ));
+  if (fail > 0) exitCode = 1;
+  Deno.exit(exitCode);
+}
+
+if (import.meta.main) {
+  await main();
+}
