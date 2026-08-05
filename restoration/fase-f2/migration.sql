@@ -1662,3 +1662,48 @@ VALUES
   ('CONFAZ_CEST','CONFAZ','Convenio ICMS 142/2018 - Anexos CEST',
    'https://www.confaz.fazenda.gov.br','Ancora para CEST e substituicao tributaria.')
 ON CONFLICT (source_key) DO NOTHING;
+
+-- =====================================================================
+-- SEÇÃO 19 — HARDENING FINAL DE PRIVILÉGIOS (fail-closed)
+-- O banco possui DEFAULT PRIVILEGES que concedem ALL a anon/authenticated
+-- em novas tabelas do schema public. Esta seção revoga tudo e reconcede
+-- apenas o estritamente necessário.
+-- =====================================================================
+DO $priv$
+DECLARE r text;
+  v_rel text[] := ARRAY[
+    'fiscal_official_sources',
+    'microorganism_regulatory_dossiers',
+    'microorganism_regulatory_presentations',
+    'microorganism_ncm_candidates',
+    'microorganism_regulatory_documents',
+    'microorganism_regulatory_checklist',
+    'microorganism_regulatory_publication_snapshots'];
+BEGIN
+  FOREACH r IN ARRAY v_rel LOOP
+    EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC, anon, authenticated', r);
+    EXECUTE format('GRANT ALL ON public.%I TO service_role', r);
+  END LOOP;
+
+  -- Leitura de referências normativas
+  EXECUTE 'GRANT SELECT ON public.fiscal_official_sources TO authenticated';
+
+  -- Escrita sempre mediada por RPC + RLS; nunca DELETE/TRUNCATE pelo cliente
+  FOREACH r IN ARRAY ARRAY[
+    'microorganism_regulatory_dossiers',
+    'microorganism_regulatory_presentations',
+    'microorganism_ncm_candidates',
+    'microorganism_regulatory_documents',
+    'microorganism_regulatory_checklist'] LOOP
+    EXECUTE format('GRANT SELECT, INSERT, UPDATE ON public.%I TO authenticated', r);
+  END LOOP;
+
+  -- Snapshots de publicação são append-only e somente leitura para o cliente
+  EXECUTE 'GRANT SELECT ON public.microorganism_regulatory_publication_snapshots TO authenticated';
+END $priv$;
+
+-- Views da fase: nunca acessíveis anonimamente
+REVOKE ALL ON public.v_microorganism_fiscal_readiness FROM PUBLIC, anon;
+REVOKE ALL ON public.v_product_fiscal_readiness FROM PUBLIC, anon;
+GRANT SELECT ON public.v_microorganism_fiscal_readiness TO authenticated, service_role;
+GRANT SELECT ON public.v_product_fiscal_readiness TO authenticated, service_role;
