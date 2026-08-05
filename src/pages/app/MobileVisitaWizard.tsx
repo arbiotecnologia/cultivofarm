@@ -41,6 +41,7 @@ import WizardDiagnosticoStep from "./wizard/WizardDiagnosticoStep";
 import WizardRecomendacaoStep from "./wizard/WizardRecomendacaoStep";
 import WizardAnexosStep from "./wizard/WizardAnexosStep";
 import WizardRevisaoStep from "./wizard/WizardRevisaoStep";
+import { AcompanhamentoVisita } from "@/components/visita/AcompanhamentoVisita";
 
 /**
  * Wizard mobile de visita técnica — 7 etapas funcionais.
@@ -64,6 +65,7 @@ const STEPS = [
   { id: 5, label: "Recomendação" },
   { id: 6, label: "Anexos" },
   { id: 7, label: "Revisão" },
+  { id: 8, label: "Acompanhamento" },
 ] as const;
 
 const TIPOS: { value: TipoVisita; label: string }[] = [
@@ -314,7 +316,7 @@ export default function MobileVisitaWizard() {
 
   // Permissões efetivas vêm do servidor (rpc_get_visita_workspace).
   // Nunca derivar permissão apenas do status local.
-  const { data: workspace } = useVisitaWorkspace(registroId);
+  const { data: workspace, isLoading: workspaceLoading } = useVisitaWorkspace(registroId);
   const permissions = workspace?.permissions ?? EMPTY_VISITA_PERMISSIONS;
 
   const locked = useMemo(() => {
@@ -406,7 +408,7 @@ export default function MobileVisitaWizard() {
     if (!diagExistente) return 4;
     if (!recExistente) return 5;
     if (!anexosExistente) return 6;
-    return 7; // Etapa 7 (Revisão) virá no próximo grupo
+    return 8; // Revisão e Acompanhamento liberados
   }, [step1Done, checkinExistente, campoExistente, diagExistente, recExistente, anexosExistente]);
 
   // Auto-advance para etapa solicitada via ?step= (respeitando unlockedUpTo)
@@ -996,6 +998,10 @@ export default function MobileVisitaWizard() {
             locked={locked}
             onDone={() => setCurrentStep(7)}
           />
+        )}
+
+        {currentStep === 8 && (
+          <AcompanhamentoVisita workspace={workspace} isLoading={workspaceLoading} />
         )}
 
         {currentStep === 7 && (
