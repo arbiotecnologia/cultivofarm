@@ -19895,6 +19895,19 @@ export type Database = {
         Args: { p_registro_id: string }
         Returns: Json
       }
+      rpc_listar_visitas_tecnicas_v1: {
+        Args: {
+          p_ate?: string
+          p_cliente_id?: string
+          p_de?: string
+          p_fazenda_id?: string
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+          p_status?: string[]
+        }
+        Returns: Json
+      }
       rpc_marcar_etiqueta_impressa: {
         Args: { p_etiqueta_id: string; p_motivo?: string }
         Returns: Json
