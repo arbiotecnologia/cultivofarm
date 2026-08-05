@@ -6,8 +6,9 @@
  *  - contexto b2b  → rótulo do papel B2B primário (Gestor/Técnico)
  *  - contexto producer → "Produtor"
  *  - portal técnico (contexto technical OU sem contexto) → deriva por papel:
- *      • possui consultor_tecnico  → "Consultor Técnico"
+ *      • consultor_tecnico         → "Consultor Técnico"
  *          (cobre usuário duplo parceiro_b2b + consultor_tecnico)
+ *      • tecnico_agronomo          → "Técnico Agrônomo"
  *      • possui aplicador          → "Aplicador"
  *      • cliente_produtor          → "Produtor"
  *      • fallback                  → ROLE_LABELS[primaryRole] || "—"
@@ -47,13 +48,13 @@ export function getPortalDisplayLabel({
   if (primaryRole === "cliente_produtor") return "Produtor";
   if (activeCtx === "technical") return ROLE_LABELS.consultor_tecnico;
   return primaryRole ? ROLE_LABELS[primaryRole] || primaryRole : "—";
-
 }
 
 /** Versão minúscula para saudações ("Olá, aplicador"). */
 export function getPortalGreetingLabel(input: PortalDisplayInput): string {
   const label = getPortalDisplayLabel(input);
   if (label === "Consultor Técnico") return "consultor";
+  if (label === "Técnico Agrônomo") return "técnico agrônomo";
   if (label === "Aplicador") return "aplicador";
   if (label === "Produtor") return "produtor";
   return label.toLowerCase();
