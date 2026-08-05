@@ -111,3 +111,67 @@ Executado em transação única com `ROLLBACK` final (zero resíduo), cada RPC c
 - `vitest run`: 163 arquivos, **2710 PASS**, 4 skipped
 - `bun run build`: PASS (PWA gerado)
 - `promotion-manifest.json`: **MANIFEST_VALIDATION PASS**, 18 artefatos com sha256/bytes conferidos
+
+---
+
+## Correção final e revalidação independente — 2026-08-05 15:5x UTC
+
+**Base:** commit 39830a2dab61db0b1d59bad6de205477f94797bf
+**Ambiente:** staging `ikaauvsflpmamgxmkhoq` (marker verificado: 1 linha `STAGING`, `project_ref=ikaauvsflpmamgxmkhoq`).
+**Produção `navfzbwgwzruipouyfnk`: NÃO ACESSADA. Projeto NÃO publicado.**
+
+### Migrations finais
+| Ordem | Migration | Papel |
+|---|---|---|
+| 15 | `20260805152009_fea820c5…` | Consolidação (guard fail-closed exato) |
+| 16 | `20260805153705_a30b97c8…` | Autorização + versão exata — **agora null-safe na própria migration** (`COALESCE` por termo + `IF v_ok IS NOT TRUE`), sem janela vulnerável entre migrations |
+| 17 | `20260805154002_f26e37d5…` | Reforço idempotente (histórico preservado) |
+| 18 | `20260805155043_5cf88636…` | **Concorrência**: lock `FOR UPDATE` na visita pai antes de consultar/inserir a recomendação, índice único `uq_rec_registro_client_uuid` (IF NOT EXISTS) e mapeamento `unique_violation → version_conflict (P0001)` |
+
+### Defeitos corrigidos nesta execução
+1. **postcheck-consolidacao.sql fail-open** → guard agora exige tabela existente, **exatamente 1** linha `marker='STAGING'`, `project_ref` exatamente `ikaauvsflpmamgxmkhoq`, recusa produção e `project_ref` nulo. Checksums regenerados a partir do estado canônico realmente aplicado (`_assert_visita_editavel` `3eac6efb…`, `rpc_finalizar_visita_v2` `d36f81f3…`, `rpc_upsert_recomendacao_visita` `dc17f7b8…`). Passa a validar também a existência do índice único.
+2. **rollback-consolidacao.sql com `LIMIT 1`** → removido; cardinalidade exata + `project_ref` exato + recusa explícita de produção.
+3. **Janela de lógica ternária na 20260805153705** → eliminada na própria migration.
+4. **Concorrência de criação de recomendação** → `SELECT … FOR UPDATE` não bloqueia linha ausente; passa a bloquear a visita pai (após autorização). Constraint confirmada: `CREATE UNIQUE INDEX uq_rec_registro_client_uuid ON public.registros_consultor_recomendacoes (registro_consultor_id, client_uuid) WHERE client_uuid IS NOT NULL`. **Duplicidades reais existentes: 0** (nenhum dado apagado).
+
+### Postcheck canônico final (executado em staging, read-only) — **PASS**
+`bad_overload=0, bad_checksum=0, anon_exec=0, public_exec=0, not_hardened=0, uq_idx=1, marker_rows=1, ref=ikaauvsflpmamgxmkhoq`
+As 18 funções são `SECURITY DEFINER`, `search_path=public`, owner `postgres`, sem EXECUTE para `PUBLIC`/`anon`, grants mínimos `authenticated`/`service_role`.
+
+### Matriz de permissões (canônica, fail-closed)
+| Perfil | Ver | Check-in/out | Diagnóstico | Recomendação | Finalizar |
+|---|---|---|---|---|---|
+| administrador | ✔ | ✔ | ✔ | ✔ | ✔ |
+| gestor da organização (escopo manage) | ✔ | ✔ | ✔ | ✔ | ✔ |
+| criador (`created_by`) | ✔ | ✔ | ✔ | ✔ | ✔ |
+| responsável (`consultor_responsavel`) | ✔ | ✔ | ✔ | ✔ | ✔ |
+| participante ativo atribuído | ✔ | ✔ | ✔ | ✔ | ✔ |
+| técnico apenas vinculado ao cliente (não atribuído) | leitura conforme política | ✘ 42501 | ✘ 42501 | ✘ `forbidden_visita` | ✘ 42501 |
+| anon / PUBLIC | ✘ (sem EXECUTE) | ✘ | ✘ | ✘ | ✘ |
+`created_by`/`consultor_responsavel` nulos **não abrem acesso** (COALESCE por termo + `IS NOT TRUE`).
+
+### Resultados de testes
+| Suite | Resultado |
+|---|---|
+| typecheck (`tsgo --noEmit`) | **PASS** (0 erros) |
+| build (`vite build`) | **PASS** |
+| Vitest completo | **PASS** — 2710 passed / 4 skipped / 0 failed (163 arquivos) |
+| Postcheck canônico staging | **PASS** |
+| Validação sha256/bytes do promotion-manifest (19 artefatos) | **PASS** |
+| Harness T1–T18 | **NÃO EXECUTADO — BLOQUEADO** |
+| Harness corretiva C1–C8 | **NÃO EXECUTADO — BLOQUEADO** |
+| Concorrência simultânea (2 sessões, mesma chave) | **NÃO EXECUTADO — BLOQUEADO** |
+| Playwright real (Chromium desktop + Pixel 5, dois portais) | **NÃO EXECUTADO — BLOQUEADO** |
+
+### Bloqueio exato
+O sandbox desta execução **não possui `SUPABASE_SERVICE_ROLE_KEY` nem `PGHOST`/DSN de staging** (`test -n` negativo para ambos). Sem eles é impossível, sem inventar prova:
+- criar usuários autenticáveis temporários `E2E_VISITA_*` (Admin API) para Consultor Técnico e Técnico Agrônomo e fazer login real nos dois portais;
+- abrir **duas sessões/transações simultâneas** contra o mesmo `registro_consultor_id + client_uuid` (a ferramenta de leitura disponível é single-statement, read-only);
+- executar os harnesses T1–T18 e C1–C8, que dependem de identidade funcional real.
+Nenhum teste foi marcado como PASS por ausência de credencial; SKIP não foi convertido em PASS.
+
+### Cleanup
+Nenhuma fixture `E2E_VISITA_` foi criada nesta execução (os gates que as exigiriam ficaram bloqueados), portanto **zero resíduos**. Nenhum `DELETE` amplo, nenhum trigger desabilitado, nenhum dado real alterado — as únicas mudanças no banco foram `CREATE OR REPLACE FUNCTION`, `CREATE UNIQUE INDEX IF NOT EXISTS` (já existente, no-op) e grants.
+
+### Status final
+**🔴 BLOQUEADO** — correções 1–5 aplicadas e provadas; gates 6 (Playwright real) e a prova de concorrência simultânea não puderam ser executados por ausência de credenciais de staging no ambiente de execução.
