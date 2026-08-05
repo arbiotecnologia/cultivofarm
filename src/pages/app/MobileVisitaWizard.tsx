@@ -801,12 +801,32 @@ export default function MobileVisitaWizard() {
             Sem conexão — o rascunho será sincronizado quando você voltar a ficar online.
           </div>
         )}
-        {locked && (
-          <div className="bg-muted border-t text-muted-foreground text-[11px] px-3 py-1 flex items-center gap-1">
-            <Lock className="h-3 w-3" />
-            {isNew ? "Modo somente leitura." : "Visita concluída. Modo somente leitura."}
+        {wizardState.message && (
+          <div
+            data-testid="visita-wizard-banner"
+            data-state={wizardState.state}
+            className={
+              wizardState.state === "erro"
+                ? "bg-destructive/10 border-t border-destructive/20 text-destructive text-[11px] px-3 py-1 flex items-center justify-between gap-2"
+                : "bg-muted border-t text-muted-foreground text-[11px] px-3 py-1 flex items-center gap-1"
+            }
+          >
+            <span className="flex items-center gap-1">
+              {wizardState.state === "erro" ? (
+                <AlertCircle className="h-3 w-3" />
+              ) : (
+                <Lock className="h-3 w-3" />
+              )}
+              {wizardState.message}
+            </span>
+            {wizardState.canRetry && (
+              <button type="button" className="underline" onClick={() => refetchWorkspace()}>
+                Tentar novamente
+              </button>
+            )}
           </div>
         )}
+
         {(clientesErr || fazendasErr || talhoesErr || culturasErr || !!registroError) && (
           <div className="bg-destructive/10 border-t border-destructive/20 text-destructive text-[11px] px-3 py-1.5 flex items-center justify-between gap-2">
             <span className="flex items-center gap-1">
