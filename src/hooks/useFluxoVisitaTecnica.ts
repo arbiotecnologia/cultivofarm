@@ -300,6 +300,7 @@ export function useFluxoVisitaTecnica() {
     try {
       const { data: res, error } = await supabase.rpc("rpc_programar_retorno_visita" as any, {
         p_registro_id: registroId,
+        p_expected_version: await fetchVersion(registroId),
         p_data_prevista: dataPrevista,
         p_descricao: data?.descricao ?? null,
       });
@@ -465,6 +466,7 @@ export function useFluxoVisitaTecnica() {
     try {
       const { data, error } = await supabase.rpc("rpc_ativar_monitoramento_visita" as any, {
         p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
         p_tipo: tipo,
         p_data_referencia: dataReferencia ?? null,
       });
@@ -481,13 +483,13 @@ export function useFluxoVisitaTecnica() {
     }
   };
 
-  const arquivarVisita = async (id: string): Promise<FluxoResponse> => {
+  const arquivarVisita = async (id: string, motivo?: string | null): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
       const { error } = await supabase.rpc("rpc_arquivar_visita" as any, {
         p_registro_id: id,
         p_expected_version: await fetchVersion(id),
-        p_motivo: null,
+        p_motivo: motivo ?? null,
       });
       if (error) throw error;
       invalidateVisita(id);
