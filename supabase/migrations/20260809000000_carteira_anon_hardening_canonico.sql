@@ -4,12 +4,17 @@
 -- restoration/carteira-anon-hardening/migration.sql.
 -- Idempotente: reexecutável, não altera dados.
 -- Base auditada: 7c0f28735914f81922a5259d30eecb91a2dd9603
--- Ambiente: staging ikaauvsflpmamgxmkhoq (guard fail-closed abaixo)
+-- Ambientes autorizados: STAGING/ikaauvsflpmamgxmkhoq e PRODUCTION/navfzbwgwzruipouyfnk
 -- Idempotente. Forward-only. Nenhuma alteração de dados.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- GUARD FAIL-CLOSED DE AMBIENTE
+-- GUARD FAIL-CLOSED DE AMBIENTE (PROMOVIVEL)
+-- Aceita EXATAMENTE dois pares autorizados:
+--   marker='STAGING'    + project_ref='ikaauvsflpmamgxmkhoq'
+--   marker='PRODUCTION' + project_ref='navfzbwgwzruipouyfnk'
+-- Ausencia do marcador, zero/multiplas linhas, NULL em qualquer coluna,
+-- combinacao cruzada ou qualquer outro valor => GUARD_ABORT.
 -- ---------------------------------------------------------------------
 DO $guard$
 DECLARE
@@ -23,18 +28,21 @@ BEGIN
 
   EXECUTE 'SELECT count(*) FROM public._fiscal_staging_marker' INTO v_count;
   IF v_count <> 1 THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marcador de ambiente com % linhas (esperado 1)', v_count;
+    RAISE EXCEPTION 'GUARD_ABORT: marcador de ambiente com % linhas (esperado exatamente 1)', v_count;
   END IF;
 
   EXECUTE 'SELECT marker, project_ref FROM public._fiscal_staging_marker'
     INTO v_marker, v_ref;
 
-  IF COALESCE(v_marker, '') <> 'STAGING' THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marker <> STAGING';
+  IF v_marker IS NULL OR v_ref IS NULL THEN
+    RAISE EXCEPTION 'GUARD_ABORT: marker/project_ref NULL nao e ambiente autorizado';
   END IF;
 
-  IF COALESCE(v_ref, '') <> 'ikaauvsflpmamgxmkhoq' THEN
-    RAISE EXCEPTION 'GUARD_ABORT: project_ref divergente do staging autorizado';
+  IF NOT (
+       (v_marker = 'STAGING'    AND v_ref = 'ikaauvsflpmamgxmkhoq')
+    OR (v_marker = 'PRODUCTION' AND v_ref = 'navfzbwgwzruipouyfnk')
+  ) THEN
+    RAISE EXCEPTION 'GUARD_ABORT: par (marker, project_ref) nao autorizado';
   END IF;
 END
 $guard$;
