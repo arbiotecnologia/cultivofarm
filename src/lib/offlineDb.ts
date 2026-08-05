@@ -58,7 +58,16 @@ export interface PendingFoto {
   remotePath?: string | null;
   uploadAttempts?: number;
   lastUploadError?: string | null;
+  /**
+   * Visita JÁ existente no servidor (fluxo online que falhou só na mídia).
+   * Quando presente, a mídia é reenviada isoladamente — nunca recria a visita.
+   */
+  remoteRegistroId?: string | null;
+  /** Chave de idempotência da referência em registros_consultor_arquivos */
+  clientUuid?: string | null;
+  categoria?: string | null;
 }
+
 
 export interface PendingCheckin {
   id: string;
@@ -470,6 +479,37 @@ export async function getPendingMediaCount(): Promise<number> {
     req.onerror = () => reject(req.error);
   });
 }
+
+/**
+ * Mídias pendentes vinculadas a uma visita que JÁ existe no servidor.
+ * São órfãs em relação à fila de registros (não existe PendingRegistro pai)
+ * e precisam de um passe próprio de reenvio.
+ */
+export async function getOrphanRemoteMedia(): Promise<PendingFoto[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOTOS, "readonly");
+    const req = tx.objectStore(STORE_FOTOS).getAll();
+    req.onsuccess = () => {
+      const all = (req.result || []) as PendingFoto[];
+      resolve(all.filter((f) => !f.uploaded && !!f.remoteRegistroId));
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/** Remove SOMENTE a mídia (cleanup pós-sucesso), nunca o registro pai. */
+export async function removePendingFoto(id: string): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOTOS, "readwrite");
+    tx.objectStore(STORE_FOTOS).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+
 
 // ============================================================================
 // synced_visit_mappings — sobreviver ao ciclo local → remoto

@@ -2,8 +2,3 @@ project_id = "ikaauvsflpmamgxmkhoq"
 
 [functions.whatsapp-status-webhook]
 verify_jwt = false
-
-[functions.visita-atendimentos-runtime-harness]
-verify_jwt = false
-
-
