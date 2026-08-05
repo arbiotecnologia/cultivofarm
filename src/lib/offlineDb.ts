@@ -588,7 +588,7 @@ export async function releasePendingFoto(id: string): Promise<void> {
 /** Reabilita uma mídia em `sync_error` para nova rodada (ação do usuário). */
 export async function retryFailedMedia(id: string): Promise<void> {
   await updatePendingFoto(id, {
-    syncStatus: "pendente",
+    syncStatus: "pending_sync",
     uploadAttempts: 0,
     syncingAt: null,
   });
