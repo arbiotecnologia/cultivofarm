@@ -8754,6 +8754,51 @@ export type Database = {
           },
         ]
       }
+      fiscal_official_sources: {
+        Row: {
+          id: string
+          source_key: string
+          authority: string
+          name: string
+          url: string
+          doc_version: string | null
+          consulted_at: string | null
+          notes: string | null
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          source_key: string
+          authority: string
+          name: string
+          url: string
+          doc_version?: string | null
+          consulted_at?: string | null
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          source_key?: string
+          authority?: string
+          name?: string
+          url?: string
+          doc_version?: string | null
+          consulted_at?: string | null
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fiscal_operation_policies: {
         Row: {
           active: boolean
@@ -9412,6 +9457,435 @@ export type Database = {
             referencedColumns: ["microorganism_id"]
           },
         ]
+      }
+      microorganism_ncm_candidates: {
+        Row: {
+          id: string
+          dossier_id: string
+          ncm: string
+          cest: string | null
+          justification: string
+          confidence: string
+          source_id: string | null
+          source_url: string | null
+          consulted_at: string | null
+          status: string
+          decided_by: string | null
+          decided_at: string | null
+          decision_reason: string | null
+          created_at: string
+          created_by: string | null
+          official_description: string | null
+          table_version: string | null
+          table_reference_date: string | null
+        }
+        Insert: {
+          id?: string
+          dossier_id: string
+          ncm: string
+          cest?: string | null
+          justification: string
+          confidence?: string
+          source_id?: string | null
+          source_url?: string | null
+          consulted_at?: string | null
+          status?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          decision_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          official_description?: string | null
+          table_version?: string | null
+          table_reference_date?: string | null
+        }
+        Update: {
+          id?: string
+          dossier_id?: string
+          ncm?: string
+          cest?: string | null
+          justification?: string
+          confidence?: string
+          source_id?: string | null
+          source_url?: string | null
+          consulted_at?: string | null
+          status?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          decision_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          official_description?: string | null
+          table_version?: string | null
+          table_reference_date?: string | null
+        }
+        Relationships: []
+      }
+      microorganism_regulatory_checklist: {
+        Row: {
+          id: string
+          dossier_id: string
+          item_key: string
+          state: string
+          justification: string | null
+          evidence_document_id: string | null
+          decided_by: string | null
+          decided_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          dossier_id: string
+          item_key: string
+          state?: string
+          justification?: string | null
+          evidence_document_id?: string | null
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          dossier_id?: string
+          item_key?: string
+          state?: string
+          justification?: string | null
+          evidence_document_id?: string | null
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      microorganism_regulatory_documents: {
+        Row: {
+          id: string
+          dossier_id: string
+          doc_type: string
+          title: string
+          storage_bucket: string
+          storage_path: string
+          content_sha256: string
+          issuer: string | null
+          issued_at: string | null
+          valid_until: string | null
+          source_id: string | null
+          source_url: string | null
+          consulted_at: string | null
+          doc_version: string | null
+          uploaded_by: string | null
+          uploaded_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          dossier_id: string
+          doc_type: string
+          title: string
+          storage_bucket?: string
+          storage_path: string
+          content_sha256: string
+          issuer?: string | null
+          issued_at?: string | null
+          valid_until?: string | null
+          source_id?: string | null
+          source_url?: string | null
+          consulted_at?: string | null
+          doc_version?: string | null
+          uploaded_by?: string | null
+          uploaded_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          dossier_id?: string
+          doc_type?: string
+          title?: string
+          storage_bucket?: string
+          storage_path?: string
+          content_sha256?: string
+          issuer?: string | null
+          issued_at?: string | null
+          valid_until?: string | null
+          source_id?: string | null
+          source_url?: string | null
+          consulted_at?: string | null
+          doc_version?: string | null
+          uploaded_by?: string | null
+          uploaded_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: []
+      }
+      microorganism_regulatory_dossiers: {
+        Row: {
+          id: string
+          microorganism_id: string
+          version: number
+          status: string
+          effective_from: string | null
+          effective_to: string | null
+          strain_code: string | null
+          strain_name: string | null
+          regulatory_category: string | null
+          formulation: string | null
+          label_guarantee: string | null
+          guarantee_unit: string | null
+          mapa_registration_number: string | null
+          mapa_holder: string | null
+          mapa_manufacturer: string | null
+          mapa_status: string | null
+          mapa_valid_until: string | null
+          mapa_not_applicable_reason: string | null
+          published_ncm: string | null
+          published_cest: string | null
+          published_ncm_candidate_id: string | null
+          technical_review_status: string
+          technical_review_by: string | null
+          technical_review_at: string | null
+          technical_review_notes: string | null
+          regulatory_review_status: string
+          regulatory_review_by: string | null
+          regulatory_review_at: string | null
+          regulatory_review_notes: string | null
+          fiscal_review_status: string
+          fiscal_review_by: string | null
+          fiscal_review_at: string | null
+          fiscal_review_notes: string | null
+          published_at: string | null
+          published_by: string | null
+          blocked_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_reason: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          sod_override_active: boolean
+          sod_override_by: string | null
+          sod_override_at: string | null
+          sod_override_reason: string | null
+        }
+        Insert: {
+          id?: string
+          microorganism_id: string
+          version: number
+          status?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          strain_code?: string | null
+          strain_name?: string | null
+          regulatory_category?: string | null
+          formulation?: string | null
+          label_guarantee?: string | null
+          guarantee_unit?: string | null
+          mapa_registration_number?: string | null
+          mapa_holder?: string | null
+          mapa_manufacturer?: string | null
+          mapa_status?: string | null
+          mapa_valid_until?: string | null
+          mapa_not_applicable_reason?: string | null
+          published_ncm?: string | null
+          published_cest?: string | null
+          published_ncm_candidate_id?: string | null
+          technical_review_status?: string
+          technical_review_by?: string | null
+          technical_review_at?: string | null
+          technical_review_notes?: string | null
+          regulatory_review_status?: string
+          regulatory_review_by?: string | null
+          regulatory_review_at?: string | null
+          regulatory_review_notes?: string | null
+          fiscal_review_status?: string
+          fiscal_review_by?: string | null
+          fiscal_review_at?: string | null
+          fiscal_review_notes?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          blocked_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          sod_override_active?: boolean
+          sod_override_by?: string | null
+          sod_override_at?: string | null
+          sod_override_reason?: string | null
+        }
+        Update: {
+          id?: string
+          microorganism_id?: string
+          version?: number
+          status?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          strain_code?: string | null
+          strain_name?: string | null
+          regulatory_category?: string | null
+          formulation?: string | null
+          label_guarantee?: string | null
+          guarantee_unit?: string | null
+          mapa_registration_number?: string | null
+          mapa_holder?: string | null
+          mapa_manufacturer?: string | null
+          mapa_status?: string | null
+          mapa_valid_until?: string | null
+          mapa_not_applicable_reason?: string | null
+          published_ncm?: string | null
+          published_cest?: string | null
+          published_ncm_candidate_id?: string | null
+          technical_review_status?: string
+          technical_review_by?: string | null
+          technical_review_at?: string | null
+          technical_review_notes?: string | null
+          regulatory_review_status?: string
+          regulatory_review_by?: string | null
+          regulatory_review_at?: string | null
+          regulatory_review_notes?: string | null
+          fiscal_review_status?: string
+          fiscal_review_by?: string | null
+          fiscal_review_at?: string | null
+          fiscal_review_notes?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          blocked_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          sod_override_active?: boolean
+          sod_override_by?: string | null
+          sod_override_at?: string | null
+          sod_override_reason?: string | null
+        }
+        Relationships: []
+      }
+      microorganism_regulatory_presentations: {
+        Row: {
+          id: string
+          dossier_id: string
+          catalog_volume_id: string | null
+          volume_ml: number
+          label: string
+          origin_note: string
+          commercial_unit: string | null
+          taxable_unit: string | null
+          conversion_factor: number | null
+          units_confirmed: boolean
+          units_confirmed_by: string | null
+          units_confirmed_at: string | null
+          gtin: string | null
+          gtin_absent: boolean
+          gtin_confirmed: boolean
+          gtin_confirmed_by: string | null
+          gtin_confirmed_at: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          gtin_absent_reason: string | null
+          gtin_absent_by: string | null
+          gtin_absent_at: string | null
+        }
+        Insert: {
+          id?: string
+          dossier_id: string
+          catalog_volume_id?: string | null
+          volume_ml: number
+          label: string
+          origin_note?: string
+          commercial_unit?: string | null
+          taxable_unit?: string | null
+          conversion_factor?: number | null
+          units_confirmed?: boolean
+          units_confirmed_by?: string | null
+          units_confirmed_at?: string | null
+          gtin?: string | null
+          gtin_absent?: boolean
+          gtin_confirmed?: boolean
+          gtin_confirmed_by?: string | null
+          gtin_confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          gtin_absent_reason?: string | null
+          gtin_absent_by?: string | null
+          gtin_absent_at?: string | null
+        }
+        Update: {
+          id?: string
+          dossier_id?: string
+          catalog_volume_id?: string | null
+          volume_ml?: number
+          label?: string
+          origin_note?: string
+          commercial_unit?: string | null
+          taxable_unit?: string | null
+          conversion_factor?: number | null
+          units_confirmed?: boolean
+          units_confirmed_by?: string | null
+          units_confirmed_at?: string | null
+          gtin?: string | null
+          gtin_absent?: boolean
+          gtin_confirmed?: boolean
+          gtin_confirmed_by?: string | null
+          gtin_confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          gtin_absent_reason?: string | null
+          gtin_absent_by?: string | null
+          gtin_absent_at?: string | null
+        }
+        Relationships: []
+      }
+      microorganism_regulatory_publication_snapshots: {
+        Row: {
+          id: string
+          dossier_id: string
+          microorganism_id: string
+          version: number
+          snapshot: Json
+          snapshot_sha256: string
+          published_at: string
+          published_by: string | null
+        }
+        Insert: {
+          id?: string
+          dossier_id: string
+          microorganism_id: string
+          version: number
+          snapshot: Json
+          snapshot_sha256: string
+          published_at?: string
+          published_by?: string | null
+        }
+        Update: {
+          id?: string
+          dossier_id?: string
+          microorganism_id?: string
+          version?: number
+          snapshot?: Json
+          snapshot_sha256?: string
+          published_at?: string
+          published_by?: string | null
+        }
+        Relationships: []
       }
       microorganism_targets: {
         Row: {
@@ -15125,6 +15599,48 @@ export type Database = {
           },
         ]
       }
+      regulatory_storage_cleanup_queue: {
+        Row: {
+          id: string
+          document_id: string
+          dossier_id: string
+          storage_bucket: string
+          storage_path: string
+          state: string
+          reason: string
+          requested_by: string | null
+          requested_at: string
+          confirmed_by: string | null
+          confirmed_at: string | null
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          dossier_id: string
+          storage_bucket?: string
+          storage_path: string
+          state?: string
+          reason: string
+          requested_by?: string | null
+          requested_at?: string
+          confirmed_by?: string | null
+          confirmed_at?: string | null
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          dossier_id?: string
+          storage_bucket?: string
+          storage_path?: string
+          state?: string
+          reason?: string
+          requested_by?: string | null
+          requested_at?: string
+          confirmed_by?: string | null
+          confirmed_at?: string | null
+        }
+        Relationships: []
+      }
       reservas_auditoria: {
         Row: {
           cliente_id: string | null
@@ -17743,6 +18259,12 @@ export type Database = {
         }
         Returns: string
       }
+      fn_gtin_is_valid: {
+        Args: {
+          _gtin: string
+        }
+        Returns: boolean
+      }
       fn_mark_entrega_not_billable: {
         Args: { _entrega_id: string; _reason: string }
         Returns: undefined
@@ -20158,6 +20680,140 @@ export type Database = {
       }
       rpc_registrar_primeira_resposta_alerta: {
         Args: { p_alerta_id: string }
+        Returns: Json
+      }
+      rpc_regulatory_checklist_set: {
+        Args: {
+          p_dossier_id: string
+          p_item_key: string
+          p_state: string
+          p_justification?: string
+          p_evidence_document_id?: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_document_register: {
+        Args: {
+          p_dossier_id: string
+          p_doc_type: string
+          p_title: string
+          p_storage_path: string
+          p_content_sha256: string
+          p_issuer?: string
+          p_issued_at?: string
+          p_valid_until?: string
+          p_source_key?: string
+          p_source_url?: string
+          p_consulted_at?: string
+          p_doc_version?: string
+        }
+        Returns: string
+      }
+      rpc_regulatory_document_soft_delete: {
+        Args: {
+          p_document_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_dossier_block: {
+        Args: {
+          p_dossier_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_dossier_detail: {
+        Args: {
+          p_microorganism_id: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_dossier_ensure_draft: {
+        Args: {
+          p_microorganism_id: string
+        }
+        Returns: string
+      }
+      rpc_regulatory_dossier_new_version: {
+        Args: {
+          p_microorganism_id: string
+          p_reason: string
+        }
+        Returns: string
+      }
+      rpc_regulatory_dossier_publish: {
+        Args: {
+          p_dossier_id: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_dossier_submit: {
+        Args: {
+          p_dossier_id: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_dossier_update_draft: {
+        Args: {
+          p_dossier_id: string
+          p_patch: Json
+        }
+        Returns: Json
+      }
+      rpc_regulatory_ncm_candidate_add: {
+        Args: {
+          p_dossier_id: string
+          p_ncm: string
+          p_justification: string
+          p_cest?: string
+          p_confidence?: string
+          p_source_key?: string
+          p_source_url?: string
+          p_consulted_at?: string
+        }
+        Returns: string
+      }
+      rpc_regulatory_ncm_candidate_decide: {
+        Args: {
+          p_candidate_id: string
+          p_approve: boolean
+          p_reason: string
+          p_official_description?: string
+          p_table_version?: string
+          p_table_reference_date?: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_presentation_upsert: {
+        Args: {
+          p_dossier_id: string
+          p_volume_ml: number
+          p_patch?: Json
+        }
+        Returns: string
+      }
+      rpc_regulatory_review_decide: {
+        Args: {
+          p_dossier_id: string
+          p_layer: string
+          p_decision: string
+          p_justification: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_sod_override: {
+        Args: {
+          p_dossier_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      rpc_regulatory_storage_cleanup_confirm: {
+        Args: {
+          p_document_id: string
+          p_success: boolean
+        }
         Returns: Json
       }
       rpc_remove_visit_technician: {
