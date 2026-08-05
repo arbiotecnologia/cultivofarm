@@ -1009,10 +1009,12 @@ async function t18(mediaCleanupOk: boolean, storageObjetosCriados: string[]) {
   certifyBool("T18", tabelasOk && usersRestantes === 0 && storageRestantes === 0 && triggersOk, {
     tabelas, usuarios_temporarios_restantes: usersRestantes,
     storage_objetos_restantes: storageRestantes,
+    storage_residuais: storageResiduais,
     cleanup_midia_t10: mediaCleanupOk,
     triggers: triggers.map((t) => ({ table: t.table, trigger: t.trigger, enabled: t.enabled })),
     triggers_habilitados: triggersOk,
   });
+
 }
 
 // ---------------------------------------------------------------------------
