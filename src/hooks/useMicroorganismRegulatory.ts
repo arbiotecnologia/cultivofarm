@@ -6,13 +6,18 @@
  * CFOP, CST/CSOSN, origem, GTIN, uCom/uTrib, fator de conversão) é inferida
  * no cliente a partir de espécie, nome comercial ou prática de mercado.
  *
- * Boundary de tipos: as relações e RPCs da Fase F2 ainda não constam no
- * arquivo canônico `src/integrations/supabase/types.ts`. Os casts ficam
- * confinados a UM único helper local (`callRegulatoryRpc`), no mesmo padrão
- * já adotado em `useMicroorganismFiscalProfiles`.
+ * Tipos: as relações e RPCs desta fase constam no arquivo canônico
+ * `src/integrations/supabase/types.ts`, regenerado a partir do catálogo do
+ * banco de staging (`restoration/fase-f2-correcao/gen-types.py`). Não há
+ * mais boundary solto: `supabase.rpc` é chamado com nome e argumentos
+ * verificados pelo compilador. A única conversão remanescente é a leitura
+ * de payloads `Json` (retorno declarado das RPCs de leitura), feita no
+ * helper `fromJson`, que é explícito e localizado.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+
 
 export type RegulatoryLayer = "TECHNICAL" | "REGULATORY";
 
