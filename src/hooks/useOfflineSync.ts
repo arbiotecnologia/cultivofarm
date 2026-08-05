@@ -733,57 +733,75 @@ export function useOfflineSync() {
       // Aqui ela é reenviada isoladamente: Storage (upsert) → referência
       // idempotente por client_uuid → cleanup SOMENTE da mídia.
       // Nunca recria a visita e nunca usa INSERT legado de registro.
-      const orphanMedia = await getOrphanRemoteMedia();
       for (const m of orphanMedia) {
         const remoteId = m.remoteRegistroId!;
-        const attempts = (m.uploadAttempts || 0) + 1;
-        if (attempts > MAX_UPLOAD_ATTEMPTS) {
-          await log("midia", m.id, "erro", {
-            tentativa: attempts,
-            mensagem_erro: `máximo de tentativas (${MAX_UPLOAD_ATTEMPTS}) excedido`,
-            item_remoto_id: remoteId,
-          });
-          continue;
-        }
+        // Lease atômico: duas abas nunca processam a mesma foto.
+        const claimed = await claimPendingFoto(m.id);
+        if (!claimed) continue;
 
+        const attempts = (m.uploadAttempts || 0) + 1;
         setProgress((p) => ({ ...p, current: "Mídia pendente" }));
         await log("midia", m.id, "tentativa", { tentativa: attempts, item_remoto_id: remoteId });
 
-        const result = await uploadMediaIdempotent(
-          {
-            clientUuid: m.clientUuid || m.id,
-            file: m.file,
-            fileName: m.fileName,
-            mimeType: m.mimeType,
-            kind: "foto",
-            categoria: m.categoria || "geral",
-            isPrincipal: m.isPrincipal,
-            previousAttempts: m.uploadAttempts || 0,
-            previousRemotePath: m.remotePath ?? null,
-          },
-          remoteId,
-        );
+        try {
+          const result = await uploadMediaIdempotent(
+            {
+              clientUuid: m.clientUuid || m.id,
+              file: m.file,
+              fileName: m.fileName,
+              mimeType: m.mimeType,
+              kind: m.tipoMidia || "foto",
+              categoria: m.categoria || "geral",
+              legenda: m.legenda ?? null,
+              duracaoSegundos: m.duracaoSegundos ?? null,
+              latitude: m.latitude ?? null,
+              longitude: m.longitude ?? null,
+              capturadoEm: m.capturadoEm ?? null,
+              isPrincipal: m.isPrincipal,
+              previousAttempts: m.uploadAttempts || 0,
+              previousRemotePath: m.remotePath ?? null,
+            },
+            remoteId,
+          );
 
-        if (result.success) {
-          await log("midia", m.id, "sucesso", { tentativa: attempts, item_remoto_id: remoteId });
-          await removePendingFoto(m.id);
-          syncedCount++;
-          setProgress((p) => ({ ...p, completed: p.completed + 1 }));
-        } else {
+          if (result.success) {
+            await log("midia", m.id, "sucesso", { tentativa: attempts, item_remoto_id: remoteId });
+            // Cleanup SOMENTE da mídia — a visita remota permanece intacta.
+            await removePendingFoto(m.id);
+            syncedCount++;
+            setProgress((p) => ({ ...p, completed: p.completed + 1 }));
+          } else {
+            const exhausted =
+              attempts >= MAX_MEDIA_SYNC_ATTEMPTS || result.errorCode === "idempotency_conflict";
+            await updatePendingFoto(m.id, {
+              uploadAttempts: attempts,
+              lastUploadError: result.error || "falha no reenvio da mídia",
+              remotePath: result.remotePath ?? m.remotePath ?? null,
+              syncStatus: exhausted ? "sync_error" : "pending_sync",
+              syncingAt: null,
+            });
+            await log("midia", m.id, "erro", {
+              tentativa: attempts,
+              mensagem_erro: result.error || "falha no reenvio da mídia",
+              item_remoto_id: remoteId,
+            });
+            failedCount++;
+            setProgress((p) => ({ ...p, failed: p.failed + 1 }));
+          }
+        } catch (err: any) {
           await updatePendingFoto(m.id, {
             uploadAttempts: attempts,
-            lastUploadError: result.error || "falha no reenvio da mídia",
-            remotePath: result.remotePath ?? m.remotePath ?? null,
-          });
-          await log("midia", m.id, "erro", {
-            tentativa: attempts,
-            mensagem_erro: result.error || "falha no reenvio da mídia",
-            item_remoto_id: remoteId,
-          });
+            lastUploadError: err?.message || "erro desconhecido",
+            syncStatus: attempts >= MAX_MEDIA_SYNC_ATTEMPTS ? "sync_error" : "pending_sync",
+            syncingAt: null,
+          }).catch(() => {});
           failedCount++;
           setProgress((p) => ({ ...p, failed: p.failed + 1 }));
+        } finally {
+          await releasePendingFoto(m.id).catch(() => {});
         }
       }
+
 
 
       if (syncedCount > 0) {
