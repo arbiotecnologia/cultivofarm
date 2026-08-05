@@ -244,3 +244,99 @@ BEGIN
 
   RETURN totals || jsonb_build_object('idempotentReplay', false);
 END $$;
+
+-- ---------------------------------------------------------------------
+-- CORREÇÃO 4: rpc_fiscal_reserve_nfe_number_v1 — pgcrypto qualificado.
+-- Motivo: gen_random_bytes vive no schema `extensions`, fora do
+-- search_path fixado da função, abortando a reserva de numeração.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.rpc_fiscal_reserve_nfe_number_v1(
+  p_invoice_id uuid, p_idempotency_key text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $$
+DECLARE
+  inv public.fiscal_invoices%ROWTYPE;
+  emit public.company_fiscal_settings%ROWTYPE;
+  s public.fiscal_document_series%ROWTYPE;
+  existing public.fiscal_number_reservations%ROWTYPE;
+  n int; cnf text; key43 text; dv int; full_key text; cuf text;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() AND NOT public.has_role(auth.uid(),'financeiro'::app_role) THEN
+    RAISE EXCEPTION 'FISCAL_FORBIDDEN: perfil sem permissao para reservar numeracao.';
+  END IF;
+  IF nullif(btrim(coalesce(p_idempotency_key,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'FISCAL_IDEMPOTENCY_KEY_REQUIRED: informe uma chave de idempotencia.';
+  END IF;
+
+  SELECT * INTO existing FROM public.fiscal_number_reservations WHERE idempotency_key = p_idempotency_key;
+  IF FOUND THEN
+    RETURN jsonb_build_object('reservationId', existing.id, 'number', existing.number,
+      'accessKey', existing.access_key, 'status', existing.status, 'idempotentReplay', true);
+  END IF;
+
+  SELECT * INTO inv FROM public.fiscal_invoices WHERE id = p_invoice_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_INVOICE_NOT_FOUND: %', p_invoice_id; END IF;
+  IF inv.status <> 'DRAFT' THEN
+    RAISE EXCEPTION 'FISCAL_INVOICE_NOT_DRAFT: reserva permitida apenas em rascunho (status=%)', inv.status;
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.fiscal_number_reservations r
+             WHERE r.fiscal_invoice_id = p_invoice_id AND r.status = 'RESERVED') THEN
+    RAISE EXCEPTION 'FISCAL_NUMBER_ALREADY_RESERVED: documento ja possui reserva ativa.';
+  END IF;
+  IF inv.tax_snapshot IS NULL OR NOT (inv.tax_snapshot ? 'engineVersion') THEN
+    RAISE EXCEPTION 'FISCAL_CALCULATION_REQUIRED: calcule os tributos antes de reservar numeracao.';
+  END IF;
+
+  SELECT * INTO emit FROM public.company_fiscal_settings WHERE is_active ORDER BY updated_at DESC LIMIT 1;
+  IF emit.nfe_readiness_status NOT IN ('READY_HOMOLOGATION','READY_PRODUCTION') THEN
+    RAISE EXCEPTION 'FISCAL_EMITTER_NOT_READY: emitente com pendencias %', emit.nfe_readiness_pendencies;
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('fiscal_series:' || emit.id::text || ':' ||
+          coalesce(emit.nfe_series_number,0)::text || ':' || coalesce(emit.nfe_environment_code,'2')));
+
+  SELECT * INTO s FROM public.fiscal_document_series
+   WHERE company_id = emit.id AND document_model = '55'
+     AND series = emit.nfe_series_number AND environment_code = emit.nfe_environment_code
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    INSERT INTO public.fiscal_document_series (company_id, series, environment_code, created_by)
+    VALUES (emit.id, emit.nfe_series_number, emit.nfe_environment_code, auth.uid())
+    RETURNING * INTO s;
+  END IF;
+  IF s.status <> 'ACTIVE' THEN
+    RAISE EXCEPTION 'FISCAL_SERIES_BLOCKED: serie % bloqueada.', s.series;
+  END IF;
+
+  n := s.current_number + 1;
+  IF n > 999999999 THEN RAISE EXCEPTION 'FISCAL_SERIES_EXHAUSTED: serie % esgotada.', s.series; END IF;
+
+  cnf := lpad(((get_byte(extensions.gen_random_bytes(4),0)::bigint << 24)
+             | (get_byte(extensions.gen_random_bytes(4),0)::bigint << 16)
+             | (get_byte(extensions.gen_random_bytes(4),0)::bigint << 8)
+             | get_byte(extensions.gen_random_bytes(4),0)::bigint) % 100000000, 8, '0');
+
+  cuf := public.fn_fiscal_uf_ibge_code(emit.state);
+  key43 := cuf
+        || to_char(coalesce(inv.issue_date, current_date), 'YYMM')
+        || public.fn_fiscal_digits(emit.cnpj)
+        || '55'
+        || lpad(s.series::text, 3, '0')
+        || lpad(n::text, 9, '0')
+        || '1'
+        || cnf;
+  dv := public.fn_fiscal_access_key_dv(key43);
+  full_key := key43 || dv::text;
+
+  UPDATE public.fiscal_document_series SET current_number = n, updated_at = now() WHERE id = s.id;
+
+  INSERT INTO public.fiscal_number_reservations
+    (series_id, number, cnf, access_key, check_digit, status, fiscal_invoice_id, idempotency_key, reserved_by)
+  VALUES (s.id, n, cnf, full_key, dv, 'RESERVED', p_invoice_id, p_idempotency_key, auth.uid());
+
+  UPDATE public.fiscal_invoices
+     SET series = s.series::text, invoice_number = n::text, access_key = full_key, updated_at = now()
+   WHERE id = p_invoice_id;
+
+  RETURN jsonb_build_object('number', n, 'series', s.series, 'accessKey', full_key,
+                            'checkDigit', dv, 'status','RESERVED', 'idempotentReplay', false);
+END $$;
