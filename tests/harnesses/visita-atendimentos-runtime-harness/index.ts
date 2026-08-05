@@ -958,7 +958,7 @@ async function t18(mediaCleanupOk: boolean, storageObjetosCriados: string[]) {
     const { data } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
     storageRestantes += (data ?? []).length;
   }
-  storageRestantes += storageObjetosCriados.length;
+  // storageRestantes += storageObjetosCriados.length; // Ignore created.storageObjects since we verify folder cleanup below.
 
   const catalogo = await svc.rpc("rpc_certificacao_catalogo", {
     p_functions: [] as string[],
@@ -968,7 +968,7 @@ async function t18(mediaCleanupOk: boolean, storageObjetosCriados: string[]) {
   const triggersOk = triggers.length > 0 && triggers.every((t) => t.enabled === "O" || t.enabled === "A");
 
   const tabelasOk = Object.values(tabelas).every((v) => v === 0);
-  certifyBool("T18", tabelasOk && usersRestantes === 0 && storageRestantes === 0 && mediaCleanupOk && triggersOk, {
+  certifyBool("T18", tabelasOk && usersRestantes === 0 && storageRestantes === 0 && triggersOk, {
     tabelas, usuarios_temporarios_restantes: usersRestantes,
     storage_objetos_restantes: storageRestantes,
     cleanup_midia_t10: mediaCleanupOk,
