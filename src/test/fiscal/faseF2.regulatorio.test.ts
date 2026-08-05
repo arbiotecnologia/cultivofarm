@@ -100,11 +100,15 @@ describe("Fase F2 — nenhuma inferência no cliente", () => {
     expect(hook).not.toMatch(/default(Ncm|Cest|Cfop)/i);
   });
 
-  it("todo cast de tipo do hook está confinado à boundary única", () => {
-    const casts = hook.match(/as unknown as/g) ?? [];
-    expect(casts.length).toBeLessThanOrEqual(1);
-    expect(hook).toContain("async function callRegulatoryRpc");
+  it("o hook usa os tipos canônicos gerados, sem boundary solta", () => {
+    expect(hook).not.toMatch(/as unknown as/);
+    expect(hook).not.toContain("callRegulatoryRpc");
+    expect(hook).toContain(
+      'import type { Database, Json } from "@/integrations/supabase/types"',
+    );
+    expect(hook).toContain("Database[\"public\"][\"Functions\"]");
   });
+
 });
 
 describe("Fase F2 — integração na tela fiscal", () => {
