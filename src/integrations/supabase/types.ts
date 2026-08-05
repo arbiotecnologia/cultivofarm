@@ -14650,6 +14650,7 @@ export type Database = {
           nivel_pressao: Database["public"]["Enums"]["nivel_pressao"] | null
           objetivo_visita: string | null
           observacoes_tecnicas: string | null
+          origem_atendimento: string | null
           pdf_status: string | null
           percentual_area_afetada: number | null
           problema_principal: string | null
@@ -14705,6 +14706,7 @@ export type Database = {
           nivel_pressao?: Database["public"]["Enums"]["nivel_pressao"] | null
           objetivo_visita?: string | null
           observacoes_tecnicas?: string | null
+          origem_atendimento?: string | null
           pdf_status?: string | null
           percentual_area_afetada?: number | null
           problema_principal?: string | null
@@ -14762,6 +14764,7 @@ export type Database = {
           nivel_pressao?: Database["public"]["Enums"]["nivel_pressao"] | null
           objetivo_visita?: string | null
           observacoes_tecnicas?: string | null
+          origem_atendimento?: string | null
           pdf_status?: string | null
           percentual_area_afetada?: number | null
           problema_principal?: string | null
@@ -16948,6 +16951,7 @@ export type Database = {
           nivel_pressao: Database["public"]["Enums"]["nivel_pressao"] | null
           objetivo_visita: string | null
           observacoes_tecnicas: string | null
+          origem_atendimento: string | null
           pdf_status: string | null
           percentual_area_afetada: number | null
           problema_principal: string | null
@@ -17202,6 +17206,7 @@ export type Database = {
           nivel_pressao: Database["public"]["Enums"]["nivel_pressao"] | null
           objetivo_visita: string | null
           observacoes_tecnicas: string | null
+          origem_atendimento: string | null
           pdf_status: string | null
           percentual_area_afetada: number | null
           problema_principal: string | null
@@ -19407,17 +19412,29 @@ export type Database = {
       }
       rpc_criar_visita_idempotente: {
         Args: {
+          p_area_hectares?: number
+          p_categoria_problema?: Database["public"]["Enums"]["categoria_problema_consultor"]
           p_client_uuid: string
           p_cliente_id: string
-          p_cultura_id: string
-          p_data_vistoria: string
+          p_cultura_id?: string
+          p_data_vistoria?: string
           p_fase_fenologica?: string
           p_fazenda_id: string
+          p_latitude?: number
+          p_localizacao_na_area?: string
+          p_longitude?: number
+          p_nivel_pressao?: Database["public"]["Enums"]["nivel_pressao"]
           p_objetivo_visita?: string
+          p_observacoes_tecnicas?: string
+          p_origem?: string
+          p_percentual_area_afetada?: number
+          p_problema_principal?: string
+          p_registro_origem_id?: string
           p_safra?: string
           p_solicitacao_id?: string
           p_talhao_id: string
-          p_tipo_visita: Database["public"]["Enums"]["tipo_visita"]
+          p_tipo_visita?: Database["public"]["Enums"]["tipo_visita"]
+          p_urgencia?: Database["public"]["Enums"]["urgencia_consultor"]
         }
         Returns: Json
       }
@@ -19899,12 +19916,25 @@ export type Database = {
         Args: { p_alerta_id: string; p_observacao?: string }
         Returns: Json
       }
+      rpc_iniciar_atendimento_solicitacao_v1: {
+        Args: { p_client_uuid?: string; p_solicitacao_id: string }
+        Returns: Json
+      }
       rpc_ler_embalagem_por_qr: {
         Args: { p_codigo_ou_token: string }
         Returns: Json
       }
       rpc_liberar_recomendacao_produtor: {
         Args: { p_registro_id: string }
+        Returns: Json
+      }
+      rpc_listar_atendimentos_tecnicos_v1: {
+        Args: {
+          p_aba?: string
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+        }
         Returns: Json
       }
       rpc_listar_visitas_tecnicas_v1: {
@@ -20163,6 +20193,7 @@ export type Database = {
         Args: { p_alerta_id: string; p_observacao?: string }
         Returns: Json
       }
+      rpc_resumo_atendimentos_tecnicos_v1: { Args: never; Returns: Json }
       rpc_salvar_campo_visita: {
         Args: {
           p_client_uuid: string

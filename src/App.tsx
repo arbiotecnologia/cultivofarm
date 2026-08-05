@@ -110,12 +110,11 @@ import MobileRegistrarOcorrencia from "@/pages/app/MobileRegistrarOcorrencia";
 import MobileOrdens from "@/pages/app/MobileOrdens";
 import MobileNotificacoes from "@/pages/app/MobileNotificacoes";
 import MobileEntregas from "@/pages/app/MobileEntregas";
-import MobileRegistrosTecnico from "@/pages/app/MobileRegistrosTecnico";
+import MobileAtendimentos from "@/pages/app/MobileAtendimentos";
 import MobileRecomendacoesProdutor from "@/pages/app/MobileRecomendacoesProdutor";
 import MobileAplicacoes from "@/pages/app/MobileAplicacoes";
 import MobileListaAplicacoes from "@/pages/app/MobileListaAplicacoes";
 import MobileSolicitar from "@/pages/app/MobileSolicitar";
-import MobileSolicitacoes from "@/pages/app/MobileSolicitacoes";
 import MobileCheckin from "@/pages/app/MobileCheckin";
 import MobileVisita from "@/pages/app/MobileVisita";
 import MobileTalhaoHistorico from "@/pages/app/MobileTalhaoHistorico";
@@ -391,9 +390,12 @@ const App = () => (
                   <Route element={<TechnicalFeatureGuard />}>
                     <Route path="/app/fazendas" element={<MobileFazendas />} />
                     <Route path="/app/registrar" element={<MobileRegistrarOcorrencia />} />
-                    <Route path="/app/registros" element={<MobileRegistrosTecnico />} />
+                    {/* Workspace único de atendimento técnico */}
+                    <Route path="/app/atendimentos" element={<MobileAtendimentos />} />
+                    {/* Rotas legadas — preservadas como redirecionamento canônico */}
+                    <Route path="/app/registros" element={<Navigate to="/app/atendimentos" replace />} />
+                    <Route path="/app/solicitacoes" element={<Navigate to="/app/atendimentos?aba=demandas" replace />} />
                     <Route path="/app/ordens" element={<MobileOrdens />} />
-                    <Route path="/app/solicitacoes" element={<MobileSolicitacoes />} />
                     <Route path="/app/checkin/:solicitacaoId" element={<MobileCheckin />} />
                     <Route path="/app/checkin" element={<MobileCheckin />} />
                     <Route path="/app/visita/novo" element={<MobileVisita />} />

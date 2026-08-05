@@ -21,90 +21,76 @@ export function useFluxoVisitaTecnica() {
 
   // --- Funções de Ação ---
 
-  const criarOuObterVisitaPorSolicitacao = async (solicitacaoId: string): Promise<FluxoResponse> => {
+  /**
+   * Início de atendimento a partir de uma demanda do produtor.
+   *
+   * Fonte única e autoritativa: `rpc_iniciar_atendimento_solicitacao_v1`.
+   * A RPC executa em uma única transação: valida o técnico, atribui a demanda
+   * de forma atômica (advisory lock — apenas um técnico vence a disputa),
+   * cria ou reaproveita a visita (idempotente por `client_uuid`) e registra a
+   * timeline. O front NÃO faz INSERT/UPDATE direto nessas tabelas.
+   */
+  const criarOuObterVisitaPorSolicitacao = async (
+    solicitacaoId: string,
+    clientUuid?: string,
+  ): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Usuário não autenticado" };
 
     try {
-      // 1. Verificar se já existe visita rascunho ou aberta para esta solicitação
-      const { data: existingVisit, error: fetchError } = await supabase
-        .from("registros_consultor")
-        .select("id, status")
-        .eq("solicitacao_id", solicitacaoId)
-        .order("created_at", { ascending: false })
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("rpc_iniciar_atendimento_solicitacao_v1" as never, {
+        p_solicitacao_id: solicitacaoId,
+        p_client_uuid: clientUuid ?? crypto.randomUUID(),
+      } as never);
 
-      if (fetchError) throw fetchError;
+      if (error) throw error;
 
-      if (existingVisit) {
-        return { success: true, message: "Visita encontrada", data: { id: existingVisit.id } };
+      const res = (data ?? {}) as any;
+      if (!res.ok) {
+        const msg =
+          res.error === "already_assigned"
+            ? "Esta demanda já foi assumida por outro técnico."
+            : res.error === "technical_access_required"
+              ? "Você não possui acesso técnico a este cliente."
+              : res.error === "forbidden"
+                ? "Perfil sem permissão para atender demandas."
+                : res.error === "not_found"
+                  ? "Demanda não encontrada."
+                  : "Não foi possível iniciar o atendimento.";
+        return { success: false, message: msg, error: res.error };
       }
 
-      // 2. Obter dados da solicitação para cópia
-      const { data: solicitacao, error: solError } = await supabase
-        .from("portal_solicitacoes")
-        .select("*")
-        .eq("id", solicitacaoId)
-        .single();
-
-      if (solError) throw solError;
-
-      // 3. Criar registro de consultor (Visita Técnica)
-      const { data: newVisit, error: createError } = await supabase
-        .from("registros_consultor")
-        .insert({
-          solicitacao_id: solicitacaoId,
-          cliente_id: solicitacao.cliente_id,
-          fazenda_id: solicitacao.fazenda_id,
-          talhao_id: solicitacao.talhao_id,
-          cultura_id: null, // portal_solicitacoes não possui cultura_id
-          consultor_responsavel: user.id,
-          created_by: user.id,
-          consultor_profile_id: profile?.id || null,
-          status: "rascunho",
-          tipo_visita: "vistoria_inicial",
-          tipo_demanda: (solicitacao.tipo_demanda as any) || "vistoria_tecnica",
-          problema_principal: solicitacao.descricao || null,
-          data_vistoria: new Date().toISOString().split('T')[0]
-        })
-        .select("id")
-        .single();
-
-      if (createError) throw createError;
-
-      // 4. Atualizar status da solicitação
-      await supabase
-        .from("portal_solicitacoes")
-        .update({ status: "em_visita" })
-        .eq("id", solicitacaoId);
-
-      // 5. Registrar timeline e logs
-      await registrarTimeline(solicitacaoId, "visita_iniciada", "Visita técnica iniciada a partir da solicitação");
-      
-      await supabase.from("visitas_logs").insert({
-        registro_consultor_id: newVisit.id,
-        usuario_id: user.id,
-        acao: "visita_criada",
-        descricao: "Visita gerada automaticamente via fluxo de check-in/início"
-      });
-
       queryClient.invalidateQueries({ queryKey: ["solicitacoes"] });
-      
-      return { success: true, message: "Visita iniciada", data: { id: newVisit.id } };
+      queryClient.invalidateQueries({ queryKey: ["atendimentos-tecnicos"] });
+      queryClient.invalidateQueries({ queryKey: ["atendimentos-tecnicos-resumo"] });
+
+      return {
+        success: true,
+        message: res.idempotent ? "Atendimento já iniciado" : "Atendimento iniciado",
+        data: {
+          id: res.registro_id,
+          status: res.status,
+          version: res.version,
+          can_edit: res.can_edit,
+          next_route: res.next_route,
+        },
+      };
     } catch (error: any) {
       console.error("Erro em criarOuObterVisitaPorSolicitacao:", error);
-      return { success: false, message: "Erro ao criar visita", error: error.message };
+      return { success: false, message: "Erro ao iniciar atendimento", error: error.message };
     }
   };
 
   const iniciarVisita = async (solicitacaoId: string) => {
     const res = await criarOuObterVisitaPorSolicitacao(solicitacaoId);
     if (res.success) {
-      navigate(`/visita-tecnica/${res.data.id}`);
+      // Portais técnicos mobile: rota canônica do wizard.
+      navigate(res.data.next_route ?? `/app/visita/${res.data.id}`);
     } else {
       toast.error(res.message);
     }
     return res.data?.id;
   };
+
 
   const registrarTimeline = async (solicitacaoId: string, tipo: string, descricao: string) => {
     if (!solicitacaoId || !user) return;

@@ -1,117 +1,55 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
-  Layers,
   AlertTriangle,
-  FileText,
   ClipboardList,
-  Truck,
-  PackageCheck,
   ChevronRight,
-  Droplets,
+  Inbox,
+  PlayCircle,
+  Clock,
+  Repeat,
+  CheckCircle2,
 } from "lucide-react";
-import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { LogoDisplay } from "@/components/LogoDisplay";
 import { getPortalGreetingLabel } from "@/lib/portalDisplayLabel";
 import { getActivePortalContext } from "@/lib/activePortalContext";
+import { useAtendimentosResumo } from "@/hooks/useAtendimentosTecnicos";
 
+/**
+ * Painel do portal técnico (consultor técnico / técnico agrônomo).
+ *
+ * Todos os contadores vêm de `rpc_resumo_atendimentos_tecnicos_v1`, a mesma
+ * fonte da listagem de atendimentos — nenhuma contagem é derivada no cliente
+ * nem consulta tabelas diretamente. Todas as rotas apontam para o workspace
+ * técnico (`/app/atendimentos`), nunca para telas exclusivas do produtor.
+ */
 export default function MobileDashboardConsultor() {
   const { profile, primaryRole, roles } = useAuth();
   const navigate = useNavigate();
-  const { config, defaults } = useSystemConfig();
-  const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
-  const logoUrl = config?.logo_url || null;
+  const { data: resumo, isLoading } = useAtendimentosResumo();
 
-  const { data: fazendas } = useQuery({
-    queryKey: ["mobile-fazendas-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("fazendas").select("*", { count: "exact", head: true });
-      return count || 0;
-    },
-  });
-
-  const { data: talhoes } = useQuery({
-    queryKey: ["mobile-talhoes-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("talhoes").select("*", { count: "exact", head: true });
-      return count || 0;
-    },
-  });
-
-  const { data: registrosAbertos } = useQuery({
-    queryKey: ["mobile-registros-abertos"],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("registros_consultor")
-        .select("*", { count: "exact", head: true })
-        .in("status", ["rascunho", "finalizado"]);
-      return count || 0;
-    },
-  });
-
-  const { data: osAndamento } = useQuery({
-    queryKey: ["mobile-os-andamento"],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("ordens_servico")
-        .select("*", { count: "exact", head: true })
-        .not("status", "in", '("finalizada","entregue")');
-      return count || 0;
-    },
-  });
-
-  const { data: recomendacoes } = useQuery({
-    queryKey: ["mobile-recomendacoes-count"],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("registros_consultor_recomendacoes")
-        .select("*", { count: "exact", head: true });
-      return count || 0;
-    },
-  });
-
-  const { data: entregas } = useQuery({
-    queryKey: ["mobile-entregas-pendentes"],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("entregas")
-        .select("*", { count: "exact", head: true })
-        .neq("status", "entregue");
-      return count || 0;
-    },
-  });
-
-  const { data: entregasRealizadas } = useQuery({
-    queryKey: ["mobile-entregas-realizadas"],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("entregas")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "entregue");
-      return count || 0;
-    },
-  });
+  const v = (n?: number) => (isLoading || n == null ? "—" : n);
 
   const stats = [
-    { label: "Fazendas", value: fazendas ?? "—", icon: MapPin, color: "text-emerald-600 bg-emerald-50", path: "/app/fazendas" },
-    { label: "Talhões", value: talhoes ?? "—", icon: Layers, color: "text-blue-600 bg-blue-50", path: "/app/fazendas" },
-    { label: "Ocorrências", value: registrosAbertos ?? "—", icon: AlertTriangle, color: "text-amber-600 bg-amber-50", path: "/app/registros" },
-    { label: "Recomendações", value: recomendacoes ?? "—", icon: FileText, color: "text-purple-600 bg-purple-50", path: "/app/recomendacoes" },
-    { label: "OS Ativas", value: osAndamento ?? "—", icon: ClipboardList, color: "text-sky-600 bg-sky-50", path: "/app/ordens" },
-    { label: "Entregas Pendentes", value: entregas ?? "—", icon: Truck, color: "text-orange-600 bg-orange-50", path: "/app/entregas" },
-    { label: "Produtos Entregues", value: entregasRealizadas ?? "—", icon: PackageCheck, color: "text-emerald-600 bg-emerald-50", path: "/app/entregas" },
+    { label: "Demandas", value: v(resumo?.demandas), icon: Inbox, color: "text-amber-600 bg-amber-50", path: "/app/atendimentos?aba=demandas" },
+    { label: "Em andamento", value: v(resumo?.em_andamento), icon: PlayCircle, color: "text-blue-600 bg-blue-50", path: "/app/atendimentos?aba=andamento" },
+    { label: "Aguardando", value: v(resumo?.aguardando), icon: Clock, color: "text-orange-600 bg-orange-50", path: "/app/atendimentos?aba=aguardando" },
+    { label: "Monitoramento", value: v(resumo?.monitoramento), icon: Repeat, color: "text-purple-600 bg-purple-50", path: "/app/atendimentos?aba=monitoramento" },
+    { label: "Ocorrências", value: v(resumo?.ocorrencias), icon: AlertTriangle, color: "text-rose-600 bg-rose-50", path: "/app/atendimentos?aba=ocorrencias" },
+    { label: "Concluídos", value: v(resumo?.concluidos), icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50", path: "/app/atendimentos?aba=concluidos" },
+    { label: "OS Ativas", value: v(resumo?.os_ativas), icon: ClipboardList, color: "text-sky-600 bg-sky-50", path: "/app/ordens" },
+    { label: "Fazendas", value: v(resumo?.fazendas), icon: MapPin, color: "text-emerald-600 bg-emerald-50", path: "/app/fazendas" },
   ];
 
   const quickActions = [
     { label: "Registrar Ocorrência", path: "/app/registrar", icon: AlertTriangle },
+    { label: "Meus Atendimentos", path: "/app/atendimentos", icon: Inbox },
     { label: "Ver Fazendas", path: "/app/fazendas", icon: MapPin },
     { label: "Ordens de Serviço", path: "/app/ordens", icon: ClipboardList },
-    { label: "Histórico de Aplicações", path: "/app/aplicacoes/lista", icon: Droplets },
   ];
+
 
   return (
     <div className="p-4 space-y-6">

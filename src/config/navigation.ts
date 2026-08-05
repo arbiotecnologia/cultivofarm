@@ -182,7 +182,9 @@ export const navigation: NavItem[] = [
 
   // ── Mobile Consultor (tabs) ────────────────────────────────────────────────
   { id: "m-c-inicio", label: "Início", icon: Home, route: "/app", section: "Mobile Consultor", platforms: ["mobile-consultor", "mobile-produtor"], order: 1 },
-  { id: "m-c-demandas", label: "Demandas", icon: ClipboardList, route: "/app/solicitacoes", section: "Mobile Consultor", platforms: ["mobile-consultor"], order: 2 },
+  // Workspace único de atendimento técnico — substitui as abas separadas
+  // "Demandas" (/app/solicitacoes) e "Registros" (/app/registros).
+  { id: "m-c-atendimentos", label: "Atendimentos", icon: ClipboardList, route: "/app/atendimentos", section: "Mobile Consultor", platforms: ["mobile-consultor"], order: 2 },
   { id: "m-c-fazendas", label: "Fazendas", icon: MapPin, route: "/app/fazendas", section: "Mobile Consultor", platforms: ["mobile-consultor"], order: 3 },
   { id: "m-c-catalogo", label: "Catálogo", icon: BookOpen, route: "/app/catalogo", section: "Mobile Consultor", platforms: ["mobile-consultor"], order: 4 },
   { id: "m-perfil", label: "Perfil", icon: User, route: "/app/perfil", section: "Mobile Consultor", platforms: ["mobile-consultor", "mobile-produtor"], order: 5 },

@@ -105,7 +105,7 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
       toast.success("Visita finalizada.");
       await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] });
       await queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", remoteRegistroId] });
-      navigate("/app/registros");
+      navigate("/app/atendimentos");
     } catch (err: any) {
       showTransitionErrorToast(err, "Não foi possível finalizar a visita.");
     } finally {
@@ -141,7 +141,7 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
       toast.success("Visita enviada para aprovação.");
       await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] });
       await queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", remoteRegistroId] });
-      navigate("/app/registros");
+      navigate("/app/atendimentos");
     } catch (err: any) {
       showTransitionErrorToast(err, "Não foi possível enviar para aprovação.");
     } finally {
