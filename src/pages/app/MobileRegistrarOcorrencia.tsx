@@ -300,13 +300,21 @@ export default function MobileRegistrarOcorrencia() {
             .from("consultor-arquivos")
             .upload(path, file, { contentType: file.type, upsert: true });
 
+          const midiaClientUuid =
+            clientUuid.slice(0, 24) + i.toString(16).padStart(12, "0");
+
           if (uploadError) {
             midiaFalhas++;
             // Enfileira para retry pela rotina de sincronização de mídia.
+            // `remoteRegistroId` marca que a visita JÁ existe: o retry só
+            // reenvia a mídia (nunca recria a visita, nunca INSERT legado).
             try {
               await savePendingFoto({
                 id: `${clientUuid}_foto_${i}`,
                 registroLocalId: registroId,
+                remoteRegistroId: registroId,
+                clientUuid: midiaClientUuid,
+                categoria: "geral",
                 file,
                 fileName: file.name,
                 mimeType: file.type,
@@ -317,6 +325,7 @@ export default function MobileRegistrarOcorrencia() {
             }
             continue;
           }
+
 
           // Referência idempotente: upsert por client_uuid determinístico.
           const { error: refError } = await supabase
