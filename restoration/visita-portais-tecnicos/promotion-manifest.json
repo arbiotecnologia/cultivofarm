@@ -1,0 +1,144 @@
+{
+  "artifact": "visita-portais-tecnicos",
+  "environment": {
+    "staging_ref": "ikaauvsflpmamgxmkhoq",
+    "production_ref": "navfzbwgwzruipouyfnk",
+    "production_access": "PROIBIDO"
+  },
+  "generated_at": "2026-08-05T04:30:00Z",
+  "hash_algorithm": "sha256",
+  "apply_order": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20260805040000_visita_canonica_failclosed.sql",
+      "kind": "migration_canonica",
+      "description": "Baseline fail-closed das RPCs de visita/atendimento",
+      "sha256": "da755b29189b9ddff057072b8125ba07d2c802c5ff5c2695065fac9e5e7acf13",
+      "bytes": 29481
+    },
+    {
+      "order": 2,
+      "path": "supabase/migrations/20260805041601_752b9122-f0e1-4646-9c4a-7c1393deae8d.sql",
+      "kind": "migration_finalizadora",
+      "description": "Gate server-side de cultura em rpc_finalizar_visita_v2",
+      "sha256": "ff80941e9d2e657c15d08e64262bc7f2ff069150c547a3940e3a2b62c3c7963a",
+      "bytes": 5076
+    },
+    {
+      "order": 3,
+      "path": "supabase/migrations/20260805042628_6341cd36-10ea-4a79-9415-54ee9277d142.sql",
+      "kind": "migration_auxiliar_certificacao",
+      "description": "Função read-only de catálogo (service_role) usada pelo runner T16/T18",
+      "sha256": "f083df58a9d5212edb89f1dc2870da4423d6da1bfb0d66b2c9ddf2fae92c3f7f",
+      "bytes": 1923
+    },
+    {
+      "order": 4,
+      "path": "restoration/visita-portais-tecnicos/canonical-final.sql",
+      "kind": "estado_final",
+      "description": "Cópia canônica aplicada no estado final",
+      "sha256": "da755b29189b9ddff057072b8125ba07d2c802c5ff5c2695065fac9e5e7acf13",
+      "bytes": 29481
+    },
+    {
+      "order": 5,
+      "path": "restoration/visita-portais-tecnicos/rollback.sql",
+      "kind": "rollback",
+      "description": "Rollback forward-safe (reaplica baseline seguro, preserva assinaturas)",
+      "sha256": "68008b25736e49b38f4ef02b991ef0a479e23564b9c30e796cb07d88110853e4",
+      "bytes": 478
+    },
+    {
+      "order": 6,
+      "path": "restoration/visita-portais-tecnicos/verify-restoration.sql",
+      "kind": "verify",
+      "description": "Verificação de checksum/owner/SECURITY DEFINER/search_path/grants pós-rollback",
+      "sha256": "e952ebfe47ecbff1c072545be019835dd191d5eea4ab0a96b2db705903fc9b17",
+      "bytes": 2910
+    },
+    {
+      "order": 7,
+      "path": "restoration/visita-portais-tecnicos/postcheck-final.sql",
+      "kind": "postcheck",
+      "description": "Pós-check do estado final reaplicado",
+      "sha256": "14f2d51cba5db30605436b49a07321364cfcd36c957e043a7bbb3be4b42a346a",
+      "bytes": 3639
+    },
+    {
+      "order": 8,
+      "path": "restoration/visita-portais-tecnicos/rehearsal.sh",
+      "kind": "rehearsal",
+      "description": "Ensaio: estado final -> rollback -> verify -> reaplicar -> postcheck",
+      "sha256": "f2f38d40079fe165a2e52a94fd84f50586064a9fd1018262ff4318a53dd55fbf",
+      "bytes": 2267
+    },
+    {
+      "order": 9,
+      "path": "tests/harnesses/visita-atendimentos-runtime-harness/index.ts",
+      "kind": "runner_certificacao",
+      "description": "Runner CLI T1–T18 (exit 0 apenas com 18 PASS)",
+      "sha256": "42279de34db6f592606605cee10a903d5a114f2f31863168ab83dbeb35656cde",
+      "bytes": 46055
+    }
+  ],
+  "superseded_migrations": [
+    {
+      "path": "supabase/migrations/20260805031852_07770aec-ddb2-4430-9ad9-e8314759fda9.sql",
+      "status": "superseded",
+      "excluded_from_package": true,
+      "history_preserved": true,
+      "reason": "Iterações intermediárias substituídas pelo baseline canônico 20260805040000 + finalizadora 20260805041601",
+      "sha256": "b92506be6f115e645b5dbb31fd42ce4319afce7d169e3f938ddba2410638e356",
+      "bytes": 25491
+    },
+    {
+      "path": "supabase/migrations/20260805032753_27aed0e3-3075-48cf-9139-3e8c94b82148.sql",
+      "status": "superseded",
+      "excluded_from_package": true,
+      "history_preserved": true,
+      "reason": "Iterações intermediárias substituídas pelo baseline canônico 20260805040000 + finalizadora 20260805041601",
+      "sha256": "9f1b2d8cf422ca3fedf4e05543547a80a2e818eee9efb03a47f9bf1f6ccfcad4",
+      "bytes": 9077
+    },
+    {
+      "path": "supabase/migrations/20260805032904_e870b640-c77e-4d75-a1aa-a398fb5c7c3c.sql",
+      "status": "superseded",
+      "excluded_from_package": true,
+      "history_preserved": true,
+      "reason": "Iterações intermediárias substituídas pelo baseline canônico 20260805040000 + finalizadora 20260805041601",
+      "sha256": "183f73bb9f08ea763f92056ab84bc59974e47ca760310a8eee2e18004fb80ff3",
+      "bytes": 2477
+    },
+    {
+      "path": "supabase/migrations/20260805033027_574aecea-ac2f-461e-9d32-8490010cd146.sql",
+      "status": "superseded",
+      "excluded_from_package": true,
+      "history_preserved": true,
+      "reason": "Iterações intermediárias substituídas pelo baseline canônico 20260805040000 + finalizadora 20260805041601",
+      "sha256": "345bbf52a22cbdc6b107f052f3a4356ca693ee2bb16d57ffffe350378175cce1",
+      "bytes": 3353
+    },
+    {
+      "path": "supabase/migrations/20260805033136_7af48a56-abc9-49f9-9242-c15695568e2b.sql",
+      "status": "superseded",
+      "excluded_from_package": true,
+      "history_preserved": true,
+      "reason": "Iterações intermediárias substituídas pelo baseline canônico 20260805040000 + finalizadora 20260805041601",
+      "sha256": "28f3202927c4a412d361dc6155e346285ce18550338cd5bd0dc2b465d08513ef",
+      "bytes": 1589
+    },
+    {
+      "path": "supabase/migrations/20260805033223_c8492f4a-28a1-442d-bcc0-1b8ef8f94259.sql",
+      "status": "superseded",
+      "excluded_from_package": true,
+      "history_preserved": true,
+      "reason": "Iterações intermediárias substituídas pelo baseline canônico 20260805040000 + finalizadora 20260805041601",
+      "sha256": "4406c46d3b2fcfdafd53aebed6918a7203eff8ce66c89bb3ca2d00dbbb329daa",
+      "bytes": 1551
+    }
+  ],
+  "validation": {
+    "hashes_validated": true,
+    "method": "sha256sum sobre o conteúdo íntegro de cada arquivo no commit"
+  }
+}
