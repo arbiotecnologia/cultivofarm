@@ -6,8 +6,9 @@
  *  - contexto b2b  → rótulo do papel B2B primário (Gestor/Técnico)
  *  - contexto producer → "Produtor"
  *  - portal técnico (contexto technical OU sem contexto) → deriva por papel:
- *      • possui consultor_tecnico  → "Consultor Técnico"
+ *      • consultor_tecnico         → "Consultor Técnico"
  *          (cobre usuário duplo parceiro_b2b + consultor_tecnico)
+ *      • tecnico_agronomo          → "Técnico Agrônomo"
  *      • possui aplicador          → "Aplicador"
  *      • cliente_produtor          → "Produtor"
  *      • fallback                  → ROLE_LABELS[primaryRole] || "—"
@@ -35,14 +36,17 @@ export function getPortalDisplayLabel({
   if (activeCtx === "producer") return "Produtor";
 
   // Portal técnico / campo — decide por papéis reais.
-  if (roles.includes("consultor_tecnico") || primaryRole === "consultor_tecnico") {
-    return "Consultor Técnico";
-  }
+  // O papel primário tem precedência para distinguir consultor_tecnico de
+  // tecnico_agronomo (rótulos diferentes, mesmas permissões).
+  if (primaryRole === "tecnico_agronomo") return ROLE_LABELS.tecnico_agronomo;
+  if (primaryRole === "consultor_tecnico") return ROLE_LABELS.consultor_tecnico;
+  if (roles.includes("consultor_tecnico")) return ROLE_LABELS.consultor_tecnico;
+  if (roles.includes("tecnico_agronomo")) return ROLE_LABELS.tecnico_agronomo;
   if (primaryRole === "aplicador" || roles.includes("aplicador")) {
     return "Aplicador";
   }
   if (primaryRole === "cliente_produtor") return "Produtor";
-  if (activeCtx === "technical") return "Consultor Técnico";
+  if (activeCtx === "technical") return ROLE_LABELS.consultor_tecnico;
   return primaryRole ? ROLE_LABELS[primaryRole] || primaryRole : "—";
 }
 
@@ -50,6 +54,7 @@ export function getPortalDisplayLabel({
 export function getPortalGreetingLabel(input: PortalDisplayInput): string {
   const label = getPortalDisplayLabel(input);
   if (label === "Consultor Técnico") return "consultor";
+  if (label === "Técnico Agrônomo") return "técnico agrônomo";
   if (label === "Aplicador") return "aplicador";
   if (label === "Produtor") return "produtor";
   return label.toLowerCase();
