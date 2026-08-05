@@ -66,6 +66,9 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   const status = (registro?.status ?? "rascunho") as RegistroStatus;
   const canFinalize = useMemo(() => canTransition(status, "finalizado"), [status]);
   const alreadyFinalized = status !== "rascunho";
+  // Cultura é obrigatória para finalizar (regra de negócio da visita técnica).
+  const culturaAusente = !!registro && !registro.cultura_id;
+
 
   const translateRpcError = (code: string | undefined, fallback: string): string => {
     switch (code) {
