@@ -34,6 +34,7 @@ DECLARE
   r_ocoB uuid := gen_random_uuid();
   r_visA uuid := gen_random_uuid();
   r_visB uuid := gen_random_uuid();
+  r_visApr uuid := gen_random_uuid();
   pa uuid; pb uuid;
   n int; ok boolean;
   sfx text := 'C1_CARTEIRA_' || to_char(now(),'YYYYMMDDHH24MISS');
@@ -75,7 +76,8 @@ BEGIN
   VALUES (r_ocoA, c_A, u_cons, u_cons, 'ocorrencia','rascunho', sfx||'_OCO_A'),
          (r_ocoB, c_B, u_semv, u_semv, 'ocorrencia','rascunho', sfx||'_OCO_B'),
          (r_visA, c_A, u_cons, u_cons, 'visita','rascunho', sfx||'_VIS_A'),
-         (r_visB, c_B, u_semv, u_semv, 'visita','rascunho', sfx||'_VIS_B');
+         (r_visB, c_B, u_semv, u_semv, 'visita','rascunho', sfx||'_VIS_B'),
+         (r_visApr, c_A, u_cons, u_cons, 'visita','aprovado', sfx||'_VIS_APR');
 
   -- ---------------- helper de sessão ----------------
   -- T1 admin
@@ -85,8 +87,8 @@ BEGIN
   SELECT count(*) INTO n FROM public.registros_consultor
    WHERE problema_principal LIKE sfx||'%';
   RESET ROLE;
-  INSERT INTO t_result VALUES ('T1','admin enxerga os 4 registros sinteticos','4',n::text,
-    CASE WHEN n=4 THEN 'PASS' ELSE 'FAIL' END);
+  INSERT INTO t_result VALUES ('T1','admin enxerga os 5 registros sinteticos','5',n::text,
+    CASE WHEN n=5 THEN 'PASS' ELSE 'FAIL' END);
 
   -- T2 gestor
   EXECUTE format($x$SELECT set_config('request.jwt.claims', %L, true)$x$,
@@ -94,8 +96,8 @@ BEGIN
   SET LOCAL ROLE authenticated;
   SELECT count(*) INTO n FROM public.registros_consultor WHERE problema_principal LIKE sfx||'%';
   RESET ROLE;
-  INSERT INTO t_result VALUES ('T2','gestor autorizado preserva acesso','4',n::text,
-    CASE WHEN n=4 THEN 'PASS' ELSE 'FAIL' END);
+  INSERT INTO t_result VALUES ('T2','gestor autorizado preserva acesso','5',n::text,
+    CASE WHEN n=5 THEN 'PASS' ELSE 'FAIL' END);
 
   -- T3/T4 consultor
   EXECUTE format($x$SELECT set_config('request.jwt.claims', %L, true)$x$,
@@ -157,11 +159,10 @@ BEGIN
     CASE WHEN n=0 AND PROCEDURE_dummy=0 THEN 'PASS' ELSE 'FAIL' END);
 
   -- T9 produtor A lê próprio registro permitido (visita aprovada)
-  UPDATE public.registros_consultor SET status='aprovado' WHERE id = r_visA;
   EXECUTE format($x$SELECT set_config('request.jwt.claims', %L, true)$x$,
                  json_build_object('sub',u_prodA,'role','authenticated')::text);
   SET LOCAL ROLE authenticated;
-  SELECT count(*) INTO n FROM public.registros_consultor WHERE id = r_visA;
+  SELECT count(*) INTO n FROM public.registros_consultor WHERE id = r_visApr;
   RESET ROLE;
   INSERT INTO t_result VALUES ('T9','produtor A le proprio registro aprovado','1',n::text,
     CASE WHEN n=1 THEN 'PASS' ELSE 'FAIL' END);
