@@ -66,7 +66,22 @@ export interface PendingFoto {
   /** Chave de idempotência da referência em registros_consultor_arquivos */
   clientUuid?: string | null;
   categoria?: string | null;
+  /** Lease de sincronização (evita duas abas processarem a mesma mídia) */
+  syncingAt?: number | null;
+  /** Estado recuperável da mídia na fila */
+  syncStatus?: PendingSyncStatus;
+  /** Metadados preservados no retry */
+  tipoMidia?: "foto" | "audio" | "documento";
+  legenda?: string | null;
+  duracaoSegundos?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  capturadoEm?: string | null;
 }
+
+/** Tentativas máximas antes de exigir ação explícita do usuário. */
+export const MAX_MEDIA_SYNC_ATTEMPTS = 3;
+
 
 
 export interface PendingCheckin {
