@@ -156,6 +156,7 @@ export default function MobileVisitaWizard() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const isOnline = useOnlineStatus();
+  const queryClient = useQueryClient();
 
   const isNew = !id || id === "novo";
   const registroId = isNew ? null : (id as string);
