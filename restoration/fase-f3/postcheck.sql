@@ -187,7 +187,7 @@ BEGIN
     RAISE EXCEPTION 'GATE 50 FAIL: detector de segredo em JSON fiscal nao funciona'; END IF; g := g+1;
 
   -- ---------- MICRORGANISMOS: nada inventado ----------
-  SELECT count(*) INTO n FROM public.v_microorganism_fiscal_readiness WHERE coalesce(is_ready,false);
+  SELECT count(*) INTO n FROM public.v_microorganism_fiscal_readiness WHERE coalesce(fiscally_ready,false);
   IF n <> 0 THEN RAISE EXCEPTION 'GATE 51 FAIL: microrganismos nao podem ficar prontos sem dado fiscal real (obtidos %)', n; END IF; g := g+1;
 
   -- ---------- PRONTIDAO AGREGADA ----------
