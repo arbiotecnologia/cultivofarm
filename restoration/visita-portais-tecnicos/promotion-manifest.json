@@ -5,7 +5,7 @@
     "production_ref": "navfzbwgwzruipouyfnk",
     "production_access": "PROIBIDO"
   },
-  "generated_at": "2026-08-05T15:45:00Z",
+  "generated_at": "2026-08-05T15:55:00Z",
   "hash_algorithm": "sha256",
   "apply_order": [
     {
@@ -93,24 +93,24 @@
       "path": "restoration/visita-portais-tecnicos/rollback-consolidacao.sql",
       "kind": "rollback_logico",
       "description": "Rollback forward-safe da consolidação (reaplica baseline 20260805040000 + 20260805041601)",
-      "sha256": "f6c2e093794c17813687cfa036bfd30c9d357d3f56bff4e3705e8630c72e9479",
-      "bytes": 1228
+      "sha256": "6c0022726b3ba4fe14657ebcf5a52f3de2b85799d7f059c730fff2c337d2a294",
+      "bytes": 1767
     },
     {
       "order": 12,
       "path": "restoration/visita-portais-tecnicos/postcheck-consolidacao.sql",
       "kind": "postcheck",
       "description": "Postcheck read-only da consolidação: SHA-256 das 18 funções, owner, search_path, grants e ausência de data_aprovacao",
-      "sha256": "72864c3c0c6430d3c52775dbec2cd60c8c5f343e603e5b1a81a10953f047b50e",
-      "bytes": 5369
+      "sha256": "5ec1798b05346087ff874ea8bd1a1f8568868ecee7fe3eb2224753b98cd4438d",
+      "bytes": 6484
     },
     {
       "order": 13,
       "path": "docs/auditoria-visita-portais-tecnicos-final.md",
       "kind": "relatorio_auditoria",
       "description": "Relatório final de consolidação e gates executados",
-      "sha256": "bed0aaf39d07a56f3ca8f81a0f9cd52d84ba685710a11b0fdbd461add1d0710f",
-      "bytes": 6268
+      "sha256": "c7cff6ac638b61f7a6c41cece40e00435cb0d75a0cd9d3ebe229a5d917f4e440",
+      "bytes": 8487
     },
     {
       "order": 14,
@@ -133,8 +133,8 @@
       "path": "supabase/migrations/20260805153705_a30b97c8-b824-4119-8bfe-702faa88a6b1.sql",
       "kind": "migration_corretiva_autorizacao",
       "description": "Autorizacao exclusiva de participantes e concorrencia exata em rpc_upsert_recomendacao_visita",
-      "sha256": "96deb4577b9ca5f86071a31cac4a2d6627d3da449bf370f0b8204fdd6245f323",
-      "bytes": 11120
+      "sha256": "0b535934e480b0d8084382052d3a7a3966a6cfbe2649f4348d6ae6812fe9c9d5",
+      "bytes": 11407
     },
     {
       "order": 17,
@@ -151,6 +151,14 @@
       "description": "Harness transacional (ROLLBACK) C1-C8 das correcoes de autorizacao e versao",
       "sha256": "0eb950e058feb56cccfeb2ec0a958da371e12ca2be3854b69539f79b2fd8a25a",
       "bytes": 9293
+    },
+    {
+      "order": 19,
+      "path": "supabase/migrations/20260805155043_5cf88636-2a44-4ef2-95df-d5904df518c0.sql",
+      "kind": "migration_corretiva_concorrencia",
+      "description": "Bloqueio da visita pai (FOR UPDATE) antes do upsert de recomendação + índice único uq_rec_registro_client_uuid + mapeamento de unique_violation para version_conflict (P0001)",
+      "sha256": "3150fa5fcbd7b8b5d156c097e1121e6ca212ab844062beb21b6d839ca717fad5",
+      "bytes": 6910
     }
   ],
   "superseded_migrations": [
@@ -211,7 +219,11 @@
   ],
   "validation": {
     "hashes_validated": true,
-    "method": "sha256sum sobre o conteúdo íntegro de cada arquivo no commit"
+    "method": "sha256sum sobre o conteúdo íntegro de cada arquivo no commit",
+    "postcheck": "PASS",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "vitest": "2710 passed / 4 skipped"
   },
   "runtime_proof": {
     "script": "restoration/visita-portais-tecnicos/harness-corretiva.sql",
