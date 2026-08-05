@@ -1,15 +1,23 @@
 -- ============================================================================
 -- VERIFY RESTORATION — Fluxo unificado de atendimento técnico
 -- Executar DEPOIS de `rollback.sql`. Read-only: nenhum DDL/DML.
--- Falha (RAISE EXCEPTION) se qualquer invariante não for satisfeita.
+-- Falha (RAISE EXCEPTION) se qualquer invariante não for satisfeita, INCLUSIVE
+-- divergência de checksum SHA-256 contra as constantes esperadas do baseline.
 -- ============================================================================
 
 DO $verify$
 DECLARE
   c_expected constant text := 'ikaauvsflpmamgxmkhoq';
   c_prod     constant text := 'navfzbwgwzruipouyfnk';
+  -- Checksums esperados APÓS o rollback (estado pré-fase), obtidos por
+  -- ensaio transacional em staging em 2026-08-05.
+  c_sum_motor constant text :=
+    '078fef67f89889dbe139904c2cb4405ce68b0e601bb25a3359bb044b5f21b057';
+  c_sum_resp  constant text :=
+    '42e3a861241a22a60773b54b0ea3a990a7fd6533d6551ff74652dcc6b6c737d9';
   v_ref text;
   v_oid oid;
+  v_resp_oid oid;
   v_checksum text;
   v_n int;
 BEGIN
@@ -47,29 +55,47 @@ BEGIN
   END IF;
   RAISE NOTICE 'V2 OK: motor unico presente com assinatura de 23 argumentos';
 
-  -- V3: sem overload ambíguo (exatamente UMA função com esse nome)
+  -- V3: sem overload ambíguo (exatamente UMA função por nome)
   SELECT count(*) INTO v_n FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
    WHERE n.nspname='public' AND p.proname='rpc_criar_visita_idempotente';
   IF v_n <> 1 THEN
     RAISE EXCEPTION 'V3 FAIL: % overloads de rpc_criar_visita_idempotente (ambiguidade)', v_n;
   END IF;
+  SELECT count(*) INTO v_n FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+   WHERE n.nspname='public' AND p.proname='is_visit_responsible';
+  IF v_n <> 1 THEN
+    RAISE EXCEPTION 'V3 FAIL: % overloads de is_visit_responsible', v_n;
+  END IF;
   RAISE NOTICE 'V3 OK: sem overload ambiguo';
 
   -- V4: grants — authenticated SIM, anon/PUBLIC NAO
-  IF NOT has_function_privilege('authenticated', v_oid, 'EXECUTE') THEN
+  v_resp_oid := to_regprocedure('public.is_visit_responsible(uuid,uuid)')::oid;
+  IF v_resp_oid IS NULL THEN
+    RAISE EXCEPTION 'V4 FAIL: is_visit_responsible ausente apos rollback';
+  END IF;
+  IF NOT has_function_privilege('authenticated', v_oid, 'EXECUTE')
+     OR NOT has_function_privilege('authenticated', v_resp_oid, 'EXECUTE') THEN
     RAISE EXCEPTION 'V4 FAIL: authenticated sem EXECUTE';
   END IF;
-  IF has_function_privilege('anon', v_oid, 'EXECUTE') THEN
+  IF has_function_privilege('anon', v_oid, 'EXECUTE')
+     OR has_function_privilege('anon', v_resp_oid, 'EXECUTE') THEN
     RAISE EXCEPTION 'V4 FAIL: anon possui EXECUTE (vazamento)';
   END IF;
-  RAISE NOTICE 'V4 OK: grants corretos (authenticated=yes, anon=no)';
-
-  -- V5: SECURITY DEFINER + search_path fixo
-  IF NOT (SELECT prosecdef FROM pg_proc WHERE oid=v_oid) THEN
-    RAISE EXCEPTION 'V5 FAIL: nao e SECURITY DEFINER';
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+     WHERE p.oid IN (v_oid, v_resp_oid) AND a.grantee = 0 AND a.privilege_type = 'EXECUTE'
+  ) THEN
+    RAISE EXCEPTION 'V4 FAIL: PUBLIC possui EXECUTE (vazamento)';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE oid=v_oid
-                   AND proconfig @> ARRAY['search_path=public']) THEN
+  RAISE NOTICE 'V4 OK: grants corretos (authenticated=yes, anon/PUBLIC=no)';
+
+  -- V5: SECURITY DEFINER + search_path fixo nas duas funções
+  IF NOT (SELECT prosecdef FROM pg_proc WHERE oid=v_oid)
+     OR NOT (SELECT prosecdef FROM pg_proc WHERE oid=v_resp_oid) THEN
+    RAISE EXCEPTION 'V5 FAIL: funcao sem SECURITY DEFINER';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE oid=v_oid AND proconfig @> ARRAY['search_path=public'])
+     OR NOT EXISTS (SELECT 1 FROM pg_proc WHERE oid=v_resp_oid AND proconfig @> ARRAY['search_path=public']) THEN
     RAISE EXCEPTION 'V5 FAIL: search_path nao fixado em public';
   END IF;
   RAISE NOTICE 'V5 OK: SECURITY DEFINER + search_path=public';
@@ -83,9 +109,25 @@ BEGIN
   SELECT count(*) INTO v_n FROM public.registros_consultor WHERE origem_atendimento IS NOT NULL;
   RAISE NOTICE 'V6 OK: origem_atendimento preservada (% linhas com origem)', v_n;
 
-  -- V7: CHECKSUM determinístico da definição restaurada
+  -- V7: CHECKSUM COMPARADO (falha em divergência)
   SELECT encode(digest(pg_get_functiondef(v_oid), 'sha256'), 'hex') INTO v_checksum;
-  RAISE NOTICE 'V7 CHECKSUM sha256(rpc_criar_visita_idempotente) = %', v_checksum;
+  IF v_checksum IS DISTINCT FROM c_sum_motor THEN
+    RAISE EXCEPTION 'V7 FAIL: checksum motor esperado % obtido %', c_sum_motor, v_checksum;
+  END IF;
+  SELECT encode(digest(pg_get_functiondef(v_resp_oid), 'sha256'), 'hex') INTO v_checksum;
+  IF v_checksum IS DISTINCT FROM c_sum_resp THEN
+    RAISE EXCEPTION 'V7 FAIL: checksum is_visit_responsible esperado % obtido %', c_sum_resp, v_checksum;
+  END IF;
+  RAISE NOTICE 'V7 OK: checksums SHA-256 conferem com o baseline esperado';
+
+  -- V8: nenhum status invalido referenciado nas definicoes restauradas
+  IF EXISTS (
+    SELECT 1 FROM pg_proc WHERE oid IN (v_oid, v_resp_oid)
+       AND pg_get_functiondef(oid) LIKE '%ajuste_solicitado%'
+  ) THEN
+    RAISE EXCEPTION 'V8 FAIL: status inexistente ajuste_solicitado presente na definicao';
+  END IF;
+  RAISE NOTICE 'V8 OK: sem referencia a status inexistente';
 
   RAISE NOTICE 'VERIFY_RESTORATION_OK';
 END
@@ -102,4 +144,6 @@ SELECT
   has_function_privilege('anon', p.oid, 'EXECUTE')          AS anon_exec,
   encode(digest(pg_get_functiondef(p.oid), 'sha256'), 'hex') AS checksum_sha256
 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-WHERE n.nspname = 'public' AND p.proname = 'rpc_criar_visita_idempotente';
+WHERE n.nspname = 'public'
+  AND p.proname IN ('rpc_criar_visita_idempotente','is_visit_responsible')
+ORDER BY p.proname;

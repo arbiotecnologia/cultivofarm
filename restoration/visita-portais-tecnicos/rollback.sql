@@ -133,7 +133,7 @@ BEGIN
       'registro_id', v_existing.id, 'client_uuid', v_existing.client_uuid,
       'status', v_existing.status::text, 'origem', v_existing.origem_atendimento,
       'version', v_existing.version,
-      'can_edit', v_existing.status IN ('rascunho','em_andamento','ajuste_solicitado','reprovado'),
+      'can_edit', v_existing.status IN ('rascunho','em_andamento','reprovado'),
       'next_route', '/app/visita/' || v_existing.id::text,
       'pdf_status', v_existing.pdf_status);
   END IF;
@@ -227,9 +227,34 @@ COMMENT ON FUNCTION public.rpc_criar_visita_idempotente(
 IS 'ROLLBACK aplicado: comportamento pre-fase (cultura obrigatoria fora de ocorrencia_campo). Assinatura e grants preservados.';
 
 -- ---------------------------------------------------------------------------
--- 3) PRESERVAÇÃO DE DADOS
+-- 3) is_visit_responsible — restaura EXATAMENTE a definição pré-fase
+--    (origem: migration 20260717223135). Owner/grants/search_path explícitos.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.is_visit_responsible(p_user_id uuid, p_registro_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.registros_consultor
+    WHERE id = p_registro_id AND consultor_profile_id = p_user_id
+  )
+$$;
+
+ALTER FUNCTION public.is_visit_responsible(uuid,uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.is_visit_responsible(uuid,uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_visit_responsible(uuid,uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_visit_responsible(uuid,uuid) TO service_role;
+COMMENT ON FUNCTION public.is_visit_responsible(uuid,uuid)
+IS 'ROLLBACK aplicado: definicao pre-fase (comparacao direta com consultor_profile_id).';
+
+-- ---------------------------------------------------------------------------
+-- 4) PRESERVAÇÃO DE DADOS
 --    A coluna `origem_atendimento`, seu CHECK e os índices permanecem.
 --    Nenhum DROP COLUMN / DELETE é executado.
 -- ---------------------------------------------------------------------------
 
 COMMIT;
+

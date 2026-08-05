@@ -289,6 +289,9 @@ export default function MobileRegistrarOcorrencia() {
 
       // Mídia: falhas NÃO invalidam a visita — ficam pendentes e recuperáveis.
       let midiaFalhas = 0;
+      // Mídias que falharam E não puderam ser enfileiradas para retry.
+      let midiaNaoEnfileiradas = 0;
+
       if (registroId && fotos.length > 0) {
         for (let i = 0; i < fotos.length; i++) {
           const file = fotos[i];
@@ -321,7 +324,8 @@ export default function MobileRegistrarOcorrencia() {
                 isPrincipal: i === 0,
               });
             } catch {
-              /* fila indisponível: mídia continua pendente no dispositivo */
+              // Fila local indisponível: a mídia NÃO foi enfileirada.
+              midiaNaoEnfileiradas++;
             }
             continue;
           }
@@ -368,11 +372,17 @@ export default function MobileRegistrarOcorrencia() {
                 isPrincipal: i === 0,
               });
             } catch {
-              /* fila indisponível */
+              midiaNaoEnfileiradas++;
             }
           }
 
         }
+      }
+
+      if (midiaNaoEnfileiradas > 0) {
+        toast.error(
+          `${midiaNaoEnfileiradas} foto(s) NÃO puderam ser enfileiradas para reenvio. Refaça a captura para não perder o registro visual.`,
+        );
       }
 
       if (midiaFalhas > 0) {

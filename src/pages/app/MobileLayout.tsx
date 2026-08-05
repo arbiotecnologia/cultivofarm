@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { Navigate } from "react-router-dom";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { OfflineIndicator } from "@/components/app/OfflineIndicator";
+import { PendingMediaRecovery } from "@/components/app/PendingMediaRecovery";
+
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
 import { useEffect } from "react";
@@ -82,6 +84,10 @@ export default function MobileLayout() {
         onSync={syncAll}
         progress={progress}
       />
+
+      {/* Mídias de visitas remotas que esgotaram tentativas (recuperável) */}
+      <PendingMediaRecovery onSync={syncAll} syncing={syncing} />
+
 
       {/* Identidade do usuário — padrão único de todos os portais */}
       <header

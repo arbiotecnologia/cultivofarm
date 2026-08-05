@@ -108,9 +108,19 @@ describe("dedup: claim impede dupla execução (StrictMode)", () => {
 });
 
 describe("dedup: idempotência via client_uuid (erro 23505)", () => {
-  it("uploadMediaIdempotent não cria nova linha quando client_uuid já existe", async () => {
+  it("não reenvia quando referência existe E objeto está confirmado no storage", async () => {
     selectMaybeSingleMock.mockResolvedValueOnce({
-      data: { id: "existing-arq", arquivo_url: "https://x" },
+      data: {
+        id: "existing-arq",
+        arquivo_url: null,
+        arquivo_path: "remote-1/foto/uuid-foto-1.jpg",
+        registro_consultor_id: "remote-1",
+      },
+      error: null,
+    });
+    // Storage confirma o objeto.
+    storageListMock.mockResolvedValueOnce({
+      data: [{ name: "uuid-foto-1.jpg" }],
       error: null,
     });
 
@@ -131,6 +141,70 @@ describe("dedup: idempotência via client_uuid (erro 23505)", () => {
     expect(res.alreadyUploaded).toBe(true);
     expect(storageUploadMock).not.toHaveBeenCalled();
   });
+
+  it("referência órfã (sem objeto no storage) provoca reenvio", async () => {
+    selectMaybeSingleMock.mockResolvedValueOnce({
+      data: {
+        id: "existing-arq",
+        arquivo_url: null,
+        arquivo_path: "remote-1/foto/uuid-foto-9.jpg",
+        registro_consultor_id: "remote-1",
+      },
+      error: null,
+    });
+    storageListMock.mockResolvedValueOnce({ data: [], error: null }); // objeto ausente
+    storageUploadMock.mockResolvedValueOnce({ error: null });
+    storageListMock.mockResolvedValueOnce({
+      data: [{ name: "uuid-foto-9.jpg" }],
+      error: null,
+    }); // confirmado após reenvio
+
+    const { uploadMediaIdempotent } = await import("@/lib/mediaUpload");
+    const res = await uploadMediaIdempotent(
+      {
+        clientUuid: "uuid-foto-9",
+        file: new Blob(["x"], { type: "image/jpeg" }),
+        fileName: "a.jpg",
+        mimeType: "image/jpeg",
+        kind: "foto",
+      },
+      "remote-1"
+    );
+
+    expect(storageUploadMock).toHaveBeenCalled();
+    expect(res.success).toBe(true);
+    // Não insere nova referência: a linha já existia.
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("client_uuid pertencente a outro registro vira idempotency_conflict", async () => {
+    selectMaybeSingleMock.mockResolvedValueOnce({
+      data: {
+        id: "existing-arq",
+        arquivo_url: null,
+        arquivo_path: "outro/foto/uuid-foto-3.jpg",
+        registro_consultor_id: "remote-OUTRO",
+      },
+      error: null,
+    });
+
+    const { uploadMediaIdempotent } = await import("@/lib/mediaUpload");
+    const res = await uploadMediaIdempotent(
+      {
+        clientUuid: "uuid-foto-3",
+        file: new Blob(["x"], { type: "image/jpeg" }),
+        fileName: "a.jpg",
+        mimeType: "image/jpeg",
+        kind: "foto",
+      },
+      "remote-1"
+    );
+
+    expect(res.success).toBe(false);
+    expect(res.errorCode).toBe("idempotency_conflict");
+    expect(storageUploadMock).not.toHaveBeenCalled();
+  });
+
 
   it("upload bem-sucedido valida via list e insere referência", async () => {
     selectMaybeSingleMock.mockResolvedValueOnce({ data: null, error: null });

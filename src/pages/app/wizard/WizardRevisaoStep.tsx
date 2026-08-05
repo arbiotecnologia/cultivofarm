@@ -66,6 +66,9 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   const status = (registro?.status ?? "rascunho") as RegistroStatus;
   const canFinalize = useMemo(() => canTransition(status, "finalizado"), [status]);
   const alreadyFinalized = status !== "rascunho";
+  // Cultura é obrigatória para finalizar (regra de negócio da visita técnica).
+  const culturaAusente = !!registro && !registro.cultura_id;
+
 
   const translateRpcError = (code: string | undefined, fallback: string): string => {
     switch (code) {
@@ -87,6 +90,10 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
     }
     if (!canFinalize) {
       showTransitionErrorToast(`Transição inválida: não é possível mudar de "${status}" para "finalizado".`);
+      return;
+    }
+    if (culturaAusente) {
+      toast.error("Informe a cultura na etapa Identificação antes de finalizar.");
       return;
     }
     if (!confirm("Finalizar esta visita? Após finalizar, o conteúdo ficará somente leitura.")) return;
@@ -185,7 +192,9 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
           <dt className="text-muted-foreground">Talhão</dt>
           <dd className="font-medium truncate">{registro.talhoes?.nome ?? "—"}</dd>
           <dt className="text-muted-foreground">Cultura</dt>
-          <dd className="font-medium truncate">{registro.culturas?.nome ?? "—"}</dd>
+          <dd className={registro.cultura_id ? "font-medium truncate" : "font-medium truncate text-destructive"}>
+            {registro.culturas?.nome ?? "Não informada"}
+          </dd>
           <dt className="text-muted-foreground">Data</dt>
           <dd className="font-medium">{registro.data_vistoria ?? "—"}</dd>
           <dt className="text-muted-foreground">Tipo</dt>
@@ -222,11 +231,27 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
               <span>Sem conexão — finalização ficará disponível quando voltar online.</span>
             </div>
           )}
+          {culturaAusente && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+              <p className="font-medium">Cultura obrigatória não informada.</p>
+              <p className="mt-0.5">
+                Complete a etapa <strong>Identificação</strong> antes de finalizar a visita.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 h-7"
+                onClick={() => navigate(`/app/visita/${remoteRegistroId}?step=identificacao`)}
+              >
+                Ir para Identificação
+              </Button>
+            </div>
+          )}
           <Button
             className="w-full"
             size="lg"
             onClick={handleFinalizar}
-            disabled={finalizing || !isOnline || !canFinalize}
+            disabled={finalizing || !isOnline || !canFinalize || culturaAusente}
           >
             {finalizing ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Finalizando…</>
@@ -239,6 +264,7 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
           </p>
         </Card>
       )}
+
 
       {status === "finalizado" && (
         <Card className="p-4 space-y-2">
