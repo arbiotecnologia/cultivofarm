@@ -1130,9 +1130,14 @@ GRANT EXECUTE ON FUNCTION public.fn_microorganism_regulatory_facts(uuid) TO auth
 -- SEÇÃO 15 — EVOLUÇÃO DO GATE CANÔNICO (motor único, sem paralelo)
 -- REGULATORY_EVIDENCE_NOT_IMPLEMENTED deixa de existir e dá lugar a
 -- pendências regulatórias específicas e acionáveis.
+-- A camada regulatória é exigida no escopo MICROORGANISM; os demais
+-- escopos continuam avaliados exclusivamente pela camada técnica.
 -- =====================================================================
+DROP VIEW IF EXISTS public.v_microorganism_fiscal_readiness;
+DROP VIEW IF EXISTS public.v_product_fiscal_readiness;
 DROP FUNCTION IF EXISTS public.fn_fiscal_item_profile_gate_eval(
   text,text,boolean,text,timestamptz,text,text,text,text,text,text,text,text,text,text,text,text);
+
 
 CREATE OR REPLACE FUNCTION public.fn_fiscal_item_profile_gate_eval(
   p_scope text, p_crt text, p_is_active boolean, p_profile_status text,
