@@ -940,12 +940,6 @@ export default function MobileVisitaWizard() {
             </div>
           </div>
         </Card>
-
-        {!isNew && !locked && (
-          <Card className="p-4 text-sm text-muted-foreground text-center">
-            As etapas 3 a 7 serão liberadas nos próximos grupos.
-          </Card>
-        )}
           </>
         )}
 
