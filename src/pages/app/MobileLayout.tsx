@@ -83,6 +83,10 @@ export default function MobileLayout() {
         progress={progress}
       />
 
+      {/* Mídias de visitas remotas que esgotaram tentativas (recuperável) */}
+      <PendingMediaRecovery onSync={syncAll} syncing={syncing} />
+
+
       {/* Identidade do usuário — padrão único de todos os portais */}
       <header
         className={cn(
