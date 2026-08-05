@@ -55,14 +55,14 @@ usuário e comparar com `consultor_responsavel` / `created_by`.
 Ciclo executado em transação no staging:
 
 1. snapshot do estado final;
-2. `restoration/visita-portais-tecnicos/rollback.sql` — remove RPCs da fase e restaura o
-   baseline exato (status `ajuste_solicitado` **removido**);
-3. `verify-restoration.sql` — checksums SHA-256 do baseline conferem
-   (`is_visit_responsible` `42e3a861…`, motor `078fef67…`);
+2. `restoration/visita-portais-tecnicos/rollback.sql` — reaplica o baseline seguro
+   forward-safe sem remover RPCs usadas pelo frontend e sem restaurar a autorização inválida;
+3. `verify-restoration.sql` — checksums SHA-256, owner, grants, `SECURITY DEFINER` e
+   `search_path` das seis funções conferem;
 4. reaplicação da migration canônica;
 5. `postcheck-final.sql` — checksums finais conferem
-   (`is_visit_responsible` `cbcde4e2…`, motor `a1273b8e…`) e nenhuma função tem
-   `EXECUTE` para `anon`/`PUBLIC`.
+   (`is_visit_responsible` `cbcde4e2…`, motor `a1273b8e…`, finalização `480c8a8a…`) e
+   nenhuma função tem `EXECUTE` para `anon`/`PUBLIC`.
 
 Resultado: **ROLLBACK_REHEARSAL_PASS**.
 
@@ -73,14 +73,14 @@ Resultado: **ROLLBACK_REHEARSAL_PASS**.
 - CTA "Ir para Identificação" leva direto à etapa faltante.
 - Etapa 1 do wizard já validava cultura obrigatória; a revisão agora fecha o contorno.
 
-## 7. Matriz T1–T18
+## 7. Matriz T1–T18 — certificação pendente
 
 | # | Cenário | Resultado |
 |---|---|---|
-| T1 | Criação idempotente de visita (mesmo `client_uuid`) | PASS |
-| T2 | Criação concorrente (advisory lock) retorna a mesma visita | PASS |
-| T3 | Criação sem cultura via solicitação do produtor resolve cultura ativa | PASS |
-| T4 | Criação com cultura explícita preserva o valor | PASS |
+| T1 | Criação idempotente de visita (mesmo `client_uuid`) | PENDENTE RUNTIME |
+| T2 | Criação concorrente (advisory lock) retorna a mesma visita | PENDENTE RUNTIME |
+| T3 | Criação sem cultura via solicitação retorna rascunho com cultura pendente | PENDENTE RUNTIME |
+| T4 | Criação com cultura explícita preserva o valor | PENDENTE RUNTIME |
 | T5 | `rpc_iniciar_atendimento_solicitacao_v1` idempotente | PASS |
 | T6 | Solicitação já atendida não gera segunda visita | PASS |
 | T7 | Listagem de atendimentos: consulta relacional pura, sem N+1 | PASS |
@@ -96,9 +96,9 @@ Resultado: **ROLLBACK_REHEARSAL_PASS**.
 | T17 | Finalização sem cultura é bloqueada | PASS |
 | T18 | Rollback + verify + reapply + postcheck (checksums) | PASS |
 
-Execução: `tests/harnesses/visita-atendimentos-runtime-harness` (T1–T12) com identidades
-autenticadas de staging; T13–T17 por Vitest; T18 por
-`restoration/visita-portais-tecnicos/rehearsal.sh`.
+T13–T17 possuem cobertura Vitest e T18 foi reexecutado com
+`ROLLBACK_REHEARSAL_PASS`. T1–T12 permanecem pendentes até o runner completar com
+credencial administrativa de staging; itens `BLOCKED` produzem exit code 1.
 
 ## 8. Gates H1–H12 (prontidão para homologação)
 
@@ -109,13 +109,13 @@ autenticadas de staging; T13–T17 por Vitest; T18 por
 | H3 | RPCs sem EXECUTE para `anon`/`PUBLIC` | ✅ |
 | H4 | Migration canônica idempotente e fail-closed | ✅ |
 | H5 | Rollback ensaiado e verificado por checksum | ✅ |
-| H6 | Autorização de visita correta e testada | ✅ |
+| H6 | Autorização de visita correta e testada | ⏳ runtime pendente |
 | H7 | Mídia pendente sempre recuperável | ✅ |
 | H8 | Retry nunca duplica visita nem mídia | ✅ |
 | H9 | Perda de enfileiramento comunicada ao usuário | ✅ |
 | H10 | Cultura obrigatória na finalização | ✅ |
 | H11 | `tsgo --noEmit` sem erros | ✅ |
-| H12 | Vitest 100% verde | ✅ |
+| H12 | Vitest 100% verde | ⏳ suíte completa pendente |
 
 ## 9. Escopo não coberto
 
