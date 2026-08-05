@@ -78,16 +78,22 @@ BEGIN
   IF v_txt <> 'NOT_READY' THEN RAISE EXCEPTION 'T04 FAIL: cMun de outra UF nao bloqueou'; END IF;
   PERFORM pg_temp.f3_pass(4,'cMun IBGE incoerente com UF mantem emitente NOT_READY');
 
-  -- T05 — Emitente completo + certificado => READY_HOMOLOGATION.
+  -- T05 — Emitente completo + certificado, mas sem validacao contabil, fica NOT_READY
+  -- apenas por EMITTER_ACCOUNTING_NOT_VALIDATED (pendencia unica e acionavel).
   UPDATE public.company_fiscal_settings
-     SET municipality_ibge_code='5208707', certificate_ref='vault://harness/cert'
+     SET municipality_ibge_code='5208707', certificate_ref='harness_cert_ref_f3'
    WHERE id=v_company;
-  SELECT nfe_readiness_status INTO v_txt FROM public.company_fiscal_settings WHERE id=v_company;
-  IF v_txt <> 'READY_HOMOLOGATION' THEN
-    RAISE EXCEPTION 'T05 FAIL: emitente completo deveria ficar READY_HOMOLOGATION (obtido %) pend=%',
-      v_txt, (SELECT nfe_readiness_pendencies FROM public.company_fiscal_settings WHERE id=v_company);
+  SELECT nfe_readiness_status, nfe_readiness_pendencies::text INTO v_txt, v_snap
+    FROM public.company_fiscal_settings WHERE id=v_company;
+  IF v_txt <> 'NOT_READY' THEN
+    RAISE EXCEPTION 'T05 FAIL: emitente sem validacao contabil deveria ficar NOT_READY (obtido %)', v_txt;
   END IF;
-  PERFORM pg_temp.f3_pass(5,'Emitente completo em homologacao fica READY_HOMOLOGATION');
+  IF (SELECT count(*) FROM jsonb_array_elements(
+        (SELECT nfe_readiness_pendencies FROM public.company_fiscal_settings WHERE id=v_company)) e
+      WHERE e->>'code' <> 'EMITTER_ACCOUNTING_NOT_VALIDATED') <> 0 THEN
+    RAISE EXCEPTION 'T05 FAIL: pendencias residuais inesperadas %', v_snap;
+  END IF;
+  PERFORM pg_temp.f3_pass(5,'Emitente completo pendente apenas de validacao contabil', v_txt);
 
   -- T06 — Validação contábil exige perfil aprovador (SoD com o preparador).
   PERFORM pg_temp.f3_as(U_PROD);
@@ -105,6 +111,11 @@ BEGIN
   v_res := public.rpc_fiscal_emitter_accounting_validate('Validacao contabil sintetica do harness F3, dados conferidos.');
   PERFORM pg_temp.f3_root();
   IF v_res->>'status' <> 'VALIDATED' THEN RAISE EXCEPTION 'T07 FAIL: validacao contabil nao registrada'; END IF;
+  SELECT nfe_readiness_status INTO v_txt FROM public.company_fiscal_settings WHERE id=v_company;
+  IF v_txt <> 'READY_HOMOLOGATION' THEN
+    RAISE EXCEPTION 'T07 FAIL: apos validacao contabil o emitente deveria ficar READY_HOMOLOGATION (obtido %) pend=%',
+      v_txt, (SELECT nfe_readiness_pendencies FROM public.company_fiscal_settings WHERE id=v_company);
+  END IF;
   PERFORM pg_temp.f3_pass(7,'Validacao contabil registrada por perfil financeiro');
 
   -- ========================= DESTINATÁRIO ==========================
@@ -114,7 +125,7 @@ BEGIN
      final_consumer, icms_taxpayer, fiscal_postal_code, fiscal_street, fiscal_number,
      fiscal_neighborhood, fiscal_city, fiscal_municipality_ibge_code, fiscal_state,
      country_code, fiscal_email, use_main_address, profile_status)
-  VALUES (v_cliente,'PJ','11.222.333/0001-81','Destinatario Harness LTDA','11.111.111-1','1',
+  VALUES (v_cliente,'PJ','11.222.333/0001-81','Destinatario Harness LTDA','10.987.654-7','1',
           false,true,'74000-000','Av Sintetica','200','Setor Sul','Goiania','5208707','GO',
           '1058','fiscal@harness.local', false, 'VALIDATED')
   ON CONFLICT (customer_id) DO UPDATE SET
@@ -137,7 +148,7 @@ BEGIN
   UPDATE public.customer_fiscal_profiles SET state_registration=NULL WHERE id=v_profile;
   SELECT nfe_readiness_status INTO v_txt FROM public.customer_fiscal_profiles WHERE id=v_profile;
   IF v_txt = 'READY' THEN RAISE EXCEPTION 'T09 FAIL: contribuinte sem IE ficou READY'; END IF;
-  UPDATE public.customer_fiscal_profiles SET state_registration='11.111.111-1' WHERE id=v_profile;
+  UPDATE public.customer_fiscal_profiles SET state_registration='10.987.654-7' WHERE id=v_profile;
   PERFORM pg_temp.f3_pass(9,'Contribuinte de ICMS sem IE bloqueia prontidao');
 
   -- T10 — CPF inválido em destinatário PF bloqueia.
@@ -158,7 +169,7 @@ BEGIN
      nature_operation, presence_indicator, final_consumer, taxpayer_indicator, origin_uf,
      destination_uf, cfop, crt, priority, source_id, legal_basis, legal_version,
      policy_status, prepared_by, active, valid_from)
-  VALUES ('B2B','VENDA','GO',true,'55','OUT',1,'Venda de producao do estabelecimento',1,false,'1','GO','GO',
+  VALUES ('b2b_partner','VENDA','GO',true,'55','OUT',1,'Venda de producao do estabelecimento',1,false,'1','GO','GO',
           '5101','3',10, v_src_moc,'MOC NF-e 7.0 — CFOP interno de venda de producao','7.0',
           'DRAFT', U_GESTOR, true, current_date - 1)
   RETURNING id INTO v_pol_go;
@@ -187,7 +198,7 @@ BEGIN
     UPDATE public.fiscal_operation_policies SET cfop='6101' WHERE id=v_pol_go;
     RAISE EXCEPTION 'T14 FAIL: CFOP de politica publicada alterado';
   EXCEPTION WHEN OTHERS THEN
-    IF SQLERRM NOT LIKE 'FISCAL_OPERATION_POLICY_IMMUTABLE%' THEN RAISE; END IF;
+    IF SQLERRM NOT LIKE 'FISCAL_POLICY_IMMUTABLE%' THEN RAISE; END IF;
   END;
   PERFORM pg_temp.f3_pass(14,'Politica publicada e imutavel');
 
@@ -197,15 +208,15 @@ BEGIN
      nature_operation, presence_indicator, final_consumer, taxpayer_indicator, origin_uf,
      destination_uf, cfop, crt, priority, source_id, legal_basis, legal_version,
      policy_status, prepared_by, active, valid_from)
-  VALUES ('B2B','VENDA','GO',true,'55','OUT',1,'Venda de producao para outra UF',1,false,'1','GO','SP',
+  VALUES ('b2b_partner','VENDA','GO',true,'55','OUT',1,'Venda de producao para outra UF',1,false,'1','GO','SP',
           '6101','3',10, v_src_moc,'MOC NF-e 7.0 — CFOP interestadual de venda de producao','7.0',
           'DRAFT', U_GESTOR, true, current_date - 1)
   RETURNING id INTO v_pol_sp;
   PERFORM pg_temp.f3_as(U_FIN);
   PERFORM public.rpc_fiscal_operation_policy_publish(v_pol_sp,'Publicacao sintetica do harness F3.');
   PERFORM pg_temp.f3_root();
-  IF (public.fn_fiscal_resolve_operation('OUT','GO','GO','3',false,'1','30021000',NULL,'B2B')).cfop <> '5101'
-     OR (public.fn_fiscal_resolve_operation('OUT','GO','SP','3',false,'1','30021000',NULL,'B2B')).cfop <> '6101' THEN
+  IF (public.fn_fiscal_resolve_operation('OUT','GO','GO','3',false,'1','30021000',NULL,'b2b_partner')).cfop <> '5101'
+     OR (public.fn_fiscal_resolve_operation('OUT','GO','SP','3',false,'1','30021000',NULL,'b2b_partner')).cfop <> '6101' THEN
     RAISE EXCEPTION 'T15 FAIL: CFOP nao resolvido por operacao/destino';
   END IF;
   PERFORM pg_temp.f3_pass(15,'CFOP resolvido por operacao e destino (GO->GO=5101, GO->SP=6101)');
@@ -268,11 +279,11 @@ BEGIN
   INSERT INTO public.fiscal_invoices
     (invoice_type, status, document_model, direction, sales_channel, billing_scope,
      source_type, source_id, customer_id, issue_date, created_by)
-  VALUES ('NFE','DRAFT','NFE','OUT','B2B','PEDIDO','PARTNER_ORDER', v_order, v_cliente, current_date, U_GESTOR)
+  VALUES ('NFE','DRAFT','NFE','OUT','b2b_partner','PEDIDO','PARTNER_ORDER', v_order, v_cliente, current_date, U_GESTOR)
   RETURNING id INTO v_inv;
   INSERT INTO public.fiscal_invoice_items
     (fiscal_invoice_id, item_sequence, item_kind, description, quantity, unit_value, gross_value, ncm_snapshot)
-  VALUES (v_inv,1,'PRODUTO','Item sintetico harness',3,10.005,30.02,'30021000');
+  VALUES (v_inv,1,'PRODUCT','Item sintetico harness',3,10.005,30.02,'30021000');
   PERFORM pg_temp.f3_as(U_FIN);
   BEGIN
     PERFORM public.rpc_fiscal_calculate_invoice_v1(v_inv,'harness-quote');
@@ -366,7 +377,7 @@ BEGIN
     INSERT INTO public.fiscal_invoices
       (invoice_type, status, document_model, direction, sales_channel, billing_scope,
        source_type, source_id, customer_id, issue_date, created_by)
-    VALUES ('NFE','DRAFT','NFE','OUT','B2B','PEDIDO','PARTNER_ORDER', v_order, v_cliente, current_date, U_GESTOR);
+    VALUES ('NFE','DRAFT','NFE','OUT','b2b_partner','PEDIDO','PARTNER_ORDER', v_order, v_cliente, current_date, U_GESTOR);
     RAISE EXCEPTION 'T26 FAIL: segunda NF-e criada para o mesmo escopo';
   EXCEPTION WHEN unique_violation THEN NULL; END;
   PERFORM pg_temp.f3_pass(26,'Uma NF-e por pedido/escopo de faturamento');

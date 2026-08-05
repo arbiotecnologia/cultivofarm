@@ -20368,6 +20368,27 @@ export type Database = {
         Returns: boolean
       }
       rpc_fiscal_homologation_readiness_v2: { Args: never; Returns: Json }
+      rpc_fiscal_nfe_readiness_v1: { Args: never; Returns: Json }
+      rpc_fiscal_emitter_accounting_validate: {
+        Args: { p_notes: string }
+        Returns: Json
+      }
+      rpc_fiscal_operation_policy_publish: {
+        Args: { p_policy_id: string; p_justification?: string | null }
+        Returns: Json
+      }
+      rpc_fiscal_tax_rule_publish: {
+        Args: { p_rule_id: string; p_justification?: string | null }
+        Returns: Json
+      }
+      rpc_fiscal_calculate_invoice_v1: {
+        Args: { p_invoice_id: string; p_idempotency_key: string }
+        Returns: Json
+      }
+      rpc_fiscal_reserve_nfe_number_v1: {
+        Args: { p_invoice_id: string; p_idempotency_key: string }
+        Returns: Json
+      }
       rpc_fiscal_product_ibs_cbs_get: {
         Args: { p_product_id: string }
         Returns: Json
