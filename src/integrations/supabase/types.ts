@@ -19180,6 +19180,10 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_certificacao_catalogo: {
+        Args: { p_functions?: string[]; p_tables?: string[] }
+        Returns: Json
+      }
       rpc_check_monitoramento_and_notify: {
         Args: { _registro_id: string }
         Returns: Json
