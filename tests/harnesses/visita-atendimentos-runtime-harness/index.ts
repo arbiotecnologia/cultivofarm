@@ -614,7 +614,8 @@ async function t11(registroId: string) {
       return { up: up.error?.message ?? null, db: db.error?.message ?? null };
     })(),
   ]);
-  created.storageObjects.push(path);
+
+  if (!s1.up || !s2.up) created.storageObjects.push(path);
 
   const { data: objetos } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
   const objetosDoTeste = (objetos ?? []).filter((o) => o.name === `${clientUuid}.jpg`);
