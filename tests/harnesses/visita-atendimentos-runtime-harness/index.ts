@@ -10,10 +10,20 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const EXPECTED_STAGING_REF = "ikaauvsflpmamgxmkhoq";
 const PROD_REF = "navfzbwgwzruipouyfnk";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Script CLI local — NÃO é Edge Function. Sem Deno.serve, sem CORS, sem HTTP.
+// Guard fail-closed: só executa contra o staging autorizado.
+function assertStaging() {
+  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+    throw new Error("GUARD_ABORT: SUPABASE_URL/SERVICE_ROLE/ANON ausentes");
+  }
+  if (SUPABASE_URL.includes(PROD_REF)) {
+    throw new Error("GUARD_ABORT: URL de PRODUCAO — execucao proibida");
+  }
+  if (!SUPABASE_URL.includes(EXPECTED_STAGING_REF)) {
+    throw new Error(`GUARD_ABORT: ambiente nao autorizado (esperado ${EXPECTED_STAGING_REF})`);
+  }
+}
+
 
 type Status = "PASS" | "FAIL" | "BLOCKED";
 type Result = { id: string; name: string; status: Status; evidence: unknown };
