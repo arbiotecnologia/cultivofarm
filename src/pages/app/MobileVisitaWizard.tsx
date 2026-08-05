@@ -7,6 +7,8 @@ import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useObjetivosVisita } from "@/hooks/useObjetivosVisita";
 import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
+import { deriveVisitaWizardState } from "@/lib/visita/wizardWorkspaceState";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -315,15 +317,30 @@ export default function MobileVisitaWizard() {
   }, [registro]);
 
   // Permissões efetivas vêm do servidor (rpc_get_visita_workspace).
-  // Nunca derivar permissão apenas do status local.
-  const { data: workspace, isLoading: workspaceLoading } = useVisitaWorkspace(registroId);
+  // Nunca derivar permissão apenas do status local, e nunca afirmar "concluída"
+  // apenas porque o workspace está ausente (carregando/erro/negado são estados
+  // distintos — ver src/lib/visita/wizardWorkspaceState.ts).
+  const {
+    data: workspace,
+    isLoading: workspaceLoading,
+    error: workspaceError,
+    refetch: refetchWorkspace,
+  } = useVisitaWorkspace(registroId);
   const permissions = workspace?.permissions ?? EMPTY_VISITA_PERMISSIONS;
 
-  const locked = useMemo(() => {
-    if (isNew) return false;
-    if (!workspace) return true; // fail-closed enquanto carrega/negado
-    return !permissions.can_edit;
-  }, [isNew, workspace, permissions.can_edit]);
+  const wizardState = useMemo(
+    () =>
+      deriveVisitaWizardState({
+        isNew,
+        loading: workspaceLoading,
+        error: workspaceError,
+        workspace: workspace ?? null,
+      }),
+    [isNew, workspaceLoading, workspaceError, workspace],
+  );
+
+  const locked = wizardState.locked;
+
 
   // Check-in existente para esta visita (habilita Etapa 3)
   const { data: checkinExistente } = useQuery({
@@ -784,12 +801,32 @@ export default function MobileVisitaWizard() {
             Sem conexão — o rascunho será sincronizado quando você voltar a ficar online.
           </div>
         )}
-        {locked && (
-          <div className="bg-muted border-t text-muted-foreground text-[11px] px-3 py-1 flex items-center gap-1">
-            <Lock className="h-3 w-3" />
-            {isNew ? "Modo somente leitura." : "Visita concluída. Modo somente leitura."}
+        {wizardState.message && (
+          <div
+            data-testid="visita-wizard-banner"
+            data-state={wizardState.state}
+            className={
+              wizardState.state === "erro"
+                ? "bg-destructive/10 border-t border-destructive/20 text-destructive text-[11px] px-3 py-1 flex items-center justify-between gap-2"
+                : "bg-muted border-t text-muted-foreground text-[11px] px-3 py-1 flex items-center gap-1"
+            }
+          >
+            <span className="flex items-center gap-1">
+              {wizardState.state === "erro" ? (
+                <AlertCircle className="h-3 w-3" />
+              ) : (
+                <Lock className="h-3 w-3" />
+              )}
+              {wizardState.message}
+            </span>
+            {wizardState.canRetry && (
+              <button type="button" className="underline" onClick={() => refetchWorkspace()}>
+                Tentar novamente
+              </button>
+            )}
           </div>
         )}
+
         {(clientesErr || fazendasErr || talhoesErr || culturasErr || !!registroError) && (
           <div className="bg-destructive/10 border-t border-destructive/20 text-destructive text-[11px] px-3 py-1.5 flex items-center justify-between gap-2">
             <span className="flex items-center gap-1">
