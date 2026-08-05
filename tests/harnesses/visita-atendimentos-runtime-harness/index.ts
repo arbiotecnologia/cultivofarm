@@ -383,27 +383,39 @@ async function run() {
   }
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+// ---------------------------------------------------------------------------
+// Entry point CLI (não-servidor). Uso:
+//   deno run --allow-net --allow-env tests/harnesses/visita-atendimentos-runtime-harness/index.ts
+// ---------------------------------------------------------------------------
+async function main() {
+  assertStaging();
+  let exitCode = 0;
   try {
     await setup();
-    try {
-      await run();
-    } finally {
-      await cleanup();
-    }
-    const pass = results.filter((r) => r.status === "PASS").length;
-    const fail = results.filter((r) => r.status === "FAIL").length;
-    const blocked = results.filter((r) => r.status === "BLOCKED").length;
-    return new Response(
-      JSON.stringify({ run: RUN, summary: { pass, fail, blocked, total: results.length }, results }, null, 2),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    await run();
   } catch (e) {
-    try { await cleanup(); } catch { /* best effort */ }
-    return new Response(
-      JSON.stringify({ error: (e as Error).message, results }, null, 2),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    exitCode = 1;
+    log("RUNNER", "Execucao do harness", "FAIL", (e as Error).message);
+  } finally {
+    try {
+      await cleanup();
+    } catch (e) {
+      exitCode = 1;
+      log("CLEANUP", "Limpeza de fixtures/usuarios", "FAIL", (e as Error).message);
+    }
   }
-});
+  const pass = results.filter((r) => r.status === "PASS").length;
+  const fail = results.filter((r) => r.status === "FAIL").length;
+  const blocked = results.filter((r) => r.status === "BLOCKED").length;
+  console.log(JSON.stringify(
+    { run: RUN, summary: { pass, fail, blocked, total: results.length }, results },
+    null,
+    2,
+  ));
+  if (fail > 0) exitCode = 1;
+  Deno.exit(exitCode);
+}
+
+if (import.meta.main) {
+  await main();
+}
