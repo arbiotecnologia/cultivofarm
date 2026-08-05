@@ -80,7 +80,7 @@ BEGIN
 
   -- T05 — Emitente completo + certificado => READY_HOMOLOGATION.
   UPDATE public.company_fiscal_settings
-     SET municipality_ibge_code='5208707', certificate_ref='vault://harness/cert'
+     SET municipality_ibge_code='5208707', certificate_ref='harness_cert_ref_f3'
    WHERE id=v_company;
   SELECT nfe_readiness_status INTO v_txt FROM public.company_fiscal_settings WHERE id=v_company;
   IF v_txt <> 'READY_HOMOLOGATION' THEN
