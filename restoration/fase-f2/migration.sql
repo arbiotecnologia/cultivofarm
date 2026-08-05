@@ -25,10 +25,16 @@ END $guard$;
 
 -- =====================================================================
 -- SEÇÃO 0 — BUCKET PRIVADO DE EVIDÊNCIA REGULATÓRIA
+-- O bucket 'fiscal-regulatorio' (privado) é provisionado pela API de
+-- Storage, fora desta migration. Aqui apenas exigimos que ele exista e
+-- seja privado: fail-closed se não estiver.
 -- =====================================================================
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('fiscal-regulatorio', 'fiscal-regulatorio', false)
-ON CONFLICT (id) DO UPDATE SET public = false;
+DO $bucket$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id='fiscal-regulatorio' AND NOT public) THEN
+    RAISE EXCEPTION 'F2_ABORT: bucket privado fiscal-regulatorio ausente ou publico';
+  END IF;
+END $bucket$;
 
 -- =====================================================================
 -- SEÇÃO 1 — HELPERS DE AUTORIZAÇÃO
