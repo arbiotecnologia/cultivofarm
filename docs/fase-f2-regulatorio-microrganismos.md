@@ -165,4 +165,41 @@ recusou. Cobertura em `src/test/fiscal/faseF2.regulatorio.test.ts` (18 testes).
 ### Estado final do staging
 Ledger 632 · 24 dossiês DRAFT · 0 candidatos de NCM · 288 itens de checklist · 0 dossiês validados.
 
-PRODUCTION_NOT_ACCESSED (navfzbwgwzruipouyfnk) · NOT_PUBLISHED
+---
+
+## Correção pontual — drift de migration (base commit 91ffe68b)
+
+### Retratação da alegação anterior
+A seção acima declarou, antes desta correção, que a migration corretiva estava em
+`supabase/migrations/20260815000000_fase_f2_correcao_auditoria.sql`. **Isso era falso.** O arquivo não
+existia no repositório: a SQL efetivamente aplicada ao staging existia apenas em
+`restoration/fase-f2-correcao/migration.sql`. Local e remoto estavam em drift e o status
+"APTO PARA F3" declarado anteriormente fica **retratado** até esta correção.
+
+### Correção aplicada (somente repositório)
+- Criado `supabase/migrations/20260815000000_fase_f2_correcao_auditoria.sql` byte a byte idêntico à SQL
+  registrada como versão `20260815000000` no ledger do staging. **Nenhum DDL foi reaplicado** e
+  **nenhuma nova versão foi criada**.
+- Prova de identidade: o statement único armazenado em `supabase_migrations.schema_migrations`
+  (versão `20260815000000`, 42048 bytes) é idêntico ao conteúdo do arquivo canônico e do kit.
+
+| artefato | SHA-256 | bytes |
+| --- | --- | --- |
+| `supabase/migrations/20260815000000_fase_f2_correcao_auditoria.sql` | `09062a4bd874a535de2d6714ec00973dad579dc84e19ea5685d2dfb0a8effe7b` | 42048 |
+| `restoration/fase-f2-correcao/migration.sql` | `09062a4bd874a535de2d6714ec00973dad579dc84e19ea5685d2dfb0a8effe7b` | 42048 |
+| statement aplicado (ledger `20260815000000`) | `09062a4bd874a535de2d6714ec00973dad579dc84e19ea5685d2dfb0a8effe7b` | 42048 |
+
+### Reconciliação do ledger
+- local = **632** · remote = **632**
+- LOCAL_ONLY = **0** · REMOTE_ONLY = **0**
+- duplicatas locais = **0** · duplicatas remotas = **0**
+- head local = head remoto = **20260815000000**
+
+### Revalidação (leitura / transação revertida)
+- `postcheck.sql`: **39/39 gates PASS** + **4/4 provas transacionais PASS** (ROLLBACK).
+- `runtime-harness.sql`: **24/24 PASS** (ROLLBACK).
+- Nenhum arquivo TypeScript alterado nesta correção — typecheck/build dispensados conforme escopo.
+- Nenhuma alteração de UI, banco, dados, grants ou funções.
+
+PRODUCTION_NOT_ACCESSED (navfzbwgwzruipouyfnk) · NOT_PUBLISHED · **Status: APTO PARA F3**
+
