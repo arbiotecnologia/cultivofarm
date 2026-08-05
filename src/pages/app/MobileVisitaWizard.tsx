@@ -315,15 +315,30 @@ export default function MobileVisitaWizard() {
   }, [registro]);
 
   // Permissões efetivas vêm do servidor (rpc_get_visita_workspace).
-  // Nunca derivar permissão apenas do status local.
-  const { data: workspace, isLoading: workspaceLoading } = useVisitaWorkspace(registroId);
+  // Nunca derivar permissão apenas do status local, e nunca afirmar "concluída"
+  // apenas porque o workspace está ausente (carregando/erro/negado são estados
+  // distintos — ver src/lib/visita/wizardWorkspaceState.ts).
+  const {
+    data: workspace,
+    isLoading: workspaceLoading,
+    error: workspaceError,
+    refetch: refetchWorkspace,
+  } = useVisitaWorkspace(registroId);
   const permissions = workspace?.permissions ?? EMPTY_VISITA_PERMISSIONS;
 
-  const locked = useMemo(() => {
-    if (isNew) return false;
-    if (!workspace) return true; // fail-closed enquanto carrega/negado
-    return !permissions.can_edit;
-  }, [isNew, workspace, permissions.can_edit]);
+  const wizardState = useMemo(
+    () =>
+      deriveVisitaWizardState({
+        isNew,
+        loading: workspaceLoading,
+        error: workspaceError,
+        workspace: workspace ?? null,
+      }),
+    [isNew, workspaceLoading, workspaceError, workspace],
+  );
+
+  const locked = wizardState.locked;
+
 
   // Check-in existente para esta visita (habilita Etapa 3)
   const { data: checkinExistente } = useQuery({
