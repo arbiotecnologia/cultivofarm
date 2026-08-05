@@ -287,118 +287,33 @@ export function useFluxoVisitaTecnica() {
     }
   };
 
+  /**
+   * Programa retorno técnico de forma transacional e idempotente via
+   * `rpc_programar_retorno_visita` (cria solicitação + rascunho vinculado).
+   */
   const programarRetorno = async (data: any): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
+    const registroId = data?.visita_original_id ?? data?.registro_id;
+    const dataPrevista = data?.data_prevista ?? data?.dataProximaVisita ?? null;
+    if (!registroId) return { success: false, message: "Visita de origem não informada" };
+    if (!dataPrevista) return { success: false, message: "Informe a data prevista do retorno" };
     try {
-      // 1. Obter dados da visita original para manter o contexto
-      const { data: originalVisit, error: fetchOrigError } = await supabase
-        .from("registros_consultor")
-        .select(`
-          id, 
-          cliente_id, 
-          fazenda_id, 
-          talhao_id, 
-          cultura_id, 
-          consultor_responsavel,
-          solicitacao_id
-        `)
-        .eq("id", data.visita_original_id)
-        .single();
-
-      if (fetchOrigError) throw fetchOrigError;
-
-      // 2. Definir o usuário alvo (normalmente o consultor original ou quem está criando)
-      let targetUserId = user.id;
-      if (originalVisit.solicitacao_id) {
-        const { data: originalSol } = await supabase
-          .from("portal_solicitacoes")
-          .select("user_id")
-          .eq("id", originalVisit.solicitacao_id)
-          .single();
-        if (originalSol?.user_id) targetUserId = originalSol.user_id;
-      }
-
-      // 3. Criar nova solicitação de retorno
-      const { data: newSol, error: solError } = await supabase
-        .from("portal_solicitacoes")
-        .insert({
-          cliente_id: data.cliente_id || originalVisit.cliente_id,
-          fazenda_id: data.fazenda_id || originalVisit.fazenda_id,
-          talhao_id: data.talhao_id || originalVisit.talhao_id,
-          tipo_demanda: "retorno_tecnico",
-          descricao: data.descricao || `Retorno técnico programado da visita #${originalVisit.id.substring(0, 8)}`,
-          status: "agendada",
-          consultor_atribuido: originalVisit.consultor_responsavel || user.id,
-          data_prevista_atendimento: data.data_prevista || data.dataProximaVisita,
-          registro_origem_id: originalVisit.id,
-          origem_solicitacao: "interna",
-          user_id: targetUserId,
-          urgencia: "media"
-        })
-        .select("id")
-        .single();
-
-      if (solError) throw solError;
-      
-      // 4. Criar rascunho de visita para o retorno
-      const { data: newVisit, error: visitError } = await supabase
-        .from("registros_consultor")
-        .insert({
-          solicitacao_id: newSol.id,
-          registro_origem_id: originalVisit.id,
-          cliente_id: data.cliente_id || originalVisit.cliente_id,
-          fazenda_id: data.fazenda_id || originalVisit.fazenda_id,
-          talhao_id: data.talhao_id || originalVisit.talhao_id,
-          cultura_id: originalVisit.cultura_id,
-          consultor_responsavel: user.id,
-          created_by: user.id,
-          consultor_profile_id: profile?.id || null,
-          status: "rascunho",
-          tipo_visita: "retorno_tecnico",
-          tipo_demanda: "retorno_tecnico",
-          problema_principal: `Acompanhamento: ${originalVisit.id.substring(0, 8)}`,
-          data_vistoria: data.data_prevista || data.dataProximaVisita || new Date().toISOString().split('T')[0]
-        } as any)
-
-        .select("id")
-        .single();
-
-      if (visitError) throw visitError;
-
-      // 5. Registrar timeline em ambas as solicitações
-      if (originalVisit.solicitacao_id) {
-        await registrarTimeline(
-          originalVisit.solicitacao_id, 
-          "retorno_programado", 
-          `Retorno técnico programado para ${data.data_prevista || 'data futura'}. Nova solicitação: ${newSol.id.substring(0, 8)}`
-        );
-      }
-      
-      await registrarTimeline(newSol.id, "rascunho_criado", "Visita rascunho de retorno técnico criada automaticamente");
-
-      // 6. Registrar logs da visita
-      await supabase.from("visitas_logs").insert([
-        {
-          registro_consultor_id: originalVisit.id,
-          usuario_id: user.id,
-          acao: "retorno_programado",
-          descricao: `Programado retorno técnico. Nova visita rascunho: ${newVisit.id}`
-        },
-        {
-          registro_consultor_id: newVisit.id,
-          usuario_id: user.id,
-          acao: "visita_criada",
-          descricao: `Visita de retorno técnico iniciada a partir da visita original #${originalVisit.id}`
-        }
-      ]);
-
+      const { data: res, error } = await supabase.rpc("rpc_programar_retorno_visita" as any, {
+        p_registro_id: registroId,
+        p_data_prevista: dataPrevista,
+        p_descricao: data?.descricao ?? null,
+      });
+      if (error) throw error;
+      const out = (res as any) || {};
       queryClient.invalidateQueries({ queryKey: ["solicitacoes"] });
       queryClient.invalidateQueries({ queryKey: ["visitas"] });
-
-      return { 
-        success: true, 
-        message: "Retorno técnico programado com sucesso!", 
-        data: { solicitacao_id: newSol.id, registro_consultor_id: newVisit.id } 
+      queryClient.invalidateQueries({ queryKey: ["visita-workspace", registroId] });
+      return {
+        success: true,
+        message: out.idempotent
+          ? "Retorno técnico já estava programado"
+          : "Retorno técnico programado com sucesso!",
+        data: { solicitacao_id: out.solicitacao_id, registro_consultor_id: out.registro_id },
       };
     } catch (error: any) {
       console.error("Erro em programarRetorno:", error);
