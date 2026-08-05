@@ -36,6 +36,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ProntidaoNfeSecao } from "@/components/fiscal/ProntidaoNfeSecao";
 import {
   AlertTriangle, CheckCircle2, HelpCircle, Lock, RefreshCcw, ShieldOff,
 } from "lucide-react";
@@ -391,6 +392,7 @@ export default function FiscalProntidao() {
   return (
     <div className="p-4 md:p-6 space-y-4" data-testid="fiscal-readiness-root">
       <Banner />
+      <ProntidaoNfeSecao />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold">Central de Prontidão Fiscal</h1>
