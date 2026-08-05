@@ -10,14 +10,28 @@
 \set ON_ERROR_STOP on
 
 DO $guard$
-DECLARE v_ref text;
+DECLARE
+  c_staging constant text := 'ikaauvsflpmamgxmkhoq';
+  c_prod    constant text := 'navfzbwgwzruipouyfnk';
+  v_ref  text;
+  v_rows integer;
 BEGIN
   IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marcador de staging inexistente';
+    RAISE EXCEPTION 'GUARD_ABORT: tabela public._fiscal_staging_marker inexistente';
   END IF;
-  SELECT project_ref INTO v_ref FROM public._fiscal_staging_marker WHERE marker = 'STAGING' LIMIT 1;
-  IF v_ref IS DISTINCT FROM 'ikaauvsflpmamgxmkhoq' THEN
-    RAISE EXCEPTION 'GUARD_ABORT: ambiente % nao autorizado', coalesce(v_ref, '<null>');
+  SELECT count(*) INTO v_rows FROM public._fiscal_staging_marker WHERE marker = 'STAGING';
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION 'GUARD_ABORT: esperada exatamente 1 linha marker=STAGING, encontradas %', v_rows;
+  END IF;
+  SELECT project_ref INTO v_ref FROM public._fiscal_staging_marker WHERE marker = 'STAGING';
+  IF v_ref IS NULL THEN
+    RAISE EXCEPTION 'GUARD_ABORT: project_ref nulo no marcador de staging';
+  END IF;
+  IF v_ref = c_prod THEN
+    RAISE EXCEPTION 'GUARD_ABORT: ambiente de producao recusado';
+  END IF;
+  IF v_ref IS DISTINCT FROM c_staging THEN
+    RAISE EXCEPTION 'GUARD_ABORT: ambiente % nao autorizado', v_ref;
   END IF;
 END
 $guard$;
