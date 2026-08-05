@@ -206,11 +206,13 @@ BEGIN
       AND p.proname='fiscal_audit_trigger_microorganism_profiles' AND NOT t.tgisinternal)
   THEN RAISE EXCEPTION 'T18 FAIL: trigger dedicado ausente'; END IF;
 
-  -- T19: os 8 triggers fiscais preexistentes continuam no corpo compartilhado
+  -- T19: os 7 triggers fiscais preexistentes continuam no corpo compartilhado
+  --      (a F1 original havia acrescentado um 8o em microorganism_fiscal_profiles;
+  --       a correcao devolveu esse escopo ao trigger dedicado)
   SELECT count(*) INTO v_n FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
   JOIN pg_proc p ON p.oid=t.tgfoid
   WHERE p.proname='fiscal_audit_trigger' AND NOT t.tgisinternal;
-  IF v_n < 8 THEN RAISE EXCEPTION 'T19 FAIL: apenas % triggers no corpo compartilhado', v_n; END IF;
+  IF v_n <> 7 THEN RAISE EXCEPTION 'T19 FAIL: % triggers no corpo compartilhado (esperado 7)', v_n; END IF;
 
   -- =========================================================
   -- INTEGRIDADE POR BASELINE (nada de contagens congeladas)
