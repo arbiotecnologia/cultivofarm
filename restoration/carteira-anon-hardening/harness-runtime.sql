@@ -237,6 +237,37 @@ BEGIN
 END
 $anon$;
 
+-- T15b overload (_user_id,_cliente_id) em sessao autenticada real
+DO $ovl$
+DECLARE
+  u uuid := gen_random_uuid(); cA uuid := gen_random_uuid(); cB uuid := gen_random_uuid();
+  sfx text := 'C1_CARTEIRA_OVL_'||to_char(clock_timestamp(),'HH24MISSMS');
+  a boolean; b boolean;
+BEGIN
+  INSERT INTO auth.users(id, instance_id, aud, role, email, encrypted_password,
+                         email_confirmed_at, created_at, updated_at,
+                         raw_app_meta_data, raw_user_meta_data)
+  VALUES (u,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',
+          sfx||'@arbio-staging.test','x', now(), now(), now(), '{}'::jsonb, '{}'::jsonb);
+  INSERT INTO public.clientes(id,nome,codigo_cliente) VALUES
+    (cA, sfx||'_A', sfx||'_A'), (cB, sfx||'_B', sfx||'_B');
+  INSERT INTO public.user_clientes(user_id,cliente_id,is_active,access_level)
+    VALUES (u,cA,true,'execute');
+  INSERT INTO public.user_roles(user_id,role) VALUES (u,'tecnico_agronomo');
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub',u,'role','authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT public.can_user_access_cliente(u, cA) INTO a;
+  SELECT public.can_user_access_cliente(u, cB) INTO b;
+  RESET ROLE;
+
+  INSERT INTO t_result VALUES ('T15b','overload 2-arg: tecnico com carteira=true, fora da carteira=false',
+    'true/false', COALESCE(a::text,'null')||'/'||COALESCE(b::text,'null'),
+    CASE WHEN a IS TRUE AND b IS FALSE THEN 'PASS' ELSE 'FAIL' END);
+END
+$ovl$;
+
 -- T14 ACLs e policies
 DO $acl$
 DECLARE v_anon int; v_pub int; v_auth text; v_polpub int;
@@ -260,7 +291,7 @@ END
 $acl$;
 
 SELECT t, status, esperado, obtido, descricao FROM t_result ORDER BY
-  (regexp_replace(t,'\D','','g'))::int;
+  (regexp_replace(t,'\D','','g'))::int, t;
 
 SELECT 'RESUMO: '||count(*) FILTER (WHERE status='PASS')||' PASS / '
      ||count(*) FILTER (WHERE status='FAIL')||' FAIL' AS resumo FROM t_result;

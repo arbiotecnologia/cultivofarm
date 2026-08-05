@@ -33,6 +33,23 @@ BEGIN
     RAISE EXCEPTION 'POSTCHECK_FAIL: SECURITY DEFINER/search_path divergente';
   END IF;
 
+  -- 1b. overload (_user_id,_cliente_id) endurecido e sem anon/PUBLIC
+  SELECT pg_get_functiondef(p.oid) INTO v_def
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname='public' AND p.proname='can_user_access_cliente' AND p.pronargs = 2;
+  IF v_def IS NULL THEN RAISE EXCEPTION 'POSTCHECK_FAIL: overload 2-arg ausente'; END IF;
+  IF v_def NOT LIKE '%has_active_user_cliente_access%' THEN
+    RAISE EXCEPTION 'POSTCHECK_FAIL: overload 2-arg ainda libera papel tecnico sem carteira';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+     WHERE n.nspname='public' AND p.proname='can_user_access_cliente'
+       AND (has_function_privilege('anon', p.oid, 'EXECUTE')
+            OR has_function_privilege('public', p.oid, 'EXECUTE'))
+  ) THEN
+    RAISE EXCEPTION 'POSTCHECK_FAIL: anon/PUBLIC com EXECUTE em can_user_access_cliente';
+  END IF;
+
   -- 2. policy de SELECT restrita a authenticated
   SELECT array_to_string(roles, ',') INTO v_roles
     FROM pg_policies
