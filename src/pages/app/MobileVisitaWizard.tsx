@@ -316,7 +316,7 @@ export default function MobileVisitaWizard() {
 
   // Permissões efetivas vêm do servidor (rpc_get_visita_workspace).
   // Nunca derivar permissão apenas do status local.
-  const { data: workspace } = useVisitaWorkspace(registroId);
+  const { data: workspace, isLoading: workspaceLoading } = useVisitaWorkspace(registroId);
   const permissions = workspace?.permissions ?? EMPTY_VISITA_PERMISSIONS;
 
   const locked = useMemo(() => {
