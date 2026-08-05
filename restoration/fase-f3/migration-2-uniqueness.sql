@@ -248,7 +248,8 @@ END $$;
 -- ---------------------------------------------------------------------
 -- CORREÇÃO 4: rpc_fiscal_reserve_nfe_number_v1 — pgcrypto qualificado.
 -- Motivo: gen_random_bytes vive no schema `extensions`, fora do
--- search_path fixado da função, abortando a reserva de numeração.
+-- search_path fixado da função, e o cNF precisava de cast textual
+-- explicito para lpad.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.rpc_fiscal_reserve_nfe_number_v1(
   p_invoice_id uuid, p_idempotency_key text)
@@ -310,10 +311,10 @@ BEGIN
   n := s.current_number + 1;
   IF n > 999999999 THEN RAISE EXCEPTION 'FISCAL_SERIES_EXHAUSTED: serie % esgotada.', s.series; END IF;
 
-  cnf := lpad(((get_byte(extensions.gen_random_bytes(4),0)::bigint << 24)
+  cnf := lpad((((get_byte(extensions.gen_random_bytes(4),0)::bigint << 24)
              | (get_byte(extensions.gen_random_bytes(4),0)::bigint << 16)
              | (get_byte(extensions.gen_random_bytes(4),0)::bigint << 8)
-             | get_byte(extensions.gen_random_bytes(4),0)::bigint) % 100000000, 8, '0');
+             | get_byte(extensions.gen_random_bytes(4),0)::bigint) % 100000000)::text, 8, '0');
 
   cuf := public.fn_fiscal_uf_ibge_code(emit.state);
   key43 := cuf
