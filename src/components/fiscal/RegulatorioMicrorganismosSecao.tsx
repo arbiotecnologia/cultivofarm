@@ -193,7 +193,31 @@ export function RegulatorioMicrorganismosSecao() {
           </div>
         </div>
 
+        <Alert data-testid="regulatorio-regras">
+          <AlertTitle>Regras obrigatórias deste cadastro</AlertTitle>
+          <AlertDescription className="text-xs space-y-1">
+            <div>
+              <strong>Fonte oficial:</strong> todo candidato de NCM exige fonte cadastrada
+              ativa ou URL oficial (gov.br), data de consulta e justificativa. Para aprovar,
+              também são exigidas a descrição oficial do código e a versão/data da tabela.
+            </div>
+            <div>
+              <strong>Segregação de funções:</strong> a mesma pessoa não aprova mais de uma
+              camada do mesmo dossiê. Publicar exige as três camadas aprovadas por identidades
+              distintas — ou override emergencial de administrador, justificado e auditado.
+            </div>
+            <div>
+              <strong>Evidências:</strong> arquivos ficam em repositório privado no caminho
+              dossiers/&lt;dossiê&gt;/&lt;documento&gt;/&lt;arquivo&gt;. Arquivo de outro dossiê
+              é recusado e documento de dossiê validado ou publicado não pode ser alterado
+              nem excluído.
+            </div>
+          </AlertDescription>
+        </Alert>
+
         <Separator />
+
+
 
         <ul className="divide-y" data-testid="regulatorio-micro-lista">
           {rows.length === 0 && (
