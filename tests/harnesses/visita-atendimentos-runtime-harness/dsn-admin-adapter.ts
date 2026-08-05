@@ -215,6 +215,8 @@ class Builder implements PromiseLike<Res<unknown>> {
   #head = false;
   #single: "single" | "maybe" | null = null;
   #returning = false;
+  #limit: number | null = null;
+  #order: string | null = null;
 
   constructor(admin: DsnAdmin, table: string) {
     this.#admin = admin;
@@ -258,6 +260,16 @@ class Builder implements PromiseLike<Res<unknown>> {
 
   in(col: string, value: unknown[]) {
     this.#filters.push({ op: "in", col, value });
+    return this;
+  }
+
+  limit(n: number) {
+    this.#limit = n;
+    return this;
+  }
+
+  order(col: string, opts?: { ascending?: boolean }) {
+    this.#order = `${ident(col)} ${opts?.ascending === false ? "desc" : "asc"}`;
     return this;
   }
 
@@ -334,7 +346,9 @@ class Builder implements PromiseLike<Res<unknown>> {
         return { data: this.#head ? null : [], error: null, count: n };
       }
 
-      const sql = `select ${this.#cols()} from ${t}${this.#where(args)}`;
+      const sql = `select ${this.#cols()} from ${t}${this.#where(args)}` +
+        (this.#order ? ` order by ${this.#order}` : "") +
+        (this.#limit !== null ? ` limit ${Number(this.#limit)}` : "");
       const rows = await this.#admin.query(sql, args);
       return this.#shape(rows);
     } catch (e) {
