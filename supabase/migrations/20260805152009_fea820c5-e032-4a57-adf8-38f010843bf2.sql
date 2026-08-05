@@ -1,19 +1,49 @@
 -- ============================================================================
 -- CONSOLIDAÇÃO FINAL — VISITA TÉCNICA
--- Sincroniza no repositório o estado certificado em staging (run d5d7582f,
--- 18/18 PASS). Idempotente (CREATE OR REPLACE), sem DROP, sem DDL destrutivo.
--- Rollback lógico: restoration/visita-portais-tecnicos/rollback.sql
--- Guard: aborta se o ambiente for o ref de produção.
+-- Sincroniza no repositório o estado certificado em staging (run d5d7582f).
+-- Idempotente (CREATE OR REPLACE), sem DROP, sem DDL destrutivo.
+-- Rollback lógico: restoration/visita-portais-tecnicos/rollback-consolidacao.sql
+--
+-- NATUREZA DESTE ARQUIVO: release candidate NAO PROMOVIDA. Nao e migration
+-- historica ja aplicada em producao; por isso seu preflight foi endurecido para
+-- fail-closed antes de entrar no pacote de promocao.
+--
+-- GUARD FAIL-CLOSED EXATO: exige a tabela public._fiscal_staging_marker,
+-- exatamente uma linha marker='STAGING', project_ref nao nulo e igual a
+-- ikaauvsflpmamgxmkhoq. Ausencia, duplicidade, nulo ou divergencia => GUARD_ABORT.
+-- O ref de producao e recusado explicitamente.
 -- ============================================================================
 
 DO $guard$
-DECLARE v_ref text;
+DECLARE
+  c_expected constant text := 'ikaauvsflpmamgxmkhoq';
+  c_prod     constant text := 'navfzbwgwzruipouyfnk';
+  v_rows integer;
+  v_ref  text;
 BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NOT NULL THEN
-    SELECT project_ref INTO v_ref FROM public._fiscal_staging_marker WHERE marker = 'STAGING' LIMIT 1;
-    IF v_ref = 'navfzbwgwzruipouyfnk' THEN
-      RAISE EXCEPTION 'GUARD_ABORT: ambiente de producao nao autorizado';
-    END IF;
+  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
+    RAISE EXCEPTION 'GUARD_ABORT: tabela public._fiscal_staging_marker inexistente';
+  END IF;
+
+  SELECT count(*) INTO v_rows
+    FROM public._fiscal_staging_marker
+   WHERE marker = 'STAGING';
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION 'GUARD_ABORT: esperada exatamente 1 linha marker=STAGING, encontradas %', v_rows;
+  END IF;
+
+  SELECT project_ref INTO v_ref
+    FROM public._fiscal_staging_marker
+   WHERE marker = 'STAGING';
+
+  IF v_ref IS NULL THEN
+    RAISE EXCEPTION 'GUARD_ABORT: project_ref nulo no marcador de staging';
+  END IF;
+  IF v_ref = c_prod THEN
+    RAISE EXCEPTION 'GUARD_ABORT: ambiente de producao recusado';
+  END IF;
+  IF v_ref IS DISTINCT FROM c_expected THEN
+    RAISE EXCEPTION 'GUARD_ABORT: ambiente % nao autorizado', v_ref;
   END IF;
 END
 $guard$;
