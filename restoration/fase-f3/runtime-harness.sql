@@ -125,7 +125,7 @@ BEGIN
      final_consumer, icms_taxpayer, fiscal_postal_code, fiscal_street, fiscal_number,
      fiscal_neighborhood, fiscal_city, fiscal_municipality_ibge_code, fiscal_state,
      country_code, fiscal_email, use_main_address, profile_status)
-  VALUES (v_cliente,'PJ','11.222.333/0001-81','Destinatario Harness LTDA','11.111.111-1','1',
+  VALUES (v_cliente,'PJ','11.222.333/0001-81','Destinatario Harness LTDA','10.987.654-7','1',
           false,true,'74000-000','Av Sintetica','200','Setor Sul','Goiania','5208707','GO',
           '1058','fiscal@harness.local', false, 'VALIDATED')
   ON CONFLICT (customer_id) DO UPDATE SET
