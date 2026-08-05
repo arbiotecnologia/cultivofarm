@@ -597,3 +597,53 @@ BEGIN
   RAISE NOTICE 'F1_CORRECAO_PROMOVIVEL_OK';
 END
 $post$;
+
+-- =====================================================================
+-- SEÇÃO 6 — WRAPPER RPC: FALLBACK COERENTE COM O AVALIADOR ÚNICO
+-- Item inexistente ou sem qualquer perfil retorna o mesmo contrato do
+-- avaliador (PROFILE_MISSING + pendência regulatória), nunca um objeto
+-- ad-hoc divergente.
+-- =====================================================================
+CREATE OR REPLACE FUNCTION public.rpc_fiscal_item_readiness(
+  p_scope text,
+  p_item_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $fn$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_res jsonb;
+BEGIN
+  IF v_uid IS NULL
+     OR NOT (public.has_role(v_uid,'administrador'::app_role)
+          OR public.has_role(v_uid,'gestor'::app_role)
+          OR public.has_role(v_uid,'financeiro'::app_role)) THEN
+    RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+
+  IF p_scope = 'PRODUCT' THEN
+    SELECT gate INTO v_res FROM public.v_product_fiscal_readiness
+    WHERE product_id = p_item_id LIMIT 1;
+  ELSIF p_scope = 'MICROORGANISM' THEN
+    SELECT gate INTO v_res FROM public.v_microorganism_fiscal_readiness
+    WHERE microorganism_id = p_item_id LIMIT 1;
+  ELSE
+    RAISE EXCEPTION 'FISCAL_INVALID_SCOPE' USING ERRCODE='22023';
+  END IF;
+
+  RETURN COALESCE(
+    v_res,
+    public.fn_fiscal_item_profile_gate_eval(
+      p_scope, public.fn_fiscal_company_crt(), NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+END
+$fn$;
+
+REVOKE ALL ON FUNCTION public.rpc_fiscal_item_readiness(text,uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.rpc_fiscal_item_readiness(text,uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.rpc_fiscal_item_readiness(text,uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_fiscal_item_readiness(text,uuid) TO service_role;
