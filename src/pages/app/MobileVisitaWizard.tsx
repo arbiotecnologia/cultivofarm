@@ -312,12 +312,16 @@ export default function MobileVisitaWizard() {
     setFaseFenologica(registro.fase_fenologica ?? "");
   }, [registro]);
 
-  // Grupo A: edição da Etapa 1 é sempre read-only até termos update versionado.
+  // Permissões efetivas vêm do servidor (rpc_get_visita_workspace).
+  // Nunca derivar permissão apenas do status local.
+  const { data: workspace } = useVisitaWorkspace(registroId);
+  const permissions = workspace?.permissions ?? EMPTY_VISITA_PERMISSIONS;
+
   const locked = useMemo(() => {
-    if (!isNew) return true;
-    const s = registro?.status;
-    return s === "finalizado" || s === "convertido_os" || s === "aprovado" || s === "arquivado";
-  }, [isNew, registro?.status]);
+    if (isNew) return false;
+    if (!workspace) return true; // fail-closed enquanto carrega/negado
+    return !permissions.can_edit;
+  }, [isNew, workspace, permissions.can_edit]);
 
   // Check-in existente para esta visita (habilita Etapa 3)
   const { data: checkinExistente } = useQuery({
