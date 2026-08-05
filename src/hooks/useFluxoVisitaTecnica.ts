@@ -455,31 +455,6 @@ export function useFluxoVisitaTecnica() {
     }
   };
 
-  const programarRetorno = async (
-    id: string,
-    dataPrevista: string,
-    descricao?: string,
-  ): Promise<FluxoResponse> => {
-    if (!user) return { success: false, message: "Não autenticado" };
-    if (!dataPrevista) return { success: false, message: "Informe a data prevista do retorno" };
-    try {
-      const { data, error } = await supabase.rpc("rpc_programar_retorno_visita" as any, {
-        p_registro_id: id,
-        p_data_prevista: dataPrevista,
-        p_descricao: descricao ?? null,
-      });
-      if (error) throw error;
-      invalidateVisita(id);
-      const res = (data as any) || {};
-      return {
-        success: true,
-        message: res.idempotent ? "Retorno já estava programado" : "Retorno técnico programado",
-        data: res,
-      };
-    } catch (error: any) {
-      return { success: false, message: "Erro ao programar retorno", error: error.message };
-    }
-  };
 
   const ativarMonitoramento = async (
     id: string,
