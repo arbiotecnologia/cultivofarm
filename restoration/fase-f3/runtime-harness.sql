@@ -148,7 +148,7 @@ BEGIN
   UPDATE public.customer_fiscal_profiles SET state_registration=NULL WHERE id=v_profile;
   SELECT nfe_readiness_status INTO v_txt FROM public.customer_fiscal_profiles WHERE id=v_profile;
   IF v_txt = 'READY' THEN RAISE EXCEPTION 'T09 FAIL: contribuinte sem IE ficou READY'; END IF;
-  UPDATE public.customer_fiscal_profiles SET state_registration='11.111.111-1' WHERE id=v_profile;
+  UPDATE public.customer_fiscal_profiles SET state_registration='10.987.654-7' WHERE id=v_profile;
   PERFORM pg_temp.f3_pass(9,'Contribuinte de ICMS sem IE bloqueia prontidao');
 
   -- T10 — CPF inválido em destinatário PF bloqueia.
