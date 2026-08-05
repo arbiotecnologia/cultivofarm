@@ -518,8 +518,7 @@ BEGIN
   IF coalesce(current_setting('app.regulatory_formal_op', true),'') = 'on' THEN
     RETURN COALESCE(NEW, OLD);
   END IF;
-  v_dossier := COALESCE(NEW, OLD);
-  EXECUTE format('SELECT ($1).%I', 'dossier_id') INTO v_dossier USING COALESCE(NEW, OLD);
+  v_dossier := (to_jsonb(COALESCE(NEW, OLD)) ->> 'dossier_id')::uuid;
   SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers WHERE id = v_dossier;
   IF v_status = 'VALIDATED' THEN
     RAISE EXCEPTION 'REGULATORY_PUBLISHED_IMMUTABLE' USING ERRCODE='55006';
