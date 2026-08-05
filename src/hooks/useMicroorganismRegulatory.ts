@@ -274,29 +274,37 @@ export function isRegulatoryPermissionError(err: unknown): boolean {
 }
 
 /**
- * Boundary única com o supabase-js para as RPCs desta fase. Todo cast
- * de tipo fica aqui; nenhum outro ponto do módulo usa `as unknown`.
+ * Chamada tipada às RPCs regulatórias. O nome da função e o formato dos
+ * argumentos são validados pelo compilador contra os tipos gerados do
+ * staging — nenhum cast de cliente é usado aqui.
  */
-async function callRegulatoryRpc<T>(
-  fn: string,
-  args?: Record<string, unknown>,
-): Promise<T> {
-  const client = supabase as unknown as {
-    rpc: (
-      name: string,
-      params?: Record<string, unknown>,
-    ) => Promise<{ data: unknown; error: unknown }>;
-  };
-  const { data, error } = await client.rpc(fn, args);
+type RegulatoryFunctions = Database["public"]["Functions"];
+type RegulatoryFn = Extract<
+  keyof RegulatoryFunctions,
+  `rpc_regulatory_${string}` | "rpc_microorganism_regulatory_overview"
+>;
+
+async function regulatoryRpc<K extends RegulatoryFn>(
+  fn: K,
+  args: RegulatoryFunctions[K]["Args"],
+): Promise<RegulatoryFunctions[K]["Returns"]> {
+  const { data, error } = await supabase.rpc(
+    fn,
+    args as never,
+  );
   if (error) {
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");
-    const message =
-      typeof (error as { message?: string }).message === "string"
-        ? (error as { message: string }).message
-        : "regulatory_rpc_failed";
-    throw new Error(message);
+    throw new Error(error.message || "regulatory_rpc_failed");
   }
-  return data as T;
+  return data as RegulatoryFunctions[K]["Returns"];
+}
+
+/**
+ * Leitura de payload `Json` retornado por RPC. Conversão explícita e única:
+ * o contrato do payload é validado pelos testes de contrato da fase.
+ */
+function fromJson<T>(payload: Json | null): T | null {
+  return payload === null || payload === undefined ? null : (payload as T);
 }
 
 export function useMicroorganismRegulatoryOverview(options?: { enabled?: boolean }) {
@@ -304,10 +312,11 @@ export function useMicroorganismRegulatoryOverview(options?: { enabled?: boolean
     queryKey: REGULATORY_KEYS.overview(),
     enabled: options?.enabled ?? true,
     queryFn: async (): Promise<RegulatoryOverviewRow[]> => {
-      const rows = await callRegulatoryRpc<RegulatoryOverviewRow[] | null>(
+      const payload = await regulatoryRpc(
         "rpc_microorganism_regulatory_overview",
+        {},
       );
-      return rows ?? [];
+      return fromJson<RegulatoryOverviewRow[]>(payload) ?? [];
     },
   });
 }
@@ -319,13 +328,16 @@ export function useRegulatoryDossierDetail(
   return useQuery({
     queryKey: REGULATORY_KEYS.detail(microorganismId),
     enabled: Boolean(microorganismId) && (options?.enabled ?? true),
-    queryFn: async (): Promise<RegulatoryDossierDetail | null> =>
-      callRegulatoryRpc<RegulatoryDossierDetail | null>(
-        "rpc_regulatory_dossier_detail",
-        { p_microorganism_id: microorganismId },
-      ),
+    queryFn: async (): Promise<RegulatoryDossierDetail | null> => {
+      if (!microorganismId) return null;
+      const payload = await regulatoryRpc("rpc_regulatory_dossier_detail", {
+        p_microorganism_id: microorganismId,
+      });
+      return fromJson<RegulatoryDossierDetail>(payload);
+    },
   });
 }
+
 
 /** Invalida overview + detalhe após qualquer escrita regulatória. */
 function useRegulatoryInvalidation(microorganismId: string | null) {
