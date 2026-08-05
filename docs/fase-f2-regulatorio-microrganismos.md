@@ -155,9 +155,14 @@ Migration corretiva idempotente: `supabase/migrations/20260815000000_fase_f2_cor
 - Ledger: versão `20260815000000` registrada.
 - `tsgo --noEmit`: limpo. `vitest`: suíte completa PASS. `build`: PASS.
 
-### Ressalva remanescente
-A camada de UI (`RegulatorioMicrorganismosSecao.tsx`) ainda não explica textualmente as novas regras
-de fonte obrigatória, segregação de funções e erros de storage — o servidor já falha fechado, mas as
-mensagens ao operador seguem genéricas.
+### UI atualizada
+`RegulatorioMicrorganismosSecao.tsx` passou a exibir o painel `regulatorio-regras` explicando fonte
+oficial obrigatória, segregação de funções e escopo/imutabilidade das evidências, e traduz os códigos
+de erro do servidor (`SERVER_ERROR_MESSAGES`) em orientações acionáveis para NCM, GTIN, storage,
+segregação e override. Nenhuma regra é reimplementada no cliente: a UI apenas explica o que o servidor
+recusou. Cobertura em `src/test/fiscal/faseF2.regulatorio.test.ts` (18 testes).
+
+### Estado final do staging
+Ledger 632 · 24 dossiês DRAFT · 0 candidatos de NCM · 288 itens de checklist · 0 dossiês validados.
 
 PRODUCTION_NOT_ACCESSED (navfzbwgwzruipouyfnk) · NOT_PUBLISHED
