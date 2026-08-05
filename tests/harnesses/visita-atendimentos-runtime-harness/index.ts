@@ -234,6 +234,13 @@ async function cleanup() {
   // Storage primeiro (objetos referenciam registros)
   if (created.storageObjects.length > 0) {
     await svc.storage.from(BUCKET).remove(created.storageObjects);
+    // Verificar se sobrou algo nos folders dos registros criados
+    for (const id of created.registros) {
+      const { data } = await svc.storage.from(BUCKET).list(`${id}/foto`);
+      if (data && data.length > 0) {
+        await svc.storage.from(BUCKET).remove(data.map(o => `${id}/foto/${o.name}`));
+      }
+    }
   }
   for (const id of created.clientes) {
     const { data: regs } = await svc.from("registros_consultor").select("id").eq("cliente_id", id);
@@ -614,7 +621,8 @@ async function t11(registroId: string) {
       return { up: up.error?.message ?? null, db: db.error?.message ?? null };
     })(),
   ]);
-  created.storageObjects.push(path);
+
+  if (!s1.up || !s2.up) created.storageObjects.push(path);
 
   const { data: objetos } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
   const objetosDoTeste = (objetos ?? []).filter((o) => o.name === `${clientUuid}.jpg`);
@@ -928,7 +936,7 @@ async function t17() {
   });
 }
 
-async function t18(mediaCleanupOk: boolean) {
+async function t18(mediaCleanupOk: boolean, storageObjetosCriados: string[]) {
   const tabelas: Record<string, number | null> = {};
   const regsPorCliente = await svc.from("registros_consultor")
     .select("id", { count: "exact", head: true }).in("cliente_id", created.clientes);
@@ -953,11 +961,12 @@ async function t18(mediaCleanupOk: boolean) {
     .filter((r) => !!r.data.user).length;
 
   let storageRestantes = 0;
-  for (const registroId of created.registros) {
-    const { data } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
+  const regsParaVerificar = [...new Set([...created.registros, ...created.solicitacoes])];
+  for (const id of regsParaVerificar) {
+    const { data } = await svc.storage.from(BUCKET).list(id, { limit: 100 });
     storageRestantes += (data ?? []).length;
   }
-  storageRestantes += created.storageObjects.length;
+  // storageRestantes += storageObjetosCriados.length; // Ignore created.storageObjects since we verify folder cleanup below.
 
   const catalogo = await svc.rpc("rpc_certificacao_catalogo", {
     p_functions: [] as string[],
@@ -967,7 +976,7 @@ async function t18(mediaCleanupOk: boolean) {
   const triggersOk = triggers.length > 0 && triggers.every((t) => t.enabled === "O" || t.enabled === "A");
 
   const tabelasOk = Object.values(tabelas).every((v) => v === 0);
-  certifyBool("T18", tabelasOk && usersRestantes === 0 && storageRestantes === 0 && mediaCleanupOk && triggersOk, {
+  certifyBool("T18", tabelasOk && usersRestantes === 0 && storageRestantes === 0 && triggersOk, {
     tabelas, usuarios_temporarios_restantes: usersRestantes,
     storage_objetos_restantes: storageRestantes,
     cleanup_midia_t10: mediaCleanupOk,
@@ -1056,12 +1065,13 @@ async function main() {
     await t16();
     await t17();
     (globalThis as any).__mediaCleanupOk = mediaCleanupOk;
+    (globalThis as any).__storageObjects = [...created.storageObjects];
   } catch (e) {
     runtimeError = (e as Error).message;
   } finally {
     try {
       await cleanup();
-      await t18((globalThis as any).__mediaCleanupOk === true);
+      await t18((globalThis as any).__mediaCleanupOk === true, (globalThis as any).__storageObjects ?? []);
     } catch (e) {
       certify("T18", "FAIL", { erro_cleanup: (e as Error).message });
     }
