@@ -24,3 +24,38 @@ CREATE UNIQUE INDEX IF NOT EXISTS fop_active_uq
 
 COMMENT ON INDEX public.fop_active_uq IS
   'F3: unicidade de politica ativa considerando origem, destino, modelo e perfil do destinatario.';
+
+-- ---------------------------------------------------------------------
+-- CORREÇÃO 2: sincronizar normalized_status a partir de status.
+-- Motivo: documentos NF-e criados pelo fluxo F3 nasciam com
+-- normalized_status NULL, o que fazia o guard de itens bloquear a
+-- montagem do documento ainda em rascunho.
+-- ---------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.tg_fiscal_invoice_sync_normalized_status()
+RETURNS trigger LANGUAGE plpgsql SET search_path TO 'public','pg_temp' AS $$
+DECLARE v_norm text;
+BEGIN
+  v_norm := upper(btrim(coalesce(NEW.status,'')));
+  v_norm := CASE v_norm
+    WHEN 'PENDING' THEN 'DRAFT'
+    WHEN 'RASCUNHO' THEN 'DRAFT'
+    WHEN 'EMITIDA' THEN 'AUTHORIZED'
+    WHEN 'AUTORIZADA' THEN 'AUTHORIZED'
+    WHEN 'CANCELADA' THEN 'CANCELED'
+    WHEN 'REJEITADA' THEN 'REJECTED'
+    WHEN 'ERRO' THEN 'ERROR'
+    ELSE v_norm
+  END;
+  IF v_norm NOT IN ('LEGACY_RECORDED','DRAFT','VALIDATING','READY','QUEUED','PROCESSING',
+                    'AUTHORIZED','REJECTED','ERROR','CANCEL_REQUESTED','CANCELED','SUBSTITUTED') THEN
+    v_norm := COALESCE(NEW.normalized_status, 'DRAFT');
+  END IF;
+  NEW.normalized_status := v_norm;
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_fiscal_invoice_sync_normalized_status ON public.fiscal_invoices;
+CREATE TRIGGER trg_fiscal_invoice_sync_normalized_status
+  BEFORE INSERT OR UPDATE OF status ON public.fiscal_invoices
+  FOR EACH ROW EXECUTE FUNCTION public.tg_fiscal_invoice_sync_normalized_status();
