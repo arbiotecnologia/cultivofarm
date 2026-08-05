@@ -2,9 +2,13 @@
  * Upload de mídias com retry idempotente.
  *
  * Path determinístico (`${registroRemoteId}/${kind}/${clientUuid}.${ext}`) +
- * `upsert: true` garantem que reenvios sobrescrevam o mesmo objeto, e o
- * `client_uuid` na tabela `registros_consultor_arquivos` evita duplicar a
- * referência caso a função seja chamada mais de uma vez para o mesmo blob.
+ * `upsert: true` garantem que reenvios sobrescrevam o mesmo objeto.
+ *
+ * A idempotência NÃO se apoia apenas na existência de `client_uuid`: a
+ * referência encontrada precisa apontar para o MESMO registro, o MESMO path e
+ * o objeto precisa existir de fato no Storage. Divergências viram
+ * `idempotency_conflict`; referência órfã (sem objeto) provoca reenvio; objeto
+ * sem referência provoca criação da referência.
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +37,8 @@ export interface UploadInput {
   /** Geolocalização */
   latitude?: number | null;
   longitude?: number | null;
+  /** Momento da captura (preservado no retry) */
+  capturadoEm?: string | null;
 }
 
 export interface UploadResult {
@@ -40,9 +46,10 @@ export interface UploadResult {
   remotePath?: string;
   attempts: number;
   error?: string;
+  /** Código estável de erro (ex.: idempotency_conflict) */
+  errorCode?: "idempotency_conflict" | "storage_unconfirmed" | "max_attempts" | "unknown";
   /** True quando o upload foi pulado por já existir confirmado */
   alreadyUploaded?: boolean;
-  /** Novos campos para conformidade 10.2.1.7.2 */
   arquivo_path?: string;
   bucket?: string;
   nome_arquivo?: string;
@@ -63,6 +70,26 @@ export function buildRemotePath(input: UploadInput, registroRemoteId: string): s
   return `${registroRemoteId}/${input.kind}/${input.clientUuid}.${ext}`;
 }
 
+/** Confirma que o objeto existe no Storage no path informado. */
+async function objectExists(remotePath: string): Promise<boolean> {
+  const folder = remotePath.substring(0, remotePath.lastIndexOf("/"));
+  const fileName = remotePath.substring(remotePath.lastIndexOf("/") + 1);
+  const { data } = await supabase.storage.from(BUCKET).list(folder, { search: fileName });
+  return (data || []).some((f: { name: string }) => f.name === fileName);
+}
+
+/** Busca a referência existente por client_uuid. */
+async function fetchReference(clientUuid: string) {
+  const { data } = await supabase
+    .from("registros_consultor_arquivos")
+    .select("id, arquivo_url, arquivo_path, registro_consultor_id")
+    .eq("client_uuid", clientUuid)
+    .maybeSingle();
+  return (data as
+    | { id: string; arquivo_url: string | null; arquivo_path: string | null; registro_consultor_id: string }
+    | null) ?? null;
+}
+
 /**
  * Faz upload com upsert + valida via list + insere referência idempotente
  * via `client_uuid`. Retorna sucesso somente quando a mídia está confirmada.
@@ -73,97 +100,127 @@ export async function uploadMediaIdempotent(
 ): Promise<UploadResult> {
   const attempts = (input.previousAttempts || 0) + 1;
   if (attempts > MAX_UPLOAD_ATTEMPTS) {
-    console.error(`[Upload] Máximo de tentativas excedido para ${input.fileName}`);
     return {
       success: false,
       attempts,
+      errorCode: "max_attempts",
       error: `máximo de tentativas (${MAX_UPLOAD_ATTEMPTS}) excedido`,
     };
   }
 
-
   const remotePath = input.previousRemotePath || buildRemotePath(input, registroRemoteId);
+  const tipoMidia = input.kind === "documento" ? "pdf" : input.kind;
+
+  const okResult = (alreadyUploaded = false): UploadResult => ({
+    success: true,
+    remotePath,
+    attempts,
+    alreadyUploaded,
+    arquivo_path: remotePath,
+    bucket: BUCKET,
+    nome_arquivo: input.fileName,
+    tipo_arquivo: input.mimeType,
+    tipo_midia: tipoMidia,
+  });
+
+  const buildRow = () => ({
+    registro_consultor_id: registroRemoteId,
+    arquivo_url: null,
+    arquivo_path: remotePath,
+    nome_arquivo: input.fileName,
+    tipo_arquivo: input.mimeType,
+    tipo_midia: tipoMidia,
+    categoria_arquivo: (input.categoria as any) || "geral",
+    legenda: input.legenda || null,
+    foto_principal: !!input.isPrincipal,
+    duracao_segundos: input.duracaoSegundos ?? null,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
+    capturado_em: input.capturadoEm || new Date().toISOString(),
+    client_uuid: input.clientUuid,
+  });
 
   try {
-    // 1) Verifica se a referência já existe (idempotência por client_uuid)
-    const { data: existingRow } = await supabase
-      .from("registros_consultor_arquivos")
-      .select("id, arquivo_url")
-      .eq("client_uuid", input.clientUuid)
-      .maybeSingle();
-
+    // 1) Referência existente — validar registro, path e objeto no Storage
+    const existingRow = await fetchReference(input.clientUuid);
     if (existingRow) {
-      return { success: true, remotePath, attempts, alreadyUploaded: true };
+      if (
+        existingRow.registro_consultor_id !== registroRemoteId ||
+        (existingRow.arquivo_path && existingRow.arquivo_path !== remotePath)
+      ) {
+        return {
+          success: false,
+          attempts,
+          remotePath,
+          errorCode: "idempotency_conflict",
+          error: "client_uuid já usado por outro registro/arquivo",
+        };
+      }
+      const path = existingRow.arquivo_path || remotePath;
+      if (await objectExists(path)) {
+        return okResult(true);
+      }
+      // Referência sem objeto no Storage → segue para reenvio.
     }
 
     // 2) Upload com upsert (sobrescreve o mesmo path em retries)
     const { error: upErr } = await supabase.storage
       .from(BUCKET)
-      .upload(remotePath, input.file, {
-        contentType: input.mimeType,
-        upsert: true,
-      });
+      .upload(remotePath, input.file, { contentType: input.mimeType, upsert: true });
     if (upErr) {
-      console.error(`[Upload] Erro no storage upload para ${remotePath}:`, upErr);
-      return { success: false, attempts, error: upErr.message, remotePath };
+      return { success: false, attempts, error: upErr.message, errorCode: "unknown", remotePath };
     }
 
-
-    // 3) Validação pós-upload via list
-    const folder = remotePath.substring(0, remotePath.lastIndexOf("/"));
-    const fileName = remotePath.substring(remotePath.lastIndexOf("/") + 1);
-    const { data: listData } = await supabase.storage
-      .from(BUCKET)
-      .list(folder, { search: fileName });
-    const found = (listData || []).some((f) => f.name === fileName);
-    if (!found) {
-      console.error(`[Upload] Arquivo não encontrado após upload: ${remotePath}`);
+    // 3) Validação pós-upload
+    if (!(await objectExists(remotePath))) {
       return {
         success: false,
         attempts,
-        error: "upload sem confirmação no storage",
         remotePath,
+        errorCode: "storage_unconfirmed",
+        error: "upload sem confirmação no storage",
       };
     }
 
+    // 4) Objeto confirmado. Se a referência já existia (órfã), nada a inserir.
+    if (existingRow) return okResult(true);
 
-    // 4) Insere referência idempotente — UNIQUE(client_uuid) protege contra corrida
-    const { error: insErr } = await supabase.from("registros_consultor_arquivos").insert({
-      registro_consultor_id: registroRemoteId,
-      arquivo_url: null, // Prioriza arquivo_path para novos registros
-      arquivo_path: remotePath,
-      nome_arquivo: input.fileName,
-      tipo_arquivo: input.mimeType,
-      tipo_midia: input.kind === "documento" ? "pdf" : input.kind,
-      categoria_arquivo: (input.categoria as any) || "geral",
-      legenda: input.legenda || null,
-      foto_principal: !!input.isPrincipal,
-      duracao_segundos: input.duracaoSegundos ?? null,
-      uploaded_by: (await supabase.auth.getUser()).data.user?.id,
-      latitude: input.latitude ?? null,
-      longitude: input.longitude ?? null,
-      capturado_em: new Date().toISOString(),
-      client_uuid: input.clientUuid,
-    } as any);
+    const { error: insErr } = await supabase
+      .from("registros_consultor_arquivos")
+      .insert({
+        ...buildRow(),
+        uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+      } as any);
 
-    if (insErr && (insErr as any).code !== "23505") {
-      return { success: false, attempts, error: insErr.message, remotePath };
+    if (insErr) {
+      // 5) Corrida: outro processo inseriu a mesma referência. Buscar e validar
+      //    o vencedor — só é sucesso se apontar para o mesmo registro/path.
+      if ((insErr as any).code === "23505") {
+        const winner = await fetchReference(input.clientUuid);
+        if (
+          winner &&
+          winner.registro_consultor_id === registroRemoteId &&
+          (!winner.arquivo_path || winner.arquivo_path === remotePath)
+        ) {
+          return okResult(true);
+        }
+        return {
+          success: false,
+          attempts,
+          remotePath,
+          errorCode: "idempotency_conflict",
+          error: "corrida resolvida para outro registro/arquivo",
+        };
+      }
+      return { success: false, attempts, error: insErr.message, errorCode: "unknown", remotePath };
     }
 
-    return { 
-      success: true, 
-      remotePath, 
-      attempts,
-      arquivo_path: remotePath,
-      bucket: BUCKET,
-      nome_arquivo: input.fileName,
-      tipo_arquivo: input.mimeType,
-      tipo_midia: input.kind === "documento" ? "pdf" : input.kind
-    };
+    return okResult(false);
   } catch (err: any) {
     return {
       success: false,
       attempts,
+      errorCode: "unknown",
       error: err?.message || "erro desconhecido",
       remotePath,
     };
