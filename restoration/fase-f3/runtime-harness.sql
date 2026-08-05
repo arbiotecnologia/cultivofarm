@@ -283,7 +283,7 @@ BEGIN
   RETURNING id INTO v_inv;
   INSERT INTO public.fiscal_invoice_items
     (fiscal_invoice_id, item_sequence, item_kind, description, quantity, unit_value, gross_value, ncm_snapshot)
-  VALUES (v_inv,1,'PRODUTO','Item sintetico harness',3,10.005,30.02,'30021000');
+  VALUES (v_inv,1,'PRODUCT','Item sintetico harness',3,10.005,30.02,'30021000');
   PERFORM pg_temp.f3_as(U_FIN);
   BEGIN
     PERFORM public.rpc_fiscal_calculate_invoice_v1(v_inv,'harness-quote');
