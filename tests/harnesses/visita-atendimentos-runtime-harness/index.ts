@@ -230,18 +230,45 @@ async function setup() {
   }
 }
 
-async function cleanup() {
-  // Storage primeiro (objetos referenciam registros)
-  if (created.storageObjects.length > 0) {
-    await svc.storage.from(BUCKET).remove(created.storageObjects);
-    // Verificar se sobrou algo nos folders dos registros criados
-    for (const id of created.registros) {
-      const { data } = await svc.storage.from(BUCKET).list(`${id}/foto`);
-      if (data && data.length > 0) {
-        await svc.storage.from(BUCKET).remove(data.map(o => `${id}/foto/${o.name}`));
-      }
+/**
+ * Lista recursivamente todos os BLOBS reais sob um prefixo do bucket.
+ * Entradas de pasta (id === null) nao sao objetos e sao percorridas, nao contadas.
+ */
+async function listStorageObjectsRecursive(prefix: string): Promise<string[]> {
+  const out: string[] = [];
+  const { data, error } = await svc.storage.from(BUCKET).list(prefix, { limit: 1000 });
+  if (error || !data) return out;
+  for (const entry of data) {
+    const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if ((entry as { id?: string | null }).id === null || (entry as { id?: string | null }).id === undefined) {
+      out.push(...(await listStorageObjectsRecursive(path)));
+    } else {
+      out.push(path);
     }
   }
+  return out;
+}
+
+/** Remove blobs reais via API de Storage (nunca DELETE em storage.objects). */
+async function purgeStoragePrefix(prefix: string): Promise<number> {
+  const paths = await listStorageObjectsRecursive(prefix);
+  if (paths.length === 0) return 0;
+  await svc.storage.from(BUCKET).remove(paths);
+  return paths.length;
+}
+
+async function cleanup() {
+  // Storage primeiro (objetos referenciam registros). Remocao pela API de
+  // Storage: os blobs reais sao apagados, nunca por DELETE em storage.objects.
+  if (created.storageObjects.length > 0) {
+    await svc.storage.from(BUCKET).remove(created.storageObjects);
+    created.storageObjects = [];
+  }
+  const prefixos = [...new Set([...created.registros, ...created.solicitacoes])];
+  for (const id of prefixos) {
+    await purgeStoragePrefix(id);
+  }
+
   for (const id of created.clientes) {
     const { data: regs } = await svc.from("registros_consultor").select("id").eq("cliente_id", id);
     for (const r of regs ?? []) {
