@@ -43,17 +43,15 @@ import WizardAnexosStep from "./wizard/WizardAnexosStep";
 import WizardRevisaoStep from "./wizard/WizardRevisaoStep";
 
 /**
- * Fase 12.8 · Grupo A — Wizard mobile de visita técnica (shell + Etapa 1).
+ * Wizard mobile de visita técnica — 7 etapas funcionais.
  *
- * Escopo desta iteração:
- * - shell de 7 etapas nas rotas oficiais /app/visita/novo e /app/visita/:id;
- * - somente a Etapa 1 (Identificação) é funcional;
+ * - rotas oficiais /app/visita/novo e /app/visita/:id;
+ * - etapas: identificação, check-in, campo, diagnóstico, recomendação,
+ *   anexos e revisão/finalização;
  * - criação idempotente via rpc_criar_visita_idempotente (client_uuid);
- * - offline: salva rascunho local via offlineDb; não permite finalizar offline;
- * - visita finalizada abre em modo locked.
- *
- * Fora de escopo: check-in, campo, diagnóstico, recomendação, anexos, revisão,
- * finalização, publicação e geração de PDF (Grupos B, C e D).
+ * - permissões e bloqueio (locked) vêm do workspace autoritativo do servidor
+ *   (rpc_get_visita_workspace / useVisitaWorkspace);
+ * - offline: salva rascunho local via offlineDb; não permite finalizar offline.
  */
 
 type TipoVisita = Database["public"]["Enums"]["tipo_visita"];
