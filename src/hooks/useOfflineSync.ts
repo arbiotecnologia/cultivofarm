@@ -27,10 +27,14 @@ import {
   getAllPendingRecomendacoes,
   updatePendingRecomendacao,
   removePendingRecomendacao,
+  getOrphanRemoteMedia,
+  removePendingFoto,
   type PendingFoto,
 } from "@/lib/offlineDb";
+import { uploadMediaIdempotent } from "@/lib/mediaUpload";
 import { emitTechnicalVisitSynced } from "@/lib/visitaSyncEvents";
 import { toast } from "sonner";
+
 
 const MAX_UPLOAD_ATTEMPTS = 3;
 
