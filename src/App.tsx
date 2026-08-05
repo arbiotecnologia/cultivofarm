@@ -115,7 +115,6 @@ import MobileRecomendacoesProdutor from "@/pages/app/MobileRecomendacoesProdutor
 import MobileAplicacoes from "@/pages/app/MobileAplicacoes";
 import MobileListaAplicacoes from "@/pages/app/MobileListaAplicacoes";
 import MobileSolicitar from "@/pages/app/MobileSolicitar";
-import MobileSolicitacoes from "@/pages/app/MobileSolicitacoes";
 import MobileCheckin from "@/pages/app/MobileCheckin";
 import MobileVisita from "@/pages/app/MobileVisita";
 import MobileTalhaoHistorico from "@/pages/app/MobileTalhaoHistorico";
