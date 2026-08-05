@@ -215,8 +215,8 @@ BEGIN
   PERFORM pg_temp.f3_as(U_FIN);
   PERFORM public.rpc_fiscal_operation_policy_publish(v_pol_sp,'Publicacao sintetica do harness F3.');
   PERFORM pg_temp.f3_root();
-  IF (public.fn_fiscal_resolve_operation('OUT','GO','GO','3',false,'1','30021000',NULL,'B2B')).cfop <> '5101'
-     OR (public.fn_fiscal_resolve_operation('OUT','GO','SP','3',false,'1','30021000',NULL,'B2B')).cfop <> '6101' THEN
+  IF (public.fn_fiscal_resolve_operation('OUT','GO','GO','3',false,'1','30021000',NULL,'b2b_partner')).cfop <> '5101'
+     OR (public.fn_fiscal_resolve_operation('OUT','GO','SP','3',false,'1','30021000',NULL,'b2b_partner')).cfop <> '6101' THEN
     RAISE EXCEPTION 'T15 FAIL: CFOP nao resolvido por operacao/destino';
   END IF;
   PERFORM pg_temp.f3_pass(15,'CFOP resolvido por operacao e destino (GO->GO=5101, GO->SP=6101)');
