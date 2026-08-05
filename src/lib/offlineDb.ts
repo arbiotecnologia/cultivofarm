@@ -58,7 +58,16 @@ export interface PendingFoto {
   remotePath?: string | null;
   uploadAttempts?: number;
   lastUploadError?: string | null;
+  /**
+   * Visita JÁ existente no servidor (fluxo online que falhou só na mídia).
+   * Quando presente, a mídia é reenviada isoladamente — nunca recria a visita.
+   */
+  remoteRegistroId?: string | null;
+  /** Chave de idempotência da referência em registros_consultor_arquivos */
+  clientUuid?: string | null;
+  categoria?: string | null;
 }
+
 
 export interface PendingCheckin {
   id: string;
