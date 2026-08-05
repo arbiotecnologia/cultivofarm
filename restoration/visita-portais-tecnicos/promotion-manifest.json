@@ -5,7 +5,7 @@
     "production_ref": "navfzbwgwzruipouyfnk",
     "production_access": "PROIBIDO"
   },
-  "generated_at": "2026-08-05T15:55:00Z",
+  "generated_at": "2026-08-05T18:27:31Z",
   "hash_algorithm": "sha256",
   "apply_order": [
     {
@@ -159,6 +159,30 @@
       "description": "Bloqueio da visita pai (FOR UPDATE) antes do upsert de recomendação + índice único uq_rec_registro_client_uuid + mapeamento de unique_violation para version_conflict (P0001)",
       "sha256": "3150fa5fcbd7b8b5d156c097e1121e6ca212ab844062beb21b6d839ca717fad5",
       "bytes": 6910
+    },
+    {
+      "order": 20,
+      "path": "supabase/migrations/20260805182000_visita_workspace_runtime_fix.sql",
+      "kind": "migration_runtime_fix",
+      "description": "Corrige 42703 em rpc_get_visita_workspace (alias data_prevista -> data_recomendada) e restringe conversao de unique_violation em rpc_upsert_recomendacao_visita a uq_rec_registro_client_uuid",
+      "sha256": "c1ab4928f6c83acbcea24e4316f3ffde97bee1da8a7decfb29389011fd57fee3",
+      "bytes": 22307
+    },
+    {
+      "order": 21,
+      "path": "restoration/visita-portais-tecnicos/postcheck-runtime-final.sql",
+      "kind": "postcheck",
+      "description": "Postcheck read-only: checksums, SECURITY DEFINER, search_path, grants sem PUBLIC/anon, colunas e indice UNIQUE de idempotencia",
+      "sha256": "f53f6b2c347a2d4ff5dbded7604bfb1093f6d4109d722a473e1d80bf893c02f8",
+      "bytes": 7855
+    },
+    {
+      "order": 22,
+      "path": "restoration/visita-portais-tecnicos/rollback-runtime-final.sql",
+      "kind": "rollback",
+      "description": "Rollback logico verbatim das definicoes anteriores a 20260805182000",
+      "sha256": "58a65cd87122b33630df9419aabc33ab16d4d0e8e2d21b61a908707283942ed8",
+      "bytes": 20883
     }
   ],
   "superseded_migrations": [
@@ -231,5 +255,23 @@
     "result": "9 PASS / 0 FAIL",
     "cleanup": "ROLLBACK (zero residuo)",
     "env": "ikaauvsflpmamgxmkhoq"
-  }
+  },
+  "frontend_artifacts": [
+    {
+      "path": "src/lib/visita/wizardWorkspaceState.ts",
+      "sha256": "51469f374871f50a68345f91e9a4aeab54cf9c13a4cfd1f749682e93e45f9f1d",
+      "bytes": 3047
+    },
+    {
+      "path": "src/lib/visita/wizardWorkspaceState.test.ts",
+      "sha256": "dc117ff864032c75a4c81b470338bdf538609ca33d0ae2ca8fc0c24ca4b5b56f",
+      "bytes": 2857
+    },
+    {
+      "path": "src/pages/app/MobileVisitaWizard.tsx",
+      "sha256": "b1a28915427b1dd39237c4d3f3b12d93311b2882c4fdc9e1cc727c6e3aff905d",
+      "bytes": 38313
+    }
+  ],
+  "status": "CANDIDATO_A_REVALIDACAO"
 }
