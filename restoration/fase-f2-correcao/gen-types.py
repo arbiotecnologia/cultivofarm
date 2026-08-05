@@ -29,7 +29,7 @@ TABLES = [
     "microorganism_regulatory_publication_snapshots",
     "regulatory_storage_cleanup_queue",
 ]
-FUNCS_LIKE = ("rpc_regulatory_%", "fn_gtin_is_valid")
+FUNCS_LIKE = ("rpc_regulatory_%", "rpc_microorganism_regulatory_%", "fn_gtin_is_valid")
 
 SCALAR = {
     "text": "string", "character varying": "string", "uuid": "string", "citext": "string",
@@ -158,7 +158,7 @@ def main():
         ), '[]'::json)
       ) as x
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname='public' and (p.proname like 'rpc_regulatory%%' or p.proname = 'fn_gtin_is_valid')
+      where n.nspname='public' and (p.proname like 'rpc_regulatory%%' or p.proname like 'rpc_microorganism_regulatory%%' or p.proname = 'fn_gtin_is_valid')
         and p.prokind = 'f'
     ) s
     """

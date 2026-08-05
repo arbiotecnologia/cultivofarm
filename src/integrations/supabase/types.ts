@@ -20508,6 +20508,10 @@ export type Database = {
         Args: { p_id: string; p_status: string }
         Returns: undefined
       }
+      rpc_microorganism_regulatory_overview: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       rpc_partner_commercial_history: {
         Args: { p_from?: string; p_partner_id: string; p_to?: string }
         Returns: Json
