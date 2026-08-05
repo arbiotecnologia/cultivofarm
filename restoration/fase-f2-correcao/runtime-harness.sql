@@ -26,7 +26,6 @@ DECLARE
   v_n         int;
   v_pass      int := 0;
 
-  PROCEDURE_placeholder int;
 BEGIN
   SELECT user_id INTO u_admin    FROM public.user_roles WHERE role = 'administrador'    LIMIT 1;
   SELECT user_id INTO u_gestor   FROM public.user_roles WHERE role = 'gestor'           LIMIT 1;
