@@ -343,8 +343,7 @@ export default function MobileRegistrarOcorrencia() {
                 uploaded_by: user.id,
                 // UUID determinístico por mídia: mesmo client_uuid, nó = índice.
                 // Mantém o tipo `uuid` da coluna e garante idempotência no retry.
-                client_uuid:
-                  clientUuid.slice(0, 24) + i.toString(16).padStart(12, "0"),
+                client_uuid: midiaClientUuid,
 
                 capturado_em: new Date().toISOString(),
                 latitude: location?.latitude || null,
@@ -352,7 +351,27 @@ export default function MobileRegistrarOcorrencia() {
               } as any,
               { onConflict: "client_uuid" },
             );
-          if (refError) midiaFalhas++;
+          if (refError) {
+            midiaFalhas++;
+            // Storage OK, referência falhou: enfileira para reconciliação.
+            try {
+              await savePendingFoto({
+                id: `${clientUuid}_foto_${i}`,
+                registroLocalId: registroId,
+                remoteRegistroId: registroId,
+                clientUuid: midiaClientUuid,
+                categoria: "geral",
+                remotePath: path,
+                file,
+                fileName: file.name,
+                mimeType: file.type,
+                isPrincipal: i === 0,
+              });
+            } catch {
+              /* fila indisponível */
+            }
+          }
+
         }
       }
 
