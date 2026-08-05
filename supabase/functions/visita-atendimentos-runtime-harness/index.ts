@@ -327,7 +327,7 @@ async function run() {
       log("C9", "Mídia parcial", "BLOCKED", "nenhum registro base disponível");
     } else {
       // Simula referência de mídia idempotente (upsert por client_uuid)
-      const cu = `${crypto.randomUUID()}_0`;
+      const cu = crypto.randomUUID();
       const ref = {
         registro_consultor_id: reg.id,
         arquivo_path: `${reg.id}/foto/${cu}.jpg`,
