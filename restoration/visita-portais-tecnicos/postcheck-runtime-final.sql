@@ -67,30 +67,35 @@ BEGIN
       RAISE EXCEPTION 'POSTCHECK_FAIL: checksum divergente em % (got %)', k, v_got;
     END IF;
 
-    SELECT p.prosecdef, pg_get_userbyid(p.proowner),
-           array_to_string(p.proconfig, ','),
-           has_function_privilege('anon', p.oid, 'EXECUTE'),
-           has_function_privilege('public', p.oid, 'EXECUTE'),
-           has_function_privilege('authenticated', p.oid, 'EXECUTE')
+    SELECT p.prosecdef AS secdef,
+           pg_get_userbyid(p.proowner) AS owner,
+           array_to_string(p.proconfig, ',') AS cfg,
+           has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_exec,
+           has_function_privilege('public', p.oid, 'EXECUTE') AS public_exec,
+           has_function_privilege('authenticated', p.oid, 'EXECUTE') AS auth_exec
       INTO r
       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public' AND p.proname = k;
 
-    IF NOT r.prosecdef THEN
+    IF NOT r.secdef THEN
       RAISE EXCEPTION 'POSTCHECK_FAIL: % nao e SECURITY DEFINER', k;
     END IF;
-    IF COALESCE(r.array_to_string, '') NOT LIKE '%search_path=public%' THEN
-      RAISE EXCEPTION 'POSTCHECK_FAIL: % sem search_path=public (%)', k, r.array_to_string;
+    IF r.owner IS NULL THEN
+      RAISE EXCEPTION 'POSTCHECK_FAIL: % sem owner', k;
     END IF;
-    IF r.has_function_privilege THEN
+    IF COALESCE(r.cfg, '') NOT LIKE '%search_path=public%' THEN
+      RAISE EXCEPTION 'POSTCHECK_FAIL: % sem search_path=public (%)', k, r.cfg;
+    END IF;
+    IF r.anon_exec THEN
       RAISE EXCEPTION 'POSTCHECK_FAIL: % com EXECUTE para anon', k;
     END IF;
-    IF r.has_function_privilege_1 THEN
+    IF r.public_exec THEN
       RAISE EXCEPTION 'POSTCHECK_FAIL: % com EXECUTE para PUBLIC', k;
     END IF;
-    IF NOT r.has_function_privilege_2 THEN
+    IF NOT r.auth_exec THEN
       RAISE EXCEPTION 'POSTCHECK_FAIL: % sem EXECUTE para authenticated', k;
     END IF;
+
 
     IF k = 'rpc_get_visita_workspace' THEN
       IF v_def LIKE '%os.data_prevista%' THEN
