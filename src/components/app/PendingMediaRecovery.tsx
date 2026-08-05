@@ -2,6 +2,17 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, RefreshCw, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   getFailedRemoteMedia,
   retryFailedMedia,
   removePendingFoto,
@@ -82,11 +93,29 @@ export function PendingMediaRecovery({ onSync, syncing }: Props) {
             </div>
             <div className="flex shrink-0 gap-1">
               <Button size="sm" variant="ghost" onClick={() => handleRetry(m.id)} disabled={syncing}>
-                <RefreshCw className="h-3 w-3" />
+                <RefreshCw className="mr-1 h-3 w-3" /> Reenviar
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => handleDiscard(m.id)}>
-                <RotateCcw className="h-3 w-3" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="ghost">
+                    <RotateCcw className="mr-1 h-3 w-3" /> Descartar mídia
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Descartar esta mídia?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Somente a mídia pendente será removida da fila local. A visita será preservada.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDiscard(m.id)}>
+                      Descartar mídia
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </li>
         ))}

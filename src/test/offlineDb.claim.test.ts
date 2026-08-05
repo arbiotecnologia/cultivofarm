@@ -14,6 +14,9 @@ import {
   savePendingCheckin,
   claimPendingCheckin,
   releasePendingCheckin,
+  savePendingFoto,
+  claimPendingFoto,
+  releasePendingFoto,
   __resetOfflineDbForTests,
   type PendingRegistro,
   type PendingCheckin,
@@ -85,5 +88,33 @@ describe("claimPendingCheckin", () => {
     expect(a).toBe(true);
     expect(b).toBe(false);
     await releasePendingCheckin("c1");
+  });
+});
+
+describe("claimPendingFoto", () => {
+  it("dois claims concorrentes têm exatamente um vencedor", async () => {
+    await savePendingFoto({
+      id: "foto-concorrente",
+      registroLocalId: "visita-local",
+      remoteRegistroId: "00000000-0000-0000-0000-000000000001",
+      clientUuid: "00000000-0000-0000-0000-000000000002",
+      file: new Blob(["evidencia"], { type: "image/jpeg" }),
+      fileName: "evidencia.jpg",
+      mimeType: "image/jpeg",
+      isPrincipal: true,
+      latitude: -15.5,
+      longitude: -47.5,
+      capturadoEm: "2026-08-05T12:00:00.000Z",
+      syncStatus: "pending_sync",
+    });
+
+    const outcomes = await Promise.all([
+      claimPendingFoto("foto-concorrente"),
+      claimPendingFoto("foto-concorrente"),
+    ]);
+
+    expect(outcomes.filter(Boolean)).toHaveLength(1);
+    expect(outcomes.filter((value) => !value)).toHaveLength(1);
+    await releasePendingFoto("foto-concorrente");
   });
 });

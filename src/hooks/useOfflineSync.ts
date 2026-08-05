@@ -756,7 +756,12 @@ export function useOfflineSync() {
         const remoteId = m.remoteRegistroId!;
         // Lease atômico: duas abas nunca processam a mesma foto.
         const claimed = await claimPendingFoto(m.id);
-        if (!claimed) continue;
+        if (!claimed) {
+          // O item entrou no total inicial, mas outra aba venceu o lease. Marcar
+          // como concluído localmente mantém completed + failed coerente com total.
+          setProgress((p) => ({ ...p, completed: p.completed + 1 }));
+          continue;
+        }
 
         const attempts = (m.uploadAttempts || 0) + 1;
         setProgress((p) => ({ ...p, current: "Mídia pendente" }));
