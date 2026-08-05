@@ -64,13 +64,59 @@ function text(value: string | null | undefined): string {
   return v.length > 0 ? v : NOT_INFORMED;
 }
 
+/**
+ * Tradução dos códigos de erro do servidor (Fase F2 — correção pós-auditoria).
+ * O servidor sempre falha fechado; aqui apenas explicamos ao operador o que
+ * precisa ser feito. Nenhuma regra é reimplementada no cliente.
+ */
+const SERVER_ERROR_MESSAGES: Record<string, string> = {
+  permission_denied: "Sem permissão para esta ação.",
+  microorganism_required: "Selecione um microrganismo antes desta ação.",
+  // Fonte oficial de NCM
+  REGULATORY_NCM_SOURCE_REQUIRED:
+    "Candidato de NCM exige fonte oficial: informe uma fonte cadastrada ativa ou uma URL oficial (gov.br), com data de consulta e justificativa de no mínimo 20 caracteres.",
+  REGULATORY_NCM_SOURCE_NOT_OFFICIAL:
+    "A URL informada não é de fonte oficial. Use a TIPI/Receita Federal, CONFAZ ou outra fonte oficial cadastrada.",
+  REGULATORY_NCM_CONSULTED_AT_REQUIRED:
+    "Informe a data em que a fonte oficial foi consultada.",
+  REGULATORY_NCM_OFFICIAL_SOURCE_REQUIRED:
+    "Para aprovar o NCM é obrigatória fonte oficial cadastrada, a descrição oficial do código e a versão/data da tabela.",
+  REGULATORY_NCM_CANDIDATE_OTHER_DOSSIER:
+    "O candidato de NCM aprovado precisa pertencer a este mesmo dossiê.",
+  // GTIN
+  REGULATORY_GTIN_CHECK_DIGIT_INVALID:
+    "GTIN inválido: o dígito verificador GS1 não confere. Confira o código impresso na embalagem.",
+  REGULATORY_GTIN_MUTUALLY_EXCLUSIVE:
+    "Escolha uma opção: informar o GTIN ou declarar 'sem GTIN' com justificativa.",
+  REGULATORY_GTIN_ABSENT_REASON_REQUIRED:
+    "Declarar 'sem GTIN' exige justificativa registrada em auditoria.",
+  // Storage escopado
+  REGULATORY_STORAGE_PATH_INVALID:
+    "Caminho do arquivo fora do padrão. Use dossiers/<dossiê>/<documento>/<arquivo>.",
+  REGULATORY_STORAGE_PATH_OUT_OF_SCOPE:
+    "O arquivo pertence a outro dossiê. Envie o documento dentro da pasta deste dossiê.",
+  REGULATORY_STORAGE_OBJECT_MISSING:
+    "O arquivo não foi encontrado no repositório privado. Faça o upload antes de registrar o documento.",
+  REGULATORY_STORAGE_IMMUTABLE:
+    "Documento de dossiê validado ou publicado não pode ser alterado nem excluído.",
+  // Segregação de funções
+  REGULATORY_SEGREGATION_OF_DUTIES:
+    "Segregação de funções: a mesma pessoa não pode aprovar mais de uma camada do mesmo dossiê. Acione outro responsável.",
+  REGULATORY_APPROVALS_INCOMPLETE:
+    "Publicação exige as três camadas aprovadas (técnica, regulatória e fiscal) por identidades distintas.",
+  REGULATORY_OVERRIDE_FORBIDDEN:
+    "Somente administrador pode conceder override emergencial de segregação.",
+  REGULATORY_OVERRIDE_JUSTIFICATION_WEAK:
+    "Override emergencial exige justificativa detalhada (mínimo de 40 caracteres); o ato fica registrado em auditoria.",
+};
+
 function errorMessage(err: unknown): string {
   if (err instanceof Error) {
-    if (err.message === "permission_denied") return "Sem permissão para esta ação.";
-    return err.message;
+    return SERVER_ERROR_MESSAGES[err.message] ?? err.message;
   }
   return "Falha inesperada.";
 }
+
 
 export function RegulatorioMicrorganismosSecao() {
   const overview = useMicroorganismRegulatoryOverview();
