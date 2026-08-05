@@ -1563,3 +1563,51 @@ BEGIN
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated, service_role', r.sig);
   END LOOP;
 END $g$;
+
+-- =====================================================================
+-- SEÇÃO 18 — SEED ESTRUTURAL (SEM INVENTAR DADO REGULATÓRIO)
+-- Cria um dossiê DRAFT + checklist para cada microrganismo ativo e
+-- importa as apresentações já existentes em catalogo_volumes SEM
+-- confirmar unidades nem GTIN. Nenhum campo regulatório é preenchido.
+-- =====================================================================
+DO $seed$
+DECLARE r record; v_dossier uuid; v_next int;
+BEGIN
+  FOR r IN SELECT id FROM public.microrganismos WHERE ativo ORDER BY codigo LOOP
+    SELECT id INTO v_dossier FROM public.microorganism_regulatory_dossiers
+     WHERE microorganism_id = r.id AND deleted_at IS NULL
+     ORDER BY version DESC LIMIT 1;
+
+    IF v_dossier IS NULL THEN
+      SELECT coalesce(max(version),0)+1 INTO v_next
+        FROM public.microorganism_regulatory_dossiers WHERE microorganism_id = r.id;
+      INSERT INTO public.microorganism_regulatory_dossiers (microorganism_id, version, status)
+      VALUES (r.id, v_next, 'DRAFT')
+      RETURNING id INTO v_dossier;
+    END IF;
+
+    INSERT INTO public.microorganism_regulatory_checklist (dossier_id, item_key, state)
+    SELECT v_dossier, k, 'PENDING' FROM unnest(ARRAY[
+      'FINALIDADE_REGULATORIA','CEPA','FORMULACAO','GARANTIA_ROTULO','REGISTRO_MAPA',
+      'TITULAR_FABRICANTE','NCM_CEST_TIPI','GTIN','UNIDADE_CONVERSAO','ORIGEM',
+      'CFOP','TRIBUTACAO']) k
+    ON CONFLICT (dossier_id, item_key) DO NOTHING;
+
+    INSERT INTO public.microorganism_regulatory_presentations
+      (dossier_id, catalog_volume_id, volume_ml, label, origin_note)
+    SELECT v_dossier, cv.id, cv.volume_ml::int,
+           coalesce(nullif(btrim(cv.rotulo),''), (cv.volume_ml/1000)::text || ' L'),
+           'CATALOGO_A_CONFIRMAR_FISCALMENTE'
+      FROM public.catalogo_volumes cv
+     WHERE cv.item_tipo = 'microrganismo' AND cv.microrganismo_id = r.id AND cv.ativo
+    ON CONFLICT (dossier_id, volume_ml) DO NOTHING;
+  END LOOP;
+END $seed$;
+
+-- Fontes oficiais mínimas para citação obrigatória em candidatos de NCM
+INSERT INTO public.fiscal_official_sources (source_key, source_name, source_url, notes)
+VALUES
+  ('TIPI','Tabela TIPI - Receita Federal','https://www.gov.br/receitafederal/pt-br','Base para enquadramento de NCM.'),
+  ('MAPA_SIPEAGRO','MAPA / SIPEAGRO','https://sistemas.agricultura.gov.br','Registro de estabelecimentos e produtos.'),
+  ('CONFAZ_CEST','Convenio ICMS 142/2018 - Anexos CEST','https://www.confaz.fazenda.gov.br','Base para CEST e substituicao tributaria.')
+ON CONFLICT (source_key) DO NOTHING;
