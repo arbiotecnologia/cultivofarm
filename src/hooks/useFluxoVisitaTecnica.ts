@@ -474,51 +474,133 @@ export function useFluxoVisitaTecnica() {
     return liberarRecomendacaoParaProdutor(id);
   };
 
+  const fetchVersion = async (id: string): Promise<number> => {
+    const { data, error } = await supabase
+      .from("registros_consultor")
+      .select("version")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as any)?.version ?? 1;
+  };
+
+  const invalidateVisita = (id: string) => {
+    queryClient.invalidateQueries({ queryKey: ["visita-tecnica", id] });
+    queryClient.invalidateQueries({ queryKey: ["visita-workspace", id] });
+  };
+
   const reprovarRecomendacao = async (id: string, motivo: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
+    if (!motivo?.trim()) return { success: false, message: "Informe o motivo da reprovação" };
     try {
-      const { error } = await supabase
-        .from("registros_consultor")
-        .update({ status: "reprovado", updated_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await supabase.rpc("rpc_reprovar_visita" as any, {
+        p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
+        p_motivo: motivo.trim(),
+      });
       if (error) throw error;
-
-      await supabase.from("aprovacoes_tecnicas").insert({
-        registro_consultor_id: id,
-        status_aprovacao: "reprovado",
-        comentario_gestor: motivo,
-        aprovado_por: user.id,
-        data_aprovacao: new Date().toISOString()
-      });
-
-      await supabase.from("visitas_logs").insert({
-        registro_consultor_id: id,
-        usuario_id: user.id,
-        acao: "recomendacao_reprovada",
-        descricao: `Recomendação reprovada pelo gestor. Motivo: ${motivo}`
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["visita-tecnica", id] });
-      return { success: true, message: "Recomendação reprovada com sucesso" };
+      invalidateVisita(id);
+      return { success: true, message: "Visita reprovada com sucesso" };
     } catch (error: any) {
-      return { success: false, message: "Erro ao reprovar recomendação", error: error.message };
+      return { success: false, message: "Erro ao reprovar visita", error: error.message };
     }
   };
 
-  const ativarMonitoramento = async (_id: string): Promise<FluxoResponse> => {
-    return { success: false, message: "Funcionalidade ainda não implementada com segurança." };
+  const solicitarAjusteVisita = async (id: string, motivo: string): Promise<FluxoResponse> => {
+    if (!user) return { success: false, message: "Não autenticado" };
+    if (!motivo?.trim()) return { success: false, message: "Informe o motivo do ajuste" };
+    try {
+      const { error } = await supabase.rpc("rpc_solicitar_ajuste_visita" as any, {
+        p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
+        p_motivo: motivo.trim(),
+      });
+      if (error) throw error;
+      invalidateVisita(id);
+      return { success: true, message: "Ajuste solicitado ao consultor" };
+    } catch (error: any) {
+      return { success: false, message: "Erro ao solicitar ajuste", error: error.message };
+    }
+  };
+
+  const reabrirVisita = async (id: string, motivo: string): Promise<FluxoResponse> => {
+    if (!user) return { success: false, message: "Não autenticado" };
+    if (!motivo?.trim()) return { success: false, message: "Informe o motivo da reabertura" };
+    try {
+      const { error } = await supabase.rpc("rpc_reabrir_visita" as any, {
+        p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
+        p_motivo: motivo.trim(),
+      });
+      if (error) throw error;
+      invalidateVisita(id);
+      return { success: true, message: "Visita reaberta para revisão" };
+    } catch (error: any) {
+      return { success: false, message: "Erro ao reabrir visita", error: error.message };
+    }
+  };
+
+  const programarRetorno = async (
+    id: string,
+    dataPrevista: string,
+    descricao?: string,
+  ): Promise<FluxoResponse> => {
+    if (!user) return { success: false, message: "Não autenticado" };
+    if (!dataPrevista) return { success: false, message: "Informe a data prevista do retorno" };
+    try {
+      const { data, error } = await supabase.rpc("rpc_programar_retorno_visita" as any, {
+        p_registro_id: id,
+        p_data_prevista: dataPrevista,
+        p_descricao: descricao ?? null,
+      });
+      if (error) throw error;
+      invalidateVisita(id);
+      const res = (data as any) || {};
+      return {
+        success: true,
+        message: res.idempotent ? "Retorno já estava programado" : "Retorno técnico programado",
+        data: res,
+      };
+    } catch (error: any) {
+      return { success: false, message: "Erro ao programar retorno", error: error.message };
+    }
+  };
+
+  const ativarMonitoramento = async (
+    id: string,
+    tipo = "monitoramento_pos_visita",
+    dataReferencia?: string | null,
+  ): Promise<FluxoResponse> => {
+    if (!user) return { success: false, message: "Não autenticado" };
+    try {
+      const { data, error } = await supabase.rpc("rpc_ativar_monitoramento_visita" as any, {
+        p_registro_id: id,
+        p_tipo: tipo,
+        p_data_referencia: dataReferencia ?? null,
+      });
+      if (error) throw error;
+      invalidateVisita(id);
+      const res = (data as any) || {};
+      return {
+        success: true,
+        message: res.idempotent ? "Monitoramento já estava ativo" : "Monitoramento ativado",
+        data: res,
+      };
+    } catch (error: any) {
+      return { success: false, message: "Erro ao ativar monitoramento", error: error.message };
+    }
   };
 
   const arquivarVisita = async (id: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
-      const { error } = await supabase
-        .from("registros_consultor")
-        .update({ status: "arquivado", updated_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await supabase.rpc("rpc_arquivar_visita" as any, {
+        p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
+        p_motivo: null,
+      });
       if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ["visita-tecnica", id] });
+      invalidateVisita(id);
       return { success: true, message: "Visita arquivada com sucesso" };
     } catch (error: any) {
       return { success: false, message: "Erro ao arquivar visita", error: error.message };
