@@ -1,0 +1,19 @@
+{
+    "marker": "STAGING",
+    "captured_at": "2026-08-05T22:20:29.193837+00:00",
+    "ledger_head": "20260812000000",
+    "project_ref": "ikaauvsflpmamgxmkhoq",
+    "ledger_count": 629,
+    "micro_profiles": 1,
+    "microrganismos": 24,
+    "partner_orders": 3,
+    "fiscal_invoices": 0,
+    "product_profiles": 2,
+    "validated_profiles": 0,
+    "accounts_receivable": 2,
+    "fiscal_invoice_items": 0,
+    "fiscal_audit_trigger_md5": "ed0a7720b025d078e307f12c0d92e6f3",
+    "micro_profiles_fiscal_md5": "821852d051c5881c9aa9071351364163",
+    "company_fiscal_settings_md5": "41398afe3328ef0e517f55697a754d7e",
+    "product_profiles_fiscal_md5": "b77707ec056d836e36bae6e6ad836079"
+}
