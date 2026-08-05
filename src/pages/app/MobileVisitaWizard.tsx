@@ -540,9 +540,49 @@ export default function MobileVisitaWizard() {
       return;
     }
 
-    // Grupo A não implementa edição versionada da Etapa 1
+    // Edição versionada da Etapa 1 (visita já existente)
     if (!isNew) {
-      toast.info("Próximas etapas serão liberadas nos próximos grupos.");
+      if (!isOnline) {
+        toast.error("Sem conexão: edição da identificação exige estar online.");
+        return;
+      }
+      setSaveState("saving");
+      try {
+        const { data, error } = await supabase.rpc(
+          "rpc_atualizar_identificacao_visita" as never,
+          {
+            p_registro_id: registroId,
+            p_expected_version: workspace?.version ?? (registro as any)?.version ?? 1,
+            p_payload: {
+              cultura_id: culturaId || null,
+              data_vistoria: dataVistoria,
+              tipo_visita: tipoVisita,
+              objetivo_visita: objetivo.trim() || null,
+              safra: safra.trim() || null,
+              fase_fenologica: faseFenologica.trim() || null,
+            },
+          } as never,
+        );
+        if (error) throw error;
+        void data;
+        setSaveState("saved");
+        await queryClient.invalidateQueries({ queryKey: visitaWorkspaceKey(registroId) });
+        await queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", registroId] });
+        toast.success("Identificação atualizada.");
+        setCurrentStep(2);
+      } catch (e: any) {
+        setSaveState("error");
+        const msg = String(e?.message ?? "");
+        if (msg.includes("version_conflict")) {
+          toast.error("Esta visita foi alterada por outra pessoa. Recarregue para continuar.");
+        } else if (msg.includes("status_nao_editavel")) {
+          toast.error("Esta visita não está mais em status editável.");
+        } else if (msg.includes("forbidden")) {
+          toast.error("Você não tem permissão para editar esta visita.");
+        } else {
+          toast.error("Não foi possível atualizar a identificação.");
+        }
+      }
       return;
     }
 
