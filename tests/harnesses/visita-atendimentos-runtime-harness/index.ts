@@ -987,13 +987,16 @@ async function t18(mediaCleanupOk: boolean, storageObjetosCriados: string[]) {
   const usersRestantes = (await Promise.all(created.users.map((id) => svc.auth.admin.getUserById(id))))
     .filter((r) => !!r.data.user).length;
 
+  // Conta apenas BLOBS reais (recursivo). Entradas de pasta nao sao objetos.
   let storageRestantes = 0;
+  const storageResiduais: string[] = [];
   const regsParaVerificar = [...new Set([...created.registros, ...created.solicitacoes])];
   for (const id of regsParaVerificar) {
-    const { data } = await svc.storage.from(BUCKET).list(id, { limit: 100 });
-    storageRestantes += (data ?? []).length;
+    const objs = await listStorageObjectsRecursive(id);
+    storageResiduais.push(...objs);
   }
-  // storageRestantes += storageObjetosCriados.length; // Ignore created.storageObjects since we verify folder cleanup below.
+  storageRestantes = storageResiduais.length;
+
 
   const catalogo = await svc.rpc("rpc_certificacao_catalogo", {
     p_functions: [] as string[],
