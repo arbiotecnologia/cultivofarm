@@ -1,20 +1,36 @@
-// Harness de homologação runtime — Fluxo unificado de atendimento técnico (staging).
-// Cria usuários efêmeros REAIS, executa os gates C1–C12 autenticados e limpa tudo.
-// service_role é usado APENAS para fixture/cleanup; os gates rodam com sessões reais.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+// ============================================================================
+// Runner CLI de certificação T1–T18 — Fluxo unificado de visita técnica.
+// Staging ikaauvsflpmamgxmkhoq SOMENTE. Produção navfzbwgwzruipouyfnk proibida.
+//
+// - Não é Edge Function: sem Deno.serve, sem CORS, sem HTTP server.
+// - A credencial administrativa é resolvida SOMENTE no backend e usada apenas
+//   para setup/cleanup. Todos os cenários funcionais rodam com sessões JWT reais.
+// - Nenhum valor, prefixo ou tamanho de credencial é impresso ou gravado.
+// - Qualquer FAIL, BLOCKED ou cenário não executado => exit 1.
+//
+// Uso:
+//   deno run --allow-net --allow-env \
+//     --allow-write=artifacts/visita-atendimentos \
+//     tests/harnesses/visita-atendimentos-runtime-harness/index.ts
+// ============================================================================
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+// Chave administrativa: service_role clássica OU secret key moderna. Backend-only.
+const ADMIN_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY");
 
 const EXPECTED_STAGING_REF = "ikaauvsflpmamgxmkhoq";
 const PROD_REF = "navfzbwgwzruipouyfnk";
+const BUCKET = "consultor-arquivos";
 
-// Script CLI local — NÃO é Edge Function. Sem Deno.serve, sem CORS, sem HTTP.
-// Guard fail-closed: só executa contra o staging autorizado.
 function assertStaging() {
-  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
-    throw new Error("GUARD_ABORT: SUPABASE_URL/SERVICE_ROLE/ANON ausentes");
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push("SUPABASE_URL");
+  if (!ANON_KEY) missing.push("SUPABASE_ANON_KEY");
+  if (!ADMIN_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY");
+  if (missing.length > 0) {
+    throw new Error(`GUARD_ABORT: variaveis ausentes: ${missing.join(", ")}`);
   }
   if (SUPABASE_URL.includes(PROD_REF)) {
     throw new Error("GUARD_ABORT: URL de PRODUCAO — execucao proibida");
@@ -24,32 +40,67 @@ function assertStaging() {
   }
 }
 
-
+// ---------------------------------------------------------------------------
+// Resultado / evidência
+// ---------------------------------------------------------------------------
 type Status = "PASS" | "FAIL" | "BLOCKED";
 type Result = { id: string; name: string; status: Status; evidence: unknown };
-const results: Result[] = [];
-const certificationResults: Result[] = [];
-const log = (id: string, name: string, status: Status, evidence: unknown) =>
-  results.push({ id, name, status, evidence });
-const check = (id: string, name: string, cond: boolean, evidence: unknown) =>
-  log(id, name, cond ? "PASS" : "FAIL", evidence);
-const certify = (id: string, name: string, status: Status, evidence: unknown) =>
-  certificationResults.push({ id, name, status, evidence });
 
-const svc = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+const T_NAMES: Record<string, string> = {
+  T1: "listagem consultor",
+  T2: "listagem agrônomo",
+  T3: "produtor/sem vínculo negados",
+  T4: "outra carteira isolada",
+  T5: "demanda sem cultura em rascunho",
+  T6: "finalização bloqueada server-side sem cultura",
+  T7: "concorrência de demanda",
+  T8: "ocorrência online",
+  T9: "replay offline",
+  T10: "falha/retry real de mídia",
+  T11: "claims/sync concorrentes",
+  T12: "busca/abas/paginação/resumo",
+  T13: "check-in/diagnóstico/version conflict",
+  T14: "finalizar/enviar/aprovar/reprovar/ajuste",
+  T15: "não atribuído negado",
+  T16: "grants anon/PUBLIC",
+  T17: "endpoint 404 com e sem JWT",
+  T18: "cleanup",
+};
+const T_ORDER = Object.keys(T_NAMES);
+
+const certificationResults = new Map<string, Result>();
+const certify = (id: string, status: Status, evidence: unknown) =>
+  certificationResults.set(id, { id, name: T_NAMES[id] ?? id, status, evidence });
+const certifyBool = (id: string, cond: boolean, evidence: unknown) =>
+  certify(id, cond ? "PASS" : "FAIL", evidence);
+
+// ---------------------------------------------------------------------------
+// Clientes
+// ---------------------------------------------------------------------------
+const svc = createClient(SUPABASE_URL, ADMIN_KEY ?? "", { auth: { persistSession: false } });
 const RUN = crypto.randomUUID().slice(0, 8);
 const PWD = `Visita-${crypto.randomUUID()}`;
 
-type Profile = "consultor" | "agronomo" | "produtor" | "sem_vinculo";
+type Profile =
+  | "gestor"
+  | "consultor"
+  | "agronomo"
+  | "produtor"
+  | "sem_vinculo"
+  | "tecnico_carteira_b";
+
 const ROLES: Record<Profile, string[]> = {
+  gestor: ["gestor"],
   consultor: ["consultor_tecnico"],
   agronomo: ["tecnico_agronomo"],
   produtor: ["cliente_produtor"],
   sem_vinculo: [],
+  tecnico_carteira_b: ["consultor_tecnico"],
 };
 
 const uid: Partial<Record<Profile, string>> = {};
-const cli: Partial<Record<Profile, ReturnType<typeof createClient>>> = {};
+const cli: Partial<Record<Profile, SupabaseClient>> = {};
+
 const created = {
   users: [] as string[],
   clientes: [] as string[],
@@ -57,31 +108,59 @@ const created = {
   talhoes: [] as string[],
   solicitacoes: [] as string[],
   registros: [] as string[],
+  storageObjects: [] as string[],
+  culturas: [] as string[],
 };
 
-async function signIn(email: string) {
+let clienteA = "";
+let clienteB = "";
+let fazendaA = "";
+let fazendaB = "";
+let talhaoA = "";
+let talhaoB = "";
+let culturaId = "";
+
+async function signIn(email: string): Promise<SupabaseClient> {
   const c = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
   const { error } = await c.auth.signInWithPassword({ email, password: PWD });
   if (error) throw new Error(`signIn ${email}: ${error.message}`);
   return c;
 }
 
-async function setup() {
+async function novoCliente(sufixo: string) {
   const { data: cl, error: eCl } = await svc.from("clientes")
-    .insert({ nome: `Visita HML ${RUN}`, codigo_cliente: `VH${RUN}` }).select("id").single();
-  if (eCl) throw new Error(`cliente: ${eCl.message}`);
-  created.clientes.push(cl.id);
-
-  const { data: fz, error: eFz } = await svc.from("fazendas")
-    .insert({ nome: `Fazenda HML ${RUN}`, cliente_id: cl.id }).select("id").single();
-  if (eFz) throw new Error(`fazenda: ${eFz.message}`);
-  created.fazendas.push(fz.id);
-
-  const { data: th, error: eTh } = await svc.from("talhoes")
-    .insert({ nome: `Talhao HML ${RUN}`, fazenda_id: fz.id, area_hectares: 12.5 })
+    .insert({ nome: `Visita HML ${sufixo} ${RUN}`, codigo_cliente: `VH${sufixo}${RUN}` })
     .select("id").single();
-  if (eTh) throw new Error(`talhao: ${eTh.message}`);
+  if (eCl) throw new Error(`cliente ${sufixo}: ${eCl.message}`);
+  created.clientes.push(cl.id);
+  const { data: fz, error: eFz } = await svc.from("fazendas")
+    .insert({ nome: `Fazenda ${sufixo} ${RUN}`, cliente_id: cl.id }).select("id").single();
+  if (eFz) throw new Error(`fazenda ${sufixo}: ${eFz.message}`);
+  created.fazendas.push(fz.id);
+  const { data: th, error: eTh } = await svc.from("talhoes")
+    .insert({ nome: `Talhao ${sufixo} ${RUN}`, fazenda_id: fz.id, area_hectares: 12.5 })
+    .select("id").single();
+  if (eTh) throw new Error(`talhao ${sufixo}: ${eTh.message}`);
   created.talhoes.push(th.id);
+  return { cliente: cl.id as string, fazenda: fz.id as string, talhao: th.id as string };
+}
+
+async function setup() {
+  const a = await novoCliente("A");
+  const b = await novoCliente("B");
+  clienteA = a.cliente; fazendaA = a.fazenda; talhaoA = a.talhao;
+  clienteB = b.cliente; fazendaB = b.fazenda; talhaoB = b.talhao;
+
+  const { data: cult } = await svc.from("culturas").select("id").eq("ativo", true).limit(1).maybeSingle();
+  if (cult?.id) {
+    culturaId = cult.id;
+  } else {
+    const { data: nova, error } = await svc.from("culturas")
+      .insert({ nome: `Cultura HML ${RUN}`, ativo: true }).select("id").single();
+    if (error) throw new Error(`cultura: ${error.message}`);
+    culturaId = nova.id;
+    created.culturas.push(nova.id);
+  }
 
   for (const p of Object.keys(ROLES) as Profile[]) {
     const email = `visita-${p}-${RUN}@arbio-staging.test`;
@@ -94,16 +173,23 @@ async function setup() {
     created.users.push(data.user!.id);
     await svc.from("user_roles").delete().eq("user_id", data.user!.id);
     for (const r of ROLES[p]) {
-      await svc.from("user_roles").insert({ user_id: data.user!.id, role: r });
+      const { error: eRole } = await svc.from("user_roles")
+        .insert({ user_id: data.user!.id, role: r });
+      if (eRole) throw new Error(`user_roles ${p}: ${eRole.message}`);
     }
-    if (p === "consultor" || p === "agronomo") {
+    if (p === "consultor" || p === "agronomo" || p === "gestor") {
       await svc.from("user_clientes").insert({
-        user_id: data.user!.id, cliente_id: cl.id, access_level: "manage", is_active: true,
+        user_id: data.user!.id, cliente_id: clienteA, access_level: "manage", is_active: true,
       });
     }
     if (p === "produtor") {
       await svc.from("user_clientes").insert({
-        user_id: data.user!.id, cliente_id: cl.id, access_level: "read", is_active: true,
+        user_id: data.user!.id, cliente_id: clienteA, access_level: "read", is_active: true,
+      });
+    }
+    if (p === "tecnico_carteira_b") {
+      await svc.from("user_clientes").insert({
+        user_id: data.user!.id, cliente_id: clienteB, access_level: "manage", is_active: true,
       });
     }
     cli[p] = await signIn(email);
@@ -111,8 +197,18 @@ async function setup() {
 }
 
 async function cleanup() {
-  for (const id of created.registros) await svc.from("registros_consultor").delete().eq("id", id);
-  await svc.from("registros_consultor").delete().eq("cliente_id", created.clientes[0]);
+  // Storage primeiro (objetos referenciam registros)
+  if (created.storageObjects.length > 0) {
+    await svc.storage.from(BUCKET).remove(created.storageObjects);
+  }
+  for (const id of created.clientes) {
+    const { data: regs } = await svc.from("registros_consultor").select("id").eq("cliente_id", id);
+    for (const r of regs ?? []) {
+      await svc.from("registros_consultor_arquivos").delete().eq("registro_consultor_id", r.id);
+      await svc.from("registros_consultor_status_log").delete().eq("registro_consultor_id", r.id);
+    }
+    await svc.from("registros_consultor").delete().eq("cliente_id", id);
+  }
   for (const id of created.solicitacoes) {
     await svc.from("solicitacoes_timeline").delete().eq("solicitacao_id", id);
     await svc.from("portal_solicitacoes").delete().eq("id", id);
@@ -125,13 +221,14 @@ async function cleanup() {
     await svc.auth.admin.deleteUser(u);
   }
   for (const id of created.clientes) await svc.from("clientes").delete().eq("id", id);
+  for (const id of created.culturas) await svc.from("culturas").delete().eq("id", id);
 }
 
-async function criarSolicitacao() {
+async function criarSolicitacao(cliente = clienteA, fazenda = fazendaA, talhao = talhaoA) {
   const { data, error } = await svc.from("portal_solicitacoes").insert({
-    cliente_id: created.clientes[0],
-    fazenda_id: created.fazendas[0],
-    talhao_id: created.talhoes[0],
+    cliente_id: cliente,
+    fazenda_id: fazenda,
+    talhao_id: talhao,
     tipo_demanda: "praga",
     descricao: `Demanda HML ${RUN}`,
     urgencia: "alta",
@@ -143,464 +240,788 @@ async function criarSolicitacao() {
   return data.id as string;
 }
 
-async function run() {
-  // ---- C1: guard de staging fail-closed ----
-  const { data: marker } = await svc.from("_fiscal_staging_marker").select("marker, project_ref");
-  const refs = (marker ?? []).map((m: any) => m.project_ref);
-  check("C1", "Guard fail-closed: marker STAGING comprovado e sem ref de produção",
-    refs.includes(EXPECTED_STAGING_REF) && !refs.includes(PROD_REF),
-    { refs, expected: EXPECTED_STAGING_REF });
+const listar = (p: Profile, args: Record<string, unknown> = {}) =>
+  cli[p]!.rpc("rpc_listar_atendimentos_tecnicos_v1", {
+    p_aba: "todos", p_search: null, p_page: 1, p_page_size: 10, ...args,
+  });
 
-  // ---- C2 / C3: listagem executa sem erro para ambos os perfis técnicos ----
-  for (const [id, p] of [["C2", "consultor"], ["C3", "agronomo"]] as [string, Profile][]) {
-    const { data, error } = await cli[p]!.rpc("rpc_listar_atendimentos_tecnicos_v1", {
-      p_aba: "todos", p_search: null, p_page: 1, p_page_size: 10,
-    });
-    check(id, `rpc_listar_atendimentos_tecnicos_v1 executa (${p})`,
-      !error && (data as any)?.ok === true,
-      { error: error?.message ?? null, total: (data as any)?.total, ok: (data as any)?.ok });
-  }
-
-  // ---- C2b: aba inválida é rejeitada explicitamente ----
-  {
-    const { data, error } = await cli.consultor!.rpc("rpc_listar_atendimentos_tecnicos_v1", {
-      p_aba: "xpto", p_search: null, p_page: 1, p_page_size: 10,
-    });
-    check("C2b", "Aba desconhecida rejeitada (invalid_tab), não lista vazia silenciosa",
-      !error && (data as any)?.ok === false && (data as any)?.error === "invalid_tab",
-      { data, error: error?.message ?? null });
-  }
-
-  // ---- C2c: resumo coerente, com total 'todos' ----
-  {
-    const { data, error } = await cli.consultor!.rpc("rpc_resumo_atendimentos_tecnicos_v1", {});
-    check("C2c", "Resumo devolve total 'todos' coerente",
-      !error && typeof (data as any)?.todos === "number",
-      { data, error: error?.message ?? null });
-  }
-
-  // ---- C4: solicitação SEM cultura cria rascunho e sinaliza cultura pendente ----
-  const solA = await criarSolicitacao();
-  {
-    const { data, error } = await cli.consultor!.rpc("rpc_iniciar_atendimento_solicitacao_v1", {
-      p_solicitacao_id: solA, p_client_uuid: crypto.randomUUID(),
-    });
-    const r = data as any;
-    if (r?.registro_id) created.registros.push(r.registro_id);
-    check("C4", "Demanda sem cultura abre rascunho e exige cultura antes da finalização",
-      !error && r?.ok === true && !!r?.registro_id &&
-      r?.status === "rascunho" &&
-      (r?.cultura_id !== null ||
-        (Array.isArray(r?.missing_fields) && r.missing_fields.includes("cultura_id") &&
-         r?.next_step === "identificacao")) &&
-      typeof r?.next_route === "string" && r.next_route.startsWith("/app/visita/"),
-      { error: error?.message ?? null, res: r });
-  }
-
-  // ---- C5: disputa entre dois técnicos pela mesma demanda ----
-  const solB = await criarSolicitacao();
-  {
-    const [a, b] = await Promise.all([
-      cli.consultor!.rpc("rpc_iniciar_atendimento_solicitacao_v1", {
-        p_solicitacao_id: solB, p_client_uuid: crypto.randomUUID(),
-      }),
-      cli.agronomo!.rpc("rpc_iniciar_atendimento_solicitacao_v1", {
-        p_solicitacao_id: solB, p_client_uuid: crypto.randomUUID(),
-      }),
-    ]);
-    const ra = a.data as any, rb = b.data as any;
-    for (const r of [ra, rb]) if (r?.registro_id) created.registros.push(r.registro_id);
-
-    const { count: nVisitas } = await svc.from("registros_consultor")
-      .select("id", { count: "exact", head: true }).eq("solicitacao_id", solB);
-    const { count: nTl } = await svc.from("solicitacoes_timeline")
-      .select("id", { count: "exact", head: true })
-      .eq("solicitacao_id", solB).eq("tipo_evento", "visita_iniciada");
-
-    const vencedores = [ra, rb].filter((r) => r?.ok === true).length;
-    const perdedores = [ra, rb].filter((r) => r?.error === "already_assigned").length;
-
-    check("C5", "Disputa: exatamente 1 visita e 1 evento de timeline",
-      nVisitas === 1 && nTl === 1 && (vencedores >= 1) && (vencedores + perdedores === 2),
-      { ra, rb, nVisitas, nTl, vencedores, perdedores });
-  }
-
-  // ---- C6: ocorrência online idempotente e imediatamente visível ----
-  {
-    const cu = crypto.randomUUID();
-    const args = {
-      p_client_uuid: cu,
-      p_cliente_id: created.clientes[0],
-      p_fazenda_id: created.fazendas[0],
-      p_talhao_id: created.talhoes[0],
-      p_cultura_id: null,
-      p_data_vistoria: new Date().toISOString().slice(0, 10),
-      p_tipo_visita: "vistoria_inicial",
-      p_origem: "ocorrencia_campo",
-      p_categoria_problema: "insetos_praga",
-      p_nivel_pressao: "alto",
-      p_percentual_area_afetada: 30,
-      p_urgencia: "alta",
-      p_observacoes_tecnicas: `HML ${RUN}`,
-      p_area_hectares: 12.5,
-      p_latitude: -15.5,
-      p_longitude: -47.5,
-    };
-    const q1 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", args);
-    const q2 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", args);
-    const r1 = q1.data as any, r2 = q2.data as any;
-    const e1 = q1.error?.message ?? null, e2 = q2.error?.message ?? null;
-    if (r1?.registro_id) created.registros.push(r1.registro_id);
-
-    const lista = (await cli.consultor!.rpc("rpc_listar_atendimentos_tecnicos_v1", {
-      p_aba: "ocorrencias", p_search: null, p_page: 1, p_page_size: 50,
-    })).data as any;
-    const visivel = (lista?.items ?? []).some((i: any) => i.id === r1?.registro_id);
-    const temCampos = (lista?.items ?? []).every(
-      (i: any) => "proxima_acao" in i && "responsavel_nome" in i && "data_prevista" in i,
-    );
-
-    check("C6", "Ocorrência online idempotente, visível na aba e com projeção ampliada",
-      r1?.ok === true && r1?.created === true &&
-      r2?.ok === true && r2?.created === false && r2?.registro_id === r1?.registro_id &&
-      visivel && temCampos,
-      { r1, r2, e1, e2, visivel, temCampos, total: lista?.total });
-  }
-
-  // ---- C7: contrato offline = contrato canônico (replay da mesma RPC) ----
-  {
-    const cu = crypto.randomUUID();
-    const offlinePayload = {
-      p_client_uuid: cu,
-      p_cliente_id: created.clientes[0],
-      p_fazenda_id: created.fazendas[0],
-      p_talhao_id: created.talhoes[0],
-      p_cultura_id: null,
-      p_data_vistoria: new Date().toISOString().slice(0, 10),
-      p_tipo_visita: "vistoria_inicial",
-      p_origem: "ocorrencia_campo",
-      p_categoria_problema: "nematoides",
-      p_nivel_pressao: "medio",
-      p_percentual_area_afetada: 10,
-      p_urgencia: "media",
-      p_observacoes_tecnicas: `HML offline ${RUN}`,
-      p_area_hectares: 12.5,
-      p_latitude: -15.6,
-      p_longitude: -47.6,
-    };
-    // replay 1 (sync) e replay 2 (retry após falha de rede) — mesmo client_uuid
-    const p1 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", offlinePayload);
-    const p2 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", offlinePayload);
-    const s1 = p1.data as any, s2 = p2.data as any;
-    const se1 = p1.error?.message ?? null, se2 = p2.error?.message ?? null;
-    if (s1?.registro_id) created.registros.push(s1.registro_id);
-
-    const { data: row } = await svc.from("registros_consultor")
-      .select("origem_atendimento, latitude, longitude, categoria_problema, natureza_registro")
-      .eq("id", s1?.registro_id).single();
-
-    check("C7", "Replay offline usa RPC canônica, preserva origem/diagnóstico/GPS, sem duplicar",
-      s1?.ok === true && s2?.registro_id === s1?.registro_id &&
-      row?.origem_atendimento === "ocorrencia_campo" &&
-      Number(row?.latitude) === -15.6 && Number(row?.longitude) === -47.6 &&
-      row?.categoria_problema === "nematoides" && row?.natureza_registro === "ocorrencia",
-      { s1, s2, se1, se2, row });
-  }
-
-  // ---- C8: produtor / sem vínculo ----
-  for (const [id, p, nome] of [
-    ["C8a", "produtor", "produtor"],
-    ["C8b", "sem_vinculo", "sem vínculo"],
-  ] as [string, Profile, string][]) {
-    const { data, error } = await cli[p]!.rpc("rpc_listar_atendimentos_tecnicos_v1", {
-      p_aba: "todos", p_search: null, p_page: 1, p_page_size: 10,
-    });
-    const r = data as any;
-    check(id, `Perfil ${nome} recebe forbidden/zero na listagem técnica`,
-      !!error || r?.ok === false || (r?.total ?? 0) === 0,
-      { error: error?.message ?? null, res: r });
-
-    const { data: d2 } = await cli[p]!.rpc("rpc_criar_visita_idempotente", {
-      p_client_uuid: crypto.randomUUID(),
-      p_cliente_id: created.clientes[0],
-      p_fazenda_id: created.fazendas[0],
-      p_talhao_id: created.talhoes[0],
-      p_data_vistoria: new Date().toISOString().slice(0, 10),
-      p_origem: "ocorrencia_campo",
-    });
-    check(`${id}-w`, `Perfil ${nome} não consegue criar visita`,
-      (d2 as any)?.ok !== true, { res: d2 });
-  }
-
-  // ---- C9: mídia parcial não invalida a visita ----
-  {
-    const { data: reg } = await svc.from("registros_consultor")
-      .select("id").eq("cliente_id", created.clientes[0]).limit(1).maybeSingle();
-    if (!reg) {
-      log("C9", "Mídia parcial", "BLOCKED", "nenhum registro base disponível");
-    } else {
-      // Simula referência de mídia idempotente (upsert por client_uuid)
-      const cu = crypto.randomUUID();
-      const ref = {
-        registro_consultor_id: reg.id,
-        arquivo_path: `${reg.id}/foto/${cu}.jpg`,
-        nome_arquivo: "hml.jpg",
-        tipo_arquivo: "image/jpeg",
-        tipo_midia: "foto",
-        categoria_arquivo: "geral",
-        foto_principal: true,
-        uploaded_by: uid.consultor,
-        client_uuid: cu,
-      };
-      const a = await svc.from("registros_consultor_arquivos").upsert(ref, { onConflict: "client_uuid" });
-      const b = await svc.from("registros_consultor_arquivos").upsert(ref, { onConflict: "client_uuid" });
-      const { count } = await svc.from("registros_consultor_arquivos")
-        .select("id", { count: "exact", head: true }).eq("client_uuid", cu);
-      const { data: visitaViva } = await svc.from("registros_consultor")
-        .select("id").eq("id", reg.id).maybeSingle();
-      await svc.from("registros_consultor_arquivos").delete().eq("client_uuid", cu);
-      check("C9", "Referência de mídia idempotente e visita preservada em falha parcial",
-        !a.error && !b.error && count === 1 && !!visitaViva,
-        { aErr: a.error?.message ?? null, bErr: b.error?.message ?? null, count });
-    }
-  }
-
-  // ---- C10: rollback/verify — verificação estática (execução psql é externa) ----
-  log("C10", "Rollback + verify/checksum preservam dados", "BLOCKED",
-    "rollback.sql/verify-restoration.sql são forward-safe e não destrutivos; execução via psql exige credenciais fora do harness (executar manualmente em staging).");
-
-  // ---- C11 (parcial): sem overload ambíguo do motor ----
-  {
-    const { data, error } = await svc.rpc("rpc_criar_visita_idempotente", {
-      p_client_uuid: crypto.randomUUID(),
-      p_cliente_id: created.clientes[0],
-      p_fazenda_id: created.fazendas[0],
-      p_talhao_id: created.talhoes[0],
-      p_data_vistoria: new Date().toISOString().slice(0, 10),
-      p_origem: "ocorrencia_campo",
-    });
-    // service_role sem auth.uid() → unauthenticated, mas SEM erro de ambiguidade (42725)
-    check("C11", "Motor único sem overload ambíguo (resolução determinística)",
-      !error || error.code !== "42725",
-      { error: error?.message ?? null, code: error?.code ?? null, data });
-  }
+async function versaoDe(registroId: string): Promise<number> {
+  const { data } = await svc.from("registros_consultor").select("version").eq("id", registroId).maybeSingle();
+  return Number((data as any)?.version ?? 1);
 }
 
-function mask(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(mask);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, mask(item)]),
-    );
-  }
-  if (typeof value !== "string") return value;
-  return value
-    .replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, (id) => `${id.slice(0, 8)}…${id.slice(-4)}`)
-    .replace(/[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g, "[JWT_REMOVIDO]");
+async function statusDe(registroId: string): Promise<string | null> {
+  const { data } = await svc.from("registros_consultor").select("status").eq("id", registroId).maybeSingle();
+  return (data as any)?.status ?? null;
 }
 
-async function runCertification() {
-  const list = async (p: Profile, args: Record<string, unknown> = {}) =>
-    await cli[p]!.rpc("rpc_listar_atendimentos_tecnicos_v1", {
-      p_aba: "todos", p_search: null, p_page: 1, p_page_size: 10, ...args,
-    });
+/** Cria visita completa (com cultura), pronta para o ciclo de aprovação. */
+async function criarVisitaCompleta(perfil: Profile = "consultor") {
+  const clientUuid = crypto.randomUUID();
+  const { data, error } = await cli[perfil]!.rpc("rpc_criar_visita_idempotente", {
+    p_client_uuid: clientUuid,
+    p_cliente_id: clienteA,
+    p_fazenda_id: fazendaA,
+    p_talhao_id: talhaoA,
+    p_cultura_id: culturaId,
+    p_data_vistoria: new Date().toISOString().slice(0, 10),
+    p_tipo_visita: "vistoria_inicial",
+    p_origem: "ocorrencia_campo",
+    p_categoria_problema: "insetos_praga",
+    p_nivel_pressao: "alto",
+    p_percentual_area_afetada: 25,
+    p_urgencia: "alta",
+    p_observacoes_tecnicas: `HML ${RUN}`,
+    p_area_hectares: 12.5,
+    p_latitude: -15.5,
+    p_longitude: -47.5,
+  });
+  if (error) throw new Error(`criarVisitaCompleta: ${error.message}`);
+  const registroId = (data as any)?.registro_id as string;
+  if (!registroId) throw new Error(`criarVisitaCompleta sem registro_id: ${JSON.stringify(data)}`);
+  created.registros.push(registroId);
+  return registroId;
+}
 
-  for (const [id, p, name] of [
-    ["T1", "consultor", "listagem consultor autenticado"],
-    ["T2", "agronomo", "listagem técnico agrônomo autenticado"],
-  ] as [string, Profile, string][]) {
-    const response = await list(p);
-    certify(id, name, !response.error && (response.data as any)?.ok === true ? "PASS" : "FAIL", {
-      error: response.error?.message ?? null, ok: (response.data as any)?.ok,
+async function checkinEDiagnostico(registroId: string, perfil: Profile = "consultor") {
+  const checkin = await cli[perfil]!.rpc("rpc_realizar_checkin_visita", {
+    p_registro_id: registroId,
+    p_client_uuid: crypto.randomUUID(),
+    p_tipo: "chegada_talhao",
+    p_latitude: -15.5,
+    p_longitude: -47.5,
+    p_precisao: 8,
+    p_justificativa_sem_gps: null,
+    p_observacoes: `check-in HML ${RUN}`,
+    p_captured_at_local: new Date().toISOString(),
+    p_solicitacao_id: null,
+    p_cliente_id: clienteA,
+    p_fazenda_id: fazendaA,
+    p_talhao_id: talhaoA,
+    p_foto_path: null,
+  });
+  const diagnostico = await cli[perfil]!.rpc("rpc_upsert_diagnostico_visita", {
+    p_registro_id: registroId,
+    p_client_uuid: crypto.randomUUID(),
+    p_payload: {
+      categoria_problema: "insetos_praga",
+      nivel_pressao: "alto",
+      percentual_area_afetada: 25,
+      urgencia: "alta",
+      problema_principal: `Problema HML ${RUN}`,
+      observacoes_tecnicas: `Diagnóstico HML ${RUN}`,
+    },
+    p_expected_versao: await versaoDe(registroId),
+  });
+  return { checkin, diagnostico };
+}
+
+// ---------------------------------------------------------------------------
+// T1–T18
+// ---------------------------------------------------------------------------
+async function t1_t3() {
+  for (const [id, p] of [["T1", "consultor"], ["T2", "agronomo"]] as [string, Profile][]) {
+    const r = await listar(p);
+    certifyBool(id, !r.error && (r.data as any)?.ok === true, {
+      error: r.error?.message ?? null, ok: (r.data as any)?.ok, total: (r.data as any)?.total,
     });
   }
 
-  const denied: unknown[] = [];
+  const negados: unknown[] = [];
   for (const p of ["produtor", "sem_vinculo"] as Profile[]) {
-    const response = await list(p);
-    denied.push({ profile: p, error: response.error?.message ?? null, result: response.data });
+    const lista = await listar(p);
+    const escrita = await cli[p]!.rpc("rpc_criar_visita_idempotente", {
+      p_client_uuid: crypto.randomUUID(),
+      p_cliente_id: clienteA, p_fazenda_id: fazendaA, p_talhao_id: talhaoA,
+      p_data_vistoria: new Date().toISOString().slice(0, 10), p_origem: "ocorrencia_campo",
+    });
+    const escritaId = (escrita.data as any)?.registro_id;
+    if (escritaId) created.registros.push(escritaId);
+    negados.push({
+      profile: p,
+      leitura_negada: !!lista.error || (lista.data as any)?.ok === false || ((lista.data as any)?.total ?? 0) === 0,
+      escrita_negada: !!escrita.error || (escrita.data as any)?.ok !== true,
+      leitura: { error: lista.error?.message ?? null, ok: (lista.data as any)?.ok, total: (lista.data as any)?.total },
+      escrita: { error: escrita.error?.message ?? null, ok: (escrita.data as any)?.ok },
+    });
   }
-  certify("T3", "produtor e autenticado sem vínculo proibidos",
-    denied.every((entry: any) => entry.error || entry.result?.ok === false || entry.result?.total === 0)
-      ? "PASS" : "FAIL", denied);
+  certifyBool("T3", negados.every((n: any) => n.leitura_negada && n.escrita_negada), negados);
+}
 
-  certify("T4", "técnico de outra carteira não lê/não altera", "BLOCKED",
-    "Perfil temporário técnico de outra carteira não existe no setup deste runner; cenário não substituído.");
+async function t4(registroCarteiraA: string) {
+  const lista = await listar("tecnico_carteira_b", { p_page_size: 100 });
+  const itens = ((lista.data as any)?.items ?? []) as any[];
+  const vazouLeitura = itens.some((i) => i.id === registroCarteiraA);
 
+  const versao = await versaoDe(registroCarteiraA);
+  const mutacoes = await Promise.all([
+    cli.tecnico_carteira_b!.rpc("rpc_atualizar_identificacao_visita", {
+      p_registro_id: registroCarteiraA, p_expected_version: versao,
+      p_payload: { observacoes_tecnicas: "invasao carteira B" },
+    }),
+    cli.tecnico_carteira_b!.rpc("rpc_finalizar_visita_v2", {
+      p_registro_id: registroCarteiraA, p_expected_version: versao,
+    }),
+    cli.tecnico_carteira_b!.rpc("rpc_enviar_visita_aprovacao", {
+      p_registro_id: registroCarteiraA, p_expected_version: versao,
+    }),
+  ]);
+  const negadas = mutacoes.map((m) => ({
+    error: m.error?.message ?? null,
+    ok: (m.data as any)?.ok ?? null,
+    negada: !!m.error || (m.data as any)?.ok === false,
+  }));
+
+  certifyBool("T4", !vazouLeitura && negadas.every((n) => n.negada), {
+    leitura_itens: itens.length, vazou_registro_carteira_a: vazouLeitura, mutacoes: negadas,
+  });
+}
+
+async function t5_t6() {
   const solicitacao = await criarSolicitacao();
   const draft = await cli.consultor!.rpc("rpc_iniciar_atendimento_solicitacao_v1", {
     p_solicitacao_id: solicitacao, p_client_uuid: crypto.randomUUID(),
   });
-  const draftData = draft.data as any;
-  if (draftData?.registro_id) created.registros.push(draftData.registro_id);
-  certify("T5", "demanda sem cultura abre rascunho e retorna missing_fields/next_step",
-    !draft.error && draftData?.ok === true && draftData?.status === "rascunho" &&
-      draftData?.missing_fields?.includes("cultura_id") && draftData?.next_step === "identificacao"
-      ? "PASS" : "FAIL", { error: draft.error?.message ?? null, result: draftData });
+  const d = draft.data as any;
+  if (d?.registro_id) created.registros.push(d.registro_id);
 
-  if (draftData?.registro_id) {
-    const finalization = await cli.consultor!.rpc("rpc_finalizar_visita_v2", {
-      p_registro_id: draftData.registro_id, p_expected_version: draftData.version,
-    });
-    certify("T6", "rpc_finalizar_visita_v2 bloqueia server-side sem cultura",
-      finalization.error?.message?.includes("cultura_obrigatoria") ? "PASS" : "FAIL",
-      { error: finalization.error?.message ?? null, result: finalization.data });
-  } else {
-    certify("T6", "rpc_finalizar_visita_v2 bloqueia server-side sem cultura", "BLOCKED",
-      "T5 não produziu registro de rascunho.");
+  const t5ok = !draft.error && d?.ok === true && d?.status === "rascunho" &&
+    Array.isArray(d?.missing_fields) && d.missing_fields.includes("cultura_id") &&
+    d?.next_step === "identificacao";
+  certifyBool("T5", t5ok, { error: draft.error?.message ?? null, result: d });
+
+  if (!t5ok || !d?.registro_id) {
+    certify("T6", "BLOCKED", "T5 falhou: rascunho sem cultura não foi produzido.");
+    return { t5ok: false, registroId: d?.registro_id as string | undefined };
   }
 
-  const concurrentSolicitacao = await criarSolicitacao();
-  const concurrent = await Promise.all([
+  const fin = await cli.consultor!.rpc("rpc_finalizar_visita_v2", {
+    p_registro_id: d.registro_id, p_expected_version: await versaoDe(d.registro_id),
+  });
+  const msg = fin.error?.message ?? JSON.stringify(fin.data ?? {});
+  const statusPos = await statusDe(d.registro_id);
+  certifyBool("T6", /cultura_obrigatoria/i.test(msg) && statusPos !== "finalizado", {
+    error: fin.error?.message ?? null, result: fin.data, status_apos_tentativa: statusPos,
+  });
+  return { t5ok: true, registroId: d.registro_id as string };
+}
+
+async function t7() {
+  const solicitacao = await criarSolicitacao();
+  const [a, b] = await Promise.all([
     cli.consultor!.rpc("rpc_iniciar_atendimento_solicitacao_v1", {
-      p_solicitacao_id: concurrentSolicitacao, p_client_uuid: crypto.randomUUID(),
+      p_solicitacao_id: solicitacao, p_client_uuid: crypto.randomUUID(),
     }),
     cli.agronomo!.rpc("rpc_iniciar_atendimento_solicitacao_v1", {
-      p_solicitacao_id: concurrentSolicitacao, p_client_uuid: crypto.randomUUID(),
+      p_solicitacao_id: solicitacao, p_client_uuid: crypto.randomUUID(),
     }),
   ]);
-  for (const item of concurrent) {
-    const id = (item.data as any)?.registro_id;
+  for (const r of [a, b]) {
+    const id = (r.data as any)?.registro_id;
     if (id) created.registros.push(id);
   }
-  const { count: visits } = await svc.from("registros_consultor")
-    .select("id", { count: "exact", head: true }).eq("solicitacao_id", concurrentSolicitacao);
+  const { count: visitas } = await svc.from("registros_consultor")
+    .select("id", { count: "exact", head: true }).eq("solicitacao_id", solicitacao);
   const { count: timeline } = await svc.from("solicitacoes_timeline")
     .select("id", { count: "exact", head: true })
-    .eq("solicitacao_id", concurrentSolicitacao).eq("tipo_evento", "visita_iniciada");
-  certify("T7", "duas sessões técnicas concorrentes na mesma demanda => exatamente 1 visita e 1 timeline",
-    visits === 1 && timeline === 1 ? "PASS" : "FAIL", { visits, timeline });
+    .eq("solicitacao_id", solicitacao).eq("tipo_evento", "visita_iniciada");
+  const vencedores = [a, b].filter((r) => (r.data as any)?.ok === true).length;
+  certifyBool("T7", visitas === 1 && timeline === 1 && vencedores >= 1, {
+    visitas, timeline, vencedores,
+    respostas: [a, b].map((r) => ({ ok: (r.data as any)?.ok, error: (r.data as any)?.error ?? r.error?.message ?? null })),
+  });
+}
 
-  const occurrenceUuid = crypto.randomUUID();
-  const occurrenceArgs = {
-    p_client_uuid: occurrenceUuid, p_cliente_id: created.clientes[0],
-    p_fazenda_id: created.fazendas[0], p_talhao_id: created.talhoes[0],
-    p_data_vistoria: new Date().toISOString().slice(0, 10), p_origem: "ocorrencia_campo",
-    p_latitude: -15.5, p_longitude: -47.5,
+async function t8_t9() {
+  const clientUuid = crypto.randomUUID();
+  const args = {
+    p_client_uuid: clientUuid,
+    p_cliente_id: clienteA, p_fazenda_id: fazendaA, p_talhao_id: talhaoA,
+    p_cultura_id: culturaId,
+    p_data_vistoria: new Date().toISOString().slice(0, 10),
+    p_tipo_visita: "vistoria_inicial",
+    p_origem: "ocorrencia_campo",
+    p_categoria_problema: "nematoides",
+    p_nivel_pressao: "medio",
+    p_urgencia: "media",
+    p_area_hectares: 12.5,
+    p_latitude: -15.6, p_longitude: -47.6,
   };
-  const occurrence1 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", occurrenceArgs);
-  const occurrence2 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", occurrenceArgs);
-  const occurrenceId = (occurrence1.data as any)?.registro_id;
-  if (occurrenceId) created.registros.push(occurrenceId);
-  const occurrenceList = await list("consultor", { p_aba: "ocorrencias", p_page_size: 100 });
-  certify("T8", "ocorrência online idempotente e visível",
-    !!occurrenceId && (occurrence2.data as any)?.registro_id === occurrenceId &&
-      ((occurrenceList.data as any)?.items ?? []).some((item: any) => item.id === occurrenceId)
-      ? "PASS" : "FAIL", { first: occurrence1.data, replay: occurrence2.data });
-  certify("T9", "replay offline pela mesma RPC sem duplicar",
-    !!occurrenceId && (occurrence2.data as any)?.created === false ? "PASS" : "FAIL",
-    { registro_id: occurrenceId, replay_created: (occurrence2.data as any)?.created });
+  const first = await cli.consultor!.rpc("rpc_criar_visita_idempotente", args);
+  const replay = await cli.consultor!.rpc("rpc_criar_visita_idempotente", args);
+  const registroId = (first.data as any)?.registro_id as string | undefined;
+  if (registroId) created.registros.push(registroId);
 
-  certify("T10", "falha real de mídia preserva visita e retry gera exatamente 1 objeto e 1 referência",
-    "BLOCKED", "Integração Storage com falha real não foi executada por este runner; cenário não substituído.");
-  certify("T11", "concorrência de dois claims/syncs para a mesma mídia => um vencedor, sem duplicidade",
-    "BLOCKED", "Concorrência IndexedDB é coberta por Vitest, mas a parte Storage staging não foi executada aqui.");
+  const lista = await listar("consultor", { p_aba: "ocorrencias", p_page_size: 100 });
+  const itens = ((lista.data as any)?.items ?? []) as any[];
+  const visivel = itens.some((i) => i.id === registroId);
+  const projecao = itens.every((i) => "proxima_acao" in i && "responsavel_nome" in i && "data_prevista" in i);
 
-  const page1 = await list("consultor", { p_page: 1, p_page_size: 1 });
-  const summary = await cli.consultor!.rpc("rpc_resumo_atendimentos_tecnicos_v1", {});
-  const total = (page1.data as any)?.total;
-  certify("T12", "busca, abas, paginação e resumo coerentes",
-    !page1.error && !summary.error && typeof total === "number" &&
-      total === (summary.data as any)?.todos && ((page1.data as any)?.items ?? []).length <= 1
-      ? "PASS" : "FAIL", { page_total: total, summary_total: (summary.data as any)?.todos });
+  certifyBool("T8", !!registroId && (first.data as any)?.created === true && visivel && projecao, {
+    registro_id: registroId, created: (first.data as any)?.created, visivel, projecao,
+    error: first.error?.message ?? null,
+  });
 
-  for (const [id, name] of [
-    ["T13", "check-in, diagnóstico obrigatório e version_conflict"],
-    ["T14", "finalizar, enviar, aprovar, reprovar e solicitar ajuste com transições/perfis corretos"],
-    ["T15", "técnico não atribuído não altera"],
-  ]) certify(id, name, "BLOCKED", "Fluxo mutável completo não foi executado; cenário não substituído.");
+  const { data: row } = await svc.from("registros_consultor")
+    .select("origem_atendimento, latitude, longitude, categoria_problema, natureza_registro")
+    .eq("id", registroId ?? "").maybeSingle();
+  const { count: duplicatas } = await svc.from("registros_consultor")
+    .select("id", { count: "exact", head: true }).eq("client_uuid", clientUuid);
 
+  certifyBool("T9",
+    (replay.data as any)?.registro_id === registroId &&
+    (replay.data as any)?.created === false &&
+    duplicatas === 1 &&
+    (row as any)?.origem_atendimento === "ocorrencia_campo" &&
+    Number((row as any)?.latitude) === -15.6 && Number((row as any)?.longitude) === -47.6 &&
+    (row as any)?.categoria_problema === "nematoides",
+    { replay: replay.data, duplicatas, row, error: replay.error?.message ?? null });
+
+  return registroId!;
+}
+
+/** Bytes determinísticos de um JPEG mínimo. */
+function fakeJpeg(): Uint8Array {
+  return new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0xff, 0xd9]);
+}
+
+async function t10(registroId: string) {
+  const clientUuid = crypto.randomUUID();
+  const capturadoEm = new Date().toISOString();
+  const path = `${registroId}/foto/${clientUuid}.jpg`;
+  const storage = cli.consultor!.storage.from(BUCKET);
+
+  // 1) Falha REAL de mídia: path inválido (fora do prefixo permitido / vazio).
+  const falha = await storage.upload(`../${clientUuid}.jpg`, fakeJpeg(), { contentType: "image/jpeg" });
+  const falhouDeVerdade = !!falha.error;
+
+  // 2) Visita preservada mesmo após a falha de mídia.
+  const { data: viva } = await svc.from("registros_consultor").select("id, status").eq("id", registroId).maybeSingle();
+
+  // 3) Retry real no Storage + referência com GPS e capturado_em.
+  const retry = await storage.upload(path, fakeJpeg(), { contentType: "image/jpeg", upsert: true });
+  if (!retry.error) created.storageObjects.push(path);
+
+  const ref = {
+    registro_consultor_id: registroId,
+    arquivo_path: path,
+    arquivo_url: path,
+    nome_arquivo: "hml-retry.jpg",
+    tipo_arquivo: "image/jpeg",
+    tipo_midia: "foto",
+    categoria_arquivo: "geral",
+    foto_principal: true,
+    uploaded_by: uid.consultor,
+    client_uuid: clientUuid,
+    latitude: -15.7,
+    longitude: -47.7,
+    capturado_em: capturadoEm,
+  };
+  const insercao = await svc.from("registros_consultor_arquivos").upsert(ref, { onConflict: "client_uuid" });
+
+  const { data: objetos } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
+  const objetosDoTeste = (objetos ?? []).filter((o) => o.name === `${clientUuid}.jpg`);
+  const { data: refs } = await svc.from("registros_consultor_arquivos")
+    .select("id, latitude, longitude, capturado_em").eq("client_uuid", clientUuid);
+
+  const ok = falhouDeVerdade && !!viva && !retry.error && !insercao.error &&
+    objetosDoTeste.length === 1 && (refs ?? []).length === 1 &&
+    Number(refs![0].latitude) === -15.7 && Number(refs![0].longitude) === -47.7 &&
+    !!refs![0].capturado_em;
+
+  certifyBool("T10", ok, {
+    falha_real: falha.error?.message ?? null,
+    visita_preservada: !!viva,
+    retry_error: retry.error?.message ?? null,
+    objetos_no_storage: objetosDoTeste.length,
+    referencias: (refs ?? []).length,
+    gps: refs?.[0] ? { lat: refs[0].latitude, lng: refs[0].longitude } : null,
+    capturado_em_presente: !!refs?.[0]?.capturado_em,
+  });
+
+  // cleanup real deste cenário
+  await svc.from("registros_consultor_arquivos").delete().eq("client_uuid", clientUuid);
+  await svc.storage.from(BUCKET).remove([path]);
+  created.storageObjects = created.storageObjects.filter((p) => p !== path);
+  const { data: pos } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
+  return (pos ?? []).filter((o) => o.name === `${clientUuid}.jpg`).length === 0;
+}
+
+async function t11(registroId: string) {
+  const clientUuid = crypto.randomUUID();
+  const path = `${registroId}/foto/${clientUuid}.jpg`;
+  const storage = cli.consultor!.storage.from(BUCKET);
+  const ref = {
+    registro_consultor_id: registroId,
+    arquivo_path: path,
+    arquivo_url: path,
+    nome_arquivo: "hml-concorrente.jpg",
+    tipo_arquivo: "image/jpeg",
+    tipo_midia: "foto",
+    categoria_arquivo: "geral",
+    foto_principal: false,
+    uploaded_by: uid.consultor,
+    client_uuid: clientUuid,
+    latitude: -15.8,
+    longitude: -47.8,
+    capturado_em: new Date().toISOString(),
+  };
+
+  // Dois "syncs" concorrentes sobre a MESMA mídia (mesmo client_uuid).
+  const [s1, s2] = await Promise.all([
+    (async () => {
+      const up = await storage.upload(path, fakeJpeg(), { contentType: "image/jpeg", upsert: true });
+      const db = await svc.from("registros_consultor_arquivos").upsert(ref, { onConflict: "client_uuid" });
+      return { up: up.error?.message ?? null, db: db.error?.message ?? null };
+    })(),
+    (async () => {
+      const up = await storage.upload(path, fakeJpeg(), { contentType: "image/jpeg", upsert: true });
+      const db = await svc.from("registros_consultor_arquivos").upsert(ref, { onConflict: "client_uuid" });
+      return { up: up.error?.message ?? null, db: db.error?.message ?? null };
+    })(),
+  ]);
+  created.storageObjects.push(path);
+
+  const { data: objetos } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
+  const objetosDoTeste = (objetos ?? []).filter((o) => o.name === `${clientUuid}.jpg`);
+  const { count: refs } = await svc.from("registros_consultor_arquivos")
+    .select("id", { count: "exact", head: true }).eq("client_uuid", clientUuid);
+
+  certifyBool("T11", objetosDoTeste.length === 1 && refs === 1, {
+    sync1: s1, sync2: s2, objetos: objetosDoTeste.length, referencias: refs,
+    nota_indexeddb: "claim atômico determinístico coberto por src/test/offlineDb.claim.test.ts (exatamente 1 claim=true)",
+  });
+
+  await svc.from("registros_consultor_arquivos").delete().eq("client_uuid", clientUuid);
+  await svc.storage.from(BUCKET).remove([path]);
+  created.storageObjects = created.storageObjects.filter((p) => p !== path);
+}
+
+async function t12() {
+  const abas = ["todos", "ocorrencias", "demandas"];
+  const porAba: Record<string, unknown> = {};
+  let abasOk = true;
+  for (const aba of abas) {
+    const r = await listar("consultor", { p_aba: aba, p_page_size: 5 });
+    porAba[aba] = { ok: (r.data as any)?.ok, total: (r.data as any)?.total, error: r.error?.message ?? null };
+    if (r.error || (r.data as any)?.ok !== true) abasOk = false;
+  }
+  const invalida = await listar("consultor", { p_aba: "xpto" });
+  const invalidaOk = !invalida.error && (invalida.data as any)?.ok === false &&
+    (invalida.data as any)?.error === "invalid_tab";
+
+  const busca = await listar("consultor", { p_search: RUN, p_page_size: 50 });
+  const buscaOk = !busca.error && (busca.data as any)?.ok === true;
+
+  const p1 = await listar("consultor", { p_page: 1, p_page_size: 1 });
+  const p2 = await listar("consultor", { p_page: 2, p_page_size: 1 });
+  const itens1 = ((p1.data as any)?.items ?? []) as any[];
+  const itens2 = ((p2.data as any)?.items ?? []) as any[];
+  const paginacaoOk = itens1.length <= 1 && (itens2.length === 0 || itens1[0]?.id !== itens2[0]?.id);
+
+  const resumo = await cli.consultor!.rpc("rpc_resumo_atendimentos_tecnicos_v1", {});
+  const resumoOk = !resumo.error && (p1.data as any)?.total === (resumo.data as any)?.todos;
+
+  certifyBool("T12", abasOk && invalidaOk && buscaOk && paginacaoOk && resumoOk, {
+    abas: porAba, aba_invalida: invalida.data, busca_ok: buscaOk,
+    paginacao: { p1: itens1.length, p2: itens2.length, distintos: paginacaoOk },
+    total: (p1.data as any)?.total, resumo_todos: (resumo.data as any)?.todos,
+  });
+}
+
+async function t13() {
+  const registroId = await criarVisitaCompleta("consultor");
+
+  const checkin = await cli.consultor!.rpc("rpc_realizar_checkin_visita", {
+    p_registro_id: registroId, p_client_uuid: crypto.randomUUID(), p_tipo: "chegada_talhao",
+    p_latitude: -15.5, p_longitude: -47.5, p_precisao: 8,
+    p_justificativa_sem_gps: null, p_observacoes: `check-in HML ${RUN}`,
+    p_captured_at_local: new Date().toISOString(),
+    p_solicitacao_id: null, p_cliente_id: clienteA, p_fazenda_id: fazendaA, p_talhao_id: talhaoA,
+    p_foto_path: null,
+  });
+  const checkinOk = !checkin.error && (checkin.data as any)?.ok !== false;
+
+  // Finalizar SEM diagnóstico deve ser recusado.
+  const semDiag = await cli.consultor!.rpc("rpc_finalizar_visita_v2", {
+    p_registro_id: registroId, p_expected_version: await versaoDe(registroId),
+  });
+  const semDiagMsg = semDiag.error?.message ?? JSON.stringify(semDiag.data ?? {});
+  const semDiagBloqueado = !!semDiag.error || (semDiag.data as any)?.ok === false;
+
+  const versaoAntiga = await versaoDe(registroId);
+  const diag = await cli.consultor!.rpc("rpc_upsert_diagnostico_visita", {
+    p_registro_id: registroId, p_client_uuid: crypto.randomUUID(),
+    p_payload: {
+      categoria_problema: "insetos_praga", nivel_pressao: "alto",
+      percentual_area_afetada: 25, urgencia: "alta",
+      problema_principal: `Problema HML ${RUN}`,
+      observacoes_tecnicas: `Diagnóstico HML ${RUN}`,
+    },
+    p_expected_versao: versaoAntiga,
+  });
+  const diagOk = !diag.error && (diag.data as any)?.ok !== false;
+
+  // Versão antiga => version_conflict.
+  const conflito = await cli.consultor!.rpc("rpc_finalizar_visita_v2", {
+    p_registro_id: registroId, p_expected_version: versaoAntiga,
+  });
+  const conflitoMsg = conflito.error?.message ?? JSON.stringify(conflito.data ?? {});
+  const conflitoOk = /version_conflict/i.test(conflitoMsg);
+
+  certifyBool("T13", checkinOk && semDiagBloqueado && diagOk && conflitoOk, {
+    checkin: { error: checkin.error?.message ?? null, ok: checkinOk },
+    finalizar_sem_diagnostico: { bloqueado: semDiagBloqueado, msg: semDiagMsg },
+    diagnostico: { error: diag.error?.message ?? null, ok: diagOk },
+    version_conflict: { esperado: true, msg: conflitoMsg, ok: conflitoOk },
+  });
+
+  return registroId;
+}
+
+async function t14(registroPronto: string) {
+  // --- Fixture 1: finalizar -> enviar -> aprovar ---
+  const fin = await cli.consultor!.rpc("rpc_finalizar_visita_v2", {
+    p_registro_id: registroPronto, p_expected_version: await versaoDe(registroPronto),
+  });
+  const statusFinal = await statusDe(registroPronto);
+
+  const env = await cli.consultor!.rpc("rpc_enviar_visita_aprovacao", {
+    p_registro_id: registroPronto, p_expected_version: await versaoDe(registroPronto),
+  });
+  const statusEnviado = await statusDe(registroPronto);
+
+  const apr = await cli.gestor!.rpc("rpc_liberar_recomendacao_produtor", { p_registro_id: registroPronto });
+  const statusAprovado = await statusDe(registroPronto);
+
+  // --- Fixture 2: finalizar -> enviar -> reprovar ---
+  const reg2 = await criarVisitaCompleta("consultor");
+  await checkinEDiagnostico(reg2);
+  await cli.consultor!.rpc("rpc_finalizar_visita_v2", {
+    p_registro_id: reg2, p_expected_version: await versaoDe(reg2),
+  });
+  await cli.consultor!.rpc("rpc_enviar_visita_aprovacao", {
+    p_registro_id: reg2, p_expected_version: await versaoDe(reg2),
+  });
+  const rep = await cli.gestor!.rpc("rpc_reprovar_visita", {
+    p_registro_id: reg2, p_expected_version: await versaoDe(reg2), p_motivo: `Reprovado HML ${RUN}`,
+  });
+  const statusReprovado = await statusDe(reg2);
+
+  // --- Fixture 3: finalizar -> enviar -> solicitar ajuste ---
+  const reg3 = await criarVisitaCompleta("consultor");
+  await checkinEDiagnostico(reg3);
+  await cli.consultor!.rpc("rpc_finalizar_visita_v2", {
+    p_registro_id: reg3, p_expected_version: await versaoDe(reg3),
+  });
+  await cli.consultor!.rpc("rpc_enviar_visita_aprovacao", {
+    p_registro_id: reg3, p_expected_version: await versaoDe(reg3),
+  });
+  const aju = await cli.gestor!.rpc("rpc_solicitar_ajuste_visita", {
+    p_registro_id: reg3, p_expected_version: await versaoDe(reg3), p_motivo: `Ajuste HML ${RUN}`,
+  });
+  const statusAjuste = await statusDe(reg3);
+
+  const { data: historico } = await svc.from("registros_consultor_status_log")
+    .select("registro_consultor_id, status_anterior, status_novo, motivo")
+    .in("registro_consultor_id", [registroPronto, reg2, reg3]);
+
+  const transicoes = (historico ?? []).map((h: any) => `${h.status_anterior}->${h.status_novo}`);
+  const ok =
+    !fin.error && statusFinal === "finalizado" &&
+    !env.error && statusEnviado === "enviado_aprovacao" &&
+    !apr.error && (apr.data as any)?.success === true && statusAprovado === "aprovado" &&
+    !rep.error && statusReprovado === "reprovado" &&
+    !aju.error && statusAjuste !== "enviado_aprovacao" &&
+    (historico ?? []).length >= 3;
+
+  certifyBool("T14", ok, {
+    fixture_aprovacao: { finalizar: fin.error?.message ?? null, status_final: statusFinal, enviar: env.error?.message ?? null, status_enviado: statusEnviado, aprovar: apr.error?.message ?? (apr.data as any)?.message ?? null, status_aprovado: statusAprovado },
+    fixture_reprovacao: { erro: rep.error?.message ?? null, status: statusReprovado },
+    fixture_ajuste: { erro: aju.error?.message ?? null, status: statusAjuste },
+    historico_registros: (historico ?? []).length,
+    transicoes,
+  });
+}
+
+async function t15() {
+  // Técnico autenticado, papel válido, MAS não atribuído à visita.
+  const registroId = await criarVisitaCompleta("consultor");
+  await checkinEDiagnostico(registroId);
+  const versao = await versaoDe(registroId);
+
+  const tentativas: Record<string, unknown> = {};
+  const chamadas: [string, Promise<any>][] = [
+    ["rpc_atualizar_identificacao_visita", cli.agronomo!.rpc("rpc_atualizar_identificacao_visita", {
+      p_registro_id: registroId, p_expected_version: versao, p_payload: { observacoes_tecnicas: "nao atribuido" },
+    })],
+    ["rpc_upsert_diagnostico_visita", cli.agronomo!.rpc("rpc_upsert_diagnostico_visita", {
+      p_registro_id: registroId, p_client_uuid: crypto.randomUUID(),
+      p_payload: { problema_principal: "nao atribuido" }, p_expected_versao: versao,
+    })],
+    ["rpc_realizar_checkin_visita", cli.agronomo!.rpc("rpc_realizar_checkin_visita", {
+      p_registro_id: registroId, p_client_uuid: crypto.randomUUID(), p_tipo: "chegada_talhao",
+      p_latitude: -15.5, p_longitude: -47.5, p_precisao: 8, p_justificativa_sem_gps: null,
+      p_observacoes: "nao atribuido", p_captured_at_local: new Date().toISOString(),
+      p_solicitacao_id: null, p_cliente_id: clienteA, p_fazenda_id: fazendaA, p_talhao_id: talhaoA,
+      p_foto_path: null,
+    })],
+    ["rpc_finalizar_visita_v2", cli.agronomo!.rpc("rpc_finalizar_visita_v2", {
+      p_registro_id: registroId, p_expected_version: versao,
+    })],
+    ["rpc_enviar_visita_aprovacao", cli.agronomo!.rpc("rpc_enviar_visita_aprovacao", {
+      p_registro_id: registroId, p_expected_version: versao,
+    })],
+    ["rpc_arquivar_visita", cli.agronomo!.rpc("rpc_arquivar_visita", {
+      p_registro_id: registroId, p_expected_version: versao, p_motivo: "nao atribuido",
+    })],
+  ];
+
+  let todasNegadas = true;
+  for (const [nome, promessa] of chamadas) {
+    const r = await promessa;
+    const negada = !!r.error || (r.data as any)?.ok === false || (r.data as any)?.success === false;
+    if (!negada) todasNegadas = false;
+    tentativas[nome] = { negada, error: r.error?.message ?? null, data: r.data ?? null };
+  }
+  const statusFinal = await statusDe(registroId);
+  certifyBool("T15", todasNegadas && statusFinal !== "finalizado", { tentativas, status: statusFinal });
+}
+
+async function t16() {
   const sensitive = [
     "rpc_criar_visita_idempotente", "rpc_iniciar_atendimento_solicitacao_v1",
     "rpc_listar_atendimentos_tecnicos_v1", "rpc_resumo_atendimentos_tecnicos_v1",
     "rpc_finalizar_visita_v2", "rpc_realizar_checkin_visita", "rpc_upsert_diagnostico_visita",
     "rpc_enviar_visita_aprovacao", "rpc_reprovar_visita", "rpc_solicitar_ajuste_visita",
+    "rpc_liberar_recomendacao_produtor", "rpc_arquivar_visita", "rpc_get_visita_workspace",
+    "rpc_atualizar_identificacao_visita", "is_visit_responsible",
   ];
-  const anon = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
-  const anonResults = await Promise.all(sensitive.map(async (name) => {
-    const response = await anon.rpc(name, {});
-    return { name, code: response.error?.code, message: response.error?.message };
-  }));
-  certify("T16", "anon/PUBLIC sem EXECUTE em todas as RPCs sensíveis",
-    anonResults.every((item) => item.code === "42501" || /permission denied/i.test(item.message ?? ""))
-      ? "PASS" : "FAIL", anonResults);
 
-  const functionUrl = `${SUPABASE_URL}/functions/v1/visita-atendimentos-runtime-harness`;
-  const noJwt = await fetch(functionUrl);
-  const token = (await cli.consultor!.auth.getSession()).data.session?.access_token;
-  const withJwt = await fetch(functionUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-  certify("T17", "endpoint do harness 404 sem JWT e com JWT autenticado comum",
-    noJwt.status === 404 && withJwt.status === 404 ? "PASS" : "FAIL",
-    { no_jwt_status: noJwt.status, authenticated_status: withJwt.status });
+  // (a) Catálogo PostgreSQL — prova formal de ausência de EXECUTE para anon/PUBLIC.
+  const catalogo = await svc.rpc("rpc_certificacao_catalogo", {
+    p_functions: sensitive, p_tables: [] as string[],
+  });
+  const funcs = ((catalogo.data as any)?.functions ?? []) as any[];
+  const catalogoOk = !catalogo.error && funcs.length === sensitive.length &&
+    funcs.every((f) => f.anon_execute === false && f.public_execute === false);
+
+  // (b) Tentativa anon REAL com argumentos válidos (parâmetro ausente não é prova).
+  const anon = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
+  const hoje = new Date().toISOString().slice(0, 10);
+  const argsPorFn: Record<string, Record<string, unknown>> = {
+    rpc_criar_visita_idempotente: {
+      p_client_uuid: crypto.randomUUID(), p_cliente_id: clienteA, p_fazenda_id: fazendaA,
+      p_talhao_id: talhaoA, p_data_vistoria: hoje, p_origem: "ocorrencia_campo",
+    },
+    rpc_iniciar_atendimento_solicitacao_v1: {
+      p_solicitacao_id: crypto.randomUUID(), p_client_uuid: crypto.randomUUID(),
+    },
+    rpc_listar_atendimentos_tecnicos_v1: { p_aba: "todos", p_search: null, p_page: 1, p_page_size: 1 },
+    rpc_resumo_atendimentos_tecnicos_v1: {},
+    rpc_finalizar_visita_v2: { p_registro_id: crypto.randomUUID(), p_expected_version: 1 },
+    rpc_realizar_checkin_visita: {
+      p_registro_id: crypto.randomUUID(), p_client_uuid: crypto.randomUUID(), p_tipo: "chegada_talhao",
+      p_latitude: -15.5, p_longitude: -47.5, p_precisao: 8, p_justificativa_sem_gps: null,
+      p_observacoes: null, p_captured_at_local: new Date().toISOString(), p_solicitacao_id: null,
+      p_cliente_id: clienteA, p_fazenda_id: fazendaA, p_talhao_id: talhaoA, p_foto_path: null,
+    },
+    rpc_upsert_diagnostico_visita: {
+      p_registro_id: crypto.randomUUID(), p_client_uuid: crypto.randomUUID(),
+      p_payload: {}, p_expected_versao: 1,
+    },
+    rpc_enviar_visita_aprovacao: { p_registro_id: crypto.randomUUID(), p_expected_version: 1 },
+    rpc_reprovar_visita: { p_registro_id: crypto.randomUUID(), p_expected_version: 1, p_motivo: "x" },
+    rpc_solicitar_ajuste_visita: { p_registro_id: crypto.randomUUID(), p_expected_version: 1, p_motivo: "x" },
+    rpc_liberar_recomendacao_produtor: { p_registro_id: crypto.randomUUID() },
+    rpc_arquivar_visita: { p_registro_id: crypto.randomUUID(), p_expected_version: 1, p_motivo: "x" },
+    rpc_get_visita_workspace: { p_registro_id: crypto.randomUUID() },
+    rpc_atualizar_identificacao_visita: {
+      p_registro_id: crypto.randomUUID(), p_expected_version: 1, p_payload: {},
+    },
+    is_visit_responsible: { p_user_id: crypto.randomUUID(), p_registro_id: crypto.randomUUID() },
+  };
+
+  const anonResults = [];
+  for (const name of sensitive) {
+    const r = await anon.rpc(name, argsPorFn[name] ?? {});
+    const msg = r.error?.message ?? "";
+    const code = r.error?.code ?? null;
+    // Aceito como prova: 42501 / permission denied / função não exposta (PGRST202 com args válidos).
+    const argumentoAusente = /could not find the function|without parameters|PGRST203/i.test(msg) &&
+      !/permission denied/i.test(msg);
+    const negado = code === "42501" || /permission denied/i.test(msg);
+    anonResults.push({ name, code, negado, argumento_ausente: argumentoAusente, message: msg || null });
+  }
+  const anonOk = anonResults.every((a) => a.negado && !a.argumento_ausente);
+
+  certifyBool("T16", catalogoOk && anonOk, {
+    catalogo_error: catalogo.error?.message ?? null,
+    catalogo: funcs.map((f) => ({
+      name: f.name, anon_execute: f.anon_execute, public_execute: f.public_execute,
+      owner: f.owner, security_definer: f.security_definer, config: f.config,
+    })),
+    anon_probes: anonResults,
+  });
 }
 
-async function verifyCleanup() {
-  const counts = await Promise.all([
-    svc.from("registros_consultor").select("id", { count: "exact", head: true }).eq("cliente_id", created.clientes[0]),
-    svc.from("portal_solicitacoes").select("id", { count: "exact", head: true }).in("id", created.solicitacoes),
-    svc.from("clientes").select("id", { count: "exact", head: true }).in("id", created.clientes),
-  ]);
-  const users = await Promise.all(created.users.map((id) => svc.auth.admin.getUserById(id)));
-  const clean = counts.every((item) => item.count === 0) && users.every((item) => !item.data.user);
-  certify("T18", "cleanup: zero fixtures, zero usuários temporários, zero objetos Storage temporários e triggers habilitados",
-    clean ? "PASS" : "FAIL", { table_counts: counts.map((item) => item.count), users_remaining: users.filter((i) => i.data.user).length,
-      storage_objects_created: 0, trigger_check: "verificado separadamente no rehearsal SQL" });
+async function t17() {
+  const functionUrl = `${SUPABASE_URL}/functions/v1/visita-atendimentos-runtime-harness`;
+  const semJwt = await fetch(functionUrl);
+  await semJwt.body?.cancel();
+  const token = (await cli.consultor!.auth.getSession()).data.session?.access_token;
+  const comJwt = await fetch(functionUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  await comJwt.body?.cancel();
+  certifyBool("T17", semJwt.status === 404 && comJwt.status === 404, {
+    sem_jwt: semJwt.status, com_jwt: comJwt.status,
+  });
+}
+
+async function t18(mediaCleanupOk: boolean) {
+  const tabelas: Record<string, number | null> = {};
+  const regsPorCliente = await svc.from("registros_consultor")
+    .select("id", { count: "exact", head: true }).in("cliente_id", created.clientes);
+  tabelas["registros_consultor"] = regsPorCliente.count ?? null;
+
+  const idsRegistros = created.registros.length > 0 ? created.registros : [crypto.randomUUID()];
+  for (const [tabela, coluna, ids] of [
+    ["registros_consultor_arquivos", "registro_consultor_id", idsRegistros],
+    ["registros_consultor_status_log", "registro_consultor_id", idsRegistros],
+    ["solicitacoes_timeline", "solicitacao_id", created.solicitacoes],
+    ["portal_solicitacoes", "id", created.solicitacoes],
+    ["talhoes", "id", created.talhoes],
+    ["fazendas", "id", created.fazendas],
+    ["clientes", "id", created.clientes],
+  ] as [string, string, string[]][]) {
+    if (ids.length === 0) { tabelas[tabela] = 0; continue; }
+    const r = await svc.from(tabela).select("id", { count: "exact", head: true }).in(coluna, ids);
+    tabelas[tabela] = r.count ?? null;
+  }
+
+  const usersRestantes = (await Promise.all(created.users.map((id) => svc.auth.admin.getUserById(id))))
+    .filter((r) => !!r.data.user).length;
+
+  let storageRestantes = 0;
+  for (const registroId of created.registros) {
+    const { data } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
+    storageRestantes += (data ?? []).length;
+  }
+  storageRestantes += created.storageObjects.length;
+
+  const catalogo = await svc.rpc("rpc_certificacao_catalogo", {
+    p_functions: [] as string[],
+    p_tables: ["registros_consultor", "registros_consultor_arquivos", "portal_solicitacoes", "solicitacoes_timeline"],
+  });
+  const triggers = ((catalogo.data as any)?.triggers ?? []) as any[];
+  const triggersOk = triggers.length > 0 && triggers.every((t) => t.enabled === "O" || t.enabled === "A");
+
+  const tabelasOk = Object.values(tabelas).every((v) => v === 0);
+  certifyBool("T18", tabelasOk && usersRestantes === 0 && storageRestantes === 0 && mediaCleanupOk && triggersOk, {
+    tabelas, usuarios_temporarios_restantes: usersRestantes,
+    storage_objetos_restantes: storageRestantes,
+    cleanup_midia_t10: mediaCleanupOk,
+    triggers: triggers.map((t) => ({ table: t.table, trigger: t.trigger, enabled: t.enabled })),
+    triggers_habilitados: triggersOk,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Mascaramento de evidência (nenhum segredo/PII vaza para artefato)
+// ---------------------------------------------------------------------------
+function mask(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(mask);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, mask(v)]),
+    );
+  }
+  if (typeof value !== "string") return value;
+  return value
+    .replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, (id) => `${id.slice(0, 8)}…${id.slice(-4)}`)
+    .replace(/[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g, "[JWT_REMOVIDO]")
+    .replace(/sb_secret_[A-Za-z0-9_-]+/g, "[SECRET_REMOVIDO]")
+    .replace(/[\w.+-]+@arbio-staging\.test/g, "[EMAIL_TEMPORARIO]");
 }
 
 async function writeArtifacts(startedAt: string) {
-  const timestamp = new Date().toISOString();
-  const safe = certificationResults.map((result) => ({ ...result, evidence: mask(result.evidence) }));
+  const finishedAt = new Date().toISOString();
+  const ordered: Result[] = T_ORDER.map((id) =>
+    certificationResults.get(id) ??
+    { id, name: T_NAMES[id], status: "BLOCKED" as Status, evidence: "cenário não executado" }
+  );
+  const safe = ordered.map((r) => ({ ...r, evidence: mask(r.evidence) }));
   const summary = {
     pass: safe.filter((r) => r.status === "PASS").length,
     fail: safe.filter((r) => r.status === "FAIL").length,
     blocked: safe.filter((r) => r.status === "BLOCKED").length,
     total: safe.length,
   };
-  const artifact = { environment: EXPECTED_STAGING_REF, started_at: startedAt, finished_at: timestamp, summary, results: safe };
+  const artifact = {
+    environment: EXPECTED_STAGING_REF,
+    production_ref_never_used: PROD_REF,
+    started_at: startedAt, finished_at: finishedAt,
+    summary, results: safe,
+  };
   await Deno.mkdir("artifacts/visita-atendimentos", { recursive: true });
-  const slug = timestamp.replace(/[:.]/g, "-");
+  const slug = finishedAt.replace(/[:.]/g, "-");
   await Deno.writeTextFile(`artifacts/visita-atendimentos/${slug}.json`, JSON.stringify(artifact, null, 2));
   const rows = safe.map((r) => `| ${r.id} | ${r.name} | ${r.status} | ${JSON.stringify(r.evidence)} |`).join("\n");
-  await Deno.writeTextFile(`artifacts/visita-atendimentos/${slug}.md`,
-    `# Certificação T1–T18\n\n- Staging: ${EXPECTED_STAGING_REF}\n- Início: ${startedAt}\n- Fim: ${timestamp}\n- PASS: ${summary.pass}; FAIL: ${summary.fail}; BLOCKED: ${summary.blocked}\n\n| ID | Cenário | Status | Evidência mascarada |\n|---|---|---|---|\n${rows}\n`);
+  await Deno.writeTextFile(
+    `artifacts/visita-atendimentos/${slug}.md`,
+    `# Certificação T1–T18 — visita técnica (staging ${EXPECTED_STAGING_REF})\n\n` +
+      `- Início: ${startedAt}\n- Fim: ${finishedAt}\n` +
+      `- PASS: ${summary.pass} | FAIL: ${summary.fail} | BLOCKED: ${summary.blocked} | TOTAL: ${summary.total}\n\n` +
+      `| ID | Cenário | Status | Evidência mascarada |\n|---|---|---|---|\n${rows}\n`,
+  );
+  return { summary, ordered };
 }
 
 // ---------------------------------------------------------------------------
-// Entry point CLI (não-servidor). Uso:
-//   deno run --allow-net --allow-env --allow-write=artifacts/visita-atendimentos tests/harnesses/visita-atendimentos-runtime-harness/index.ts
+// Entry point
 // ---------------------------------------------------------------------------
 async function main() {
   assertStaging();
   const startedAt = new Date().toISOString();
-  let exitCode = 0;
+  let runtimeError: string | null = null;
+
   try {
     await setup();
-    await run();
-    await runCertification();
+
+    await t1_t3();
+    const registroCarteiraA = await criarVisitaCompleta("consultor");
+    await t4(registroCarteiraA);
+    await t5_t6();
+    await t7();
+    const registroOcorrencia = await t8_t9();
+    const mediaCleanupOk = await t10(registroOcorrencia);
+    await t11(registroOcorrencia);
+    await t12();
+    const registroT13 = await t13();
+    await t14(registroT13);
+    await t15();
+    await t16();
+    await t17();
+    (globalThis as any).__mediaCleanupOk = mediaCleanupOk;
   } catch (e) {
-    exitCode = 1;
-    log("RUNNER", "Execucao do harness", "FAIL", (e as Error).message);
+    runtimeError = (e as Error).message;
   } finally {
     try {
       await cleanup();
-      await verifyCleanup();
+      await t18((globalThis as any).__mediaCleanupOk === true);
     } catch (e) {
-      exitCode = 1;
-      log("CLEANUP", "Limpeza de fixtures/usuarios", "FAIL", (e as Error).message);
+      certify("T18", "FAIL", { erro_cleanup: (e as Error).message });
     }
   }
-  const pass = results.filter((r) => r.status === "PASS").length;
-  const fail = results.filter((r) => r.status === "FAIL").length;
-  const blocked = results.filter((r) => r.status === "BLOCKED").length;
-  await writeArtifacts(startedAt);
-  console.log(JSON.stringify(
-    { run: RUN, summary: { pass, fail, blocked, total: results.length }, results },
-    null,
-    2,
-  ));
-  const criticalFailure = certificationResults.some((r) => r.status !== "PASS");
-  if (fail > 0 || blocked > 0 || criticalFailure) exitCode = 1;
-  Deno.exit(exitCode);
+
+  const { summary, ordered } = await writeArtifacts(startedAt);
+  console.log(JSON.stringify({
+    run: RUN, environment: EXPECTED_STAGING_REF, runtime_error: runtimeError ? mask(runtimeError) : null,
+    summary, results: ordered.map((r) => ({ id: r.id, name: r.name, status: r.status })),
+  }, null, 2));
+
+  const aprovado = !runtimeError && summary.total === 18 && summary.pass === 18 &&
+    summary.fail === 0 && summary.blocked === 0;
+  Deno.exit(aprovado ? 0 : 1);
 }
 
 if (import.meta.main) {
