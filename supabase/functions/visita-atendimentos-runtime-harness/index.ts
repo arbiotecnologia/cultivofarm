@@ -233,8 +233,10 @@ async function run() {
       p_latitude: -15.5,
       p_longitude: -47.5,
     };
-    const r1 = (await cli.consultor!.rpc("rpc_criar_visita_idempotente", args)).data as any;
-    const r2 = (await cli.consultor!.rpc("rpc_criar_visita_idempotente", args)).data as any;
+    const q1 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", args);
+    const q2 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", args);
+    const r1 = q1.data as any, r2 = q2.data as any;
+    const e1 = q1.error?.message ?? null, e2 = q2.error?.message ?? null;
     if (r1?.registro_id) created.registros.push(r1.registro_id);
 
     const lista = (await cli.consultor!.rpc("rpc_listar_atendimentos_tecnicos_v1", {
@@ -249,7 +251,7 @@ async function run() {
       r1?.ok === true && r1?.created === true &&
       r2?.ok === true && r2?.created === false && r2?.registro_id === r1?.registro_id &&
       visivel && temCampos,
-      { r1, r2, visivel, temCampos, total: lista?.total });
+      { r1, r2, e1, e2, visivel, temCampos, total: lista?.total });
   }
 
   // ---- C7: contrato offline = contrato canônico (replay da mesma RPC) ----
@@ -274,8 +276,10 @@ async function run() {
       p_longitude: -47.6,
     };
     // replay 1 (sync) e replay 2 (retry após falha de rede) — mesmo client_uuid
-    const s1 = (await cli.consultor!.rpc("rpc_criar_visita_idempotente", offlinePayload)).data as any;
-    const s2 = (await cli.consultor!.rpc("rpc_criar_visita_idempotente", offlinePayload)).data as any;
+    const p1 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", offlinePayload);
+    const p2 = await cli.consultor!.rpc("rpc_criar_visita_idempotente", offlinePayload);
+    const s1 = p1.data as any, s2 = p2.data as any;
+    const se1 = p1.error?.message ?? null, se2 = p2.error?.message ?? null;
     if (s1?.registro_id) created.registros.push(s1.registro_id);
 
     const { data: row } = await svc.from("registros_consultor")
@@ -287,7 +291,7 @@ async function run() {
       row?.origem_atendimento === "ocorrencia_campo" &&
       Number(row?.latitude) === -15.6 && Number(row?.longitude) === -47.6 &&
       row?.categoria_problema === "nematoides" && row?.natureza_registro === "ocorrencia",
-      { s1, s2, row });
+      { s1, s2, se1, se2, row });
   }
 
   // ---- C8: produtor / sem vínculo ----
