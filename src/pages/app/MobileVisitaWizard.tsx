@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useObjetivosVisita } from "@/hooks/useObjetivosVisita";
+import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -155,6 +156,7 @@ export default function MobileVisitaWizard() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const isOnline = useOnlineStatus();
+  const queryClient = useQueryClient();
 
   const isNew = !id || id === "novo";
   const registroId = isNew ? null : (id as string);
@@ -312,12 +314,16 @@ export default function MobileVisitaWizard() {
     setFaseFenologica(registro.fase_fenologica ?? "");
   }, [registro]);
 
-  // Grupo A: edição da Etapa 1 é sempre read-only até termos update versionado.
+  // Permissões efetivas vêm do servidor (rpc_get_visita_workspace).
+  // Nunca derivar permissão apenas do status local.
+  const { data: workspace } = useVisitaWorkspace(registroId);
+  const permissions = workspace?.permissions ?? EMPTY_VISITA_PERMISSIONS;
+
   const locked = useMemo(() => {
-    if (!isNew) return true;
-    const s = registro?.status;
-    return s === "finalizado" || s === "convertido_os" || s === "aprovado" || s === "arquivado";
-  }, [isNew, registro?.status]);
+    if (isNew) return false;
+    if (!workspace) return true; // fail-closed enquanto carrega/negado
+    return !permissions.can_edit;
+  }, [isNew, workspace, permissions.can_edit]);
 
   // Check-in existente para esta visita (habilita Etapa 3)
   const { data: checkinExistente } = useQuery({
@@ -535,9 +541,49 @@ export default function MobileVisitaWizard() {
       return;
     }
 
-    // Grupo A não implementa edição versionada da Etapa 1
+    // Edição versionada da Etapa 1 (visita já existente)
     if (!isNew) {
-      toast.info("Próximas etapas serão liberadas nos próximos grupos.");
+      if (!isOnline) {
+        toast.error("Sem conexão: edição da identificação exige estar online.");
+        return;
+      }
+      setSaveState("saving");
+      try {
+        const { data, error } = await supabase.rpc(
+          "rpc_atualizar_identificacao_visita" as never,
+          {
+            p_registro_id: registroId,
+            p_expected_version: workspace?.version ?? (registro as any)?.version ?? 1,
+            p_payload: {
+              cultura_id: culturaId || null,
+              data_vistoria: dataVistoria,
+              tipo_visita: tipoVisita,
+              objetivo_visita: objetivo.trim() || null,
+              safra: safra.trim() || null,
+              fase_fenologica: faseFenologica.trim() || null,
+            },
+          } as never,
+        );
+        if (error) throw error;
+        void data;
+        setSaveState("saved");
+        await queryClient.invalidateQueries({ queryKey: visitaWorkspaceKey(registroId) });
+        await queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", registroId] });
+        toast.success("Identificação atualizada.");
+        setCurrentStep(2);
+      } catch (e: any) {
+        setSaveState("error");
+        const msg = String(e?.message ?? "");
+        if (msg.includes("version_conflict")) {
+          toast.error("Esta visita foi alterada por outra pessoa. Recarregue para continuar.");
+        } else if (msg.includes("status_nao_editavel")) {
+          toast.error("Esta visita não está mais em status editável.");
+        } else if (msg.includes("forbidden")) {
+          toast.error("Você não tem permissão para editar esta visita.");
+        } else {
+          toast.error("Não foi possível atualizar a identificação.");
+        }
+      }
       return;
     }
 

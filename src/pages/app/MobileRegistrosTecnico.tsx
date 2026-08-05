@@ -13,7 +13,7 @@ import { FileText, ChevronRight, Plus, Pencil } from "lucide-react";
  * Read-write conforme regras existentes: técnico enxerga rascunhos próprios
  * e pode abrir para edição quando status ∈ {rascunho, em_andamento}.
  * Nenhuma nova ação mutante é habilitada aqui — todas as mutations reais
- * continuam nas telas de edição/wizard (`/visita-tecnica/:id`).
+ * continuam nas telas de edição/wizard mobile (`/app/visita/:id`).
  */
 
 const STATUS_LABELS: Record<string, string> = {
@@ -54,8 +54,8 @@ export default function MobileRegistrosTecnico() {
     },
   });
 
-  const openRoteiro = (id: string) => navigate(`/visita-tecnica/${id}?tab=roteiro`);
-  const openEdicao = (id: string) => navigate(`/visita-tecnica/${id}`);
+  const openRoteiro = (id: string) => navigate(`/app/visita/${id}?step=7`);
+  const openEdicao = (id: string) => navigate(`/app/visita/${id}`);
 
   return (
     <div className="p-4 space-y-4">

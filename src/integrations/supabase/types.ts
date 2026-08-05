@@ -17160,6 +17160,74 @@ export type Database = {
         Args: { p_partner_order_id: string }
         Returns: undefined
       }
+      _visita_lock_and_check: {
+        Args: {
+          p_expected_version: number
+          p_registro_id: string
+          p_require_approver?: boolean
+        }
+        Returns: {
+          acao_realizada: string | null
+          area_hectares: number | null
+          categoria_problema:
+            | Database["public"]["Enums"]["categoria_problema_consultor"]
+            | null
+          client_uuid: string | null
+          cliente_id: string | null
+          codigo_visita: string | null
+          condicoes_climaticas_observadas: string | null
+          consultor_profile_id: string | null
+          consultor_responsavel: string | null
+          created_at: string
+          created_by: string | null
+          cultura_id: string | null
+          data_proxima_visita: string | null
+          data_vistoria: string
+          duracao_estimada: number | null
+          fase_fenologica: string | null
+          fazenda_id: string | null
+          finalized_at: string | null
+          finalized_by: string | null
+          historico_resumido: string | null
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          latitude: number | null
+          localizacao_na_area: string | null
+          longitude: number | null
+          natureza_registro: Database["public"]["Enums"]["natureza_registro_consultor"]
+          necessidade_intervencao:
+            | Database["public"]["Enums"]["necessidade_intervencao"]
+            | null
+          nivel_pressao: Database["public"]["Enums"]["nivel_pressao"] | null
+          objetivo_visita: string | null
+          observacoes_tecnicas: string | null
+          pdf_status: string | null
+          percentual_area_afetada: number | null
+          problema_principal: string | null
+          problema_secundario: string | null
+          proxima_acao_recomendada: string | null
+          registro_origem_id: string | null
+          risco_produtivo: Database["public"]["Enums"]["risco_produtivo"] | null
+          safra: string | null
+          solicitacao_id: string | null
+          status: Database["public"]["Enums"]["status_registro_consultor"]
+          talhao_id: string | null
+          tipo_demanda:
+            | Database["public"]["Enums"]["tipo_demanda_consultor"]
+            | null
+          tipo_visita: Database["public"]["Enums"]["tipo_visita"] | null
+          updated_at: string
+          urgencia: Database["public"]["Enums"]["urgencia_consultor"] | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "registros_consultor"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       add_b2b_payment_terms_note_secure: {
         Args: { p_note: string; p_partner_order_id: string }
         Returns: Json
@@ -18463,16 +18531,40 @@ export type Database = {
         Args: { p_template_id: string }
         Returns: Json
       }
+      rpc_arquivar_visita: {
+        Args: {
+          p_expected_version: number
+          p_motivo: string
+          p_registro_id: string
+        }
+        Returns: Json
+      }
       rpc_assign_visit_technician: {
         Args: { p_registro_id: string; p_role?: string; p_user_id: string }
         Returns: Json
       }
       rpc_assumir_alerta: { Args: { p_alerta_id: string }; Returns: Json }
+      rpc_ativar_monitoramento_visita: {
+        Args: {
+          p_data_referencia: string
+          p_registro_id: string
+          p_tipo: string
+        }
+        Returns: Json
+      }
       rpc_atualizar_checklist_entrega: {
         Args: {
           p_checklist_id: string
           p_concluido: boolean
           p_observacao?: string
+        }
+        Returns: Json
+      }
+      rpc_atualizar_identificacao_visita: {
+        Args: {
+          p_expected_version: number
+          p_payload: Json
+          p_registro_id: string
         }
         Returns: Json
       }
@@ -19779,6 +19871,10 @@ export type Database = {
         Args: { p_client_uuid: string }
         Returns: Json
       }
+      rpc_get_visita_workspace: {
+        Args: { p_registro_id: string }
+        Returns: Json
+      }
       rpc_harness_purge_entregas_v1: {
         Args: { p_entrega_ids: string[] }
         Returns: Json
@@ -19883,6 +19979,14 @@ export type Database = {
         Args: { p_target_role: Database["public"]["Enums"]["app_role"] }
         Returns: Json
       }
+      rpc_programar_retorno_visita: {
+        Args: {
+          p_data_prevista: string
+          p_descricao?: string
+          p_registro_id: string
+        }
+        Returns: Json
+      }
       rpc_publish_communication_event: {
         Args: {
           p_event_key: string
@@ -19909,6 +20013,14 @@ export type Database = {
       }
       rpc_reabrir_alerta_operacional: {
         Args: { p_alerta_id: string; p_observacao?: string }
+        Returns: Json
+      }
+      rpc_reabrir_visita: {
+        Args: {
+          p_expected_version: number
+          p_motivo: string
+          p_registro_id: string
+        }
         Returns: Json
       }
       rpc_realizar_checkin_visita: {
@@ -19992,6 +20104,14 @@ export type Database = {
         Args: { p_reason?: string; p_registro_id: string; p_user_id: string }
         Returns: Json
       }
+      rpc_reprovar_visita: {
+        Args: {
+          p_expected_version: number
+          p_motivo: string
+          p_registro_id: string
+        }
+        Returns: Json
+      }
       rpc_reservar_embalagem_entrega: {
         Args: {
           p_embalagem_id: string
@@ -20060,6 +20180,14 @@ export type Database = {
       }
       rpc_skip_communication_delivery: {
         Args: { p_outbox_id: string; p_reason: string; p_worker_id: string }
+        Returns: Json
+      }
+      rpc_solicitar_ajuste_visita: {
+        Args: {
+          p_expected_version: number
+          p_motivo: string
+          p_registro_id: string
+        }
         Returns: Json
       }
       rpc_substituir_etiqueta_produto: {

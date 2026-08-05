@@ -287,118 +287,33 @@ export function useFluxoVisitaTecnica() {
     }
   };
 
+  /**
+   * Programa retorno técnico de forma transacional e idempotente via
+   * `rpc_programar_retorno_visita` (cria solicitação + rascunho vinculado).
+   */
   const programarRetorno = async (data: any): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
+    const registroId = data?.visita_original_id ?? data?.registro_id;
+    const dataPrevista = data?.data_prevista ?? data?.dataProximaVisita ?? null;
+    if (!registroId) return { success: false, message: "Visita de origem não informada" };
+    if (!dataPrevista) return { success: false, message: "Informe a data prevista do retorno" };
     try {
-      // 1. Obter dados da visita original para manter o contexto
-      const { data: originalVisit, error: fetchOrigError } = await supabase
-        .from("registros_consultor")
-        .select(`
-          id, 
-          cliente_id, 
-          fazenda_id, 
-          talhao_id, 
-          cultura_id, 
-          consultor_responsavel,
-          solicitacao_id
-        `)
-        .eq("id", data.visita_original_id)
-        .single();
-
-      if (fetchOrigError) throw fetchOrigError;
-
-      // 2. Definir o usuário alvo (normalmente o consultor original ou quem está criando)
-      let targetUserId = user.id;
-      if (originalVisit.solicitacao_id) {
-        const { data: originalSol } = await supabase
-          .from("portal_solicitacoes")
-          .select("user_id")
-          .eq("id", originalVisit.solicitacao_id)
-          .single();
-        if (originalSol?.user_id) targetUserId = originalSol.user_id;
-      }
-
-      // 3. Criar nova solicitação de retorno
-      const { data: newSol, error: solError } = await supabase
-        .from("portal_solicitacoes")
-        .insert({
-          cliente_id: data.cliente_id || originalVisit.cliente_id,
-          fazenda_id: data.fazenda_id || originalVisit.fazenda_id,
-          talhao_id: data.talhao_id || originalVisit.talhao_id,
-          tipo_demanda: "retorno_tecnico",
-          descricao: data.descricao || `Retorno técnico programado da visita #${originalVisit.id.substring(0, 8)}`,
-          status: "agendada",
-          consultor_atribuido: originalVisit.consultor_responsavel || user.id,
-          data_prevista_atendimento: data.data_prevista || data.dataProximaVisita,
-          registro_origem_id: originalVisit.id,
-          origem_solicitacao: "interna",
-          user_id: targetUserId,
-          urgencia: "media"
-        })
-        .select("id")
-        .single();
-
-      if (solError) throw solError;
-      
-      // 4. Criar rascunho de visita para o retorno
-      const { data: newVisit, error: visitError } = await supabase
-        .from("registros_consultor")
-        .insert({
-          solicitacao_id: newSol.id,
-          registro_origem_id: originalVisit.id,
-          cliente_id: data.cliente_id || originalVisit.cliente_id,
-          fazenda_id: data.fazenda_id || originalVisit.fazenda_id,
-          talhao_id: data.talhao_id || originalVisit.talhao_id,
-          cultura_id: originalVisit.cultura_id,
-          consultor_responsavel: user.id,
-          created_by: user.id,
-          consultor_profile_id: profile?.id || null,
-          status: "rascunho",
-          tipo_visita: "retorno_tecnico",
-          tipo_demanda: "retorno_tecnico",
-          problema_principal: `Acompanhamento: ${originalVisit.id.substring(0, 8)}`,
-          data_vistoria: data.data_prevista || data.dataProximaVisita || new Date().toISOString().split('T')[0]
-        } as any)
-
-        .select("id")
-        .single();
-
-      if (visitError) throw visitError;
-
-      // 5. Registrar timeline em ambas as solicitações
-      if (originalVisit.solicitacao_id) {
-        await registrarTimeline(
-          originalVisit.solicitacao_id, 
-          "retorno_programado", 
-          `Retorno técnico programado para ${data.data_prevista || 'data futura'}. Nova solicitação: ${newSol.id.substring(0, 8)}`
-        );
-      }
-      
-      await registrarTimeline(newSol.id, "rascunho_criado", "Visita rascunho de retorno técnico criada automaticamente");
-
-      // 6. Registrar logs da visita
-      await supabase.from("visitas_logs").insert([
-        {
-          registro_consultor_id: originalVisit.id,
-          usuario_id: user.id,
-          acao: "retorno_programado",
-          descricao: `Programado retorno técnico. Nova visita rascunho: ${newVisit.id}`
-        },
-        {
-          registro_consultor_id: newVisit.id,
-          usuario_id: user.id,
-          acao: "visita_criada",
-          descricao: `Visita de retorno técnico iniciada a partir da visita original #${originalVisit.id}`
-        }
-      ]);
-
+      const { data: res, error } = await supabase.rpc("rpc_programar_retorno_visita" as any, {
+        p_registro_id: registroId,
+        p_data_prevista: dataPrevista,
+        p_descricao: data?.descricao ?? null,
+      });
+      if (error) throw error;
+      const out = (res as any) || {};
       queryClient.invalidateQueries({ queryKey: ["solicitacoes"] });
       queryClient.invalidateQueries({ queryKey: ["visitas"] });
-
-      return { 
-        success: true, 
-        message: "Retorno técnico programado com sucesso!", 
-        data: { solicitacao_id: newSol.id, registro_consultor_id: newVisit.id } 
+      queryClient.invalidateQueries({ queryKey: ["visita-workspace", registroId] });
+      return {
+        success: true,
+        message: out.idempotent
+          ? "Retorno técnico já estava programado"
+          : "Retorno técnico programado com sucesso!",
+        data: { solicitacao_id: out.solicitacao_id, registro_consultor_id: out.registro_id },
       };
     } catch (error: any) {
       console.error("Erro em programarRetorno:", error);
@@ -474,51 +389,108 @@ export function useFluxoVisitaTecnica() {
     return liberarRecomendacaoParaProdutor(id);
   };
 
+  const fetchVersion = async (id: string): Promise<number> => {
+    const { data, error } = await supabase
+      .from("registros_consultor")
+      .select("version")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as any)?.version ?? 1;
+  };
+
+  const invalidateVisita = (id: string) => {
+    queryClient.invalidateQueries({ queryKey: ["visita-tecnica", id] });
+    queryClient.invalidateQueries({ queryKey: ["visita-workspace", id] });
+  };
+
   const reprovarRecomendacao = async (id: string, motivo: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
+    if (!motivo?.trim()) return { success: false, message: "Informe o motivo da reprovação" };
     try {
-      const { error } = await supabase
-        .from("registros_consultor")
-        .update({ status: "reprovado", updated_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await supabase.rpc("rpc_reprovar_visita" as any, {
+        p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
+        p_motivo: motivo.trim(),
+      });
       if (error) throw error;
-
-      await supabase.from("aprovacoes_tecnicas").insert({
-        registro_consultor_id: id,
-        status_aprovacao: "reprovado",
-        comentario_gestor: motivo,
-        aprovado_por: user.id,
-        data_aprovacao: new Date().toISOString()
-      });
-
-      await supabase.from("visitas_logs").insert({
-        registro_consultor_id: id,
-        usuario_id: user.id,
-        acao: "recomendacao_reprovada",
-        descricao: `Recomendação reprovada pelo gestor. Motivo: ${motivo}`
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["visita-tecnica", id] });
-      return { success: true, message: "Recomendação reprovada com sucesso" };
+      invalidateVisita(id);
+      return { success: true, message: "Visita reprovada com sucesso" };
     } catch (error: any) {
-      return { success: false, message: "Erro ao reprovar recomendação", error: error.message };
+      return { success: false, message: "Erro ao reprovar visita", error: error.message };
     }
   };
 
-  const ativarMonitoramento = async (_id: string): Promise<FluxoResponse> => {
-    return { success: false, message: "Funcionalidade ainda não implementada com segurança." };
+  const solicitarAjusteVisita = async (id: string, motivo: string): Promise<FluxoResponse> => {
+    if (!user) return { success: false, message: "Não autenticado" };
+    if (!motivo?.trim()) return { success: false, message: "Informe o motivo do ajuste" };
+    try {
+      const { error } = await supabase.rpc("rpc_solicitar_ajuste_visita" as any, {
+        p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
+        p_motivo: motivo.trim(),
+      });
+      if (error) throw error;
+      invalidateVisita(id);
+      return { success: true, message: "Ajuste solicitado ao consultor" };
+    } catch (error: any) {
+      return { success: false, message: "Erro ao solicitar ajuste", error: error.message };
+    }
+  };
+
+  const reabrirVisita = async (id: string, motivo: string): Promise<FluxoResponse> => {
+    if (!user) return { success: false, message: "Não autenticado" };
+    if (!motivo?.trim()) return { success: false, message: "Informe o motivo da reabertura" };
+    try {
+      const { error } = await supabase.rpc("rpc_reabrir_visita" as any, {
+        p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
+        p_motivo: motivo.trim(),
+      });
+      if (error) throw error;
+      invalidateVisita(id);
+      return { success: true, message: "Visita reaberta para revisão" };
+    } catch (error: any) {
+      return { success: false, message: "Erro ao reabrir visita", error: error.message };
+    }
+  };
+
+
+  const ativarMonitoramento = async (
+    id: string,
+    tipo = "monitoramento_pos_visita",
+    dataReferencia?: string | null,
+  ): Promise<FluxoResponse> => {
+    if (!user) return { success: false, message: "Não autenticado" };
+    try {
+      const { data, error } = await supabase.rpc("rpc_ativar_monitoramento_visita" as any, {
+        p_registro_id: id,
+        p_tipo: tipo,
+        p_data_referencia: dataReferencia ?? null,
+      });
+      if (error) throw error;
+      invalidateVisita(id);
+      const res = (data as any) || {};
+      return {
+        success: true,
+        message: res.idempotent ? "Monitoramento já estava ativo" : "Monitoramento ativado",
+        data: res,
+      };
+    } catch (error: any) {
+      return { success: false, message: "Erro ao ativar monitoramento", error: error.message };
+    }
   };
 
   const arquivarVisita = async (id: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
-      const { error } = await supabase
-        .from("registros_consultor")
-        .update({ status: "arquivado", updated_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await supabase.rpc("rpc_arquivar_visita" as any, {
+        p_registro_id: id,
+        p_expected_version: await fetchVersion(id),
+        p_motivo: null,
+      });
       if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ["visita-tecnica", id] });
+      invalidateVisita(id);
       return { success: true, message: "Visita arquivada com sucesso" };
     } catch (error: any) {
       return { success: false, message: "Erro ao arquivar visita", error: error.message };
@@ -577,6 +549,8 @@ export function useFluxoVisitaTecnica() {
     enviarParaAprovacao,
     aprovarRecomendacao,
     reprovarRecomendacao,
+    solicitarAjusteVisita,
+    reabrirVisita,
     liberarRecomendacaoParaProdutor,
     converterRecomendacaoEmOS,
     programarRetorno,

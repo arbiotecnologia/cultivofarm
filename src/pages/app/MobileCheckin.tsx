@@ -164,7 +164,7 @@ export default function MobileCheckin() {
           createdAt: new Date().toISOString(),
         });
         toast.success("Check-in salvo offline. Será sincronizado.");
-        navigate(visitId ? `/visita-tecnica/${visitId}` : "/app");
+        navigate(visitId ? `/app/visita/${visitId}` : "/app");
         return;
       }
 
@@ -251,7 +251,7 @@ export default function MobileCheckin() {
           <div className="w-full space-y-3">
             <Button 
               className="w-full h-14 text-base font-semibold"
-              onClick={() => navigate(`/visita-tecnica/${createdVisitId}`)}
+              onClick={() => navigate(`/app/visita/${createdVisitId}`)}
             >
               Abrir Visita Técnica
             </Button>
