@@ -178,9 +178,26 @@ excluídas do pacote, com histórico preservado.
 - Promoção para produção `navfzbwgwzruipouyfnk`: **não executada** (proibida nesta fase).
 - Publicação do app: não realizada.
 
-## 11. Status final
+## 11. Estado de limpeza do staging (T18 — verificação independente)
+
+Consulta read-only via DSN de staging em 2026-08-05T04:50Z:
+
+```
+auth_users_temp=0
+storage_objects_bucket_temp=0   (bucket consultor-arquivos)
+registros_consultor_arquivos_temp=0
+triggers_disabled_public=0      (nenhum trigger desabilitado)
+```
+
+Isto confirma ausência de resíduos de execuções anteriores, mas **não** substitui
+o T18 do runner, que continua `BLOCKED`.
+
+## 12. Status final
 
 **NÃO APTO / BLOQUEADO** — T1–T18 não podem ser certificados sem a credencial
-administrativa de staging no executor. `PRODUCAO_NAO_ACESSADA` ✅ ·
-`NAO_PUBLICADO` ✅.
+administrativa de staging disponível ao executor CLI
+(`SUPABASE_SECRET_KEY` ou `SUPABASE_SERVICE_ROLE_KEY` em Project Settings →
+Secrets). Nenhum `BLOCKED` foi convertido em `PASS`.
+`PRODUCAO_NAO_ACESSADA` ✅ · `NAO_PUBLICADO` ✅.
+
 
