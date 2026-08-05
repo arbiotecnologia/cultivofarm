@@ -16,20 +16,19 @@ BEGIN;
 DROP VIEW IF EXISTS public.v_microorganism_fiscal_readiness;
 
 -- 2) Funções de leitura/escrita da fase
-DROP FUNCTION IF EXISTS public.rpc_regulatory_dossier_detail(uuid);
-DROP FUNCTION IF EXISTS public.rpc_microorganism_regulatory_overview();
-DROP FUNCTION IF EXISTS public.rpc_regulatory_dossier_block(uuid, text);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_dossier_publish(uuid, date);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_review_decide(uuid, text, text, text);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_dossier_submit(uuid);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_document_register(uuid, text, text, text, text, text, date, date, text, text, date, text);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_checklist_set(uuid, text, text, text, uuid);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_ncm_candidate_decide(uuid, text, text);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_ncm_candidate_add(uuid, text, text, text, text, text, date);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_presentation_upsert(uuid, jsonb);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_dossier_update_draft(uuid, jsonb);
-DROP FUNCTION IF EXISTS public.rpc_regulatory_dossier_ensure_draft(uuid);
-DROP FUNCTION IF EXISTS public.fn_microorganism_regulatory_facts(uuid);
+DO $drop$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT p.oid::regprocedure::text AS sig
+             FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+            WHERE n.nspname = 'public'
+              AND (p.proname LIKE 'rpc_regulatory%'
+                OR p.proname LIKE 'rpc_microorganism_regulatory%'
+                OR p.proname = 'fn_microorganism_regulatory_facts')
+  LOOP
+    EXECUTE format('DROP FUNCTION IF EXISTS %s CASCADE', r.sig);
+  END LOOP;
+END $drop$;
 
 -- 3) Gate canônico volta à assinatura da F1
 DROP FUNCTION IF EXISTS public.fn_fiscal_item_profile_gate_eval(
