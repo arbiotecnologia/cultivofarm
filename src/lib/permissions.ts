@@ -277,6 +277,7 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/app/fazendas": rw(APP_TECHNICAL_ROLES),
   "/app/registrar": rw(APP_TECHNICAL_ROLES),
   "/app/registros": rw(APP_TECHNICAL_ROLES),
+  "/app/atendimentos": rw(APP_TECHNICAL_ROLES),
   "/app/ordens": rw(APP_TECHNICAL_ROLES),
   "/app/solicitacoes": rw(APP_TECHNICAL_ROLES),
   "/app/checkin": rw(APP_TECHNICAL_ROLES),

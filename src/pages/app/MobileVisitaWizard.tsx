@@ -699,7 +699,7 @@ export default function MobileVisitaWizard() {
         <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground" />
         <p className="text-sm">Este rascunho local não foi encontrado ou já foi removido.</p>
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate("/app/registros")}>
+          <Button variant="outline" size="sm" onClick={() => navigate("/app/atendimentos")}>
             Voltar para visitas
           </Button>
           <Button size="sm" onClick={() => navigate("/app/visita/novo", { replace: true })}>
@@ -718,7 +718,7 @@ export default function MobileVisitaWizard() {
         {localRes.message && (
           <p className="text-xs text-muted-foreground">{localRes.message}</p>
         )}
-        <Button variant="outline" size="sm" onClick={() => navigate("/app/registros")}>
+        <Button variant="outline" size="sm" onClick={() => navigate("/app/atendimentos")}>
           Voltar
         </Button>
       </div>
@@ -741,7 +741,7 @@ export default function MobileVisitaWizard() {
       <div className="p-6 text-center space-y-3">
         <AlertCircle className="h-8 w-8 mx-auto text-destructive" />
         <p className="text-sm">Visita não encontrada.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate("/app/registros")}>
+        <Button variant="outline" size="sm" onClick={() => navigate("/app/atendimentos")}>
           Voltar
         </Button>
       </div>
@@ -756,7 +756,7 @@ export default function MobileVisitaWizard() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/app/registros")}
+            onClick={() => navigate("/app/atendimentos")}
             aria-label="Voltar"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -1014,7 +1014,7 @@ export default function MobileVisitaWizard() {
 
       {/* Footer com navegação */}
       <footer className="sticky bottom-0 bg-background/95 backdrop-blur border-t p-3 flex items-center justify-between gap-3">
-        <Button variant="outline" onClick={() => navigate("/app/registros")}>
+        <Button variant="outline" onClick={() => navigate("/app/atendimentos")}>
           Voltar
         </Button>
         {currentStep === 1 ? (
