@@ -66,16 +66,26 @@ Rotas legadas preservadas como redirecionamento — nenhum link antigo quebra.
 - `tsgo --noEmit`: limpo
 - Vitest: **2707 passed | 4 skipped**
 
-## Certificação T1–T18 (2026-08-05)
+## Certificação T1–T18 — reexecução 2026-08-05 (04:4xZ)
 
 | Comando | Timestamp (UTC) | Resultado |
 | --- | --- | --- |
-| `npx tsgo --noEmit -p tsconfig.json` | 04:30:27Z | PASS |
-| `bunx vitest run` | 04:31:31Z | PASS — 2710 passed / 4 skipped |
-| `bun run build` | 04:31Z | PASS |
-| `bash restoration/visita-portais-tecnicos/rehearsal.sh` | 04:33Z | `ROLLBACK_REHEARSAL_PASS` |
-| Scanner de segredos | 04:31Z | PASS (nenhum literal) |
-| Runner T1–T18 (`deno run … tests/harnesses/visita-atendimentos-runtime-harness/index.ts`) | 04:32:24Z | **exit 1 — GUARD_ABORT** |
+| `npx tsgo --noEmit -p tsconfig.app.json` | 04:44Z | PASS (exit 0) |
+| `bunx vitest run` | 04:45Z | PASS — 2710 passed / 4 skipped, 163 arquivos |
+| `bun run build` | 04:46Z | PASS (exit 0, `built in 25.69s`) |
+| `bash restoration/visita-portais-tecnicos/rehearsal.sh` | 04:48Z | `ROLLBACK_REHEARSAL_PASS` (exit 0) |
+| Validação do `promotion-manifest.json` (sha256 + tamanho) | 04:47Z | `MANIFEST_VALIDATION PASS` |
+| `bash scripts/fiscal-secrets-scan.sh` | 04:47Z | exit 1 — 3 achados **legados**, 0 segredos reais (anon publicável em `src/integrations/supabase/client.ts` e `scripts/rbac-audit/run-rbac-audit.ts`; placeholder `USER:PASSWORD` em `restoration/comunicacao-deploy/env.example`) |
+| Runner T1–T18 (`deno run … visita-atendimentos-runtime-harness/index.ts`) | 04:46Z | **exit 1 — `GUARD_ABORT: variaveis ausentes: SUPABASE_SERVICE_ROLE_KEY\|SUPABASE_SECRET_KEY`** |
+| E2E mobile/desktop de visita técnica | 04:49Z | não executável — `ERR_MODULE_NOT_FOUND: lovable-agent-playwright-config` (dependência de harness ausente no executor) |
+
+Rebind executado (`supabase--rebind_secrets`): vinculou apenas `SUPABASE_URL` e a
+chave publicável. Estado no executor, sem valores: `SUPABASE_URL=SET`,
+`SUPABASE_PUBLISHABLE_KEY=SET` (usada como anon), `SUPABASE_ANON_KEY=MISSING`,
+`SUPABASE_SECRET_KEY=MISSING`, `SUPABASE_SERVICE_ROLE_KEY=MISSING`.
+Os secrets cadastrados em **Edge Function Secrets** do Supabase só são visíveis
+ao runtime das Edge Functions, não ao executor CLI — e o gate proíbe endpoint
+administrativo, então não há caminho alternativo sem expor a credencial.
 
 O runner CLI implementa realmente os 18 cenários da matriz aprovada (perfis
 temporários reais: gestor, consultor, agrônomo, produtor, sem vínculo e técnico
@@ -83,7 +93,7 @@ de outra carteira; setup/cleanup em `try/finally`; T6 vira `BLOCKED` se T5
 falhar). A credencial administrativa é resolvida só no backend por
 `SUPABASE_SERVICE_ROLE_KEY ?? SUPABASE_SECRET_KEY` e nunca é impressa.
 
-**BLOQUEADO** — variáveis ausentes no executor: `SUPABASE_ANON_KEY`,
+**BLOQUEIO TÉCNICO EXATO** — variável ausente no executor backend:
 `SUPABASE_SECRET_KEY` (ou `SUPABASE_SERVICE_ROLE_KEY`).
 Status: **NÃO APTO**. `PRODUCAO_NAO_ACESSADA` · `NAO_PUBLICADO`.
 

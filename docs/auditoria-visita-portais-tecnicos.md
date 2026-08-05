@@ -101,30 +101,49 @@ cenário não executado força **exit 1**.
 | T17 | Endpoint 404 com e sem JWT | BLOCKED — credencial ausente |
 | T18 | Cleanup (tabelas, auth users, storage, triggers habilitados) | BLOCKED — credencial ausente |
 
-### 7.1 Execução registrada
+### 7.1 Execução registrada (reexecução 2026-08-05, 04:4xZ)
 
 | Comando | Timestamp (UTC) | Resultado |
 |---|---|---|
-| `npx tsgo --noEmit -p tsconfig.json` | 2026-08-05T04:30:27Z | PASS (0 erros) |
-| `bunx vitest run` | 2026-08-05T04:31:31Z | PASS — 2710 testes, 163 arquivos (1 arquivo skip: harness RLS fiscal sem staging provisionado) |
-| `bun run build` | 2026-08-05T04:31:5xZ | PASS |
-| `bash restoration/visita-portais-tecnicos/rehearsal.sh` | 2026-08-05T04:33:0xZ | `ROLLBACK_REHEARSAL_PASS` — estado final → rollback → verify → reaplicar → postcheck (6 funções por assinatura, checksum, owner, SECURITY DEFINER, search_path e grants) |
-| Scanner de segredos (`rg` sobre runner/kit/artefatos) | 2026-08-05T04:31:5xZ | PASS — nenhum literal `sb_secret_`, JWT ou service_role |
-| `deno run … visita-atendimentos-runtime-harness/index.ts` | 2026-08-05T04:32:24Z | **exit 1 — GUARD_ABORT** |
+| `npx tsgo --noEmit -p tsconfig.app.json` | 2026-08-05T04:44Z | PASS (exit 0) |
+| `bunx vitest run` | 2026-08-05T04:45Z | PASS — 2710 testes / 4 skip, 163 arquivos (1 arquivo skip: harness RLS fiscal sem staging provisionado) |
+| `bun run build` | 2026-08-05T04:46Z | PASS (exit 0) |
+| `bash restoration/visita-portais-tecnicos/rehearsal.sh` | 2026-08-05T04:48Z | `ROLLBACK_REHEARSAL_PASS` (exit 0) — estado final → rollback → verify (`VERIFY_RESTORATION_OK`) → reaplicar → postcheck (`POSTCHECK_FINAL_OK`, 6 funções por assinatura, checksum, owner, SECURITY DEFINER, search_path e grants). Staging terminou no estado final. |
+| Validação do `promotion-manifest.json` | 2026-08-05T04:47Z | `MANIFEST_VALIDATION PASS` — sha256 e tamanho conferem para todos os artefatos |
+| `bash scripts/fiscal-secrets-scan.sh` | 2026-08-05T04:47Z | exit 1 — **3 achados legados, 0 segredos reais**: anon publicável em `src/integrations/supabase/client.ts:6` e `scripts/rbac-audit/run-rbac-audit.ts:39`, placeholder `USER:PASSWORD` em `restoration/comunicacao-deploy/env.example:9`. Nenhum achado no runner, kit ou artefatos. |
+| `deno run … visita-atendimentos-runtime-harness/index.ts` | 2026-08-05T04:46Z | **exit 1 — `GUARD_ABORT: variaveis ausentes: SUPABASE_SERVICE_ROLE_KEY\|SUPABASE_SECRET_KEY`** |
 | Lint | — | indisponível no projeto (sem script `lint`); substituído por `tsgo` + build |
-| E2E mobile/desktop de visita técnica | — | não executado nesta rodada (depende das fixtures criadas pelo runner) |
+| E2E mobile/desktop de visita técnica | 2026-08-05T04:49Z | não executável — `ERR_MODULE_NOT_FOUND: lovable-agent-playwright-config` importado por `playwright.config.ts` (dependência de harness ausente no executor) |
 
 ### 7.2 Bloqueio formal
 
+Rebind seguro executado (`supabase--rebind_secrets`). Estado no executor
+(somente SET/MISSING, sem valor, prefixo ou tamanho):
+
+```
+SUPABASE_URL=SET                     (ref ikaauvsflpmamgxmkhoq — staging)
+SUPABASE_PUBLISHABLE_KEY=SET         (chave publicável; usada como anon)
+SUPABASE_ANON_KEY=MISSING            (resolvido por fallback publicável — não bloqueia)
+SUPABASE_SECRET_KEY=MISSING
+SUPABASE_SERVICE_ROLE_KEY=MISSING
+```
+
 ```
 BLOQUEADO
-Variáveis ausentes no executor: SUPABASE_ANON_KEY, SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY)
+Variável ausente no executor backend: SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY)
 ```
+
+Causa raiz técnica: os secrets foram cadastrados em **Edge Function Secrets** do
+Supabase, escopo visível apenas ao runtime das Edge Functions. O runner é CLI
+(exigência: sem endpoint administrativo), portanto não enxerga esse escopo. O
+`rebind_secrets` do conector vinculou apenas `SUPABASE_URL` e a chave publicável.
+Desbloqueio: cadastrar `SUPABASE_SECRET_KEY` em **Project Settings → Secrets**
+do Lovable (escopo do executor). Nenhum valor foi solicitado ou revelado.
 
 O runner resolve a credencial exclusivamente por
 `Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY")`,
 nunca imprime valor, prefixo ou tamanho, e aborta fail-closed fora de
-`ikaauvsflpmamgxmkhoq`. Nenhum valor de segredo é solicitado ou revelado aqui.
+`ikaauvsflpmamgxmkhoq`.
 
 ## 8. Gates H1–H12 (prontidão para homologação)
 
