@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useObjetivosVisita } from "@/hooks/useObjetivosVisita";
+import { useVisitaWorkspace, EMPTY_VISITA_PERMISSIONS, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
