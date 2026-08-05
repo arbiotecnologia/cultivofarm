@@ -16,6 +16,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
+import { AcompanhamentoVisita } from "@/components/visita/AcompanhamentoVisita";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -105,6 +107,7 @@ import { formatOS } from "@/lib/osLabel";
 export default function VisitaTecnica() {
   const isMobile = useIsMobile();
   const { id } = useParams<{ id: string }>();
+  const workspaceQuery = useVisitaWorkspace(id ?? null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, profile, role } = useAuth();
@@ -1993,10 +1996,12 @@ export default function VisitaTecnica() {
         {/* Tabs: Edição vs Roteiro (roteiro só após finalizar) */}
         {!isNew && isFinalized && id ? (
           <Tabs
-            value={searchParams.get("tab") === "roteiro" ? "roteiro" : "edicao"}
+            value={["roteiro", "acompanhamento"].includes(searchParams.get("tab") || "")
+              ? (searchParams.get("tab") as string)
+              : "edicao"}
             onValueChange={(v) => {
               const next = new URLSearchParams(searchParams);
-              if (v === "roteiro") next.set("tab", "roteiro");
+              if (v === "roteiro" || v === "acompanhamento") next.set("tab", v);
               else next.delete("tab");
               setSearchParams(next, { replace: true });
             }}
@@ -2005,6 +2010,7 @@ export default function VisitaTecnica() {
             <TabsList>
               <TabsTrigger value="edicao">Edição</TabsTrigger>
               <TabsTrigger value="roteiro">Roteiro da visita</TabsTrigger>
+              <TabsTrigger value="acompanhamento">Acompanhamento</TabsTrigger>
             </TabsList>
             <TabsContent value="edicao" className="mt-4">
               {/* Layout responsivo: grid no desktop, accordion no mobile/tablet */}
@@ -2081,6 +2087,9 @@ export default function VisitaTecnica() {
             </TabsContent>
             <TabsContent value="roteiro" className="mt-4">
               <RoteiroVisita registroId={id} />
+            </TabsContent>
+            <TabsContent value="acompanhamento" className="mt-4">
+              <AcompanhamentoVisita workspace={workspaceQuery.data} isLoading={workspaceQuery.isLoading} />
             </TabsContent>
           </Tabs>
         ) : (

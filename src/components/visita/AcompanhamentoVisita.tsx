@@ -79,6 +79,37 @@ export function AcompanhamentoVisita({ workspace, isLoading }: AcompanhamentoVis
         )}
       </Section>
 
+      <Section title="Dados de campo (registrados no mobile)">
+        {workspace.campo ? (
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-[11px] uppercase text-muted-foreground">Área avaliada</p>
+              <p className="text-foreground">{(workspace.campo as any).area_avaliada_ha ?? "—"} ha</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-muted-foreground">Fase fenológica</p>
+              <p className="text-foreground">{(workspace.campo as any).fase_fenologica || "—"}</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-muted-foreground">Estande (plantas/ha)</p>
+              <p className="text-foreground">{(workspace.campo as any).estande_plantas_ha ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase text-muted-foreground">Uniformidade</p>
+              <p className="text-foreground">{(workspace.campo as any).uniformidade || "—"}</p>
+            </div>
+            {(workspace.campo as any).observacoes_campo && (
+              <div className="col-span-2">
+                <p className="text-[11px] uppercase text-muted-foreground">Observações de campo</p>
+                <p className="text-foreground whitespace-pre-line">{(workspace.campo as any).observacoes_campo}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Vazio>Nenhuma avaliação de campo registrada.</Vazio>
+        )}
+      </Section>
+
       <Section title="Plano de monitoramento">
         {workspace.monitoramento.length ? (
           <ul className="space-y-1">
