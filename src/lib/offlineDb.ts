@@ -504,6 +504,8 @@ export async function getPendingMediaCount(): Promise<number> {
  * Mídias pendentes vinculadas a uma visita que JÁ existe no servidor.
  * São órfãs em relação à fila de registros (não existe PendingRegistro pai)
  * e precisam de um passe próprio de reenvio.
+ * Exclui itens em lease ativo (outra aba) e itens em `sync_error`
+ * (esgotaram as tentativas e exigem ação explícita do usuário).
  */
 export async function getOrphanRemoteMedia(): Promise<PendingFoto[]> {
   const db = await openDb();
@@ -512,9 +514,83 @@ export async function getOrphanRemoteMedia(): Promise<PendingFoto[]> {
     const req = tx.objectStore(STORE_FOTOS).getAll();
     req.onsuccess = () => {
       const all = (req.result || []) as PendingFoto[];
-      resolve(all.filter((f) => !f.uploaded && !!f.remoteRegistroId));
+      resolve(
+        all.filter(
+          (f) =>
+            !f.uploaded &&
+            !!f.remoteRegistroId &&
+            f.syncStatus !== "sync_error" &&
+            (f.uploadAttempts ?? 0) < MAX_MEDIA_SYNC_ATTEMPTS &&
+            (!f.syncingAt || isStale(f.syncingAt))
+        )
+      );
     };
     req.onerror = () => reject(req.error);
+  });
+}
+
+/** Mídias remotas que esgotaram tentativas — visíveis para retry manual. */
+export async function getFailedRemoteMedia(): Promise<PendingFoto[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOTOS, "readonly");
+    const req = tx.objectStore(STORE_FOTOS).getAll();
+    req.onsuccess = () => {
+      const all = (req.result || []) as PendingFoto[];
+      resolve(
+        all.filter(
+          (f) =>
+            !f.uploaded &&
+            !!f.remoteRegistroId &&
+            (f.syncStatus === "sync_error" ||
+              (f.uploadAttempts ?? 0) >= MAX_MEDIA_SYNC_ATTEMPTS)
+        )
+      );
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/** Lease atômico da mídia: apenas um processo/aba vence. */
+export async function claimPendingFoto(id: string): Promise<boolean> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOTOS, "readwrite");
+    const store = tx.objectStore(STORE_FOTOS);
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const item = getReq.result as PendingFoto | undefined;
+      if (!item || item.uploaded) return resolve(false);
+      if (item.syncingAt && !isStale(item.syncingAt)) return resolve(false);
+      store.put({ ...item, syncingAt: Date.now() });
+      resolve(true);
+    };
+    getReq.onerror = () => reject(getReq.error);
+  });
+}
+
+/** Libera o lease sem apagar a mídia. */
+export async function releasePendingFoto(id: string): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOTOS, "readwrite");
+    const store = tx.objectStore(STORE_FOTOS);
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const item = getReq.result as PendingFoto | undefined;
+      if (item) store.put({ ...item, syncingAt: null });
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** Reabilita uma mídia em `sync_error` para nova rodada (ação do usuário). */
+export async function retryFailedMedia(id: string): Promise<void> {
+  await updatePendingFoto(id, {
+    syncStatus: "pendente",
+    uploadAttempts: 0,
+    syncingAt: null,
   });
 }
 
@@ -528,6 +604,7 @@ export async function removePendingFoto(id: string): Promise<void> {
     tx.onerror = () => reject(tx.error);
   });
 }
+
 
 
 
