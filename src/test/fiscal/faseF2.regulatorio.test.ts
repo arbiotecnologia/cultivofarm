@@ -153,3 +153,36 @@ describe("Fase F2 — publicação e trilha", () => {
     expect(secao).toContain("Chave da fonte oficial");
   });
 });
+
+describe("Fase F2 — correção pós-auditoria na UI", () => {
+  it("explica fonte oficial obrigatória, segregação e escopo de evidências", () => {
+    expect(secao).toContain('data-testid="regulatorio-regras"');
+    expect(secao).toMatch(/Fonte oficial/);
+    expect(secao).toMatch(/Segregação de funções/);
+    expect(secao).toMatch(/dossiers\/&lt;dossiê&gt;/);
+  });
+
+  it("traduz os códigos de erro do servidor para o operador", () => {
+    const codigos = [
+      "REGULATORY_NCM_SOURCE_REQUIRED",
+      "REGULATORY_NCM_SOURCE_NOT_OFFICIAL",
+      "REGULATORY_NCM_OFFICIAL_SOURCE_REQUIRED",
+      "REGULATORY_GTIN_CHECK_DIGIT_INVALID",
+      "REGULATORY_STORAGE_PATH_INVALID",
+      "REGULATORY_STORAGE_PATH_OUT_OF_SCOPE",
+      "REGULATORY_STORAGE_OBJECT_MISSING",
+      "REGULATORY_STORAGE_IMMUTABLE",
+      "REGULATORY_SEGREGATION_OF_DUTIES",
+      "REGULATORY_APPROVALS_INCOMPLETE",
+      "REGULATORY_OVERRIDE_JUSTIFICATION_WEAK",
+    ];
+    for (const codigo of codigos) {
+      expect(secao).toContain(codigo);
+    }
+  });
+
+  it("não reimplementa as regras no cliente: apenas traduz o erro do servidor", () => {
+    expect(secao).not.toMatch(/gov\.br.*test\(|checkDigit|mod10/i);
+    expect(secao).toContain("SERVER_ERROR_MESSAGES[err.message] ?? err.message");
+  });
+});
