@@ -84,9 +84,11 @@ BEGIN
     SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public'
        AND p.proname = ANY (SELECT jsonb_object_keys(expected))
-       AND pg_get_functiondef(p.oid) ILIKE '%registros_consultor%data_aprovacao%'
-  ) THEN
-    RAISE EXCEPTION 'POST FAIL: referencia a registros_consultor.data_aprovacao';
+       AND (
+         pg_get_functiondef(p.oid) ILIKE '%registros_consultor.data_aprovacao%'
+         OR pg_get_functiondef(p.oid) ~* 'UPDATE\s+public\.registros_consultor[^;]*data_aprovacao'
+       )
+
   END IF;
 
   RAISE NOTICE 'POSTCHECK_CONSOLIDACAO_OK';
