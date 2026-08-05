@@ -51,12 +51,6 @@ BEGIN
                (u_prodA,'proda'),(u_prodB,'prodb'),(u_semv,'semv'),
                (u_partA,'parta'),(u_partB,'partb')) AS x(id, tag);
 
-  INSERT INTO public.user_roles(user_id, role) VALUES
-    (u_admin,'administrador'),(u_gestor,'gestor'),
-    (u_cons,'consultor_tecnico'),(u_agro,'tecnico_agronomo'),
-    (u_prodA,'cliente_produtor'),(u_prodB,'cliente_produtor'),
-    (u_partA,'parceiro_b2b'),(u_partB,'parceiro_b2b');
-
   INSERT INTO public.clientes(id, nome, codigo_cliente)
   VALUES (c_A, sfx||'_CLIENTE_A', sfx||'_A'), (c_B, sfx||'_CLIENTE_B', sfx||'_B');
 
@@ -65,10 +59,15 @@ BEGIN
   VALUES (u_cons, c_A, true, 'execute'),
          (u_agro, c_A, true, 'execute'),
          (u_prodA, c_A, true, 'read'),
-         (u_prodB, c_B, true, 'read');
-  -- gestor com alçada manage no cliente A (bypass global também se aplica)
-  INSERT INTO public.user_clientes(user_id, cliente_id, is_active, access_level)
-  VALUES (u_gestor, c_A, true, 'manage');
+         (u_prodB, c_B, true, 'read'),
+         (u_gestor, c_A, true, 'manage');
+
+  INSERT INTO public.user_roles(user_id, role) VALUES
+    (u_admin,'administrador'),(u_gestor,'gestor'),
+    (u_cons,'consultor_tecnico'),(u_agro,'tecnico_agronomo'),
+    (u_prodA,'cliente_produtor'),(u_prodB,'cliente_produtor'),
+    (u_partA,'parceiro_b2b'),(u_partB,'parceiro_b2b');
+
 
   -- registros: ocorrência e visita em cada cliente
   INSERT INTO public.registros_consultor(id, cliente_id, consultor_responsavel, created_by,
