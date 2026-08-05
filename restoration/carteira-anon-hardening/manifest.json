@@ -92,5 +92,119 @@
     "sha256_depois": "118be4751fcd7e1e6ad3a587a30dfff89aceedf75419f9e8750e0bcee6453dbb",
     "origem": "definicao homologada em staging apos 20260805182000 (contem version_conflict e FOR UPDATE); corpo da RPC nao alterado",
     "resultado": "POSTCHECK_CONSOLIDACAO_OK"
+  },
+  "correcao_2_migration_promovivel_e_ledger": {
+    "base_auditada": "c4061fec06d7fa8295285e732f03add8baab2282",
+    "ambiente": {
+      "project_ref": "ikaauvsflpmamgxmkhoq",
+      "tipo": "staging",
+      "producao_acessada": false,
+      "publicado": false
+    },
+    "guard_promovivel": {
+      "pares_aceitos": [
+        {
+          "marker": "STAGING",
+          "project_ref": "ikaauvsflpmamgxmkhoq"
+        },
+        {
+          "marker": "PRODUCTION",
+          "project_ref": "navfzbwgwzruipouyfnk"
+        }
+      ],
+      "rejeita": [
+        "tabela marcadora ausente",
+        "0 linhas",
+        "2+ linhas (duplicidade)",
+        "marker NULL",
+        "project_ref NULL",
+        "cruzado STAGING+navfzbwgwzruipouyfnk",
+        "cruzado PRODUCTION+ikaauvsflpmamgxmkhoq",
+        "valor arbitrario",
+        "strings vazias"
+      ],
+      "teste_controlado": "10 cenarios em transacoes revertidas (ROLLBACK) contra tabela marcadora sintetica; 2 GUARD_OK / 8 GUARD_ABORT; marcador real intacto; producao nao conectada",
+      "resultado": "GUARD_PROMOVIVEL_PASS"
+    },
+    "migration_canonica": {
+      "caminho": "supabase/migrations/20260809000000_carteira_anon_hardening_canonico.sql",
+      "versao": "20260809000000",
+      "sha256_antes": "307c3b7c8bc1158edbe9f8390a43b22c9bdc7b5a07393b9b7e448e3b3993c584",
+      "bytes_antes": 10736,
+      "sha256_depois": "dafa288a9162655a6084ced85edad5b2de6b3abea7afb0d477747ef361e29e3a",
+      "bytes_depois": 11210,
+      "alteracao": "exclusivamente o bloco DO $guard$ de ambiente; nenhuma funcao, policy, ACL, dado ou regra funcional alterada",
+      "idempotencia_staging": "reexecucao psql --single-transaction -v ON_ERROR_STOP=1 exit 0",
+      "checksums_funcionais_inalterados": {
+        "can_user_access_cliente(_cliente_id uuid)": "4c2eaf7ab10e204e7ad57d41cb418554",
+        "can_user_access_cliente(_user_id uuid, _cliente_id uuid)": "c0acb1dcd7f0b183f9500f4c264c1fa1",
+        "rpc_get_visita_workspace(p_registro_id uuid)": "c43f27400905922bbb91fbe908a70589",
+        "rpc_upsert_recomendacao_visita(...)": "42f87a90cb7d1be324b43bb3867b3a28",
+        "fiscal_sinief20_snapshot_immutable()": "cc1aa1a61454e37efe0195620e1455b8"
+      },
+      "status": "candidata promovivel; NAO promovida (producao nao acessada)"
+    },
+    "ledger": {
+      "antes": {
+        "max_version": "20260805155043",
+        "total": 642,
+        "distintos": 642
+      },
+      "depois": {
+        "max_version": "20260809000000",
+        "total": 647,
+        "distintos": 647,
+        "duplicidades": 0
+      },
+      "versoes_reconciliadas": [
+        "20260805182000",
+        "20260806000000",
+        "20260807000000",
+        "20260808000000",
+        "20260809000000"
+      ],
+      "mecanismo": "supabase CLI 2.111.0 -- `supabase migration repair --status applied <v...> --db-url $STAGING_DSN`",
+      "dml_manual_em_supabase_migrations": false,
+      "confirmacao": "`supabase migration list --db-url $STAGING_DSN` exibe as cinco versoes como Local+Remote alinhadas; 0 duplicidade, 0 lacuna e 0 fantasma entre as cinco",
+      "divergencia_preexistente_fora_de_escopo": "47 versoes so-repo e 66 so-ledger, todas de 20260727-20260731 (deriva de timestamp de +-2s gerada por execucoes anteriores) mais 20260804000000, 20260805000000 e 20260805040000. Anteriores ao ledger head desta correcao e nao tocadas."
+    },
+    "prova_de_paridade_estrutural": {
+      "metodo": "catalogo pg_proc/pg_tables/pg_views/pg_indexes/pg_trigger/pg_policies/information_schema + colunas + RLS + postcheck",
+      "20260805182000": "rpc_get_visita_workspace e rpc_upsert_recomendacao_visita presentes; POSTCHECK_RUNTIME_FINAL_PASS",
+      "20260806000000": "tabela microorganism_fiscal_profiles (27/27 colunas), view v_microorganism_fiscal_readiness, indice ix_microorganism_fiscal_profiles_status, trigger trg_..._updated_at, 2 policies, RLS on",
+      "20260807000000": "3 tabelas (colunas 100% conferidas), 9 indices, 6 policies, RLS on nas 3",
+      "20260808000000": "fiscal_sinief20_snapshot_immutable + trg_fi_sinief20_snapshot_immutable presentes",
+      "20260809000000": "can_user_access_cliente (2 overloads), policy registros_consultor_select_hardened, 0 privilegios anon/PUBLIC em registros_consultor; POSTCHECK_CARTEIRA_ANON_PASS",
+      "resultado": "PARIDADE_TOTAL — nenhuma divergencia; nenhuma versao marcada sem prova"
+    },
+    "testes": {
+      "guard_controlado": "10/10 conforme esperado (2 aceite / 8 GUARD_ABORT)",
+      "postcheck_carteira_anon": "POSTCHECK_CARTEIRA_ANON_PASS",
+      "postcheck_runtime_final_visita": "POSTCHECK_RUNTIME_FINAL_PASS",
+      "postcheck_consolidacao_visita": "POSTCHECK_CONSOLIDACAO_OK",
+      "harness_carteira_anon": "15 PASS / 0 FAIL",
+      "visita_T1_T18": "18 PASS / 0 FAIL",
+      "typecheck_tsgo": "PASS (exit 0)",
+      "vitest": "2723 passed / 4 skipped (166 arquivos) — exit 0",
+      "build": "PASS (exit 0)"
+    },
+    "residuo": {
+      "fixtures_da_execucao": 0,
+      "blobs": 0,
+      "triggers_desabilitados": 0,
+      "observacao": "4 usuarios auth `fase-e-*@arbio-staging.test` de 2026-07-31 sao residuo PRE-EXISTENTE de fase anterior, nao gerados nem tocados por esta correcao"
+    },
+    "escopo_preservado": {
+      "react_rotas_dados": "intocados",
+      "financeiro_fiscal": "intocados",
+      "ponte_recomendacao_pedido": "intocada",
+      "artefatos_fora_de_migrations": [
+        "rollback.sql",
+        "postcheck.sql",
+        "harness-runtime.sql",
+        "manifest.json"
+      ]
+    },
+    "status": "APTO"
   }
 }
