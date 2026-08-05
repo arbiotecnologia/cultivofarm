@@ -23,6 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
   enviado_aprovacao: "Aguardando Aprovação",
   aprovado: "Aprovado",
   convertido_os: "Convertido em OS",
+  reprovado: "Reprovado",
   arquivado: "Arquivado",
 };
 
@@ -33,6 +34,7 @@ const STATUS_COLORS: Record<string, string> = {
   enviado_aprovacao: "bg-amber-100 text-amber-700",
   aprovado: "bg-emerald-100 text-emerald-700",
   convertido_os: "bg-purple-100 text-purple-700",
+  reprovado: "bg-destructive/10 text-destructive",
   arquivado: "bg-muted text-muted-foreground",
 };
 
