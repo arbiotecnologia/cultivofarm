@@ -51,7 +51,7 @@ export class DsnAdmin {
       user: decodeURIComponent(u.username),
       password: decodeURIComponent(u.password),
       database: u.pathname.replace(/^\//, "") || "postgres",
-      tls: { enabled: true, enforce: false, caCertificates: ca },
+      tls: { enabled: false },
     });
     await c.connect();
     const marker = await c.queryObject<{ n: bigint; ref: string | null }>(
