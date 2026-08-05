@@ -1,0 +1,138 @@
+{
+  "environment": "ikaauvsflpmamgxmkhoq",
+  "production_ref_never_used": "navfzbwgwzruipouyfnk",
+  "started_at": "2026-08-05T15:59:28.877Z",
+  "finished_at": "2026-08-05T15:59:31.583Z",
+  "summary": {
+    "pass": 0,
+    "fail": 1,
+    "blocked": 17,
+    "total": 18
+  },
+  "results": [
+    {
+      "id": "T1",
+      "name": "listagem consultor",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T2",
+      "name": "listagem agrônomo",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T3",
+      "name": "produtor/sem vínculo negados",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T4",
+      "name": "outra carteira isolada",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T5",
+      "name": "demanda sem cultura em rascunho",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T6",
+      "name": "finalização bloqueada server-side sem cultura",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T7",
+      "name": "concorrência de demanda",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T8",
+      "name": "ocorrência online",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T9",
+      "name": "replay offline",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T10",
+      "name": "falha/retry real de mídia",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T11",
+      "name": "claims/sync concorrentes",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T12",
+      "name": "busca/abas/paginação/resumo",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T13",
+      "name": "check-in/diagnóstico/version conflict",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T14",
+      "name": "finalizar/enviar/aprovar/reprovar/ajuste",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T15",
+      "name": "não atribuído negado",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T16",
+      "name": "grants anon/PUBLIC",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T17",
+      "name": "endpoint 404 com e sem JWT",
+      "status": "BLOCKED",
+      "evidence": "cenário não executado"
+    },
+    {
+      "id": "T18",
+      "name": "cleanup",
+      "status": "FAIL",
+      "evidence": {
+        "tabelas": {
+          "registros_consultor": 0,
+          "registros_consultor_arquivos": 0,
+          "registros_consultor_status_log": 0,
+          "solicitacoes_timeline": 0,
+          "portal_solicitacoes": 0,
+          "talhoes": 0,
+          "fazendas": 0,
+          "clientes": 0
+        },
+        "usuarios_temporarios_restantes": 0,
+        "storage_objetos_restantes": 0,
+        "cleanup_midia_t10": false,
+        "triggers": [],
+        "triggers_habilitados": false
+      }
+    }
+  ]
+}

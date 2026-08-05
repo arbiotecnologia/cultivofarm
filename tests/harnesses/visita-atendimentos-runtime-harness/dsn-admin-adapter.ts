@@ -40,7 +40,19 @@ export class DsnAdmin {
     if (!dsn) throw new Error("GUARD_ABORT: STAGING_DSN ausente");
     if (dsn.includes(PROD_REF)) throw new Error("GUARD_ABORT: DSN de PRODUCAO — execucao proibida");
     if (!dsn.includes(STAGING_REF)) throw new Error("GUARD_ABORT: DSN nao pertence ao staging autorizado");
-    const c = new Client(dsn);
+    // CA opcional (PG_CA_FILE) para ambientes cuja cadeia TLS nao esta nos
+    // certificados do sistema. Nenhum segredo e impresso.
+    const caFile = Deno.env.get("PG_CA_FILE");
+    const ca = caFile ? [await Deno.readTextFile(caFile)] : [];
+    const u = new URL(dsn);
+    const c = new Client({
+      hostname: u.hostname,
+      port: Number(u.port || 5432),
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: u.pathname.replace(/^\//, "") || "postgres",
+      tls: { enabled: true, enforce: true, caCertificates: ca },
+    });
     await c.connect();
     const marker = await c.queryObject<{ n: bigint; ref: string | null }>(
       `select count(*)::bigint as n, min(project_ref) as ref
