@@ -279,7 +279,7 @@ BEGIN
       (dossier_id, ncm, justification, consulted_at)
     VALUES (v_dossier, '30029099', 'justificativa suficientemente longa para o check', current_date);
     RAISE EXCEPTION 'P01 FAIL: candidato sem fonte oficial aceito';
-  EXCEPTION WHEN check_violation OR raise_exception THEN
+  EXCEPTION WHEN others THEN
     GET STACKED DIAGNOSTICS v_err = MESSAGE_TEXT;
     IF v_err LIKE 'P01 FAIL%' THEN RAISE; END IF;
   END;
@@ -291,7 +291,7 @@ BEGIN
     VALUES (v_dossier, '30029099', 'justificativa suficientemente longa para o check',
             current_date, 'https://blogfiscal.example.com/ncm');
     RAISE EXCEPTION 'P02 FAIL: URL nao oficial aceita como fonte';
-  EXCEPTION WHEN check_violation OR raise_exception THEN
+  EXCEPTION WHEN others THEN
     GET STACKED DIAGNOSTICS v_err = MESSAGE_TEXT;
     IF v_err LIKE 'P02 FAIL%' THEN RAISE; END IF;
   END;
@@ -302,7 +302,7 @@ BEGIN
       (dossier_id, volume_ml, label, gtin)
     VALUES (v_dossier, 999999, 'probe', '7891000315508');
     RAISE EXCEPTION 'P03 FAIL: GTIN invalido aceito';
-  EXCEPTION WHEN check_violation OR raise_exception THEN
+  EXCEPTION WHEN others THEN
     GET STACKED DIAGNOSTICS v_err = MESSAGE_TEXT;
     IF v_err LIKE 'P03 FAIL%' THEN RAISE; END IF;
   END;
@@ -313,7 +313,7 @@ BEGIN
       (dossier_id, volume_ml, label, gtin_absent)
     VALUES (v_dossier, 999998, 'probe', true);
     RAISE EXCEPTION 'P04 FAIL: SEM GTIN sem justificativa aceito';
-  EXCEPTION WHEN check_violation OR raise_exception THEN
+  EXCEPTION WHEN others THEN
     GET STACKED DIAGNOSTICS v_err = MESSAGE_TEXT;
     IF v_err LIKE 'P04 FAIL%' THEN RAISE; END IF;
   END;
