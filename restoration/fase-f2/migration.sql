@@ -1164,7 +1164,10 @@ DECLARE
   v_pend_count int;
 BEGIN
   -- ---------------- Camada REGULATÓRIA (Fase F2) ----------------
-  IF p_regulatory IS NULL OR p_regulatory = 'null'::jsonb THEN
+  -- Exigida apenas onde o dossiê existe como conceito: microrganismos.
+  IF p_scope <> 'MICROORGANISM' THEN
+    v_reg := '[]'::jsonb;
+  ELSIF p_regulatory IS NULL OR p_regulatory = 'null'::jsonb THEN
     v_reg := jsonb_build_array(jsonb_build_object(
       'code','REGULATORY_DOSSIER_MISSING','field','microorganism_regulatory_dossiers','layer','REGULATORY',
       'message','Sem dossie regulatorio cadastrado para o item.'));
