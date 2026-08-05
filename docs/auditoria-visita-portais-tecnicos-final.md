@@ -175,3 +175,71 @@ Nenhuma fixture `E2E_VISITA_` foi criada nesta execução (os gates que as exigi
 
 ### Status final
 **🔴 BLOQUEADO** — correções 1–5 aplicadas e provadas; gates 6 (Playwright real) e a prova de concorrência simultânea não puderam ser executados por ausência de credenciais de staging no ambiente de execução.
+
+---
+
+## Correção runtime final — 2026-08-05 (staging `ikaauvsflpmamgxmkhoq`)
+
+### Causa-raiz confirmada (P0-1)
+`rpc_get_visita_workspace` projetava `ordens_servico_onfarm.data_prevista`, coluna
+inexistente — a coluna real é `data_recomendada`. A RPC falhava com **42703**, o
+front recebia workspace ausente e o wizard exibia incorretamente
+“Visita concluída. Modo somente leitura.” para visitas em `rascunho`.
+
+- Correção: projeção passa a usar `os.data_recomendada`, **preservando o contrato
+  JSON** pela chave `'data_prevista'` (alias).
+- Auditoria completa das colunas referenciadas pela função contra
+  `information_schema.columns`: **nenhuma outra coluna inexistente**.
+- Preservados: `SECURITY DEFINER`, `STABLE`, `search_path=public`,
+  `can_view_technical_visit`, projeções por audiência (interna/produtor) e RLS.
+- Grants: `REVOKE ALL ... FROM PUBLIC, anon` + `GRANT EXECUTE TO authenticated`.
+
+Prova de runtime (transação com `SET LOCAL ROLE authenticated` e claims JWT do
+consultor responsável, com `ROLLBACK`): status `rascunho`, `can_edit=true`,
+`is_editable_status=true`, `ordens_servico=[]`, sem 42703.
+
+### P0-2 — unique_violation em `rpc_upsert_recomendacao_visita`
+Antes qualquer `unique_violation` virava `version_conflict`. Agora usa
+`GET STACKED DIAGNOSTICS ... CONSTRAINT_NAME` e converte **somente** quando a
+constraint é `uq_rec_registro_client_uuid`; as demais são relançadas intactas
+(`RAISE;`).
+
+### Front-end — estados explícitos do wizard
+Novo módulo `src/lib/visita/wizardWorkspaceState.ts` (`deriveVisitaWizardState`),
+consumido por `MobileVisitaWizard`:
+
+| Estado | Banner | Edição |
+| --- | --- | --- |
+| `novo` | — | liberada |
+| `carregando` | “Carregando atendimento…” | bloqueada (fail-closed) |
+| `erro` | “Não foi possível carregar o atendimento” + **Tentar novamente** | bloqueada |
+| `permissao_negada` | “Você não tem permissão…” | bloqueada |
+| `editavel` | — | liberada |
+| `somente_leitura` | “Visita concluída. Modo somente leitura.” | bloqueada |
+
+Regra garantida por teste: **nunca** afirmar “concluída” por ausência de
+workspace (8/8 testes em `wizardWorkspaceState.test.ts`).
+
+### Harness T16 / T18
+- T16: grants auditados diretamente no catálogo do staging — `anon` e `PUBLIC`
+  sem `EXECUTE` nas 15 funções sensíveis. **Nenhum afrouxamento de grant.**
+- T18: cleanup de mídia reescrito para varredura **recursiva** via API de
+  Storage (`listStorageObjectsRecursive` / `purgeStoragePrefix`), removendo
+  blobs reais. A contagem residual passa a considerar apenas objetos
+  (`id !== null`), ignorando entradas de pasta. Sem `DELETE` amplo e sem
+  desabilitar triggers.
+
+### Artefatos
+- `supabase/migrations/20260805182000_visita_workspace_runtime_fix.sql` (idempotente, guard fail-closed)
+- `restoration/visita-portais-tecnicos/postcheck-runtime-final.sql` → `POSTCHECK_RUNTIME_FINAL_PASS (ref=ikaauvsflpmamgxmkhoq)`
+- `restoration/visita-portais-tecnicos/rollback-runtime-final.sql`
+- `restoration/visita-portais-tecnicos/promotion-manifest.json` atualizado
+
+### Regressão
+`tsgo --noEmit` PASS · `vitest` 2718 passed / 4 skipped · `bun run build` PASS ·
+postcheck staging PASS.
+
+### Ressalva
+Playwright E2E **não** foi executado. Nenhuma alegação de E2E real.
+
+**Status: CANDIDATO À REVALIDAÇÃO** (staging apenas; produção não tocada; sem publicação).
