@@ -1604,10 +1604,14 @@ BEGIN
   END LOOP;
 END $seed$;
 
--- Fontes oficiais mínimas para citação obrigatória em candidatos de NCM
-INSERT INTO public.fiscal_official_sources (source_key, source_name, source_url, notes)
+-- Fontes oficiais mínimas para citação obrigatória em candidatos de NCM.
+-- Apenas referências normativas; nenhuma classificação é derivada delas.
+INSERT INTO public.fiscal_official_sources (source_key, authority, name, url, notes)
 VALUES
-  ('TIPI','Tabela TIPI - Receita Federal','https://www.gov.br/receitafederal/pt-br','Base para enquadramento de NCM.'),
-  ('MAPA_SIPEAGRO','MAPA / SIPEAGRO','https://sistemas.agricultura.gov.br','Registro de estabelecimentos e produtos.'),
-  ('CONFAZ_CEST','Convenio ICMS 142/2018 - Anexos CEST','https://www.confaz.fazenda.gov.br','Base para CEST e substituicao tributaria.')
+  ('TIPI','Receita Federal do Brasil','Tabela TIPI',
+   'https://www.gov.br/receitafederal/pt-br','Ancora para enquadramento de NCM.'),
+  ('MAPA_SIPEAGRO','Ministerio da Agricultura e Pecuaria','SIPEAGRO - registro de produtos e estabelecimentos',
+   'https://sistemas.agricultura.gov.br','Ancora para registro/ato regulatorio.'),
+  ('CONFAZ_CEST','CONFAZ','Convenio ICMS 142/2018 - Anexos CEST',
+   'https://www.confaz.fazenda.gov.br','Ancora para CEST e substituicao tributaria.')
 ON CONFLICT (source_key) DO NOTHING;
