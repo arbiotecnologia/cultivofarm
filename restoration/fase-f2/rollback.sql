@@ -189,7 +189,7 @@ REVOKE ALL ON public.v_microorganism_fiscal_readiness FROM PUBLIC, anon;
 GRANT SELECT ON public.v_microorganism_fiscal_readiness TO authenticated, service_role;
 
 -- 4) Triggers e tabelas da fase (ordem de dependência)
-DROP TRIGGER IF EXISTS trg_regulatory_block_published_edit ON public.microorganism_regulatory_dossiers;
+DROP TRIGGER IF EXISTS trg_regulatory_published_lock ON public.microorganism_regulatory_dossiers;
 DROP FUNCTION IF EXISTS public.regulatory_block_published_edit();
 
 DROP TABLE IF EXISTS public.microorganism_regulatory_publication_snapshots CASCADE;

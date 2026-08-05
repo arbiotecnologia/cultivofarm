@@ -234,7 +234,7 @@ BEGIN
   -- G26 — imutabilidade do publicado por trigger
   IF NOT EXISTS (SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
                   WHERE c.relname='microorganism_regulatory_dossiers'
-                    AND t.tgname='trg_regulatory_block_published_edit' AND NOT t.tgisinternal) THEN
+                    AND t.tgname='trg_regulatory_published_lock' AND NOT t.tgisinternal) THEN
     RAISE EXCEPTION 'G26_SEM_TRIGGER_IMUTABILIDADE';
   END IF;
   RAISE NOTICE 'G26 PASS: edicao de dossie publicado bloqueada por trigger';
