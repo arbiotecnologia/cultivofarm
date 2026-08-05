@@ -17228,6 +17228,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      _visita_log_status: {
+        Args: {
+          p_acao: string
+          p_motivo: string
+          p_registro_id: string
+          p_status_anterior: string
+          p_status_novo: string
+          p_version: number
+        }
+        Returns: undefined
+      }
       add_b2b_payment_terms_note_secure: {
         Args: { p_note: string; p_partner_order_id: string }
         Returns: Json
@@ -18547,6 +18558,7 @@ export type Database = {
       rpc_ativar_monitoramento_visita: {
         Args: {
           p_data_referencia: string
+          p_expected_version: number
           p_registro_id: string
           p_tipo: string
         }
@@ -19996,6 +20008,7 @@ export type Database = {
         Args: {
           p_data_prevista: string
           p_descricao?: string
+          p_expected_version: number
           p_registro_id: string
         }
         Returns: Json
