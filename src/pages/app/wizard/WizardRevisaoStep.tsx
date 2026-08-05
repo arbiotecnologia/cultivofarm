@@ -92,6 +92,10 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
       showTransitionErrorToast(`Transição inválida: não é possível mudar de "${status}" para "finalizado".`);
       return;
     }
+    if (culturaAusente) {
+      toast.error("Informe a cultura na etapa Identificação antes de finalizar.");
+      return;
+    }
     if (!confirm("Finalizar esta visita? Após finalizar, o conteúdo ficará somente leitura.")) return;
     setFinalizing(true);
     try {
@@ -188,7 +192,9 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
           <dt className="text-muted-foreground">Talhão</dt>
           <dd className="font-medium truncate">{registro.talhoes?.nome ?? "—"}</dd>
           <dt className="text-muted-foreground">Cultura</dt>
-          <dd className="font-medium truncate">{registro.culturas?.nome ?? "—"}</dd>
+          <dd className={registro.cultura_id ? "font-medium truncate" : "font-medium truncate text-destructive"}>
+            {registro.culturas?.nome ?? "Não informada"}
+          </dd>
           <dt className="text-muted-foreground">Data</dt>
           <dd className="font-medium">{registro.data_vistoria ?? "—"}</dd>
           <dt className="text-muted-foreground">Tipo</dt>
