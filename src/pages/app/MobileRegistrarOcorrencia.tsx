@@ -260,37 +260,60 @@ export default function MobileRegistrarOcorrencia() {
       return;
     }
 
-    // ONLINE MODE: Save directly
+    // ONLINE: motor canônico transacional e idempotente (`client_uuid`).
     try {
-      console.log("Submitting occurrence payload:", payload);
-      const { data: registro, error } = await supabase
-        .from("registros_consultor")
-        .insert(payload)
-        .select("id")
-        .single();
+      const { data: rpcData, error } = await supabase.rpc(
+        "rpc_criar_visita_idempotente" as never,
+        {
+          p_client_uuid: clientUuid,
+          p_cliente_id: clienteId,
+          p_fazenda_id: fazendaId,
+          p_talhao_id: talhaoId,
+          p_cultura_id: null,
+          p_data_vistoria: payload.data_vistoria,
+          p_tipo_visita: "vistoria_inicial",
+          p_origem: "ocorrencia_campo",
+          p_categoria_problema: categoriaProblema,
+          p_nivel_pressao: nivelPressao,
+          p_percentual_area_afetada: payload.percentual_area_afetada,
+          p_urgencia: urgencia,
+          p_observacoes_tecnicas: observacoes || null,
+          p_area_hectares: payload.area_hectares,
+          p_latitude: location?.latitude ?? null,
+          p_longitude: location?.longitude ?? null,
+        } as never,
+      );
 
-      if (error) {
-        console.error("Supabase insert error:", error);
-        throw error;
+      if (error) throw error;
+
+      const res = (rpcData ?? {}) as any;
+      if (!res.ok) {
+        throw new Error(
+          res.error === "technical_access_required"
+            ? "Você não possui acesso técnico a este cliente."
+            : "Não foi possível registrar a ocorrência.",
+        );
       }
 
-      if (registro && fotos.length > 0) {
+      const registroId = res.registro_id as string;
+
+      if (registroId && fotos.length > 0) {
         for (let i = 0; i < fotos.length; i++) {
           const file = fotos[i];
           const ext = file.name.split(".").pop() || "jpg";
           // Path determinístico usando client_uuid para evitar arquivos órfãos em retries
-          const path = `${registro.id}/foto/${clientUuid}_${i}.${ext}`;
+          const path = `${registroId}/foto/${clientUuid}_${i}.${ext}`;
 
           const { error: uploadError } = await supabase.storage
             .from("consultor-arquivos")
-            .upload(path, file, { 
+            .upload(path, file, {
               contentType: file.type,
-              upsert: true
+              upsert: true,
             });
 
           if (!uploadError) {
             await supabase.from("registros_consultor_arquivos").insert({
-              registro_consultor_id: registro.id,
+              registro_consultor_id: registroId,
               arquivo_url: null, // Legado
               arquivo_path: path,
               nome_arquivo: file.name,
@@ -302,14 +325,15 @@ export default function MobileRegistrarOcorrencia() {
               client_uuid: `${clientUuid}_${i}`,
               capturado_em: new Date().toISOString(),
               latitude: location?.latitude || null,
-              longitude: location?.longitude || null
+              longitude: location?.longitude || null,
             } as any);
           }
         }
       }
 
-      toast.success("Ocorrência registrada com sucesso!");
-      navigate("/app");
+      toast.success(res.idempotent ? "Ocorrência já registrada" : "Ocorrência registrada com sucesso!");
+      // Continuidade do atendimento: segue para o wizard da visita.
+      navigate(res.next_route ?? `/app/visita/${registroId}`);
     } catch (err: any) {
       toast.error(err.message || "Erro ao registrar ocorrência");
     } finally {
