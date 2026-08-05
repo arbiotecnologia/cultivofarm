@@ -5,7 +5,7 @@
     "production_ref": "navfzbwgwzruipouyfnk",
     "production_access": "PROIBIDO"
   },
-  "generated_at": "2026-08-05T18:27:31Z",
+  "generated_at": "2026-08-05T18:34:37Z",
   "hash_algorithm": "sha256",
   "apply_order": [
     {
@@ -77,8 +77,8 @@
       "path": "tests/harnesses/visita-atendimentos-runtime-harness/index.ts",
       "kind": "runner_certificacao",
       "description": "Runner CLI T1–T18 (exit 0 apenas com 18 PASS); user_clientes antes de user_roles e recomendação criada antes do cenário de aprovação",
-      "sha256": "3e9772b976d846bbebf6477a38293d6f1e225e69ada35168692d56f916e72294",
-      "bytes": 47617
+      "sha256": "cd8b5b5de8f56e2d690e42875f0b55dcc022ecabf9b3d62426cd2207189a420a",
+      "bytes": 49867
     },
     {
       "order": 10,
@@ -109,8 +109,8 @@
       "path": "docs/auditoria-visita-portais-tecnicos-final.md",
       "kind": "relatorio_auditoria",
       "description": "Relatório final de consolidação e gates executados",
-      "sha256": "c7cff6ac638b61f7a6c41cece40e00435cb0d75a0cd9d3ebe229a5d917f4e440",
-      "bytes": 8487
+      "sha256": "9afe6df75e46cb449fcfd80220b3d760f4261c318098495e9ca879de5373d585",
+      "bytes": 17206
     },
     {
       "order": 14,
@@ -273,5 +273,14 @@
       "bytes": 38313
     }
   ],
-  "status": "CANDIDATO_A_REVALIDACAO"
+  "status": "CANDIDATO_A_REVALIDACAO",
+  "last_runtime_revalidation": {
+    "date": "2026-08-05",
+    "harness_run": "034e5c9a",
+    "result": "18/18 PASS",
+    "concurrency_run": "e4a7bec7",
+    "concurrency_result": "1 sucesso / 1 version_conflict / 1 linha",
+    "postcheck": "POSTCHECK_RUNTIME_FINAL_PASS",
+    "environment": "ikaauvsflpmamgxmkhoq"
+  }
 }
