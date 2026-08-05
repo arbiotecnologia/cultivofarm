@@ -85,12 +85,12 @@ async function setup() {
     }
     if (p === "consultor" || p === "agronomo") {
       await svc.from("user_clientes").insert({
-        user_id: data.user!.id, cliente_id: cl.id, access_level: "manage", ativo: true,
+        user_id: data.user!.id, cliente_id: cl.id, access_level: "manage", is_active: true,
       });
     }
     if (p === "produtor") {
       await svc.from("user_clientes").insert({
-        user_id: data.user!.id, cliente_id: cl.id, access_level: "read", ativo: true,
+        user_id: data.user!.id, cliente_id: cl.id, access_level: "read", is_active: true,
       });
     }
     cli[p] = await signIn(email);
