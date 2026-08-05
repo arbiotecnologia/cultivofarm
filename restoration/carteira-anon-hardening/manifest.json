@@ -1,0 +1,50 @@
+{
+  "kit": "carteira-anon-hardening",
+  "titulo": "CORREÇÃO 1 — Hardening de carteira e anon em registros/ocorrências",
+  "base_auditada": "7c0f28735914f81922a5259d30eecb91a2dd9603",
+  "ambiente": {
+    "project_ref": "ikaauvsflpmamgxmkhoq",
+    "tipo": "staging",
+    "producao_acessada": false,
+    "publicado": false
+  },
+  "aplicado_em": "2026-08-05T19:40:00Z",
+  "artefatos": [
+    { "arquivo": "migration.sql", "sha256": "994ece940d6482b8c0b5407fbaf32d9085d153bc069c8525c7891b73f91db73f" },
+    { "arquivo": "rollback.sql", "sha256": "204703e1271eb7b5df02ba37a0630b663483814a74ce400c340e733fd650cdab" },
+    { "arquivo": "postcheck.sql", "sha256": "9e64c1ac61cb3d5faf23fedd827af9f99b7281bc4e1202911492d551d3707c7f" },
+    { "arquivo": "harness-runtime.sql", "sha256": "6100b435ba02732f7598ca753174e88b14947efaf65747921e0a231bc706ce86" }
+  ],
+  "objetos_alterados": {
+    "public.can_user_access_cliente(uuid)": {
+      "md5_functiondef_antes": "efeito: tecnicos com qualquer vinculo em user_clientes (inclusive inativo/vencido)",
+      "md5_functiondef_depois": "4c2eaf7ab10e204e7ad57d41cb418554"
+    },
+    "public.can_user_access_cliente(uuid,uuid)": {
+      "md5_functiondef_antes": "09dc2a16f4b20ea04140609907c4461f",
+      "md5_functiondef_depois": "c0acb1dcd7f0b183f9500f4c264c1fa1"
+    },
+    "policy registros_consultor_select_hardened": { "roles_antes": "public", "roles_depois": "authenticated" },
+    "acl public.registros_consultor": {
+      "anon_antes": "ALL (7 privilegios)",
+      "anon_depois": "nenhum",
+      "public_depois": "nenhum",
+      "authenticated_antes": "ALL (7 privilegios)",
+      "authenticated_depois": "SELECT,INSERT,UPDATE,DELETE",
+      "service_role": "ALL (inalterado)",
+      "rls": "habilitada"
+    }
+  },
+  "evidencia_runtime": {
+    "harness_carteira_anon": "15 PASS / 0 FAIL (T1-T14 + T15b)",
+    "visita_T1_T18": "18 PASS / 0 FAIL",
+    "concorrencia_recomendacao": "9 PASS / 0 FAIL",
+    "postcheck_kit": "POSTCHECK_CARTEIRA_ANON_PASS",
+    "postcheck_runtime_final_visita": "POSTCHECK_RUNTIME_FINAL_PASS",
+    "typecheck": "PASS",
+    "vitest": "2723 passed / 4 skipped",
+    "build": "PASS"
+  },
+  "residuo": { "fixtures": 0, "blobs": 0, "triggers_desabilitados": 0 },
+  "divergencia_preexistente": "restoration/visita-portais-tecnicos/postcheck-consolidacao.sql falha no checksum de rpc_upsert_recomendacao_visita por desatualizacao frente a migration 20260805182000 (runtime fix). Nao relacionado a esta correcao; funcao nao foi tocada."
+}
