@@ -186,8 +186,23 @@ export function useOfflineSync() {
     try {
       const pending = await getPendingRegistros();
       const pendingCheckins = await getPendingCheckins();
-      const total = pending.length + pendingCheckins.length;
+      // Fila completa: registros, checkins, campos, diagnósticos, recomendações
+      // e mídias órfãs de visitas remotas — cada item contado UMA vez.
+      const [camposIniciais, diagsIniciais, recsIniciais, orphanMedia] = await Promise.all([
+        getPendingCampos(),
+        getAllPendingDiagnosticos(),
+        getAllPendingRecomendacoes(),
+        getOrphanRemoteMedia(),
+      ]);
+      const total =
+        pending.length +
+        pendingCheckins.length +
+        camposIniciais.length +
+        diagsIniciais.length +
+        recsIniciais.length +
+        orphanMedia.length;
       setProgress({ total, completed: 0, failed: 0 });
+
 
       let syncedCount = 0;
       let failedCount = 0;
