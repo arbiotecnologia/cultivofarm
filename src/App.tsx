@@ -110,7 +110,7 @@ import MobileRegistrarOcorrencia from "@/pages/app/MobileRegistrarOcorrencia";
 import MobileOrdens from "@/pages/app/MobileOrdens";
 import MobileNotificacoes from "@/pages/app/MobileNotificacoes";
 import MobileEntregas from "@/pages/app/MobileEntregas";
-import MobileRegistrosTecnico from "@/pages/app/MobileRegistrosTecnico";
+import MobileAtendimentos from "@/pages/app/MobileAtendimentos";
 import MobileRecomendacoesProdutor from "@/pages/app/MobileRecomendacoesProdutor";
 import MobileAplicacoes from "@/pages/app/MobileAplicacoes";
 import MobileListaAplicacoes from "@/pages/app/MobileListaAplicacoes";
