@@ -57,7 +57,7 @@ interface GeoLocation {
 
 export default function MobileRegistrarOcorrencia() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const isOnline = useOnlineStatus();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -199,42 +199,49 @@ export default function MobileRegistrarOcorrencia() {
     setSubmitting(true);
     const talhaoData = talhoes?.find((t) => t.id === talhaoId);
     const clientUuid = crypto.randomUUID();
-    
+
     const safeParseNumber = (val: string) => {
       if (!val) return null;
-      const parsed = Number(val.replace(',', '.'));
+      const parsed = Number(val.replace(",", "."));
       return isNaN(parsed) ? null : parsed;
     };
 
-    const payload = {
-      cliente_id: clienteId,
-      fazenda_id: fazendaId,
-      talhao_id: talhaoId,
-      categoria_problema: categoriaProblema as any,
-      nivel_pressao: nivelPressao as any,
-      percentual_area_afetada: safeParseNumber(percentualAfetado),
-      observacoes_tecnicas: observacoes || null,
-      urgencia: urgencia as any,
-      area_hectares: talhaoData?.area_hectares || null,
-      consultor_responsavel: user.id,
-      created_by: user.id,
-      consultor_profile_id: profile?.id || null,
-      status: "rascunho" as const,
-      data_vistoria: new Date().toISOString().split("T")[0],
-      client_uuid: clientUuid,
-      condicoes_climaticas_observadas: location
-        ? `GPS: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)} (±${Math.round(location.accuracy)}m)`
-        : null,
+    // Contrato CANÔNICO p_* — idêntico online e offline (motor único).
+    const rpcArgs = {
+      p_client_uuid: clientUuid,
+      p_cliente_id: clienteId,
+      p_fazenda_id: fazendaId,
+      p_talhao_id: talhaoId,
+      p_cultura_id: null as string | null,
+      p_data_vistoria: new Date().toISOString().split("T")[0],
+      p_tipo_visita: "vistoria_inicial",
+      p_objetivo_visita: null as string | null,
+      p_safra: null as string | null,
+      p_fase_fenologica: null as string | null,
+      p_solicitacao_id: null as string | null,
+      p_origem: "ocorrencia_campo",
+      p_categoria_problema: categoriaProblema,
+      p_nivel_pressao: nivelPressao,
+      p_percentual_area_afetada: safeParseNumber(percentualAfetado),
+      p_urgencia: urgencia,
+      p_localizacao_na_area: null as string | null,
+      p_observacoes_tecnicas: observacoes || null,
+      p_problema_principal: null as string | null,
+      p_area_hectares: talhaoData?.area_hectares ?? null,
+      p_latitude: location?.latitude ?? null,
+      p_longitude: location?.longitude ?? null,
+      p_registro_origem_id: null as string | null,
     };
 
-    // OFFLINE MODE: Save to IndexedDB
+    // OFFLINE MODE: fila com o MESMO contrato canônico (sem INSERT legado).
     if (!isOnline) {
       try {
         const localId = `offline_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         await savePendingRegistro({
           id: localId,
           clientUuid,
-          payload,
+          operationType: "create_technical_visit",
+          payload: rpcArgs,
           createdAt: new Date().toISOString(),
           synced: false,
         });
@@ -252,7 +259,7 @@ export default function MobileRegistrarOcorrencia() {
 
         toast.success("Salvo offline! Será sincronizado quando houver conexão.", { icon: "📶" });
         navigate("/app");
-      } catch (err: any) {
+      } catch {
         toast.error("Erro ao salvar offline");
       } finally {
         setSubmitting(false);
@@ -264,24 +271,7 @@ export default function MobileRegistrarOcorrencia() {
     try {
       const { data: rpcData, error } = await supabase.rpc(
         "rpc_criar_visita_idempotente" as never,
-        {
-          p_client_uuid: clientUuid,
-          p_cliente_id: clienteId,
-          p_fazenda_id: fazendaId,
-          p_talhao_id: talhaoId,
-          p_cultura_id: null,
-          p_data_vistoria: payload.data_vistoria,
-          p_tipo_visita: "vistoria_inicial",
-          p_origem: "ocorrencia_campo",
-          p_categoria_problema: categoriaProblema,
-          p_nivel_pressao: nivelPressao,
-          p_percentual_area_afetada: payload.percentual_area_afetada,
-          p_urgencia: urgencia,
-          p_observacoes_tecnicas: observacoes || null,
-          p_area_hectares: payload.area_hectares,
-          p_latitude: location?.latitude ?? null,
-          p_longitude: location?.longitude ?? null,
-        } as never,
+        rpcArgs as never,
       );
 
       if (error) throw error;
@@ -297,6 +287,8 @@ export default function MobileRegistrarOcorrencia() {
 
       const registroId = res.registro_id as string;
 
+      // Mídia: falhas NÃO invalidam a visita — ficam pendentes e recuperáveis.
+      let midiaFalhas = 0;
       if (registroId && fotos.length > 0) {
         for (let i = 0; i < fotos.length; i++) {
           const file = fotos[i];
@@ -306,32 +298,68 @@ export default function MobileRegistrarOcorrencia() {
 
           const { error: uploadError } = await supabase.storage
             .from("consultor-arquivos")
-            .upload(path, file, {
-              contentType: file.type,
-              upsert: true,
-            });
+            .upload(path, file, { contentType: file.type, upsert: true });
 
-          if (!uploadError) {
-            await supabase.from("registros_consultor_arquivos").insert({
-              registro_consultor_id: registroId,
-              arquivo_url: null, // Legado
-              arquivo_path: path,
-              nome_arquivo: file.name,
-              tipo_arquivo: file.type,
-              tipo_midia: "foto",
-              categoria_arquivo: "geral",
-              foto_principal: i === 0,
-              uploaded_by: user.id,
-              client_uuid: `${clientUuid}_${i}`,
-              capturado_em: new Date().toISOString(),
-              latitude: location?.latitude || null,
-              longitude: location?.longitude || null,
-            } as any);
+          if (uploadError) {
+            midiaFalhas++;
+            // Enfileira para retry pela rotina de sincronização de mídia.
+            try {
+              await savePendingFoto({
+                id: `${clientUuid}_foto_${i}`,
+                registroLocalId: registroId,
+                file,
+                fileName: file.name,
+                mimeType: file.type,
+                isPrincipal: i === 0,
+              });
+            } catch {
+              /* fila indisponível: mídia continua pendente no dispositivo */
+            }
+            continue;
           }
+
+          // Referência idempotente: upsert por client_uuid determinístico.
+          const { error: refError } = await supabase
+            .from("registros_consultor_arquivos")
+            .upsert(
+              {
+                registro_consultor_id: registroId,
+                arquivo_url: null,
+                arquivo_path: path,
+                nome_arquivo: file.name,
+                tipo_arquivo: file.type,
+                tipo_midia: "foto",
+                categoria_arquivo: "geral",
+                foto_principal: i === 0,
+                uploaded_by: user.id,
+                // UUID determinístico por mídia: mesmo client_uuid, nó = índice.
+                // Mantém o tipo `uuid` da coluna e garante idempotência no retry.
+                client_uuid:
+                  clientUuid.slice(0, 24) + i.toString(16).padStart(12, "0"),
+
+                capturado_em: new Date().toISOString(),
+                latitude: location?.latitude || null,
+                longitude: location?.longitude || null,
+              } as any,
+              { onConflict: "client_uuid" },
+            );
+          if (refError) midiaFalhas++;
         }
       }
 
-      toast.success(res.idempotent ? "Ocorrência já registrada" : "Ocorrência registrada com sucesso!");
+      if (midiaFalhas > 0) {
+        toast.warning(
+          `Ocorrência registrada. ${midiaFalhas} de ${fotos.length} foto(s) ficaram pendentes e serão reenviadas.`,
+        );
+      } else {
+        toast.success(res.idempotent ? "Ocorrência já registrada" : "Ocorrência registrada com sucesso!");
+      }
+
+      const faltando: string[] = Array.isArray(res.missing_fields) ? res.missing_fields : [];
+      if (faltando.includes("cultura_id")) {
+        toast.info("Informe a cultura na etapa Identificação antes de finalizar.");
+      }
+
       // Continuidade do atendimento: segue para o wizard da visita.
       navigate(res.next_route ?? `/app/visita/${registroId}`);
     } catch (err: any) {
@@ -340,6 +368,7 @@ export default function MobileRegistrarOcorrencia() {
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="p-4 space-y-5 pb-8">
@@ -386,8 +415,8 @@ export default function MobileRegistrarOcorrencia() {
       {/* Cascading selects */}
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Cliente * (ID: {clienteId})</Label>
-          <Select value={clienteId} onValueChange={(v) => { console.log("Selected Client ID:", v); setClienteId(v); setFazendaId(""); setTalhaoId(""); }}>
+          <Label className="text-sm font-medium">Cliente *</Label>
+          <Select value={clienteId} onValueChange={(v) => { setClienteId(v); setFazendaId(""); setTalhaoId(""); }}>
             <SelectTrigger className="h-11"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
             <SelectContent>
               {clientes?.map((c) => (

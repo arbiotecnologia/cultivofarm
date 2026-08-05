@@ -226,20 +226,33 @@ export function useOfflineSync() {
             const clientUuid =
               item.clientUuid || item.payload?.client_uuid || item.payload?.p_client_uuid || crypto.randomUUID();
 
-            // === Contrato NOVO: wizard de visita técnica via RPC idempotente ===
+            // === Contrato CANÔNICO: motor único via RPC idempotente ===
             if (item.operationType === "create_technical_visit") {
+              const pl = (item.payload ?? {}) as Record<string, unknown>;
               const rpcArgs = {
                 p_client_uuid: clientUuid,
-                p_cliente_id: item.payload?.p_cliente_id,
-                p_fazenda_id: item.payload?.p_fazenda_id,
-                p_talhao_id: item.payload?.p_talhao_id,
-                p_cultura_id: item.payload?.p_cultura_id,
-                p_data_vistoria: item.payload?.p_data_vistoria,
-                p_tipo_visita: item.payload?.p_tipo_visita,
-                p_objetivo_visita: item.payload?.p_objetivo_visita ?? null,
-                p_safra: item.payload?.p_safra ?? null,
-                p_fase_fenologica: item.payload?.p_fase_fenologica ?? null,
-                p_solicitacao_id: item.payload?.p_solicitacao_id ?? null,
+                p_cliente_id: pl.p_cliente_id,
+                p_fazenda_id: pl.p_fazenda_id,
+                p_talhao_id: pl.p_talhao_id,
+                p_cultura_id: pl.p_cultura_id ?? null,
+                p_data_vistoria: pl.p_data_vistoria,
+                p_tipo_visita: pl.p_tipo_visita ?? "vistoria_inicial",
+                p_objetivo_visita: pl.p_objetivo_visita ?? null,
+                p_safra: pl.p_safra ?? null,
+                p_fase_fenologica: pl.p_fase_fenologica ?? null,
+                p_solicitacao_id: pl.p_solicitacao_id ?? null,
+                p_origem: pl.p_origem ?? "visita_avulsa",
+                p_categoria_problema: pl.p_categoria_problema ?? null,
+                p_nivel_pressao: pl.p_nivel_pressao ?? null,
+                p_percentual_area_afetada: pl.p_percentual_area_afetada ?? null,
+                p_urgencia: pl.p_urgencia ?? null,
+                p_localizacao_na_area: pl.p_localizacao_na_area ?? null,
+                p_observacoes_tecnicas: pl.p_observacoes_tecnicas ?? null,
+                p_problema_principal: pl.p_problema_principal ?? null,
+                p_area_hectares: pl.p_area_hectares ?? null,
+                p_latitude: pl.p_latitude ?? null,
+                p_longitude: pl.p_longitude ?? null,
+                p_registro_origem_id: pl.p_registro_origem_id ?? null,
               };
 
               const { data, error } = await supabase.rpc(
@@ -265,12 +278,13 @@ export function useOfflineSync() {
               });
               // B0.2: persiste remoteId + version na pendência antes de qualquer remoção
               await setRegistroRemoteId(item.id, remoteId!, remoteVersion);
-            } else {
-              // === Contrato LEGADO: INSERT direto ===
-              const payloadWithUuid = {
-                ...item.payload,
-                client_uuid: clientUuid,
-              };
+            } else if (item.operationType === "create_consultor_record") {
+              // === Compatibilidade LEGADA (somente pendências antigas já gravadas) ===
+              // Proibido para novas ocorrências: a UI grava sempre o contrato canônico.
+              await log("registro", item.id, "tentativa", {
+                mensagem_erro: "contrato legado detectado — pendência anterior à unificação",
+              });
+              const payloadWithUuid = { ...item.payload, client_uuid: clientUuid };
 
               const { data: registro, error } = await supabase
                 .from("registros_consultor")
@@ -289,7 +303,7 @@ export function useOfflineSync() {
                     remoteId = existing.id;
                     await log("registro", item.id, "sucesso", {
                       item_remoto_id: remoteId,
-                      mensagem_erro: "idempotente — registro já existia",
+                      mensagem_erro: "idempotente — registro já existia (legado)",
                     });
                   } else {
                     await log("registro", item.id, "erro", { mensagem_erro: error.message });
@@ -310,7 +324,17 @@ export function useOfflineSync() {
               }
 
               await setRegistroRemoteId(item.id, remoteId!);
+            } else {
+              // Sem operationType: pendência inválida/desconhecida. Nunca faz INSERT direto.
+              await log("registro", item.id, "erro", {
+                mensagem_erro: "operationType ausente — sincronização recusada (fallback legado proibido)",
+              });
+              await releasePendingRegistro(item.id);
+              failedCount++;
+              setProgress((p) => ({ ...p, failed: p.failed + 1 }));
+              continue;
             }
+
           }
 
           // === Upload de mídias com gating ===

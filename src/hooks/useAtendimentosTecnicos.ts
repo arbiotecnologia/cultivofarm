@@ -42,6 +42,9 @@ export interface AtendimentoItem {
   cultura_nome: string | null;
   tipo: string | null;
   urgencia: string | null;
+  responsavel_nome: string | null;
+  data_prevista: string | null;
+  proxima_acao: string | null;
   data_ref: string | null;
   can_edit: boolean;
   next_route: string;
@@ -63,6 +66,7 @@ export interface AtendimentosResumo {
   monitoramento: number;
   ocorrencias: number;
   concluidos: number;
+  todos: number;
   os_ativas: number;
   fazendas: number;
 }
@@ -74,9 +78,11 @@ export const EMPTY_ATENDIMENTOS_RESUMO: AtendimentosResumo = {
   monitoramento: 0,
   ocorrencias: 0,
   concluidos: 0,
+  todos: 0,
   os_ativas: 0,
   fazendas: 0,
 };
+
 
 export const ABAS_ATENDIMENTO: { value: AtendimentoAba; label: string }[] = [
   { value: "todos", label: "Todos" },
@@ -120,7 +126,10 @@ export function useAtendimentosTecnicos(filters: AtendimentosFilters = {}) {
         p_page_size: pageSize,
       } as never);
       if (error) throw error;
-      const res = (data ?? {}) as Partial<AtendimentosResult>;
+      const res = (data ?? {}) as Partial<AtendimentosResult> & { ok?: boolean; error?: string };
+      // O backend valida a aba: valor desconhecido é rejeitado explicitamente.
+      if (res.ok === false) throw new Error(res.error ?? "atendimentos_indisponivel");
+
       return {
         items: (res.items ?? []) as AtendimentoItem[],
         total: res.total ?? 0,
