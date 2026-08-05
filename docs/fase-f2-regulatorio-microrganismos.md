@@ -81,12 +81,34 @@ lista exatamente o que falta, por camada.
 - `restoration/fase-f2/rollback.sql` — remoção atômica e restauração do gate da F1
 - `restoration/fase-f2/baseline/pre-f2.json` — baseline pré-fase
 
-## Pendente
+## Camada de interface (concluída)
 
-A seção de UI "Microrganismos — regularização" em
-`src/pages/configuracoes/FiscalProdutos.tsx` ainda **não** foi implementada. O backend
-já expõe tudo o que ela precisa: `rpc_microorganism_regulatory_overview()` e
-`rpc_regulatory_dossier_detail(uuid)` para leitura, e as RPCs de escrita
-(`ensure_draft`, `update_draft`, `presentation_upsert`, `ncm_candidate_add/decide`,
-`checklist_set`, `document_register`, `submit`, `review_decide`, `publish`, `block`,
-`new_version`).
+- `src/hooks/useMicroorganismRegulatory.ts` — hooks tipados para as 14 RPCs da fase.
+  Todo cast de tipo está confinado a uma única boundary (`callRegulatoryRpc`); o
+  cliente não infere NCM, CEST, CFOP, CST, origem, GTIN nem unidades.
+- `src/components/fiscal/RegulatorioMicrorganismosSecao.tsx` — seção
+  "Cadastro regulatório e fiscal de microrganismos" com lista de dossiês, progresso
+  do checklist, pendências acionáveis por camada e painel de dossiê em abas
+  (Fatos, Checklist, Apresentações, NCM, Documentos, Revisão, Pendências).
+- Montada em `src/pages/configuracoes/FiscalProdutos.tsx`, logo abaixo do resumo
+  de prontidão.
+
+Regras de UI aplicadas:
+
+- ausência de dado é sempre exibida como `não informado`, nunca como palpite;
+- `NOT_APPLICABLE` no checklist exige justificativa antes do envio (e o servidor
+  rejeita novamente com `REGULATORY_JUSTIFICATION_REQUIRED`);
+- decisões de revisão, bloqueio e nova versão exigem justificativa preenchida;
+- candidato de NCM só é enviado com 8 dígitos, justificativa e fonte oficial;
+- falha de leitura por permissão exibe estado fail-closed, sem inferir prontidão.
+
+## Validações desta etapa
+
+- `bunx vitest run src/test/fiscal/faseF2.regulatorio.test.ts` — 15/15 PASS
+- `bunx vitest run` (suíte completa) — 2738 PASS, 4 skipped, 167 arquivos
+- `bunx tsgo --noEmit` — limpo
+- `bun run build` — PASS
+- `restoration/fase-f2/postcheck.sql` — 32/32 gates PASS (staging `ikaauvsflpmamgxmkhoq`)
+
+Ambiente: exclusivamente staging `ikaauvsflpmamgxmkhoq`. Produção
+`navfzbwgwzruipouyfnk` não foi tocada e nada foi publicado.
