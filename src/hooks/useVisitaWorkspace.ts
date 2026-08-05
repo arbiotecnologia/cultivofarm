@@ -20,13 +20,17 @@ export interface VisitaWorkspacePermissions {
   can_approve: boolean;
   can_manage_team: boolean;
   can_convert_os: boolean;
+  can_view_internal: boolean;
   is_editable_status: boolean;
   is_admin: boolean;
   is_manager: boolean;
   is_participant: boolean;
 }
 
+export type VisitaAudience = "interna" | "produtor";
+
 export interface VisitaWorkspace {
+  audience: VisitaAudience;
   registro: Record<string, any> | null;
   version: number | null;
   status: string | null;
@@ -59,6 +63,7 @@ export const EMPTY_VISITA_PERMISSIONS: VisitaWorkspacePermissions = {
   can_approve: false,
   can_manage_team: false,
   can_convert_os: false,
+  can_view_internal: false,
   is_editable_status: false,
   is_admin: false,
   is_manager: false,
