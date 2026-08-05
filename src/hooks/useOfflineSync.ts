@@ -71,95 +71,42 @@ function isUniqueViolation(err: any): boolean {
   return err?.code === "23505";
 }
 
-/** Tenta upload com upsert (idempotente) e valida via list */
+/** Usa o mesmo motor idempotente tanto no primeiro envio quanto na recuperação. */
 async function uploadFotoWithRetry(
   foto: PendingFoto,
   registroRemoteId: string,
   log: (status: "sucesso" | "erro", msg?: string) => Promise<void>
 ): Promise<{ success: boolean; remotePath?: string }> {
-  const ext = foto.fileName.split(".").pop()?.toLowerCase() || "jpg";
-  // Path determinístico: o mesmo blob sobrescreve o mesmo path em retry
-  const remotePath = foto.remotePath || `${registroRemoteId}/${foto.id}.${ext}`;
-
-  const attempts = (foto.uploadAttempts || 0) + 1;
-
-  if (attempts > MAX_UPLOAD_ATTEMPTS) {
-    await log("erro", `máximo de tentativas (${MAX_UPLOAD_ATTEMPTS}) excedido`);
-    return { success: false };
-  }
-
   try {
-    const { error: upErr } = await supabase.storage
-      .from("consultor-arquivos")
-      .upload(remotePath, foto.file, {
-        contentType: foto.mimeType,
-        upsert: true,
-      });
-
-    if (upErr) {
-      await updatePendingFoto(foto.id, {
-        uploadAttempts: attempts,
-        lastUploadError: upErr.message,
-        remotePath,
-      });
-      await log("erro", upErr.message);
-      return { success: false };
-    }
-
-    // Validação pós-upload: confirma presença no storage
-    const folder = remotePath.substring(0, remotePath.lastIndexOf("/"));
-    const fileName = remotePath.substring(remotePath.lastIndexOf("/") + 1);
-    const { data: listData } = await supabase.storage
-      .from("consultor-arquivos")
-      .list(folder, { search: fileName });
-    const found = (listData || []).some((f) => f.name === fileName);
-    if (!found) {
-      await updatePendingFoto(foto.id, {
-        uploadAttempts: attempts,
-        lastUploadError: "upload sem confirmação no storage",
-        remotePath,
-      });
-      await log("erro", "upload sem confirmação no storage");
-      return { success: false };
-    }
-
-    // Insere referência (idempotente: se já existir mesmo path, não duplica)
-    const { data: existing } = await supabase
-      .from("registros_consultor_arquivos")
-      .select("id")
-      .eq("registro_consultor_id", registroRemoteId)
-      .eq("arquivo_path", remotePath)
-      .maybeSingle();
-
-    if (!existing) {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from("registros_consultor_arquivos").insert({
-        registro_consultor_id: registroRemoteId,
-        arquivo_url: null,
-        arquivo_path: remotePath,
-        nome_arquivo: foto.fileName,
-        tipo_arquivo: foto.mimeType,
-        tipo_midia: "foto",
-        categoria_arquivo: "geral",
-        foto_principal: foto.isPrincipal,
-        uploaded_by: user?.id || null,
-        client_uuid: foto.id // Usar o ID local como client_uuid para idempotência
-      } as any);
-    }
-
+    const result = await uploadMediaIdempotent({
+      clientUuid: foto.clientUuid || foto.id,
+      file: foto.file,
+      fileName: foto.fileName,
+      mimeType: foto.mimeType,
+      kind: "foto",
+      legenda: foto.legenda,
+      isPrincipal: foto.isPrincipal,
+      duracaoSegundos: foto.duracaoSegundos,
+      previousAttempts: foto.uploadAttempts,
+      previousRemotePath: foto.remotePath,
+      latitude: foto.latitude,
+      longitude: foto.longitude,
+      capturadoEm: foto.capturadoEm,
+    }, registroRemoteId);
     await updatePendingFoto(foto.id, {
-      uploaded: true,
-      remotePath,
-      lastUploadError: null,
-      uploadAttempts: attempts,
+      uploaded: result.success,
+      remotePath: result.remotePath,
+      lastUploadError: result.error ?? null,
+      uploadAttempts: result.attempts,
     });
-    await log("sucesso");
-    return { success: true, remotePath };
+    await log(result.success ? "sucesso" : "erro", result.error);
+    return { success: result.success, remotePath: result.remotePath };
   } catch (err: any) {
+    const attempts = (foto.uploadAttempts || 0) + 1;
     await updatePendingFoto(foto.id, {
       uploadAttempts: attempts,
       lastUploadError: err?.message || "erro desconhecido",
-      remotePath,
+      remotePath: foto.remotePath,
     });
     await log("erro", err?.message || "erro desconhecido");
     return { success: false };
@@ -756,7 +703,12 @@ export function useOfflineSync() {
         const remoteId = m.remoteRegistroId!;
         // Lease atômico: duas abas nunca processam a mesma foto.
         const claimed = await claimPendingFoto(m.id);
-        if (!claimed) continue;
+        if (!claimed) {
+          // O item entrou no total inicial, mas outra aba venceu o lease. Marcar
+          // como concluído localmente mantém completed + failed coerente com total.
+          setProgress((p) => ({ ...p, completed: p.completed + 1 }));
+          continue;
+        }
 
         const attempts = (m.uploadAttempts || 0) + 1;
         setProgress((p) => ({ ...p, current: "Mídia pendente" }));

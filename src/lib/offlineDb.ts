@@ -561,17 +561,20 @@ export async function getFailedRemoteMedia(): Promise<PendingFoto[]> {
 export async function claimPendingFoto(id: string): Promise<boolean> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
+    let claimed = false;
     const tx = db.transaction(STORE_FOTOS, "readwrite");
     const store = tx.objectStore(STORE_FOTOS);
     const getReq = store.get(id);
     getReq.onsuccess = () => {
       const item = getReq.result as PendingFoto | undefined;
-      if (!item || item.uploaded) return resolve(false);
-      if (item.syncingAt && !isStale(item.syncingAt)) return resolve(false);
+      if (!item || item.uploaded) return;
+      if (item.syncingAt && !isStale(item.syncingAt)) return;
       store.put({ ...item, syncingAt: Date.now() });
-      resolve(true);
+      claimed = true;
     };
-    getReq.onerror = () => reject(getReq.error);
+    tx.oncomplete = () => resolve(claimed);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
   });
 }
 

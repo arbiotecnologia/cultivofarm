@@ -20,6 +20,7 @@ PROD_REF="navfzbwgwzruipouyfnk"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 CANONICAL="$ROOT/supabase/migrations/20260805040000_visita_canonica_failclosed.sql"
+FINALIZER="$ROOT/supabase/migrations/20260805041601_752b9122-f0e1-4646-9c4a-7c1393deae8d.sql"
 
 if [[ -z "${STAGING_DSN:-}" || -z "${STAGING_REF:-}" ]]; then
   echo "ABORT: STAGING_DSN/STAGING_REF ausentes"; exit 1
@@ -34,7 +35,7 @@ fi
 run() { psql "$STAGING_DSN" -v ON_ERROR_STOP=1 --single-transaction -f "$1"; }
 
 echo "== 1) snapshot do estado final =="
-psql "$STAGING_DSN" -tAF'|' -c "select p.proname, encode(digest(pg_get_functiondef(p.oid),'sha256'),'hex') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_visit_responsible','rpc_criar_visita_idempotente','rpc_iniciar_atendimento_solicitacao_v1','rpc_listar_atendimentos_tecnicos_v1','rpc_resumo_atendimentos_tecnicos_v1') order by 1;"
+psql "$STAGING_DSN" -tAF'|' -c "select p.proname, encode(extensions.digest(pg_get_functiondef(p.oid)::bytea,'sha256'),'hex') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_visit_responsible','rpc_criar_visita_idempotente','rpc_iniciar_atendimento_solicitacao_v1','rpc_listar_atendimentos_tecnicos_v1','rpc_resumo_atendimentos_tecnicos_v1','rpc_finalizar_visita_v2') order by 1;"
 
 echo "== 2) rollback =="
 run "$HERE/rollback.sql"
@@ -44,6 +45,7 @@ run "$HERE/verify-restoration.sql"
 
 echo "== 4) reaplicar migration canonica =="
 run "$CANONICAL"
+run "$FINALIZER"
 
 echo "== 5) postcheck (estado final) =="
 run "$HERE/postcheck-final.sql"
