@@ -332,7 +332,11 @@ export default function MobileRegistrarOcorrencia() {
                 categoria_arquivo: "geral",
                 foto_principal: i === 0,
                 uploaded_by: user.id,
-                client_uuid: `${clientUuid}_${i}`,
+                // UUID determinístico por mídia: mesmo client_uuid, nó = índice.
+                // Mantém o tipo `uuid` da coluna e garante idempotência no retry.
+                client_uuid:
+                  clientUuid.slice(0, 24) + i.toString(16).padStart(12, "0"),
+
                 capturado_em: new Date().toISOString(),
                 latitude: location?.latitude || null,
                 longitude: location?.longitude || null,
