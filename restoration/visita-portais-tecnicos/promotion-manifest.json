@@ -85,8 +85,8 @@
       "path": "supabase/migrations/20260805152009_fea820c5-e032-4a57-adf8-38f010843bf2.sql",
       "kind": "migration_consolidacao",
       "description": "Consolidação final: sincroniza no repositório as 18 funções canônicas certificadas no staging (run d5d7582f)",
-      "sha256": "2ff87b7466a280c34b02d22e382598c089f89a7f9543facd23744d6e58272e6a",
-      "bytes": 37029
+      "sha256": "bda8b2cb9e226c16a5358e1984cfade32ce9ee9527a2afda31796e3af2d336dd",
+      "bytes": 38117
     },
     {
       "order": 11,
