@@ -986,13 +986,13 @@ BEGIN
       dest.final_consumer, dest.taxpayer_indicator, it.ncm_snapshot, null, inv.sales_channel, ref_date);
 
     kinds := ARRAY['ICMS','PIS','COFINS'];
-    IF coalesce(emit.ipi_taxpayer,false) THEN kinds := kinds || 'IPI'::text; END IF;
-    IF coalesce(emit.icms_st_responsible,false) THEN kinds := kinds || 'ICMS_ST'::text; END IF;
-    IF coalesce(emit.fcp_applicable,false) THEN kinds := kinds || 'FCP'::text; END IF;
+    IF coalesce(emit.ipi_taxpayer,false) THEN kinds := kinds || 'IPI'; END IF;
+    IF coalesce(emit.icms_st_responsible,false) THEN kinds := kinds || 'ICMS_ST'; END IF;
+    IF coalesce(emit.fcp_applicable,false) THEN kinds := kinds || 'FCP'; END IF;
     IF coalesce(emit.difal_responsible,false)
        AND upper(coalesce(dest.fiscal_state,'')) <> upper(coalesce(emit.state,''))
        AND coalesce(dest.final_consumer,true) THEN
-      kinds := kinds || 'DIFAL'::text;
+      kinds := kinds || 'DIFAL';
     END IF;
     IF coalesce(emit.rtc_scaffolding_enabled,false) THEN kinds := kinds || ARRAY['IBS','CBS']; END IF;
 
@@ -1146,10 +1146,10 @@ BEGIN
   n := s.current_number + 1;
   IF n > 999999999 THEN RAISE EXCEPTION 'FISCAL_SERIES_EXHAUSTED: serie % esgotada.', s.series; END IF;
 
-  cnf := lpad((((get_byte(extensions.gen_random_bytes(4),0)::bigint << 24)
-             | (get_byte(extensions.gen_random_bytes(4),0)::bigint << 16)
-             | (get_byte(extensions.gen_random_bytes(4),0)::bigint << 8)
-             | get_byte(extensions.gen_random_bytes(4),0)::bigint) % 100000000)::text, 8, '0');
+  cnf := lpad(((get_byte(gen_random_bytes(4),0)::bigint << 24)
+             | (get_byte(gen_random_bytes(4),0)::bigint << 16)
+             | (get_byte(gen_random_bytes(4),0)::bigint << 8)
+             | get_byte(gen_random_bytes(4),0)::bigint) % 100000000, 8, '0');
 
   cuf := public.fn_fiscal_uf_ibge_code(emit.state);
   key43 := cuf
