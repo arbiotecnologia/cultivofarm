@@ -85,7 +85,8 @@ const svc = new Proxy({} as SupabaseClient, {
       if (!ADMIN_KEY) throw new Error("GUARD_ABORT: credencial administrativa ausente");
       _svc = createClient(SUPABASE_URL, ADMIN_KEY, { auth: { persistSession: false } });
     }
-    return (_svc as unknown as Record<PropertyKey, unknown>)[prop];
+    const value = (_svc as unknown as Record<PropertyKey, unknown>)[prop];
+    return typeof value === "function" ? (value as (...a: unknown[]) => unknown).bind(_svc) : value;
   },
 });
 const RUN = crypto.randomUUID().slice(0, 8);
