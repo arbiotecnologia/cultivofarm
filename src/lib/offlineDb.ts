@@ -477,9 +477,14 @@ export async function removePendingRegistro(id: string): Promise<void> {
 }
 
 export async function getPendingCount(): Promise<number> {
-  const [regs, checks] = await Promise.all([getPendingRegistros(), getPendingCheckins()]);
-  return regs.length + checks.length;
+  const [regs, checks, orphans] = await Promise.all([
+    getPendingRegistros(),
+    getPendingCheckins(),
+    getOrphanRemoteMedia(),
+  ]);
+  return regs.length + checks.length + orphans.length;
 }
+
 
 /** Conta total de mídias pendentes (registros pendentes + fotos não enviadas). */
 export async function getPendingMediaCount(): Promise<number> {
