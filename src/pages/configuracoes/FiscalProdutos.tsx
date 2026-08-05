@@ -383,6 +383,9 @@ export default function FiscalProdutos() {
         </CardContent>
       </Card>
 
+      <RegulatorioMicrorganismosSecao />
+
+
       <Card>
         <CardHeader className="gap-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
