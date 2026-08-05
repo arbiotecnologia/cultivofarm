@@ -321,7 +321,8 @@ export default function MobileRegistrarOcorrencia() {
                 isPrincipal: i === 0,
               });
             } catch {
-              /* fila indisponível: mídia continua pendente no dispositivo */
+              // Fila local indisponível: a mídia NÃO foi enfileirada.
+              midiaNaoEnfileiradas++;
             }
             continue;
           }
@@ -368,11 +369,17 @@ export default function MobileRegistrarOcorrencia() {
                 isPrincipal: i === 0,
               });
             } catch {
-              /* fila indisponível */
+              midiaNaoEnfileiradas++;
             }
           }
 
         }
+      }
+
+      if (midiaNaoEnfileiradas > 0) {
+        toast.error(
+          `${midiaNaoEnfileiradas} foto(s) NÃO puderam ser enfileiradas para reenvio. Refaça a captura para não perder o registro visual.`,
+        );
       }
 
       if (midiaFalhas > 0) {
