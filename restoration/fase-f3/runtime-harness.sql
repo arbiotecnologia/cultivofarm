@@ -78,16 +78,22 @@ BEGIN
   IF v_txt <> 'NOT_READY' THEN RAISE EXCEPTION 'T04 FAIL: cMun de outra UF nao bloqueou'; END IF;
   PERFORM pg_temp.f3_pass(4,'cMun IBGE incoerente com UF mantem emitente NOT_READY');
 
-  -- T05 — Emitente completo + certificado => READY_HOMOLOGATION.
+  -- T05 — Emitente completo + certificado, mas sem validacao contabil, fica NOT_READY
+  -- apenas por EMITTER_ACCOUNTING_NOT_VALIDATED (pendencia unica e acionavel).
   UPDATE public.company_fiscal_settings
      SET municipality_ibge_code='5208707', certificate_ref='harness_cert_ref_f3'
    WHERE id=v_company;
-  SELECT nfe_readiness_status INTO v_txt FROM public.company_fiscal_settings WHERE id=v_company;
-  IF v_txt <> 'READY_HOMOLOGATION' THEN
-    RAISE EXCEPTION 'T05 FAIL: emitente completo deveria ficar READY_HOMOLOGATION (obtido %) pend=%',
-      v_txt, (SELECT nfe_readiness_pendencies FROM public.company_fiscal_settings WHERE id=v_company);
+  SELECT nfe_readiness_status, nfe_readiness_pendencies::text INTO v_txt, v_snap
+    FROM public.company_fiscal_settings WHERE id=v_company;
+  IF v_txt <> 'NOT_READY' THEN
+    RAISE EXCEPTION 'T05 FAIL: emitente sem validacao contabil deveria ficar NOT_READY (obtido %)', v_txt;
   END IF;
-  PERFORM pg_temp.f3_pass(5,'Emitente completo em homologacao fica READY_HOMOLOGATION');
+  IF (SELECT count(*) FROM jsonb_array_elements(
+        (SELECT nfe_readiness_pendencies FROM public.company_fiscal_settings WHERE id=v_company)) e
+      WHERE e->>'code' <> 'EMITTER_ACCOUNTING_NOT_VALIDATED') <> 0 THEN
+    RAISE EXCEPTION 'T05 FAIL: pendencias residuais inesperadas %', v_snap;
+  END IF;
+  PERFORM pg_temp.f3_pass(5,'Emitente completo pendente apenas de validacao contabil', v_txt);
 
   -- T06 — Validação contábil exige perfil aprovador (SoD com o preparador).
   PERFORM pg_temp.f3_as(U_PROD);
@@ -105,6 +111,11 @@ BEGIN
   v_res := public.rpc_fiscal_emitter_accounting_validate('Validacao contabil sintetica do harness F3, dados conferidos.');
   PERFORM pg_temp.f3_root();
   IF v_res->>'status' <> 'VALIDATED' THEN RAISE EXCEPTION 'T07 FAIL: validacao contabil nao registrada'; END IF;
+  SELECT nfe_readiness_status INTO v_txt FROM public.company_fiscal_settings WHERE id=v_company;
+  IF v_txt <> 'READY_HOMOLOGATION' THEN
+    RAISE EXCEPTION 'T07 FAIL: apos validacao contabil o emitente deveria ficar READY_HOMOLOGATION (obtido %) pend=%',
+      v_txt, (SELECT nfe_readiness_pendencies FROM public.company_fiscal_settings WHERE id=v_company);
+  END IF;
   PERFORM pg_temp.f3_pass(7,'Validacao contabil registrada por perfil financeiro');
 
   -- ========================= DESTINATÁRIO ==========================
