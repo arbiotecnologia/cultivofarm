@@ -151,3 +151,48 @@ GRANT ALL ON TABLE public.registros_consultor TO authenticated;
 GRANT ALL ON TABLE public.registros_consultor TO service_role;
 
 ALTER TABLE public.registros_consultor ENABLE ROW LEVEL SECURITY;
+
+-- 4) Overload (_user_id, _cliente_id) no estado original do baseline
+CREATE OR REPLACE FUNCTION public.can_user_access_cliente(_user_id uuid, _cliente_id uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF public.has_role(_user_id,'administrador'::app_role)
+     OR public.has_role(_user_id,'gestor_comercial'::app_role)
+     OR public.has_role(_user_id,'gestor'::app_role)
+     OR public.has_role(_user_id,'tecnico_agronomo'::app_role)
+     OR public.has_role(_user_id,'consultor_tecnico'::app_role)
+  THEN
+    RETURN true;
+  END IF;
+
+  IF public.has_role(_user_id,'parceiro_b2b'::app_role) THEN
+    RETURN EXISTS (
+      SELECT 1 FROM public.partner_clients pc
+      JOIN public.partner_users pu ON pu.partner_id = pc.partner_id
+      WHERE pu.user_id = _user_id AND pc.cliente_id = _cliente_id AND pc.active = true
+    );
+  END IF;
+
+  IF public.has_role(_user_id,'parceiro_b2b_tecnico'::app_role) THEN
+    RETURN EXISTS (
+      SELECT 1 FROM public.partner_user_clients puc
+      WHERE puc.user_id = _user_id AND puc.cliente_id = _cliente_id AND puc.active = true
+    ) OR EXISTS (
+      SELECT 1 FROM public.partner_technician_clients ptc
+      WHERE ptc.technician_user_id = _user_id AND ptc.cliente_id = _cliente_id AND ptc.active = true
+    );
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1 FROM public.user_clientes uc
+    WHERE uc.user_id = _user_id AND uc.cliente_id = _cliente_id
+  );
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.can_user_access_cliente(uuid, uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.can_user_access_cliente(uuid) TO authenticated, service_role;
