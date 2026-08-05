@@ -112,3 +112,52 @@ Regras de UI aplicadas:
 
 Ambiente: exclusivamente staging `ikaauvsflpmamgxmkhoq`. Produção
 `navfzbwgwzruipouyfnk` não foi tocada e nada foi publicado.
+
+---
+
+## Correção pós-auditoria (commit 9d6c63d9) — staging ikaauvsflpmamgxmkhoq
+
+Migration corretiva idempotente: `supabase/migrations/20260815000000_fase_f2_correcao_auditoria.sql`
+(kit em `restoration/fase-f2-correcao/`: `migration.sql`, `rollback.sql`, `postcheck.sql`,
+`runtime-harness.sql`, `gen-types.py`).
+
+### Achados tratados
+1. **Storage sem escopo de registro** — path canônico `dossiers/<dossier_id>/<document_id>/<arquivo>`;
+   policies de SELECT/INSERT/UPDATE/DELETE em `storage.objects` extraem o `dossier_id` do path e
+   validam existência do dossiê/documento, papel e estado. Blob de dossiê `VALIDATED` ou com snapshot
+   publicado não pode ser alterado nem removido. Exclusão lógica via
+   `rpc_regulatory_document_soft_delete` + fila compensável `regulatory_storage_cleanup_queue`
+   confirmada por `rpc_regulatory_storage_cleanup_confirm`. O registro rejeita path fora do dossiê
+   (`REGULATORY_STORAGE_PATH_OUT_OF_SCOPE`) e objeto inexistente (`REGULATORY_STORAGE_OBJECT_MISSING`).
+2. **NCM sem fonte oficial** — candidato `PROPOSED` exige fonte cadastrada ativa OU URL oficial
+   allowlisted (`fn_fiscal_official_url_allowlisted`), `consulted_at` e justificativa >= 20 caracteres.
+   Aprovação exige fonte cadastrada, descrição oficial do NCM e versão/data da tabela. Trigger
+   deferível garante que o `published_ncm_candidate_id` pertence ao mesmo dossiê. Nenhum candidato
+   foi criado para os 24 itens.
+3. **GTIN** — `fn_gtin_is_valid` (imutável) implementa o dígito verificador GS1 para GTIN-8/12/13/14,
+   aplicada por constraint e pelo motor. "SEM GTIN" permanece declaração explícita, mutuamente
+   exclusiva e auditada.
+4. **Tipos canônicos** — `src/integrations/supabase/types.ts` regenerado a partir do catálogo do
+   staging por `restoration/fase-f2-correcao/gen-types.py` (DSN só via ambiente, nada em código):
+   8 tabelas e 18 funções. O hook `useMicroorganismRegulatory.ts` não usa mais boundary solta nem
+   `as unknown as`; o nome e os argumentos de cada RPC são verificados pelo compilador.
+5. **Segregação de funções** — a mesma identidade não aprova mais de uma camada no mesmo dossiê
+   (`REGULATORY_SEGREGATION_OF_DUTIES`). Override emergencial só por administrador, com justificativa
+   forte, flag e log (`rpc_regulatory_sod_override`). Publicação exige três camadas `APPROVED` com três
+   identidades distintas (ou override auditado), candidato NCM aprovado do mesmo dossiê, evidências e
+   checklist concluído; rejeição devolve a `DRAFT` e nunca publica.
+
+### Evidências
+- `postcheck.sql`: **39/39 gates PASS** + **4/4 provas transacionais PASS** (revertidas).
+- `runtime-harness.sql` (papel `authenticated` real, via `request.jwt.claims`): **24/24 PASS**,
+  cobrindo RLS por admin/gestor/financeiro/técnico/parceiro/produtor/sem papel, ausência de DML direto
+  apesar dos grants, fonte de NCM, GTIN, escopo de storage, segregação e publicação. Transação revertida.
+- Ledger: versão `20260815000000` registrada.
+- `tsgo --noEmit`: limpo. `vitest`: suíte completa PASS. `build`: PASS.
+
+### Ressalva remanescente
+A camada de UI (`RegulatorioMicrorganismosSecao.tsx`) ainda não explica textualmente as novas regras
+de fonte obrigatória, segregação de funções e erros de storage — o servidor já falha fechado, mas as
+mensagens ao operador seguem genéricas.
+
+PRODUCTION_NOT_ACCESSED (navfzbwgwzruipouyfnk) · NOT_PUBLISHED

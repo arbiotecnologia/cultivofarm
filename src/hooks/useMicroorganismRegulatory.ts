@@ -6,13 +6,18 @@
  * CFOP, CST/CSOSN, origem, GTIN, uCom/uTrib, fator de conversão) é inferida
  * no cliente a partir de espécie, nome comercial ou prática de mercado.
  *
- * Boundary de tipos: as relações e RPCs da Fase F2 ainda não constam no
- * arquivo canônico `src/integrations/supabase/types.ts`. Os casts ficam
- * confinados a UM único helper local (`callRegulatoryRpc`), no mesmo padrão
- * já adotado em `useMicroorganismFiscalProfiles`.
+ * Tipos: as relações e RPCs desta fase constam no arquivo canônico
+ * `src/integrations/supabase/types.ts`, regenerado a partir do catálogo do
+ * banco de staging (`restoration/fase-f2-correcao/gen-types.py`). Não há
+ * mais boundary solto: `supabase.rpc` é chamado com nome e argumentos
+ * verificados pelo compilador. A única conversão remanescente é a leitura
+ * de payloads `Json` (retorno declarado das RPCs de leitura), feita no
+ * helper `fromJson`, que é explícito e localizado.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database, Json } from "@/integrations/supabase/types";
+
 
 export type RegulatoryLayer = "TECHNICAL" | "REGULATORY";
 
@@ -269,29 +274,37 @@ export function isRegulatoryPermissionError(err: unknown): boolean {
 }
 
 /**
- * Boundary única com o supabase-js para as RPCs desta fase. Todo cast
- * de tipo fica aqui; nenhum outro ponto do módulo usa `as unknown`.
+ * Chamada tipada às RPCs regulatórias. O nome da função e o formato dos
+ * argumentos são validados pelo compilador contra os tipos gerados do
+ * staging — nenhum cast de cliente é usado aqui.
  */
-async function callRegulatoryRpc<T>(
-  fn: string,
-  args?: Record<string, unknown>,
-): Promise<T> {
-  const client = supabase as unknown as {
-    rpc: (
-      name: string,
-      params?: Record<string, unknown>,
-    ) => Promise<{ data: unknown; error: unknown }>;
-  };
-  const { data, error } = await client.rpc(fn, args);
+type RegulatoryFunctions = Database["public"]["Functions"];
+type RegulatoryFn = Extract<
+  keyof RegulatoryFunctions,
+  `rpc_regulatory_${string}` | "rpc_microorganism_regulatory_overview"
+>;
+
+async function regulatoryRpc<K extends RegulatoryFn>(
+  fn: K,
+  args: RegulatoryFunctions[K]["Args"],
+): Promise<RegulatoryFunctions[K]["Returns"]> {
+  const { data, error } = await supabase.rpc(
+    fn,
+    args as never,
+  );
   if (error) {
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");
-    const message =
-      typeof (error as { message?: string }).message === "string"
-        ? (error as { message: string }).message
-        : "regulatory_rpc_failed";
-    throw new Error(message);
+    throw new Error(error.message || "regulatory_rpc_failed");
   }
-  return data as T;
+  return data as RegulatoryFunctions[K]["Returns"];
+}
+
+/**
+ * Leitura de payload `Json` retornado por RPC. Conversão explícita e única:
+ * o contrato do payload é validado pelos testes de contrato da fase.
+ */
+function fromJson<T>(payload: Json | null): T | null {
+  return payload === null || payload === undefined ? null : (payload as T);
 }
 
 export function useMicroorganismRegulatoryOverview(options?: { enabled?: boolean }) {
@@ -299,10 +312,11 @@ export function useMicroorganismRegulatoryOverview(options?: { enabled?: boolean
     queryKey: REGULATORY_KEYS.overview(),
     enabled: options?.enabled ?? true,
     queryFn: async (): Promise<RegulatoryOverviewRow[]> => {
-      const rows = await callRegulatoryRpc<RegulatoryOverviewRow[] | null>(
+      const payload = await regulatoryRpc(
         "rpc_microorganism_regulatory_overview",
+        {},
       );
-      return rows ?? [];
+      return fromJson<RegulatoryOverviewRow[]>(payload) ?? [];
     },
   });
 }
@@ -314,12 +328,20 @@ export function useRegulatoryDossierDetail(
   return useQuery({
     queryKey: REGULATORY_KEYS.detail(microorganismId),
     enabled: Boolean(microorganismId) && (options?.enabled ?? true),
-    queryFn: async (): Promise<RegulatoryDossierDetail | null> =>
-      callRegulatoryRpc<RegulatoryDossierDetail | null>(
-        "rpc_regulatory_dossier_detail",
-        { p_microorganism_id: microorganismId },
-      ),
+    queryFn: async (): Promise<RegulatoryDossierDetail | null> => {
+      if (!microorganismId) return null;
+      const payload = await regulatoryRpc("rpc_regulatory_dossier_detail", {
+        p_microorganism_id: microorganismId,
+      });
+      return fromJson<RegulatoryDossierDetail>(payload);
+    },
   });
+}
+
+
+function requireMicroorganism(id: string | null): string {
+  if (!id) throw new Error("microorganism_required");
+  return id;
 }
 
 /** Invalida overview + detalhe após qualquer escrita regulatória. */
@@ -335,6 +357,7 @@ function useRegulatoryInvalidation(microorganismId: string | null) {
 }
 
 export interface DossierDraftPatch {
+  [key: string]: Json | undefined;
   regulatory_category?: string | null;
   strain_code?: string | null;
   strain_name?: string | null;
@@ -349,6 +372,7 @@ export interface DossierDraftPatch {
 }
 
 export interface PresentationPatch {
+  [key: string]: Json | undefined;
   commercial_unit?: string | null;
   taxable_unit?: string | null;
   conversion_factor?: number | null;
@@ -367,15 +391,15 @@ export function useRegulatoryActions(microorganismId: string | null) {
 
   const ensureDraft = useMutation({
     mutationFn: async (): Promise<string> =>
-      callRegulatoryRpc<string>("rpc_regulatory_dossier_ensure_draft", {
-        p_microorganism_id: microorganismId,
+      regulatoryRpc("rpc_regulatory_dossier_ensure_draft", {
+        p_microorganism_id: requireMicroorganism(microorganismId),
       }),
     onSuccess: invalidate,
   });
 
   const updateDraft = useMutation({
     mutationFn: async (input: { dossierId: string; patch: DossierDraftPatch }) =>
-      callRegulatoryRpc("rpc_regulatory_dossier_update_draft", {
+      regulatoryRpc("rpc_regulatory_dossier_update_draft", {
         p_dossier_id: input.dossierId,
         p_patch: input.patch,
       }),
@@ -388,7 +412,7 @@ export function useRegulatoryActions(microorganismId: string | null) {
       volumeMl: number;
       patch: PresentationPatch;
     }) =>
-      callRegulatoryRpc("rpc_regulatory_presentation_upsert", {
+      regulatoryRpc("rpc_regulatory_presentation_upsert", {
         p_dossier_id: input.dossierId,
         p_volume_ml: input.volumeMl,
         p_patch: input.patch,
@@ -407,7 +431,7 @@ export function useRegulatoryActions(microorganismId: string | null) {
       sourceUrl?: string | null;
       consultedAt?: string | null;
     }) =>
-      callRegulatoryRpc("rpc_regulatory_ncm_candidate_add", {
+      regulatoryRpc("rpc_regulatory_ncm_candidate_add", {
         p_dossier_id: input.dossierId,
         p_ncm: input.ncm,
         p_justification: input.justification,
@@ -426,7 +450,7 @@ export function useRegulatoryActions(microorganismId: string | null) {
       approve: boolean;
       reason: string;
     }) =>
-      callRegulatoryRpc("rpc_regulatory_ncm_candidate_decide", {
+      regulatoryRpc("rpc_regulatory_ncm_candidate_decide", {
         p_candidate_id: input.candidateId,
         p_approve: input.approve,
         p_reason: input.reason,
@@ -442,7 +466,7 @@ export function useRegulatoryActions(microorganismId: string | null) {
       justification?: string | null;
       evidenceDocumentId?: string | null;
     }) =>
-      callRegulatoryRpc("rpc_regulatory_checklist_set", {
+      regulatoryRpc("rpc_regulatory_checklist_set", {
         p_dossier_id: input.dossierId,
         p_item_key: input.itemKey,
         p_state: input.state,
@@ -467,7 +491,7 @@ export function useRegulatoryActions(microorganismId: string | null) {
       consultedAt?: string | null;
       docVersion?: string | null;
     }) =>
-      callRegulatoryRpc("rpc_regulatory_document_register", {
+      regulatoryRpc("rpc_regulatory_document_register", {
         p_dossier_id: input.dossierId,
         p_doc_type: input.docType,
         p_title: input.title,
@@ -486,7 +510,7 @@ export function useRegulatoryActions(microorganismId: string | null) {
 
   const submit = useMutation({
     mutationFn: async (dossierId: string) =>
-      callRegulatoryRpc("rpc_regulatory_dossier_submit", { p_dossier_id: dossierId }),
+      regulatoryRpc("rpc_regulatory_dossier_submit", { p_dossier_id: dossierId }),
     onSuccess: invalidate,
   });
 
@@ -497,7 +521,7 @@ export function useRegulatoryActions(microorganismId: string | null) {
       decision: "APPROVED" | "REJECTED";
       justification: string;
     }) =>
-      callRegulatoryRpc("rpc_regulatory_review_decide", {
+      regulatoryRpc("rpc_regulatory_review_decide", {
         p_dossier_id: input.dossierId,
         p_layer: input.layer,
         p_decision: input.decision,
@@ -508,13 +532,13 @@ export function useRegulatoryActions(microorganismId: string | null) {
 
   const publish = useMutation({
     mutationFn: async (dossierId: string) =>
-      callRegulatoryRpc("rpc_regulatory_dossier_publish", { p_dossier_id: dossierId }),
+      regulatoryRpc("rpc_regulatory_dossier_publish", { p_dossier_id: dossierId }),
     onSuccess: invalidate,
   });
 
   const block = useMutation({
     mutationFn: async (input: { dossierId: string; reason: string }) =>
-      callRegulatoryRpc("rpc_regulatory_dossier_block", {
+      regulatoryRpc("rpc_regulatory_dossier_block", {
         p_dossier_id: input.dossierId,
         p_reason: input.reason,
       }),
@@ -523,8 +547,8 @@ export function useRegulatoryActions(microorganismId: string | null) {
 
   const newVersion = useMutation({
     mutationFn: async (reason: string) =>
-      callRegulatoryRpc<string>("rpc_regulatory_dossier_new_version", {
-        p_microorganism_id: microorganismId,
+      regulatoryRpc("rpc_regulatory_dossier_new_version", {
+        p_microorganism_id: requireMicroorganism(microorganismId),
         p_reason: reason,
       }),
     onSuccess: invalidate,
