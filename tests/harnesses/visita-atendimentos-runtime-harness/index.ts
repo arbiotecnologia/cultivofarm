@@ -234,6 +234,13 @@ async function cleanup() {
   // Storage primeiro (objetos referenciam registros)
   if (created.storageObjects.length > 0) {
     await svc.storage.from(BUCKET).remove(created.storageObjects);
+    // Verificar se sobrou algo nos folders dos registros criados
+    for (const id of created.registros) {
+      const { data } = await svc.storage.from(BUCKET).list(`${id}/foto`);
+      if (data && data.length > 0) {
+        await svc.storage.from(BUCKET).remove(data.map(o => `${id}/foto/${o.name}`));
+      }
+    }
   }
   for (const id of created.clientes) {
     const { data: regs } = await svc.from("registros_consultor").select("id").eq("cliente_id", id);
@@ -954,8 +961,9 @@ async function t18(mediaCleanupOk: boolean, storageObjetosCriados: string[]) {
     .filter((r) => !!r.data.user).length;
 
   let storageRestantes = 0;
-  for (const registroId of created.registros) {
-    const { data } = await svc.storage.from(BUCKET).list(`${registroId}/foto`, { limit: 100 });
+  const regsParaVerificar = [...new Set([...created.registros, ...created.solicitacoes])];
+  for (const id of regsParaVerificar) {
+    const { data } = await svc.storage.from(BUCKET).list(id, { limit: 100 });
     storageRestantes += (data ?? []).length;
   }
   // storageRestantes += storageObjetosCriados.length; // Ignore created.storageObjects since we verify folder cleanup below.
