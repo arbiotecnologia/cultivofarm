@@ -19779,6 +19779,10 @@ export type Database = {
         Args: { p_client_uuid: string }
         Returns: Json
       }
+      rpc_get_visita_workspace: {
+        Args: { p_registro_id: string }
+        Returns: Json
+      }
       rpc_harness_purge_entregas_v1: {
         Args: { p_entrega_ids: string[] }
         Returns: Json
