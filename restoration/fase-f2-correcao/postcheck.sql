@@ -209,7 +209,8 @@ BEGIN
   SELECT count(*) INTO v FROM public.microorganism_regulatory_publication_snapshots;
   IF v <> 0 THEN RAISE EXCEPTION 'G32 FAIL: existe snapshot publicado'; END IF;
 
-  SELECT count(*) INTO v FROM public.v_microorganism_fiscal_readiness WHERE is_ready;
+  SELECT count(*) INTO v FROM public.v_microorganism_fiscal_readiness
+   WHERE fiscally_ready OR regulatory_ready OR accounting_validated;
   IF v <> 0 THEN RAISE EXCEPTION 'G33 FAIL: item marcado como fiscalmente pronto'; END IF;
 
   -- ---------------------------------------------------------------
