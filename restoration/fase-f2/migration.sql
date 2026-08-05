@@ -574,3 +574,483 @@ DROP TRIGGER IF EXISTS trg_regulatory_snapshot_lock ON public.microorganism_regu
 CREATE TRIGGER trg_regulatory_snapshot_lock
   BEFORE UPDATE OR DELETE ON public.microorganism_regulatory_publication_snapshots
   FOR EACH ROW EXECUTE FUNCTION public.regulatory_snapshot_immutable();
+
+-- =====================================================================
+-- SEÇÃO 12 — RPCs DE PREPARO (administrador/gestor)
+-- =====================================================================
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_dossier_ensure_draft(p_microorganism_id uuid)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_id uuid; v_next int;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.microrganismos WHERE id = p_microorganism_id) THEN
+    RAISE EXCEPTION 'REGULATORY_MICROORGANISM_NOT_FOUND' USING ERRCODE='22023';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('regulatory_dossier:'||p_microorganism_id::text, 0));
+
+  SELECT id INTO v_id FROM public.microorganism_regulatory_dossiers
+   WHERE microorganism_id = p_microorganism_id
+     AND status IN ('DRAFT','PENDING_REVIEW') AND deleted_at IS NULL
+   LIMIT 1;
+  IF v_id IS NOT NULL THEN RETURN v_id; END IF;
+
+  SELECT coalesce(max(version),0)+1 INTO v_next
+    FROM public.microorganism_regulatory_dossiers WHERE microorganism_id = p_microorganism_id;
+
+  INSERT INTO public.microorganism_regulatory_dossiers
+    (microorganism_id, version, status, created_by, updated_by)
+  VALUES (p_microorganism_id, v_next, 'DRAFT', auth.uid(), auth.uid())
+  RETURNING id INTO v_id;
+
+  INSERT INTO public.microorganism_regulatory_checklist (dossier_id, item_key, state)
+  SELECT v_id, k, 'PENDING' FROM unnest(ARRAY[
+    'FINALIDADE_REGULATORIA','CEPA','FORMULACAO','GARANTIA_ROTULO','REGISTRO_MAPA',
+    'TITULAR_FABRICANTE','NCM_CEST_TIPI','GTIN','UNIDADE_CONVERSAO','ORIGEM',
+    'CFOP','TRIBUTACAO']) k
+  ON CONFLICT (dossier_id, item_key) DO NOTHING;
+
+  RETURN v_id;
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_dossier_update_draft(p_dossier_id uuid, p_patch jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_status text; v_row public.microorganism_regulatory_dossiers;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL FOR UPDATE;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  IF v_status NOT IN ('DRAFT','PENDING_REVIEW') THEN
+    RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_EDITABLE' USING ERRCODE='55006';
+  END IF;
+
+  UPDATE public.microorganism_regulatory_dossiers d SET
+    strain_code = coalesce(p_patch->>'strain_code', d.strain_code),
+    strain_name = coalesce(p_patch->>'strain_name', d.strain_name),
+    regulatory_category = coalesce(p_patch->>'regulatory_category', d.regulatory_category),
+    formulation = coalesce(p_patch->>'formulation', d.formulation),
+    label_guarantee = coalesce(p_patch->>'label_guarantee', d.label_guarantee),
+    guarantee_unit = coalesce(p_patch->>'guarantee_unit', d.guarantee_unit),
+    mapa_registration_number = coalesce(p_patch->>'mapa_registration_number', d.mapa_registration_number),
+    mapa_holder = coalesce(p_patch->>'mapa_holder', d.mapa_holder),
+    mapa_manufacturer = coalesce(p_patch->>'mapa_manufacturer', d.mapa_manufacturer),
+    mapa_status = coalesce(p_patch->>'mapa_status', d.mapa_status),
+    mapa_valid_until = coalesce((p_patch->>'mapa_valid_until')::date, d.mapa_valid_until),
+    mapa_not_applicable_reason = coalesce(p_patch->>'mapa_not_applicable_reason', d.mapa_not_applicable_reason),
+    effective_from = coalesce((p_patch->>'effective_from')::date, d.effective_from),
+    effective_to = coalesce((p_patch->>'effective_to')::date, d.effective_to),
+    -- Qualquer edição de conteúdo invalida aprovações já dadas
+    technical_review_status = CASE WHEN d.technical_review_status='APPROVED' THEN 'PENDING' ELSE d.technical_review_status END,
+    regulatory_review_status = CASE WHEN d.regulatory_review_status='APPROVED' THEN 'PENDING' ELSE d.regulatory_review_status END,
+    fiscal_review_status = CASE WHEN d.fiscal_review_status='APPROVED' THEN 'PENDING' ELSE d.fiscal_review_status END,
+    updated_by = auth.uid()
+  WHERE d.id = p_dossier_id
+  RETURNING * INTO v_row;
+
+  RETURN to_jsonb(v_row);
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_presentation_upsert(
+  p_dossier_id uuid, p_volume_ml integer, p_patch jsonb DEFAULT '{}'::jsonb)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_id uuid; v_status text; v_units boolean; v_gtin boolean;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL FOR UPDATE;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  IF v_status NOT IN ('DRAFT','PENDING_REVIEW') THEN
+    RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_EDITABLE' USING ERRCODE='55006';
+  END IF;
+
+  -- Confirmações são sempre explícitas: nunca inferidas de preenchimento
+  v_units := coalesce((p_patch->>'units_confirmed')::boolean, false);
+  v_gtin  := coalesce((p_patch->>'gtin_confirmed')::boolean, false);
+
+  INSERT INTO public.microorganism_regulatory_presentations AS p
+    (dossier_id, volume_ml, label, catalog_volume_id, created_by, updated_by)
+  VALUES (p_dossier_id, p_volume_ml,
+          coalesce(p_patch->>'label', (p_volume_ml/1000.0)::text||' L'),
+          nullif(p_patch->>'catalog_volume_id','')::uuid, auth.uid(), auth.uid())
+  ON CONFLICT (dossier_id, volume_ml) DO UPDATE SET
+    label = coalesce(EXCLUDED.label, p.label),
+    updated_by = auth.uid()
+  RETURNING p.id INTO v_id;
+
+  UPDATE public.microorganism_regulatory_presentations SET
+    commercial_unit = coalesce(p_patch->>'commercial_unit', commercial_unit),
+    taxable_unit = coalesce(p_patch->>'taxable_unit', taxable_unit),
+    conversion_factor = coalesce((p_patch->>'conversion_factor')::numeric, conversion_factor),
+    gtin = CASE WHEN coalesce((p_patch->>'gtin_absent')::boolean,false) THEN NULL
+                ELSE coalesce(nullif(p_patch->>'gtin',''), gtin) END,
+    gtin_absent = coalesce((p_patch->>'gtin_absent')::boolean, gtin_absent),
+    units_confirmed = v_units,
+    units_confirmed_by = CASE WHEN v_units THEN auth.uid() ELSE NULL END,
+    units_confirmed_at = CASE WHEN v_units THEN now() ELSE NULL END,
+    gtin_confirmed = v_gtin,
+    gtin_confirmed_by = CASE WHEN v_gtin THEN auth.uid() ELSE NULL END,
+    gtin_confirmed_at = CASE WHEN v_gtin THEN now() ELSE NULL END,
+    updated_by = auth.uid()
+  WHERE id = v_id;
+
+  RETURN v_id;
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_ncm_candidate_add(
+  p_dossier_id uuid, p_ncm text, p_justification text,
+  p_cest text DEFAULT NULL, p_confidence text DEFAULT 'LOW',
+  p_source_key text DEFAULT NULL, p_source_url text DEFAULT NULL,
+  p_consulted_at date DEFAULT NULL)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_id uuid; v_status text; v_source uuid;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  IF v_status NOT IN ('DRAFT','PENDING_REVIEW') THEN
+    RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_EDITABLE' USING ERRCODE='55006';
+  END IF;
+  SELECT id INTO v_source FROM public.fiscal_official_sources WHERE source_key = p_source_key;
+
+  INSERT INTO public.microorganism_ncm_candidates
+    (dossier_id, ncm, cest, justification, confidence, source_id, source_url, consulted_at, created_by)
+  VALUES (p_dossier_id, p_ncm, p_cest, p_justification, coalesce(p_confidence,'LOW'),
+          v_source, p_source_url, p_consulted_at, auth.uid())
+  RETURNING id INTO v_id;
+  RETURN v_id;
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_ncm_candidate_decide(
+  p_candidate_id uuid, p_approve boolean, p_reason text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_dossier uuid; v_status text; v_row public.microorganism_ncm_candidates;
+BEGIN
+  -- Aprovar candidato de NCM é ato contábil/fiscal
+  IF NOT public.fn_regulatory_can_approve('FISCAL') THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  IF nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'REGULATORY_JUSTIFICATION_REQUIRED' USING ERRCODE='22023';
+  END IF;
+
+  SELECT dossier_id INTO v_dossier FROM public.microorganism_ncm_candidates
+   WHERE id = p_candidate_id FOR UPDATE;
+  IF v_dossier IS NULL THEN RAISE EXCEPTION 'REGULATORY_CANDIDATE_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('regulatory_dossier_ncm:'||v_dossier::text, 0));
+
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers WHERE id = v_dossier FOR UPDATE;
+  IF v_status NOT IN ('DRAFT','PENDING_REVIEW') THEN
+    RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_EDITABLE' USING ERRCODE='55006';
+  END IF;
+
+  UPDATE public.microorganism_ncm_candidates
+     SET status = CASE WHEN p_approve THEN 'APPROVED' ELSE 'REJECTED' END,
+         decided_by = auth.uid(), decided_at = now(), decision_reason = p_reason
+   WHERE id = p_candidate_id
+  RETURNING * INTO v_row;
+
+  RETURN to_jsonb(v_row);
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_checklist_set(
+  p_dossier_id uuid, p_item_key text, p_state text,
+  p_justification text DEFAULT NULL, p_evidence_document_id uuid DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_status text; v_row public.microorganism_regulatory_checklist;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  IF p_state = 'NOT_APPLICABLE' AND nullif(btrim(coalesce(p_justification,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'REGULATORY_JUSTIFICATION_REQUIRED' USING ERRCODE='22023';
+  END IF;
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  IF v_status NOT IN ('DRAFT','PENDING_REVIEW') THEN
+    RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_EDITABLE' USING ERRCODE='55006';
+  END IF;
+
+  INSERT INTO public.microorganism_regulatory_checklist AS c
+    (dossier_id, item_key, state, justification, evidence_document_id, decided_by, decided_at)
+  VALUES (p_dossier_id, p_item_key, p_state, p_justification, p_evidence_document_id,
+          CASE WHEN p_state='PENDING' THEN NULL ELSE auth.uid() END,
+          CASE WHEN p_state='PENDING' THEN NULL ELSE now() END)
+  ON CONFLICT (dossier_id, item_key) DO UPDATE SET
+    state = EXCLUDED.state,
+    justification = EXCLUDED.justification,
+    evidence_document_id = EXCLUDED.evidence_document_id,
+    decided_by = EXCLUDED.decided_by,
+    decided_at = EXCLUDED.decided_at
+  RETURNING * INTO v_row;
+
+  -- Mudança de checklist invalida aprovações já concedidas
+  UPDATE public.microorganism_regulatory_dossiers SET
+    technical_review_status = CASE WHEN technical_review_status='APPROVED' THEN 'PENDING' ELSE technical_review_status END,
+    regulatory_review_status = CASE WHEN regulatory_review_status='APPROVED' THEN 'PENDING' ELSE regulatory_review_status END,
+    fiscal_review_status = CASE WHEN fiscal_review_status='APPROVED' THEN 'PENDING' ELSE fiscal_review_status END,
+    updated_by = auth.uid()
+  WHERE id = p_dossier_id;
+
+  RETURN to_jsonb(v_row);
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_document_register(
+  p_dossier_id uuid, p_doc_type text, p_title text, p_storage_path text, p_content_sha256 text,
+  p_issuer text DEFAULT NULL, p_issued_at date DEFAULT NULL, p_valid_until date DEFAULT NULL,
+  p_source_key text DEFAULT NULL, p_source_url text DEFAULT NULL,
+  p_consulted_at date DEFAULT NULL, p_doc_version text DEFAULT NULL)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_id uuid; v_status text; v_source uuid;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  IF v_status NOT IN ('DRAFT','PENDING_REVIEW') THEN
+    RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_EDITABLE' USING ERRCODE='55006';
+  END IF;
+  SELECT id INTO v_source FROM public.fiscal_official_sources WHERE source_key = p_source_key;
+
+  INSERT INTO public.microorganism_regulatory_documents
+    (dossier_id, doc_type, title, storage_path, content_sha256, issuer, issued_at, valid_until,
+     source_id, source_url, consulted_at, doc_version, uploaded_by)
+  VALUES (p_dossier_id, p_doc_type, p_title, p_storage_path, lower(p_content_sha256),
+          p_issuer, p_issued_at, p_valid_until, v_source, p_source_url, p_consulted_at,
+          p_doc_version, auth.uid())
+  RETURNING id INTO v_id;
+  RETURN v_id;
+END $fn$;
+
+-- =====================================================================
+-- SEÇÃO 13 — WORKFLOW: SUBMISSÃO, REVISÃO, PUBLICAÇÃO, BLOQUEIO
+-- =====================================================================
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_dossier_submit(p_dossier_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_status text; v_row public.microorganism_regulatory_dossiers;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL FOR UPDATE;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  IF v_status <> 'DRAFT' THEN
+    RAISE EXCEPTION 'REGULATORY_INVALID_TRANSITION' USING ERRCODE='55006';
+  END IF;
+  UPDATE public.microorganism_regulatory_dossiers
+     SET status = 'PENDING_REVIEW', updated_by = auth.uid()
+   WHERE id = p_dossier_id RETURNING * INTO v_row;
+  RETURN to_jsonb(v_row);
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_review_decide(
+  p_dossier_id uuid, p_layer text, p_decision text, p_justification text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_status text; v_row public.microorganism_regulatory_dossiers;
+BEGIN
+  IF p_layer NOT IN ('TECHNICAL','REGULATORY','FISCAL') THEN
+    RAISE EXCEPTION 'REGULATORY_INVALID_LAYER' USING ERRCODE='22023';
+  END IF;
+  IF p_decision NOT IN ('APPROVED','REJECTED') THEN
+    RAISE EXCEPTION 'REGULATORY_INVALID_DECISION' USING ERRCODE='22023';
+  END IF;
+  IF NOT public.fn_regulatory_can_approve(p_layer) THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  IF nullif(btrim(coalesce(p_justification,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'REGULATORY_JUSTIFICATION_REQUIRED' USING ERRCODE='22023';
+  END IF;
+
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL FOR UPDATE;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  IF v_status <> 'PENDING_REVIEW' THEN
+    RAISE EXCEPTION 'REGULATORY_INVALID_TRANSITION' USING ERRCODE='55006';
+  END IF;
+
+  UPDATE public.microorganism_regulatory_dossiers SET
+    technical_review_status = CASE WHEN p_layer='TECHNICAL' THEN p_decision ELSE technical_review_status END,
+    technical_review_by = CASE WHEN p_layer='TECHNICAL' THEN auth.uid() ELSE technical_review_by END,
+    technical_review_at = CASE WHEN p_layer='TECHNICAL' THEN now() ELSE technical_review_at END,
+    technical_review_notes = CASE WHEN p_layer='TECHNICAL' THEN p_justification ELSE technical_review_notes END,
+    regulatory_review_status = CASE WHEN p_layer='REGULATORY' THEN p_decision ELSE regulatory_review_status END,
+    regulatory_review_by = CASE WHEN p_layer='REGULATORY' THEN auth.uid() ELSE regulatory_review_by END,
+    regulatory_review_at = CASE WHEN p_layer='REGULATORY' THEN now() ELSE regulatory_review_at END,
+    regulatory_review_notes = CASE WHEN p_layer='REGULATORY' THEN p_justification ELSE regulatory_review_notes END,
+    fiscal_review_status = CASE WHEN p_layer='FISCAL' THEN p_decision ELSE fiscal_review_status END,
+    fiscal_review_by = CASE WHEN p_layer='FISCAL' THEN auth.uid() ELSE fiscal_review_by END,
+    fiscal_review_at = CASE WHEN p_layer='FISCAL' THEN now() ELSE fiscal_review_at END,
+    fiscal_review_notes = CASE WHEN p_layer='FISCAL' THEN p_justification ELSE fiscal_review_notes END,
+    status = CASE WHEN p_decision='REJECTED' THEN 'DRAFT' ELSE status END,
+    updated_by = auth.uid()
+  WHERE id = p_dossier_id RETURNING * INTO v_row;
+
+  RETURN to_jsonb(v_row);
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_dossier_publish(p_dossier_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE
+  d public.microorganism_regulatory_dossiers;
+  v_cand public.microorganism_ncm_candidates;
+  v_pending int; v_docs int; v_snapshot jsonb; v_sha text;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+
+  SELECT * INTO d FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL FOR UPDATE;
+  IF d.id IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('regulatory_publish:'||d.microorganism_id::text, 0));
+
+  IF d.status <> 'PENDING_REVIEW' THEN
+    RAISE EXCEPTION 'REGULATORY_INVALID_TRANSITION' USING ERRCODE='55006';
+  END IF;
+  IF d.technical_review_status <> 'APPROVED'
+     OR d.regulatory_review_status <> 'APPROVED'
+     OR d.fiscal_review_status <> 'APPROVED' THEN
+    RAISE EXCEPTION 'REGULATORY_APPROVALS_INCOMPLETE' USING ERRCODE='55006';
+  END IF;
+
+  SELECT count(*) INTO v_pending FROM public.microorganism_regulatory_checklist
+   WHERE dossier_id = p_dossier_id AND state = 'PENDING';
+  IF v_pending > 0 THEN
+    RAISE EXCEPTION 'REGULATORY_CHECKLIST_INCOMPLETE: % item(ns) pendente(s)', v_pending USING ERRCODE='55006';
+  END IF;
+
+  SELECT count(*) INTO v_docs FROM public.microorganism_regulatory_documents
+   WHERE dossier_id = p_dossier_id AND deleted_at IS NULL AND doc_type IN ('ROTULO','LAUDO');
+  IF v_docs = 0 THEN
+    RAISE EXCEPTION 'REGULATORY_EVIDENCE_DOCUMENT_MISSING' USING ERRCODE='55006';
+  END IF;
+
+  SELECT * INTO v_cand FROM public.microorganism_ncm_candidates
+   WHERE dossier_id = p_dossier_id AND status = 'APPROVED';
+  IF v_cand.id IS NULL THEN
+    RAISE EXCEPTION 'REGULATORY_NCM_NOT_APPROVED' USING ERRCODE='55006';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.microorganism_regulatory_presentations
+              WHERE dossier_id = p_dossier_id AND (NOT units_confirmed OR NOT gtin_confirmed)) THEN
+    RAISE EXCEPTION 'REGULATORY_PRESENTATION_NOT_CONFIRMED' USING ERRCODE='55006';
+  END IF;
+
+  PERFORM set_config('app.regulatory_formal_op','on', true);
+
+  UPDATE public.microorganism_regulatory_dossiers
+     SET status = 'VALIDATED',
+         published_ncm = v_cand.ncm,
+         published_cest = v_cand.cest,
+         published_ncm_candidate_id = v_cand.id,
+         published_at = now(), published_by = auth.uid(),
+         effective_from = coalesce(effective_from, current_date),
+         updated_by = auth.uid()
+   WHERE id = p_dossier_id RETURNING * INTO d;
+
+  v_snapshot := jsonb_build_object(
+    'dossier', to_jsonb(d),
+    'presentations', coalesce((SELECT jsonb_agg(to_jsonb(p) ORDER BY p.volume_ml)
+                               FROM public.microorganism_regulatory_presentations p
+                               WHERE p.dossier_id = p_dossier_id),'[]'::jsonb),
+    'documents', coalesce((SELECT jsonb_agg(jsonb_build_object(
+                              'id',x.id,'doc_type',x.doc_type,'title',x.title,
+                              'content_sha256',x.content_sha256,'issued_at',x.issued_at,
+                              'valid_until',x.valid_until,'source_url',x.source_url) ORDER BY x.id)
+                           FROM public.microorganism_regulatory_documents x
+                           WHERE x.dossier_id = p_dossier_id AND x.deleted_at IS NULL),'[]'::jsonb),
+    'checklist', coalesce((SELECT jsonb_agg(jsonb_build_object(
+                              'item_key',c.item_key,'state',c.state,'justification',c.justification)
+                              ORDER BY c.item_key)
+                           FROM public.microorganism_regulatory_checklist c
+                           WHERE c.dossier_id = p_dossier_id),'[]'::jsonb),
+    'ncm_candidate', to_jsonb(v_cand));
+  v_sha := encode(digest(v_snapshot::text,'sha256'),'hex');
+
+  INSERT INTO public.microorganism_regulatory_publication_snapshots
+    (dossier_id, microorganism_id, version, snapshot, snapshot_sha256, published_by)
+  VALUES (p_dossier_id, d.microorganism_id, d.version, v_snapshot, v_sha, auth.uid());
+
+  PERFORM set_config('app.regulatory_formal_op','', true);
+  RETURN jsonb_build_object('dossier_id', p_dossier_id, 'status', d.status, 'snapshot_sha256', v_sha);
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_dossier_block(p_dossier_id uuid, p_reason text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_row public.microorganism_regulatory_dossiers;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  IF nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'REGULATORY_JUSTIFICATION_REQUIRED' USING ERRCODE='22023';
+  END IF;
+  PERFORM set_config('app.regulatory_formal_op','on', true);
+  UPDATE public.microorganism_regulatory_dossiers
+     SET status = 'BLOCKED', blocked_reason = p_reason, updated_by = auth.uid()
+   WHERE id = p_dossier_id AND deleted_at IS NULL RETURNING * INTO v_row;
+  PERFORM set_config('app.regulatory_formal_op','', true);
+  IF v_row.id IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE='22023'; END IF;
+  RETURN to_jsonb(v_row);
+END $fn$;
+
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_dossier_new_version(p_microorganism_id uuid, p_reason text)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $fn$
+DECLARE v_id uuid; v_next int;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE='42501';
+  END IF;
+  IF nullif(btrim(coalesce(p_reason,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'REGULATORY_JUSTIFICATION_REQUIRED' USING ERRCODE='22023';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('regulatory_dossier:'||p_microorganism_id::text, 0));
+
+  IF EXISTS (SELECT 1 FROM public.microorganism_regulatory_dossiers
+              WHERE microorganism_id = p_microorganism_id
+                AND status IN ('DRAFT','PENDING_REVIEW') AND deleted_at IS NULL) THEN
+    RAISE EXCEPTION 'REGULATORY_OPEN_VERSION_EXISTS' USING ERRCODE='55006';
+  END IF;
+
+  SELECT coalesce(max(version),0)+1 INTO v_next
+    FROM public.microorganism_regulatory_dossiers WHERE microorganism_id = p_microorganism_id;
+
+  INSERT INTO public.microorganism_regulatory_dossiers
+    (microorganism_id, version, status, created_by, updated_by, blocked_reason)
+  VALUES (p_microorganism_id, v_next, 'DRAFT', auth.uid(), auth.uid(), NULL)
+  RETURNING id INTO v_id;
+
+  INSERT INTO public.microorganism_regulatory_checklist (dossier_id, item_key, state)
+  SELECT v_id, k, 'PENDING' FROM unnest(ARRAY[
+    'FINALIDADE_REGULATORIA','CEPA','FORMULACAO','GARANTIA_ROTULO','REGISTRO_MAPA',
+    'TITULAR_FABRICANTE','NCM_CEST_TIPI','GTIN','UNIDADE_CONVERSAO','ORIGEM',
+    'CFOP','TRIBUTACAO']) k;
+
+  RETURN v_id;
+END $fn$;
+
+DO $g$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT p.oid::regprocedure::text AS sig FROM pg_proc p
+           JOIN pg_namespace n ON n.oid=p.pronamespace
+           WHERE n.nspname='public' AND p.proname LIKE 'rpc_regulatory_%'
+  LOOP
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon', r.sig);
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated, service_role', r.sig);
+  END LOOP;
+END $g$;
