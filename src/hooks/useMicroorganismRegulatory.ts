@@ -357,6 +357,7 @@ function useRegulatoryInvalidation(microorganismId: string | null) {
 }
 
 export interface DossierDraftPatch {
+  [key: string]: Json | undefined;
   regulatory_category?: string | null;
   strain_code?: string | null;
   strain_name?: string | null;
@@ -371,6 +372,7 @@ export interface DossierDraftPatch {
 }
 
 export interface PresentationPatch {
+  [key: string]: Json | undefined;
   commercial_unit?: string | null;
   taxable_unit?: string | null;
   conversion_factor?: number | null;
