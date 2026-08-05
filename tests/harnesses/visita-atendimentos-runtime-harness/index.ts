@@ -189,27 +189,33 @@ async function setup() {
     if (error) throw new Error(`createUser ${p}: ${error.message}`);
     uid[p] = data.user!.id;
     created.users.push(data.user!.id);
+    // Vínculo de carteira ANTES do papel: o papel sem vínculo não pode
+    // conceder acesso, e a falha de vínculo precisa abortar o setup.
+    const vinculo =
+      p === "consultor" || p === "agronomo" || p === "gestor"
+        ? { cliente_id: clienteA, access_level: "manage" }
+        : p === "produtor"
+          ? { cliente_id: clienteA, access_level: "read" }
+          : p === "tecnico_carteira_b"
+            ? { cliente_id: clienteB, access_level: "manage" }
+            : null;
+    if (vinculo) {
+      const { error: eLink } = await svc.from("user_clientes").insert({
+        user_id: data.user!.id,
+        cliente_id: vinculo.cliente_id,
+        access_level: vinculo.access_level,
+        is_active: true,
+      });
+      if (eLink) throw new Error(`user_clientes ${p}: ${eLink.message}`);
+    }
+
     await svc.from("user_roles").delete().eq("user_id", data.user!.id);
     for (const r of ROLES[p]) {
       const { error: eRole } = await svc.from("user_roles")
         .insert({ user_id: data.user!.id, role: r });
       if (eRole) throw new Error(`user_roles ${p}: ${eRole.message}`);
     }
-    if (p === "consultor" || p === "agronomo" || p === "gestor") {
-      await svc.from("user_clientes").insert({
-        user_id: data.user!.id, cliente_id: clienteA, access_level: "manage", is_active: true,
-      });
-    }
-    if (p === "produtor") {
-      await svc.from("user_clientes").insert({
-        user_id: data.user!.id, cliente_id: clienteA, access_level: "read", is_active: true,
-      });
-    }
-    if (p === "tecnico_carteira_b") {
-      await svc.from("user_clientes").insert({
-        user_id: data.user!.id, cliente_id: clienteB, access_level: "manage", is_active: true,
-      });
-    }
+
     cli[p] = await signIn(email);
   }
 }
@@ -698,10 +704,24 @@ async function t13() {
 }
 
 async function t14(registroPronto: string) {
-  // --- Fixture 1: finalizar -> enviar -> aprovar ---
+  // --- Fixture 1: recomendar -> finalizar -> enviar -> aprovar ---
+  // A recomendação precisa existir ANTES da aprovação: a liberação ao
+  // produtor exige recomendação técnica preenchida.
+  const recPrev = await cli.consultor!.rpc("rpc_upsert_recomendacao_visita", {
+    p_registro_id: registroPronto,
+    p_client_uuid: crypto.randomUUID(),
+    p_payload: {
+      recomendacao_tecnica: `Recomendação HML ${RUN}`,
+      objetivo_recomendacao: "preventivo",
+      estrategia_manejo: "biologico",
+    },
+    p_expected_versao: 1,
+  });
+
   const fin = await cli.consultor!.rpc("rpc_finalizar_visita_v2", {
     p_registro_id: registroPronto, p_expected_version: await versaoDe(registroPronto),
   });
+
   const statusFinal = await statusDe(registroPronto);
 
   const env = await cli.consultor!.rpc("rpc_enviar_visita_aprovacao", {
@@ -746,6 +766,7 @@ async function t14(registroPronto: string) {
 
   const transicoes = (historico ?? []).map((h: any) => `${h.status_anterior}->${h.status_novo}`);
   const ok =
+    !recPrev.error &&
     !fin.error && statusFinal === "finalizado" &&
     !env.error && statusEnviado === "enviado_aprovacao" &&
     !apr.error && (apr.data as any)?.success === true && statusAprovado === "aprovado" &&
@@ -754,7 +775,9 @@ async function t14(registroPronto: string) {
     (historico ?? []).length >= 3;
 
   certifyBool("T14", ok, {
+    recomendacao_previa: { erro: recPrev.error?.message ?? null },
     fixture_aprovacao: { finalizar: fin.error?.message ?? null, status_final: statusFinal, enviar: env.error?.message ?? null, status_enviado: statusEnviado, aprovar: apr.error?.message ?? (apr.data as any)?.message ?? null, status_aprovado: statusAprovado },
+
     fixture_reprovacao: { erro: rep.error?.message ?? null, status: statusReprovado },
     fixture_ajuste: { erro: aju.error?.message ?? null, status: statusAjuste },
     historico_registros: (historico ?? []).length,

@@ -1,3 +1,3 @@
-// Re-export the base fixture from the package
-// Override or extend test/expect here if needed
-export { test, expect } from "lovable-agent-playwright-config/fixture";
+// Fixture E2E autossuficiente: apenas re-exporta o runner oficial do
+// Playwright. Sem dependência de pacote de harness externo.
+export { test, expect } from "@playwright/test";
