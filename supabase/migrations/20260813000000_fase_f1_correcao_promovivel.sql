@@ -183,6 +183,7 @@ CREATE OR REPLACE FUNCTION public.fn_fiscal_item_profile_gate_eval(
 RETURNS jsonb
 LANGUAGE plpgsql
 IMMUTABLE
+SET search_path = pg_catalog, pg_temp
 AS $fn$
 DECLARE
   v_p jsonb := '[]'::jsonb;   -- pendências técnicas
@@ -647,3 +648,15 @@ REVOKE ALL ON FUNCTION public.rpc_fiscal_item_readiness(text,uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.rpc_fiscal_item_readiness(text,uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.rpc_fiscal_item_readiness(text,uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_fiscal_item_readiness(text,uuid) TO service_role;
+
+-- =====================================================================
+-- SEÇÃO 7 — HIGIENE DE PRIVILÉGIOS DE FUNÇÕES (auditoria owner/DEFINER)
+-- fiscal_audit_trigger() é SECURITY DEFINER e mantinha EXECUTE default
+-- para PUBLIC/anon herdado da criação original. Funções de gatilho não
+-- precisam de EXECUTE para disparar (o privilégio é checado na criação
+-- do trigger), portanto a revogação é segura e não altera a auditoria.
+-- =====================================================================
+REVOKE ALL ON FUNCTION public.fiscal_audit_trigger() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.fiscal_audit_trigger() FROM anon;
+GRANT EXECUTE ON FUNCTION public.fiscal_audit_trigger() TO service_role;
+GRANT EXECUTE ON FUNCTION public.fiscal_audit_trigger_microorganism_profiles() TO service_role;
