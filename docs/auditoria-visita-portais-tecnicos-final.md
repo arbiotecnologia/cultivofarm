@@ -75,3 +75,39 @@ consolidação, este relatório, `playwright.config.ts` e `playwright-fixture.ts
 com o checksum atualizado do runner T1–T18.
 
 Validação sha256 + tamanho dos 15 artefatos: **`MANIFEST_VALIDATION PASS`**.
+
+## Auditoria corretiva final — prova runtime (2026-08-05)
+
+Ambiente: staging `ikaauvsflpmamgxmkhoq` (guard fail-closed no marcador `_fiscal_staging_marker`). Produção `navfzbwgwzruipouyfnk` não acessada.
+
+### Defeito adicional encontrado durante a prova (não declarado antes)
+`rpc_finalizar_visita_v2` e `_assert_visita_editavel` avaliavam a permissão como
+`IF NOT (can_manage OR created_by = uid OR consultor_responsavel = uid OR participante)`.
+Com `consultor_responsavel` NULL e nenhum termo verdadeiro, a expressão resultava em `NULL`,
+`NOT NULL` = `NULL`, e o `IF` não disparava → **fail-open**: técnico não atribuído passava da
+checagem de permissão. Corrigido em `20260805154002_...sql` com `COALESCE(..., false)` por termo
+e `IF v_ok IS NOT TRUE THEN RAISE 'sem_permissao'`.
+
+### Resultado do harness `restoration/visita-portais-tecnicos/harness-corretiva.sql`
+Executado em transação única com `ROLLBACK` final (zero resíduo), cada RPC chamada sob
+`SET LOCAL ROLE authenticated` + `request.jwt.claims` do usuário sob teste (service_role não usado como identidade funcional).
+
+| Caso | Cenário | Esperado | Resultado |
+|---|---|---|---|
+| C1 | Técnico com vínculo `manage` no cliente, **não atribuído**, grava recomendação | `forbidden_visita` | PASS |
+| C1b | Nenhuma linha gravada após a negativa | 0 linhas | PASS |
+| C2 | Participante ativo atribuído insere recomendação | versão 1 | PASS |
+| C3 | Versão desatualizada (`0`) | `version_conflict` / `P0001` | PASS |
+| C4 | Versão futura (`99`) | `version_conflict` / `P0001` | PASS |
+| C5 | Linha inalterada após ambos os conflitos | snapshot idêntico | PASS |
+| C6 | Versão exata (`1`) | versão 2 | PASS |
+| C7 | Finalização por técnico não atribuído | `sem_permissao` | PASS |
+| C8 | Finalização por participante atribuído passa da autorização | barra em `cultura_obrigatoria` | PASS |
+
+**RESULTADO: 9 PASS / 0 FAIL — `HARNESS_CORRETIVA_PASS`.**
+
+### Regressão local
+- `tsgo --noEmit`: PASS (sem saída de erro)
+- `vitest run`: 163 arquivos, **2710 PASS**, 4 skipped
+- `bun run build`: PASS (PWA gerado)
+- `promotion-manifest.json`: **MANIFEST_VALIDATION PASS**, 18 artefatos com sha256/bytes conferidos

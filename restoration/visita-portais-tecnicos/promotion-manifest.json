@@ -5,7 +5,7 @@
     "production_ref": "navfzbwgwzruipouyfnk",
     "production_access": "PROIBIDO"
   },
-  "generated_at": "2026-08-05T04:30:00Z",
+  "generated_at": "2026-08-05T15:45:00Z",
   "hash_algorithm": "sha256",
   "apply_order": [
     {
@@ -85,8 +85,8 @@
       "path": "supabase/migrations/20260805152009_fea820c5-e032-4a57-adf8-38f010843bf2.sql",
       "kind": "migration_consolidacao",
       "description": "Consolidação final: sincroniza no repositório as 18 funções canônicas certificadas no staging (run d5d7582f)",
-      "sha256": "2ff87b7466a280c34b02d22e382598c089f89a7f9543facd23744d6e58272e6a",
-      "bytes": 37029
+      "sha256": "bda8b2cb9e226c16a5358e1984cfade32ce9ee9527a2afda31796e3af2d336dd",
+      "bytes": 38117
     },
     {
       "order": 11,
@@ -127,6 +127,30 @@
       "description": "Fixture E2E sem dependência de pacote externo",
       "sha256": "524aa616dd154c74c5fd88d93824558dbb3cade992d46917ecbb5b82dff1c5e9",
       "bytes": 181
+    },
+    {
+      "order": 16,
+      "path": "supabase/migrations/20260805153705_a30b97c8-b824-4119-8bfe-702faa88a6b1.sql",
+      "kind": "migration_corretiva_autorizacao",
+      "description": "Autorizacao exclusiva de participantes e concorrencia exata em rpc_upsert_recomendacao_visita",
+      "sha256": "96deb4577b9ca5f86071a31cac4a2d6627d3da449bf370f0b8204fdd6245f323",
+      "bytes": 11120
+    },
+    {
+      "order": 17,
+      "path": "supabase/migrations/20260805154002_f26e37d5-f5aa-4376-b51d-317ff61a7616.sql",
+      "kind": "migration_corretiva_failclosed",
+      "description": "Fail-closed em logica ternaria de permissao (_assert_visita_editavel, rpc_finalizar_visita_v2)",
+      "sha256": "f915adebf4686aa9689911fe219c3454c94d2a480fc2c36b77c842ddd40b4aef",
+      "bytes": 5180
+    },
+    {
+      "order": 18,
+      "path": "restoration/visita-portais-tecnicos/harness-corretiva.sql",
+      "kind": "prova_runtime",
+      "description": "Harness transacional (ROLLBACK) C1-C8 das correcoes de autorizacao e versao",
+      "sha256": "0eb950e058feb56cccfeb2ec0a958da371e12ca2be3854b69539f79b2fd8a25a",
+      "bytes": 9293
     }
   ],
   "superseded_migrations": [
@@ -188,5 +212,12 @@
   "validation": {
     "hashes_validated": true,
     "method": "sha256sum sobre o conteúdo íntegro de cada arquivo no commit"
+  },
+  "runtime_proof": {
+    "script": "restoration/visita-portais-tecnicos/harness-corretiva.sql",
+    "scenarios": "C1-C8",
+    "result": "9 PASS / 0 FAIL",
+    "cleanup": "ROLLBACK (zero residuo)",
+    "env": "ikaauvsflpmamgxmkhoq"
   }
 }
