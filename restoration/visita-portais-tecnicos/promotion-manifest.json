@@ -76,9 +76,57 @@
       "order": 9,
       "path": "tests/harnesses/visita-atendimentos-runtime-harness/index.ts",
       "kind": "runner_certificacao",
-      "description": "Runner CLI T1–T18 (exit 0 apenas com 18 PASS)",
-      "sha256": "42279de34db6f592606605cee10a903d5a114f2f31863168ab83dbeb35656cde",
-      "bytes": 46055
+      "description": "Runner CLI T1–T18 (exit 0 apenas com 18 PASS); user_clientes antes de user_roles e recomendação criada antes do cenário de aprovação",
+      "sha256": "3e9772b976d846bbebf6477a38293d6f1e225e69ada35168692d56f916e72294",
+      "bytes": 47617
+    },
+    {
+      "order": 10,
+      "path": "supabase/migrations/20260805152009_fea820c5-e032-4a57-adf8-38f010843bf2.sql",
+      "kind": "migration_consolidacao",
+      "description": "Consolidação final: sincroniza no repositório as 18 funções canônicas certificadas no staging (run d5d7582f)",
+      "sha256": "2ff87b7466a280c34b02d22e382598c089f89a7f9543facd23744d6e58272e6a",
+      "bytes": 37029
+    },
+    {
+      "order": 11,
+      "path": "restoration/visita-portais-tecnicos/rollback-consolidacao.sql",
+      "kind": "rollback_logico",
+      "description": "Rollback forward-safe da consolidação (reaplica baseline 20260805040000 + 20260805041601)",
+      "sha256": "f6c2e093794c17813687cfa036bfd30c9d357d3f56bff4e3705e8630c72e9479",
+      "bytes": 1228
+    },
+    {
+      "order": 12,
+      "path": "restoration/visita-portais-tecnicos/postcheck-consolidacao.sql",
+      "kind": "postcheck",
+      "description": "Postcheck read-only da consolidação: SHA-256 das 18 funções, owner, search_path, grants e ausência de data_aprovacao",
+      "sha256": "72864c3c0c6430d3c52775dbec2cd60c8c5f343e603e5b1a81a10953f047b50e",
+      "bytes": 5369
+    },
+    {
+      "order": 13,
+      "path": "docs/auditoria-visita-portais-tecnicos-final.md",
+      "kind": "relatorio_auditoria",
+      "description": "Relatório final de consolidação e gates executados",
+      "sha256": "76e5d281c0da593c8211d4f6da9538439813c7002d3179b6d1e1ded2590ba39d",
+      "bytes": 5867
+    },
+    {
+      "order": 14,
+      "path": "playwright.config.ts",
+      "kind": "executor_e2e",
+      "description": "Configuração Playwright autossuficiente (@playwright/test), baseURL e webServer configuráveis",
+      "sha256": "04573abb290e1d747a7fbaf9554f17b47231e7595330b75e1e16c65db871bbc1",
+      "bytes": 1309
+    },
+    {
+      "order": 15,
+      "path": "playwright-fixture.ts",
+      "kind": "executor_e2e",
+      "description": "Fixture E2E sem dependência de pacote externo",
+      "sha256": "524aa616dd154c74c5fd88d93824558dbb3cade992d46917ecbb5b82dff1c5e9",
+      "bytes": 181
     }
   ],
   "superseded_migrations": [
