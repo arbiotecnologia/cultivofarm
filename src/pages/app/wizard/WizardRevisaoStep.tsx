@@ -222,11 +222,27 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
               <span>Sem conexão — finalização ficará disponível quando voltar online.</span>
             </div>
           )}
+          {culturaAusente && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+              <p className="font-medium">Cultura obrigatória não informada.</p>
+              <p className="mt-0.5">
+                Complete a etapa <strong>Identificação</strong> antes de finalizar a visita.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 h-7"
+                onClick={() => navigate(`/app/visita/${remoteRegistroId}?step=identificacao`)}
+              >
+                Ir para Identificação
+              </Button>
+            </div>
+          )}
           <Button
             className="w-full"
             size="lg"
             onClick={handleFinalizar}
-            disabled={finalizing || !isOnline || !canFinalize}
+            disabled={finalizing || !isOnline || !canFinalize || culturaAusente}
           >
             {finalizing ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Finalizando…</>
@@ -239,6 +255,7 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
           </p>
         </Card>
       )}
+
 
       {status === "finalizado" && (
         <Card className="p-4 space-y-2">
