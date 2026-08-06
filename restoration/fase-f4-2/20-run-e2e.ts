@@ -64,13 +64,47 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: 
 // ---------------------------------------------------------------------
 // Resultado / gates
 // ---------------------------------------------------------------------
-interface Gate { id: string; name: string; ok: boolean; detail: string }
+type GateStatus = "PASS" | "FAIL" | "SKIP";
+interface Gate { id: string; name: string; ok: boolean; status: GateStatus; detail: string }
 const gates: Gate[] = [];
 function gate(id: string, name: string, ok: boolean, detail = "") {
-  gates.push({ id, name, ok, detail });
+  gates.push({ id, name, ok, status: ok ? "PASS" : "FAIL", detail });
   console.log(`${ok ? "PASS" : "FAIL"}  ${id}  ${name}${detail ? " — " + detail : ""}`);
   if (!ok) failed = true;
 }
+/** Gate nao executado por dependencia nao satisfeita: nunca conta como PASS. */
+function skipGate(id: string, name: string, reason: string) {
+  gates.push({ id, name, ok: false, status: "SKIP", detail: `BLOCKED_BY_PRECONDITION: ${reason}` });
+  console.log(`SKIP  ${id}  ${name} — BLOCKED_BY_PRECONDITION: ${reason}`);
+  failed = true;
+}
+/** Erro de pre-condicao: interrompe a cadeia sem virar TXX. */
+class PreconditionBlocked extends Error {}
+// Gates que dependem de calculo + reserva do documento principal.
+const DEPENDENT_GATES: [string, string][] = [
+  ["T08", "tpAmb != 2 -> bloqueio fail-closed"],
+  ["T09", "sem certificado A1 -> 412 CERTIFICATE_REQUIRED e estado GENERATED"],
+  ["T10", "execucao preservada (nunca FAILED)"],
+  ["T11", "registro do A1 sintetico (display_name F42-HARNESS-*)"],
+  ["T12", "geracao real -> SIGNED"],
+  ["T13", "validator xmllint-wasm@5.3.0"],
+  ["T14", "pacote XSD PL_010e_v1.02"],
+  ["T15", "signatureVerified = true"],
+  ["T16", "transmitted = false (teto SIGNED)"],
+  ["T17", "hashes/bytes/paths persistidos"],
+  ["T18", "download autorizado devolve URL assinada de 120s"],
+  ["T19", "download por usuario sem papel -> 403"],
+  ["T20", "download por anon bloqueado"],
+  ["T21", "SHA-256 do XML baixado confere com o registrado"],
+  ["T22", "XMLDSig verificada FORA da Edge"],
+  ["T23", "XSD 1.0 oficial revalidado no XML baixado"],
+  ["T24", "adulteracao do documento invalida a assinatura"],
+  ["T25", "adulteracao da assinatura falha na verificacao"],
+  ["T26", "replay da mesma chave nao cria nova execucao/versao"],
+  ["T27", "payload diferente com a mesma chave -> conflito"],
+  ["T28", "mesma chave em outro documento -> escopo bloqueado"],
+  ["T29", "concorrencia simultanea na mesma chave -> no maximo 1 execucao"],
+];
 let failed = false;
 
 // ---------------------------------------------------------------------
@@ -257,14 +291,45 @@ try {
   gate("T06", "reserva de numeracao (serie sintetica 899)", !resv.error,
     resv.error ? String(resv.error.message).split(":")[0] : "ok");
 
-  // ---------- Bloqueios de negócio ------------------------------------
-  const quote = await callFn({
-    body: { action: "generate", invoice_id: INVOICE_QUOTE_ID, idempotency_key: `${TAG}-QUOTE` },
-    bearer: fiscalUser.token,
+  // ---------- Bloqueio de negocio: pedido em cotacao -------------------
+  // Ordem real das validacoes (auditada nas migrations F3/F4):
+  //   rpc_fiscal_xml_prepare_v1 exige tax_snapshot (FISCAL_CALCULATION_REQUIRED)
+  //   e reserva ANTES de avaliar a elegibilidade do pedido. Logo, o gate de
+  //   quote_only nao e alcancavel pela Edge: ele vive uma camada antes, em
+  //   rpc_fiscal_calculate_invoice_v1, que aplica fn_fiscal_invoice_eligibility
+  //   e devolve FISCAL_NOT_ELIGIBLE com a razao FISCAL_QUOTE_ONLY_BLOCKED.
+  //   O gate e provado exatamente ali — sem satisfazer pre-condicoes que
+  //   permitiriam concluir o documento em cotacao.
+  const quoteCalc = await userClient.rpc("rpc_fiscal_calculate_invoice_v1", {
+    p_invoice_id: INVOICE_QUOTE_ID, p_idempotency_key: `${TAG}-QUOTE-CALC`,
   });
-  gate("T07", "pedido em cotacao -> bloqueio sem efeitos",
-    quote.status === 400 && /QUOTE_ONLY|NOT_ELIGIBLE|CALCULATION_REQUIRED/.test(String(quote.json?.code ?? "")),
-    `status=${quote.status} code=${quote.json?.code}`);
+  const quoteMsg = String(quoteCalc.error?.message ?? "");
+  gate("T07", "pedido em cotacao -> FISCAL_NOT_ELIGIBLE/FISCAL_QUOTE_ONLY_BLOCKED",
+    !!quoteCalc.error && /FISCAL_NOT_ELIGIBLE/.test(quoteMsg) &&
+      /FISCAL_QUOTE_ONLY_BLOCKED/.test(quoteMsg),
+    quoteMsg.slice(0, 120) || "sem erro (inesperado)");
+
+  // Prova de ausencia de efeitos colaterais no documento em cotacao.
+  const quoteInv = await admin.from("fiscal_invoices")
+    .select("status, tax_snapshot").eq("id", INVOICE_QUOTE_ID).maybeSingle();
+  const quoteRuns = await admin.from("fiscal_calculation_runs")
+    .select("id").eq("fiscal_invoice_id", INVOICE_QUOTE_ID);
+  const quoteResv = await admin.from("fiscal_number_reservations")
+    .select("id").eq("fiscal_invoice_id", INVOICE_QUOTE_ID);
+  const quoteXml = await admin.from("fiscal_xml_runs")
+    .select("id").eq("fiscal_invoice_id", INVOICE_QUOTE_ID);
+  gate("T07b", "documento em cotacao sem efeitos colaterais",
+    quoteInv.data?.status === "DRAFT" && !quoteInv.data?.tax_snapshot &&
+    (quoteRuns.data?.length ?? 0) === 0 && (quoteResv.data?.length ?? 0) === 0 &&
+    (quoteXml.data?.length ?? 0) === 0,
+    `status=${quoteInv.data?.status} runs=${quoteRuns.data?.length} resv=${quoteResv.data?.length} xml=${quoteXml.data?.length}`);
+
+  // Cadeia T08+ depende de calculo/reserva reais do documento principal.
+  if (calc.error || resv.error) {
+    throw new PreconditionBlocked(
+      `T05/T06 falharam (${String(calc.error?.message ?? resv.error?.message).split(":")[0]})`,
+    );
+  }
 
   // tpAmb != 2 : altera SOMENTE o emitente sintetico e restaura em seguida.
   await admin.from("company_fiscal_settings").update({ nfe_environment_code: "1" }).eq("id", COMPANY_ID);
@@ -382,7 +447,11 @@ try {
   gate("T20", "download por anon bloqueado",
     dlAnon.status === 401 || dlAnon.status === 403, `status=${dlAnon.status}`);
 
-  const xmlRes = await fetch(String(dl.json?.url));
+  const signedUrl = typeof dl.json?.url === "string" ? String(dl.json.url) : "";
+  if (!signedUrl) {
+    throw new PreconditionBlocked("T18 nao devolveu URL assinada; verificacao externa impossivel");
+  }
+  const xmlRes = await fetch(signedUrl);
   const signedXml = await xmlRes.text();
   const xmlSha = await sha256Hex(enc.encode(signedXml));
   gate("T21", "SHA-256 do XML baixado confere com o registrado",
@@ -474,7 +543,14 @@ try {
 } catch (err) {
   failed = true;
   const msg = err instanceof Error ? err.message : String(err);
-  gate("TXX", "excecao nao tratada no harness", false, msg.slice(0, 200));
+  if (err instanceof PreconditionBlocked) {
+    const done = new Set(gates.map((g) => g.id));
+    for (const [id, name] of DEPENDENT_GATES) {
+      if (!done.has(id)) skipGate(id, name, msg);
+    }
+  } else {
+    gate("TXX", "excecao nao tratada no harness", false, msg.slice(0, 200));
+  }
 } finally {
   // Nunca deixar usuários temporários para trás, mesmo em falha.
   for (const id of createdUsers) {
@@ -491,6 +567,12 @@ try {
   } catch { /* artefato é acessório */ }
 }
 
-const passed = gates.filter((g) => g.ok).length;
-console.log(`\nHARNESS F4.2: ${passed}/${gates.length} GATES ${failed ? "— FAIL" : "PASS"}`);
+const passed = gates.filter((g) => g.status === "PASS").length;
+const skipped = gates.filter((g) => g.status === "SKIP").length;
+const hardFailed = gates.filter((g) => g.status === "FAIL").length;
+console.log(
+  `\nHARNESS F4.2: ${passed}/${gates.length} GATES PASS` +
+    ` (FAIL=${hardFailed}, SKIP/BLOCKED_BY_PRECONDITION=${skipped})` +
+    ` ${failed ? "— FAIL" : "— PASS"}`,
+);
 Deno.exit(failed ? 1 : 0);
