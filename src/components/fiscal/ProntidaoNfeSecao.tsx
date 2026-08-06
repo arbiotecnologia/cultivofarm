@@ -62,14 +62,14 @@ export function ProntidaoNfeSecao() {
                 variant="outline"
                 data-status={data.overallStatus}
                 className={
-                  data.overallStatus === "READY"
+                  data.overallStatus === "READY_HOMOLOGATION"
                     ? "border-emerald-500/50 text-emerald-700 dark:text-emerald-300"
                     : data.overallStatus === "PARTIAL"
                       ? "border-amber-500/60 text-amber-700 dark:text-amber-300"
                       : "border-destructive/60 text-destructive"
                 }
               >
-                {data.overallStatus === "READY" ? (
+                {data.overallStatus === "READY_HOMOLOGATION" ? (
                   <CheckCircle2 className="w-3 h-3 mr-1" aria-hidden />
                 ) : (
                   <Lock className="w-3 h-3 mr-1" aria-hidden />
