@@ -50,6 +50,8 @@ GRANT EXECUTE ON FUNCTION public.fn_fiscal_can_operate(uuid) TO authenticated, s
 
 -- 1.1 A unicidade global de idempotency_key permitia devolver a reserva de
 --     OUTRO documento. Escopo correto: (fiscal_invoice_id, idempotency_key).
+ALTER TABLE public.fiscal_number_reservations
+  DROP CONSTRAINT IF EXISTS fnr_unique_idempotency;
 DROP INDEX IF EXISTS public.fnr_unique_idempotency;
 
 ALTER TABLE public.fiscal_number_reservations
