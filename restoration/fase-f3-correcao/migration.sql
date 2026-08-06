@@ -454,15 +454,22 @@ COMMENT ON COLUMN public.fiscal_tax_rules.base_components IS
 COMMENT ON COLUMN public.fiscal_tax_rules.st_modality IS
   'Modalidade de determinacao da BC ST (modBCST): MVA, PAUTA, PRECO_TABELADO, VALOR_OPERACAO. Fase F3 calcula MVA.';
 
+CREATE OR REPLACE FUNCTION public.fn_fiscal_base_components_valid(_c jsonb)
+RETURNS boolean
+LANGUAGE sql IMMUTABLE
+AS $$
+  SELECT jsonb_typeof(_c) = 'array'
+     AND NOT EXISTS (
+       SELECT 1 FROM jsonb_array_elements_text(_c) x
+        WHERE x NOT IN ('PRODUTO','FRETE','SEGURO','OUTRAS_DESPESAS','DESCONTO','IPI','ICMS_ST'));
+$$;
+
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint
                  WHERE conrelid='public.fiscal_tax_rules'::regclass AND conname='ftr_base_components_chk') THEN
     ALTER TABLE public.fiscal_tax_rules ADD CONSTRAINT ftr_base_components_chk
-      CHECK (jsonb_typeof(base_components) = 'array'
-             AND NOT EXISTS (
-               SELECT 1 FROM jsonb_array_elements_text(base_components) c
-               WHERE c NOT IN ('PRODUTO','FRETE','SEGURO','OUTRAS_DESPESAS','DESCONTO','IPI','ICMS_ST')));
+      CHECK (public.fn_fiscal_base_components_valid(base_components));
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_constraint
