@@ -11,7 +11,7 @@ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
 import { useEffect } from "react";
 import { itemsForPlatform } from "@/config/navigation";
-import { PortalIdentityHeader } from "@/components/portal/PortalIdentityHeader";
+import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 
 // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
@@ -90,22 +90,12 @@ export default function MobileLayout() {
 
 
       {/* Identidade do usuário — padrão único de todos os portais */}
-      <header
-        className={cn(
-          "sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-card px-4 py-2",
-          (!isOnline || pendingCount > 0) && "mt-10",
-        )}
-      >
-        <PortalIdentityHeader
-          variant="compact"
-          roleLabel={getPortalDisplayLabel({
-            activeCtx,
-            primaryRole,
-            roles,
-          })}
-          showEmail
-        />
-      </header>
+      <PortalTopBar
+        brandTitle="AR Bio Campo"
+        brandSubtitle={getPortalDisplayLabel({ activeCtx, primaryRole, roles })}
+        className={cn((!isOnline || pendingCount > 0) && "mt-10")}
+      />
+
 
       {/* Main content area — em desktop limita largura para evitar cartões excessivamente largos */}
       <main

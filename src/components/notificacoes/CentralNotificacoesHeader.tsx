@@ -33,7 +33,8 @@ const TIPO_COLOR: Record<string, string> = {
 
 export function CentralNotificacoesHeader() {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("alertas");
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const { roles } = useAuth();
 
@@ -56,6 +57,10 @@ export function CentralNotificacoesHeader() {
   } = useNotificacoesUnificadas({ limit: 8 });
 
   const listaAlertas = alertasPrioritarios.length > 0 ? alertasPrioritarios : alertasRecentes;
+
+  // Sem permissão de alertas (produtor, parceiro B2B), a central mostra só notificações.
+  const abaAtiva = activeTab ?? (podeVerAlertas ? "alertas" : "notificacoes");
+
 
   const badgeCount = totalCriticos > 0
     ? totalCriticos
@@ -114,20 +119,23 @@ export function CentralNotificacoesHeader() {
       </PopoverTrigger>
 
       <PopoverContent align="end" className="w-[360px] p-0" sideOffset={8}>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={abaAtiva} onValueChange={setActiveTab} className="w-full">
           <div className="px-3 pt-3 pb-2 border-b">
-            <TabsList className="grid w-full grid-cols-2 h-9">
-              <TabsTrigger value="alertas" className="text-xs">
-                Alertas
-                {totalAlertasNaoLidos > 0 && (
-                  <Badge
-                    variant={isCritico ? "destructive" : "secondary"}
-                    className="ml-1.5 h-4 px-1 text-[10px]"
-                  >
-                    {totalAlertasNaoLidos > 99 ? "99+" : totalAlertasNaoLidos}
-                  </Badge>
-                )}
-              </TabsTrigger>
+            <TabsList className={cn("grid w-full h-9", podeVerAlertas ? "grid-cols-2" : "grid-cols-1")}>
+              {podeVerAlertas && (
+                <TabsTrigger value="alertas" className="text-xs">
+                  Alertas
+                  {totalAlertasNaoLidos > 0 && (
+                    <Badge
+                      variant={isCritico ? "destructive" : "secondary"}
+                      className="ml-1.5 h-4 px-1 text-[10px]"
+                    >
+                      {totalAlertasNaoLidos > 99 ? "99+" : totalAlertasNaoLidos}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
+
               <TabsTrigger value="notificacoes" className="text-xs">
                 Notificações
                 {unreadNotificacoes > 0 && (
@@ -139,7 +147,9 @@ export function CentralNotificacoesHeader() {
             </TabsList>
           </div>
 
+          {podeVerAlertas && (
           <TabsContent value="alertas" className="mt-0">
+
             <div className="px-3 py-2 border-b flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold">Alertas prioritários</p>
@@ -175,6 +185,8 @@ export function CentralNotificacoesHeader() {
               </Button>
             </div>
           </TabsContent>
+          )}
+
 
           <TabsContent value="notificacoes" className="mt-0">
             <div className="px-3 py-2 border-b flex items-center justify-between">

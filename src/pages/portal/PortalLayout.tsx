@@ -17,8 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { PortalIdentityHeader } from "@/components/portal/PortalIdentityHeader";
-import { getRoleLabel } from "@/lib/portal/identidade";
+import { PortalTopBar } from "@/components/portal/PortalTopBar";
+
 
 interface MenuItem {
   title: string;
@@ -52,11 +52,6 @@ export default function PortalLayout() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { clienteId, clienteNome, clientes, setClienteAtivo, loading } = usePortalCliente();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
 
   // Contagem de recomendações aguardando decisão do produtor
   const { data: aguardandoCount = 0 } = useQuery({
@@ -167,67 +162,53 @@ export default function PortalLayout() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="flex items-center justify-between px-4 h-14 gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            {isMobile && (
-              <Button variant="ghost" size="icon" onClick={() => setMenuOpen(!menuOpen)}>
-                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            )}
-            <div className="flex items-center gap-2 min-w-0">
-              <Sprout className="h-6 w-6 text-primary shrink-0" />
-              <span className="font-bold text-lg truncate">Portal do Produtor</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 min-w-0">
-            {clientes.length > 1 ? (
-              <Popover open={clientePickerOpen} onOpenChange={setClientePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="max-w-[220px] gap-2">
-                    <Building2 className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{clienteNome ?? "Selecionar cliente"}</span>
-                    <ChevronsUpDown className="h-3 w-3 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[260px] p-0" align="end">
-                  <Command>
-                    <CommandInput placeholder="Buscar cliente..." />
-                    <CommandList>
-                      <CommandEmpty>Nada encontrado.</CommandEmpty>
-                      <CommandGroup heading="Visualizando">
-                        {clientes.map(c => (
-                          <CommandItem key={c.id} value={c.nome} onSelect={() => { setClienteAtivo(c.id); setClientePickerOpen(false); }}>
-                            <Check className={cn("mr-2 h-4 w-4", clienteId === c.id ? "opacity-100" : "opacity-0")} />
-                            <span className="flex-1 truncate">{c.nome}</span>
-                            {c.principal && <span className="text-[10px] text-muted-foreground ml-2">principal</span>}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            ) : clienteNome ? (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                <Building2 className="h-4 w-4" />
-                <span className="truncate max-w-[160px]" title={clienteNome}>{clienteNome}</span>
-              </div>
-            ) : null}
-
-            <PortalIdentityHeader
-              variant="compact"
-              className="hidden md:flex"
-              roleLabel={getRoleLabel(role)}
-            />
-            <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sair">
-              <LogOut className="h-4 w-4" />
+      <PortalTopBar
+        brandTitle="Portal do Produtor"
+        brandIcon={Sprout}
+        leadingSlot={
+          isMobile ? (
+            <Button variant="ghost" size="icon" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}>
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
+          ) : null
+        }
+        contextSlot={
+          clientes.length > 1 ? (
+            <Popover open={clientePickerOpen} onOpenChange={setClientePickerOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="max-w-[220px] gap-2">
+                  <Building2 className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{clienteNome ?? "Selecionar cliente"}</span>
+                  <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[260px] p-0" align="end">
+                <Command>
+                  <CommandInput placeholder="Buscar cliente..." />
+                  <CommandList>
+                    <CommandEmpty>Nada encontrado.</CommandEmpty>
+                    <CommandGroup heading="Visualizando">
+                      {clientes.map(c => (
+                        <CommandItem key={c.id} value={c.nome} onSelect={() => { setClienteAtivo(c.id); setClientePickerOpen(false); }}>
+                          <Check className={cn("mr-2 h-4 w-4", clienteId === c.id ? "opacity-100" : "opacity-0")} />
+                          <span className="flex-1 truncate">{c.nome}</span>
+                          {c.principal && <span className="text-[10px] text-muted-foreground ml-2">principal</span>}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          ) : clienteNome ? (
+            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span className="truncate max-w-[160px]" title={clienteNome}>{clienteNome}</span>
+            </div>
+          ) : null
+        }
+      />
 
-          </div>
-        </div>
-      </header>
 
       <div className="flex flex-1">
         {!isMobile && (
