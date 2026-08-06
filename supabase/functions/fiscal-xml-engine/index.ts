@@ -301,22 +301,22 @@ Deno.serve(async (req) => {
   }
 
   // 4. Assinatura com o certificado A1 ativo (material cifrado no cofre).
-  const masterKey = decodeMasterKey();
-  if (!masterKey) {
-    // Recuperável: o XML gerado permanece íntegro em GENERATED.
-    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
-      detail: "cofre de certificados indisponível" }, 412, headers);
-  }
-
   const certRow = await admin
     .from("v_fiscal_certificate_readiness")
-    .select("certificate_id, status, environment")
+    .select("certificate_id, display_name, status, environment")
     .eq("status", "AVAILABLE").eq("environment", "HOMOLOGATION")
     .order("valid_until", { ascending: false }).limit(1).maybeSingle();
   const certificateId = certRow.data?.certificate_id as string | undefined;
   if (!certificateId) {
     return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
       detail: "nenhum certificado A1 de homologação disponível" }, 412, headers);
+  }
+
+  const masterKey = await resolveMasterKey(admin, String(certRow.data?.display_name ?? ""));
+  if (!masterKey) {
+    // Recuperável: o XML gerado permanece íntegro em GENERATED.
+    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
+      detail: "cofre de certificados indisponível" }, 412, headers);
   }
 
   const material = await admin
@@ -334,11 +334,11 @@ Deno.serve(async (req) => {
     const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path as string);
     if (dl.error || !dl.data) throw new Error("download");
     const cipher = new Uint8Array(await dl.data.arrayBuffer());
-    pfx = await aesGcmDecrypt(masterKey, fromB64(material.data.material_iv as string), cipher);
+    pfx = await aesGcmDecrypt(masterKey, fromBinaryColumn(material.data.material_iv as string), cipher);
     const pwdPlain = await aesGcmDecrypt(
       masterKey,
-      fromB64(material.data.password_iv as string),
-      fromB64(material.data.encrypted_password as string),
+      fromBinaryColumn(material.data.password_iv as string),
+      fromBinaryColumn(material.data.encrypted_password as string),
     );
     password = new TextDecoder().decode(pwdPlain);
   } catch {
