@@ -214,7 +214,7 @@ BEGIN
     customer_id, debtor_partner_id, debtor_customer_id, direction, fin_nfe,
     nature_operation, tp_emis, issue_date, total_amount, created_by, notes
   ) VALUES (
-    v_invoice, 'NFE', 'NFE', 'PENDING', 'PARTNER_ORDER', v_order,
+    v_invoice, 'NFE', 'NFE', 'DRAFT', 'PARTNER_ORDER', v_order,
     v_client, v_partner, v_client, 'OUT', 1,
     'VENDA DE MERCADORIA (HOMOLOGACAO F42)', 1, current_date, 1000.00,
     '00000000-0000-0000-0000-000000000000', v_tag
@@ -237,7 +237,7 @@ BEGIN
     customer_id, debtor_partner_id, debtor_customer_id, direction, fin_nfe,
     nature_operation, tp_emis, issue_date, total_amount, created_by, notes
   ) VALUES (
-    v_inv_quote, 'NFE', 'NFE', 'PENDING', 'PARTNER_ORDER', v_order_quo,
+    v_inv_quote, 'NFE', 'NFE', 'DRAFT', 'PARTNER_ORDER', v_order_quo,
     v_client, v_partner, v_client, 'OUT', 1,
     'VENDA BLOQUEADA (COTACAO)', 1, current_date, 500.00,
     '00000000-0000-0000-0000-000000000000', v_tag
@@ -252,6 +252,18 @@ BEGIN
     v_inv_quote, 1, 'PRODUCT', v_tag || ' PRODUTO COTACAO', 5.000000,
     'UN', 100.000000, 500.00, 500.00
   );
+
+  -- 6c. Contrato real: calculo (rpc_fiscal_calculate_invoice_v1) e reserva
+  --     (rpc_fiscal_reserve_nfe_number_v1) exigem status = 'DRAFT'. Falha
+  --     fail-closed se qualquer fixture nascer fora de DRAFT.
+  IF EXISTS (
+    SELECT 1 FROM public.fiscal_invoices i
+     JOIN public._f42_harness_fixtures f
+       ON f.entity = 'fiscal_invoices' AND f.tag = v_tag AND f.entity_id = i.id
+    WHERE i.status <> 'DRAFT'
+  ) THEN
+    RAISE EXCEPTION 'F42_SETUP: fixtures fiscais devem nascer em DRAFT (contrato de calculo/reserva)';
+  END IF;
 
   RAISE NOTICE 'F42 SETUP OK tag=% invoice=% invoice_quote=% company=% series=% emitente_anterior=%',
     v_tag, v_invoice, v_inv_quote, v_company, v_series, coalesce(v_prev_comp::text,'NENHUM');
