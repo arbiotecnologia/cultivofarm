@@ -3,10 +3,12 @@
 Alvo **exclusivo**: staging `ikaauvsflpmamgxmkhoq`. Produção
 `navfzbwgwzruipouyfnk` não foi acessada. Nada publicado ou transmitido.
 
-> **Status corrigido em 2026-08-06: BLOQUEADO / NÃO APTO PARA F5.** O relato
-> anterior não demonstrou ledger remoto, deploy da Edge Function, validação
-> por XSD 1.0 real nem runtime harness. As afirmações de conformidade e de
-> aplicação completa ficam revogadas até evidência nova.
+> **Status corrigido em 2026-08-06: BLOQUEADO / NÃO APTO PARA F5.** A auditoria
+> remota confirmou que os objetos existem, mas o ledger termina em
+> `20260821000000` e não contém a F4 `20260822000000`; houve aplicação fora do
+> fluxo oficial. O relato anterior também não demonstrou deploy da Edge,
+> validação por XSD 1.0 real nem runtime harness. As afirmações de conformidade
+> e de aplicação completa ficam revogadas até evidência nova.
 
 ## Teto absoluto
 
@@ -65,15 +67,16 @@ em três camadas: gate `fn_fiscal_assert_environment_homologation()`,
 
 - Em 2026-08-06, `POST /functions/v1/fiscal-xml-engine` no staging retornou
   `404 NOT_FOUND`: a Edge Function não está implantada.
-- A consulta REST confirmou a existência remota de `fiscal_xsd_registry`, mas
-  não substitui consulta autenticada ao ledger nem prova a versão aplicada.
+- A auditoria remota read-only confirmou objetos F4 e bucket privado no
+  staging, mas nenhuma entrada F4 no ledger de migrations.
 - `xmllint-wasm 5.3.0` foi executado localmente no Deno e validou um XSD 1.0
   mínimo sem rede; isso comprova viabilidade técnica, não certificação NF-e.
 - Nenhum hash/data de XSD oficial será registrado sem os bytes oficiais.
 
 ## Bloqueios obrigatórios
 
-1. Acesso controlado ao banco/ledger e ao deploy do staging.
+1. Acesso controlado para migration incremental e deploy do staging; o ledger
+   read-only já confirmou que a F4 atual foi aplicada fora do fluxo oficial.
 2. Bundle oficial completo de XSDs NF-e, com URL específica, bytes e hashes
    verificáveis; imports/includes locais e allowlisted.
 3. Migration incremental F4.1, rollback/postcheck e reconciliação do arquivo
