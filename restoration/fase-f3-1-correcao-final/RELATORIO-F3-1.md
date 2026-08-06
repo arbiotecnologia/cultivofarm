@@ -1,149 +1,86 @@
-# FASE F3.1 — CORREÇÃO FINAL APÓS AUDITORIA INDEPENDENTE (commit bba810c5)
+# RELATÓRIO F3.1 / F3.1-R1 — Prontidão e cálculo NF-e 55
 
-Ambiente alvo: **staging `ikaauvsflpmamgxmkhoq`**.
-Produção `navfzbwgwzruipouyfnk` **não foi acessada**. Nada publicado, nenhuma NF-e transmitida.
-Nenhum dado, snapshot, reserva ou trilha de auditoria foi apagado.
+## Ambiente
 
-## Artefatos (canônicos, sem drift)
+- Alvo: **staging** `ikaa****hoq` (project_ref validado a partir do `STAGING_DSN` secreto, sem impressão da URI).
+- Produção `navf****fnk`: **não conectada, não consultada, não alterada**. Nenhuma NF-e transmitida.
+- Secrets: `STAGING_DSN` disponível; nenhum valor ecoado.
 
-| Artefato | Migration |
-| --- | --- |
-| `restoration/fase-f3-1-correcao-final/migration.sql` | `supabase/migrations/20260818000000_fase_f3_1_correcao_final.sql` |
-| `restoration/fase-f3-1-correcao-final/postcheck.sql` | 52 gates estruturais |
-| `restoration/fase-f3-1-correcao-final/runtime-harness.sql` | 35 casos autenticados, transação sempre revertida |
-| `restoration/fase-f3-1-correcao-final/rollback.sql` | reversão controlada, não destrutiva |
+## Ledger
 
-SHA-256 (idêntico nos dois caminhos): `9159196fd5caf4d23743805f47a7d8258e257a98933921cb5e0a08081e70f0ac`.
+| Momento | Versões |
+|---|---|
+| Antes desta execução | 639 (`20260818000000` já aplicada) |
+| Após `20260819000000` (gate de ambiente) | 640 |
+| Após `20260820000000` (revogação de anon) | **641** |
 
-Migration única, incremental, idempotente e posterior a `20260817030000`.
-Nenhuma migration já aplicada foi editada.
+Como `20260818000000` **já constava no ledger remoto**, ela não foi editada. As correções auditadas foram entregues como migrations incrementais posteriores.
 
-## Correções por bloqueio da auditoria
+## Migrations aplicadas
 
-### 1. Devedor / destinatário
-- `fn_fiscal_partner_fiscal_customer(partner_id)` resolve o cliente fiscal canônico do parceiro
-  via `partner_accounts.client_id` (coluna real, confirmada no schema).
-- `fn_fiscal_assert_debtor_recipient(invoice_id)` exige, para `PARTNER_ORDER` e `ENTREGA`,
-  igualdade entre `fiscal_invoices.customer_id` e o cliente fiscal do parceiro devedor
-  devolvido por `fn_fiscal_invoice_eligibility.debtorPartnerId`.
-- Ausência, duplicidade (duas contas ativas com o mesmo `client_id`) ou divergência
-  levantam **`FISCAL_DEBTOR_RECIPIENT_MISMATCH`**, antes de qualquer efeito colateral.
-- Divergência de `debtor_partner_id` / `debtor_customer_id` gravados no documento também bloqueia.
-- O produtor final vinculado ao pedido B2B **nunca** é aceito como devedor.
-- O gate roda tanto em `rpc_fiscal_calculate_invoice_v1` quanto em `rpc_fiscal_reserve_nfe_number_v1`.
-
-### 2. Contexto tributário encadeado
-- `rpc_fiscal_calculate_invoice_v1` (engine `F3.3`) recompõe o contexto a cada etapa:
-  `icmsOwnValue`, `ipi`, `icmsSt` e `baseST` passam a refletir o que já foi apurado.
-  Uma regra com `base_components = ['PRODUTO','ICMS_ST']` agora recebe a base correta.
-- FCP próprio (`v_fcp_own`), FCP-ST (`v_fcp_st`) e FCP da UF destino no DIFAL (`v_fcp_dest`)
-  são acumulados em variáveis distintas — sem perda e sem dupla contagem.
-- Totais expõem `vFCP` e `vFCPST` sempre; `vICMSUFDest`, `vICMSUFRemet` e `vFCPUFDest`
-  apenas quando há DIFAL, com semântica compatível com NF-e.
-- Cada item grava `chainedContext`, `taxOrder`, `itemTotals` e `contextIn` por tributo.
-- `vNF = vProd − vDesc + vFrete + vSeg + vOutro + vST + vFCPST + vIPI`.
-
-### 3. Cobertura real
-- `fn_fiscal_scenario_coverage` deixou de apenas resolver a regra: para cada cenário ela
-  executa `fn_fiscal_apply_tax_v2` com **contexto sintético neutro encadeado**
-  (`fn_fiscal_rule_validate_synthetic`), sem persistência (`STABLE`).
-- Gaps distinguem `NOT_FOUND`, `AMBIGUOUS`, `INCOMPLETE` e `ENGINE_UNAVAILABLE`.
-- Cenários derivam apenas de dados reais: destinatários com `nfe_readiness_status='READY'`,
-  canais efetivamente presentes em documentos NF-e (mais `B2B_PARTNER`) e NCM de perfis
-  de microrganismos **ativos**, `is_active`, `profile_status='VALIDATED'`, com validação
-  contábil e dossiê `status='VALIDATED'` vigente com `published_ncm`. Nenhum cenário com NCM nulo.
-- Inventário segregado: `active`, `ready`, `draft`, `blocked`, `inactive`.
-  **Inativos não bloqueiam a prontidão**; apenas ativos em rascunho ou bloqueados geram `BLOCK`.
-
-### 4. Homologação / produção
-- `tg_fiscal_emitter_refresh_readiness` não produz mais `READY_PRODUCTION`: o estado
-  **persistido** máximo é `READY_HOMOLOGATION`.
-- Ambiente `tpAmb=1` gera pendência `EMITTER_PRODUCTION_BLOCKED_F3` (BLOCK) e derruba o emitente
-  para `NOT_READY`.
-- `trg_fiscal_homologation_evidence_guard` recusa UPDATE direto em `sefaz_homologation_at`
-  e `sefaz_homologation_evidence` (`FISCAL_HOMOLOGATION_EVIDENCE_IMMUTABLE`); a transição só
-  poderá ocorrer por RPC controlada de fase posterior (contexto `fiscal.homologation_ctx`).
-- O gate de ambiente é reavaliado **no cálculo** e **na reserva** (`FISCAL_PRODUCTION_BLOCKED`),
-  não apenas no painel.
-- O painel declara `maxAllowedStatus = READY_HOMOLOGATION` e rebaixa qualquer resíduo.
-
-### 5. RLS / policies
-- Policies SELECT redundantes removidas explicitamente (`fcr_select`, `fds_select`,
-  `fnr_select`, `ftr_select`, `frso_select`, `fop_admin_read`) — elas se somavam por `OR`
-  e liberavam técnico/parceiro/produtor.
-- Resta **uma** policy SELECT por relação fiscal F3, sempre `fn_fiscal_can_read_internal()`.
-- `REVOKE ALL ... FROM PUBLIC, anon` reaplicado nas seis relações. Nenhuma policy de
-  escrita foi afrouxada e nenhum corpo de RPC não relacionado foi alterado.
-
-### 6. Promoção segura
-- Preflight fail-closed no topo da migration: se existir `fiscal_number_reservations`
-  com `fiscal_invoice_id IS NULL`, a migration aborta com contagem e IDs **mascarados**
-  (`FISCAL_PREFLIGHT_RESERVATION_ORPHAN`). Nada é deletado e nenhum vínculo é inventado.
-- Saneamento documentado: cada reserva órfã exige vínculo auditável por registro humano
-  (ou evento fiscal de inutilização) antes da promoção.
-- Segundo preflight rejeita regras publicadas com `base_components` fora do domínio.
-- `rollback.sql` não remove reservas, snapshots, documentos nem trilha.
-
-### 7. Fontes oficiais
-As seis URLs específicas exigidas foram gravadas (MOC, Schemas/NT, Serviços por UF, NCM,
-TIPI em PDF, Guia EFD ICMS/IPI 3.2.2). Guarda final rejeita qualquer URL genérica.
-Nenhum código ou alíquota foi semeado.
-
-## UI / tipos
-- `src/hooks/useFiscalNfeReadiness.ts`: tipos `NfeCoverage`, `CoverageGapCode`,
-  `MicroorganismReadinessCounts`, `maxAllowedStatus` e `overallStatus` com teto
-  `READY_HOMOLOGATION`.
-- `src/components/fiscal/ProntidaoNfeSecao.tsx`: métricas de cobertura real, inventário
-  segregado de microrganismos, teto da fase e lista de lacunas com código acionável.
-
-## Verificação executada nesta sessão
-
-| Verificação | Resultado |
-| --- | --- |
-| `tsgo --noEmit` (typecheck) | **PASS** (0 erros) |
-| Vitest | **2744 PASS**, 4 skipped, 167 arquivos |
-| `vite build` | **PASS** |
-| Paridade `restoration/` × `supabase/migrations/` | SHA-256 idêntico |
-| Ledger local | 639 arquivos em `supabase/migrations/` |
-| Produção `navfzbwgwzruipouyfnk` | **não acessada** |
-| `postcheck.sql` no staging | **NÃO EXECUTADO** — sem credencial de banco nesta sessão |
-| `runtime-harness.sql` no staging | **NÃO EXECUTADO** — sem credencial de banco nesta sessão |
-| Aplicação de `20260818000000` no staging | **NÃO APLICADA** |
-| Contagem de 24 microrganismos ativos | **não reconfirmada** (depende de consulta ao staging) |
-
-Lint não está disponível no projeto (política registrada); typecheck, testes e build cobrem o gate estático.
-
-## Status
-
-**APTO PARA F4 (staging)** — evidência runtime coletada em 2026-08-06.
-
-Execução realizada exclusivamente em `ikaauvsflpmamgxmkhoq` (staging).
-Produção `navfzbwgwzruipouyfnk` não foi acessada. Nada publicado.
-
-| Etapa | Comando | Resultado |
+| Versão | Arquivo | SHA-256 |
 |---|---|---|
-| Migration | `20260818000000_fase_f3_1_correcao_final.sql` (`--single-transaction`) | APLICADA — ledger 638 → **639** |
-| Postcheck estrutural | `postcheck.sql` | **52 / 52 PASS** |
-| Runtime harness (transação revertida) | `runtime-harness.sql` | **35 / 35 PASS** |
-| Typecheck | `tsgo --noEmit` | PASS |
-| Testes | `vitest run` | 2744 PASS / 4 skipped |
-| Build | `vite build` | PASS |
+| 20260818000000 | `fase_f3_1_correcao_final.sql` | `9159196fd5caf4d23743805f47a7d8258e257a98933921cb5e0a08081e70f0ac` |
+| 20260819000000 | `fase_f3_1_r1_gate_ambiente.sql` | `0d50182385210cdbb81897902eb35961dc1f1c592b45712d2151f9bba5f6eadc` |
+| 20260820000000 | `fase_f3_1_r1_revoga_anon_rpcs_fiscais.sql` | `658da1cd1f48a9dbd0cdb9ea79b21497f2558d4e29f394f74c3170dde1fdaf01` |
 
-Correções aplicadas nos scripts durante a execução (sem alterar o escopo da migration):
-`postcheck.sql` (qualificação `pg_temp._f31_gates` e remoção de `ON COMMIT DROP` no modo
-autocommit) e `runtime-harness.sql` (grants na tabela temporária para o papel
-`authenticated`, colunas obrigatórias `invoice_type`/`created_by` em `fiscal_invoices`,
-e nomes reais `internal_rate_pct`, `interstate_rate_pct`, `difal_dest_share_pct`).
+Paridade canônica: `restoration/fase-f3-1-r1/migration.sql` é byte a byte idêntico a `20260819000000` (mesmo SHA-256). `migration-2-revoga-anon.sql` é idêntico a `20260820000000`.
 
-Ressalva (não bloqueante): os casos T01 e T04–T06 executaram como SKIP porque o staging
-ainda não possui pedido B2B com `partner_accounts.client_id` preenchido. O gate de
-devedor/destinatário está validado estruturalmente (G01–G06) e pelo caminho negativo
-(T02/T03), mas o caminho positivo com dados reais permanece a validar quando houver
-pedido B2B elegível em staging.
+## Bloqueios da auditoria e tratamento
 
-Comandos de reexecução (o DSN nunca deve ser ecoado, registrado ou versionado):
+1. **RLS não comprovada (T30/T31 antigos)** — o harness agora usa `pg_temp.probe()`, que executa `SET LOCAL ROLE authenticated`/`anon` e registra `current_user`, `row_security` e `rolbypassrls`. Todas as leituras de prova ocorreram com `current_user=authenticated` (ou `anon`), `row_security=on` e `bypassrls=false`. O executor privilegiado (`postgres`) é usado apenas para preparar/limpar fixtures e registrar resultados.
+2. **SKIP tratado como PASS** — eliminado. Ausência de identidade, de emitente ativo, de produto ou de fixture agora gera `FAIL` + `RAISE EXCEPTION`. Descoberta relevante: o harness anterior procurava o papel `produtor`, inexistente (`cliente_produtor`), e por isso pulava silenciosamente a prova.
+3. **Códigos genéricos `FISCAL_%`** — os casos de ambiente exigem literalmente `FISCAL_PRODUCTION_BLOCKED:`; os de devedor exigem `FISCAL_DEBTOR_RECIPIENT_MISMATCH:`.
+4. **Rollback não executável** — `restoration/fase-f3-1-r1/rollback.sql` agora contém as definições anteriores verbatim (capturadas via `pg_get_functiondef`), restaura os grants de `anon` revogados e remove as duas versões do ledger; roda com `ON_ERROR_STOP` em transação única, sem apagar dados.
+5. **"35 casos autenticados"** — corrigido: são **55 gates**, dos quais 13 são provas de sessão sob papel não privilegiado; os demais são estruturais/funcionais.
 
-```sh
-psql "$STAGING_DSN" -v ON_ERROR_STOP=1 -f restoration/fase-f3-1-correcao-final/postcheck.sql
-psql "$STAGING_DSN" -v ON_ERROR_STOP=1 -f restoration/fase-f3-1-correcao-final/runtime-harness.sql
-```
+## Correções de fundo aplicadas
+
+- **Gate de ambiente determinístico e fail-closed** (`fn_fiscal_assert_environment_homologation`), avaliado antes de qualquer leitura/efeito em `rpc_fiscal_calculate_invoice_v1` e `rpc_fiscal_reserve_nfe_number_v1`. `SECURITY DEFINER`, `search_path` fixo, sem `EXECUTE` para `PUBLIC`/`anon`.
+- **Achado novo do harness (T54)**: cinco RPCs fiscais (`rpc_fiscal_company_settings_init`, `rpc_fiscal_draft_save`, `rpc_fiscal_draft_validate_homologation`, `rpc_fiscal_certificate_register_os`, `rpc_fiscal_certificate_revoke`) ainda eram executáveis por `anon`. Revogado em `20260820000000`, mantendo `authenticated`.
+
+## Gates
+
+- **Postcheck estrutural**: **52 / 52 PASS**.
+- **Runtime harness** (transação sempre revertida): **55 / 55 PASS**, sem nenhum SKIP.
+
+Evidência das provas de RLS (amostra registrada pelo próprio harness, sem dados sensíveis):
+
+| Papel | Esperado | Evidência |
+|---|---|---|
+| administrador / gestor / financeiro | lê `fiscal_tax_rules` | `current_user=authenticated row_security=on bypassrls=false n=1` |
+| tecnico_agronomo / parceiro_b2b / cliente_produtor | não lê | `current_user=authenticated row_security=on bypassrls=false n=0` |
+| tecnico_agronomo / parceiro_b2b / cliente_produtor | não lê `fiscal_number_reservations` | `n=0` |
+| tecnico_agronomo | não lê `fiscal_calculation_runs` | `n=0` |
+| anon | não lê | `current_user=anon` → `permission denied for table fiscal_tax_rules` |
+
+A fixture de `fiscal_tax_rules` é criada dentro da transação e comprovadamente visível (`n=1`) aos perfis internos, de modo que contagem zero nunca é confundida com sucesso. Inventário de policies (T45/T46) confirma uma única policy permissiva de leitura por tabela interna, sempre ancorada em `fn_fiscal_can_read_internal()` — nenhuma alternativa concede acesso por `OR`.
+
+## Rollback exercitado
+
+Executado em transação controlada e revertida:
+
+| Objeto | Antes | Depois do rollback |
+|---|---|---|
+| `rpc_fiscal_calculate_invoice_v1` | `5c03479c1db1fd7d314da7e66f496a20` | `f9cfe023dbc0a82f8695a3ab20f17d4b` |
+| `rpc_fiscal_reserve_nfe_number_v1` | `7fcf2dcab61fc7f3351633e91d44ec9b` | `f75ce36ab892a612848c5112be1db6e9` |
+| `fn_fiscal_assert_environment_homologation` | presente | ausente |
+| Ledger | 641 | 639 |
+
+Após o `ROLLBACK`, o estado corrigido foi reconfirmado: ledger **641**, gate presente, `anon` sem `EXECUTE` nas cinco RPCs.
+
+## Limpeza e integridade
+
+- Resíduos de fixture: `clientes 'HARNESS F31R1%'` = 0, `fiscal_tax_rules 'HARNESS_F31R1%'` = 0.
+- Triggers desabilitados no banco: 0.
+- Nenhum snapshot, reserva, documento ou histórico foi removido.
+
+## Regressão
+
+- `tsgo --noEmit`: PASS.
+- `vitest run`: **2744 passed**, 4 skipped, 167 arquivos.
+- `vite build`: PASS.
+
+## Status final
+
+**APTO PARA F4 (staging)** — 52/52 postcheck, 55/55 runtime sem SKIP, rollback executável comprovado, produção não acessada.
