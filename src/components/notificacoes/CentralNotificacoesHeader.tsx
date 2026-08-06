@@ -33,7 +33,8 @@ const TIPO_COLOR: Record<string, string> = {
 
 export function CentralNotificacoesHeader() {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("alertas");
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const { roles } = useAuth();
 
