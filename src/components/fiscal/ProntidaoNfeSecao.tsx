@@ -137,7 +137,55 @@ export function ProntidaoNfeSecao() {
                 }
               />
               <Metric label="Séries ativas" value={String(data.numbering.activeSeries)} />
+              {data.coverage ? (
+                <Metric
+                  label="Cobertura de cenários reais"
+                  value={`${data.coverage.covered} / ${data.coverage.total}`}
+                  hint={
+                    data.coverage.dimensions
+                      ? `${data.coverage.dimensions.readyRecipients} destinatários · ${data.coverage.dimensions.activeChannels} canais · ${data.coverage.dimensions.officialNcms} NCM oficiais`
+                      : undefined
+                  }
+                />
+              ) : null}
+              {data.microorganisms ? (
+                <Metric
+                  label="Microrganismos (ativos)"
+                  value={`${data.microorganisms.ready} prontos / ${data.microorganisms.active}`}
+                  hint={`${data.microorganisms.draft} rascunhos · ${data.microorganisms.blocked} bloqueados · ${data.microorganisms.inactive} inativos (não bloqueiam)`}
+                />
+              ) : null}
+              <Metric
+                label="Teto desta fase"
+                value={data.maxAllowedStatus ?? "READY_HOMOLOGATION"}
+                hint={
+                  data.emitter.sefazHomologationRecorded
+                    ? "Homologação SEFAZ registrada"
+                    : "Produção bloqueada até homologação SEFAZ por fluxo controlado"
+                }
+              />
             </div>
+
+            {data.coverage && data.coverage.gaps.length > 0 ? (
+              <div className="space-y-2" data-testid="fiscal-nfe-coverage-gaps">
+                <p className="text-sm font-medium">Lacunas de cobertura</p>
+                <ul className="space-y-1">
+                  {data.coverage.gaps.slice(0, 20).map((g, i) => (
+                    <li
+                      key={`${g.scope}-${g.code}-${g.taxKind ?? ""}-${g.destUf ?? ""}-${g.ncm ?? ""}-${i}`}
+                      className="text-sm text-muted-foreground"
+                    >
+                      <strong>{g.code}</strong> · {g.scope}
+                      {g.taxKind ? ` · ${g.taxKind}` : ""}
+                      {g.destUf ? ` · UF ${g.destUf}` : ""}
+                      {g.ncm ? ` · NCM ${g.ncm}` : ""}
+                      {g.channel ? ` · ${g.channel}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
 
             {blocks.length > 0 ? (
               <div className="space-y-2" data-testid="fiscal-nfe-blockers">
