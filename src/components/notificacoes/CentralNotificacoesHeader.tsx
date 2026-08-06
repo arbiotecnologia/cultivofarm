@@ -58,6 +58,10 @@ export function CentralNotificacoesHeader() {
 
   const listaAlertas = alertasPrioritarios.length > 0 ? alertasPrioritarios : alertasRecentes;
 
+  // Sem permissão de alertas (produtor, parceiro B2B), a central mostra só notificações.
+  const abaAtiva = activeTab ?? (podeVerAlertas ? "alertas" : "notificacoes");
+
+
   const badgeCount = totalCriticos > 0
     ? totalCriticos
     : totalAlertasNaoLidos > 0
