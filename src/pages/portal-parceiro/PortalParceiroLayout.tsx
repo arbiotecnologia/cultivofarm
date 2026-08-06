@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate, Navigate, useLocation } from "react-route
 import { useAuth } from "@/hooks/useAuth";
 import { useMyPartner } from "@/hooks/useMyPartner";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, ListOrdered, PlusCircle, History, LogOut, Menu, Wallet, LayoutDashboard, Star, TrendingUp, FileText, FlaskConical, Users, Inbox, Repeat } from "lucide-react";
+import { ShoppingCart, ListOrdered, PlusCircle, History, Menu, Wallet, LayoutDashboard, Star, TrendingUp, FileText, FlaskConical, Users, Inbox } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -138,11 +138,6 @@ export default function PortalParceiroLayout() {
 
 
 
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

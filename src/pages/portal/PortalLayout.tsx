@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
-import { getRoleLabel } from "@/lib/portal/identidade";
 
 
 interface MenuItem {
@@ -53,11 +52,6 @@ export default function PortalLayout() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { clienteId, clienteNome, clientes, setClienteAtivo, loading } = usePortalCliente();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
 
   // Contagem de recomendações aguardando decisão do produtor
   const { data: aguardandoCount = 0 } = useQuery({
