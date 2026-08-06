@@ -221,26 +221,8 @@ export default function PortalParceiroLayout() {
           ))}
         </nav>
 
-        <div className="p-3 border-t space-y-2">
-          {canSwitchPortal && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                setOpen(false);
-                void switchPortal();
-              }}
-              aria-label="Trocar de portal"
-            >
-              <Repeat className="h-4 w-4 mr-2" aria-hidden="true" /> Trocar de portal
-            </Button>
-          )}
-          <Button variant="outline" size="sm" className="w-full" onClick={handleSignOut} aria-label="Sair da conta">
-            <LogOut className="h-4 w-4 mr-2" aria-hidden="true" /> Sair
-          </Button>
-        </div>
       </aside>
+
 
       <main className="flex-1 p-4 md:p-6 overflow-x-auto">
         {isStaff && partner && (
