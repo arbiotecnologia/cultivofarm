@@ -185,6 +185,8 @@ export function CentralNotificacoesHeader() {
               </Button>
             </div>
           </TabsContent>
+          )}
+
 
           <TabsContent value="notificacoes" className="mt-0">
             <div className="px-3 py-2 border-b flex items-center justify-between">
