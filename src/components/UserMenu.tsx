@@ -106,14 +106,24 @@ export function UserMenu({ settingsTo, onSwitchPortal }: UserMenuProps = {}) {
         </div>
 
         <div className="p-1">
-          <DropdownMenuItem asChild className="cursor-pointer">
-            <Link to="/configuracoes" className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              <span>Configurações</span>
-            </Link>
-          </DropdownMenuItem>
+          {settingsPath && (
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to={settingsPath} className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                <span>Configurações</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
 
-          <DropdownMenuSeparator className="my-1" />
+          {onSwitchPortal && (
+            <DropdownMenuItem onClick={onSwitchPortal} className="cursor-pointer">
+              <Repeat className="h-4 w-4 mr-2 text-muted-foreground" aria-hidden="true" />
+              <span>Trocar de portal</span>
+            </DropdownMenuItem>
+          )}
+
+          {(settingsPath || onSwitchPortal) && <DropdownMenuSeparator className="my-1" />}
+
 
           <DropdownMenuItem
             onClick={handleSignOut}
