@@ -71,7 +71,7 @@ BEGIN
                  'public.tg_fiscal_xml_runs_immutable()'::regprocedure,
                  'public.tg_fiscal_xsd_registry_immutable()'::regprocedure)
      AND prosecdef
-     AND array_to_string(proconfig,',') LIKE '%search_path=public,pg_temp%';
+     AND array_to_string(proconfig,',') LIKE '%search_path=public, pg_temp%';
   IF n <> 5 THEN RAISE EXCEPTION 'G12 FAIL: % de 5 funcoes com SECURITY DEFINER + search_path fixo', n; END IF;
 
   -- G13 triggers de imutabilidade ativos
