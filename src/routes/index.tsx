@@ -1,3 +1,3 @@
 export default function Index() {
-  return <body>foi realizado a atualização do cabeçalho no portal do operador, aplicador, financeiro e todos os outros perfis?</body>;
+  return <body>Implementar suporte a modo escuro no cabeçalho do painel administrador, garantindo contraste adequado nos textos, badges e ícones.</body>;
 }
