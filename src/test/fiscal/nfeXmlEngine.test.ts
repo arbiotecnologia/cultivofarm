@@ -200,10 +200,12 @@ describe("parseXml — superfície fail-closed", () => {
   });
 
   it("rejeita comentários, CDATA e processing instructions", () => {
-    expect(() => parseXml("<a><!-- c --></a>")).toThrowError(/COMMENT/);
+    expect(() => parseXml("<a><!-- c --></a>")).toThrowError(/<!--/);
     expect(() => parseXml("<a><![CDATA[x]]></a>")).toThrowError(/CDATA/);
-    expect(() => parseXml('<?xml version="1.0"?><a><?php ?></a>')).toThrowError(/PI/);
+    expect(() => parseXml('<?xml version="1.0"?><a><?php ?></a>'))
+      .toThrowError(/processing instruction/);
   });
+
 
   it("rejeita tags desbalanceadas e múltiplas raízes", () => {
     expect(() => parseXml("<a><b></a>")).toThrowError(XmlParseError);
