@@ -529,8 +529,10 @@ BEGIN
   PERFORM pg_temp.as_root();
   IF v_res->'emitter'->>'status' <> 'READY_HOMOLOGATION'
      OR v_res->>'maxAllowedStatus' <> 'READY_HOMOLOGATION'
-     OR (v_res->>'pendencies') NOT LIKE '%SEFAZ_HOMOLOGATION_NOT_RECORDED%' THEN
+     OR (v_res->'emitter'->>'sefazHomologationRecorded')::boolean THEN
     RAISE EXCEPTION 'T35 FAIL: %', v_res->'emitter'; END IF;
+  IF v_res->'emitter'->>'status' = 'READY_PRODUCTION' THEN
+    RAISE EXCEPTION 'T35 FAIL: producao liberada sem homologacao SEFAZ'; END IF;
   PERFORM pg_temp.ok(35,'Teto READY_HOMOLOGATION enquanto nao houver homologacao SEFAZ registrada');
 
   -- T36 — cobertura incompleta rebaixa a prontidão global.
