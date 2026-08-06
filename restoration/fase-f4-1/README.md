@@ -93,10 +93,27 @@ Ausência/indisponibilidade de certificado devolve HTTP 412
 `CERTIFICATE_REQUIRED` **preservando a execução em `GENERATED`** — deixou
 de ser falha terminal, conforme exigido.
 
-## 6. Itens BLOQUEADOS (dependem de acesso a staging)
+## 6. Kit de aplicação (pronto, NÃO executado)
 
-Esta execução não possui credencial de banco (`PGHOST` ausente) nem CLI
-Supabase. Portanto **permanecem pendentes**:
+| artefato | escopo |
+| --- | --- |
+| `migration-incremental.sql` | bytes/hashes reais do bundle em `fiscal_xsd_registry` |
+| `rollback.sql` | forward-safe; não toca execuções nem Storage |
+| `postcheck.sql` | 8 gates fail-fast (colunas, hashes, dependências, validador, ACL, RLS, teto de ambiente) |
+| `RUNBOOK-STAGING.md` | ordem fail-fast: ledger → migration → postcheck → deploy → verificação runtime → UI |
+| `runtime-harness/xsd-gate.ts` | 8 gates locais de XSD real + XMLDSig |
+| `runtime-harness/xsd-bundle-integrity.ts` | integridade byte a byte do bundle versionado |
+
+Integridade do bundle reexecutada em 2026-08-06: **5/5 PASS**
+(`d44ae5aa6a0d…`).
+
+## 7. BLOQUEIO EXATO (itens que dependem de acesso a staging)
+
+Reverificado nesta retomada: `PGHOST` ausente, sem DSN, sem CLI Supabase,
+e o projeto usa Supabase **externo** — o namespace de ferramentas de banco
+expõe apenas `enable` (que criaria um projeto novo, fora do escopo
+autorizado). Portanto **permanecem pendentes, sem simulação nem
+declaração de aprovação**:
 
 - reconciliação do ledger: `supabase_migrations.schema_migrations` termina
   em `20260821000000`; a F4 (`20260822000000`) continua aplicada fora do
@@ -110,7 +127,11 @@ Supabase. Portanto **permanecem pendentes**:
 A UI de geração (`GeracaoXmlNfeSecao.tsx`) permanece **bloqueada** com
 mensagem honesta até o deploy e a reconciliação do ledger.
 
-## 7. Qualidade local
+Desbloqueio: executar `RUNBOOK-STAGING.md` com operador autorizado (passos
+0 a 7). Nenhum desses gates pode ser comprovado nesta sessão, e nada foi
+declarado como aprovado por inferência.
+
+## 8. Qualidade local
 
 - `tsgo --noEmit`: limpo.
 - Vitest: 168 arquivos PASS / 1 skipped; 2.764 testes PASS / 4 skipped.
