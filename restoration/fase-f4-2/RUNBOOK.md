@@ -158,9 +158,52 @@ final do script: `fixtures`, `certificados`, `emitentes`, `parceiros` e
 `clientes` em `0`, e `emitentes_ativos` de volta a `1` quando havia
 emitente ativo antes do run.
 
-## 8. Estado atual
+## 8. Ensaio runtime real no staging (2026-08-06) — 9/22 FAIL
 
-Não executado nesta sessão: o ambiente do agente não possui `PGHOST`/DSN,
-CLI Supabase nem os secrets de staging. O kit está pronto para execução por
-um operador autorizado, na ordem acima. Produção não foi acessada.
+Execução real em `ikaauvsflpmamgxmkhoq` com binário Deno oficial verificado:
+**9/22 PASS — FAIL**. Cleanup comprovado: `active_emitters=1`,
+`previous_restored=true`, `fixtures=0`, `temp_users=0`, `certs=0`, Storage
+limpo; segredo de teste e PAT removidos ao final. Nenhum acesso a produção,
+nenhuma transmissão SEFAZ.
+
+Causa raiz e correções aplicadas neste pacote:
+
+1. **T05/T06 — `FISCAL_INVOICE_NOT_DRAFT`.** O setup criava as duas notas
+   sintéticas com `status = 'PENDING'`, mas o contrato real de
+   `rpc_fiscal_calculate_invoice_v1` e `rpc_fiscal_reserve_nfe_number_v1`
+   exige `DRAFT`. Ambas as fixtures passam a nascer em `DRAFT`, com guarda
+   fail-closed no próprio setup e gate `G17` no verify. Nenhum dado real
+   é tocado.
+2. **T07 — ordem real das validações.** `rpc_fiscal_xml_prepare_v1` cobra
+   `tax_snapshot` (`FISCAL_CALCULATION_REQUIRED`) e reserva **antes** de
+   avaliar a elegibilidade do pedido; logo o gate de cotação é inalcançável
+   pela Edge sem antes concluir pré-condições que o documento em cotação não
+   pode ter. O gate passou a ser provado onde ele realmente vive:
+   `rpc_fiscal_calculate_invoice_v1`, que aplica `fn_fiscal_invoice_eligibility`
+   e devolve `FISCAL_NOT_ELIGIBLE` com a razão `FISCAL_QUOTE_ONLY_BLOCKED`.
+   Nenhum erro genérico é aceito, e o novo `T07b` prova zero efeitos
+   colaterais (documento segue `DRAFT`, sem `tax_snapshot`, sem
+   `fiscal_calculation_runs`, sem reserva e sem `fiscal_xml_runs`).
+3. **Cascata T09/T10/T12–T29 e `TXX Invalid URL`.** O harness agora
+   interrompe a cadeia quando T05/T06 falham e registra os dependentes como
+   `SKIP — BLOCKED_BY_PRECONDITION`, sem nunca chamar download com URL
+   `undefined`. O total permanece honesto: o resumo final imprime
+   `PASS/total` com `FAIL` e `SKIP` discriminados, e SKIP nunca conta como
+   PASS.
+4. **Regressão estática.** `src/test/fiscal/f42HarnessFixtures.static.test.ts`
+   falha se qualquer fixture fiscal de cálculo voltar a ser criada fora de
+   `DRAFT` ou se as guardas de DRAFT sumirem do setup/verify.
+
+Com as fixtures em `DRAFT`, a sequência esperada é: T05/T06 PASS → T09 chega
+a `412 CERTIFICATE_REQUIRED` preservando a execução em `GENERATED` → T12
+assina até `SIGNED` → T13–T29 executam normalmente.
+
+## 9. Estado atual
+
+**CANDIDATO À REVALIDAÇÃO.** O último resultado externo conhecido é
+**9/22 FAIL**; as correções acima ainda não foram reprovadas em novo ensaio
+remoto, e o ambiente do agente não possui DSN/CLI/secrets de staging. Nenhum
+PASS de runtime é alegado até nova prova externa. Produção
+`navfzbwgwzruipouyfnk` não foi acessada, nada foi publicado, nada foi
+transmitido à SEFAZ e nenhuma migration foi executada.
 
