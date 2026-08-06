@@ -151,6 +151,72 @@ BEGIN
   END IF;
   pass := pass + 1; RAISE NOTICE 'G11 PASS certificado sintetico do harness';
 
+  -- G12 — o emitente sintético é o ÚNICO ativo durante o harness.
+  total := total + 1;
+  SELECT count(*) INTO n FROM public.company_fiscal_settings WHERE is_active;
+  IF n <> 1 THEN RAISE EXCEPTION 'G12 FAIL: % emitentes ativos (esperado 1)', n; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.company_fiscal_settings c
+      JOIN public._f42_harness_fixtures f
+        ON f.entity = 'company_fiscal_settings' AND f.entity_id = c.id AND f.tag = v_tag
+     WHERE c.is_active) THEN
+    RAISE EXCEPTION 'G12 FAIL: emitente ativo nao e o fixture da tag';
+  END IF;
+  pass := pass + 1; RAISE NOTICE 'G12 PASS emitente sintetico unico ativo';
+
+  -- G13 — o emitente ativo anterior está registrado para restauração.
+  total := total + 1;
+  IF NOT EXISTS (
+    SELECT 1 FROM public._f42_harness_fixtures
+     WHERE tag = v_tag AND entity = 'previous_active_company_fiscal_settings') THEN
+    RAISE EXCEPTION 'G13 FAIL: emitente anterior nao registrado';
+  END IF;
+  pass := pass + 1; RAISE NOTICE 'G13 PASS emitente anterior registrado';
+
+  -- G14 — prontidão real do emitente e do destinatário (contrato do motor).
+  total := total + 1;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.company_fiscal_settings c
+      JOIN public._f42_harness_fixtures f
+        ON f.entity = 'company_fiscal_settings' AND f.entity_id = c.id AND f.tag = v_tag
+     WHERE c.nfe_readiness_status = 'READY_HOMOLOGATION') THEN
+    RAISE EXCEPTION 'G14 FAIL: emitente sintetico nao esta READY_HOMOLOGATION';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.customer_fiscal_profiles p
+      JOIN public._f42_harness_fixtures f
+        ON f.entity = 'customer_fiscal_profiles' AND f.entity_id = p.customer_id AND f.tag = v_tag
+     WHERE p.nfe_readiness_status = 'READY' AND p.profile_status = 'VALIDATED') THEN
+    RAISE EXCEPTION 'G14 FAIL: destinatario sintetico nao esta READY/VALIDATED';
+  END IF;
+  pass := pass + 1; RAISE NOTICE 'G14 PASS prontidao real emitente/destinatario';
+
+  -- G15 — nenhum objeto sintético fora da tag corrente.
+  total := total + 1;
+  SELECT count(*) INTO n FROM public._f42_harness_fixtures WHERE tag <> v_tag;
+  IF n <> 0 THEN RAISE EXCEPTION 'G15 FAIL: % fixture(s) de outra tag presentes', n; END IF;
+  SELECT count(*) INTO n FROM public.company_fiscal_settings
+   WHERE legal_name LIKE 'F42-HARNESS-%' AND legal_name NOT LIKE v_tag || '%';
+  IF n <> 0 THEN RAISE EXCEPTION 'G15 FAIL: % emitente(s) sinteticos fora da tag', n; END IF;
+  SELECT count(*) INTO n FROM public.clientes
+   WHERE nome LIKE 'F42-HARNESS-%' AND nome NOT LIKE v_tag || '%';
+  IF n <> 0 THEN RAISE EXCEPTION 'G15 FAIL: % cliente(s) sinteticos fora da tag', n; END IF;
+  SELECT count(*) INTO n FROM public.partner_accounts
+   WHERE razao_social LIKE 'F42-HARNESS-%' AND razao_social NOT LIKE v_tag || '%';
+  IF n <> 0 THEN RAISE EXCEPTION 'G15 FAIL: % parceiro(s) sinteticos fora da tag', n; END IF;
+  pass := pass + 1; RAISE NOTICE 'G15 PASS somente objetos da tag corrente';
+
+  -- G16 — gatilhos de prontidão permanecem habilitados (nada foi desligado).
+  total := total + 1;
+  SELECT count(*) INTO n FROM pg_trigger t
+   WHERE NOT t.tgisinternal
+     AND t.tgenabled <> 'D'
+     AND t.tgfoid IN (
+       'public.tg_fiscal_emitter_refresh_readiness()'::regprocedure,
+       'public.tg_fiscal_recipient_refresh_readiness()'::regprocedure);
+  IF n < 2 THEN RAISE EXCEPTION 'G16 FAIL: gatilhos de prontidao ausentes/desabilitados (%)', n; END IF;
+  pass := pass + 1; RAISE NOTICE 'G16 PASS gatilhos de prontidao ativos';
+
   RAISE NOTICE 'VERIFY F4.2: %/% GATES PASS', pass, total;
   IF pass <> total THEN RAISE EXCEPTION 'VERIFY F4.2 FAIL'; END IF;
 END $v$;

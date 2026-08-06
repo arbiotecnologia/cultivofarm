@@ -90,7 +90,7 @@ Ordem fail-fast: integridade do bundle XSD → `10-setup.sql` → `20-run-e2e.ts
 `90-cleanup.sql`, mesmo em falha (use `F42_KEEP_FIXTURES=1` para investigar
 um run com falha, e rode o cleanup manualmente depois).
 
-## 5. Gates provados (29 no harness + 11 no verify)
+## 5. Gates provados (29 no harness + 16 no verify)
 
 Contenção: 401 sem JWT, 403 origem fora da allowlist, `anon` bloqueado,
 usuário sem papel fiscal bloqueado, download negado a `anon` e a usuário
@@ -111,18 +111,56 @@ Idempotência e concorrência: replay não cria nova `run_version`; payload
 alterado com a mesma chave gera conflito; a mesma chave em outro documento
 é rejeitada por escopo; duas invocações simultâneas produzem no máximo uma
 execução.
+Isolamento (G12–G16 do verify): emitente sintético é o único ativo;
+o emitente ativo anterior está registrado para restauração; emitente e
+destinatário sintéticos atingem `READY_HOMOLOGATION` / `READY`+`VALIDATED`
+pelos gatilhos reais; não há objeto sintético de outra tag; os gatilhos
+`tg_fiscal_emitter_refresh_readiness` e `tg_fiscal_recipient_refresh_readiness`
+permanecem habilitados.
 
-## 6. Limpeza
+## 6. Schema real — correções aplicadas
+
+O kit foi alinhado ao schema efetivo do staging:
+
+- Destinatário fica em `public.clientes` (não `clients`), com
+  `codigo_cliente` obrigatório e sem coluna `ativo`.
+- `partner_accounts` exige `razao_social` (não possui `nome`);
+  `nome_fantasia` e `client_id` acompanham a fixture.
+- `customer_fiscal_profiles.person_type` usa o domínio `PJ|PF|ESTRANGEIRO`
+  e `fiscal_email` é exigido para prontidão total.
+- A prontidão **não** é recalculada por função utilitária inexistente: quem
+  atualiza é o gatilho `tg_fiscal_emitter_refresh_readiness` /
+  `tg_fiscal_recipient_refresh_readiness` no próprio INSERT. O setup apenas
+  **verifica** o resultado e aborta com as pendências reais se divergir.
+- O emitente sintético nasce com `uf_accreditations`, `certificate_ref` e
+  `accounting_validated_at` preenchidos, condições exigidas por
+  `READY_HOMOLOGATION`.
+
+### Singleton de emitente ativo — isolamento reversível
+
+`ux_company_fiscal_settings_active_singleton` admite um único emitente
+ativo. O setup, **antes** de qualquer alteração, registra o id do emitente
+ativo corrente em `_f42_harness_fixtures`
+(`entity = 'previous_active_company_fiscal_settings'`), desativa-o e ativa
+o sintético. O cleanup remove o sintético **primeiro** e só então reativa
+o id registrado, validando que exatamente um emitente ficou ativo. Como o
+registro é gravado antes da mudança e o cleanup roda no `trap EXIT`, a
+restauração também ocorre no caminho de falha.
+
+## 7. Limpeza
 
 `90-cleanup.sql` remove **apenas** os ids registrados em
 `public._f42_harness_fixtures` para a tag, mais os certificados cujo
 `display_name` começa com `F42-HARNESS-`. Nenhum `DELETE` amplo, nenhum
 trigger desabilitado, nenhum UUID de dado real. Os usuários temporários são
 apagados no `finally` do próprio harness. A prova de limpeza é a consulta
-final do script: todas as contagens devem ser `0`.
+final do script: `fixtures`, `certificados`, `emitentes`, `parceiros` e
+`clientes` em `0`, e `emitentes_ativos` de volta a `1` quando havia
+emitente ativo antes do run.
 
-## 7. Estado atual
+## 8. Estado atual
 
 Não executado nesta sessão: o ambiente do agente não possui `PGHOST`/DSN,
 CLI Supabase nem os secrets de staging. O kit está pronto para execução por
 um operador autorizado, na ordem acima. Produção não foi acessada.
+
