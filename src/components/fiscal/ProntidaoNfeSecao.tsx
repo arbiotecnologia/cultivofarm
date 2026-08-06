@@ -15,10 +15,11 @@ import {
 } from "@/hooks/useFiscalNfeReadiness";
 
 const OVERALL_LABEL: Record<string, string> = {
-  READY: "Pronto para homologação",
+  READY_HOMOLOGATION: "Pronto para homologação",
   PARTIAL: "Parcial — pendências não bloqueantes",
   NOT_READY: "Bloqueado — pendências obrigatórias",
 };
+
 
 const SECTION_LABEL: Record<string, string> = {
   EMITENTE: "Emitente",
