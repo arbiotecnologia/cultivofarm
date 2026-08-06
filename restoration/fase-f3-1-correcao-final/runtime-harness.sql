@@ -385,9 +385,12 @@ END $$;
 
 -- T30 calculo bloqueia ambiente 1 com FISCAL_PRODUCTION_BLOCKED especificamente
 DO $$
-DECLARE inv uuid;
+DECLARE inv uuid; au uuid;
 BEGIN
   inv := (SELECT v FROM _fx WHERE k='inv_ok');
+  SELECT uid INTO au FROM _ids WHERE papel='administrador';
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', au, 'role','authenticated')::text, true);
   BEGIN
     PERFORM public.rpc_fiscal_calculate_invoice_v1(inv, 'harness-f31r1-'||gen_random_uuid()::text);
     PERFORM pg_temp.h('T30 calculo exige FISCAL_PRODUCTION_BLOCKED em tpAmb=1', false, 'nao bloqueou');
@@ -395,13 +398,17 @@ BEGIN
     PERFORM pg_temp.h('T30 calculo exige FISCAL_PRODUCTION_BLOCKED em tpAmb=1',
       SQLERRM LIKE 'FISCAL_PRODUCTION_BLOCKED:%', SQLERRM);
   END;
+  PERFORM set_config('request.jwt.claims', NULL, true);
 END $$;
 
 -- T31 reserva bloqueia ambiente 1 com FISCAL_PRODUCTION_BLOCKED especificamente
 DO $$
-DECLARE inv uuid;
+DECLARE inv uuid; au uuid;
 BEGIN
   inv := (SELECT v FROM _fx WHERE k='inv_ok');
+  SELECT uid INTO au FROM _ids WHERE papel='administrador';
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', au, 'role','authenticated')::text, true);
   BEGIN
     PERFORM public.rpc_fiscal_reserve_nfe_number_v1(inv, 'harness-f31r1-'||gen_random_uuid()::text);
     PERFORM pg_temp.h('T31 reserva exige FISCAL_PRODUCTION_BLOCKED em tpAmb=1', false, 'nao bloqueou');
@@ -409,6 +416,7 @@ BEGIN
     PERFORM pg_temp.h('T31 reserva exige FISCAL_PRODUCTION_BLOCKED em tpAmb=1',
       SQLERRM LIKE 'FISCAL_PRODUCTION_BLOCKED:%', SQLERRM);
   END;
+  PERFORM set_config('request.jwt.claims', NULL, true);
 END $$;
 
 -- Restaura o ambiente de homologacao antes das provas de RLS (a transacao e' revertida de todo modo).
