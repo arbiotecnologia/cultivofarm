@@ -407,7 +407,14 @@ BEGIN
                             'status','RESERVED', 'idempotentReplay', false);
 END $function$;
 
+-- Reverte 20260820000000: restaura EXECUTE de anon nas cinco RPCs fiscais.
+GRANT EXECUTE ON FUNCTION public.rpc_fiscal_company_settings_init() TO anon;
+GRANT EXECUTE ON FUNCTION public.rpc_fiscal_draft_save(uuid, jsonb, jsonb, integer) TO anon;
+GRANT EXECUTE ON FUNCTION public.rpc_fiscal_draft_validate_homologation(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION public.rpc_fiscal_certificate_register_os(uuid, jsonb) TO anon;
+GRANT EXECUTE ON FUNCTION public.rpc_fiscal_certificate_revoke(uuid, text) TO anon;
 
 DROP FUNCTION IF EXISTS public.fn_fiscal_assert_environment_homologation();
 
-DELETE FROM supabase_migrations.schema_migrations WHERE version = '20260819000000';
+DELETE FROM supabase_migrations.schema_migrations WHERE version IN ('20260819000000','20260820000000');
+
