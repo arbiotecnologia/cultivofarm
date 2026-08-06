@@ -132,6 +132,11 @@ function buildEmit(p: NfePayload): string {
   const cnpj = digits(required(e, "CNPJ", "emit"));
   if (cnpj.length !== 14) throw new NfeBuildError("NFE_EMIT_CNPJ_INVALID", "CNPJ do emitente inválido");
   const ie = digits(e.IE);
+  // Ordem obrigatória do leiaute 4.00 (grupo emit):
+  // CNPJ, xNome, xFant, enderEmit, IE, IEST, IM, CNAE, CRT.
+  // O XSD só admite CNAE dentro da sequência que contém IM; sem IM o
+  // elemento CNAE é rejeitado. Por isso CNAE é emitido apenas com IM.
+  const im = sanitizeText(e.IM, 15);
   return [
     "<emit>",
     tag("CNPJ", cnpj),
@@ -139,10 +144,12 @@ function buildEmit(p: NfePayload): string {
     tag("xFant", sanitizeText(e.xFant, 60)),
     buildEndereco("enderEmit", (e.enderEmit ?? {}) as Record<string, unknown>, "emit.enderEmit"),
     ie ? tag("IE", ie) : tag("IE", "ISENTO"),
-    tag("CNAE", digits(e.CNAE)),
+    tag("IEST", digits(e.IEST)),
+    im ? tag("IM", im) + tag("CNAE", digits(e.CNAE)) : "",
     tag("CRT", required(e, "CRT", "emit")),
     "</emit>",
   ].join("");
+
 }
 
 function buildDest(p: NfePayload): string {
