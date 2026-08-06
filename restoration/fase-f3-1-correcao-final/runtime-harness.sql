@@ -435,15 +435,15 @@ END $$;
 
 -- T33..T38: leitura sob SET ROLE authenticated com claims reais.
 DO $$
-DECLARE papel text; res jsonb; interno boolean; ok boolean; q text; det text; u uuid;
+DECLARE _papel text; res jsonb; interno boolean; ok boolean; q text; det text; u uuid;
 BEGIN
   q := format('SELECT count(*) FROM public.fiscal_tax_rules WHERE id = %L::uuid',
               (SELECT v FROM _fx WHERE k='regra'));
-  FOREACH papel IN ARRAY ARRAY['administrador','gestor','financeiro',
+  FOREACH _papel IN ARRAY ARRAY['administrador','gestor','financeiro',
                                'tecnico_agronomo','parceiro_b2b','cliente_produtor'] LOOP
-    SELECT i.uid INTO u FROM _ids i WHERE i.papel = papel;
+    SELECT i.uid INTO u FROM _ids i WHERE i.papel = _papel;
     res := pg_temp.probe('authenticated', u, q);
-    interno := papel IN ('administrador','gestor','financeiro');
+    interno := _papel IN ('administrador','gestor','financeiro');
     det := format('current_user=%s row_security=%s bypassrls=%s n=%s err=%s',
       res->>'currentUser', res->>'rowSecurity', res->>'bypassrls',
       coalesce(res->>'n','-'), coalesce(res->>'error','-'));
@@ -452,20 +452,20 @@ BEGIN
       AND (res->>'bypassrls')::boolean IS FALSE
       AND CASE WHEN interno THEN coalesce((res->>'n')::int,0) = 1
                ELSE coalesce((res->>'n')::int,0) = 0 END;
-    PERFORM pg_temp.h(format('T33+ RLS fiscal_tax_rules papel=%s esperado=%s', papel,
+    PERFORM pg_temp.h(format('T33+ RLS fiscal_tax_rules _papel=%s esperado=%s', _papel,
       CASE WHEN interno THEN 'LE' ELSE 'NAO LE' END), ok, det);
   END LOOP;
 END $$;
 
 -- T39..T41: reservas de numeracao invisiveis a perfis nao fiscais.
 DO $$
-DECLARE papel text; res jsonb; q text; u uuid;
+DECLARE _papel text; res jsonb; q text; u uuid;
 BEGIN
   q := 'SELECT count(*) FROM public.fiscal_number_reservations';
-  FOREACH papel IN ARRAY ARRAY['tecnico_agronomo','parceiro_b2b','cliente_produtor'] LOOP
-    SELECT i.uid INTO u FROM _ids i WHERE i.papel = papel;
+  FOREACH _papel IN ARRAY ARRAY['tecnico_agronomo','parceiro_b2b','cliente_produtor'] LOOP
+    SELECT i.uid INTO u FROM _ids i WHERE i.papel = _papel;
     res := pg_temp.probe('authenticated', u, q);
-    PERFORM pg_temp.h(format('T39+ reservas de numeracao invisiveis para %s', papel),
+    PERFORM pg_temp.h(format('T39+ reservas de numeracao invisiveis para %s', _papel),
       (res->>'currentUser') = 'authenticated'
       AND (res->>'bypassrls')::boolean IS FALSE
       AND coalesce((res->>'n')::int,0) = 0,
