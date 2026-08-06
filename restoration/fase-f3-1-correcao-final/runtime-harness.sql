@@ -9,8 +9,9 @@
 BEGIN;
 
 CREATE TEMP TABLE _h(n serial, caso text, ok boolean, detail text) ON COMMIT DROP;
+GRANT INSERT, SELECT ON _h TO PUBLIC;
 CREATE OR REPLACE FUNCTION pg_temp.h(_c text, _ok boolean, _d text DEFAULT NULL)
-RETURNS void LANGUAGE sql AS $$ INSERT INTO _h(caso, ok, detail) VALUES (_c,_ok,_d) $$;
+RETURNS void LANGUAGE sql AS $$ INSERT INTO pg_temp._h(caso, ok, detail) VALUES (_c,_ok,_d) $$;
 
 -- Sessão autenticada de administrador fiscal (usuário real do staging).
 DO $$
