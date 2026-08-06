@@ -3,12 +3,15 @@
 Alvo **exclusivo**: staging `ikaauvsflpmamgxmkhoq`. Produção
 `navfzbwgwzruipouyfnk` não foi acessada. Nada publicado ou transmitido.
 
-> **Status corrigido em 2026-08-06: BLOQUEADO / NÃO APTO PARA F5.** A auditoria
-> remota confirmou que os objetos existem, mas o ledger termina em
-> `20260821000000` e não contém a F4 `20260822000000`; houve aplicação fora do
-> fluxo oficial. O relato anterior também não demonstrou deploy da Edge,
-> validação por XSD 1.0 real nem runtime harness. As afirmações de conformidade
-> e de aplicação completa ficam revogadas até evidência nova.
+> **Atualização 2026-08-06 (F4.1-R1):** o bundle XSD oficial
+> (`PL_010e_v1.02`) foi obtido, versionado com hashes e a validação XSD 1.0
+> real (`xmllint-wasm`) passou a ser aplicada ao documento **assinado**,
+> junto de verificação XMLDSig independente. Ver
+> `restoration/fase-f4-1/README.md`. Continuam BLOQUEADOS, por falta de
+> acesso ao staging: reconciliação do ledger (termina em `20260821000000`),
+> aplicação da migration incremental e deploy da Edge `fiscal-xml-engine`.
+> **Não apto para F5.**
+
 
 ## Teto absoluto
 

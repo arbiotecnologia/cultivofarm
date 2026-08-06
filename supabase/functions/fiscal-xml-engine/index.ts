@@ -2,9 +2,14 @@
  * Fase F4 — Edge Function `fiscal-xml-engine`.
  *
  * Ações (POST, admin/perfil fiscal interno):
- *   1. `generate`  — prepara (RPC), constrói XML, valida contra a gramática
- *                    XSD 4.00, armazena o não assinado, assina com o A1 e
- *                    armazena o assinado. Teto: SIGNED.
+ *   1. `generate`  — prepara (RPC), constrói o XML, aplica o precheck de
+ *                    gramática, armazena o não assinado, assina com o A1,
+ *                    valida o documento ASSINADO contra o XSD 1.0 OFICIAL
+ *                    (bundle PL_010e_v1.02 em ./xsd, via xmllint-wasm),
+ *                    verifica a XMLDSig e só então registra
+ *                    XSD_VALIDATED → SIGNED. Teto: SIGNED.
+ *                    Ausência de certificado devolve 412 CERTIFICATE_REQUIRED
+ *                    preservando a execução em GENERATED (recuperável).
  *   2. `download`  — devolve URL assinada de curta duração de um artefato.
  *
  * Invariantes:
@@ -18,7 +23,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/nfe/buildNfeXml.ts";
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
-import { signNfeXml } from "../_shared/fiscal/nfe/signNfeXml.ts";
+import { signNfeXml, verifyNfeSignature } from "../_shared/fiscal/nfe/signNfeXml.ts";
+import { validateAgainstOfficialXsd, XSD_PACKAGE, XSD_VALIDATOR } from "./xsdValidate.ts";
 
 const BUCKET = "fiscal-xml";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -206,7 +212,10 @@ Deno.serve(async (req) => {
   const upUnsigned = await admin.storage.from(BUCKET).upload(unsignedPath, unsignedBytes, {
     contentType: "application/xml", upsert: false,
   });
-  if (upUnsigned.error) {
+  // Reentrada: em retomada de GENERATED/XSD_VALIDATED o objeto já existe
+  // com o mesmo conteúdo determinístico — duplicidade não é falha.
+  const duplicateUnsigned = /exists|duplicate/i.test(upUnsigned.error?.message ?? "");
+  if (upUnsigned.error && !duplicateUnsigned) {
     return await fail("XML_STORAGE_FAILED", "falha ao armazenar o XML não assinado", 500);
   }
 
@@ -222,35 +231,31 @@ Deno.serve(async (req) => {
     return await fail("XML_RECORD_FAILED", "falha ao registrar geração", 500);
   }
 
-  // 3. Validação contra a gramática derivada do XSD oficial 4.00.
+  // 3. Precheck de gramática (NÃO autoriza XSD_VALIDATED).
+  //    A validação normativa é feita pelo XSD 1.0 oficial, no documento
+  //    ASSINADO (o schema exige `Signature` em `NFe`), na etapa 5.
   const report = validateNfeXml(built.xml, run.schemaVersion);
   if (!report.valid) {
     await admin.rpc("rpc_fiscal_xml_record_v1", {
       p_run_id: run.runId, p_state: "FAILED",
       p_patch: {
-        errorCode: "XSD_VALIDATION_FAILED",
-        errorDetail: `${report.issues.length} inconsistência(s)`,
-        validation: { ...report, issues: report.issues.slice(0, 50) },
+        errorCode: "NFE_PRECHECK_FAILED",
+        errorDetail: `${report.issues.length} inconsistência(s) no precheck`,
+        validation: { precheck: { ...report, issues: report.issues.slice(0, 50) } },
       },
     });
     return json({
-      runId: run.runId, state: "FAILED", code: "XSD_VALIDATION_FAILED",
+      runId: run.runId, state: "FAILED", code: "NFE_PRECHECK_FAILED",
       issues: report.issues.slice(0, 50),
     }, 422, headers);
-  }
-
-  const recValidated = await admin.rpc("rpc_fiscal_xml_record_v1", {
-    p_run_id: run.runId, p_state: "XSD_VALIDATED",
-    p_patch: { validation: { ...report, issues: [] } },
-  });
-  if (recValidated.error) {
-    return await fail("XML_RECORD_FAILED", "falha ao registrar validação", 500);
   }
 
   // 4. Assinatura com o certificado A1 ativo (material cifrado no cofre).
   const masterKey = decodeMasterKey();
   if (!masterKey) {
-    return await fail("CERTIFICATE_VAULT_NOT_CONFIGURED", "cofre de certificados indisponível", 503);
+    // Recuperável: o XML gerado permanece íntegro em GENERATED.
+    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
+      detail: "cofre de certificados indisponível" }, 412, headers);
   }
 
   const certRow = await admin
@@ -260,7 +265,8 @@ Deno.serve(async (req) => {
     .order("valid_until", { ascending: false }).limit(1).maybeSingle();
   const certificateId = certRow.data?.certificate_id as string | undefined;
   if (!certificateId) {
-    return await fail("CERTIFICATE_NOT_CONFIGURED", "nenhum certificado A1 de homologação disponível", 412);
+    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
+      detail: "nenhum certificado A1 de homologação disponível" }, 412, headers);
   }
 
   const material = await admin
@@ -268,7 +274,8 @@ Deno.serve(async (req) => {
     .select("object_path, encrypted_password, password_iv, material_iv")
     .eq("certificate_id", certificateId).maybeSingle();
   if (material.error || !material.data) {
-    return await fail("CERTIFICATE_MATERIAL_MISSING", "material do certificado indisponível", 412);
+    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
+      detail: "material do certificado indisponível" }, 412, headers);
   }
 
   let pfx: Uint8Array;
@@ -308,10 +315,46 @@ Deno.serve(async (req) => {
     password = "";
   }
 
-  // Reprova assinatura que corrompa a estrutura do documento.
-  const postSign = validateNfeXml(signedXml, run.schemaVersion);
-  if (!postSign.valid) {
-    return await fail("XSD_VALIDATION_FAILED_AFTER_SIGN", "assinatura invalidou a estrutura", 422);
+  // 5. Validação XSD 1.0 REAL (bundle oficial) sobre o documento assinado.
+  const xsd = await validateAgainstOfficialXsd(signedXml);
+  if (!xsd.valid) {
+    await admin.rpc("rpc_fiscal_xml_record_v1", {
+      p_run_id: run.runId, p_state: "FAILED",
+      p_patch: {
+        errorCode: "XSD_VALIDATION_FAILED",
+        errorDetail: `${xsd.issues.length} inconsistência(s) XSD`,
+        validation: { xsd: { ...xsd, issues: xsd.issues.slice(0, 50) } },
+      },
+    });
+    return json({
+      runId: run.runId, state: "FAILED", code: "XSD_VALIDATION_FAILED",
+      issues: xsd.issues.slice(0, 50),
+    }, 422, headers);
+  }
+
+  // 6. Verificação independente da assinatura (digest + RSA sobre SignedInfo).
+  const verified = verifyNfeSignature(signedXml, NFE_NAMESPACE);
+  if (!verified.valid) {
+    return await fail(verified.code ?? "SIGNATURE_VERIFICATION_FAILED",
+      "assinatura não verificou contra o documento", 422);
+  }
+
+  const recValidated = await admin.rpc("rpc_fiscal_xml_record_v1", {
+    p_run_id: run.runId, p_state: "XSD_VALIDATED",
+    p_patch: {
+      validation: {
+        valid: true,
+        validator: XSD_VALIDATOR,
+        xsdPackage: XSD_PACKAGE,
+        schema: xsd.schema,
+        target: "SIGNED_DOCUMENT",
+        precheckElementCount: report.elementCount,
+        issues: [],
+      },
+    },
+  });
+  if (recValidated.error) {
+    return await fail("XML_RECORD_FAILED", "falha ao registrar validação", 500);
   }
 
   const signedBytes = encoder.encode(signedXml);
@@ -320,7 +363,7 @@ Deno.serve(async (req) => {
   const upSigned = await admin.storage.from(BUCKET).upload(signedPath, signedBytes, {
     contentType: "application/xml", upsert: false,
   });
-  if (upSigned.error) {
+  if (upSigned.error && !/exists|duplicate/i.test(upSigned.error.message ?? "")) {
     return await fail("XML_STORAGE_FAILED", "falha ao armazenar o XML assinado", 500);
   }
 
@@ -348,7 +391,8 @@ Deno.serve(async (req) => {
     payloadSha256: run.payloadSha256,
     unsignedSha256: unsignedSha,
     signedSha256: signedSha,
-    validation: { valid: true, elementCount: report.elementCount },
+    validation: { valid: true, validator: XSD_VALIDATOR, xsdPackage: XSD_PACKAGE, target: "SIGNED_DOCUMENT" },
+    signatureVerified: true,
     transmitted: false,
   }, 200, headers);
 });

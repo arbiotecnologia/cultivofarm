@@ -161,3 +161,79 @@ export function signNfeXml(args: {
     },
   };
 }
+
+/**
+ * F4.1-R1 — Verificação independente da assinatura XMLDSig enveloped.
+ *
+ * Recalcula o DigestValue da referência `#NFe<chave>` a partir do próprio
+ * documento assinado (removendo o elemento `Signature`, conforme a
+ * transform enveloped-signature) e verifica o `SignatureValue` com a chave
+ * pública do X509Certificate embutido em `KeyInfo`.
+ */
+export interface VerifyResult {
+  valid: boolean;
+  digestMatches: boolean;
+  signatureMatches: boolean;
+  referenceUri: string;
+  code: string | null;
+}
+
+export function verifyNfeSignature(signedXml: string, namespace: string): VerifyResult {
+  const base: VerifyResult = {
+    valid: false, digestMatches: false, signatureMatches: false,
+    referenceUri: "", code: null,
+  };
+  const sigStart = signedXml.lastIndexOf("<Signature ");
+  const sigEnd = signedXml.lastIndexOf("</Signature>");
+  if (sigStart < 0 || sigEnd < 0) return { ...base, code: "SIGNATURE_ABSENT" };
+  const signatureBlock = signedXml.slice(sigStart, sigEnd + "</Signature>".length);
+
+  const siStart = signatureBlock.indexOf("<SignedInfo>");
+  const siEnd = signatureBlock.indexOf("</SignedInfo>");
+  if (siStart < 0 || siEnd < 0) return { ...base, code: "SIGNEDINFO_ABSENT" };
+  const signedInfoRaw = signatureBlock.slice(siStart, siEnd + "</SignedInfo>".length);
+  // C14N do SignedInfo: herda o namespace xmldsig do elemento Signature.
+  const signedInfoC14n = signedInfoRaw.replace(
+    "<SignedInfo>",
+    '<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#">',
+  );
+
+  const uri = signatureBlock.match(/<Reference URI="([^"]*)"/)?.[1] ?? "";
+  const digestValue = signatureBlock.match(/<DigestValue>([^<]*)<\/DigestValue>/)?.[1] ?? "";
+  const signatureValue = signatureBlock.match(/<SignatureValue>([^<]*)<\/SignatureValue>/)?.[1] ?? "";
+  const certB64 = signatureBlock.match(/<X509Certificate>([^<]*)<\/X509Certificate>/)?.[1] ?? "";
+  if (!uri || !digestValue || !signatureValue || !certB64) {
+    return { ...base, referenceUri: uri, code: "SIGNATURE_INCOMPLETE" };
+  }
+
+  const enveloped = signedXml.slice(0, sigStart) + signedXml.slice(sigEnd + "</Signature>".length);
+  let canonical: string;
+  try {
+    canonical = canonicalizeInfNFe(enveloped, namespace);
+  } catch {
+    return { ...base, referenceUri: uri, code: "NFE_SIGN_NO_INFNFE" };
+  }
+  const md = forge.md.sha1.create();
+  md.update(canonical, "utf8");
+  const digestMatches = forge.util.encode64(md.digest().bytes()) === digestValue;
+
+  let signatureMatches = false;
+  try {
+    const cert = forge.pki.certificateFromAsn1(
+      forge.asn1.fromDer(forge.util.createBuffer(forge.util.decode64(certB64))),
+    );
+    const verifyMd = forge.md.sha1.create();
+    verifyMd.update(signedInfoC14n, "utf8");
+    signatureMatches = (cert.publicKey as unknown as {
+      verify: (d: string, s: string) => boolean;
+    }).verify(verifyMd.digest().bytes(), forge.util.decode64(signatureValue));
+  } catch {
+    signatureMatches = false;
+  }
+
+  const valid = digestMatches && signatureMatches;
+  return {
+    valid, digestMatches, signatureMatches, referenceUri: uri,
+    code: valid ? null : (!digestMatches ? "SIGNATURE_DIGEST_MISMATCH" : "SIGNATURE_VALUE_MISMATCH"),
+  };
+}
