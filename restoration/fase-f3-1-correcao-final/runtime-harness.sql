@@ -427,13 +427,14 @@ END $$;
 
 -- T33..T38: leitura sob SET ROLE authenticated com claims reais.
 DO $$
-DECLARE papel text; res jsonb; interno boolean; ok boolean; q text; det text;
+DECLARE papel text; res jsonb; interno boolean; ok boolean; q text; det text; u uuid;
 BEGIN
   q := format('SELECT count(*) FROM public.fiscal_tax_rules WHERE id = %L::uuid',
               (SELECT v FROM _fx WHERE k='regra'));
   FOREACH papel IN ARRAY ARRAY['administrador','gestor','financeiro',
                                'tecnico_agronomo','parceiro_b2b','cliente_produtor'] LOOP
-    res := pg_temp.probe('authenticated', (SELECT uid FROM _ids WHERE papel = _ids.papel AND _ids.papel = papel), q);
+    SELECT i.uid INTO u FROM _ids i WHERE i.papel = papel;
+    res := pg_temp.probe('authenticated', u, q);
     interno := papel IN ('administrador','gestor','financeiro');
     det := format('current_user=%s row_security=%s bypassrls=%s n=%s err=%s',
       res->>'currentUser', res->>'rowSecurity', res->>'bypassrls',
@@ -450,11 +451,12 @@ END $$;
 
 -- T39..T41: reservas de numeracao invisiveis a perfis nao fiscais.
 DO $$
-DECLARE papel text; res jsonb; q text;
+DECLARE papel text; res jsonb; q text; u uuid;
 BEGIN
   q := 'SELECT count(*) FROM public.fiscal_number_reservations';
   FOREACH papel IN ARRAY ARRAY['tecnico_agronomo','parceiro_b2b','cliente_produtor'] LOOP
-    res := pg_temp.probe('authenticated', (SELECT uid FROM _ids WHERE _ids.papel = papel), q);
+    SELECT i.uid INTO u FROM _ids i WHERE i.papel = papel;
+    res := pg_temp.probe('authenticated', u, q);
     PERFORM pg_temp.h(format('T39+ reservas de numeracao invisiveis para %s', papel),
       (res->>'currentUser') = 'authenticated'
       AND (res->>'bypassrls')::boolean IS FALSE
