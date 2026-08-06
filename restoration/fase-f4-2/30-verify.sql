@@ -217,6 +217,19 @@ BEGIN
   IF n < 2 THEN RAISE EXCEPTION 'G16 FAIL: gatilhos de prontidao ausentes/desabilitados (%)', n; END IF;
   pass := pass + 1; RAISE NOTICE 'G16 PASS gatilhos de prontidao ativos';
 
+  -- G17 — fixtures fiscais nasceram e permanecem em DRAFT (contrato de
+  --        rpc_fiscal_calculate_invoice_v1 / rpc_fiscal_reserve_nfe_number_v1).
+  total := total + 1;
+  SELECT count(*) INTO n
+    FROM public.fiscal_invoices i
+    JOIN public._f42_harness_fixtures f
+      ON f.entity = 'fiscal_invoices' AND f.tag = v_tag AND f.entity_id = i.id
+   WHERE i.status <> 'DRAFT';
+  IF n <> 0 THEN
+    RAISE EXCEPTION 'G17 FAIL: % documento(s) sinteticos fora de DRAFT', n;
+  END IF;
+  pass := pass + 1; RAISE NOTICE 'G17 PASS documentos sinteticos em DRAFT';
+
   RAISE NOTICE 'VERIFY F4.2: %/% GATES PASS', pass, total;
   IF pass <> total THEN RAISE EXCEPTION 'VERIFY F4.2 FAIL'; END IF;
 END $v$;
