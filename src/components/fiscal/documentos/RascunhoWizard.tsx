@@ -588,6 +588,10 @@ export default function RascunhoWizard({
                 </div>
               </CardContent>
             </Card>
+            <div className="pt-4">
+              <GeracaoXmlNfeSecao invoiceId={invoiceId} />
+            </div>
+
           </TabsContent>
         </fieldset>
       </Tabs>
