@@ -27,9 +27,13 @@ const payload = (o: Partial<NfePayload> = {}): NfePayload => ({
   infAdic: { infCpl: "AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL" }, ...o });
 
 const { xml } = buildNfeXml(payload());
+// O XSD oficial exige `Signature` dentro de `NFe`: o documento NÃO assinado
+// é legitimamente inválido, e essa deve ser a ÚNICA pendência apontada.
 const ok = await validateAgainstOfficialXsd(xml);
-console.log("GATE positivo:", ok.valid ? "PASS" : "FAIL");
-if (!ok.valid) console.log(JSON.stringify(ok.issues.slice(0, 12), null, 2));
+const onlySignature = !ok.valid && ok.issues.length === 1 &&
+  /Signature/.test(ok.issues[0].message);
+console.log("GATE não assinado (só falta Signature):", onlySignature ? "PASS" : "FAIL");
+if (!onlySignature) console.log(JSON.stringify(ok.issues.slice(0, 12), null, 2));
 
 const tampered = xml.replace("<nItem", "<nItemX").replace("</det>", "</det>");
 const neg1 = await validateAgainstOfficialXsd(xml.replace("<vNF>250.00</vNF>", "<vNF>250.00</vNF><vXXX>1</vXXX>"));

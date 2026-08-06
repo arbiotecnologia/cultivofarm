@@ -2,9 +2,14 @@
  * Fase F4 — Edge Function `fiscal-xml-engine`.
  *
  * Ações (POST, admin/perfil fiscal interno):
- *   1. `generate`  — prepara (RPC), constrói XML, valida contra a gramática
- *                    XSD 4.00, armazena o não assinado, assina com o A1 e
- *                    armazena o assinado. Teto: SIGNED.
+ *   1. `generate`  — prepara (RPC), constrói o XML, aplica o precheck de
+ *                    gramática, armazena o não assinado, assina com o A1,
+ *                    valida o documento ASSINADO contra o XSD 1.0 OFICIAL
+ *                    (bundle PL_010e_v1.02 em ./xsd, via xmllint-wasm),
+ *                    verifica a XMLDSig e só então registra
+ *                    XSD_VALIDATED → SIGNED. Teto: SIGNED.
+ *                    Ausência de certificado devolve 412 CERTIFICATE_REQUIRED
+ *                    preservando a execução em GENERATED (recuperável).
  *   2. `download`  — devolve URL assinada de curta duração de um artefato.
  *
  * Invariantes:
@@ -207,7 +212,10 @@ Deno.serve(async (req) => {
   const upUnsigned = await admin.storage.from(BUCKET).upload(unsignedPath, unsignedBytes, {
     contentType: "application/xml", upsert: false,
   });
-  if (upUnsigned.error) {
+  // Reentrada: em retomada de GENERATED/XSD_VALIDATED o objeto já existe
+  // com o mesmo conteúdo determinístico — duplicidade não é falha.
+  const duplicateUnsigned = /exists|duplicate/i.test(upUnsigned.error?.message ?? "");
+  if (upUnsigned.error && !duplicateUnsigned) {
     return await fail("XML_STORAGE_FAILED", "falha ao armazenar o XML não assinado", 500);
   }
 
@@ -355,7 +363,7 @@ Deno.serve(async (req) => {
   const upSigned = await admin.storage.from(BUCKET).upload(signedPath, signedBytes, {
     contentType: "application/xml", upsert: false,
   });
-  if (upSigned.error) {
+  if (upSigned.error && !/exists|duplicate/i.test(upSigned.error.message ?? "")) {
     return await fail("XML_STORAGE_FAILED", "falha ao armazenar o XML assinado", 500);
   }
 
