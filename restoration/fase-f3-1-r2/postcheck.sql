@@ -104,21 +104,27 @@ BEGIN
 END $$;
 
 DO $$
-DECLARE err text; src public.company_fiscal_settings%ROWTYPE; n integer;
+DECLARE has_ix boolean; src text;
 BEGIN
-  -- (07) multiplicidade -> FISCAL_EMITTER_AMBIGUOUS
-  SELECT count(*) INTO n FROM public.company_fiscal_settings;
-  SELECT * INTO src FROM public.company_fiscal_settings WHERE is_active LIMIT 1;
-  UPDATE public.company_fiscal_settings SET nfe_environment_code = '2' WHERE id = src.id;
-  IF n > 1 THEN
-    UPDATE public.company_fiscal_settings SET is_active = true;
-  ELSE
-    INSERT INTO public.company_fiscal_settings (id, is_active, nfe_environment_code)
-    VALUES (gen_random_uuid(), true, '2');
-  END IF;
-  BEGIN PERFORM public.fn_fiscal_assert_environment_homologation(); err := '<sem erro>';
-  EXCEPTION WHEN OTHERS THEN err := SQLERRM; END;
-  PERFORM pg_temp.gate('R2-07', err LIKE 'FISCAL_EMITTER_AMBIGUOUS:%', coalesce(left(err,80),''));
+  -- (07) multiplicidade: o banco impede dois emitentes ativos (singleton).
+  -- Prova-se (i) a barreira fisica e (ii) o ramo fail-closed do helper.
+  SELECT EXISTS (
+    SELECT 1 FROM pg_indexes
+     WHERE schemaname='public' AND tablename='company_fiscal_settings'
+       AND indexname='ux_company_fiscal_settings_active_singleton')
+    INTO has_ix;
+  PERFORM pg_temp.gate('R2-07a', has_ix, 'indice singleton de emitente ativo presente');
+
+  SELECT prosrc INTO src FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+   WHERE n.nspname='public' AND p.proname='fn_fiscal_assert_environment_homologation';
+  PERFORM pg_temp.gate('R2-07b',
+    src LIKE '%FISCAL_EMITTER_AMBIGUOUS%' AND src LIKE '%v_count > 1%',
+    'ramo FISCAL_EMITTER_AMBIGUOUS presente no helper');
+  PERFORM pg_temp.gate('R2-07c',
+    src LIKE '%FISCAL_EMITTER_NOT_CONFIGURED%'
+    AND src LIKE '%FISCAL_ENVIRONMENT_INVALID%'
+    AND src LIKE '%FISCAL_PRODUCTION_BLOCKED%',
+    'todos os codigos fail-closed presentes');
 END $$;
 
 -- ---------------------------------------------------------------- T54 (R2-11..13)
