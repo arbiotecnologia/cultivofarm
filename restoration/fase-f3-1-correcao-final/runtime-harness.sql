@@ -163,7 +163,7 @@ DECLARE r public.fiscal_tax_rules%ROWTYPE; res jsonb; d numeric; o numeric; f nu
 BEGIN
   r.tax_kind := 'DIFAL'; r.calc_mode := 'PERCENT';
   r.base_components := '["PRODUTO"]'::jsonb; r.status := 'PUBLISHED';
-  r.internal_rate := 18; r.interstate_rate := 12; r.fcp_rate := 2;
+  r.internal_rate_pct := 18; r.interstate_rate_pct := 12; r.fcp_rate := 2;
   r.destination_share := 100;
   BEGIN
     res := public.fn_fiscal_apply_tax_v2(r, jsonb_build_object(
@@ -189,7 +189,7 @@ DECLARE r public.fiscal_tax_rules%ROWTYPE;
 BEGIN
   r.tax_kind := 'DIFAL'; r.calc_mode := 'PERCENT';
   r.base_components := '["PRODUTO"]'::jsonb; r.status := 'PUBLISHED';
-  r.internal_rate := 10; r.interstate_rate := 12;
+  r.internal_rate_pct := 10; r.interstate_rate_pct := 12;
   BEGIN
     PERFORM public.fn_fiscal_apply_tax_v2(r, jsonb_build_object('produto',1000,'frete',0,'seguro',0,
       'outras',0,'desconto',0,'ipi',0,'icmsSt',0,'icmsOwnValue',0,'baseST',NULL));
