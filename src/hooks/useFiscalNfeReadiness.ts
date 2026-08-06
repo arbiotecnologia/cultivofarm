@@ -22,9 +22,51 @@ export interface NfeReadinessPendency {
   message: string;
 }
 
+/** Códigos de lacuna de cobertura, distinguidos pelo motor (F3.1). */
+export type CoverageGapCode =
+  | "NOT_FOUND"
+  | "AMBIGUOUS"
+  | "INCOMPLETE"
+  | "ENGINE_UNAVAILABLE";
+
+export interface CoverageGap {
+  scope: "OPERACAO" | "TRIBUTO" | "EMITENTE" | string;
+  code: CoverageGapCode | string;
+  taxKind?: string;
+  destUf?: string;
+  channel?: string;
+  ncm?: string;
+  finalConsumer?: boolean;
+  indIEDest?: string;
+}
+
+export interface NfeCoverage {
+  total: number;
+  covered: number;
+  dimensions?: {
+    readyRecipients: number;
+    activeChannels: number;
+    officialNcms: number;
+  };
+  gapCodes?: CoverageGapCode[];
+  gaps: CoverageGap[];
+}
+
+/** Inventário segregado: inativos nunca bloqueiam a prontidão. */
+export interface MicroorganismReadinessCounts {
+  active: number;
+  ready: number;
+  draft: number;
+  blocked: number;
+  inactive: number;
+  total: number;
+}
+
 export interface NfeReadiness {
   generatedAt: string;
   documentModel: string;
+  /** Teto da fase F3: nunca READY_PRODUCTION. */
+  maxAllowedStatus: "READY_HOMOLOGATION";
   emitter: {
     configured: boolean;
     status: string;
@@ -34,14 +76,19 @@ export interface NfeReadiness {
     environment: string | null;
     certificateLinked: boolean;
     accountingValidated: boolean;
+    sefazHomologationRecorded?: boolean;
+    productionBlocked?: boolean;
   };
   recipients: { total: number; ready: number };
   operations: { publishedPolicies: number };
   taxes: { publishedRules: number; missingMandatoryKinds: string[] };
+  coverage?: NfeCoverage;
+  microorganisms?: MicroorganismReadinessCounts;
   numbering: { activeSeries: number };
   pendencies: NfeReadinessPendency[];
-  overallStatus: "READY" | "PARTIAL" | "NOT_READY";
+  overallStatus: "READY_HOMOLOGATION" | "PARTIAL" | "NOT_READY";
 }
+
 
 export const NFE_READINESS_QUERY_KEY = ["fiscal", "nfe-readiness-v1"] as const;
 
