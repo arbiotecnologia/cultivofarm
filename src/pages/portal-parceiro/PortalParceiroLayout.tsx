@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useSwitchPortal } from "@/hooks/useSwitchPortal";
-import { PortalIdentityHeader } from "@/components/portal/PortalIdentityHeader";
+import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { getPapelLabel } from "@/lib/portal/identidade";
 
 import {
