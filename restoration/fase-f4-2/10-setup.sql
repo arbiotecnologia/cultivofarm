@@ -68,6 +68,7 @@ DO $f$
 DECLARE
   v_tag        text := :'f42_tag';
   v_company    uuid := gen_random_uuid();
+  v_prev_comp  uuid;
   v_client     uuid := gen_random_uuid();
   v_partner    uuid := gen_random_uuid();
   v_order      uuid := gen_random_uuid();
@@ -76,59 +77,110 @@ DECLARE
   v_invoice    uuid := gen_random_uuid();
   v_inv_quote  uuid := gen_random_uuid();
   v_order_quo  uuid := gen_random_uuid();
+  v_suffix     text := right(replace(v_tag, 'F42-HARNESS-', ''), 12);
+  v_status     text;
 BEGIN
   IF EXISTS (SELECT 1 FROM public._f42_harness_fixtures WHERE tag = v_tag) THEN
     RAISE EXCEPTION 'F42_SETUP: tag % ja possui fixtures; rode o cleanup antes.', v_tag;
   END IF;
 
-  -- 1. Emitente sintético, homologação (tpAmb=2), pronto.
-  --    NOTA: `rpc_fiscal_xml_prepare_v1` escolhe o emitente ativo com
-  --    updated_at mais recente. O fixture torna-se temporariamente esse
-  --    emitente; o cleanup o remove e o cadastro anterior volta a valer.
+  -- 1. Isolamento REVERSÍVEL do emitente ativo.
+  --    `ux_company_fiscal_settings_active_singleton` admite um único emitente
+  --    ativo. O id do emitente ativo atual é REGISTRADO ANTES de qualquer
+  --    alteração; só então ele é desativado. O cleanup restaura exatamente
+  --    esse id, inclusive quando acionado após falha.
+  SELECT id INTO v_prev_comp
+    FROM public.company_fiscal_settings
+   WHERE is_active
+   ORDER BY updated_at DESC NULLS LAST
+   LIMIT 1;
+
+  INSERT INTO public._f42_harness_fixtures(tag, entity, entity_id, entity_text)
+  VALUES (v_tag, 'previous_active_company_fiscal_settings', v_prev_comp,
+          CASE WHEN v_prev_comp IS NULL THEN 'NONE' ELSE 'ACTIVE' END);
+
+  IF v_prev_comp IS NOT NULL THEN
+    UPDATE public.company_fiscal_settings
+       SET is_active = false, updated_at = now()
+     WHERE id = v_prev_comp;
+  END IF;
+
+  -- 1b. Emitente sintético, homologação (tpAmb=2), pronto.
+  --     A prontidão é recalculada pelo gatilho `trg_fiscal_emitter_readiness`
+  --     (função `tg_fiscal_emitter_refresh_readiness`) no próprio INSERT.
+  --     Não existe `fn_fiscal_recompute_emitter_readiness`.
   INSERT INTO public.company_fiscal_settings (
     id, is_active, legal_name, trade_name, cnpj, state_registration,
     tax_regime, crt, primary_cnae, fiscal_email, postal_code, street, number,
     neighborhood, city, municipality_ibge_code, state, country_code,
     fiscal_provider, fiscal_environment, nfe_enabled, production_enabled,
     configuration_status, nfe_series_number, nfe_environment_code,
-    pis_cofins_regime, created_at, updated_at
+    pis_cofins_regime, uf_accreditations, certificate_ref,
+    accounting_validated_at, created_at, updated_at
   ) VALUES (
     v_company, true, v_tag || ' EMITENTE LTDA', v_tag || ' EMIT', '19131243000197',
     'ISENTO', 'SIMPLES_NACIONAL', '1', '2029100', 'f42-harness@example.invalid',
     '95700000', 'RUA SINTETICA F42', '1', 'CENTRO', 'BENTO GONCALVES', '4302105',
     'RS', 'BR', 'NONE', 'HOMOLOGATION', true, false, 'VALIDATED',
-    899, '2', 'CUMULATIVO', now(), now()
+    899, '2', 'CUMULATIVO',
+    jsonb_build_array(jsonb_build_object('uf','RS','status','CREDENCIADO','environment','2')),
+    v_tag, now(), now(), now()
   );
-  PERFORM public.fn_fiscal_recompute_emitter_readiness(v_company);
   INSERT INTO public._f42_harness_fixtures(tag, entity, entity_id)
   VALUES (v_tag, 'company_fiscal_settings', v_company);
 
+  -- Prontidão REAL exigida pelo motor (rpc_fiscal_xml_prepare_v1).
+  SELECT nfe_readiness_status INTO v_status
+    FROM public.company_fiscal_settings WHERE id = v_company;
+  IF v_status <> 'READY_HOMOLOGATION' THEN
+    RAISE EXCEPTION 'F42_SETUP: emitente sintetico ficou % (esperado READY_HOMOLOGATION); pendencias=%',
+      v_status,
+      (SELECT nfe_readiness_pendencies FROM public.company_fiscal_settings WHERE id = v_company);
+  END IF;
+
+  IF (SELECT count(*) FROM public.company_fiscal_settings WHERE is_active) <> 1 THEN
+    RAISE EXCEPTION 'F42_SETUP: singleton de emitente ativo violado';
+  END IF;
+
   -- 2. Cliente fiscal + perfil fiscal do destinatário (parceiro devedor).
-  INSERT INTO public.clients (id, nome, tipo_pessoa, cpf_cnpj, email, ativo)
+  --    A tabela real é `public.clientes` (não `clients`); não possui `ativo`
+  --    e exige `codigo_cliente` NOT NULL.
+  INSERT INTO public.clientes (id, nome, tipo_pessoa, cpf_cnpj, email, codigo_cliente)
   VALUES (v_client, v_tag || ' DESTINATARIO', 'juridica', '45723174000110',
-          'f42-dest@example.invalid', true);
+          'f42-dest@example.invalid', 'F42' || v_suffix);
   INSERT INTO public._f42_harness_fixtures(tag, entity, entity_id)
-  VALUES (v_tag, 'clients', v_client);
+  VALUES (v_tag, 'clientes', v_client);
 
   INSERT INTO public.customer_fiscal_profiles (
     customer_id, taxpayer_indicator, person_type, cpf_cnpj, legal_name,
     state_registration, final_consumer, icms_taxpayer, use_main_address,
     fiscal_postal_code, fiscal_street, fiscal_number, fiscal_neighborhood,
     fiscal_city, fiscal_municipality_ibge_code, fiscal_state, country_code,
-    profile_status
+    fiscal_email, profile_status
   ) VALUES (
-    v_client, '9', 'J', '45723174000110', v_tag || ' DESTINATARIO LTDA',
+    v_client, '9', 'PJ', '45723174000110', v_tag || ' DESTINATARIO LTDA',
     NULL, true, false, false,
     '95700000', 'AV SINTETICA F42', '2', 'CENTRO',
-    'BENTO GONCALVES', '4302105', 'RS', 'BR', 'VALIDATED'
+    'BENTO GONCALVES', '4302105', 'RS', 'BR',
+    'f42-dest@example.invalid', 'VALIDATED'
   );
-  PERFORM public.fn_fiscal_recompute_recipient_readiness(v_client);
   INSERT INTO public._f42_harness_fixtures(tag, entity, entity_id)
   VALUES (v_tag, 'customer_fiscal_profiles', v_client);
 
+  -- Prontidão do destinatário é recalculada por
+  -- `trg_fiscal_recipient_readiness` no INSERT; o contrato exige 'READY'.
+  SELECT nfe_readiness_status INTO v_status
+    FROM public.customer_fiscal_profiles WHERE customer_id = v_client;
+  IF v_status <> 'READY' THEN
+    RAISE EXCEPTION 'F42_SETUP: destinatario sintetico ficou % (esperado READY); pendencias=%',
+      v_status,
+      (SELECT nfe_readiness_pendencies FROM public.customer_fiscal_profiles WHERE customer_id = v_client);
+  END IF;
+
   -- 3. Conta de parceiro B2B devedora, vinculada ao cliente fiscal.
-  INSERT INTO public.partner_accounts (id, nome, client_id, ativo)
-  VALUES (v_partner, v_tag || ' PARCEIRO', v_client, true);
+  --    `partner_accounts` não possui `nome`: exige `razao_social`.
+  INSERT INTO public.partner_accounts (id, razao_social, nome_fantasia, client_id, ativo)
+  VALUES (v_partner, v_tag || ' PARCEIRO LTDA', v_tag || ' PARCEIRO', v_client, true);
   INSERT INTO public._f42_harness_fixtures(tag, entity, entity_id)
   VALUES (v_tag, 'partner_accounts', v_partner);
 
