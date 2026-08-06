@@ -81,8 +81,9 @@ BEGIN
   SELECT c.id INTO wrong FROM public.clientes c WHERE c.id <> cid ORDER BY c.created_at LIMIT 1;
 
   INSERT INTO public.fiscal_invoices (document_model, direction, status, source_type, source_id,
-                                      customer_id, issue_date, tp_emis)
-  VALUES ('NFE','OUT','DRAFT','PARTNER_ORDER', oid, wrong, current_date, 1)
+                                      customer_id, issue_date, tp_emis, invoice_type, created_by)
+  VALUES ('NFE','OUT','DRAFT','PARTNER_ORDER', oid, wrong, current_date, 1, 'NFE',
+          (current_setting('request.jwt.claims', true)::jsonb->>'sub')::uuid)
   RETURNING id INTO inv;
 
   BEGIN
@@ -112,8 +113,9 @@ DO $$
 DECLARE inv uuid;
 BEGIN
   INSERT INTO public.fiscal_invoices (document_model, direction, status, source_type, source_id,
-                                      issue_date, tp_emis)
-  VALUES ('NFE','OUT','DRAFT','OUTRA', gen_random_uuid(), current_date, 1)
+                                      issue_date, tp_emis, invoice_type, created_by)
+  VALUES ('NFE','OUT','DRAFT','OUTRA', gen_random_uuid(), current_date, 1, 'NFE',
+          (current_setting('request.jwt.claims', true)::jsonb->>'sub')::uuid)
   RETURNING id INTO inv;
   BEGIN
     PERFORM public.fn_fiscal_assert_debtor_recipient(inv);
