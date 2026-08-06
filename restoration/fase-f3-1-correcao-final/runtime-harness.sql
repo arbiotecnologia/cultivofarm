@@ -9,8 +9,10 @@
 BEGIN;
 
 CREATE TEMP TABLE _h(n serial, caso text, ok boolean, detail text) ON COMMIT DROP;
+GRANT INSERT, SELECT ON _h TO PUBLIC;
+GRANT USAGE, SELECT ON SEQUENCE _h_n_seq TO PUBLIC;
 CREATE OR REPLACE FUNCTION pg_temp.h(_c text, _ok boolean, _d text DEFAULT NULL)
-RETURNS void LANGUAGE sql AS $$ INSERT INTO _h(caso, ok, detail) VALUES (_c,_ok,_d) $$;
+RETURNS void LANGUAGE sql AS $$ INSERT INTO pg_temp._h(caso, ok, detail) VALUES (_c,_ok,_d) $$;
 
 -- Sessão autenticada de administrador fiscal (usuário real do staging).
 DO $$
@@ -79,8 +81,9 @@ BEGIN
   SELECT c.id INTO wrong FROM public.clientes c WHERE c.id <> cid ORDER BY c.created_at LIMIT 1;
 
   INSERT INTO public.fiscal_invoices (document_model, direction, status, source_type, source_id,
-                                      customer_id, issue_date, tp_emis)
-  VALUES ('NFE','OUT','DRAFT','PARTNER_ORDER', oid, wrong, current_date, 1)
+                                      customer_id, issue_date, tp_emis, invoice_type, created_by)
+  VALUES ('NFE','OUT','DRAFT','PARTNER_ORDER', oid, wrong, current_date, 1, 'NFE',
+          (current_setting('request.jwt.claims', true)::jsonb->>'sub')::uuid)
   RETURNING id INTO inv;
 
   BEGIN
@@ -110,8 +113,9 @@ DO $$
 DECLARE inv uuid;
 BEGIN
   INSERT INTO public.fiscal_invoices (document_model, direction, status, source_type, source_id,
-                                      issue_date, tp_emis)
-  VALUES ('NFE','OUT','DRAFT','OUTRA', gen_random_uuid(), current_date, 1)
+                                      issue_date, tp_emis, invoice_type, created_by)
+  VALUES ('NFE','OUT','DRAFT','OUTRA', gen_random_uuid(), current_date, 1, 'NFE',
+          (current_setting('request.jwt.claims', true)::jsonb->>'sub')::uuid)
   RETURNING id INTO inv;
   BEGIN
     PERFORM public.fn_fiscal_assert_debtor_recipient(inv);
@@ -159,8 +163,8 @@ DECLARE r public.fiscal_tax_rules%ROWTYPE; res jsonb; d numeric; o numeric; f nu
 BEGIN
   r.tax_kind := 'DIFAL'; r.calc_mode := 'PERCENT';
   r.base_components := '["PRODUTO"]'::jsonb; r.status := 'PUBLISHED';
-  r.internal_rate := 18; r.interstate_rate := 12; r.fcp_rate := 2;
-  r.destination_share := 100;
+  r.internal_rate_pct := 18; r.interstate_rate_pct := 12; r.fcp_rate := 2;
+  r.difal_dest_share_pct := 100;
   BEGIN
     res := public.fn_fiscal_apply_tax_v2(r, jsonb_build_object(
       'produto',1000,'frete',0,'seguro',0,'outras',0,'desconto',0,
@@ -185,7 +189,7 @@ DECLARE r public.fiscal_tax_rules%ROWTYPE;
 BEGIN
   r.tax_kind := 'DIFAL'; r.calc_mode := 'PERCENT';
   r.base_components := '["PRODUTO"]'::jsonb; r.status := 'PUBLISHED';
-  r.internal_rate := 10; r.interstate_rate := 12;
+  r.internal_rate_pct := 10; r.interstate_rate_pct := 12;
   BEGIN
     PERFORM public.fn_fiscal_apply_tax_v2(r, jsonb_build_object('produto',1000,'frete',0,'seguro',0,
       'outras',0,'desconto',0,'ipi',0,'icmsSt',0,'icmsOwnValue',0,'baseST',NULL));

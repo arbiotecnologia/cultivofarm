@@ -13,10 +13,10 @@ BEGIN
   NULL;
 END $$;
 
-CREATE TEMP TABLE _f31_gates(n serial, gate text, ok boolean, detail text) ON COMMIT DROP;
+CREATE TEMP TABLE _f31_gates(n serial, gate text, ok boolean, detail text);
 
 CREATE OR REPLACE FUNCTION pg_temp.gate(_g text, _ok boolean, _d text DEFAULT NULL)
-RETURNS void LANGUAGE sql AS $$ INSERT INTO _f31_gates(gate, ok, detail) VALUES (_g, _ok, _d) $$;
+RETURNS void LANGUAGE sql AS $$ INSERT INTO pg_temp._f31_gates(gate, ok, detail) VALUES (_g, _ok, _d) $$;
 
 -- 1..6 Devedor/destinatário
 SELECT pg_temp.gate('G01 fn_fiscal_partner_fiscal_customer existe',
