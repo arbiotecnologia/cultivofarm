@@ -11,7 +11,7 @@ import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { getActivePortalContext, setActivePortalContext } from "@/lib/activePortalContext";
 import { useEffect } from "react";
 import { itemsForPlatform } from "@/config/navigation";
-import { PortalIdentityHeader } from "@/components/portal/PortalIdentityHeader";
+import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 
 // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
