@@ -57,11 +57,15 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function decodeMasterKey(): Uint8Array | null {
-  const raw = Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY");
+/** Prefixo obrigatório da fixture sintética do harness F4.2. */
+const HARNESS_FIXTURE_PREFIX = "F42-HARNESS-";
+/** Único project_ref onde a via de chave de teste pode ser ativada. */
+const STAGING_PROJECT_REF = "ikaauvsflpmamgxmkhoq";
+
+function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   if (!raw) return null;
   try {
-    const bin = atob(raw);
+    const bin = atob(raw.trim());
     if (bin.length !== 32) return null;
     const out = new Uint8Array(32);
     for (let i = 0; i < 32; i++) out[i] = bin.charCodeAt(i);
@@ -71,8 +75,54 @@ function decodeMasterKey(): Uint8Array | null {
   }
 }
 
-function fromB64(value: string): Uint8Array {
-  const bin = atob(value);
+function decodeMasterKey(): Uint8Array | null {
+  return decodeKeyB64(Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY"));
+}
+
+/**
+ * F4.2 — via de chave EXCLUSIVA DE STAGING para a fixture do harness.
+ *
+ * Só é possível ativar quando TODAS as condições valem juntas:
+ *   1. o certificado selecionado é a fixture sintética (`F42-HARNESS-*`);
+ *   2. `FISCAL_TEST_CERTIFICATE_MASTER_KEY` está definida e tem 32 bytes;
+ *   3. `public._fiscal_staging_marker` confirma o project_ref de staging.
+ * Fora do staging (marcador ausente/diferente) a função devolve sempre a
+ * chave mestra normal — a via de teste é inalcançável. Nenhum secret
+ * existente é lido, sobrescrito ou ecoado.
+ */
+async function resolveMasterKey(
+  admin: { from: (t: string) => any },
+  certificateDisplayName: string,
+): Promise<Uint8Array | null> {
+  const primary = decodeMasterKey();
+  if (!certificateDisplayName.startsWith(HARNESS_FIXTURE_PREFIX)) return primary;
+  const testKey = decodeKeyB64(Deno.env.get("FISCAL_TEST_CERTIFICATE_MASTER_KEY"));
+  if (!testKey) return primary;
+  const marker = await admin
+    .from("_fiscal_staging_marker")
+    .select("project_ref")
+    .eq("marker", "STAGING")
+    .maybeSingle();
+  if (marker.error || marker.data?.project_ref !== STAGING_PROJECT_REF) return primary;
+  return testKey;
+}
+
+/**
+ * F4.2 — decodifica coluna `bytea` devolvida pelo PostgREST, que serializa
+ * como hexadecimal `\x...`. Base64 continua aceito para compatibilidade.
+ */
+function fromBinaryColumn(value: string): Uint8Array {
+  const v = String(value ?? "").trim();
+  if (v.startsWith("\\x") || v.startsWith("0x")) {
+    const hex = v.slice(2);
+    if (hex.length % 2 !== 0 || /[^0-9a-fA-F]/.test(hex)) {
+      throw new Error("bytea_hex_invalid");
+    }
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    return out;
+  }
+  const bin = atob(v);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
@@ -251,22 +301,22 @@ Deno.serve(async (req) => {
   }
 
   // 4. Assinatura com o certificado A1 ativo (material cifrado no cofre).
-  const masterKey = decodeMasterKey();
-  if (!masterKey) {
-    // Recuperável: o XML gerado permanece íntegro em GENERATED.
-    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
-      detail: "cofre de certificados indisponível" }, 412, headers);
-  }
-
   const certRow = await admin
     .from("v_fiscal_certificate_readiness")
-    .select("certificate_id, status, environment")
+    .select("certificate_id, display_name, status, environment")
     .eq("status", "AVAILABLE").eq("environment", "HOMOLOGATION")
     .order("valid_until", { ascending: false }).limit(1).maybeSingle();
   const certificateId = certRow.data?.certificate_id as string | undefined;
   if (!certificateId) {
     return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
       detail: "nenhum certificado A1 de homologação disponível" }, 412, headers);
+  }
+
+  const masterKey = await resolveMasterKey(admin, String(certRow.data?.display_name ?? ""));
+  if (!masterKey) {
+    // Recuperável: o XML gerado permanece íntegro em GENERATED.
+    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
+      detail: "cofre de certificados indisponível" }, 412, headers);
   }
 
   const material = await admin
@@ -284,11 +334,11 @@ Deno.serve(async (req) => {
     const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path as string);
     if (dl.error || !dl.data) throw new Error("download");
     const cipher = new Uint8Array(await dl.data.arrayBuffer());
-    pfx = await aesGcmDecrypt(masterKey, fromB64(material.data.material_iv as string), cipher);
+    pfx = await aesGcmDecrypt(masterKey, fromBinaryColumn(material.data.material_iv as string), cipher);
     const pwdPlain = await aesGcmDecrypt(
       masterKey,
-      fromB64(material.data.password_iv as string),
-      fromB64(material.data.encrypted_password as string),
+      fromBinaryColumn(material.data.password_iv as string),
+      fromBinaryColumn(material.data.encrypted_password as string),
     );
     password = new TextDecoder().decode(pwdPlain);
   } catch {
