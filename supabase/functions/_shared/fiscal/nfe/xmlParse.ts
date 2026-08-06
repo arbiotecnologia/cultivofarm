@@ -124,19 +124,18 @@ export function parseXml(input: string): XmlNode {
     }
     const attrs: Record<string, string> = {};
     if (spaceAt >= 0) {
-      const attrRe = /([A-Za-z_][A-Za-z0-9_.:-]*)\s*=\s*"([^"]*)"/g;
       const attrPart = body.slice(spaceAt);
+      const attrRe = /([A-Za-z_][A-Za-z0-9_.:-]*)\s*=\s*"([^"]*)"/g;
       let m: RegExpExecArray | null;
-      let consumed = 0;
       while ((m = attrRe.exec(attrPart)) !== null) {
         attrs[m[1]] = unescapeXml(m[2]);
-        consumed += m[0].length;
       }
-      if (attrPart.replace(/\s+/g, "").length !== consumed.valueOf() - 0 &&
-          attrPart.trim().length > 0 && Object.keys(attrs).length === 0) {
+      const leftover = attrPart.replace(/([A-Za-z_][A-Za-z0-9_.:-]*)\s*=\s*"([^"]*)"/g, "").trim();
+      if (leftover.length > 0) {
         throw new XmlParseError("XML_BAD_ATTRS", `atributos inválidos em <${name}>`);
       }
     }
+
 
     const node: XmlNode = { name, attrs, children: [], text: "" };
     if (stack.length > 0) stack[stack.length - 1].children.push(node);
