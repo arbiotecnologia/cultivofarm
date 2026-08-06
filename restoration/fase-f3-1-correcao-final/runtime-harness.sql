@@ -366,9 +366,13 @@ BEGIN
 END $$;
 
 DO $$
-DECLARE p jsonb;
+DECLARE p jsonb; au uuid;
 BEGIN
+  SELECT uid INTO au FROM _ids WHERE papel='administrador';
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', au, 'role','authenticated')::text, true);
   p := public.rpc_fiscal_nfe_readiness_v1();
+  PERFORM set_config('request.jwt.claims', NULL, true);
   PERFORM pg_temp.h('T26 painel nunca READY_PRODUCTION',
     (p->'emitter'->>'status') <> 'READY_PRODUCTION' AND (p->>'overallStatus') <> 'READY_PRODUCTION');
   PERFORM pg_temp.h('T27 painel declara teto READY_HOMOLOGATION',
