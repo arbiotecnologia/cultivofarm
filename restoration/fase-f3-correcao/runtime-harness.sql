@@ -377,27 +377,27 @@ BEGIN
   UPDATE public.fiscal_tax_rules SET status='SUPERSEDED' WHERE id=v_rid;
   PERFORM pg_temp.ok(24,'Ambiguidade de regra tributaria bloqueia a emissao');
 
-  -- T25 — ambiguidade de política de operação bloqueia.
-  INSERT INTO public.fiscal_operation_policies
-    (sales_channel, operation_type, uf, requires_invoice, document_model, direction, fin_nfe,
-     nature_operation, presence_indicator, final_consumer, taxpayer_indicator, origin_uf,
-     destination_uf, cfop, crt, priority, source_id, legal_basis, legal_version,
-     policy_status, prepared_by, active, valid_from)
-  VALUES ('b2b_partner','VENDA','GO',true,'55','OUT',1,'Venda de producao (duplicada)',1,false,'1','GO','GO',
-          '5102','3',10, v_src,'MOC NF-e 7.0 — duplicada para teste de ambiguidade','7.0',
-          'DRAFT', U_GESTOR, true, (SELECT valid_from FROM public.fiscal_operation_policies WHERE id=v_pol_go))
-  RETURNING id INTO v_pol_dup;
-  PERFORM pg_temp.as_user(U_FIN);
-  PERFORM public.rpc_fiscal_operation_policy_publish(v_pol_dup,'Publicacao duplicada do harness.');
-  PERFORM pg_temp.as_root();
+  -- T25 — ambiguidade de política de operação é impossível por construção:
+  -- fop_active_uq impede duas políticas vigentes no mesmo escopo (canal, operação,
+  -- UF origem/destino, modelo, indIEDest, consumidor final, vigência). A defesa em
+  -- tempo de resolução (FISCAL_OPERATION_POLICY_AMBIGUOUS) permanece como fail-closed.
   BEGIN
-    PERFORM public.fn_fiscal_resolve_operation('OUT','GO','GO','3',false,'1','30021000',NULL,'b2b_partner');
-    RAISE EXCEPTION 'T25 FAIL: politica ambigua resolvida';
-  EXCEPTION WHEN OTHERS THEN
-    IF SQLERRM NOT LIKE 'FISCAL_OPERATION_POLICY_AMBIGUOUS%' THEN RAISE; END IF;
-  END;
-  UPDATE public.fiscal_operation_policies SET active=false, policy_status='SUPERSEDED' WHERE id=v_pol_dup;
-  PERFORM pg_temp.ok(25,'Ambiguidade de politica de operacao bloqueia a emissao');
+    INSERT INTO public.fiscal_operation_policies
+      (sales_channel, operation_type, uf, requires_invoice, document_model, direction, fin_nfe,
+       nature_operation, presence_indicator, final_consumer, taxpayer_indicator, origin_uf,
+       destination_uf, cfop, crt, priority, source_id, legal_basis, legal_version,
+       policy_status, prepared_by, active, valid_from)
+    VALUES ('b2b_partner','VENDA','GO',true,'55','OUT',1,'Venda de producao (duplicada)',1,false,'1','GO','GO',
+            '5102','3',10, v_src,'MOC NF-e 7.0 — duplicada para teste de ambiguidade','7.0',
+            'DRAFT', U_GESTOR, true, (SELECT valid_from FROM public.fiscal_operation_policies WHERE id=v_pol_go));
+    RAISE EXCEPTION 'T25 FAIL: politica de operacao duplicada aceita no mesmo escopo';
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  IF (SELECT prosrc LIKE '%FISCAL_OPERATION_POLICY_AMBIGUOUS%'
+        FROM pg_proc WHERE proname='fn_fiscal_resolve_operation') IS NOT TRUE THEN
+    RAISE EXCEPTION 'T25 FAIL: resolvedor sem guarda de ambiguidade';
+  END IF;
+  PERFORM pg_temp.ok(25,'Politica de operacao ambigua impedida por unicidade e por guarda no resolvedor');
+
 
   -- T26 — coerência CRT: Simples exige CSOSN, Normal exige CST.
   BEGIN
