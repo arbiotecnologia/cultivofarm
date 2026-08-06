@@ -147,7 +147,9 @@ export function CentralNotificacoesHeader() {
             </TabsList>
           </div>
 
+          {podeVerAlertas && (
           <TabsContent value="alertas" className="mt-0">
+
             <div className="px-3 py-2 border-b flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold">Alertas prioritários</p>
