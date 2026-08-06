@@ -452,7 +452,7 @@ BEGIN
       AND (res->>'bypassrls')::boolean IS FALSE
       AND CASE WHEN interno THEN coalesce((res->>'n')::int,0) = 1
                ELSE coalesce((res->>'n')::int,0) = 0 END;
-    PERFORM pg_temp.h(format('T33+ RLS fiscal_tax_rules _papel=%s esperado=%s', _papel,
+    PERFORM pg_temp.h(format('T33+ RLS fiscal_tax_rules papel=%s esperado=%s', _papel,
       CASE WHEN interno THEN 'LE' ELSE 'NAO LE' END), ok, det);
   END LOOP;
 END $$;
