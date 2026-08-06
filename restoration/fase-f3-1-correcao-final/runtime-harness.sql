@@ -613,17 +613,50 @@ BEGIN
 END $$;
 
 -- T54 RPCs fiscais nao executaveis por PUBLIC/anon
+-- F3.1-R2: prova por catalogo explicito (proacl/aclexplode). proacl NULL
+-- significa ACL default, que inclui EXECUTE para PUBLIC — por isso e' FAIL.
 DO $$
 DECLARE ruins text := '';
 BEGIN
   SELECT string_agg(p.oid::regprocedure::text,' ') INTO ruins
     FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
    WHERE n.nspname='public' AND p.proname LIKE 'rpc_fiscal%'
-     AND (has_function_privilege('public', p.oid, 'EXECUTE')
-          OR has_function_privilege('anon', p.oid, 'EXECUTE'));
-  PERFORM pg_temp.h('T54 nenhuma RPC fiscal executavel por PUBLIC/anon',
+     AND (p.proacl IS NULL
+          OR EXISTS (SELECT 1 FROM aclexplode(p.proacl) x
+                      WHERE x.privilege_type='EXECUTE'
+                        AND x.grantee IN (0, 'anon'::regrole::oid)));
+  PERFORM pg_temp.h('T54 nenhuma RPC fiscal executavel por PUBLIC/anon (proacl)',
     coalesce(ruins,'') = '', coalesce(ruins,'ok'));
 END $$;
+
+-- T55 confirmacao independente por information_schema.routine_privileges
+DO $$
+DECLARE ruins text := '';
+BEGIN
+  SELECT string_agg(DISTINCT rp.routine_name, ' ') INTO ruins
+    FROM information_schema.routine_privileges rp
+   WHERE rp.specific_schema='public'
+     AND rp.routine_name LIKE 'rpc_fiscal%'
+     AND rp.grantee IN ('PUBLIC','anon')
+     AND rp.privilege_type='EXECUTE';
+  PERFORM pg_temp.h('T55 routine_privileges sem PUBLIC/anon em rpc_fiscal*',
+    coalesce(ruins,'') = '', coalesce(ruins,'ok'));
+END $$;
+
+-- T56 helper de ambiente e' interno: sem EXECUTE para PUBLIC/anon/authenticated
+DO $$
+DECLARE a aclitem[]; bad boolean;
+BEGIN
+  SELECT p.proacl INTO a FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+   WHERE n.nspname='public' AND p.proname='fn_fiscal_assert_environment_homologation';
+  bad := a IS NULL
+      OR EXISTS (SELECT 1 FROM aclexplode(a) x
+                  WHERE x.privilege_type='EXECUTE'
+                    AND x.grantee IN (0,'anon'::regrole::oid,'authenticated'::regrole::oid));
+  PERFORM pg_temp.h('T56 helper de ambiente sem EXECUTE para PUBLIC/anon/authenticated',
+    NOT bad, coalesce(array_to_string(a,','),'ACL DEFAULT'));
+END $$;
+
 
 \echo '== RESULTADO RUNTIME HARNESS F3.1 / F3.1-R1 =='
 SELECT n, caso, CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END AS status, coalesce(detail,'') AS detalhe
