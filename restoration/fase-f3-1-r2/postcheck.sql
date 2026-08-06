@@ -31,7 +31,7 @@ END $$;
 -- ---------------------------------------------------------------- R2-01..05
 -- Estrutural: helper existe, SECURITY DEFINER, search_path fixo, sem grants.
 DO $$
-DECLARE d text; a text[];
+DECLARE d text; a aclitem[];
 BEGIN
   SELECT pg_get_functiondef(p.oid), p.proacl INTO d, a
     FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
