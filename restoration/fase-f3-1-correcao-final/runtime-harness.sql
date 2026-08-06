@@ -87,7 +87,7 @@ END $$;
 DO $$
 DECLARE
   admin_uid uuid; cli_ok uuid; cli_outro uuid; parceiro uuid; parceiro_sem uuid;
-  pedido uuid; inv_ok uuid; inv_div uuid; inv_sem uuid; sufixo text;
+  pedido uuid; inv_ok uuid; inv_div uuid; inv_sem uuid; sufixo text; prod uuid;
 BEGIN
   SELECT uid INTO admin_uid FROM _ids WHERE papel = 'administrador';
   sufixo := substr(replace(gen_random_uuid()::text,'-',''),1,10);
@@ -113,9 +113,13 @@ BEGIN
   VALUES (parceiro, 'aprovado', now(), admin_uid, 'accepted', false)
   RETURNING id INTO pedido;
 
-  INSERT INTO public.partner_order_items(order_id, quantidade, pricing_mode_snapshot,
+  SELECT p.id INTO prod FROM public.produtos p ORDER BY p.created_at LIMIT 1;
+  IF prod IS NULL THEN
+    RAISE EXCEPTION 'HARNESS_PRODUCT_MISSING: nenhum produto disponivel para a fixture.';
+  END IF;
+  INSERT INTO public.partner_order_items(order_id, product_id, quantidade, pricing_mode_snapshot,
                                          preco_unitario_final_snapshot, price_source_snapshot)
-  VALUES (pedido, 1, 'table', 100, 'HARNESS_FIXTURE');
+  VALUES (pedido, prod, 1, 'table', 100, 'HARNESS_FIXTURE');
 
   INSERT INTO public.fiscal_invoices(document_model, direction, status, source_type, source_id,
                                      customer_id, issue_date, tp_emis, invoice_type, created_by)
