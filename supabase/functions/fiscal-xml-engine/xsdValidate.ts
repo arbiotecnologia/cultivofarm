@@ -82,9 +82,8 @@ export async function validateAgainstOfficialXsd(xml: string): Promise<XsdReport
   const { schema, preload } = await loadBundle();
   const result = await validateXML({
     xml: [{ fileName: "nfe.xml", contents: xml }],
-    schema: [schema.contents],
+    schema: [{ fileName: schema.fileName, contents: schema.contents }],
     preload,
-    normalization: "none",
   });
   return {
     valid: result.valid === true,
