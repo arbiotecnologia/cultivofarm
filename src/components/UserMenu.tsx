@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Repeat, Settings, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { canAccess } from "@/lib/permissions";
 import { getIniciais, getNomeExibicao, getRoleLabel } from "@/lib/portal/identidade";
 import {
   DropdownMenu,
@@ -16,7 +17,17 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 
-export function UserMenu() {
+interface UserMenuProps {
+  /**
+   * Rota de configurações. `undefined` = decide por permissão (`/configuracoes`);
+   * `null` = oculta o item.
+   */
+  settingsTo?: string | null;
+  /** Exibe "Trocar de portal" quando o usuário tem mais de um contexto. */
+  onSwitchPortal?: () => void;
+}
+
+export function UserMenu({ settingsTo, onSwitchPortal }: UserMenuProps = {}) {
   const { profile, user, role, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -26,9 +37,15 @@ export function UserMenu() {
   const nomeExibicao = getNomeExibicao(nome, email);
   const roleLabel = getRoleLabel(role);
 
+  const settingsPath =
+    settingsTo === null
+      ? null
+      : settingsTo ?? (canAccess(role, "/configuracoes") ? "/configuracoes" : null);
+
   const handleSignOut = async () => {
     await signOut();
   };
+
 
   const avatar = (
     <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
