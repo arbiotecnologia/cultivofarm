@@ -248,5 +248,6 @@ export default function PortalParceiroLayout() {
       </main>
       </div>
     </div>
-
+  );
 }
+
