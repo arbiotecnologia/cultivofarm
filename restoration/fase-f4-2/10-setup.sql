@@ -253,8 +253,8 @@ BEGIN
     'UN', 100.000000, 500.00, 500.00
   );
 
-  RAISE NOTICE 'F42 SETUP OK tag=% invoice=% invoice_quote=% company=% series=%',
-    v_tag, v_invoice, v_inv_quote, v_company, v_series;
+  RAISE NOTICE 'F42 SETUP OK tag=% invoice=% invoice_quote=% company=% series=% emitente_anterior=%',
+    v_tag, v_invoice, v_inv_quote, v_company, v_series, coalesce(v_prev_comp::text,'NENHUM');
 END $f$;
 
 -- Saída consumida pelo `run` (exportar para o ambiente do harness).
