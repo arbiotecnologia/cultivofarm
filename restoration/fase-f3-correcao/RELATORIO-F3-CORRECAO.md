@@ -107,7 +107,7 @@ Todas as migrations são incrementais e idempotentes. A migration F3 já aplicad
 | --- | --- |
 | `postcheck.sql` (estrutural) | **48/48 PASS** |
 | `runtime-harness.sql` (autenticado, revertido) | **40/40 PASS** |
-| Ledger de migrations | 637 local / 637 remoto — sem drift |
+| Ledger de migrations | 638 local / 638 remoto — sem drift |
 | Produção `navfzbwgwzruipouyfnk` | não acessada |
 
 ## Ressalvas
