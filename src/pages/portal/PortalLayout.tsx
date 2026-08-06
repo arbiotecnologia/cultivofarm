@@ -17,8 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { PortalIdentityHeader } from "@/components/portal/PortalIdentityHeader";
+import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { getRoleLabel } from "@/lib/portal/identidade";
+
 
 interface MenuItem {
   title: string;
