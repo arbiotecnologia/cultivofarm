@@ -37,3 +37,16 @@ console.log("GATE elemento desconhecido:", neg1.valid ? "FAIL" : "PASS", neg1.is
 const neg2 = await validateAgainstOfficialXsd(xml.replace(/<NCM>\d+<\/NCM>/, "<NCM>1</NCM>"));
 console.log("GATE faceta NCM:", neg2.valid ? "FAIL" : "PASS", neg2.issues[0]?.code ?? "");
 void tampered;
+
+// ---- Gate assinado: XSD real sobre o documento FINAL (com Signature) ----
+import { signNfeXml } from "../../../supabase/functions/_shared/fiscal/nfe/signNfeXml.ts";
+const pfx = await Deno.readFile("/tmp/test-a1.pfx");
+const built = buildNfeXml(payload());
+const signed = signNfeXml({ xml: built.xml, infNFeId: built.infNFeId,
+  namespace: "http://www.portalfiscal.inf.br/nfe", pfx, password: "homolog" });
+const rSigned = await validateAgainstOfficialXsd(signed.signedXml);
+console.log("GATE assinado XSD:", rSigned.valid ? "PASS" : "FAIL");
+if (!rSigned.valid) console.log(JSON.stringify(rSigned.issues.slice(0, 8), null, 2));
+const rTamper = await validateAgainstOfficialXsd(
+  signed.signedXml.replace("<vNF>250.00</vNF>", "<vNF>ABC</vNF>"));
+console.log("GATE adulteração tipo:", rTamper.valid ? "FAIL" : "PASS");
