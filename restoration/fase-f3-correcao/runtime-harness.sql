@@ -176,24 +176,23 @@ BEGIN
     RAISE EXCEPTION 'T07 FAIL: %', v_res; END IF;
   PERFORM pg_temp.ok(7,'Snapshot de preco ausente bloqueia emissao');
 
-  -- T08 — devedor B2B ausente bloqueia.
+  -- T08 — entrega inexistente/nao concluida bloqueia (devedor sempre exigido).
+  -- Observacao: partner_orders.partner_id e NOT NULL no schema real, logo o devedor
+  -- do pedido nunca pode ser nulo; a via testavel do bloqueio e a origem ENTREGA.
   UPDATE public.partner_order_items
      SET preco_unitario_final_snapshot=10.005, price_source_snapshot='HARNESS'
    WHERE order_id=v_order;
-  UPDATE public.partner_orders SET partner_id=NULL WHERE id=v_order;
-  v_res := public.fn_fiscal_invoice_eligibility('PARTNER_ORDER', v_order);
-  IF (v_res->>'eligible')::boolean OR (v_res->>'reasons') NOT LIKE '%FISCAL_DEBTOR_UNRESOLVED%' THEN
+  v_res := public.fn_fiscal_invoice_eligibility('ENTREGA', gen_random_uuid());
+  IF (v_res->>'eligible')::boolean OR (v_res->>'reasons') NOT LIKE '%FISCAL_DELIVERY_NOT_FOUND%' THEN
     RAISE EXCEPTION 'T08 FAIL: %', v_res; END IF;
-  PERFORM pg_temp.ok(8,'Devedor B2B nao identificado bloqueia emissao');
+  PERFORM pg_temp.ok(8,'Entrega inexistente bloqueia emissao (fail-closed por origem)');
 
-  -- T09 — pedido integralmente elegivel.
-  UPDATE public.partner_orders
-     SET partner_id=(SELECT partner_id FROM public.partner_orders WHERE partner_id IS NOT NULL LIMIT 1)
-   WHERE id=v_order;
+  -- T09 — pedido integralmente elegivel com devedor B2B resolvido.
   v_res := public.fn_fiscal_invoice_eligibility('PARTNER_ORDER', v_order);
   IF NOT (v_res->>'eligible')::boolean THEN RAISE EXCEPTION 'T09 FAIL: %', v_res->>'reasons'; END IF;
   IF v_res->>'debtorPartnerId' IS NULL THEN RAISE EXCEPTION 'T09 FAIL: devedor nao resolvido'; END IF;
   PERFORM pg_temp.ok(9,'Pedido aprovado, aprovado comercialmente e precificado e elegivel');
+
 
   -- T10 — origem nao suportada bloqueia (fail-closed por tipo).
   v_res := public.fn_fiscal_invoice_eligibility('CONTRATO', v_order);
