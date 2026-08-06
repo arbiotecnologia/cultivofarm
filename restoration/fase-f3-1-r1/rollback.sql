@@ -277,7 +277,7 @@ BEGIN
   VALUES (p_invoice_id, p_idempotency_key, 'F3.3', totals, auth.uid());
 
   RETURN totals || jsonb_build_object('idempotentReplay', false);
-END $function$
+END $function$;
 
 
 CREATE OR REPLACE FUNCTION public.rpc_fiscal_reserve_nfe_number_v1(p_invoice_id uuid, p_idempotency_key text)
@@ -405,7 +405,7 @@ BEGIN
   RETURN jsonb_build_object('number', n, 'series', s.series, 'accessKey', full_key,
                             'checkDigit', dv, 'tpEmis', coalesce(inv.tp_emis,1),
                             'status','RESERVED', 'idempotentReplay', false);
-END $function$
+END $function$;
 
 
 DROP FUNCTION IF EXISTS public.fn_fiscal_assert_environment_homologation();
