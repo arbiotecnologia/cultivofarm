@@ -727,7 +727,7 @@ BEGIN
     FROM public.microrganismos m;
 
   SELECT
-    count(*) FILTER (WHERE coalesce(p.profile_status,'DRAFT') = 'APPROVED'
+    count(*) FILTER (WHERE coalesce(p.profile_status,'DRAFT') = 'VALIDATED'
                        AND p.accounting_validated_at IS NOT NULL
                        AND coalesce(p.is_active,false)),
     count(*) FILTER (WHERE coalesce(p.profile_status,'DRAFT') = 'BLOCKED')
@@ -765,14 +765,14 @@ BEGIN
         JOIN public.microrganismos m ON m.id = mp.microorganism_id
        WHERE coalesce(m.ativo,true)
          AND coalesce(mp.is_active,false)
-         AND coalesce(mp.profile_status,'DRAFT') = 'APPROVED'
+         AND coalesce(mp.profile_status,'DRAFT') = 'VALIDATED'
          AND mp.accounting_validated_at IS NOT NULL
          AND nullif(btrim(coalesce(mp.ncm,'')),'') IS NOT NULL
          AND EXISTS (
            SELECT 1 FROM public.microorganism_regulatory_dossiers d
             WHERE d.microorganism_id = m.id
               AND d.deleted_at IS NULL
-              AND d.status IN ('APPROVED','PUBLISHED')
+              AND d.status = 'VALIDATED'
               AND coalesce(d.effective_from, current_date) <= current_date
               AND (d.effective_to IS NULL OR d.effective_to >= current_date)
               AND nullif(btrim(coalesce(d.published_ncm,'')),'') IS NOT NULL)
