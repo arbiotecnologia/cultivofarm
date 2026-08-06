@@ -119,20 +119,23 @@ export function CentralNotificacoesHeader() {
       </PopoverTrigger>
 
       <PopoverContent align="end" className="w-[360px] p-0" sideOffset={8}>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={abaAtiva} onValueChange={setActiveTab} className="w-full">
           <div className="px-3 pt-3 pb-2 border-b">
-            <TabsList className="grid w-full grid-cols-2 h-9">
-              <TabsTrigger value="alertas" className="text-xs">
-                Alertas
-                {totalAlertasNaoLidos > 0 && (
-                  <Badge
-                    variant={isCritico ? "destructive" : "secondary"}
-                    className="ml-1.5 h-4 px-1 text-[10px]"
-                  >
-                    {totalAlertasNaoLidos > 99 ? "99+" : totalAlertasNaoLidos}
-                  </Badge>
-                )}
-              </TabsTrigger>
+            <TabsList className={cn("grid w-full h-9", podeVerAlertas ? "grid-cols-2" : "grid-cols-1")}>
+              {podeVerAlertas && (
+                <TabsTrigger value="alertas" className="text-xs">
+                  Alertas
+                  {totalAlertasNaoLidos > 0 && (
+                    <Badge
+                      variant={isCritico ? "destructive" : "secondary"}
+                      className="ml-1.5 h-4 px-1 text-[10px]"
+                    >
+                      {totalAlertasNaoLidos > 99 ? "99+" : totalAlertasNaoLidos}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
+
               <TabsTrigger value="notificacoes" className="text-xs">
                 Notificações
                 {unreadNotificacoes > 0 && (
