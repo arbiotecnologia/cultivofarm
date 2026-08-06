@@ -50,3 +50,14 @@ if (!rSigned.valid) console.log(JSON.stringify(rSigned.issues.slice(0, 8), null,
 const rTamper = await validateAgainstOfficialXsd(
   signed.signedXml.replace("<vNF>250.00</vNF>", "<vNF>ABC</vNF>"));
 console.log("GATE adulteração tipo:", rTamper.valid ? "FAIL" : "PASS");
+
+// ---- Gate XMLDSig: verificação independente e detecção de adulteração ----
+import { verifyNfeSignature } from "../../../supabase/functions/_shared/fiscal/nfe/signNfeXml.ts";
+const NS = "http://www.portalfiscal.inf.br/nfe";
+const v1 = verifyNfeSignature(signed.signedXml, NS);
+console.log("GATE XMLDSig positivo:", v1.valid ? "PASS" : "FAIL", JSON.stringify(v1));
+const v2 = verifyNfeSignature(signed.signedXml.replace("<vNF>250.00</vNF>", "<vNF>251.00</vNF>"), NS);
+console.log("GATE XMLDSig adulterado:", !v2.valid && v2.code === "SIGNATURE_DIGEST_MISMATCH" ? "PASS" : "FAIL", v2.code);
+const v3 = verifyNfeSignature(
+  signed.signedXml.replace(/<SignatureValue>[^<]*<\/SignatureValue>/, "<SignatureValue>AAAA</SignatureValue>"), NS);
+console.log("GATE XMLDSig assinatura trocada:", !v3.valid ? "PASS" : "FAIL", v3.code);
