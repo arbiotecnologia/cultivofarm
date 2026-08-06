@@ -106,16 +106,22 @@ export default function PortalLayout() {
   // Usuário precisa ter pelo menos um cliente vinculado para usar o portal
   if (!loading && clientes.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md text-center space-y-4">
-          <Building2 className="h-12 w-12 mx-auto text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Nenhum cliente vinculado</h2>
-          <p className="text-sm text-muted-foreground">
-            Sua conta não está vinculada a nenhum cliente. Contate o administrador para concluir a configuração do acesso.
-          </p>
-          <Button variant="outline" onClick={async () => { await signOut(); navigate("/auth"); }}>
-            <LogOut className="h-4 w-4 mr-2" /> Sair
-          </Button>
+      <div className="min-h-screen bg-background flex flex-col">
+        <PortalTopBar
+          brandTitle="Portal do Produtor"
+          brandIcon={Sprout}
+        />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="max-w-md text-center space-y-4">
+            <Building2 className="h-12 w-12 mx-auto text-muted-foreground" />
+            <h2 className="text-xl font-semibold">Nenhum cliente vinculado</h2>
+            <p className="text-sm text-muted-foreground">
+              Sua conta não está vinculada a nenhum cliente. Contate o administrador para concluir a configuração do acesso.
+            </p>
+            <Button variant="outline" onClick={async () => { await signOut(); navigate("/auth"); }}>
+              <LogOut className="h-4 w-4 mr-2" /> Sair
+            </Button>
+          </div>
         </div>
       </div>
     );
