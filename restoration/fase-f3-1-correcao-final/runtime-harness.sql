@@ -164,7 +164,7 @@ BEGIN
   r.tax_kind := 'DIFAL'; r.calc_mode := 'PERCENT';
   r.base_components := '["PRODUTO"]'::jsonb; r.status := 'PUBLISHED';
   r.internal_rate_pct := 18; r.interstate_rate_pct := 12; r.fcp_rate := 2;
-  r.destination_share := 100;
+  r.difal_dest_share_pct := 100;
   BEGIN
     res := public.fn_fiscal_apply_tax_v2(r, jsonb_build_object(
       'produto',1000,'frete',0,'seguro',0,'outras',0,'desconto',0,
