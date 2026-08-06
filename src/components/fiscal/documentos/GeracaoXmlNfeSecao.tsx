@@ -34,6 +34,10 @@ const STATE_LABEL: Record<FiscalXmlState, string> = {
   FAILED: "Falhou",
 };
 
+// F4.1: fail-closed até que o bundle XSD oficial, o validador XSD 1.0 real,
+// a Edge Function e o runtime harness estejam certificados no staging.
+const F4_1_RUNTIME_CERTIFIED = false;
+
 function StateBadge({ state }: { state: FiscalXmlState }) {
   const tone =
     state === "SIGNED"
@@ -143,7 +147,7 @@ export function GeracaoXmlNfeSecao({ invoiceId }: { invoiceId: string | null }) 
   const [lastKey, setLastKey] = useState<string | null>(null);
 
   const latest = useMemo(() => status.data?.runs?.[0] ?? null, [status.data]);
-  const canGenerate = !!invoiceId && !generate.isPending &&
+  const canGenerate = F4_1_RUNTIME_CERTIFIED && !!invoiceId && !generate.isPending &&
     (!latest || latest.state === "SIGNED" || latest.state === "FAILED");
 
   const handleGenerate = async () => {
@@ -173,14 +177,15 @@ export function GeracaoXmlNfeSecao({ invoiceId }: { invoiceId: string | null }) 
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
           <CardTitle className="flex items-center gap-2">
-            XML NF-e 4.00 — geração, validação e assinatura
+            XML NF-e 4.00 — bloqueado para certificação F4.1
             <Badge variant="outline" className="border-amber-500/60 text-amber-700 dark:text-amber-300">
               <Lock className="w-3 h-3 mr-1" aria-hidden /> Teto: assinado
             </Badge>
           </CardTitle>
           <CardDescription>
-            Gera o XML a partir do snapshot congelado, valida contra o leiaute oficial 4.00 e
-            assina com o certificado A1 de homologação. Nada é transmitido à SEFAZ.
+            A emissão permanece desabilitada até a validação por XSD oficial real, a verificação
+            criptográfica e o fluxo HTTP do staging concluírem o harness obrigatório. Nada é
+            transmitido à SEFAZ.
           </CardDescription>
         </div>
         <Button
@@ -194,6 +199,17 @@ export function GeracaoXmlNfeSecao({ invoiceId }: { invoiceId: string | null }) 
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {!F4_1_RUNTIME_CERTIFIED ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" aria-hidden />
+            <AlertTitle>Motor XML indisponível</AlertTitle>
+            <AlertDescription>
+              A validação anterior era apenas um precheck manual e não comprova conformidade XSD
+              NF-e 4.00. A geração e a assinatura estão bloqueadas até a certificação F4.1.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         {!invoiceId ? (
           <Alert>
             <AlertTitle>Salve o rascunho primeiro</AlertTitle>
@@ -221,7 +237,7 @@ export function GeracaoXmlNfeSecao({ invoiceId }: { invoiceId: string | null }) 
             data-testid="fiscal-xml-gerar"
           >
             <FileSignature className="w-4 h-4 mr-1" aria-hidden />
-            {generate.isPending ? "Processando..." : "Gerar, validar e assinar"}
+            {generate.isPending ? "Processando..." : "Geração bloqueada"}
           </Button>
           {lastKey ? (
             <span className="text-xs text-muted-foreground self-center font-mono">

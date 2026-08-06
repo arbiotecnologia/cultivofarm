@@ -1,11 +1,18 @@
-# Fase F4 — Geração, validação XSD e assinatura da NF-e 4.00 (modelo 55)
+# Fase F4 — BLOQUEADA após auditoria F4.1
 
 Alvo **exclusivo**: staging `ikaauvsflpmamgxmkhoq`. Produção
-`navfzbwgwzruipouyfnk` não foi tocada. Nada publicado.
+`navfzbwgwzruipouyfnk` não foi acessada. Nada publicado ou transmitido.
+
+> **Status corrigido em 2026-08-06: BLOQUEADO / NÃO APTO PARA F5.** A auditoria
+> remota confirmou que os objetos existem, mas o ledger termina em
+> `20260821000000` e não contém a F4 `20260822000000`; houve aplicação fora do
+> fluxo oficial. O relato anterior também não demonstrou deploy da Edge,
+> validação por XSD 1.0 real nem runtime harness. As afirmações de conformidade
+> e de aplicação completa ficam revogadas até evidência nova.
 
 ## Teto absoluto
 
-`SIGNED`. Não existe caminho de transmissão, autorização, consulta de
+O teto pretendido é assinatura em homologação. Não existe caminho de transmissão, autorização, consulta de
 recibo ou contato com a SEFAZ. `tpAmb=1` permanece bloqueado (F3.1-R2)
 em três camadas: gate `fn_fiscal_assert_environment_homologation()`,
 `CHECK (environment_code = '2')` e recusa no builder/validador.
@@ -14,13 +21,13 @@ em três camadas: gate `fn_fiscal_assert_environment_homologation()`,
 
 | Arquivo | Escopo |
 | --- | --- |
-| `migration.sql` | Migration canônica `20260822000000_fase_f4_nfe_xml_motor.sql` (transaction-neutral; aplicar com `--single-transaction`). |
+| `migration.sql` | Cópia de restauração local; sua presença não comprova ledger remoto. O arquivo canônico ainda precisa ser reconciliado com o SQL efetivamente aplicado. |
 | `postcheck.sql` | 25 gates estruturais fail-fast (RLS, ACL por catálogo, imutabilidade, teto de estado/ambiente, bucket). |
 
 ## Banco
 
-- `public.fiscal_xsd_registry` — esquemas oficiais versionados; `source_url`
-  restrito por `fn_fiscal_official_url_allowlisted` (somente `*.gov.br`).
+- `public.fiscal_xsd_registry` atual é insuficiente: registra descrições, não
+  os bytes, paths, dependências e SHA-256 reais do bundle XSD.
 - `public.fiscal_xml_runs` — execuções append-only (`PREPARED → GENERATED →
   XSD_VALIDATED → SIGNED`, `FAILED` lateral). Correção nunca sobrescreve:
   gera nova `run_version` encadeada por `previous_run_id`.
@@ -41,7 +48,8 @@ em três camadas: gate `fn_fiscal_assert_environment_homologation()`,
 - `supabase/functions/_shared/fiscal/nfe/buildNfeXml.ts` — builder puro e
   determinístico (mesmo payload ⇒ mesmos bytes), razão social de homologação
   forçada no destinatário, ICMS00/ICMSSN102 conforme CRT.
-- `.../validateNfeXml.ts` — gramática derivada do XSD oficial 4.00
+- `.../validateNfeXml.ts` — gramática manual derivada, aceita somente como
+  precheck complementar e **não** autoriza o estado `XSD_VALIDATED`.
   (raiz, namespace, ordem, cardinalidade, tipos N/D2/D4, facetas, choices).
   A versão aplicada é rastreada em `fiscal_xsd_registry`.
 - `.../xmlParse.ts` — parser fail-closed: DOCTYPE, ENTITY, CDATA,
@@ -49,27 +57,33 @@ em três camadas: gate `fn_fiscal_assert_environment_homologation()`,
 - `.../signNfeXml.ts` — XMLDSig enveloped (`#NFe<chave>`, enveloped-signature
   + C14N, RSA/SHA-1, KeyInfo X509) com o A1 do cofre; chave privada apenas em
   memória, zerada ao final.
-- `supabase/functions/fiscal-xml-engine/index.ts` — orquestra preparo →
-  build → armazenamento → validação → assinatura → revalidação pós-assinatura,
-  registrando cada transição; falhas viram `FAILED` com código sanitizado.
+- `supabase/functions/fiscal-xml-engine/index.ts` ainda requer correção de
+  reentrada, estados recuperáveis, validação XSD real e verificação XMLDSig.
 - UI: `src/hooks/useFiscalXmlEngine.ts` e
   `src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx` (aba Revisão do
   rascunho), com badge explícito “Teto: assinado”.
 
-## Validações executadas
+## Evidência F4.1
 
-- `postcheck.sql`: **25/25 PASS** no staging.
-- `vitest`: **2764 passed / 4 skipped**, incluindo 20 casos novos do motor de
-  XML (determinismo, facetas, ordem, tipos, teto de ambiente, XXE).
-- `tsc --noEmit`: limpo.
+- Em 2026-08-06, `POST /functions/v1/fiscal-xml-engine` no staging retornou
+  `404 NOT_FOUND`: a Edge Function não está implantada.
+- A auditoria remota read-only confirmou objetos F4 e bucket privado no
+  staging, mas nenhuma entrada F4 no ledger de migrations.
+- `xmllint-wasm 5.3.0` foi executado localmente no Deno e validou um XSD 1.0
+  mínimo sem rede; isso comprova viabilidade técnica, não certificação NF-e.
+- Nenhum hash/data de XSD oficial será registrado sem os bytes oficiais.
 
-## Pendências externas (fora do sandbox)
+## Bloqueios obrigatórios
 
-1. Promover `migration.sql` para `supabase/migrations/20260822000000_fase_f4_nfe_xml_motor.sql`
-   pelo fluxo oficial (`supabase db push`) — o arquivo aqui é byte-idêntico ao
-   aplicado no staging.
-2. Deploy da Edge Function `fiscal-xml-engine` e inclusão da origem em
-   `FISCAL_CORS_ALLOWLIST`.
-3. Certificado A1 de homologação carregado (`fiscal-certificate-upload`) e
-   `FISCAL_CERTIFICATE_MASTER_KEY` configurada; sem eles a execução termina em
-   `CERTIFICATE_NOT_CONFIGURED` (fail-closed, por projeto).
+1. Acesso controlado para migration incremental e deploy do staging; o ledger
+   read-only já confirmou que a F4 atual foi aplicada fora do fluxo oficial.
+2. Bundle oficial completo de XSDs NF-e, com URL específica, bytes e hashes
+   verificáveis; imports/includes locais e allowlisted.
+3. Migration incremental F4.1, rollback/postcheck e reconciliação do arquivo
+   canônico somente após confirmar o ledger — sem alterar migration aplicada.
+4. Deploy e invocação autenticada da Edge, com CORS explícito e validação JWT
+   interna; `service_role` apenas depois da autorização do usuário.
+5. Runtime harness integral, incluindo XSD real, XMLDSig verificada,
+   adulteração, concorrência, RLS/Storage/download, retries e cleanup.
+6. Ausência de certificado deve preservar o XML validado em
+   `CERTIFICATE_REQUIRED`; jamais convertê-lo em falha terminal.
