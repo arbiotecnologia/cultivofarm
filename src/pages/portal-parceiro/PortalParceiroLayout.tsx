@@ -145,63 +145,59 @@ export default function PortalParceiroLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      <header className="md:hidden border-b flex items-center justify-between px-4 py-3 sticky top-0 bg-background z-10 gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <ShoppingCart className="h-5 w-5 text-primary shrink-0" />
-          <span className="font-semibold truncate">Portal Parceiro</span>
-        </div>
-        <div className="flex items-center gap-2 min-w-0">
-          <PortalIdentityHeader
-            variant="compact"
-            roleLabel={getPapelLabel(papelVisual)}
-            contextLabel={isStaff ? partner?.razao_social ?? null : ownPartner?.razao_social ?? null}
-          />
+    <div className="min-h-screen bg-background flex flex-col">
+      <PortalTopBar
+        brandTitle="Portal Parceiro B2B"
+        brandIcon={ShoppingCart}
+        brandSubtitle={getPapelLabel(papelVisual)}
+        onSwitchPortal={canSwitchPortal ? () => { setOpen(false); void switchPortal(); } : undefined}
+        leadingSlot={
           <Button
             variant="ghost"
             size="icon"
-            className="h-12 w-12 shrink-0"
+            className="h-10 w-10 shrink-0 md:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? "Fechar menu" : "Abrir menu"}
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-5 w-5" />
           </Button>
-        </div>
-      </header>
+        }
+        contextSlot={
+          isStaff ? (
+            <div className="hidden sm:flex items-center gap-2 min-w-0">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Ver como</span>
+              <Select value={simulatedId ?? ""} onValueChange={(v) => setSimulatedId(v)}>
+                <SelectTrigger className="h-8 text-sm w-[200px]">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allPartners.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.razao_social}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <span
+              className="hidden sm:block text-sm text-muted-foreground truncate max-w-[200px]"
+              title={ownPartner?.razao_social ?? undefined}
+            >
+              {isLoading ? "..." : ownPartner?.razao_social ?? "—"}
+            </span>
+          )
+        }
+      />
 
-
+      <div className="flex flex-1 flex-col md:flex-row min-h-0">
       <aside
         className={cn(
-          "md:w-64 md:min-h-screen border-r bg-card md:flex md:flex-col",
+          "md:w-64 border-r bg-card md:flex md:flex-col",
           open ? "flex flex-col" : "hidden md:flex",
         )}
       >
-        <PortalIdentityHeader
-          className="hidden md:block"
-          brandTitle="Portal Parceiro B2B"
-          brandIcon={ShoppingCart}
-          roleLabel={getPapelLabel(papelVisual)}
-          contextLabel={isStaff ? undefined : isLoading ? "..." : ownPartner?.razao_social ?? "—"}
-          contextSlot={
-            isStaff ? (
-              <>
-                <div className="text-xs text-muted-foreground">Visualizar como parceiro</div>
-                <Select value={simulatedId ?? ""} onValueChange={(v) => setSimulatedId(v)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allPartners.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.razao_social}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            ) : undefined
-          }
-        />
+
 
 
         <nav className="flex-1 px-2 py-2 space-y-1">
