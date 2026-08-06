@@ -115,22 +115,35 @@ Lint não está disponível no projeto (política registrada); typecheck, testes
 
 ## Status
 
-**BLOQUEADO** — não há evidência runtime.
+**APTO PARA F4 (staging)** — evidência runtime coletada em 2026-08-06.
 
-Motivo exato: o ambiente desta sessão não expõe `PGHOST` nem qualquer credencial/DSN do
-staging, e não há ferramenta de migration disponível. A migration, o postcheck (52 gates),
-o runtime harness (35 casos) e o rollback estão prontos e canônicos, mas **não foram
-aplicados nem executados** contra `ikaauvsflpmamgxmkhoq`. Conforme o critério definido,
-o status só pode ser `APTO PARA F4` com 52/52 postcheck e 35/35 harness PASS no staging.
+Execução realizada exclusivamente em `ikaauvsflpmamgxmkhoq` (staging).
+Produção `navfzbwgwzruipouyfnk` não foi acessada. Nada publicado.
 
-Para desbloquear, execute no staging (nesta ordem, fail-fast):
+| Etapa | Comando | Resultado |
+|---|---|---|
+| Migration | `20260818000000_fase_f3_1_correcao_final.sql` (`--single-transaction`) | APLICADA — ledger 638 → **639** |
+| Postcheck estrutural | `postcheck.sql` | **52 / 52 PASS** |
+| Runtime harness (transação revertida) | `runtime-harness.sql` | **35 / 35 PASS** |
+| Typecheck | `tsgo --noEmit` | PASS |
+| Testes | `vitest run` | 2744 PASS / 4 skipped |
+| Build | `vite build` | PASS |
+
+Correções aplicadas nos scripts durante a execução (sem alterar o escopo da migration):
+`postcheck.sql` (qualificação `pg_temp._f31_gates` e remoção de `ON COMMIT DROP` no modo
+autocommit) e `runtime-harness.sql` (grants na tabela temporária para o papel
+`authenticated`, colunas obrigatórias `invoice_type`/`created_by` em `fiscal_invoices`,
+e nomes reais `internal_rate_pct`, `interstate_rate_pct`, `difal_dest_share_pct`).
+
+Ressalva (não bloqueante): os casos T01 e T04–T06 executaram como SKIP porque o staging
+ainda não possui pedido B2B com `partner_accounts.client_id` preenchido. O gate de
+devedor/destinatário está validado estruturalmente (G01–G06) e pelo caminho negativo
+(T02/T03), mas o caminho positivo com dados reais permanece a validar quando houver
+pedido B2B elegível em staging.
+
+Comandos de reexecução (o DSN nunca deve ser ecoado, registrado ou versionado):
 
 ```sh
-psql "$STAGING_DSN" --single-transaction -v ON_ERROR_STOP=1 \
-  -f supabase/migrations/20260818000000_fase_f3_1_correcao_final.sql
 psql "$STAGING_DSN" -v ON_ERROR_STOP=1 -f restoration/fase-f3-1-correcao-final/postcheck.sql
-psql "$STAGING_DSN" --single-transaction -v ON_ERROR_STOP=1 \
-  -f restoration/fase-f3-1-correcao-final/runtime-harness.sql
+psql "$STAGING_DSN" -v ON_ERROR_STOP=1 -f restoration/fase-f3-1-correcao-final/runtime-harness.sql
 ```
-
-O DSN nunca deve ser ecoado, registrado ou versionado.
