@@ -246,6 +246,7 @@ export default function PortalParceiroLayout() {
           <Outlet context={{ partner }} />
         )}
       </main>
+      </div>
     </div>
-  );
+
 }
