@@ -90,13 +90,17 @@ function fromB64(v: string): Uint8Array {
   return out;
 }
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", bytes);
+  const buf = await crypto.subtle.digest("SHA-256", bytes as unknown as BufferSource);
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 async function aesGcmEncrypt(key: Uint8Array, plain: Uint8Array) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ck = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt"]);
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, ck, plain));
+  const ck = await crypto.subtle.importKey(
+    "raw", key as unknown as BufferSource, "AES-GCM", false, ["encrypt"],
+  );
+  const ct = new Uint8Array(await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv }, ck, plain as unknown as BufferSource,
+  ));
   return { iv, ct };
 }
 
