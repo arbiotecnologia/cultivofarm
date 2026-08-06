@@ -87,11 +87,14 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN err := SQLERRM; END;
   PERFORM pg_temp.gate('R2-08a', err LIKE 'FISCAL_ENVIRONMENT_INVALID:%', coalesce(left(err,80),''));
 
-  -- (08b) tpAmb fora do dominio -> FISCAL_ENVIRONMENT_INVALID
-  UPDATE public.company_fiscal_settings SET nfe_environment_code = '9' WHERE id = src.id;
-  BEGIN PERFORM public.fn_fiscal_assert_environment_homologation(); err := '<sem erro>';
-  EXCEPTION WHEN OTHERS THEN err := SQLERRM; END;
-  PERFORM pg_temp.gate('R2-08b', err LIKE 'FISCAL_ENVIRONMENT_INVALID:%', coalesce(left(err,80),''));
+  -- (08b) valor fora do dominio {1,2} e' rejeitado na propria tabela por
+  -- CHECK constraint (defesa em profundidade); o helper cobre NULL/invalido.
+  BEGIN
+    UPDATE public.company_fiscal_settings SET nfe_environment_code = '9' WHERE id = src.id;
+    err := '<sem erro>';
+  EXCEPTION WHEN check_violation THEN err := 'CHECK_VIOLATION';
+  END;
+  PERFORM pg_temp.gate('R2-08b', err = 'CHECK_VIOLATION', 'dominio tpAmb protegido por CHECK: '||coalesce(left(err,60),''));
 
   -- (09) tpAmb=1 -> FISCAL_PRODUCTION_BLOCKED
   UPDATE public.company_fiscal_settings SET nfe_environment_code = '1' WHERE id = src.id;
