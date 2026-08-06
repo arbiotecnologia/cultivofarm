@@ -322,7 +322,7 @@ BEGIN
   -- T21 — isenção exige motivo e base legal documentados.
   INSERT INTO public.fiscal_tax_rules
     (rule_key, tax_kind, base_components, prepared_by, source_id, legal_basis, status, calc_mode, cst, crt)
-  VALUES ('f3c_isento','ICMS','["PRODUTO"]'::jsonb, U_GESTOR, v_src, NULL,'DRAFT','EXEMPT','40','3')
+  VALUES ('f3c_isento','ICMS','["PRODUTO"]'::jsonb, U_GESTOR, v_src, NULL,'DRAFT','EXEMPT_DOCUMENTED','40','3')
   RETURNING * INTO v_rule;
   BEGIN
     PERFORM public.fn_fiscal_apply_tax_v2(v_rule, v_ctx);
