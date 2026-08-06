@@ -1,0 +1,365 @@
+/**
+ * Fase F4 — Construtor determinístico do XML da NF-e 4.00 (modelo 55).
+ *
+ * Entrada: EXCLUSIVAMENTE o payload congelado por
+ * `rpc_fiscal_xml_prepare_v1`. O builder é função pura: mesmo payload
+ * produz byte a byte o mesmo XML (canônico, sem espaços supérfluos,
+ * ordem de elementos fixa conforme leiaute).
+ *
+ * Teto: gera apenas o documento `NFe` de homologação (tpAmb=2). Não
+ * monta `nfeProc`, não monta lote e não fala com SEFAZ.
+ *
+ * Módulo puro (sem APIs Deno).
+ */
+
+export const NFE_NAMESPACE = "http://www.portalfiscal.inf.br/nfe";
+export const NFE_VERSION = "4.00";
+
+export class NfeBuildError extends Error {
+  readonly code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+    this.name = "NfeBuildError";
+  }
+}
+
+export interface NfePayload {
+  engineVersion: string;
+  schemaVersion: string;
+  tpAmb: string;
+  accessKey: string;
+  ide: Record<string, unknown>;
+  emit: Record<string, unknown>;
+  dest: Record<string, unknown>;
+  det: Array<Record<string, unknown>>;
+  total: Record<string, unknown> | null;
+  infAdic?: Record<string, unknown>;
+}
+
+export function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Normaliza texto para o leiaute: sem controle, sem espaços duplicados. */
+export function sanitizeText(value: unknown, maxLen: number): string {
+  const raw = value === null || value === undefined ? "" : String(value);
+  // deno-lint-ignore no-control-regex
+  const clean = raw.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+  return clean.slice(0, maxLen);
+}
+
+export function dec(value: unknown, places: number): string {
+  const n = typeof value === "number" ? value : Number(value ?? 0);
+  if (!Number.isFinite(n)) {
+    throw new NfeBuildError("NFE_NUMBER_INVALID", "valor numérico inválido no payload");
+  }
+  // HALF_UP determinístico em 2/4 casas, idêntico ao fn_fiscal_round.
+  const factor = 10 ** places;
+  const rounded = Math.sign(n) * Math.round(Math.abs(n) * factor + Number.EPSILON) / factor;
+  return rounded.toFixed(places);
+}
+
+function tag(name: string, value: unknown): string {
+  const text = value === null || value === undefined ? "" : String(value);
+  if (text === "") return "";
+  return `<${name}>${escapeXml(text)}</${name}>`;
+}
+
+function required(payload: Record<string, unknown>, key: string, ctx: string): string {
+  const v = payload[key];
+  const s = v === null || v === undefined ? "" : String(v).trim();
+  if (s === "") {
+    throw new NfeBuildError("NFE_FIELD_REQUIRED", `campo obrigatório ausente: ${ctx}.${key}`);
+  }
+  return s;
+}
+
+function digits(value: unknown): string {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+function buildEndereco(tagName: string, e: Record<string, unknown>, ctx: string): string {
+  return [
+    `<${tagName}>`,
+    tag("xLgr", sanitizeText(required(e, "xLgr", ctx), 60)),
+    tag("nro", sanitizeText(e.nro ?? "SN", 60)),
+    tag("xCpl", sanitizeText(e.xCpl, 60)),
+    tag("xBairro", sanitizeText(required(e, "xBairro", ctx), 60)),
+    tag("cMun", digits(required(e, "cMun", ctx))),
+    tag("xMun", sanitizeText(required(e, "xMun", ctx), 60)),
+    tag("UF", String(required(e, "UF", ctx)).toUpperCase()),
+    tag("CEP", digits(required(e, "CEP", ctx))),
+    tag("cPais", digits(e.cPais ?? "1058")),
+    tag("xPais", sanitizeText(e.xPais ?? "BRASIL", 60)),
+    `</${tagName}>`,
+  ].join("");
+}
+
+function buildIde(p: NfePayload): string {
+  const ide = p.ide ?? {};
+  return [
+    "<ide>",
+    tag("cUF", digits(required(ide, "cUF", "ide"))),
+    tag("cNF", digits(required(ide, "cNF", "ide")).padStart(8, "0")),
+    tag("natOp", sanitizeText(required(ide, "natOp", "ide"), 60)),
+    tag("mod", "55"),
+    tag("serie", String(Number(required(ide, "serie", "ide")))),
+    tag("nNF", String(Number(required(ide, "nNF", "ide")))),
+    tag("dhEmi", `${required(ide, "dhEmi", "ide")}T00:00:00-03:00`),
+    tag("tpNF", required(ide, "tpNF", "ide")),
+    tag("idDest", required(ide, "idDest", "ide")),
+    tag("cMunFG", digits(required(ide, "cMunFG", "ide"))),
+    tag("tpImp", ide.tpImp ?? "1"),
+    tag("tpEmis", "1"),
+    tag("cDV", required(ide, "cDV", "ide")),
+    tag("tpAmb", p.tpAmb),
+    tag("finNFe", ide.finNFe ?? "1"),
+    tag("indFinal", required(ide, "indFinal", "ide")),
+    tag("indPres", ide.indPres ?? "9"),
+    tag("procEmi", ide.procEmi ?? "0"),
+    tag("verProc", sanitizeText(ide.verProc ?? "ARBIO", 20)),
+    "</ide>",
+  ].join("");
+}
+
+function buildEmit(p: NfePayload): string {
+  const e = p.emit ?? {};
+  const cnpj = digits(required(e, "CNPJ", "emit"));
+  if (cnpj.length !== 14) throw new NfeBuildError("NFE_EMIT_CNPJ_INVALID", "CNPJ do emitente inválido");
+  const ie = digits(e.IE);
+  return [
+    "<emit>",
+    tag("CNPJ", cnpj),
+    tag("xNome", sanitizeText(required(e, "xNome", "emit"), 60)),
+    tag("xFant", sanitizeText(e.xFant, 60)),
+    buildEndereco("enderEmit", (e.enderEmit ?? {}) as Record<string, unknown>, "emit.enderEmit"),
+    ie ? tag("IE", ie) : tag("IE", "ISENTO"),
+    tag("CNAE", digits(e.CNAE)),
+    tag("CRT", required(e, "CRT", "emit")),
+    "</emit>",
+  ].join("");
+}
+
+function buildDest(p: NfePayload): string {
+  const d = p.dest ?? {};
+  const doc = digits(required(d, "doc", "dest"));
+  if (doc.length !== 11 && doc.length !== 14) {
+    throw new NfeBuildError("NFE_DEST_DOC_INVALID", "CPF/CNPJ do destinatário inválido");
+  }
+  // Homologação: MOC exige razão social fixa no destinatário (tpAmb=2).
+  const nome = p.tpAmb === "2"
+    ? "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
+    : sanitizeText(required(d, "xNome", "dest"), 60);
+  const indIE = String(d.indIEDest ?? "9");
+  const ie = digits(d.IE);
+  return [
+    "<dest>",
+    doc.length === 14 ? tag("CNPJ", doc) : tag("CPF", doc),
+    tag("xNome", nome),
+    buildEndereco("enderDest", (d.enderDest ?? {}) as Record<string, unknown>, "dest.enderDest"),
+    tag("indIEDest", indIE),
+    indIE === "1" && ie ? tag("IE", ie) : "",
+    "</dest>",
+  ].join("");
+}
+
+function icmsBlock(item: Record<string, unknown>, crt: string): string {
+  const orig = String(item.orig ?? "0");
+  const snapshot = (item.taxSnapshot ?? {}) as Record<string, unknown>;
+  const taxes = (snapshot.taxes ?? {}) as Record<string, Record<string, unknown>>;
+  const icms = taxes.ICMS ?? {};
+  const base = dec(icms.baseValue ?? icms.base ?? 0, 2);
+  const rate = dec(icms.rate ?? 0, 2);
+  const value = dec(icms.value ?? 0, 2);
+
+  if (crt === "1" || crt === "2") {
+    const csosn = String(item.CSOSN ?? "").trim() || "102";
+    return `<ICMS><ICMSSN102><orig>${orig}</orig><CSOSN>${csosn}</CSOSN></ICMSSN102></ICMS>`;
+  }
+  const cst = String(item.CST ?? "").trim() || "00";
+  return [
+    "<ICMS><ICMS00>",
+    tag("orig", orig),
+    tag("CST", cst),
+    tag("modBC", "3"),
+    tag("vBC", base),
+    tag("pICMS", rate),
+    tag("vICMS", value),
+    "</ICMS00></ICMS>",
+  ].join("");
+}
+
+function pisCofinsBlock(item: Record<string, unknown>): string {
+  const snapshot = (item.taxSnapshot ?? {}) as Record<string, unknown>;
+  const taxes = (snapshot.taxes ?? {}) as Record<string, Record<string, unknown>>;
+  const pis = taxes.PIS ?? {};
+  const cofins = taxes.COFINS ?? {};
+  return [
+    "<PIS><PISAliq>",
+    tag("CST", String(pis.cst ?? "01")),
+    tag("vBC", dec(pis.baseValue ?? pis.base ?? 0, 2)),
+    tag("pPIS", dec(pis.rate ?? 0, 2)),
+    tag("vPIS", dec(pis.value ?? 0, 2)),
+    "</PISAliq></PIS>",
+    "<COFINS><COFINSAliq>",
+    tag("CST", String(cofins.cst ?? "01")),
+    tag("vBC", dec(cofins.baseValue ?? cofins.base ?? 0, 2)),
+    tag("pCOFINS", dec(cofins.rate ?? 0, 2)),
+    tag("vCOFINS", dec(cofins.value ?? 0, 2)),
+    "</COFINSAliq></COFINS>",
+  ].join("");
+}
+
+function buildDet(p: NfePayload): string {
+  const crt = String((p.emit ?? {}).CRT ?? "3");
+  if (!Array.isArray(p.det) || p.det.length === 0) {
+    throw new NfeBuildError("NFE_NO_ITEMS", "documento sem itens");
+  }
+  if (p.det.length > 990) {
+    throw new NfeBuildError("NFE_TOO_MANY_ITEMS", "NF-e 4.00 suporta no máximo 990 itens");
+  }
+  return p.det
+    .map((item, idx) => {
+      const nItem = Number(item.nItem ?? idx + 1);
+      const ncm = digits(required(item, "NCM", `det[${nItem}]`));
+      if (ncm.length !== 8) {
+        throw new NfeBuildError("NFE_NCM_INVALID", `NCM inválido no item ${nItem}`);
+      }
+      const cfop = digits(required(item, "CFOP", `det[${nItem}]`));
+      if (cfop.length !== 4) {
+        throw new NfeBuildError("NFE_CFOP_INVALID", `CFOP inválido no item ${nItem}`);
+      }
+      const cest = digits(item.CEST);
+      const prod = [
+        "<prod>",
+        tag("cProd", sanitizeText(required(item, "cProd", `det[${nItem}]`), 60)),
+        tag("cEAN", "SEM GTIN"),
+        tag("xProd", sanitizeText(required(item, "xProd", `det[${nItem}]`), 120)),
+        tag("NCM", ncm),
+        cest ? tag("CEST", cest.padStart(7, "0")) : "",
+        tag("CFOP", cfop),
+        tag("uCom", sanitizeText(item.uCom ?? "UN", 6)),
+        tag("qCom", dec(item.qCom, 4)),
+        tag("vUnCom", dec(item.vUnCom, 4)),
+        tag("vProd", dec(item.vProd, 2)),
+        tag("cEANTrib", "SEM GTIN"),
+        tag("uTrib", sanitizeText(item.uCom ?? "UN", 6)),
+        tag("qTrib", dec(item.qCom, 4)),
+        tag("vUnTrib", dec(item.vUnCom, 4)),
+        Number(item.vFrete ?? 0) > 0 ? tag("vFrete", dec(item.vFrete, 2)) : "",
+        Number(item.vSeg ?? 0) > 0 ? tag("vSeg", dec(item.vSeg, 2)) : "",
+        Number(item.vDesc ?? 0) > 0 ? tag("vDesc", dec(item.vDesc, 2)) : "",
+        Number(item.vOutro ?? 0) > 0 ? tag("vOutro", dec(item.vOutro, 2)) : "",
+        tag("indTot", "1"),
+        "</prod>",
+      ].join("");
+      return [
+        `<det nItem="${nItem}">`,
+        prod,
+        "<imposto>",
+        icmsBlock(item, crt),
+        pisCofinsBlock(item),
+        "</imposto>",
+        "</det>",
+      ].join("");
+    })
+    .join("");
+}
+
+function buildTotal(p: NfePayload): string {
+  const t = (p.total ?? {}) as Record<string, unknown>;
+  if (!t || Object.keys(t).length === 0) {
+    throw new NfeBuildError("NFE_TOTALS_MISSING", "snapshot de totais ausente");
+  }
+  return [
+    "<total><ICMSTot>",
+    tag("vBC", dec(t.vBC ?? t.vProd ?? 0, 2)),
+    tag("vICMS", dec(t.vICMS, 2)),
+    tag("vICMSDeson", dec(0, 2)),
+    tag("vFCP", dec(t.vFCP, 2)),
+    tag("vBCST", dec(0, 2)),
+    tag("vST", dec(t.vST, 2)),
+    tag("vFCPST", dec(t.vFCPST, 2)),
+    tag("vFCPSTRet", dec(0, 2)),
+    tag("vProd", dec(t.vProd, 2)),
+    tag("vFrete", dec(t.vFrete, 2)),
+    tag("vSeg", dec(t.vSeg, 2)),
+    tag("vDesc", dec(t.vDesc, 2)),
+    tag("vII", dec(0, 2)),
+    tag("vIPI", dec(t.vIPI, 2)),
+    tag("vIPIDevol", dec(0, 2)),
+    tag("vPIS", dec(t.vPIS, 2)),
+    tag("vCOFINS", dec(t.vCOFINS, 2)),
+    tag("vOutro", dec(t.vOutro, 2)),
+    tag("vNF", dec(t.vNF, 2)),
+    "</ICMSTot></total>",
+  ].join("");
+}
+
+function buildTransp(): string {
+  return "<transp><modFrete>9</modFrete></transp>";
+}
+
+function buildPag(p: NfePayload): string {
+  const t = (p.total ?? {}) as Record<string, unknown>;
+  return [
+    "<pag><detPag>",
+    tag("indPag", "1"),
+    tag("tPag", "99"),
+    tag("vPag", dec(t.vNF, 2)),
+    "</detPag></pag>",
+  ].join("");
+}
+
+function buildInfAdic(p: NfePayload): string {
+  const infCpl = sanitizeText((p.infAdic ?? {}).infCpl, 5000);
+  if (!infCpl) return "";
+  return `<infAdic>${tag("infCpl", infCpl)}</infAdic>`;
+}
+
+export interface BuiltNfe {
+  xml: string;
+  infNFeId: string;
+  accessKey: string;
+}
+
+/** Constrói o XML `NFe` (sem assinatura) a partir do payload congelado. */
+export function buildNfeXml(payload: NfePayload): BuiltNfe {
+  if (!payload || typeof payload !== "object") {
+    throw new NfeBuildError("NFE_PAYLOAD_INVALID", "payload ausente");
+  }
+  if (payload.tpAmb !== "2") {
+    throw new NfeBuildError("NFE_ENVIRONMENT_BLOCKED", "apenas homologação (tpAmb=2) é permitida");
+  }
+  const key = digits(payload.accessKey);
+  if (key.length !== 44) {
+    throw new NfeBuildError("NFE_ACCESS_KEY_INVALID", "chave de acesso deve ter 44 dígitos");
+  }
+  const infNFeId = `NFe${key}`;
+
+  const inner = [
+    buildIde(payload),
+    buildEmit(payload),
+    buildDest(payload),
+    buildDet(payload),
+    buildTotal(payload),
+    buildTransp(),
+    buildPag(payload),
+    buildInfAdic(payload),
+  ].join("");
+
+  const xml =
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<NFe xmlns="${NFE_NAMESPACE}">` +
+    `<infNFe Id="${infNFeId}" versao="${NFE_VERSION}">` +
+    inner +
+    `</infNFe>` +
+    `</NFe>`;
+
+  return { xml, infNFeId, accessKey: key };
+}
