@@ -1001,7 +1001,26 @@ function NcmCandidateForm({
           <Label htmlFor="cand-data">Data da consulta</Label>
           <Input id="cand-data" type="date" value={consultedAt} onChange={(e) => setConsultedAt(e.target.value)} />
         </div>
+        <div className="space-y-1">
+          <Label htmlFor="cand-conf">Confiança da classificação</Label>
+          <select
+            id="cand-conf"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={confidence}
+            onChange={(e) => setConfidence(e.target.value)}
+          >
+            {CONFIDENCE_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{confidenceLabel(opt)}</option>
+            ))}
+          </select>
+          {confidence === "CONDITIONAL" && (
+            <p className="text-xs text-muted-foreground">
+              Candidato condicional não pode ser aprovado até a definição da alegação de uso.
+            </p>
+          )}
+        </div>
       </div>
+
       <div className="space-y-1">
         <Label htmlFor="cand-just">Justificativa técnica (TIPI / notas explicativas)</Label>
         <Textarea id="cand-just" rows={3} value={justification} onChange={(e) => setJustification(e.target.value)} />
