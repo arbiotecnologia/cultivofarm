@@ -514,3 +514,61 @@ GRANT EXECUTE ON FUNCTION public.fn_regulatory_confidence_normalize(text) TO ser
 
 COMMENT ON FUNCTION public.fn_regulatory_confidence_normalize(text) IS
   'Normaliza a confianca de candidato de NCM. Retorna NULL quando fora do dominio (fail-closed).';
+
+-- ----------------------------------------------------------------------------
+-- PARTE E - RPC DE CADASTRO DE CANDIDATO CIENTE DE CONDITIONAL
+-- Antes: coalesce(p_confidence,'LOW') aceitava qualquer texto e degradava semantica.
+-- Agora: dominio validado (fail-closed) e CONDITIONAL suportado de ponta a ponta.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.rpc_regulatory_ncm_candidate_add(
+  p_dossier_id uuid, p_ncm text, p_justification text, p_cest text DEFAULT NULL::text,
+  p_confidence text DEFAULT 'LOW'::text, p_source_key text DEFAULT NULL::text,
+  p_source_url text DEFAULT NULL::text, p_consulted_at date DEFAULT NULL::date)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE v_id uuid; v_status text; v_source uuid; v_conf text;
+BEGIN
+  IF NOT public.fn_regulatory_can_prepare() THEN
+    RAISE EXCEPTION 'REGULATORY_FORBIDDEN' USING ERRCODE = '42501';
+  END IF;
+  SELECT status INTO v_status FROM public.microorganism_regulatory_dossiers
+   WHERE id = p_dossier_id AND deleted_at IS NULL;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_FOUND' USING ERRCODE = '22023'; END IF;
+  IF v_status NOT IN ('DRAFT', 'PENDING_REVIEW') THEN
+    RAISE EXCEPTION 'REGULATORY_DOSSIER_NOT_EDITABLE' USING ERRCODE = '55006';
+  END IF;
+
+  IF length(btrim(coalesce(p_justification, ''))) < 20 THEN
+    RAISE EXCEPTION 'REGULATORY_JUSTIFICATION_REQUIRED' USING ERRCODE = '22023';
+  END IF;
+  IF p_consulted_at IS NULL THEN
+    RAISE EXCEPTION 'REGULATORY_NCM_CONSULTED_AT_REQUIRED' USING ERRCODE = '22023';
+  END IF;
+
+  v_conf := public.fn_regulatory_confidence_normalize(p_confidence);
+  IF v_conf IS NULL THEN
+    RAISE EXCEPTION 'REGULATORY_NCM_CONFIDENCE_INVALID'
+      USING ERRCODE = '22023',
+            HINT = 'Confianca deve ser LOW, MEDIUM, HIGH ou CONDITIONAL.';
+  END IF;
+
+  SELECT id INTO v_source FROM public.fiscal_official_sources
+   WHERE source_key = p_source_key AND is_active;
+
+  IF v_source IS NULL AND NOT public.fn_fiscal_official_url_allowlisted(p_source_url) THEN
+    RAISE EXCEPTION 'REGULATORY_NCM_SOURCE_REQUIRED'
+      USING ERRCODE = '22023',
+            HINT = 'Informe fonte oficial cadastrada e ativa (source_key) ou URL oficial allowlisted (.gov.br).';
+  END IF;
+
+  INSERT INTO public.microorganism_ncm_candidates
+    (dossier_id, ncm, cest, justification, confidence, source_id, source_url, consulted_at, created_by)
+  VALUES (p_dossier_id, p_ncm, p_cest, p_justification, v_conf,
+          v_source, p_source_url, p_consulted_at, auth.uid())
+  RETURNING id INTO v_id;
+  RETURN v_id;
+END $function$;
+
