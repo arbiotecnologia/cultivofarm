@@ -1036,6 +1036,8 @@ function NcmCandidateForm({
             sourceKey: sourceKey.trim(),
             sourceUrl: sourceUrl.trim() || null,
             consultedAt: consultedAt || null,
+            confidence,
+
           })
         }
       >
