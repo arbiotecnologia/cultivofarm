@@ -561,7 +561,11 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
                             }),
                           )
                         }
-                        disabled={actions.decideNcmCandidate.isPending}
+                        disabled={
+                          actions.decideNcmCandidate.isPending ||
+                          c.confidence === "CONDITIONAL"
+                        }
+
                       >
                         Aprovar
                       </Button>
