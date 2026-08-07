@@ -8754,6 +8754,42 @@ export type Database = {
           },
         ]
       }
+      fiscal_matrix_load_ledger: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          applied_value: string | null
+          batch_marker: string
+          column_name: string
+          id: string
+          previous_value: string | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          applied_value?: string | null
+          batch_marker: string
+          column_name: string
+          id?: string
+          previous_value?: string | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          applied_value?: string | null
+          batch_marker?: string
+          column_name?: string
+          id?: string
+          previous_value?: string | null
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       fiscal_official_sources: {
         Row: {
           id: string
