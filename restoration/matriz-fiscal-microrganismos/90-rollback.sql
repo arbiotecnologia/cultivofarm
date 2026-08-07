@@ -43,22 +43,28 @@ BEGIN
      AND x.observacoes LIKE '%[' || c_mark || ']%'
      AND x.codigo IN ('BAC-1','BAC-12','BAC-17');
 
-  -- 5. Finalidade regulatoria gravada pela carga em dossies preexistentes.
-  --    Removida apenas onde o dossie segue DRAFT e sem revisao/publicacao.
-  UPDATE public.microorganism_regulatory_dossiers
-     SET regulatory_category = NULL
-   WHERE status = 'DRAFT'
-     AND deleted_at IS NULL
-     AND published_ncm IS NULL
-     AND technical_review_status = 'PENDING'
-     AND regulatory_review_status = 'PENDING'
-     AND fiscal_review_status = 'PENDING'
-     AND regulatory_category IS NOT NULL
-     AND microorganism_id IN (
-       SELECT id FROM public.microrganismos
-        WHERE codigo IN ('BAC-2','BAC-3','BAC-4','BAC-5','BAC-6','BAC-7','BAC-9','BAC-10','BAC-11',
-                         'BAC-14','BAC-15','FUN-1','FUN-2','FUN-5','FUN-6','FUN-7','FUN-8','FUN-9')
-     );
+  -- 5. Finalidade regulatoria: revertida SOMENTE com proveniencia do ledger.
+  --    Condicoes cumulativas: (a) ledger registra a escrita por este lote,
+  --    (b) o valor atual e exatamente o valor aplicado pelo lote,
+  --    (c) o dossie segue DRAFT/PENDING e sem publicacao.
+  UPDATE public.microorganism_regulatory_dossiers d
+     SET regulatory_category = l.previous_value
+    FROM public.fiscal_matrix_load_ledger l
+   WHERE l.batch_marker = c_mark
+     AND l.table_name = 'microorganism_regulatory_dossiers'
+     AND l.column_name = 'regulatory_category'
+     AND l.record_id = d.id
+     AND d.regulatory_category IS NOT DISTINCT FROM l.applied_value
+     AND d.status = 'DRAFT'
+     AND d.deleted_at IS NULL
+     AND d.published_ncm IS NULL
+     AND d.technical_review_status = 'PENDING'
+     AND d.regulatory_review_status = 'PENDING'
+     AND d.fiscal_review_status = 'PENDING';
+
+  -- 5b. Ledger do lote consumido.
+  DELETE FROM public.fiscal_matrix_load_ledger WHERE batch_marker = c_mark;
+
 
   -- 6. Microrganismos criados pela conciliacao (somente se sem dependencias).
   DELETE FROM public.microrganismos x
