@@ -930,11 +930,34 @@ function DraftFactsForm({
   );
 }
 
+const CONFIDENCE_OPTIONS = ["LOW", "MEDIUM", "HIGH", "CONDITIONAL"] as const;
+
+function confidenceLabel(value: string | null | undefined): string {
+  switch (value) {
+    case "HIGH": return "Confiança alta";
+    case "MEDIUM": return "Confiança média";
+    case "CONDITIONAL": return "Condicional";
+    case "LOW": return "Confiança baixa";
+    default: return "Confiança não informada";
+  }
+}
+
+function confidenceBadgeVariant(
+  value: string | null | undefined,
+): "default" | "secondary" | "outline" | "destructive" {
+  switch (value) {
+    case "HIGH": return "default";
+    case "MEDIUM": return "secondary";
+    case "CONDITIONAL": return "destructive";
+    default: return "outline";
+  }
+}
+
 function NcmCandidateForm({
   onSubmit, pending,
 }: {
   onSubmit: (input: {
-    ncm: string; justification: string; cest: string | null;
+    ncm: string; justification: string; cest: string | null; confidence: string;
     sourceKey: string; sourceUrl: string | null; consultedAt: string | null;
   }) => void;
   pending: boolean;
@@ -945,11 +968,14 @@ function NcmCandidateForm({
   const [sourceKey, setSourceKey] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [consultedAt, setConsultedAt] = useState("");
+  const [confidence, setConfidence] = useState<string>("LOW");
 
   const valid =
     /^\d{8}$/.test(ncm.replace(/\D/g, "")) &&
     justification.trim().length > 0 &&
-    sourceKey.trim().length > 0;
+    sourceKey.trim().length > 0 &&
+    CONFIDENCE_OPTIONS.includes(confidence as (typeof CONFIDENCE_OPTIONS)[number]);
+
 
   return (
     <div className="border rounded-md p-3 space-y-2">
