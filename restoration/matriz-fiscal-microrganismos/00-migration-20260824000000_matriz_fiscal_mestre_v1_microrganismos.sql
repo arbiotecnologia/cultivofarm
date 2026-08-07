@@ -21,6 +21,59 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
+-- PARTE 0 - TRAVA DE AMBIENTE FAIL-CLOSED (staging ikaauvsflpmamgxmkhoq)
+-- Recusa producao navfzbwgwzruipouyfnk e recusa qualquer ambiente que nao
+-- comprove ser o staging autorizado. Ausencia de prova = ABORTA (fail-closed).
+-- ----------------------------------------------------------------------------
+DO $guard$
+DECLARE
+  v_ref    text := nullif(btrim(coalesce(current_setting('app.settings.project_ref', true), '')), '');
+  v_marked boolean := false;
+BEGIN
+  IF v_ref = 'navfzbwgwzruipouyfnk' THEN
+    RAISE EXCEPTION 'ABORT: producao navfzbwgwzruipouyfnk PROIBIDA para esta migration'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
+    RAISE EXCEPTION 'ABORT (fail-closed): public._fiscal_staging_marker ausente — ambiente nao comprovado como staging ikaauvsflpmamgxmkhoq'
+      USING ERRCODE = '42501';
+  END IF;
+
+  EXECUTE $q$
+    SELECT EXISTS (
+      SELECT 1 FROM public._fiscal_staging_marker
+      WHERE marker = 'STAGING' AND project_ref = 'ikaauvsflpmamgxmkhoq'
+    )
+  $q$ INTO v_marked;
+
+  IF NOT v_marked THEN
+    RAISE EXCEPTION 'ABORT (fail-closed): marcador STAGING/ikaauvsflpmamgxmkhoq ausente — migration recusada'
+      USING ERRCODE = '42501';
+  END IF;
+
+  EXECUTE $q$
+    SELECT EXISTS (
+      SELECT 1 FROM public._fiscal_staging_marker
+      WHERE project_ref = 'navfzbwgwzruipouyfnk'
+    )
+  $q$ INTO v_marked;
+
+  IF v_marked THEN
+    RAISE EXCEPTION 'ABORT: marcador de producao navfzbwgwzruipouyfnk detectado — migration recusada'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF v_ref IS NOT NULL AND v_ref <> 'ikaauvsflpmamgxmkhoq' THEN
+    RAISE EXCEPTION 'ABORT: project_ref inesperado (esperado ikaauvsflpmamgxmkhoq, obtido %)', v_ref
+      USING ERRCODE = '42501';
+  END IF;
+END
+$guard$;
+
+
+
+-- ----------------------------------------------------------------------------
 -- PARTE A - EVOLUCAO DO DOMINIO DE CONFIANCA (compativel e reversivel)
 -- microorganism_ncm_candidates.confidence e TEXT + CHECK (NAO e ENUM fisico),
 -- portanto a adicao de 'CONDITIONAL' e FISICAMENTE REVERSIVEL: basta converter
