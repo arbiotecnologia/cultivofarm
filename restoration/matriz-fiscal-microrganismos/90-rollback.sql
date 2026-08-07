@@ -5,6 +5,10 @@
 -- Remove EXCLUSIVAMENTE o que a carga criou (marcador MATRIZ_FISCAL_MESTRE_V1).
 -- Nao toca em dossies/apresentacoes/checklists preexistentes (5 L / 20 L da Fase F2),
 -- nem em pedidos, produtos ou configuracoes fiscais.
+--
+-- CORRECAO DA AUDITORIA (ressalva 2): regulatory_category so e revertida quando
+-- public.fiscal_matrix_load_ledger comprova que o valor ATUAL foi escrito por este
+-- lote. Qualquer alteracao posterior feita por humano/outro processo e preservada.
 -- ============================================================================
 
 DO $rollback$
@@ -12,6 +16,7 @@ DECLARE
   c_mark constant text := 'MATRIZ_FISCAL_MESTRE_V1';
   v_n    int;
 BEGIN
+
   -- 1. Perfis fiscais criados pela carga.
   DELETE FROM public.microorganism_fiscal_profiles
    WHERE accounting_notes LIKE '%[' || c_mark || ']%';
