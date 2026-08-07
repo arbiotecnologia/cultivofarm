@@ -37,7 +37,9 @@ BEGIN
 
   SELECT count(*) INTO v_prod
   FROM public.company_fiscal_settings
-  WHERE coalesce(nfe_environment, '2') = '1';
+  WHERE coalesce(production_enabled, false) IS TRUE
+     OR upper(coalesce(fiscal_environment, '')) = 'PRODUCTION'
+     OR coalesce(nfe_environment_code, '') = '1';
 
   IF v_prod > 0 THEN
     RAISE EXCEPTION 'MATRIZ_ABORT_PRODUCTION_ENVIRONMENT: emitente com ambiente produtivo; carga bloqueada.'
@@ -178,7 +180,7 @@ BEGIN
              WHEN r.perfil = 'PF-01' THEN 'INOCULANTE'
              WHEN r.perfil = 'PF-02' THEN 'AGENTE_BIOLOGICO_CONTROLE'
              WHEN r.perfil = 'PF-03' THEN 'OUTRO_A_DEFINIR'
-           END::regulatory_category_enum,
+           END,
            updated_by = v_actor
      WHERE d.id = v_dossier
        AND d.status = 'DRAFT'
