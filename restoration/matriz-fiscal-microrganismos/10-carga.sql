@@ -33,8 +33,13 @@ BEGIN
   -- ------------------------------------------------------------------
   -- 0. GUARDA FAIL-CLOSED DE AMBIENTE
   -- ------------------------------------------------------------------
-  PERFORM public.fn_fiscal_assert_environment_homologation();
+  -- Gate canonico de ambiente (F3.1-R2): aplicavel quando existe emitente ativo.
+  -- Sem emitente ativo nao ha tpAmb a validar; a guarda direta abaixo continua valendo.
+  IF EXISTS (SELECT 1 FROM public.company_fiscal_settings WHERE coalesce(is_active, false) IS TRUE) THEN
+    PERFORM public.fn_fiscal_assert_environment_homologation();
+  END IF;
 
+  -- Guarda direta e incondicional contra qualquer emitente produtivo.
   SELECT count(*) INTO v_prod
   FROM public.company_fiscal_settings
   WHERE coalesce(production_enabled, false) IS TRUE
