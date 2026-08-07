@@ -517,26 +517,38 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
               )}
               {candidates.map((c) => (
                 <div key={c.id} className="border rounded-md p-3 text-sm space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">
                       NCM {c.ncm}{c.cest ? ` · CEST ${c.cest}` : ""}
                     </span>
-                    <Badge
-                      variant={
-                        c.status === "APPROVED" ? "default"
-                        : c.status === "REJECTED" ? "destructive"
-                        : "outline"
-                      }
-                    >
-                      {c.status === "APPROVED" ? "Aprovado"
-                        : c.status === "REJECTED" ? "Rejeitado" : "Proposto"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={confidenceBadgeVariant(c.confidence)}>
+                        {confidenceLabel(c.confidence)}
+                      </Badge>
+                      <Badge
+                        variant={
+                          c.status === "APPROVED" ? "default"
+                          : c.status === "REJECTED" ? "destructive"
+                          : "outline"
+                        }
+                      >
+                        {c.status === "APPROVED" ? "Aprovado"
+                          : c.status === "REJECTED" ? "Rejeitado" : "Proposto"}
+                      </Badge>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground">{c.justification}</p>
                   <p className="text-xs text-muted-foreground">
                     Fonte: {text(c.source_url)} · consulta: {text(c.consulted_at)}
                   </p>
+                  {c.confidence === "CONDITIONAL" && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Enquadramento condicional à alegação de uso: não pode ser aprovado
+                      antes da definição da finalidade regulatória.
+                    </p>
+                  )}
                   {c.status === "PROPOSED" && (
+
                     <div className="flex gap-2">
                       <Button
                         size="sm"
