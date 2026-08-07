@@ -517,26 +517,38 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
               )}
               {candidates.map((c) => (
                 <div key={c.id} className="border rounded-md p-3 text-sm space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">
                       NCM {c.ncm}{c.cest ? ` · CEST ${c.cest}` : ""}
                     </span>
-                    <Badge
-                      variant={
-                        c.status === "APPROVED" ? "default"
-                        : c.status === "REJECTED" ? "destructive"
-                        : "outline"
-                      }
-                    >
-                      {c.status === "APPROVED" ? "Aprovado"
-                        : c.status === "REJECTED" ? "Rejeitado" : "Proposto"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={confidenceBadgeVariant(c.confidence)}>
+                        {confidenceLabel(c.confidence)}
+                      </Badge>
+                      <Badge
+                        variant={
+                          c.status === "APPROVED" ? "default"
+                          : c.status === "REJECTED" ? "destructive"
+                          : "outline"
+                        }
+                      >
+                        {c.status === "APPROVED" ? "Aprovado"
+                          : c.status === "REJECTED" ? "Rejeitado" : "Proposto"}
+                      </Badge>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground">{c.justification}</p>
                   <p className="text-xs text-muted-foreground">
                     Fonte: {text(c.source_url)} · consulta: {text(c.consulted_at)}
                   </p>
+                  {c.confidence === "CONDITIONAL" && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Enquadramento condicional à alegação de uso: não pode ser aprovado
+                      antes da definição da finalidade regulatória.
+                    </p>
+                  )}
                   {c.status === "PROPOSED" && (
+
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -549,7 +561,11 @@ function DossierSheet({ row, open, onOpenChange }: DossierSheetProps) {
                             }),
                           )
                         }
-                        disabled={actions.decideNcmCandidate.isPending}
+                        disabled={
+                          actions.decideNcmCandidate.isPending ||
+                          c.confidence === "CONDITIONAL"
+                        }
+
                       >
                         Aprovar
                       </Button>
@@ -914,11 +930,34 @@ function DraftFactsForm({
   );
 }
 
+const CONFIDENCE_OPTIONS = ["LOW", "MEDIUM", "HIGH", "CONDITIONAL"] as const;
+
+function confidenceLabel(value: string | null | undefined): string {
+  switch (value) {
+    case "HIGH": return "Confiança alta";
+    case "MEDIUM": return "Confiança média";
+    case "CONDITIONAL": return "Condicional";
+    case "LOW": return "Confiança baixa";
+    default: return "Confiança não informada";
+  }
+}
+
+function confidenceBadgeVariant(
+  value: string | null | undefined,
+): "default" | "secondary" | "outline" | "destructive" {
+  switch (value) {
+    case "HIGH": return "default";
+    case "MEDIUM": return "secondary";
+    case "CONDITIONAL": return "destructive";
+    default: return "outline";
+  }
+}
+
 function NcmCandidateForm({
   onSubmit, pending,
 }: {
   onSubmit: (input: {
-    ncm: string; justification: string; cest: string | null;
+    ncm: string; justification: string; cest: string | null; confidence: string;
     sourceKey: string; sourceUrl: string | null; consultedAt: string | null;
   }) => void;
   pending: boolean;
@@ -929,11 +968,14 @@ function NcmCandidateForm({
   const [sourceKey, setSourceKey] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [consultedAt, setConsultedAt] = useState("");
+  const [confidence, setConfidence] = useState<string>("LOW");
 
   const valid =
     /^\d{8}$/.test(ncm.replace(/\D/g, "")) &&
     justification.trim().length > 0 &&
-    sourceKey.trim().length > 0;
+    sourceKey.trim().length > 0 &&
+    CONFIDENCE_OPTIONS.includes(confidence as (typeof CONFIDENCE_OPTIONS)[number]);
+
 
   return (
     <div className="border rounded-md p-3 space-y-2">
@@ -959,7 +1001,26 @@ function NcmCandidateForm({
           <Label htmlFor="cand-data">Data da consulta</Label>
           <Input id="cand-data" type="date" value={consultedAt} onChange={(e) => setConsultedAt(e.target.value)} />
         </div>
+        <div className="space-y-1">
+          <Label htmlFor="cand-conf">Confiança da classificação</Label>
+          <select
+            id="cand-conf"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={confidence}
+            onChange={(e) => setConfidence(e.target.value)}
+          >
+            {CONFIDENCE_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{confidenceLabel(opt)}</option>
+            ))}
+          </select>
+          {confidence === "CONDITIONAL" && (
+            <p className="text-xs text-muted-foreground">
+              Candidato condicional não pode ser aprovado até a definição da alegação de uso.
+            </p>
+          )}
+        </div>
       </div>
+
       <div className="space-y-1">
         <Label htmlFor="cand-just">Justificativa técnica (TIPI / notas explicativas)</Label>
         <Textarea id="cand-just" rows={3} value={justification} onChange={(e) => setJustification(e.target.value)} />
@@ -975,6 +1036,8 @@ function NcmCandidateForm({
             sourceKey: sourceKey.trim(),
             sourceUrl: sourceUrl.trim() || null,
             consultedAt: consultedAt || null,
+            confidence,
+
           })
         }
       >
