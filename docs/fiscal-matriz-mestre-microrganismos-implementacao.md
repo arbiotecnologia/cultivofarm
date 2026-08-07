@@ -11,7 +11,7 @@ Correção das três ressalvas da auditoria independente do commit `1d14c53e`:
 |---|---|---|
 | 1 | `CONDITIONAL` degradado para `LOW` | Domínio `mnc_conf_chk` evoluído para `LOW/MEDIUM/HIGH/CONDITIONAL`; 7 candidatos primários + 1 alternativo reconciliados; RPC e UI cientes |
 | 2 | Rollback sem proveniência | Novo `public.fiscal_matrix_load_ledger` (campo a campo); `90-rollback.sql` só reverte `regulatory_category` quando o valor atual foi escrito pelo lote |
-| 3 | Sem histórico oficial de migration | Artefato canônico versionado `20260824000000_matriz_fiscal_mestre_v1_microrganismos.sql` (ver ressalva aberta no item 6) |
+| 3 | Sem histórico oficial de migration | Encerrada: `supabase/migrations/20260824000000_matriz_fiscal_mestre_v1_microrganismos.sql` versionado, idêntico ao canônico (ver item 6) |
 
 ## 2. Artefatos
 
@@ -68,13 +68,20 @@ ALTER TABLE public.microorganism_ncm_candidates ADD CONSTRAINT mnc_conf_chk
   CHECK (confidence = ANY (ARRAY['LOW','MEDIUM','HIGH']));
 ```
 
-## 6. Ressalva aberta (ressalva 3 parcialmente atendida)
+## 6. Ressalva 3 — encerrada
 
-A ativação do tooling gerenciado de banco provisionou um backend Cloud novo e repontou
-`.env`, `client.ts`, `config.toml` e `types.ts` para ele. Os seis arquivos foram revertidos
-para o conteúdo exato de `1d14c53e` e o projeto voltou ao staging `ikaauvsflpmamgxmkhoq`.
-Como consequência, a ferramenta de migration passou a escrever/aplicar contra o backend novo e
-**o arquivo oficial em `supabase/migrations/` não pôde ser criado nesta rodada**.
-O artefato canônico existe, está aplicado e validado em staging sob o nome final
-`20260824000000_matriz_fiscal_mestre_v1_microrganismos.sql` e deve ser movido para
-`supabase/migrations/` assim que o vínculo de migration voltar a apontar para o staging.
+O arquivo oficial está versionado no histórico do repositório:
+
+- `supabase/migrations/20260824000000_matriz_fiscal_mestre_v1_microrganismos.sql`
+- Byte a byte idêntico ao artefato canônico `restoration/matriz-fiscal-microrganismos/00-migration-20260824000000_matriz_fiscal_mestre_v1_microrganismos.sql`
+- SHA-256 (ambos): `c1d21afd3336e4e2679ebcc233520d3376513b995dd21f17b697e15e58a2a3f2`
+- Sem duplicidade de conteúdo e sem conflito de timestamp (`20260824000000` é único; o anterior é `20260823000000`).
+
+A cópia foi feita por edição normal do repositório: nenhum tooling gerenciado foi ativado, nenhum
+backend provisionado e nenhuma alteração em `.env`, `client.ts`, `config.toml`, `types.ts` ou vínculo
+Supabase. A carga não foi reaplicada; o staging `ikaauvsflpmamgxmkhoq` permanece como validado.
+
+A migration abre com a **PARTE 0 — trava de ambiente fail-closed**: aborta em produção
+`navfzbwgwzruipouyfnk`, aborta se `public._fiscal_staging_marker` não existir e aborta se o marcador
+`STAGING`/`ikaauvsflpmamgxmkhoq` não estiver presente (ausência de prova = recusa).
+
