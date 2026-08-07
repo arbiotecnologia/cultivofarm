@@ -11,7 +11,7 @@ Correção das três ressalvas da auditoria independente do commit `1d14c53e`:
 |---|---|---|
 | 1 | `CONDITIONAL` degradado para `LOW` | Domínio `mnc_conf_chk` evoluído para `LOW/MEDIUM/HIGH/CONDITIONAL`; 7 candidatos primários + 1 alternativo reconciliados; RPC e UI cientes |
 | 2 | Rollback sem proveniência | Novo `public.fiscal_matrix_load_ledger` (campo a campo); `90-rollback.sql` só reverte `regulatory_category` quando o valor atual foi escrito pelo lote |
-| 3 | Sem histórico oficial de migration | Artefato canônico versionado `20260824000000_matriz_fiscal_mestre_v1_microrganismos.sql` (ver ressalva aberta no item 6) |
+| 3 | Sem histórico oficial de migration | Encerrada: `supabase/migrations/20260824000000_matriz_fiscal_mestre_v1_microrganismos.sql` versionado, idêntico ao canônico (ver item 6) |
 
 ## 2. Artefatos
 
