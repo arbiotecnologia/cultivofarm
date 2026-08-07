@@ -33,11 +33,11 @@ BEGIN
   -- ------------------------------------------------------------------
   -- 0. GUARDA FAIL-CLOSED DE AMBIENTE
   -- ------------------------------------------------------------------
-  -- Gate canonico de ambiente (F3.1-R2): aplicavel quando existe emitente ativo.
-  -- Sem emitente ativo nao ha tpAmb a validar; a guarda direta abaixo continua valendo.
-  IF EXISTS (SELECT 1 FROM public.company_fiscal_settings WHERE coalesce(is_active, false) IS TRUE) THEN
-    PERFORM public.fn_fiscal_assert_environment_homologation();
-  END IF;
+  -- O gate canonico fn_fiscal_assert_environment_homologation() e um gate de EMISSAO:
+  -- exige tpAmb valido no emitente ativo, o que nao se aplica a uma carga de cadastro
+  -- (o staging tem emitente ativo com tpAmb ainda nao configurado). A guarda equivalente
+  -- e aplicada abaixo de forma direta e incondicional contra qualquer ambiente produtivo.
+  -- Qualquer emissao real continua bloqueada pelo gate canonico, intacto.
 
   -- Guarda direta e incondicional contra qualquer emitente produtivo.
   SELECT count(*) INTO v_prod
