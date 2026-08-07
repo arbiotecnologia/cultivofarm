@@ -85,3 +85,49 @@ A migration abre com a **PARTE 0 — trava de ambiente fail-closed**: aborta em 
 `navfzbwgwzruipouyfnk`, aborta se `public._fiscal_staging_marker` não existir e aborta se o marcador
 `STAGING`/`ikaauvsflpmamgxmkhoq` não estiver presente (ausência de prova = recusa).
 
+
+---
+
+## Remediação final dos 3 bloqueios da auditoria (staging `ikaauvsflpmamgxmkhoq`)
+
+### B1 — Vínculo de ambiente
+- `.env` realinhado ao staging (`VITE_SUPABASE_PROJECT_ID`, `VITE_SUPABASE_URL`, chave publicável = anon do `client.ts`).
+- `client.ts` e `supabase/config.toml` conferidos: staging.
+- 0 referências ao backend acidental (`yzszl…`) e 0 à produção (`navfzbwgwzruipouyfnk`) nos arquivos de conexão.
+- Guarda permanente: `src/test/config/connection-binding.static.test.ts` — falha a suíte se `.env`/`client.ts`/`config.toml` divergirem do staging, se a chave do `.env` não for a anon do client, ou se produção/backend acidental aparecerem.
+
+### B2 — Contrato de tipos
+- `src/integrations/supabase/types.ts` restaurado do contrato completo (21.8k linhas) e estendido com `fiscal_matrix_load_ledger`.
+- O mesmo teste estático reprova qualquer regressão a stub (`> 5000` linhas + relações críticas obrigatórias).
+
+### B3 — Bloqueio server-side de candidato NCM `CONDITIONAL`
+Migration `supabase/migrations/20260825000000_b3_conditional_block_ledger_acl.sql`
+(byte-idêntica a `restoration/matriz-fiscal-microrganismos/01-migration-20260825000000_b3_conditional_block_ledger_acl.sql`,
+SHA-256 `22e03297148c6dafd6d5a89092c58ef2edc135055864ec43ff01d8508fe68c01`):
+
+- **Parte 0** — trava fail-closed: aborta em produção, aborta sem `public._fiscal_staging_marker` = `STAGING/ikaauvsflpmamgxmkhoq`.
+- **Parte 1** — `rpc_regulatory_ncm_candidate_decide` recusa aprovação de candidato `CONDITIONAL` com `REGULATORY_NCM_CONDITIONAL_BLOCKED` (`55006`). Assinatura, `SECURITY DEFINER`, `search_path`, locks e demais validações preservados; rejeição continua permitida.
+- **Parte 2** — constraint `microorganism_ncm_candidates_conditional_not_approved` impede `APPROVED` + `CONDITIONAL` mesmo por UPDATE direto.
+- **Parte 3** — ACL do `fiscal_matrix_load_ledger`: `anon` e `PUBLIC` revogados; `authenticated` apenas leitura (sob RLS); escrita só por `service_role`/SECURITY DEFINER.
+- **Parte 4** — invariantes: aborta se algum candidato sair de `PROPOSED`, se algum dossiê sair de `DRAFT`, se houver validação contábil, se a guarda sumir da RPC ou se `anon` mantiver SELECT.
+
+Rollback reversível: `restoration/matriz-fiscal-microrganismos/91-rollback-b3.sql` (mesma trava de ambiente; reverte RPC, constraint e ACL sem tocar em dados).
+
+### Evidências pós-aplicação (staging)
+| Verificação | Resultado |
+| --- | --- |
+| Guarda `CONDITIONAL` na RPC | presente |
+| Constraint criada | 1 |
+| `anon` SELECT no ledger | `false` |
+| ACL do ledger | `authenticated=rm`, `service_role=arwdDxtm` |
+| Candidatos NCM | 28 `PROPOSED` (nenhum promovido) |
+| UPDATE direto `CONDITIONAL→APPROVED` | recusado pela constraint |
+
+### Regressão
+- `tsgo --noEmit`: PASS
+- `vitest`: **2776 PASS / 0 FAIL** (4 skipped, 171 arquivos)
+- `build`: PASS
+
+Produção `navfzbwgwzruipouyfnk` não acessada; nada publicado; nenhuma transmissão SEFAZ.
+
+**Status: APTO_PARA_AUDITORIA_FINAL.**
