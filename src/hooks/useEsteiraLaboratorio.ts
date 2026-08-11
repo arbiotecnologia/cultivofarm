@@ -152,47 +152,52 @@ export function useEsteiraLaboratorio() {
     return true;
   };
 
+  /**
+   * Gera o lote pelo motor transacional (lock por programação + unicidade no
+   * banco). Substitui o insert direto, que permitia lotes duplicados quando a
+   * ação era disparada duas vezes.
+   */
   const gerarLote = async (loteData: any, osId: string, origem: string) => {
-    // Guarda de unicidade: garante que cada programação só gere um lote
-    if (loteData.programacao_id) {
-      const { data: existente } = await supabase
-        .from("lotes")
-        .select("id, codigo_lote")
-        .eq("programacao_id", loteData.programacao_id)
-        .limit(1)
-        .maybeSingle();
-
-      if (existente) {
-        toast.error(`Já existe um lote (${existente.codigo_lote}) para esta programação.`);
-        invalidateAll();
-        return null;
-      }
-    }
-
-    const { data, error } = await supabase
-      .from("lotes")
-      .insert([loteData])
-      .select()
-      .single();
-
-    if (error) {
-      toast.error(error.message);
+    if (!loteData?.programacao_id) {
+      toast.error("Programação não identificada para gerar o lote.");
       return null;
     }
 
-    await registrarAuditoria({
-      origem,
-      osId,
-      programacaoId: loteData.programacao_id,
-      loteId: data.id,
-      etapaNova: "lote_gerado",
-      acao: "gerar_lote",
-      observacao: `Lote ${data.codigo_lote} gerado.`
-    });
+    try {
+      const { data, error } = await (supabase as any).rpc("rpc_cockpit_gerar_lote_v1", {
+        p_programacao_id: loteData.programacao_id,
+        p_os_id: osId,
+        p_origem: origem,
+        p_lote: {
+          codigo_lote: loteData.codigo_lote ?? null,
+          produto_id: loteData.produto_id ?? null,
+          microrganismo_id: loteData.microrganismo_id ?? null,
+          volume_produzido: loteData.volume_produzido ?? null,
+          data_producao: loteData.data_producao ?? null,
+          responsavel_producao: loteData.responsavel_producao ?? null,
+          tanque: loteData.tanque ?? null,
+          observacoes_tecnicas: loteData.observacoes_tecnicas ?? null,
+        },
+      });
 
-    toast.success(`Lote ${data.codigo_lote} gerado com sucesso`);
-    invalidateAll();
-    return data;
+      if (error) {
+        toast.error(traduzErroCockpit(error.message));
+        return null;
+      }
+
+      if (data?.replay) {
+        toast.error(data.message || "Já existe um lote para esta programação.");
+        invalidateAll();
+        return null;
+      }
+
+      toast.success(data?.message || "Lote gerado com sucesso");
+      invalidateAll();
+      return { id: data?.lote_id, codigo_lote: data?.codigo_lote };
+    } catch (error: any) {
+      toast.error(traduzErroCockpit(error?.message));
+      return null;
+    }
   };
 
 
