@@ -33,6 +33,13 @@ const COCKPIT_ERROS: Record<string, string> = {
   COCKPIT_ENTREGA_PARAMS_INVALIDOS: "Entrega inválida.",
   COCKPIT_ENTREGA_NAO_ENCONTRADA: "Entrega não encontrada.",
   COCKPIT_ENTREGA_CANCELADA: "Entrega cancelada não pode ser confirmada.",
+  COCKPIT_ENTREGA_QUANTIDADE_INVALIDA: "Informe uma quantidade válida para a entrega.",
+  COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO: "Item de estoque da entrega não encontrado.",
+  COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA: "A quantidade da entrega excede a reserva disponível.",
+  COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE: "Este item de estoque não está reservado para esta OS.",
+  COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM: "A origem da OS não confere com a reserva do estoque.",
+  COCKPIT_LOTE_PARAMS_INVALIDOS: "Dados insuficientes para gerar o lote.",
+  COCKPIT_LOTE_CODIGO_OBRIGATORIO: "Informe o código do lote.",
   COCKPIT_SEED_FORBIDDEN: "Apenas administradores podem gerar fixtures.",
   COCKPIT_SEED_BLOQUEADO: "Geração de fixtures indisponível fora do ambiente de homologação.",
   COCKPIT_SEED_INDISPONIVEL: "Gerador de fixtures indisponível neste ambiente.",
@@ -145,47 +152,52 @@ export function useEsteiraLaboratorio() {
     return true;
   };
 
+  /**
+   * Gera o lote pelo motor transacional (lock por programação + unicidade no
+   * banco). Substitui o insert direto, que permitia lotes duplicados quando a
+   * ação era disparada duas vezes.
+   */
   const gerarLote = async (loteData: any, osId: string, origem: string) => {
-    // Guarda de unicidade: garante que cada programação só gere um lote
-    if (loteData.programacao_id) {
-      const { data: existente } = await supabase
-        .from("lotes")
-        .select("id, codigo_lote")
-        .eq("programacao_id", loteData.programacao_id)
-        .limit(1)
-        .maybeSingle();
-
-      if (existente) {
-        toast.error(`Já existe um lote (${existente.codigo_lote}) para esta programação.`);
-        invalidateAll();
-        return null;
-      }
-    }
-
-    const { data, error } = await supabase
-      .from("lotes")
-      .insert([loteData])
-      .select()
-      .single();
-
-    if (error) {
-      toast.error(error.message);
+    if (!loteData?.programacao_id) {
+      toast.error("Programação não identificada para gerar o lote.");
       return null;
     }
 
-    await registrarAuditoria({
-      origem,
-      osId,
-      programacaoId: loteData.programacao_id,
-      loteId: data.id,
-      etapaNova: "lote_gerado",
-      acao: "gerar_lote",
-      observacao: `Lote ${data.codigo_lote} gerado.`
-    });
+    try {
+      const { data, error } = await (supabase as any).rpc("rpc_cockpit_gerar_lote_v1", {
+        p_programacao_id: loteData.programacao_id,
+        p_os_id: osId,
+        p_origem: origem,
+        p_lote: {
+          codigo_lote: loteData.codigo_lote ?? null,
+          produto_id: loteData.produto_id ?? null,
+          microrganismo_id: loteData.microrganismo_id ?? null,
+          volume_produzido: loteData.volume_produzido ?? null,
+          data_producao: loteData.data_producao ?? null,
+          responsavel_producao: loteData.responsavel_producao ?? null,
+          tanque: loteData.tanque ?? null,
+          observacoes_tecnicas: loteData.observacoes_tecnicas ?? null,
+        },
+      });
 
-    toast.success(`Lote ${data.codigo_lote} gerado com sucesso`);
-    invalidateAll();
-    return data;
+      if (error) {
+        toast.error(traduzErroCockpit(error.message));
+        return null;
+      }
+
+      if (data?.replay) {
+        toast.error(data.message || "Já existe um lote para esta programação.");
+        invalidateAll();
+        return null;
+      }
+
+      toast.success(data?.message || "Lote gerado com sucesso");
+      invalidateAll();
+      return { id: data?.lote_id, codigo_lote: data?.codigo_lote };
+    } catch (error: any) {
+      toast.error(traduzErroCockpit(error?.message));
+      return null;
+    }
   };
 
 
@@ -511,46 +523,43 @@ export function useEsteiraLaboratorio() {
     }
   };
 
+  /**
+   * Cria a entrega pelo motor transacional: valida a reserva da OS, é
+   * idempotente por OS + item de estoque e deixa a entrega em "separado".
+   * A OS só chega a "entregue" na confirmação.
+   */
   const criarEntrega = async (entregaData: any, osId: string, origem: string) => {
-    if (!entregaData.estoque_produto_id) {
+    if (!entregaData?.estoque_produto_id) {
       toast.error("Não é possível criar entrega sem estoque disponível.");
       return false;
     }
 
     try {
-      const osField = origem === 'onfarm' ? 'ordem_servico_onfarm_id' : 'ordem_servico_id';
-      const { data: created, error } = await supabase
-        .from("entregas")
-        .insert([{
-          ...entregaData,
-          [osField]: osId
-        }] as any)
-        .select("id")
-        .maybeSingle();
-
-      if (error) throw error;
-
-      await registrarAuditoria({
-        origem,
-        osId,
-        etapaNova: "entrega_criada",
-        acao: "criar_entrega"
+      const { data, error } = await (supabase as any).rpc("rpc_cockpit_criar_entrega_v1", {
+        p_os_id: osId,
+        p_origem: origem,
+        p_estoque_produto_id: entregaData.estoque_produto_id,
+        p_quantidade: Number(entregaData.quantidade_entregue ?? 0),
+        p_dados: {
+          cliente_id: entregaData.cliente_id ?? null,
+          data_saida: entregaData.data_saida ?? null,
+          motorista: entregaData.motorista ?? null,
+          veiculo: entregaData.veiculo ?? null,
+        },
       });
 
-      // Se a OS estiver em envase ou estoque_reserva, avança para entrega
-      await avancarEtapa({
-        origem,
-        osId,
-        programacaoId: null,
-        etapaDestino: "enviar_entrega"
-      });
+      if (error) throw new Error(traduzErroCockpit(error.message));
 
-      toast.success("Entrega registrada");
+      if (data?.replay) {
+        toast.info(data.message || "Entrega já registrada para este item.");
+      } else {
+        toast.success(data?.message || "Entrega registrada");
+      }
       invalidateAll();
-      return created;
+      return { id: data?.entrega_id };
     } catch (error: any) {
-      console.error("[criarEntrega] falha no insert:", error);
-      throw new Error(error?.message || "Falha ao gravar entrega.");
+      console.error("[criarEntrega] falha no motor transacional:", error);
+      throw new Error(traduzErroCockpit(error?.message) || "Falha ao gravar entrega.");
     }
   };
 
