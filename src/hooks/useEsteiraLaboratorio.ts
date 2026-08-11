@@ -665,6 +665,34 @@ export function useEsteiraLaboratorio() {
     return true;
   };
 
+  /**
+   * Programa a OS (aberta → aprovada → programada) e, opcionalmente, grava a
+   * data programada. Motor transacional no banco: rpc_programar_os_v1.
+   */
+  const programarProducao = async (osId: string, origem: string, data?: string | null) => {
+    const { data: res, error } = await supabase.rpc("rpc_programar_os_v1" as any, {
+      p_os_id: osId,
+      p_origem: origem,
+      p_data_programada: data || null,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+
+    const result = res as { success?: boolean; message?: string } | null;
+    if (!result?.success) {
+      toast.error(result?.message ?? "Não foi possível programar a produção");
+      return false;
+    }
+
+    toast.success(result.message ?? "OS programada com sucesso");
+    invalidateAll();
+    return true;
+  };
+
+
   const vincularResponsavel = async (programacaoId: string, responsavelId: string) => {
     const { error } = await supabase
       .from("programacao_producao")
@@ -794,6 +822,8 @@ export function useEsteiraLaboratorio() {
     validarIntegridade,
     atualizarPrioridade,
     atualizarDataProgramada,
+    programarProducao,
+
     vincularResponsavel,
     avancarEtapa,
     proximaEtapaDoStage,

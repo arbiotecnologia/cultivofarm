@@ -125,6 +125,8 @@ export default function CockpitLaboratorio() {
     finalizarOS,
     atualizarPrioridade,
     atualizarDataProgramada,
+    programarProducao,
+
     vincularResponsavel,
     executarProximaAcao,
   } = useEsteiraLaboratorio();
@@ -862,7 +864,18 @@ export default function CockpitLaboratorio() {
                             <CalendarComponent
                               mode="single"
                               selected={selectedItem.data_programada ? new Date(selectedItem.data_programada) : undefined}
-                              onSelect={(date) => date && atualizarDataProgramada(selectedItem.id, format(date, 'yyyy-MM-dd'))}
+                              onSelect={(date) => {
+                                if (!date) return;
+                                const dataISO = format(date, 'yyyy-MM-dd');
+                                // Antes da produção, definir a data também programa a OS
+                                // (aberta → aprovada → programada) via motor transacional.
+                                if (selectedItem.stage === "aguardando") {
+                                  programarProducao(selectedItem.os_id, selectedItem.origem, dataISO);
+                                } else {
+                                  atualizarDataProgramada(selectedItem.id, dataISO);
+                                }
+                              }}
+
                               locale={ptBR}
                               initialFocus
                             />
