@@ -523,46 +523,43 @@ export function useEsteiraLaboratorio() {
     }
   };
 
+  /**
+   * Cria a entrega pelo motor transacional: valida a reserva da OS, é
+   * idempotente por OS + item de estoque e deixa a entrega em "separado".
+   * A OS só chega a "entregue" na confirmação.
+   */
   const criarEntrega = async (entregaData: any, osId: string, origem: string) => {
-    if (!entregaData.estoque_produto_id) {
+    if (!entregaData?.estoque_produto_id) {
       toast.error("Não é possível criar entrega sem estoque disponível.");
       return false;
     }
 
     try {
-      const osField = origem === 'onfarm' ? 'ordem_servico_onfarm_id' : 'ordem_servico_id';
-      const { data: created, error } = await supabase
-        .from("entregas")
-        .insert([{
-          ...entregaData,
-          [osField]: osId
-        }] as any)
-        .select("id")
-        .maybeSingle();
-
-      if (error) throw error;
-
-      await registrarAuditoria({
-        origem,
-        osId,
-        etapaNova: "entrega_criada",
-        acao: "criar_entrega"
+      const { data, error } = await (supabase as any).rpc("rpc_cockpit_criar_entrega_v1", {
+        p_os_id: osId,
+        p_origem: origem,
+        p_estoque_produto_id: entregaData.estoque_produto_id,
+        p_quantidade: Number(entregaData.quantidade_entregue ?? 0),
+        p_dados: {
+          cliente_id: entregaData.cliente_id ?? null,
+          data_saida: entregaData.data_saida ?? null,
+          motorista: entregaData.motorista ?? null,
+          veiculo: entregaData.veiculo ?? null,
+        },
       });
 
-      // Se a OS estiver em envase ou estoque_reserva, avança para entrega
-      await avancarEtapa({
-        origem,
-        osId,
-        programacaoId: null,
-        etapaDestino: "enviar_entrega"
-      });
+      if (error) throw new Error(traduzErroCockpit(error.message));
 
-      toast.success("Entrega registrada");
+      if (data?.replay) {
+        toast.info(data.message || "Entrega já registrada para este item.");
+      } else {
+        toast.success(data?.message || "Entrega registrada");
+      }
       invalidateAll();
-      return created;
+      return { id: data?.entrega_id };
     } catch (error: any) {
-      console.error("[criarEntrega] falha no insert:", error);
-      throw new Error(error?.message || "Falha ao gravar entrega.");
+      console.error("[criarEntrega] falha no motor transacional:", error);
+      throw new Error(traduzErroCockpit(error?.message) || "Falha ao gravar entrega.");
     }
   };
 
