@@ -125,6 +125,8 @@ export default function CockpitLaboratorio() {
     finalizarOS,
     atualizarPrioridade,
     atualizarDataProgramada,
+    programarProducao,
+
     vincularResponsavel,
     executarProximaAcao,
   } = useEsteiraLaboratorio();
