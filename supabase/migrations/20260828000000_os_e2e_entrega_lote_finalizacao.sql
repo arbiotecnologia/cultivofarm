@@ -140,7 +140,8 @@ BEGIN
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.rpc_cockpit_confirmar_entrega_v1(p_entrega_id uuid, p_os_id uuid, p_origem text)
+DROP FUNCTION IF EXISTS public.rpc_cockpit_confirmar_entrega_v1(uuid, uuid, text);
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_confirmar_entrega_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb DEFAULT '{}'::jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -153,6 +154,7 @@ DECLARE
   v_est public.estoque_produto%ROWTYPE;
   v_pendentes int; v_total_entregue numeric; v_total_reservado numeric;
   v_finalizada boolean := false; v_avanco jsonb;
+  v_recebedor_nome text;
 BEGIN
   PERFORM public.fn_estoque_ctx_open(jsonb_build_object('acao','entrega','origem','rpc_cockpit_confirmar_entrega_v1','usuario_id',auth.uid()::text));
   v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
@@ -202,8 +204,24 @@ BEGIN
     END IF;
   END IF;
 
+  -- Dados de recebimento exigidos pelo gatilho fn_validate_entrega_confirmacao.
+  v_recebedor_nome := nullif(btrim(coalesce(p_recebedor->>'nome','')), '');
+  IF v_recebedor_nome IS NULL THEN
+    SELECT nullif(btrim(coalesce(pr.nome,'')), '') INTO v_recebedor_nome
+      FROM public.profiles pr WHERE pr.id = v_uid;
+  END IF;
+  IF v_recebedor_nome IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO';
+  END IF;
+
   UPDATE public.entregas
-     SET status = 'entregue'::public.status_entrega, entregue_em = now()
+     SET status = 'entregue'::public.status_entrega,
+         entregue_em = now(),
+         recebido_por_nome = v_recebedor_nome,
+         recebido_por_cargo = coalesce(nullif(btrim(coalesce(p_recebedor->>'cargo','')), ''), recebido_por_cargo),
+         recebido_por_documento = coalesce(nullif(btrim(coalesce(p_recebedor->>'documento','')), ''), recebido_por_documento),
+         observacoes_confirmacao = coalesce(nullif(btrim(coalesce(p_recebedor->>'observacoes','')), ''), observacoes_confirmacao),
+         confirmado_por = v_uid
    WHERE id = p_entrega_id;
 
   IF v_est.id IS NOT NULL THEN
