@@ -418,16 +418,16 @@ BEGIN
 
   INSERT INTO public.lotes (
     programacao_id, codigo_lote, produto_id, microrganismo_id,
-    volume_produzido_l, data_producao, data_validade, responsavel_id, observacoes
+    volume_produzido, data_producao, responsavel_producao, tanque, observacoes_tecnicas
   ) VALUES (
     p_programacao_id, v_codigo,
     nullif(p_lote->>'produto_id','')::uuid,
     nullif(p_lote->>'microrganismo_id','')::uuid,
-    nullif(p_lote->>'volume_produzido_l','')::numeric,
+    nullif(p_lote->>'volume_produzido','')::numeric,
     coalesce(nullif(p_lote->>'data_producao','')::date, CURRENT_DATE),
-    nullif(p_lote->>'data_validade','')::date,
-    coalesce(nullif(p_lote->>'responsavel_id','')::uuid, v_uid),
-    nullif(p_lote->>'observacoes','')
+    nullif(p_lote->>'responsavel_producao',''),
+    nullif(p_lote->>'tanque',''),
+    nullif(p_lote->>'observacoes_tecnicas','')
   ) RETURNING id INTO v_id;
 
   INSERT INTO public.laboratorio_esteira_eventos
@@ -507,13 +507,17 @@ BEGIN
 
   INSERT INTO public.entregas (
     ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,
-    quantidade_entregue, status, responsavel_id, observacoes
+    lote_id, produto_id, quantidade_entregue, status,
+    cliente_id, data_saida, motorista, veiculo
   ) VALUES (
     CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,
     CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,
-    p_estoque_produto_id, p_quantidade, 'separado'::public.status_entrega,
-    coalesce(nullif(p_dados->>'responsavel_id','')::uuid, v_uid),
-    nullif(p_dados->>'observacoes','')
+    p_estoque_produto_id, v_est.lote_id, v_est.produto_id,
+    p_quantidade, 'separado'::public.status_entrega,
+    nullif(p_dados->>'cliente_id','')::uuid,
+    nullif(p_dados->>'data_saida','')::date,
+    nullif(p_dados->>'motorista',''),
+    nullif(p_dados->>'veiculo','')
   ) RETURNING id INTO v_id;
 
   INSERT INTO public.laboratorio_esteira_eventos
