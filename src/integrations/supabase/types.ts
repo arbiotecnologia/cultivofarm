@@ -8385,6 +8385,48 @@ export type Database = {
           },
         ]
       }
+      fiscal_matrix_load_ledger: {
+        Row: {
+          id: string
+          created_at: string
+          load_version: string
+          entity_table: string
+          entity_id: string | null
+          field_name: string | null
+          previous_value: Json | null
+          new_value: Json | null
+          operation: string
+          reverted_at: string | null
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          load_version: string
+          entity_table: string
+          entity_id?: string | null
+          field_name?: string | null
+          previous_value?: Json | null
+          new_value?: Json | null
+          operation: string
+          reverted_at?: string | null
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          load_version?: string
+          entity_table?: string
+          entity_id?: string | null
+          field_name?: string | null
+          previous_value?: Json | null
+          new_value?: Json | null
+          operation?: string
+          reverted_at?: string | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
       fiscal_invoices: {
         Row: {
           access_key: string | null
