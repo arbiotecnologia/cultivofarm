@@ -41,7 +41,11 @@ const COCKPIT_ERROS: Record<string, string> = {
 export function traduzErroCockpit(message?: string | null): string {
   const raw = String(message ?? "");
   const hit = Object.keys(COCKPIT_ERROS).find((code) => raw.includes(code));
-  return hit ? COCKPIT_ERROS[hit] : raw || "Erro inesperado na esteira.";
+  if (hit) return COCKPIT_ERROS[hit];
+  if (raw.includes("estoque_movimentacoes_acao_valida")) {
+    return "Não foi possível registrar a movimentação de estoque do envase.";
+  }
+  return raw || "Erro inesperado na esteira.";
 }
 
 
