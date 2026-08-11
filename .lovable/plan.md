@@ -1,29 +1,44 @@
-# Remediação dos 3 bloqueios da auditoria final — Matriz Fiscal Mestre v1
+# Correção do fluxo: OS gerada não pode ser programada
 
-Somente staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` proibida. Sem publicação e sem transmissão SEFAZ.
+## Diagnóstico (verificado no staging ikaauvsflpmamgxmkhoq)
 
-## B1 — Configuração de conexão divergente (`.env`)
+- A única OS existente hoje (`ordens_servico`, criada em 11/08) está com `status = 'aberta'` e `data_programada` nula.
+- `rpc_avancar_esteira_laboratorio`, ao receber `assumir_producao`, só faz o auto-avanço quando a OS está em `aprovada` (`aprovada -> programada`). Para qualquer outro status ela retorna a mensagem que o usuário vê: *"OS precisa estar em status 'programada' para assumir produção. Status atual: aberta"*.
+- O trigger `check_os_status_transition` permite apenas transições de +1 passo na régua `aberta → aprovada → programada → em_producao → ...`, então nem um update direto de `aberta` para `programada` funcionaria.
+- Não existe hoje nenhuma ação de UI que mude o status da OS de `aberta` para `aprovada`/`programada`. No Cockpit, o botão "Definir data" grava apenas `programacao_producao.data_programada` — não toca no status da OS. Resultado: o fluxo trava exatamente onde o usuário relatou.
 
-O `.env` no HEAD voltou a apontar `VITE_SUPABASE_PROJECT_ID` / `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` para o backend Cloud acidental, enquanto `client.ts` e `config.toml` apontam para o staging. A higienização anterior foi sobrescrita.
+## Solução proposta
 
-Ação: realinhar as três variáveis públicas ao staging (URL, project id e a chave anon já existente em `client.ts`), preservando todas as demais variáveis. Como o arquivo é regenerado pelo binding do Cloud, adicionar um teste estático de guarda (`src/test/config/connection-binding.static.test.ts`) que falha se `.env`, `client.ts` e `config.toml` divergirem ou se qualquer referência ao backend acidental reaparecer.
+### 1. Motor no banco (migration, somente staging)
 
-## B2 — `types.ts` reduzido a stub (11 testes falhando)
+Criar `public.rpc_programar_os_v1(p_os_id, p_origem, p_data_programada)`, `SECURITY DEFINER`, fail-closed:
 
-`src/integrations/supabase/types.ts` está com 155 linhas (stub gerado contra o backend acidental), quebrando 4 arquivos de teste / 11 casos que verificam contrato de schema.
+- Valida papel do usuário (mesmo conjunto já usado por `rpc_avancar_esteira_laboratorio`: admin/gestor/produção/laboratório).
+- Rejeita OS `cancelada`/`finalizada` e status já adiantado (`em_producao` em diante) com mensagem clara.
+- Executa a escada respeitando o trigger: `aberta → aprovada → programada`, passo a passo, dentro da mesma transação.
+- Grava `data_programada` na OS e sincroniza `programacao_producao.data_programada` do registro vinculado.
+- Registra evento de auditoria em `laboratorio_esteira_eventos` (ação `programar_os`).
+- Retorna JSONB `{ success, status, message }`, no mesmo contrato dos RPCs da esteira.
+- GRANT `EXECUTE` apenas para `authenticated`; REVOKE de `PUBLIC`/`anon`.
+- Trava de ambiente fail-closed no topo da migration (bloqueio da produção `navfzbwgwzruipouyfnk`, exigência do marcador de staging), no mesmo padrão das migrations recentes.
 
-Ação: restaurar o contrato completo do staging (versão de 21.808 linhas já validada) e cobrir a regressão com o mesmo teste de guarda de B1 (limite mínimo de contrato + presença das relações exigidas), para que uma nova sobrescrita seja detectada pela suíte e não pela auditoria.
+Ajuste complementar em `rpc_avancar_esteira_laboratorio`: no ramo `assumir_producao`, o auto-avanço passa a cobrir também `aberta` (subindo `aberta → aprovada → programada`), mantendo o bloqueio para os demais status. Assim o botão "Assumir produção" deixa de travar mesmo quando a programação explícita não foi feita.
 
-## B3 — Aprovação de candidato NCM não bloqueada por confiança CONDITIONAL
+Script de rollback correspondente em `restoration/`.
 
-`rpc_regulatory_ncm_candidate_decide` exige fonte oficial, descrição, versão e data da tabela, mas não impede aprovar um candidato com `confidence = 'CONDITIONAL'`. Os 8 candidatos condicionais hoje têm fonte cadastrada, então a aprovação passaria.
+### 2. Interface
 
-Ação: migration incremental (novo timestamp, com a mesma trava de ambiente fail-closed já usada em `20260824000000`) que recria a função adicionando, no ramo de aprovação, a recusa `REGULATORY_NCM_CONDITIONAL_BLOCKED` enquanto a confiança for `CONDITIONAL`, exigindo reclassificação explícita para `HIGH`/`MEDIUM` antes da decisão. Sem alterar dados existentes.
+- **Cockpit do Laboratório**: o seletor de data no painel de detalhe passa a chamar a nova ação "Programar produção" (data + status) em vez de apenas atualizar a data; quando a OS estiver em `aberta`/`aprovada`, exibir botão explícito **"Programar"** ao lado da data, com estado de carregamento e toast de sucesso/erro.
+- **Ordens de Serviço** (`/ordens-servico`): incluir ação "Programar" no card/linha das OS em `aberta`/`aprovada`, abrindo seletor de data e chamando o mesmo RPC.
+- Mensagens de erro do RPC são exibidas integralmente (sem mascarar), e as queries do cockpit/esteira/OS são invalidadas após sucesso.
 
-## Risco residual (não bloqueante, decisão do usuário)
+### 3. Validação
 
-`public.fiscal_matrix_load_ledger` mantém GRANT amplo para `anon`; a RLS já nega leitura (0 linhas) e escrita. Opcionalmente revogar os privilégios de `anon` na mesma migration de B3.
+- Teste unitário do hook novo (mock do RPC: sucesso, erro de papel, status inválido).
+- Harness SQL de verificação: OS `aberta` → programar → `programada` → `assumir_producao` conclui sem erro; papel sem permissão recebe negativa.
+- Regressão completa: `tsgo`, `vitest`, `build`.
 
-## Validação final
+## Restrições respeitadas
 
-`tsgo --noEmit`, `build` e suíte completa com zero falhas; reconferência somente-leitura dos contadores 27/27/27/324/28 e das ACLs. Nenhum acesso a produção, nenhuma publicação, nenhuma transmissão SEFAZ.
+- Nenhuma alteração em produção `navfzbwgwzruipouyfnk`; migration aplicada apenas em `ikaauvsflpmamgxmkhoq`.
+- Sem publicação e sem alteração de rotas, permissões existentes ou dependências.
