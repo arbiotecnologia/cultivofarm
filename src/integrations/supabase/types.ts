@@ -8754,6 +8754,39 @@ export type Database = {
           },
         ]
       }
+      fiscal_matrix_load_ledger: {
+        Row: {
+          id: string
+          load_tag: string
+          entity_table: string
+          entity_id: string
+          field_name: string
+          previous_value: Json | null
+          new_value: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          load_tag: string
+          entity_table: string
+          entity_id: string
+          field_name: string
+          previous_value?: Json | null
+          new_value?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          load_tag?: string
+          entity_table?: string
+          entity_id?: string
+          field_name?: string
+          previous_value?: Json | null
+          new_value?: Json | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       fiscal_official_sources: {
         Row: {
           id: string
