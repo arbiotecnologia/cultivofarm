@@ -822,6 +822,8 @@ export function useEsteiraLaboratorio() {
     validarIntegridade,
     atualizarPrioridade,
     atualizarDataProgramada,
+    programarProducao,
+
     vincularResponsavel,
     avancarEtapa,
     proximaEtapaDoStage,
