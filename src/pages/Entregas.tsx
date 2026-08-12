@@ -69,7 +69,7 @@ export default function Entregas() {
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [motivoCancel, setMotivoCancel] = useState("");
-  const { criarEntrega, confirmarEntrega: hookConfirmarEntrega, reservarEstoque: hookReservarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();
+  const { criarEntrega, reservarEstoque: hookReservarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();
   const [form, setForm] = useState({
     estoque_produto_id: "",
     ordem_servico_id: "",
