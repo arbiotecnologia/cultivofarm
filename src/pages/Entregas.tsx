@@ -125,6 +125,13 @@ export default function Entregas() {
             id,
             codigo_lote,
             envase(volume_por_unidade, data_envase)
+          ),
+          entrega_comprovantes!entrega_comprovantes_entrega_id_fkey(
+            id,
+            tipo,
+            numero_formulario,
+            metadata,
+            gerado_em
           )
         `)
         .order("created_at", { ascending: false })
