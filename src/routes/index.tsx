@@ -4,6 +4,7 @@
 // ATENÇÃO: o editor visual costuma mirar este arquivo. Ele NÃO deve receber
 // texto de prompt/rascunho. Se aparecer conteúdo de comando aqui, é edição
 // acidental e deve ser revertida para este placeholder.
+// corrija a máscara do telefone dos contatos no registro de entrega.
 export default function Index() {
   return (
     <div
