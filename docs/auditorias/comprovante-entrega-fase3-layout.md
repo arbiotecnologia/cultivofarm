@@ -127,7 +127,7 @@ Base validada desta fase: commit `ec4801cb744be6ef89d4df0261177019a68d5c1a`.
 
 O Fast Visual Edit `b90ada5d` voltou a alterar `.env` e reduziu `src/integrations/supabase/types.ts` a 155 linhas. `.env`, `client.ts`, `types.ts` e `supabase/config.toml` foram restaurados via `git show ec4801cb:<arquivo>`, sem imprimir chaves, DSN ou segredos. Estado final: `types.ts` com **21.850 linhas**, `config.toml` apontando para o staging `ikaauvsflpmamgxmkhoq`, `connection-binding.static.test.ts` **8/8 PASS**, com a suíte completa reexecutada depois da restauração.
 
-Diff acumulado sobre a base (`git diff --name-only d9c8a249`) contém apenas `docs/auditorias/comprovante-entrega-fase3-layout.md`, `src/components/entregas/PreviewDocumentoEntrega.tsx`, `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx` e `src/test/entregas/comprovanteEntregaPdf.test.ts`: nenhuma migration, função, policy ou config de backend foi alterada.
+Diff acumulado sobre a base (`git diff --name-only ec4801cb`) contém apenas `docs/auditorias/comprovante-entrega-fase3-layout.md`, `src/components/entregas/PreviewDocumentoEntrega.tsx`, `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx` e `src/test/entregas/comprovanteEntregaPdf.test.ts`: nenhuma migration, função, policy ou config de backend foi alterada.
 
 ## 8. Confirmações de escopo
 
