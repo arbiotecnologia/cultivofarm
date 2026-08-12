@@ -910,7 +910,7 @@ export default function Entregas() {
                           const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });
                           const reemissao = confirmada && definitivo;
                           return (
-                            <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e, reemissao)} title={label}>
+                            <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title={label}>
                               <FileDown className="h-4 w-4 mr-1" /> {label}
                             </Button>
                           );
@@ -984,7 +984,7 @@ export default function Entregas() {
                           const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });
                           const reemissao = confirmada && definitivo;
                           return (
-                            <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e, reemissao)} title={label}>
+                            <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title={label}>
                               <FileDown className="h-4 w-4 mr-1" /> {label}
                             </Button>
                           );
