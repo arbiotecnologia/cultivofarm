@@ -175,6 +175,38 @@ export type Database = {
         }
         Relationships: []
       }
+      cliente_documentos: {
+        Row: {
+          cliente_id: string | null
+          created_at: string | null
+          id: string
+          titulo: string | null
+          url: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          titulo?: string | null
+          url?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          titulo?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_documentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           id: string
@@ -268,6 +300,35 @@ export type Database = {
         }
         Relationships: []
       }
+      esteira_producao_v2: {
+        Row: {
+          created_at: string | null
+          id: string
+          ordem_servico_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ordem_servico_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ordem_servico_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esteira_producao_v2_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidencias: {
         Row: {
           id: string
@@ -344,21 +405,71 @@ export type Database = {
           },
         ]
       }
+      microorganism_technical_profiles: {
+        Row: {
+          beneficios_agronomicos: string | null
+          created_at: string | null
+          cuidados_aplicacao: string | null
+          explicacao_produtor: string | null
+          id: string
+          indicacoes_uso: string | null
+          microrganismo_id: string | null
+          resumo_curto: string | null
+          status_validacao: string | null
+        }
+        Insert: {
+          beneficios_agronomicos?: string | null
+          created_at?: string | null
+          cuidados_aplicacao?: string | null
+          explicacao_produtor?: string | null
+          id?: string
+          indicacoes_uso?: string | null
+          microrganismo_id?: string | null
+          resumo_curto?: string | null
+          status_validacao?: string | null
+        }
+        Update: {
+          beneficios_agronomicos?: string | null
+          created_at?: string | null
+          cuidados_aplicacao?: string | null
+          explicacao_produtor?: string | null
+          id?: string
+          indicacoes_uso?: string | null
+          microrganismo_id?: string | null
+          resumo_curto?: string | null
+          status_validacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "microorganism_technical_profiles_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       microrganismos: {
         Row: {
+          ativo: boolean | null
           created_at: string | null
           id: string
           nome: string
+          nome_cientifico: string | null
         }
         Insert: {
+          ativo?: boolean | null
           created_at?: string | null
           id?: string
           nome: string
+          nome_cientifico?: string | null
         }
         Update: {
+          ativo?: boolean | null
           created_at?: string | null
           id?: string
           nome?: string
+          nome_cientifico?: string | null
         }
         Relationships: []
       }
@@ -367,6 +478,7 @@ export type Database = {
           area_hectares: number | null
           cliente_id: string | null
           created_at: string | null
+          data_programada: string | null
           fazenda_id: string | null
           id: string
           produto_id: string | null
@@ -378,6 +490,7 @@ export type Database = {
           area_hectares?: number | null
           cliente_id?: string | null
           created_at?: string | null
+          data_programada?: string | null
           fazenda_id?: string | null
           id?: string
           produto_id?: string | null
@@ -389,6 +502,7 @@ export type Database = {
           area_hectares?: number | null
           cliente_id?: string | null
           created_at?: string | null
+          data_programada?: string | null
           fazenda_id?: string | null
           id?: string
           produto_id?: string | null
@@ -427,6 +541,38 @@ export type Database = {
           },
         ]
       }
+      produto_anexos: {
+        Row: {
+          created_at: string | null
+          id: string
+          produto_id: string | null
+          titulo: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          produto_id?: string | null
+          titulo?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          produto_id?: string | null
+          titulo?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_anexos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtos: {
         Row: {
           created_at: string | null
@@ -451,6 +597,7 @@ export type Database = {
       profiles: {
         Row: {
           ativo: boolean | null
+          avatar_url: string | null
           created_at: string
           email: string | null
           id: string
@@ -460,6 +607,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean | null
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -469,6 +617,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean | null
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           id?: string
