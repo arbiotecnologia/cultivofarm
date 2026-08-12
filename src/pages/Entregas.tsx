@@ -18,7 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDateDisplay } from "@/lib/date-utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { gerarDocumentoEntregaPDF } from "@/lib/comprovanteEntregaPdf";
+import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento } from "@/lib/comprovanteEntregaPdf";
 
 const ERROS_COMPROVANTE: Record<string, string> = {
   COMPROVANTE_UNAUTHENTICATED: "Sessão expirada. Entre novamente para emitir o documento.",
@@ -840,9 +840,16 @@ export default function Entregas() {
                         {canCancel && e.status !== "entregue" && e.status !== "cancelada" && (
                           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCancelTarget(e); setMotivoCancel(""); }}>Cancelar</Button>
                         )}
-                        <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title="Baixar recibo interno (PDF)">
-                          <FileDown className="h-4 w-4" />
-                        </Button>
+                        {(() => {
+                          const confirmada = e.status === "entregue";
+                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: !!e.comprovante_numero });
+                          const reemissao = confirmada && !!e.comprovante_numero;
+                          return (
+                            <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e, reemissao)} title={label}>
+                              <FileDown className="h-4 w-4 mr-1" /> {label}
+                            </Button>
+                          );
+                        })()}
                         <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Documento de entrega com assinatura">
                           <FileText className="h-4 w-4 mr-1" /> Documento
                         </Button>
@@ -905,9 +912,16 @@ export default function Entregas() {
                         {canCancel && e.status !== "entregue" && e.status !== "cancelada" && (
                           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setCancelTarget(e); setMotivoCancel(""); }}>Cancelar</Button>
                         )}
-                        <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title="Baixar recibo interno (PDF)">
-                          <FileDown className="h-4 w-4" />
-                        </Button>
+                        {(() => {
+                          const confirmada = e.status === "entregue";
+                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: !!e.comprovante_numero });
+                          const reemissao = confirmada && !!e.comprovante_numero;
+                          return (
+                            <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e, reemissao)} title={label}>
+                              <FileDown className="h-4 w-4 mr-1" /> {label}
+                            </Button>
+                          );
+                        })()}
                         <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Documento de entrega com assinatura">
                           <FileText className="h-4 w-4 mr-1" /> Documento
                         </Button>
