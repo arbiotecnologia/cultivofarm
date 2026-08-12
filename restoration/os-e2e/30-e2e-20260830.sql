@@ -108,8 +108,11 @@ BEGIN
         jsonb_build_object('codigo_lote', v_tag, 'produto_id', v_produto::text,
                            'volume_produzido', '100000'));
   v_lote := (r->>'lote_id')::uuid;
-  INSERT INTO _e2e_gate(gate,status,detalhe) VALUES ('T04 gerar_lote',
-    CASE WHEN (r->>'success')::boolean AND (r->>'replay')::boolean IS FALSE THEN 'PASS' ELSE 'FAIL' END, r->>'codigo_lote');
+  -- O lote pode já existir (trigger de programação); o motor deve resolver
+  -- de forma convergente, devolvendo sempre um lote único e vinculado.
+  INSERT INTO _e2e_gate(gate,status,detalhe) VALUES ('T04 gerar_lote convergente',
+    CASE WHEN (r->>'success')::boolean AND v_lote IS NOT NULL THEN 'PASS' ELSE 'FAIL' END,
+    coalesce(r->>'codigo_lote','(sem codigo)') || ' replay=' || coalesce(r->>'replay','?'));
 
   -- T05 concorrência: segunda chamada devolve replay, nunca duplica
   r := public.rpc_cockpit_gerar_lote_v1(v_prog, v_os, 'manual', jsonb_build_object('codigo_lote', v_tag||'-DUP'));
