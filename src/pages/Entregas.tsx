@@ -1062,22 +1062,18 @@ export default function Entregas() {
 
       <PreviewDocumentoEntrega
         open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        payload={previewPayload}
-        branding={{
-          nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
-          logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
-          cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
-        }}
-        onDownload={async () => {
-          if (previewPayload) {
-            await gerarDocumentoEntregaPDF(previewPayload, {
-              nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
-              logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
-              cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
-            });
+        onOpenChange={(o) => {
+          setPreviewOpen(o);
+          if (!o) {
+            // Fechar/cancelar o preview nunca contabiliza reemissao.
+            setPreviewPayload(null);
+            setPreviewEntregaId(null);
+            setPreviewSnapshotAntes(false);
           }
         }}
+        payload={previewPayload}
+        branding={brandingDocumento()}
+        onDownload={handleDownloadPreview}
       />
     </div>
   );
