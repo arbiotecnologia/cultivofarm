@@ -718,39 +718,71 @@ export default function Entregas() {
 
 
 
-  const handleGerarDocumento = async (e: any, reemissao = false, preview = true) => {
-    try {
-      const { data, error } = await supabase.rpc("rpc_get_comprovante_entrega_data" as any, {
-        p_entrega_id: e.id,
-        p_reemissao: reemissao,
-      });
-      if (error) throw error;
+  const brandingDocumento = () => ({
+    nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
+    logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
+    cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
+  });
 
-      const payload = data as any;
-      const branding = {
-        nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
-        logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
-        cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
-      };
+  const buscarPayloadDocumento = async (entregaId: string, reemissao: boolean) => {
+    const { data, error } = await supabase.rpc("rpc_get_comprovante_entrega_data" as any, {
+      p_entrega_id: entregaId,
+      p_reemissao: reemissao,
+    });
+    if (error) throw error;
+    return data as any;
+  };
+
+  /**
+   * Abertura do preview: SEMPRE `p_reemissao=false`, inclusive quando ja existe
+   * snapshot. Nenhum contador de reemissao e incrementado por visualizar,
+   * fechar/cancelar o dialog, refresh ou mount.
+   */
+  const handleGerarDocumento = async (e: any, preview = true) => {
+    try {
+      const possuiSnapshotAntes = possuiComprovanteDefinitivo(e);
+      const payload = await buscarPayloadDocumento(e.id, false);
 
       // Primeira emissão definitiva congela o snapshot no servidor: refaz o fetch
       // para que a próxima ação passe corretamente a "Reemitir comprovante".
-      if (!reemissao && payload?.doc_tipo === "comprovante") {
+      if (!possuiSnapshotAntes && payload?.doc_tipo === "comprovante") {
         queryClient.invalidateQueries({ queryKey: ["entregas"] });
       }
 
       if (preview) {
         setPreviewPayload(payload);
+        setPreviewSnapshotAntes(possuiSnapshotAntes);
+        setPreviewEntregaId(e.id);
         setPreviewOpen(true);
       } else {
-        await gerarDocumentoEntregaPDF(payload, branding);
+        await gerarDocumentoEntregaPDF(payload, brandingDocumento());
       }
     } catch (err: any) {
       toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);
     }
   };
 
-  const handleBaixarRecibo = (e: any, reemissao = false) => handleGerarDocumento(e, reemissao, true);
+  /**
+   * Download a partir do preview. Só aqui uma reemissão pode ser contabilizada,
+   * e apenas quando já existia snapshot definitivo antes da abertura do preview.
+   */
+  const handleDownloadPreview = async () => {
+    if (!previewPayload || !previewEntregaId) return;
+    try {
+      const reemitir = decidirReemissaoNoDownload({
+        docTipo: previewPayload?.doc_tipo,
+        possuiSnapshotAntes: previewSnapshotAntes,
+      });
+      const payload = reemitir ? await buscarPayloadDocumento(previewEntregaId, true) : previewPayload;
+      await gerarDocumentoEntregaPDF(payload, brandingDocumento());
+      queryClient.invalidateQueries({ queryKey: ["entregas"] });
+      setPreviewOpen(false);
+    } catch (err: any) {
+      toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);
+    }
+  };
+
+  const handleBaixarRecibo = (e: any) => handleGerarDocumento(e, true);
 
   return (
     <div className="space-y-4 sm:space-y-6">
