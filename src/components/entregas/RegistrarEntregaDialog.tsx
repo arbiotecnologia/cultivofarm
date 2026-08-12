@@ -679,7 +679,7 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
               </div>
               <div>
                 <Label>Telefone</Label>
-                <MaskedInput mask="telefone" value={motoristaTelefone} onChange={(e) => setMotoristaTelefone(e.target.value)} placeholder="(00) 00000-0000" />
+                <MaskedInput mask="(00) 00000-0000" value={motoristaTelefone} onChange={(e) => setMotoristaTelefone(e.target.value)} placeholder="(00) 00000-0000" />
               </div>
               <div className="sm:col-span-2">
                 <Label>{tipoEntrega === "retirada" ? "Documento (RG/CPF)" : "CNH / Documento"}</Label>
