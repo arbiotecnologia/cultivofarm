@@ -733,6 +733,12 @@ export default function Entregas() {
         cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
       };
 
+      // Primeira emissão definitiva congela o snapshot no servidor: refaz o fetch
+      // para que a próxima ação passe corretamente a "Reemitir comprovante".
+      if (!reemissao && payload?.doc_tipo === "comprovante") {
+        queryClient.invalidateQueries({ queryKey: ["entregas"] });
+      }
+
       if (preview) {
         setPreviewPayload(payload);
         setPreviewOpen(true);
