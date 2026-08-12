@@ -250,6 +250,24 @@ export type Database = {
         }
         Relationships: []
       }
+      culturas: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       evidencias: {
         Row: {
           id: string
@@ -325,6 +343,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      microrganismos: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       ordens_servico: {
         Row: {
@@ -468,21 +504,88 @@ export type Database = {
           },
         ]
       }
+      registros_consultor: {
+        Row: {
+          created_at: string | null
+          data_registro: string | null
+          id: string
+          talhao_id: string | null
+          tipo_manejo_agua: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_registro?: string | null
+          id?: string
+          talhao_id?: string | null
+          tipo_manejo_agua?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_registro?: string | null
+          id?: string
+          talhao_id?: string | null
+          tipo_manejo_agua?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_consultor_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registros_consultor_recomendacoes: {
+        Row: {
+          created_at: string | null
+          id: string
+          recomendacao: string | null
+          registro_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          recomendacao?: string | null
+          registro_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          recomendacao?: string | null
+          registro_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_consultor_recomendacoes_registro_id_fkey"
+            columns: ["registro_id"]
+            isOneToOne: false
+            referencedRelation: "registros_consultor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talhoes: {
         Row: {
+          area_hectares: number | null
           fazenda_id: string | null
           id: string
           nome: string
+          tipo_manejo_agua: string | null
         }
         Insert: {
+          area_hectares?: number | null
           fazenda_id?: string | null
           id?: string
           nome: string
+          tipo_manejo_agua?: string | null
         }
         Update: {
+          area_hectares?: number | null
           fazenda_id?: string | null
           id?: string
           nome?: string
+          tipo_manejo_agua?: string | null
         }
         Relationships: [
           {
@@ -557,6 +660,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_get_visita_workspace: { Args: { _visita_id: string }; Returns: Json }
     }
     Enums: {
       app_role:
@@ -568,6 +672,7 @@ export type Database = {
         | "producao"
         | "administrativo"
         | "gestor"
+        | "consultor_tecnico"
       status_os:
         | "aberta"
         | "aprovada"
@@ -714,6 +819,7 @@ export const Constants = {
         "producao",
         "administrativo",
         "gestor",
+        "consultor_tecnico",
       ],
       status_os: [
         "aberta",
