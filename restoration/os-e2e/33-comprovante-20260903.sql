@@ -78,23 +78,31 @@ $grants$;
 -- ---------------------------------------------------------------------
 DO $fix$
 DECLARE
-  v_ent uuid; v_cliente uuid; v_produto uuid; v_lote uuid; v_uid text;
+  v_ent uuid; v_cliente uuid; v_produto uuid; v_lote uuid; v_uid text; v_est uuid;
   v_tag text := 'CE2-' || to_char(clock_timestamp(),'YYYYMMDDHH24MISSMS');
 BEGIN
   SELECT l.id, l.produto_id INTO v_lote, v_produto
     FROM public.lotes l WHERE l.produto_id IS NOT NULL ORDER BY l.created_at DESC LIMIT 1;
-  IF v_produto IS NULL THEN SELECT id INTO v_produto FROM public.produtos ORDER BY created_at LIMIT 1; END IF;
+  IF v_lote IS NULL THEN RAISE EXCEPTION 'CE2_SEM_LOTE_FIXTURE'; END IF;
   SELECT id INTO v_cliente FROM public.clientes ORDER BY created_at LIMIT 1;
   SELECT ur.user_id::text INTO v_uid FROM public.user_roles ur
    WHERE ur.role::text IN ('administrador','gestor') LIMIT 1;
 
-  INSERT INTO public.entregas (cliente_id, produto_id, lote_id, quantidade_entregue,
-                               volume_entregue_ml, data_saida, status, motorista, veiculo)
-  VALUES (v_cliente, v_produto, v_lote, 10, 20000, CURRENT_DATE, 'separado', 'Motorista Teste', 'Fiorino')
+  INSERT INTO public.estoque_produto (produto_id, lote_id, quantidade, volume_total,
+                                      quantidade_reservada, status)
+  VALUES (v_produto, v_lote, 100, 200000, 100, 'disponivel')
+  RETURNING id INTO v_est;
+
+  INSERT INTO public.entregas (cliente_id, produto_id, lote_id, estoque_produto_id,
+                               quantidade_entregue, volume_entregue_ml, data_saida,
+                               status, motorista, veiculo)
+  VALUES (v_cliente, v_produto, v_lote, v_est, 10, 20000, CURRENT_DATE,
+          'separado', 'Motorista Teste', 'Fiorino')
   RETURNING id INTO v_ent;
 
   INSERT INTO _dc(k,v) VALUES ('entrega', v_ent::text), ('uid', v_uid),
-                              ('cliente', v_cliente::text), ('tag', v_tag);
+                              ('cliente', v_cliente::text), ('tag', v_tag),
+                              ('estoque', v_est::text);
 END
 $fix$;
 
@@ -234,9 +242,10 @@ DECLARE
   v_ok boolean; v_err text; r jsonb;
 BEGIN
   -- entrega confirmada porem sem produto/lote => comprovante negado
-  INSERT INTO public.entregas (cliente_id, quantidade_entregue, data_saida, status,
-                               recebido_por_nome, confirmada_em)
-  VALUES (v_cliente, 5, CURRENT_DATE, 'entregue', 'Maria Recebedora', now())
+  INSERT INTO public.entregas (cliente_id, estoque_produto_id, quantidade_entregue, data_saida,
+                               status, recebido_por_nome, confirmada_em)
+  VALUES (v_cliente, (SELECT v FROM _dc WHERE k='estoque')::uuid, 5, CURRENT_DATE,
+          'entregue', 'Maria Recebedora', now())
   RETURNING id INTO v_ent2;
 
   PERFORM set_config('request.jwt.claims', json_build_object('sub',v_uid,'role','authenticated')::text, true);
