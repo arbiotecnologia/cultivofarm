@@ -18,7 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDateDisplay } from "@/lib/date-utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento, possuiComprovanteDefinitivo, decidirReemissaoNoDownload } from "@/lib/comprovanteEntregaPdf";
+import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento, possuiComprovanteDefinitivo, deveReemitirNoDownload, REEMISSAO_NA_ABERTURA_DO_PREVIEW } from "@/lib/comprovanteEntregaPdf";
 
 const ERROS_COMPROVANTE: Record<string, string> = {
   COMPROVANTE_UNAUTHENTICATED: "Sessão expirada. Entre novamente para emitir o documento.",
