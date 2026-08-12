@@ -141,13 +141,16 @@ $romaneio$;
 DO $sem_receb$
 DECLARE
   v_ent uuid := (SELECT v FROM _dc WHERE k='entrega')::uuid;
-  r jsonb;
+  v_ok boolean; v_err text;
 BEGIN
-  UPDATE public.entregas SET status = 'entregue', confirmada_em = now() WHERE id = v_ent;
-  r := public.rpc_get_comprovante_entrega_data(v_ent, false);
-  INSERT INTO _d(gate,status,detalhe) VALUES ('D09 entregue sem recebedor => romaneio',
-    CASE WHEN r->>'doc_tipo' = 'romaneio' THEN 'PASS' ELSE 'FAIL' END,
-    'doc='||coalesce(r->>'doc_tipo','?'));
+  -- O banco nao aceita 'entregue' sem identificacao do recebedor
+  BEGIN
+    UPDATE public.entregas SET status = 'entregue', confirmada_em = now() WHERE id = v_ent;
+    v_ok := false; v_err := 'permitiu';
+  EXCEPTION WHEN others THEN v_ok := true; v_err := SQLERRM;
+  END;
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D09 entregue sem recebedor e bloqueado',
+    CASE WHEN v_ok THEN 'PASS' ELSE 'FAIL' END, left(v_err, 60));
 END
 $sem_receb$;
 
@@ -160,7 +163,8 @@ DECLARE
   r1 jsonb; r2 jsonb; v_snap int;
 BEGIN
   UPDATE public.entregas
-     SET recebido_por_nome = 'Joao Recebedor',
+     SET status = 'entregue',
+         recebido_por_nome = 'Joao Recebedor',
          recebido_por_documento = '123456789',
          recebido_por_cargo = 'Encarregado',
          confirmada_em = now(),
