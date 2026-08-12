@@ -22,24 +22,48 @@ Rotinas do módulo de entrega afetadas (arquivo `20260613154311_...sql`):
 - `rpc_confirmar_recebimento_entrega`
 - `rpc_dispensar_assinatura_entrega`
 
-Há ainda outras rotinas antigas com o mesmo `digest` não qualificado (rastreio de lote/etiqueta,
-comprovante documento v1, envase, fiscal F2). Elas caem no mesmo modo de falha e entram na mesma
-correção, para não repetir o incidente em outro botão.
+O mesmo defeito existe em rotinas antigas que ainda estão vigentes e vão quebrar do mesmo jeito
+quando forem acionadas. Todas entram nesta correção — nada fica de fora:
+
+**Lote / etiquetas / rastreio (foco principal)**
+- `rpc_gerar_etiqueta_produto` (versão vigente)
+- `rpc_gerar_etiquetas_embalagens_lote`
+- `rpc_marcar_etiqueta_impressa`
+- `rpc_cancelar_etiqueta_produto`
+- `rpc_substituir_etiqueta_produto`
+- `rpc_validar_rastreio_produto`
+- `rpc_rastreio_produto_interno`
+
+**Entrega / conferência / termos**
+- `fn_entrega_build_snapshot_v1`, `rpc_entrega_gerar_termo_v1`, `rpc_entrega_assinar_termo_v1`
+- `rpc_entrega_reconciliar_v1`, `rpc_entrega_reentrega_saldo_v1`
+- `fn_comprovante_entrega_montar_v1` (versão vigente)
+
+**Financeiro, estoque, envase, comunicação e fiscal**
+- `fn_assign_receipt_metadata` (recibo financeiro)
+- `log_estoque_movimentacao` (ledger)
+- `rpc_cockpit_registrar_envase_v1` (versão vigente)
+- rotinas de comunicação que montam snapshot/idempotência com `digest`
+- rotinas do dossiê regulatório/fiscal F2 que montam snapshot com `digest`
 
 ## Correção proposta
 
 Migration incremental nova (ex.: `20260905000000_hardening_digest_schema_v1.sql`), somente no
 staging, sem alterar regras de negócio, numeração, snapshots ou RLS:
 
-1. **Inventário primeiro**: listar no catálogo do banco todas as funções de `public` cujo corpo usa
-   `digest(` sem o prefixo `extensions.`. Só as definições realmente vigentes serão recriadas
-   (várias já foram sobrescritas por versões corretas em migrations posteriores).
+1. **Inventário primeiro**: listar no catálogo do banco **todas** as funções de `public` cujo corpo
+   usa `digest(` sem o prefixo `extensions.`. Essa lista do catálogo é a fonte da verdade —
+   ela captura inclusive rotinas antigas não citadas acima e descarta as que já foram
+   sobrescritas por versões corretas em migrations posteriores.
 2. **Recriar cada função vigente afetada** com o corpo idêntico, trocando apenas
    `digest(x, 'sha256')` por `extensions.digest(x, 'sha256')`, mantendo assinatura, `SECURITY
    DEFINER`, `search_path`, grants e revogações atuais.
-3. **Prioridade 1 (desbloqueia o usuário)**: as quatro rotinas de comprovação de entrega acima.
-   **Prioridade 2 (mesma migration)**: rastreio de lote/etiqueta, `fn_comprovante_entrega_montar_v1`
-   legado, envase e fiscal F2.
+3. **Ordem de aplicação**: primeiro as quatro rotinas de comprovação de entrega (desbloqueiam o
+   erro que o usuário está vendo), depois lote/etiquetas/rastreio, e na sequência todo o restante
+   do inventário, na mesma migration atômica.
+4. **Nenhuma mudança de valor de hash**: mesmo algoritmo e mesma entrada; hashes já gravados
+   continuam válidos e nada é recalculado.
+
 4. **Nenhuma mudança de valor de hash**: mesmo algoritmo e mesma entrada; hashes já gravados
    continuam válidos e nada é recalculado.
 5. **Rollback incremental** correspondente, na pasta de restauração já usada nas fases anteriores.
