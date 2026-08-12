@@ -894,6 +894,27 @@ export type Database = {
           },
         ]
       }
+      financial_settings: {
+        Row: {
+          chave: string | null
+          created_at: string | null
+          id: string
+          valor: string | null
+        }
+        Insert: {
+          chave?: string | null
+          created_at?: string | null
+          id?: string
+          valor?: string | null
+        }
+        Update: {
+          chave?: string | null
+          created_at?: string | null
+          id?: string
+          valor?: string | null
+        }
+        Relationships: []
+      }
       lotes: {
         Row: {
           codigo_lote: string | null
@@ -1512,23 +1533,41 @@ export type Database = {
       talhoes: {
         Row: {
           area_hectares: number | null
+          ativo: boolean | null
           fazenda_id: string | null
+          historico_pragas: string | null
           id: string
+          latitude: number | null
+          localizacao_referencia: string | null
+          longitude: number | null
           nome: string
+          observacoes: string | null
           tipo_manejo_agua: string | null
         }
         Insert: {
           area_hectares?: number | null
+          ativo?: boolean | null
           fazenda_id?: string | null
+          historico_pragas?: string | null
           id?: string
+          latitude?: number | null
+          localizacao_referencia?: string | null
+          longitude?: number | null
           nome: string
+          observacoes?: string | null
           tipo_manejo_agua?: string | null
         }
         Update: {
           area_hectares?: number | null
+          ativo?: boolean | null
           fazenda_id?: string | null
+          historico_pragas?: string | null
           id?: string
+          latitude?: number | null
+          localizacao_referencia?: string | null
+          longitude?: number | null
           nome?: string
+          observacoes?: string | null
           tipo_manejo_agua?: string | null
         }
         Relationships: [
@@ -1585,7 +1624,7 @@ export type Database = {
         Returns: boolean
       }
       rpc_cancelar_etiqueta_produto: {
-        Args: { _etiqueta_id: string }
+        Args: { p_etiqueta_id: string }
         Returns: undefined
       }
       rpc_cockpit_criar_entrega_v1: {
@@ -1602,14 +1641,14 @@ export type Database = {
       }
       rpc_create_portal_notification_secure: {
         Args: {
-          _cliente_id: string
-          _idempotency_key: string
-          _link: string
-          _mensagem: string
-          _source_id: string
-          _source_type: string
-          _tipo: string
-          _titulo: string
+          p_cliente_id: string
+          p_idempotency_key: string
+          p_link: string
+          p_mensagem: string
+          p_source_id: string
+          p_source_type: string
+          p_tipo: string
+          p_titulo: string
         }
         Returns: undefined
       }
@@ -1658,7 +1697,7 @@ export type Database = {
       }
       rpc_generate_idempotency_key: { Args: never; Returns: string }
       rpc_gerar_etiqueta_produto: {
-        Args: { _lote_id: string; _payload: Json }
+        Args: { p_lote_id: string; p_payload: Json }
         Returns: string
       }
       rpc_gerar_formulario_entrega: {
