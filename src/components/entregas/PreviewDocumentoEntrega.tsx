@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, FileDown, Eye } from "lucide-react";
@@ -21,42 +21,56 @@ export function PreviewDocumentoEntrega({
 }: PreviewDocumentoEntregaProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  // Ref com a URL viva: evita closure obsoleta na limpeza e garante revogacao
+  // em troca de payload, fechamento do dialog e desmontagem.
+  const urlRef = useRef<string | null>(null);
+
+  const revogarUrl = useCallback(() => {
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current);
+      urlRef.current = null;
+    }
+    setPdfUrl(null);
+  }, []);
 
   useEffect(() => {
     let active = true;
+
+    const renderPreview = async () => {
+      if (!payload) return;
+      setGenerating(true);
+      revogarUrl();
+      try {
+        const doc = await prepararDocumentoEntregaPDF(payload, branding);
+        if (!active) return;
+        const blob = doc.output("blob");
+        const url = URL.createObjectURL(blob);
+        urlRef.current = url;
+        setPdfUrl(url);
+      } catch (err) {
+        console.error("Erro ao gerar preview:", err);
+      } finally {
+        if (active) setGenerating(false);
+      }
+    };
+
     if (open && payload) {
-      renderPreview(active);
+      void renderPreview();
     } else {
-      cleanup();
+      revogarUrl();
     }
-    return () => { active = false; };
-  }, [open, payload]);
 
-  const cleanup = () => {
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
-    }
-  };
+    return () => {
+      active = false;
+    };
+    // `branding` e derivado de config estavel; incluir o objeto recriado a cada
+    // render causaria loop de regeracao do blob.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, payload, revogarUrl]);
 
-  const renderPreview = async (active: boolean) => {
-    if (!payload) return;
-    setGenerating(true);
-    cleanup();
-    
-    try {
-      const doc = await prepararDocumentoEntregaPDF(payload, branding);
-      if (!active) return;
-      
-      const blob = doc.output("blob");
-      const url = URL.createObjectURL(blob);
-      setPdfUrl(url);
-    } catch (err) {
-      console.error("Erro ao gerar preview:", err);
-    } finally {
-      if (active) setGenerating(false);
-    }
-  };
+  // Revogacao final na desmontagem do componente.
+  useEffect(() => () => revogarUrl(), [revogarUrl]);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
