@@ -52,7 +52,7 @@ import { getClienteLabel, getClienteFullLabel } from "@/lib/clienteLabel";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { SeletorLoteEnvasado } from "@/components/entregas/SeletorLoteEnvasado";
 import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/components/entregas/RegistrarEntregaDialog";
-
+import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
@@ -82,6 +82,8 @@ export default function Entregas() {
   }, [searchParams]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [comprovanteEntrega, setComprovanteEntrega] = useState<any>(null);
+  const [previewPayload, setPreviewPayload] = useState<any>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);
   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
@@ -704,7 +706,7 @@ export default function Entregas() {
 
 
 
-  const handleBaixarRecibo = async (e: any, reemissao = false) => {
+  const handleGerarDocumento = async (e: any, reemissao = false, preview = true) => {
     try {
       const { data, error } = await supabase.rpc("rpc_get_comprovante_entrega_data" as any, {
         p_entrega_id: e.id,
@@ -712,15 +714,25 @@ export default function Entregas() {
       });
       if (error) throw error;
 
-      await gerarDocumentoEntregaPDF(data as any, {
+      const payload = data as any;
+      const branding = {
         nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
         logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
         cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
-      });
+      };
+
+      if (preview) {
+        setPreviewPayload(payload);
+        setPreviewOpen(true);
+      } else {
+        await gerarDocumentoEntregaPDF(payload, branding);
+      }
     } catch (err: any) {
       toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);
     }
   };
+
+  const handleBaixarRecibo = (e: any, reemissao = false) => handleGerarDocumento(e, reemissao, true);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -994,6 +1006,26 @@ export default function Entregas() {
           {comprovanteEntrega && <div className="mt-4"><TermoEntregaPanel entregaId={comprovanteEntrega.id} /></div>}
         </DialogContent>
       </Dialog>
+
+      <PreviewDocumentoEntrega
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        payload={previewPayload}
+        branding={{
+          nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
+          logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
+          cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
+        }}
+        onDownload={async () => {
+          if (previewPayload) {
+            await gerarDocumentoEntregaPDF(previewPayload, {
+              nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
+              logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
+              cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
+            });
+          }
+        }}
+      />
     </div>
   );
 }
