@@ -247,9 +247,9 @@ DECLARE
 BEGIN
   -- entrega confirmada porem sem produto/lote => comprovante negado
   INSERT INTO public.entregas (cliente_id, estoque_produto_id, quantidade_entregue, data_saida,
-                               status, recebido_por_nome, confirmada_em)
+                               status, recebido_por_nome, confirmada_em, confirmado_por)
   VALUES (v_cliente, (SELECT v FROM _dc WHERE k='estoque')::uuid, 5, CURRENT_DATE,
-          'entregue', 'Maria Recebedora', now())
+          'entregue', 'Maria Recebedora', now(), v_uid::uuid)
   RETURNING id INTO v_ent2;
 
   PERFORM set_config('request.jwt.claims', json_build_object('sub',v_uid,'role','authenticated')::text, true);
