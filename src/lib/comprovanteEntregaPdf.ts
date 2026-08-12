@@ -186,6 +186,83 @@ export function rotuloAcaoDocumento(opts: { confirmada: boolean; possuiSnapshot?
   return opts.possuiSnapshot ? "Reemitir comprovante" : "Baixar comprovante";
 }
 
+/* ================== Deteccao de snapshot definitivo (Fase 2) ================== */
+
+/**
+ * Chave canonica gravada por `fn_comprovante_entrega_montar_v1` em
+ * `entrega_comprovantes.metadata` no momento da PRIMEIRA emissao definitiva.
+ * Formularios legados (`formulario_entrega`, `termo_recebimento`, ...) NAO
+ * possuem essa chave e, portanto, nao contam como comprovante definitivo.
+ */
+export const CHAVE_SNAPSHOT_COMPROVANTE = "comprovante_snapshot_v1";
+
+/** Registro minimo de `entrega_comprovantes` carregado apenas para deteccao visual. */
+export interface RegistroComprovanteDeteccao {
+  id?: string | null;
+  tipo?: string | null;
+  numero_formulario?: string | null;
+  gerado_em?: string | null;
+  metadata?: unknown;
+}
+
+interface EntregaComSnapshot {
+  entrega_comprovantes?: RegistroComprovanteDeteccao | RegistroComprovanteDeteccao[] | null;
+}
+
+function metadataDeRegistro(reg: RegistroComprovanteDeteccao | null | undefined): Record<string, unknown> | null {
+  const meta = reg?.metadata;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return null;
+  return meta as Record<string, unknown>;
+}
+
+/** Verdadeiro somente quando o registro carrega o snapshot canonico congelado. */
+export function ehComprovanteDefinitivo(reg: RegistroComprovanteDeteccao | null | undefined): boolean {
+  const meta = metadataDeRegistro(reg);
+  if (!meta) return false;
+  const snapshot = meta[CHAVE_SNAPSHOT_COMPROVANTE];
+  return snapshot !== undefined && snapshot !== null;
+}
+
+function listaRegistros(entrega: EntregaComSnapshot | null | undefined): RegistroComprovanteDeteccao[] {
+  const rel = entrega?.entrega_comprovantes;
+  if (!rel) return [];
+  return (Array.isArray(rel) ? rel : [rel]).filter(Boolean) as RegistroComprovanteDeteccao[];
+}
+
+/**
+ * Seleciona de forma DETERMINISTICA o registro definitivo mais recente.
+ * Uso exclusivamente visual (rotulo/flag) — o conteudo do documento continua
+ * sendo montado no servidor por `rpc_get_comprovante_entrega_data`.
+ */
+export function selecionarComprovanteDefinitivo(
+  entrega: EntregaComSnapshot | null | undefined,
+): RegistroComprovanteDeteccao | null {
+  const definitivos = listaRegistros(entrega).filter(ehComprovanteDefinitivo);
+  if (definitivos.length === 0) return null;
+  const ordenados = [...definitivos].sort((a, b) => {
+    const ga = String(a.gerado_em ?? "");
+    const gb = String(b.gerado_em ?? "");
+    if (ga !== gb) return gb.localeCompare(ga);
+    return String(b.id ?? "").localeCompare(String(a.id ?? ""));
+  });
+  return ordenados[0];
+}
+
+/** Helper puro: a entrega ja possui comprovante definitivo emitido? */
+export function possuiComprovanteDefinitivo(entrega: EntregaComSnapshot | null | undefined): boolean {
+  return selecionarComprovanteDefinitivo(entrega) !== null;
+}
+
+/** Numero do comprovante definitivo (`CE-YYYY-000000`), apenas para exibicao. */
+export function numeroComprovanteDefinitivo(entrega: EntregaComSnapshot | null | undefined): string | null {
+  const reg = selecionarComprovanteDefinitivo(entrega);
+  if (!reg) return null;
+  const meta = metadataDeRegistro(reg);
+  const numero = meta?.["comprovante_numero"];
+  const valor = typeof numero === "string" && numero.trim() ? numero : reg.numero_formulario;
+  return valor ? String(valor) : null;
+}
+
 /* ============================== Renderizacao ============================== */
 
 async function loadImageDataUrl(url: string): Promise<{ dataUrl: string; w: number; h: number; fmt: string } | null> {

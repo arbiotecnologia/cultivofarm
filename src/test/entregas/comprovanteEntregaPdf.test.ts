@@ -57,6 +57,10 @@ import {
   seloDocumento,
   AVISO_COMPROVANTE,
   AVISO_ROMANEIO,
+  possuiComprovanteDefinitivo,
+  selecionarComprovanteDefinitivo,
+  numeroComprovanteDefinitivo,
+  ehComprovanteDefinitivo,
 } from "@/lib/comprovanteEntregaPdf";
 
 const branding = { nome_empresa: "AR Bio", logo_url: null, cor_primaria: "160 84% 22%" };
@@ -181,6 +185,79 @@ describe("rótulos de ação na tela de entregas", () => {
   });
   it("após confirmação, com snapshot existente", () => {
     expect(rotuloAcaoDocumento({ confirmada: true, possuiSnapshot: true })).toBe("Reemitir comprovante");
+  });
+});
+
+describe("detecção de comprovante definitivo (snapshot canônico)", () => {
+  const legado = {
+    id: "11111111-1111-1111-1111-111111111111",
+    tipo: "formulario_entrega",
+    numero_formulario: "AR-ENT-000123",
+    gerado_em: "2026-08-01T10:00:00Z",
+    metadata: { origem: "rpc_gerar_formulario_entrega" },
+  };
+  const definitivo = {
+    id: "22222222-2222-2222-2222-222222222222",
+    tipo: "comprovante_entrega",
+    numero_formulario: "CE-2026-000007",
+    gerado_em: "2026-08-05T10:00:00Z",
+    metadata: {
+      comprovante_snapshot_v1: { doc_tipo: "comprovante" },
+      comprovante_numero: "CE-2026-000007",
+      comprovante_reemissoes: 0,
+    },
+  };
+
+  it("entrega sem relação carregada não conta como snapshot", () => {
+    expect(possuiComprovanteDefinitivo({})).toBe(false);
+    expect(possuiComprovanteDefinitivo(null)).toBe(false);
+    expect(possuiComprovanteDefinitivo({ entrega_comprovantes: [] })).toBe(false);
+    expect(rotuloAcaoDocumento({ confirmada: true, possuiSnapshot: possuiComprovanteDefinitivo({}) })).toBe(
+      "Baixar comprovante",
+    );
+  });
+
+  it("formulário legado sem snapshot não conta como reemissão", () => {
+    const entrega = { entrega_comprovantes: [legado] };
+    expect(ehComprovanteDefinitivo(legado)).toBe(false);
+    expect(possuiComprovanteDefinitivo(entrega)).toBe(false);
+    expect(numeroComprovanteDefinitivo(entrega)).toBeNull();
+    expect(rotuloAcaoDocumento({ confirmada: true, possuiSnapshot: possuiComprovanteDefinitivo(entrega) })).toBe(
+      "Baixar comprovante",
+    );
+  });
+
+  it("snapshot canônico habilita reemissão", () => {
+    const entrega = { entrega_comprovantes: [legado, definitivo] };
+    expect(possuiComprovanteDefinitivo(entrega)).toBe(true);
+    expect(numeroComprovanteDefinitivo(entrega)).toBe("CE-2026-000007");
+    expect(rotuloAcaoDocumento({ confirmada: true, possuiSnapshot: possuiComprovanteDefinitivo(entrega) })).toBe(
+      "Reemitir comprovante",
+    );
+  });
+
+  it("relação objeto único também é aceita", () => {
+    expect(possuiComprovanteDefinitivo({ entrega_comprovantes: definitivo })).toBe(true);
+  });
+
+  it("seleção é determinística pelo mais recente", () => {
+    const antigo = { ...definitivo, id: "0", gerado_em: "2026-07-01T10:00:00Z", metadata: { ...definitivo.metadata, comprovante_numero: "CE-2026-000001" } };
+    const entrega = { entrega_comprovantes: [definitivo, antigo, legado] };
+    expect(selecionarComprovanteDefinitivo(entrega)?.id).toBe(definitivo.id);
+    expect(selecionarComprovanteDefinitivo({ entrega_comprovantes: [antigo, definitivo] })?.id).toBe(definitivo.id);
+  });
+
+  it("metadata nula ou inválida não conta", () => {
+    expect(ehComprovanteDefinitivo({ metadata: null })).toBe(false);
+    expect(ehComprovanteDefinitivo({ metadata: "texto" as unknown })).toBe(false);
+    expect(ehComprovanteDefinitivo({ metadata: { comprovante_snapshot_v1: null } })).toBe(false);
+  });
+
+  it("entrega não confirmada permanece em romaneio mesmo com snapshot", () => {
+    const entrega = { entrega_comprovantes: [definitivo] };
+    expect(rotuloAcaoDocumento({ confirmada: false, possuiSnapshot: possuiComprovanteDefinitivo(entrega) })).toBe(
+      "Gerar romaneio",
+    );
   });
 });
 

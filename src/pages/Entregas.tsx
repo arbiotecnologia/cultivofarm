@@ -18,11 +18,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDateDisplay } from "@/lib/date-utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento } from "@/lib/comprovanteEntregaPdf";
+import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento, possuiComprovanteDefinitivo } from "@/lib/comprovanteEntregaPdf";
 
 const ERROS_COMPROVANTE: Record<string, string> = {
   COMPROVANTE_UNAUTHENTICATED: "Sessão expirada. Entre novamente para emitir o documento.",
   COMPROVANTE_FORBIDDEN: "Seu perfil não tem permissão para emitir documentos de entrega.",
+  COMPROVANTE_PARAMS_INVALIDOS: "Não foi possível identificar a entrega. Recarregue a lista e tente novamente.",
   COMPROVANTE_ENTREGA_NAO_ENCONTRADA: "Entrega não encontrada.",
   COMPROVANTE_ENTREGA_CANCELADA: "Entrega cancelada não gera documento.",
   COMPROVANTE_SEM_ITENS: "A entrega não possui itens vinculados.",
@@ -31,6 +32,10 @@ const ERROS_COMPROVANTE: Record<string, string> = {
   COMPROVANTE_QUANTIDADE_OBRIGATORIA: "Informe a quantidade entregue antes de emitir o comprovante.",
   COMPROVANTE_CLIENTE_OBRIGATORIO: "Vincule o cliente à entrega antes de emitir o comprovante.",
   COMPROVANTE_CONFIRMACAO_SEM_DATA: "Confirme o recebimento antes de emitir o comprovante.",
+  COMPROVANTE_OS_OBRIGATORIA:
+    "Vincule a entrega a uma OS, OS On-Farm ou pedido de parceiro legítimo antes de emitir o comprovante definitivo.",
+  COMPROVANTE_VOLUME_OBRIGATORIO:
+    "O volume total da entrega precisa estar preenchido e ser maior que zero para emitir o comprovante.",
 };
 
 function traduzErroComprovante(msg: string): string {
@@ -120,6 +125,13 @@ export default function Entregas() {
             id,
             codigo_lote,
             envase(volume_por_unidade, data_envase)
+          ),
+          entrega_comprovantes!entrega_comprovantes_entrega_id_fkey(
+            id,
+            tipo,
+            numero_formulario,
+            metadata,
+            gerado_em
           )
         `)
         .order("created_at", { ascending: false })
@@ -721,6 +733,12 @@ export default function Entregas() {
         cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
       };
 
+      // Primeira emissão definitiva congela o snapshot no servidor: refaz o fetch
+      // para que a próxima ação passe corretamente a "Reemitir comprovante".
+      if (!reemissao && payload?.doc_tipo === "comprovante") {
+        queryClient.invalidateQueries({ queryKey: ["entregas"] });
+      }
+
       if (preview) {
         setPreviewPayload(payload);
         setPreviewOpen(true);
@@ -854,16 +872,18 @@ export default function Entregas() {
                         )}
                         {(() => {
                           const confirmada = e.status === "entregue";
-                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: !!e.comprovante_numero });
-                          const reemissao = confirmada && !!e.comprovante_numero;
+                          const definitivo = possuiComprovanteDefinitivo(e);
+                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });
+                          const reemissao = confirmada && definitivo;
                           return (
                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e, reemissao)} title={label}>
                               <FileDown className="h-4 w-4 mr-1" /> {label}
                             </Button>
                           );
                         })()}
-                        <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Documento de entrega com assinatura">
-                          <FileText className="h-4 w-4 mr-1" /> Documento
+                        <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">
+
+                          <FileText className="h-4 w-4 mr-1" /> Evidências
                         </Button>
                       </>
                     }
@@ -926,16 +946,17 @@ export default function Entregas() {
                         )}
                         {(() => {
                           const confirmada = e.status === "entregue";
-                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: !!e.comprovante_numero });
-                          const reemissao = confirmada && !!e.comprovante_numero;
+                          const definitivo = possuiComprovanteDefinitivo(e);
+                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });
+                          const reemissao = confirmada && definitivo;
                           return (
                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e, reemissao)} title={label}>
                               <FileDown className="h-4 w-4 mr-1" /> {label}
                             </Button>
                           );
                         })()}
-                        <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Documento de entrega com assinatura">
-                          <FileText className="h-4 w-4 mr-1" /> Documento
+                        <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">
+                          <FileText className="h-4 w-4 mr-1" /> Evidências
                         </Button>
                       </div>
                     </TableCell>
@@ -1000,7 +1021,7 @@ export default function Entregas() {
 
       <Dialog open={!!comprovanteEntrega} onOpenChange={(o) => !o && setComprovanteEntrega(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Comprovação de entrega</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Evidências e termos da entrega</DialogTitle></DialogHeader>
           {comprovanteEntrega && <EntregaComprovantePanel entrega={comprovanteEntrega} />}
           {comprovanteEntrega && <div className="mt-4"><EmbalagensEntregaPanel entregaId={comprovanteEntrega.id} /></div>}
           {comprovanteEntrega && <div className="mt-4"><TermoEntregaPanel entregaId={comprovanteEntrega.id} /></div>}

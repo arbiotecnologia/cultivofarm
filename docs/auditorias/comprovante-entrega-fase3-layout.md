@@ -68,31 +68,48 @@ O `aviso` retornado pelo backend, quando presente, tem precedência sobre o text
 
 Implementada pré-visualização em Dialog A4 antes do download. O renderer institucional é invocado para gerar um Blob de preview, garantindo fidelidade 1:1 com o arquivo baixado.
 
+### 6.1 Detecção confiável de snapshot/reemissão (correção final)
+
+O rótulo dependia de `e.comprovante_numero`, campo que a query de listagem **não** carregava — logo a flag era sempre falsa. Correção aplicada sem backend:
+
+- A mesma query de `entregas` passou a embutir a relação já existente `entrega_comprovantes!entrega_comprovantes_entrega_id_fkey(id, tipo, numero_formulario, metadata, gerado_em)` — sem N+1, sem RPC nova, sem tabela nova, respeitando a RLS vigente.
+- Helper puro `possuiComprovanteDefinitivo(entrega)` em `src/lib/comprovanteEntregaPdf.ts` só considera definitivo o registro cuja `metadata` contém a chave canônica `comprovante_snapshot_v1` (a mesma gravada por `fn_comprovante_entrega_montar_v1`). Formulários legados (`formulario_entrega`, `termo_recebimento`) e `metadata` nula/inválida **não** contam.
+- `selecionarComprovanteDefinitivo` resolve arrays de forma determinística (`gerado_em` desc, depois `id` desc) apenas para detecção visual; o conteúdo do documento continua sendo montado no servidor.
+- Após a primeira emissão definitiva (`p_reemissao=false` com `doc_tipo='comprovante'`), a query `entregas` é invalidada, de modo que a próxima ação já exibe `Reemitir comprovante`.
+
 `rotuloAcaoDocumento({ confirmada, possuiSnapshot })`:
 
 - não confirmada → **Gerar romaneio**;
-- confirmada, sem snapshot → **Baixar comprovante** (`p_reemissao = false`);
-- confirmada, com snapshot → **Reemitir comprovante** (`p_reemissao = true`).
+- confirmada, sem snapshot canônico → **Baixar comprovante** (`p_reemissao = false`);
+- confirmada, com snapshot canônico → **Reemitir comprovante** (`p_reemissao = true`).
 
-`p_reemissao=true` só é enviado por clique explícito na ação de reemissão; não há chamada automática em abertura de tela, refresh ou navegação. Aplicado tanto na tabela desktop quanto no `MobileCard`.
+`p_reemissao=true` só é enviado por clique explícito e apenas quando `possuiComprovanteDefinitivo(e)` é verdadeiro; não há chamada automática em abertura de tela, refresh ou navegação. Aplicado tanto na tabela desktop quanto no `MobileCard`.
+
+### 6.2 Mensagens de erro da Fase 2
+
+`ERROS_COMPROVANTE` passou a mapear também `COMPROVANTE_OS_OBRIGATORIA` (orienta vincular OS, OS On-Farm ou pedido de parceiro legítimo), `COMPROVANTE_VOLUME_OBRIGATORIO` (volume total válido e maior que zero) e `COMPROVANTE_PARAMS_INVALIDOS`. Erros desconhecidos continuam sendo exibidos na íntegra — nada é mascarado.
+
+### 6.3 Painel legado renomeado
+
+O antigo botão `Documento` abria `EntregaComprovantePanel` + `EmbalagensEntregaPanel` + `TermoEntregaPanel` — evidências e termos, não o PDF canônico. O recurso foi **preservado integralmente**; apenas os rótulos mudaram: botão → **Evidências**, título do dialog → **Evidências e termos da entrega**, com `title` explicativo (assinatura, embalagens e checklist).
 
 ## 7. Testes executados
 
 | Teste | Resultado |
 | --- | --- |
-| `src/test/entregas/comprovanteEntregaPdf.test.ts` | **24/24 PASS** |
+| `src/test/entregas/comprovanteEntregaPdf.test.ts` | **31/31 PASS** (24 de layout + 7 de detecção de snapshot) |
 | `tsgo --noEmit` | **PASS** (sem diagnósticos) |
-| Vitest completo | **2800 passed / 4 skipped — ZERO FAIL** |
-| `bun run build` | **PASS** (built in 23.08s) |
+| Vitest completo | **2807 passed / 4 skipped — ZERO FAIL** |
+| `bun run build` | **PASS** (built in 24.54s) |
 | `src/test/config/connection-binding.static.test.ts` (final) | **8/8 PASS** |
 
-Provas específicas cobertas: ausência de import/consulta Supabase no renderer; romaneio sem linguagem de confirmação/assinatura; comprovante com recebedor, data/hora e aviso definitivo; formatação de origem nas três modalidades sem nome técnico/UUID; multi-item com 12 linhas, `didDrawPage` e rodapé de resumo; geração resiliente a falha de logo (CORS).
+Provas específicas cobertas: ausência de import/consulta Supabase no renderer; romaneio sem linguagem de confirmação/assinatura; comprovante com recebedor, data/hora e aviso definitivo; formatação de origem nas três modalidades sem nome técnico/UUID; multi-item com 12 linhas, `didDrawPage` e rodapé de resumo; geração resiliente a falha de logo (CORS). Novos gates de detecção: sem relação → `Baixar comprovante`/false; formulário legado sem snapshot → false (não conta como reemissão); snapshot canônico → `Reemitir comprovante`/true e número `CE-2026-000007`; relação como objeto único; ordenação determinística; `metadata` nula/string/`snapshot=null` rejeitadas; entrega não confirmada permanece em `Gerar romaneio` mesmo com snapshot.
 
 Base validada desta fase: commit `d9c8a249b21266c037c068d58efb38ae324dafa6`.
 
-Durante a execução o `src/integrations/supabase/types.ts` sofreu reset automático de plataforma (duas ocorrências, reduzido a 135/155 linhas) junto com `.env`; ambos foram restaurados a partir do commit base `d9c8a249` (types.ts com 21.850 linhas), sem exibir qualquer chave ou DSN. Binding revalidado após cada restauração — `connection-binding.static.test.ts` **8/8 PASS** na execução final.
+Durante a execução o `src/integrations/supabase/types.ts` sofreu reset automático de plataforma (três ocorrências, reduzido a 155 linhas) junto com `.env`, `client.ts` e `config.toml`; todos foram restaurados a partir do commit base `d9c8a249` (types.ts com 21.850 linhas), sem exibir qualquer chave ou DSN. Binding revalidado após cada restauração — `connection-binding.static.test.ts` **8/8 PASS** na execução final, com a suíte completa reexecutada depois da restauração.
 
-Diff acumulado sobre a base (`git diff --name-only d9c8a249..HEAD -- supabase/`) retorna **vazio**: nenhuma migration, função, policy ou config de backend foi alterada. Os arquivos de produto tocados são `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx`, `src/components/entregas/PreviewDocumentoEntrega.tsx`, `src/test/entregas/comprovanteEntregaPdf.test.ts` e este relatório.
+Diff acumulado sobre a base (`git diff --name-only d9c8a249`) contém apenas `docs/auditorias/comprovante-entrega-fase3-layout.md`, `src/components/entregas/PreviewDocumentoEntrega.tsx`, `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx` e `src/test/entregas/comprovanteEntregaPdf.test.ts`: nenhuma migration, função, policy ou config de backend foi alterada.
 
 ## 8. Confirmações de escopo
 
@@ -105,7 +122,7 @@ Diff acumulado sobre a base (`git diff --name-only d9c8a249..HEAD -- supabase/`)
 
 1. **Slogan/identidade**: `useSystemConfig` ainda não expõe slogan nem cor secundária; o renderer já aceita, falta a configuração.
 2. **Validação visual em browser real**: a suíte usa mock de jsPDF/autoTable; ainda não houve inspeção de PDF renderizado com logo real e nomes longos de produto/microrganismo.
-3. **`possuiSnapshot` na listagem**: o rótulo `Reemitir comprovante` depende de o registro de entrega expor o número do comprovante; onde esse campo não vier, a ação exibe `Baixar comprovante` (comportamento seguro — não incrementa reemissão indevidamente, apenas rótulo menos específico).
+3. **`possuiSnapshot` na listagem — RESOLVIDO**: a detecção passou a usar a relação `entrega_comprovantes` carregada na própria query e o helper puro `possuiComprovanteDefinitivo`, ancorado na chave canônica `comprovante_snapshot_v1`. Não depende mais de campo inexistente na listagem; formulários legados não disparam reemissão.
 4. **Evidência de assinatura**: quando `assinatura_tipo` existir, é apresentada como texto; a representação gráfica de evidência real fica para fase posterior.
 
 ---
