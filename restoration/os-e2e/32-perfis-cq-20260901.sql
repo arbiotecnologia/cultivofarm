@@ -182,9 +182,12 @@ DECLARE
   v_seq_apr bigint; v_seq_rep bigint; v_ult text; v_ok boolean;
 BEGIN
   SELECT id INTO v_prog FROM public.programacao_producao WHERE ordem_servico_id=v_os LIMIT 1;
-  INSERT INTO public.lotes (codigo_lote, programacao_id, status)
-  VALUES ((SELECT v FROM _cx WHERE k='tag')||'-L', v_prog, 'em_producao')
-  RETURNING id INTO v_lote;
+  -- lote pelo motor canônico (respeita constraints de item da OS)
+  PERFORM public.rpc_cockpit_gerar_lote_v1(
+    v_prog, v_os, 'manual',
+    jsonb_build_object('codigo_lote', (SELECT v FROM _cx WHERE k='tag')||'-L'));
+  SELECT id INTO v_lote FROM public.lotes WHERE programacao_id = v_prog LIMIT 1;
+  IF v_lote IS NULL THEN RAISE EXCEPTION 'E2E6_LOTE_NAO_GERADO'; END IF;
 
   -- Dois laudos com EXATAMENTE o mesmo created_at: só a seq desempata.
   INSERT INTO public.controle_qualidade (lote_id, resultado, data_analise, created_at)
