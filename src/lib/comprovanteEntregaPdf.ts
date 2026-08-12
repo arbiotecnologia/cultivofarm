@@ -215,10 +215,10 @@ const MARGIN = 14;
 const HEADER_H = 34;
 const FOOTER_TOP = 22;
 
-export async function gerarDocumentoEntregaPDF(
+export async function prepararDocumentoEntregaPDF(
   payload: DocumentoEntregaPayload,
   branding: DocumentoEntregaBranding,
-) {
+): Promise<jsPDF> {
   const c = payload.conteudo || {};
   const emitente = c.emitente || {};
   const destinatario = c.destinatario || {};
@@ -503,5 +503,13 @@ export async function gerarDocumentoEntregaPDF(
     doc.text(`Página ${p} de ${total}`, pageW - MARGIN, pageH - 7, { align: "right" });
   }
 
+  return doc;
+}
+
+export async function gerarDocumentoEntregaPDF(
+  payload: DocumentoEntregaPayload,
+  branding: DocumentoEntregaBranding,
+) {
+  const doc = await prepararDocumentoEntregaPDF(payload, branding);
   doc.save(nomeArquivoDocumento(payload));
 }
