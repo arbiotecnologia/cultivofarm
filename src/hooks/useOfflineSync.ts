@@ -503,7 +503,7 @@ export function useOfflineSync() {
           if (fotoPath && c.payload?.registro_consultor_id) {
             const { data: { user } } = await supabase.auth.getUser();
             const { error: arqErr } = await supabase
-              .from("registros_consultor_arquivos")
+              .from("registros_consultor_arquivos" as any)
               .insert({
                 registro_consultor_id: c.payload.registro_consultor_id,
                 arquivo_path: fotoPath,
