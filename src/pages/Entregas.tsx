@@ -671,16 +671,18 @@ export default function Entregas() {
     },
   });
 
-  const handleConfirmarEntrega = async (id: string) => {
+  /**
+   * Ponto único de confirmação de entrega: abre o ConfirmarEntregaDialog,
+   * que coleta o recebedor físico (nome obrigatório). Não existe fluxo
+   * paralelo nem fallback do nome do operador como recebedor.
+   */
+  const handleConfirmarEntrega = (id: string) => {
     const entrega: any = (entregas as any[]).find((e) => e.id === id);
     if (!entrega) return;
-    
-    const osId = entrega.ordem_servico_id || entrega.ordem_servico_onfarm_id;
-    const origem = entrega.ordem_servico_onfarm_id ? "onfarm" : "manual";
-    
-    await hookConfirmarEntrega(id, osId, origem);
-    queryClient.invalidateQueries({ queryKey: ["entregas"] });
+    setSelectedEntrega(entrega);
+    setConfirmEntregaOpen(true);
   };
+
 
 
 
