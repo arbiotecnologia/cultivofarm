@@ -98,3 +98,18 @@ pronto_entrega → entregue → finalizada`.
 idempotência comprovada em todos os motores transacionais e superfície de ACL sem
 exposição a `anon`. Promoção para produção permanece **pendente de autorização humana
 explícita**.
+
+## Fase 6 — harness complementar de perfis + determinismo do CQ
+
+`32-perfis-cq-20260901.sql` (transacional, BEGIN/ROLLBACK, guard staging `ikaauvsflpmamgxmkhoq`):
+
+- P01/P02 — nenhum EXECUTE para `anon`/`PUBLIC` nos 13 motores sensíveis da OS.
+- P03/P04 — `vw_os_integridade_esteira` sem `anon`; `authenticated` apenas `SELECT`.
+- P05 — todas as SECURITY DEFINER auditadas com `search_path = public, pg_temp`.
+- P06/P09 — perfis `gestor` e `producao` operam dentro do escopo previsto.
+- P07/P08 — `operador_onfarm` não cruza OS de origem manual; usuário sem role é negado.
+- C01–C03 — `controle_qualidade.seq` monotônica; `fn_cq_ultimo_resultado` desempata
+  `created_at` idêntico e permanece estável após UPDATE (ctid alterado).
+- C04 — CQ reprovado mais recente bloqueia o envase.
+
+Resultado: **13/13 PASS**, ROLLBACK sem resíduo. Nenhuma migration nova foi necessária.
