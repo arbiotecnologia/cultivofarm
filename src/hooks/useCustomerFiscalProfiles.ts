@@ -25,8 +25,7 @@ import {
 } from "@/lib/fiscal/fiscalOptions";
 import { sanitizePostgrestTerm } from "@/hooks/useFiscalClientesLite";
 
-export type CustomerReadinessRow =
-  any;
+export type CustomerReadinessRow = any;
 
 export const CUSTOMER_FISCAL_KEYS = {
   root: ["fiscal", "customer-profiles"] as const,
