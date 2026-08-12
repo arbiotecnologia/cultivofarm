@@ -62,6 +62,8 @@ BEGIN
 
   SELECT coalesce(max(seq), 0) INTO v_max FROM public.controle_qualidade;
 
+  EXECUTE 'ALTER TABLE public.controle_qualidade ALTER COLUMN seq SET NOT NULL';
+
   IF NOT EXISTS (
     SELECT 1 FROM pg_attribute a
      WHERE a.attrelid = 'public.controle_qualidade'::regclass
@@ -75,8 +77,6 @@ BEGIN
   END IF;
 END;
 $backfill$;
-
-ALTER TABLE public.controle_qualidade ALTER COLUMN seq SET NOT NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_controle_qualidade_seq
   ON public.controle_qualidade (seq);
