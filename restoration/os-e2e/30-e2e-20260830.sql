@@ -31,15 +31,21 @@ DO $fix$
 DECLARE
   v_uid uuid := 'b5c2ebd4-7cdf-4647-a585-6ec49f1b583a';
   v_cliente uuid; v_produto uuid; v_micro uuid; v_os uuid; v_prog uuid;
+  v_fazenda uuid; v_talhao uuid;
   v_tag text := 'E2E-' || to_char(clock_timestamp(),'YYYYMMDDHH24MISSMS');
 BEGIN
-  SELECT id INTO v_cliente FROM public.clientes ORDER BY created_at LIMIT 1;
+  SELECT t.id, t.fazenda_id, f.cliente_id INTO v_talhao, v_fazenda, v_cliente
+    FROM public.talhoes t JOIN public.fazendas f ON f.id = t.fazenda_id
+   ORDER BY t.created_at LIMIT 1;
+  IF v_talhao IS NULL THEN RAISE EXCEPTION 'E2E_SEM_TALHAO_FIXTURE'; END IF;
   SELECT id INTO v_produto FROM public.produtos ORDER BY created_at LIMIT 1;
   SELECT id INTO v_micro FROM public.microrganismos ORDER BY created_at LIMIT 1;
 
-  INSERT INTO public.ordens_servico (numero_os, cliente_id, produto_id, microrganismo_id,
+  INSERT INTO public.ordens_servico (numero_os, cliente_id, fazenda_id, talhao_id,
+                                     produto_id, microrganismo_id,
                                      volume_total_ml, status, origem, tipo_item)
-  VALUES (v_tag, v_cliente, v_produto, v_micro, 100000, 'aberta', 'manual', 'produto')
+  VALUES (v_tag, v_cliente, v_fazenda, v_talhao, v_produto, v_micro,
+          100000, 'aberta', 'agronomica', 'produto')
   RETURNING id INTO v_os;
 
   INSERT INTO public.programacao_producao (ordem_servico_id, produto_id, microrganismo_id,
