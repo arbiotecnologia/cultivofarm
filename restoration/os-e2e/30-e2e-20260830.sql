@@ -50,7 +50,7 @@ BEGIN
 
   INSERT INTO public.programacao_producao (ordem_servico_id, produto_id, microrganismo_id,
                                            volume_necessario, status, data_programada)
-  VALUES (v_os, v_produto, v_micro, 100000, 'planejada', CURRENT_DATE)
+  VALUES (v_os, v_produto, v_micro, 100000, 'aguardando', CURRENT_DATE)
   RETURNING id INTO v_prog;
 
   INSERT INTO _e2e_ctx VALUES ('os', v_os::text), ('prog', v_prog::text),
