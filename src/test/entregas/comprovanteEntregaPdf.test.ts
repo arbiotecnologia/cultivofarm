@@ -57,6 +57,10 @@ import {
   seloDocumento,
   AVISO_COMPROVANTE,
   AVISO_ROMANEIO,
+  possuiComprovanteDefinitivo,
+  selecionarComprovanteDefinitivo,
+  numeroComprovanteDefinitivo,
+  ehComprovanteDefinitivo,
 } from "@/lib/comprovanteEntregaPdf";
 
 const branding = { nome_empresa: "AR Bio", logo_url: null, cor_primaria: "160 84% 22%" };
