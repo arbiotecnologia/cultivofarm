@@ -1063,6 +1063,7 @@ export default function Entregas() {
       <PreviewDocumentoEntrega
         open={previewOpen}
         onOpenChange={(o) => {
+          if (!o && downloadingPreview) return;
           setPreviewOpen(o);
           if (!o) {
             // Fechar/cancelar o preview nunca contabiliza reemissao.
@@ -1074,6 +1075,7 @@ export default function Entregas() {
         payload={previewPayload}
         branding={brandingDocumento()}
         onDownload={handleDownloadPreview}
+        downloading={downloadingPreview}
       />
     </div>
   );
