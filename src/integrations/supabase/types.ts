@@ -184,6 +184,7 @@ export type Database = {
           id: string
           is_whatsapp: boolean | null
           nome: string
+          principal: boolean | null
           telefone: string | null
         }
         Insert: {
@@ -194,6 +195,7 @@ export type Database = {
           id?: string
           is_whatsapp?: boolean | null
           nome: string
+          principal?: boolean | null
           telefone?: string | null
         }
         Update: {
@@ -204,6 +206,7 @@ export type Database = {
           id?: string
           is_whatsapp?: boolean | null
           nome?: string
+          principal?: boolean | null
           telefone?: string | null
         }
         Relationships: [
@@ -262,6 +265,41 @@ export type Database = {
           nome?: string
         }
         Relationships: []
+      }
+      clientes_audit_log: {
+        Row: {
+          acao: string | null
+          alteracoes: Json | null
+          cliente_id: string | null
+          created_at: string | null
+          id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao?: string | null
+          alteracoes?: Json | null
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string | null
+          alteracoes?: Json | null
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_audit_log_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_fiscal_settings: {
         Row: {
@@ -370,6 +408,45 @@ export type Database = {
           },
         ]
       }
+      estoque_produto: {
+        Row: {
+          created_at: string | null
+          id: string
+          microrganismo_id: string | null
+          produto_id: string | null
+          quantidade: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          microrganismo_id?: string | null
+          produto_id?: string | null
+          quantidade?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          microrganismo_id?: string | null
+          produto_id?: string | null
+          quantidade?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_produto_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_produto_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidencias: {
         Row: {
           id: string
@@ -416,6 +493,7 @@ export type Database = {
           codigo_lote: string | null
           created_at: string | null
           id: string
+          microrganismo_id: string | null
           produto_id: string | null
           status: string | null
           volume_produzido: number | null
@@ -424,6 +502,7 @@ export type Database = {
           codigo_lote?: string | null
           created_at?: string | null
           id?: string
+          microrganismo_id?: string | null
           produto_id?: string | null
           status?: string | null
           volume_produzido?: number | null
@@ -432,11 +511,19 @@ export type Database = {
           codigo_lote?: string | null
           created_at?: string | null
           id?: string
+          microrganismo_id?: string | null
           produto_id?: string | null
           status?: string | null
           volume_produzido?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lotes_microrganismo_id_fkey"
+            columns: ["microrganismo_id"]
+            isOneToOne: false
+            referencedRelation: "microrganismos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lotes_produto_id_fkey"
             columns: ["produto_id"]
@@ -498,6 +585,7 @@ export type Database = {
           id: string
           nome: string
           nome_cientifico: string | null
+          valor_dose_brl: number | null
         }
         Insert: {
           ativo?: boolean | null
@@ -506,6 +594,7 @@ export type Database = {
           id?: string
           nome: string
           nome_cientifico?: string | null
+          valor_dose_brl?: number | null
         }
         Update: {
           ativo?: boolean | null
@@ -514,6 +603,7 @@ export type Database = {
           id?: string
           nome?: string
           nome_cientifico?: string | null
+          valor_dose_brl?: number | null
         }
         Relationships: []
       }
@@ -669,6 +759,7 @@ export type Database = {
           dose_ml_ha: number | null
           id: string
           nome: string
+          tipo: string | null
         }
         Insert: {
           ativo?: boolean | null
@@ -677,6 +768,7 @@ export type Database = {
           dose_ml_ha?: number | null
           id?: string
           nome: string
+          tipo?: string | null
         }
         Update: {
           ativo?: boolean | null
@@ -685,6 +777,7 @@ export type Database = {
           dose_ml_ha?: number | null
           id?: string
           nome?: string
+          tipo?: string | null
         }
         Relationships: []
       }
@@ -903,6 +996,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_generate_idempotency_key: { Args: never; Returns: string }
       rpc_get_visita_workspace: { Args: { _visita_id: string }; Returns: Json }
     }
     Enums: {
