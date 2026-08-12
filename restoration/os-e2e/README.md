@@ -113,3 +113,42 @@ explícita**.
 - C04 — CQ reprovado mais recente bloqueia o envase.
 
 Resultado: **13/13 PASS**, ROLLBACK sem resíduo. Nenhuma migration nova foi necessária.
+
+## Fase 6 FINAL — auditoria independente e certificação (retomada)
+
+Alvo exclusivo: staging `ikaauvsflpmamgxmkhoq` via `staging-psql.sh`/`$STAGING_DSN`.
+Produção `navfzbwgwzruipouyfnk` não acessada. Sem publish, sem SEFAZ.
+
+### Correções incrementais aplicadas
+- `16-migration-20260902000000_os_guard_marker_canonico.sql` (+ cópia em
+  `supabase/migrations/`): cria `public.fn_os_assert_staging_exato()`, guard
+  canônico por MARKER EXATO (`_fiscal_staging_marker` = STAGING /
+  ikaauvsflpmamgxmkhoq) que remedia a ausência de marker exato no guard
+  estrutural da migration `20260831000000_os_e2e_fase5_idempotencia.sql`
+  (não reescrita). PUBLIC/anon revogados; EXECUTE apenas para `service_role`.
+  Postcheck OK.
+- `96-rollback-20260902000000.sql`: rollback exato, ensaiado em BEGIN/ROLLBACK
+  (função ausente após o drop, restaurada pelo rollback da transação).
+- `ctid` como ordem do CQ: **eliminado**. Nenhuma função em `public` referencia
+  `ctid`; a ordem canônica é `created_at DESC, seq DESC` via
+  `fn_cq_ultimo_resultado` (migration `20260901000000_cq_ordem_canonica.sql`).
+
+### Evidências
+- Harness `31-e2e-fase5-20260831.sql`: **35/35 PASS**, ROLLBACK sem resíduo.
+- Harness `32-perfis-cq-20260901.sql`: **13/13 PASS**, ROLLBACK sem resíduo.
+- ACL/RLS: anon=0 e PUBLIC=0 nos 13 motores sensíveis; `pg_temp` em todas as
+  SECURITY DEFINER auditadas; `vw_os_integridade_esteira` sem anon e só SELECT
+  para authenticated.
+- Órfãos/consistência: `cq_sem_lote=0`, `cq_seq_nulo=0`, `mov_qtd_negativa=0`,
+  `estoque_negativo=0`, `reserva_maior_que_saldo=0`,
+  `os_finalizada_sem_entrega_confirmada=0`. Resíduo legado conhecido e não
+  tocado: `entregas_sem_os=4` (agosto/2026) e `lotes_sem_programacao=1`.
+- Regressão: `tsgo --noEmit` limpo; Vitest **2776 passed / 4 skipped**; build PASS.
+- `src/integrations/supabase/types.ts` (21.850 linhas) e `.env` realinhados ao
+  staging após reset automático do ambiente.
+
+### Pendência
+- Playwright real segue bloqueado: `E2E_ADMIN_USER`, `E2E_ADMIN_PASSWORD`,
+  `E2E_BASE_URL` = MISSING.
+
+Veredito: **APTO_PARA_HOMOLOGACAO_BROWSER**.
