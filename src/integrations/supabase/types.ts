@@ -1030,6 +1030,7 @@ export type Database = {
           data_programada: string | null
           fazenda_id: string | null
           id: string
+          partner_order_id: string | null
           produto_id: string | null
           status: string | null
           talhao_id: string | null
@@ -1042,6 +1043,7 @@ export type Database = {
           data_programada?: string | null
           fazenda_id?: string | null
           id?: string
+          partner_order_id?: string | null
           produto_id?: string | null
           status?: string | null
           talhao_id?: string | null
@@ -1054,6 +1056,7 @@ export type Database = {
           data_programada?: string | null
           fazenda_id?: string | null
           id?: string
+          partner_order_id?: string | null
           produto_id?: string | null
           status?: string | null
           talhao_id?: string | null
@@ -1075,6 +1078,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ordens_servico_partner_order_id_fkey"
+            columns: ["partner_order_id"]
+            isOneToOne: false
+            referencedRelation: "partner_orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ordens_servico_produto_id_fkey"
             columns: ["produto_id"]
             isOneToOne: false
@@ -1092,23 +1102,65 @@ export type Database = {
       }
       ordens_servico_onfarm: {
         Row: {
+          cliente_id: string | null
           created_at: string | null
           id: string
           ordem_servico_id: string | null
         }
         Insert: {
+          cliente_id?: string | null
           created_at?: string | null
           id?: string
           ordem_servico_id?: string | null
         }
         Update: {
+          cliente_id?: string | null
           created_at?: string | null
           id?: string
           ordem_servico_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "ordens_servico_onfarm_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ordens_servico_onfarm_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      os_faturamento_base: {
+        Row: {
+          created_at: string | null
+          id: string
+          ordem_servico_id: string | null
+          origem_os_tipo: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ordem_servico_id?: string | null
+          origem_os_tipo?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ordem_servico_id?: string | null
+          origem_os_tipo?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "os_faturamento_base_ordem_servico_id_fkey"
             columns: ["ordem_servico_id"]
             isOneToOne: false
             referencedRelation: "ordens_servico"
@@ -1136,6 +1188,35 @@ export type Database = {
           nome?: string
         }
         Relationships: []
+      }
+      partner_orders: {
+        Row: {
+          created_at: string | null
+          id: string
+          partner_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          partner_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          partner_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       portal_notifications: {
         Row: {
@@ -1503,6 +1584,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      rpc_cancelar_etiqueta_produto: {
+        Args: { _etiqueta_id: string }
+        Returns: undefined
+      }
       rpc_cockpit_criar_entrega_v1: {
         Args: { _ordem_servico_id: string; _volume_total: number }
         Returns: string
@@ -1567,7 +1652,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_fiscal_item_readiness: {
+        Args: { _item_id: string; _tipo: string }
+        Returns: Json
+      }
       rpc_generate_idempotency_key: { Args: never; Returns: string }
+      rpc_gerar_etiqueta_produto: {
+        Args: { _lote_id: string; _payload: Json }
+        Returns: string
+      }
       rpc_gerar_formulario_entrega: {
         Args: { _entrega_id: string }
         Returns: boolean
