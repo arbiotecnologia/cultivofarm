@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts_receivable: {
+        Row: {
+          created_at: string | null
+          id: string
+          ordem_servico_id: string | null
+          status: string | null
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ordem_servico_id?: string | null
+          status?: string | null
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ordem_servico_id?: string | null
+          status?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_receivable_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aplicacao_evidencias: {
         Row: {
           aplicacao_id: string | null
@@ -151,6 +183,27 @@ export type Database = {
           },
         ]
       }
+      audit_senha_log: {
+        Row: {
+          acao: string | null
+          created_at: string | null
+          id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao?: string | null
+          created_at?: string | null
+          id?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string | null
+          created_at?: string | null
+          id?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       bi_user_preferences: {
         Row: {
           created_at: string | null
@@ -174,6 +227,38 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      cliente_campos_extras: {
+        Row: {
+          campo: string | null
+          cliente_id: string | null
+          created_at: string | null
+          id: string
+          valor: string | null
+        }
+        Insert: {
+          campo?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          valor?: string | null
+        }
+        Update: {
+          campo?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_campos_extras_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cliente_contatos: {
         Row: {
@@ -485,9 +570,45 @@ export type Database = {
           },
         ]
       }
+      estoque_movimentacoes: {
+        Row: {
+          created_at: string | null
+          id: string
+          origem: string | null
+          produto_id: string | null
+          quantidade: number | null
+          tipo: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          origem?: string | null
+          produto_id?: string | null
+          quantidade?: number | null
+          tipo?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          origem?: string | null
+          produto_id?: string | null
+          quantidade?: number | null
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estoque_produto: {
         Row: {
           created_at: string | null
+          envase_id: string | null
           id: string
           lote_id: string | null
           microrganismo_id: string | null
@@ -499,6 +620,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          envase_id?: string | null
           id?: string
           lote_id?: string | null
           microrganismo_id?: string | null
@@ -510,6 +632,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          envase_id?: string | null
           id?: string
           lote_id?: string | null
           microrganismo_id?: string | null
@@ -520,6 +643,13 @@ export type Database = {
           volume_total?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "estoque_produto_envase_id_fkey"
+            columns: ["envase_id"]
+            isOneToOne: false
+            referencedRelation: "envase"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "estoque_produto_lote_id_fkey"
             columns: ["lote_id"]
@@ -788,6 +918,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      partner_accounts: {
+        Row: {
+          codigo: string | null
+          created_at: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       portal_notifications: {
         Row: {
@@ -1140,6 +1291,10 @@ export type Database = {
       }
     }
     Functions: {
+      create_partner_order_secure: {
+        Args: { _items: Json; _partner_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
