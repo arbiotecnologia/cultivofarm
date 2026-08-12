@@ -18,7 +18,25 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDateDisplay } from "@/lib/date-utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { gerarReciboEntregaPDF } from "@/lib/reciboEntregaPdf";
+import { gerarDocumentoEntregaPDF } from "@/lib/comprovanteEntregaPdf";
+
+const ERROS_COMPROVANTE: Record<string, string> = {
+  COMPROVANTE_UNAUTHENTICATED: "Sessão expirada. Entre novamente para emitir o documento.",
+  COMPROVANTE_FORBIDDEN: "Seu perfil não tem permissão para emitir documentos de entrega.",
+  COMPROVANTE_ENTREGA_NAO_ENCONTRADA: "Entrega não encontrada.",
+  COMPROVANTE_ENTREGA_CANCELADA: "Entrega cancelada não gera documento.",
+  COMPROVANTE_SEM_ITENS: "A entrega não possui itens vinculados.",
+  COMPROVANTE_PRODUTO_OBRIGATORIO: "Vincule o produto à entrega antes de emitir o comprovante.",
+  COMPROVANTE_LOTE_OBRIGATORIO: "Vincule o lote à entrega antes de emitir o comprovante.",
+  COMPROVANTE_QUANTIDADE_OBRIGATORIA: "Informe a quantidade entregue antes de emitir o comprovante.",
+  COMPROVANTE_CLIENTE_OBRIGATORIO: "Vincule o cliente à entrega antes de emitir o comprovante.",
+  COMPROVANTE_CONFIRMACAO_SEM_DATA: "Confirme o recebimento antes de emitir o comprovante.",
+};
+
+function traduzErroComprovante(msg: string): string {
+  const chave = Object.keys(ERROS_COMPROVANTE).find((k) => msg.includes(k));
+  return chave ? ERROS_COMPROVANTE[chave] : msg;
+}
 import { validatePhoneBR } from "@/lib/masks";
 import { useAuth } from "@/hooks/useAuth";
 import { Textarea } from "@/components/ui/textarea";
@@ -686,66 +704,21 @@ export default function Entregas() {
 
 
 
-  const handleBaixarRecibo = async (e: any) => {
+  const handleBaixarRecibo = async (e: any, reemissao = false) => {
     try {
-      let saldoReservadoRestante: number | null = null;
-      if (e.estoque_produto_id && e.ordem_servico_id) {
-        // Busca saldo reservado em uma única query combinada (estoque + soma de entregas)
-        const [estoqueRes, entregasRes] = await Promise.all([
-          supabase
-            .from("estoque_produto")
-            .select("status, quantidade_reservada, reservado_para_os_id")
-            .eq("id", e.estoque_produto_id)
-            .maybeSingle(),
-          supabase
-            .from("entregas")
-            .select("quantidade_entregue")
-            .eq("estoque_produto_id", e.estoque_produto_id)
-            .eq("ordem_servico_id", e.ordem_servico_id)
-            .not("status", "eq", "cancelada")
-        ]);
+      const { data, error } = await supabase.rpc("rpc_get_comprovante_entrega_data" as any, {
+        p_entrega_id: e.id,
+        p_reemissao: reemissao,
+      });
+      if (error) throw error;
 
-        const estoque = estoqueRes.data;
-        const entregasOS = entregasRes.data;
-
-        if (estoque && estoque.status === "reservado" && estoque.reservado_para_os_id === e.ordem_servico_id) {
-          const qtdReservada = Number(estoque.quantidade_reservada || 0);
-          const totalEntregue = (entregasOS || []).reduce((acc: number, x: any) => acc + (Number(x.quantidade_entregue) || 0), 0);
-          saldoReservadoRestante = Math.max(0, qtdReservada - totalEntregue);
-        }
-      }
-
-      // Tenta pegar volume do lote carregado no fetch inicial (query cache)
-      const envaseData = e.lotes?.envase;
-      let volumePorUnidade: number | null = null;
-      
-      if (Array.isArray(envaseData) && envaseData.length > 0) {
-        volumePorUnidade = envaseData.sort((a: any, b: any) => 
-          (b.data_envase || "").localeCompare(a.data_envase || "")
-        )[0]?.volume_por_unidade ?? null;
-      } else if (envaseData && typeof envaseData === 'object') {
-        volumePorUnidade = (envaseData as any).volume_por_unidade ?? null;
-      }
-
-      await gerarReciboEntregaPDF(
-        {
-          entrega: e,
-          clienteNome: getClienteFullLabel(e.clientes),
-          produtoNome: e.produtos?.nome,
-          loteCodigo: e.lotes?.codigo_lote,
-          osId: e.ordem_servico_id || e.ordem_servico_onfarm_id,
-          numeroOs: e.ordens_servico?.numero_os || e.ordens_servico_onfarm?.numero_os,
-          volumePorUnidade,
-          saldoReservadoRestante,
-        },
-        {
-          nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
-          logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
-          cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
-        },
-      );
+      await gerarDocumentoEntregaPDF(data as any, {
+        nome_empresa: brandingConfig?.nome_empresa || brandingDefaults.nome_empresa,
+        logo_url: brandingConfig?.logo_url || brandingDefaults.logo_url,
+        cor_primaria: brandingConfig?.cor_primaria || brandingDefaults.cor_primaria,
+      });
     } catch (err: any) {
-      toast.error(`Erro ao gerar comprovante: ${err?.message || String(err)}`);
+      toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);
     }
   };
 

@@ -152,3 +152,22 @@ Produção `navfzbwgwzruipouyfnk` não acessada. Sem publish, sem SEFAZ.
   `E2E_BASE_URL` = MISSING.
 
 Veredito: **APTO_PARA_HOMOLOGACAO_BROWSER**.
+
+## Comprovante de Entrega (Fase 2 — 2026-09-03)
+
+Migrations (staging `ikaauvsflpmamgxmkhoq`, aplicadas nesta ordem):
+1. `17-migration-20260903000000_comprovante_entrega_documento_v1.sql` — motor documental (`fn_comprovante_entrega_montar_v1`, `rpc_get_comprovante_entrega_data`, sequência `comprovante_entrega_seq`).
+2. `18-migration-20260903010000_comprovante_cepas_fix.sql` — correção: `produto_etiquetas.cepas` é `text[]`.
+3. `19-migration-20260903020000_comprovante_tipo_canonico.sql` — aceita `tipo = 'comprovante_entrega'` em `entrega_comprovantes`.
+
+Rollback: `97-rollback-20260903000000.sql`.
+
+Harness: `33-comprovante-20260903.sql` (transacional, ROLLBACK) — **18/18 PASS**.
+Cobre ACL (anon/PUBLIC sem EXECUTE, `pg_temp` no search_path), romaneio antes da
+confirmação, bloqueio de `entregue` sem recebedor, comprovante definitivo com
+numeração `CE-YYYY-NNNNNN`, imutabilidade do snapshot frente a alteração de
+cadastro, reemissão auditada sem divergir conteúdo, obrigatoriedade de
+produto/lote e negação por perfil.
+
+Frontend: `src/lib/comprovanteEntregaPdf.ts` (renderiza o payload do motor) e
+`src/pages/Entregas.tsx` (chama a RPC; nada é montado no cliente).
