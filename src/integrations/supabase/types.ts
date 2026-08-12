@@ -869,6 +869,8 @@ export type Database = {
         Row: {
           id: string
           mime: string | null
+          owner_id: string | null
+          owner_type: string | null
           storage_path: string | null
           tamanho_bytes: number | null
           url: string
@@ -876,6 +878,8 @@ export type Database = {
         Insert: {
           id?: string
           mime?: string | null
+          owner_id?: string | null
+          owner_type?: string | null
           storage_path?: string | null
           tamanho_bytes?: number | null
           url: string
@@ -883,6 +887,8 @@ export type Database = {
         Update: {
           id?: string
           mime?: string | null
+          owner_id?: string | null
+          owner_type?: string | null
           storage_path?: string | null
           tamanho_bytes?: number | null
           url?: string
@@ -917,22 +923,46 @@ export type Database = {
       }
       financial_categories: {
         Row: {
+          active: boolean | null
           created_at: string | null
           id: string
           nome: string
           tipo: string | null
         }
         Insert: {
+          active?: boolean | null
           created_at?: string | null
           id?: string
           nome: string
           tipo?: string | null
         }
         Update: {
+          active?: boolean | null
           created_at?: string | null
           id?: string
           nome?: string
           tipo?: string | null
+        }
+        Relationships: []
+      }
+      financial_cost_centers: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
         }
         Relationships: []
       }
