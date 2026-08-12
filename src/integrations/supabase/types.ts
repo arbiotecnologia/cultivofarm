@@ -361,6 +361,41 @@ export type Database = {
         }
         Relationships: []
       }
+      controle_qualidade: {
+        Row: {
+          created_at: string | null
+          data_analise: string | null
+          id: string
+          lote_id: string | null
+          resultado: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_analise?: string | null
+          id?: string
+          lote_id?: string | null
+          resultado?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_analise?: string | null
+          id?: string
+          lote_id?: string | null
+          resultado?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controle_qualidade_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       culturas: {
         Row: {
           created_at: string | null
@@ -378,6 +413,48 @@ export type Database = {
           nome?: string
         }
         Relationships: []
+      }
+      envase: {
+        Row: {
+          created_at: string | null
+          data_envase: string | null
+          id: string
+          lote_id: string | null
+          quantidade: number | null
+          reservado_para_os_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_envase?: string | null
+          id?: string
+          lote_id?: string | null
+          quantidade?: number | null
+          reservado_para_os_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_envase?: string | null
+          id?: string
+          lote_id?: string | null
+          quantidade?: number | null
+          reservado_para_os_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envase_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "envase_reservado_para_os_id_fkey"
+            columns: ["reservado_para_os_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       esteira_producao_v2: {
         Row: {
@@ -415,6 +492,7 @@ export type Database = {
           microrganismo_id: string | null
           produto_id: string | null
           quantidade: number | null
+          volume_total: number | null
         }
         Insert: {
           created_at?: string | null
@@ -422,6 +500,7 @@ export type Database = {
           microrganismo_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          volume_total?: number | null
         }
         Update: {
           created_at?: string | null
@@ -429,6 +508,7 @@ export type Database = {
           microrganismo_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          volume_total?: number | null
         }
         Relationships: [
           {
@@ -586,6 +666,7 @@ export type Database = {
           nome: string
           nome_cientifico: string | null
           valor_dose_brl: number | null
+          valor_litro_brl: number | null
         }
         Insert: {
           ativo?: boolean | null
@@ -595,6 +676,7 @@ export type Database = {
           nome: string
           nome_cientifico?: string | null
           valor_dose_brl?: number | null
+          valor_litro_brl?: number | null
         }
         Update: {
           ativo?: boolean | null
@@ -604,6 +686,7 @@ export type Database = {
           nome?: string
           nome_cientifico?: string | null
           valor_dose_brl?: number | null
+          valor_litro_brl?: number | null
         }
         Relationships: []
       }
@@ -756,6 +839,7 @@ export type Database = {
           ativo: boolean | null
           codigo: string | null
           created_at: string | null
+          descricao: string | null
           dose_ml_ha: number | null
           id: string
           nome: string
@@ -765,6 +849,7 @@ export type Database = {
           ativo?: boolean | null
           codigo?: string | null
           created_at?: string | null
+          descricao?: string | null
           dose_ml_ha?: number | null
           id?: string
           nome: string
@@ -774,6 +859,7 @@ export type Database = {
           ativo?: boolean | null
           codigo?: string | null
           created_at?: string | null
+          descricao?: string | null
           dose_ml_ha?: number | null
           id?: string
           nome?: string
@@ -819,16 +905,19 @@ export type Database = {
           created_at: string | null
           id: string
           ordem_servico_id: string | null
+          volume_necessario: number | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           ordem_servico_id?: string | null
+          volume_necessario?: number | null
         }
         Update: {
           created_at?: string | null
           id?: string
           ordem_servico_id?: string | null
+          volume_necessario?: number | null
         }
         Relationships: [
           {
@@ -953,7 +1042,12 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_schema_health: {
+        Row: {
+          table_name: unknown
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
