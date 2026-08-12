@@ -222,7 +222,7 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
  * colunas reais de company_fiscal_settings — sem casts estruturais
  * (nenhum any). Chaves proibidas nunca são incluídas.
  */
-export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
+export function buildUpdatePayload(values: CompanyFiscalFormValues): any {
   const parsed = companyFiscalFormSchema.parse(values);
   const payload: Update = {
     // Trava: provider legacy sempre NONE.

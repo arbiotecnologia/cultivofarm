@@ -23,7 +23,7 @@ export async function gerarBackupDocumentosCliente(
   clienteId: string,
   nomeCliente: string
 ): Promise<{ totalDocs: number; baixados: number; falhas: string[] }> {
-  const { data: docs, error } = await supabase
+  const { data: docs, error } = await (supabase as any)
     .from("cliente_documentos")
     .select("*")
     .eq("cliente_id", clienteId);
@@ -41,7 +41,7 @@ export async function gerarBackupDocumentosCliente(
 
   for (const doc of lista) {
     try {
-      const { data: blob, error: dlErr } = await supabase.storage
+      const { data: blob, error: dlErr } = await (supabase as any).storage
         .from("clientes-docs")
         .download(doc.arquivo_path);
       if (dlErr || !blob) {
@@ -109,7 +109,7 @@ export async function gerarBackupDocumentosCliente(
  * Remove todos os documentos do cliente (arquivos do bucket + linhas da tabela).
  */
 export async function removerTodosDocumentosCliente(clienteId: string): Promise<void> {
-  const { data: docs, error } = await supabase
+  const { data: docs, error } = await (supabase as any)
     .from("cliente_documentos")
     .select("id, arquivo_path")
     .eq("cliente_id", clienteId);
@@ -118,9 +118,9 @@ export async function removerTodosDocumentosCliente(clienteId: string): Promise<
   if (lista.length === 0) return;
   const paths = lista.map((d) => d.arquivo_path).filter(Boolean);
   if (paths.length > 0) {
-    await supabase.storage.from("clientes-docs").remove(paths);
+    await (supabase as any).storage.from("clientes-docs").remove(paths);
   }
-  await supabase
+  await (supabase as any)
     .from("cliente_documentos")
     .delete()
     .eq("cliente_id", clienteId);
