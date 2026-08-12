@@ -772,17 +772,24 @@ export default function Entregas() {
    */
   const handleDownloadPreview = async () => {
     if (!previewPayload || !previewEntregaId) return;
+    if (downloadingPreview) return;
+    setDownloadingPreview(true);
     try {
-      const reemitir = decidirReemissaoNoDownload({
+      const reemitir = deveReemitirNoDownload({
         docTipo: previewPayload?.doc_tipo,
-        possuiSnapshotAntes: previewSnapshotAntes,
+        eraComprovanteExistente: previewSnapshotAntes,
       });
       const payload = reemitir ? await buscarPayloadDocumento(previewEntregaId, true) : previewPayload;
       await gerarDocumentoEntregaPDF(payload, brandingDocumento());
       queryClient.invalidateQueries({ queryKey: ["entregas"] });
       setPreviewOpen(false);
+      setPreviewPayload(null);
+      setPreviewEntregaId(null);
+      setPreviewSnapshotAntes(false);
     } catch (err: any) {
       toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);
+    } finally {
+      setDownloadingPreview(false);
     }
   };
 
