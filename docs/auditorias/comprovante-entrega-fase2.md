@@ -72,6 +72,80 @@ Demais validações: runner fail-closed PASS · rollback rehearsal PASS · conne
 - Entregas legadas confirmadas sem OS ou sem volume não conseguirão emitir comprovante definitivo — por desenho; permanecem com romaneio até serem regularizadas.
 - Nenhuma promoção para produção foi feita nem preparada.
 
+
+## 9. Hardening final (migration 20260903040000)
+
+### 9.1 Mapeamento das entregas sem OS (feito ANTES de bloquear)
+
+Levantamento read-only no staging `ikaauvsflpmamgxmkhoq`:
+
+| métrica | valor |
+| --- | --- |
+| entregas totais | 6 |
+| com `ordem_servico_id` | 2 |
+| com `ordem_servico_onfarm_id` | 0 |
+| sem qualquer OS | 4 (todas em `separado` → romaneio, nenhuma confirmada) |
+| sem OS **e** confirmadas (`entregue`) | 0 |
+| sem OS com `partner_order_id` | 0 |
+
+Conclusão: nenhuma entrega legítima confirmada fica órfã com o gate de OS. Porém a coluna
+`public.entregas.partner_order_id` (FK para `public.partner_orders`) é um vínculo legítimo do domínio
+B2B atual. Em vez de inventar exceção, a origem foi **mapeada e suportada**: a migration
+`20260903040000_comprovante_origem_pedido_v1.sql` acrescenta ao builder a terceira origem documental,
+identificada corretamente no snapshot:
+
+- `tipo = ordem_servico` / `origem = <origem da OS>` (fluxo laboratório)
+- `tipo = ordem_servico_onfarm` / `origem = on_farm`
+- `tipo = partner_order` / `origem = pedido_parceiro`, `numero_os = partner_orders.numero`
+
+Entrega confirmada sem nenhuma das três origens continua negada com `COMPROVANTE_OS_OBRIGATORIA`.
+A regra do **romaneio permanece inalterada** (documento operacional, sem exigência de origem).
+
+Os demais gates do comprovante definitivo seguem ativos: `volume_total_ml > 0` por item, produto,
+lote, quantidade > 0, cliente e confirmação/recebedor. O fallback usa exclusivamente o alias SQL `e2`
+dentro do SELECT (sem depender da variável PL/pgSQL `e`), eliminando ambiguidade de leitura.
+
+### 9.2 Rollbacks incrementais
+
+| arquivo | escopo | preservações deliberadas |
+| --- | --- | --- |
+| `restoration/os-e2e/98-rollback-20260903010000.sql` | restaura o builder na definição de `20260903000000` (sem o fix de `cepas text[]`) | não toca sequence, snapshots nem constraint |
+| `restoration/os-e2e/99-rollback-20260903020000.sql` | restaura a definição anterior de `entrega_comprovantes_tipo_chk` | só reverte se **não** houver documento com tipo `comprovante_entrega`; nunca apaga snapshot; não recicla número CE |
+| `restoration/os-e2e/100-rollback-20260903040000.sql` | restaura o builder na definição de `20260903030000` (sem origem `pedido_parceiro`) | não toca sequence, snapshots nem constraint |
+| `restoration/os-e2e/97-rollback-20260903000000.sql` | rollback completo da fase | sequence `comprovante_entrega_seq` preservada (números CE nunca reciclados); revogações de `anon` **não** revertidas |
+
+### 9.3 Rollback rehearsal (BEGIN … ROLLBACK) — revalidação pós-simulação
+
+Cada rollback foi ensaiado dentro de transação e o estado revalidado ainda dentro dela:
+
+| ensaio | builder presente | constraint presente | sequence | snapshots |
+| --- | --- | --- | --- | --- |
+| 100 (040000) | 1 | 1 | 11 | preservados |
+| 98 (010000) | 1 | 1 | 11 | preservados |
+| 99 (020000) | 1 | 1 (restaurada à definição anterior) | 11 | preservados |
+
+Todas as transações encerraram em `ROLLBACK`; o estado aplicado do staging permanece o de 040000
+(`origem_pedido_ok = t` confirmado após os ensaios).
+
+### 9.4 Harness 34 — gates adicionais
+
+`restoration/os-e2e/34-comprovante-origem-20260903.sql` (BEGIN … ROLLBACK): **14/14 PASS, 0 SKIP, 0 FAIL**.
+
+- O01 origem `ordens_servico` aceita · O02 origem `pedido_parceiro` aceita e identificada no snapshot
+- O03 confirmada sem OS e sem pedido → `COMPROVANTE_OS_OBRIGATORIA`
+- O04 volume zero → `COMPROVANTE_VOLUME_OBRIGATORIO` · O05 romaneio sem origem continua permitido
+- O06 perfis autorizados testados **explicitamente e individualmente**: `administrador`, `gestor`,
+  `administrativo`, `producao`, `operador_onfarm`, `aplicador` (todos emitem comprovante)
+- O07 perfil real fora da lista (`gestor_comercial`) → `COMPROVANTE_FORBIDDEN`
+- O08 builder sem EXECUTE para PUBLIC/anon/authenticated
+- O09 `is_delivery_staff` mantém EXECUTE para `authenticated` **por necessidade**: 6 políticas RLS
+  em `public` invocam o helper; remover o grant quebraria as políticas. PUBLIC e `anon` negados,
+  nenhuma política ampliada.
+
+Resíduo pós-ROLLBACK: `residuo_entregas_fixture = 0`.
+
+Harness 33 reexecutado após o hardening: **26/26 PASS**, resíduo 0.
+
 ## Veredito
 
 **FASE_2_CERTIFICADA_PARA_LAYOUT**

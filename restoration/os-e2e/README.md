@@ -171,3 +171,16 @@ produto/lote e negação por perfil.
 
 Frontend: `src/lib/comprovanteEntregaPdf.ts` (renderiza o payload do motor) e
 `src/pages/Entregas.tsx` (chama a RPC; nada é montado no cliente).
+
+## Hardening final Fase 2 — comprovante de entrega (20260903040000)
+
+- `21-migration-20260903040000_comprovante_origem_pedido_v1.sql` (espelhada em
+  `supabase/migrations/20260903040000_comprovante_origem_pedido_v1.sql`): acrescenta a origem
+  legítima `pedido_parceiro` (`entregas.partner_order_id` → `partner_orders`) ao builder do
+  comprovante, mantendo OS padrão e On-Farm, os gates de volume/quantidade/lote/produto/cliente/
+  confirmação e o alias SQL `e2` no fallback. Romaneio inalterado.
+- Rollbacks incrementais: `98-rollback-20260903010000.sql`, `99-rollback-20260903020000.sql`,
+  `100-rollback-20260903040000.sql` (além do completo `97-rollback-20260903000000.sql`).
+  Sequence `comprovante_entrega_seq` e snapshots históricos são preservados por política.
+- Harness: `33-comprovante-20260903.sql` **26/26 PASS** e
+  `34-comprovante-origem-20260903.sql` **14/14 PASS** — ambos BEGIN … ROLLBACK, resíduo 0.
