@@ -745,7 +745,7 @@ export default function Entregas() {
   const handleGerarDocumento = async (e: any, preview = true) => {
     try {
       const possuiSnapshotAntes = possuiComprovanteDefinitivo(e);
-      const payload = await buscarPayloadDocumento(e.id, false);
+      const payload = await buscarPayloadDocumento(e.id, REEMISSAO_NA_ABERTURA_DO_PREVIEW);
 
       // Primeira emissão definitiva congela o snapshot no servidor: refaz o fetch
       // para que a próxima ação passe corretamente a "Reemitir comprovante".
