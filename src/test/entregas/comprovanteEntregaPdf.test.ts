@@ -58,6 +58,7 @@ import {
   AVISO_COMPROVANTE,
   AVISO_ROMANEIO,
   possuiComprovanteDefinitivo,
+  decidirReemissaoNoDownload,
   selecionarComprovanteDefinitivo,
   numeroComprovanteDefinitivo,
   ehComprovanteDefinitivo,
@@ -366,5 +367,81 @@ describe("multi-item e paginação", () => {
     await gerarDocumentoEntregaPDF(payloadBase() as any, { ...branding, logo_url: "https://x/logo.png" });
     expect(savedName).toBe("romaneio-entrega-RM-2026-000001.pdf");
     fetchSpy.mockRestore();
+  });
+});
+
+describe("semantica de reemissao no preview (Fase 3 - C)", () => {
+  it("romaneio nunca reemite", () => {
+    expect(decidirReemissaoNoDownload({ docTipo: "romaneio", possuiSnapshotAntes: false })).toBe(false);
+    expect(decidirReemissaoNoDownload({ docTipo: "romaneio", possuiSnapshotAntes: true })).toBe(false);
+  });
+
+  it("primeira emissão não vira reemissão", () => {
+    expect(decidirReemissaoNoDownload({ docTipo: "comprovante", possuiSnapshotAntes: false })).toBe(false);
+  });
+
+  it("comprovante já emitido reemite uma única vez no download", () => {
+    expect(decidirReemissaoNoDownload({ docTipo: "comprovante", possuiSnapshotAntes: true })).toBe(true);
+  });
+
+  it("doc_tipo ausente/desconhecido nunca reemite", () => {
+    expect(decidirReemissaoNoDownload({ docTipo: null, possuiSnapshotAntes: true })).toBe(false);
+    expect(decidirReemissaoNoDownload({ docTipo: undefined, possuiSnapshotAntes: true })).toBe(false);
+  });
+});
+
+describe("fluxo da tela de Entregas (estático)", () => {
+  const src = readFileSync(resolve(__dirname, "../../pages/Entregas.tsx"), "utf8");
+  const preview = readFileSync(resolve(__dirname, "../../components/entregas/PreviewDocumentoEntrega.tsx"), "utf8");
+
+  it("abertura do preview sempre chama a RPC com p_reemissao=false", () => {
+    expect(src).toContain("buscarPayloadDocumento(e.id, false)");
+    // a única chamada com `true` é a do download explícito de reemissão
+    const comTrue = src.match(/buscarPayloadDocumento\([^)]*true\)/g) ?? [];
+    expect(comTrue).toHaveLength(1);
+    expect(src).toContain("reemitir ? await buscarPayloadDocumento(previewEntregaId, true)");
+  });
+
+  it("a decisão de reemissão usa o helper puro e o estado anterior ao preview", () => {
+    expect(src).toContain("decidirReemissaoNoDownload({");
+    expect(src).toContain("possuiSnapshotAntes: previewSnapshotAntes");
+    expect(src).toContain("const possuiSnapshotAntes = possuiComprovanteDefinitivo(e);");
+  });
+
+  it("a listagem carrega a relação entrega_comprovantes com campos mínimos", () => {
+    expect(src).toContain("entrega_comprovantes!entrega_comprovantes_entrega_id_fkey");
+    for (const campo of ["id", "tipo", "numero_formulario", "metadata", "gerado_em"]) {
+      expect(src).toContain(campo);
+    }
+  });
+
+  it("download invalida a query de entregas", () => {
+    expect(src).toContain('queryClient.invalidateQueries({ queryKey: ["entregas"] });');
+  });
+
+  it("fechar o preview limpa o estado sem reemitir", () => {
+    expect(src).toContain("setPreviewSnapshotAntes(false)");
+  });
+
+  it("mapa de erros cobre os gates da Fase 2", () => {
+    expect(src).toContain("COMPROVANTE_OS_OBRIGATORIA");
+    expect(src).toContain("COMPROVANTE_VOLUME_OBRIGATORIO");
+    expect(src).toContain("COMPROVANTE_PARAMS_INVALIDOS");
+  });
+
+  it("painel legado aparece como Evidências", () => {
+    expect(src).toContain("Evidências");
+    expect(src).toContain("Evidências e termos da entrega");
+    expect(src).not.toMatch(/>\s*Documento\s*</);
+    // funcionalidades preservadas
+    expect(src).toContain("EntregaComprovantePanel");
+    expect(src).toContain("EmbalagensEntregaPanel");
+    expect(src).toContain("TermoEntregaPanel");
+  });
+
+  it("preview revoga Object URLs via ref (sem leak)", () => {
+    expect(preview).toContain("URL.revokeObjectURL(urlRef.current)");
+    expect(preview).toContain("useEffect(() => () => revogarUrl()");
+    expect(preview).not.toContain("supabase");
   });
 });
