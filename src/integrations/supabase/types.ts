@@ -204,6 +204,27 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_accounts: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       bi_user_preferences: {
         Row: {
           created_at: string | null
@@ -894,6 +915,51 @@ export type Database = {
           },
         ]
       }
+      financial_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string
+          tipo: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome: string
+          tipo?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string
+          tipo?: string | null
+        }
+        Relationships: []
+      }
+      financial_documents: {
+        Row: {
+          created_at: string | null
+          id: string
+          owner_id: string | null
+          owner_type: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          owner_id?: string | null
+          owner_type?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          owner_id?: string | null
+          owner_type?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       financial_settings: {
         Row: {
           chave: string | null
@@ -1238,6 +1304,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_methods: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
       }
       portal_notifications: {
         Row: {
@@ -1600,6 +1687,13 @@ export type Database = {
       }
     }
     Views: {
+      vw_financial_settings_flat: {
+        Row: {
+          require_receipt_on_payable_payment: string | null
+          require_receipt_on_receivable_payment: string | null
+        }
+        Relationships: []
+      }
       vw_schema_health: {
         Row: {
           table_name: unknown
@@ -1669,6 +1763,10 @@ export type Database = {
           _produto_id: string
           _quantidade: number
         }
+        Returns: undefined
+      }
+      rpc_financeiro_conciliar_v1: {
+        Args: { _baixa_id: string; _documento_id: string }
         Returns: undefined
       }
       rpc_fiscal_company_settings_init: {
