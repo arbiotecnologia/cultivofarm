@@ -46,5 +46,6 @@ ALTER FUNCTION public.rpc_validar_integridade_esteira(text, uuid)
   SET search_path = public, pg_temp;
 ALTER FUNCTION public.rpc_cockpit_metricas_v1()
   SET search_path = public, pg_temp;
-ALTER FUNCTION public.rpc_cockpit_metricas_v2()
+ALTER FUNCTION public.rpc_cockpit_metricas_v2(text, text[], text[], text[], boolean, date, date)
   SET search_path = public, pg_temp;
+
