@@ -10,6 +10,7 @@ interface PreviewDocumentoEntregaProps {
   payload: DocumentoEntregaPayload | null;
   branding: DocumentoEntregaBranding;
   onDownload: () => void;
+  downloading?: boolean;
 }
 
 export function PreviewDocumentoEntrega({
