@@ -78,7 +78,7 @@ $grants$;
 -- ---------------------------------------------------------------------
 DO $fix$
 DECLARE
-  v_ent uuid; v_cliente uuid; v_produto uuid; v_lote uuid; v_uid text; v_est uuid;
+  v_ent uuid; v_cliente uuid; v_produto uuid; v_lote uuid; v_uid text; v_est uuid; v_os uuid;
   v_tag text := 'CE2-' || to_char(clock_timestamp(),'YYYYMMDDHH24MISSMS');
 BEGIN
   SELECT l.id, l.produto_id INTO v_lote, v_produto
@@ -87,6 +87,8 @@ BEGIN
   SELECT id INTO v_cliente FROM public.clientes ORDER BY created_at LIMIT 1;
   SELECT ur.user_id::text INTO v_uid FROM public.user_roles ur
    WHERE ur.role::text IN ('administrador','gestor') LIMIT 1;
+  SELECT o.id INTO v_os FROM public.ordens_servico o ORDER BY o.created_at DESC LIMIT 1;
+  IF v_os IS NULL THEN RAISE EXCEPTION 'CE2_SEM_OS_FIXTURE'; END IF;
 
   INSERT INTO public.estoque_produto (produto_id, lote_id, quantidade, volume_total,
                                       quantidade_reservada, status)
@@ -94,17 +96,20 @@ BEGIN
   RETURNING id INTO v_est;
 
   INSERT INTO public.entregas (cliente_id, produto_id, lote_id, estoque_produto_id,
+                               ordem_servico_id,
                                quantidade_entregue, volume_entregue_ml, data_saida,
                                status, motorista, veiculo)
-  VALUES (v_cliente, v_produto, v_lote, v_est, 10, 20000, CURRENT_DATE,
-          'separado', 'Motorista Teste', 'Fiorino')
+  VALUES (v_cliente, v_produto, v_lote, v_est, v_os, 10, 20000, CURRENT_DATE,
+          'separado', 'Motorista Teste CE2', 'Fiorino')
   RETURNING id INTO v_ent;
 
   INSERT INTO _dc(k,v) VALUES ('entrega', v_ent::text), ('uid', v_uid),
                               ('cliente', v_cliente::text), ('tag', v_tag),
-                              ('estoque', v_est::text);
+                              ('estoque', v_est::text), ('os', v_os::text),
+                              ('produto', v_produto::text);
 END
 $fix$;
+
 
 -- ---------------------------------------------------------------------
 -- D06..D08 — regra documental antes da confirmacao
