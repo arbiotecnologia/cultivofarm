@@ -91,6 +91,8 @@ export default function Entregas() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSnapshotAntes, setPreviewSnapshotAntes] = useState(false);
   const [previewEntregaId, setPreviewEntregaId] = useState<string | null>(null);
+  // Guarda contra duplo clique no download: impede contabilizar duas reemissões.
+  const [downloadingPreview, setDownloadingPreview] = useState(false);
   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);
   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
