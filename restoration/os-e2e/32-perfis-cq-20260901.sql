@@ -185,7 +185,9 @@ BEGIN
   -- lote pelo motor canônico (respeita constraints de item da OS)
   PERFORM public.rpc_cockpit_gerar_lote_v1(
     v_prog, v_os, 'manual',
-    jsonb_build_object('codigo_lote', (SELECT v FROM _cx WHERE k='tag')||'-L'));
+    jsonb_build_object('codigo_lote', (SELECT v FROM _cx WHERE k='tag')||'-L',
+                       'produto_id', (SELECT produto_id::text FROM public.ordens_servico WHERE id=v_os),
+                       'volume_produzido','100000'));
   SELECT id INTO v_lote FROM public.lotes WHERE programacao_id = v_prog LIMIT 1;
   IF v_lote IS NULL THEN RAISE EXCEPTION 'E2E6_LOTE_NAO_GERADO'; END IF;
 
