@@ -25,7 +25,7 @@ export function useProductionPlanning(statusFilter?: string) {
   return useQuery({
     queryKey: ["production-planning", statusFilter ?? "all"],
     queryFn: async (): Promise<PlanningRow[]> => {
-      let q = supabase
+      let q = (supabase as any)
         .from("production_planning")
         .select(
           `id, partner_order_id, partner_id, status, planned_start_date, planned_finish_date, created_at, updated_at,
@@ -61,7 +61,7 @@ export function useProductionPlanningDetail(planningId: string | null) {
     queryKey: ["production-planning-detail", planningId],
     enabled: !!planningId,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_production_planning_detail" as any, {
+      const { data, error } = await (supabase as any).rpc("get_production_planning_detail" as any, {
         p_planning_id: planningId,
       });
       if (error) throw error;
@@ -74,13 +74,13 @@ export function useUpdatePlanningDates() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (vars: { id: string; planned_start_date: string | null; planned_finish_date: string | null; production_notes?: string | null }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("production_planning")
         .update({
           planned_start_date: vars.planned_start_date,
           planned_finish_date: vars.planned_finish_date,
           ...(vars.production_notes !== undefined ? { production_notes: vars.production_notes } : {}),
-        })
+        } as any)
         .eq("id", vars.id);
       if (error) throw error;
     },
@@ -98,7 +98,7 @@ export function useGenerateProductionOrders() {
   return useMutation({
     mutationFn: async (vars: { partner_order_id: string; planning_id: string; numero?: string }) => {
       const promise = Promise.resolve(
-        supabase.rpc("publish_planning_to_lab" as any, { p_planning_id: vars.planning_id }),
+        (supabase as any).rpc("publish_planning_to_lab" as any, { p_planning_id: vars.planning_id }),
       ).then(({ data, error }) => {
         if (error) throw error;
         return data as { ok: boolean; planning_id: string; os_created: number };
@@ -125,7 +125,7 @@ export function useRequestReplanning() {
   return useMutation({
     mutationFn: async (vars: { os_id: string; motivo: string; numero?: string }) => {
       const promise = Promise.resolve(
-        supabase.rpc("lab_request_replanning" as any, { p_os_id: vars.os_id, p_motivo: vars.motivo }),
+        (supabase as any).rpc("lab_request_replanning" as any, { p_os_id: vars.os_id, p_motivo: vars.motivo }),
       ).then(({ data, error }) => {
         if (error) throw error;
         return data as { ok: boolean; planning_id: string };
@@ -151,7 +151,7 @@ export function useProductionDashboard() {
   return useQuery({
     queryKey: ["production-dashboard"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("production_planning")
         .select("status, partner_order_id, partner_orders ( total )");
       if (error) throw error;
@@ -180,7 +180,7 @@ export function useB2BCapacityKpis() {
   return useQuery({
     queryKey: ["b2b-capacity-kpis"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("rpc_b2b_capacity_kpis" as any);
+      const { data, error } = await (supabase as any).rpc("rpc_b2b_capacity_kpis" as any);
       if (error) throw error;
       return data as Record<string, number>;
     },
@@ -193,7 +193,7 @@ export function useB2BIntegrityCheck(enabled = false) {
     queryKey: ["b2b-integrity-check"],
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("rpc_b2b_integrity_check" as any);
+      const { data, error } = await (supabase as any).rpc("rpc_b2b_integrity_check" as any);
       if (error) throw error;
       return data as Record<string, number>;
     },
