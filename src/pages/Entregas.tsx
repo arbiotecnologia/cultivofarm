@@ -89,6 +89,8 @@ export default function Entregas() {
   const [comprovanteEntrega, setComprovanteEntrega] = useState<any>(null);
   const [previewPayload, setPreviewPayload] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSnapshotAntes, setPreviewSnapshotAntes] = useState(false);
+  const [previewEntregaId, setPreviewEntregaId] = useState<string | null>(null);
   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);
   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
