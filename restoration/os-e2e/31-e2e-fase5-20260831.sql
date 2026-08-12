@@ -321,17 +321,21 @@ BEGIN
   SELECT status::text INTO v_status FROM public.ordens_servico WHERE id=v_os;
   SELECT count(*) INTO v_n2 FROM public.laboratorio_esteira_eventos
    WHERE os_id=v_os AND etapa_nova='finalizar_os';
+  -- A confirmacao da entrega ja pode ter auto-finalizado a OS (motor unico):
+  -- o exigido e' status finalizada com EXATAMENTE UM evento 'finalizar_os'.
   INSERT INTO _g(gate,status,detalhe) VALUES ('H22 finalizar OS -> finalizada',
-    CASE WHEN v_status='finalizada' AND v_n2 = v_n + 1 THEN 'PASS' ELSE 'FAIL' END,
-    'status='||v_status||' eventos_finalizar='||v_n2);
+    CASE WHEN v_status='finalizada' AND v_n2 = 1 THEN 'PASS' ELSE 'FAIL' END,
+    'status='||v_status||' eventos_finalizar_antes='||v_n||' depois='||v_n2);
 
   -- ============ GATE CRÍTICO 5: replay finalizar sem evento extra ============
   r := public.rpc_avancar_esteira_laboratorio(v_os,'manual','finalizar_os',v_prog);
   SELECT count(*) INTO v_n FROM public.laboratorio_esteira_eventos
    WHERE os_id=v_os AND etapa_nova='finalizar_os';
   INSERT INTO _g(gate,status,detalhe) VALUES ('GATE5 replay finalizar sem evento duplicado',
-    CASE WHEN v_n = v_n2 AND coalesce((r->>'replay')::boolean,false) THEN 'PASS' ELSE 'FAIL' END,
-    'antes='||v_n2||' depois='||v_n||' replay='||coalesce(r->>'replay','?'));
+    CASE WHEN v_n = v_n2 AND v_n = 1
+          AND coalesce((coalesce(r->'avanco'->>'replay', r->>'replay'))::boolean,false)
+         THEN 'PASS' ELSE 'FAIL' END,
+    'antes='||v_n2||' depois='||v_n||' replay='||coalesce(r->'avanco'->>'replay', r->>'replay','?'));
 
   -- H23 status final visível em /ordens-servico
   SELECT status::text INTO v_status FROM public.ordens_servico WHERE id=v_os;
