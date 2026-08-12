@@ -35,12 +35,11 @@ DECLARE
 BEGIN
   SELECT id INTO v_cliente FROM public.clientes ORDER BY created_at LIMIT 1;
   SELECT id INTO v_produto FROM public.produtos ORDER BY created_at LIMIT 1;
-  SELECT microrganismo_id INTO v_micro FROM public.produtos WHERE id = v_produto;
-  IF v_micro IS NULL THEN SELECT id INTO v_micro FROM public.microrganismos ORDER BY created_at LIMIT 1; END IF;
+  SELECT id INTO v_micro FROM public.microrganismos ORDER BY created_at LIMIT 1;
 
   INSERT INTO public.ordens_servico (numero_os, cliente_id, produto_id, microrganismo_id,
-                                     quantidade_solicitada, status, origem)
-  VALUES (v_tag, v_cliente, v_produto, v_micro, 100, 'aberta', 'manual')
+                                     volume_total_ml, status, origem, tipo_item)
+  VALUES (v_tag, v_cliente, v_produto, v_micro, 100000, 'aberta', 'manual', 'produto')
   RETURNING id INTO v_os;
 
   INSERT INTO public.programacao_producao (ordem_servico_id, produto_id, microrganismo_id,
