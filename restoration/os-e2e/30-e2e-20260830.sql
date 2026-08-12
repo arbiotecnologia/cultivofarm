@@ -26,6 +26,9 @@ $guard$;
 
 CREATE TEMP TABLE _e2e_gate(seq serial, gate text, status text, detalhe text);
 CREATE TEMP TABLE _e2e_ctx(k text primary key, v text);
+GRANT SELECT, INSERT ON _e2e_gate TO authenticated;
+GRANT SELECT, USAGE ON SEQUENCE _e2e_gate_seq_seq TO authenticated;
+GRANT SELECT ON _e2e_ctx TO authenticated;
 
 DO $fix$
 DECLARE
