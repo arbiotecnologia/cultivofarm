@@ -1,34 +1,46 @@
-# Fase 1 — Auditoria do comprovante de entrega (AR Bio)
+# Fase 1 — Auditoria do gerador do comprovante de entrega (AR Bio)
 
-Ambiente: staging `ikaauvsflpmamgxmkhoq` (produção não tocada). Somente leitura nesta fase.
+Ambiente: staging `ikaauvsflpmamgxmkhoq` (produção `navfzbwgwzruipouyfnk` intocada). Nada publicado. Sem SEFAZ.
+HEAD inicial da apuração: `87a9281f` · HEAD de trabalho desta rodada: `33b22156`.
 
-## 0. Contaminação visual e binding
+## 1. Higiene do ambiente
 
-- `src/routes/index.tsx`: placeholder inerte, sem texto de prompt. OK.
-- `src/integrations/supabase/types.ts`: encontrado truncado (155 linhas); restaurado de `7c56c377` com 21.850 linhas.
-- `.env`: reapontado para o projeto de staging `ikaauvsflpmamgxmkhoq` (mesma origem de commit).
+- `src/routes/index.tsx`: placeholder inerte, sem texto de prompt (contaminação da edição visual revertida).
+- `src/integrations/supabase/types.ts`: encontrado truncado (155 linhas) em duas ocasiões; restaurado de `7c56c377` com 21.850 linhas.
+- `.env`: reapontado ao projeto de staging `ikaauvsflpmamgxmkhoq` (contract test de binding passa).
 
-## 1. Gerador atual do PDF (estado pré-Fase 2)
+## 2. Fluxo anterior (pré-Fase 2)
 
-- Arquivo: `src/lib/reciboEntregaPdf.ts` (removido na Fase 2).
-- Montagem 100% no frontend a partir da linha carregada em `src/pages/Entregas.tsx`; nenhum snapshot persistido.
-- Numeração do documento derivada de `id.slice(0, 8)` (ex.: `B7CCE937`) — não sequencial, não auditável, não legível para o produtor.
-- Sem distinção entre entrega pendente e entrega confirmada: o mesmo papel era emitido como se fosse comprovante.
-- Emitente/destinatário lidos parcialmente do cliente atual; qualquer alteração de cadastro reescrevia retroativamente o documento já entregue.
-- Reemissão não registrada.
+Arquivo `src/lib/reciboEntregaPdf.ts` (removido na Fase 2):
 
-## 2. Infraestrutura já existente aproveitável
+- Montagem 100% no frontend a partir da linha de `entregas` carregada em `src/pages/Entregas.tsx`.
+- Nenhum snapshot persistido: o documento era recalculado a cada emissão a partir do cadastro corrente.
+- Numeração derivada de `id.slice(0,8)` (ex.: `B7CCE937`) — não sequencial, não auditável.
+- Sem distinção entre entrega pendente e confirmada: emitia como comprovante um papel sem valor de recebimento.
+- Regras de completude (produto, lote, quantidade) no cliente, portanto burláveis.
+- Reemissão não registrada em lugar algum.
 
-- `public.entrega_formulario_seq` + `rpc_gerar_formulario_entrega` (padrão de numeração canônica).
-- `public.entrega_termos` e `fn_entrega_build_snapshot_v1` (padrão de snapshot).
-- `public.company_fiscal_settings` como fonte do emitente.
-- `public.produto_etiquetas` como fonte real de produto/lote/cepas.
+## 3. Infraestrutura reaproveitável identificada
 
-## 3. Achados de segurança
+| Objeto | Uso |
+| --- | --- |
+| `public.entregas` | Fonte da entrega, status, transporte e recebimento |
+| `public.entrega_comprovantes` (`metadata jsonb`) | Persistência do snapshot e da numeração |
+| `public.entrega_termos` | Documentos de termo já existentes |
+| `public.entrega_formulario_seq` / `rpc_gerar_formulario_entrega` | Padrão de numeração canônica |
+| `public.company_fiscal_settings` | Emitente |
+| `public.entrega_etiquetas` + `public.produto_etiquetas` | Itens canônicos (produto, lote, volume, cepas `text[]`) |
+| `public.ordens_servico` e `public.ordens_servico_onfarm` | Vínculo de OS (dois fluxos legítimos) |
+| `public.is_delivery_staff(uuid)` | Autorização de perfil |
 
-- `public.entrega_comprovantes`: role `anon` com grants de DML excedentes.
-- Ausência de motor server-side: regra "romaneio x comprovante" era decidida no cliente, portanto burlável.
+## 4. Problemas encontrados
 
-## 4. Veredito
+1. `anon` com grants de DML em `entrega_comprovantes` / `entrega_termos`.
+2. Ausência de motor server-side: a decisão romaneio × comprovante era do cliente.
+3. Sem snapshot: alteração de cadastro reescrevia documento já entregue.
+4. Numeração não auditável.
+5. Nenhum registro de reemissão.
 
-**FASE_1_APTA** — auditoria concluída, lacunas mapeadas e endereçáveis por migração incremental com rollback. Autorizado avançar para a Fase 2.
+## 5. Veredito
+
+**FASE_1_APTA** — lacunas mapeadas, todas endereçáveis por migração incremental com rollback, sem criar tabela paralela. Autorizada a Fase 2.
