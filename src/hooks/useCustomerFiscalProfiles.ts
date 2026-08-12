@@ -159,9 +159,9 @@ export function useCustomerFiscalList(
         throw new Error(error.message);
       }
 
-      const rawRows = (data ?? []) as unknown as RawListRow[];
+      const rawRows = (data ?? []) as any[];
       const items: CustomerListItem[] = rawRows.map((r) => {
-        const c = pickCliente(r.clientes);
+        const c = pickCliente(r.clientes as any);
         return {
           id: r.id,
           customer_id: r.customer_id,

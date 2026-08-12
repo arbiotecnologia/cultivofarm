@@ -224,14 +224,14 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
  */
 export function buildUpdatePayload(values: CompanyFiscalFormValues): any {
   const parsed = companyFiscalFormSchema.parse(values);
-  const payload: Update = {
+  const payload: any = {
     // Trava: provider legacy sempre NONE.
     fiscal_provider: LOCKED_PROVIDER,
   };
 
-  const assignText = (key: keyof Update, val: string | null | undefined) => {
+  const assignText = (key: string, val: string | null | undefined) => {
     if (val === undefined) return;
-    (payload as Record<string, string | null>)[key as string] = val;
+    (payload as Record<string, string | null>)[key] = val;
   };
 
   if (parsed.cnpj !== undefined) payload.cnpj = parsed.cnpj === null ? null : normalizeCnpj(parsed.cnpj);
@@ -291,7 +291,7 @@ function jsonObjectRecord(v: Json | null | undefined): Record<string, unknown> {
   return {};
 }
 
-export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
+export function rowToFormValues(row: any | null): CompanyFiscalFormValues {
   if (!row) {
     return {
       fiscal_environment: "NOT_CONFIGURED",
