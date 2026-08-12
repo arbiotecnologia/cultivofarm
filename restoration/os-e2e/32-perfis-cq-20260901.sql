@@ -206,7 +206,7 @@ BEGIN
     CASE WHEN v_ult='reprovado' THEN 'PASS' ELSE 'FAIL' END, coalesce(v_ult,'<nulo>'));
 
   -- C03: o desempate sobrevive a rewrite físico (ctid muda, seq não)
-  UPDATE public.controle_qualidade SET observacoes_gerais = observacoes_gerais
+  UPDATE public.controle_qualidade SET responsavel = responsavel
    WHERE lote_id = v_lote;
   v_ult := public.fn_cq_ultimo_resultado(v_lote);
   INSERT INTO _p(gate,status,detalhe) VALUES ('C03 desempate estavel apos UPDATE (ctid muda)',
