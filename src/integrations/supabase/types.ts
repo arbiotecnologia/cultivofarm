@@ -499,20 +499,72 @@ export type Database = {
         }
         Relationships: []
       }
+      entrega_conferencia_itens: {
+        Row: {
+          created_at: string | null
+          entrega_id: string | null
+          id: string
+          lote_id: string | null
+          produto_id: string | null
+          quantidade_conferida: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          entrega_id?: string | null
+          id?: string
+          lote_id?: string | null
+          produto_id?: string | null
+          quantidade_conferida?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          entrega_id?: string | null
+          id?: string
+          lote_id?: string | null
+          produto_id?: string | null
+          quantidade_conferida?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_conferencia_itens_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_conferencia_itens_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entrega_conferencia_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entrega_etiquetas: {
         Row: {
+          ativo: boolean | null
           codigo_barras: string | null
           created_at: string | null
           entrega_id: string | null
           id: string
         }
         Insert: {
+          ativo?: boolean | null
           codigo_barras?: string | null
           created_at?: string | null
           entrega_id?: string | null
           id?: string
         }
         Update: {
+          ativo?: boolean | null
           codigo_barras?: string | null
           created_at?: string | null
           entrega_id?: string | null
@@ -521,6 +573,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "entrega_etiquetas_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entrega_termos: {
+        Row: {
+          aceite: boolean | null
+          created_at: string | null
+          entrega_id: string | null
+          id: string
+          termo: string | null
+        }
+        Insert: {
+          aceite?: boolean | null
+          created_at?: string | null
+          entrega_id?: string | null
+          id?: string
+          termo?: string | null
+        }
+        Update: {
+          aceite?: boolean | null
+          created_at?: string | null
+          entrega_id?: string | null
+          id?: string
+          termo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entrega_termos_entrega_id_fkey"
             columns: ["entrega_id"]
             isOneToOne: false
             referencedRelation: "entregas"
@@ -689,6 +773,7 @@ export type Database = {
           produto_id: string | null
           quantidade: number | null
           reservado_para_os_id: string | null
+          reservado_para_os_tipo: string | null
           status: string | null
           validade: string | null
           volume_total: number | null
@@ -702,6 +787,7 @@ export type Database = {
           produto_id?: string | null
           quantidade?: number | null
           reservado_para_os_id?: string | null
+          reservado_para_os_tipo?: string | null
           status?: string | null
           validade?: string | null
           volume_total?: number | null
@@ -715,6 +801,7 @@ export type Database = {
           produto_id?: string | null
           quantidade?: number | null
           reservado_para_os_id?: string | null
+          reservado_para_os_tipo?: string | null
           status?: string | null
           validade?: string | null
           volume_total?: number | null
@@ -1419,6 +1506,14 @@ export type Database = {
       rpc_cockpit_criar_entrega_v1: {
         Args: { _ordem_servico_id: string; _volume_total: number }
         Returns: string
+      }
+      rpc_cockpit_criar_visita_v1: {
+        Args: { _cliente_id: string; _data_visita: string; _fazenda_id: string }
+        Returns: string
+      }
+      rpc_cockpit_finalizar_os_v1: {
+        Args: { _ordem_servico_id: string }
+        Returns: undefined
       }
       rpc_create_portal_notification_secure: {
         Args: {
