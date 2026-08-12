@@ -22,7 +22,7 @@ export function useNotificacoesOperacionais() {
     queryKey: ["notificacoes-operacionais", user?.id],
     queryFn: async (): Promise<NotificacaoOperacional[]> => {
       if (!user) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("notificacoes_operacionais")
         .select("id, usuario_id, tipo, titulo, mensagem, link, lido, created_at")
         .eq("usuario_id", user.id)
@@ -61,7 +61,7 @@ export function useNotificacoesOperacionais() {
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("notificacoes_operacionais")
         .update({ lido: true })
         .eq("id", id);
@@ -73,7 +73,7 @@ export function useNotificacoesOperacionais() {
   const markAllRead = useMutation({
     mutationFn: async () => {
       if (!user) return;
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("notificacoes_operacionais")
         .update({ lido: true })
         .eq("usuario_id", user.id)

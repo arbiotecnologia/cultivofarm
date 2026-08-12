@@ -68,13 +68,13 @@ export default function ConsentimentoWhatsappPanel({ canMutate }: { canMutate: b
     queryFn: async (): Promise<ClienteMatch[]> => {
       const q = term.trim();
       if (q.length < 2) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("clientes")
         .select("id, nome, telefone")
         .or(`nome.ilike.%${q}%,cnpj.ilike.%${q}%,cpf.ilike.%${q}%`)
         .limit(15);
       if (error) throw error;
-      return (data as ClienteMatch[]) ?? [];
+      return (data as any[]) ?? [];
     },
     enabled: term.trim().length >= 2,
     staleTime: 30_000,
@@ -84,14 +84,14 @@ export default function ConsentimentoWhatsappPanel({ canMutate }: { canMutate: b
     queryKey: ["consent-prefs", selected?.id],
     queryFn: async (): Promise<Preferencia | null> => {
       if (!selected) return null;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("comunicacao_preferencias")
         .select("id, cliente_id, user_id, canal, enabled, telefone_verificado, whatsapp_opt_in_at, whatsapp_opt_out_at, source, updated_at")
         .eq("cliente_id", selected.id)
         .eq("canal", "whatsapp")
         .maybeSingle();
       if (error) throw error;
-      return (data as Preferencia | null) ?? null;
+      return (data as any | null) ?? null;
     },
     enabled: !!selected,
   });
@@ -100,7 +100,7 @@ export default function ConsentimentoWhatsappPanel({ canMutate }: { canMutate: b
     queryKey: ["consent-log", selected?.id],
     queryFn: async (): Promise<ConsentLog[]> => {
       if (!selected) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("comunicacao_consent_log")
         .select("id, cliente_id, user_id, canal, acao, source, actor_id, created_at")
         .eq("cliente_id", selected.id)
@@ -108,7 +108,7 @@ export default function ConsentimentoWhatsappPanel({ canMutate }: { canMutate: b
         .order("created_at", { ascending: false })
         .limit(30);
       if (error) throw error;
-      return (data as ConsentLog[]) ?? [];
+      return (data as any[]) ?? [];
     },
     enabled: !!selected,
   });
@@ -126,7 +126,7 @@ export default function ConsentimentoWhatsappPanel({ canMutate }: { canMutate: b
         p_source: source || "admin_ui",
         p_justificativa: justificativa.trim() || null,
       };
-      const { data, error } = await supabase.rpc("rpc_admin_set_whatsapp_consent" as never, payload as never);
+      const { data, error } = await (supabase as any).rpc("rpc_admin_set_whatsapp_consent" as never, payload as never);
       if (error) throw error;
       return data;
     },

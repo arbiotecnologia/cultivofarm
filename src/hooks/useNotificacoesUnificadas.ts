@@ -61,7 +61,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
     queryKey: ["notif-unified", "op", user?.id],
     queryFn: async (): Promise<NotifOp[]> => {
       if (!user) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("notificacoes_operacionais")
         .select("id, tipo, titulo, mensagem, link, lido, created_at")
         .eq("usuario_id", user.id)
@@ -79,7 +79,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
     queryKey: ["notif-unified", "portal", clienteId],
     queryFn: async (): Promise<NotifPortal[]> => {
       if (!clienteId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("portal_notificacoes")
         .select("id, tipo, titulo, mensagem, link, lido, created_at")
         .eq("cliente_id", clienteId)
@@ -165,7 +165,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
       if (!parsed) return;
       const table =
         parsed.origem === "operacional" ? "notificacoes_operacionais" : "portal_notificacoes";
-      const { error } = await supabase.from(table).update({ lido: true }).eq("id", parsed.rawId);
+      const { error } = await (supabase as any).from(table as any).update({ lido: true }).eq("id", parsed.rawId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -180,7 +180,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
       if (user) {
         tasks.push(
           (async () => {
-            const r = await supabase
+            const r = await (supabase as any)
               .from("notificacoes_operacionais")
               .update({ lido: true })
               .eq("usuario_id", user.id)
@@ -192,7 +192,7 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
       if (clienteId) {
         tasks.push(
           (async () => {
-            const r = await supabase
+            const r = await (supabase as any)
               .from("portal_notificacoes")
               .update({ lido: true })
               .eq("cliente_id", clienteId)

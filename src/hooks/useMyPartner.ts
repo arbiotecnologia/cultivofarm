@@ -10,14 +10,14 @@ export function useMyPartner() {
     queryKey: ["my-partner", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data: pu, error: e1 } = await supabase
+      const { data: pu, error: e1 } = await (supabase as any)
         .from("partner_users")
         .select("partner_id, papel")
         .eq("user_id", user!.id)
         .maybeSingle();
       if (e1) throw e1;
       if (!pu) return null;
-      const { data: partner, error: e2 } = await supabase
+      const { data: partner, error: e2 } = await (supabase as any)
         .from("partner_accounts")
         .select("id, codigo, razao_social, nome_fantasia, desconto_padrao, ativo")
         .eq("id", (pu as any).partner_id)

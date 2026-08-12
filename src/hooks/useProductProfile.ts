@@ -63,10 +63,10 @@ export function useProductProfile(produtoId: string | null | undefined) {
     enabled: !!produtoId,
     queryFn: async () => {
       const [pRes, tRes, cRes, fRes] = await Promise.all([
-        supabase.from("product_technical_profiles").select("*").eq("produto_id", produtoId!).maybeSingle(),
-        supabase.from("product_target_recommendations").select("*").eq("produto_id", produtoId!).eq("ativo", true).order("prioridade"),
-        supabase.from("product_crop_recommendations").select("*").eq("produto_id", produtoId!).eq("ativo", true),
-        supabase
+        (supabase as any).from("product_technical_profiles").select("*").eq("produto_id", produtoId!).maybeSingle(),
+        (supabase as any).from("product_target_recommendations").select("*").eq("produto_id", produtoId!).eq("ativo", true).order("prioridade"),
+        (supabase as any).from("product_crop_recommendations").select("*").eq("produto_id", produtoId!).eq("ativo", true),
+        (supabase as any)
           .from("formulacoes")
           .select("microrganismo_id, component_insumo_id, volume_ml, proporcao, microrganismos(id,nome,nome_cientifico,funcao_agronomica,tipo), insumo:produtos!formulacoes_component_insumo_id_fkey(nome)")
           .eq("produto_id", produtoId!),
@@ -89,8 +89,8 @@ export function useProductProfile(produtoId: string | null | undefined) {
       }));
       return {
         profile: (pRes.data as ProductProfile | null) ?? null,
-        targets: (tRes.data ?? []) as ProductTarget[],
-        crops: (cRes.data ?? []) as ProductCrop[],
+        targets: (tRes.data ?? []) as any[],
+        crops: (cRes.data ?? []) as any[],
         composicao,
       };
     },
@@ -101,9 +101,9 @@ export function useUpsertProductProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: Partial<ProductProfile> & { produto_id: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("product_technical_profiles")
-        .upsert(payload, { onConflict: "produto_id" })
+        .upsert(payload as any, { onConflict: "produto_id" })
         .select()
         .maybeSingle();
       if (error) throw error;

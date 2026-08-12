@@ -35,9 +35,9 @@ export function TimelinePedidoDialog({ orderId, open, onOpenChange }: Props) {
     queryKey: ["partner-order-summary", orderId],
     enabled: !!orderId && open,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("partner_orders")
-        .select("id, numero, status, approval_notes, updated_at")
+        .select("id, status, approval_notes, updated_at")
         .eq("id", orderId!)
         .maybeSingle();
       if (error) throw error;
@@ -49,7 +49,7 @@ export function TimelinePedidoDialog({ orderId, open, onOpenChange }: Props) {
     queryKey: ["partner-timeline", orderId],
     enabled: !!orderId && open,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("production_timeline_events")
         .select("id, event_type, event_at")
         .eq("partner_order_id", orderId!)
@@ -69,7 +69,7 @@ export function TimelinePedidoDialog({ orderId, open, onOpenChange }: Props) {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            Andamento do pedido {order?.numero ? <span className="font-mono text-sm text-muted-foreground">· {order.numero}</span> : null}
+            Andamento do pedido {(order as any)?.numero ? <span className="font-mono text-sm text-muted-foreground">· {(order as any).numero}</span> : null}
           </DialogTitle>
         </DialogHeader>
 

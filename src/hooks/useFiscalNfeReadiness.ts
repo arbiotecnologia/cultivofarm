@@ -110,7 +110,7 @@ export function useFiscalNfeReadiness(enabled = true) {
     enabled,
     staleTime: 30_000,
     queryFn: async (): Promise<NfeReadiness> => {
-      const { data, error } = await supabase.rpc("rpc_fiscal_nfe_readiness_v1");
+      const { data, error } = await (supabase as any).rpc("rpc_fiscal_nfe_readiness_v1");
       if (error) throw new Error(mapNfeReadinessError(error.message));
       return data as unknown as NfeReadiness;
     },

@@ -69,19 +69,19 @@ export function depLabel(key: string): string {
 }
 
 export async function checkClienteDeps(id: string): Promise<DepCounts> {
-  const { data, error } = await supabase.rpc("check_cliente_dependencies", { _cliente_id: id });
+  const { data, error } = await (supabase as any).rpc("check_cliente_dependencies", { _cliente_id: id });
   if (error) throw error;
   return (data as DepCounts) || {};
 }
 
 export async function checkFazendaDeps(id: string): Promise<DepCounts> {
-  const { data, error } = await supabase.rpc("check_fazenda_dependencies", { _fazenda_id: id });
+  const { data, error } = await (supabase as any).rpc("check_fazenda_dependencies", { _fazenda_id: id });
   if (error) throw error;
   return (data as DepCounts) || {};
 }
 
 export async function checkTalhaoDeps(id: string): Promise<DepCounts> {
-  const { data, error } = await supabase.rpc("check_talhao_dependencies", { _talhao_id: id });
+  const { data, error } = await (supabase as any).rpc("check_talhao_dependencies", { _talhao_id: id });
   if (error) throw error;
   return (data as DepCounts) || {};
 }

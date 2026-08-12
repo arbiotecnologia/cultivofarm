@@ -30,14 +30,14 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
     queryKey: ["catalogo-unificado", scope],
     queryFn: async (): Promise<CatalogoUnificadoRow[]> => {
       const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await Promise.all([
-        supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").order("nome"),
-        supabase.from("microrganismos").select("id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").order("nome"),
-        supabase.from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,explicacao_tecnica"),
-        supabase.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,mecanismo_acao,beneficios_agronomicos,explicacao_tecnica"),
-        supabase.from("formulacoes").select("produto_id"),
-        supabase.from("catalog_technical_sources" as any).select("entidade_tipo,entidade_id"),
-        supabase.from("microorganism_targets").select("microrganismo_id").eq("ativo", true),
-        supabase.from("product_target_recommendations").select("produto_id").eq("ativo", true),
+        (supabase as any).from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").order("nome"),
+        (supabase as any).from("microrganismos").select("id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").order("nome"),
+        (supabase as any).from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,explicacao_tecnica"),
+        (supabase as any).from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,mecanismo_acao,beneficios_agronomicos,explicacao_tecnica"),
+        (supabase as any).from("formulacoes").select("produto_id"),
+        (supabase as any).from("catalog_technical_sources" as any).select("entidade_tipo,entidade_id"),
+        (supabase as any).from("microorganism_targets").select("microrganismo_id").eq("ativo", true),
+        (supabase as any).from("product_target_recommendations").select("produto_id").eq("ativo", true),
       ]);
       const ppMap = new Map((prodProf.data ?? []).map((x: any) => [x.produto_id, x]));
       const mpMap = new Map((microProf.data ?? []).map((x: any) => [x.microrganismo_id, x]));

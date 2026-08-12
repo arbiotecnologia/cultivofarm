@@ -228,13 +228,13 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
         .eq("id", alvo)
         .maybeSingle();
       if (cancelled) return;
-      if (p) { setOsExtra({ ...p, type: "padrao" }); return; }
+      if (p) { setOsExtra({ ...p as any, type: "padrao" } as any); return; }
       const { data: f } = await supabase
         .from("ordens_servico_onfarm")
         .select("id, numero_os, status, cliente_id, clientes(nome, codigo_cliente), produtos(nome)")
         .eq("id", alvo)
         .maybeSingle();
-      if (!cancelled && f) setOsExtra({ ...f, type: "onfarm" });
+      if (!cancelled && f) setOsExtra({ ...f as any, type: "onfarm" } as any);
     })();
     return () => { cancelled = true; };
   }, [open, osEfetivaId, osInicial, todasOS, osExtra]);

@@ -16,14 +16,14 @@ export function PrevisaoInteligente() {
 
   const { data: fazendas } = useQuery({
     queryKey: ["fazendas"],
-    queryFn: async () => { const { data } = await supabase.from("fazendas").select("id, nome").order("nome"); return data ?? []; },
+    queryFn: async () => { const { data } = await (supabase as any).from("fazendas").select("id, nome").order("nome"); return data ?? []; },
   });
 
   const { data: talhoes } = useQuery({
     queryKey: ["talhoes_prev", fazendaId],
     queryFn: async () => {
       if (!fazendaId) return [];
-      const { data } = await supabase.from("talhoes").select("id, nome, culturas(nome)").eq("fazenda_id", fazendaId);
+      const { data } = await (supabase as any).from("talhoes").select("id, nome, culturas(nome)").eq("fazenda_id", fazendaId);
       return data ?? [];
     },
     enabled: !!fazendaId,
@@ -34,7 +34,7 @@ export function PrevisaoInteligente() {
     queryFn: async () => {
       if (!fazendaId) return [];
       const d = new Date(); d.setDate(d.getDate() - 7);
-      const { data } = await supabase.from("clima_dados").select("*").eq("fazenda_id", fazendaId).gte("data_hora", d.toISOString()).order("data_hora", { ascending: false });
+      const { data } = await (supabase as any).from("clima_dados").select("*").eq("fazenda_id", fazendaId).gte("data_hora", d.toISOString()).order("data_hora", { ascending: false });
       return data ?? [];
     },
     enabled: !!fazendaId,
@@ -44,7 +44,7 @@ export function PrevisaoInteligente() {
     queryKey: ["registros_prev", fazendaId],
     queryFn: async () => {
       if (!fazendaId) return [];
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor")
         .select("talhao_id, categoria_problema, tipo_demanda")
         .eq("fazenda_id", fazendaId);
@@ -55,7 +55,7 @@ export function PrevisaoInteligente() {
 
   const createAlert = useMutation({
     mutationFn: async (params: { fazenda_id: string; talhao_id: string; tipo_alerta: string; nivel_risco: string; descricao: string }) => {
-      const { error } = await supabase.from("alertas_agronomicos").insert(params as any);
+      const { error } = await (supabase as any).from("alertas_agronomicos").insert(params as any);
       if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["alertas_agronomicos"] }); toast.success("Alerta criado com sucesso"); },

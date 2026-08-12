@@ -68,19 +68,19 @@ export function ProblemaSelector({ value, onSelect, className, placeholder = "Se
   const { data: problemas, isLoading } = useQuery({
     queryKey: ["catalogo-problemas-ativo"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("catalogo_problemas")
         .select("id, nome, categoria, nome_cientifico")
         .eq("ativo", true)
         .order("nome");
       if (error) throw error;
-      return data as CatalogoProblema[];
+      return data as any[];
     },
   });
 
   const createMutation = useMutation({
     mutationFn: async (payload: { nome: string; categoria: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("catalogo_problemas")
         .insert([{ 
           nome: payload.nome, 
@@ -142,7 +142,7 @@ export function ProblemaSelector({ value, onSelect, className, placeholder = "Se
               <CommandEmpty>Nenhum problema encontrado.</CommandEmpty>
               {Object.entries(groupedProblemas).map(([cat, list]) => (
                 <CommandGroup key={cat} heading={CATEGORIA_LABELS[cat] || cat}>
-                  {list.map((p) => (
+                  {(list as any[]).map((p) => (
                     <CommandItem
                       key={p.id}
                       value={p.nome}

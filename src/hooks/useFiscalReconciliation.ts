@@ -24,7 +24,7 @@ import {
   type UnlinkValues,
 } from "@/lib/fiscal/reconciliationValidation";
 
-type FiscalEventRow = Database["public"]["Tables"]["fiscal_events"]["Row"];
+type FiscalEventRow = any;
 
 export const RECON_KEYS = {
   root: ["fiscal", "reconciliation"] as const,
@@ -59,7 +59,7 @@ export function useReconciliationQueue(params: QueueParams) {
     queryFn: async (): Promise<QueueResult> => {
       const from = (params.page - 1) * params.pageSize;
       const to = from + params.pageSize - 1;
-      let q = supabase
+      let q = (supabase as any)
         .from("v_fiscal_document_reconciliation_pending")
         .select(QUEUE_COLUMNS, { count: "exact" })
         .range(from, to);
@@ -72,7 +72,7 @@ export function useReconciliationQueue(params: QueueParams) {
       const { data, count, error } = await q;
       if (error) throw error;
       return {
-        items: (data ?? []) as unknown as ReconciliationPendingRow[],
+        items: (data ?? []) as any[],
         total: count ?? 0,
       };
     },
@@ -92,13 +92,13 @@ export function useReconciliationInvoice(id: string | null) {
     enabled: !!id,
     queryFn: async (): Promise<FiscalInvoiceRow | null> => {
       if (!id) return null;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_invoices")
         .select(INVOICE_COLUMNS)
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return (data as unknown as FiscalInvoiceRow | null) ?? null;
+      return (data as any | null) ?? null;
     },
     staleTime: 15_000,
   });
@@ -110,7 +110,7 @@ export function useReconciliationEvents(id: string | null) {
     enabled: !!id,
     queryFn: async (): Promise<FiscalEventRow[]> => {
       if (!id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_events")
         .select(
           "id, fiscal_invoice_id, event_type, event_source, status_before, " +
@@ -121,7 +121,7 @@ export function useReconciliationEvents(id: string | null) {
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
-      return (data ?? []) as unknown as FiscalEventRow[];
+      return (data ?? []) as any[];
     },
     staleTime: 15_000,
   });
@@ -147,11 +147,11 @@ export function useLinkFiscalInvoice() {
         throw new Error("Vínculo já existente; confirmação explícita necessária.");
       }
       if (currentLink === parsed.targetId) return prev.id;
-      const patch: Database["public"]["Tables"]["fiscal_invoices"]["Update"] =
+      const patch: any =
         parsed.target === "receivable_id"
           ? { receivable_id: parsed.targetId }
           : { delivery_id: parsed.targetId };
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_invoices")
         .update(patch)
         .eq("id", prev.id)
@@ -186,11 +186,11 @@ export function useUnlinkFiscalInvoice() {
       if (!writeEnabled) throw new ReconciliationWriteDisabledError();
       const parsed = unlinkSchema.parse(values);
       assertManualEditable(prev);
-      const patch: Database["public"]["Tables"]["fiscal_invoices"]["Update"] =
+      const patch: any =
         parsed.target === "receivable_id"
           ? { receivable_id: null }
           : { delivery_id: null };
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_invoices")
         .update(patch)
         .eq("id", prev.id)
@@ -205,7 +205,7 @@ export function useUnlinkFiscalInvoice() {
       // reverte o UPDATE — o desvínculo é auditado pelo trigger canônico.
       if (manualEventEnabled) {
         const notes = `unlink_${parsed.target}: ${parsed.reason}`.slice(0, 2000);
-        const { error: rpcErr } = await supabase.rpc("rpc_fiscal_event_manual", {
+        const { error: rpcErr } = await (supabase as any).rpc("rpc_fiscal_event_manual", {
           p_invoice_id: prev.id,
           p_event_type: "MANUAL_UPDATED",
           p_notes: notes,

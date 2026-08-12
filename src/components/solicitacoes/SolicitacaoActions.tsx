@@ -63,12 +63,12 @@ export function SolicitacaoActions({ solicitacao, onOpenDetail, onOpenAtribuir }
   const cancelMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Sessão expirada");
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("portal_solicitacoes")
         .update({ status: "cancelada" })
         .eq("id", solicitacao.id);
       if (error) throw error;
-      await supabase.from("solicitacoes_timeline").insert({
+      await (supabase as any).from("solicitacoes_timeline").insert({
         solicitacao_id: solicitacao.id,
         tipo_evento: "cancelada",
         descricao: motivo || "Cancelada sem motivo informado",
@@ -157,7 +157,7 @@ export function SolicitacaoActions({ solicitacao, onOpenDetail, onOpenAtribuir }
           {solicitacao.status === "aguardando_decisao_produtor" && (
             <DropdownMenuItem 
               onClick={async () => {
-                const { data: visit } = await supabase
+                const { data: visit } = await (supabase as any)
                   .from("registros_consultor")
                   .select("id")
                   .eq("solicitacao_id", solicitacao.id)

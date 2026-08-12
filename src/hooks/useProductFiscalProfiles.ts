@@ -100,7 +100,7 @@ export function useProductFiscalList(
         !!params.status && isProductFiscalProfileStatus(params.status);
 
       const runFiltered = async () => {
-        let q = supabase
+        let q = (supabase as any)
           .from("produtos")
           .select(
             "id, nome, codigo, product_fiscal_profiles!inner(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
@@ -116,7 +116,7 @@ export function useProductFiscalList(
       };
 
       const runUnfiltered = async () => {
-        let q = supabase
+        let q = (supabase as any)
           .from("produtos")
           .select(
             "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
@@ -138,7 +138,7 @@ export function useProductFiscalList(
         throw new Error(error.message);
       }
 
-      const items: ProductListItem[] = (data ?? []).map((p) => {
+      const items: ProductListItem[] = (data ?? []).map((p: any) => {
         const profileRaw = p.product_fiscal_profiles;
         const profile = Array.isArray(profileRaw)
           ? profileRaw[0] ?? null
@@ -176,10 +176,10 @@ export function useProductFiscalReadiness(
     queryKey: PRODUCT_FISCAL_KEYS.readiness(productIds),
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("v_product_fiscal_readiness")
         .select("product_id, profile_status, minimally_classified, accounting_validated")
-        .in("product_id", productIds);
+        .in("product_id", productIds as any);
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
@@ -209,17 +209,17 @@ export function useProductFiscalListByIds(
     queryKey: PRODUCT_FISCAL_KEYS.byIds(productIds),
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("produtos")
         .select(
           "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
         )
-        .in("id", productIds);
+        .in("id", productIds as any);
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
       }
-      return (data ?? []).map((p) => {
+      return (data ?? []).map((p: any) => {
         const profileRaw = p.product_fiscal_profiles;
         const profile = Array.isArray(profileRaw)
           ? profileRaw[0] ?? null
@@ -251,7 +251,7 @@ export function useProductFiscalProfile(
     queryKey: [...PRODUCT_FISCAL_KEYS.root, "profile", productId] as const,
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("product_fiscal_profiles")
         .select("*")
         .eq("product_id", productId!)
@@ -286,7 +286,7 @@ export function useSaveProductFiscalProfile() {
     mutationFn: async ({ productId, current, values }) => {
       if (!current) {
         // Verificação prévia: perfil pode existir de outra sessão.
-        const existing = await supabase
+        const existing = await (supabase as any)
           .from("product_fiscal_profiles")
           .select("id")
           .eq("product_id", productId)
@@ -300,9 +300,9 @@ export function useSaveProductFiscalProfile() {
           throw new Error("duplicate_profile");
         }
         const payload = buildInsertPayload(productId, values);
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("product_fiscal_profiles")
-          .insert(payload)
+          .insert(payload as any)
           .select("*")
           .single();
         if (error) {
@@ -315,9 +315,9 @@ export function useSaveProductFiscalProfile() {
       if (Object.keys(payload).length === 0) {
         return current; // nada a atualizar
       }
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("product_fiscal_profiles")
-        .update(payload)
+        .update(payload as any)
         .eq("id", current.id)
         .eq("product_id", current.product_id)
         .eq("updated_at", current.updated_at)

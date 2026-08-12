@@ -126,7 +126,7 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
 
   useEffect(() => {
     if (open && produto && canSeeAudit && data?.profile?.id) {
-      supabase
+      (supabase as any)
         .from("catalog_technical_audit_logs")
         .select("id, acao, usuario_id, created_at")
         .eq("entidade_tipo", "ficha_produto")

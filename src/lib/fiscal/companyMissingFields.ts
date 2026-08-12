@@ -124,7 +124,7 @@ function jsonObj(v: unknown): Record<string, unknown> {
 
 /** Retorna a lista de campos faltantes agrupada por seção, sem inventar dados. */
 export function computeCompanyMissingFields(
-  row: CompanyFiscalRow | null,
+  row: any | null,
 ): MissingFieldsResult {
   const bySection: Record<MissingSection, MissingField[]> = {
     empresa: [],

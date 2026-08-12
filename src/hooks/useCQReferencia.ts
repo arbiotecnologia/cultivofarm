@@ -31,7 +31,7 @@ export function useCQReferencia(
 
       // 1) tentativa mais específica: microrganismo + produto
       if (produtoId) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("cq_parametros_referencia")
           .select("*")
           .eq("ativo", true)
@@ -43,7 +43,7 @@ export function useCQReferencia(
       }
 
       // 2) fallback: apenas microrganismo (produto_id nulo)
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("cq_parametros_referencia")
         .select("*")
         .eq("ativo", true)
@@ -51,7 +51,7 @@ export function useCQReferencia(
         .is("produto_id", null)
         .maybeSingle();
       if (error) throw error;
-      return (data as CQReferencia | null) ?? null;
+      return (data as any | null) ?? null;
     },
   });
 }

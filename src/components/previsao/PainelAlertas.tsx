@@ -18,8 +18,8 @@ export function PainelAlertas() {
   const { data: alertas, isLoading } = useQuery({
     queryKey: ["alertas_agronomicos", statusFilter],
     queryFn: async () => {
-      let q = supabase.from("alertas_agronomicos").select("*, fazendas(nome), talhoes(nome)").order("data_alerta", { ascending: false });
-      if (statusFilter !== "todos") q = q.eq("status", statusFilter as "ativo" | "monitoramento" | "encerrado");
+      let q = (supabase as any).from("alertas_agronomicos").select("*, fazendas(nome), talhoes(nome)").order("data_alerta", { ascending: false });
+      if (statusFilter !== "todos") q = q.eq("status", statusFilter as any);
       const { data } = await q;
       return data ?? [];
     },
@@ -27,7 +27,7 @@ export function PainelAlertas() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("alertas_agronomicos").update({ status: status as any, updated_at: new Date().toISOString() }).eq("id", id);
+      const { error } = await (supabase as any).from("alertas_agronomicos").update({ status: status as any, updated_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["alertas_agronomicos"] }); toast.success("Alerta atualizado"); },

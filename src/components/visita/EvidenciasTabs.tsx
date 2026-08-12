@@ -323,7 +323,7 @@ export function EvidenciasTabs({
       
       if (upErr) throw upErr;
       
-      const { error } = await supabase.from("registros_consultor_arquivos").insert({
+      const { error } = await (supabase as any).from("registros_consultor_archives").insert({
         registro_consultor_id: registroId,
         arquivo_path: path,
         arquivo_url: null, // Legado
@@ -345,7 +345,7 @@ export function EvidenciasTabs({
   };
 
   const updateArquivo = async (id: string, patch: Partial<ArquivoRow>) => {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("registros_consultor_arquivos")
       .update(patch as any)
       .eq("id", id);
@@ -358,7 +358,7 @@ export function EvidenciasTabs({
 
   const removeArquivo = async (id: string) => {
     // Primeiro pegamos os dados do arquivo para permitir o "Desfazer"
-    const { data: arquivoParaRemover, error: fetchError } = await supabase
+    const { data: arquivoParaRemover, error: fetchError } = await (supabase as any)
       .from("registros_consultor_arquivos")
       .select("*")
       .eq("id", id)
@@ -369,7 +369,7 @@ export function EvidenciasTabs({
       return;
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("registros_consultor_arquivos")
       .delete()
       .eq("id", id);
@@ -391,7 +391,7 @@ export function EvidenciasTabs({
         // Removemos campos gerados automaticamente para o insert
         // Usamos 'as any' para evitar erros de tipagem com campos que podem não estar na interface local
         const { id: _, uploaded_at: __, ...rest } = arquivoParaRemover as any;
-        const { error: undoError } = await supabase
+        const { error: undoError } = await (supabase as any)
           .from("registros_consultor_arquivos")
           .insert(rest);
         
@@ -429,7 +429,7 @@ export function EvidenciasTabs({
 
   const setPrincipal = async (id: string) => {
     // Limpa principal anterior, marca esta
-    await supabase
+    await (supabase as any)
       .from("registros_consultor_arquivos")
       .update({ foto_principal: false } as any)
       .eq("registro_consultor_id", registroId);

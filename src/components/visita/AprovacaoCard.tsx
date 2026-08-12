@@ -55,7 +55,7 @@ export function AprovacaoCard({ registroId, registroStatus }: AprovacaoCardProps
   const { data: aprovacoes = [] } = useQuery({
     queryKey: ["visita-aprovacoes", registroId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("aprovacoes_tecnicas")
         .select("*")
         .eq("registro_consultor_id", registroId)
@@ -75,7 +75,7 @@ export function AprovacaoCard({ registroId, registroStatus }: AprovacaoCardProps
     queryKey: ["aprovacao-gestores", gestorIds],
     enabled: gestorIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("profiles")
         .select("user_id, nome")
         .in("user_id", gestorIds);
@@ -86,7 +86,7 @@ export function AprovacaoCard({ registroId, registroStatus }: AprovacaoCardProps
   const { data: log = [] } = useQuery({
     queryKey: ["visita-status-log", registroId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor_status_log")
         .select("*")
         .eq("registro_consultor_id", registroId)
@@ -105,7 +105,7 @@ export function AprovacaoCard({ registroId, registroStatus }: AprovacaoCardProps
     queryKey: ["status-log-users", changedByIds],
     enabled: changedByIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("profiles")
         .select("user_id, nome")
         .in("user_id", changedByIds);

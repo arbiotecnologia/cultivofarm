@@ -30,17 +30,17 @@ export function VisitaTimeline({ registroId, talhaoId, className }: VisitaTimeli
       const items: TimelineItem[] = [];
 
       const [{ data: logs }, { data: checkins }, { data: arqs }] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("registros_consultor_status_log")
           .select("*")
           .eq("registro_consultor_id", registroId)
           .order("changed_at", { ascending: false }),
-        supabase
+        (supabase as any)
           .from("visitas_checkin")
           .select("id, latitude, longitude, data_hora_checkin, tipo_checkin")
           .eq("registro_consultor_id", registroId)
           .order("data_hora_checkin", { ascending: false }),
-        supabase
+        (supabase as any)
           .from("registros_consultor_arquivos")
           .select("id, tipo_midia, tipo_arquivo, categoria_arquivo, uploaded_at, legenda")
           .eq("registro_consultor_id", registroId)
@@ -88,7 +88,7 @@ export function VisitaTimeline({ registroId, talhaoId, className }: VisitaTimeli
     queryKey: ["talhao-info", talhaoId],
     queryFn: async () => {
       if (!talhaoId) return null;
-      const { data } = await supabase.from("talhoes").select("tipo_manejo_agua").eq("id", talhaoId).single();
+      const { data } = await (supabase as any).from("talhoes").select("tipo_manejo_agua").eq("id", talhaoId).single();
       return data;
     },
     enabled: !!talhaoId,
@@ -99,14 +99,14 @@ export function VisitaTimeline({ registroId, talhaoId, className }: VisitaTimeli
     queryFn: async () => {
       if (!talhaoId) return { visitas: [], aplicacoes: [] };
       const [{ data: visitas }, { data: aplicacoes }] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("registros_consultor")
           .select("id, data_vistoria, problema_principal, status")
           .eq("talhao_id", talhaoId)
           .neq("id", registroId)
           .order("data_vistoria", { ascending: false })
           .limit(3),
-        supabase
+        (supabase as any)
           .from("aplicacoes")
           .select("id, data_aplicacao, dose_aplicada, ordens_servico:ordem_servico_id(talhao_id)")
           .order("data_aplicacao", { ascending: false })

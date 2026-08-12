@@ -41,7 +41,7 @@ export function useMetricasOperacionais() {
   const laboratorio = useQuery({
     queryKey: ["metricas-laboratorio"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("vw_esteira_laboratorio")
         .select("*");
       
@@ -80,7 +80,7 @@ export function useMetricasOperacionais() {
       // Para fins de métrica "real" no frontend, vamos apenas coletar os valores.
       // Em uma Fase 11 real, isso seria uma RPC agregadora.
       
-      data.forEach(item => {
+      (data ?? []).forEach((item: any) => {
         const statusOficial = item.status_esteira_oficial as string;
         
         // Usar status_esteira_oficial para as contagens principais
@@ -113,7 +113,7 @@ export function useMetricasOperacionais() {
   const visitas = useQuery({
     queryKey: ["metricas-visita-tecnica"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("vw_fluxo_visita_tecnica")
         .select("*");
 
@@ -142,7 +142,7 @@ export function useMetricasOperacionais() {
       let tFinAprov = 0, cFinAprov = 0;
       let tAprovOs = 0, cAprovOs = 0;
 
-      data.forEach(item => {
+      (data ?? []).forEach((item: any) => {
         if (item.status_solicitacao && !["concluida", "cancelada", "convertida_os"].includes(item.status_solicitacao)) {
           metricas.totalSolicitacoesAbertas++;
         }

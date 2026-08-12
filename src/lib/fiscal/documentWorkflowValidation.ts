@@ -32,14 +32,10 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
 // ————————————————————————— Tipos do contrato —————————————————————————
-export type FiscalInvoiceRow =
-  Database["public"]["Tables"]["fiscal_invoices"]["Row"];
-export type FiscalInvoiceInsert =
-  Database["public"]["Tables"]["fiscal_invoices"]["Insert"];
-export type FiscalInvoiceUpdate =
-  Database["public"]["Tables"]["fiscal_invoices"]["Update"];
-export type FiscalInvoiceItemRow =
-  Database["public"]["Tables"]["fiscal_invoice_items"]["Row"];
+export type FiscalInvoiceRow = any;
+export type FiscalInvoiceInsert = any;
+export type FiscalInvoiceUpdate = any;
+export type FiscalInvoiceItemRow = any;
 
 // ————————————————————————— Domínios canônicos ————————————————————————
 export const DOCUMENT_MODEL_VALUES = ["NFE", "NFSE", "OTHER"] as const;

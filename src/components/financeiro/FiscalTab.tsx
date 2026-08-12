@@ -28,7 +28,7 @@ export function FiscalTab({ receivable }: Props) {
     queryKey: ["fiscal-invoice-by-ar", arId],
     enabled: !!arId,
     queryFn: async () => {
-      const { data } = await supabase.from("fiscal_invoices").select("*").eq("receivable_id", arId).maybeSingle();
+      const { data } = await (supabase as any).from("fiscal_invoices").select("*").eq("receivable_id", arId).maybeSingle();
       return data;
     },
   });
@@ -36,11 +36,11 @@ export function FiscalTab({ receivable }: Props) {
   const [form, setForm] = useState<any>({});
   useEffect(() => {
     setForm({
-      status: invoice?.status ?? receivable?.fiscal_invoice_status ?? "PENDING",
-      invoice_number: invoice?.invoice_number ?? receivable?.fiscal_invoice_number ?? "",
-      series: invoice?.series ?? "",
-      access_key: invoice?.access_key ?? receivable?.fiscal_access_key ?? "",
-      issue_date: invoice?.issue_date ?? receivable?.fiscal_issue_date ?? "",
+      status: (invoice as any)?.status ?? (receivable as any)?.fiscal_invoice_status ?? "PENDING",
+      invoice_number: (invoice as any)?.invoice_number ?? (receivable as any)?.fiscal_invoice_number ?? "",
+      series: (invoice as any)?.series ?? "",
+      access_key: (invoice as any)?.access_key ?? (receivable as any)?.fiscal_access_key ?? "",
+      issue_date: (invoice as any)?.issue_date ?? (receivable as any)?.fiscal_issue_date ?? "",
     });
   }, [invoice, receivable]);
 
@@ -54,8 +54,8 @@ export function FiscalTab({ receivable }: Props) {
           series: form.series || null,
           access_key: form.access_key || null,
           issue_date: form.issue_date || null,
-          invoice_type: invoice?.invoice_type ?? "NFE",
-          total_amount: invoice?.total_amount ?? receivable.total_amount,
+          invoice_type: (invoice as any)?.invoice_type ?? "NFE",
+          total_amount: (invoice as any)?.total_amount ?? receivable.total_amount,
         },
       });
       if (error) throw error;
@@ -96,10 +96,10 @@ export function FiscalTab({ receivable }: Props) {
 
       <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full sm:w-auto">Salvar dados fiscais</Button>
 
-      {invoice?.id && (
+      {(invoice as any)?.id && (
         <div className="pt-3 border-t">
           <Label className="text-xs uppercase text-muted-foreground">Anexos fiscais (XML / DANFE)</Label>
-          <DocumentosPanel ownerType="FISCAL_INVOICE" ownerId={invoice.id} defaultType="XML" canDelete />
+          <DocumentosPanel ownerType="FISCAL_INVOICE" ownerId={(invoice as any).id} defaultType="XML" canDelete />
         </div>
       )}
     </div>

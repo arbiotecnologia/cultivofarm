@@ -18,7 +18,7 @@ export function CalculoRisco() {
   const { data: fazendas } = useQuery({
     queryKey: ["fazendas"],
     queryFn: async () => {
-      const { data } = await supabase.from("fazendas").select("id, nome").order("nome");
+      const { data } = await (supabase as any).from("fazendas").select("id, nome").order("nome");
       return data ?? [];
     },
   });
@@ -27,7 +27,7 @@ export function CalculoRisco() {
     queryKey: ["talhoes_fazenda", fazendaId],
     queryFn: async () => {
       if (!fazendaId) return [];
-      const { data } = await supabase.from("talhoes").select("id, nome, cultura_id, culturas(nome)").eq("fazenda_id", fazendaId);
+      const { data } = await (supabase as any).from("talhoes").select("id, nome, cultura_id, culturas(nome)").eq("fazenda_id", fazendaId);
       return data ?? [];
     },
     enabled: !!fazendaId,
@@ -38,7 +38,7 @@ export function CalculoRisco() {
     queryFn: async () => {
       if (!fazendaId) return [];
       const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { data } = await supabase.from("clima_dados").select("*").eq("fazenda_id", fazendaId).gte("data_hora", sevenDaysAgo.toISOString()).order("data_hora", { ascending: false });
+      const { data } = await (supabase as any).from("clima_dados").select("*").eq("fazenda_id", fazendaId).gte("data_hora", sevenDaysAgo.toISOString()).order("data_hora", { ascending: false });
       return data ?? [];
     },
     enabled: !!fazendaId,
@@ -48,7 +48,7 @@ export function CalculoRisco() {
     queryKey: ["registros_fazenda", fazendaId],
     queryFn: async () => {
       if (!fazendaId) return [];
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor")
         .select("talhao_id, categoria_problema, tipo_demanda")
         .eq("fazenda_id", fazendaId);

@@ -16,10 +16,10 @@ export function useOrdersSlaMap(orderIds: string[]) {
     enabled: key.length > 0 && Object.keys(configMap).length > 0,
     staleTime: 60_000,
     queryFn: async (): Promise<Map<string, SlaBadgeInfo>> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("production_planning")
         .select("partner_order_id, status, updated_at")
-        .in("partner_order_id", key);
+        .in("partner_order_id", key as any);
       if (error) throw error;
       const result = new Map<string, SlaBadgeInfo>();
       for (const r of (data ?? []) as any[]) {

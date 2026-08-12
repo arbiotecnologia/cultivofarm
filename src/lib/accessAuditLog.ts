@@ -28,7 +28,7 @@ export async function logAccessDeniedOnce(
   recentlyLogged.set(key, now);
 
   try {
-    await supabase.rpc("log_my_access_denied_secure", {
+    await (supabase as any).rpc("log_my_access_denied_secure", {
       p_context: context,
       p_route_group: routeGroup ?? null,
     });

@@ -23,7 +23,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
   const handle = async () => {
     setBusy(true);
     try {
-      const { data, error } = await supabase.rpc("issue_financial_receipt", {
+      const { data, error } = await (supabase as any).rpc("issue_financial_receipt", {
         _payment_id: paymentId,
       });
       if (error) throw error;

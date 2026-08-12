@@ -50,7 +50,7 @@ export function usePushSubscription() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase as any).auth.getUser();
       if (!user) return;
 
       const keys = sub.toJSON().keys;
@@ -58,13 +58,13 @@ export function usePushSubscription() {
         throw new Error("Erro ao obter chaves da assinatura");
       }
 
-      const { error } = await supabase.from("push_subscriptions").upsert({
+      const { error } = await (supabase as any).from("push_subscriptions").upsert({
         user_id: user.id,
         endpoint: sub.endpoint,
         p256dh: keys.p256dh,
         auth: keys.auth,
         user_agent: navigator.userAgent,
-      });
+      } as any);
 
       if (error) throw error;
 
@@ -80,7 +80,7 @@ export function usePushSubscription() {
     if (!subscription) return;
     try {
       await subscription.unsubscribe();
-      await supabase
+      await (supabase as any)
         .from("push_subscriptions")
         .delete()
         .eq("endpoint", subscription.endpoint);

@@ -88,7 +88,7 @@ export function useServiceFiscalList(
       const from = params.page * params.pageSize;
       const to = from + params.pageSize - 1;
 
-      let query = supabase
+      let query = (supabase as any)
         .from("service_fiscal_profiles")
         .select(LIST_COLUMNS, { count: "exact" })
         .eq("is_active", true)
@@ -113,7 +113,7 @@ export function useServiceFiscalList(
         throw new Error(error.message);
       }
 
-      const items = (data ?? []) as ServiceListItem[];
+      const items = (data ?? []) as any[];
 
       // Statuses distintos observados na página; a lista completa vive na
       // view de prontidão, mas evitamos consulta extra ampla nesta fase.
@@ -139,12 +139,12 @@ export function useServiceFiscalReadiness(
     queryKey: SERVICE_FISCAL_KEYS.readiness(profileIds),
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("v_service_fiscal_readiness")
         .select(
           "id, service_id, source_reference, profile_status, minimally_classified, accounting_validated",
         )
-        .in("id", profileIds);
+        .in("id", profileIds as any);
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
@@ -163,7 +163,7 @@ export function useServiceFiscalProfile(
     queryKey: [...SERVICE_FISCAL_KEYS.root, "profile", profileId] as const,
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("service_fiscal_profiles")
         .select("*")
         .eq("id", profileId!)
@@ -196,7 +196,7 @@ async function findActiveByServiceId(
   serviceId: string,
   excludeId?: string,
 ): Promise<string | null> {
-  let q = supabase
+  let q = (supabase as any)
     .from("service_fiscal_profiles")
     .select("id")
     .eq("service_id", serviceId)
@@ -219,7 +219,7 @@ async function findActiveBySourceReference(
   // exato (sem wildcards) para bater o mesmo conjunto de forma
   // case-insensitive, e escapamos os caracteres especiais do LIKE.
   const escaped = ref.replace(/\\/g, "\\\\").replace(/[%_]/g, (c) => `\\${c}`);
-  let q = supabase
+  let q = (supabase as any)
     .from("service_fiscal_profiles")
     .select("id, source_reference")
     .ilike("source_reference", escaped)
@@ -267,9 +267,9 @@ export function useSaveServiceFiscalProfile() {
           if (dup) throw new DuplicateServiceProfileError("source_reference");
         }
         const payload = buildInsertPayload(identity, values);
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("service_fiscal_profiles")
-          .insert(payload)
+          .insert(payload as any)
           .select("*")
           .single();
         if (error) {
@@ -308,9 +308,9 @@ export function useSaveServiceFiscalProfile() {
       if (Object.keys(payload).length === 0) {
         return current;
       }
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("service_fiscal_profiles")
-        .update(payload)
+        .update(payload as any)
         .eq("id", current.id)
         .eq("updated_at", current.updated_at)
         .select("*")

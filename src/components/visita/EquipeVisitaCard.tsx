@@ -34,17 +34,17 @@ export function EquipeVisitaCard({ registroId, canManage }: { registroId: string
     queryKey: ["visit-team", registroId],
     enabled: !!registroId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("technical_visit_assignments")
         .select("id,user_id,role,is_active,assigned_at")
         .eq("registro_consultor_id", registroId)
         .eq("is_active", true)
         .order("assigned_at", { ascending: true });
       if (error) throw error;
-      const rows = (data || []) as Assignment[];
+      const rows = (data || []) as any[];
       if (rows.length === 0) return rows;
       const ids = rows.map((r) => r.user_id);
-      const { data: profs } = await supabase
+      const { data: profs } = await (supabase as any)
         .from("profiles")
         .select("user_id,nome,email")
         .in("user_id", ids);
@@ -58,7 +58,7 @@ export function EquipeVisitaCard({ registroId, canManage }: { registroId: string
     enabled: canManage && search.trim().length >= 2,
     queryFn: async () => {
       const term = `%${search.trim()}%`;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("profiles")
         .select("user_id,nome,email")
         .or(`nome.ilike.${term},email.ilike.${term}`)

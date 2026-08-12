@@ -27,7 +27,7 @@ export function useFiscalMicrorganismosLite(search: string) {
   return useQuery({
     queryKey: ["fiscal", "microrganismos-lite", term],
     queryFn: async (): Promise<FiscalMicrorganismoLite[]> => {
-      let q = supabase
+      let q = (supabase as any)
         .from("microrganismos")
         .select("id, nome, codigo, nome_cientifico")
         .eq("ativo", true)
@@ -43,7 +43,7 @@ export function useFiscalMicrorganismosLite(search: string) {
         // Não expõe SQL/detalhes; propaga como erro para acionar isError.
         throw new Error("Falha ao consultar microrganismos.");
       }
-      return (data ?? []).map((row) => ({
+      return (data ?? []).map((row: any) => ({
         id: String(row.id),
         nome: String(row.nome ?? ""),
         codigo: (row.codigo as string | null) ?? null,

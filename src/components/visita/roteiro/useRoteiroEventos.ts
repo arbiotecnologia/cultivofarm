@@ -71,34 +71,34 @@ export function useRoteiroEventos(registroId: string | undefined) {
         { data: aprovacoes },
         { data: osList },
       ] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("registros_consultor")
           .select(
             "*, clientes(nome), fazendas(nome, municipio, estado), talhoes(nome), culturas(nome)"
           )
           .eq("id", registroId)
           .maybeSingle(),
-        supabase
+        (supabase as any)
           .from("registros_consultor_status_log")
           .select("*")
           .eq("registro_consultor_id", registroId)
           .order("changed_at", { ascending: true }),
-        supabase
+        (supabase as any)
           .from("visitas_checkin")
           .select("*")
           .eq("registro_consultor_id", registroId)
           .order("data_hora_checkin", { ascending: true }),
-        supabase
+        (supabase as any)
           .from("registros_consultor_arquivos")
           .select("*")
           .eq("registro_consultor_id", registroId)
           .order("uploaded_at", { ascending: true }),
-        supabase
+        (supabase as any)
           .from("aprovacoes_tecnicas")
           .select("*")
           .eq("registro_consultor_id", registroId)
           .order("created_at", { ascending: true }),
-        supabase
+        (supabase as any)
           .from("ordens_servico_onfarm")
           .select("id, created_at, status, numero_os")
           .eq("registro_consultor_id", registroId)

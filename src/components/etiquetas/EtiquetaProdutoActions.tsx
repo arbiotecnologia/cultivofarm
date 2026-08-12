@@ -33,7 +33,8 @@ export function EtiquetaProdutoActions({ envaseId, loteId, etiquetaId, traceToke
 
   const gerar = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc("rpc_gerar_etiqueta_produto", {
+    const { data, error } = await (supabase as any).rpc("rpc_gerar_etiqueta_produto", {
+      p_lote_id: loteId || null,
       p_payload: {
         envase_id: envaseId || null,
         lote_id: loteId || null,

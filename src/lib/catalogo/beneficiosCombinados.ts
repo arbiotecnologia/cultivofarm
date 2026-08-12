@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
  * Texto retornado deve ser exibido como "prévia automática" — não salvar sem revisão.
  */
 export async function gerarPreviaBeneficioCombinado(produtoId: string): Promise<string> {
-  const { data: formulacoes, error } = await supabase
+  const { data: formulacoes, error } = await (supabase as any)
     .from("formulacoes")
     .select("microrganismo_id, microrganismos(id,nome,nome_cientifico,funcao_agronomica)")
     .eq("produto_id", produtoId);
@@ -17,10 +17,10 @@ export async function gerarPreviaBeneficioCombinado(produtoId: string): Promise<
     return "Este produto ainda não possui composição microbiológica cadastrada.";
   }
 
-  const { data: profiles } = await supabase
+  const { data: profiles } = await (supabase as any)
     .from("microorganism_technical_profiles")
     .select("microrganismo_id, resumo_curto, beneficios_agronomicos, mecanismo_acao")
-    .in("microrganismo_id", microIds);
+    .in("microrganismo_id", microIds as any);
 
   const profileMap = new Map((profiles ?? []).map((p: any) => [p.microrganismo_id, p]));
 

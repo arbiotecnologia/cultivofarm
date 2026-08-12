@@ -103,7 +103,7 @@ function providerConfigured(value: unknown): boolean {
 }
 
 // ─── Empresa ─────────────────────────────────────────────────────────
-function computeEmpresa(row: CompanyFiscalRow | null): ConnectionItem {
+function computeEmpresa(row: any | null): ConnectionItem {
   const base: ConnectionItem = {
     key: "empresa",
     label: "Dados da empresa",
@@ -112,10 +112,10 @@ function computeEmpresa(row: CompanyFiscalRow | null): ConnectionItem {
     deepLink: link("empresa"),
   };
   if (row === null) return base;
-  const required: Array<keyof CompanyFiscalRow> = [
+  const required: string[] = [
     "cnpj", "legal_name", "state", "municipality_ibge_code",
   ];
-  const missing = required.filter((k) => empty(row[k]));
+  const missing = required.filter((k) => empty((row as any)[k]));
   if (missing.length === required.length) return base;
   if (missing.length > 0) {
     return {
@@ -132,7 +132,7 @@ function computeEmpresa(row: CompanyFiscalRow | null): ConnectionItem {
 }
 
 // ─── NF-e ────────────────────────────────────────────────────────────
-function computeNfe(row: CompanyFiscalRow | null): ConnectionItem {
+function computeNfe(row: any | null): ConnectionItem {
   const base: ConnectionItem = {
     key: "nfe",
     label: "NF-e",
@@ -166,7 +166,7 @@ function computeNfe(row: CompanyFiscalRow | null): ConnectionItem {
 }
 
 // ─── NFS-e ───────────────────────────────────────────────────────────
-function computeNfse(row: CompanyFiscalRow | null): ConnectionItem {
+function computeNfse(row: any | null): ConnectionItem {
   const base: ConnectionItem = {
     key: "nfse",
     label: "NFS-e",
@@ -197,7 +197,7 @@ function computeNfse(row: CompanyFiscalRow | null): ConnectionItem {
 }
 
 // ─── Provedor (agregado) ─────────────────────────────────────────────
-function computeProvedor(row: CompanyFiscalRow | null): ConnectionItem {
+function computeProvedor(row: any | null): ConnectionItem {
   const base: ConnectionItem = {
     key: "provedor",
     label: "Provedor",
@@ -233,7 +233,7 @@ function computeProvedor(row: CompanyFiscalRow | null): ConnectionItem {
 }
 
 // ─── Credenciais do provedor ─────────────────────────────────────────
-function computeCredenciais(row: CompanyFiscalRow | null): ConnectionItem {
+function computeCredenciais(row: any | null): ConnectionItem {
   const base: ConnectionItem = {
     key: "credenciais_provedor",
     label: "Credenciais do provedor",
@@ -314,7 +314,7 @@ function computeCertificado(
 }
 
 // ─── Webhook ─────────────────────────────────────────────────────────
-function computeWebhook(row: CompanyFiscalRow | null): ConnectionItem {
+function computeWebhook(row: any | null): ConnectionItem {
   const base: ConnectionItem = {
     key: "webhook",
     label: "Webhook de retorno",
@@ -339,7 +339,7 @@ function computeWebhook(row: CompanyFiscalRow | null): ConnectionItem {
 }
 
 // ─── Ambiente ────────────────────────────────────────────────────────
-function computeAmbiente(row: CompanyFiscalRow | null): ConnectionItem {
+function computeAmbiente(row: any | null): ConnectionItem {
   const base: ConnectionItem = {
     key: "ambiente",
     label: "Ambiente de homologação",
@@ -376,7 +376,7 @@ function computeAmbiente(row: CompanyFiscalRow | null): ConnectionItem {
 
 // ─── API pública ─────────────────────────────────────────────────────
 export function computeConnectionsReadiness(
-  row: CompanyFiscalRow | null,
+  row: any | null,
   certificates: FiscalCertificateReadinessRow[] | null | undefined,
 ): ConnectionsReadinessResult {
   const items: ConnectionItem[] = [

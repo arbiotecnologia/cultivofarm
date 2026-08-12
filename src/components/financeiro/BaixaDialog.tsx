@@ -56,8 +56,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       if (Number(form.amount) - _saldo > 0.005) throw new Error("Valor excede o saldo da parcela.");
 
       const requireReceipt = kind === "receivable" 
-        ? settings?.require_receipt_on_receivable_payment 
-        : settings?.require_receipt_on_payable_payment;
+        ? (settings as any)?.require_receipt_on_receivable_payment 
+        : (settings as any)?.require_receipt_on_payable_payment;
       
       if (requireReceipt && !file) {
         throw new Error("O anexo do comprovante é obrigatório para esta operação.");
@@ -90,15 +90,15 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         if (upErr) throw upErr;
 
         const { error: insErr } = await supabase.from("financial_documents").insert({
-          owner_type: ownerType,
-          owner_id: paymentId,
-          document_type: "RECEIPT",
-          file_name: file.name,
-          storage_path: path,
-          mime_type: file.type,
-          file_size: file.size,
-          uploaded_by: user.id,
-        });
+          owner_type: ownerType as any,
+          owner_id: paymentId as any,
+          document_type: "RECEIPT" as any,
+          file_name: file.name as any,
+          storage_path: path as any,
+          mime_type: file.type as any,
+          file_size: file.size as any,
+          uploaded_by: user.id as any,
+        } as any);
         if (insErr) throw insErr;
       }
     },
@@ -192,7 +192,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           </div>
           <div className="col-span-2"><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
           <div className="col-span-2 space-y-2">
-            <Label>Comprovante { (kind === "receivable" ? settings?.require_receipt_on_receivable_payment : settings?.require_receipt_on_payable_payment) ? "*" : "" }</Label>
+            <Label>Comprovante { (kind === "receivable" ? (settings as any)?.require_receipt_on_receivable_payment : (settings as any)?.require_receipt_on_payable_payment) ? "*" : "" }</Label>
             <div className="flex items-center gap-2">
               <input type="file" ref={fileRef} className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
               {file ? (

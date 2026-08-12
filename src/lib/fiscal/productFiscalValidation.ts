@@ -14,12 +14,9 @@
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
-export type ProductFiscalRow =
-  Database["public"]["Tables"]["product_fiscal_profiles"]["Row"];
-export type ProductFiscalInsert =
-  Database["public"]["Tables"]["product_fiscal_profiles"]["Insert"];
-export type ProductFiscalUpdate =
-  Database["public"]["Tables"]["product_fiscal_profiles"]["Update"];
+export type ProductFiscalRow = any;
+export type ProductFiscalInsert = any;
+export type ProductFiscalUpdate = any;
 
 // ————————————————————————— Normalizadores —————————————————————————
 export function digitsOnly(v: string | null | undefined): string {

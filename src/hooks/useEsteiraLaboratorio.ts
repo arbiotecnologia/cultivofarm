@@ -65,14 +65,14 @@ export function useEsteiraLaboratorio() {
     queryKey: ["profiles-esteira"],
     queryFn: async () => {
       const ROLES_PRODUCAO = ["administrador", "gestor", "operador_onfarm", "producao"];
-      const { data: roles, error: rolesErr } = await supabase
+      const { data: roles, error: rolesErr } = await (supabase as any)
         .from("user_roles")
         .select("user_id")
         .in("role", ROLES_PRODUCAO as any);
       if (rolesErr) throw rolesErr;
       const userIds = Array.from(new Set((roles ?? []).map((r: any) => r.user_id)));
       if (userIds.length === 0) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("profiles")
         .select("id, nome, email, ativo, user_id")
         .in("user_id", userIds);
@@ -109,8 +109,8 @@ export function useEsteiraLaboratorio() {
     acao: string;
     observacao?: string;
   }) => {
-    const { error } = await supabase.from("laboratorio_esteira_eventos").insert({
-      origem_os: params.origem,
+    const { error } = await (supabase as any).from("laboratorio_esteira_eventos").insert({
+      origem_os: params.origem as any,
       os_id: params.osId,
       programacao_id: params.programacaoId,
       lote_id: params.loteId,
@@ -137,7 +137,7 @@ export function useEsteiraLaboratorio() {
       });
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("programacao_producao")
       .update({ responsavel_id: user.id, status: 'em_producao' } as any)
       .eq("id", programacaoId);
@@ -207,7 +207,7 @@ export function useEsteiraLaboratorio() {
       return false;
     }
 
-    const { data: lote } = await supabase
+    const { data: lote } = await (supabase as any)
       .from("lotes")
       .select("id")
       .eq("programacao_id", programacaoId)
@@ -249,7 +249,7 @@ export function useEsteiraLaboratorio() {
 
   const enviarParaEnvase = async (programacaoId: string | null, osId: string, origem: string) => {
     if (!programacaoId) return false;
-    const { data: lote } = await supabase
+    const { data: lote } = await (supabase as any)
       .from("lotes")
       .select("id")
       .eq("programacao_id", programacaoId)
@@ -257,7 +257,7 @@ export function useEsteiraLaboratorio() {
       .maybeSingle();
 
     if (lote) {
-      const { data: cq } = await supabase
+      const { data: cq } = await (supabase as any)
         .from("controle_qualidade")
         .select("resultado")
         .eq("lote_id", lote.id)
@@ -377,7 +377,7 @@ export function useEsteiraLaboratorio() {
 
   const gerarEstoque = async (estoqueData: any, osId: string, origem: string) => {
     // Mantido por retrocompatibilidade, mas prefira registrarEnvaseEEstoque
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("estoque_produto")
       .insert([estoqueData] as any);
 
@@ -417,14 +417,14 @@ export function useEsteiraLaboratorio() {
     try {
       const loteId = item?.lote_id;
       if (loteId && !overrideOrigem) {
-        const { data: loteRow } = await supabase
+        const { data: loteRow } = await (supabase as any)
           .from("lotes")
           .select("programacao_id")
           .eq("id", loteId)
           .maybeSingle();
         const programacaoId = (loteRow as any)?.programacao_id;
         if (programacaoId) {
-          const { data: progRow } = await supabase
+          const { data: progRow } = await (supabase as any)
             .from("programacao_producao")
             .select("ordem_servico_id, ordem_servico_onfarm_id")
             .eq("id", programacaoId)
@@ -616,9 +616,9 @@ export function useEsteiraLaboratorio() {
 
 
   const liberarAplicacao = async (programacaoId: string | null, osId: string, origem: string) => {
-    const osField = origem === 'onfarm' ? 'ordem_servico_onfarm_id' : 'ordem_servico_id';
+    const osField = (origem === 'onfarm' ? 'ordem_servico_onfarm_id' : 'ordem_servico_id') as any;
     
-    const { data: entrega } = await supabase
+    const { data: entrega } = await (supabase as any)
       .from("entregas")
       .select("status")
       .eq(osField, osId)
@@ -645,7 +645,7 @@ export function useEsteiraLaboratorio() {
   };
 
   const validarIntegridade = async (osId: string, origem: string) => {
-    const { data, error } = await supabase.rpc("rpc_validar_integridade_esteira", {
+    const { data, error } = await (supabase as any).rpc("rpc_validar_integridade_esteira", {
       p_os_id: osId,
       p_origem: origem
     });
@@ -754,7 +754,7 @@ export function useEsteiraLaboratorio() {
       // Garantir que programacaoId seja null se for string vazia
       const progId = params.programacaoId && params.programacaoId.trim() !== "" ? params.programacaoId : null;
 
-      const { data, error } = await supabase.rpc("rpc_avancar_esteira_laboratorio", {
+      const { data, error } = await (supabase as any).rpc("rpc_avancar_esteira_laboratorio", {
         p_os_id: params.osId,
         p_origem: params.origem,
         p_etapa_destino: params.etapaDestino,

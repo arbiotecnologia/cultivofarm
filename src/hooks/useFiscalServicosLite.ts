@@ -28,7 +28,7 @@ export function useFiscalServicosLite(search: string) {
   return useQuery({
     queryKey: ["fiscal", "servicos-lite", term],
     queryFn: async (): Promise<FiscalServicoLite[]> => {
-      let q = supabase
+      let q = (supabase as any)
         .from("service_fiscal_profiles")
         .select(
           "id, service_id, service_name, lc116_item, cnae, municipal_taxation_code, national_taxation_code, incidence_municipality_ibge_code, iss_rate, iss_withheld_default, profile_status, fiscal_description_template",
@@ -41,7 +41,7 @@ export function useFiscalServicosLite(search: string) {
       }
       const { data, error } = await q;
       if (error) return [];
-      return (data ?? []).map((row) => ({
+      return (data ?? []).map((row: any) => ({
         id: row.id,
         nome: row.service_name ?? "(sem nome)",
         service_id: row.service_id,

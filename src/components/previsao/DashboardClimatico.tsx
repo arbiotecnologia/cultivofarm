@@ -20,7 +20,7 @@ export function DashboardClimatico() {
   const { data: fazendas } = useQuery({
     queryKey: ["fazendas"],
     queryFn: async () => {
-      const { data } = await supabase.from("fazendas").select("id, nome, latitude, longitude").order("nome");
+      const { data } = await (supabase as any).from("fazendas").select("id, nome, latitude, longitude").order("nome");
       return data ?? [];
     },
   });
@@ -31,7 +31,7 @@ export function DashboardClimatico() {
       if (!fazendaId) return [];
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("clima_dados")
         .select("*")
         .eq("fazenda_id", fazendaId)
@@ -80,7 +80,7 @@ export function DashboardClimatico() {
 
   const handleInsert = async () => {
     if (!fazendaId) { toast.error("Selecione uma fazenda"); return; }
-    const { error } = await supabase.from("clima_dados").insert({
+    const { error } = await (supabase as any).from("clima_dados").insert({
       fazenda_id: fazendaId,
       temperatura: form.temperatura ? Number(form.temperatura) : null,
       umidade: form.umidade ? Number(form.umidade) : null,

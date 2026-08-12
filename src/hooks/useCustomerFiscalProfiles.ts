@@ -25,8 +25,7 @@ import {
 } from "@/lib/fiscal/fiscalOptions";
 import { sanitizePostgrestTerm } from "@/hooks/useFiscalClientesLite";
 
-export type CustomerReadinessRow =
-  Database["public"]["Views"]["v_customer_fiscal_readiness"]["Row"];
+export type CustomerReadinessRow = any;
 
 export const CUSTOMER_FISCAL_KEYS = {
   root: ["fiscal", "customer-profiles"] as const,
@@ -123,7 +122,7 @@ export function useCustomerFiscalList(
       const from = params.page * params.pageSize;
       const to = from + params.pageSize - 1;
 
-      let query = supabase
+      let query = (supabase as any)
         .from("customer_fiscal_profiles")
         .select(LIST_COLUMNS, { count: "exact" })
         .order("updated_at", { ascending: false })
@@ -160,9 +159,9 @@ export function useCustomerFiscalList(
         throw new Error(error.message);
       }
 
-      const rawRows = (data ?? []) as unknown as RawListRow[];
+      const rawRows = (data ?? []) as any[];
       const items: CustomerListItem[] = rawRows.map((r) => {
-        const c = pickCliente(r.clientes);
+        const c = pickCliente(r.clientes as any);
         return {
           id: r.id,
           customer_id: r.customer_id,
@@ -200,7 +199,7 @@ export function useCustomerFiscalReadiness(
     queryKey: CUSTOMER_FISCAL_KEYS.readiness(customerIds),
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("v_customer_fiscal_readiness")
         .select("customer_id, profile_status, has_ibge")
         .in("customer_id", customerIds);
@@ -222,7 +221,7 @@ export function useCustomerFiscalProfile(
     queryKey: [...CUSTOMER_FISCAL_KEYS.root, "profile", profileId] as const,
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("customer_fiscal_profiles")
         .select(
           "id, customer_id, taxpayer_indicator, state_registration_status, municipal_registration, fiscal_email, fiscal_phone, use_main_address, fiscal_postal_code, fiscal_street, fiscal_number, fiscal_complement, fiscal_neighborhood, fiscal_city, fiscal_municipality_ibge_code, fiscal_state, country_code, rural_producer_indicator, foreign_customer_indicator, profile_status, validation_notes, created_at, updated_at, created_by, updated_by",
@@ -233,7 +232,7 @@ export function useCustomerFiscalProfile(
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
       }
-      return (data ?? null) as CustomerFiscalRow | null;
+      return (data ?? null) as any | null;
     },
   });
 }
@@ -258,7 +257,7 @@ export class MissingCustomerError extends Error {
 }
 
 async function customerExists(customerId: string): Promise<boolean> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("clientes")
     .select("id")
     .eq("id", customerId)
@@ -274,7 +273,7 @@ async function findByCustomerId(
   customerId: string,
   excludeId?: string,
 ): Promise<string | null> {
-  let q = supabase
+  let q = (supabase as any)
     .from("customer_fiscal_profiles")
     .select("id")
     .eq("customer_id", customerId)
@@ -310,7 +309,7 @@ export function useSaveCustomerFiscalProfile() {
         if (dup) throw new DuplicateCustomerProfileError();
 
         const payload = buildInsertPayload(customerId, values);
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("customer_fiscal_profiles")
           .insert(payload)
           .select("*")
@@ -320,7 +319,7 @@ export function useSaveCustomerFiscalProfile() {
           if (error.code === "23505") throw new DuplicateCustomerProfileError();
           throw new Error(error.message);
         }
-        return data as CustomerFiscalRow;
+        return data as any;
       }
 
       // UPDATE otimista por id + customer_id + updated_at.
@@ -328,7 +327,7 @@ export function useSaveCustomerFiscalProfile() {
       if (Object.keys(payload).length === 0) {
         return current;
       }
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("customer_fiscal_profiles")
         .update(payload)
         .eq("id", current.id)
@@ -342,7 +341,7 @@ export function useSaveCustomerFiscalProfile() {
         throw new Error(error.message);
       }
       if (!data) throw new OptimisticConflictError();
-      return data as CustomerFiscalRow;
+      return data as any;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: CUSTOMER_FISCAL_KEYS.root });

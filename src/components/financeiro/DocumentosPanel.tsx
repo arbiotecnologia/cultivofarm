@@ -60,15 +60,15 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
       const { error: upErr } = await supabase.storage.from("financial-docs").upload(path, file, { upsert: false });
       if (upErr) throw upErr;
       const { error: insErr } = await supabase.from("financial_documents").insert({
-        owner_type: ownerType,
-        owner_id: ownerId,
-        document_type: type,
-        file_name: file.name,
-        storage_path: path,
-        mime_type: file.type,
-        file_size: file.size,
-        uploaded_by: user.id,
-      });
+        owner_type: ownerType as any,
+        owner_id: ownerId as any,
+        document_type: type as any,
+        file_name: file.name as any,
+        storage_path: path as any,
+        mime_type: file.type as any,
+        file_size: file.size as any,
+        uploaded_by: user.id as any,
+      } as any);
       if (insErr) throw insErr;
     },
     onSuccess: () => { toast.success("Documento anexado"); qc.invalidateQueries({ queryKey: ["fin-docs", ownerType, ownerId] }); },

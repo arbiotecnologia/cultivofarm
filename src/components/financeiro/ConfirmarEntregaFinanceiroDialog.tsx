@@ -99,19 +99,19 @@ export function ConfirmarEntregaFinanceiroDialog({ open, onClose, entrega }: Pro
   const { data: categories = [] } = useQuery({
     queryKey: ["fin-cat-rcv"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("financial_categories").select("*").eq("active", true).in("type", ["RECEITA", "AMBOS"]).order("name");
+      const { data, error } = await (supabase as any).from("financial_categories").select("*").eq("active", true).in("type", ["RECEITA", "AMBOS"]).order("name");
       if (error) throw error; return data;
     },
   });
   const { data: ccs = [] } = useQuery({
     queryKey: ["fin-cc-act"],
-    queryFn: async () => { const { data, error } = await supabase.from("financial_cost_centers").select("id, name").eq("active", true).order("name"); if (error) throw error; return data; },
+    queryFn: async () => { const { data, error } = await (supabase as any).from("financial_cost_centers").select("id, name").eq("active", true).order("name"); if (error) throw error; return data; },
   });
 
   const { data: paymentMethods = [] } = useQuery({
     queryKey: ["fin-pm-act"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("payment_methods").select("id, name").eq("active", true).order("name");
+      const { data, error } = await (supabase as any).from("payment_methods").select("id, name").eq("active", true).order("name");
       if (error) throw error; return data;
     },
   });

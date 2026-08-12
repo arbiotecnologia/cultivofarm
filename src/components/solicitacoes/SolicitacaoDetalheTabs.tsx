@@ -52,7 +52,7 @@ export function SolicitacaoDetalheTabs({ solicitacao }: Props) {
   const { data: registros } = useQuery({
     queryKey: ["solicitacao-registros", solicitacao.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor")
         .select("*")
         .eq("solicitacao_id", solicitacao.id)
@@ -67,7 +67,7 @@ export function SolicitacaoDetalheTabs({ solicitacao }: Props) {
     queryKey: ["solicitacao-recs", solicitacao.id, regIds],
     queryFn: async () => {
       if (regIds.length === 0) return [];
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor_recomendacoes")
         .select("*, produtos:produto_biologico_sugerido_id(nome)")
         .in("registro_consultor_id", regIds);
@@ -80,7 +80,7 @@ export function SolicitacaoDetalheTabs({ solicitacao }: Props) {
     queryKey: ["solicitacao-oss", solicitacao.id, regIds],
     queryFn: async () => {
       if (regIds.length === 0) return [];
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("ordens_servico_onfarm")
         .select("*, produtos:produto_id(nome)")
         .in("registro_consultor_id", regIds);
@@ -102,7 +102,7 @@ export function SolicitacaoDetalheTabs({ solicitacao }: Props) {
         fotoPath: solicitacao.fotos_paths?.[0], // Preview da primeira foto
       });
 
-      const { data: timelineRows } = await supabase
+      const { data: timelineRows } = await (supabase as any)
         .from("solicitacoes_timeline")
         .select("*")
         .eq("solicitacao_id", solicitacao.id)

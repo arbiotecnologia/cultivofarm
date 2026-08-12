@@ -83,7 +83,7 @@ export function PlanoMonitoramentoEditor({
       const newPlanoBlock = serializePlanoMonitoramento(state);
       const finalObs = `${cleanObs}\n\n${newPlanoBlock}`.trim();
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from("registros_consultor")
         .update({
           observacoes_tecnicas: finalObs,
@@ -94,7 +94,7 @@ export function PlanoMonitoramentoEditor({
       if (updateError) throw updateError;
 
       // Atualizar alerta agronômico vinculado
-      const { data: alerta } = await supabase
+      const { data: alerta } = await (supabase as any)
         .from("alertas_agronomicos")
         .select("id")
         .eq("talhao_id", talhaoId)
@@ -105,7 +105,7 @@ export function PlanoMonitoramentoEditor({
         .single();
 
       if (alerta) {
-        await supabase
+        await (supabase as any)
           .from("alertas_agronomicos")
           .update({
             data_alerta: state.dataProximaVisita,
@@ -127,7 +127,7 @@ export function PlanoMonitoramentoEditor({
   const handleSchedule = async () => {
     setIsScheduling(true);
     try {
-      const { error } = await supabase
+    const { error } = await (supabase as any)
         .from("portal_solicitacoes")
         .insert({
           cliente_id: clienteId,

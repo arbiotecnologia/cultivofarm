@@ -120,7 +120,7 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
           const volumeTotal = dose * areaCalc;
           const produtoId = rec.produto_biologico_sugerido_id || rec.produto_id || null;
 
-          const { error: osError } = await supabase.from("ordens_servico_onfarm").insert({
+          const { error: osError } = await (supabase as any).from("ordens_servico_onfarm").insert({
             registro_consultor_id: registro.id,
             cliente_id: registro.cliente_id,
             fazenda_id: registro.fazenda_id,
@@ -140,7 +140,7 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
       }
 
       // 2) Atualizar status do registro
-      const { data: updatedReg, error: regError } = await supabase
+      const { data: updatedReg, error: regError } = await (supabase as any)
         .from("registros_consultor")
         .update({
           status: newStatus,
@@ -157,7 +157,7 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
       }
 
       // 3) Histórico de status (igual ao caminho do gestor)
-      await supabase.from("registros_consultor_status_log").insert({
+      await (supabase as any).from("registros_consultor_status_log").insert({
         registro_consultor_id: registro.id,
         status_anterior: statusAnterior,
         status_novo: newStatus,
@@ -172,7 +172,7 @@ export function TalhaoRecomendacaoCard({ registro, recomendacoes, defaultOpen = 
 
       // 4) Espelhar no portal_solicitacoes, quando houver vínculo
       if (registro.solicitacao_id) {
-        await supabase
+        await (supabase as any)
           .from("portal_solicitacoes")
           .update({
             status: newStatus === "finalizado" ? "concluida" : "aguardando_os",

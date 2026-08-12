@@ -76,7 +76,7 @@ export function useBIOperacional() {
   const { data: rawVisitas = [], isLoading: isLoadingVisitas, error: errorVisitas } = useQuery({
     queryKey: ["bi-visitas", filtros],
     queryFn: async () => {
-      let query = supabase.from("vw_fluxo_visita_tecnica").select("*");
+      let query = (supabase as any).from("vw_fluxo_visita_tecnica").select("*");
       
       if (filtros.clienteId) query = query.eq("cliente_id", filtros.clienteId);
       if (filtros.fazendaId) query = query.eq("fazenda_id", filtros.fazendaId);
@@ -101,7 +101,7 @@ export function useBIOperacional() {
   const { data: rawEsteira = [], isLoading: isLoadingEsteira, error: errorEsteira } = useQuery({
     queryKey: ["bi-esteira", filtros],
     queryFn: async () => {
-      let query = supabase.from("vw_esteira_laboratorio").select("*");
+      let query = (supabase as any).from("vw_esteira_laboratorio").select("*");
       
       if (filtros.clienteId) query = query.eq("cliente_id", filtros.clienteId);
       if (filtros.fazendaId) query = query.eq("fazenda_id", filtros.fazendaId);
@@ -162,7 +162,7 @@ export function useBIOperacional() {
   const { data: rawEstoque = [], isLoading: isLoadingEstoque } = useQuery({
     queryKey: ["bi-estoque-real", filtros],
     queryFn: async () => {
-      let query = supabase.from("estoque_produto").select("*, produto:produtos(nome), microrganismo:microrganismos(nome)");
+      let query = (supabase as any).from("estoque_produto").select("*, produto:produtos(nome), microrganismo:microrganismos(nome)");
       if (filtros.produtoId) query = query.eq("produto_id", filtros.produtoId);
       if (filtros.microrganismoId) query = query.eq("microrganismo_id", filtros.microrganismoId);
       const { data, error } = await query.limit(500);
@@ -176,7 +176,7 @@ export function useBIOperacional() {
   const { data: rawMovimentacoes = [] } = useQuery({
     queryKey: ["bi-movimentacoes-real", filtros],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from("estoque_movimentacoes")
         .select("id, acao, quantidade, status_anterior, status_novo, created_at, os_id, cliente_id, lote_id");
       if (filtros.periodoInicio) query = query.gte("created_at", filtros.periodoInicio);

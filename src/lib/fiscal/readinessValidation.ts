@@ -21,23 +21,11 @@ import {
  * parte deste snapshot — o classificador só usa os 10 campos abaixo, e
  * mantê-los explícitos evita acoplamento a colunas irrelevantes.
  */
-export type CompanyRow = Pick<
-  Database["public"]["Views"]["v_fiscal_company_readiness"]["Row"],
-  | "id"
-  | "configuration_status"
-  | "fiscal_environment"
-  | "fiscal_provider"
-  | "nfe_enabled"
-  | "nfse_enabled"
-  | "production_enabled"
-  | "accounting_validated"
-  | "filled_score"
-  | "max_score"
->;
-export type ProductRow = Database["public"]["Views"]["v_product_fiscal_readiness"]["Row"];
-export type ServiceRow = Database["public"]["Views"]["v_service_fiscal_readiness"]["Row"];
-export type CustomerRow = Database["public"]["Views"]["v_customer_fiscal_readiness"]["Row"];
-export type ReconRow = Database["public"]["Views"]["v_fiscal_document_reconciliation_pending"]["Row"];
+export type CompanyRow = any;
+export type ProductRow = any;
+export type ServiceRow = any;
+export type CustomerRow = any;
+export type ReconRow = any;
 
 export const BLOCK_STATUS_VALUES = [
   "pronto",

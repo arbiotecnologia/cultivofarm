@@ -81,8 +81,8 @@ export default function SafrasTalhaoDialog({ talhaoId, talhaoNome, open, onOpenC
     if (!talhaoId) return;
     setLoading(true);
     const [{ data: s }, { data: c }] = await Promise.all([
-      supabase.from("talhao_safras").select("*, culturas(nome)").eq("talhao_id", talhaoId).order("data_plantio", { ascending: false }),
-      supabase.from("culturas").select("id, nome").order("nome"),
+      (supabase as any).from("talhao_safras").select("*, culturas(nome)").eq("talhao_id", talhaoId).order("data_plantio", { ascending: false }),
+      (supabase as any).from("culturas").select("id, nome").order("nome"),
     ]);
     if (s) setSafras(s as any);
     if (c) setCulturas(c as Cultura[]);
@@ -104,7 +104,7 @@ export default function SafrasTalhaoDialog({ talhaoId, talhaoNome, open, onOpenC
       toast.error("Já existe uma safra em andamento. Encerre-a antes de iniciar outra.");
       return;
     }
-    const { error } = await supabase.from("talhao_safras").insert([{
+    const { error } = await (supabase as any).from("talhao_safras").insert([{
       talhao_id: talhaoId,
       cultura_id: nova.cultura_id,
       safra: nova.safra,
@@ -124,7 +124,7 @@ export default function SafrasTalhaoDialog({ talhaoId, talhaoNome, open, onOpenC
   const handleEncerrar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!encerrarSafra) return;
-    const { error } = await supabase.from("talhao_safras").update({
+    const { error } = await (supabase as any).from("talhao_safras").update({
       status: "colhida",
       data_colheita_real: encerrar.data_colheita_real,
       produtividade: encerrar.produtividade ? Number(encerrar.produtividade) : null,
@@ -141,7 +141,7 @@ export default function SafrasTalhaoDialog({ talhaoId, talhaoNome, open, onOpenC
 
   const handleExcluir = async (id: string) => {
     if (!confirm("Excluir este registro de safra? Esta ação é permanente.")) return;
-    const { error } = await supabase.from("talhao_safras").delete().eq("id", id);
+    const { error } = await (supabase as any).from("talhao_safras").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Safra removida");
     fetchData();

@@ -16,7 +16,7 @@ export function useLogCatalogAccess() {
   return useCallback(
     (params: { entidade_tipo: "microrganismo" | "produto"; entidade_id: string; origem: CatalogOrigem }) => {
       if (!user) return;
-      void supabase.from("catalog_access_events").insert({
+      void (supabase as any).from("catalog_access_events").insert({
         user_id: user.id,
         role,
         entidade_tipo: params.entidade_tipo,

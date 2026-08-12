@@ -136,20 +136,20 @@ export function ProdutosTab() {
 
 
   const fetchMicrorganismos = async () => {
-    const { data } = await supabase.from("microrganismos").select("id, nome, nome_cientifico, concentracao_ufc_ml, valor_dose_brl, dose_ml_ha, codigo, tipo").order("codigo", { nullsFirst: false }).order("nome");
+    const { data } = await (supabase as any).from("microrganismos").select("id, nome, nome_cientifico, concentracao_ufc_ml, valor_dose_brl, dose_ml_ha, codigo, tipo").order("codigo", { nullsFirst: false }).order("nome");
     if (data) setMicrorganismos(data as Microrganismo[]);
   };
 
   const fetch = async () => {
     const [produtosResult, formulacoesResult, microrganismosResult, profilesResult] = await Promise.all([
-      supabase.from("produtos").select("*").order("nome"),
-      supabase
+      (supabase as any).from("produtos").select("*").order("nome"),
+      (supabase as any)
         .from("formulacoes")
         .select("id, produto_id, microrganismo_id, component_insumo_id, volume_ml, proporcao, e_volume_fixo"),
-      supabase
+      (supabase as any)
         .from("microrganismos")
         .select("id, nome, nome_cientifico, concentracao_ufc_ml, valor_dose_brl, dose_ml_ha, codigo, tipo"),
-      supabase.from("product_technical_profiles").select("produto_id,status_validacao"),
+      (supabase as any).from("product_technical_profiles").select("produto_id,status_validacao"),
     ]);
     const pmap: Record<string, string> = {};
     (profilesResult.data ?? []).forEach((x: any) => { pmap[x.produto_id] = x.status_validacao; });
@@ -165,7 +165,7 @@ export function ProdutosTab() {
     if (produtosResult.data) {
       const microMap = new Map((microrganismosResult.data ?? []).map((m) => [m.id, m]));
       const productNameMap = new Map(produtosResult.data.map((p) => [p.id, p.nome]));
-      const formulacoesByProduct = (formulacoesResult.data ?? []).reduce<Record<string, Formulacao[]>>((acc, f) => {
+      const formulacoesByProduct = ((formulacoesResult as any).data ?? []).reduce<Record<string, Formulacao[]>>((acc: any, f: any) => {
         if (!f.produto_id) return acc;
         const formulacao: Formulacao = {
           ...f,
@@ -279,10 +279,10 @@ export function ProdutosTab() {
     try {
       let produtoId = form.id;
       if (form.id) {
-        const { error } = await supabase.from("produtos").update(payload).eq("id", form.id);
+        const { error } = await (supabase as any).from("produtos").update(payload).eq("id", form.id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("produtos").insert([payload]).select();
+        const { data, error } = await (supabase as any).from("produtos").insert([payload]).select();
         if (error) throw error;
         produtoId = data![0].id;
         produtoNovoCriadoId = produtoId;
@@ -294,11 +294,11 @@ export function ProdutosTab() {
 
       // Sync composition (idempotent delete then insert) — só se editando
       if (form.id) {
-        const { error: delErr } = await supabase.from("formulacoes").delete().eq("produto_id", produtoId);
+        const { error: delErr } = await (supabase as any).from("formulacoes").delete().eq("produto_id", produtoId);
         if (delErr) throw delErr;
       }
       if (formulacoesPayload.length > 0) {
-        const { error: insErr } = await supabase.from("formulacoes").insert(formulacoesPayload);
+        const { error: insErr } = await (supabase as any).from("formulacoes").insert(formulacoesPayload);
         if (insErr) throw insErr;
       }
 
@@ -308,7 +308,7 @@ export function ProdutosTab() {
       fetch();
     } catch (err: any) {
       if (!form.id && produtoNovoCriadoId) {
-        await supabase.from("produtos").delete().eq("id", produtoNovoCriadoId);
+        await (supabase as any).from("produtos").delete().eq("id", produtoNovoCriadoId);
       }
       toast.error(err.message || "Erro ao salvar produto");
     } finally {

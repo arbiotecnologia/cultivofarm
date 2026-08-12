@@ -29,15 +29,15 @@ export function HistoricoTab({ kind, contaId }: Props) {
     enabled: !!contaId,
     queryFn: async () => {
       // ids relacionados
-      const { data: insts } = await supabase.from(instType as any).select("id").eq(fkCol, contaId!);
+      const { data: insts } = await (supabase as any).from(instType as any).select("id").eq(fkCol, contaId!);
       const instIds = (insts || []).map((i: any) => i.id);
       let payIds: string[] = [];
       if (instIds.length) {
-        const { data: pays } = await supabase.from(payType as any).select("id").in("installment_id", instIds);
+        const { data: pays } = await (supabase as any).from(payType as any).select("id").in("installment_id", instIds);
         payIds = (pays || []).map((p: any) => p.id);
       }
       const allIds = [contaId!, ...instIds, ...payIds];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("financial_audit_log")
         .select("*")
         .in("entity_id", allIds)
