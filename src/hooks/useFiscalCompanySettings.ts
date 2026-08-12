@@ -47,7 +47,7 @@ export function useFiscalCompanySettings(options: { enabled?: boolean } = {}) {
     queryKey: FISCAL_COMPANY_KEYS.settings,
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("company_fiscal_settings")
         .select("*")
         .eq("is_active", true)
@@ -67,7 +67,7 @@ export function useInitFiscalCompanySettings() {
   const qc = useQueryClient();
   return useMutation<CompanyFiscalRow, Error, void>({
     mutationFn: async () => {
-      const { data, error } = await supabase.rpc("rpc_fiscal_company_settings_init");
+      const { data, error } = await (supabase as any).rpc("rpc_fiscal_company_settings_init");
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(errorMessage(error, "init_failed"));
@@ -90,7 +90,7 @@ export function useUpdateFiscalCompanySettings() {
     mutationFn: async ({ id, expectedVersion, values }) => {
       const payload = buildUpdatePayload(values);
       payload.configuration_version = expectedVersion + 1;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("company_fiscal_settings")
         .update(payload)
         .eq("id", id)
@@ -121,16 +121,16 @@ export interface CompanyFiscalReadiness {
   max_score: number;
 }
 
-const READINESS_FIELDS: Array<keyof CompanyFiscalRow> = [
+const READINESS_FIELDS: Array<string> = [
   "cnpj", "legal_name", "trade_name", "fiscal_email", "tax_regime", "crt",
   "primary_cnae", "municipal_registration", "state_registration",
   "municipality_ibge_code", "postal_code", "street", "number",
   "neighborhood", "city", "state", "country_code",
 ];
 
-export function computeReadiness(row: CompanyFiscalRow): CompanyFiscalReadiness {
+export function computeReadiness(row: any): CompanyFiscalReadiness {
   const filled = READINESS_FIELDS.filter((f) => {
-    const v = row[f];
+    const v = (row as any)[f];
     return v !== null && v !== undefined && v !== "";
   }).length;
   return {

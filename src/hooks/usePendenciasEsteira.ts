@@ -23,10 +23,10 @@ export function usePendenciasEsteira() {
   const { data: rawItems = [], isLoading } = useQuery({
     queryKey: ["pendencias-esteira"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("vw_esteira_laboratorio")
         .select("*")
-        .neq("status_os", "finalizada");
+        .neq("status_os" as any, "finalizada");
       if (error) throw error;
       return data || [];
     },

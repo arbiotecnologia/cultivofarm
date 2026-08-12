@@ -25,10 +25,9 @@ import {
   NORMALIZED_STATUS_MANUAL,
 } from "@/lib/fiscal/documentWorkflowValidation";
 
-type FiscalEventRow = Database["public"]["Tables"]["fiscal_events"]["Row"];
-type FiscalAuditRow = Database["public"]["Tables"]["fiscal_audit_log"]["Row"];
-type ReconciliationRow =
-  Database["public"]["Views"]["v_fiscal_document_reconciliation_pending"]["Row"];
+type FiscalEventRow = any;
+type FiscalAuditRow = any;
+type ReconciliationRow = any;
 
 export class OptimisticFiscalConflictError extends Error {
   constructor() {
@@ -98,7 +97,7 @@ export function useFiscalDocumentList(params: ListParams) {
     queryFn: async (): Promise<ListResult> => {
       const from = (params.page - 1) * params.pageSize;
       const to = from + params.pageSize - 1;
-      let q = supabase
+      let q = (supabase as any)
         .from("fiscal_invoices")
         .select(LIST_COLUMNS, { count: "exact" })
         .order("created_at", { ascending: false })
@@ -120,8 +119,8 @@ export function useFiscalDocumentList(params: ListParams) {
       const { data, count, error } = await q;
       if (error) throw error;
       return {
-        items: (data ?? []) as unknown as FiscalInvoiceRow[],
-        total: count ?? 0,
+        items: (data ?? []) as any[],
+        total: (count as any) ?? 0,
       };
     },
     staleTime: 30_000,
@@ -134,13 +133,13 @@ export function useFiscalDocument(id: string | null) {
     enabled: !!id,
     queryFn: async (): Promise<FiscalInvoiceRow | null> => {
       if (!id) return null;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_invoices")
         .select(DETAIL_COLUMNS)
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return (data as unknown as FiscalInvoiceRow | null) ?? null;
+      return (data as any | null) ?? null;
     },
     staleTime: 15_000,
   });
@@ -152,7 +151,7 @@ export function useFiscalDocumentItems(id: string | null) {
     enabled: !!id,
     queryFn: async (): Promise<FiscalInvoiceItemRow[]> => {
       if (!id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_invoice_items")
         .select(
           "id, fiscal_invoice_id, item_sequence, item_kind, description, " +
@@ -163,7 +162,7 @@ export function useFiscalDocumentItems(id: string | null) {
         .eq("fiscal_invoice_id", id)
         .order("item_sequence", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as unknown as FiscalInvoiceItemRow[];
+      return (data ?? []) as any[];
     },
     staleTime: 30_000,
   });
@@ -175,7 +174,7 @@ export function useFiscalDocumentEvents(id: string | null) {
     enabled: !!id,
     queryFn: async (): Promise<FiscalEventRow[]> => {
       if (!id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_events")
         .select(
           "id, fiscal_invoice_id, event_type, event_source, status_before, " +
@@ -186,7 +185,7 @@ export function useFiscalDocumentEvents(id: string | null) {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data ?? []) as unknown as FiscalEventRow[];
+      return (data ?? []) as any[];
     },
     staleTime: 15_000,
   });
@@ -198,14 +197,14 @@ export function useFiscalAuditLog(recordId: string | null) {
     enabled: !!recordId,
     queryFn: async (): Promise<FiscalAuditRow[]> => {
       if (!recordId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_audit_log")
         .select("id, action, table_name, record_id, changed_at, changed_by, old_values, new_values")
         .eq("record_id", recordId)
         .order("changed_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data ?? []) as unknown as FiscalAuditRow[];
+      return (data ?? []) as any[];
     },
     staleTime: 15_000,
   });
@@ -215,7 +214,7 @@ export function useReconciliationPending() {
   return useQuery({
     queryKey: FISCAL_DOC_KEYS.reconciliation(),
     queryFn: async (): Promise<ReconciliationRow[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("v_fiscal_document_reconciliation_pending")
         .select(
           "fiscal_invoice_id, receivable_id, document_model, document_origin, " +
@@ -223,7 +222,7 @@ export function useReconciliationPending() {
         )
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as unknown as ReconciliationRow[];
+      return (data ?? []) as any[];
     },
     staleTime: 60_000,
   });
@@ -243,7 +242,7 @@ export function useSaveFiscalDocument() {
         if (prev.locked_at) throw new InvoiceLockedError();
         const patch = buildUpdatePayload(values, prev);
         if (Object.keys(patch).length === 0) return prev.id;
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("fiscal_invoices")
           .update(patch)
           .eq("id", prev.id)
@@ -256,7 +255,7 @@ export function useSaveFiscalDocument() {
         return data.id;
       }
       const payload = buildInsertPayload(values, createdBy);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("fiscal_invoices")
         .insert(payload)
         .select("id")
@@ -285,7 +284,7 @@ export function useRegisterManualEvent() {
       if (!enabled) throw new ManualEventRpcDisabledError();
       assertManualEventType(eventType);
       const cleanNotes = notes.trim().slice(0, 2000);
-      const { data, error } = await supabase.rpc("rpc_fiscal_event_manual", {
+      const { data, error } = await (supabase as any).rpc("rpc_fiscal_event_manual", {
         p_invoice_id: invoiceId,
         p_event_type: eventType,
         p_notes: cleanNotes === "" ? undefined : cleanNotes,

@@ -30,7 +30,7 @@ export function BIFilterPresetButton({ currentFilters, onSelect, section = "gera
     enabled: !!user,
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("bi_user_preferences")
           .select("*")
           .eq("user_id", user?.id)
@@ -46,10 +46,10 @@ export function BIFilterPresetButton({ currentFilters, onSelect, section = "gera
 
   const saveMutation = useMutation({
     mutationFn: async (nome: string) => {
-      const { error } = await supabase.from("bi_user_preferences").insert({
+      const { error } = await (supabase as any).from("bi_user_preferences").insert({
         user_id: user?.id,
-        nome,
-        filtros: currentFilters,
+        nome: nome as any,
+        filtros: currentFilters as any,
         secao: section
       });
       if (error) throw error;

@@ -38,21 +38,21 @@ export function OSFlowTimeline({ registroId, className }: OSFlowTimelineProps) {
     queryKey: ["os-flow-timeline", registroId],
     queryFn: async () => {
       // 1. Registro e Recomendações (Visita e Aprovação)
-      const { data: registro } = await supabase
+      const { data: registro } = await (supabase as any)
         .from("registros_consultor")
         .select("id, status, created_at, data_vistoria")
         .eq("id", registroId)
         .single();
 
       // 2. Log de status do registro (Aprovação)
-      const { data: registroLogs } = await supabase
+      const { data: registroLogs } = await (supabase as any)
         .from("registros_consultor_status_log")
         .select("*")
         .eq("registro_consultor_id", registroId)
         .order("changed_at", { ascending: true });
 
       // 3. OS On-Farm (Produção até Entrega)
-      const { data: osData } = await supabase
+      const { data: osData } = await (supabase as any)
         .from("ordens_servico_onfarm")
         .select("id, status, created_at, updated_at, produtos(nome)")
         .eq("registro_consultor_id", registroId);
@@ -60,7 +60,7 @@ export function OSFlowTimeline({ registroId, className }: OSFlowTimelineProps) {
       // 4. Aplicações
       const osIds = osData?.map(os => os.id) || [];
       const { data: aplicacoes } = osIds.length > 0 
-        ? await supabase.from("aplicacoes").select("*").in("ordem_servico_id", osIds)
+        ? await (supabase as any).from("aplicacoes").select("*").in("ordem_servico_id", osIds)
         : { data: [] };
 
       // Processar eventos para a timeline

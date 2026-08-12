@@ -64,8 +64,8 @@ export function useCreateParceiroB2B() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: ParceiroB2BInput) => {
-      const { data: userData } = await supabase.auth.getUser();
-      const { data, error } = await supabase
+      const { data: userData } = await (supabase as any).auth.getUser();
+      const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .insert({ ...input, created_by: userData.user?.id } as any)
         .select()
@@ -85,7 +85,7 @@ export function useUpdateParceiroB2B() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...input }: ParceiroB2BInput & { id: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .update(input as any)
         .eq("id", id)
@@ -106,12 +106,12 @@ export function useSoftDeleteParceiroB2B() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .update({
           ativo,
           deleted_at: ativo ? null : new Date().toISOString(),
-        })
+        } as any)
         .eq("id", id)
         .select()
         .single();

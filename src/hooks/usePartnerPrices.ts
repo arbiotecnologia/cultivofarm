@@ -53,17 +53,17 @@ export function usePartnerPrices(partnerId: string | null | undefined) {
     enabled: !!partnerId,
     queryFn: async (): Promise<PartnerPriceRow[]> => {
       const [produtosRes, microsRes, pricesRes] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("produtos")
           .select("id, nome, codigo, valor_ha_brl, valor_dose_brl, valor_litro_brl, dose_ml_ha")
           .eq("ativo", true)
           .order("nome"),
-        supabase
+        (supabase as any)
           .from("microrganismos")
           .select("id, nome, codigo, valor_dose_brl")
           .eq("ativo", true)
           .order("nome"),
-        supabase
+        (supabase as any)
           .from("partner_product_prices")
           .select("*")
           .eq("partner_id", partnerId!)
@@ -75,13 +75,13 @@ export function usePartnerPrices(partnerId: string | null | undefined) {
 
       const byProduct = new Map(
         (pricesRes.data ?? [])
-          .filter((p) => p.product_id)
-          .map((p) => [p.product_id as string, p]),
+          .filter((p: any) => p.product_id)
+          .map((p: any) => [p.product_id as string, p]),
       );
       const byMicro = new Map(
         (pricesRes.data ?? [])
-          .filter((p) => p.microrganismo_id)
-          .map((p) => [p.microrganismo_id as string, p]),
+          .filter((p: any) => p.microrganismo_id)
+          .map((p: any) => [p.microrganismo_id as string, p]),
       );
 
       const produtos: PartnerPriceRow[] = (produtosRes.data ?? []).map((p: any) => {
@@ -170,13 +170,13 @@ export function useSavePartnerPrices(partnerId: string) {
           ativo: true,
         }));
       if (produtos.length) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("partner_product_prices")
           .upsert(produtos, { onConflict: "partner_id,product_id" });
         if (error) throw error;
       }
       if (micros.length) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("partner_product_prices")
           .upsert(micros, { onConflict: "partner_id,microrganismo_id" });
         if (error) throw error;

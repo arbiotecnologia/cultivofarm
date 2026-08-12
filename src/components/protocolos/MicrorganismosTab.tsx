@@ -89,7 +89,7 @@ export function MicrorganismosTab() {
   });
 
   const fetch = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("microrganismos")
       .select("*")
       .order("nome");
@@ -169,13 +169,13 @@ export function MicrorganismosTab() {
 
     let error;
     if (form.id) {
-      const { error: err } = await supabase
+      const { error: err } = await (supabase as any)
         .from("microrganismos")
         .update(payload)
         .eq("id", form.id);
       error = err;
     } else {
-      const { error: err } = await supabase
+      const { error: err } = await (supabase as any)
         .from("microrganismos")
         .insert([payload]);
       error = err;

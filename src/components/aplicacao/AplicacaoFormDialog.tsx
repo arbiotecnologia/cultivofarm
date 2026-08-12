@@ -113,17 +113,17 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
       setDoseAplicada(String(aplicacaoOriginal.dose_aplicada || ""));
       setVolumeCalda(String(aplicacaoOriginal.volume_calda_l_ha || ""));
       setAreaAplicada(String(aplicacaoOriginal.area_aplicada_ha || ""));
-      setEquipamento(aplicacaoOriginal.equipamento || "");
-      setEquipamentoModelo(aplicacaoOriginal.equipamento_modelo || "");
-      setBicoTipo(aplicacaoOriginal.bico_tipo || "");
-      setPressaoBar(String(aplicacaoOriginal.pressao_bar || ""));
-      setTemperatura(String(aplicacaoOriginal.temperatura_c || ""));
-      setUmidade(String(aplicacaoOriginal.umidade_pct || ""));
-      setVento(String(aplicacaoOriginal.vento_kmh || ""));
-      setCondicoes(aplicacaoOriginal.condicoes_climaticas || "");
-      setLatitude(aplicacaoOriginal.latitude);
-      setLongitude(aplicacaoOriginal.longitude);
-      setResultado(aplicacaoOriginal.resultado_inicial || "");
+      setEquipamento((aplicacaoOriginal as any).equipamento || "");
+      setEquipamentoModelo((aplicacaoOriginal as any).equipamento_modelo || "");
+      setBicoTipo((aplicacaoOriginal as any).bico_tipo || "");
+      setPressaoBar(String((aplicacaoOriginal as any).pressao_bar || ""));
+      setTemperatura(String((aplicacaoOriginal as any).temperatura_c || ""));
+      setUmidade(String((aplicacaoOriginal as any).umidade_pct || ""));
+      setVento(String((aplicacaoOriginal as any).vento_kmh || ""));
+      setCondicoes((aplicacaoOriginal as any).condicoes_climaticas || "");
+      setLatitude((aplicacaoOriginal as any).latitude);
+      setLongitude((aplicacaoOriginal as any).longitude);
+      setResultado((aplicacaoOriginal as any).resultado_inicial || "");
       setObservacoes(aplicacaoOriginal.observacoes || "");
     }
   }, [aplicacaoOriginal]);
@@ -232,7 +232,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
         await supabase.from("aplicacoes").update({ is_latest: false }).eq("id", rectifyId);
       }
 
-      const { data: ins, error } = await supabase.from("aplicacoes").insert(aplicacaoData).select("id").single();
+      const { data: ins, error } = await supabase.from("aplicacoes").insert(aplicacaoData as any).select("id").single();
       if (error) throw error;
 
       if (evidencias.length && osSel) {
@@ -261,17 +261,17 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
       // notificação ao produtor
       if (osSel) {
-        await supabase.rpc("rpc_create_portal_notification_secure", {
-          _cliente_id: (osSel as any).cliente_id,
-          _tipo: rectifyId ? "alerta" : "aplicacao",
-          _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
-          _mensagem: rectifyId
+        await (supabase as any).rpc("rpc_notificar_gestor", {
+          p_cliente_id: (osSel as any).cliente_id,
+          p_tipo: rectifyId ? "alerta" : "aplicacao",
+          p_titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
+          p_mensagem: rectifyId
             ? `O registro de aplicação de ${(osSel as any).produtos?.nome || "produto"} foi corrigido.`
             : `Aplicação de ${(osSel as any).produtos?.nome || "produto"} registrada em ${(osSel as any).fazendas?.nome || ""} / ${(osSel as any).talhoes?.nome || ""}`,
-          _link: null,
-          _source_type: "aplicacao",
-          _source_id: ins.id,
-          _idempotency_key: `aplic-dialog-${ins.id}-${rectifyId ? "rect" : "new"}`,
+          p_link: null,
+          p_source_type: "aplicacao",
+          p_source_id: ins.id,
+          p_idempotency_key: `aplic-dialog-${ins.id}-${rectifyId ? "rect" : "new"}`,
         });
       }
 

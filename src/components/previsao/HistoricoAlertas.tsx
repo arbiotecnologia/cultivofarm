@@ -14,14 +14,14 @@ export function HistoricoAlertas() {
 
   const { data: fazendas } = useQuery({
     queryKey: ["fazendas"],
-    queryFn: async () => { const { data } = await supabase.from("fazendas").select("id, nome").order("nome"); return data ?? []; },
+    queryFn: async () => { const { data } = await (supabase as any).from("fazendas").select("id, nome").order("nome"); return data ?? []; },
   });
 
   const { data: talhoes } = useQuery({
     queryKey: ["talhoes_fazenda_hist", fazendaId],
     queryFn: async () => {
       if (!fazendaId) return [];
-      const { data } = await supabase.from("talhoes").select("id, nome").eq("fazenda_id", fazendaId);
+      const { data } = await (supabase as any).from("talhoes").select("id, nome").eq("fazenda_id", fazendaId);
       return data ?? [];
     },
     enabled: !!fazendaId,
@@ -31,7 +31,7 @@ export function HistoricoAlertas() {
     queryKey: ["alertas_historico", fazendaId, talhaoId],
     queryFn: async () => {
       if (!fazendaId) return [];
-      let q = supabase.from("alertas_agronomicos").select("*").eq("fazenda_id", fazendaId).order("data_alerta", { ascending: false });
+      let q = (supabase as any).from("alertas_agronomicos").select("*").eq("fazenda_id", fazendaId).order("data_alerta", { ascending: false });
       if (talhaoId) q = q.eq("talhao_id", talhaoId);
       const { data } = await q;
       return data ?? [];

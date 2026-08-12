@@ -96,19 +96,19 @@ export function useAlertasNotificacoes() {
     setError(null);
     try {
       const [c, d, h, r] = await Promise.all([
-        supabase.from("alertas_notificacao_config").select("*").order("canal"),
-        supabase
+        (supabase as any).from("alertas_notificacao_config").select("*").order("canal"),
+        (supabase as any)
           .from("alertas_notificacao_destinatarios")
           .select("*")
           .order("created_at", { ascending: false }),
-        supabase
+        (supabase as any)
           .from("alertas_notificacoes")
           .select(
             "id, alerta_id, destinatario_id, canal, destino, assunto, status, tentativa, enviado_em, erro, provider, created_at",
           )
           .order("created_at", { ascending: false })
           .limit(50),
-        supabase
+        (supabase as any)
           .from("alertas_resumos")
           .select(
             "id, tipo_resumo, canal, periodo_inicio, periodo_fim, status, destino, assunto, total_alertas, total_criticos, total_alta, total_resolvidos, enviado_em, erro, created_at",
@@ -120,10 +120,10 @@ export function useAlertasNotificacoes() {
       if (d.error) throw d.error;
       if (h.error) throw h.error;
       if (r.error) throw r.error;
-      setConfigs((c.data ?? []) as NotificacaoConfig[]);
-      setDestinatarios((d.data ?? []) as NotificacaoDestinatario[]);
-      setHistorico((h.data ?? []) as NotificacaoItem[]);
-      setHistoricoResumos((r.data ?? []) as ResumoItem[]);
+      setConfigs((c.data ?? []) as any[]);
+      setDestinatarios((d.data ?? []) as any[]);
+      setHistorico((h.data ?? []) as any[]);
+      setHistoricoResumos((r.data ?? []) as any[]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao carregar notificações");
     } finally {
@@ -139,7 +139,7 @@ export function useAlertasNotificacoes() {
   const salvarConfig = useCallback(
     async (id: string, patch: Partial<NotificacaoConfig>) => {
       if (!podeGerenciar) throw new Error("sem_permissao");
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("alertas_notificacao_config")
         .update(patch as never)
         .eq("id", id);
@@ -154,7 +154,7 @@ export function useAlertasNotificacoes() {
       if (!podeGerenciar) throw new Error("sem_permissao");
       if (input.id) {
         const { id, ...rest } = input;
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("alertas_notificacao_destinatarios")
           .update(rest as never)
           .eq("id", id);
@@ -164,7 +164,7 @@ export function useAlertasNotificacoes() {
         if ((input.canal ?? "email") === "email" && !input.email) {
           throw new Error("email_obrigatorio");
         }
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("alertas_notificacao_destinatarios")
           .insert({
             nome: input.nome,
@@ -187,7 +187,7 @@ export function useAlertasNotificacoes() {
   const alternarDestinatario = useCallback(
     async (id: string, ativo: boolean) => {
       if (!podeGerenciar) throw new Error("sem_permissao");
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("alertas_notificacao_destinatarios")
         .update({ ativo } as never)
         .eq("id", id);
@@ -201,7 +201,7 @@ export function useAlertasNotificacoes() {
   const desativarDestinatario = useCallback(
     async (id: string) => {
       if (!podeGerenciar) throw new Error("sem_permissao");
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("alertas_notificacao_destinatarios")
         .update({ ativo: false } as never)
         .eq("id", id);
@@ -215,7 +215,7 @@ export function useAlertasNotificacoes() {
     if (!podeGerenciar) throw new Error("sem_permissao");
     setProcessando(true);
     try {
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await (supabase as any).rpc(
         "rpc_preparar_notificacoes_alertas",
       );
       if (error) throw error;
@@ -236,7 +236,7 @@ export function useAlertasNotificacoes() {
       if (!podeGerenciar) throw new Error("sem_permissao");
       setProcessandoResumo(true);
       try {
-        const { data, error } = await supabase.rpc(
+        const { data, error } = await (supabase as any).rpc(
           "rpc_preparar_resumos_alertas",
           { p_tipo_resumo: tipo },
         );

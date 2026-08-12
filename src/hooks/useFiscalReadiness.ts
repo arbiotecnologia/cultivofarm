@@ -30,7 +30,7 @@ export function useCompanyReadiness() {
     queryKey: KEYS.company(),
     staleTime: STALE_MS,
     queryFn: async (): Promise<CompanyRow | null> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("v_fiscal_company_readiness")
         .select(
           "id, configuration_status, fiscal_environment, fiscal_provider, nfe_enabled, nfse_enabled, production_enabled, accounting_validated, filled_score, max_score",
@@ -38,7 +38,7 @@ export function useCompanyReadiness() {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return data ?? null;
+      return data as any;
     },
   });
 }
@@ -52,7 +52,7 @@ async function countHead(
     | "v_customer_fiscal_readiness"
     | "v_fiscal_document_reconciliation_pending",
 ): Promise<number> {
-  const { count, error } = await supabase
+  const { count, error } = await (supabase as any)
     .from(view)
     .select("*", { count: "exact", head: true });
   if (error) throw error;
@@ -62,7 +62,7 @@ async function countHead(
 async function countProductBoolTrue(
   col: "minimally_classified" | "accounting_validated",
 ): Promise<number> {
-  const { count, error } = await supabase
+  const { count, error } = await (supabase as any)
     .from("v_product_fiscal_readiness")
     .select("*", { count: "exact", head: true })
     .eq(col, true);
@@ -73,7 +73,7 @@ async function countProductBoolTrue(
 async function countServiceBoolTrue(
   col: "minimally_classified" | "accounting_validated",
 ): Promise<number> {
-  const { count, error } = await supabase
+  const { count, error } = await (supabase as any)
     .from("v_service_fiscal_readiness")
     .select("*", { count: "exact", head: true })
     .eq(col, true);
@@ -82,7 +82,7 @@ async function countServiceBoolTrue(
 }
 
 async function countCustomersWithIbge(): Promise<number> {
-  const { count, error } = await supabase
+  const { count, error } = await (supabase as any)
     .from("v_customer_fiscal_readiness")
     .select("*", { count: "exact", head: true })
     .eq("has_ibge", true);
@@ -91,7 +91,7 @@ async function countCustomersWithIbge(): Promise<number> {
 }
 
 async function countDocsByModel(model: DocumentModel): Promise<number> {
-  const { count, error } = await supabase
+  const { count, error } = await (supabase as any)
     .from("v_fiscal_document_reconciliation_pending")
     .select("*", { count: "exact", head: true })
     .eq("document_model", model);

@@ -23,7 +23,7 @@ export function usePartnerOrders(partnerId: string | null | undefined, status?: 
     queryKey: ["partner-orders", partnerId, status],
     enabled: !!partnerId,
     queryFn: async (): Promise<PartnerOrder[]> => {
-      let q = supabase
+      let q = (supabase as any)
         .from("partner_orders")
         .select("*")
         .eq("partner_id", partnerId!)
@@ -31,7 +31,7 @@ export function usePartnerOrders(partnerId: string | null | undefined, status?: 
       if (status) q = q.eq("status", status as any);
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as PartnerOrder[];
+      return (data ?? []) as any[];
     },
   });
 }
@@ -41,7 +41,7 @@ export function usePartnerOrderItems(orderId: string | null | undefined) {
     queryKey: ["partner-order-items", orderId],
     enabled: !!orderId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("partner_order_items")
         .select(`
           *,

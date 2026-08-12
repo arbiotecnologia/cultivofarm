@@ -19,13 +19,13 @@ export function EstornosResumoCard({ from, to }: Props) {
     queryKey: ["fin-estornos-resumo", from, to],
     queryFn: async () => {
       const [rec, pay] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("receivable_payments")
           .select("amount_received")
           .eq("is_reversal", true)
           .gte("payment_date", from)
           .lte("payment_date", to),
-        supabase
+        (supabase as any)
           .from("payable_payments")
           .select("amount_paid")
           .eq("is_reversal", true)

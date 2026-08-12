@@ -80,7 +80,7 @@ export function useFiscalClientesLite(
       { excludeProfiled, excludeIds },
     ],
     queryFn: async () => {
-      let q = supabase
+      let q = (supabase as any)
         .from("clientes")
         .select("id, nome, cpf_cnpj, codigo_cliente")
         .order("nome", { ascending: true })
@@ -105,13 +105,13 @@ export function useFiscalClientesLite(
         return { items: [], status: "error" };
       }
 
-      let items = (data ?? []) as FiscalClienteLite[];
+      let items = (data ?? []) as any[];
 
       if (excludeProfiled && items.length > 0) {
         const candidateIds = items.map((c) => c.id);
         // Consulta estreita: SELECT customer_id apenas, restrita aos
         // candidatos já filtrados. Nunca lista todos os perfis.
-        const { data: profiled, error: pErr } = await supabase
+        const { data: profiled, error: pErr } = await (supabase as any)
           .from("customer_fiscal_profiles")
           .select("customer_id")
           .in("customer_id", candidateIds);

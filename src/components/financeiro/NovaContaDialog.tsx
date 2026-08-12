@@ -50,20 +50,20 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["fin-clientes"],
-    queryFn: async () => { const { data, error } = await supabase.from("clientes").select("id, nome, codigo_cliente").order("nome"); if (error) throw error; return data; },
+    queryFn: async () => { const { data, error } = await (supabase as any).from("clientes").select("id, nome, codigo_cliente").order("nome"); if (error) throw error; return data; },
     enabled: kind === "receivable",
   });
   const { data: categories = [] } = useQuery({
     queryKey: ["fin-categories-active", kind],
     queryFn: async () => {
       const tipos = kind === "receivable" ? ["RECEITA", "AMBOS"] : ["DESPESA", "AMBOS"];
-      const { data, error } = await supabase.from("financial_categories").select("*").eq("active", true).in("type", tipos).order("name");
+      const { data, error } = await (supabase as any).from("financial_categories").select("*").eq("active", true).in("type", tipos).order("name");
       if (error) throw error; return data;
     },
   });
   const { data: ccs = [] } = useQuery({
     queryKey: ["fin-cc-active"],
-    queryFn: async () => { const { data, error } = await supabase.from("financial_cost_centers").select("id, name").eq("active", true).order("name"); if (error) throw error; return data; },
+    queryFn: async () => { const { data, error } = await (supabase as any).from("financial_cost_centers").select("id, name").eq("active", true).order("name"); if (error) throw error; return data; },
   });
 
   const sumInstallments = useMemo(() => installments.reduce((s, r) => s + (Number(r.amount) || 0), 0), [installments]);
@@ -102,7 +102,7 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
         payload.supplier_invoice_date = form.supplier_invoice_date || null;
       }
 
-      const { data, error } = await supabase.rpc("rpc_create_financial_title" as any, {
+      const { data, error } = await (supabase as any).rpc("rpc_create_financial_title" as any, {
         p_kind: kind,
         p_payload: payload,
       });

@@ -47,13 +47,13 @@ export function AtribuicaoForm({ solicitacao, onChanged }: Props) {
   const { data: consultores } = useQuery({
     queryKey: ["consultores-disponiveis"],
     queryFn: async () => {
-      const { data: roles } = await supabase
+      const { data: roles } = await (supabase as any)
         .from("user_roles")
         .select("user_id")
         .in("role", ["consultor_tecnico", "tecnico_agronomo"]);
       const userIds = (roles || []).map((r) => r.user_id);
       if (userIds.length === 0) return [];
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("profiles")
         .select("user_id, nome, email")
         .in("user_id", userIds);
@@ -75,14 +75,14 @@ export function AtribuicaoForm({ solicitacao, onChanged }: Props) {
         if (["pendente", "aberta", "em_triagem"].includes(solicitacao.status)) {
           novoStatus = "atribuida";
         }
-        await supabase.from("solicitacoes_atribuicoes").insert({
+        await (supabase as any).from("solicitacoes_atribuicoes").insert({
           solicitacao_id: solicitacao.id,
           consultor_id: consultorId,
           atribuido_por: user.id,
           observacoes: observacoes || null,
           status: "atribuida",
         });
-        await supabase.from("solicitacoes_timeline").insert({
+        await (supabase as any).from("solicitacoes_timeline").insert({
           solicitacao_id: solicitacao.id,
           tipo_evento: "atribuida",
           descricao: `Consultor atribuído${observacoes ? ` — ${observacoes}` : ""}`,
@@ -98,7 +98,7 @@ export function AtribuicaoForm({ solicitacao, onChanged }: Props) {
           if (!novoStatus && ["atribuida", "pendente", "aberta", "em_triagem"].includes(solicitacao.status)) {
             novoStatus = "agendada";
           }
-          await supabase.from("solicitacoes_timeline").insert({
+          await (supabase as any).from("solicitacoes_timeline").insert({
             solicitacao_id: solicitacao.id,
             tipo_evento: solicitacao.data_prevista_atendimento ? "reagendada" : "agendada",
             descricao: `Visita ${solicitacao.data_prevista_atendimento ? "reagendada" : "agendada"} para ${formatDateTimeDisplay(dataPrevista)}`,
@@ -107,7 +107,7 @@ export function AtribuicaoForm({ solicitacao, onChanged }: Props) {
         }
       }
       if (novoStatus) updates.status = novoStatus;
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("portal_solicitacoes")
         .update(updates)
         .eq("id", solicitacao.id);

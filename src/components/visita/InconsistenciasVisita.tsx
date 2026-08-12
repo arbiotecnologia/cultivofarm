@@ -28,7 +28,7 @@ export function InconsistenciasVisita() {
   const { data: inconsistencias = [], isLoading, refetch } = useQuery({
     queryKey: ["inconsistencias-visita"],
     queryFn: async () => {
-      const { data: viewData, error } = await supabase
+      const { data: viewData, error } = await (supabase as any)
         .from("vw_fluxo_visita_tecnica")
         .select("*")
         .not("bloqueios", "eq", "{}");
@@ -122,14 +122,14 @@ export function InconsistenciasVisita() {
       if (!inconsistencia.checkin_id || !inconsistencia.solicitacao_id) return;
       
       // Tentar achar uma visita para essa solicitação
-      const { data: visit } = await supabase
+      const { data: visit } = await (supabase as any)
         .from("registros_consultor")
         .select("id")
         .eq("solicitacao_id", inconsistencia.solicitacao_id)
         .maybeSingle();
 
       if (visit) {
-        await supabase
+        await (supabase as any)
           .from("visitas_checkin")
           .update({ registro_consultor_id: visit.id })
           .eq("id", inconsistencia.checkin_id);

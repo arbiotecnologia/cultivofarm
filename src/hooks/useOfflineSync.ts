@@ -161,8 +161,8 @@ export function useOfflineSync() {
         opts: { tentativa?: number; mensagem_erro?: string; item_remoto_id?: string; payload_resumo?: any } = {}
       ) => {
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          await supabase.from("sync_log" as any).insert({
+          const { data: { user } } = await (supabase as any).auth.getUser();
+          await (supabase as any).from("sync_log" as any).insert({
             user_id: user?.id || null,
             tipo_item,
             item_local_id,
@@ -225,9 +225,9 @@ export function useOfflineSync() {
                 p_registro_origem_id: pl.p_registro_origem_id ?? null,
               };
 
-              const { data, error } = await supabase.rpc(
-                "rpc_criar_visita_idempotente" as never,
-                rpcArgs as never,
+              const { data, error } = await (supabase as any).rpc(
+                "rpc_criar_visita_idempotente" as any,
+                rpcArgs as any,
               );
 
               const res = data as any;
@@ -256,7 +256,7 @@ export function useOfflineSync() {
               });
               const payloadWithUuid = { ...item.payload, client_uuid: clientUuid };
 
-              const { data: registro, error } = await supabase
+              const { data: registro, error } = await (supabase as any)
                 .from("registros_consultor")
                 .insert(payloadWithUuid as any)
                 .select("id")
@@ -264,7 +264,7 @@ export function useOfflineSync() {
 
               if (error) {
                 if (isUniqueViolation(error)) {
-                  const { data: existing } = await supabase
+                  const { data: existing } = await (supabase as any)
                     .from("registros_consultor")
                     .select("id")
                     .eq("client_uuid", payloadWithUuid.client_uuid)
@@ -397,7 +397,7 @@ export function useOfflineSync() {
               continue;
             }
 
-            const { error: upErr } = await supabase.storage
+            const { error: upErr } = await (supabase as any).storage
               .from("consultor-arquivos")
               .upload(path, c.fotoBlob, {
                 contentType: c.fotoMimeType || "image/jpeg",
@@ -440,7 +440,7 @@ export function useOfflineSync() {
 
           // Fase 12.8 · Fase 3 — despacha para RPC de checkin ou checkout.
           const isCheckout = p.tipo_checkin === "checkout";
-          const rpcName = isCheckout ? "rpc_realizar_checkout_visita" : "rpc_realizar_checkin_visita";
+          const rpcName = (isCheckout ? "rpc_realizar_checkout_visita" : "rpc_realizar_checkin_visita") as any;
           const rpcArgs: any = isCheckout
             ? {
                 p_registro_id: p.registro_consultor_id ?? null,

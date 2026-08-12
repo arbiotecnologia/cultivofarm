@@ -62,7 +62,7 @@ export function usePedidoFormalHeader(orderId: string | null | undefined) {
     queryKey: ["pedido-formal-header", orderId],
     enabled: !!orderId,
     queryFn: async (): Promise<PedidoFormalHeaderData | null> => {
-      const { data: order, error } = await supabase
+      const { data: order, error } = await (supabase as any)
         .from("partner_orders")
         .select("*")
         .eq("id", orderId!)
@@ -71,57 +71,57 @@ export function usePedidoFormalHeader(orderId: string | null | undefined) {
       if (!order) return null;
 
       const [cliRes, partRes, criadorRes, aprovadorRes] = await Promise.all([
-        order.cliente_id
-          ? supabase
+        (order as any).cliente_id
+          ? (supabase as any)
               .from("clientes")
               .select(
                 "id, razao_social, nome_fantasia, cpf_cnpj, inscricao_estadual, endereco_municipio, endereco_estado, endereco_logradouro, endereco_numero, endereco_bairro, endereco_cep, telefone, email, condicao_pagamento, nome",
               )
-              .eq("id", order.cliente_id)
+              .eq("id", (order as any).cliente_id)
               .maybeSingle()
           : Promise.resolve({ data: null, error: null } as any),
-        supabase
+        (supabase as any)
           .from("partner_accounts")
           .select(
             "id, razao_social, nome_fantasia, codigo, cnpj, condicao_pagamento_padrao, prazo_pagamento_padrao_dias, entrega_logradouro, entrega_numero, entrega_bairro, entrega_cidade, entrega_estado, entrega_cep",
           )
-          .eq("id", order.partner_id)
+          .eq("id", (order as any).partner_id)
           .maybeSingle(),
-        order.created_by
-          ? supabase
+        (order as any).created_by
+          ? (supabase as any)
               .from("profiles")
               .select("user_id, nome_completo, email")
-              .eq("user_id", order.created_by)
+              .eq("user_id", (order as any).created_by)
               .maybeSingle()
           : Promise.resolve({ data: null, error: null } as any),
-        order.approved_by
-          ? supabase
+        (order as any).approved_by
+          ? (supabase as any)
               .from("profiles")
               .select("user_id, nome_completo, email")
-              .eq("user_id", order.approved_by)
+              .eq("user_id", (order as any).approved_by)
               .maybeSingle()
           : Promise.resolve({ data: null, error: null } as any),
       ]);
 
       const cli = (cliRes as any)?.data ?? null;
       return {
-        id: order.id,
+        id: (order as any).id,
         tipo: "pedido",
-        numero: order.numero,
-        status: order.status,
+        numero: (order as any).numero,
+        status: (order as any).status,
         financial_status: (order as any).financial_status ?? null,
-        created_at: order.created_at,
-        requested_delivery_date: order.requested_delivery_date,
-        estimated_delivery_date: order.estimated_delivery_date,
-        approved_at: order.approved_at,
+        created_at: (order as any).created_at,
+        requested_delivery_date: (order as any).requested_delivery_date,
+        estimated_delivery_date: (order as any).estimated_delivery_date,
+        approved_at: (order as any).approved_at,
         cultura: (order as any).cultura ?? null,
         area_total_ha: (order as any).area_total_ha ?? null,
-        subtotal: Number(order.subtotal ?? 0),
-        desconto_total: Number(order.desconto_total ?? 0),
-        total: Number(order.total ?? 0),
+        subtotal: Number((order as any).subtotal ?? 0),
+        desconto_total: Number((order as any).desconto_total ?? 0),
+        total: Number((order as any).total ?? 0),
         payment_method: (order as any).payment_method ?? null,
         payment_due_date: (order as any).payment_due_date ?? null,
-        observacoes: order.observacoes,
+        observacoes: (order as any).observacoes,
         
         commercial_notes: (order as any).commercial_notes ?? null,
         origin_simulation_id: (order as any).origin_simulation_id ?? null,

@@ -10,7 +10,7 @@ export function useObjetivosVisita(culturaId?: string | null) {
   return useQuery({
     queryKey: ["objetivos-visita-sugestoes", culturaId ?? null],
     queryFn: async () => {
-      let q = supabase
+      let q = (supabase as any)
         .from("objetivos_visita_sugestoes")
         .select("texto, ordem, cultura_id")
         .eq("ativo", true);
@@ -24,7 +24,7 @@ export function useObjetivosVisita(culturaId?: string | null) {
       const { data, error } = await q;
       if (error) throw error;
 
-      const rows = (data || []).slice().sort((a, b) => {
+      const rows = (data || []).slice().sort((a: any, b: any) => {
         // específicas (cultura_id != null) primeiro
         const aGen = a.cultura_id ? 0 : 1;
         const bGen = b.cultura_id ? 0 : 1;

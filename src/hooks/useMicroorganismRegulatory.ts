@@ -288,9 +288,9 @@ async function regulatoryRpc<K extends RegulatoryFn>(
   fn: K,
   args: RegulatoryFunctions[K]["Args"],
 ): Promise<RegulatoryFunctions[K]["Returns"]> {
-  const { data, error } = await supabase.rpc(
+  const { data, error } = await (supabase as any).rpc(
     fn,
-    args as never,
+    args as any,
   );
   if (error) {
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");

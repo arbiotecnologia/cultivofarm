@@ -48,14 +48,14 @@ export function useMicroorganismProfile(microId: string | null | undefined) {
     enabled: !!microId,
     queryFn: async () => {
       const [pRes, tRes, cRes] = await Promise.all([
-        supabase.from("microorganism_technical_profiles").select("*").eq("microrganismo_id", microId!).maybeSingle(),
-        supabase.from("microorganism_targets").select("*").eq("microrganismo_id", microId!).eq("ativo", true).order("prioridade"),
-        supabase.from("microorganism_crop_recommendations").select("*").eq("microrganismo_id", microId!).eq("ativo", true),
+        (supabase as any).from("microorganism_technical_profiles").select("*").eq("microrganismo_id", microId!).maybeSingle(),
+        (supabase as any).from("microorganism_targets").select("*").eq("microrganismo_id", microId!).eq("ativo", true).order("prioridade"),
+        (supabase as any).from("microorganism_crop_recommendations").select("*").eq("microrganismo_id", microId!).eq("ativo", true),
       ]);
       return {
         profile: (pRes.data as MicroProfile | null) ?? null,
-        targets: (tRes.data ?? []) as MicroTarget[],
-        crops: (cRes.data ?? []) as MicroCrop[],
+        targets: (tRes.data ?? []) as any[],
+        crops: (cRes.data ?? []) as any[],
       };
     },
   });
@@ -65,9 +65,9 @@ export function useUpsertMicroProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: Partial<MicroProfile> & { microrganismo_id: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("microorganism_technical_profiles")
-        .upsert(payload, { onConflict: "microrganismo_id" })
+        .upsert(payload as any, { onConflict: "microrganismo_id" })
         .select()
         .maybeSingle();
       if (error) throw error;

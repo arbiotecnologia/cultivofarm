@@ -30,7 +30,7 @@ export function useAvailableContexts() {
     retry: 1,
     refetchOnWindowFocus: true,
     queryFn: async (): Promise<AvailableContexts> => {
-      const { data, error } = await supabase.rpc("get_my_available_portal_contexts");
+      const { data, error } = await (supabase as any).rpc("get_my_available_portal_contexts");
       if (error) throw error;
       const raw = (data ?? {}) as Partial<AvailableContexts>;
       return {
@@ -49,7 +49,7 @@ export function useAvailableContexts() {
 
 /** Registra `login_redirect` via RPC segura (metadata fixa no servidor). */
 export async function registerLoginRedirect(context: PortalContext) {
-  const { data, error } = await supabase.rpc("register_my_login_redirect_secure", {
+  const { data, error } = await (supabase as any).rpc("register_my_login_redirect_secure", {
     p_context: context,
   });
   if (error) {

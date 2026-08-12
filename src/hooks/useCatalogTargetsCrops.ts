@@ -45,7 +45,7 @@ export function useTargets(kind: ParentKind, parentId: string | null | undefined
     queryKey: ["catalog-targets", kind, parentId],
     enabled: !!parentId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from(targetTable(kind) as any)
         .select("id, alvo_nome, alvo_tipo, descricao, prioridade, ativo")
         .eq(parentCol(kind), parentId!)
@@ -62,10 +62,10 @@ export function useUpsertTarget(kind: ParentKind, parentId: string) {
     mutationFn: async (payload: Partial<TargetRow> & { alvo_nome: string; alvo_tipo: string }) => {
       const row: any = { ...payload, [parentCol(kind)]: parentId };
       if (payload.id) {
-        const { error } = await supabase.from(targetTable(kind) as any).update(row).eq("id", payload.id);
+        const { error } = await (supabase as any).from(targetTable(kind) as any).update(row).eq("id", payload.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from(targetTable(kind) as any).insert(row);
+        const { error } = await (supabase as any).from(targetTable(kind) as any).insert(row);
         if (error) throw error;
       }
     },
@@ -77,7 +77,7 @@ export function useDeactivateTarget(kind: ParentKind, parentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from(targetTable(kind) as any).update({ ativo: false }).eq("id", id);
+      const { error } = await (supabase as any).from(targetTable(kind) as any).update({ ativo: false }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["catalog-targets", kind, parentId] }),
@@ -93,7 +93,7 @@ export function useCrops(kind: ParentKind, parentId: string | null | undefined) 
         kind === "produto"
           ? "id, cultura_id, cultura_nome, fase_recomendada, objetivo_uso, dose_recomendada, observacao, ativo"
           : "id, cultura_id, cultura_nome, fase_recomendada, objetivo_uso, observacao, ativo";
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from(cropTable(kind) as any)
         .select(cols)
         .eq(parentCol(kind), parentId!);
@@ -110,10 +110,10 @@ export function useUpsertCrop(kind: ParentKind, parentId: string) {
       const row: any = { ...payload, [parentCol(kind)]: parentId };
       if (kind === "micro") delete row.dose_recomendada;
       if (payload.id) {
-        const { error } = await supabase.from(cropTable(kind) as any).update(row).eq("id", payload.id);
+        const { error } = await (supabase as any).from(cropTable(kind) as any).update(row).eq("id", payload.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from(cropTable(kind) as any).insert(row);
+        const { error } = await (supabase as any).from(cropTable(kind) as any).insert(row);
         if (error) throw error;
       }
     },
@@ -125,7 +125,7 @@ export function useDeactivateCrop(kind: ParentKind, parentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from(cropTable(kind) as any).update({ ativo: false }).eq("id", id);
+      const { error } = await (supabase as any).from(cropTable(kind) as any).update({ ativo: false }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["catalog-crops", kind, parentId] }),
@@ -136,7 +136,7 @@ export function useCulturasOptions() {
   return useQuery({
     queryKey: ["culturas-options"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("culturas").select("id, nome").eq("ativo", true).order("nome");
+      const { data, error } = await (supabase as any).from("culturas").select("id, nome").eq("ativo", true).order("nome");
       if (error) throw error;
       return (data ?? []) as { id: string; nome: string }[];
     },

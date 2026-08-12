@@ -125,7 +125,7 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
 
   useEffect(() => {
     if (open && micro && canSeeAudit) {
-      supabase
+      (supabase as any)
         .from("catalog_technical_audit_logs")
         .select("id, acao, usuario_id, created_at, entidade_tipo")
         .eq("entidade_tipo", "ficha_microrganismo")

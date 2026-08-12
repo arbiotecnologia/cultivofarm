@@ -15,12 +15,12 @@ export function useCulturas() {
   return useQuery({
     queryKey: CULTURAS_QUERY_KEY,
     queryFn: async (): Promise<Cultura[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("culturas")
         .select("id, nome, descricao, ativo, desativada_em")
         .order("nome");
       if (error) throw error;
-      return (data ?? []) as Cultura[];
+      return (data ?? []) as any[];
     },
     staleTime: 60 * 1000,
   });
@@ -47,10 +47,10 @@ export function useSaveCultura() {
     mutationFn: async (input: { id?: string; nome: string; descricao: string | null }) => {
       const payload = { nome: input.nome.trim(), descricao: input.descricao };
       if (input.id) {
-        const { error } = await supabase.from("culturas").update(payload).eq("id", input.id);
+        const { error } = await (supabase as any).from("culturas").update(payload).eq("id", input.id);
         if (error) throw new Error(mapCulturaError(error));
       } else {
-        const { error } = await supabase.from("culturas").insert([payload]);
+        const { error } = await (supabase as any).from("culturas").insert([payload]);
         if (error) throw new Error(mapCulturaError(error));
       }
     },
@@ -65,7 +65,7 @@ export function useToggleCulturaAtivo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: string; ativo: boolean }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("culturas")
         .update({ ativo: input.ativo })
         .eq("id", input.id);

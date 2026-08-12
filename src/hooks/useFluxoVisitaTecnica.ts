@@ -37,7 +37,7 @@ export function useFluxoVisitaTecnica() {
     if (!user) return { success: false, message: "Usuário não autenticado" };
 
     try {
-      const { data, error } = await supabase.rpc("rpc_iniciar_atendimento_solicitacao_v1" as never, {
+      const { data, error } = await (supabase as any).rpc("rpc_iniciar_atendimento_solicitacao_v1" as never, {
         p_solicitacao_id: solicitacaoId,
         p_client_uuid: clientUuid ?? crypto.randomUUID(),
       } as never);
@@ -94,7 +94,7 @@ export function useFluxoVisitaTecnica() {
 
   const registrarTimeline = async (solicitacaoId: string, tipo: string, descricao: string) => {
     if (!solicitacaoId || !user) return;
-    await supabase.from("solicitacoes_timeline").insert({
+    await (supabase as any).from("solicitacoes_timeline").insert({
       solicitacao_id: solicitacaoId,
       tipo_evento: tipo,
       descricao: descricao,
@@ -114,7 +114,7 @@ export function useFluxoVisitaTecnica() {
 
     try {
       // Fase 12.8 · Fase 2 — todo check-in passa pela RPC blindada.
-      const { data: rpcData, error } = await supabase.rpc("rpc_realizar_checkin_visita", {
+      const { data: rpcData, error } = await (supabase as any).rpc("rpc_realizar_checkin_visita", {
         p_registro_id: data.registro_consultor_id ?? null,
         p_client_uuid: clientUuid,
         p_tipo: data.tipo_checkin,
@@ -153,7 +153,7 @@ export function useFluxoVisitaTecnica() {
             precisao: data.precisao_gps,
           },
         };
-        await supabase.from("registros_consultor_arquivos").insert(filePayload);
+        await (supabase as any).from("registros_consultor_arquivos").insert(filePayload);
       }
 
       return { success: true, message: "Check-in realizado", data: { id: checkin.id, data_hora_checkin: checkin.data_hora_checkin, idempotent: !!checkin.idempotent } };
@@ -167,7 +167,7 @@ export function useFluxoVisitaTecnica() {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
       // 1. Buscar check-ins com solicitação_id mas sem registro_consultor_id
-      const { data: orfaos, error: fetchError } = await supabase
+      const { data: orfaos, error: fetchError } = await (supabase as any)
         .from("visitas_checkin")
         .select("id, solicitacao_id")
         .not("solicitacao_id", "is", null)
@@ -181,14 +181,14 @@ export function useFluxoVisitaTecnica() {
 
       for (const checkin of orfaos) {
         // Buscar visitas vinculadas a esta solicitação
-        const { data: visitas } = await supabase
+        const { data: visitas } = await (supabase as any)
           .from("registros_consultor")
           .select("id")
           .eq("solicitacao_id", checkin.solicitacao_id);
 
         if (visitas && visitas.length === 1) {
           // Vínculo único - correção segura
-          await supabase
+          await (supabase as any)
             .from("visitas_checkin")
             .update({ registro_consultor_id: visitas[0].id })
             .eq("id", checkin.id);
@@ -211,7 +211,7 @@ export function useFluxoVisitaTecnica() {
   const liberarRecomendacaoParaProdutor = async (registroId: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
-      const { data, error } = await supabase.rpc("rpc_liberar_recomendacao_produtor", { p_registro_id: registroId });
+      const { data, error } = await (supabase as any).rpc("rpc_liberar_recomendacao_produtor", { p_registro_id: registroId });
       if (error) throw error;
       const res = (data as any) || {};
 
@@ -236,7 +236,7 @@ export function useFluxoVisitaTecnica() {
   const converterRecomendacaoEmOS = async (registroId: string, observacao?: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
-      const { data, error } = await supabase.rpc("rpc_converter_visita_em_os", {
+      const { data, error } = await (supabase as any).rpc("rpc_converter_visita_em_os", {
         p_registro_id: registroId,
         p_observacao: observacao || null,
       });
@@ -284,7 +284,7 @@ export function useFluxoVisitaTecnica() {
     if (!registroId) return { success: false, message: "Visita de origem não informada" };
     if (!dataPrevista) return { success: false, message: "Informe a data prevista do retorno" };
     try {
-      const { data: res, error } = await supabase.rpc("rpc_programar_retorno_visita" as any, {
+      const { data: res, error } = await (supabase as any).rpc("rpc_programar_retorno_visita" as any, {
         p_registro_id: registroId,
         p_expected_version: await fetchVersion(registroId),
         p_data_prevista: dataPrevista,
@@ -317,7 +317,7 @@ export function useFluxoVisitaTecnica() {
   const salvarRascunho = async (id: string, data: any): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("registros_consultor")
         .update(data)
         .eq("id", id);
@@ -331,13 +331,13 @@ export function useFluxoVisitaTecnica() {
   const finalizarVisita = async (id: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
-      const { data: reg, error: regErr } = await supabase
+      const { data: reg, error: regErr } = await (supabase as any)
         .from("registros_consultor")
         .select("version")
         .eq("id", id)
         .maybeSingle();
       if (regErr) throw regErr;
-      const { error } = await supabase.rpc("rpc_finalizar_visita_v2" as any, {
+      const { error } = await (supabase as any).rpc("rpc_finalizar_visita_v2" as any, {
         p_registro_id: id,
         p_expected_version: (reg as any)?.version ?? 1,
       });
@@ -352,13 +352,13 @@ export function useFluxoVisitaTecnica() {
   const enviarParaAprovacao = async (id: string): Promise<FluxoResponse> => {
     if (!user) return { success: false, message: "Não autenticado" };
     try {
-      const { data: reg, error: regErr } = await supabase
+      const { data: reg, error: regErr } = await (supabase as any)
         .from("registros_consultor")
         .select("version")
         .eq("id", id)
         .maybeSingle();
       if (regErr) throw regErr;
-      const { error } = await supabase.rpc("rpc_enviar_visita_aprovacao" as any, {
+      const { error } = await (supabase as any).rpc("rpc_enviar_visita_aprovacao" as any, {
         p_registro_id: id,
         p_expected_version: (reg as any)?.version ?? 1,
       });
@@ -377,7 +377,7 @@ export function useFluxoVisitaTecnica() {
   };
 
   const fetchVersion = async (id: string): Promise<number> => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("registros_consultor")
       .select("version")
       .eq("id", id)
@@ -395,7 +395,7 @@ export function useFluxoVisitaTecnica() {
     if (!user) return { success: false, message: "Não autenticado" };
     if (!motivo?.trim()) return { success: false, message: "Informe o motivo da reprovação" };
     try {
-      const { error } = await supabase.rpc("rpc_reprovar_visita" as any, {
+      const { error } = await (supabase as any).rpc("rpc_reprovar_visita" as any, {
         p_registro_id: id,
         p_expected_version: await fetchVersion(id),
         p_motivo: motivo.trim(),
@@ -412,7 +412,7 @@ export function useFluxoVisitaTecnica() {
     if (!user) return { success: false, message: "Não autenticado" };
     if (!motivo?.trim()) return { success: false, message: "Informe o motivo do ajuste" };
     try {
-      const { error } = await supabase.rpc("rpc_solicitar_ajuste_visita" as any, {
+      const { error } = await (supabase as any).rpc("rpc_solicitar_ajuste_visita" as any, {
         p_registro_id: id,
         p_expected_version: await fetchVersion(id),
         p_motivo: motivo.trim(),
@@ -429,7 +429,7 @@ export function useFluxoVisitaTecnica() {
     if (!user) return { success: false, message: "Não autenticado" };
     if (!motivo?.trim()) return { success: false, message: "Informe o motivo da reabertura" };
     try {
-      const { error } = await supabase.rpc("rpc_reabrir_visita" as any, {
+      const { error } = await (supabase as any).rpc("rpc_reabrir_visita" as any, {
         p_registro_id: id,
         p_expected_version: await fetchVersion(id),
         p_motivo: motivo.trim(),

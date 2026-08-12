@@ -50,7 +50,7 @@ export default function PresencaCheckoutButton({ registroId, className }: Props)
     queryKey: ["presenca-ultimo-evento", registroId, user?.id],
     enabled: !!registroId && !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("visitas_checkin")
         .select("id, tipo_checkin, data_hora_checkin")
         .eq("registro_consultor_id", registroId)

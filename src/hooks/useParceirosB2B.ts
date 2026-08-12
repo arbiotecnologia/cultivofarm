@@ -98,7 +98,7 @@ export function useParceirosB2B(params: UseParceirosParams = {}) {
       { search, status, partnerType, uf, consultor, faixaDesconto, vinculoCliente, page, pageSize },
     ],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from("partner_accounts")
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false });

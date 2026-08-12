@@ -32,7 +32,7 @@ export function VersoesHistoricoTab({ entidadeTipo, entidadeId, canApprove }: Pr
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = supabase
+    let q = (supabase as any)
       .from("ficha_tecnica_versoes")
       .select("*")
       .eq("entidade_tipo", entidadeTipo)
@@ -42,7 +42,7 @@ export function VersoesHistoricoTab({ entidadeTipo, entidadeId, canApprove }: Pr
     if (filter === "pendente") q = q.eq("status", "pendente");
     const { data, error } = await q;
     if (error) toast.error(error.message);
-    setVersoes((data as Versao[]) ?? []);
+    setVersoes((data as any[]) ?? []);
     setLoading(false);
   }, [entidadeTipo, entidadeId, filter]);
 

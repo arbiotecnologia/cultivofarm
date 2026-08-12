@@ -19,17 +19,17 @@ export function usePartnerUsers(partnerId: string | null | undefined) {
     queryKey: ["partner-users", partnerId],
     enabled: !!partnerId,
     queryFn: async (): Promise<PartnerUserRow[]> => {
-      const { data: links, error } = await supabase
+      const { data: links, error } = await (supabase as any)
         .from("partner_users")
         .select("*")
         .eq("partner_id", partnerId!);
       if (error) throw error;
       const ids = (links ?? []).map((l: any) => l.user_id);
       if (!ids.length) return [];
-      const { data: profiles } = await supabase
+      const { data: profiles } = await (supabase as any)
         .from("profiles")
         .select("user_id, nome, email")
-        .in("user_id", ids);
+        .in("user_id", ids as any);
       const pmap = new Map((profiles ?? []).map((p: any) => [p.user_id, p]));
       return (links ?? []).map((l: any) => ({
         ...l,
@@ -46,9 +46,9 @@ export function useAvailablePartnerUsers() {
     queryKey: ["available-partner-users"],
     queryFn: async () => {
       const [{ data: profiles, error }, { data: linked }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("user_id, nome, email").order("nome"),
-        supabase.from("partner_users").select("user_id"),
-        supabase.from("user_roles").select("user_id, role"),
+        (supabase as any).from("profiles").select("user_id, nome, email").order("nome"),
+        (supabase as any).from("partner_users").select("user_id"),
+        (supabase as any).from("user_roles").select("user_id, role"),
       ]);
       if (error) throw error;
       const linkedSet = new Set((linked ?? []).map((l: any) => l.user_id));
@@ -130,7 +130,7 @@ export function useUnlinkPartnerUser(partnerId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (linkId: string) => {
-      const { error } = await supabase.from("partner_users").delete().eq("id", linkId);
+      const { error } = await (supabase as any).from("partner_users").delete().eq("id", linkId);
       if (error) throw error;
     },
     onSuccess: () => {

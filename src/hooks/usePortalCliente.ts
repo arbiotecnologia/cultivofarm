@@ -25,7 +25,7 @@ export function usePortalCliente() {
     setLoading(true);
 
     // 1) Busca vínculos cru (sem join embutido para não depender de relacionamento PostgREST)
-    const { data: vinculos, error: vinculosError } = await supabase
+    const { data: vinculos, error: vinculosError } = await (supabase as any)
       .from("user_clientes")
       .select("cliente_id, principal")
       .eq("user_id", user.id);
@@ -39,7 +39,7 @@ export function usePortalCliente() {
 
     // 2) Fallback: profiles.cliente_id (compatibilidade com cadastros antigos)
     if (clienteIds.length === 0) {
-      const { data: prof } = await supabase
+      const { data: prof } = await (supabase as any)
         .from("profiles")
         .select("cliente_id")
         .eq("user_id", user.id)
@@ -52,10 +52,10 @@ export function usePortalCliente() {
 
     if (clienteIds.length > 0) {
       // 3) Resolve nomes dos clientes em uma query separada
-      const { data: clis, error: clisError } = await supabase
+      const { data: clis, error: clisError } = await (supabase as any)
         .from("clientes")
         .select("id, nome")
-        .in("id", clienteIds);
+        .in("id", clienteIds as any);
 
       if (clisError) {
         console.error("usePortalCliente: erro ao buscar clientes:", clisError);

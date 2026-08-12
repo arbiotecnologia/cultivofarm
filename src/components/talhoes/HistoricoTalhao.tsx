@@ -56,7 +56,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
   const { data: solicitacoes } = useQuery({
     queryKey: ["historico-talhao-solicitacoes", talhaoId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("portal_solicitacoes")
         .select("id, created_at, tipo_demanda, urgencia, status, descricao")
         .eq("talhao_id", talhaoId)
@@ -69,7 +69,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
   const { data: registros } = useQuery({
     queryKey: ["historico-talhao-registros", talhaoId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor")
         .select(
           "id, data_vistoria, objetivo_visita, problema_principal, categoria_problema, nivel_pressao, status, latitude, longitude"
@@ -86,7 +86,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
     queryFn: async () => {
       if (!registros?.length) return [];
       const ids = registros.map((r) => r.id);
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor_recomendacoes")
         .select(
           "id, registro_consultor_id, recomendacao_tecnica, dose_recomendada_valor, dose_recomendada_unidade, created_at, produtos:produto_biologico_sugerido_id(nome)"
@@ -103,7 +103,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
     queryFn: async () => {
       if (!registros?.length) return [];
       const ids = registros.map((r) => r.id);
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor_arquivos")
         .select("registro_consultor_id, arquivo_url, arquivo_path")
         .in("registro_consultor_id", ids);
@@ -116,7 +116,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
   const { data: ordens } = useQuery({
     queryKey: ["historico-talhao-os", talhaoId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("ordens_servico_onfarm")
         .select(
           "id, numero_os, created_at, data_recomendada, status, dose_ml_ha, area_hectares, produtos:produto_id(nome)"
@@ -131,7 +131,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
   const { data: aplicacoes } = useQuery({
     queryKey: ["historico-talhao-aplicacoes", talhaoId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("aplicacoes")
         .select(
           "id, data_aplicacao, dose_aplicada, resultado_inicial, ordens_servico!inner(talhao_id, produtos(nome))"
@@ -147,7 +147,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
   // Build timeline
   const timeline: TimelineItem[] = [];
 
-  solicitacoes?.forEach((s) => {
+  (solicitacoes as any[])?.forEach((s) => {
     timeline.push({
       id: `sol-${s.id}`,
       date: s.created_at,
@@ -158,8 +158,8 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
     });
   });
 
-  registros?.forEach((r) => {
-    const rArquivos = arquivos?.filter((a) => a.registro_consultor_id === r.id) || [];
+  (registros as any[])?.forEach((r) => {
+    const rArquivos = (arquivos as any[])?.filter((a) => a.registro_consultor_id === r.id) || [];
     const fotos = rArquivos.map((a) => a.arquivo_url);
     const fotosPaths = rArquivos.map((a) => a.arquivo_path).filter(Boolean) as string[];
 
@@ -215,7 +215,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
 
   // Indicadores de recorrência
   const problemasMap = new Map<string, number>();
-  registros?.forEach((r) => {
+  (registros as any[])?.forEach((r) => {
     const key = r.problema_principal || r.categoria_problema;
     if (key) problemasMap.set(key, (problemasMap.get(key) || 0) + 1);
   });
@@ -223,7 +223,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
 
-  const ultimaAplicacao = aplicacoes?.[0];
+  const ultimaAplicacao = (aplicacoes as any[])?.[0];
   const totalSolicitacoes = solicitacoes?.length || 0;
   const totalVisitas = registros?.length || 0;
 

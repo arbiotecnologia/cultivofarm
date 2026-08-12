@@ -24,7 +24,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
     queryKey: ["os-trace", osId],
     queryFn: async () => {
       // 1. Integridade e Status Oficial
-      const { data: integridade } = await supabase
+      const { data: integridade } = await (supabase as any)
         .from("vw_esteira_laboratorio")
         .select("*")
         .eq("os_id", osId)
@@ -32,7 +32,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
         .single();
 
       // 2. Programação
-      const { data: programacoes } = await supabase
+      const { data: programacoes } = await (supabase as any)
         .from("programacao_producao")
         .select(`
           *,
@@ -43,7 +43,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       const prog = programacoes?.[0];
 
       // 3. Lote
-      const { data: lotes } = await supabase
+      const { data: lotes } = await (supabase as any)
         .from("lotes")
         .select(`
           *,
@@ -55,7 +55,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       const lote = lotes?.[0];
 
       // 4. CQ
-      const { data: cqs } = await supabase
+      const { data: cqs } = await (supabase as any)
         .from("controle_qualidade")
         .select("*")
         .eq("lote_id", lote?.id || "");
@@ -63,7 +63,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       const cq = cqs?.[0];
 
       // 5. Envase
-      const { data: envases } = await supabase
+      const { data: envases } = await (supabase as any)
         .from("envase")
         .select("*")
         .eq("lote_id", lote?.id || "");
@@ -71,7 +71,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       const envase = envases?.[0];
 
       // 6. Estoque / Reserva
-      const { data: estoques } = await supabase
+      const { data: estoques } = await (supabase as any)
         .from("estoque_produto")
         .select("*")
         .eq("reservado_para_os_id", osId);
@@ -79,7 +79,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       const estoque = estoques?.[0];
 
       // 7. Entrega
-      const { data: entregas } = await supabase
+      const { data: entregas } = await (supabase as any)
         .from("entregas")
         .select("*")
         .eq(osTipo === 'onfarm' ? "ordem_servico_onfarm_id" : "ordem_servico_id", osId);
@@ -87,7 +87,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       const entrega = entregas?.[0];
 
       // 8. Aplicação
-      const { data: aplicacoes } = await supabase
+      const { data: aplicacoes } = await (supabase as any)
         .from("aplicacoes")
         .select("*")
         .eq(osTipo === 'onfarm' ? "ordem_servico_onfarm_id" : "ordem_servico_id", osId);
@@ -95,7 +95,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       const aplicacao = aplicacoes?.[0];
 
       // 9. Eventos de Auditoria (Timeline)
-      const { data: eventos } = await supabase
+      const { data: eventos } = await (supabase as any)
         .from("laboratorio_esteira_eventos")
         .select("*")
         .eq("os_id", osId)
