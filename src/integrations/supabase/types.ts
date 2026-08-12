@@ -492,6 +492,7 @@ export type Database = {
           microrganismo_id: string | null
           produto_id: string | null
           quantidade: number | null
+          status: string | null
           validade: string | null
           volume_total: number | null
         }
@@ -501,6 +502,7 @@ export type Database = {
           microrganismo_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          status?: string | null
           validade?: string | null
           volume_total?: number | null
         }
@@ -510,6 +512,7 @@ export type Database = {
           microrganismo_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          status?: string | null
           validade?: string | null
           volume_total?: number | null
         }
@@ -854,6 +857,7 @@ export type Database = {
           nome: string
           tipo: string | null
           valor_dose_brl: number | null
+          valor_litro_brl: number | null
         }
         Insert: {
           ativo?: boolean | null
@@ -865,6 +869,7 @@ export type Database = {
           nome: string
           tipo?: string | null
           valor_dose_brl?: number | null
+          valor_litro_brl?: number | null
         }
         Update: {
           ativo?: boolean | null
@@ -876,6 +881,7 @@ export type Database = {
           nome?: string
           tipo?: string | null
           valor_dose_brl?: number | null
+          valor_litro_brl?: number | null
         }
         Relationships: []
       }
@@ -1123,6 +1129,10 @@ export type Database = {
       }
       rpc_generate_idempotency_key: { Args: never; Returns: string }
       rpc_get_visita_workspace: { Args: { _visita_id: string }; Returns: Json }
+      rpc_notificar_gestor: {
+        Args: { _mensagem: string; _titulo: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
