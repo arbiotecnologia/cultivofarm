@@ -567,13 +567,33 @@ export function useEsteiraLaboratorio() {
    * Confirma a entrega em UMA ÚNICA TRANSAÇÃO: baixa do estoque reservado,
    * atualização da OS, verificação de cobertura e finalização automática.
    * Chamadas repetidas retornam replay em vez de dupla baixa/dupla finalização.
+   *
+   * O recebedor físico é OBRIGATÓRIO e precisa vir de coleta explícita na UI
+   * (ConfirmarEntregaDialog). NÃO existe fallback para o nome do operador:
+   * o backend recusa a confirmação com `COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO`.
    */
-  const confirmarEntrega = async (entregaId: string, osId: string, origem: string) => {
+  const confirmarEntrega = async (
+    entregaId: string,
+    osId: string,
+    origem: string,
+    recebedor: { nome: string; cargo?: string | null; documento?: string | null },
+  ) => {
+    const nome = recebedor?.nome?.trim() ?? "";
+    if (!nome) {
+      toast.error("Informe o nome de quem recebeu a entrega para confirmar.");
+      return false;
+    }
+
     try {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_confirmar_entrega_v1", {
         p_entrega_id: entregaId,
         p_os_id: osId,
         p_origem: origem,
+        p_recebedor: {
+          nome,
+          cargo: recebedor.cargo?.trim() || null,
+          documento: recebedor.documento?.trim() || null,
+        },
       });
 
       if (error) {
@@ -593,6 +613,7 @@ export function useEsteiraLaboratorio() {
       return false;
     }
   };
+
 
   const liberarAplicacao = async (programacaoId: string | null, osId: string, origem: string) => {
     const osField = origem === 'onfarm' ? 'ordem_servico_onfarm_id' : 'ordem_servico_id';

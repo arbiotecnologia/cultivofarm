@@ -69,7 +69,7 @@ export default function Entregas() {
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [motivoCancel, setMotivoCancel] = useState("");
-  const { criarEntrega, confirmarEntrega: hookConfirmarEntrega, reservarEstoque: hookReservarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();
+  const { criarEntrega, reservarEstoque: hookReservarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();
   const [form, setForm] = useState({
     estoque_produto_id: "",
     ordem_servico_id: "",
@@ -564,17 +564,20 @@ export default function Entregas() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      // A confirmação física ("entregue") NÃO passa por aqui: ela exige
+      // recebedor identificado e é feita exclusivamente pelo
+      // ConfirmarEntregaDialog. Nenhum caminho pode confirmar em silêncio.
       if (status === "entregue") {
-        const entrega: any = (entregas as any[]).find((e) => e.id === id);
-        const osId = entrega.ordem_servico_id || entrega.ordem_servico_onfarm_id;
-        const origem = entrega.ordem_servico_onfarm_id ? "onfarm" : "manual";
-        return await hookConfirmarEntrega(id, osId, origem);
+        throw new Error(
+          "Use o diálogo de confirmação de entrega para registrar o recebedor.",
+        );
       }
-      
+
       const { error } = await supabase.from("entregas").update({ status: status as Tables<"entregas">["status"] }).eq("id", id);
       if (error) throw error;
       return true;
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["entregas"] });
       queryClient.invalidateQueries({ queryKey: ["estoque-prontos-entrega"] });
@@ -668,16 +671,18 @@ export default function Entregas() {
     },
   });
 
-  const handleConfirmarEntrega = async (id: string) => {
+  /**
+   * Ponto único de confirmação de entrega: abre o ConfirmarEntregaDialog,
+   * que coleta o recebedor físico (nome obrigatório). Não existe fluxo
+   * paralelo nem fallback do nome do operador como recebedor.
+   */
+  const handleConfirmarEntrega = (id: string) => {
     const entrega: any = (entregas as any[]).find((e) => e.id === id);
     if (!entrega) return;
-    
-    const osId = entrega.ordem_servico_id || entrega.ordem_servico_onfarm_id;
-    const origem = entrega.ordem_servico_onfarm_id ? "onfarm" : "manual";
-    
-    await hookConfirmarEntrega(id, osId, origem);
-    queryClient.invalidateQueries({ queryKey: ["entregas"] });
+    setSelectedEntrega(entrega);
+    setConfirmEntregaOpen(true);
   };
+
 
 
 
