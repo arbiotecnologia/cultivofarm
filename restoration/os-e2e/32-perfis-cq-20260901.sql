@@ -192,6 +192,9 @@ BEGIN
   SELECT id INTO v_lote FROM public.lotes WHERE programacao_id = v_prog LIMIT 1;
   IF v_lote IS NULL THEN RAISE EXCEPTION 'E2E6_LOTE_NAO_GERADO'; END IF;
 
+  -- a OS precisa estar em 'em_cq' antes de receber laudos (ladder vigente)
+  PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','enviar_cq',v_prog);
+
   -- Dois laudos com EXATAMENTE o mesmo created_at: só a seq desempata.
   INSERT INTO public.controle_qualidade (lote_id, resultado, data_analise, created_at)
   VALUES (v_lote,'aprovado'::resultado_cq, CURRENT_DATE, v_ts) RETURNING seq INTO v_seq_apr;
