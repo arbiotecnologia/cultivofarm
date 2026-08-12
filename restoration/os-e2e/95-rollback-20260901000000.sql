@@ -30,7 +30,12 @@ BEGIN
        )
   LOOP
     v_def := r.def;
-    v_novo := replace(v_def, 'created_at DESC, seq DESC', 'created_at DESC, ctid DESC');
+    -- fn_avancar_etapa_esteira nao possuia desempate antes da 20260901000000
+    IF r.oid::regproc::text LIKE '%fn_avancar_etapa_esteira%' THEN
+      v_novo := replace(v_def, 'ORDER BY created_at DESC, seq DESC LIMIT 1', 'ORDER BY created_at DESC LIMIT 1');
+    ELSE
+      v_novo := replace(v_def, 'created_at DESC, seq DESC', 'created_at DESC, ctid DESC');
+    END IF;
     IF v_novo IS DISTINCT FROM v_def THEN
       EXECUTE v_novo;
     END IF;
