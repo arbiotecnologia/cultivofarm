@@ -94,10 +94,9 @@ DECLARE
   v_sem text := (SELECT v FROM _c WHERE k='uid_sem');
   v_bloqueado boolean := false; r jsonb;
 BEGIN
-  IF v_sem = '' THEN
-    INSERT INTO _g(gate,status,detalhe) VALUES ('N01 sem permissao bloqueia','SKIP','sem usuario sem role no staging');
-    RETURN;
-  END IF;
+  -- Sem usuario real sem role no staging, usamos um sub sintetico (usuario
+  -- desconhecido) — o motor deve recusar igualmente, sem tocar em dado real.
+  IF v_sem = '' THEN v_sem := gen_random_uuid()::text; END IF;
   PERFORM set_config('request.jwt.claims', json_build_object('sub',v_sem,'role','authenticated')::text, true);
   BEGIN
     r := public.rpc_programar_os_v1(v_os,'manual',CURRENT_DATE);
