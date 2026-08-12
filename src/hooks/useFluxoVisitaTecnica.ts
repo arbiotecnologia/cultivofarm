@@ -500,7 +500,7 @@ export function useFluxoVisitaTecnica() {
     if (!user) return { success: false, message: "Não autenticado" };
     const clientUuid = data.client_uuid || crypto.randomUUID();
     try {
-      const { data: rpcData, error } = await supabase.rpc("rpc_realizar_checkout_visita", {
+      const { data: rpcData, error } = await (supabase as any).rpc("rpc_realizar_checkout_visita" as any, {
         p_registro_id: data.registro_consultor_id,
         p_client_uuid: clientUuid,
         p_latitude: data.latitude ?? null,
