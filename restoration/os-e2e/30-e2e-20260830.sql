@@ -48,10 +48,21 @@ BEGIN
           100000, 'aberta', 'agronomica', 'produto')
   RETURNING id INTO v_os;
 
-  INSERT INTO public.programacao_producao (ordem_servico_id, produto_id, microrganismo_id,
-                                           volume_necessario, status, data_programada)
-  VALUES (v_os, v_produto, v_micro, 100000, 'aguardando', CURRENT_DATE)
-  RETURNING id INTO v_prog;
+  -- A programação é criada por trigger a partir da OS; reaproveitamos ou criamos.
+  SELECT id INTO v_prog FROM public.programacao_producao WHERE ordem_servico_id = v_os LIMIT 1;
+  IF v_prog IS NULL THEN
+    INSERT INTO public.programacao_producao (ordem_servico_id, produto_id, microrganismo_id,
+                                             volume_necessario, status, data_programada)
+    VALUES (v_os, v_produto, v_micro, 100000, 'aguardando', CURRENT_DATE)
+    RETURNING id INTO v_prog;
+  ELSE
+    UPDATE public.programacao_producao
+       SET produto_id = coalesce(produto_id, v_produto),
+           microrganismo_id = coalesce(microrganismo_id, v_micro),
+           volume_necessario = 100000,
+           data_programada = CURRENT_DATE
+     WHERE id = v_prog;
+  END IF;
 
   INSERT INTO _e2e_ctx VALUES ('os', v_os::text), ('prog', v_prog::text),
     ('produto', v_produto::text), ('micro', coalesce(v_micro::text,'')), ('tag', v_tag), ('uid', v_uid::text);
