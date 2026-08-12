@@ -21,8 +21,9 @@ Data: 2026-08-12 · Ambiente: staging `ikaauvsflpmamgxmkhoq` (somente leitura ne
 
 | Arquivo | Natureza |
 | --- | --- |
-| `src/lib/comprovanteEntregaPdf.ts` | Reescrita do renderer (layout v2) + helpers puros exportados |
-| `src/pages/Entregas.tsx` | Rótulos de ação por status (tabela e cartão mobile) |
+| `src/lib/comprovanteEntregaPdf.ts` | Reescrita do renderer (layout v2) + refatoração para preview |
+| `src/pages/Entregas.tsx` | Rótulos de ação por status + integração de preview |
+| `src/components/entregas/PreviewDocumentoEntrega.tsx` | Novo — Componente de pré-visualização A4 |
 | `src/test/entregas/comprovanteEntregaPdf.test.ts` | Novo — 24 testes de renderer/decisão |
 | `docs/auditorias/comprovante-entrega-fase3-layout.md` | Este relatório |
 
@@ -63,7 +64,9 @@ O `aviso` retornado pelo backend, quando presente, tem precedência sobre o text
 - Rodapé (aviso + número + hash + reemissão + `Página X de Y`) é reimpresso em todas as páginas ao final da geração, com o total já conhecido.
 - Cenários exercitados por teste: 0, 1 e 12 itens.
 
-## 6. UX dos botões (tela de Entregas)
+## 6. UX de Pré-visualização e Botões
+
+Implementada pré-visualização em Dialog A4 antes do download. O renderer institucional é invocado para gerar um Blob de preview, garantindo fidelidade 1:1 com o arquivo baixado.
 
 `rotuloAcaoDocumento({ confirmada, possuiSnapshot })`:
 
@@ -89,7 +92,7 @@ Base validada desta fase: commit `d9c8a249b21266c037c068d58efb38ae324dafa6`.
 
 Durante a execução o `src/integrations/supabase/types.ts` sofreu reset automático de plataforma (duas ocorrências, reduzido a 135/155 linhas) junto com `.env`; ambos foram restaurados a partir do commit base `d9c8a249` (types.ts com 21.850 linhas), sem exibir qualquer chave ou DSN. Binding revalidado após cada restauração — `connection-binding.static.test.ts` **8/8 PASS** na execução final.
 
-Diff acumulado sobre a base (`git diff --name-only d9c8a249..HEAD -- supabase/`) retorna **vazio**: nenhuma migration, função, policy ou config de backend foi alterada. Os únicos arquivos de produto tocados são `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx`, `src/test/entregas/comprovanteEntregaPdf.test.ts` e este relatório.
+Diff acumulado sobre a base (`git diff --name-only d9c8a249..HEAD -- supabase/`) retorna **vazio**: nenhuma migration, função, policy ou config de backend foi alterada. Os arquivos de produto tocados são `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx`, `src/components/entregas/PreviewDocumentoEntrega.tsx`, `src/test/entregas/comprovanteEntregaPdf.test.ts` e este relatório.
 
 ## 8. Confirmações de escopo
 
@@ -107,4 +110,4 @@ Diff acumulado sobre a base (`git diff --name-only d9c8a249..HEAD -- supabase/`)
 
 ---
 
-**FASE_3_LAYOUT_APTA_COM_RESSALVAS**
+**FASE_3_LAYOUT_APTA_PARA_HOMOLOGACAO**
