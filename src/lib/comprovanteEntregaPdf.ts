@@ -590,3 +590,22 @@ export async function gerarDocumentoEntregaPDF(
   const doc = await prepararDocumentoEntregaPDF(payload, branding);
   doc.save(nomeArquivoDocumento(payload));
 }
+
+/* ================== Decisao de reemissao no download (Fase 3) ================== */
+
+/**
+ * O preview SEMPRE abre com `p_reemissao=false` (nunca contabiliza reemissao).
+ * No clique em "Baixar Documento" decidimos se e necessaria uma NOVA chamada RPC
+ * com `p_reemissao=true`:
+ *  - romaneio (entrega nao confirmada) => nunca reemite;
+ *  - primeira emissao (sem snapshot antes de abrir o preview) => nao reemite;
+ *    o snapshot ja foi congelado pela chamada `false`, basta gerar o payload recebido;
+ *  - ja existia snapshot definitivo antes do preview => reemissao explicita = true.
+ */
+export function decidirReemissaoNoDownload(opts: {
+  docTipo?: string | null;
+  possuiSnapshotAntes: boolean;
+}): boolean {
+  if (opts.docTipo !== "comprovante") return false;
+  return opts.possuiSnapshotAntes === true;
+}

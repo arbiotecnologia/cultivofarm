@@ -92,24 +92,42 @@ O rótulo dependia de `e.comprovante_numero`, campo que a query de listagem **n�
 ### 6.3 Painel legado renomeado
 
 O antigo botão `Documento` abria `EntregaComprovantePanel` + `EmbalagensEntregaPanel` + `TermoEntregaPanel` — evidências e termos, não o PDF canônico. O recurso foi **preservado integralmente**; apenas os rótulos mudaram: botão → **Evidências**, título do dialog → **Evidências e termos da entrega**, com `title` explicativo (assinatura, embalagens e checklist).
+### 6.4 Preview não contabiliza reemissão (fechamento controlado)
+
+Regra implementada com helper puro `decidirReemissaoNoDownload({ docTipo, possuiSnapshotAntes })`:
+
+| Situação | Abertura do preview | Clique em "Baixar Documento" |
+| --- | --- | --- |
+| Romaneio (não confirmada) | `p_reemissao=false` | nunca reemite |
+| Comprovante — primeira emissão | `p_reemissao=false` (congela o snapshot) | usa o payload já recebido, **sem segunda chamada** |
+| Comprovante — já com snapshot | `p_reemissao=false` | nova RPC com `p_reemissao=true`, **uma única vez** |
+
+- `possuiSnapshotAntes` é capturado **antes** de abrir o preview (`possuiComprovanteDefinitivo(e)`) e guardado no estado junto com `previewEntregaId`, de modo que a decisão do download não depende do refetch intermediário.
+- Fechar/cancelar o preview limpa `previewPayload`, `previewEntregaId` e `previewSnapshotAntes` sem qualquer chamada RPC — nunca incrementa contador.
+- Não há reemissão automática em mount, refresh ou navegação: `p_reemissao=true` só existe no caminho de clique explícito.
+- Após o download, `queryKey: ["entregas"]` é invalidada.
+
+### 6.5 Higiene de recursos do preview
+
+`PreviewDocumentoEntrega.tsx` passou a manter a Object URL viva em `urlRef`, eliminando a closure obsoleta que impedia a revogação. `revogarUrl()` é chamada ao trocar payload, ao fechar o dialog e em um `useEffect` de desmontagem dedicado. As dependências do efeito são `[open, payload, revogarUrl]` (`revogarUrl` é `useCallback` estável), sem ciclo de regeração do blob.
 
 ## 7. Testes executados
 
 | Teste | Resultado |
 | --- | --- |
-| `src/test/entregas/comprovanteEntregaPdf.test.ts` | **31/31 PASS** (24 de layout + 7 de detecção de snapshot) |
+| `src/test/entregas/comprovanteEntregaPdf.test.ts` | **43/43 PASS** (layout + detecção de snapshot + semântica de reemissão + gates estáticos de tela) |
 | `tsgo --noEmit` | **PASS** (sem diagnósticos) |
-| Vitest completo | **2807 passed / 4 skipped — ZERO FAIL** |
-| `bun run build` | **PASS** (built in 24.54s) |
+| Vitest completo | **2819 passed / 4 skipped — ZERO FAIL** (171 arquivos) |
+| `bun run build` | **PASS** |
 | `src/test/config/connection-binding.static.test.ts` (final) | **8/8 PASS** |
 
-Provas específicas cobertas: ausência de import/consulta Supabase no renderer; romaneio sem linguagem de confirmação/assinatura; comprovante com recebedor, data/hora e aviso definitivo; formatação de origem nas três modalidades sem nome técnico/UUID; multi-item com 12 linhas, `didDrawPage` e rodapé de resumo; geração resiliente a falha de logo (CORS). Novos gates de detecção: sem relação → `Baixar comprovante`/false; formulário legado sem snapshot → false (não conta como reemissão); snapshot canônico → `Reemitir comprovante`/true e número `CE-2026-000007`; relação como objeto único; ordenação determinística; `metadata` nula/string/`snapshot=null` rejeitadas; entrega não confirmada permanece em `Gerar romaneio` mesmo com snapshot.
+Provas específicas cobertas: ausência de import/consulta Supabase no renderer e no preview; romaneio sem linguagem de confirmação/assinatura; comprovante com recebedor, data/hora e aviso definitivo; formatação de origem nas três modalidades sem nome técnico/UUID; multi-item com 12 linhas, `didDrawPage` e rodapé de resumo; geração resiliente a falha de logo (CORS). Gates de detecção: sem relação → `Baixar comprovante`/false; formulário legado sem snapshot → false; snapshot canônico → `Reemitir comprovante`/true e número `CE-2026-000007`; relação como objeto único; ordenação determinística; `metadata` nula/string/`snapshot=null` rejeitadas; entrega não confirmada permanece em `Gerar romaneio` mesmo com snapshot. Gates de reemissão: romaneio nunca reemite; primeira emissão não vira reemissão; comprovante existente reemite uma única vez; `doc_tipo` ausente/desconhecido nunca reemite; existe **exatamente uma** ocorrência de chamada RPC com `true` no arquivo; relação e campos mínimos presentes na query; erros da Fase 2 mapeados; botão legado exposto como `Evidências` com os três painéis preservados; revogação de Object URL por ref.
 
-Base validada desta fase: commit `d9c8a249b21266c037c068d58efb38ae324dafa6`.
+Base validada desta fase: commit `ec4801cb744be6ef89d4df0261177019a68d5c1a`.
 
-Durante a execução o `src/integrations/supabase/types.ts` sofreu reset automático de plataforma (três ocorrências, reduzido a 155 linhas) junto com `.env`, `client.ts` e `config.toml`; todos foram restaurados a partir do commit base `d9c8a249` (types.ts com 21.850 linhas), sem exibir qualquer chave ou DSN. Binding revalidado após cada restauração — `connection-binding.static.test.ts` **8/8 PASS** na execução final, com a suíte completa reexecutada depois da restauração.
+O Fast Visual Edit `b90ada5d` voltou a alterar `.env` e reduziu `src/integrations/supabase/types.ts` a 155 linhas. `.env`, `client.ts`, `types.ts` e `supabase/config.toml` foram restaurados via `git show ec4801cb:<arquivo>`, sem imprimir chaves, DSN ou segredos. Estado final: `types.ts` com **21.850 linhas**, `config.toml` apontando para o staging `ikaauvsflpmamgxmkhoq`, `connection-binding.static.test.ts` **8/8 PASS**, com a suíte completa reexecutada depois da restauração.
 
-Diff acumulado sobre a base (`git diff --name-only d9c8a249`) contém apenas `docs/auditorias/comprovante-entrega-fase3-layout.md`, `src/components/entregas/PreviewDocumentoEntrega.tsx`, `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx` e `src/test/entregas/comprovanteEntregaPdf.test.ts`: nenhuma migration, função, policy ou config de backend foi alterada.
+Diff acumulado sobre a base (`git diff --name-only ec4801cb`) contém apenas `docs/auditorias/comprovante-entrega-fase3-layout.md`, `src/components/entregas/PreviewDocumentoEntrega.tsx`, `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx` e `src/test/entregas/comprovanteEntregaPdf.test.ts`: nenhuma migration, função, policy ou config de backend foi alterada.
 
 ## 8. Confirmações de escopo
 
