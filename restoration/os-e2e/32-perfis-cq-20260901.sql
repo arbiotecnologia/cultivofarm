@@ -124,7 +124,7 @@ $fix$;
 DO $perfis$
 DECLARE
   v_os uuid := (SELECT v FROM _cx WHERE k='os')::uuid;
-  v_uid text; v_ok boolean; r jsonb;
+  v_uid text; v_ok boolean; r jsonb; v_prog uuid;
 BEGIN
   -- P06: gestor/administrador autorizado consegue programar
   SELECT ur.user_id::text INTO v_uid FROM public.user_roles ur
@@ -160,10 +160,11 @@ BEGIN
     CASE WHEN v_ok THEN 'PASS' ELSE 'FAIL' END, 'bloqueado='||v_ok);
 
   -- P09: perfil producao opera dentro do escopo previsto da esteira
+  SELECT id INTO v_prog FROM public.programacao_producao WHERE ordem_servico_id=v_os LIMIT 1;
   SELECT ur.user_id::text INTO v_uid FROM public.user_roles ur WHERE ur.role::text='producao' LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub',v_uid,'role','authenticated')::text, true);
   BEGIN
-    r := public.rpc_avancar_esteira_laboratorio(v_os,'manual','assumir_producao',NULL);
+    r := public.rpc_avancar_esteira_laboratorio(v_os,'manual','assumir_producao',v_prog);
     v_ok := coalesce((r->>'success')::boolean, true);
   EXCEPTION WHEN others THEN v_ok := false;
   END;
