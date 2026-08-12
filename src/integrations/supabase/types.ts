@@ -175,6 +175,47 @@ export type Database = {
         }
         Relationships: []
       }
+      cliente_contatos: {
+        Row: {
+          cargo: string | null
+          cliente_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_whatsapp: boolean | null
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          cargo?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_whatsapp?: boolean | null
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          cargo?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_whatsapp?: boolean | null
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_contatos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_documentos: {
         Row: {
           cliente_id: string | null
@@ -453,6 +494,7 @@ export type Database = {
         Row: {
           ativo: boolean | null
           created_at: string | null
+          funcao_agronomica: string | null
           id: string
           nome: string
           nome_cientifico: string | null
@@ -460,6 +502,7 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           created_at?: string | null
+          funcao_agronomica?: string | null
           id?: string
           nome: string
           nome_cientifico?: string | null
@@ -467,6 +510,7 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           created_at?: string | null
+          funcao_agronomica?: string | null
           id?: string
           nome?: string
           nome_cientifico?: string | null
@@ -541,6 +585,50 @@ export type Database = {
           },
         ]
       }
+      product_technical_profiles: {
+        Row: {
+          beneficio_combinado: string | null
+          created_at: string | null
+          cuidados_aplicacao: string | null
+          explicacao_produtor: string | null
+          id: string
+          indicacoes_uso: string | null
+          produto_id: string | null
+          resumo_curto: string | null
+          status_validacao: string | null
+        }
+        Insert: {
+          beneficio_combinado?: string | null
+          created_at?: string | null
+          cuidados_aplicacao?: string | null
+          explicacao_produtor?: string | null
+          id?: string
+          indicacoes_uso?: string | null
+          produto_id?: string | null
+          resumo_curto?: string | null
+          status_validacao?: string | null
+        }
+        Update: {
+          beneficio_combinado?: string | null
+          created_at?: string | null
+          cuidados_aplicacao?: string | null
+          explicacao_produtor?: string | null
+          id?: string
+          indicacoes_uso?: string | null
+          produto_id?: string | null
+          resumo_curto?: string | null
+          status_validacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_technical_profiles_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto_anexos: {
         Row: {
           created_at: string | null
@@ -575,18 +663,24 @@ export type Database = {
       }
       produtos: {
         Row: {
+          ativo: boolean | null
+          codigo: string | null
           created_at: string | null
           dose_ml_ha: number | null
           id: string
           nome: string
         }
         Insert: {
+          ativo?: boolean | null
+          codigo?: string | null
           created_at?: string | null
           dose_ml_ha?: number | null
           id?: string
           nome: string
         }
         Update: {
+          ativo?: boolean | null
+          codigo?: string | null
           created_at?: string | null
           dose_ml_ha?: number | null
           id?: string
