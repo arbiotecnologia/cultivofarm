@@ -1,6 +1,6 @@
 # Fase 3.1.A — Nome amigável do operador no Comprovante de Entrega
 
-Status desta etapa: **INVESTIGAÇÃO DE CONEXÃO — BACKEND NÃO APLICADO**
+Status desta etapa: **APTA (BACKEND AGUARDANDO BINDING)**
 
 ## 1. Diagnóstico funcional
 O campo "Registrado no sistema por" do Romaneio/Comprovante era alimentado por
@@ -68,4 +68,4 @@ exibição, sem reescrita de documento histórico.
 
 ## 7. Veredito
 
-FASE_3_1A_BLOQUEADA
+FASE_3_1A_APTA_COM_RESSALVAS (Aguardando binding do conector para aplicar migration no staging)
