@@ -122,7 +122,7 @@ Diff acumulado sobre a base (`git diff --name-only d9c8a249`) contém apenas `do
 
 1. **Slogan/identidade**: `useSystemConfig` ainda não expõe slogan nem cor secundária; o renderer já aceita, falta a configuração.
 2. **Validação visual em browser real**: a suíte usa mock de jsPDF/autoTable; ainda não houve inspeção de PDF renderizado com logo real e nomes longos de produto/microrganismo.
-3. **`possuiSnapshot` na listagem**: o rótulo `Reemitir comprovante` depende de o registro de entrega expor o número do comprovante; onde esse campo não vier, a ação exibe `Baixar comprovante` (comportamento seguro — não incrementa reemissão indevidamente, apenas rótulo menos específico).
+3. **`possuiSnapshot` na listagem — RESOLVIDO**: a detecção passou a usar a relação `entrega_comprovantes` carregada na própria query e o helper puro `possuiComprovanteDefinitivo`, ancorado na chave canônica `comprovante_snapshot_v1`. Não depende mais de campo inexistente na listagem; formulários legados não disparam reemissão.
 4. **Evidência de assinatura**: quando `assinatura_tipo` existir, é apresentada como texto; a representação gráfica de evidência real fica para fase posterior.
 
 ---
