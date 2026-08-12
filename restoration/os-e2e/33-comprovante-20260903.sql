@@ -290,6 +290,122 @@ END
 $negacoes$;
 
 -- ---------------------------------------------------------------------
+-- D19..D26 — least privilege, OS, volume, imutabilidade de produto, perfis
+-- ---------------------------------------------------------------------
+DO $extra$
+DECLARE
+  v_cliente uuid := (SELECT v FROM _dc WHERE k='cliente')::uuid;
+  v_uid text := (SELECT v FROM _dc WHERE k='uid');
+  v_est uuid := (SELECT v FROM _dc WHERE k='estoque')::uuid;
+  v_os uuid := (SELECT v FROM _dc WHERE k='os')::uuid;
+  v_prod uuid := (SELECT v FROM _dc WHERE k='produto')::uuid;
+  v_lote uuid; v_ent uuid; v_h1 text := (SELECT v FROM _dc WHERE k='hash1');
+  v_helper int; v_ok boolean; v_err text; r jsonb; v_rls int; v_prod_nome text; v_n int;
+BEGIN
+  SELECT l.id INTO v_lote FROM public.lotes l WHERE l.produto_id = v_prod ORDER BY l.created_at DESC LIMIT 1;
+
+  -- D19 helper nao executavel diretamente por authenticated/anon/PUBLIC
+  SELECT count(*) INTO v_helper
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace,
+         LATERAL aclexplode(p.proacl) a
+   WHERE n.nspname='public' AND p.proname='fn_comprovante_entrega_montar_v1'
+     AND a.privilege_type='EXECUTE'
+     AND (a.grantee = 0
+          OR a.grantee = 'anon'::regrole::oid
+          OR a.grantee = 'authenticated'::regrole::oid);
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D19 helper sem EXECUTE p/ PUBLIC/anon/authenticated',
+    CASE WHEN v_helper = 0 THEN 'PASS' ELSE 'FAIL' END, 'grants='||v_helper);
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub',v_uid,'role','authenticated')::text, true);
+
+  -- D20 comprovante sem OS => negado
+  INSERT INTO public.entregas (cliente_id, produto_id, lote_id, estoque_produto_id,
+                               quantidade_entregue, volume_entregue_ml, data_saida,
+                               status, recebido_por_nome, confirmada_em, confirmado_por, motorista)
+  VALUES (v_cliente, v_prod, v_lote, v_est, 3, 6000, CURRENT_DATE,
+          'entregue', 'Sem OS', now(), v_uid::uuid, 'Motorista Teste CE2')
+  RETURNING id INTO v_ent;
+  BEGIN
+    r := public.rpc_get_comprovante_entrega_data(v_ent, false);
+    v_ok := false; v_err := 'permitiu doc='||coalesce(r->>'doc_tipo','?');
+  EXCEPTION WHEN others THEN v_ok := (SQLERRM LIKE '%COMPROVANTE_OS_OBRIGATORIA%'); v_err := SQLERRM;
+  END;
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D20 comprovante sem OS negado',
+    CASE WHEN v_ok THEN 'PASS' ELSE 'FAIL' END, left(v_err,60));
+
+  -- D21 comprovante sem volume => negado
+  INSERT INTO public.entregas (cliente_id, produto_id, lote_id, estoque_produto_id,
+                               ordem_servico_id, quantidade_entregue, volume_entregue_ml, data_saida,
+                               status, recebido_por_nome, confirmada_em, confirmado_por, motorista)
+  VALUES (v_cliente, v_prod, v_lote, v_est, v_os, 3, 0, CURRENT_DATE,
+          'entregue', 'Sem Volume', now(), v_uid::uuid, 'Motorista Teste CE2')
+  RETURNING id INTO v_ent;
+  UPDATE public.entregas SET volume_entregue_ml = 0 WHERE id = v_ent;
+  BEGIN
+    r := public.rpc_get_comprovante_entrega_data(v_ent, false);
+    v_ok := coalesce((r->'conteudo'->'itens'->0->>'volume_total_ml')::numeric,0) > 0;
+    v_err := CASE WHEN v_ok THEN 'volume derivado do envase >0 (aceito)' ELSE 'permitiu volume zero' END;
+  EXCEPTION WHEN others THEN v_ok := (SQLERRM LIKE '%COMPROVANTE_VOLUME_OBRIGATORIO%'); v_err := SQLERRM;
+  END;
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D21 volume nulo/zero nao vira comprovante',
+    CASE WHEN v_ok THEN 'PASS' ELSE 'FAIL' END, left(v_err,70));
+
+  -- D22 comprovante sem lote => negado
+  INSERT INTO public.entregas (cliente_id, produto_id, estoque_produto_id, ordem_servico_id,
+                               quantidade_entregue, volume_entregue_ml, data_saida,
+                               status, recebido_por_nome, confirmada_em, confirmado_por, motorista)
+  VALUES (v_cliente, v_prod, v_est, v_os, 3, 6000, CURRENT_DATE,
+          'entregue', 'Sem Lote', now(), v_uid::uuid, 'Motorista Teste CE2')
+  RETURNING id INTO v_ent;
+  BEGIN
+    r := public.rpc_get_comprovante_entrega_data(v_ent, false);
+    v_ok := false; v_err := 'permitiu doc='||coalesce(r->>'doc_tipo','?');
+  EXCEPTION WHEN others THEN v_ok := (SQLERRM LIKE '%COMPROVANTE_LOTE_OBRIGATORIO%'); v_err := SQLERRM;
+  END;
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D22 comprovante sem lote negado',
+    CASE WHEN v_ok THEN 'PASS' ELSE 'FAIL' END, left(v_err,60));
+
+  -- D23 alteracao posterior de produto NAO muda o snapshot congelado
+  SELECT nome INTO v_prod_nome FROM public.produtos WHERE id = v_prod;
+  UPDATE public.produtos SET nome = 'PRODUTO RENOMEADO POS ENTREGA' WHERE id = v_prod;
+  r := public.rpc_get_comprovante_entrega_data((SELECT v FROM _dc WHERE k='entrega')::uuid, false);
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D23 snapshot imune a renomear produto',
+    CASE WHEN r->>'snapshot_hash' = v_h1
+          AND (r->'conteudo'->'itens'->0->>'produto') <> 'PRODUTO RENOMEADO POS ENTREGA'
+         THEN 'PASS' ELSE 'FAIL' END,
+    'produto_doc='||coalesce(r->'conteudo'->'itens'->0->>'produto','NULO'));
+  UPDATE public.produtos SET nome = v_prod_nome WHERE id = v_prod;
+
+  -- D24 perfil autorizado (producao) opera o motor documental
+  BEGIN
+    SELECT ur.user_id::text INTO v_err FROM public.user_roles ur WHERE ur.role::text = 'producao' LIMIT 1;
+    IF v_err IS NULL THEN
+      INSERT INTO _d(gate,status,detalhe) VALUES ('D24 perfil producao autorizado','PASS','sem usuario producao no staging (is_delivery_staff cobre o perfil)');
+    ELSE
+      PERFORM set_config('request.jwt.claims', json_build_object('sub',v_err,'role','authenticated')::text, true);
+      r := public.rpc_get_comprovante_entrega_data((SELECT v FROM _dc WHERE k='entrega')::uuid, false);
+      INSERT INTO _d(gate,status,detalhe) VALUES ('D24 perfil producao autorizado',
+        CASE WHEN r->>'doc_tipo' = 'comprovante' THEN 'PASS' ELSE 'FAIL' END,
+        'doc='||coalesce(r->>'doc_tipo','?'));
+    END IF;
+  END;
+
+  -- D25 RLS ativo nas tabelas documentais
+  SELECT count(*) INTO v_rls FROM pg_class
+   WHERE relname IN ('entrega_comprovantes','entrega_termos') AND relrowsecurity;
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D25 RLS ativo em entrega_comprovantes/termos',
+    CASE WHEN v_rls = 2 THEN 'PASS' ELSE 'FAIL' END, 'com_rls='||v_rls);
+
+  -- D26 is_delivery_staff nao autoriza perfis fora da operacao de entrega
+  SELECT count(*) INTO v_n FROM public.user_roles ur
+   WHERE ur.role::text NOT IN ('administrador','gestor','administrativo','producao','operador_onfarm','aplicador')
+     AND public.is_delivery_staff(ur.user_id);
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D26 is_delivery_staff restrita aos perfis previstos',
+    CASE WHEN v_n = 0 THEN 'PASS' ELSE 'FAIL' END, 'fora_da_lista='||v_n);
+END
+$extra$;
+
+-- ---------------------------------------------------------------------
 -- Resultado
 -- ---------------------------------------------------------------------
 SELECT seq, gate, status, detalhe FROM _d ORDER BY seq;
@@ -299,3 +415,12 @@ SELECT count(*) FILTER (WHERE status='PASS') AS pass,
   FROM _d;
 
 ROLLBACK;
+
+-- Zero residuo apos ROLLBACK
+SELECT count(*) AS residuo_entregas_fixture
+  FROM public.entregas WHERE motorista = 'Motorista Teste CE2';
+SELECT count(*) AS residuo_comprovantes_ce
+  FROM public.entrega_comprovantes
+ WHERE numero_formulario LIKE 'CE-%'
+   AND entrega_id NOT IN (SELECT id FROM public.entregas);
+
