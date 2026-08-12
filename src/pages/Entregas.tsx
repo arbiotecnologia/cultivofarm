@@ -872,15 +872,17 @@ export default function Entregas() {
                         )}
                         {(() => {
                           const confirmada = e.status === "entregue";
-                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: !!e.comprovante_numero });
-                          const reemissao = confirmada && !!e.comprovante_numero;
+                          const definitivo = possuiComprovanteDefinitivo(e);
+                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });
+                          const reemissao = confirmada && definitivo;
                           return (
                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e, reemissao)} title={label}>
                               <FileDown className="h-4 w-4 mr-1" /> {label}
                             </Button>
                           );
                         })()}
-                        <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Documento de entrega com assinatura">
+                        <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">
+
                           <FileText className="h-4 w-4 mr-1" /> Documento
                         </Button>
                       </>
@@ -944,15 +946,16 @@ export default function Entregas() {
                         )}
                         {(() => {
                           const confirmada = e.status === "entregue";
-                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: !!e.comprovante_numero });
-                          const reemissao = confirmada && !!e.comprovante_numero;
+                          const definitivo = possuiComprovanteDefinitivo(e);
+                          const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });
+                          const reemissao = confirmada && definitivo;
                           return (
                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e, reemissao)} title={label}>
                               <FileDown className="h-4 w-4 mr-1" /> {label}
                             </Button>
                           );
                         })()}
-                        <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Documento de entrega com assinatura">
+                        <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">
                           <FileText className="h-4 w-4 mr-1" /> Documento
                         </Button>
                       </div>
@@ -1018,7 +1021,7 @@ export default function Entregas() {
 
       <Dialog open={!!comprovanteEntrega} onOpenChange={(o) => !o && setComprovanteEntrega(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Comprovação de entrega</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Evidências e termos da entrega</DialogTitle></DialogHeader>
           {comprovanteEntrega && <EntregaComprovantePanel entrega={comprovanteEntrega} />}
           {comprovanteEntrega && <div className="mt-4"><EmbalagensEntregaPanel entregaId={comprovanteEntrega.id} /></div>}
           {comprovanteEntrega && <div className="mt-4"><TermoEntregaPanel entregaId={comprovanteEntrega.id} /></div>}
