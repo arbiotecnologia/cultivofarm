@@ -259,6 +259,7 @@ describe("detecção de comprovante definitivo (snapshot canônico)", () => {
       "Gerar romaneio",
     );
   });
+});
 
 describe("avisos e selos", () => {
   it("romaneio", () => {
