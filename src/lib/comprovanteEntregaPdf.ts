@@ -174,6 +174,22 @@ export function rotuloReemissao(reemissoes?: number | null): string | null {
   return n === 1 ? "2ª via — reemissão do mesmo documento" : `${n + 1}ª via — reemissão do mesmo documento`;
 }
 
+/** Regex de UUID canonico — usado apenas para BLOQUEAR exibicao de identificador tecnico. */
+const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Nome amigavel do operador interno para o documento externo.
+ * Nunca imprime UUID: o identificador tecnico permanece apenas na auditoria.
+ * Snapshots historicos sem `confirmado_por_nome` caem no travessao neutro.
+ */
+export function nomeOperadorDocumento(recebimento: any): string {
+  const nome = String(recebimento?.confirmado_por_nome ?? "").trim();
+  if (nome && !RE_UUID.test(nome)) return nome;
+  return TRACO;
+}
+
+
+
 export function nomeArquivoDocumento(payload: Pick<DocumentoEntregaPayload, "doc_tipo" | "numero_documento">): string {
   const prefixo = payload.doc_tipo === "comprovante" ? "comprovante-entrega" : "romaneio-entrega";
   const numero = String(payload.numero_documento ?? "documento").replace(/[^\w.-]+/g, "-");
