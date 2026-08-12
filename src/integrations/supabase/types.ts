@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      aplicacao_evidencias: {
+        Row: {
+          aplicacao_id: string | null
+          evidencia_id: string | null
+          id: string
+        }
+        Insert: {
+          aplicacao_id?: string | null
+          evidencia_id?: string | null
+          id?: string
+        }
+        Update: {
+          aplicacao_id?: string | null
+          evidencia_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aplicacao_evidencias_aplicacao_id_fkey"
+            columns: ["aplicacao_id"]
+            isOneToOne: false
+            referencedRelation: "aplicacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aplicacao_evidencias_evidencia_id_fkey"
+            columns: ["evidencia_id"]
+            isOneToOne: false
+            referencedRelation: "evidencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aplicacao_evidencias_vinculos: {
         Row: {
           aplicacao_id: string
@@ -117,6 +150,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      bi_user_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          preferences: Json | null
+          secao: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          preferences?: Json | null
+          secao?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          preferences?: Json | null
+          secao?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       clientes: {
         Row: {
@@ -234,6 +291,41 @@ export type Database = {
           },
         ]
       }
+      lotes: {
+        Row: {
+          codigo_lote: string | null
+          created_at: string | null
+          id: string
+          produto_id: string | null
+          status: string | null
+          volume_produzido: number | null
+        }
+        Insert: {
+          codigo_lote?: string | null
+          created_at?: string | null
+          id?: string
+          produto_id?: string | null
+          status?: string | null
+          volume_produzido?: number | null
+        }
+        Update: {
+          codigo_lote?: string | null
+          created_at?: string | null
+          id?: string
+          produto_id?: string | null
+          status?: string | null
+          volume_produzido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lotes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ordens_servico: {
         Row: {
           area_hectares: number | null
@@ -320,6 +412,62 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      programacao_producao: {
+        Row: {
+          created_at: string | null
+          id: string
+          ordem_servico_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ordem_servico_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ordem_servico_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programacao_producao_ordem_servico_id_fkey"
+            columns: ["ordem_servico_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talhoes: {
         Row: {
           fazenda_id: string | null
@@ -376,6 +524,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      rpc_create_portal_notification_secure: {
+        Args: {
+          _cliente_id: string
+          _idempotency_key: string
+          _link: string
+          _mensagem: string
+          _source_id: string
+          _source_type: string
+          _tipo: string
+          _titulo: string
+        }
+        Returns: undefined
+      }
       rpc_fiscal_company_settings_init: {
         Args: never
         Returns: {
@@ -407,6 +568,16 @@ export type Database = {
         | "producao"
         | "administrativo"
         | "gestor"
+      status_os:
+        | "aberta"
+        | "aprovada"
+        | "programada"
+        | "em_producao"
+        | "em_cq"
+        | "envase"
+        | "pronto_entrega"
+        | "entregue"
+        | "finalizada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -543,6 +714,17 @@ export const Constants = {
         "producao",
         "administrativo",
         "gestor",
+      ],
+      status_os: [
+        "aberta",
+        "aprovada",
+        "programada",
+        "em_producao",
+        "em_cq",
+        "envase",
+        "pronto_entrega",
+        "entregue",
+        "finalizada",
       ],
     },
   },
