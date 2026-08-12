@@ -492,6 +492,7 @@ export type Database = {
           microrganismo_id: string | null
           produto_id: string | null
           quantidade: number | null
+          validade: string | null
           volume_total: number | null
         }
         Insert: {
@@ -500,6 +501,7 @@ export type Database = {
           microrganismo_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          validade?: string | null
           volume_total?: number | null
         }
         Update: {
@@ -508,6 +510,7 @@ export type Database = {
           microrganismo_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          validade?: string | null
           volume_total?: number | null
         }
         Relationships: [
@@ -576,6 +579,7 @@ export type Database = {
           microrganismo_id: string | null
           produto_id: string | null
           status: string | null
+          validade: string | null
           volume_produzido: number | null
         }
         Insert: {
@@ -585,6 +589,7 @@ export type Database = {
           microrganismo_id?: string | null
           produto_id?: string | null
           status?: string | null
+          validade?: string | null
           volume_produzido?: number | null
         }
         Update: {
@@ -594,6 +599,7 @@ export type Database = {
           microrganismo_id?: string | null
           produto_id?: string | null
           status?: string | null
+          validade?: string | null
           volume_produzido?: number | null
         }
         Relationships: [
@@ -661,6 +667,7 @@ export type Database = {
         Row: {
           ativo: boolean | null
           created_at: string | null
+          dose_ml_ha: number | null
           funcao_agronomica: string | null
           id: string
           nome: string
@@ -671,6 +678,7 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           created_at?: string | null
+          dose_ml_ha?: number | null
           funcao_agronomica?: string | null
           id?: string
           nome: string
@@ -681,6 +689,7 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           created_at?: string | null
+          dose_ml_ha?: number | null
           funcao_agronomica?: string | null
           id?: string
           nome?: string
@@ -844,6 +853,7 @@ export type Database = {
           id: string
           nome: string
           tipo: string | null
+          valor_dose_brl: number | null
         }
         Insert: {
           ativo?: boolean | null
@@ -854,6 +864,7 @@ export type Database = {
           id?: string
           nome: string
           tipo?: string | null
+          valor_dose_brl?: number | null
         }
         Update: {
           ativo?: boolean | null
@@ -864,6 +875,7 @@ export type Database = {
           id?: string
           nome?: string
           tipo?: string | null
+          valor_dose_brl?: number | null
         }
         Relationships: []
       }
@@ -1067,6 +1079,25 @@ export type Database = {
           _source_type: string
           _tipo: string
           _titulo: string
+        }
+        Returns: undefined
+      }
+      rpc_criar_visita_idempotente: {
+        Args: {
+          _cliente_id: string
+          _consultor_id: string
+          _data_visita: string
+          _fazenda_id: string
+          _idempotency_key: string
+        }
+        Returns: string
+      }
+      rpc_estoque_operar_v1: {
+        Args: {
+          _microrganismo_id: string
+          _operacao: string
+          _produto_id: string
+          _quantidade: number
         }
         Returns: undefined
       }
