@@ -59,6 +59,8 @@ import {
   AVISO_ROMANEIO,
   possuiComprovanteDefinitivo,
   decidirReemissaoNoDownload,
+  deveReemitirNoDownload,
+  REEMISSAO_NA_ABERTURA_DO_PREVIEW,
   selecionarComprovanteDefinitivo,
   numeroComprovanteDefinitivo,
   ehComprovanteDefinitivo,
