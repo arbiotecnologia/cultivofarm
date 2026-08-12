@@ -883,7 +883,7 @@ export default function Entregas() {
                         })()}
                         <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">
 
-                          <FileText className="h-4 w-4 mr-1" /> Documento
+                          <FileText className="h-4 w-4 mr-1" /> Evidências
                         </Button>
                       </>
                     }
@@ -956,7 +956,7 @@ export default function Entregas() {
                           );
                         })()}
                         <Button size="sm" variant="outline" onClick={() => setComprovanteEntrega(e)} title="Evidências e termos da entrega (assinatura, embalagens e checklist)">
-                          <FileText className="h-4 w-4 mr-1" /> Documento
+                          <FileText className="h-4 w-4 mr-1" /> Evidências
                         </Button>
                       </div>
                     </TableCell>
