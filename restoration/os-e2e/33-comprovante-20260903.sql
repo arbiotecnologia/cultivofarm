@@ -263,7 +263,7 @@ BEGIN
     v_ok := false; v_err := coalesce(r->>'doc_tipo','?');
   EXCEPTION WHEN others THEN v_ok := true; v_err := SQLERRM;
   END;
-  INSERT INTO _d(gate,status,detalhe) VALUES ('D16 comprovante exige produto/lote',
+  INSERT INTO _d(gate,status,detalhe) VALUES ('D16 comprovante exige dados minimos (OS/produto/lote)',
     CASE WHEN v_ok THEN 'PASS' ELSE 'FAIL' END, left(v_err, 60));
 
   -- usuario autenticado sem role algum
