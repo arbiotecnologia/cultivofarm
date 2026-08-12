@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts_payable: {
+        Row: {
+          banco_conta_id: string | null
+          created_at: string | null
+          data_pagamento: string | null
+          id: string
+          metodo_pagamento_id: string | null
+          observacoes: string | null
+          status: string | null
+          valor: number
+          valor_pago: number | null
+          vencimento: string | null
+        }
+        Insert: {
+          banco_conta_id?: string | null
+          created_at?: string | null
+          data_pagamento?: string | null
+          id?: string
+          metodo_pagamento_id?: string | null
+          observacoes?: string | null
+          status?: string | null
+          valor: number
+          valor_pago?: number | null
+          vencimento?: string | null
+        }
+        Update: {
+          banco_conta_id?: string | null
+          created_at?: string | null
+          data_pagamento?: string | null
+          id?: string
+          metodo_pagamento_id?: string | null
+          observacoes?: string | null
+          status?: string | null
+          valor?: number
+          valor_pago?: number | null
+          vencimento?: string | null
+        }
+        Relationships: []
+      }
       accounts_receivable: {
         Row: {
           created_at: string | null
@@ -1834,7 +1873,7 @@ export type Database = {
       }
       rpc_get_visita_workspace: { Args: { _visita_id: string }; Returns: Json }
       rpc_notificar_gestor: {
-        Args: { _mensagem: string; _titulo: string }
+        Args: { p_link?: string; p_mensagem: string; p_titulo: string }
         Returns: undefined
       }
     }
