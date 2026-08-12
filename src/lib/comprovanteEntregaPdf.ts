@@ -625,3 +625,25 @@ export function decidirReemissaoNoDownload(opts: {
   if (opts.docTipo !== "comprovante") return false;
   return opts.possuiSnapshotAntes === true;
 }
+
+/**
+ * A abertura da pre-visualizacao NUNCA contabiliza reemissao: a RPC e sempre
+ * chamada com `p_reemissao=false`. Constante exportada para permitir assercao
+ * em teste sem depender de browser real.
+ */
+export const REEMISSAO_NA_ABERTURA_DO_PREVIEW = false as const;
+
+/**
+ * Alias semantico de `decidirReemissaoNoDownload` usando a nomenclatura da
+ * Fase 3: comprovante ja existente => true; primeira emissao => false;
+ * romaneio => false.
+ */
+export function deveReemitirNoDownload(opts: {
+  docTipo?: string | null;
+  eraComprovanteExistente: boolean;
+}): boolean {
+  return decidirReemissaoNoDownload({
+    docTipo: opts.docTipo,
+    possuiSnapshotAntes: opts.eraComprovanteExistente,
+  });
+}

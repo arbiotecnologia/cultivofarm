@@ -18,7 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDateDisplay } from "@/lib/date-utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento, possuiComprovanteDefinitivo, decidirReemissaoNoDownload } from "@/lib/comprovanteEntregaPdf";
+import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento, possuiComprovanteDefinitivo, deveReemitirNoDownload, REEMISSAO_NA_ABERTURA_DO_PREVIEW } from "@/lib/comprovanteEntregaPdf";
 
 const ERROS_COMPROVANTE: Record<string, string> = {
   COMPROVANTE_UNAUTHENTICATED: "Sessão expirada. Entre novamente para emitir o documento.",
@@ -91,6 +91,8 @@ export default function Entregas() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSnapshotAntes, setPreviewSnapshotAntes] = useState(false);
   const [previewEntregaId, setPreviewEntregaId] = useState<string | null>(null);
+  // Guarda contra duplo clique no download: impede contabilizar duas reemissões.
+  const [downloadingPreview, setDownloadingPreview] = useState(false);
   const [financialConfirmOpen, setFinancialConfirmOpen] = useState(false);
   const [confirmEntregaOpen, setConfirmEntregaOpen] = useState(false);
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
@@ -743,7 +745,7 @@ export default function Entregas() {
   const handleGerarDocumento = async (e: any, preview = true) => {
     try {
       const possuiSnapshotAntes = possuiComprovanteDefinitivo(e);
-      const payload = await buscarPayloadDocumento(e.id, false);
+      const payload = await buscarPayloadDocumento(e.id, REEMISSAO_NA_ABERTURA_DO_PREVIEW);
 
       // Primeira emissão definitiva congela o snapshot no servidor: refaz o fetch
       // para que a próxima ação passe corretamente a "Reemitir comprovante".
@@ -770,17 +772,24 @@ export default function Entregas() {
    */
   const handleDownloadPreview = async () => {
     if (!previewPayload || !previewEntregaId) return;
+    if (downloadingPreview) return;
+    setDownloadingPreview(true);
     try {
-      const reemitir = decidirReemissaoNoDownload({
+      const reemitir = deveReemitirNoDownload({
         docTipo: previewPayload?.doc_tipo,
-        possuiSnapshotAntes: previewSnapshotAntes,
+        eraComprovanteExistente: previewSnapshotAntes,
       });
       const payload = reemitir ? await buscarPayloadDocumento(previewEntregaId, true) : previewPayload;
       await gerarDocumentoEntregaPDF(payload, brandingDocumento());
       queryClient.invalidateQueries({ queryKey: ["entregas"] });
       setPreviewOpen(false);
+      setPreviewPayload(null);
+      setPreviewEntregaId(null);
+      setPreviewSnapshotAntes(false);
     } catch (err: any) {
       toast.error(`Erro ao gerar documento de entrega: ${traduzErroComprovante(err?.message || String(err))}`);
+    } finally {
+      setDownloadingPreview(false);
     }
   };
 
@@ -1063,6 +1072,7 @@ export default function Entregas() {
       <PreviewDocumentoEntrega
         open={previewOpen}
         onOpenChange={(o) => {
+          if (!o && downloadingPreview) return;
           setPreviewOpen(o);
           if (!o) {
             // Fechar/cancelar o preview nunca contabiliza reemissao.
@@ -1074,6 +1084,7 @@ export default function Entregas() {
         payload={previewPayload}
         branding={brandingDocumento()}
         onDownload={handleDownloadPreview}
+        downloading={downloadingPreview}
       />
     </div>
   );

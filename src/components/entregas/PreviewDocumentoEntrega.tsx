@@ -10,6 +10,7 @@ interface PreviewDocumentoEntregaProps {
   payload: DocumentoEntregaPayload | null;
   branding: DocumentoEntregaBranding;
   onDownload: () => void;
+  downloading?: boolean;
 }
 
 export function PreviewDocumentoEntrega({
@@ -18,6 +19,7 @@ export function PreviewDocumentoEntrega({
   payload,
   branding,
   onDownload,
+  downloading = false,
 }: PreviewDocumentoEntregaProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -101,19 +103,25 @@ export function PreviewDocumentoEntrega({
                  <h4 className="font-medium">Falha ao carregar visualização</h4>
                  <p className="text-sm text-muted-foreground">Você ainda pode baixar o documento diretamente.</p>
                </div>
-               <Button onClick={onDownload}>
-                 <FileDown className="h-4 w-4 mr-2" /> Baixar PDF
+               <Button onClick={onDownload} disabled={downloading}>
+                 {downloading
+                   ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                   : <FileDown className="h-4 w-4 mr-2" />}
+                 Baixar PDF
                </Button>
             </div>
           )}
         </div>
 
         <DialogFooter className="p-4 border-t bg-background">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={downloading}>
             Fechar
           </Button>
-          <Button onClick={onDownload} disabled={!payload}>
-            <FileDown className="h-4 w-4 mr-2" /> Baixar Documento
+          <Button onClick={onDownload} disabled={!payload || downloading}>
+            {downloading
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <FileDown className="h-4 w-4 mr-2" />}
+            {downloading ? "Gerando documento..." : "Baixar Documento"}
           </Button>
         </DialogFooter>
       </DialogContent>

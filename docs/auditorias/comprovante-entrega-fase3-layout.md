@@ -146,3 +146,30 @@ Diff acumulado sobre a base (`git diff --name-only ec4801cb`) contém apenas `do
 ---
 
 **FASE_3_LAYOUT_APTA_PARA_HOMOLOGACAO**
+
+---
+
+## 10. Último gate da Fase 3 — reemissão contabilizada só no download
+
+Correções estritamente de frontend/testes/docs (zero alteração em `supabase/` ou SQL):
+
+- **Abertura do preview**: `handleGerarDocumento` chama a RPC com a constante explícita
+  `REEMISSAO_NA_ABERTURA_DO_PREVIEW` (`false`) para romaneio, comprovante novo e reemissão.
+  O booleano `eraComprovanteExistente` (`possuiComprovanteDefinitivo(e)` no instante do clique)
+  e o `entregaId` são congelados no estado do preview.
+- **Download**: `handleDownloadPreview` é o único ponto que pode contabilizar reemissão.
+  Usa o helper puro `deveReemitirNoDownload({ docTipo, eraComprovanteExistente })`;
+  comprovante já existente refaz a RPC com `p_reemissao=true` e gera o PDF com o payload NOVO;
+  primeira emissão e romaneio reaproveitam o payload do preview sem segunda chamada.
+  Em todos os casos `['entregas']` é invalidada ao final.
+- **Fechar sem baixar**: nenhuma chamada com `true`; o estado do preview é limpo.
+- **Duplo clique**: estado `downloadingPreview` com guard de reentrada, botões desabilitados,
+  spinner e bloqueio de fechamento enquanto processa (prop `downloading` no preview).
+- **Object URL**: revogação por `urlRef` na troca de payload, no fechamento e na desmontagem.
+
+Gates finais: `tsgo --noEmit` **PASS** · Vitest completo **2822 passed / 4 skipped — ZERO FAIL** ·
+`bun run build` **PASS** · `connection-binding.static.test.ts` **8/8 PASS** (binding e `types.ts`
+com 21.850 linhas restaurados de `ec4801cb` após novo reset da plataforma, sem expor segredos).
+Produção não acessada, nada publicado, SEFAZ não acionado.
+
+**FASE_3_LAYOUT_APTA_PARA_HOMOLOGACAO**

@@ -59,6 +59,8 @@ import {
   AVISO_ROMANEIO,
   possuiComprovanteDefinitivo,
   decidirReemissaoNoDownload,
+  deveReemitirNoDownload,
+  REEMISSAO_NA_ABERTURA_DO_PREVIEW,
   selecionarComprovanteDefinitivo,
   numeroComprovanteDefinitivo,
   ehComprovanteDefinitivo,
@@ -388,6 +390,17 @@ describe("semantica de reemissao no preview (Fase 3 - C)", () => {
     expect(decidirReemissaoNoDownload({ docTipo: null, possuiSnapshotAntes: true })).toBe(false);
     expect(decidirReemissaoNoDownload({ docTipo: undefined, possuiSnapshotAntes: true })).toBe(false);
   });
+
+  it("deveReemitirNoDownload replica a decisão com a nomenclatura da Fase 3", () => {
+    expect(deveReemitirNoDownload({ docTipo: "comprovante", eraComprovanteExistente: true })).toBe(true);
+    expect(deveReemitirNoDownload({ docTipo: "comprovante", eraComprovanteExistente: false })).toBe(false);
+    expect(deveReemitirNoDownload({ docTipo: "romaneio", eraComprovanteExistente: true })).toBe(false);
+    expect(deveReemitirNoDownload({ docTipo: null, eraComprovanteExistente: true })).toBe(false);
+  });
+
+  it("a abertura do preview é declarada como não-reemissão", () => {
+    expect(REEMISSAO_NA_ABERTURA_DO_PREVIEW).toBe(false);
+  });
 });
 
 describe("fluxo da tela de Entregas (estático)", () => {
@@ -395,7 +408,7 @@ describe("fluxo da tela de Entregas (estático)", () => {
   const preview = readFileSync(resolve(__dirname, "../../components/entregas/PreviewDocumentoEntrega.tsx"), "utf8");
 
   it("abertura do preview sempre chama a RPC com p_reemissao=false", () => {
-    expect(src).toContain("buscarPayloadDocumento(e.id, false)");
+    expect(src).toContain("buscarPayloadDocumento(e.id, REEMISSAO_NA_ABERTURA_DO_PREVIEW)");
     // a única chamada com `true` é a do download explícito de reemissão
     const comTrue = src.match(/buscarPayloadDocumento\([^)]*true\)/g) ?? [];
     expect(comTrue).toHaveLength(1);
@@ -403,9 +416,17 @@ describe("fluxo da tela de Entregas (estático)", () => {
   });
 
   it("a decisão de reemissão usa o helper puro e o estado anterior ao preview", () => {
-    expect(src).toContain("decidirReemissaoNoDownload({");
-    expect(src).toContain("possuiSnapshotAntes: previewSnapshotAntes");
+    expect(src).toContain("deveReemitirNoDownload({");
+    expect(src).toContain("eraComprovanteExistente: previewSnapshotAntes");
     expect(src).toContain("const possuiSnapshotAntes = possuiComprovanteDefinitivo(e);");
+  });
+
+  it("o download é protegido contra duplo clique", () => {
+    expect(src).toContain("if (downloadingPreview) return;");
+    expect(src).toContain("setDownloadingPreview(true)");
+    expect(src).toContain("setDownloadingPreview(false)");
+    expect(src).toContain("downloading={downloadingPreview}");
+    expect(preview).toContain("disabled={!payload || downloading}");
   });
 
   it("a listagem carrega a relação entrega_comprovantes com campos mínimos", () => {
