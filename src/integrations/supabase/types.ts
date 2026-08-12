@@ -489,6 +489,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          lote_id: string | null
           microrganismo_id: string | null
           produto_id: string | null
           quantidade: number | null
@@ -499,6 +500,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          lote_id?: string | null
           microrganismo_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
@@ -509,6 +511,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          lote_id?: string | null
           microrganismo_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
@@ -517,6 +520,13 @@ export type Database = {
           volume_total?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "estoque_produto_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "estoque_produto_microrganismo_id_fkey"
             columns: ["microrganismo_id"]
@@ -536,14 +546,23 @@ export type Database = {
       evidencias: {
         Row: {
           id: string
+          mime: string | null
+          storage_path: string | null
+          tamanho_bytes: number | null
           url: string
         }
         Insert: {
           id?: string
+          mime?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
           url: string
         }
         Update: {
           id?: string
+          mime?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
           url?: string
         }
         Relationships: []
@@ -770,6 +789,56 @@ export type Database = {
           },
         ]
       }
+      portal_notifications: {
+        Row: {
+          cliente_id: string | null
+          created_at: string | null
+          id: string
+          idempotency_key: string | null
+          link: string | null
+          mensagem: string | null
+          read: boolean | null
+          source_id: string | null
+          source_type: string | null
+          tipo: string | null
+          titulo: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          link?: string | null
+          mensagem?: string | null
+          read?: boolean | null
+          source_id?: string | null
+          source_type?: string | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          link?: string | null
+          mensagem?: string | null
+          read?: boolean | null
+          source_id?: string | null
+          source_type?: string | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_notifications_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_technical_profiles: {
         Row: {
           beneficio_combinado: string | null
@@ -857,6 +926,7 @@ export type Database = {
           nome: string
           tipo: string | null
           valor_dose_brl: number | null
+          valor_ha_brl: number | null
           valor_litro_brl: number | null
         }
         Insert: {
@@ -869,6 +939,7 @@ export type Database = {
           nome: string
           tipo?: string | null
           valor_dose_brl?: number | null
+          valor_ha_brl?: number | null
           valor_litro_brl?: number | null
         }
         Update: {
@@ -881,6 +952,7 @@ export type Database = {
           nome?: string
           tipo?: string | null
           valor_dose_brl?: number | null
+          valor_ha_brl?: number | null
           valor_litro_brl?: number | null
         }
         Relationships: []
