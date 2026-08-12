@@ -19,6 +19,7 @@ export function PreviewDocumentoEntrega({
   payload,
   branding,
   onDownload,
+  downloading = false,
 }: PreviewDocumentoEntregaProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
