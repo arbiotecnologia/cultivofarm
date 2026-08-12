@@ -85,7 +85,11 @@ O `aviso` retornado pelo backend, quando presente, tem precedência sobre o text
 
 Provas específicas cobertas: ausência de import/consulta Supabase no renderer; romaneio sem linguagem de confirmação/assinatura; comprovante com recebedor, data/hora e aviso definitivo; formatação de origem nas três modalidades sem nome técnico/UUID; multi-item com 12 linhas, `didDrawPage` e rodapé de resumo; geração resiliente a falha de logo (CORS).
 
-Durante a execução o `src/integrations/supabase/types.ts` sofreu reset automático de plataforma (155 linhas); restaurado a partir do commit validado `20cb619e` (21.850 linhas) junto com `.env`, sem exibir qualquer chave. Binding revalidado ao final.
+Base validada desta fase: commit `d9c8a249b21266c037c068d58efb38ae324dafa6`.
+
+Durante a execução o `src/integrations/supabase/types.ts` sofreu reset automático de plataforma (duas ocorrências, reduzido a 135/155 linhas) junto com `.env`; ambos foram restaurados a partir do commit base `d9c8a249` (types.ts com 21.850 linhas), sem exibir qualquer chave ou DSN. Binding revalidado após cada restauração — `connection-binding.static.test.ts` **8/8 PASS** na execução final.
+
+Diff acumulado sobre a base (`git diff --name-only d9c8a249..HEAD -- supabase/`) retorna **vazio**: nenhuma migration, função, policy ou config de backend foi alterada. Os únicos arquivos de produto tocados são `src/lib/comprovanteEntregaPdf.ts`, `src/pages/Entregas.tsx`, `src/test/entregas/comprovanteEntregaPdf.test.ts` e este relatório.
 
 ## 8. Confirmações de escopo
 
