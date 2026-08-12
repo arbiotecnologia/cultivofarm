@@ -31,6 +31,29 @@ const MOTIVOS_NAO_FATURAVEL = [
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
 const MAX_BYTES = 15 * 1024 * 1024;
 
+const ERROS_ENTREGA: Record<string, string> = {
+  COCKPIT_UNAUTHENTICATED: "Sessão expirada. Entre novamente para confirmar a entrega.",
+  COCKPIT_FORBIDDEN: "Seu perfil não tem permissão para confirmar entregas.",
+  COCKPIT_FORBIDDEN_ORIGEM: "Seu perfil não pode confirmar entregas desta origem.",
+  COCKPIT_ENTREGA_NAO_ENCONTRADA: "Entrega não encontrada.",
+  COCKPIT_ENTREGA_CANCELADA: "Entrega cancelada não pode ser confirmada.",
+  COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO: "Informe o nome de quem recebeu a entrega.",
+  COCKPIT_ENTREGA_MOTIVO_NAO_FATURAVEL_OBRIGATORIO: "Descreva o motivo da entrega sem cobrança.",
+  COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO: "O item de estoque vinculado à entrega não foi encontrado.",
+  COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA: "A quantidade da entrega excede o saldo reservado.",
+  COCKPIT_RELATION_MISMATCH_ENTREGA_OS: "A entrega não pertence à ordem de serviço informada.",
+  COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE: "O estoque vinculado pertence a outra ordem de serviço.",
+  COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM: "O estoque vinculado pertence a outra origem de OS.",
+  COCKPIT_ENTREGA_PARAMS_INVALIDOS: "Dados insuficientes para confirmar a entrega.",
+};
+
+function traduzErroEntrega(msg?: string | null): string {
+  const texto = (msg || "").trim();
+  const chave = Object.keys(ERROS_ENTREGA).find((k) => texto.includes(k));
+  return chave ? ERROS_ENTREGA[chave] : texto || "Não foi possível confirmar a entrega.";
+}
+
+
 type PendingFile = { id: string; file: File; tipo: string };
 export type ConfirmMode = "bill_now" | "bill_later" | "not_billable";
 
@@ -149,29 +172,31 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
         if (insErr) throw insErr;
       }
 
-      // 2) Atualiza entrega -> status entregue + dados de confirmação
-      const updPayload: any = {
-        status: "entregue",
-        entregue_em: new Date(form.entregue_em).toISOString(),
-        recebido_por_nome: form.recebido_por_nome.trim(),
-        recebido_por_cargo: form.recebido_por_cargo.trim() || null,
-        recebido_por_documento: form.recebido_por_documento.trim() || null,
-        observacoes_confirmacao: form.observacoes_confirmacao.trim() || null,
-        confirmado_por: user.id,
-      };
-      if (mode === "bill_later") updPayload.financial_status = "PENDING_BILLING";
-      const { error: updErr } = await supabase.from("entregas").update(updPayload).eq("id", entrega.id);
-      if (updErr) throw updErr;
+      // 2) Confirmação transacional pelo motor único (estoque, esteira e finalização)
+      const reason =
+        mode === "not_billable"
+          ? `${MOTIVOS_NAO_FATURAVEL.find((m) => m.value === motivoNB)?.label}: ${motivoNBTexto.trim()}`
+          : null;
 
-      // 3) Caso "sem cobrança", chama RPC para registrar motivo + auditoria
-      if (mode === "not_billable") {
-        const reason = `${MOTIVOS_NAO_FATURAVEL.find((m) => m.value === motivoNB)?.label}: ${motivoNBTexto.trim()}`;
-        const { error: rpcErr } = await supabase.rpc("fn_mark_entrega_not_billable" as any, {
-          _entrega_id: entrega.id,
-          _reason: reason,
-        });
-        if (rpcErr) throw rpcErr;
-      }
+      const { data, error: rpcErr } = await supabase.rpc("rpc_entrega_confirmar_v1" as any, {
+        p_entrega_id: entrega.id,
+        p_recebedor: {
+          nome: form.recebido_por_nome.trim(),
+          cargo: form.recebido_por_cargo.trim() || null,
+          documento: form.recebido_por_documento.trim() || null,
+          observacoes: form.observacoes_confirmacao.trim() || null,
+        },
+        p_opcoes: {
+          entregue_em: new Date(form.entregue_em).toISOString(),
+          faturamento: mode,
+          motivo_nao_faturavel: reason,
+        },
+      });
+      if (rpcErr) throw new Error(traduzErroEntrega(rpcErr.message));
+      const res = data as any;
+      if (res && res.success === false) throw new Error(traduzErroEntrega(res.message || "Falha ao confirmar"));
+      return res;
+
     },
     onSuccess: () => {
       toast({ title: "Entrega confirmada com sucesso" });
