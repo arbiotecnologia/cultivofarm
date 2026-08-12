@@ -7,3 +7,4 @@ ALTER FUNCTION public.rpc_validar_integridade_esteira(uuid, text, text) SET sear
 ALTER FUNCTION public.rpc_validar_integridade_esteira(text, uuid) SET search_path = public;
 ALTER FUNCTION public.rpc_cockpit_metricas_v1() SET search_path = public;
 ALTER FUNCTION public.rpc_cockpit_metricas_v2(text, text[], text[], text[], boolean, date, date) SET search_path = public;
+ALTER FUNCTION public.rpc_bi_esteira_resumo(timestamptz, timestamptz, uuid, uuid, uuid, uuid, text, text) SET search_path = public;
