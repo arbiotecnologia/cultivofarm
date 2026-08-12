@@ -908,7 +908,6 @@ export default function Entregas() {
                           const confirmada = e.status === "entregue";
                           const definitivo = possuiComprovanteDefinitivo(e);
                           const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });
-                          const reemissao = confirmada && definitivo;
                           return (
                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title={label}>
                               <FileDown className="h-4 w-4 mr-1" /> {label}
@@ -982,7 +981,6 @@ export default function Entregas() {
                           const confirmada = e.status === "entregue";
                           const definitivo = possuiComprovanteDefinitivo(e);
                           const label = rotuloAcaoDocumento({ confirmada, possuiSnapshot: definitivo });
-                          const reemissao = confirmada && definitivo;
                           return (
                             <Button size="sm" variant="ghost" onClick={() => handleBaixarRecibo(e)} title={label}>
                               <FileDown className="h-4 w-4 mr-1" /> {label}
