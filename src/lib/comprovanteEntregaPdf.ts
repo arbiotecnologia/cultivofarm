@@ -523,7 +523,7 @@ export async function prepararDocumentoEntregaPDF(
       ...(recebimento.assinatura_tipo
         ? ([["Evidência de assinatura", String(recebimento.assinatura_tipo)]] as [string, string][])
         : []),
-      ["Registrado no sistema por", txt(recebimento.confirmado_por)],
+      ["Registrado no sistema por", nomeOperadorDocumento(recebimento)],
     ], y) + 6;
 
     // Area de assinatura: quebra para nova pagina se nao couber acima do rodape.
