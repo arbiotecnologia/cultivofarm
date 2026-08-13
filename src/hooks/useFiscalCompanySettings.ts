@@ -47,7 +47,7 @@ export function useFiscalCompanySettings(options: { enabled?: boolean } = {}) {
     queryKey: FISCAL_COMPANY_KEYS.settings,
     enabled,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("company_fiscal_settings")
         .select("*")
         .eq("is_active", true)
@@ -90,7 +90,7 @@ export function useUpdateFiscalCompanySettings() {
     mutationFn: async ({ id, expectedVersion, values }) => {
       const payload = buildUpdatePayload(values);
       payload.configuration_version = expectedVersion + 1;
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("company_fiscal_settings")
         .update(payload)
         .eq("id", id)
