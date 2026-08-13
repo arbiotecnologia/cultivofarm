@@ -56,6 +56,12 @@ export interface NavItem {
   order?: number;
   /** Palavras-chave/aliases para a busca. */
   searchKeywords?: string[];
+  /**
+   * Marca o filho cujo deep-link corresponde ao valor padrão do parâmetro
+   * (ex.: `?tab=produtos` é o padrão de `/base-tecnica`, e por isso a URL sem
+   * o parâmetro também o considera ativo).
+   */
+  paramDefault?: boolean;
   platforms: NavPlatform[];
   children?: NavItem[];
 }
@@ -105,7 +111,19 @@ export const navigation: NavItem[] = [
   { id: "com-solicitacoes-b2b", label: "Solicitações B2B", icon: Inbox, route: "/comercial/solicitacoes-b2b", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 8, platforms: ["desktop"], searchKeywords: ["solicitação b2b", "solicitações b2b", "parceiro", "revenda"] },
   { id: "com-campanhas", label: "Campanhas", icon: TrendingUp, route: "/comercial/campanhas", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 9, platforms: ["desktop"], searchKeywords: ["campanha", "promoção", "campanhas", "comercial", "ações comerciais"] },
   { id: "com-catalogo", label: "Catálogo", icon: FlaskConical, route: "/comercial/catalogo", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 10, platforms: ["desktop"], searchKeywords: ["catálogo", "produto", "produtos", "portfólio"] },
-  { id: "protocolos", label: "Base Técnica", icon: FileText, route: "/base-tecnica", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11, platforms: ["desktop"], searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "produtos", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"] },
+  {
+    id: "protocolos", label: "Base Técnica", icon: FileText, route: "/base-tecnica",
+    section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11,
+    platforms: ["desktop"], legacyRoutes: ["/protocolos"],
+    searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "produtos", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],
+    children: [
+      { id: "protocolos-produtos", label: "Produtos", icon: Package, route: "/base-tecnica?tab=produtos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], paramDefault: true, searchKeywords: ["produtos", "base técnica"] },
+      { id: "protocolos-microrganismos", label: "Microrganismos", icon: FlaskConical, route: "/base-tecnica?tab=microrganismos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["microrganismos", "base técnica"] },
+      { id: "protocolos-catalogo-tecnico", label: "Catálogo Técnico", icon: BookOpen, route: "/base-tecnica?tab=catalogo-tecnico", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["catálogo técnico", "catalogo tecnico", "base técnica"] },
+      { id: "protocolos-culturas", label: "Culturas", icon: Sprout, route: "/base-tecnica?tab=culturas", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["culturas", "base técnica"] },
+      { id: "protocolos-problemas", label: "Problemas", icon: AlertTriangle, route: "/base-tecnica?tab=problemas", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["problemas", "alvos", "base técnica"] },
+    ],
+  },
   { id: "com-simulador", label: "Simulador", icon: BarChart3, route: "/comercial/simulador", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 12, platforms: ["desktop"], searchKeywords: ["simulador", "simulação", "proposta", "orçamento"] },
   { id: "com-condicoes-pagamento", label: "Condições e Preços", icon: CreditCard, route: "/comercial/condicoes-pagamento", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 13, platforms: ["desktop"], searchKeywords: ["condição de pagamento", "condicoes de pagamento", "condições financeiras", "matriz de preços", "matriz de precos", "preço por produto", "preco por microrganismo", "à vista", "a vista", "prazo", "safra", "sob consulta", "quote only", "plano de pagamento", "tabela de preços"] },
 
