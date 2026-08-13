@@ -160,20 +160,20 @@ export default function OrdensServico() {
       // Filtro padrão: últimos 90 dias (reduz leitura sem impactar operação corrente)
       const since90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
       const [{ data: oManual }, { data: oOnfarm }, { data: c }, { data: f }, { data: t }, { data: p }, { data: m }] = await Promise.all([
-        supabase.from("ordens_servico").select("*, clientes(id, nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome), microrganismos(nome, nome_cientifico), partner_orders:partner_order_id(numero, partner_accounts:partner_id(id, razao_social, nome_fantasia, codigo))").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
-        supabase.from("ordens_servico_onfarm").select("*, clientes(id, nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome)").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
-        supabase.from("clientes").select("id, nome, codigo_cliente").order("nome"),
-        supabase.from("fazendas").select("id, nome, cliente_id").order("nome"),
-        supabase.from("talhoes").select("id, nome, fazenda_id, area_hectares").order("nome"),
-        supabase.from("produtos").select("id, nome, dose_ml_ha").order("nome"),
-        supabase.from("microrganismos").select("id, nome, nome_cientifico, dose_ml_ha").order("nome"),
+        (supabase as any).from("ordens_servico").select("*, clientes(id, nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome), microrganismos(nome, nome_cientifico), partner_orders:partner_order_id(numero, partner_accounts:partner_id(id, razao_social, nome_fantasia, codigo))").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
+        (supabase as any).from("ordens_servico_onfarm").select("*, clientes(id, nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome)").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
+        (supabase as any).from("clientes").select("id, nome, codigo_cliente").order("nome"),
+        (supabase as any).from("fazendas").select("id, nome, cliente_id").order("nome"),
+        (supabase as any).from("talhoes").select("id, nome, fazenda_id, area_hectares").order("nome"),
+        (supabase as any).from("produtos").select("id, nome, dose_ml_ha").order("nome"),
+        (supabase as any).from("microrganismos").select("id, nome, nome_cientifico, dose_ml_ha").order("nome"),
       ]);
 
       const manuais: OS[] = (oManual || []).map((r: any) => ({ ...r, origem: "manual" as const }));
       const onfarm: OS[] = (oOnfarm || []).map((r: any) => ({ ...r, origem: "onfarm" as const, data_programada: r.data_programada ?? r.data_recomendada ?? null }));
       const unified = [...manuais, ...onfarm].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setOrdens(unified);
-      if (c) setClientes(c);
+      if (c) setClientes(c as any[]);
       if (f) setFazendas(f as Fazenda[]);
       if (t) setTalhoes(t as Talhao[]);
       if (p) setProdutos(p as Produto[]);
