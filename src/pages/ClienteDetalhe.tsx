@@ -85,10 +85,10 @@ export default function ClienteDetalhe() {
     );
   }
 
-  const totalOS = ordens.length;
-  const abertas = ordens.filter((o: any) => !["finalizada", "entregue"].includes(o.status)).length;
+  const totalOS = (ordens as any[]).length;
+  const abertas = (ordens as any[]).filter((o: any) => !["finalizada", "entregue"].includes(o.status)).length;
   const concluidas = totalOS - abertas;
-  const ultima = ordens[0]?.data_programada || ordens[0]?.created_at;
+  const ultima = (ordens as any[])[0]?.data_programada || (ordens as any[])[0]?.created_at;
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
@@ -100,17 +100,17 @@ export default function ClienteDetalhe() {
           <div>
             <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-primary" />
-              <h1 className="text-xl font-bold">{cliente.nome}</h1>
-              {cliente.codigo_cliente && (
-                <Badge variant="outline" className="font-mono text-[10px]">{cliente.codigo_cliente}</Badge>
+              <h1 className="text-xl font-bold">{(cliente as any).nome}</h1>
+              {(cliente as any).codigo_cliente && (
+                <Badge variant="outline" className="font-mono text-[10px]">{(cliente as any).codigo_cliente}</Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {cliente.cpf_cnpj || "—"}
-              {(cliente.endereco_municipio || cliente.endereco_estado) && (
-                <> · {cliente.endereco_municipio}{cliente.endereco_estado ? `/${cliente.endereco_estado}` : ""}</>
+              {(cliente as any).cpf_cnpj || "—"}
+              {((cliente as any).endereco_municipio || (cliente as any).endereco_estado) && (
+                <> · {(cliente as any).endereco_municipio}{(cliente as any).endereco_estado ? `/${(cliente as any).endereco_estado}` : ""}</>
               )}
-              {cliente.status_cliente && <> · <span className="font-semibold">{cliente.status_cliente}</span></>}
+              {(cliente as any).status_cliente && <> · <span className="font-semibold">{(cliente as any).status_cliente}</span></>}
             </p>
           </div>
         </div>
