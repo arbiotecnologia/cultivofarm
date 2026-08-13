@@ -222,9 +222,9 @@ export const FORBIDDEN_PAYLOAD_KEYS = [
  * colunas reais de company_fiscal_settings — sem casts estruturais
  * (nenhum any). Chaves proibidas nunca são incluídas.
  */
-export function buildUpdatePayload(values: CompanyFiscalFormValues): any {
+export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   const parsed = companyFiscalFormSchema.parse(values);
-  const payload: any = {
+  const payload: Update = {
     // Trava: provider legacy sempre NONE.
     fiscal_provider: LOCKED_PROVIDER,
   };
@@ -291,7 +291,7 @@ function jsonObjectRecord(v: Json | null | undefined): Record<string, unknown> {
   return {};
 }
 
-export function rowToFormValues(row: any | null): CompanyFiscalFormValues {
+export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
   if (!row) {
     return {
       fiscal_environment: "NOT_CONFIGURED",
