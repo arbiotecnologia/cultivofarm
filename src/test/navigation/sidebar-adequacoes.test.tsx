@@ -11,7 +11,7 @@ import {
   isNavItemActiveSelfWithSearch,
   isNavItemActive,
 } from "@/lib/navigation/matchActive";
-import { sanitizeGroupState, storageKeyFor } from "@/hooks/useSidebarGroupState";
+import { sanitizeCollapseState, groupsStorageKey } from "@/hooks/useNavCollapseState";
 import { canAccess } from "@/lib/permissions";
 
 const read = (p: string) => fs.readFileSync(path.resolve(process.cwd(), p), "utf8");
@@ -64,9 +64,9 @@ describe("Sidebar — Base Técnica com abas no menu", () => {
 
 describe("Sidebar — subtítulos de subseção", () => {
   it("renderiza o subtítulo Produtos e Planejamento com contraste legível", () => {
-    const src = read("src/components/AppSidebar.tsx");
+    const src = read("src/components/nav/NavSectionGroup.tsx");
     expect(src).toContain("{it.subSection}");
-    expect(src).toContain("font-semibold uppercase tracking-wider text-sidebar-foreground");
+    expect(src).toContain("uppercase tracking-wider text-sidebar-foreground/70");
     expect(src).not.toContain("text-muted-foreground/80");
     expect(
       navigation.some((i) => i.subSection === "Produtos e Planejamento"),
@@ -85,17 +85,16 @@ describe("Sidebar — scroll no modo ícone", () => {
 describe("Sidebar — estado persistido dos grupos", () => {
   beforeEach(() => localStorage.clear());
 
-  it("versiona a chave por usuário", () => {
-    expect(storageKeyFor("u1")).toBe("sidebar:groups:v2:u1");
-    expect(storageKeyFor(null)).toBe("sidebar:groups:v2:anon");
+  it("versiona a chave por usuário e portal", () => {
+    expect(groupsStorageKey("u1", "admin")).toBe("sidebar:groups:v3:u1:admin");
+    expect(groupsStorageKey(null, "produtor")).toBe("sidebar:groups:v3:anon:produtor");
   });
 
   it("descarta valores legados/inválidos que poderiam ocultar grupos", () => {
-    expect(sanitizeGroupState({ "Secao Inexistente": false })).toEqual({});
-    expect(sanitizeGroupState({ Financeiro: "false" })).toEqual({});
-    expect(sanitizeGroupState(null)).toEqual({});
-    expect(sanitizeGroupState(["Financeiro"])).toEqual({});
-    expect(sanitizeGroupState({ Financeiro: false })).toEqual({ Financeiro: false });
+    expect(sanitizeCollapseState({ Financeiro: "false" })).toEqual({});
+    expect(sanitizeCollapseState(null)).toEqual({});
+    expect(sanitizeCollapseState(["Financeiro"])).toEqual({});
+    expect(sanitizeCollapseState({ Financeiro: false })).toEqual({ Financeiro: false });
   });
 });
 

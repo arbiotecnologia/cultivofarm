@@ -1,52 +1,29 @@
-import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { canAccess, getHomeForRole } from "@/lib/permissions";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  LayoutDashboard, MapPin, FileText, ClipboardList,
-  FlaskConical, Truck, Sprout, User, PlusCircle, Stethoscope,
-  LogOut, Menu, X, Calendar, Building2, ChevronsUpDown, Check, CreditCard, Inbox
-} from "lucide-react";
+import { Sprout, LogOut, Building2, ChevronsUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { PortalSidebar } from "@/components/nav/PortalSidebar";
+import { useSidebarOpenState } from "@/hooks/useNavCollapseState";
+import { PRODUTOR_MENU_GROUPS } from "@/config/portalMenus";
 
 
-interface MenuItem {
-  title: string;
-  url: string;
-  icon: any;
-  /** Rota interna usada para verificação de permissão (ACCESS_MAP). null = sempre visível */
-  permissionPath: string | null;
-}
-
-const portalMenu: MenuItem[] = [
-  { title: "Dashboard", url: "/portal", icon: LayoutDashboard, permissionPath: null },
-  // "Meus Pedidos" removido — visualização B2B não é mais exibida ao produtor (Fase 2).
-  { title: "Meus Títulos", url: "/portal/financeiro", icon: CreditCard, permissionPath: null },
-  { title: "Fazendas", url: "/portal/fazendas", icon: MapPin, permissionPath: null },
-  { title: "Minha Agenda", url: "/portal/agenda", icon: Calendar, permissionPath: null },
-  { title: "Registros Técnicos", url: "/portal/registros", icon: Stethoscope, permissionPath: null },
-  { title: "Recomendações", url: "/portal/recomendacoes", icon: FileText, permissionPath: null },
-  { title: "Acompanhamento", url: "/portal/acompanhamento", icon: ClipboardList, permissionPath: null },
-
-  { title: "Aplicações", url: "/portal/aplicacoes", icon: Sprout, permissionPath: null },
-  { title: "Solicitar Atendimento", url: "/portal/solicitar", icon: PlusCircle, permissionPath: null },
-  { title: "Meu Perfil", url: "/portal/perfil", icon: User, permissionPath: null },
-];
+// Itens do menu passaram a ser declarados em `src/config/portalMenus.ts`
+// (mesmas rotas, mesmos rótulos e mesmos `permissionPath`).
 
 export default function PortalLayout() {
   const { signOut, profile, role } = useAuth();
-  const isMobile = useIsMobile();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebarOpenState("produtor");
   const [clientePickerOpen, setClientePickerOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,10 +69,20 @@ export default function PortalLayout() {
     };
   }, [clienteId, queryClient]);
 
-  // Filtra o menu pelo perfil do usuário (ACCESS_MAP)
-  const filteredMenu = useMemo(
-    () => portalMenu.filter(it => it.permissionPath === null || canAccess(role, it.permissionPath)),
-    [role]
+  // Filtra o menu pelo perfil do usuário (ACCESS_MAP) — regra inalterada.
+  const menuGroups = useMemo(
+    () =>
+      PRODUTOR_MENU_GROUPS.map((g) => ({
+        ...g,
+        items: g.items
+          .filter((it) => it.permissionPath == null || canAccess(role, it.permissionPath))
+          .map((it) =>
+            it.route === "/portal/recomendacoes" && aguardandoCount > 0
+              ? { ...it, badgeCount: aguardandoCount }
+              : it,
+          ),
+      })).filter((g) => g.items.length > 0),
+    [role, aguardandoCount],
   );
 
   // Para perfis não-produtor/admin/gestor, manda para sua home
@@ -128,56 +115,28 @@ export default function PortalLayout() {
   }
 
   // Guard de rota: se a página atual não está nas permitidas, manda para o dashboard
-  const currentItem = portalMenu.find(it => it.url === location.pathname);
+  const currentItem = PRODUTOR_MENU_GROUPS.flatMap((g) => g.items).find(
+    (it) => it.route === location.pathname,
+  );
   if (currentItem && currentItem.permissionPath && !canAccess(role, currentItem.permissionPath)) {
     return <Navigate to="/portal" replace />;
   }
 
-  const navContent = (
-    <nav className="flex flex-col gap-1 p-3">
-      {filteredMenu.map((item) => {
-        const showBadge = item.url === "/portal/recomendacoes" && aguardandoCount > 0;
-        return (
-          <NavLink
-            key={item.url}
-            to={item.url}
-            end={item.url === "/portal"}
-            onClick={() => setMenuOpen(false)}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )
-            }
-          >
-            <item.icon className="h-4 w-4 shrink-0" />
-            <span className="flex-1">{item.title}</span>
-            {showBadge && (
-              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
-                {aguardandoCount}
-              </Badge>
-            )}
-          </NavLink>
-        );
-      })}
-    </nav>
-  );
-
-
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <div className="min-h-screen flex w-full">
+        <PortalSidebar
+          portal="produtor"
+          groups={menuGroups}
+          brandTitle="Portal do Produtor"
+          brandIcon={Sprout}
+        />
+        <div className="flex-1 flex flex-col min-w-0">
       <PortalTopBar
         brandTitle="Portal do Produtor"
         brandIcon={Sprout}
-        leadingSlot={
-          isMobile ? (
-            <Button variant="ghost" size="icon" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}>
-              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          ) : null
-        }
+        hideBrandOnMobile
+        leadingSlot={<SidebarTrigger className="h-10 w-10 shrink-0" />}
         contextSlot={
           clientes.length > 1 ? (
             <Popover open={clientePickerOpen} onOpenChange={setClientePickerOpen}>
@@ -216,26 +175,11 @@ export default function PortalLayout() {
       />
 
 
-      <div className="flex flex-1">
-        {!isMobile && (
-          <aside className="w-60 border-r bg-card shrink-0 overflow-y-auto">
-            {navContent}
-          </aside>
-        )}
-
-        {isMobile && menuOpen && (
-          <div className="fixed inset-0 z-40 flex">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
-            <aside className="relative z-50 w-64 bg-card border-r overflow-y-auto animate-in slide-in-from-left">
-              {navContent}
-            </aside>
-          </div>
-        )}
-
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <Outlet />
-        </main>
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <Outlet />
+      </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

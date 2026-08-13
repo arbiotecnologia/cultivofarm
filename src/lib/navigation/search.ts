@@ -52,3 +52,22 @@ export function searchNavItems(
     return tokens.every((tok) => haystack.includes(tok));
   });
 }
+
+/**
+ * Filtro puro por termo (tokens AND), sem checagem de permissão — o chamador
+ * já entrega apenas itens visíveis. Usado pela busca compartilhada da sidebar
+ * de todos os portais.
+ */
+export function filterNavItemsByQuery<
+  T extends { label: string; subSection?: string; searchKeywords?: string[] },
+>(items: T[], query: string): T[] {
+  const term = normalize(query.trim());
+  if (!term) return items;
+  const tokens = term.split(/\s+/).filter(Boolean);
+  return items.filter((it) => {
+    const haystack = [it.label, it.subSection ?? "", ...(it.searchKeywords ?? [])]
+      .map(normalize)
+      .join(" | ");
+    return tokens.every((tok) => haystack.includes(tok));
+  });
+}
