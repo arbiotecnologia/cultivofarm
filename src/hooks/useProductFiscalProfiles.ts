@@ -112,7 +112,7 @@ export function useProductFiscalList(
         if (safeTerm) {
           q = q.or(`nome.ilike.%${safeTerm}%,codigo.ilike.%${safeTerm}%`);
         }
-        return q;
+        return q as any;
       };
 
       const runUnfiltered = async () => {
