@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Filter, Info, FileDown, FileText, Droplets } from "lucide-react";
 import { generateCatalogoMicrorganismosPdf } from "@/lib/pdf/catalogoMicrorganismosPdf";
 import { generateFichaTecnicaMicrorganismoPdf } from "@/lib/pdf/fichaTecnicaMicrorganismoPdf";
+import { generateDossieCompletoMicrorganismos } from "@/lib/pdf/dossieMicrorganismosPdf";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatConcentracaoDisplay, formatConcentracaoValue, parseConcentracao } from "@/lib/cqFormat";
