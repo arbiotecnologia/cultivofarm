@@ -280,10 +280,10 @@ export function isRegulatoryPermissionError(err: unknown): boolean {
  */
 type RegulatoryFn = string;
 
-async function regulatoryRpc<K extends RegulatoryFn>(
+async function regulatoryRpc<K extends string>(
   fn: K,
-  args: RegulatoryFunctions[K]["Args"],
-): Promise<RegulatoryFunctions[K]["Returns"]> {
+  args: any,
+): Promise<any> {
   const { data, error } = await (supabase as any).rpc(
     fn,
     args as any,
