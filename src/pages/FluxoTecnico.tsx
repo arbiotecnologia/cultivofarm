@@ -206,15 +206,15 @@ export default function FluxoTecnico() {
           toast.info("Gerando Ordens de Serviço solicitadas...");
           gerarOSMutation.mutate(variables.registro);
         } else if (variables.registro.proxima_acao_recomendada === "emitir_recomendação") {
-          supabase.rpc("rpc_create_portal_notification_secure", {
-            _cliente_id: variables.registro.cliente_id,
-            _tipo: "informativo",
-            _titulo: "Recomendação Técnica Aprovada",
-            _mensagem: `Uma nova recomendação técnica para o talhão ${variables.registro.talhoes?.nome || ""} está aguardando sua decisão no Portal.`,
-            _link: null,
-            _source_type: "registros_consultor",
-            _source_id: variables.registro.id,
-            _idempotency_key: `fluxo-aprov-rec-${variables.registro.id}`,
+          (supabase as any).rpc("rpc_create_portal_notification_secure", {
+            p_cliente_id: variables.registro.cliente_id,
+            p_tipo: "informativo",
+            p_titulo: "Recomendação Técnica Aprovada",
+            p_mensagem: `Uma nova recomendação técnica para o talhão ${variables.registro.talhoes?.nome || ""} está aguardando sua decisão no Portal.`,
+            p_link: null,
+            p_source_type: "registros_consultor",
+            p_source_id: variables.registro.id,
+            p_idempotency_key: `fluxo-aprov-rec-${variables.registro.id}`,
           }).then();
 
 
