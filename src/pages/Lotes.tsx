@@ -129,7 +129,7 @@ export default function Lotes() {
     const lote = lotes.find(l => l.id === id);
     if (!lote?.programacao_id) return;
 
-    const { data: prog } = await supabase
+    const { data: prog } = await (supabase as any)
       .from("programacao_producao")
       .select("ordem_servico_id, ordem_servico_onfarm_id")
       .eq("id", lote.programacao_id)
@@ -137,8 +137,8 @@ export default function Lotes() {
 
     if (!prog) return;
 
-    const osId = prog.ordem_servico_onfarm_id || prog.ordem_servico_id;
-    const origem = prog.ordem_servico_onfarm_id ? "onfarm" : "manual";
+    const osId = (prog as any).ordem_servico_onfarm_id || (prog as any).ordem_servico_id;
+    const origem = (prog as any).ordem_servico_onfarm_id ? "onfarm" : "manual";
 
     if (status === "aguardando_cq") {
       if (osId) {

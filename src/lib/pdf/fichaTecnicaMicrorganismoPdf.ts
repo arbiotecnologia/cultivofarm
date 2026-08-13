@@ -21,10 +21,10 @@ export async function generateFichaTecnicaMicrorganismoPdf({ microId, mode = "do
     : "*";
 
   const [mRes, pRes, tRes, cRes] = await Promise.all([
-    supabase.from("microrganismos").select(microSelect).eq("id", microId).maybeSingle(),
-    supabase.from("microorganism_technical_profiles").select(perfilSelect).eq("microrganismo_id", microId).maybeSingle(),
-    supabase.from("microorganism_targets").select("*").eq("microrganismo_id", microId).eq("ativo", true),
-    supabase.from("microorganism_crop_recommendations").select("*").eq("microrganismo_id", microId).eq("ativo", true),
+    (supabase as any).from("microrganismos").select(microSelect).eq("id", microId).maybeSingle(),
+    (supabase as any).from("microorganism_technical_profiles").select(perfilSelect).eq("microrganismo_id", microId).maybeSingle(),
+    (supabase as any).from("microorganism_targets").select("*").eq("microrganismo_id", microId).eq("ativo", true),
+    (supabase as any).from("microorganism_crop_recommendations").select("*").eq("microrganismo_id", microId).eq("ativo", true),
   ]);
   const m: any = mRes.data;
   if (!m) throw new Error("Microrganismo não encontrado");

@@ -51,20 +51,20 @@ export default function AgendaTecnica() {
   const moveMutation = useMutation({
     mutationFn: async ({ id, newDate }: { id: string; newDate: Date }) => {
       // Registrar log de reagendamento
-      await supabase.from("visitas_logs").insert({
+      await (supabase as any).from("visitas_logs").insert({
         solicitacao_id: id,
         acao: "reagendamento",
         descricao: `Reagendado via agenda para ${formatDateTimeDisplay(newDate)}`,
         usuario_id: user?.id,
       });
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("portal_solicitacoes")
         .update({ 
           data_prevista_atendimento: newDate.toISOString(),
           // Se for reagendado, resetamos a confirmação do produtor para pendente
           confirmacao_produtor: "pendente" 
-        })
+        } as any)
         .eq("id", id);
       if (error) throw error;
 
@@ -134,7 +134,7 @@ export default function AgendaTecnica() {
   const { data: solicitacoes, isLoading } = useQuery({
     queryKey: ["agenda-tecnica", targetConsultor, periodo],
     queryFn: async () => {
-      let q = supabase
+      let q = (supabase as any)
         .from("portal_solicitacoes")
         .select(`
           *, 

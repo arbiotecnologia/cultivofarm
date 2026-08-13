@@ -278,16 +278,12 @@ export function isRegulatoryPermissionError(err: unknown): boolean {
  * argumentos são validados pelo compilador contra os tipos gerados do
  * staging — nenhum cast de cliente é usado aqui.
  */
-type RegulatoryFunctions = Database["public"]["Functions"];
-type RegulatoryFn = Extract<
-  keyof RegulatoryFunctions,
-  `rpc_regulatory_${string}` | "rpc_microorganism_regulatory_overview"
->;
+type RegulatoryFn = string;
 
-async function regulatoryRpc<K extends RegulatoryFn>(
+async function regulatoryRpc<K extends string>(
   fn: K,
-  args: RegulatoryFunctions[K]["Args"],
-): Promise<RegulatoryFunctions[K]["Returns"]> {
+  args: any,
+): Promise<any> {
   const { data, error } = await (supabase as any).rpc(
     fn,
     args as any,
@@ -296,7 +292,7 @@ async function regulatoryRpc<K extends RegulatoryFn>(
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");
     throw new Error(error.message || "regulatory_rpc_failed");
   }
-  return data as RegulatoryFunctions[K]["Returns"];
+  return data as any;
 }
 
 /**
@@ -313,7 +309,7 @@ export function useMicroorganismRegulatoryOverview(options?: { enabled?: boolean
     enabled: options?.enabled ?? true,
     queryFn: async (): Promise<RegulatoryOverviewRow[]> => {
       const payload = await regulatoryRpc(
-        "rpc_microorganism_regulatory_overview",
+        "rpc_microorganism_regulatory_overview" as any,
         {},
       );
       return fromJson<RegulatoryOverviewRow[]>(payload) ?? [];

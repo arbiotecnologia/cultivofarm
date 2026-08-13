@@ -226,7 +226,7 @@ export default function Fazendas() {
   };
 
   const handleInativarFazenda = async (id: string, ativo: boolean) => {
-    const { error } = await supabase.from("fazendas").update({ ativo }).eq("id", id);
+    const { error } = await (supabase as any).from("fazendas").update({ ativo } as any).eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success(ativo ? "Fazenda reativada" : "Fazenda inativada");
     fetchData();

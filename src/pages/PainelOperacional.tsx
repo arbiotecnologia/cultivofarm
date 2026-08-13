@@ -55,7 +55,7 @@ export default function PainelOperacional() {
   const { data: solicitacoes } = useQuery({
     queryKey: ["painel-solicitacoes"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("portal_solicitacoes")
         .select("id, status, urgencia, tipo_demanda, consultor_atribuido, data_prevista_atendimento, updated_at, numero_solicitacao, clientes:cliente_id(nome), fazendas:fazenda_id(nome)")
         .order("created_at", { ascending: false })
@@ -69,7 +69,7 @@ export default function PainelOperacional() {
   const { data: registros } = useQuery({
     queryKey: ["painel-registros"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("registros_consultor")
         .select("id, status, hora_inicio, hora_fim, consultor_responsavel, created_at, objetivo_visita, fazenda_id")
         .order("created_at", { ascending: false })
@@ -83,7 +83,7 @@ export default function PainelOperacional() {
   const { data: checkins } = useQuery({
     queryKey: ["painel-checkins"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("visitas_checkin")
         .select("id, consultor_id, data_hora_checkin, latitude, longitude, solicitacao_id, registro_consultor_id")
         .order("data_hora_checkin", { ascending: false })
@@ -123,7 +123,7 @@ export default function PainelOperacional() {
     queryKey: ["painel-monitoramentos"],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("alertas_agronomicos")
         .select("id")
         .eq("status", "monitoramento")
@@ -136,7 +136,7 @@ export default function PainelOperacional() {
   const { data: alertasEstoque } = useQuery({
     queryKey: ["painel-estoque-alertas"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("produtos")
         .select("id, nome, estoque_minimo, estoque_produto(volume_total)")
         .eq("e_insumo", true);
