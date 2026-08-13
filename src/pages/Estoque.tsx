@@ -124,15 +124,15 @@ export default function Estoque() {
   const { data: lotes = [] } = useQuery({
     queryKey: ["lotes-aprovados-envasados"],
     queryFn: async () => {
-      const { data: lts } = await supabase
+      const { data: lts } = await (supabase as any)
         .from("lotes")
         .select("id, codigo_lote, produto_id, microrganismo_id, programacao_id")
         .eq("status", "aprovado");
       const ids = (lts || []).map(l => l.id);
       if (!ids.length) return [];
       const [{ data: envases }, { data: estoquesExist }] = await Promise.all([
-        supabase.from("envase").select("lote_id").in("lote_id", ids),
-        supabase.from("estoque_produto").select("lote_id").in("lote_id", ids),
+        (supabase as any).from("envase").select("lote_id").in("lote_id", ids),
+        (supabase as any).from("estoque_produto").select("lote_id").in("lote_id", ids),
       ]);
       const comEnvase = new Set((envases || []).map((e: any) => e.lote_id));
       const jaNoEstoque = new Set((estoquesExist || []).map((e: any) => e.lote_id));
@@ -147,7 +147,7 @@ export default function Estoque() {
       const microrganismoId = lote?.microrganismo_id || null;
       if (!produtoId && !microrganismoId) throw new Error("Lote selecionado não possui produto nem microrganismo vinculado.");
       
-      const { data: jaExiste } = await supabase
+      const { data: jaExiste } = await (supabase as any)
         .from("estoque_produto")
         .select("id")
         .eq("lote_id", form.lote_id)
@@ -156,14 +156,14 @@ export default function Estoque() {
         throw new Error("Este lote já possui entrada no estoque.");
       }
 
-      const { data: prog } = await supabase
+      const { data: prog } = await (supabase as any)
         .from("programacao_producao")
-        .select("ordem_servico_id, ordem_servico_onfarm_id")
+        .select("ordem_servico_id, ordem_servico_onfarm_id, produto_id")
         .eq("id", lote.programacao_id)
         .single();
       
-      const osId = prog?.ordem_servico_onfarm_id || prog?.ordem_servico_id;
-      const origem = prog?.ordem_servico_onfarm_id ? "onfarm" : "manual";
+      const osId = (prog as any)?.ordem_servico_onfarm_id || (prog as any)?.ordem_servico_id;
+      const origem = (prog as any)?.ordem_servico_onfarm_id ? "onfarm" : "manual";
 
       const estoqueData = {
         lote_id: form.lote_id,
