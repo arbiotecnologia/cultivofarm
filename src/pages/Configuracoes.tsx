@@ -114,7 +114,7 @@ export default function Configuracoes() {
     queryFn: async () => {
       const { data, error } = await supabase.from("clientes").select("id, nome, cpf_cnpj").order("nome");
       if (error) throw error;
-      return data as { id: string; nome: string; cpf_cnpj: string | null }[];
+      return (data || []) as { id: string; nome: string; cpf_cnpj: string | null }[];
     },
   });
 
