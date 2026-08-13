@@ -19,8 +19,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
 import { AcompanhamentoVisita } from "@/components/visita/AcompanhamentoVisita";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase as supabaseTyped } from "@/integrations/supabase/client";
-const supabase = supabaseTyped as any;
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -388,14 +387,14 @@ export default function VisitaTecnica() {
 
     // Carregar diagnósticos da nova tabela ou converter legados
     const loadDiagnostics = async () => {
-      const { data: existingDiag } = await (supabase as any)
+      const { data: existingDiag } = await supabase
         .from("visita_diagnosticos")
         .select("*")
         .eq("registro_id", v.id)
         .order("created_at", { ascending: true });
 
       if (existingDiag && existingDiag.length > 0) {
-        setDiagnosticos(existingDiag.map((d: any) => ({
+        setDiagnosticos(existingDiag.map(d => ({
           id: d.id,
           problema: d.problema || "",
           severidade: d.severidade || "medio",
