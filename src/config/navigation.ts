@@ -56,6 +56,12 @@ export interface NavItem {
   order?: number;
   /** Palavras-chave/aliases para a busca. */
   searchKeywords?: string[];
+  /**
+   * Marca o filho cujo deep-link corresponde ao valor padrão do parâmetro
+   * (ex.: `?tab=produtos` é o padrão de `/base-tecnica`, e por isso a URL sem
+   * o parâmetro também o considera ativo).
+   */
+  paramDefault?: boolean;
   platforms: NavPlatform[];
   children?: NavItem[];
 }
