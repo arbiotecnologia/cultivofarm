@@ -257,7 +257,7 @@ export default function CockpitLaboratorio() {
     queryKey: ["esteira-history", selectedItem?.os_id],
     enabled: !!selectedItem,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("laboratorio_esteira_eventos")
         .select("*")
         .eq("os_id", selectedItem?.os_id)

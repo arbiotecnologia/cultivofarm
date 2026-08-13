@@ -103,21 +103,21 @@ export default function ParceiroDetalhe() {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <Building2 className="h-5 w-5 text-primary" />
-              <h1 className="text-xl font-bold">{(parceiro as any).nome_fantasia || (parceiro as any).razao_social}</h1>
-              {(parceiro as any).codigo && (
-                <Badge variant="outline" className="font-mono text-[10px]">{(parceiro as any).codigo}</Badge>
+              <h1 className="text-xl font-bold">{parceiro.nome_fantasia || parceiro.razao_social}</h1>
+              {parceiro.codigo && (
+                <Badge variant="outline" className="font-mono text-[10px]">{parceiro.codigo}</Badge>
               )}
-              <Badge variant={(parceiro as any).ativo ? "secondary" : "destructive"} className="text-[10px]">
-                {(parceiro as any).ativo ? "Ativo" : "Inativo"}
+              <Badge variant={parceiro.ativo ? "secondary" : "destructive"} className="text-[10px]">
+                {parceiro.ativo ? "Ativo" : "Inativo"}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              {(parceiro as any).razao_social}
-              {(parceiro as any).cnpj && <> · {(parceiro as any).cnpj}</>}
-              {((parceiro as any).commercial_city || (parceiro as any).commercial_state) && (
-                <> · {(parceiro as any).commercial_city}{(parceiro as any).commercial_state ? `/${(parceiro as any).commercial_state}` : ""}</>
+              {parceiro.razao_social}
+              {parceiro.cnpj && <> · {parceiro.cnpj}</>}
+              {(parceiro.commercial_city || parceiro.commercial_state) && (
+                <> · {parceiro.commercial_city}{parceiro.commercial_state ? `/${parceiro.commercial_state}` : ""}</>
               )}
-              {(parceiro as any).segmento && <> · {(parceiro as any).segmento}</>}
+              {parceiro.segmento && <> · {parceiro.segmento}</>}
             </p>
           </div>
         </div>
@@ -190,14 +190,14 @@ export default function ParceiroDetalhe() {
 
       <Card>
         <CardHeader className="py-3">
-          <CardTitle className="text-sm">Contatos ({((parceiro as any).partner_contacts ?? []).length})</CardTitle>
+          <CardTitle className="text-sm">Contatos ({(parceiro.partner_contacts ?? []).length})</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          {((parceiro as any).partner_contacts ?? []).length === 0 ? (
+          {(parceiro.partner_contacts ?? []).length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhum contato cadastrado.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {((parceiro as any).partner_contacts as any[]).map((c) => (
+              {(parceiro.partner_contacts as any[]).map((c) => (
                 <div key={c.id} className="border rounded-md p-2 text-xs">
                   <div className="font-semibold flex items-center gap-1.5">
                     {c.nome}

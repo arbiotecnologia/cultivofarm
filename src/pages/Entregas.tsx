@@ -226,11 +226,11 @@ export default function Entregas() {
     queryKey: ["todas-os-disponiveis"],
     queryFn: async () => {
       const [osPadrone, osOnFarm] = await Promise.all([
-        (supabase as any).from("ordens_servico").select("id, numero_os, status, cliente_id, origem, partner_order_id, clientes(nome, codigo_cliente), produtos(nome), data_programada, partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))"),
-        (supabase as any).from("ordens_servico_onfarm").select("id, numero_os, status, cliente_id, clientes(nome, codigo_cliente), produtos(nome), data_recomendada"),
+        supabase.from("ordens_servico").select("id, numero_os, status, cliente_id, origem, partner_order_id, clientes(nome, codigo_cliente), produtos(nome), data_programada, partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))"),
+        supabase.from("ordens_servico_onfarm").select("id, numero_os, status, cliente_id, clientes(nome, codigo_cliente), produtos(nome), data_recomendada"),
       ]);
-      const p = ((osPadrone as any).data || []).map((o: any) => ({ ...o, type: "padrao", data: o.data_programada }));
-      const f = ((osOnFarm as any).data || []).map((o: any) => ({ ...o, type: "onfarm", data: o.data_recomendada }));
+      const p = (osPadrone.data || []).map((o) => ({ ...o, type: "padrao", data: o.data_programada }));
+      const f = (osOnFarm.data || []).map((o) => ({ ...o, type: "onfarm", data: o.data_recomendada }));
       return [...p, ...f];
     },
   });
@@ -536,7 +536,7 @@ export default function Entregas() {
           // Integração com estoque: se a reserva zerou, expede pelo motor canônico.
           // Nenhum UPDATE direto: `rpc_estoque_operar_v1` grava saldo + livro atomicamente.
           try {
-            const { data: entregasAtivas } = await (supabase as any)
+            const { data: entregasAtivas } = await supabase
               .from("entregas")
               .select("quantidade_entregue")
               .eq("estoque_produto_id", item.id)
@@ -623,7 +623,7 @@ export default function Entregas() {
 
   const cancelarEntrega = useMutation({
     mutationFn: async ({ id, motivo }: { id: string; motivo: string }) => {
-      const { data: entrega, error: fetchErr } = await (supabase as any)
+      const { data: entrega, error: fetchErr } = await supabase
         .from("entregas")
         .select("status, estoque_produto_id, quantidade_entregue, ordem_servico_id")
         .eq("id", id)
@@ -631,16 +631,16 @@ export default function Entregas() {
       
       if (fetchErr) throw fetchErr;
 
-      if ((entrega as any).status === "entregue" && (entrega as any).estoque_produto_id) {
-        const { data: itemEstoque } = await (supabase as any)
+      if (entrega.status === "entregue" && entrega.estoque_produto_id) {
+        const { data: itemEstoque } = await supabase
           .from("estoque_produto")
           .select("id, quantidade, status, lote_id")
-          .eq("id", (entrega as any).estoque_produto_id)
+          .eq("id", entrega.estoque_produto_id)
           .single();
         
         if (itemEstoque) {
-          const osId = (entrega as any).ordem_servico_id;
-          const { data: osOnFarm } = await (supabase as any).from("ordens_servico_onfarm").select("id").eq("id", osId).maybeSingle();
+          const osId = entrega.ordem_servico_id;
+          const { data: osOnFarm } = await supabase.from("ordens_servico_onfarm").select("id").eq("id", osId).maybeSingle();
           const origem = osOnFarm ? "onfarm" : "manual";
           
           await cancelarReservaEstoque(
@@ -666,11 +666,11 @@ export default function Entregas() {
       // a movimentação de expedição desta entrega, uma única vez (índice único
       // em movimentacao_origem_id impede estorno duplicado).
       try {
-        if ((entrega as any).estoque_produto_id) {
-          const { data: movExpedicao } = await (supabase as any)
+        if (entrega.estoque_produto_id) {
+          const { data: movExpedicao } = await supabase
             .from("estoque_movimentacoes")
             .select("id, acao")
-            .eq("estoque_produto_id", (entrega as any).estoque_produto_id)
+            .eq("estoque_produto_id", entrega.estoque_produto_id)
             .eq("referencia_tipo", "entrega")
             .eq("referencia_id", id)
             .in("acao", ["expedicao", "entrega"])

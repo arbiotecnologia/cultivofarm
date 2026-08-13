@@ -165,7 +165,7 @@ export function ProdutosTab() {
     if (produtosResult.data) {
       const microMap = new Map((microrganismosResult.data ?? []).map((m) => [m.id, m]));
       const productNameMap = new Map(produtosResult.data.map((p) => [p.id, p.nome]));
-      const formulacoesByProduct = ((formulacoesResult as any).data ?? []).reduce((acc: any, f: any) => {
+      const formulacoesByProduct = ((formulacoesResult as any).data ?? []).reduce<Record<string, Formulacao[]>>((acc: any, f: any) => {
         if (!f.produto_id) return acc;
         const formulacao: Formulacao = {
           ...f,

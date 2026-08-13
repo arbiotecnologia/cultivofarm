@@ -80,7 +80,7 @@ async function objectExists(remotePath: string): Promise<boolean> {
 
 /** Busca a referência existente por client_uuid. */
 async function fetchReference(clientUuid: string) {
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("registros_consultor_arquivos")
     .select("id, arquivo_url, arquivo_path, registro_consultor_id")
     .eq("client_uuid", clientUuid)
@@ -185,7 +185,7 @@ export async function uploadMediaIdempotent(
     // 4) Objeto confirmado. Se a referência já existia (órfã), nada a inserir.
     if (existingRow) return okResult(true);
 
-    const { error: insErr } = await (supabase as any)
+    const { error: insErr } = await supabase
       .from("registros_consultor_arquivos")
       .insert({
         ...buildRow(),

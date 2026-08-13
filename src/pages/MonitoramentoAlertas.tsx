@@ -49,7 +49,7 @@ export default function MonitoramentoAlertas() {
   const { data: alertas = [], isLoading } = useQuery({
     queryKey: ["alertas-monitoramento-gestor"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("alertas_agronomicos")
         .select(`
           *,
@@ -67,21 +67,21 @@ export default function MonitoramentoAlertas() {
 
   const rescheduleMutation = useMutation({
     mutationFn: async ({ id, date, registroId }: { id: string; date: string; registroId?: string }) => {
-      const { error: alertError } = await (supabase as any)
+      const { error: alertError } = await supabase
         .from("alertas_agronomicos")
         .update({ 
           data_vencimento: date,
           nivel_risco: "medio", // Reset risk when rescheduled
           updated_at: new Date().toISOString()
-        } as any)
+        })
         .eq("id", id);
 
       if (alertError) throw alertError;
 
       if (registroId) {
-        const { error: regError } = await (supabase as any)
+        const { error: regError } = await supabase
           .from("registros_consultor")
-          .update({ data_proxima_visita: date } as any)
+          .update({ data_proxima_visita: date })
           .eq("id", registroId);
         if (regError) throw regError;
       }
@@ -98,19 +98,19 @@ export default function MonitoramentoAlertas() {
   });
 
   const filteredAlertas = alertas.filter((a) => {
-    const clienteNome = (a as any).talhoes?.fazendas?.clientes?.nome || "";
-    const fazendaNome = (a as any).fazendas?.nome || "";
-    const talhaoNome = (a as any).talhoes?.nome || "";
+    const clienteNome = (a.talhoes as any)?.fazendas?.clientes?.nome || "";
+    const fazendaNome = (a.fazendas as any)?.nome || "";
+    const talhaoNome = (a.talhoes as any)?.nome || "";
     
     const matchesSearch = 
       clienteNome.toLowerCase().includes(search.toLowerCase()) ||
       fazendaNome.toLowerCase().includes(search.toLowerCase()) ||
       talhaoNome.toLowerCase().includes(search.toLowerCase()) ||
-      (a as any).descricao?.toLowerCase().includes(search.toLowerCase());
+      a.descricao?.toLowerCase().includes(search.toLowerCase());
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dueDate = (a as any).data_vencimento ? parseISO((a as any).data_vencimento) : null;
+    const dueDate = a.data_vencimento ? parseISO(a.data_vencimento) : null;
 
     let matchesFilter = true;
     if (filter === "overdue") {
@@ -257,14 +257,14 @@ export default function MonitoramentoAlertas() {
           <ResponsiveTable
             mobileCards={filteredAlertas.map((a) => (
               <MobileCard
-                key={(a as any).id}
-                title={(a as any).talhoes?.fazendas?.clientes?.nome || "Cliente"}
-                subtitle={`${(a as any).fazendas?.nome} • ${(a as any).talhoes?.nome}`}
-                status={getStatusBadge((a as any).data_vencimento)}
+                key={a.id}
+                title={(a.talhoes as any)?.fazendas?.clientes?.nome || "Cliente"}
+                subtitle={`${(a.fazendas as any)?.nome} • ${(a.talhoes as any)?.nome}`}
+                status={getStatusBadge(a.data_vencimento)}
                 content={[
-                  { label: "Vencimento", value: (a as any).data_vencimento ? formatDateDisplay((a as any).data_vencimento) : "—" },
-                  { label: "Tipo", value: (a as any).tipo_alerta?.toUpperCase() },
-                  { label: "Descrição", value: (a as any).descricao },
+                  { label: "Vencimento", value: a.data_vencimento ? formatDateDisplay(a.data_vencimento) : "—" },
+                  { label: "Tipo", value: a.tipo_alerta?.toUpperCase() },
+                  { label: "Descrição", value: a.descricao },
                 ]}
                 actions={
                   <div className="flex gap-2 w-full mt-2">
@@ -313,19 +313,19 @@ export default function MonitoramentoAlertas() {
                     </tr>
                   ) : (
                     filteredAlertas.map((a) => (
-                      <tr key={(a as any).id} className="hover:bg-muted/30 transition-colors">
+                      <tr key={a.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex flex-col">
                             <span className="font-semibold text-foreground">
-                              {(a as any).talhoes?.fazendas?.clientes?.nome || "Cliente"}
+                              {(a.talhoes as any)?.fazendas?.clientes?.nome || "Cliente"}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {(a as any).fazendas?.nome} • {(a as any).talhoes?.nome}
+                              {(a.fazendas as any)?.nome} • {(a.talhoes as any)?.nome}
                             </span>
                           </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          {(a as any).data_vencimento ? formatDateDisplay((a as any).data_vencimento) : "—"}
+                          {a.data_vencimento ? formatDateDisplay(a.data_vencimento) : "—"}
                         </td>
                         <td className="px-4 py-3">
                           {getStatusBadge(a.data_vencimento)}
