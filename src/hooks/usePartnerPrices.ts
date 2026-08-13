@@ -115,7 +115,7 @@ export function usePartnerPrices(partnerId: string | null | undefined) {
       });
 
       const micros: PartnerPriceRow[] = (microsRes.data ?? []).map((m: any) => {
-        const ex = byMicro.get(m.id);
+        const ex = byMicro.get(m.id) as any;
         const base = Number(m.valor_dose_brl ?? 0);
         return {
           tipo: "microrganismo",
