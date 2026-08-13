@@ -387,14 +387,14 @@ export default function VisitaTecnica() {
 
     // Carregar diagnósticos da nova tabela ou converter legados
     const loadDiagnostics = async () => {
-      const { data: existingDiag } = await supabase
+      const { data: existingDiag } = await (supabase as any)
         .from("visita_diagnosticos")
         .select("*")
         .eq("registro_id", v.id)
         .order("created_at", { ascending: true });
 
       if (existingDiag && existingDiag.length > 0) {
-        setDiagnosticos(existingDiag.map(d => ({
+        setDiagnosticos(existingDiag.map((d: any) => ({
           id: d.id,
           problema: d.problema || "",
           severidade: d.severidade || "medio",
