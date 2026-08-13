@@ -185,7 +185,7 @@ export async function uploadMediaIdempotent(
     // 4) Objeto confirmado. Se a referência já existia (órfã), nada a inserir.
     if (existingRow) return okResult(true);
 
-    const { error: insErr } = await supabase
+    const { error: insErr } = await (supabase as any)
       .from("registros_consultor_arquivos")
       .insert({
         ...buildRow(),
