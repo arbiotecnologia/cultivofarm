@@ -1,67 +1,38 @@
-# Auditoria somente leitura — "informações sumiram do Dashboard" (13/08/2026)
+# Dashboard /dashboard/geral com valores vazios — auditoria somente leitura
 
-Nenhum arquivo foi editado, nenhuma migration aplicada e nenhum dado alterado. Todas as consultas ao banco foram `SELECT`.
+## O que foi verificado agora (fatos)
 
-## Diagnóstico principal
+1. `src/pages/Index.tsx` não renderiza cards: apenas redireciona por perfil (`getHomeForRole`). Os cards vêm de `src/pages/dashboard/DashboardUnificado.tsx` → `src/pages/dashboard/VisaoGeral.tsx`.
+2. `VisaoGeral.tsx` usa exatamente duas fontes:
+   - `useExecutivoResumo` → RPC `rpc_executivo_resumo_geral` (bloco executivo, prioridades, fluxo do dia);
+   - `useQuery` → RPC `rpc_dashboard_geral_lab_resumo` (situação do laboratório).
+3. Ambas as RPCs **existem** no projeto de staging `ikaauvsflpmamgxmkhoq` (chamada REST anônima retornou `42501 permission denied for function`, ou seja, a função existe e é restrita a usuário autenticado).
+4. Divergência de ambiente ativa:
+   - `.env` aponta para o Sandbox `yzszlzjpovmcteuxjznj`;
+   - `src/integrations/supabase/client.ts` (usado em runtime pelos hooks) aponta para o staging `ikaauvsflpmamgxmkhoq`;
+   - `src/integrations/supabase/types.ts` está com **2.052 linhas** (schema do Sandbox), contra **21.850 linhas** da versão íntegra de staging no commit `c75bb87f`. A restauração feita antes foi sobrescrita por regeneração automática da plataforma.
+5. Não há logs de console nem requisições de rede capturados nesta sessão (snapshot vazio), e a sessão de preview está `signed_out` — portanto **não foi possível observar a resposta real das RPCs autenticadas**.
 
-**Não houve perda de dados no banco de staging.** Os registros continuam íntegros; a última gravação em tabelas operacionais é de **12/08/2026**, ou seja, nada foi apagado em 13/08.
+## Diagnóstico
 
-O que de fato mudou em 13/08 foram dois artefatos de configuração/tipagem:
+Causa confirmada: **deriva de ambiente**. O código de runtime consulta o staging, enquanto `.env` e `types.ts` foram regenerados para o Sandbox (que só possui funções-stub e praticamente nenhum dado). Qualquer parte do app que dependa de `import.meta.env.VITE_SUPABASE_URL` (ex.: chamadas de Edge Function) e a tipagem do client passam a apontar para um projeto vazio.
 
-1. `.env` voltou a apontar para o backend Sandbox (`yzszlzjpovmcteuxjznj`), enquanto o restante do projeto está vinculado ao staging (`ikaauvsflpmamgxmkhoq`).
-2. `src/integrations/supabase/types.ts` foi regenerado a partir do Sandbox e ficou reduzido a **2.052 linhas** (a versão íntegra do staging tem 21.850 linhas).
+Causa do "valores vazios" especificamente: **não confirmada**. O componente distingue erro (mostra card "Resumo executivo indisponível"), indisponibilidade por origem (mostra "Indisponível") e ausência de valor (mostra `—` ou `0`). Ver os valores em branco não corresponde a nenhum desses estados de forma óbvia — é preciso ler a resposta real da RPC autenticada antes de afirmar a causa.
 
-## Evidências
+## Plano mínimo de correção (a executar só após aprovação)
 
-**Conexão realmente usada pelo app (preview):** o módulo servido pelo Vite em `src/integrations/supabase/client.ts` mantém a URL/chave de **staging** (`ikaauvsflpmamgxmkhoq`) — confirmado lendo o bundle servido. Logo, o Dashboard continua lendo o banco correto; o `.env` divergente não redireciona as consultas do Dashboard.
+Etapa 1 — Confirmar o comportamento em runtime (sem edições)
+- Com sessão autenticada no preview, capturar console + rede em `/dashboard/geral` e ler o payload de `rpc_executivo_resumo_geral` e `rpc_dashboard_geral_lab_resumo` (status HTTP, `resumo`, `dados_indisponiveis`).
 
-**Impacto real do `.env` divergente:** apenas as chamadas diretas a Edge Functions que usam `import.meta.env`:
-- `src/pages/configuracoes/ComunicacaoConfigTab.tsx:370-376`
-- `src/components/protocolos/catalog/ProfileFieldAI.tsx:38-42`
-Essas chamadas vão para o Sandbox e falham (ex.: "falha de rede").
+Etapa 2 — Restaurar apenas o mínimo (2 arquivos)
+- `.env` → valores de staging do commit `019762de` (`VITE_SUPABASE_PROJECT_ID` / `VITE_SUPABASE_URL` = `ikaauvsflpmamgxmkhoq` + anon key correspondente).
+- `src/integrations/supabase/types.ts` → versão íntegra de `c75bb87f` (21.850 linhas).
 
-**Impacto do `types.ts` reduzido:** `bunx tsgo -p tsconfig.app.json` falha com dezenas de erros (fiscal, regulatório, testes). Isso quebra typecheck/build/publicação, mas não oculta dados em runtime.
+Nenhum outro arquivo precisa mudar: `client.ts` e `supabase/config.toml` já estão corretos e `VisaoGeral.tsx` não foi alterado pelos commits recentes.
 
-**Código de Dashboard não foi alterado:** o diff `019762de..HEAD` não toca em `src/pages/Index.tsx`, `src/pages/dashboard/*`, `src/components/executivo/*`, `src/hooks/useExecutivo*`, `src/config/navigation.ts` nem `src/lib/permissions.ts`. Nenhum filtro, rota ou card foi removido.
+Etapa 3 — Validar
+- `tsgo -p tsconfig.app.json`, `vite build`, `connection-binding.static.test.ts` e reconferência do dashboard autenticado.
 
-**RPCs do Dashboard existem no staging:** `rpc_executivo_resumo_geral`, `rpc_dashboard_geral_lab_resumo`, `rpc_executivo_financeiro_resumo` e `reservar_estoque_item` estão presentes (retornam "Não autenticado" quando chamadas fora de sessão — comportamento esperado).
+Observação: se a Etapa 1 mostrar que as RPCs respondem 200 com `resumo` vazio, o problema é de dados/permissão no staging e não se resolve com a restauração de arquivos — nesse caso o próximo passo é auditar as RPCs no banco (somente leitura), sem alterar dados.
 
-**Console/rede do preview:** nenhum log e nenhuma requisição registrada no snapshot — não há evidência de erro de runtime no Dashboard neste momento.
-
-**Contagens reais no staging (somente SELECT):**
-
-| Tabela | Total | Observação |
-|---|---|---|
-| clientes | 3 | 1 "Fazenda Homologação LTDA", 1 `TESTE_ENTREGA_E2E_...`, 1 `F42-HARNESS-...` |
-| ordens_servico | 2 | `pronto_entrega` e `finalizada` (11–12/08) |
-| lotes | 3 | LT-2026-0001/0002 + 1 `TESTE_ENTREGA_E2E_LOT_...` |
-| entregas | 6 | 1 entregue, 1 em rota, 4 `separado` de fixture E2E de 03/08 |
-| estoque_produto | 2 | ambos `expedido` |
-| produtos | 9 | 8 legítimos + `INO-5 TESTE_ENTREGA_E2E_PROD_...` |
-| microrganismos | 26 | 25 legítimos + `F42-HARNESS-20260806121703-FA6EB0 MICRO` |
-| fazendas / talhoes | 1 / 3 | — |
-
-**Conclusão sobre a percepção de "sumiço":** o volume de dados operacionais no staging sempre foi pequeno; após a exclusão autorizada de *Azospirillum brasilense* e *Bradyrhizobium japonicum* (e das OS/lotes de teste vinculados), os cards passaram a exibir números menores. Isso é efeito da limpeza autorizada, não das alterações de 13/08. Nenhum dado legítimo remanescente está sendo ocultado por código.
-
-## Arquivos afetados pelas alterações de 13/08
-
-- `.env` — apontando para Sandbox (divergente de `client.ts` e `supabase/config.toml`).
-- `src/integrations/supabase/types.ts` — stub do Sandbox (2.052 linhas).
-- Limpeza de casts (sem efeito de ocultação): `AgendaTecnica.tsx`, `ClienteDetalhe.tsx`, `Entregas.tsx`, `Estoque.tsx`, `MonitoramentoAlertas.tsx`, `OrdensServico.tsx`, `Solicitacoes.tsx`, `FluxoTecnico.tsx`, `useMicroorganismRegulatory.ts` e outros ~20.
-- Um ponto de atenção menor: em `Configuracoes.tsx` a queda de `(data || []) as ...` para `data as ...` remove o fallback de lista vazia (pode render `null` em vez de `[]`).
-
-## Plano mínimo de restauração (a executar somente após sua aprovação)
-
-Nenhuma etapa apaga ou altera dados.
-
-1. **Restaurar `.env`** para o binding de staging do commit `019762de`: `VITE_SUPABASE_PROJECT_ID`/`VITE_SUPABASE_URL` = `ikaauvsflpmamgxmkhoq` e a chave anon correspondente. Corrige as chamadas de Edge Function.
-2. **Restaurar `src/integrations/supabase/types.ts`** a partir de `c75bb87f` (21.850 linhas, schema do staging). Corrige typecheck/build.
-3. **Reintroduzir o fallback `|| []`** no seletor de clientes em `Configuracoes.tsx` (correção defensiva de 1 linha).
-4. **Validar:** `bunx tsgo -p tsconfig.app.json` em zero erros e `src/test/config/connection-binding.static.test.ts` em 8/8.
-5. **Verificar o Dashboard logado** (sessão de administrador) para confirmar que `rpc_executivo_resumo_geral` e `rpc_dashboard_geral_lab_resumo` retornam os indicadores esperados com os registros existentes.
-
-Observação de risco: a plataforma já regenerou `.env` e `types.ts` a partir do projeto Sandbox mais de uma vez. Se isso repetir após a restauração, o item raiz é o vínculo do projeto com o backend Sandbox — que deve ser tratado antes de qualquer publicação.
-
-## Não recomendado
-
-Nenhuma exclusão de dados é proposta. Os registros `TESTE_ENTREGA_E2E_*`, `F42-HARNESS-*` e `Fazenda Homologação LTDA` são identificáveis como fixtures, mas permanecem intocados nesta auditoria.
+Nada foi editado, nenhum banco alterado e nada publicado.
