@@ -296,7 +296,7 @@ async function regulatoryRpc<K extends RegulatoryFn>(
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");
     throw new Error(error.message || "regulatory_rpc_failed");
   }
-  return data as RegulatoryFunctions[K]["Returns"];
+  return data as any;
 }
 
 /**
