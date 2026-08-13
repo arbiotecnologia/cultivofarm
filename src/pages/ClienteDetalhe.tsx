@@ -140,7 +140,7 @@ export default function ClienteDetalhe() {
             <p className="text-xs text-muted-foreground">Nenhuma fazenda cadastrada.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {(cliente.fazendas as any[]).map((f) => (
+              {(((cliente as any).fazendas ?? []) as any[]).map((f) => (
                 <Link key={f.id} to={`/fazendas/${f.id}`}>
                   <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/70">
                     {f.nome}
