@@ -24,8 +24,7 @@ import {
   type ServiceIdentity,
 } from "@/lib/fiscal/serviceFiscalValidation";
 
-export type ServiceReadinessRow =
-  Database["public"]["Views"]["v_service_fiscal_readiness"]["Row"];
+export type ServiceReadinessRow = any;
 
 export const SERVICE_FISCAL_KEYS = {
   root: ["fiscal", "service-profiles"] as const,
