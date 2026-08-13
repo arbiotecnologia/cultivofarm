@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import { drawArBioFooter, drawArBioHeader } from "./arBioHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { generateFichaTecnicaMicrorganismoPdf } from "./fichaTecnicaMicrorganismoPdf";
+import { formatConcentracaoDisplay } from "@/lib/cqFormat";
 
 export interface DossieMicrorganismosOptions {
   mode?: "download" | "blob";
@@ -16,8 +16,7 @@ export async function generateDossieCompletoMicrorganismos({
   audience = "interna"
 }: DossieMicrorganismosOptions = {}): Promise<void | { blobUrl: string; filename: string }> {
   
-  // 1. Buscar todos os microrganismos ativos (e habilitados para B2B se for o caso)
-  const query = supabase
+  const query = (supabase as any)
     .from("microrganismos")
     .select("id, nome")
     .eq("ativo", true);
@@ -29,34 +28,20 @@ export async function generateDossieCompletoMicrorganismos({
   const { data: micros, error } = await query.order("nome");
 
   if (error) throw error;
-  if (!micros || micros.length === 0) {
+  if (!micros || (micros as any[]).length === 0) {
     throw new Error("Nenhum microrganismo encontrado para gerar o dossiê.");
   }
 
-  // 2. Criar o documento mestre
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const filename = `dossie-microrganismos-${new Date().toISOString().split('T')[0]}.pdf`;
 
-  // 3. Iterar e gerar cada ficha
-  for (let i = 0; i < micros.length; i++) {
-    const micro = micros[i];
-    
-    // Adicionar nova página se não for a primeira
-    if (i > 0) {
-      doc.addPage();
-    }
-
-    // Gerar o conteúdo da ficha para este microrganismo específico no doc atual
-    // Como a função original cria um novo doc internamente e não aceita um doc existente,
-    // precisamos de uma pequena refatoração ou lógica similar.
-    // Para manter a fidelidade visual, vamos replicar a lógica de seção aqui ou extrair.
-    
-    // Opção: Chamar a função original para cada um e "mergear" é pesado.
-    // Melhor: Implementar a iteração dentro de uma função que aceita o doc.
+  const microList = micros as any[];
+  for (let i = 0; i < microList.length; i++) {
+    const micro = microList[i];
+    if (i > 0) doc.addPage();
     await appendMicroorganismoToDoc(doc, micro.id, audience);
   }
 
-  // 4. Finalizar
   if (mode === "blob") {
     const blobUrl = doc.output("bloburl") as unknown as string;
     return { blobUrl, filename };
@@ -64,9 +49,6 @@ export async function generateDossieCompletoMicrorganismos({
   doc.save(filename);
 }
 
-/**
- * Função auxiliar para anexar um microrganismo ao documento PDF existente
- */
 async function appendMicroorganismoToDoc(doc: jsPDF, microId: string, audience: "interna" | "b2b"): Promise<void> {
   const isB2B = audience === "b2b";
   const microSelect = isB2B
@@ -77,10 +59,10 @@ async function appendMicroorganismoToDoc(doc: jsPDF, microId: string, audience: 
     : "*";
 
   const [mRes, pRes, tRes, cRes] = await Promise.all([
-    supabase.from("microrganismos").select(microSelect).eq("id", microId).maybeSingle(),
-    supabase.from("microorganism_technical_profiles").select(perfilSelect).eq("microrganismo_id", microId).maybeSingle(),
-    supabase.from("microorganism_targets").select("*").eq("microrganismo_id", microId).eq("ativo", true),
-    supabase.from("microorganism_crop_recommendations").select("*").eq("microrganismo_id", microId).eq("ativo", true),
+    (supabase as any).from("microrganismos").select(microSelect).eq("id", microId).maybeSingle(),
+    (supabase as any).from("microorganism_technical_profiles").select(perfilSelect).eq("microrganismo_id", microId).maybeSingle(),
+    (supabase as any).from("microorganism_targets").select("*").eq("microrganismo_id", microId).eq("ativo", true),
+    (supabase as any).from("microorganism_crop_recommendations").select("*").eq("microrganismo_id", microId).eq("ativo", true),
   ]);
 
   const m: any = mRes.data;
@@ -89,8 +71,6 @@ async function appendMicroorganismoToDoc(doc: jsPDF, microId: string, audience: 
   const targets: any[] = tRes.data ?? [];
   const crops: any[] = cRes.data ?? [];
 
-  // Reutilizando a lógica visual de fichaTecnicaMicrorganismoPdf.ts
-  // Importante: passamos o 'doc' como referência
   let y = await drawArBioHeader(doc, { subtitulo: `Ficha técnica — ${m.nome}` });
 
   const margin = 40;
@@ -111,8 +91,7 @@ async function appendMicroorganismoToDoc(doc: jsPDF, microId: string, audience: 
   doc.text(m.nome_cientifico || "", margin, y); y += 16;
 
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(0, 0, 0);
-  // Nota: importação de formatConcentracaoDisplay omitida por brevidade, usando raw se necessário ou fixando import
-  doc.text(`Tipo: ${m.tipo}    UFC/mL: ${m.concentracao_ufc_ml || "—"}    Dose: ${m.dose_ml_ha ?? "—"} mL/ha`, margin, y);
+  doc.text(`Tipo: ${m.tipo}    UFC/mL: ${formatConcentracaoDisplay(m.concentracao_ufc_ml) || "—"}    Dose: ${m.dose_ml_ha ?? "—"} mL/ha`, margin, y);
   y += 14;
 
   writeSection("Resumo", p.resumo_curto || m.descricao);
