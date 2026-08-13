@@ -67,7 +67,7 @@ export function useInitFiscalCompanySettings() {
   const qc = useQueryClient();
   return useMutation<CompanyFiscalRow, Error, void>({
     mutationFn: async () => {
-      const { data, error } = await (supabase as any).rpc("rpc_fiscal_company_settings_init");
+      const { data, error } = await supabase.rpc("rpc_fiscal_company_settings_init");
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(errorMessage(error, "init_failed"));
@@ -128,9 +128,9 @@ const READINESS_FIELDS: Array<string> = [
   "neighborhood", "city", "state", "country_code",
 ];
 
-export function computeReadiness(row: any): CompanyFiscalReadiness {
+export function computeReadiness(row: CompanyFiscalRow): CompanyFiscalReadiness {
   const filled = READINESS_FIELDS.filter((f) => {
-    const v = (row as any)[f];
+    const v = (row as Record<string, unknown>)[f];
     return v !== null && v !== undefined && v !== "";
   }).length;
   return {
