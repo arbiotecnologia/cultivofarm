@@ -86,7 +86,7 @@ export default function SelecionarPortal() {
     if (submitting) return; // evita duplo clique
     setSubmitting(ctx);
     try {
-      const { data: res, error } = await (supabase as any).rpc("set_my_context_preference", {
+      const { data: res, error } = await supabase.rpc("set_my_context_preference", {
         p_context: ctx,
         p_remember: remember,
       });

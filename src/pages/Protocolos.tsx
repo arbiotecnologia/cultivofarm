@@ -201,7 +201,7 @@ function ProblemasTab() {
   const { data: problemas, isLoading } = useQuery({
     queryKey: ["catalogo-problemas-admin"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("catalogo_problemas")
         .select("*")
         .order("nome");
@@ -213,15 +213,15 @@ function ProblemasTab() {
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
       if (editingItem) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("catalogo_problemas")
-          .update(payload as any)
+          .update(payload)
           .eq("id", editingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("catalogo_problemas")
-          .insert([payload] as any);
+          .insert([payload]);
         if (error) throw error;
       }
     },
@@ -237,9 +237,9 @@ function ProblemasTab() {
 
   const toggleAtivoMutation = useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("catalogo_problemas")
-        .update({ ativo } as any)
+        .update({ ativo })
         .eq("id", id);
       if (error) throw error;
     },

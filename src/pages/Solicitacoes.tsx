@@ -233,11 +233,11 @@ export default function Solicitacoes() {
         atribuido_por: user.id,
         observacoes: observacoes || null,
         status: "atribuida",
-      } as any);
+      });
       if (e1) throw e1;
       const { error: e2 } = await supabase
         .from("portal_solicitacoes")
-        .update({ status: "atribuida", consultor_atribuido: selectedConsultor } as any)
+        .update({ status: "atribuida", consultor_atribuido: selectedConsultor })
         .eq("id", assignDialog.solicitacaoId);
       if (e2) throw e2;
     },
@@ -259,10 +259,10 @@ export default function Solicitacoes() {
         consultor_id: user.id,
         atribuido_por: user.id,
         status: "aceita",
-      } as any);
+      });
       await supabase
         .from("portal_solicitacoes")
-        .update({ status: "atribuida", consultor_atribuido: user.id } as any)
+        .update({ status: "atribuida", consultor_atribuido: user.id })
         .eq("id", solicitacaoId);
     },
     onSuccess: () => {

@@ -24,7 +24,8 @@ import {
   isProductFiscalProfileStatus,
 } from "@/lib/fiscal/fiscalOptions";
 
-export type ReadinessRow = any;
+export type ReadinessRow =
+  Database["public"]["Views"]["v_product_fiscal_readiness"]["Row"];
 
 export const PRODUCT_FISCAL_KEYS = {
   root: ["fiscal", "product-profiles"] as const,
@@ -111,7 +112,7 @@ export function useProductFiscalList(
         if (safeTerm) {
           q = q.or(`nome.ilike.%${safeTerm}%,codigo.ilike.%${safeTerm}%`);
         }
-        return q as any;
+        return q;
       };
 
       const runUnfiltered = async () => {

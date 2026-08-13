@@ -11,8 +11,10 @@
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
-export type ReconciliationPendingRow = any;
-export type FiscalInvoiceRow = any;
+export type ReconciliationPendingRow =
+  Database["public"]["Views"]["v_fiscal_document_reconciliation_pending"]["Row"];
+export type FiscalInvoiceRow =
+  Database["public"]["Tables"]["fiscal_invoices"]["Row"];
 
 /** Domínios canônicos do CHECK reconciliation_status. */
 export const RECONCILIATION_STATUS_VALUES = [

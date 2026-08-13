@@ -83,10 +83,10 @@ export default function Envase() {
     // Filtro padrão: últimos 90 dias (envases e lotes antigos permanecem via detalhe)
     const since90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
     const [{ data: e }, { data: l }] = await Promise.all([
-      (supabase as any).from("envase").select("*, lotes(codigo_lote, produto_id, produtos(nome)), produto_etiquetas:etiqueta_id(id, status, trace_token, codigo_etiqueta)").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
-      (supabase as any).from("lotes").select("id, codigo_lote, status, volume_produzido, programacao_id, produto_id, microrganismo_id, produtos(nome), controle_qualidade(resultado)").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
+      supabase.from("envase").select("*, lotes(codigo_lote, produto_id, produtos(nome)), produto_etiquetas:etiqueta_id(id, status, trace_token, codigo_etiqueta)").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
+      supabase.from("lotes").select("id, codigo_lote, status, volume_produzido, programacao_id, produto_id, microrganismo_id, produtos(nome), controle_qualidade(resultado)").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
     ]);
-    if (e) setEnvases(e as any[]);
+    if (e) setEnvases(e as Envase[]);
     if (l) setLotes(l as any[]);
   };
 
@@ -161,8 +161,8 @@ export default function Envase() {
       return;
     }
 
-    const osId = (prog as any).ordem_servico_onfarm_id || (prog as any).ordem_servico_id;
-    const origem = (prog as any).ordem_servico_onfarm_id ? "onfarm" : "manual";
+    const osId = prog.ordem_servico_onfarm_id || prog.ordem_servico_id;
+    const origem = prog.ordem_servico_onfarm_id ? "onfarm" : "manual";
     const volumeUnitValue = embalagemVolumes[form.tipo_embalagem] || 0;
 
     const success = await registrarEnvaseEEstoque({
@@ -175,8 +175,8 @@ export default function Envase() {
       },
       estoqueData: {
         lote_id: form.lote_id,
-        produto_id: (prog as any).produto_id,
-        microrganismo_id: (prog as any).microrganismo_id || null,
+        produto_id: prog.produto_id,
+        microrganismo_id: prog.microrganismo_id || null,
         quantidade: Number(form.quantidade),
         volume_total: volSolicitado / 1000,
         validade: form.validade || null,

@@ -664,17 +664,17 @@ export async function importCatalogoARBioV13(): Promise<SeedResult> {
 
     let produtoId: string;
     if (existente?.id) {
-      const { error: upErr } = await (supabase as any)
+      const { error: upErr } = await supabase
         .from("produtos")
-        .update(payload as any)
+        .update(payload)
         .eq("id", existente.id);
       if (upErr) throw upErr;
       produtoId = existente.id;
       atualizados += 1;
     } else {
-      const { data: novo, error: insErr } = await (supabase as any)
+      const { data: novo, error: insErr } = await supabase
         .from("produtos")
-        .insert(payload as any)
+        .insert(payload)
         .select("id")
         .single();
       if (insErr) throw insErr;
@@ -683,7 +683,7 @@ export async function importCatalogoARBioV13(): Promise<SeedResult> {
     }
 
     // Reset formulações do produto
-    const { error: delFErr } = await (supabase as any)
+    const { error: delFErr } = await supabase
       .from("formulacoes")
       .delete()
       .eq("produto_id", produtoId);
@@ -696,7 +696,7 @@ export async function importCatalogoARBioV13(): Promise<SeedResult> {
       e_volume_fixo: true,
     }));
     if (formPayload.length > 0) {
-      const { error: insFErr } = await (supabase as any).from("formulacoes").insert(formPayload as any);
+      const { error: insFErr } = await supabase.from("formulacoes").insert(formPayload);
       if (insFErr) throw insFErr;
       formulacoesCriadas += formPayload.length;
     }
@@ -712,7 +712,7 @@ export async function importCatalogoARBioV13(): Promise<SeedResult> {
 export async function isCatalogoARBioV13Aplicado(): Promise<boolean> {
   const { data, error } = await supabase
     .from("produtos")
-    .select("codigo, versao_catalogo, ativo") as any;
+    .select("codigo, versao_catalogo, ativo");
   if (error || !data) return false;
   const ativos = data.filter((p) => p.ativo);
   if (ativos.length !== SEED_PRODUTOS_AR_BIO_V13.length) return false;

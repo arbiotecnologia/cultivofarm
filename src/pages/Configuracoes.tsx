@@ -73,7 +73,7 @@ export default function Configuracoes() {
       if (!user) throw new Error("Não autenticado");
       const chk = validatePhoneBR(phone, { fieldLabel: "Telefone" });
       if (!chk.ok) throw new Error(chk.error);
-      const { error } = await (supabase as any).from("profiles").update({ nome, telefone: chk.value, cpf_cnpj: unmaskCpfCnpj(cpfCnpj) } as any).eq("user_id", user.id);
+      const { error } = await supabase.from("profiles").update({ nome, telefone: chk.value, cpf_cnpj: unmaskCpfCnpj(cpfCnpj) }).eq("user_id", user.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -112,9 +112,9 @@ export default function Configuracoes() {
     queryKey: ["clientes-lista"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("clientes").select("id, nome, cpf_cnpj").order("nome");
+      const { data, error } = await supabase.from("clientes").select("id, nome, cpf_cnpj").order("nome");
       if (error) throw error;
-      return (data || []) as { id: string; nome: string; cpf_cnpj: string | null }[];
+      return data as { id: string; nome: string; cpf_cnpj: string | null }[];
     },
   });
 

@@ -60,9 +60,9 @@ export default function ConsultorTecnico() {
 
   const updateCaptionMutation = useMutation({
     mutationFn: async ({ id, descricao }: { id: string; descricao: string }) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("arquivos")
-        .update({ descricao } as any)
+        .update({ descricao })
         .eq("id", id);
       if (error) throw error;
     },
@@ -232,13 +232,13 @@ export default function ConsultorTecnico() {
     queryKey: ["consultor-clientes", selected?.user_id],
     enabled: !!selected?.user_id,
     queryFn: async () => {
-      const { data: vinc } = await (supabase as any)
+      const { data: vinc } = await supabase
         .from("user_clientes")
         .select("cliente_id, principal")
         .eq("user_id", selected.user_id);
       if (!vinc || vinc.length === 0) return [];
       const ids = vinc.map((v: any) => v.cliente_id);
-      const { data: clientes } = await (supabase as any)
+      const { data: clientes } = await supabase
         .from("clientes")
         .select("id, nome, nome_fantasia")
         .in("id", ids)

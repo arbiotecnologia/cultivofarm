@@ -33,11 +33,11 @@ export default function ControleQualidade() {
   const [selectedCq, setSelectedCq] = useState<CQ | null>(null);
 
   const fetchAll = async () => {
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("controle_qualidade")
       .select("*, lotes(codigo_lote, programacao_id, produtos(nome))")
       .order("created_at", { ascending: false });
-    if (data) setCqs(data as any[]);
+    if (data) setCqs(data as CQ[]);
   };
 
   useEffect(() => { fetchAll(); }, []);

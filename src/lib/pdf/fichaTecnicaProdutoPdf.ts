@@ -20,13 +20,13 @@ export async function generateFichaTecnicaProdutoPdf({ produtoId, mode = "downlo
     : "*";
 
   const [prRes, pRes, tRes, cRes, fRes] = await Promise.all([
-    (supabase as any).from("produtos").select(produtoSelect).eq("id", produtoId).maybeSingle(),
-    (supabase as any).from("product_technical_profiles").select(perfilSelect).eq("produto_id", produtoId).maybeSingle(),
-    (supabase as any).from("product_target_recommendations").select("*").eq("produto_id", produtoId).eq("ativo", true),
-    (supabase as any).from("product_crop_recommendations").select("*").eq("produto_id", produtoId).eq("ativo", true),
+    supabase.from("produtos").select(produtoSelect).eq("id", produtoId).maybeSingle(),
+    supabase.from("product_technical_profiles").select(perfilSelect).eq("produto_id", produtoId).maybeSingle(),
+    supabase.from("product_target_recommendations").select("*").eq("produto_id", produtoId).eq("ativo", true),
+    supabase.from("product_crop_recommendations").select("*").eq("produto_id", produtoId).eq("ativo", true),
     isB2B
       ? Promise.resolve({ data: [] as any[], error: null })
-      : (supabase as any)
+      : supabase
           .from("formulacoes")
           .select("volume_ml, proporcao, microrganismos(nome, nome_cientifico, funcao_agronomica)")
           .eq("produto_id", produtoId),
