@@ -313,7 +313,7 @@ export function useMicroorganismRegulatoryOverview(options?: { enabled?: boolean
     enabled: options?.enabled ?? true,
     queryFn: async (): Promise<RegulatoryOverviewRow[]> => {
       const payload = await regulatoryRpc(
-        "rpc_microorganism_regulatory_overview",
+        "rpc_microorganism_regulatory_overview" as any,
         {},
       );
       return fromJson<RegulatoryOverviewRow[]>(payload) ?? [];
