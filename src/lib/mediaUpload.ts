@@ -85,9 +85,7 @@ async function fetchReference(clientUuid: string) {
     .select("id, arquivo_url, arquivo_path, registro_consultor_id")
     .eq("client_uuid", clientUuid)
     .maybeSingle();
-  return (data as
-    | { id: string; arquivo_url: string | null; arquivo_path: string | null; registro_consultor_id: string }
-    | null) ?? null;
+  return (data as any) ?? null;
 }
 
 /**

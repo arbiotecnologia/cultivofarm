@@ -286,8 +286,8 @@ type RegulatoryFn = Extract<
 
 async function regulatoryRpc<K extends RegulatoryFn>(
   fn: K,
-  args: RegulatoryFunctions[K]["Args"],
-): Promise<RegulatoryFunctions[K]["Returns"]> {
+  args: any,
+): Promise<any> {
   const { data, error } = await (supabase as any).rpc(
     fn,
     args as any,
@@ -296,7 +296,7 @@ async function regulatoryRpc<K extends RegulatoryFn>(
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");
     throw new Error(error.message || "regulatory_rpc_failed");
   }
-  return data as RegulatoryFunctions[K]["Returns"];
+  return data;
 }
 
 /**

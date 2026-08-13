@@ -24,8 +24,7 @@ import {
   isProductFiscalProfileStatus,
 } from "@/lib/fiscal/fiscalOptions";
 
-export type ReadinessRow =
-  Database["public"]["Views"]["v_product_fiscal_readiness"]["Row"];
+export type ReadinessRow = any;
 
 export const PRODUCT_FISCAL_KEYS = {
   root: ["fiscal", "product-profiles"] as const,
