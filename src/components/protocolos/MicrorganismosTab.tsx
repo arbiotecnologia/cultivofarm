@@ -301,7 +301,27 @@ export function MicrorganismosTab() {
 
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="hidden md:flex">
             <FileDown className="h-4 w-4 mr-1" />
-            Exportar PDF
+            Exportar Lista
+          </Button>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              try {
+                toast.loading("Gerando dossiê de microrganismos...");
+                await generateDossieCompletoMicrorganismos();
+                toast.dismiss();
+                toast.success("Dossiê exportado!");
+              } catch (err: any) {
+                toast.dismiss();
+                toast.error("Erro ao exportar dossiê: " + err.message);
+              }
+            }} 
+            className="hidden lg:flex"
+          >
+            <FileText className="h-4 w-4 mr-1" />
+            Dossiê Completo
           </Button>
 
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) resetForm(); }}>
