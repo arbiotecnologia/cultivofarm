@@ -80,7 +80,7 @@ async function objectExists(remotePath: string): Promise<boolean> {
 
 /** Busca a referência existente por client_uuid. */
 async function fetchReference(clientUuid: string) {
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from("registros_consultor_arquivos")
     .select("id, arquivo_url, arquivo_path, registro_consultor_id")
     .eq("client_uuid", clientUuid)
