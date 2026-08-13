@@ -85,7 +85,7 @@ export default function Talhoes() {
       longitude: form.longitude ? Number(form.longitude) : null,
       localizacao_referencia: form.localizacao_referencia || null,
     };
-    const { error } = await supabase.from("talhoes").insert([payload]);
+    const { error } = await (supabase as any).from("talhoes").insert([payload]);
     if (error) { toast.error(error.message); return; }
     toast.success("Talhão cadastrado!");
     setOpen(false);
