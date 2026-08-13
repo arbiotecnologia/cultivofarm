@@ -1,15 +1,18 @@
-import { NavLink, Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyPartner } from "@/hooks/useMyPartner";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, ListOrdered, PlusCircle, History, Menu, Wallet, LayoutDashboard, Star, TrendingUp, FileText, FlaskConical, Users, Inbox } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
 import { useSwitchPortal } from "@/hooks/useSwitchPortal";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { PortalSidebar } from "@/components/nav/PortalSidebar";
+import { useSidebarOpenState } from "@/hooks/useNavCollapseState";
+import { PARCEIRO_GESTOR_GROUPS, PARCEIRO_TECNICO_GROUPS } from "@/config/portalMenus";
 import { getPapelLabel } from "@/lib/portal/identidade";
 
 import {
@@ -20,34 +23,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type MenuItem = {
-  title: string;
-  url: string;
-  icon: any;
-  showFor: "all" | "gestor" | "tecnico";
-};
-
 // NOTA: Estrutura de vínculo B2B × cliente (Meus Produtores, Usuários × Clientes,
 // Técnicos × Produtores) preservada no banco/rotas para uso futuro.
 // Acesso oculto temporariamente por decisão de produto (Fase 2 - reformulação B2B).
-const menuGestor: MenuItem[] = [
-  { title: "Dashboard", url: "/portal-parceiro/dashboard", icon: LayoutDashboard, showFor: "gestor" },
-  { title: "Meus Pedidos", url: "/portal-parceiro/pedidos", icon: ListOrdered, showFor: "gestor" },
-  { title: "Simulações", url: "/portal-parceiro/simulacoes-equipe", icon: FlaskConical, showFor: "gestor" },
-  { title: "Catálogo", url: "/portal-parceiro/catalogo", icon: ShoppingCart, showFor: "gestor" },
-  { title: "Fichas Técnicas", url: "/portal-parceiro/fichas", icon: FileText, showFor: "gestor" },
-  { title: "Favoritos", url: "/portal-parceiro/favoritos", icon: Star, showFor: "gestor" },
-  { title: "Meu Histórico", url: "/portal-parceiro/meu-historico", icon: TrendingUp, showFor: "gestor" },
-  { title: "Financeiro", url: "/portal-parceiro/financeiro", icon: Wallet, showFor: "gestor" },
-];
-
-const menuTecnico: MenuItem[] = [
-  { title: "Dashboard", url: "/portal-parceiro/dashboard", icon: LayoutDashboard, showFor: "tecnico" },
-  { title: "Simulador", url: "/portal-parceiro/simulador", icon: FlaskConical, showFor: "tecnico" },
-  { title: "Minhas Simulações", url: "/portal-parceiro/simulacoes", icon: History, showFor: "tecnico" },
-  { title: "Fichas Técnicas", url: "/portal-parceiro/fichas", icon: FileText, showFor: "tecnico" },
-];
-
+// Os itens de menu passaram a ser declarados em `src/config/portalMenus.ts`
+// (mesmas rotas, mesmos rótulos, mesmo `showFor`).
 
 export default function PortalParceiroLayout() {
   const { user, role, signOut, loading } = useAuth();
@@ -56,12 +36,12 @@ export default function PortalParceiroLayout() {
   const switchPortal = useSwitchPortal();
   const canSwitchPortal = !!contexts && contexts.available_contexts.length >= 2;
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebarOpenState("parceiro");
   const [simulatedId, setSimulatedId] = useState<string | null>(null);
 
   const isStaff = role === "administrador" || role === "gestor_comercial";
   const isTecnico = role === "parceiro_b2b_tecnico";
-  const menu = isTecnico ? menuTecnico : menuGestor;
+  const menuGroups = isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS;
   const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
 
 
@@ -140,23 +120,23 @@ export default function PortalParceiroLayout() {
 
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <div className="min-h-screen flex w-full">
+        <PortalSidebar
+          portal="parceiro"
+          groups={menuGroups}
+          brandTitle="Portal Parceiro B2B"
+          brandSubtitle={getPapelLabel(papelVisual)}
+          brandIcon={ShoppingCart}
+        />
+        <div className="flex-1 flex flex-col min-w-0">
       <PortalTopBar
         brandTitle="Portal Parceiro B2B"
         brandIcon={ShoppingCart}
         brandSubtitle={getPapelLabel(papelVisual)}
-        onSwitchPortal={canSwitchPortal ? () => { setOpen(false); void switchPortal(); } : undefined}
-        leadingSlot={
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 shrink-0 md:hidden"
-            onClick={() => setOpen((v) => !v)}
-            aria-label={open ? "Fechar menu" : "Abrir menu"}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        }
+        hideBrandOnMobile
+        onSwitchPortal={canSwitchPortal ? () => { void switchPortal(); } : undefined}
+        leadingSlot={<SidebarTrigger className="h-10 w-10 shrink-0" />}
         contextSlot={
           isStaff ? (
             <div className="hidden sm:flex items-center gap-2 min-w-0">
@@ -185,40 +165,6 @@ export default function PortalParceiroLayout() {
         }
       />
 
-      <div className="flex flex-1 flex-col md:flex-row min-h-0">
-      <aside
-        className={cn(
-          "md:w-64 border-r bg-card md:flex md:flex-col",
-          open ? "flex flex-col" : "hidden md:flex",
-        )}
-      >
-
-
-
-        <nav className="flex-1 px-2 py-2 space-y-1">
-          {menu.map((m) => (
-            <NavLink
-              key={m.url}
-              to={m.url}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-2 px-3 py-3 md:py-2 min-h-11 rounded-md text-sm transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-accent text-foreground",
-                )
-              }
-            >
-              <m.icon className="h-5 w-5 md:h-4 md:w-4" />
-              {m.title}
-            </NavLink>
-          ))}
-        </nav>
-
-      </aside>
-
-
       <main className="flex-1 p-4 md:p-6 overflow-x-auto">
         {isStaff && partner && (
           <div
@@ -241,8 +187,9 @@ export default function PortalParceiroLayout() {
           <Outlet context={{ partner }} />
         )}
       </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
 

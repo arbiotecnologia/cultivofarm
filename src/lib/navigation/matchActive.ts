@@ -1,6 +1,13 @@
 import type { NavItem } from "@/config/navigation";
 
 /**
+ * Subconjunto estrutural suficiente para o cálculo de rota ativa.
+ * `NavItem` (config) e `SidebarNavItem` (nav compartilhado) o satisfazem.
+ */
+export type MatchableNavItem = Pick<NavItem, "route"> &
+  Partial<Pick<NavItem, "matchRoutes" | "legacyRoutes" | "paramDefault">>;
+
+/**
  * Converte um padrão de rota com parâmetros (`/foo/:id`) em RegExp.
  * Aceita também rota simples exata (`/foo`) — trata como prefixo.
  */
@@ -19,7 +26,7 @@ function patternToRegex(pattern: string): RegExp {
  *
  * Query string e hash são ignorados (React Router já não os inclui no pathname).
  */
-export function isNavItemActive(item: NavItem, pathname: string): boolean {
+export function isNavItemActive(item: MatchableNavItem, pathname: string): boolean {
   // Rota raiz precisa de match exato.
   if (item.route === "/") return pathname === "/";
 
@@ -37,7 +44,7 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
  * (ignora `matchRoutes` do pai). Usado para diferenciar o filho ativo
  * do pai no realce da sidebar. Rotas legadas ativam o filho correspondente.
  */
-export function isNavItemActiveSelf(item: NavItem, pathname: string): boolean {
+export function isNavItemActiveSelf(item: MatchableNavItem, pathname: string): boolean {
   const candidates = [item.route, ...(item.legacyRoutes ?? [])].map(stripQuery);
   return candidates.some((pattern) => {
     if (pattern === "/") return pathname === "/";
@@ -59,7 +66,7 @@ function stripQuery(pattern: string): string {
  * `paramDefault` é considerado ativo.
  */
 export function isNavItemActiveSelfWithSearch(
-  item: NavItem,
+  item: MatchableNavItem,
   pathname: string,
   search: string,
 ): boolean {
