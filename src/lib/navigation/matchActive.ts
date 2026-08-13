@@ -23,7 +23,9 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
   // Rota raiz precisa de match exato.
   if (item.route === "/") return pathname === "/";
 
-  const candidates = [item.route, ...(item.matchRoutes ?? []), ...(item.legacyRoutes ?? [])];
+  const candidates = [item.route, ...(item.matchRoutes ?? []), ...(item.legacyRoutes ?? [])].map(
+    (p) => (p.indexOf("?") === -1 ? p : p.slice(0, p.indexOf("?"))),
+  );
   return candidates.some((pattern) => {
     if (pattern.includes(":")) return patternToRegex(pattern).test(pathname);
     return pathname === pattern || pathname.startsWith(pattern + "/");
