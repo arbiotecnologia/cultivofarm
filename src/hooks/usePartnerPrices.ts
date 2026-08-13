@@ -85,7 +85,7 @@ export function usePartnerPrices(partnerId: string | null | undefined) {
       );
 
       const produtos: PartnerPriceRow[] = (produtosRes.data ?? []).map((p: any) => {
-        const ex = byProduct.get(p.id);
+        const ex = byProduct.get(p.id) as any;
         const valorHa = Number(p.valor_ha_brl ?? 0);
         const valorDose = Number(p.valor_dose_brl ?? 0);
         const valorLitro = Number(p.valor_litro_brl ?? 0);
