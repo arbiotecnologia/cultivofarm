@@ -34,8 +34,8 @@ export function usePartnerUsers(partnerId: string | null | undefined) {
       return (links ?? []).map((l: any) => ({
         ...l,
         papel: (l.papel ?? "gestor") as PartnerUserPapel,
-        email: pmap.get(l.user_id)?.email ?? null,
-        nome: pmap.get(l.user_id)?.nome ?? null,
+        email: (pmap.get(l.user_id) as any)?.email ?? null,
+        nome: (pmap.get(l.user_id) as any)?.nome ?? null,
       }));
     },
   });
