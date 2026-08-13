@@ -91,7 +91,7 @@ export default function Solicitacoes() {
   const { data: solicitacoes, isLoading } = useQuery({
     queryKey: ["solicitacoes-admin"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("portal_solicitacoes")
         .select(`
           id, status, urgencia, tipo_demanda, consultor_atribuido, created_at, numero_solicitacao, descricao, cliente_id, fazenda_id, talhao_id, data_prevista_atendimento, origem_solicitacao, updated_at,
@@ -227,17 +227,17 @@ export default function Solicitacoes() {
   const assignMutation = useMutation({
     mutationFn: async () => {
       if (!assignDialog.solicitacaoId || !selectedConsultor || !user) return;
-      const { error: e1 } = await supabase.from("solicitacoes_atribuicoes").insert({
+      const { error: e1 } = await (supabase as any).from("solicitacoes_atribuicoes").insert({
         solicitacao_id: assignDialog.solicitacaoId,
         consultor_id: selectedConsultor,
         atribuido_por: user.id,
         observacoes: observacoes || null,
         status: "atribuida",
-      });
+      } as any);
       if (e1) throw e1;
-      const { error: e2 } = await supabase
+      const { error: e2 } = await (supabase as any)
         .from("portal_solicitacoes")
-        .update({ status: "atribuida", consultor_atribuido: selectedConsultor })
+        .update({ status: "atribuida", consultor_atribuido: selectedConsultor } as any)
         .eq("id", assignDialog.solicitacaoId);
       if (e2) throw e2;
     },
@@ -254,15 +254,15 @@ export default function Solicitacoes() {
   const assumirMutation = useMutation({
     mutationFn: async (solicitacaoId: string) => {
       if (!user) return;
-      await supabase.from("solicitacoes_atribuicoes").insert({
+      await (supabase as any).from("solicitacoes_atribuicoes").insert({
         solicitacao_id: solicitacaoId,
         consultor_id: user.id,
         atribuido_por: user.id,
         status: "aceita",
-      });
-      await supabase
+      } as any);
+      await (supabase as any)
         .from("portal_solicitacoes")
-        .update({ status: "atribuida", consultor_atribuido: user.id })
+        .update({ status: "atribuida", consultor_atribuido: user.id } as any)
         .eq("id", solicitacaoId);
     },
     onSuccess: () => {
@@ -593,7 +593,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
     queryKey: ["solicitacao-detalhe", solicitacaoId],
     queryFn: async () => {
       if (!solicitacaoId) return null;
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("portal_solicitacoes")
         .select(`*, clientes:cliente_id(nome), fazendas:fazenda_id(nome), talhoes:talhao_id(nome)`)
         .eq("id", solicitacaoId)
