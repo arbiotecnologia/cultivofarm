@@ -91,7 +91,7 @@ export default function Solicitacoes() {
   const { data: solicitacoes, isLoading } = useQuery({
     queryKey: ["solicitacoes-admin"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("portal_solicitacoes")
         .select(`
           id, status, urgencia, tipo_demanda, consultor_atribuido, created_at, numero_solicitacao, descricao, cliente_id, fazenda_id, talhao_id, data_prevista_atendimento, origem_solicitacao, updated_at,
@@ -227,7 +227,7 @@ export default function Solicitacoes() {
   const assignMutation = useMutation({
     mutationFn: async () => {
       if (!assignDialog.solicitacaoId || !selectedConsultor || !user) return;
-      const { error: e1 } = await (supabase as any).from("solicitacoes_atribuicoes").insert({
+      const { error: e1 } = await supabase.from("solicitacoes_atribuicoes").insert({
         solicitacao_id: assignDialog.solicitacaoId,
         consultor_id: selectedConsultor,
         atribuido_por: user.id,
@@ -235,7 +235,7 @@ export default function Solicitacoes() {
         status: "atribuida",
       } as any);
       if (e1) throw e1;
-      const { error: e2 } = await (supabase as any)
+      const { error: e2 } = await supabase
         .from("portal_solicitacoes")
         .update({ status: "atribuida", consultor_atribuido: selectedConsultor } as any)
         .eq("id", assignDialog.solicitacaoId);
@@ -254,13 +254,13 @@ export default function Solicitacoes() {
   const assumirMutation = useMutation({
     mutationFn: async (solicitacaoId: string) => {
       if (!user) return;
-      await (supabase as any).from("solicitacoes_atribuicoes").insert({
+      await supabase.from("solicitacoes_atribuicoes").insert({
         solicitacao_id: solicitacaoId,
         consultor_id: user.id,
         atribuido_por: user.id,
         status: "aceita",
       } as any);
-      await (supabase as any)
+      await supabase
         .from("portal_solicitacoes")
         .update({ status: "atribuida", consultor_atribuido: user.id } as any)
         .eq("id", solicitacaoId);
@@ -593,7 +593,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
     queryKey: ["solicitacao-detalhe", solicitacaoId],
     queryFn: async () => {
       if (!solicitacaoId) return null;
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("portal_solicitacoes")
         .select(`*, clientes:cliente_id(nome), fazendas:fazenda_id(nome), talhoes:talhao_id(nome)`)
         .eq("id", solicitacaoId)
@@ -620,7 +620,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
       }
 
       // Atribuições
-      const { data: atribs } = await (supabase as any)
+      const { data: atribs } = await supabase
         .from("solicitacoes_atribuicoes")
         .select("*")
         .eq("solicitacao_id", solicitacaoId)
@@ -636,7 +636,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
       );
 
       // Check-ins (com GPS e foto)
-      const { data: checkins } = await (supabase as any)
+      const { data: checkins } = await supabase
         .from("visitas_checkin")
         .select("*")
         .eq("solicitacao_id", solicitacaoId)
@@ -656,12 +656,12 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
       );
 
       // Visitas (registros_consultor) ligadas e seus arquivos/recomendações
-      const { data: registros } = await (supabase as any)
+      const { data: registros } = await supabase
         .from("registros_consultor")
         .select("id, hora_inicio, hora_fim, status, objetivo_visita, problema_principal, observacoes_tecnicas")
         .eq("solicitacao_id", solicitacaoId);
 
-      for (const reg of (registros || []) as any[]) {
+      for (const reg of registros || []) {
         if (reg.hora_inicio) {
           ev.push({
             id: `vi-${reg.id}`,
@@ -674,7 +674,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
         }
 
         // Arquivos da visita
-        const { data: arquivos } = await (supabase as any)
+        const { data: arquivos } = await supabase
           .from("registros_consultor_arquivos")
           .select("id, arquivo_url, tipo_midia, tipo_arquivo, categoria_arquivo, legenda, capturado_em, uploaded_at, duracao_segundos")
           .eq("registro_consultor_id", reg.id)
@@ -719,7 +719,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
         });
 
         // Recomendação técnica
-        const { data: recs } = await (supabase as any)
+        const { data: recs } = await supabase
           .from("registros_consultor_recomendacoes")
           .select("id, created_at, recomendacao_tecnica, dose_recomendada_valor, dose_recomendada_unidade, modo_aplicacao")
           .eq("registro_consultor_id", reg.id);
@@ -751,7 +751,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
       }
 
       // Logs de visita extras
-      const { data: logs } = await (supabase as any)
+      const { data: logs } = await supabase
         .from("visitas_logs")
         .select("id, acao, descricao, data_hora")
         .eq("solicitacao_id", solicitacaoId)
@@ -771,7 +771,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
       // Ordens de serviço on-farm originadas da visita
       if (registros && registros.length > 0) {
         const regIds = registros.map((r: any) => r.id);
-        const { data: oss } = await (supabase as any)
+        const { data: oss } = await supabase
           .from("ordens_servico_onfarm")
           .select("id, numero_os, created_at, status, prioridade, dose_ml_ha, area_hectares, modo_aplicacao")
           .in("registro_consultor_id", regIds);

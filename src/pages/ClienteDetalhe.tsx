@@ -119,7 +119,7 @@ export default function ClienteDetalhe() {
             <Link to={`/clientes?aba=produtores`}><ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Ver no cadastro</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link to={`/ordens-servico?novo=1&cliente=${(cliente as any).id}`}><Plus className="h-3.5 w-3.5 mr-1.5" /> Nova OS</Link>
+            <Link to={`/ordens-servico?novo=1&cliente=${cliente.id}`}><Plus className="h-3.5 w-3.5 mr-1.5" /> Nova OS</Link>
           </Button>
         </div>
       </div>
@@ -133,14 +133,14 @@ export default function ClienteDetalhe() {
 
       <Card>
         <CardHeader className="py-3">
-          <CardTitle className="text-sm">Fazendas vinculadas ({((cliente as any).fazendas ?? []).length})</CardTitle>
+          <CardTitle className="text-sm">Fazendas vinculadas ({(cliente.fazendas ?? []).length})</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          {((cliente as any).fazendas ?? []).length === 0 ? (
+          {(cliente.fazendas ?? []).length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhuma fazenda cadastrada.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {(((cliente as any).fazendas ?? []) as any[]).map((f) => (
+              {(cliente.fazendas as any[]).map((f) => (
                 <Link key={f.id} to={`/fazendas/${f.id}`}>
                   <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/70">
                     {f.nome}
