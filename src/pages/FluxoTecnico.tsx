@@ -101,7 +101,7 @@ export default function FluxoTecnico() {
   const { data: pendentes = [], refetch: refetchPendentes } = useQuery({
     queryKey: ["fluxo-pendentes"],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("registros_consultor")
         .select("*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), culturas(nome)")
         .eq("status", "enviado_aprovacao")
@@ -114,7 +114,7 @@ export default function FluxoTecnico() {
   const { data: aprovacoes = [], refetch: refetchAprovacoes } = useQuery({
     queryKey: ["aprovacoes-todas"],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("aprovacoes_tecnicas")
         .select("*, aprovado_por_perfil:aprovado_por(nome), registros_consultor(*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), culturas(nome))")
         .order("created_at", { ascending: false });
@@ -126,7 +126,7 @@ export default function FluxoTecnico() {
   const { data: ordensOnFarm = [], refetch: refetchOS } = useQuery({
     queryKey: ["os-onfarm"],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("ordens_servico_onfarm")
         .select("*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome), programacao_producao!ordem_servico_onfarm_id(lotes(id, status, controle_qualidade(resultado)))")
         .order("created_at", { ascending: false });
@@ -168,7 +168,7 @@ export default function FluxoTecnico() {
     mutationFn: async ({ registro, type, newStatus, comentario, isReopen }: {
       registro: any; type: string; newStatus: RegistroStatus; comentario: string; isReopen?: boolean;
     }) => {
-      const { error: aprError } = await (supabase as any).from("aprovacoes_tecnicas").insert({
+      const { error: aprError } = await supabase.from("aprovacoes_tecnicas").insert({
         registro_consultor_id: registro.id,
         status_aprovacao: type,
         aprovado_por: user?.id,
@@ -179,13 +179,13 @@ export default function FluxoTecnico() {
       } as any);
       if (aprError) throw aprError;
 
-      const { error: updErr } = await (supabase as any)
+      const { error: updErr } = await supabase
         .from("registros_consultor")
-        .update({ status: newStatus as any } as any)
+        .update({ status: newStatus as any })
         .eq("id", registro.id);
       if (updErr) throw updErr;
 
-      await (supabase as any).from("registros_consultor_status_log").insert({
+      await supabase.from("registros_consultor_status_log").insert({
         registro_consultor_id: registro.id,
         status_anterior: registro.status,
         status_novo: newStatus,
@@ -206,22 +206,22 @@ export default function FluxoTecnico() {
           toast.info("Gerando Ordens de Serviço solicitadas...");
           gerarOSMutation.mutate(variables.registro);
         } else if (variables.registro.proxima_acao_recomendada === "emitir_recomendação") {
-          (supabase as any).rpc("rpc_create_portal_notification_secure", {
-            p_cliente_id: variables.registro.cliente_id,
-            p_tipo: "informativo",
-            p_titulo: "Recomendação Técnica Aprovada",
-            p_mensagem: `Uma nova recomendação técnica para o talhão ${variables.registro.talhoes?.nome || ""} está aguardando sua decisão no Portal.`,
-            p_link: null,
-            p_source_type: "registros_consultor",
-            p_source_id: variables.registro.id,
-            p_idempotency_key: `fluxo-aprov-rec-${variables.registro.id}`,
+          supabase.rpc("rpc_create_portal_notification_secure", {
+            _cliente_id: variables.registro.cliente_id,
+            _tipo: "informativo",
+            _titulo: "Recomendação Técnica Aprovada",
+            _mensagem: `Uma nova recomendação técnica para o talhão ${variables.registro.talhoes?.nome || ""} está aguardando sua decisão no Portal.`,
+            _link: null,
+            _source_type: "registros_consultor",
+            _source_id: variables.registro.id,
+            _idempotency_key: `fluxo-aprov-rec-${variables.registro.id}`,
           }).then();
 
 
           if (variables.registro.solicitacao_id) {
-            (supabase as any).from("portal_solicitacoes").update({
+            supabase.from("portal_solicitacoes").update({
               status: "aguardando_decisao"
-            } as any).eq("id", variables.registro.solicitacao_id).then();
+            }).eq("id", variables.registro.solicitacao_id).then();
           }
         }
       }
@@ -230,7 +230,7 @@ export default function FluxoTecnico() {
 
   const gerarOSMutation = useMutation({
     mutationFn: async (registro: any) => {
-      const { data: recs } = await (supabase as any)
+      const { data: recs } = await supabase
         .from("registros_consultor_recomendacoes")
         .select("*, produtos(nome, dose_ml_ha)")
         .eq("registro_consultor_id", registro.id);
@@ -261,7 +261,7 @@ export default function FluxoTecnico() {
         } as any);
       }
 
-      await (supabase as any).from("registros_consultor").update({ status: "convertido_os" as any } as any).eq("id", registro.id);
+      await supabase.from("registros_consultor").update({ status: "convertido_os" as any }).eq("id", registro.id);
     },
     onSuccess: () => { toast.success("OS gerada!"); refetchAll(); }
   });
@@ -278,7 +278,7 @@ export default function FluxoTecnico() {
   };
 
   const handleOSStatusChange = async (osId: string, newStatus: string) => {
-      await (supabase as any).from("ordens_servico_onfarm").update({ status: newStatus as any } as any).eq("id", osId);
+      await supabase.from("ordens_servico_onfarm").update({ status: newStatus as any }).eq("id", osId);
       refetchOS();
   };
 
@@ -473,7 +473,7 @@ function ChatRecomendacoesRegistro({ registroId }: { registroId: string }) {
   const { data: recs = [] } = useQuery({
     queryKey: ["recs_chat_registro", registroId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("registros_consultor_recomendacoes")
         .select("id")
         .eq("registro_consultor_id", registroId)
