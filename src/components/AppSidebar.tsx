@@ -20,18 +20,31 @@ import {
   type NavItem,
   type NavSection,
 } from "@/config/navigation";
-import { isNavItemActive, isNavItemActiveSelf } from "@/lib/navigation/matchActive";
+import { isNavItemActive, isNavItemActiveSelf, isNavItemActiveSelfWithSearch } from "@/lib/navigation/matchActive";
 import { searchNavItems, isNavItemFeatureEnabled } from "@/lib/navigation/search";
 import { useSidebarGroupState } from "@/hooks/useSidebarGroupState";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const { role } = useAuth();
   const { config } = useSystemConfig();
 
   const nomeEmpresa = config?.nome_empresa || "AR Bio";
+
+  /** Rota sem query string — deep links (`?tab=`) usam a mesma permissão da página. */
+  const routePath = (route: string) =>
+    route.indexOf("?") === -1 ? route : route.slice(0, route.indexOf("?"));
+
+  /**
+   * Visibilidade: permissão da rota + feature flag + `allowedRoles` declarado
+   * no item (quando ausente, delega inteiramente ao ACCESS_MAP).
+   */
+  const isVisible = (item: NavItem) =>
+    canAccess(role, routePath(item.route)) &&
+    isNavItemFeatureEnabled(item) &&
+    (!item.allowedRoles || (!!role && (item.allowedRoles as string[]).includes(role)));
   const [query, setQuery] = useState("");
 
   // Descobre a seção do item ativo — usada para forçar seu grupo aberto.
@@ -48,9 +61,10 @@ export function AppSidebar() {
     return desktopItemsBySection()
       .map(({ section, items }) => ({
         section,
-        items: items.filter((it) => canAccess(role, it.route) && isNavItemFeatureEnabled(it)),
+        items: items.filter(isVisible),
       }))
       .filter((g) => g.items.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role]);
 
   // Resultados de busca (achata todos os grupos).
@@ -63,14 +77,14 @@ export function AppSidebar() {
     const nested = opts?.nested === true;
     const isParent = opts?.parent === true;
     const hasChildren = !!item.children && item.children.length > 0;
-    const selfActive = isNavItemActiveSelf(item, pathname);
+    const selfActive = isNavItemActiveSelfWithSearch(item, pathname, search);
     const groupActive = isNavItemActive(item, pathname);
     // Fase 6.1 — se um filho está ativo em seu próprio route, o pai NUNCA
     // recebe estado de página ativa (evita aria-current="page" duplicado
     // entre "Dashboard" e "Visão Geral" quando ambos apontam para
     // /dashboard/geral). O pai fica apenas parcialmente ativo.
     const anyChildActive =
-      hasChildren && item.children!.some((c) => isNavItemActiveSelf(c, pathname));
+      hasChildren && item.children!.some((c) => isNavItemActiveSelfWithSearch(c, pathname, search));
     const active = isParent ? selfActive && !anyChildActive : selfActive;
     const partiallyActive = isParent && !active && groupActive;
     const isCockpit = item.route === "/cockpit-laboratorio";
@@ -120,7 +134,7 @@ export function AppSidebar() {
         {/* Fase 3.2 — renderiza filhos indentados quando existirem e a sidebar
             estiver expandida. Cada filho respeita `canAccess` do próprio route. */}
         {!collapsed && hasChildren && item.children!
-          .filter((c) => canAccess(role, c.route) && isNavItemFeatureEnabled(c))
+          .filter(isVisible)
           .map((c) => (
             <div key={c.id}>{renderItem(c, { nested: true })}</div>
           ))}
@@ -202,7 +216,7 @@ export function AppSidebar() {
                               {showSubHeader && (
                                 <div
                                   role="presentation"
-                                  className="px-2 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80"
+                                  className="px-2 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground"
                                 >
                                   {it.subSection}
                                 </div>
