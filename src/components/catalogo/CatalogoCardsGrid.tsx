@@ -188,6 +188,19 @@ export function CatalogoCardsGrid({
     return list;
   }, [filtered, sort]);
 
+  // FASE 27D — limite de exibição incremental. Reseta ao mudar filtros/ordenação.
+  const [limite, setLimite] = useState(CATALOGO_PAGE_SIZE);
+  useEffect(() => {
+    setLimite(CATALOGO_PAGE_SIZE);
+  }, [search, tipo, status, b2b, sort, scope]);
+
+  const visiveis = useMemo(
+    () => (sorted.length > limite ? sorted.slice(0, limite) : sorted),
+    [sorted, limite],
+  );
+  const restantes = sorted.length - visiveis.length;
+
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-2 md:items-stretch">
