@@ -21,7 +21,7 @@ import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 import {
   PLACEHOLDER_VAZIO,
   REFERENCIA_DOSE_LITRO,
-  formatBRL,
+  formatarMoeda,
 } from "@/lib/catalogo/formatUnidades";
 
 /** Escopo visual da ficha. Amplia `CatalogoScope` com o portal do produtor. */
@@ -147,9 +147,9 @@ export function CatalogoItemDrawer({ item, open, onOpenChange, scope = "interno"
               <TabsContent value="comercial" className="mt-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Campo label="Dose (mL/ha)" value={dose === null ? null : dose} />
-                  <Campo label="Valor por dose" value={valorDose === null ? null : formatBRL(valorDose)} />
-                  <Campo label="Valor por litro" value={valorLitro === null ? null : formatBRL(valorLitro)} />
-                  <Campo label="Valor por hectare" value={valorHa === null ? null : formatBRL(valorHa)} />
+                  <Campo label="Valor por dose" value={valorDose === null ? null : formatarMoeda(valorDose)} />
+                  <Campo label="Valor por litro" value={valorLitro === null ? null : formatarMoeda(valorLitro)} />
+                  <Campo label="Valor por hectare" value={valorHa === null ? null : formatarMoeda(valorHa)} />
                   <Campo label="Unidade principal" value={unidade} />
                 </div>
                 <p className="text-[11px] text-muted-foreground italic">{REFERENCIA_DOSE_LITRO}</p>
