@@ -8,13 +8,14 @@ const read = (p: string) => fs.readFileSync(path.resolve(process.cwd(), p), "utf
 describe("Base Técnica Agronômica — renomeação de interface", () => {
   const item = navigation.find((i) => i.id === "protocolos");
 
-  it("o menu apresenta o rótulo 'Base Técnica'", () => {
-    expect(item?.label).toBe("Base Técnica");
+  it("o menu apresenta o rótulo 'Catálogo AR Bio' (Fase 26C)", () => {
+    expect(item?.label).toBe("Catálogo AR Bio");
   });
 
   it("a rota canônica é /base-tecnica e /protocolos apenas redireciona", () => {
     expect(item?.route).toBe("/base-tecnica");
     expect(item?.id).toBe("protocolos");
+    expect(item?.legacyRoutes).toContain("/protocolos");
     const app = read("src/App.tsx");
     expect(app).toContain('path="/base-tecnica" element={<RoleGuard><Protocolos /></RoleGuard>}');
     expect(app).toContain('path="/protocolos" element={<PreservedNavigate to="/base-tecnica" />}');
@@ -22,10 +23,30 @@ describe("Base Técnica Agronômica — renomeação de interface", () => {
     expect(app.match(/<Protocolos \/>/g)?.length).toBe(1);
   });
 
-  it("a busca do menu encontra Base Técnica, Produtos, Culturas e ainda Protocolos", () => {
+  it("a busca do menu encontra Base Técnica, Catálogo AR Bio, Produtos, Culturas e ainda Protocolos", () => {
     const kw = (item?.searchKeywords ?? []).map((k) => k.toLowerCase());
-    for (const termo of ["base técnica", "produtos", "culturas", "protocolos", "alvos"]) {
+    for (const termo of [
+      "base técnica",
+      "base tecnica",
+      "catálogo ar bio",
+      "catalogo ar bio",
+      "catálogo técnico",
+      "catalogo tecnico",
+      "microrganismos",
+      "produtos",
+      "culturas",
+      "protocolos",
+      "alvos",
+    ]) {
       expect(kw).toContain(termo);
+    }
+  });
+
+  it("aceita aliases de aba convertidos para o valor canônico", () => {
+    const src = read("src/pages/Protocolos.tsx");
+    expect(src).toContain("TAB_ALIASES");
+    for (const alias of ["catalogo", "fichas", "tecnico", "revisao"]) {
+      expect(src).toContain(`${alias}: "catalogo-tecnico"`);
     }
   });
 
