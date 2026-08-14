@@ -50,3 +50,36 @@ describe("useTabParam", () => {
     expect(result.current.search).toContain("busca=abc");
   });
 });
+
+// ── Fase 26C — aliases opcionais ────────────────────────────────────────────
+const ALIASES = { catalogo: "culturas", fichas: "culturas" } as const;
+
+function useHarnessAlias() {
+  const [tab, setTab] = useTabParam("tab", ALLOWED, "produtos", ALIASES);
+  const location = useLocation();
+  return { tab, setTab, search: location.search };
+}
+
+describe("useTabParam — aliases", () => {
+  it("converte alias para o valor canônico", () => {
+    const { result } = renderHook(useHarnessAlias, { wrapper: wrapperFor("/base-tecnica?tab=catalogo") });
+    expect(result.current.tab).toBe("culturas");
+  });
+
+  it("mantém o valor canônico quando já é permitido", () => {
+    const { result } = renderHook(useHarnessAlias, { wrapper: wrapperFor("/base-tecnica?tab=problemas") });
+    expect(result.current.tab).toBe("problemas");
+  });
+
+  it("cai no fallback para valor que não é permitido nem alias", () => {
+    const { result } = renderHook(useHarnessAlias, { wrapper: wrapperFor("/base-tecnica?tab=zzz") });
+    expect(result.current.tab).toBe("produtos");
+  });
+
+  it("grava sempre o valor canônico na URL", () => {
+    const { result } = renderHook(useHarnessAlias, { wrapper: wrapperFor("/base-tecnica?tab=fichas") });
+    act(() => result.current.setTab("culturas"));
+    expect(result.current.search).toContain("tab=culturas");
+    expect(result.current.search).not.toContain("fichas");
+  });
+});
