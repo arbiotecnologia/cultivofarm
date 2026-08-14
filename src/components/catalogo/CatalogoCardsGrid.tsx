@@ -12,6 +12,7 @@ import { MicroorganismTechnicalProfileDialog } from "@/components/protocolos/Mic
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
 import { useCatalogoUnificado, CatalogoUnificadoRow, CatalogoScope, catalogoRevisionPending } from "@/hooks/useCatalogoUnificado";
 import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
+import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
@@ -56,6 +57,8 @@ export function CatalogoCardsGrid({
   const [openMicro, setOpenMicro] = useState<any | null>(null);
   const [openProd, setOpenProd] = useState<any | null>(null);
   const [fichaB2B, setFichaB2B] = useState<{ id: string; tipo: "produto" | "microrganismo" } | null>(null);
+  // Fase 26D — ficha unificada (somente leitura). Não substitui os dialogs atuais.
+  const [fichaUnificada, setFichaUnificada] = useState<CatalogoUnificadoRow | null>(null);
   const isMobile = useIsMobile();
   const [view, setView] = useState<"cards" | "lista">(() => {
     try {
@@ -117,6 +120,14 @@ export function CatalogoCardsGrid({
         }}
       >
         Ver ficha
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="text-xs"
+        onClick={() => setFichaUnificada(r)}
+      >
+        Ficha completa
       </Button>
       {actionSlot && actionSlot(r)}
     </div>
@@ -349,6 +360,12 @@ export function CatalogoCardsGrid({
         onOpenChange={(v) => !v && setOpenProd(null)}
         produto={openProd}
         origem={fichaOrigem}
+      />
+      <CatalogoItemDrawer
+        item={fichaUnificada}
+        open={!!fichaUnificada}
+        onOpenChange={(v) => !v && setFichaUnificada(null)}
+        scope={scope as CatalogoFichaScope}
       />
       <FichaProdutorDrawer
         open={!!fichaB2B}
