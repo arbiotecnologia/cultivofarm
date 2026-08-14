@@ -134,7 +134,7 @@ export function CatalogoCardsGrid({
   );
 
 
-  const rows = data ?? [];
+  const rows = useMemo(() => data ?? [], [data]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
