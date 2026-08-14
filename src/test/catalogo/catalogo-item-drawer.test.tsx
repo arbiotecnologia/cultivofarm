@@ -141,6 +141,6 @@ describe("CatalogoCardsGrid — fluxos críticos preservados (26E)", () => {
   });
 
   it("AddToCartDialog do fluxo B2B permanece no projeto", () => {
-    expect(fs.existsSync(path.resolve(process.cwd(), "src/components/b2b/AddToCartDialog.tsx"))).toBe(true);
+    expect(fs.existsSync(path.resolve(process.cwd(), "src/components/catalogo/AddToCartDialog.tsx"))).toBe(true);
   });
 });
