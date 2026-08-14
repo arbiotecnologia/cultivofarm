@@ -134,7 +134,7 @@ export function CatalogoCardsGrid({
   );
 
 
-  const rows = data ?? [];
+  const rows = useMemo(() => data ?? [], [data]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -215,7 +215,29 @@ export function CatalogoCardsGrid({
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
       ) : filtered.length === 0 ? (
-        <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Nenhum item encontrado.</CardContent></Card>
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground space-y-3">
+            {rows.length === 0 ? (
+              <p>Nenhum item encontrado.</p>
+            ) : (
+              <>
+                <p>Nenhum item encontrado para os filtros aplicados.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                    setTipo("todos");
+                    setStatus("todos");
+                    setB2b("todos");
+                  }}
+                >
+                  Limpar filtros
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
       ) : effectiveView === "lista" ? (
         <Card>
           <Table className="table-fixed w-full">
