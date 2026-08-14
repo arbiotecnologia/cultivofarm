@@ -112,14 +112,14 @@ export const navigation: NavItem[] = [
   { id: "com-campanhas", label: "Campanhas", icon: TrendingUp, route: "/comercial/campanhas", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 9, platforms: ["desktop"], searchKeywords: ["campanha", "promoção", "campanhas", "comercial", "ações comerciais"] },
   { id: "com-catalogo", label: "Catálogo", icon: FlaskConical, route: "/comercial/catalogo", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 10, platforms: ["desktop"], searchKeywords: ["catálogo", "produto", "produtos", "portfólio"] },
   // Fase 26B: o rótulo permanece "Base Técnica" — há teste de contrato
-  // (`src/test/protocolos/base-tecnica.rename.test.ts`) que fixa esse texto.
-  // A renomeação visual para "Catálogo AR Bio" fica planejada para a Fase 26C,
-  // junto com a atualização do teste. Aqui apenas tornamos o termo pesquisável.
+  // Fase 26C: rótulo visual passa a ser "Catálogo AR Bio". Rota canônica
+  // (/base-tecnica), id, legacyRoutes (/protocolos), permissões e filhos
+  // permanecem inalterados — apenas o texto exibido muda.
   {
-    id: "protocolos", label: "Base Técnica", icon: FileText, route: "/base-tecnica",
+    id: "protocolos", label: "Catálogo AR Bio", icon: FileText, route: "/base-tecnica",
     section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11,
     platforms: ["desktop"], legacyRoutes: ["/protocolos"],
-    searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "catálogo ar bio", "catalogo ar bio", "produtos", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],
+    searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "catálogo ar bio", "catalogo ar bio", "produtos", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "catalogo tecnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],
 
     children: [
       { id: "protocolos-produtos", label: "Produtos", icon: Package, route: "/base-tecnica?tab=produtos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], paramDefault: true, searchKeywords: ["produtos", "base técnica"] },
