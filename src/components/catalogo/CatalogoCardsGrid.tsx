@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,14 @@ import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalo
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
+
+/**
+ * FASE 27D — exibição incremental segura.
+ * Listas com até CATALOGO_PAGE_SIZE itens renderizam exatamente como antes.
+ * Acima disso, os primeiros CATALOGO_PAGE_SIZE são exibidos e o botão
+ * "Mostrar mais" apenas aumenta o limite local (sem nova query).
+ */
+export const CATALOGO_PAGE_SIZE = 60;
 
 interface Props {
   scope: CatalogoScope;
