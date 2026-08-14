@@ -114,18 +114,26 @@ export function CatalogoCardsGrid({
     </div>
   );
 
+  // FASE 27D — callbacks memoizados (compartilhados por todos os cards/linhas).
+  const abrirVerFicha = useCallback((r: CatalogoUnificadoRow) => {
+    if (scope === "b2b") {
+      setFichaB2B({ id: r.id, tipo: r.tipo });
+      return;
+    }
+    if (r.tipo === "produto") setOpenProd(r.raw);
+    else setOpenMicro(r.raw);
+  }, [scope]);
+
+  const abrirFichaCompleta = useCallback((r: CatalogoUnificadoRow) => {
+    setFichaUnificada(r);
+  }, []);
+
   const renderActions = (r: CatalogoUnificadoRow) => (
     <div className="flex gap-1 justify-end flex-wrap">
       <Button
         size="sm"
         variant="outline"
-        onClick={() => {
-          if (scope === "b2b") {
-            setFichaB2B({ id: r.id, tipo: r.tipo });
-            return;
-          }
-          r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw);
-        }}
+        onClick={() => abrirVerFicha(r)}
       >
         Ver ficha
       </Button>
@@ -133,7 +141,7 @@ export function CatalogoCardsGrid({
         size="sm"
         variant="ghost"
         className="text-xs"
-        onClick={() => setFichaUnificada(r)}
+        onClick={() => abrirFichaCompleta(r)}
       >
         Ficha completa
       </Button>
