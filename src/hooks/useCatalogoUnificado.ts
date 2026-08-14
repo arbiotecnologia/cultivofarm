@@ -67,8 +67,8 @@ export function catalogoGateB2B<T>(
 }
 
 /** O parceiro B2B só enxerga itens ativos e liberados para B2B. */
-export function catalogoShouldShowB2BRow(row: CatalogoUnificadoRow): boolean {
-  return row.ativo && row.b2b_enabled;
+export function catalogoShouldShowB2BRow(r: CatalogoUnificadoRow): boolean {
+  return r.ativo && r.b2b_enabled;
 }
 
 /** Normaliza `ficha_produto`/`ficha_microrganismo` para a entidade base. */
