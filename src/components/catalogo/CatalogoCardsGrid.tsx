@@ -400,6 +400,18 @@ export function CatalogoCardsGrid({
         </div>
       )}
 
+      {restantes > 0 && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLimite((l) => l + CATALOGO_PAGE_SIZE)}
+          >
+            Mostrar mais ({restantes})
+          </Button>
+        </div>
+      )}
+
       <MicroorganismTechnicalProfileDialog
         open={!!openMicro}
         onOpenChange={(v) => !v && setOpenMicro(null)}
