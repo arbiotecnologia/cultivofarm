@@ -63,6 +63,39 @@ export function catalogoFichaAlertas(row: CatalogoUnificadoRow): string[] {
   return alertas;
 }
 
+export interface CatalogoFichaPublicacao {
+  b2bVisivel: boolean;
+  b2bMotivo: string;
+  produtorVisivel: boolean;
+  produtorMotivo: string;
+}
+
+export const CATALOGO_FICHA_PUBLICACAO_OK = "Visível conforme regras atuais";
+
+/**
+ * Diagnóstico visual de publicação — não altera a regra real de publicação,
+ * não grava nada e não expõe ação de publicar/despublicar.
+ */
+export function catalogoFichaPublicacao(row: CatalogoUnificadoRow): CatalogoFichaPublicacao {
+  const aprovado = row.ficha_status === "aprovado";
+  const b2bVisivel = row.ativo && row.b2b_enabled && aprovado;
+  const produtorVisivel = row.ativo && aprovado;
+
+  const motivo = (b2bDesabilitado: boolean): string => {
+    if (!row.ativo) return "Item inativo";
+    if (b2bDesabilitado) return "B2B desabilitado";
+    if (!aprovado) return "Ficha não aprovada";
+    return CATALOGO_FICHA_PUBLICACAO_OK;
+  };
+
+  return {
+    b2bVisivel,
+    b2bMotivo: b2bVisivel ? CATALOGO_FICHA_PUBLICACAO_OK : motivo(!row.b2b_enabled),
+    produtorVisivel,
+    produtorMotivo: produtorVisivel ? CATALOGO_FICHA_PUBLICACAO_OK : motivo(false),
+  };
+}
+
 const num = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
 
