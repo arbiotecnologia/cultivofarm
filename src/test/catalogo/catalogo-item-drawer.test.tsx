@@ -130,14 +130,17 @@ describe("CatalogoItemDrawer — diagnóstico de publicação (26E)", () => {
 
 describe("CatalogoCardsGrid — fluxos críticos preservados (26E)", () => {
   const grid = read("src/components/catalogo/CatalogoCardsGrid.tsx");
-  it("mantém FichaProdutorDrawer, AddToCartDialog e dialogs técnicos", () => {
+  it("mantém FichaProdutorDrawer e dialogs técnicos na grade", () => {
     for (const comp of [
       "FichaProdutorDrawer",
-      "AddToCartDialog",
       "MicroorganismTechnicalProfileDialog",
       "ProductTechnicalProfileDialog",
     ]) {
       expect(grid).toContain(comp);
     }
+  });
+
+  it("AddToCartDialog do fluxo B2B permanece no projeto", () => {
+    expect(fs.existsSync(path.resolve(process.cwd(), "src/components/b2b/AddToCartDialog.tsx"))).toBe(true);
   });
 });
