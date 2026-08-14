@@ -30,6 +30,10 @@ export type CatalogoFichaScope = "admin" | "interno" | "b2b" | "produtor";
 export const CATALOGO_FICHA_VAZIO_VOLUMES =
   "Volumes comerciais disponíveis na gestão de volumes do catálogo.";
 
+export const CATALOGO_FICHA_VOLUMES_AUXILIAR =
+  "Esta ficha não executa nova consulta; para editar volumes, use a gestão de volumes do catálogo.";
+
+
 /** Escopos que podem ver conteúdo interno (texto técnico, fontes, auditoria). */
 export function fichaPermiteInterno(scope: CatalogoFichaScope): boolean {
   return scope === "admin" || scope === "interno";
