@@ -30,6 +30,10 @@ export type CatalogoFichaScope = "admin" | "interno" | "b2b" | "produtor";
 export const CATALOGO_FICHA_VAZIO_VOLUMES =
   "Volumes comerciais disponíveis na gestão de volumes do catálogo.";
 
+export const CATALOGO_FICHA_VOLUMES_AUXILIAR =
+  "Esta ficha não executa nova consulta; para editar volumes, use a gestão de volumes do catálogo.";
+
+
 /** Escopos que podem ver conteúdo interno (texto técnico, fontes, auditoria). */
 export function fichaPermiteInterno(scope: CatalogoFichaScope): boolean {
   return scope === "admin" || scope === "interno";
@@ -57,6 +61,39 @@ export function catalogoFichaAlertas(row: CatalogoUnificadoRow): string[] {
     alertas.push("Ficha aprovada sem fonte técnica");
   }
   return alertas;
+}
+
+export interface CatalogoFichaPublicacao {
+  b2bVisivel: boolean;
+  b2bMotivo: string;
+  produtorVisivel: boolean;
+  produtorMotivo: string;
+}
+
+export const CATALOGO_FICHA_PUBLICACAO_OK = "Visível conforme regras atuais";
+
+/**
+ * Diagnóstico visual de publicação — não altera a regra real de publicação,
+ * não grava nada e não expõe ação de publicar/despublicar.
+ */
+export function catalogoFichaPublicacao(row: CatalogoUnificadoRow): CatalogoFichaPublicacao {
+  const aprovado = row.ficha_status === "aprovado";
+  const b2bVisivel = row.ativo && row.b2b_enabled && aprovado;
+  const produtorVisivel = row.ativo && aprovado;
+
+  const motivo = (b2bDesabilitado: boolean): string => {
+    if (!row.ativo) return "Item inativo";
+    if (b2bDesabilitado) return "B2B desabilitado";
+    if (!aprovado) return "Ficha não aprovada";
+    return CATALOGO_FICHA_PUBLICACAO_OK;
+  };
+
+  return {
+    b2bVisivel,
+    b2bMotivo: b2bVisivel ? CATALOGO_FICHA_PUBLICACAO_OK : motivo(!row.b2b_enabled),
+    produtorVisivel,
+    produtorMotivo: produtorVisivel ? CATALOGO_FICHA_PUBLICACAO_OK : motivo(false),
+  };
 }
 
 const num = (v: unknown): number | null =>
@@ -102,6 +139,9 @@ export function CatalogoItemDrawer({ item, open, onOpenChange, scope = "interno"
   const volumes = Array.isArray(raw.volumes) ? (raw.volumes as Record<string, unknown>[]) : null;
 
   const alertas = item ? catalogoFichaAlertas(item) : [];
+  const publicacao = catalogoFichaPublicacao(
+    item ?? ({ ativo: false, b2b_enabled: false, ficha_status: null } as CatalogoUnificadoRow),
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -128,7 +168,8 @@ export function CatalogoItemDrawer({ item, open, onOpenChange, scope = "interno"
                 <TabsTrigger value="geral">Geral</TabsTrigger>
                 <TabsTrigger value="comercial">Comercial</TabsTrigger>
                 <TabsTrigger value="tecnica">Técnica</TabsTrigger>
-                <TabsTrigger value="volumes">Volumes</TabsTrigger>
+                <TabsTrigger value="volumes">Volumes e Preços</TabsTrigger>
+                <TabsTrigger value="publicacao">Publicação</TabsTrigger>
                 {item.tipo === "produto" && composicao && (
                   <TabsTrigger value="composicao">Composição</TabsTrigger>
                 )}
@@ -172,19 +213,79 @@ export function CatalogoItemDrawer({ item, open, onOpenChange, scope = "interno"
                 )}
               </TabsContent>
 
-              <TabsContent value="volumes" className="mt-4 space-y-2">
+              <TabsContent value="volumes" className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Campo label="Dose (mL/ha)" value={dose === null ? null : dose} />
+                  <Campo label="Valor por dose" value={valorDose === null ? null : formatarMoeda(valorDose)} />
+                  <Campo label="Valor por litro" value={valorLitro === null ? null : formatarMoeda(valorLitro)} />
+                  <Campo label="Valor por hectare" value={valorHa === null ? null : formatarMoeda(valorHa)} />
+                  <Campo label="Unidade principal" value={unidade} />
+                </div>
+                <p className="text-[11px] text-muted-foreground italic">{REFERENCIA_DOSE_LITRO}</p>
+                <Separator />
                 {volumes && volumes.length > 0 ? (
                   <ul className="space-y-1 text-sm">
-                    {volumes.map((v, i) => (
-                      <li key={i} className="rounded border px-2 py-1">
-                        {String(v.rotulo ?? v.nome ?? v.volume_litros ?? PLACEHOLDER_VAZIO)}
-                      </li>
-                    ))}
+                    {volumes.map((v, i) => {
+                      const rotulo =
+                        v.rotulo ?? v.nome ??
+                        (num(v.volume_litros) !== null ? `${v.volume_litros} L` : null) ??
+                        (num(v.volume_ml) !== null ? `${v.volume_ml} mL` : null);
+                      const precoVolume = num(v.preco_brl);
+                      const precoLitro = num(v.preco_litro_brl);
+                      const precoDose = num(v.valor_dose_100ml_brl);
+                      return (
+                        <li key={i} className="rounded border px-2 py-1">
+                          <span className="font-medium">{String(rotulo ?? PLACEHOLDER_VAZIO)}</span>
+                          {(precoVolume !== null || precoLitro !== null || precoDose !== null) && (
+                            <span className="text-muted-foreground">
+                              {" — "}
+                              {[
+                                precoVolume !== null ? formatarMoeda(precoVolume) : null,
+                                precoLitro !== null ? `${formatarMoeda(precoLitro)}/L` : null,
+                                precoDose !== null ? `${formatarMoeda(precoDose)} / 100 mL` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <p className="text-sm text-muted-foreground">{CATALOGO_FICHA_VAZIO_VOLUMES}</p>
                 )}
+                <p className="text-[11px] text-muted-foreground italic">
+                  {CATALOGO_FICHA_VOLUMES_AUXILIAR}
+                </p>
               </TabsContent>
+
+              <TabsContent value="publicacao" className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Campo label="Situação" value={item.ativo ? "Ativo" : "Inativo"} />
+                  <Campo label="B2B habilitado" value={item.b2b_enabled ? "Sim" : "Não"} />
+                  <Campo
+                    label="Status da ficha"
+                    value={<TechnicalProfileStatusBadge status={item.ficha_status} />}
+                  />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Campo
+                    label="Potencialmente visível ao parceiro B2B"
+                    value={`${publicacao.b2bVisivel ? "Sim" : "Não"} — ${publicacao.b2bMotivo}`}
+                  />
+                  <Campo
+                    label="Potencialmente visível ao produtor"
+                    value={`${publicacao.produtorVisivel ? "Sim" : "Não"} — ${publicacao.produtorMotivo}`}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground italic">
+                  Diagnóstico visual somente leitura — não altera a publicação real do item.
+                </p>
+              </TabsContent>
+
+
 
               {item.tipo === "produto" && composicao && (
                 <TabsContent value="composicao" className="mt-4 space-y-2">
