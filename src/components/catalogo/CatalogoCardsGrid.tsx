@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,14 @@ import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalo
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
+
+/**
+ * FASE 27D — exibição incremental segura.
+ * Listas com até CATALOGO_PAGE_SIZE itens renderizam exatamente como antes.
+ * Acima disso, os primeiros CATALOGO_PAGE_SIZE são exibidos e o botão
+ * "Mostrar mais" apenas aumenta o limite local (sem nova query).
+ */
+export const CATALOGO_PAGE_SIZE = 60;
 
 interface Props {
   scope: CatalogoScope;
@@ -106,18 +114,26 @@ export function CatalogoCardsGrid({
     </div>
   );
 
+  // FASE 27D — callbacks memoizados (compartilhados por todos os cards/linhas).
+  const abrirVerFicha = useCallback((r: CatalogoUnificadoRow) => {
+    if (scope === "b2b") {
+      setFichaB2B({ id: r.id, tipo: r.tipo });
+      return;
+    }
+    if (r.tipo === "produto") setOpenProd(r.raw);
+    else setOpenMicro(r.raw);
+  }, [scope]);
+
+  const abrirFichaCompleta = useCallback((r: CatalogoUnificadoRow) => {
+    setFichaUnificada(r);
+  }, []);
+
   const renderActions = (r: CatalogoUnificadoRow) => (
     <div className="flex gap-1 justify-end flex-wrap">
       <Button
         size="sm"
         variant="outline"
-        onClick={() => {
-          if (scope === "b2b") {
-            setFichaB2B({ id: r.id, tipo: r.tipo });
-            return;
-          }
-          r.tipo === "produto" ? setOpenProd(r.raw) : setOpenMicro(r.raw);
-        }}
+        onClick={() => abrirVerFicha(r)}
       >
         Ver ficha
       </Button>
@@ -125,7 +141,7 @@ export function CatalogoCardsGrid({
         size="sm"
         variant="ghost"
         className="text-xs"
-        onClick={() => setFichaUnificada(r)}
+        onClick={() => abrirFichaCompleta(r)}
       >
         Ficha completa
       </Button>
@@ -171,6 +187,19 @@ export function CatalogoCardsGrid({
     else if (sort === "codigo") list.sort((a, b) => (a.codigo ?? "\uffff").localeCompare(b.codigo ?? "\uffff") || byNome(a, b));
     return list;
   }, [filtered, sort]);
+
+  // FASE 27D — limite de exibição incremental. Reseta ao mudar filtros/ordenação.
+  const [limite, setLimite] = useState(CATALOGO_PAGE_SIZE);
+  useEffect(() => {
+    setLimite(CATALOGO_PAGE_SIZE);
+  }, [search, tipo, status, b2b, sort, scope]);
+
+  const visiveis = useMemo(
+    () => (sorted.length > limite ? sorted.slice(0, limite) : sorted),
+    [sorted, limite],
+  );
+  const restantes = sorted.length - visiveis.length;
+
 
   return (
     <div className="space-y-4">
@@ -250,7 +279,7 @@ export function CatalogoCardsGrid({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((r) => {
+              {visiveis.map((r) => {
                 const modoAcao = r.tipo === "produto" ? (r.raw?.modo_acao ?? null) : r.mecanismo_acao;
                 const modoLabel = r.tipo === "produto" ? "Modo" : "Mec.";
                 return (
@@ -314,7 +343,7 @@ export function CatalogoCardsGrid({
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {sorted.map((r) => {
+          {visiveis.map((r) => {
             const modoAcao = r.tipo === "produto" ? (r.raw?.modo_acao ?? null) : r.mecanismo_acao;
             return (
               <Card key={`${r.tipo}-${r.id}`} className="hover:border-primary/40 transition">
@@ -368,6 +397,18 @@ export function CatalogoCardsGrid({
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {restantes > 0 && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLimite((l) => l + CATALOGO_PAGE_SIZE)}
+          >
+            Mostrar mais ({restantes})
+          </Button>
         </div>
       )}
 
