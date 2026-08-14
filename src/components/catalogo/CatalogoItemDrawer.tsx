@@ -210,19 +210,79 @@ export function CatalogoItemDrawer({ item, open, onOpenChange, scope = "interno"
                 )}
               </TabsContent>
 
-              <TabsContent value="volumes" className="mt-4 space-y-2">
+              <TabsContent value="volumes" className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Campo label="Dose (mL/ha)" value={dose === null ? null : dose} />
+                  <Campo label="Valor por dose" value={valorDose === null ? null : formatarMoeda(valorDose)} />
+                  <Campo label="Valor por litro" value={valorLitro === null ? null : formatarMoeda(valorLitro)} />
+                  <Campo label="Valor por hectare" value={valorHa === null ? null : formatarMoeda(valorHa)} />
+                  <Campo label="Unidade principal" value={unidade} />
+                </div>
+                <p className="text-[11px] text-muted-foreground italic">{REFERENCIA_DOSE_LITRO}</p>
+                <Separator />
                 {volumes && volumes.length > 0 ? (
                   <ul className="space-y-1 text-sm">
-                    {volumes.map((v, i) => (
-                      <li key={i} className="rounded border px-2 py-1">
-                        {String(v.rotulo ?? v.nome ?? v.volume_litros ?? PLACEHOLDER_VAZIO)}
-                      </li>
-                    ))}
+                    {volumes.map((v, i) => {
+                      const rotulo =
+                        v.rotulo ?? v.nome ??
+                        (num(v.volume_litros) !== null ? `${v.volume_litros} L` : null) ??
+                        (num(v.volume_ml) !== null ? `${v.volume_ml} mL` : null);
+                      const precoVolume = num(v.preco_brl);
+                      const precoLitro = num(v.preco_litro_brl);
+                      const precoDose = num(v.valor_dose_100ml_brl);
+                      return (
+                        <li key={i} className="rounded border px-2 py-1">
+                          <span className="font-medium">{String(rotulo ?? PLACEHOLDER_VAZIO)}</span>
+                          {(precoVolume !== null || precoLitro !== null || precoDose !== null) && (
+                            <span className="text-muted-foreground">
+                              {" — "}
+                              {[
+                                precoVolume !== null ? formatarMoeda(precoVolume) : null,
+                                precoLitro !== null ? `${formatarMoeda(precoLitro)}/L` : null,
+                                precoDose !== null ? `${formatarMoeda(precoDose)} / 100 mL` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <p className="text-sm text-muted-foreground">{CATALOGO_FICHA_VAZIO_VOLUMES}</p>
                 )}
+                <p className="text-[11px] text-muted-foreground italic">
+                  {CATALOGO_FICHA_VOLUMES_AUXILIAR}
+                </p>
               </TabsContent>
+
+              <TabsContent value="publicacao" className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Campo label="Situação" value={item.ativo ? "Ativo" : "Inativo"} />
+                  <Campo label="B2B habilitado" value={item.b2b_enabled ? "Sim" : "Não"} />
+                  <Campo
+                    label="Status da ficha"
+                    value={<TechnicalProfileStatusBadge status={item.ficha_status} />}
+                  />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Campo
+                    label="Potencialmente visível ao parceiro B2B"
+                    value={`${publicacao.b2bVisivel ? "Sim" : "Não"} — ${publicacao.b2bMotivo}`}
+                  />
+                  <Campo
+                    label="Potencialmente visível ao produtor"
+                    value={`${publicacao.produtorVisivel ? "Sim" : "Não"} — ${publicacao.produtorMotivo}`}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground italic">
+                  Diagnóstico visual somente leitura — não altera a publicação real do item.
+                </p>
+              </TabsContent>
+
+
 
               {item.tipo === "produto" && composicao && (
                 <TabsContent value="composicao" className="mt-4 space-y-2">
