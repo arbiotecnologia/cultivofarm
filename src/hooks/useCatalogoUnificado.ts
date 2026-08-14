@@ -25,43 +25,122 @@ export interface CatalogoUnificadoRow {
 
 export type CatalogoScope = "admin" | "b2b" | "interno";
 
+/**
+ * FASE 27B — colunas explícitas por consulta. Nunca usar SELECT *:
+ * o catálogo interno agrega dados técnicos e comerciais e o payload
+ * precisa permanecer previsível.
+ */
+export const PRODUTOS_SELECT =
+  "id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled";
+export const MICROORGANISMOS_SELECT =
+  "id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled";
+export const PRODUCT_PROFILES_SELECT =
+  "produto_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,explicacao_tecnica";
+export const MICRO_PROFILES_SELECT =
+  "microrganismo_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,mecanismo_acao,beneficios_agronomicos,explicacao_tecnica";
+export const FORMULACOES_SELECT = "produto_id";
+export const SOURCES_SELECT = "entidade_tipo,entidade_id";
+export const MICRO_TARGETS_SELECT = "microrganismo_id";
+export const PRODUCT_TARGETS_SELECT = "produto_id";
+
+/** Cache conservador: catálogo muda pouco durante uma sessão de trabalho. */
+export const CATALOGO_UNIFICADO_STALE_TIME = 120_000;
+export const CATALOGO_UNIFICADO_GC_TIME = 10 * 60_000;
+
+/** `true` apenas para o escopo do parceiro B2B. */
+export function catalogoIsB2BScope(scope: CatalogoScope): boolean {
+  return scope === "b2b";
+}
+
+/**
+ * No escopo B2B o conteúdo de ficha só pode aparecer quando a ficha está
+ * aprovada — mesma regra aplicada pelas RPCs canônicas
+ * get_partner_catalog_secure / get_partner_catalog_tecnico_secure.
+ */
+export function catalogoGateB2B<T>(
+  scope: CatalogoScope,
+  status: string | null | undefined,
+  value: T,
+): T | null {
+  if (!catalogoIsB2BScope(scope)) return value;
+  return status === "aprovado" ? value : null;
+}
+
+/** O parceiro B2B só enxerga itens ativos e liberados para B2B. */
+export function catalogoShouldShowB2BRow(row: CatalogoUnificadoRow): boolean {
+  return row.ativo && row.b2b_enabled;
+}
+
+/** Normaliza `ficha_produto`/`ficha_microrganismo` para a entidade base. */
+export function catalogoBuildSourceKey(
+  entidadeTipo: string,
+  entidadeId: string,
+): string {
+  const base =
+    entidadeTipo === "ficha_produto"
+      ? "produto"
+      : entidadeTipo === "ficha_microrganismo"
+        ? "microrganismo"
+        : entidadeTipo;
+  return `${base}:${entidadeId}`;
+}
+
+/** Conta linhas agrupadas por uma chave simples. */
+export function buildCountMap(
+  rows: any[] | null | undefined,
+  keyField: string,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  (rows ?? []).forEach((r: any) => {
+    const key = r?.[keyField];
+    if (key == null) return;
+    map.set(key, (map.get(key) ?? 0) + 1);
+  });
+  return map;
+}
+
+/** Indexa linhas por uma chave de identidade (perfis técnicos). */
+function buildIndexMap(rows: any[] | null | undefined, keyField: string) {
+  const map = new Map<string, any>();
+  (rows ?? []).forEach((r: any) => {
+    if (r?.[keyField] != null) map.set(r[keyField], r);
+  });
+  return map;
+}
+
 export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
   return useQuery({
     queryKey: ["catalogo-unificado", scope],
+    staleTime: CATALOGO_UNIFICADO_STALE_TIME,
+    gcTime: CATALOGO_UNIFICADO_GC_TIME,
+    refetchOnWindowFocus: false,
     queryFn: async (): Promise<CatalogoUnificadoRow[]> => {
       const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await Promise.all([
-        (supabase as any).from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").order("nome"),
-        (supabase as any).from("microrganismos").select("id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").order("nome"),
-        (supabase as any).from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,explicacao_tecnica"),
-        (supabase as any).from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,mecanismo_acao,beneficios_agronomicos,explicacao_tecnica"),
-        (supabase as any).from("formulacoes").select("produto_id"),
-        (supabase as any).from("catalog_technical_sources" as any).select("entidade_tipo,entidade_id"),
-        (supabase as any).from("microorganism_targets").select("microrganismo_id").eq("ativo", true),
-        (supabase as any).from("product_target_recommendations").select("produto_id").eq("ativo", true),
+        (supabase as any).from("produtos").select(PRODUTOS_SELECT).order("nome"),
+        (supabase as any).from("microrganismos").select(MICROORGANISMOS_SELECT).order("nome"),
+        (supabase as any).from("product_technical_profiles").select(PRODUCT_PROFILES_SELECT),
+        (supabase as any).from("microorganism_technical_profiles").select(MICRO_PROFILES_SELECT),
+        (supabase as any).from("formulacoes").select(FORMULACOES_SELECT),
+        (supabase as any).from("catalog_technical_sources" as any).select(SOURCES_SELECT),
+        (supabase as any).from("microorganism_targets").select(MICRO_TARGETS_SELECT).eq("ativo", true),
+        (supabase as any).from("product_target_recommendations").select(PRODUCT_TARGETS_SELECT).eq("ativo", true),
       ]);
-      const ppMap = new Map((prodProf.data ?? []).map((x: any) => [x.produto_id, x]));
-      const mpMap = new Map((microProf.data ?? []).map((x: any) => [x.microrganismo_id, x]));
-      const compMap = new Map<string, number>();
-      (formul.data ?? []).forEach((f: any) => compMap.set(f.produto_id, (compMap.get(f.produto_id) ?? 0) + 1));
+
+      const ppMap = buildIndexMap(prodProf.data, "produto_id");
+      const mpMap = buildIndexMap(microProf.data, "microrganismo_id");
+      const compMap = buildCountMap(formul.data, "produto_id");
+      const microTargetMap = buildCountMap(microTargets.data, "microrganismo_id");
+      const prodTargetMap = buildCountMap(prodTargets.data, "produto_id");
+
       const sourceMap = new Map<string, number>();
       ((sources.data ?? []) as any[]).forEach((s: any) => {
-        const tipoBase = s.entidade_tipo === "ficha_produto" ? "produto"
-          : s.entidade_tipo === "ficha_microrganismo" ? "microrganismo"
-          : s.entidade_tipo;
-        const key = `${tipoBase}:${s.entidade_id}`;
+        const key = catalogoBuildSourceKey(s.entidade_tipo, s.entidade_id);
         sourceMap.set(key, (sourceMap.get(key) ?? 0) + 1);
       });
-      const microTargetMap = new Map<string, number>();
-      (microTargets.data ?? []).forEach((t: any) => microTargetMap.set(t.microrganismo_id, (microTargetMap.get(t.microrganismo_id) ?? 0) + 1));
-      const prodTargetMap = new Map<string, number>();
-      (prodTargets.data ?? []).forEach((t: any) => prodTargetMap.set(t.produto_id, (prodTargetMap.get(t.produto_id) ?? 0) + 1));
 
-      // No escopo B2B, o conteúdo de ficha só pode aparecer quando a ficha está
-      // aprovada — mesma regra aplicada pelas RPCs canônicas
-      // get_partner_catalog_secure / get_partner_catalog_tecnico_secure.
-      const isB2B = scope === "b2b";
+      const isB2B = catalogoIsB2BScope(scope);
       const gate = <T,>(status: string | null | undefined, value: T): T | null =>
-        !isB2B || status === "aprovado" ? value : null;
+        catalogoGateB2B(scope, status, value);
 
       const produtos: CatalogoUnificadoRow[] = (prod.data ?? []).map((p: any) => {
         const pp = ppMap.get(p.id) as any;
@@ -83,6 +162,7 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
           raw: isB2B ? { ...p, modo_acao: null } : p,
         };
       });
+
       const micros: CatalogoUnificadoRow[] = (micro.data ?? []).map((m: any) => {
         const mp = mpMap.get(m.id) as any;
         const st = mp?.status_validacao ?? null;
@@ -101,12 +181,12 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
           raw: m,
         };
       });
+
       const all = [...produtos, ...micros];
       if (isB2B) {
-        return all.filter((r) => r.ativo && r.b2b_enabled);
+        return all.filter(catalogoShouldShowB2BRow);
       }
       return all;
-
     },
   });
 }
