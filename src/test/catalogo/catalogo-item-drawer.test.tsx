@@ -95,3 +95,49 @@ describe("CatalogoItemDrawer — integração não destrutiva", () => {
     expect(src).toContain(CATALOGO_FICHA_VAZIO_VOLUMES);
   });
 });
+
+describe("CatalogoItemDrawer — diagnóstico de publicação (26E)", () => {
+  it("B2B visível apenas com ativo + b2b_enabled + aprovado", () => {
+    const p = catalogoFichaPublicacao(row({ ativo: true, b2b_enabled: true, ficha_status: "aprovado" }));
+    expect(p.b2bVisivel).toBe(true);
+    expect(p.produtorVisivel).toBe(true);
+    expect(p.b2bMotivo).toMatch(/Vis[íi]vel conforme regras atuais/);
+  });
+
+  it("item inativo bloqueia B2B e produtor", () => {
+    const p = catalogoFichaPublicacao(row({ ativo: false, b2b_enabled: true, ficha_status: "aprovado" }));
+    expect(p.b2bVisivel).toBe(false);
+    expect(p.produtorVisivel).toBe(false);
+    expect(p.b2bMotivo).toBe("Item inativo");
+    expect(p.produtorMotivo).toBe("Item inativo");
+  });
+
+  it("B2B desabilitado bloqueia só o B2B", () => {
+    const p = catalogoFichaPublicacao(row({ ativo: true, b2b_enabled: false, ficha_status: "aprovado" }));
+    expect(p.b2bVisivel).toBe(false);
+    expect(p.b2bMotivo).toBe("B2B desabilitado");
+    expect(p.produtorVisivel).toBe(true);
+  });
+
+  it("ficha em revisão bloqueia B2B e produtor", () => {
+    const p = catalogoFichaPublicacao(row({ ativo: true, b2b_enabled: true, ficha_status: "em_revisao" }));
+    expect(p.b2bVisivel).toBe(false);
+    expect(p.produtorVisivel).toBe(false);
+    expect(p.b2bMotivo).toBe("Ficha não aprovada");
+    expect(p.produtorMotivo).toBe("Ficha não aprovada");
+  });
+});
+
+describe("CatalogoCardsGrid — fluxos críticos preservados (26E)", () => {
+  const grid = read("src/components/catalogo/CatalogoCardsGrid.tsx");
+  it("mantém FichaProdutorDrawer, AddToCartDialog e dialogs técnicos", () => {
+    for (const comp of [
+      "FichaProdutorDrawer",
+      "AddToCartDialog",
+      "MicroorganismTechnicalProfileDialog",
+      "ProductTechnicalProfileDialog",
+    ]) {
+      expect(grid).toContain(comp);
+    }
+  });
+});
