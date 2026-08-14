@@ -484,8 +484,16 @@ import { MicrorganismosTab } from "@/components/protocolos/MicrorganismosTab";
 // --- Main Page ---
 const MAIN_TABS = ["produtos", "microrganismos", "catalogo-tecnico", "culturas", "problemas"] as const;
 
+/** Aliases de leitura aceitos na URL (Fase 26C). A gravação usa o canônico. */
+const TAB_ALIASES = {
+  catalogo: "catalogo-tecnico",
+  fichas: "catalogo-tecnico",
+  tecnico: "catalogo-tecnico",
+  revisao: "catalogo-tecnico",
+} as const satisfies Record<string, (typeof MAIN_TABS)[number]>;
+
 export default function Protocolos() {
-  const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos");
+  const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos", TAB_ALIASES);
   useEffect(() => {
     const anterior = document.title;
     document.title = "Base Técnica Agronômica | AR Bio";
