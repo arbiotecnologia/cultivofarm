@@ -139,6 +139,9 @@ export function CatalogoItemDrawer({ item, open, onOpenChange, scope = "interno"
   const volumes = Array.isArray(raw.volumes) ? (raw.volumes as Record<string, unknown>[]) : null;
 
   const alertas = item ? catalogoFichaAlertas(item) : [];
+  const publicacao = catalogoFichaPublicacao(
+    item ?? ({ ativo: false, b2b_enabled: false, ficha_status: null } as CatalogoUnificadoRow),
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
