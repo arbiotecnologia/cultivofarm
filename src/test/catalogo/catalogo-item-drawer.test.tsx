@@ -1,12 +1,14 @@
 /**
- * FASE 26D — Ficha unificada por item do Catálogo AR Bio (somente leitura).
- * Cobre regras de escopo, alertas e integração não destrutiva na grade.
+ * FASE 26D/26E — Ficha unificada por item do Catálogo AR Bio (somente leitura).
+ * Cobre regras de escopo, alertas, diagnóstico de publicação e integração
+ * não destrutiva na grade.
  */
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import {
   catalogoFichaAlertas,
+  catalogoFichaPublicacao,
   fichaPermiteInterno,
   fichaPermiteTextoB2B,
   fichaPermiteTextoProdutor,
