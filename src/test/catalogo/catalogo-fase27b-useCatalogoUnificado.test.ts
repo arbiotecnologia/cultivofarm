@@ -110,10 +110,11 @@ describe("FASE 27B — fluxos externos intocados", () => {
     expect(read("src/hooks/useCreatePartnerOrder.ts")).toContain("create_partner_order_secure");
     const novoPedido = read("src/pages/portal-parceiro/NovoPedido.tsx");
     expect(novoPedido).toContain("AddToCartDialog");
-    expect(novoPedido).not.toContain("useCatalogoUnificado");
+    // usa apenas o tipo CatalogoUnificadoRow; nunca o hook interno como fonte.
+    expect(novoPedido).not.toContain("useCatalogoUnificado(");
   });
 
   it("MobileCatalogoTecnico não passou a depender do hook interno", () => {
-    expect(read("src/pages/app/MobileCatalogoTecnico.tsx")).not.toContain("useCatalogoUnificado");
+    expect(read("src/pages/app/MobileCatalogoTecnico.tsx")).not.toContain("useCatalogoUnificado(");
   });
 });
