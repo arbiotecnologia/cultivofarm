@@ -93,7 +93,7 @@ describe("FASE 27C — 27B certificada", () => {
   });
 
   it("carrinho e pedido B2B intactos", () => {
-    const novo = read("src/pages/parceiro/NovoPedido.tsx");
+    const novo = read("src/pages/portal-parceiro/NovoPedido.tsx");
     expect(novo).toContain("usePartnerCatalog");
     expect(novo).toContain("AddToCartDialog");
   });
