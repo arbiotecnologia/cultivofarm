@@ -279,7 +279,7 @@ export function CatalogoCardsGrid({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((r) => {
+              {visiveis.map((r) => {
                 const modoAcao = r.tipo === "produto" ? (r.raw?.modo_acao ?? null) : r.mecanismo_acao;
                 const modoLabel = r.tipo === "produto" ? "Modo" : "Mec.";
                 return (
@@ -343,7 +343,7 @@ export function CatalogoCardsGrid({
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {sorted.map((r) => {
+          {visiveis.map((r) => {
             const modoAcao = r.tipo === "produto" ? (r.raw?.modo_acao ?? null) : r.mecanismo_acao;
             return (
               <Card key={`${r.tipo}-${r.id}`} className="hover:border-primary/40 transition">
