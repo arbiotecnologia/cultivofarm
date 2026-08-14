@@ -1,0 +1,94 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
+
+const path = (p: string) => resolve(process.cwd(), p);
+const read = (p: string) => readFileSync(path(p), "utf8");
+const exists = (p: string) => existsSync(path(p));
+
+const REPORT_27E = "docs/auditorias/catalogo-fase27e-certificacao-final.md";
+const TEST_27E = "src/test/catalogo/catalogo-fase27e-certificacao-final.test.ts";
+const REPORT_28A = "docs/auditorias/ar-bio-pos-catalogo-fase28a-mapa-proxima-frente.md";
+const APP = "src/App.tsx";
+const NAV = "src/config/navigation.ts";
+const HOOK_PARTNER = "src/hooks/usePartnerCatalog.ts";
+const HOOK_PARTNER_TEC = "src/hooks/usePartnerCatalogTecnico.ts";
+const HOOK_ORDER = "src/hooks/useCreatePartnerOrder.ts";
+const NOVO_PEDIDO = "src/pages/portal-parceiro/NovoPedido.tsx";
+const MOBILE = "src/pages/app/MobileCatalogoTecnico.tsx";
+
+describe("FASE 28A — artefatos de certificação presentes", () => {
+  it("relatório e teste da 27E existem", () => {
+    expect(exists(REPORT_27E)).toBe(true);
+    expect(exists(TEST_27E)).toBe(true);
+  });
+
+  it("relatório 27E conclui a frente como apta", () => {
+    expect(read(REPORT_27E)).toMatch(/FINALIZADA E APTA/);
+  });
+
+  it("relatório 28A existe e registra 27E CERTIFICADA", () => {
+    expect(exists(REPORT_28A)).toBe(true);
+    expect(read(REPORT_28A)).toContain("27E CERTIFICADA");
+  });
+
+  it("relatório 28A recomenda uma próxima frente e prompts futuros", () => {
+    const c = read(REPORT_28A);
+    expect(c).toMatch(/Frente recomendada/i);
+    for (const fase of ["28B", "28C", "28D"]) expect(c).toContain(fase);
+  });
+});
+
+describe("FASE 28A — rotas do Catálogo AR Bio preservadas", () => {
+  it("/base-tecnica e /protocolos continuam registrados", () => {
+    const c = read(APP);
+    expect(c).toMatch(/path="\/base-tecnica"/);
+    expect(c).toMatch(/path="\/protocolos"[\s\S]{0,120}to="\/base-tecnica"/);
+  });
+
+  it("navegação mantém o rótulo Catálogo AR Bio e a rota legada", () => {
+    const c = read(NAV);
+    expect(c).toContain("Catálogo AR Bio");
+    expect(c).toContain('legacyRoutes: ["/protocolos"]');
+  });
+});
+
+describe("FASE 28A — contratos B2B preservados", () => {
+  it("hooks de catálogo do parceiro seguem nas RPCs seguras", () => {
+    expect(read(HOOK_PARTNER)).toContain("get_partner_catalog_secure");
+    expect(read(HOOK_PARTNER_TEC)).toContain("get_partner_catalog_tecnico_secure");
+  });
+
+  it("useCreatePartnerOrder segue em create_partner_order_secure com unidade_medida", () => {
+    const c = read(HOOK_ORDER);
+    expect(c).toContain("create_partner_order_secure");
+    expect(c).toContain("unidade_medida");
+  });
+
+  it("NovoPedido mantém AddToCartDialog e as unidades canônicas", () => {
+    const c = read(NOVO_PEDIDO);
+    expect(c).toContain("AddToCartDialog");
+    expect(c).toContain("hectare");
+    expect(c).toContain("dose_100ml");
+  });
+});
+
+describe("FASE 28A — mobile/produtor sem exposição interna", () => {
+  it("MobileCatalogoTecnico não expõe custo interno nem auditoria", () => {
+    const c = read(MOBILE);
+    expect(c).not.toContain("catalog_technical_audit_logs");
+    expect(c).not.toMatch(/custo_interno|custo interno/i);
+    expect(c).not.toMatch(/auditoria/i);
+  });
+});
+
+describe("FASE 28A — nenhuma migration nova nesta fase", () => {
+  it("a última migration segue sendo o hardening do digest", () => {
+    const migrations = readdirSync(path("supabase/migrations"))
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
+    expect(migrations[migrations.length - 1]).toBe(
+      "20260905000000_hardening_digest_schema_v1.sql",
+    );
+  });
+});
