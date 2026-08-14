@@ -165,7 +165,8 @@ export function CatalogoItemDrawer({ item, open, onOpenChange, scope = "interno"
                 <TabsTrigger value="geral">Geral</TabsTrigger>
                 <TabsTrigger value="comercial">Comercial</TabsTrigger>
                 <TabsTrigger value="tecnica">Técnica</TabsTrigger>
-                <TabsTrigger value="volumes">Volumes</TabsTrigger>
+                <TabsTrigger value="volumes">Volumes e Preços</TabsTrigger>
+                <TabsTrigger value="publicacao">Publicação</TabsTrigger>
                 {item.tipo === "produto" && composicao && (
                   <TabsTrigger value="composicao">Composição</TabsTrigger>
                 )}
