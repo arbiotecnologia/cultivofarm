@@ -30,23 +30,30 @@ Estado **encontrado** no HEAD (evidência: leitura direta dos arquivos, sem sobr
 
 Comparação executada antes de qualquer correção (não foi "restauração cega"): 2 de 4 fontes de binding do repo já apontavam para o staging; apenas `.env` e `types.ts` divergiam, e o `types.ts` divergente é um stub sem as relações fiscais/regulatórias exigidas pelo teste de contrato `src/test/config/connection-binding.static.test.ts`. A hipótese "staging = `ikaauvsflpmamgxmkhoq`" foi, portanto, **confirmada por três evidências independentes** (config.toml, client.ts, teste de contrato versionado), e não assumida.
 
-Evidência do banco realmente acessível pelo executor (sandbox):
-`50 tabelas públicas · 3 policies · 18 functions · 2 views · 42 tabelas sem RLS` — incompatível com um schema originado de 681 migrations. `supabase_migrations.schema_migrations` retorna `permission denied`.
+Evidência do banco realmente acessível pelo executor (sandbox), relida neste HEAD:
+`current_database=postgres · current_user=sandbox_exec · 50 tabelas públicas · 3 policies` — incompatível com um schema originado de 681 migrations. `supabase_migrations.schema_migrations` retorna `ERROR: permission denied for schema supabase_migrations`.
+
+**Reincidência confirmada (H0-002R)**: no HEAD `fbc0afaf` o drift de `.env` (`yzszlzjpovmcteuxjznj`) e o truncamento de `types.ts` (2.052 linhas) **voltaram a ocorrer**, mesmo tendo sido corrigidos na rodada anterior. Isso caracteriza regeneração automática recorrente pelo backend Cloud sandbox, e não um erro pontual de commit — o repositório sozinho não estabiliza o binding. Registrado como pendência estrutural.
 
 ## 3. Build, typecheck, lint, testes
 
-| Etapa | Comando | Resultado | Duração |
-|---|---|---|---|
-| Typecheck | `bunx tsgo --noEmit` | **0 erros** (exit 0) | ~40 s |
-| Testes (1ª execução, pré-correção) | `bunx vitest run` | **5 failed / 3068 passed / 4 skipped** (188 arquivos) | 109,9 s |
-| Testes (pós-correção) | `bunx vitest run` | **3073 passed / 4 skipped / 0 failed** (187 files passed, 1 skipped) | 169,3 s |
-| Lint | `bunx eslint .` | exit 1 — **3.381 problemas (3.274 errors, 107 warnings)**; predominância `@typescript-eslint/no-explicit-any` | ~60 s |
-| Build produção | `bunx vite build` | **SUCESSO** (exit 0), 1 m 51 s; PWA `generateSW`, 20 entradas precache (6.077 KiB) | 111 s |
-| E2E (Playwright) | não executado | 9 specs presentes; dependem de credenciais/usuários de teste e de staging | — |
+Evidência desta continuação (HEAD `fbc0afaf`), logs em `/tmp/h0/`:
 
-Warnings relevantes do build: bundle único `dist/assets/index-*.js` de **5.398 kB** (gzip 1.411 kB) — acima do limite de 500 kB, sem code-splitting.
+| Etapa | Comando | Resultado |
+|---|---|---|
+| Typecheck (pré-correção) | `bunx tsgo --noEmit` | **0 erros** (exit 0) |
+| Testes (pré-correção) | `bunx vitest run` | exit 1 — **14 failed / 3059 passed / 4 skipped** (5 arquivos falhando: `connection-binding.static`, `comunicacao/fase2-schema-onfarm`, `fiscal/fase3_15.static`, `fiscal/fase3_19_2.audit`, `fiscal/sinief49/staging/verifier`) — **100% das falhas causadas pelo drift de `.env`/`types.ts`**, nenhuma falha de regra de negócio |
+| Testes (pós-correção C-3) | `bunx vitest run` | exit 0 — **3.073 passed / 4 skipped / 0 failed** (187 files passed, 1 skipped, 188 total) |
+| Typecheck (pós-correção) | `bunx tsgo --noEmit` | **0 erros** (exit 0) |
+| Lint | `bunx eslint . -f json` | exit 1 — **3.381 problemas (3.274 errors / 107 warnings)**: `no-explicit-any` 3.233 · `react-hooks/exhaustive-deps` 48 · `react-refresh/only-export-components` 33 · parse/none 26 · `prefer-const` 16 · `ban-ts-comment` 7 · `no-empty` 6 · `no-useless-escape` 4 |
+| Build produção | `bunx vite build` | **SUCESSO** (exit 0), 32,6 s |
+| E2E (Playwright) | não executado | 9 specs; dependem de staging + usuários de teste — **NÃO VALIDADO** |
 
-Separação infra × funcional: a primeira tentativa de `eslint` falhou por `ENOENT` no arquivo temporário `vite.config.ts.timestamp-*.mjs` (corrida com o `vite build` paralelo) — **falha de infraestrutura**, resolvida ao rodar isoladamente. As 5 falhas de teste eram **funcionais** (regressão de navegação, ver §20).
+Warnings relevantes do build: bundle único `dist/assets/index-BCPJGZrY.js` de **5.398,69 kB** (gzip 1.411,32 kB) — acima do limite de 500 kB, sem code-splitting de rota. Demais chunks: `html2canvas` 201 kB, `index.es` 151 kB, `PortalExecutivo` 77 kB, `purify.es` 24 kB.
+
+Separação infra × funcional: nenhuma falha de infraestrutura nesta rodada. As 14 falhas foram **funcionais-de-ambiente** (contrato de tipos/binding), não de domínio.
+
+
 
 ## 4. Inventário frontend (rotas, layouts, guards)
 
