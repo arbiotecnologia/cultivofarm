@@ -120,8 +120,8 @@ export const navigation: NavItem[] = [
   {
     id: "protocolos", label: "Catálogo AR Bio", icon: FileText, route: "/base-tecnica",
     section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11,
-    platforms: ["desktop"], legacyRoutes: ["/protocolos"],
-    searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "catálogo ar bio", "catalogo ar bio", "produtos", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "catalogo tecnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],
+    platforms: ["desktop"], legacyRoutes: ["/protocolos", "/comercial/catalogo"],
+    searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "catálogo", "catalogo", "catálogo comercial", "catalogo comercial", "portfólio", "portfolio", "catálogo ar bio", "catalogo ar bio", "produtos", "produto", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "catalogo tecnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],
 
     children: [
       { id: "protocolos-produtos", label: "Produtos", icon: Package, route: "/base-tecnica?tab=produtos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], paramDefault: true, searchKeywords: ["produtos", "base técnica"] },

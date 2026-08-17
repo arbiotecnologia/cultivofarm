@@ -55,7 +55,7 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
     administrativo: "r", tecnico_agronomo: "r", financeiro: "r",
   },
   "/base-tecnica": {
-    administrador: "rw", gestor: "rw", consultor_tecnico: "r",
+    administrador: "rw", gestor: "rw", consultor_tecnico: "r", gestor_comercial: "r",
     operador_onfarm: "r", administrativo: "r", tecnico_agronomo: "r", producao: "r",
   },
   // Rota legada mantida apenas para o redirecionamento /protocolos -> /base-tecnica
