@@ -191,7 +191,10 @@ Cadeia evento → template → outbox → provider → tentativa → status, com
 
 ## 20. Correções realizadas nesta execução (mínimas, reversíveis)
 
-### C-1 — Rebind de ambiente para o staging autorizado (P0)
+### C-1 — Binding **versionado do repositório** realinhado ao staging autorizado (P0)
+
+> **Escopo exato desta correção**: ela atua **somente** sobre os arquivos versionados do frontend (`.env`, `src/integrations/supabase/types.ts`, conferidos contra `client.ts` e `supabase/config.toml`). Ela **não** rebindou o executor: `PGHOST`/conector Lovable Cloud **permanece no projeto sandbox** e continua bloqueado (H0-001). Nenhuma leitura de staging foi obtida em consequência de C-1.
+
 - **Antes**: `.env` apontando para `yzszlzjpovmcteuxjznj`; `types.ts` com 2.052 linhas (stub sem relações fiscais/regulatórias).
 - **Causa**: regeneração automática pelo backend Cloud sandbox (drift recorrente já documentado).
 - **Arquivos**: `.env`, `src/integrations/supabase/types.ts` (restaurados de `c75bb87f`, único baseline cujo conteúdo é coerente com `client.ts` + `config.toml` + teste de contrato).
