@@ -109,6 +109,7 @@ CREATE TEMP TABLE h1_result (
   obtido text,
   status text
 ) ON COMMIT DROP;
+GRANT INSERT, SELECT ON h1_result TO authenticated, anon;
 
 DO $harness$
 DECLARE
