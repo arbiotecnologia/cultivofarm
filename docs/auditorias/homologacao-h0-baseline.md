@@ -441,3 +441,34 @@ Os capítulos 6–10, único motivo do bloqueio anterior, foram completados com 
 Ressalvas que seguem para H1, **não corrigidas aqui**: H0-015 (defasagem de 37 migrations, P0), H0-017 (grants amplos a `anon`, P0), H0-002R (drift de binding reincidente, P0), H0-016 (P1), H0-004/H0-005 (P1), H0-018 (P2).
 
 H1 **não** foi iniciada. Nada promovido para produção.
+
+---
+
+# ADENDO C — CORREÇÃO DO GATE H0 APÓS EVIDÊNCIA DIRETA (FASE H1)
+
+Auditoria humana/técnica apontou, corretamente, que B.10 fechou em "APROVADA COM RESSALVAS" listando P0 abertos — o que viola o gate do projeto (`P0/P1 aberto ⇒ BLOQUEADA`). Este adendo corrige as **severidades** com base em evidência direta do staging `ikaauvsflpmamgxmkhoq` e registra o fechamento dos bloqueadores na Fase H1.
+
+## C.1 Reclassificação de severidade
+
+| ID | Severidade anterior | Severidade correta | Fundamento |
+| --- | --- | --- | --- |
+| H0-015 (37 migrations repo-only) | P0 | **P2** | Não é bloqueador automático. Reconciliação por conteúdo (não por data do nome): 20 são bootstrap legado do Sandbox e **não devem** ser aplicadas; 16 já estão incorporadas semanticamente no schema do staging (divergência de *history*, não de schema); 1 era dependência real do HEAD (`rpc_notificar_gestor`) — **aplicada em H1**. |
+| H0-017 (grants de escrita a `anon` em 130 tabelas) | P0 | **P2** | Grant de tabela isolado não é P0 com RLS ativa em **223/223** tabelas. O risco exige grant **+** policy permissiva para `anon` ou endpoint privilegiado — nenhum encontrado. Nenhum `REVOKE ALL` em massa foi executado. Tratamento tabela a tabela fica para H2. |
+| H0-016 (`anon EXECUTE` em SECURITY DEFINER) | P1 | **P1 — CORRIGIDO** | Das 23 funções: 15 são trigger functions (não são endpoint RPC; executam sob o dono da tabela), 6 são RPCs internas/autenticadas — `anon` revogado em todas as 21; 2 são RPCs públicas token-scoped legítimas (`rpc_validar_comprovante_entrega`, `rpc_validar_rastreio_produto`), mantidas. Postcheck: 23 → **2**. |
+| H0-002R (drift de binding) | P0 | **P1 — MITIGADO** | O binding **versionado** do repo aponta ao staging e é validado de forma bloqueante por `src/test/config/connection-binding.static.test.ts` (8/8 PASS). O drift reincidente é do **executor** (`PGHOST` → Sandbox), não do repositório. Nenhuma chave foi trocada manualmente. |
+| H0-001 (sem acesso ao staging) | P0 | **RESOLVIDO** | Acesso read-only obtido via `STAGING_DSN`; capítulos 6–10 completados; escrita realizada em H1 pelo runner fail-closed. |
+| H0-004 / H0-005 (estoque, UI) | P1 | **P2** | O motor `rpc_estoque_operar_v1` é transacional e idempotente por chave; o risco remanescente é de UI (laço no diálogo de reserva). Rastreado como H1-013. |
+| H0-018 (`pg_net` em `public`) | P2 | P2 | Inalterado. |
+
+## C.2 Distinção obrigatória — binding do repositório × binding do executor
+
+- **Binding versionado (repo):** `.env`, `src/integrations/supabase/client.ts` e `supabase/config.toml` apontam para `ikaauvsflpmamgxmkhoq`. **Correto e verificado por teste bloqueante.**
+- **Binding do executor (`PGHOST` / ferramenta de migrations da plataforma):** aponta para o Sandbox `yzszl…`. Por isso o DDL de H1 foi aplicado pelo runner fail-closed `restoration/os-e2e/staging-psql.sh` e **não** pela ferramenta de migrations — que gravaria no banco errado. Pendência P2 rastreada como **H1-015**.
+
+## C.3 Gate H0 — versão final
+
+> ## **H0 APROVADA**
+
+Justificativa: o único bloqueador estrutural (H0-001, ausência de introspecção do staging) foi resolvido; as severidades P0 remanescentes foram reclassificadas com evidência direta (C.1) e os itens concretos que restavam como P0/P1 de configuração foram **corrigidos e verificados** na Fase H1 (ver `docs/auditorias/homologacao-h1-seguranca.md`). Não resta P0/P1 aberto atribuível ao escopo H0.
+
+As ressalvas P2/P3 remanescentes (H0-015 reclassificada, H0-017 reclassificada, H0-018, H1-013, H1-015) estão rastreadas no relatório H1. Nada foi promovido para produção. Fiscal permanece em HML.
