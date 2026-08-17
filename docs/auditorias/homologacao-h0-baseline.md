@@ -339,3 +339,105 @@ Efeito líquido remanescente do H0: **documentação** (`docs/auditorias/homolog
 # H0 BLOQUEADA (mantida)
 
 A revisão corrigiu o que a própria H0 introduziu (credencial e contrato de tipos agora idênticos ao pré-H0) e a redação enganosa sobre rebind, mas **não altera o bloqueio**: sem leitura do staging `ikaauvsflpmamgxmkhoq`, os capítulos 6–10 permanecem NÃO VALIDADOS. H1 não foi iniciada.
+
+---
+
+# ADENDO B — DESBLOQUEIO READ-ONLY DO STAGING (2026-08-17)
+
+Escopo: obter leitura do staging com credenciais **já existentes** no ambiente. Nenhuma migration aplicada, nenhum dado alterado, nenhum secret alterado, nenhum arquivo de binding (`.env`, `client.ts`, `types.ts`, `config.toml`) tocado.
+
+## B.1 Métodos tentados
+
+| Método | Resultado |
+|---|---|
+| Supabase CLI (`supabase --version`) | **INDISPONÍVEL** — binário ausente no PATH; nenhum comando CLI executado, autenticação CLI **não comprovável** |
+| `SUPABASE_ACCESS_TOKEN` | **NÃO EXISTE** no ambiente |
+| `SUPABASE_DB_URL` / `PGHOST` / `SUPABASE_PROJECT_ID` / `SUPABASE_URL` | EXISTEM, mas apontam para o **sandbox** `yzszlzjpovmcteuxjznj` (confirma H0-001) |
+| `STAGING_REF` | **EXISTE** e vale exatamente `ikaauvsflpmamgxmkhoq` |
+| `STAGING_DSN` | **EXISTE** e contém `ikaauvsflpmamgxmkhoq`; não contém produção nem sandbox. Valor nunca impresso |
+| `psql "$STAGING_DSN"` com `SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY` | **SUCESSO** — apenas SELECTs |
+
+Conexão confirmada: `PostgreSQL 17.6`, `current_database=postgres`, papel `postgres`. Divergência estrutural frente ao sandbox (50 tabelas / 3 policies) é decisiva: o alvo lido tem **223 tabelas / 535 policies / 644 migrations**, coerente com o histórico do repositório. **Project ref evidenciado: `ikaauvsflpmamgxmkhoq`.**
+
+## B.2 Capítulo 6 — Migration history aplicada (A)
+
+- Aplicadas no banco: **644** (`20260314022647` … `20260823000000`).
+- Arquivos no repositório: **681**.
+- **No banco e ausentes do repo: 0** (nenhuma migration órfã aplicada).
+- **No repo e não aplicadas: 37** — 20 do lote `20260812134101…20260812135640` mais `20260824000000`, `20260825000000`, `20260827000000`, `20260828000000`, `20260830000000`, `20260831000000/010000/020000/030000`, `20260901000000`, `20260902000000`, `20260903000000/010000/020000/030000/040000`, `20260905000000`.
+
+**Achado H0-015 (P0)** — o staging está **37 migrations atrás do repositório**. Todo o trabalho de OS E2E (fases 4–6), comprovante de entrega (fases 2–3) e o hardening `digest`/`extensions` (`20260905000000`) **não está no banco lido**. Consequência: o código do HEAD assume RPCs/colunas que podem não existir em staging. Recomendação: reconciliar em H1, com precheck por migration; nada aplicado aqui.
+
+## B.3 Capítulo 7 — Inventário de objetos (B)
+
+| Objeto | Qtd |
+|---|---|
+| Tabelas (`public`) | 223 |
+| Views | 21 |
+| Materialized views | 2 |
+| Enums | 57 |
+| Triggers (não internos) | 297 |
+| Funções (`public`) | 907 |
+
+## B.4 Capítulo 8 — Funções, SECURITY DEFINER e grants EXECUTE (C, D)
+
+- SECURITY DEFINER em `public`: **606 de 907** (67%).
+- **`search_path` fixo: 100% — 0 funções SECURITY DEFINER sem `search_path` explícito.** O hardening histórico se sustenta.
+- EXECUTE concedido a papéis abertos em funções SECURITY DEFINER: **23 para `anon`** e **18 para `PUBLIC`**.
+
+**Achado H0-016 (P1)** — 41 funções SECURITY DEFINER executáveis por papel não autenticado ou público. Cada uma roda com privilégios do owner; a superfície precisa de revisão caso a caso em H1 (algumas são legitimamente públicas, como health/lookup).
+
+## B.5 Capítulo 9 — RLS, policies e grants (E, F)
+
+- RLS habilitada: **223/223 tabelas (100%)**; `FORCE ROW LEVEL SECURITY`: 4.
+- Policies em `public`: **535**.
+- **RLS habilitada e sem nenhuma policy (deny-all efetivo): 7** — `_f42_harness_fixtures`, `_fiscal_staging_marker`, `commercial_payment_plans`, `communication_provider_settings`, `communication_provider_settings_rate_limit`, `comunicacao_inapp_dispatch`, `fiscal_certificate_material`. Para tabelas de segredo (`fiscal_certificate_material`, `communication_provider_settings`) isso é o comportamento desejado; `commercial_payment_plans` é de negócio e merece verificação em H1.
+
+**Achado H0-017 (P0)** — grants amplos para `anon`: **130 tabelas** com grant a `anon`, totalizando **380 privilégios de escrita** (`INSERT`/`UPDATE`/`DELETE`) — incluindo `clientes`, `profiles`, `user_roles`, `ordens_servico`, `lotes`, `entregas`, `portal_solicitacoes`, `partner_*`, `produtos`, `fazendas`. Hoje o dado só não vaza porque a RLS está ativa em 100% das tabelas: os grants são a **segunda linha de defesa removida**. Qualquer policy futura escrita com `USING (true)` ou `TO public` vira exposição imediata a chave publishable. Recomendação (H1, migration dedicada): `REVOKE ALL ON ... FROM anon` em todas as tabelas sem policy que legitime leitura anônima, mantendo `anon` só onde o portal público realmente lê. **Nada revogado nesta H0.**
+
+Isso encerra H0-006 como **evidenciada** (o estado de RLS agora é conhecido) e a converte no achado concreto H0-017.
+
+## B.6 Capítulo 10 — Storage e extensões (G, H)
+
+- Buckets: **14** — `aplicacao-evidencias`, `clientes-docs`, `consultor-arquivos`, `entrega-documentos`, `entrega-termos`, `financial-docs`, `financial-receipts`, `financial-reports`, `fiscal-certificates`, `fiscal-regulatorio`, `fiscal-xml`, `logos`, `visit-pdfs`, `visitas-pdf`. **Apenas `logos` é público**; os 13 restantes são privados — correto para documentos fiscais e de cliente.
+- Policies em `storage`: **51**, cobrindo os buckets acima por papel (staff/admin/parceiro/produtor).
+- Extensões: `btree_gist` (public), `pg_cron` (pg_catalog), `pg_net` (public), `pg_stat_statements` (extensions), `pgcrypto` (extensions), `plpgsql`, `supabase_vault` (vault), `uuid-ossp` (extensions).
+
+**Achado H0-018 (P2)** — `pg_net` instalada no schema `public`; recomendação padrão Supabase é `extensions`. Baixo risco, mas exige `search_path` cuidadoso — o que já é 100% cumprido (B.4).
+
+## B.7 Situação dos achados anteriores
+
+| ID | Situação após B |
+|---|---|
+| H0-001 | **RESOLVIDO PARCIALMENTE** — leitura do staging obtida via `STAGING_DSN`. As ferramentas gerenciadas (`PGHOST`, `read_query`, migration tool) **continuam ligadas ao sandbox**; escrita/migration em staging segue sem caminho autorizado |
+| H0-006 | **FECHADO** — RLS evidenciada (223/223 ativa, 535 policies); risco real reclassificado em H0-017 |
+| H0-002R | Aberto (P0) — inalterado; nenhum arquivo de binding foi tocado nesta rodada |
+| H0-004 / H0-005 | Abertos (P1) — fora do escopo, intocados |
+
+## B.8 Novos achados
+
+| ID | Sev. | Achado | Evidência | Recomendação |
+|---|---|---|---|---|
+| H0-015 | P0 | Staging 37 migrations atrás do repo | 644 aplicadas × 681 arquivos; 0 órfãs | Reconciliar em H1 com precheck por arquivo |
+| H0-016 | P1 | 41 funções SECURITY DEFINER com EXECUTE para `anon`/`PUBLIC` | `aclexplode(proacl)` | Revisão caso a caso; revogar as não públicas |
+| H0-017 | P0 | 130 tabelas com grant a `anon`, 380 privilégios de escrita | `information_schema.role_table_grants` | `REVOKE` dirigido em migration de H1 |
+| H0-018 | P2 | `pg_net` em `public` | `pg_extension` | Mover para `extensions` quando houver janela |
+
+## B.9 Entregáveis solicitados
+
+- **Métodos tentados**: CLI Supabase (indisponível), varredura de env (sem imprimir valores), `psql` read-only via `STAGING_DSN`.
+- **CLI autenticado?** Não — binário ausente; não comprovável.
+- **Credencial read-only para staging?** Sim — `STAGING_DSN` + `STAGING_REF`, usados exclusivamente com `SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY` e SELECTs.
+- **Project ref evidenciado**: `ikaauvsflpmamgxmkhoq`.
+- **Capítulos 6–10**: **COMPLETADOS** (B.2 a B.6).
+- **Não executado**: `db dump`, `db push`, `migration up`, `db reset`, `link`, qualquer DDL/DML, qualquer publicação.
+
+## B.10 Gate final atualizado
+
+# H0 APROVADA COM RESSALVAS
+
+Os capítulos 6–10, único motivo do bloqueio anterior, foram completados com evidência real do staging `ikaauvsflpmamgxmkhoq`. O lado código já estava certificado (typecheck 0, 3.073 testes PASS, build OK) e não foi reexecutado nesta rodada por não ter havido alteração de código — apenas este documento mudou.
+
+Ressalvas que seguem para H1, **não corrigidas aqui**: H0-015 (defasagem de 37 migrations, P0), H0-017 (grants amplos a `anon`, P0), H0-002R (drift de binding reincidente, P0), H0-016 (P1), H0-004/H0-005 (P1), H0-018 (P2).
+
+H1 **não** foi iniciada. Nada promovido para produção.
