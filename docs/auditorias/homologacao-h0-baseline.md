@@ -285,3 +285,57 @@ Capítulos **validados com evidência** nesta execução: 1, 2 (com divergência
 - H1-C: auditoria de todas as funções `SECURITY DEFINER` (owner, `search_path`, `auth.uid()`, EXECUTE, SQL dinâmico, isolamento de tenant).
 - H1-D: replay completo do schema em Postgres efêmero local.
 - H1-E: suíte oficial de homologação (§12) e correção de H0-004/H0-005.
+
+---
+
+# ADENDO — AUDITORIA HUMANA/TÉCNICA PÓS-RELATÓRIO (revisão do próprio H0)
+
+Execução: 2026-08-17 18:14 UTC · Escopo: correção do H0. **H1 não iniciada. Nada promovido a produção.**
+Commits de referência: `1c2dff45` ("Concluiu auditoria H0", HEAD da execução H0) · parent `56ddc8b7` (pré-H0).
+
+## A.1 Inconsistências encontradas pela auditoria humana
+
+| # | Inconsistência | Verificação nesta revisão | Veredito |
+|---|---|---|---|
+| A-1 | O relatório afirmava correção do binding sem separar repo × executor | Redação de C-1 revista; C-1 agora declara explicitamente que o executor **não** foi rebindado | **Procedente — corrigido** |
+| A-2 | O H0 teria trocado `VITE_SUPABASE_PUBLISHABLE_KEY` por chave histórica | `git show` do parent × HEAD: as duas chaves têm fingerprints distintos, confirmando alteração líquida da credencial | **Procedente — revertido ao valor do parent** |
+| A-3 | H0-001 seria real (conector = sandbox) | Confirmado internamente (`sandbox_exec` · 50 tabelas · 3 policies) e externamente pelo auditor humano | **Procedente — mantido como P0** |
+| A-4 | Divergência sobre project ID/URL do parent | O parent `56ddc8b7` já estava em `ikaauvsflpmamgxmkhoq`; **o commit H0 `1c2dff45` regrediu ID, URL e chave para `yzszlzjpovmcteuxjznj`** e truncou `types.ts` de 21.850 → 2.052 linhas. A restauração feita durante a H0 **não persistiu no commit** (o drift foi regravado antes do commit) | **Achado novo e mais grave que o reportado** |
+
+## A.2 Correções realizadas nesta revisão
+
+- **R-1 (P0)** — `.env` restaurado **byte a byte** a partir do parent `56ddc8b7` (`git show HEAD~1:.env > .env`). Isso devolve simultaneamente o project ID, a URL e **exatamente a `VITE_SUPABASE_PUBLISHABLE_KEY` pré-H0**, sem substituí-la por credencial histórica e sem expor o valor. Diferença líquida contra o parent: **nenhuma**.
+- **R-2 (P0)** — `src/integrations/supabase/types.ts` restaurado do mesmo parent: **21.850 linhas** (o HEAD H0 tinha 2.052). Diferença líquida contra o parent: **nenhuma**.
+- **R-3** — C-1 do relatório reescrito para distinguir *binding versionado do repositório* de *binding do executor/PGHOST/conector*, sem alegar rebind que não ocorreu.
+- **C-2 preservado** — `protocolos-catalogo-tecnico` continua em `src/config/navigation.ts:129`; nada removido.
+- **Não tocados nesta revisão**: H0-004, H0-005, H0-006 (dívida para fase posterior). Nenhum reset/drop/migration no sandbox; nenhuma tentativa de inventar acesso ao staging.
+
+## A.3 Diff final efetivo do H0
+
+`git diff 56ddc8b7 -- .env src/integrations/supabase/types.ts` → **vazio**. O H0 deixa de ter qualquer efeito líquido sobre credenciais e contrato de tipos.
+Efeito líquido remanescente do H0: **documentação** (`docs/auditorias/homologacao-h0-baseline.md`) e a correção C-2 em `src/config/navigation.ts`.
+
+## A.4 Testes reexecutados após R-1/R-2
+
+| Etapa | Comando | Resultado |
+|---|---|---|
+| Contrato de binding | `vitest run src/test/config/connection-binding.static.test.ts` | **8/8 PASS** |
+| Typecheck | `bunx tsgo --noEmit` | **0 erros** (exit 0) |
+| Suíte completa | `bunx vitest run` | **3.073 passed / 4 skipped / 0 failed** (187 files passed, 1 skipped) |
+| Build produção | `bunx vite build` | **SUCESSO** (exit 0; precache 20 entradas / 6.077 KiB) |
+
+## A.5 P0/P1 ainda abertos
+
+| ID | Sev. | Situação |
+|---|---|---|
+| H0-001 | P0 | Conector/PGHOST no sandbox; **nenhum caminho de leitura de staging já configurado e seguro existe** — não foi inventado nenhum |
+| H0-002R | P0 | Drift de `.env`/`types.ts` reincidente e capaz de sobreviver ao commit (comprovado em `1c2dff45`) — exige gate bloqueante de CI |
+| H0-004 | P1 | Idempotência de reserva de estoque — fora do escopo desta revisão |
+| H0-005 | P1 | Harnesses de runtime + amplitude do service role — fora do escopo |
+| H0-006 | P1 | Estado final de RLS não evidenciado — depende de H0-001 |
+
+## A.6 Gate final (após revisão)
+
+# H0 BLOQUEADA (mantida)
+
+A revisão corrigiu o que a própria H0 introduziu (credencial e contrato de tipos agora idênticos ao pré-H0) e a redação enganosa sobre rebind, mas **não altera o bloqueio**: sem leitura do staging `ikaauvsflpmamgxmkhoq`, os capítulos 6–10 permanecem NÃO VALIDADOS. H1 não foi iniciada.
