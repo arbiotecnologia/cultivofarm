@@ -243,8 +243,24 @@ Nenhuma regra de negócio, migration, RPC, RLS, rota, permissão ou dependência
 ## 23. Bloqueadores para homologação
 
 1. **H0-001 (P0)** — sem acesso somente-leitura ao staging `ikaauvsflpmamgxmkhoq`, os capítulos 4, 6, 7, 8, 9 e 10 do escopo H0 (migrations aplicadas, schema final, SECURITY DEFINER, RLS, grants, storage) **não podem ser certificados com evidência**.
-2. **H0-004 (P1)** — idempotência de reserva de estoque.
-3. **H0-005 (P1)** — harnesses de runtime e amplitude do service role nas Edge Functions.
+2. **H0-002R (P0)** — o binding do repositório é reescrito automaticamente para o projeto sandbox; a correção manual não se sustenta entre execuções.
+3. **H0-004 (P1)** — idempotência de reserva de estoque.
+4. **H0-005 (P1)** — harnesses de runtime e amplitude do service role nas Edge Functions.
+5. **H0-006 (P1)** — estado final de RLS não evidenciado.
+
+### Itens explicitamente NÃO VALIDADOS (pendências, sem evidência inventada)
+
+| Capítulo do escopo | Situação | Causa |
+|---|---|---|
+| 6 — reconciliação migrations repo × banco | **NÃO VALIDADA** | `supabase_migrations` inacessível; executor no sandbox |
+| 7 — rebuild/replay do schema | **NÃO VALIDADA** | sem Postgres efêmero autorizado; reset remoto vedado |
+| 8 — inventário final do schema/storage | **NÃO VALIDADA** | leitura só possível no staging |
+| 9 — SECURITY DEFINER (owner, grants EXECUTE, SQL dinâmico) | **NÃO VALIDADA** | idem |
+| 10 — matriz RLS/grants por tabela sensível | **NÃO VALIDADA** | idem |
+| E2E Playwright (9 specs) | **NÃO VALIDADA** | exige staging + usuários de teste |
+| Flags de entrega de comunicação OFF no ambiente | **NÃO VALIDADA** | exige leitura do ambiente de staging |
+
+Capítulos **validados com evidência** nesta execução: 1, 2 (com divergência registrada), 3, 4, 5, 11 (a partir de `config.toml` + código), 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22.
 
 ---
 
@@ -252,9 +268,11 @@ Nenhuma regra de negócio, migration, RPC, RLS, rota, permissão ou dependência
 
 # H0 BLOQUEADA
 
-**Motivo**: o binding do executor aponta para um projeto sandbox, e não para o staging autorizado. A metade "código" da baseline está certificada (typecheck 0 erros, 3.073 testes PASS, build de produção OK, inventários de rotas/perfis/migrations/Edge Functions concluídos), mas a metade "banco" (migrations aplicadas, schema final, SECURITY DEFINER, RLS, grants, storage) não pôde ser evidenciada. Declarar aprovação — mesmo com ressalvas — afirmaria segurança sem evidência, o que o próprio escopo proíbe.
+**Motivo**: o binding do executor aponta para um projeto sandbox (`50 tabelas · 3 policies · `permission denied` em `supabase_migrations``), e não para o staging autorizado `ikaauvsflpmamgxmkhoq`. A metade "código" da baseline está certificada (typecheck 0 erros, **3.073 testes PASS / 0 FAIL**, build de produção OK, inventários de rotas/perfis/migrations/Edge Functions/domínios concluídos), mas a metade "banco" (migrations aplicadas, schema final, SECURITY DEFINER, RLS, grants, storage) **não pôde ser evidenciada**. Some-se a isso a reincidência do drift de binding (H0-002R), que torna o próprio ambiente de build não determinístico. Declarar aprovação — mesmo com ressalvas — afirmaria segurança sem evidência, o que o escopo proíbe.
 
-**P0/P1 abertos**: H0-001 (P0), H0-004 (P1), H0-005 (P1), H0-006 (P1).
+**P0/P1 abertos**: H0-001 (P0), H0-002R (P0), H0-004 (P1), H0-005 (P1), H0-006 (P1).
+
+
 
 **Desbloqueio mínimo**: conceder ao executor acesso somente-leitura ao staging `ikaauvsflpmamgxmkhoq` (rebind das ferramentas de banco ou `STAGING_DSN` read-only) e re-executar apenas os capítulos 6–10.
 
