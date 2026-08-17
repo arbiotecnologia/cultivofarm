@@ -2,6 +2,7 @@
 
 Execução: 2026-08-17 (UTC) · Modo: auditoria somente-leitura + correções mínimas P0/P1 autorizadas
 Escopo: HEAD atual do repositório. **H1 NÃO foi iniciada.**
+Revisão: continuação/finalização da H0 sobre o HEAD `fbc0afaf` (a rodada anterior foi refeita integralmente neste HEAD; nenhuma correção antiga do catálogo foi repetida).
 
 ---
 
@@ -9,7 +10,8 @@ Escopo: HEAD atual do repositório. **H1 NÃO foi iniciada.**
 
 | Item | Valor |
 |---|---|
-| HEAD | `d34c86c2245b357b5b16dc3c7fe5f30edfa06942` — "Work in progress" (2026-08-17 13:38 UTC) |
+| HEAD | `fbc0afaf` — "Work in progress" (2026-08-17, continuação da H0; HEAD da 1ª rodada: `d34c86c2`) |
+
 | Migrations no repo | 681 arquivos (`supabase/migrations/`) |
 | Edge Functions no repo | 34 (`supabase/functions/`, exclui `_shared`) |
 | Rotas declaradas | 172 ocorrências `path=` em `src/App.tsx` |
