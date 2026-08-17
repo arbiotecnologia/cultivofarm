@@ -110,7 +110,9 @@ export const navigation: NavItem[] = [
   { id: "com-pedidos-b2b", label: "Pedidos B2B", icon: ClipboardCheck, route: "/comercial/pedidos-b2b", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 7, platforms: ["desktop"], searchKeywords: ["pedido b2b", "pedidos b2b", "pedidos parceiro", "revenda"] },
   { id: "com-solicitacoes-b2b", label: "Solicitações B2B", icon: ClipboardList, route: "/comercial/solicitacoes-b2b", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 8, platforms: ["desktop"], searchKeywords: ["solicitação b2b", "solicitações b2b", "parceiro", "revenda"] },
   { id: "com-campanhas", label: "Campanhas", icon: TrendingUp, route: "/comercial/campanhas", section: "Comercial e Relacionamento", subSection: "Demandas e Vendas", order: 9, platforms: ["desktop"], searchKeywords: ["campanha", "promoção", "campanhas", "comercial", "ações comerciais"] },
-  { id: "com-catalogo", label: "Catálogo", icon: FlaskConical, route: "/comercial/catalogo", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 10, platforms: ["desktop"], searchKeywords: ["catálogo", "produto", "produtos", "portfólio"] },
+  // Fase 29: o item "Catálogo" (/comercial/catalogo) foi unificado ao
+  // "Catálogo Técnico" de /base-tecnica — a rota antiga apenas redireciona.
+
   // Fase 26B: o rótulo permanece "Base Técnica" — há teste de contrato
   // Fase 26C: rótulo visual passa a ser "Catálogo AR Bio". Rota canônica
   // (/base-tecnica), id, legacyRoutes (/protocolos), permissões e filhos
@@ -118,8 +120,8 @@ export const navigation: NavItem[] = [
   {
     id: "protocolos", label: "Catálogo AR Bio", icon: FileText, route: "/base-tecnica",
     section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11,
-    platforms: ["desktop"], legacyRoutes: ["/protocolos"],
-    searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "catálogo ar bio", "catalogo ar bio", "produtos", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "catalogo tecnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],
+    platforms: ["desktop"], legacyRoutes: ["/protocolos", "/comercial/catalogo"],
+    searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "catálogo", "catalogo", "catálogo comercial", "catalogo comercial", "portfólio", "portfolio", "catálogo ar bio", "catalogo ar bio", "produtos", "produto", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "catalogo tecnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],
 
     children: [
       { id: "protocolos-produtos", label: "Produtos", icon: Package, route: "/base-tecnica?tab=produtos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], paramDefault: true, searchKeywords: ["produtos", "base técnica"] },

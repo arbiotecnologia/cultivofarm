@@ -197,6 +197,7 @@ async def main():
         results.append(await assert_catalog(page, "admin_protocolos"))
 
         await page.goto(f"{BASE}/comercial/catalogo", wait_until="networkidle")
+        # rota legada redireciona para a aba unificada do Catálogo Técnico
         results.append(await assert_catalog(page, "comercial_catalogo"))
 
         await page.goto(f"{BASE}/portal-parceiro/novo", wait_until="networkidle")

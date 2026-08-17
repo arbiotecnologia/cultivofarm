@@ -49,7 +49,7 @@ describe("FASE 28A — rotas do Catálogo AR Bio preservadas", () => {
   it("navegação mantém o rótulo Catálogo AR Bio e a rota legada", () => {
     const c = read(NAV);
     expect(c).toContain("Catálogo AR Bio");
-    expect(c).toContain('legacyRoutes: ["/protocolos"]');
+    expect(c).toContain('legacyRoutes: ["/protocolos", "/comercial/catalogo"]');
   });
 });
 

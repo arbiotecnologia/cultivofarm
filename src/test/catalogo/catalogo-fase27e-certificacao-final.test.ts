@@ -135,7 +135,7 @@ describe("FASE 27E — rotas e navegação", () => {
     const c = read(NAV);
     expect(c).toContain("Catálogo AR Bio");
     expect(c).toContain("/base-tecnica");
-    expect(c).toContain('legacyRoutes: ["/protocolos"]');
+    expect(c).toContain('legacyRoutes: ["/protocolos", "/comercial/catalogo"]');
   });
 
   it("/protocolos permanece como rota legada redirecionando para /base-tecnica", () => {

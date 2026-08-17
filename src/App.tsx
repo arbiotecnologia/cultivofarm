@@ -151,7 +151,7 @@ import CampanhasComerciais from "@/pages/comercial/CampanhasComerciais";
 import SimuladorComercial from "@/pages/comercial/SimuladorComercial";
 import IndicadoresComerciais from "@/pages/comercial/IndicadoresComerciais";
 import AlertasComerciais from "@/pages/comercial/AlertasComerciais";
-import CatalogoComercial from "@/pages/comercial/CatalogoComercial";
+
 import DashboardConsolidadoB2B from "@/pages/comercial/DashboardConsolidadoB2B";
 import CommercialPaymentPlansPage from "@/pages/comercial/CommercialPaymentPlansPage";
 import AuditoriaMotorB2B from "@/pages/comercial/AuditoriaMotorB2B";
@@ -545,7 +545,7 @@ const App = () => (
                  <Route path="/comercial/dashboard-b2b" element={<Navigate to="/comercial/dashboard-consolidado" replace />} />
                  <Route path="/comercial/campanhas" element={<RoleGuard><CampanhasComerciais /></RoleGuard>} />
                  <Route path="/comercial/simulador" element={<RoleGuard><SimuladorComercial /></RoleGuard>} />
-                 <Route path="/comercial/catalogo" element={<RoleGuard><CatalogoComercial /></RoleGuard>} />
+                 <Route path="/comercial/catalogo" element={<PreservedNavigate to="/base-tecnica?tab=catalogo-tecnico" />} />
                  <Route path="/comercial/indicadores" element={<RoleGuard><IndicadoresComerciais /></RoleGuard>} />
                  <Route path="/comercial/alertas" element={<RoleGuard><AlertasComerciais /></RoleGuard>} />
                  <Route path="/comercial/dashboard-consolidado" element={<RoleGuard><DashboardConsolidadoB2B /></RoleGuard>} />
