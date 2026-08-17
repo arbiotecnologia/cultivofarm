@@ -2,6 +2,7 @@
 
 Execução: 2026-08-17 (UTC) · Modo: auditoria somente-leitura + correções mínimas P0/P1 autorizadas
 Escopo: HEAD atual do repositório. **H1 NÃO foi iniciada.**
+Revisão: continuação/finalização da H0 sobre o HEAD `fbc0afaf` (a rodada anterior foi refeita integralmente neste HEAD; nenhuma correção antiga do catálogo foi repetida).
 
 ---
 
@@ -9,7 +10,8 @@ Escopo: HEAD atual do repositório. **H1 NÃO foi iniciada.**
 
 | Item | Valor |
 |---|---|
-| HEAD | `d34c86c2245b357b5b16dc3c7fe5f30edfa06942` — "Work in progress" (2026-08-17 13:38 UTC) |
+| HEAD | `fbc0afaf` — "Work in progress" (2026-08-17, continuação da H0; HEAD da 1ª rodada: `d34c86c2`) |
+
 | Migrations no repo | 681 arquivos (`supabase/migrations/`) |
 | Edge Functions no repo | 34 (`supabase/functions/`, exclui `_shared`) |
 | Rotas declaradas | 172 ocorrências `path=` em `src/App.tsx` |
@@ -28,23 +30,30 @@ Estado **encontrado** no HEAD (evidência: leitura direta dos arquivos, sem sobr
 
 Comparação executada antes de qualquer correção (não foi "restauração cega"): 2 de 4 fontes de binding do repo já apontavam para o staging; apenas `.env` e `types.ts` divergiam, e o `types.ts` divergente é um stub sem as relações fiscais/regulatórias exigidas pelo teste de contrato `src/test/config/connection-binding.static.test.ts`. A hipótese "staging = `ikaauvsflpmamgxmkhoq`" foi, portanto, **confirmada por três evidências independentes** (config.toml, client.ts, teste de contrato versionado), e não assumida.
 
-Evidência do banco realmente acessível pelo executor (sandbox):
-`50 tabelas públicas · 3 policies · 18 functions · 2 views · 42 tabelas sem RLS` — incompatível com um schema originado de 681 migrations. `supabase_migrations.schema_migrations` retorna `permission denied`.
+Evidência do banco realmente acessível pelo executor (sandbox), relida neste HEAD:
+`current_database=postgres · current_user=sandbox_exec · 50 tabelas públicas · 3 policies` — incompatível com um schema originado de 681 migrations. `supabase_migrations.schema_migrations` retorna `ERROR: permission denied for schema supabase_migrations`.
+
+**Reincidência confirmada (H0-002R)**: no HEAD `fbc0afaf` o drift de `.env` (`yzszlzjpovmcteuxjznj`) e o truncamento de `types.ts` (2.052 linhas) **voltaram a ocorrer**, mesmo tendo sido corrigidos na rodada anterior. Isso caracteriza regeneração automática recorrente pelo backend Cloud sandbox, e não um erro pontual de commit — o repositório sozinho não estabiliza o binding. Registrado como pendência estrutural.
 
 ## 3. Build, typecheck, lint, testes
 
-| Etapa | Comando | Resultado | Duração |
-|---|---|---|---|
-| Typecheck | `bunx tsgo --noEmit` | **0 erros** (exit 0) | ~40 s |
-| Testes (1ª execução, pré-correção) | `bunx vitest run` | **5 failed / 3068 passed / 4 skipped** (188 arquivos) | 109,9 s |
-| Testes (pós-correção) | `bunx vitest run` | **3073 passed / 4 skipped / 0 failed** (187 files passed, 1 skipped) | 169,3 s |
-| Lint | `bunx eslint .` | exit 1 — **3.381 problemas (3.274 errors, 107 warnings)**; predominância `@typescript-eslint/no-explicit-any` | ~60 s |
-| Build produção | `bunx vite build` | **SUCESSO** (exit 0), 1 m 51 s; PWA `generateSW`, 20 entradas precache (6.077 KiB) | 111 s |
-| E2E (Playwright) | não executado | 9 specs presentes; dependem de credenciais/usuários de teste e de staging | — |
+Evidência desta continuação (HEAD `fbc0afaf`), logs em `/tmp/h0/`:
 
-Warnings relevantes do build: bundle único `dist/assets/index-*.js` de **5.398 kB** (gzip 1.411 kB) — acima do limite de 500 kB, sem code-splitting.
+| Etapa | Comando | Resultado |
+|---|---|---|
+| Typecheck (pré-correção) | `bunx tsgo --noEmit` | **0 erros** (exit 0) |
+| Testes (pré-correção) | `bunx vitest run` | exit 1 — **14 failed / 3059 passed / 4 skipped** (5 arquivos falhando: `connection-binding.static`, `comunicacao/fase2-schema-onfarm`, `fiscal/fase3_15.static`, `fiscal/fase3_19_2.audit`, `fiscal/sinief49/staging/verifier`) — **100% das falhas causadas pelo drift de `.env`/`types.ts`**, nenhuma falha de regra de negócio |
+| Testes (pós-correção C-3) | `bunx vitest run` | exit 0 — **3.073 passed / 4 skipped / 0 failed** (187 files passed, 1 skipped, 188 total) |
+| Typecheck (pós-correção) | `bunx tsgo --noEmit` | **0 erros** (exit 0) |
+| Lint | `bunx eslint . -f json` | exit 1 — **3.381 problemas (3.274 errors / 107 warnings)**: `no-explicit-any` 3.233 · `react-hooks/exhaustive-deps` 48 · `react-refresh/only-export-components` 33 · parse/none 26 · `prefer-const` 16 · `ban-ts-comment` 7 · `no-empty` 6 · `no-useless-escape` 4 |
+| Build produção | `bunx vite build` | **SUCESSO** (exit 0), 32,6 s |
+| E2E (Playwright) | não executado | 9 specs; dependem de staging + usuários de teste — **NÃO VALIDADO** |
 
-Separação infra × funcional: a primeira tentativa de `eslint` falhou por `ENOENT` no arquivo temporário `vite.config.ts.timestamp-*.mjs` (corrida com o `vite build` paralelo) — **falha de infraestrutura**, resolvida ao rodar isoladamente. As 5 falhas de teste eram **funcionais** (regressão de navegação, ver §20).
+Warnings relevantes do build: bundle único `dist/assets/index-BCPJGZrY.js` de **5.398,69 kB** (gzip 1.411,32 kB) — acima do limite de 500 kB, sem code-splitting de rota. Demais chunks: `html2canvas` 201 kB, `index.es` 151 kB, `PortalExecutivo` 77 kB, `purify.es` 24 kB.
+
+Separação infra × funcional: nenhuma falha de infraestrutura nesta rodada. As 14 falhas foram **funcionais-de-ambiente** (contrato de tipos/binding), não de domínio.
+
+
 
 ## 4. Inventário frontend (rotas, layouts, guards)
 
@@ -189,21 +198,31 @@ Cadeia evento → template → outbox → provider → tentativa → status, com
 - **Rollback**: `git show d34c86c2:.env > .env` e idem para `types.ts`.
 - **Reteste**: `connection-binding.static.test.ts` PASS; `tsgo --noEmit` 0 erros; build OK.
 
-### C-2 — Regressão de navegação: sub-aba "Catálogo Técnico" ausente (P1)
+### C-2 — Regressão de navegação: sub-aba "Catálogo Técnico" ausente (P1) — rodada anterior
 - **Antes**: 5 testes falhando (`catalogo-unificacao-fase29`, `sidebar-adequacoes` ×2, `sidebar-padronizacao` ×2); Base Técnica com 4 filhos.
 - **Causa**: na unificação (Fase 29) o filho `protocolos-catalogo-tecnico` foi removido junto com o item legado `/comercial/catalogo`, embora seja justamente o **destino** do redirect.
 - **Arquivo**: `src/config/navigation.ts` (uma linha reinserida, idêntica à definição histórica, entre "Microrganismos" e "Culturas").
 - **Rollback**: remover a linha `protocolos-catalogo-tecnico`.
-- **Reteste**: suíte completa **3.073 PASS / 4 skipped / 0 FAIL**.
+- **Status nesta continuação**: já presente no HEAD `fbc0afaf` e **não foi refeita**. Verificada apenas por reteste (suíte de navegação PASS).
 
-Nenhuma regra de negócio, migration, RPC, RLS ou rota foi alterada.
+### C-3 — Rebind do staging reincidente no HEAD `fbc0afaf` (P0)
+- **Antes**: `.env` = `yzszlzjpovmcteuxjznj`; `types.ts` = 2.052 linhas; 14 testes falhando.
+- **Verificação prévia (sem restauração cega)**: `client.ts` e `config.toml` continuavam em `ikaauvsflpmamgxmkhoq`, e o teste de contrato versionado exige esse mesmo ref — 3 evidências independentes contra 1 divergente. Só então foi restaurado o baseline `c75bb87f` (21.850 linhas), único conteúdo coerente com as três.
+- **Arquivos**: `.env`, `src/integrations/supabase/types.ts`. Backup do estado divergente preservado em `/tmp/h0/env.drift.bak` e `/tmp/h0/types.drift.bak`.
+- **Rollback**: `git show fbc0afaf:.env > .env` e idem para `types.ts`.
+- **Reteste**: `tsgo --noEmit` 0 erros · `vitest run` **3.073 PASS / 0 FAIL** · `vite build` SUCESSO.
+
+Nenhuma regra de negócio, migration, RPC, RLS, rota, permissão ou dependência foi alterada nesta continuação. Nenhuma migration foi aplicada; nenhum banco remoto foi resetado; nada foi promovido a produção.
+
 
 ## 21. Achados
 
 | ID | Sev | Domínio | Evidência | Impacto | Recomendação | Teste de regressão | Status |
 |---|---|---|---|---|---|---|---|
 | H0-001 | P0 | Ambiente | `PGHOST`/tools apontam para sandbox (`50 tabelas, 3 policies`); `supabase_migrations` inacessível | Impede §6 §8 §9 §10 (migrations, schema final, SECURITY DEFINER, RLS) | Rebind das ferramentas de execução ao staging `ikaauvsflpmamgxmkhoq` (ou fornecer `STAGING_DSN` somente-leitura) | script `scripts/rbac-audit/policies-report.sql` executável | **ABERTO** |
-| H0-002 | P0 | Ambiente | `.env` + `types.ts` divergentes no HEAD | App compilaria contra projeto errado | Corrigido em C-1; adicionar gate de CI com o teste de binding | `connection-binding.static.test.ts` | CORRIGIDO |
+| H0-002 | P0 | Ambiente | `.env` + `types.ts` divergentes no HEAD | App compilaria contra projeto errado | Corrigido em C-1/C-3 | `connection-binding.static.test.ts` | CORRIGIDO |
+| H0-002R | P0 | Ambiente | O mesmo drift **reincidiu** no HEAD `fbc0afaf` após já corrigido, derrubando 14 testes | Correção manual não se sustenta; qualquer build pode sair ligado ao projeto errado | Estabilizar a fonte do binding (parar a regeneração automática de `.env`/`types.ts` pelo sandbox) e travar o teste de contrato como gate de CI/publicação | `connection-binding.static.test.ts` em CI bloqueante | **ABERTO** |
+
 | H0-003 | P1 | Navegação/Catálogo | 5 testes falhando no HEAD | Menu sem o destino canônico do redirect | Corrigido em C-2 | `catalogo-unificacao-fase29.test.ts` | CORRIGIDO |
 | H0-004 | P1 | Estoque | Divergências A1/A2 da Fase 28B ainda no HEAD | Reserva sem idempotência / laço não transacional | Unificar em `rpc_estoque_operar_v1` com chave idempotente | harness SQL de reserva concorrente | ABERTO |
 | H0-005 | P1 | Edge Functions | 3 harnesses de runtime implantáveis; 29 funções com service role | Superfície de execução privilegiada em produção | Excluir harnesses do deploy de produção; revisar escopo do service role | inventário de deploy por ambiente | ABERTO |
@@ -224,8 +243,24 @@ Nenhuma regra de negócio, migration, RPC, RLS ou rota foi alterada.
 ## 23. Bloqueadores para homologação
 
 1. **H0-001 (P0)** — sem acesso somente-leitura ao staging `ikaauvsflpmamgxmkhoq`, os capítulos 4, 6, 7, 8, 9 e 10 do escopo H0 (migrations aplicadas, schema final, SECURITY DEFINER, RLS, grants, storage) **não podem ser certificados com evidência**.
-2. **H0-004 (P1)** — idempotência de reserva de estoque.
-3. **H0-005 (P1)** — harnesses de runtime e amplitude do service role nas Edge Functions.
+2. **H0-002R (P0)** — o binding do repositório é reescrito automaticamente para o projeto sandbox; a correção manual não se sustenta entre execuções.
+3. **H0-004 (P1)** — idempotência de reserva de estoque.
+4. **H0-005 (P1)** — harnesses de runtime e amplitude do service role nas Edge Functions.
+5. **H0-006 (P1)** — estado final de RLS não evidenciado.
+
+### Itens explicitamente NÃO VALIDADOS (pendências, sem evidência inventada)
+
+| Capítulo do escopo | Situação | Causa |
+|---|---|---|
+| 6 — reconciliação migrations repo × banco | **NÃO VALIDADA** | `supabase_migrations` inacessível; executor no sandbox |
+| 7 — rebuild/replay do schema | **NÃO VALIDADA** | sem Postgres efêmero autorizado; reset remoto vedado |
+| 8 — inventário final do schema/storage | **NÃO VALIDADA** | leitura só possível no staging |
+| 9 — SECURITY DEFINER (owner, grants EXECUTE, SQL dinâmico) | **NÃO VALIDADA** | idem |
+| 10 — matriz RLS/grants por tabela sensível | **NÃO VALIDADA** | idem |
+| E2E Playwright (9 specs) | **NÃO VALIDADA** | exige staging + usuários de teste |
+| Flags de entrega de comunicação OFF no ambiente | **NÃO VALIDADA** | exige leitura do ambiente de staging |
+
+Capítulos **validados com evidência** nesta execução: 1, 2 (com divergência registrada), 3, 4, 5, 11 (a partir de `config.toml` + código), 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22.
 
 ---
 
@@ -233,9 +268,11 @@ Nenhuma regra de negócio, migration, RPC, RLS ou rota foi alterada.
 
 # H0 BLOQUEADA
 
-**Motivo**: o binding do executor aponta para um projeto sandbox, e não para o staging autorizado. A metade "código" da baseline está certificada (typecheck 0 erros, 3.073 testes PASS, build de produção OK, inventários de rotas/perfis/migrations/Edge Functions concluídos), mas a metade "banco" (migrations aplicadas, schema final, SECURITY DEFINER, RLS, grants, storage) não pôde ser evidenciada. Declarar aprovação — mesmo com ressalvas — afirmaria segurança sem evidência, o que o próprio escopo proíbe.
+**Motivo**: o binding do executor aponta para um projeto sandbox (`50 tabelas · 3 policies · `permission denied` em `supabase_migrations``), e não para o staging autorizado `ikaauvsflpmamgxmkhoq`. A metade "código" da baseline está certificada (typecheck 0 erros, **3.073 testes PASS / 0 FAIL**, build de produção OK, inventários de rotas/perfis/migrations/Edge Functions/domínios concluídos), mas a metade "banco" (migrations aplicadas, schema final, SECURITY DEFINER, RLS, grants, storage) **não pôde ser evidenciada**. Some-se a isso a reincidência do drift de binding (H0-002R), que torna o próprio ambiente de build não determinístico. Declarar aprovação — mesmo com ressalvas — afirmaria segurança sem evidência, o que o escopo proíbe.
 
-**P0/P1 abertos**: H0-001 (P0), H0-004 (P1), H0-005 (P1), H0-006 (P1).
+**P0/P1 abertos**: H0-001 (P0), H0-002R (P0), H0-004 (P1), H0-005 (P1), H0-006 (P1).
+
+
 
 **Desbloqueio mínimo**: conceder ao executor acesso somente-leitura ao staging `ikaauvsflpmamgxmkhoq` (rebind das ferramentas de banco ou `STAGING_DSN` read-only) e re-executar apenas os capítulos 6–10.
 
