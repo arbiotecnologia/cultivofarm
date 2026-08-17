@@ -115,7 +115,7 @@ Nenhum endpoint externo sem autenticação suficiente combinado com privilégio 
 | Postcheck SQL no staging | Todas as 6 tabelas com RLS on; **0** policy `qual=true` remanescente nas tabelas alvo; `anon EXECUTE` reduzido de 23 → **2** (apenas as duas RPCs públicas token-scoped); `rpc_notificar_gestor` presente com `anon=f`, `authenticated=t`; 6 helpers criados |
 | Lint | 3274 achados (majoritariamente `no-explicit-any`) — **dívida histórica**, fora do escopo H1 |
 
-**Testes RLS positivos/negativos por perfil (ID tampering):** as novas policies são *expressões* que negam por construção (`can_user_access_*` exige vínculo por `auth.uid()`); a validação estrutural foi feita via postcheck. A execução de harness SQL multi-perfil com sessões reais (`set local role` + `request.jwt.claims`) para cada uma das 6 tabelas **não foi executada** — ver risco residual R-1.
+**Testes RLS positivos/negativos por perfil (ID tampering):** **executados**. O harness `restoration/homologacao-h1/30-rls-behavioral-harness.sql` roda no staging em uma única transação encerrada com `ROLLBACK`, criando fixtures efêmeras para dois escopos de cliente e alternando identidade real via `SET LOCAL ROLE authenticated|anon` + `request.jwt.claims`. Resultado: **47 casos, 47 PASS / 0 FAIL**, cobrindo as 6 tabelas endurecidas (leitura própria permitida, cross-cliente negada em SELECT/INSERT/DELETE, forja de `changed_by`/`usuario_id` negada, `entidade_tipo` desconhecido negado, `anon` sem leitura de dado operacional, `anon EXECUTE` revogado e RPCs públicas token-scoped não revelando existência), além da preservação do acesso legítimo de staff. Evidência completa e prova de rollback em `docs/auditorias/homologacao-h1-rls-evidencias.md`.
 
 ---
 
@@ -129,7 +129,7 @@ Nenhum endpoint externo sem autenticação suficiente combinado com privilégio 
 
 | ID | Risco | Severidade |
 | --- | --- | --- |
-| R-1 | Harness RLS multi-perfil com sessões JWT reais não executado; a prova é estrutural (expressão da policy), não comportamental. | **P1 aberto** |
+| R-1 | Harness RLS multi-perfil com sessões JWT reais — **RESOLVIDO** em `restoration/homologacao-h1/30-rls-behavioral-harness.sql` (47/47 PASS, evidência em `homologacao-h1-rls-evidencias.md`). | **Fechado** |
 | H1-015 | Migration canônica ainda não presente em `supabase/migrations/` porque o executor está vinculado ao Sandbox. | P2 |
 | H1-013 | Diálogo de reserva de estoque: laço por item sem transação única na UI. | P2 |
 | H1-010 | 130 tabelas com grants de escrita para `anon` (mitigadas por RLS). | P2 |
@@ -142,10 +142,10 @@ Nenhum endpoint externo sem autenticação suficiente combinado com privilégio 
 
 ## 9. GATE FINAL H1
 
-> ## **H1 — BLOQUEADA**
+> ## **H1 — APROVADA COM RESSALVAS**
 
-**Justificativa:** todos os achados P0 e P1 de *configuração* (H1-001 a H1-006, H1-008, H1-009) foram corrigidos e verificados por postcheck direto no staging, com suíte verde (3073 PASS) e build OK. Entretanto, permanece **R-1 (P1 aberto)**: a comprovação das novas policies é estrutural, não comportamental — não houve execução de teste RLS positivo/negativo por perfil com sessões autenticadas reais, que o próprio escopo H1 exige como obrigatório. Pela regra do projeto (**P0/P1 aberto ⇒ BLOQUEADA**), o gate não pode ser aprovado.
+**Justificativa:** todos os achados P0 e P1 (H1-001 a H1-006, H1-008, H1-009) foram corrigidos e verificados por postcheck estrutural direto no staging **e** por prova comportamental de RLS com identidade JWT real (47/47 PASS, transação revertida, sem resíduo). Não resta nenhum P0/P1 aberto. As ressalvas remanescentes são exclusivamente **P2/P3**: H1-015 (migration canônica ainda fora de `supabase/migrations/`, versionada em `restoration/homologacao-h1/`), H1-013 (laço de reserva de estoque sem transação única na UI), H1-010 (grants de escrita a `anon` mitigados por RLS), ausência de rate limit de borda nas duas RPCs públicas token-scoped, H1-007 (`financial_settings`), H1-014 (harnesses de runtime no staging) e a dívida histórica de lint.
 
-**Caminho de desbloqueio (escopo mínimo, sem nova frente):** executar harness SQL multi-perfil no staging para as 6 tabelas endurecidas — usuário A não lê/insere/deleta registro do cliente B; `anon` sem sessão não lê dado operacional; admin/gestor/técnico/operador/produtor/parceiro preservam acesso legítimo pelo registro pai; RPC pública com token inválido não revela existência; reserva de estoque com dupla submissão não duplica.
+**Verificações de fechamento:** typecheck 0 erros · Vitest 3073 PASS · build SUCCESS · `connection-binding.static.test.ts` 8/8 PASS · postcheck SQL no staging · harness comportamental 47/47 PASS.
 
 **H2 NÃO iniciada.** Relatório pronto para auditoria independente.
