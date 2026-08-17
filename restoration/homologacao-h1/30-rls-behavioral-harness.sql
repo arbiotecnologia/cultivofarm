@@ -124,11 +124,7 @@ DECLARE
   so_a  uuid := '88888888-8888-4888-8888-888888888888';
   so_b  uuid := '99999999-9999-4999-8999-999999999999';
   n     int;
-
-  PROCEDURE_DUMMY int; -- placeholder (plpgsql não aceita procedures locais)
 BEGIN
-  -- helper interno: registra resultado
-  CREATE TEMP TABLE IF NOT EXISTS h1_noop(i int);
 
   -- ===== aplicacao_emails =====
   PERFORM set_config('request.jwt.claims', json_build_object('sub',u_a,'role','authenticated')::text, true);
