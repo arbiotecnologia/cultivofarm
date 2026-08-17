@@ -220,7 +220,9 @@ Nenhuma regra de negócio, migration, RPC, RLS, rota, permissão ou dependência
 | ID | Sev | Domínio | Evidência | Impacto | Recomendação | Teste de regressão | Status |
 |---|---|---|---|---|---|---|---|
 | H0-001 | P0 | Ambiente | `PGHOST`/tools apontam para sandbox (`50 tabelas, 3 policies`); `supabase_migrations` inacessível | Impede §6 §8 §9 §10 (migrations, schema final, SECURITY DEFINER, RLS) | Rebind das ferramentas de execução ao staging `ikaauvsflpmamgxmkhoq` (ou fornecer `STAGING_DSN` somente-leitura) | script `scripts/rbac-audit/policies-report.sql` executável | **ABERTO** |
-| H0-002 | P0 | Ambiente | `.env` + `types.ts` divergentes no HEAD | App compilaria contra projeto errado | Corrigido em C-1; adicionar gate de CI com o teste de binding | `connection-binding.static.test.ts` | CORRIGIDO |
+| H0-002 | P0 | Ambiente | `.env` + `types.ts` divergentes no HEAD | App compilaria contra projeto errado | Corrigido em C-1/C-3 | `connection-binding.static.test.ts` | CORRIGIDO |
+| H0-002R | P0 | Ambiente | O mesmo drift **reincidiu** no HEAD `fbc0afaf` após já corrigido, derrubando 14 testes | Correção manual não se sustenta; qualquer build pode sair ligado ao projeto errado | Estabilizar a fonte do binding (parar a regeneração automática de `.env`/`types.ts` pelo sandbox) e travar o teste de contrato como gate de CI/publicação | `connection-binding.static.test.ts` em CI bloqueante | **ABERTO** |
+
 | H0-003 | P1 | Navegação/Catálogo | 5 testes falhando no HEAD | Menu sem o destino canônico do redirect | Corrigido em C-2 | `catalogo-unificacao-fase29.test.ts` | CORRIGIDO |
 | H0-004 | P1 | Estoque | Divergências A1/A2 da Fase 28B ainda no HEAD | Reserva sem idempotência / laço não transacional | Unificar em `rpc_estoque_operar_v1` com chave idempotente | harness SQL de reserva concorrente | ABERTO |
 | H0-005 | P1 | Edge Functions | 3 harnesses de runtime implantáveis; 29 funções com service role | Superfície de execução privilegiada em produção | Excluir harnesses do deploy de produção; revisar escopo do service role | inventário de deploy por ambiente | ABERTO |
