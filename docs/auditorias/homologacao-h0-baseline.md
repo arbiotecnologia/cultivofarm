@@ -198,14 +198,22 @@ Cadeia evento → template → outbox → provider → tentativa → status, com
 - **Rollback**: `git show d34c86c2:.env > .env` e idem para `types.ts`.
 - **Reteste**: `connection-binding.static.test.ts` PASS; `tsgo --noEmit` 0 erros; build OK.
 
-### C-2 — Regressão de navegação: sub-aba "Catálogo Técnico" ausente (P1)
+### C-2 — Regressão de navegação: sub-aba "Catálogo Técnico" ausente (P1) — rodada anterior
 - **Antes**: 5 testes falhando (`catalogo-unificacao-fase29`, `sidebar-adequacoes` ×2, `sidebar-padronizacao` ×2); Base Técnica com 4 filhos.
 - **Causa**: na unificação (Fase 29) o filho `protocolos-catalogo-tecnico` foi removido junto com o item legado `/comercial/catalogo`, embora seja justamente o **destino** do redirect.
 - **Arquivo**: `src/config/navigation.ts` (uma linha reinserida, idêntica à definição histórica, entre "Microrganismos" e "Culturas").
 - **Rollback**: remover a linha `protocolos-catalogo-tecnico`.
-- **Reteste**: suíte completa **3.073 PASS / 4 skipped / 0 FAIL**.
+- **Status nesta continuação**: já presente no HEAD `fbc0afaf` e **não foi refeita**. Verificada apenas por reteste (suíte de navegação PASS).
 
-Nenhuma regra de negócio, migration, RPC, RLS ou rota foi alterada.
+### C-3 — Rebind do staging reincidente no HEAD `fbc0afaf` (P0)
+- **Antes**: `.env` = `yzszlzjpovmcteuxjznj`; `types.ts` = 2.052 linhas; 14 testes falhando.
+- **Verificação prévia (sem restauração cega)**: `client.ts` e `config.toml` continuavam em `ikaauvsflpmamgxmkhoq`, e o teste de contrato versionado exige esse mesmo ref — 3 evidências independentes contra 1 divergente. Só então foi restaurado o baseline `c75bb87f` (21.850 linhas), único conteúdo coerente com as três.
+- **Arquivos**: `.env`, `src/integrations/supabase/types.ts`. Backup do estado divergente preservado em `/tmp/h0/env.drift.bak` e `/tmp/h0/types.drift.bak`.
+- **Rollback**: `git show fbc0afaf:.env > .env` e idem para `types.ts`.
+- **Reteste**: `tsgo --noEmit` 0 erros · `vitest run` **3.073 PASS / 0 FAIL** · `vite build` SUCESSO.
+
+Nenhuma regra de negócio, migration, RPC, RLS, rota, permissão ou dependência foi alterada nesta continuação. Nenhuma migration foi aplicada; nenhum banco remoto foi resetado; nada foi promovido a produção.
+
 
 ## 21. Achados
 
