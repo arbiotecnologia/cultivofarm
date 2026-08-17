@@ -120,7 +120,6 @@ describe("Sidebar — allowedRoles e integridade do menu", () => {
     for (const expected of [
       "dashboard",
       "portal-produtor",
-      "com-catalogo",
       "protocolos",
       "com-simulador",
       "com-condicoes-pagamento",

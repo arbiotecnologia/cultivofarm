@@ -10,13 +10,13 @@ describe("Fase 4 — reorganização declarativa Comercial/Campo/Produção", ()
       "com-consolidado", "com-indicadores", "com-alertas",
       "clientes", "fazendas",
       "solicitacoes", "com-pedidos-b2b", "com-solicitacoes-b2b", "com-campanhas",
-      "com-catalogo", "protocolos", "com-simulador", "com-condicoes-pagamento",
+      "protocolos", "com-simulador", "com-condicoes-pagamento",
     ]);
     const sub = (id: string) => g.items.find((i) => i.id === id)!.subSection;
     expect(sub("com-consolidado")).toBe("Visão Comercial");
     expect(sub("clientes")).toBe("Clientes e Propriedades");
     expect(sub("solicitacoes")).toBe("Demandas e Vendas");
-    expect(sub("com-catalogo")).toBe("Produtos e Planejamento");
+    expect(sub("protocolos")).toBe("Produtos e Planejamento");
   });
 
   it("Campo e Assistência Técnica: 7 itens na ordem, sem subseções", () => {

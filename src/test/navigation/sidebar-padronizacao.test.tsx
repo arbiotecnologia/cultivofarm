@@ -360,7 +360,7 @@ describe("N-15 não-regressão estrutural", () => {
   it("itens desktop essenciais continuam presentes", () => {
     const ids = itemsForPlatform("desktop").map((i) => i.id);
     for (const id of [
-      "dashboard", "portal-produtor", "com-catalogo", "protocolos", "com-simulador",
+      "dashboard", "portal-produtor", "protocolos", "com-simulador",
       "com-condicoes-pagamento", "clientes", "fazendas", "comunicacao-admin",
     ]) {
       expect(ids).toContain(id);

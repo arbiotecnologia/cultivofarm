@@ -4,7 +4,8 @@ import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 
 /**
  * KPIs do Catálogo AR Bio — fonte única compartilhada por
- * `/comercial/catalogo` e pela aba "Catálogo Técnico" de `/base-tecnica`.
+ * pela aba "Catálogo Técnico" de `/base-tecnica` (rota unificada; a antiga
+ * `/comercial/catalogo` apenas redireciona).
  *
  * Os cálculos são exatamente os que existiam duplicados nos dois arquivos;
  * nada de filtro, dado ou ordem foi alterado nesta extração.

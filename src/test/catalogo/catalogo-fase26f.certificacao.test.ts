@@ -23,7 +23,7 @@ describe("26F — rotas preservadas", () => {
     expect(app).toContain('path="/base-tecnica"');
     expect(app).toContain('path="/protocolos"');
     expect(app).toContain('to="/base-tecnica"');
-    expect(app).toContain('path="/comercial/catalogo"');
+    expect(app).toContain('path="/comercial/catalogo" element={<PreservedNavigate to="/base-tecnica?tab=catalogo-tecnico" />}');
   });
 
   it("mantém catálogo mobile/produtor e catálogo do portal parceiro", () => {
