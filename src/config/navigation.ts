@@ -126,7 +126,6 @@ export const navigation: NavItem[] = [
     children: [
       { id: "protocolos-produtos", label: "Produtos", icon: Package, route: "/base-tecnica?tab=produtos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], paramDefault: true, searchKeywords: ["produtos", "base técnica"] },
       { id: "protocolos-microrganismos", label: "Microrganismos", icon: FlaskConical, route: "/base-tecnica?tab=microrganismos", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["microrganismos", "base técnica"] },
-      { id: "protocolos-catalogo-tecnico", label: "Catálogo Técnico", icon: BookOpen, route: "/base-tecnica?tab=catalogo-tecnico", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["catálogo técnico", "catalogo tecnico", "base técnica"] },
       { id: "protocolos-culturas", label: "Culturas", icon: Sprout, route: "/base-tecnica?tab=culturas", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["culturas", "base técnica"] },
       { id: "protocolos-problemas", label: "Problemas", icon: AlertTriangle, route: "/base-tecnica?tab=problemas", section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", platforms: ["desktop"], searchKeywords: ["problemas", "alvos", "base técnica"] },
     ],
