@@ -1,36 +1,39 @@
-# Unificação do Catálogo AR Bio — Fase 26A (auditoria) e plano 26B+
+# Unificação: manter apenas o "Catálogo Técnico"
 
-Relatório completo em `docs/auditorias/catalogo-fase26a.md`. Nada foi alterado em banco, migrations, RLS, RPC ou dados.
+Hoje existem duas entradas no mesmo submenu "Produtos e Planejamento":
 
-## O que a auditoria encontrou
+- "Catálogo" → `/comercial/catalogo` (página `CatalogoComercial`, escopo `interno`)
+- "Catálogo AR Bio" → "Catálogo Técnico" → `/base-tecnica?tab=catalogo-tecnico` (escopo `admin`)
 
-- Não existem rotas isoladas `/produtos`, `/microrganismos`, `/catalogo-tecnico`: são abas de `/base-tecnica` (`?tab=`). `/protocolos` já redireciona.
-- `/comercial/catalogo` e a aba "Catálogo Técnico" renderizam KPIs idênticos (código duplicado) e a mesma grade, mudando apenas o escopo.
-- Grades editáveis (Produtos/Microrganismos) e grade de leitura (CatalogoCardsGrid) exibem os mesmos registros com layouts diferentes.
-- `MobileCatalogoTecnico` refaz o join de `useCatalogoUnificado`; no B2B convivem RPC segura e query direta com gate no cliente.
-- Tabelas oficiais confirmadas (`produtos`, `microrganismos`, `formulacoes`, `catalogo_volumes`); camada técnica é complementar. Nenhuma tabela paralela.
+Verificado no código: as duas telas usam os mesmos componentes (`CatalogoKpis` + `CatalogoCardsGrid`) e o mesmo hook `useCatalogoUnificado`. A diferença de dados entre `interno` e `admin` é nula — o hook só filtra campos no escopo `b2b`. É duplicidade real.
 
-## Proposta
+## O que muda
 
-Entrada única de menu "Catálogo AR Bio" sobre `/base-tecnica`, com áreas Produtos, Microrganismos, Composições, Volumes e Preços, Fichas Técnicas, Revisão Técnica, Publicação e Histórico — unificação visual, sem fundir tabelas nem duplicar dados. Ficha por item em abas carregadas sob demanda.
+1. Remover o item de menu "Catálogo" (`com-catalogo`) da navegação desktop.
+2. Transformar `/comercial/catalogo` em redirecionamento preservado para `/base-tecnica?tab=catalogo-tecnico` (link antigo, favorito ou deep link continua funcionando).
+3. Manter a página `CatalogoComercial` fora da árvore de rotas ou removê-la, sem tocar em `CatalogoCardsGrid`, `CatalogoKpis`, `CatalogoItemDrawer` nem no hook.
+4. Reforçar as `searchKeywords` do item "Catálogo AR Bio" com "catálogo", "portfólio" e "catálogo comercial", para a busca do menu continuar encontrando.
 
-## Fases seguintes
+## Ponto que exige sua autorização explícita
 
-- 26B: componente `CatalogoKpis` compartilhado (elimina duplicação literal).
-- 26C: rótulo/agrupamento de menu e aliases de aba, sem remover rotas.
-- 26D: ficha unificada por item com abas lazy.
-- 26E: abas Volumes/Preços e Publicação reaproveitando hooks existentes.
-- 26F: performance (paginação, colunas explícitas, agregados fora da listagem).
-- 26G: convergir mobile e B2B para as RPCs canônicas.
+`gestor_comercial` hoje tem acesso a `/comercial/catalogo`, mas **não** tem acesso a `/base-tecnica`. Ao unificar, esse papel perde a visão de catálogo, a menos que se conceda leitura.
 
-## Preservação e riscos
+Opções:
 
-Preservar: `/base-tecnica` e deep links `?tab=`, `/comercial/catalogo`, portais parceiro/produtor, `/app/catalogo`, planejamento, PDFs, `get_partner_catalog_secure`, `create_partner_order_secure`, `unidade_medida`, precificação B2B, aprovação técnica e RLS. Riscos altos concentrados em carrinho B2B, aprovação técnica e PDFs; todas as fases são frontend-only e revertíveis por commit.
+- (A) Adicionar `gestor_comercial: "r"` em `/base-tecnica` no `permissions.ts` — mantém o acesso atual do papel. Recomendado.
+- (B) Não alterar permissões — `gestor_comercial` deixa de ver catálogo.
 
-## Testes
+Aprovar este plano sem ressalva será tratado como escolha (A). Se preferir (B), diga na resposta.
 
-Navegação N-01..N-15, `base-tecnica.redirect`, `catalogo/formatUnidades.guard`, `portalParceiroSimulador.contract`, typecheck, build e suíte completa.
+## Detalhes técnicos
 
-Ressalva: antes de executar 26B, o binding (`.env` / `types.ts`) deve estar no baseline de staging aprovado.
+- `src/config/navigation.ts`: remover `com-catalogo`; ampliar keywords de `protocolos`.
+- `src/App.tsx`: `/comercial/catalogo` passa a `<PreservedNavigate to="/base-tecnica?tab=catalogo-tecnico" />`, mesmo padrão já usado em `/protocolos`.
+- `src/lib/permissions.ts`: manter a chave `/comercial/catalogo` (rota legada de redirecionamento); em (A), acrescentar `gestor_comercial: "r"` em `/base-tecnica`.
+- `src/pages/comercial/CatalogoComercial.tsx`: removido junto com seu import.
+- Ajustar `src/test/catalogo/catalogo-fase26f.certificacao.test.ts` e `e2e/catalogo-cards-assertions.py` onde referenciam `/comercial/catalogo`, e adicionar teste do redirecionamento.
+- Frontend apenas: nenhuma migration, RPC, RLS ou dado é alterado. Rotas B2B, `/app/catalogo` (mobile consultor) e `MobileCatalogoTecnico` ficam intactas.
 
-**Status: APTO PARA UNIFICAÇÃO VISUAL.**
+## Validação
+
+`tsgo` (typecheck), `vitest run` completo e `build`.
