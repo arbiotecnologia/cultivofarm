@@ -48,8 +48,8 @@ BEGIN
   -- T7: itens gravaveis antes da aprovacao
   UPDATE public.partner_orders SET status = 'em_analise_comercial' WHERE id = v_order;
   BEGIN
-    INSERT INTO public.partner_order_items(order_id, quantidade, preco_unitario, subtotal)
-    VALUES (v_order, 1, 10, 10);
+    INSERT INTO public.partner_order_items(order_id, product_id, quantidade, preco_unitario, subtotal)
+    VALUES (v_order, (SELECT id FROM public.produtos WHERE ativo LIMIT 1), 1, 10, 10);
     v_pass := v_pass+1;
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_msg = MESSAGE_TEXT;
