@@ -37,7 +37,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const saldo = installment ? Number(installment.original_amount) - Number(installment.received_amount ?? installment.paid_amount ?? 0) - Number(installment.discount_amount ?? 0) : 0;
 
-  useEffect(() => { if (open) { setForm({ ...empty, amount: Math.max(0, saldo) }); setFile(null); } /* eslint-disable-line */ }, [open, installment?.id]);
+  useEffect(() => { if (open) { setForm({ ...empty, amount: Math.max(0, saldo) }); setFile(null); idempotencyRef.current = crypto.randomUUID(); } /* eslint-disable-line */ }, [open, installment?.id]);
 
   const { data: pms = [] } = useQuery({
     queryKey: ["fin-pm-active"],
