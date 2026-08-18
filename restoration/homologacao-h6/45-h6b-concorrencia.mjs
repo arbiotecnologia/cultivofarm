@@ -96,13 +96,13 @@ async function setup() {
   await admin.query("BEGIN");
 
   const categoryId = (await admin.query(
-    `INSERT INTO public.financial_categories (nome, tipo, active) VALUES ($1,'RECEITA',true) RETURNING id`,
+    `INSERT INTO public.financial_categories (name, type, active) VALUES ($1,'RECEITA',true) RETURNING id`,
     [`${TAG} CATEGORIA`])).rows[0].id;
   const pmId = (await admin.query(
-    `INSERT INTO public.payment_methods (nome, active) VALUES ($1,true) RETURNING id`,
+    `INSERT INTO public.payment_methods (name, active) VALUES ($1,true) RETURNING id`,
     [`${TAG} PIX`])).rows[0].id;
   const bankId = (await admin.query(
-    `INSERT INTO public.bank_accounts (nome, active) VALUES ($1,true) RETURNING id`,
+    `INSERT INTO public.bank_accounts (name, active) VALUES ($1,true) RETURNING id`,
     [`${TAG} BANCO`])).rows[0].id;
 
   const clienteId = (await admin.query(
