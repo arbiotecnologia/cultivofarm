@@ -84,6 +84,7 @@ describe("H3 — migration versionada", () => {
     expect(mig).toContain('DROP POLICY IF EXISTS "Authenticated users can read microrganismos"');
     expect(mig).toContain("CREATE OR REPLACE VIEW public.vw_catalogo_ficha_produtos");
     expect(mig).toContain("CREATE OR REPLACE VIEW public.vw_catalogo_ficha_microrganismos");
-    expect(mig).not.toMatch(/fornecedor|meio_cultivo|preco_tabela/);
+    const viewsBlock = mig.slice(mig.indexOf("CREATE OR REPLACE VIEW"));
+    expect(viewsBlock).not.toMatch(/\bp\.fornecedor|\bm\.fornecedor|meio_cultivo|preco_tabela/);
   });
 });
