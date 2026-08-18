@@ -92,9 +92,14 @@ DECLARE
   v_b2b uuid; v_b2b_tec uuid; v_prod uuid; v_admin uuid;
   n int; n_apr int; n_view int; n_inativo int;
 BEGIN
-  SELECT user_id INTO v_b2b     FROM public.user_roles WHERE role='parceiro_b2b' LIMIT 1;
-  SELECT user_id INTO v_b2b_tec FROM public.user_roles WHERE role='parceiro_b2b_tecnico' LIMIT 1;
-  SELECT user_id INTO v_prod    FROM public.user_roles WHERE role='cliente_produtor' LIMIT 1;
+  -- Fixtures externos "puros": usuários sem nenhum papel interno acumulado
+  -- (um parceiro que também é consultor_tecnico enxerga como interno, por direito).
+  SELECT ur.user_id INTO v_b2b FROM public.user_roles ur
+   WHERE ur.role='parceiro_b2b' AND NOT public.can_view_catalog_internal(ur.user_id) LIMIT 1;
+  SELECT ur.user_id INTO v_b2b_tec FROM public.user_roles ur
+   WHERE ur.role='parceiro_b2b_tecnico' AND NOT public.can_view_catalog_internal(ur.user_id) LIMIT 1;
+  SELECT ur.user_id INTO v_prod FROM public.user_roles ur
+   WHERE ur.role='cliente_produtor' AND NOT public.can_view_catalog_internal(ur.user_id) LIMIT 1;
   SELECT user_id INTO v_admin   FROM public.user_roles WHERE role='administrador' LIMIT 1;
 
   -- B2B: nenhuma ficha não aprovada
