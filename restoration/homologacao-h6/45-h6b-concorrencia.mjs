@@ -158,8 +158,10 @@ async function setup() {
       [oid, produtoId, total / 10, total, `${TAG} ITEM`]);
     await admin.query(
       `INSERT INTO public.partner_order_payment_terms
-         (partner_order_id, installment_count, first_due_date, table_amount, final_amount, approval_status, created_by)
-       VALUES ($1, 1, CURRENT_DATE, $2, $2, 'approved', $3)`,
+         (partner_order_id, plan_name_snapshot, plan_code_snapshot, discount_percent_snapshot,
+          monthly_interest_percent_snapshot, months_count_snapshot, installment_count, first_due_date,
+          table_amount, net_amount_after_discount, final_amount, approval_status, created_by)
+       VALUES ($1, 'H6B AVISTA', 'H6B_AVISTA', 0, 0, 0, 1, CURRENT_DATE, $2, $2, $2, 'approved', $3)`,
       [oid, total, adminUid]);
     return oid;
   };
