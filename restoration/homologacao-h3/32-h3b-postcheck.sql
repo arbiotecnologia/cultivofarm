@@ -153,6 +153,24 @@ BEGIN
   ELSE RAISE NOTICE 'SKIP_H3B_INTERNO_SEM_FIXTURE'; END IF;
 END $$;
 
+-- 10b) View de microrganismos oculta itens cuja ficha não está aprovada (produtor)
+DO $$
+DECLARE v_prod uuid; n_ok int; n_bad int;
+BEGIN
+  SELECT ur.user_id INTO v_prod FROM public.user_roles ur
+   WHERE ur.role='cliente_produtor' AND NOT public.can_view_catalog_internal(ur.user_id) LIMIT 1;
+  IF v_prod IS NULL THEN RAISE NOTICE 'SKIP_H3B_VIEW_PUBLICACAO_SEM_FIXTURE'; RETURN; END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub',v_prod,'role','authenticated')::text, true);
+  PERFORM set_config('role','authenticated', true);
+  SELECT count(*) INTO n_ok FROM public.vw_catalogo_ficha_microrganismos;
+  SELECT count(*) INTO n_bad FROM public.vw_catalogo_ficha_microrganismos v
+   WHERE EXISTS (SELECT 1 FROM public.microorganism_technical_profiles tp
+                  WHERE tp.microrganismo_id = v.id AND tp.status_validacao <> 'aprovado');
+  RESET ROLE;
+  IF n_bad = 0 AND n_ok > 0 THEN RAISE NOTICE 'PASS_H3B_VIEW_PUBLICACAO (visiveis=%)', n_ok;
+  ELSE RAISE EXCEPTION 'FAIL_H3B_VIEW_PUBLICACAO visiveis=% nao_aprovados=%', n_ok, n_bad; END IF;
+END $$;
+
 -- 10) Views só devolvem itens ativos
 SELECT CASE WHEN count(*)=0 THEN 'PASS_H3B_VIEW_SOMENTE_ATIVOS' ELSE 'FAIL_H3B_VIEW_SOMENTE_ATIVOS' END
 FROM public.vw_catalogo_ficha_produtos WHERE ativo IS DISTINCT FROM true;
