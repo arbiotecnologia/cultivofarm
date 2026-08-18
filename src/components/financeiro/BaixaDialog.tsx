@@ -72,7 +72,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         penalty_amount: Number(form.penalty_amount) || 0,
         notes: form.notes || null,
         has_receipt: !!file,
+        idempotency_key: idempotencyRef.current,
       };
+
 
       const rpcName = kind === "receivable" ? "rpc_register_receivable_payment" : "rpc_register_payable_payment";
       const amountKey = kind === "receivable" ? "amount_received" : "amount_paid";
