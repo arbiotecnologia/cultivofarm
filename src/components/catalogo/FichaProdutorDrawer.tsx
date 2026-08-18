@@ -63,7 +63,7 @@ export function FichaProdutorDrawer({ open, onOpenChange, itemId, tipo, origem =
     (async () => {
       if (tipo === "microrganismo") {
         const [m, p] = await Promise.all([
-          supabase.from("microrganismos").select("nome,nome_cientifico,funcao_agronomica,ativo,valor_dose_brl,valor_litro_brl,dose_ml_ha").eq("id", itemId).maybeSingle(),
+          (supabase as any).from("vw_catalogo_ficha_microrganismos").select("nome,nome_cientifico,funcao_agronomica,ativo,valor_dose_brl,valor_litro_brl,dose_ml_ha").eq("id", itemId).maybeSingle(),
           supabase
             .from("microorganism_technical_profiles")
             .select("resumo_curto,explicacao_produtor,indicacoes_uso,cuidados_aplicacao,beneficios_agronomicos,status_validacao")
@@ -91,7 +91,7 @@ export function FichaProdutorDrawer({ open, onOpenChange, itemId, tipo, origem =
         );
       } else {
         const [pr, p] = await Promise.all([
-          supabase.from("produtos").select("nome,codigo,tipo,descricao,ativo,valor_dose_brl,valor_litro_brl,valor_ha_brl,dose_ml_ha").eq("id", itemId).maybeSingle(),
+          (supabase as any).from("vw_catalogo_ficha_produtos").select("nome,codigo,tipo,descricao,ativo,valor_dose_brl,valor_litro_brl,valor_ha_brl,dose_ml_ha").eq("id", itemId).maybeSingle(),
           supabase
             .from("product_technical_profiles")
             .select("resumo_curto,explicacao_produtor,indicacoes_uso,cuidados_aplicacao,beneficio_combinado,status_validacao")
