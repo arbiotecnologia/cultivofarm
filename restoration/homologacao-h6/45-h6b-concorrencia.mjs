@@ -156,7 +156,7 @@ async function setup() {
     const oid = (await admin.query(
       `INSERT INTO public.partner_orders (partner_id, cliente_id, status, observacoes, total,
                                           final_amount_with_interest)
-       VALUES ($1,$2,'aprovado',$3,$4,$4) RETURNING id`,
+       VALUES ($1,$2,'pendente',$3,$4,$4) RETURNING id`,
       [partnerId, clienteId, `${TAG} PEDIDO`, total])).rows[0].id;
     await admin.query(
       `INSERT INTO public.partner_order_items (order_id, product_id, quantidade, preco_unitario,
@@ -171,6 +171,9 @@ async function setup() {
           table_amount, net_amount_after_discount, final_amount, approval_status, created_by)
        VALUES ($1, 'H6B AVISTA', 'H6B_AVISTA', 0, 0, 0, 1, CURRENT_DATE, $2, $2, $2, 'approved', $3)`,
       [oid, total, adminUid]);
+    // H6d: aprova apos os itens/termos (itens sao imutaveis apos aprovacao) para
+    // satisfazer o fail-closed H6c de pedido faturavel.
+    await admin.query(`UPDATE public.partner_orders SET status='aprovado' WHERE id=$1`, [oid]);
     return oid;
   };
 
