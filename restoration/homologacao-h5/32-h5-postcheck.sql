@@ -108,6 +108,8 @@ BEGIN
         jsonb_build_object('codigo_lote', v_tag, 'produto_id', v_produto::text,
                            'volume_produzido','140000'));
   v_lote := (r->>'lote_id')::uuid;
+  -- Produção acima da demanda da OS: garante excedente livre no envase.
+  UPDATE public.lotes SET volume_produzido = 140000 WHERE id = v_lote;
   PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','enviar_cq',v_prog);
   PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','aprovar_cq',v_prog);
   PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','enviar_envase',v_prog);
