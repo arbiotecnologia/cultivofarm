@@ -38,7 +38,7 @@ const rec = (gate, ok, detalhe) => {
 };
 
 const connect = async () => {
-  const c = new pg.Client({ connectionString: DSN });
+  const c = new pg.Client({ connectionString: DSN, ssl: { rejectUnauthorized: false } });
   await c.connect();
   return c;
 };
