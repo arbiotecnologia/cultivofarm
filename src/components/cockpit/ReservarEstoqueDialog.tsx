@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,8 +73,17 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
       setQtys(initQtys);
       setObservacao("");
       setProgress(null);
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current = `reserva:${target?.os_id ?? "os"}:${target?.lote_id ?? "lote"}:${
+          typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Date.now().toString(36)
+        }`;
+      }
     }
-  }, [open, itens]);
+  }, [open, itens, target?.os_id, target?.lote_id]);
+
+  useEffect(() => {
+    if (!open) idempotencyKeyRef.current = "";
+  }, [open]);
 
   const itensDisponiveis = useMemo(() => itens.filter((i: any) => i.status === "disponivel"), [itens]);
   const itemJaReservadoParaEstaOS = useMemo(
