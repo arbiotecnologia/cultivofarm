@@ -1,5 +1,4 @@
 -- H4b: aprovacao comercial fail-closed sob credit_limit_action='approval_required' (H4-003 P1)
-\set ON_ERROR_STOP on
 BEGIN;
 
 -- 1) approve_b2b_credit: comportamento inalterado + marcador transacional que
