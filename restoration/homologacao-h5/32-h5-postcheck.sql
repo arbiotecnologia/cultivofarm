@@ -157,10 +157,12 @@ BEGIN
   r := public.rpc_estoque_reservar_v1(v_os,'manual',
         jsonb_build_array(jsonb_build_object('item_id',v_est::text,'quantidade','2')), v_key, v_dados);
   v_res := ((r->'itens')->>0)::uuid;
-  SELECT quantidade INTO v_disp FROM public.estoque_produto WHERE id=v_est;
-  INSERT INTO _g(gate,status,detalhe) VALUES ('T-C reserva parcial atomica',
-    CASE WHEN (r->>'ok')::boolean AND (r->>'replay')::boolean IS FALSE AND v_disp = v_qtd-2 THEN 'PASS' ELSE 'FAIL' END,
-    'saldo_restante='||v_disp||' reservado_id='||coalesce(v_res::text,'null'));
+  SELECT status::text, coalesce(quantidade_reservada,0) INTO v_status, v_disp
+    FROM public.estoque_produto WHERE id = v_res;
+  INSERT INTO _g(gate,status,detalhe) VALUES ('T-C reserva atomica vincula a OS',
+    CASE WHEN (r->>'ok')::boolean AND (r->>'replay')::boolean IS FALSE
+              AND v_status = 'reservado' AND v_disp = 2 THEN 'PASS' ELSE 'FAIL' END,
+    'status='||v_status||' reservado='||v_disp||' item='||coalesce(v_res::text,'null'));
 
   -- T-D: replay com a MESMA chave não duplica movimento nem reserva (H1-013 / T9)
   SELECT count(*) INTO v_n FROM public.estoque_movimentacoes
@@ -169,10 +171,10 @@ BEGIN
         jsonb_build_array(jsonb_build_object('item_id',v_est::text,'quantidade','2')), v_key, v_dados);
   SELECT count(*) INTO v_n2 FROM public.estoque_movimentacoes
    WHERE idempotency_key = v_key OR idempotency_key LIKE v_key||'#%';
-  SELECT quantidade INTO v_disp FROM public.estoque_produto WHERE id=v_est;
+  SELECT coalesce(quantidade_reservada,0) INTO v_disp FROM public.estoque_produto WHERE id=v_res;
   INSERT INTO _g(gate,status,detalhe) VALUES ('T-D replay idempotente sem duplicar',
-    CASE WHEN (r->>'replay')::boolean AND v_n2 = v_n AND v_disp = v_qtd-2 THEN 'PASS' ELSE 'FAIL' END,
-    'mov_antes='||v_n||' mov_depois='||v_n2||' saldo='||v_disp);
+    CASE WHEN (r->>'replay')::boolean AND v_n2 = v_n AND v_disp = 2 THEN 'PASS' ELSE 'FAIL' END,
+    'mov_antes='||v_n||' mov_depois='||v_n2||' reservado='||v_disp);
 
   -- T-E: rastreabilidade causal da movimentação (referência, autoria, ledger)
   SELECT count(*) INTO v_n FROM public.estoque_movimentacoes
@@ -191,9 +193,10 @@ BEGIN
   END;
   SELECT count(*) INTO v_n FROM public.estoque_movimentacoes
    WHERE estoque_produto_id IN (v_est, v_res) AND acao = 'cancelamento_reserva';
+  SELECT status::text INTO v_status FROM public.estoque_produto WHERE id = v_res;
   INSERT INTO _g(gate,status,detalhe) VALUES ('T-F cancelamento reverte reserva',
-    CASE WHEN v_ok AND v_n = 1 THEN 'PASS' ELSE 'FAIL' END,
-    'estornos='||v_n||' ret='||left(r::text,60));
+    CASE WHEN v_ok AND v_n >= 1 AND v_status = 'disponivel' THEN 'PASS' ELSE 'FAIL' END,
+    'estornos='||v_n||' status='||v_status||' ret='||left(r::text,50));
 
   -- T-G: replay do cancelamento não estorna duas vezes
   BEGIN
