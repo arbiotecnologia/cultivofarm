@@ -7,7 +7,7 @@ DECLARE
   v_partner uuid; v_order uuid; v_exp jsonb; v_pass int := 0; v_fail int := 0;
   v_msg text;
 BEGIN
-  INSERT INTO public.partner_accounts(nome, ativo)
+  INSERT INTO public.partner_accounts(razao_social, ativo)
   VALUES ('H4-POSTCHECK PARCEIRO', true) RETURNING id INTO v_partner;
 
   INSERT INTO public.partner_financial_settings(partner_id, credit_limit, credit_limit_action, block_if_overdue)
