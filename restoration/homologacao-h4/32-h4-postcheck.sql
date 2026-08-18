@@ -45,27 +45,36 @@ BEGIN
   IF (v_exp->>'exposicao_projetada')::numeric = 0 THEN v_pass := v_pass+1;
   ELSE v_fail := v_fail+1; RAISE WARNING 'T5 FAIL %', v_exp; END IF;
 
+  -- T7: itens gravaveis antes da aprovacao
+  UPDATE public.partner_orders SET status = 'em_analise_comercial' WHERE id = v_order;
+  BEGIN
+    INSERT INTO public.partner_order_items(order_id, quantidade, preco_unitario, subtotal)
+    VALUES (v_order, 1, 10, 10);
+    v_pass := v_pass+1;
+  EXCEPTION WHEN OTHERS THEN
+    GET STACKED DIAGNOSTICS v_msg = MESSAGE_TEXT;
+    v_fail := v_fail+1; RAISE WARNING 'T7 FAIL msg=%', v_msg;
+  END;
+
   -- T6: itens imutaveis apos aprovacao
   UPDATE public.partner_orders SET status = 'aprovado' WHERE id = v_order;
   BEGIN
-    INSERT INTO public.partner_order_items(order_id, quantidade, preco_unitario)
-    VALUES (v_order, 1, 10);
-    v_fail := v_fail+1; RAISE WARNING 'T6 FAIL: insert permitido em pedido aprovado';
+    UPDATE public.partner_order_items SET preco_unitario = 1 WHERE order_id = v_order;
+    v_fail := v_fail+1; RAISE WARNING 'T6 FAIL: update permitido em pedido aprovado';
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_msg = MESSAGE_TEXT;
     IF v_msg LIKE 'order_items_immutable_after_approval%' THEN v_pass := v_pass+1;
     ELSE v_fail := v_fail+1; RAISE WARNING 'T6 FAIL msg=%', v_msg; END IF;
   END;
 
-  -- T7: itens gravaveis antes da aprovacao
-  UPDATE public.partner_orders SET status = 'em_analise_comercial' WHERE id = v_order;
+  -- T8: exclusao de item tambem bloqueada apos aprovacao
   BEGIN
-    INSERT INTO public.partner_order_items(order_id, quantidade, preco_unitario)
-    VALUES (v_order, 1, 10);
-    v_pass := v_pass+1;
+    DELETE FROM public.partner_order_items WHERE order_id = v_order;
+    v_fail := v_fail+1; RAISE WARNING 'T8 FAIL: delete permitido em pedido aprovado';
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_msg = MESSAGE_TEXT;
-    v_fail := v_fail+1; RAISE WARNING 'T7 FAIL msg=%', v_msg;
+    IF v_msg LIKE 'order_items_immutable_after_approval%' THEN v_pass := v_pass+1;
+    ELSE v_fail := v_fail+1; RAISE WARNING 'T8 FAIL msg=%', v_msg; END IF;
   END;
 
   RAISE NOTICE 'H4 POSTCHECK: % PASS / % FAIL', v_pass, v_fail;
