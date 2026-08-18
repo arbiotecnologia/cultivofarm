@@ -435,6 +435,14 @@ async function t12_sem_alcada() {
 
 async function teardown() {
   await admin.query("BEGIN");
+  // H6d: o trigger trg_h6c_entrega_ar_b2b_link cria vinculos financeiros
+  // apontando para os recebiveis; removidos primeiro para liberar o FK.
+  await admin.query(
+    `DELETE FROM public.partner_order_financial_links WHERE partner_order_id = ANY($1)
+        OR receivable_id IN (SELECT id FROM public.accounts_receivable
+                              WHERE description LIKE $2 OR origin_id = ANY($1))`,
+    [[F.orderT6, F.orderT7, F.orderT8, F.orderT10, F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10],
+     `${TAG}%`]);
   await admin.query(
     `DELETE FROM public.receivable_payments WHERE installment_id IN
        (SELECT i.id FROM public.accounts_receivable_installments i
