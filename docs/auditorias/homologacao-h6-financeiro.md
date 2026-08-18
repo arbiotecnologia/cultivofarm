@@ -134,3 +134,25 @@ preservados. Produção intocada.
 ## GATE
 
 **H6 — APROVADA COM RESSALVAS** (zero P0/P1; ressalvas P3 acima). **H7 não iniciada.**
+
+---
+
+## H6d — Proveniência/reprodutibilidade (encerramento do GATE H6)
+
+- Migrations canônicas criadas em `supabase/migrations/`:
+  `20260917000000_h6c_financeiro_snapshot_b2b_credito.sql` e
+  `20260917010000_h6c_backfill_payment_terms_link.sql`.
+- `restoration/homologacao-h6/apply-h6c.sh` passa a aplicar as **duas** etapas na ordem,
+  com guard duro contra produção.
+- Novos: `rollback-h6c.sql` (forward-safe) e o postcheck de paridade
+  `49-h6d-paridade-repo-live.sql` + `49-h6d-paridade.sh`.
+- Paridade REPO x LIVE provada em transação com ROLLBACK: **6/6 PASS**, backfill no-op,
+  nenhuma reaplicação de DDL necessária no staging.
+- Histórico `supabase_migrations.schema_migrations` defasado em 48 versões
+  (aplicação manual via psql) — **H6D-001 (P2)**, documentado e delegado a H10 sem
+  adulteração de metadados.
+- Reexecução: H6b 16/16, H6c 13/13, comportamental 12/12, concorrência 17/17,
+  typecheck 0 erros, Vitest 3105 passed, build OK, binding `c75bb87f`.
+- Produção `navfzbwgwzruipouyfnk` intocada.
+
+**GATE H6 — APROVADA COM RESSALVAS (zero P0/P1). H7 não iniciada.**
