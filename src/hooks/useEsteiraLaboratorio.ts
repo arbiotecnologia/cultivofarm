@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
+
 
 export type EsteiraStage =
   | "aguardando"
