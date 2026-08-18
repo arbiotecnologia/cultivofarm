@@ -44,7 +44,10 @@ BEGIN
   VALUES (v_order, 'AVISTA', 'AVISTA', 0, 0, 0, 1, current_date, 'compound',
           5000, 0, 5000, 0, 5000, 'approved');
   -- normaliza status caso gatilhos tenham roteado o pedido
+  -- simula deriva administrativa: pedido acima do limite parado em em_analise_comercial
+  ALTER TABLE public.partner_orders DISABLE TRIGGER trg_partner_orders_credit_guard;
   UPDATE public.partner_orders SET status='em_analise_comercial', credit_block_reason=NULL WHERE id=v_order;
+  ALTER TABLE public.partner_orders ENABLE TRIGGER trg_partner_orders_credit_guard;
 
   BEGIN
     PERFORM public.approve_partner_order(v_order, 'harness A', NULL);
@@ -110,7 +113,10 @@ BEGIN
     financial_interest_amount, final_amount, approval_status)
   VALUES (v_order, 'AVISTA', 'AVISTA', 0, 0, 0, 1, current_date, 'compound',
           5000, 0, 5000, 0, 5000, 'approved');
+  -- simula deriva administrativa: pedido acima do limite parado em em_analise_comercial
+  ALTER TABLE public.partner_orders DISABLE TRIGGER trg_partner_orders_credit_guard;
   UPDATE public.partner_orders SET status='em_analise_comercial', credit_block_reason=NULL WHERE id=v_order;
+  ALTER TABLE public.partner_orders ENABLE TRIGGER trg_partner_orders_credit_guard;
 
   BEGIN
     PERFORM public.approve_partner_order(v_order, 'harness C', NULL);
@@ -138,7 +144,10 @@ BEGIN
     financial_interest_amount, final_amount, approval_status)
   VALUES (v_order, 'AVISTA', 'AVISTA', 0, 0, 0, 1, current_date, 'compound',
           100, 0, 100, 0, 100, 'approved');
+  -- simula deriva administrativa: pedido acima do limite parado em em_analise_comercial
+  ALTER TABLE public.partner_orders DISABLE TRIGGER trg_partner_orders_credit_guard;
   UPDATE public.partner_orders SET status='em_analise_comercial', credit_block_reason=NULL WHERE id=v_order;
+  ALTER TABLE public.partner_orders ENABLE TRIGGER trg_partner_orders_credit_guard;
 
   BEGIN
     PERFORM public.approve_partner_order(v_order, 'harness D', NULL);
