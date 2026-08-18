@@ -352,7 +352,7 @@ async function t6_t7_t8_t10() {
   const ids = r.filter((x) => x.ok).map((x) => x.out.rows[0].id);
   rec("T6 entrega B2B integral => AR único = snapshot canônico (2000)",
     ars === 1 && Math.abs(total - 2000) < 0.011 && (ids.length < 2 || ids[0] === ids[1]),
-    `ars=${ars} total=${total}`);
+    `ars=${ars} total=${total} err=${r.map((x)=>x.ok?"ok":x.error.message).join(" | ")}`);
 
   // T7 parcial
   const teto = Number(F.reconcT7.valor_faturavel_max);
