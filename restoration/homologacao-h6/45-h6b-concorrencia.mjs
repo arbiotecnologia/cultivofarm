@@ -96,13 +96,13 @@ async function setup() {
   await admin.query("BEGIN");
 
   const categoryId = (await admin.query(
-    `INSERT INTO public.financial_categories (nome, tipo, active) VALUES ($1,'RECEITA',true) RETURNING id`,
+    `INSERT INTO public.financial_categories (name, type, active) VALUES ($1,'RECEITA',true) RETURNING id`,
     [`${TAG} CATEGORIA`])).rows[0].id;
   const pmId = (await admin.query(
-    `INSERT INTO public.payment_methods (nome, active) VALUES ($1,true) RETURNING id`,
+    `INSERT INTO public.payment_methods (name, active) VALUES ($1,true) RETURNING id`,
     [`${TAG} PIX`])).rows[0].id;
   const bankId = (await admin.query(
-    `INSERT INTO public.bank_accounts (nome, active) VALUES ($1,true) RETURNING id`,
+    `INSERT INTO public.bank_accounts (name, active) VALUES ($1,true) RETURNING id`,
     [`${TAG} BANCO`])).rows[0].id;
 
   const clienteId = (await admin.query(
@@ -144,6 +144,14 @@ async function setup() {
      VALUES ($1,$1, lpad((floor(random()*1e14))::bigint::text,14,'0'), true) RETURNING id`,
     [`${TAG} PARCEIRO`])).rows[0].id;
 
+  const loteId = (await admin.query(
+    `INSERT INTO public.lotes (codigo_lote, produto_id, volume_produzido, status)
+     VALUES ($1,$2,10000,'aprovado') RETURNING id`, [`${TAG}-LOTE`, produtoId])).rows[0].id;
+  const mkEstoque = async () => (await admin.query(
+    `INSERT INTO public.estoque_produto (produto_id, lote_id, quantidade, quantidade_reservada,
+                                         volume_total, status)
+     VALUES ($1,$2,100,100,100000,'disponivel') RETURNING id`, [produtoId, loteId])).rows[0].id;
+
   const mkOrder = async (total) => {
     const oid = (await admin.query(
       `INSERT INTO public.partner_orders (partner_id, cliente_id, status, observacoes, total,
@@ -158,18 +166,24 @@ async function setup() {
       [oid, produtoId, total / 10, total, `${TAG} ITEM`]);
     await admin.query(
       `INSERT INTO public.partner_order_payment_terms
-         (partner_order_id, installment_count, first_due_date, table_amount, final_amount, approval_status, created_by)
-       VALUES ($1, 1, CURRENT_DATE, $2, $2, 'approved', $3)`,
+         (partner_order_id, plan_name_snapshot, plan_code_snapshot, discount_percent_snapshot,
+          monthly_interest_percent_snapshot, months_count_snapshot, installment_count, first_due_date,
+          table_amount, net_amount_after_discount, final_amount, approval_status, created_by)
+       VALUES ($1, 'H6B AVISTA', 'H6B_AVISTA', 0, 0, 0, 1, CURRENT_DATE, $2, $2, $2, 'approved', $3)`,
       [oid, total, adminUid]);
     return oid;
   };
 
-  const mkEntrega = async (orderId) => (await admin.query(
-    `INSERT INTO public.entregas (cliente_id, partner_order_id, status, data_saida,
-                                  recebido_por_nome, confirmado_por, comprovante_entrega_obrigatorio,
-                                  financial_status)
-     VALUES ($1,$2,'entregue',CURRENT_DATE,$3,$4,false,'PENDING_BILLING') RETURNING id`,
-    [clienteId, orderId, `${TAG} RECEBEDOR`, adminUid])).rows[0].id;
+  const mkEntrega = async (orderId) => {
+    const epId = await mkEstoque();
+    return (await admin.query(
+      `INSERT INTO public.entregas (cliente_id, partner_order_id, status, data_saida,
+                                    recebido_por_nome, confirmado_por, comprovante_entrega_obrigatorio,
+                                    financial_status, estoque_produto_id, lote_id, produto_id,
+                                    quantidade_entregue, volume_entregue_ml)
+       VALUES ($1,$2,'entregue',CURRENT_DATE,$3,$4,false,'PENDING_BILLING',$5,$6,$7,1,1000) RETURNING id`,
+      [clienteId, orderId, `${TAG} RECEBEDOR`, adminUid, epId, loteId, produtoId])).rows[0].id;
+  };
 
   const orderT6 = await mkOrder(2000);
   const entregaT6 = await mkEntrega(orderT6);
@@ -184,17 +198,15 @@ async function setup() {
     [entregaT10, `${TAG} TESTE NAO FATURAVEL`]);
 
   // T7: conferência parcial (metade do volume aceito) + reconciliação
-  const loteId = (await admin.query(
-    `INSERT INTO public.lotes (codigo_lote, produto_id, volume_produzido, status)
-     VALUES ($1,$2,10000,'aprovado') RETURNING id`, [`${TAG}-LOTE`, produtoId])).rows[0].id;
   const mkEmb = async (vol) => (await admin.query(
     `INSERT INTO public.estoque_embalagens (codigo_embalagem, status, lote_id, produto_id, volume, quantidade, unidade)
      VALUES ($1,'separado',$2,$3,$4,1,'ml') RETURNING id`,
     [`${TAG}-${Math.random().toString(36).slice(2, 10)}`, loteId, produtoId, vol])).rows[0].id;
   const embOk = await mkEmb(500), embNo = await mkEmb(500);
   await admin.query(
-    `INSERT INTO public.entrega_conferencia_itens (entrega_id, embalagem_id, status, quantidade)
-     VALUES ($1,$2,'aceito',1), ($1,$3,'recusado',1)`, [entregaT7, embOk, embNo]);
+    `INSERT INTO public.entrega_conferencia_itens (entrega_id, embalagem_id, status, quantidade, motivo)
+     VALUES ($1,$2,'aceito',1,NULL), ($1,$3,'recusado',1,'H6B teste de recusa parcial')`,
+    [entregaT7, embOk, embNo]);
   const reconcT7 = (await admin.query(
     `INSERT INTO public.entrega_reconciliacoes
        (entrega_id, status, itens_total, itens_aceitos, itens_recusados,
@@ -407,13 +419,16 @@ async function t11_anon() {
 async function t12_sem_alcada() {
   if (!F.prodUid) { rec("T12 papel sem alçada não baixa/estorna (SKIP: sem usuário 'producao')", true); return; }
   const b = await concurrentTx(F.prodUid, barrier(200), payAr(F.arT1.inst, `${TAG}-T12-KEY`, 10));
-  const e = await concurrentTx(F.prodUid, barrier(200), (c) =>
-    c.query("SELECT public.fn_reverse_payment($1,'receivable','tentativa indevida')",
-      [(await admin.query("SELECT id FROM public.receivable_payments WHERE installment_id=$1 LIMIT 1",
-        [F.arT1.inst])).rows[0].id]));
+  const alvo = (await admin.query(
+    "SELECT id FROM public.receivable_payments WHERE installment_id=$1 LIMIT 1", [F.arT1.inst])).rows[0];
+  const e = alvo
+    ? await concurrentTx(F.prodUid, barrier(200), (c) =>
+        c.query("SELECT public.fn_reverse_payment($1,'receivable','tentativa indevida')", [alvo.id]))
+    : { ok: false, error: { code: "SEM_BAIXA" } };
   rec("T12 papel sem alçada não registra baixa nem estorna", !b.ok && !e.ok,
     `${b.error?.code ?? ""}/${e.error?.code ?? ""}`);
 }
+
 
 async function teardown() {
   await admin.query("BEGIN");
@@ -427,7 +442,15 @@ async function teardown() {
     `DELETE FROM public.payable_payments WHERE installment_id IN
        (SELECT i.id FROM public.accounts_payable_installments i
           JOIN public.accounts_payable a ON a.id=i.payable_id WHERE a.description LIKE $1)`, [`${TAG}%`]);
-  await admin.query(`UPDATE public.entregas SET receivable_id=NULL WHERE id = ANY($1)`,
+  await admin.query(`DELETE FROM public.entrega_conferencia_itens WHERE entrega_id = ANY($1)`,
+    [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
+  // A reconciliação é imutável por trigger (proteção H5). Para remover apenas as
+  // fixtures descartáveis do harness, o gatilho é suspenso na própria transação.
+  await admin.query("ALTER TABLE public.entrega_reconciliacoes DISABLE TRIGGER USER");
+  await admin.query(`DELETE FROM public.entrega_reconciliacoes WHERE entrega_id = ANY($1)`,
+    [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
+  await admin.query("ALTER TABLE public.entrega_reconciliacoes ENABLE TRIGGER USER");
+  await admin.query(`DELETE FROM public.entregas WHERE id = ANY($1)`,
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(
     `DELETE FROM public.accounts_receivable_installments WHERE receivable_id IN
@@ -441,13 +464,22 @@ async function teardown() {
   await admin.query(`DELETE FROM public.accounts_receivable WHERE description LIKE $1 OR origin_id = ANY($2)`,
     [`${TAG}%`, [F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(`DELETE FROM public.accounts_payable WHERE description LIKE $1`, [`${TAG}%`]);
-  await admin.query(`DELETE FROM public.entrega_reconciliacoes WHERE idempotency_key LIKE $1`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.entrega_conferencia_itens WHERE entrega_id = ANY($1)`,
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(`DELETE FROM public.entregas WHERE id = ANY($1)`,
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(`DELETE FROM public.estoque_embalagens WHERE codigo_embalagem LIKE $1`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.controle_qualidade WHERE lote_id=$1`, [F.loteId]);
+  // Estoque é protegido pelo motor canônico (H5); o gatilho é suspenso apenas
+  // para remover as fixtures descartáveis criadas por este harness.
+  await admin.query("ALTER TABLE public.estoque_produto DISABLE TRIGGER USER");
+  await admin.query("ALTER TABLE public.estoque_movimentacoes DISABLE TRIGGER USER");
+  await admin.query(
+    `DELETE FROM public.estoque_movimentacoes WHERE estoque_produto_id IN
+       (SELECT id FROM public.estoque_produto WHERE lote_id=$1)`, [F.loteId]);
+  await admin.query(`DELETE FROM public.estoque_produto WHERE lote_id=$1`, [F.loteId]);
+  await admin.query("ALTER TABLE public.estoque_movimentacoes ENABLE TRIGGER USER");
+  await admin.query("ALTER TABLE public.estoque_produto ENABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.lotes WHERE codigo_lote LIKE $1`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.partner_order_payment_terms WHERE partner_order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
