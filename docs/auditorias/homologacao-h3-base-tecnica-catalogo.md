@@ -72,7 +72,52 @@ Nenhuma fonte nova foi criada. As duas views adicionadas nesta fase são **proje
 | H3-006 | P3 | Ausência de índices por `ativo`/`b2b_enabled` em `produtos`/`microrganismos` | Aberto — tabelas com 8 e 25 linhas; otimização prematura, reavaliar quando o volume crescer |
 | H3-007 | P3 | `formulacoes` com policies genéricas `auth.uid() IS NOT NULL` para escrita | Aberto — conteúdo é composição técnica, sem dado sensível; endurecer junto do RBAC de escrita em H4+ |
 
-Nenhum P0/P1 permanece aberto.
+### 7.1 Reabertura H3 (auditoria independente pós-gate, 2026-08-18)
+
+Uma auditoria independente executada **após** o gate original encontrou dois P1 ainda abertos e uma afirmação incorreta neste relatório. O gate anterior ("Nenhum P0/P1 aberto") **não era factualmente correto** e foi revogado até o reteste do H3b.
+
+Evidência independente que reabriu a fase:
+
+| ID | Sev. | Achado | Evidência direta em staging | Status |
+|---|---|---|---|---|
+| H3-008 | P1 | Divergência entre mestre e catálogo nos caminhos comerciais. `BioInseticida 02`: `produtos.valor_litro_brl = 169,80` / `valor_dose_brl = 16,98` versus `catalogo_volumes` ativo `216,67/L` e `21,67/100 mL`. A correção H3 tratou apenas o arredondamento interno de `catalogo_volumes`; os resolvedores comerciais continuavam lendo o mestre | `fn_b2b_resolve_base_unit_price` e `fn_resolve_commercial_price` liam `produtos`/`microrganismos` logo após `partner_product_prices` | **Corrigido em H3b** |
+| H3-009 | P1 | B2B lia fichas técnicas não aprovadas. Harness com conta `parceiro_b2b` real mostrou em `microorganism_technical_profiles`: aprovado 4, em_revisão 12, rascunho 1 visíveis. Causa: policy permissiva `micro_tech_profiles_b2b_read` (e a paralela `product_tech_profiles_b2b_read`) sem filtro de `status_validacao` — como policies SELECT são OR, ela neutralizava a policy restritiva | `pg_policies`: `USING (has_role(...'parceiro_b2b') OR has_role(...'parceiro_b2b_tecnico'))` | **Corrigido em H3b** |
+| H3-010 | P1 | As views `vw_catalogo_ficha_*` eram projeções simples (owner-context) sem respeitar publicação: entregavam itens inativos e itens com ficha não aprovada | `pg_get_viewdef` sem cláusula `WHERE` | **Corrigido em H3b** |
+
+Nota metodológica sobre a evidência do H3-009: o harness H3 original selecionava o primeiro usuário com o papel `parceiro_b2b`, e esse fixture acumula também `consultor_tecnico` (papel interno) — por isso via tudo por direito. O harness H3b passou a exigir fixtures externos "puros" (`NOT can_view_catalog_internal(user_id)`), o que expõe a falha real e mede o papel pretendido.
+
+### 7.2 Correções aplicadas em H3b
+
+Migration incremental e reversível `20260909000000_h3b_preco_canonico_fichas_v1.sql` (cópia no kit: `restoration/homologacao-h3/30-h3b-preco-canonico-fichas.sql`). A migration H3 anterior foi preservada; nada de history aplicada foi reescrito.
+
+1. **Fonte canônica de preço comercial** — nova função `public.fn_catalogo_preco_canonico(produto, microrganismo, unidade, volume_ml)` (STABLE, SECURITY DEFINER, `search_path` fixo, sem EXECUTE para `anon`). Deriva `litro`, `dose`, `hectare` e `unidade` a partir das apresentações **ativas** de `catalogo_volumes`. Retorna `NULL` quando não há apresentação ativa **ou** quando o preço/litro entre apresentações não é único — ambiguidade nunca é resolvida por palpite.
+2. **Precedência explícita nos dois resolvedores comerciais** (`fn_b2b_resolve_base_unit_price`, `fn_resolve_commercial_price`), únicos caminhos de preço do catálogo, simulador, carrinho e pedido B2B:
+   `partner_product_prices` (preço negociado) → **`catalogo_volumes` (canônico, `price_source = catalog_volume_price`)** → mestre `produtos`/`microrganismos` (`catalog_base_price`, fallback legado documentado).
+3. **Fichas técnicas** — `micro_tech_profiles_b2b_read` e `product_tech_profiles_b2b_read` removidas. As policies restritivas passaram a cobrir `parceiro_b2b` **e** `parceiro_b2b_tecnico`, sempre exigindo `status_validacao = 'aprovado'`, item `ativo` e `b2b_enabled = true` no caminho B2B. Produtor: somente aprovado + ativo. Internos autorizados (`can_view_catalog_internal`) mantêm visão completa.
+4. **Projeções publicadas** — `vw_catalogo_ficha_produtos` e `vw_catalogo_ficha_microrganismos` recriadas como **interface publicada segura**, não bypass: somente `ativo = true`; quando existe ficha técnica, exige `aprovado` para papéis externos; caminho B2B respeita `b2b_enabled`; preço exposto é o canônico com a coluna `preco_fonte` (`catalogo_volumes` | `legado_mestre`); sem `fornecedor`, `meio_cultivo`, observações internas, `preco_tabela` ou campos regulatórios internos; `anon` sem GRANT. A arquitetura owner-context foi mantida deliberadamente (converter para `security_invoker` faria o produtor perder toda a ficha) e está documentada em `COMMENT ON VIEW`.
+5. **Dados legados** — nenhum preço histórico, snapshot de pedido ou simulação foi alterado. Os campos `produtos.valor_*` / `microrganismos.valor_*` **não** foram sobrescritos: onde há dúvida de regra comercial, a decisão foi eliminar seu uso do caminho comercial e marcá-los como legado via `COMMENT ON COLUMN` ("LEGADO NAO-CANONICO"), em vez de sincronizar e destruir a futura diferenciação por volume.
+
+### 7.3 Política de fonte de preço (sem ambiguidade)
+
+- **Canônico**: `catalogo_volumes` com apresentação ativa. Preço/litro único por item entre apresentações (confirmado hoje: 64 volumes ativos, 5 L e 20 L com o mesmo preço/litro por item).
+- **Prevalece sobre**: `produtos.valor_*` e `microrganismos.valor_*`, que são **fallback legado não-canônico**, usados apenas quando não há apresentação ativa (ou quando o preço/litro é ambíguo).
+- **Acima de ambos**: `partner_product_prices` (preço negociado por parceiro) e `commercial_price_rules` / `commercial_condition_item_prices` (condição comercial publicada), que continuam com a precedência anterior.
+- **Divergências legadas ainda presentes** (inventário completo, sem impacto comercial após H3b — o payload usa o canônico):
+
+| Item | Legado `valor_litro_brl` | Canônico `catalogo_volumes` |
+|---|---|---|
+| BioInseticida 02 | 169,80 | 216,67 |
+| E.M - Microrganismos Eficientes | 150,00 | 100,00 |
+| Pantoea agglomerans | (nulo) | 250,00 |
+
+Estas três linhas ficam registradas como H3-011 (P3, dado mestre legado divergente) e serão conciliadas na frente de dados mestres com decisão comercial explícita — não são sobrescritas silenciosamente.
+
+| ID | Sev. | Achado | Status |
+|---|---|---|---|
+| H3-011 | P3 | 3 itens com mestre legado divergente do catálogo canônico | Aberto — sem efeito nos fluxos comerciais (payload usa o canônico); requer decisão comercial |
+
+Após H3b, **nenhum P0/P1 permanece aberto**.
+
 
 ## 8. Arquivos, migrations e policies alterados
 
