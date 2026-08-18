@@ -38,12 +38,15 @@ interface Props {
 
 export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
   const qc = useQueryClient();
-  const { reservarEstoque } = useEsteiraLaboratorio();
+  const { reservarEstoqueLote } = useEsteiraLaboratorio();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [qtys, setQtys] = useState<Record<string, string>>({});
   const [observacao, setObservacao] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  // Chave estável por abertura do diálogo: reenvio/duplo clique vira replay.
+  const idempotencyKeyRef = useRef<string>("");
+
 
   const { data: itens = [], isLoading, error: queryError } = useQuery({
     queryKey: ["estoque-disponivel-lote", target?.lote_id],
