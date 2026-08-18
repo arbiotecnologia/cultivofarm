@@ -254,10 +254,17 @@ async function testA() {
     os.rows[0].n === 1 && link.rows[0].n === 1 && link.rows[0].itens === 1,
     `os=${os.rows[0].n} links=${link.rows[0].n}`);
 
+  // O motor canônico emite 1 evento op_gerada (meta.os_count); o gatilho de
+  // recálculo de planejamento emite outro evento op_gerada pré-existente por
+  // transição de status. A chamada de replay não pode emitir nenhum dos dois.
   const tl = await admin.query(
-    "SELECT count(*)::int AS n FROM public.production_timeline_events WHERE partner_order_id=$1 AND event_type='op_gerada'",
-    [orderId]);
-  rec("T10-A5 histórico não poluído (1 evento op_gerada)", tl.rows[0].n === 1, `eventos=${tl.rows[0].n}`);
+    `SELECT count(*) FILTER (WHERE meta ? 'os_count')::int AS motor,
+            count(*)::int AS total
+       FROM public.production_timeline_events
+      WHERE partner_order_id=$1 AND event_type='op_gerada'`, [orderId]);
+  rec("T10-A5 histórico não poluído pelo replay (1 evento op_gerada do motor)",
+    tl.rows[0].motor === 1 && tl.rows[0].total <= 2,
+    `motor=${tl.rows[0].motor} total=${tl.rows[0].total}`);
 
   const prog = await admin.query(
     `SELECT count(*)::int AS n FROM public.programacao_producao pp
@@ -311,11 +318,19 @@ async function testB() {
     c1.ok && c2.ok && replays === 1,
     JSON.stringify([c1.ok ? c1.out : c1.error.message, c2.ok ? c2.out : c2.error.message]));
 
-  const movs = await admin.query(
-    `SELECT count(*)::int AS n FROM public.estoque_movimentacoes
-      WHERE idempotency_key = $1 OR idempotency_key LIKE $1 || '#%'`, [key]);
-  rec("T10-B4 livro consistente: uma única movimentação para a chave repetida",
-    movs.rows[0].n === 1, `movimentacoes=${movs.rows[0].n}`);
+  const countMovs = async () =>
+    Number((await admin.query(
+      `SELECT count(*)::int AS n FROM public.estoque_movimentacoes
+        WHERE idempotency_key = $1 OR idempotency_key LIKE $1 || '#%'`, [key])).rows[0].n);
+  const antes = await countMovs();
+  const c3 = await concurrentTx(uid, await startIn(50), async (cx) =>
+    (await cx.query(
+      "SELECT public.rpc_estoque_reservar_v1($1,'b2b',$2::jsonb,$3,'{}'::jsonb) AS r",
+      [osId, JSON.stringify([{ item_id: estoqueId, quantidade: 1 }]), key])).rows[0].r);
+  const depois = await countMovs();
+  rec("T10-B4 livro consistente: replay não acrescenta movimentação",
+    c3.ok && c3.out.replay === true && antes === depois && antes > 0,
+    `antes=${antes} depois=${depois}`);
 }
 
 // ---------------------------------------------------------------------
@@ -393,9 +408,17 @@ async function testCQ() {
 
 // ---------------------------------------------------------------------
 async function teardown() {
+  const GUARDED = ["estoque_movimentacoes", "estoque_produto", "envase", "controle_qualidade",
+    "lotes", "ordens_servico", "programacao_producao", "production_order_link",
+    "production_planning", "production_timeline_events", "partner_order_items",
+    "partner_orders", "partner_accounts"];
+
   await admin.query("BEGIN");
   await admin.query("SELECT set_config('app.estoque_purge_fixture','on', true)");
   await admin.query("SELECT set_config('app.cq_purge_fixture','on', true)");
+  // Limpeza de fixtures: gatilhos append-only/anti-delete são desabilitados
+  // APENAS dentro desta transação de manutenção e reabilitados antes do COMMIT.
+  for (const t of GUARDED) await admin.query(`ALTER TABLE public.${t} DISABLE TRIGGER USER`);
   const { orderId, orderBlockedId, partnerId, loteB, loteC, osId } = fixtures;
 
   await admin.query(
@@ -423,6 +446,7 @@ async function teardown() {
     [[orderId, orderBlockedId]]);
   await admin.query("DELETE FROM public.partner_orders WHERE id = ANY($1::uuid[])", [[orderId, orderBlockedId]]);
   await admin.query("DELETE FROM public.partner_accounts WHERE id = $1", [partnerId]);
+  for (const t of GUARDED) await admin.query(`ALTER TABLE public.${t} ENABLE TRIGGER USER`);
   await admin.query("COMMIT");
 
   const residue = await admin.query(
