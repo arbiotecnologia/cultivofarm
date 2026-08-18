@@ -22,6 +22,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  // H6-002: chave de idempotencia por tentativa de baixa (evita baixa duplicada em duplo clique/retry)
+  const idempotencyRef = useRef<string>(crypto.randomUUID());
+
   const today = new Date().toISOString().slice(0, 10);
   const empty: any = { payment_date: today, amount: 0, payment_method_id: "", bank_account_id: "", discount_amount: 0, interest_amount: 0, penalty_amount: 0, notes: "" };
   const [form, setForm] = useState<any>(empty);
@@ -34,7 +37,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const saldo = installment ? Number(installment.original_amount) - Number(installment.received_amount ?? installment.paid_amount ?? 0) - Number(installment.discount_amount ?? 0) : 0;
 
-  useEffect(() => { if (open) { setForm({ ...empty, amount: Math.max(0, saldo) }); setFile(null); } /* eslint-disable-line */ }, [open, installment?.id]);
+  useEffect(() => { if (open) { setForm({ ...empty, amount: Math.max(0, saldo) }); setFile(null); idempotencyRef.current = crypto.randomUUID(); } /* eslint-disable-line */ }, [open, installment?.id]);
 
   const { data: pms = [] } = useQuery({
     queryKey: ["fin-pm-active"],
@@ -72,7 +75,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         penalty_amount: Number(form.penalty_amount) || 0,
         notes: form.notes || null,
         has_receipt: !!file,
+        idempotency_key: idempotencyRef.current,
       };
+
 
       const rpcName = kind === "receivable" ? "rpc_register_receivable_payment" : "rpc_register_payable_payment";
       const amountKey = kind === "receivable" ? "amount_received" : "amount_paid";
