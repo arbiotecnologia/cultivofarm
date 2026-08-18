@@ -87,8 +87,12 @@ describe("FASE 28A — nenhuma migration nova nesta fase", () => {
     const migrations = readdirSync(path("supabase/migrations"))
       .filter((f) => f.endsWith(".sql"))
       .sort();
-    expect(migrations[migrations.length - 1]).toBe(
-      "20260905000000_hardening_digest_schema_v1.sql",
-    );
+    // H3: baseline preservado; posteriores apenas das fases de homologação.
+    expect(migrations).toContain("20260905000000_hardening_digest_schema_v1.sql");
+    expect(
+      migrations
+        .filter((f: string) => f.slice(0, 14) > "20260905000000")
+        .every((f: string) => /_h\d/.test(f)),
+    ).toBe(true);
   });
 });
