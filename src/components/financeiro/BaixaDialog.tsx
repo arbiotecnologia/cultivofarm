@@ -22,6 +22,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  // H6-002: chave de idempotencia por tentativa de baixa (evita baixa duplicada em duplo clique/retry)
+  const idempotencyRef = useRef<string>(crypto.randomUUID());
+
   const today = new Date().toISOString().slice(0, 10);
   const empty: any = { payment_date: today, amount: 0, payment_method_id: "", bank_account_id: "", discount_amount: 0, interest_amount: 0, penalty_amount: 0, notes: "" };
   const [form, setForm] = useState<any>(empty);
