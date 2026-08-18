@@ -100,8 +100,8 @@ async function setup() {
   // ---- Fixture A: pedido B2B elegível --------------------------------
   const partnerId = (
     await admin.query(
-      `INSERT INTO public.partner_accounts (nome_fantasia, razao_social, cnpj, status)
-       VALUES ($1, $1, lpad((floor(random()*1e14))::bigint::text, 14, '0'), 'ativo')
+      `INSERT INTO public.partner_accounts (nome_fantasia, razao_social, cnpj, ativo)
+       VALUES ($1, $1, lpad((floor(random()*1e14))::bigint::text, 14, '0'), true)
        RETURNING id`,
       [`${TAG} PARCEIRO`],
     )
