@@ -470,7 +470,11 @@ async function teardown() {
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(`DELETE FROM public.estoque_embalagens WHERE codigo_embalagem LIKE $1`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.controle_qualidade WHERE lote_id=$1`, [F.loteId]);
+  // Estoque é protegido pelo motor canônico (H5); o gatilho é suspenso apenas
+  // para remover as fixtures descartáveis criadas por este harness.
+  await admin.query("ALTER TABLE public.estoque_produto DISABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.estoque_produto WHERE lote_id=$1`, [F.loteId]);
+  await admin.query("ALTER TABLE public.estoque_produto ENABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.lotes WHERE codigo_lote LIKE $1`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.partner_order_payment_terms WHERE partner_order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
