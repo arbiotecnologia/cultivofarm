@@ -927,6 +927,8 @@ export function useEsteiraLaboratorio() {
     registrarEnvaseTransacional,
     gerarEstoque,
     reservarEstoque,
+    reservarEstoqueLote,
+
     cancelarReservaEstoque,
     criarEntrega,
     confirmarEntrega,
