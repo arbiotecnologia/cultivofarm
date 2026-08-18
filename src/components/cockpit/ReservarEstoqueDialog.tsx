@@ -153,27 +153,35 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
 
     setSubmitting(true);
     setProgress({ done: 0, total: selectedItems.length });
-    let ok = 0;
-    const falhas: string[] = [];
-    for (let idx = 0; idx < selectedItems.length; idx++) {
-      const it = selectedItems[idx];
-      const qty = Number(qtys[it.id]);
-      const success = await reservarEstoque(it, buildReservaData(it, qty), target.os_id, os_tipo);
-      if (success) ok++; else falhas.push(fmtEmb(it));
-      setProgress({ done: idx + 1, total: selectedItems.length });
-    }
+
+    // Uma única transação no banco: ou reserva tudo, ou nada.
+    // A chave é estável por abertura do diálogo, então reenvio não duplica.
+    const { ok } = await reservarEstoqueLote({
+      osId: target.os_id,
+      origem: os_tipo,
+      itens: selectedItems.map((it: any) => ({
+        item_id: it.id,
+        quantidade: Number(qtys[it.id]),
+      })),
+      idempotencyKey: idempotencyKeyRef.current,
+      dados: {
+        cliente_id: isParceiro ? null : target.cliente_id ?? null,
+        partner_id: isParceiro ? target.partner_id ?? null : null,
+        partner_order_id: isParceiro ? target.partner_order_id ?? null : null,
+        observacao: observacao || null,
+        titular_nome: isParceiro ? target.titular_nome ?? null : target.cliente_nome ?? target.titular_nome ?? null,
+      },
+    });
+
+    setProgress({ done: selectedItems.length, total: selectedItems.length });
     setSubmitting(false);
 
     qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] });
     qc.invalidateQueries({ queryKey: ["estoque-disponivel-lote", target.lote_id] });
 
-    if (falhas.length === 0) {
-      toast.success(`${ok} ${ok === 1 ? "embalagem reservada" : "embalagens reservadas"} · ${totalLSel.toFixed(totalLSel % 1 ? 2 : 0)} L`);
-      onOpenChange(false);
-    } else {
-      toast.error(`Falha em ${falhas.length} item(ns): ${falhas.join(", ")}`);
-    }
+    if (ok) onOpenChange(false);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!submitting) onOpenChange(v); }}>
