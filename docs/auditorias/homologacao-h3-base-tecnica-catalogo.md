@@ -132,6 +132,19 @@ Após H3b, **nenhum P0/P1 permanece aberto**.
 - `src/test/catalogo/catalogo-fase28a-pos-certificacao.test.ts`, `src/test/estoque/estoque-fase28b-auditoria.test.ts`, `src/test/estoque/estoque-contratos-fase28c.test.ts` (asserção de baseline)
 - Baseline de conexão `c75bb87f` (`.env`, `src/integrations/supabase/types.ts`) restaurado após drift detectado durante a fase.
 
+H3b (correção incremental):
+
+- `supabase/migrations/20260909000000_h3b_preco_canonico_fichas_v1.sql` + cópia idêntica em `restoration/homologacao-h3/30-h3b-preco-canonico-fichas.sql`
+  - `CREATE OR REPLACE FUNCTION public.fn_catalogo_preco_canonico` (+ `REVOKE` de `anon`/`PUBLIC`)
+  - `CREATE OR REPLACE FUNCTION public.fn_b2b_resolve_base_unit_price` e `public.fn_resolve_commercial_price` com a fonte canônica antes do mestre legado
+  - `DROP POLICY micro_tech_profiles_b2b_read` / `product_tech_profiles_b2b_read`; recriação de `micro_tp_read_internal` e `prod_tp_read_internal`
+  - Recriação endurecida de `vw_catalogo_ficha_produtos` / `vw_catalogo_ficha_microrganismos` + `COMMENT ON VIEW`/`COMMENT ON COLUMN`
+- `restoration/homologacao-h3/31-h3b-rollback.sql` (rollback separado e reversível)
+- `restoration/homologacao-h3/32-h3b-postcheck.sql` (harness transacional com `ROLLBACK`)
+- `src/test/catalogo/h3b-preco-canonico-fichas.test.ts` (novo)
+
+Nenhuma alteração de frontend foi necessária em H3b: o catálogo B2B, o simulador e o carrinho já consomem exclusivamente `get_partner_catalog_secure` / `fn_resolve_commercial_price`, que passaram a devolver o preço canônico; a ficha do produtor já lia as views, agora endurecidas.
+
 ## 9. Performance/índices
 
 - Índices existentes cobrem os caminhos quentes: `catalogo_volumes` por `produto_id`/`microrganismo_id`/`ativo`, alvos por entidade e `ativo`, perfis técnicos com unique por entidade, `catalog_technical_sources` por entidade.
@@ -140,7 +153,7 @@ Após H3b, **nenhum P0/P1 permanece aberto**.
 
 ## 10. Testes e evidências
 
-Postcheck em staging (`restoration/homologacao-h3/20-postcheck.sql`, transacional com `ROLLBACK`):
+Postcheck H3 em staging (`restoration/homologacao-h3/20-postcheck.sql`, transacional com `ROLLBACK`):
 
 - `PASS_H3_ROUNDING`
 - `PASS_H3_DOSE_RULE` (1 L = 10 doses, dose 100 mL, derivação de preço)
@@ -148,22 +161,43 @@ Postcheck em staging (`restoration/homologacao-h3/20-postcheck.sql`, transaciona
 - `PASS_H3_NO_BROAD_SELECT`
 - `PASS_H3_VIEW_SAFE_COLUMNS`
 - `PASS_H3_VIEW_NO_ANON`
-- `PASS_H3_BEHAVIOR` — com claims JWT reais: `cliente_produtor` lê 0 linhas de `produtos` (tampering por ID/UUID direto também retorna vazio) e 8 linhas da view; `administrador` lê 8 linhas da tabela. Zero resíduo (rollback).
+- `PASS_H3_BEHAVIOR` — com claims JWT reais: `cliente_produtor` lê 0 linhas de `produtos` e 8 linhas da view; `administrador` lê 8 linhas da tabela.
 
-Frontend:
+Postcheck H3b em staging (`restoration/homologacao-h3/32-h3b-postcheck.sql`, transacional com `ROLLBACK`, fixtures externos sem papel interno acumulado) — **15/15 PASS**:
+
+- `PASS_H3B_NO_PERMISSIVE_B2B_POLICY` — nenhuma policy SELECT de ficha sem exigência de `aprovado`
+- `PASS_H3B_FN_CANONICA` / `PASS_H3B_FN_NO_ANON`
+- `PASS_H3B_RESOLVERS_CANONICOS` — as duas funções comerciais consultam a fonte canônica
+- `PASS_H3B_BIOINSETICIDA02` — payload comercial canônico = **216,67/L e 21,67/100 mL** (não cai em 169,80/16,98)
+- `PASS_H3B_PARIDADE_CATALOGO_PAYLOAD` — paridade catálogo → payload em todos os itens com volume ativo, sem fallback silencioso para o mestre
+- `PASS_H3B_PRECO_VOLUMES` — arredondamento e regra 1 L = 10 doses corretos nos 64 volumes ativos
+- `PASS_H3B_VIEW_SAFE_COLUMNS` / `PASS_H3B_VIEW_NO_ANON` / `PASS_H3B_VIEW_SOMENTE_ATIVOS`
+- `PASS_H3B_B2B_NON_APPROVED_ZERO` — `parceiro_b2b`: 0 fichas não aprovadas (antes: 12 em revisão + 1 rascunho); 4 aprovadas visíveis
+- `PASS_H3B_B2B_TECNICO_NON_APPROVED_ZERO` — `parceiro_b2b_tecnico`: 0 não aprovadas
+- `PASS_H3B_PRODUTOR_NON_APPROVED_ZERO` — `cliente_produtor`: 0 não aprovadas; 8 produtos na view
+- `PASS_H3B_INTERNO_LEITURA` — `administrador`: 17 perfis e 8 produtos, leitura legítima preservada
+- `PASS_H3B_VIEW_PUBLICACAO` — produtor enxerga 12 de 25 microrganismos ativos; os 13 com ficha não aprovada ficam ocultos
+- `INFO_H3B_DIVERGENCIA_LEGADO` — inventário completo dos 3 mestres divergentes (H3-011)
+
+Zero resíduo: todos os harnesses rodam em transação com `ROLLBACK`.
+
+Frontend (pós-H3b):
 
 - `tsgo --noEmit`: 0 erros
-- `vitest run`: **3082 passed | 4 skipped**, 0 falhas
+- `vitest run`: **3095 passed | 4 skipped**, 0 falhas
 - `vite build`: SUCESSO
 
 ## 11. Riscos residuais e rollback
 
 - Risco: algum papel interno não listado nas novas policies perderia leitura das tabelas mestres. Mitigado listando os 10 papéis internos do enum; `cliente_produtor` e parceiros seguem cobertos por views/policies próprias.
-- Rollback: reexecutar as policies antigas (`CREATE POLICY ... USING (true)`) e restaurar a versão anterior de `sync_catalogo_volumes_calc` (sem `round`); as views podem ser removidas com `DROP VIEW`. O backfill é idempotente e não destrutivo (recalcula a partir de `preco_brl`, que não foi alterado).
+- Risco H3b: item com apresentações ativas de preço/litro divergente cairia no fallback legado em vez de erro. Decisão consciente — a função canônica retorna `NULL` em ambiguidade e o `price_source` do payload (`catalog_volume_price` vs. `catalog_base_price`) permite auditar quando isso ocorre.
+- Rollback H3b: `restoration/homologacao-h3/31-h3b-rollback.sql` repõe as funções, policies e views exatamente no estado H3 e remove `fn_catalogo_preco_canonico`. Não toca dados.
+- Rollback H3: reexecutar as policies antigas e restaurar `sync_catalogo_volumes_calc` sem `round`; as views podem ser removidas com `DROP VIEW`. O backfill é idempotente e não destrutivo.
 - Pendências herdadas: H1-013, H1-015 (proveniência de migrations pelo kit `restoration/`), H2-002 (RoleGuard por `primaryRole`).
 
 ## Gate final
 
-**H3 — APROVADA COM RESSALVAS**
+**H3 — APROVADA COM RESSALVAS** (reemitida após H3b; o gate anterior foi revogado pela auditoria independente)
 
-Nenhum P0/P1 aberto após reteste. Ressalvas: H3-005, H3-006, H3-007 (P3) e pendências herdadas H1-013/H1-015/H2-002. H4 não iniciada.
+Zero P0/P1 aberto após o reteste comportamental do H3b. Ressalvas: H3-005, H3-006, H3-007, H3-011 (P3) e pendências herdadas H1-013/H1-015/H2-002. Produção intocada. **H4 não iniciada.**
+
