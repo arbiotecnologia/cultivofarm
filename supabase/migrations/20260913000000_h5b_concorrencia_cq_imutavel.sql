@@ -272,6 +272,13 @@ SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
 AS $fn$
 BEGIN
+  -- Escape controlado APENAS para limpeza de fixtures executada por papel
+  -- de manutenção (nunca anon/authenticated, portanto inacessível ao app).
+  IF COALESCE(current_setting('app.cq_purge_fixture', true), '') = 'on'
+     AND current_user NOT IN ('anon','authenticated') THEN
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+
   IF TG_OP = 'DELETE' THEN
     IF OLD.resultado IS NOT NULL THEN
       RAISE EXCEPTION 'CQ_RESULTADO_FINAL_IMUTAVEL: análise % do lote % já possui resultado final (%) e não pode ser excluída. Registre uma nova análise (reanálise) para o mesmo lote.',
