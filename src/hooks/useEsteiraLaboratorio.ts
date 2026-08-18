@@ -485,6 +485,83 @@ export function useEsteiraLaboratorio() {
   };
 
   /**
+   * Reserva TODAS as embalagens selecionadas em UMA ÚNICA TRANSAÇÃO
+   * (`rpc_estoque_reservar_v1`), com chave de idempotência obrigatória.
+   * Substitui o laço item a item, que podia reservar parcialmente e
+   * duplicar movimentações em caso de reenvio.
+   */
+  const reservarEstoqueLote = async (params: {
+    osId: string;
+    origem: string;
+    itens: { item_id: string; quantidade: number }[];
+    idempotencyKey: string;
+    dados?: {
+      cliente_id?: string | null;
+      partner_id?: string | null;
+      partner_order_id?: string | null;
+      observacao?: string | null;
+      titular_nome?: string | null;
+    };
+  }): Promise<{ ok: boolean; replay: boolean }> => {
+    const { osId, origem, itens, idempotencyKey, dados } = params;
+    if (!itens.length) {
+      toast.error("Selecione ao menos uma embalagem.");
+      return { ok: false, replay: false };
+    }
+    if (itens.some((i) => !i.quantidade || i.quantidade <= 0)) {
+      toast.error("Informe uma quantidade válida para cada embalagem.");
+      return { ok: false, replay: false };
+    }
+
+    try {
+      const isB2B = origem === "b2b";
+      const { data, error } = await (supabase as any).rpc("rpc_estoque_reservar_v1", {
+        p_os_id: osId,
+        p_origem: origem,
+        p_itens: itens.map((i) => ({ item_id: i.item_id, quantidade: String(i.quantidade) })),
+        p_idempotency_key: idempotencyKey,
+        p_dados: {
+          cliente_id: isB2B ? null : (dados?.cliente_id ?? null),
+          partner_id: isB2B ? (dados?.partner_id ?? null) : null,
+          partner_order_id: isB2B ? (dados?.partner_order_id ?? null) : null,
+          observacao: dados?.observacao ?? null,
+        },
+      });
+
+      if (error) {
+        toast.error(mensagemErroEstoque(error.message ?? error));
+        invalidateAll();
+        return { ok: false, replay: false };
+      }
+
+      const replay = !!data?.replay;
+      await registrarAuditoria({
+        origem,
+        osId,
+        etapaNova: "estoque_reservado",
+        acao: "reservar_estoque",
+        observacao: `Reserva em lote (${itens.length} embalagem(ns)) para OS ${osId}`,
+      });
+
+      const titular = dados?.titular_nome;
+      toast.success(
+        replay
+          ? "Reserva já registrada anteriormente."
+          : titular
+            ? `Estoque reservado para ${titular}`
+            : "Estoque reservado com sucesso",
+      );
+      invalidateAll();
+      return { ok: true, replay };
+    } catch (error: any) {
+      toast.error(mensagemErroEstoque(error));
+      return { ok: false, replay: false };
+    }
+  };
+
+
+
+  /**
    * Cancela/estorna a reserva em UMA ÚNICA TRANSAÇÃO no banco (lock de linha,
    * devolução de saldo, estorno auditável e movimentação). Substitui a antiga
    * sequência de updates client-side, que podia duplicar ou perder saldo.
