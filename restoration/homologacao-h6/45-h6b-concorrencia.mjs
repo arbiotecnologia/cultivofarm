@@ -144,6 +144,14 @@ async function setup() {
      VALUES ($1,$1, lpad((floor(random()*1e14))::bigint::text,14,'0'), true) RETURNING id`,
     [`${TAG} PARCEIRO`])).rows[0].id;
 
+  const loteId = (await admin.query(
+    `INSERT INTO public.lotes (codigo_lote, produto_id, volume_produzido, status)
+     VALUES ($1,$2,10000,'aprovado') RETURNING id`, [`${TAG}-LOTE`, produtoId])).rows[0].id;
+  const mkEstoque = async () => (await admin.query(
+    `INSERT INTO public.estoque_produto (produto_id, lote_id, quantidade, quantidade_reservada,
+                                         volume_total, status)
+     VALUES ($1,$2,100,100,100000,'disponivel') RETURNING id`, [produtoId, loteId])).rows[0].id;
+
   const mkOrder = async (total) => {
     const oid = (await admin.query(
       `INSERT INTO public.partner_orders (partner_id, cliente_id, status, observacoes, total,
@@ -166,12 +174,16 @@ async function setup() {
     return oid;
   };
 
-  const mkEntrega = async (orderId) => (await admin.query(
-    `INSERT INTO public.entregas (cliente_id, partner_order_id, status, data_saida,
-                                  recebido_por_nome, confirmado_por, comprovante_entrega_obrigatorio,
-                                  financial_status)
-     VALUES ($1,$2,'entregue',CURRENT_DATE,$3,$4,false,'PENDING_BILLING') RETURNING id`,
-    [clienteId, orderId, `${TAG} RECEBEDOR`, adminUid])).rows[0].id;
+  const mkEntrega = async (orderId) => {
+    const epId = await mkEstoque();
+    return (await admin.query(
+      `INSERT INTO public.entregas (cliente_id, partner_order_id, status, data_saida,
+                                    recebido_por_nome, confirmado_por, comprovante_entrega_obrigatorio,
+                                    financial_status, estoque_produto_id, lote_id, produto_id,
+                                    quantidade_entregue, volume_entregue_ml)
+       VALUES ($1,$2,'entregue',CURRENT_DATE,$3,$4,false,'PENDING_BILLING',$5,$6,$7,1,1000) RETURNING id`,
+      [clienteId, orderId, `${TAG} RECEBEDOR`, adminUid, epId, loteId, produtoId])).rows[0].id;
+  };
 
   const orderT6 = await mkOrder(2000);
   const entregaT6 = await mkEntrega(orderT6);
@@ -186,9 +198,6 @@ async function setup() {
     [entregaT10, `${TAG} TESTE NAO FATURAVEL`]);
 
   // T7: conferência parcial (metade do volume aceito) + reconciliação
-  const loteId = (await admin.query(
-    `INSERT INTO public.lotes (codigo_lote, produto_id, volume_produzido, status)
-     VALUES ($1,$2,10000,'aprovado') RETURNING id`, [`${TAG}-LOTE`, produtoId])).rows[0].id;
   const mkEmb = async (vol) => (await admin.query(
     `INSERT INTO public.estoque_embalagens (codigo_embalagem, status, lote_id, produto_id, volume, quantidade, unidade)
      VALUES ($1,'separado',$2,$3,$4,1,'ml') RETURNING id`,
@@ -453,6 +462,7 @@ async function teardown() {
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(`DELETE FROM public.estoque_embalagens WHERE codigo_embalagem LIKE $1`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.controle_qualidade WHERE lote_id=$1`, [F.loteId]);
+  await admin.query(`DELETE FROM public.estoque_produto WHERE lote_id=$1`, [F.loteId]);
   await admin.query(`DELETE FROM public.lotes WHERE codigo_lote LIKE $1`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.partner_order_payment_terms WHERE partner_order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
