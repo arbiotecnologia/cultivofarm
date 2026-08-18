@@ -37,8 +37,12 @@ const rec = (gate, ok, detalhe) => {
   console.log(`${ok ? "PASS" : "FAIL"} — ${gate}${detalhe ? ` :: ${detalhe}` : ""}`);
 };
 
+// TLS gerenciado pelo provedor (cadeia self-signed); sslmode do DSN é normalizado
+// para evitar conflito com a verificação estrita do driver.
+const SAFE_DSN = DSN.replace(/([?&])sslmode=[^&]*/g, "$1").replace(/[?&]$/, "");
+
 const connect = async () => {
-  const c = new pg.Client({ connectionString: DSN, ssl: { rejectUnauthorized: false } });
+  const c = new pg.Client({ connectionString: SAFE_DSN, ssl: { rejectUnauthorized: false } });
   await c.connect();
   return c;
 };
