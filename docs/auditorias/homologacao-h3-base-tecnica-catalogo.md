@@ -72,7 +72,52 @@ Nenhuma fonte nova foi criada. As duas views adicionadas nesta fase são **proje
 | H3-006 | P3 | Ausência de índices por `ativo`/`b2b_enabled` em `produtos`/`microrganismos` | Aberto — tabelas com 8 e 25 linhas; otimização prematura, reavaliar quando o volume crescer |
 | H3-007 | P3 | `formulacoes` com policies genéricas `auth.uid() IS NOT NULL` para escrita | Aberto — conteúdo é composição técnica, sem dado sensível; endurecer junto do RBAC de escrita em H4+ |
 
-Nenhum P0/P1 permanece aberto.
+### 7.1 Reabertura H3 (auditoria independente pós-gate, 2026-08-18)
+
+Uma auditoria independente executada **após** o gate original encontrou dois P1 ainda abertos e uma afirmação incorreta neste relatório. O gate anterior ("Nenhum P0/P1 aberto") **não era factualmente correto** e foi revogado até o reteste do H3b.
+
+Evidência independente que reabriu a fase:
+
+| ID | Sev. | Achado | Evidência direta em staging | Status |
+|---|---|---|---|---|
+| H3-008 | P1 | Divergência entre mestre e catálogo nos caminhos comerciais. `BioInseticida 02`: `produtos.valor_litro_brl = 169,80` / `valor_dose_brl = 16,98` versus `catalogo_volumes` ativo `216,67/L` e `21,67/100 mL`. A correção H3 tratou apenas o arredondamento interno de `catalogo_volumes`; os resolvedores comerciais continuavam lendo o mestre | `fn_b2b_resolve_base_unit_price` e `fn_resolve_commercial_price` liam `produtos`/`microrganismos` logo após `partner_product_prices` | **Corrigido em H3b** |
+| H3-009 | P1 | B2B lia fichas técnicas não aprovadas. Harness com conta `parceiro_b2b` real mostrou em `microorganism_technical_profiles`: aprovado 4, em_revisão 12, rascunho 1 visíveis. Causa: policy permissiva `micro_tech_profiles_b2b_read` (e a paralela `product_tech_profiles_b2b_read`) sem filtro de `status_validacao` — como policies SELECT são OR, ela neutralizava a policy restritiva | `pg_policies`: `USING (has_role(...'parceiro_b2b') OR has_role(...'parceiro_b2b_tecnico'))` | **Corrigido em H3b** |
+| H3-010 | P1 | As views `vw_catalogo_ficha_*` eram projeções simples (owner-context) sem respeitar publicação: entregavam itens inativos e itens com ficha não aprovada | `pg_get_viewdef` sem cláusula `WHERE` | **Corrigido em H3b** |
+
+Nota metodológica sobre a evidência do H3-009: o harness H3 original selecionava o primeiro usuário com o papel `parceiro_b2b`, e esse fixture acumula também `consultor_tecnico` (papel interno) — por isso via tudo por direito. O harness H3b passou a exigir fixtures externos "puros" (`NOT can_view_catalog_internal(user_id)`), o que expõe a falha real e mede o papel pretendido.
+
+### 7.2 Correções aplicadas em H3b
+
+Migration incremental e reversível `20260909000000_h3b_preco_canonico_fichas_v1.sql` (cópia no kit: `restoration/homologacao-h3/30-h3b-preco-canonico-fichas.sql`). A migration H3 anterior foi preservada; nada de history aplicada foi reescrito.
+
+1. **Fonte canônica de preço comercial** — nova função `public.fn_catalogo_preco_canonico(produto, microrganismo, unidade, volume_ml)` (STABLE, SECURITY DEFINER, `search_path` fixo, sem EXECUTE para `anon`). Deriva `litro`, `dose`, `hectare` e `unidade` a partir das apresentações **ativas** de `catalogo_volumes`. Retorna `NULL` quando não há apresentação ativa **ou** quando o preço/litro entre apresentações não é único — ambiguidade nunca é resolvida por palpite.
+2. **Precedência explícita nos dois resolvedores comerciais** (`fn_b2b_resolve_base_unit_price`, `fn_resolve_commercial_price`), únicos caminhos de preço do catálogo, simulador, carrinho e pedido B2B:
+   `partner_product_prices` (preço negociado) → **`catalogo_volumes` (canônico, `price_source = catalog_volume_price`)** → mestre `produtos`/`microrganismos` (`catalog_base_price`, fallback legado documentado).
+3. **Fichas técnicas** — `micro_tech_profiles_b2b_read` e `product_tech_profiles_b2b_read` removidas. As policies restritivas passaram a cobrir `parceiro_b2b` **e** `parceiro_b2b_tecnico`, sempre exigindo `status_validacao = 'aprovado'`, item `ativo` e `b2b_enabled = true` no caminho B2B. Produtor: somente aprovado + ativo. Internos autorizados (`can_view_catalog_internal`) mantêm visão completa.
+4. **Projeções publicadas** — `vw_catalogo_ficha_produtos` e `vw_catalogo_ficha_microrganismos` recriadas como **interface publicada segura**, não bypass: somente `ativo = true`; quando existe ficha técnica, exige `aprovado` para papéis externos; caminho B2B respeita `b2b_enabled`; preço exposto é o canônico com a coluna `preco_fonte` (`catalogo_volumes` | `legado_mestre`); sem `fornecedor`, `meio_cultivo`, observações internas, `preco_tabela` ou campos regulatórios internos; `anon` sem GRANT. A arquitetura owner-context foi mantida deliberadamente (converter para `security_invoker` faria o produtor perder toda a ficha) e está documentada em `COMMENT ON VIEW`.
+5. **Dados legados** — nenhum preço histórico, snapshot de pedido ou simulação foi alterado. Os campos `produtos.valor_*` / `microrganismos.valor_*` **não** foram sobrescritos: onde há dúvida de regra comercial, a decisão foi eliminar seu uso do caminho comercial e marcá-los como legado via `COMMENT ON COLUMN` ("LEGADO NAO-CANONICO"), em vez de sincronizar e destruir a futura diferenciação por volume.
+
+### 7.3 Política de fonte de preço (sem ambiguidade)
+
+- **Canônico**: `catalogo_volumes` com apresentação ativa. Preço/litro único por item entre apresentações (confirmado hoje: 64 volumes ativos, 5 L e 20 L com o mesmo preço/litro por item).
+- **Prevalece sobre**: `produtos.valor_*` e `microrganismos.valor_*`, que são **fallback legado não-canônico**, usados apenas quando não há apresentação ativa (ou quando o preço/litro é ambíguo).
+- **Acima de ambos**: `partner_product_prices` (preço negociado por parceiro) e `commercial_price_rules` / `commercial_condition_item_prices` (condição comercial publicada), que continuam com a precedência anterior.
+- **Divergências legadas ainda presentes** (inventário completo, sem impacto comercial após H3b — o payload usa o canônico):
+
+| Item | Legado `valor_litro_brl` | Canônico `catalogo_volumes` |
+|---|---|---|
+| BioInseticida 02 | 169,80 | 216,67 |
+| E.M - Microrganismos Eficientes | 150,00 | 100,00 |
+| Pantoea agglomerans | (nulo) | 250,00 |
+
+Estas três linhas ficam registradas como H3-011 (P3, dado mestre legado divergente) e serão conciliadas na frente de dados mestres com decisão comercial explícita — não são sobrescritas silenciosamente.
+
+| ID | Sev. | Achado | Status |
+|---|---|---|---|
+| H3-011 | P3 | 3 itens com mestre legado divergente do catálogo canônico | Aberto — sem efeito nos fluxos comerciais (payload usa o canônico); requer decisão comercial |
+
+Após H3b, **nenhum P0/P1 permanece aberto**.
+
 
 ## 8. Arquivos, migrations e policies alterados
 
@@ -87,6 +132,19 @@ Nenhum P0/P1 permanece aberto.
 - `src/test/catalogo/catalogo-fase28a-pos-certificacao.test.ts`, `src/test/estoque/estoque-fase28b-auditoria.test.ts`, `src/test/estoque/estoque-contratos-fase28c.test.ts` (asserção de baseline)
 - Baseline de conexão `c75bb87f` (`.env`, `src/integrations/supabase/types.ts`) restaurado após drift detectado durante a fase.
 
+H3b (correção incremental):
+
+- `supabase/migrations/20260909000000_h3b_preco_canonico_fichas_v1.sql` + cópia idêntica em `restoration/homologacao-h3/30-h3b-preco-canonico-fichas.sql`
+  - `CREATE OR REPLACE FUNCTION public.fn_catalogo_preco_canonico` (+ `REVOKE` de `anon`/`PUBLIC`)
+  - `CREATE OR REPLACE FUNCTION public.fn_b2b_resolve_base_unit_price` e `public.fn_resolve_commercial_price` com a fonte canônica antes do mestre legado
+  - `DROP POLICY micro_tech_profiles_b2b_read` / `product_tech_profiles_b2b_read`; recriação de `micro_tp_read_internal` e `prod_tp_read_internal`
+  - Recriação endurecida de `vw_catalogo_ficha_produtos` / `vw_catalogo_ficha_microrganismos` + `COMMENT ON VIEW`/`COMMENT ON COLUMN`
+- `restoration/homologacao-h3/31-h3b-rollback.sql` (rollback separado e reversível)
+- `restoration/homologacao-h3/32-h3b-postcheck.sql` (harness transacional com `ROLLBACK`)
+- `src/test/catalogo/h3b-preco-canonico-fichas.test.ts` (novo)
+
+Nenhuma alteração de frontend foi necessária em H3b: o catálogo B2B, o simulador e o carrinho já consomem exclusivamente `get_partner_catalog_secure` / `fn_resolve_commercial_price`, que passaram a devolver o preço canônico; a ficha do produtor já lia as views, agora endurecidas.
+
 ## 9. Performance/índices
 
 - Índices existentes cobrem os caminhos quentes: `catalogo_volumes` por `produto_id`/`microrganismo_id`/`ativo`, alvos por entidade e `ativo`, perfis técnicos com unique por entidade, `catalog_technical_sources` por entidade.
@@ -95,7 +153,7 @@ Nenhum P0/P1 permanece aberto.
 
 ## 10. Testes e evidências
 
-Postcheck em staging (`restoration/homologacao-h3/20-postcheck.sql`, transacional com `ROLLBACK`):
+Postcheck H3 em staging (`restoration/homologacao-h3/20-postcheck.sql`, transacional com `ROLLBACK`):
 
 - `PASS_H3_ROUNDING`
 - `PASS_H3_DOSE_RULE` (1 L = 10 doses, dose 100 mL, derivação de preço)
@@ -103,22 +161,43 @@ Postcheck em staging (`restoration/homologacao-h3/20-postcheck.sql`, transaciona
 - `PASS_H3_NO_BROAD_SELECT`
 - `PASS_H3_VIEW_SAFE_COLUMNS`
 - `PASS_H3_VIEW_NO_ANON`
-- `PASS_H3_BEHAVIOR` — com claims JWT reais: `cliente_produtor` lê 0 linhas de `produtos` (tampering por ID/UUID direto também retorna vazio) e 8 linhas da view; `administrador` lê 8 linhas da tabela. Zero resíduo (rollback).
+- `PASS_H3_BEHAVIOR` — com claims JWT reais: `cliente_produtor` lê 0 linhas de `produtos` e 8 linhas da view; `administrador` lê 8 linhas da tabela.
 
-Frontend:
+Postcheck H3b em staging (`restoration/homologacao-h3/32-h3b-postcheck.sql`, transacional com `ROLLBACK`, fixtures externos sem papel interno acumulado) — **15/15 PASS**:
+
+- `PASS_H3B_NO_PERMISSIVE_B2B_POLICY` — nenhuma policy SELECT de ficha sem exigência de `aprovado`
+- `PASS_H3B_FN_CANONICA` / `PASS_H3B_FN_NO_ANON`
+- `PASS_H3B_RESOLVERS_CANONICOS` — as duas funções comerciais consultam a fonte canônica
+- `PASS_H3B_BIOINSETICIDA02` — payload comercial canônico = **216,67/L e 21,67/100 mL** (não cai em 169,80/16,98)
+- `PASS_H3B_PARIDADE_CATALOGO_PAYLOAD` — paridade catálogo → payload em todos os itens com volume ativo, sem fallback silencioso para o mestre
+- `PASS_H3B_PRECO_VOLUMES` — arredondamento e regra 1 L = 10 doses corretos nos 64 volumes ativos
+- `PASS_H3B_VIEW_SAFE_COLUMNS` / `PASS_H3B_VIEW_NO_ANON` / `PASS_H3B_VIEW_SOMENTE_ATIVOS`
+- `PASS_H3B_B2B_NON_APPROVED_ZERO` — `parceiro_b2b`: 0 fichas não aprovadas (antes: 12 em revisão + 1 rascunho); 4 aprovadas visíveis
+- `PASS_H3B_B2B_TECNICO_NON_APPROVED_ZERO` — `parceiro_b2b_tecnico`: 0 não aprovadas
+- `PASS_H3B_PRODUTOR_NON_APPROVED_ZERO` — `cliente_produtor`: 0 não aprovadas; 8 produtos na view
+- `PASS_H3B_INTERNO_LEITURA` — `administrador`: 17 perfis e 8 produtos, leitura legítima preservada
+- `PASS_H3B_VIEW_PUBLICACAO` — produtor enxerga 12 de 25 microrganismos ativos; os 13 com ficha não aprovada ficam ocultos
+- `INFO_H3B_DIVERGENCIA_LEGADO` — inventário completo dos 3 mestres divergentes (H3-011)
+
+Zero resíduo: todos os harnesses rodam em transação com `ROLLBACK`.
+
+Frontend (pós-H3b):
 
 - `tsgo --noEmit`: 0 erros
-- `vitest run`: **3082 passed | 4 skipped**, 0 falhas
+- `vitest run`: **3095 passed | 4 skipped**, 0 falhas
 - `vite build`: SUCESSO
 
 ## 11. Riscos residuais e rollback
 
 - Risco: algum papel interno não listado nas novas policies perderia leitura das tabelas mestres. Mitigado listando os 10 papéis internos do enum; `cliente_produtor` e parceiros seguem cobertos por views/policies próprias.
-- Rollback: reexecutar as policies antigas (`CREATE POLICY ... USING (true)`) e restaurar a versão anterior de `sync_catalogo_volumes_calc` (sem `round`); as views podem ser removidas com `DROP VIEW`. O backfill é idempotente e não destrutivo (recalcula a partir de `preco_brl`, que não foi alterado).
+- Risco H3b: item com apresentações ativas de preço/litro divergente cairia no fallback legado em vez de erro. Decisão consciente — a função canônica retorna `NULL` em ambiguidade e o `price_source` do payload (`catalog_volume_price` vs. `catalog_base_price`) permite auditar quando isso ocorre.
+- Rollback H3b: `restoration/homologacao-h3/31-h3b-rollback.sql` repõe as funções, policies e views exatamente no estado H3 e remove `fn_catalogo_preco_canonico`. Não toca dados.
+- Rollback H3: reexecutar as policies antigas e restaurar `sync_catalogo_volumes_calc` sem `round`; as views podem ser removidas com `DROP VIEW`. O backfill é idempotente e não destrutivo.
 - Pendências herdadas: H1-013, H1-015 (proveniência de migrations pelo kit `restoration/`), H2-002 (RoleGuard por `primaryRole`).
 
 ## Gate final
 
-**H3 — APROVADA COM RESSALVAS**
+**H3 — APROVADA COM RESSALVAS** (reemitida após H3b; o gate anterior foi revogado pela auditoria independente)
 
-Nenhum P0/P1 aberto após reteste. Ressalvas: H3-005, H3-006, H3-007 (P3) e pendências herdadas H1-013/H1-015/H2-002. H4 não iniciada.
+Zero P0/P1 aberto após o reteste comportamental do H3b. Ressalvas: H3-005, H3-006, H3-007, H3-011 (P3) e pendências herdadas H1-013/H1-015/H2-002. Produção intocada. **H4 não iniciada.**
+
