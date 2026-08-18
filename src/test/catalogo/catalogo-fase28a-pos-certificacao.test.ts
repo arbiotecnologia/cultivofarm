@@ -91,7 +91,7 @@ describe("FASE 28A — nenhuma migration nova nesta fase", () => {
     expect(migrations).toContain("20260905000000_hardening_digest_schema_v1.sql");
     expect(
       migrations
-        .filter((f: string) => f > "20260905000000")
+        .filter((f: string) => f.slice(0, 14) > "20260905000000")
         .every((f: string) => /_h\d/.test(f)),
     ).toBe(true);
   });
