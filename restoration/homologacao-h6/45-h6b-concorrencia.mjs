@@ -473,6 +473,9 @@ async function teardown() {
   // Estoque é protegido pelo motor canônico (H5); o gatilho é suspenso apenas
   // para remover as fixtures descartáveis criadas por este harness.
   await admin.query("ALTER TABLE public.estoque_produto DISABLE TRIGGER USER");
+  await admin.query(
+    `DELETE FROM public.estoque_movimentacoes WHERE estoque_produto_id IN
+       (SELECT id FROM public.estoque_produto WHERE lote_id=$1)`, [F.loteId]);
   await admin.query(`DELETE FROM public.estoque_produto WHERE lote_id=$1`, [F.loteId]);
   await admin.query("ALTER TABLE public.estoque_produto ENABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.lotes WHERE codigo_lote LIKE $1`, [`${TAG}%`]);
