@@ -201,3 +201,46 @@ Frontend (pós-H3b):
 
 Zero P0/P1 aberto após o reteste comportamental do H3b. Ressalvas: H3-005, H3-006, H3-007, H3-011 (P3) e pendências herdadas H1-013/H1-015/H2-002. Produção intocada. **H4 não iniciada.**
 
+
+---
+
+# H3c — Correção focada pós-H3 (2026-08-18, staging `ikaauvsflpmamgxmkhoq`)
+
+Auditoria independente apontou que a H3b resolveu o *consumo* (resolvedores preferem `catalogo_volumes`), mas manteve **duas fontes editáveis** de preço vivo e policies B2B frouxas nas tabelas mestres. Corrigido nesta rodada. Produção `navfzbwgwzruipouyfnk` intocada.
+
+## Evidência da fonte viva (decisão)
+
+| Item | Mestre (antes) | `catalogo_volumes` | Decisão |
+| --- | --- | --- | --- |
+| BioInseticida 02 | 169,80/L | 216,67/L (5 L e 20 L, mesmo R$/L) | catálogo canônico → mestre alinhado |
+| E.M — Microrganismos Eficientes | 150,00/L | 100,00/L | catálogo canônico |
+| Pantoea agglomerans | NULL | 250,00/L | catálogo canônico |
+| Bioinseticida 03 | 190,00/L | sem apresentação ativa | cache legado preservado (fallback) |
+
+Critério: `catalogo_volumes` é a única entidade com apresentação comercial real (volume, rótulo, preço/L, dose/100 mL), é a base das telas de catálogo e já era a fonte dos resolvedores após H3b; os campos mestres viraram cache derivado.
+
+## H3-012 (P1) — Fonte canônica única de preço
+
+Kit: `restoration/homologacao-h3/40-h3c-fonte-canonica-preco.sql` (rollback `41-`, postcheck `42-`).
+
+- `fn_catalogo_litro_canonico(produto, micro)` → `(litro, tiers)` sobre apresentações ativas.
+- `fn_catalogo_sync_mestre_preco` + trigger `trg_zz_catalogo_volumes_sync_mestre` (AFTER I/U/D em `catalogo_volumes`): sincronização **direção única** catálogo → mestre.
+- Guarda `trg_zz_produtos_guard_preco` / `trg_zz_microrganismos_guard_preco` (BEFORE I/U): edição direta dos campos legados é sobrescrita pelo canônico — não existe mais segunda fonte editável.
+- Tiers por volume (preço/L diferente entre apresentações): cache legado é **anulado**, impedindo que campos mestres finjam fonte única; caminho comercial usa `catalogo_volumes` por volume.
+- Sem apresentação ativa: cache legado preservado como fallback explícito (Bioinseticida 03).
+- Backfill único alinhou os 3 divergentes. Histórico de pedidos/simulações **não** recalculado (snapshot próprio).
+- `COMMENT` em `produtos.valor_litro_brl/valor_dose_brl/valor_ha_brl` e `microrganismos.valor_litro_brl/valor_dose_brl`: “LEGADO NAO-CANONICO / CACHE DERIVADO”.
+
+## H3-013 (P1) — Policies B2B do mestre
+
+`produtos_b2b_read` e `micros_b2b_read` passaram a exigir papel **e** `ativo = true` **e** `COALESCE(b2b_enabled,false) = true` (antes: apenas papel).
+
+## Reteste comportamental — `42-h3c-postcheck.sql` (transacional, termina em ROLLBACK)
+
+`PASS_H3C_ZERO_DIVERGENCIA` (8 produtos / 25 microrganismos ativos, zero divergência) · `PASS_H3C_BIOINSETICIDA02` (mestre = canônico = resolvedor B2B = 216,67, `price_source=catalog_volume_price`) · `PASS_H3C_GUARD_MESTRE` · `PASS_H3C_SYNC_VOLUME` · `PASS_H3C_TIERS_SEM_FONTE_DUPLA` · `PASS_H3C_POLICY_B2B` · `PASS_H3C_ANON_SEM_EXEC` — **7/7 PASS**.
+
+Frontend: `tsgo --noEmit` 0 erros; `vitest run` **3105 passed | 4 skipped**. Binding restaurado ao baseline de staging `c75bb87f` (`.env`, `types.ts`) após drift detectado do sandbox.
+
+## Gate
+
+**H3 — APROVADA** (reemitida após H3c). H3-011 encerrado pelo alinhamento canônico; H3-012 e H3-013 corrigidos e retestados. Ressalvas remanescentes: H3-005, H3-006, H3-007 (P3) e herdadas H1-013/H1-015/H2-002. **H4 não iniciada.**
