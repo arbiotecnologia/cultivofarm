@@ -112,14 +112,17 @@ BEGIN
   PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','aprovar_cq',v_prog);
   PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','enviar_envase',v_prog);
   r := public.rpc_cockpit_registrar_envase_v1(v_lote, v_os,'manual',v_prog,
-        jsonb_build_array(jsonb_build_object('tipo_embalagem','bombona_20L','quantidade','5')),
-        (CURRENT_DATE+365),'H5', v_tag||':env');
+        jsonb_build_array(jsonb_build_object('tipo_embalagem','bombona_20L','quantidade','7')),
+        (CURRENT_DATE+365),'H5', v_tag||':env', true, 'Excedente para harness H5');
 
+  -- Item DISPONIVEL (excedente do envase) e o alvo dos testes de reserva.
   SELECT id, quantidade, status::text INTO v_est, v_qtd, v_status
-    FROM public.estoque_produto WHERE lote_id = v_lote ORDER BY created_at LIMIT 1;
+    FROM public.estoque_produto
+   WHERE lote_id = v_lote AND status::text = 'disponivel'
+   ORDER BY created_at LIMIT 1;
 
-  INSERT INTO _g(gate,status,detalhe) VALUES ('F00 fixture ate envase',
-    CASE WHEN v_est IS NOT NULL AND v_qtd = 5 THEN 'PASS' ELSE 'FAIL' END,
+  INSERT INTO _g(gate,status,detalhe) VALUES ('F00 fixture ate envase (excedente disponivel)',
+    CASE WHEN v_est IS NOT NULL AND v_qtd >= 2 THEN 'PASS' ELSE 'FAIL' END,
     'estoque='||coalesce(v_est::text,'null')||' qtd='||coalesce(v_qtd::text,'?')||' status='||coalesce(v_status,'?'));
 
   v_dados := jsonb_build_object('cliente_id', v_cliente::text, 'observacao', v_tag||' reserva H5');
@@ -154,8 +157,7 @@ BEGIN
   v_res := ((r->'itens')->>0)::uuid;
   SELECT quantidade INTO v_disp FROM public.estoque_produto WHERE id=v_est;
   INSERT INTO _g(gate,status,detalhe) VALUES ('T-C reserva parcial atomica',
-    CASE WHEN (r->>'ok')::boolean AND (r->>'replay')::boolean IS FALSE AND v_disp = v_qtd-2
-         THEN 'PASS' ELSE 'FAIL' END,
+    CASE WHEN (r->>'ok')::boolean AND (r->>'replay')::boolean IS FALSE AND v_disp = v_qtd-2 THEN 'PASS' ELSE 'FAIL' END,
     'saldo_restante='||v_disp||' reservado_id='||coalesce(v_res::text,'null'));
 
   -- T-D: replay com a MESMA chave não duplica movimento nem reserva (H1-013 / T9)
