@@ -42,7 +42,7 @@ BEGIN
     interest_type_snapshot, table_amount, discount_amount, net_amount_after_discount,
     financial_interest_amount, final_amount, approval_status)
   VALUES (v_order, 'AVISTA', 'AVISTA', 0, 0, 0, 1, current_date, 'compound',
-          5000, 0, 5000, 0, 5000, 'aprovado');
+          5000, 0, 5000, 0, 5000, 'approved');
   -- normaliza status caso gatilhos tenham roteado o pedido
   UPDATE public.partner_orders SET status='em_analise_comercial', credit_block_reason=NULL WHERE id=v_order;
 
@@ -109,7 +109,7 @@ BEGIN
     interest_type_snapshot, table_amount, discount_amount, net_amount_after_discount,
     financial_interest_amount, final_amount, approval_status)
   VALUES (v_order, 'AVISTA', 'AVISTA', 0, 0, 0, 1, current_date, 'compound',
-          5000, 0, 5000, 0, 5000, 'aprovado');
+          5000, 0, 5000, 0, 5000, 'approved');
   UPDATE public.partner_orders SET status='em_analise_comercial', credit_block_reason=NULL WHERE id=v_order;
 
   BEGIN
@@ -137,7 +137,7 @@ BEGIN
     interest_type_snapshot, table_amount, discount_amount, net_amount_after_discount,
     financial_interest_amount, final_amount, approval_status)
   VALUES (v_order, 'AVISTA', 'AVISTA', 0, 0, 0, 1, current_date, 'compound',
-          100, 0, 100, 0, 100, 'aprovado');
+          100, 0, 100, 0, 100, 'approved');
   UPDATE public.partner_orders SET status='em_analise_comercial', credit_block_reason=NULL WHERE id=v_order;
 
   BEGIN
