@@ -111,7 +111,7 @@ async function setup() {
     await admin.query(
       `INSERT INTO public.partner_orders (partner_id, status, ready_for_production, observacoes,
                                           requires_financial_approval, financial_approval_status)
-       VALUES ($1, 'aprovado', true, $2, false, 'not_required') RETURNING id`,
+       VALUES ($1, 'pendente', false, $2, false, 'not_required') RETURNING id`,
       [partnerId, `${TAG} PEDIDO`],
     )
   ).rows[0].id;
@@ -121,6 +121,12 @@ async function setup() {
                                              subtotal, unidade_medida, produto_nome_snapshot)
      VALUES ($1, $2, 10, 100, 1000, 'litro', $3)`,
     [orderId, produtoId, `${TAG} ITEM`],
+  );
+
+  // aprovação só depois dos itens (itens são imutáveis após aprovação — H4)
+  await admin.query(
+    `UPDATE public.partner_orders SET status='aprovado', ready_for_production=true WHERE id=$1`,
+    [orderId],
   );
 
   await admin.query(
