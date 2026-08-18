@@ -437,12 +437,14 @@ async function teardown() {
   await admin.query("BEGIN");
   // H6d: o trigger trg_h6c_entrega_ar_b2b_link cria vinculos financeiros
   // apontando para os recebiveis; removidos primeiro para liberar o FK.
+  await admin.query("ALTER TABLE public.partner_order_financial_links DISABLE TRIGGER USER");
   await admin.query(
     `DELETE FROM public.partner_order_financial_links WHERE partner_order_id = ANY($1)
         OR receivable_id IN (SELECT id FROM public.accounts_receivable
                               WHERE description LIKE $2 OR origin_id = ANY($1))`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10, F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10],
      `${TAG}%`]);
+  await admin.query("ALTER TABLE public.partner_order_financial_links ENABLE TRIGGER USER");
   await admin.query(
     `DELETE FROM public.receivable_payments WHERE installment_id IN
        (SELECT i.id FROM public.accounts_receivable_installments i
@@ -495,8 +497,6 @@ async function teardown() {
   // H6d: desfaz o vinculo canonico (partner_orders.payment_terms_id) antes de
   // remover os termos, senao o FK partner_orders_payment_terms_id_fkey barra.
   await admin.query(`UPDATE public.partner_orders SET payment_terms_id = NULL WHERE id = ANY($1)`,
-    [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
-  await admin.query(`DELETE FROM public.partner_order_financial_links WHERE partner_order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
   await admin.query(`DELETE FROM public.partner_order_payment_terms WHERE partner_order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
