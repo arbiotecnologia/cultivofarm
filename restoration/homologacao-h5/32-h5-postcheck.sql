@@ -162,9 +162,6 @@ BEGIN
     CASE WHEN (r->>'ok')::boolean AND (r->>'replay')::boolean IS FALSE AND v_disp = v_qtd-2 THEN 'PASS' ELSE 'FAIL' END,
     'saldo_restante='||v_disp||' reservado_id='||coalesce(v_res::text,'null'));
 
-  RAISE NOTICE 'DBG keys=%', (SELECT jsonb_agg(jsonb_build_object('k',idempotency_key,'a',acao,'o',origem))
-    FROM public.estoque_movimentacoes WHERE estoque_produto_id IN (v_est, v_res));
-
   -- T-D: replay com a MESMA chave não duplica movimento nem reserva (H1-013 / T9)
   SELECT count(*) INTO v_n FROM public.estoque_movimentacoes
    WHERE idempotency_key = v_key OR idempotency_key LIKE v_key||'#%';
