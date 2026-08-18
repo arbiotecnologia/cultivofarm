@@ -171,6 +171,9 @@ async function setup() {
           table_amount, net_amount_after_discount, final_amount, approval_status, created_by)
        VALUES ($1, 'H6B AVISTA', 'H6B_AVISTA', 0, 0, 0, 1, CURRENT_DATE, $2, $2, $2, 'approved', $3)`,
       [oid, total, adminUid]);
+    // H6d: aprova apos os itens/termos (itens sao imutaveis apos aprovacao) para
+    // satisfazer o fail-closed H6c de pedido faturavel.
+    await admin.query(`UPDATE public.partner_orders SET status='aprovado' WHERE id=$1`, [oid]);
     return oid;
   };
 
@@ -352,7 +355,7 @@ async function t6_t7_t8_t10() {
   const ids = r.filter((x) => x.ok).map((x) => x.out.rows[0].id);
   rec("T6 entrega B2B integral => AR único = snapshot canônico (2000)",
     ars === 1 && Math.abs(total - 2000) < 0.011 && (ids.length < 2 || ids[0] === ids[1]),
-    `ars=${ars} total=${total}`);
+    `ars=${ars} total=${total} err=${r.map((x)=>x.ok?"ok":x.error.message).join(" | ")}`);
 
   // T7 parcial
   const teto = Number(F.reconcT7.valor_faturavel_max);
@@ -432,6 +435,16 @@ async function t12_sem_alcada() {
 
 async function teardown() {
   await admin.query("BEGIN");
+  // H6d: o trigger trg_h6c_entrega_ar_b2b_link cria vinculos financeiros
+  // apontando para os recebiveis; removidos primeiro para liberar o FK.
+  await admin.query("ALTER TABLE public.partner_order_financial_links DISABLE TRIGGER USER");
+  await admin.query(
+    `DELETE FROM public.partner_order_financial_links WHERE partner_order_id = ANY($1)
+        OR receivable_id IN (SELECT id FROM public.accounts_receivable
+                              WHERE description LIKE $2 OR origin_id = ANY($1))`,
+    [[F.orderT6, F.orderT7, F.orderT8, F.orderT10, F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10],
+     `${TAG}%`]);
+  await admin.query("ALTER TABLE public.partner_order_financial_links ENABLE TRIGGER USER");
   await admin.query(
     `DELETE FROM public.receivable_payments WHERE installment_id IN
        (SELECT i.id FROM public.accounts_receivable_installments i
@@ -481,7 +494,14 @@ async function teardown() {
   await admin.query("ALTER TABLE public.estoque_movimentacoes ENABLE TRIGGER USER");
   await admin.query("ALTER TABLE public.estoque_produto ENABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.lotes WHERE codigo_lote LIKE $1`, [`${TAG}%`]);
+  // H6d: desfaz o vinculo canonico (partner_orders.payment_terms_id) antes de
+  // remover os termos, senao o FK partner_orders_payment_terms_id_fkey barra.
+  await admin.query(`UPDATE public.partner_orders SET payment_terms_id = NULL WHERE id = ANY($1)`,
+    [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
   await admin.query(`DELETE FROM public.partner_order_payment_terms WHERE partner_order_id = ANY($1)`,
+    [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
+  // H6d: itens sao imutaveis em pedido aprovado; volta ao rascunho antes de limpar.
+  await admin.query(`UPDATE public.partner_orders SET status='pendente' WHERE id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
   await admin.query(`DELETE FROM public.partner_order_items WHERE order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
