@@ -444,8 +444,12 @@ async function teardown() {
           JOIN public.accounts_payable a ON a.id=i.payable_id WHERE a.description LIKE $1)`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.entrega_conferencia_itens WHERE entrega_id = ANY($1)`,
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
+  // A reconciliação é imutável por trigger (proteção H5). Para remover apenas as
+  // fixtures descartáveis do harness, o gatilho é suspenso na própria transação.
+  await admin.query("ALTER TABLE public.entrega_reconciliacoes DISABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.entrega_reconciliacoes WHERE entrega_id = ANY($1)`,
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
+  await admin.query("ALTER TABLE public.entrega_reconciliacoes ENABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.entregas WHERE id = ANY($1)`,
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(
@@ -460,7 +464,6 @@ async function teardown() {
   await admin.query(`DELETE FROM public.accounts_receivable WHERE description LIKE $1 OR origin_id = ANY($2)`,
     [`${TAG}%`, [F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(`DELETE FROM public.accounts_payable WHERE description LIKE $1`, [`${TAG}%`]);
-  await admin.query(`DELETE FROM public.entrega_reconciliacoes WHERE idempotency_key LIKE $1`, [`${TAG}%`]);
   await admin.query(`DELETE FROM public.entrega_conferencia_itens WHERE entrega_id = ANY($1)`,
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(`DELETE FROM public.entregas WHERE id = ANY($1)`,
