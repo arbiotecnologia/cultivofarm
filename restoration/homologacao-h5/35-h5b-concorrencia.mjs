@@ -129,9 +129,11 @@ async function setup() {
     [orderId],
   );
 
+  // o planejamento é criado automaticamente na aprovação; garante existência
   await admin.query(
     `INSERT INTO public.production_planning (partner_order_id, partner_id, status)
-     VALUES ($1, $2, 'aguardando_planejamento')`,
+     VALUES ($1, $2, 'aguardando_planejamento')
+     ON CONFLICT (partner_order_id) DO NOTHING`,
     [orderId, partnerId],
   );
 
