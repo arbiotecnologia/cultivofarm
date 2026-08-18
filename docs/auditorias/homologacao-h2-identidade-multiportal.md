@@ -45,7 +45,7 @@ Nenhum guard confia em `localStorage`/`sessionStorage`/query string. Confirmado.
 
 ## 6. Artefatos
 
-- `restoration/homologacao-h2/10-migration-20260907000000_h2_storage_visit_pdfs_hardening_v1.sql`
+- `restoration/homologacao-h2/10-migration-20260907000000_h2_storage_visit_pdfs_hardening_v1.sql` (aplicada em staging; mantida no kit de restauração, mesma convenção da H1 — ver pendência H1-015)
 - `restoration/homologacao-h2/20-postcheck.sql` — **6/6 OK**
 - `restoration/homologacao-h2/90-rollback-20260907000000.sql`
 
