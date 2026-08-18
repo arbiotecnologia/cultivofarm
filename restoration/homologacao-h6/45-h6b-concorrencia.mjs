@@ -204,8 +204,9 @@ async function setup() {
     [`${TAG}-${Math.random().toString(36).slice(2, 10)}`, loteId, produtoId, vol])).rows[0].id;
   const embOk = await mkEmb(500), embNo = await mkEmb(500);
   await admin.query(
-    `INSERT INTO public.entrega_conferencia_itens (entrega_id, embalagem_id, status, quantidade)
-     VALUES ($1,$2,'aceito',1), ($1,$3,'recusado',1)`, [entregaT7, embOk, embNo]);
+    `INSERT INTO public.entrega_conferencia_itens (entrega_id, embalagem_id, status, quantidade, motivo)
+     VALUES ($1,$2,'aceito',1,NULL), ($1,$3,'recusado',1,'H6B teste de recusa parcial')`,
+    [entregaT7, embOk, embNo]);
   const reconcT7 = (await admin.query(
     `INSERT INTO public.entrega_reconciliacoes
        (entrega_id, status, itens_total, itens_aceitos, itens_recusados,
