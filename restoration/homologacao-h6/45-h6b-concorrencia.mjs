@@ -500,6 +500,9 @@ async function teardown() {
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
   await admin.query(`DELETE FROM public.partner_order_payment_terms WHERE partner_order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
+  // H6d: itens sao imutaveis em pedido aprovado; volta ao rascunho antes de limpar.
+  await admin.query(`UPDATE public.partner_orders SET status='pendente' WHERE id = ANY($1)`,
+    [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
   await admin.query(`DELETE FROM public.partner_order_items WHERE order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
   await admin.query(`DELETE FROM public.partner_orders WHERE id = ANY($1)`,
