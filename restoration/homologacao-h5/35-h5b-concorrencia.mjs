@@ -175,11 +175,25 @@ async function setup() {
     )
   ).rows[0].id;
 
+  await admin.query(
+    `INSERT INTO public.controle_qualidade (lote_id, resultado, responsavel, ph)
+     VALUES ($1, 'aprovado', $2, 6.5)`, [loteB, `${TAG} QA-B`]);
+
+  const envaseB = (
+    await admin.query(
+      `INSERT INTO public.envase (lote_id, tipo_embalagem, volume_por_unidade, quantidade, operador)
+       VALUES ($1, (SELECT enumlabel FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid
+                     WHERE t.typname='tipo_embalagem' ORDER BY e.enumsortorder LIMIT 1)::tipo_embalagem,
+               1000, 10, $2) RETURNING id`,
+      [loteB, `${TAG} OP-B`],
+    )
+  ).rows[0].id;
+
   const estoqueId = (
     await admin.query(
-      `INSERT INTO public.estoque_produto (produto_id, lote_id, quantidade, volume_total, status)
-       VALUES ($1, $2, 10, 10000, 'disponivel') RETURNING id`,
-      [produtoId, loteB],
+      `INSERT INTO public.estoque_produto (produto_id, lote_id, envase_id, quantidade, volume_total, status)
+       VALUES ($1, $2, $3, 10, 10000, 'disponivel') RETURNING id`,
+      [produtoId, loteB, envaseB],
     )
   ).rows[0].id;
 
