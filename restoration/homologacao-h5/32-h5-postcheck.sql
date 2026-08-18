@@ -106,7 +106,7 @@ BEGIN
   PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','assumir_producao',v_prog);
   r := public.rpc_cockpit_gerar_lote_v1(v_prog, v_os, 'manual',
         jsonb_build_object('codigo_lote', v_tag, 'produto_id', v_produto::text,
-                           'volume_produzido','100000'));
+                           'volume_produzido','140000'));
   v_lote := (r->>'lote_id')::uuid;
   PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','enviar_cq',v_prog);
   PERFORM public.rpc_avancar_esteira_laboratorio(v_os,'manual','aprovar_cq',v_prog);
