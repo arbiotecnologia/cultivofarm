@@ -143,31 +143,8 @@ $function$;
 REVOKE ALL ON FUNCTION public.rpc_estoque_reservar_v1(uuid, text, jsonb, text, jsonb) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_estoque_reservar_v1(uuid, text, jsonb, text, jsonb) TO authenticated;
 
--- 3) Envase deixa de vazar contexto para as operações seguintes da transação.
-DO $envase$
-DECLARE v_src text; v_new text;
-BEGIN
-  SELECT pg_get_functiondef(p.oid) INTO v_src
-    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname='public' AND p.proname='rpc_cockpit_registrar_envase_v1';
-  IF v_src IS NULL THEN RAISE EXCEPTION 'H5B_ENVASE_AUSENTE'; END IF;
-
-  IF position('fn_estoque_ctx_close' in v_src) > 0 THEN
-    RAISE NOTICE 'H5B: envase ja fecha o contexto; nada a fazer';
-    RETURN;
-  END IF;
-
-  IF position('fn_estoque_ctx_open' in v_src) = 0 THEN
-    RAISE NOTICE 'H5B: envase nao abre contexto; nada a fazer';
-    RETURN;
-  END IF;
-
-  -- Fecha o contexto imediatamente antes de cada RETURN da função.
-  v_new := regexp_replace(v_src,
-    '(\n\s*)RETURN ', E'\\1PERFORM public.fn_estoque_ctx_close();\\1RETURN ', 'g');
-  EXECUTE v_new;
-  RAISE NOTICE 'H5B: envase ajustado para fechar o contexto do ledger';
-END
-$envase$;
+-- Observação: o contexto do ledger é transaction-local (`set_config(..., true)`),
+-- portanto o vazamento só ocorre quando dois motores rodam na MESMA transação.
+-- A imposição acima blinda a reserva, que é o caminho com idempotência.
 
 COMMIT;
