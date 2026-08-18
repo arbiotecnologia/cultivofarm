@@ -156,7 +156,7 @@ async function setup() {
     const oid = (await admin.query(
       `INSERT INTO public.partner_orders (partner_id, cliente_id, status, observacoes, total,
                                           final_amount_with_interest)
-       VALUES ($1,$2,'pendente',$3,$4,$4) RETURNING id`,
+       VALUES ($1,$2,'aprovado',$3,$4,$4) RETURNING id`,
       [partnerId, clienteId, `${TAG} PEDIDO`, total])).rows[0].id;
     await admin.query(
       `INSERT INTO public.partner_order_items (order_id, product_id, quantidade, preco_unitario,
@@ -481,6 +481,12 @@ async function teardown() {
   await admin.query("ALTER TABLE public.estoque_movimentacoes ENABLE TRIGGER USER");
   await admin.query("ALTER TABLE public.estoque_produto ENABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.lotes WHERE codigo_lote LIKE $1`, [`${TAG}%`]);
+  // H6d: desfaz o vinculo canonico (partner_orders.payment_terms_id) antes de
+  // remover os termos, senao o FK partner_orders_payment_terms_id_fkey barra.
+  await admin.query(`UPDATE public.partner_orders SET payment_terms_id = NULL WHERE id = ANY($1)`,
+    [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
+  await admin.query(`DELETE FROM public.partner_order_financial_links WHERE partner_order_id = ANY($1)`,
+    [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
   await admin.query(`DELETE FROM public.partner_order_payment_terms WHERE partner_order_id = ANY($1)`,
     [[F.orderT6, F.orderT7, F.orderT8, F.orderT10]]);
   await admin.query(`DELETE FROM public.partner_order_items WHERE order_id = ANY($1)`,
