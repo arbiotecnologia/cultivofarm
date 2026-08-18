@@ -82,18 +82,65 @@ Nenhum RPC ou tela grava itens após aprovação (verificado: `create_partner_or
 | T6 | UPDATE de item após aprovação bloqueado | PASS |
 | T8 | DELETE de item após aprovação bloqueado | PASS |
 
-## 5. Ressalvas remanescentes (P2/P3, não bloqueantes)
+## 5. Reabertura H4b — H4-003 reclassificado para P1 (auditoria independente)
 
-- **H4-003 (P2)** — Cenário `credit_limit_action = 'approval_required'` gera apenas
-  `LIMIT_EXCEEDED_APPROVAL` (warning) na simulação; o roteamento automático para
-  `aguardando_aprovacao_credito` depende de configuração por parceiro e não foi
-  exercitado com dados reais em staging (não há parceiro com esse modo configurado).
+A auditoria independente executada diretamente no staging após o GATE H4 **reabriu o gate**.
+A redação anterior tratava H4-003 como “P2, cenário não exercitado, não bloqueante” — isso
+estava **incorreto** e foi corrigido: tratava-se de uma quebra de invariante de autorização
+financeira server-side (P1).
+
+### H4-003 (P1) — `approve_partner_order` não era fail-closed em `LIMIT_EXCEEDED_APPROVAL`
+
+Os 5 `partner_financial_settings` existentes usam `credit_limit_action='block'`, por isso o
+postcheck H4 nunca exerceu `approval_required`. Na reavaliação de crédito da aprovação
+comercial, apenas `LIMIT_EXCEEDED_BLOCK` e `OVERDUE_BLOCK` bloqueavam: um pedido acima do
+limite em `em_analise_comercial` sem `credit_approved_at` (por correção administrativa,
+importação, RPC futura ou transição indevida) podia ser aprovado com
+`reason_code='LIMIT_EXCEEDED_APPROVAL'`.
+
+**Correção (kit `restoration/homologacao-h4/40-h4b-credit-approval-failclosed.sql`,
+migration `20260910000000_h4b_credit_approval_failclosed.sql`):**
+
+- `approve_partner_order`, sob o advisory lock já existente: com `credit_approved_at IS NULL`,
+  `OVERDUE_BLOCK`/`LIMIT_EXCEEDED_BLOCK` → `credit_block_on_approval`;
+  `LIMIT_EXCEEDED_APPROVAL` → nova exceção estável `credit_approval_required`, sem aprovar e
+  sem `ready_for_production = true`.
+- Com `credit_approved_at IS NOT NULL` a aprovação segue, preservando a decisão financeira
+  formal já auditada mesmo com exposição acima do limite em modo `approval_required`.
+- Novo gatilho `trg_b2b_guard_credit_approval_fields`
+  (`fn_b2b_guard_credit_approval_fields`): `credit_approved_at/by` só podem ser gravados
+  dentro de `approve_b2b_credit` (marcador transacional `arbio.b2b_credit_approval`) — erro
+  `credit_approval_fields_immutable`. Mudança de status não substitui a aprovação de crédito.
+- `create_partner_order_secure` e o fluxo normal de `approve_b2b_credit` permanecem inalterados.
+
+### Postcheck H4b (`restoration/homologacao-h4/42-h4b-postcheck.sql`) — 7/7 PASS
+
+Fixture sintética com `credit_limit_action='approval_required'`, limite baixo e pedido
+priceable (itens + `partner_order_payment_terms`), tudo em transação com ROLLBACK.
+
+| # | Cenário | Resultado |
+|---|---------|-----------|
+| A1 | Acima do limite sem `credit_approved_at` → `credit_approval_required` | PASS |
+| A2 | Pedido permanece não aprovado e `ready_for_production=false` | PASS |
+| A3 | Gravação direta de `credit_approved_at/by` bloqueada | PASS |
+| B1 | `aguardando_aprovacao_credito` → `approve_b2b_credit` grava crédito formal | PASS |
+| B2 | Com crédito formal, aprovação comercial é permitida | PASS |
+| C | `credit_limit_action='block'` continua bloqueando (`LIMIT_EXCEEDED_BLOCK`) | PASS |
+| D | Pedido dentro do limite continua aprovável | PASS |
+
+Rollback integral: zero resíduos (`partner_accounts LIKE 'H4B%'` = 0).
+Produção `navfzbwgwzruipouyfnk` intocada.
+
+## 6. Ressalvas remanescentes (P2/P3, não bloqueantes)
+
 - **H4-004 (P3)** — `partner_orders` não possui índice parcial dedicado para o bucket
   pendente; volume atual (3 pedidos) não justifica.
 - Herdadas de H1/H3: ressalvas P2/P3 já registradas nos respectivos relatórios.
 
-## 6. GATE H4
+## 7. GATE H4 (reemitido após H4b)
 
-**H4 — APROVADA.** Nenhum P0/P1 aberto: H4-001 (P1) e H4-002 (P2) corrigidos, aplicados
-e reprovados por teste comportamental no staging; suíte completa 3105 PASS; baseline de
-conexão íntegro em `c75bb87f`; produção intocada. Não iniciar H5 sem autorização.
+**H4 — APROVADA COM RESSALVAS.** Nenhum P0/P1 aberto: H4-001 (P1), H4-002 (P2) e H4-003
+(P1, reaberto pela auditoria independente) corrigidos e reprovados por teste comportamental
+no staging (8/8 + 7/7 PASS); ressalvas remanescentes apenas P2/P3. Não iniciar H5 sem
+autorização.
+
