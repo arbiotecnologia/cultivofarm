@@ -442,7 +442,11 @@ async function teardown() {
     `DELETE FROM public.payable_payments WHERE installment_id IN
        (SELECT i.id FROM public.accounts_payable_installments i
           JOIN public.accounts_payable a ON a.id=i.payable_id WHERE a.description LIKE $1)`, [`${TAG}%`]);
-  await admin.query(`UPDATE public.entregas SET receivable_id=NULL WHERE id = ANY($1)`,
+  await admin.query(`DELETE FROM public.entrega_conferencia_itens WHERE entrega_id = ANY($1)`,
+    [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
+  await admin.query(`DELETE FROM public.entrega_reconciliacoes WHERE entrega_id = ANY($1)`,
+    [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
+  await admin.query(`DELETE FROM public.entregas WHERE id = ANY($1)`,
     [[F.entregaT6, F.entregaT7, F.entregaT8, F.entregaT10]]);
   await admin.query(
     `DELETE FROM public.accounts_receivable_installments WHERE receivable_id IN
