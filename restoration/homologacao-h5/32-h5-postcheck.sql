@@ -26,7 +26,7 @@ CREATE TEMP TABLE _g(seq serial, gate text, status text, detalhe text);
 CREATE TEMP TABLE _c(k text primary key, v text);
 GRANT SELECT, INSERT ON _g TO authenticated;
 GRANT SELECT, USAGE ON SEQUENCE _g_seq_seq TO authenticated;
-GRANT SELECT ON _c TO authenticated;
+GRANT SELECT, INSERT ON _c TO authenticated;
 
 -- Estático: anon não executa as RPCs críticas de estoque (T18).
 INSERT INTO _g(gate,status,detalhe)
