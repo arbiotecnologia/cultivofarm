@@ -108,24 +108,6 @@ export function ReservarEstoqueDialog({ open, onOpenChange, target }: Props) {
 
   if (!target) return null;
 
-  const buildReservaData = (item: any, qty: number) => {
-    const isParceiro = target.titular_tipo === "parceiro";
-    if (isParceiro) {
-      return {
-        partner_id: target.partner_id,
-        partner_order_id: target.partner_order_id,
-        quantidade_reservada: qty,
-        observacao: observacao || undefined,
-        titular_nome: target.titular_nome,
-      };
-    }
-    return {
-      cliente_id: target.cliente_id,
-      quantidade_reservada: qty,
-      observacao: observacao || undefined,
-      titular_nome: target.cliente_nome ?? target.titular_nome,
-    };
-  };
 
   const handleConfirm = async () => {
     const isParceiro = target.titular_tipo === "parceiro";
