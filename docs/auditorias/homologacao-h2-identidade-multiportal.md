@@ -1,7 +1,9 @@
 # FASE H2 — Identidade, RBAC, Multiportal e Isolamento
 
 Ambiente auditado: **staging `ikaauvsflpmamgxmkhoq`** (produção `navfzbwgwzruipouyfnk` intocada).
-Baseline de repositório: `c75bb87f`. Data: 2026-09-07.
+Baseline de repositório: `c75bb87f`. Data da auditoria: **2026-08-18**.
+
+> Nota de convenção: nomes de migration com prefixo `202609xx` seguem a numeração histórica do repositório e **não** representam a data real de execução desta auditoria.
 
 ## 1. Identidade e papéis
 
