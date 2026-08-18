@@ -407,13 +407,16 @@ async function t11_anon() {
 async function t12_sem_alcada() {
   if (!F.prodUid) { rec("T12 papel sem alçada não baixa/estorna (SKIP: sem usuário 'producao')", true); return; }
   const b = await concurrentTx(F.prodUid, barrier(200), payAr(F.arT1.inst, `${TAG}-T12-KEY`, 10));
-  const e = await concurrentTx(F.prodUid, barrier(200), (c) =>
-    c.query("SELECT public.fn_reverse_payment($1,'receivable','tentativa indevida')",
-      [(await admin.query("SELECT id FROM public.receivable_payments WHERE installment_id=$1 LIMIT 1",
-        [F.arT1.inst])).rows[0].id]));
+  const alvo = (await admin.query(
+    "SELECT id FROM public.receivable_payments WHERE installment_id=$1 LIMIT 1", [F.arT1.inst])).rows[0];
+  const e = alvo
+    ? await concurrentTx(F.prodUid, barrier(200), (c) =>
+        c.query("SELECT public.fn_reverse_payment($1,'receivable','tentativa indevida')", [alvo.id]))
+    : { ok: false, error: { code: "SEM_BAIXA" } };
   rec("T12 papel sem alçada não registra baixa nem estorna", !b.ok && !e.ok,
     `${b.error?.code ?? ""}/${e.error?.code ?? ""}`);
 }
+
 
 async function teardown() {
   await admin.query("BEGIN");
