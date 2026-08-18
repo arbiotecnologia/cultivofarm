@@ -146,6 +146,17 @@ async function setup() {
     )
   ).rows[0].id;
 
+  // item âncora do pedido inelegível: usado para satisfazer o CHECK de origem b2b
+  // da OS de fixture do teste B (a OS não é gerada pelo motor).
+  const blockedItemId = (
+    await admin.query(
+      `INSERT INTO public.partner_order_items (order_id, product_id, quantidade, preco_unitario,
+                                               subtotal, unidade_medida, produto_nome_snapshot)
+       VALUES ($1, $2, 1, 100, 100, 'litro', $3) RETURNING id`,
+      [orderBlockedId, produtoId, `${TAG} ITEM BLOQUEADO`],
+    )
+  ).rows[0].id;
+
   // ---- Fixture B: item de estoque disponível -------------------------
   const loteB = (
     await admin.query(
@@ -157,9 +168,10 @@ async function setup() {
 
   const osId = (
     await admin.query(
-      `INSERT INTO public.ordens_servico (numero_os, produto_id, volume_total_ml, status, origem, tipo_item)
-       VALUES ($1, $2, 10000, 'aprovada', 'b2b', 'produto') RETURNING id`,
-      [`${TAG}-OS`, produtoId],
+      `INSERT INTO public.ordens_servico (numero_os, produto_id, volume_total_ml, status, origem, tipo_item,
+                                          partner_order_id, partner_order_item_id)
+       VALUES ($1, $2, 10000, 'aprovada', 'b2b', 'produto', $3, $4) RETURNING id`,
+      [`${TAG}-OS`, produtoId, orderBlockedId, blockedItemId],
     )
   ).rows[0].id;
 
