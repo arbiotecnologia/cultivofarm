@@ -11,7 +11,9 @@ BEGIN
   VALUES ('H4-POSTCHECK PARCEIRO', true) RETURNING id INTO v_partner;
 
   INSERT INTO public.partner_financial_settings(partner_id, credit_limit, credit_limit_action, block_if_overdue)
-  VALUES (v_partner, 1000, 'block', false);
+  VALUES (v_partner, 1000, 'block', false)
+  ON CONFLICT (partner_id) DO UPDATE
+    SET credit_limit = 1000, credit_limit_action = 'block', block_if_overdue = false;
 
   -- T1: sem pedidos, exposicao zero
   v_exp := public.fn_b2b_credit_exposure(v_partner, 0, NULL);
