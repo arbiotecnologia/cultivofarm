@@ -26,7 +26,7 @@ WITH checks AS (
                   WHERE table_schema='public' AND table_name='entrega_reconciliacoes'
                     AND column_name='valor_faturavel_origem')
   UNION ALL SELECT 'H6B-S07 idempotência obrigatória nas RPCs de baixa',
-         (SELECT bool_and(prosrc ILIKE '%idempotency_key_obrigatoria%')
+         (SELECT bool_and(prosrc ILIKE '%FIN_IDEMPOTENCY_REQUIRED%')
             FROM pg_proc WHERE proname IN ('rpc_register_receivable_payment','rpc_register_payable_payment'))
   UNION ALL SELECT 'H6B-S08 fingerprint/conflito estável nas RPCs de baixa',
          (SELECT bool_and(prosrc ILIKE '%FIN_IDEMPOTENCY_CONFLICT%')
