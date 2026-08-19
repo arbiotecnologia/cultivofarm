@@ -37,8 +37,9 @@ BEGIN
   UPDATE public.company_fiscal_settings SET nfe_environment_code='2' WHERE is_active;
 
   -- T4: ISSUED normaliza para AUTHORIZED.
-  INSERT INTO public.fiscal_invoices(invoice_type, status, total_amount)
-  VALUES ('NFE','ISSUED',100.00) RETURNING id INTO v_inv;
+  SELECT id INTO v_ar FROM auth.users ORDER BY created_at LIMIT 1;
+  INSERT INTO public.fiscal_invoices(invoice_type, status, total_amount, created_by)
+  VALUES ('NFE','ISSUED',100.00, v_ar) RETURNING id INTO v_inv;
   SELECT normalized_status INTO v_msg FROM public.fiscal_invoices WHERE id=v_inv;
   IF v_msg='AUTHORIZED' THEN v_ok := v_ok+1; RAISE NOTICE 'T4 PASS ISSUED->AUTHORIZED';
   ELSE v_fail := v_fail+1; RAISE WARNING 'T4 FAIL normalized=%', v_msg; END IF;
