@@ -1,7 +1,7 @@
 -- =====================================================================
 -- FASE H7b — Correção focada pós-auditoria independente do H7.
 -- Ambiente autorizado: STAGING ikaauvsflpmamgxmkhoq.
--- Produção (navfzbwgwzruipouyfnk) permanece intacta: o bloco de ambiente
+-- A produção permanece intacta: o bloco de ambiente
 -- (H7B-002) só executa quando o marcador fiscal comprova STAGING.
 -- Emissão produtiva continua DESLIGADA.
 --
