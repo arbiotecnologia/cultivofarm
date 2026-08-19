@@ -62,7 +62,9 @@ BEGIN
   BEGIN
     EXECUTE 'SET LOCAL ROLE authenticated';
     UPDATE public.receivable_payments SET amount_received = amount_received + 1 WHERE id = v_pay;
-  EXCEPTION WHEN OTHERS THEN v_ok := true;
+    GET DIAGNOSTICS v_cnt = ROW_COUNT;
+    v_ok := (v_cnt = 0);   -- RLS sem policy de UPDATE: nenhuma linha afetada
+  EXCEPTION WHEN OTHERS THEN v_ok := true;  -- ou trigger append-only
   END;
   EXECUTE 'RESET ROLE';
   RAISE NOTICE 'H6D-A02 UPDATE direto da baixa AR rejeitado : %', CASE WHEN v_ok THEN 'PASS' ELSE 'FAIL' END;
@@ -110,6 +112,8 @@ BEGIN
   BEGIN
     EXECUTE 'SET LOCAL ROLE authenticated';
     UPDATE public.payable_payments SET amount_paid = amount_paid + 1 WHERE id = v_pay2;
+    GET DIAGNOSTICS v_cnt = ROW_COUNT;
+    v_ok := (v_cnt = 0);
   EXCEPTION WHEN OTHERS THEN v_ok := true;
   END;
   EXECUTE 'RESET ROLE';
