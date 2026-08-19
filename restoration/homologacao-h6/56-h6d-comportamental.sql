@@ -10,6 +10,8 @@ DECLARE
   v_admin uuid;
   v_cli   uuid;
   v_pm    uuid;
+  v_cat_r uuid;
+  v_cat_d uuid;
   v_ar    uuid;
   v_ari   uuid;
   v_ap    uuid;
@@ -25,24 +27,26 @@ BEGIN
   SELECT user_id INTO v_admin FROM public.user_roles WHERE role='administrador' LIMIT 1;
   SELECT id INTO v_cli FROM public.clientes LIMIT 1;
   SELECT id INTO v_pm  FROM public.payment_methods WHERE active LIMIT 1;
+  SELECT id INTO v_cat_r FROM public.financial_categories WHERE type='RECEITA' LIMIT 1;
+  SELECT id INTO v_cat_d FROM public.financial_categories WHERE type='DESPESA' LIMIT 1;
   v_claims := json_build_object('sub', v_admin, 'role', 'authenticated')::text;
   PERFORM set_config('request.jwt.claims', v_claims, true);
   PERFORM set_config('role', 'authenticated', true);
 
   -- ---------------- Fixtures ----------------
   INSERT INTO public.accounts_receivable
-    (origin_type, customer_id, description, total_amount, issue_date, first_due_date,
+    (origin_type, customer_id, description, category_id, total_amount, issue_date, first_due_date,
      installment_count, status, payment_method_id, created_by)
-  VALUES ('MANUAL', v_cli, 'H6D-FIXTURE AR', 1000, CURRENT_DATE, CURRENT_DATE + 30,
+  VALUES ('MANUAL', v_cli, 'H6D-FIXTURE AR', v_cat_r, 1000, CURRENT_DATE, CURRENT_DATE + 30,
           1, 'OPEN', v_pm, v_admin)
   RETURNING id INTO v_ar;
   SELECT id INTO v_ari FROM public.accounts_receivable_installments WHERE receivable_id = v_ar LIMIT 1;
 
   INSERT INTO public.accounts_payable
-    (supplier_name, description, total_amount, issue_date, first_due_date,
-     installment_count, status, created_by)
-  VALUES ('H6D-FIXTURE FORNECEDOR', 'H6D-FIXTURE AP', 500, CURRENT_DATE, CURRENT_DATE + 30,
-          1, 'OPEN', v_admin)
+    (supplier_name, description, category_id, total_amount, issue_date, first_due_date,
+     installment_count, status, origin_type, created_by)
+  VALUES ('H6D-FIXTURE FORNECEDOR', 'H6D-FIXTURE AP', v_cat_d, 500, CURRENT_DATE, CURRENT_DATE + 30,
+          1, 'OPEN', 'MANUAL', v_admin)
   RETURNING id INTO v_ap;
   SELECT id INTO v_api FROM public.accounts_payable_installments WHERE payable_id = v_ap LIMIT 1;
 
