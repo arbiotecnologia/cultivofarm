@@ -282,7 +282,11 @@ async function teardown() {
   await admin.query("ALTER TABLE public.entrega_reconciliacoes DISABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.entrega_reconciliacoes WHERE entrega_id = ANY($1)`, [entregas]);
   await admin.query("ALTER TABLE public.entrega_reconciliacoes ENABLE TRIGGER USER");
+  // A entrega faturada é imutável por trigger (proteção H6); o gatilho é suspenso
+  // apenas para remover as fixtures descartáveis deste harness.
+  await admin.query("ALTER TABLE public.entregas DISABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.entregas WHERE id = ANY($1)`, [entregas]);
+  await admin.query("ALTER TABLE public.entregas ENABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.estoque_embalagens WHERE codigo_embalagem LIKE $1`, [`${TAG}%`]);
   await admin.query("ALTER TABLE public.estoque_produto DISABLE TRIGGER USER");
   await admin.query("ALTER TABLE public.estoque_movimentacoes DISABLE TRIGGER USER");
