@@ -190,3 +190,31 @@ tocar a produção `navfzbwgwzruipouyfnk`.
 - Veredito mantido: **GATE H7 — APROVADA COM RESSALVAS / PRONTA PARA SMOKE
   EXTERNO**. Emissão de produção continua desligada nas duas camadas
   (marcador de ambiente + gate `tpAmb`). **H8 não iniciada.**
+
+## 7. H7c — Upload de certificado A1 (2026-08-19)
+
+Correção focada em `supabase/functions/fiscal-certificate-upload`:
+a triagem de magic bytes rejeitava PFX em BER de comprimento indefinido
+(`30 80`) antes do parser, retornando `not_pkcs12`. A triagem foi extraída
+para `asn1Screen.ts` (`isPlausibleAsn1Sequence`), agora aceitando as formas
+curta, indefinida (`0x80`, com EOC obrigatório) e longa (`0x81–0x84`), com
+rejeição de tag inválida, `0x85+`, truncamento e buffers < 64 bytes. O
+node-forge (`fromDer` + `pkcs12FromAsn1`) passou a ser a autoridade explícita
+de formato; todos os demais controles (extensão, 10 MB, senha, UUID, X.509 +
+chave privada + match criptográfico, validade, AES-256-GCM com IVs
+independentes, bucket privado, RPC canônica, rollback, CORS fail-closed,
+admin server-side) permanecem inalterados.
+
+Cofre no staging: bucket `fiscal-certificates` privado com 0 policies,
+`fiscal_certificate_material` sem acesso anon/authenticated,
+`fiscal_certificates` vazio, 1 emitente ativo com `tpAmb=2`, marcador
+`ikaauvsflpmamgxmkhoq|STAGING|prod=false`. **`FISCAL_CERTIFICATE_MASTER_KEY` e
+`FISCAL_CORS_ALLOWLIST` ausentes** no cofre de segredos — comportamento
+fail-closed mantido, nenhuma senha solicitada e nenhum PFX importado.
+
+Evidências: `src/test/fiscal/h7c.asn1Screen.test.ts` (13 PASS),
+postcheck H7 **11/12 PASS/0 FAIL** (`60-h7`) e segurança/ambiente **12/12
+PASS** (`61-h7`). Nova versão da Edge Function publicada apenas no staging.
+Detalhes em `docs/auditorias/homologacao-h7c-certificado-a1.md`.
+**GATE H7c — APROVADA no código, pendente de segredos do cofre. H8 não
+iniciada.**
