@@ -26,7 +26,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_PASSWORD = 256;
 const MAX_DISPLAY_NAME = 200;
 const ALLOWED_EXT = [".pfx", ".p12"];
-const PKCS12_MAGIC = new Uint8Array([0x30, 0x82]);
+const DER_SEQUENCE_TAG = 0x30;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
