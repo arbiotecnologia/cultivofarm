@@ -21,11 +21,11 @@ WITH t(check_id, ok) AS (
        AND NOT has_function_privilege('authenticated',p.oid,'EXECUTE')
       FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
      WHERE n.nspname='public' AND p.proname='fn_h6d_hard_delete_allowed')),
-  ('H6E-T04 triggers H6/H6d continuam vinculados (8 esperados)',
-   (SELECT count(*)>=8 FROM pg_trigger WHERE NOT tgisinternal AND tgname IN
-     ('trg_h6_rp_append_only','trg_h6_pp_append_only','trg_h6d_ar_no_delete','trg_h6d_ap_no_delete',
-      'trg_h6d_ari_no_delete','trg_h6d_api_no_delete','trg_h6_ar_guard_title','trg_h6_ap_guard_title',
-      'trg_h6_ari_guard','trg_h6_api_guard'))),
+  ('H6E-T04 triggers H6/H6d continuam vinculados as 5 funcoes (10 esperados)',
+   (SELECT count(*)=10 FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid
+     WHERE NOT t.tgisinternal AND p.proname IN
+       ('fn_h6_guard_ar_installment_snapshot','fn_h6_guard_ap_installment_snapshot',
+        'fn_h6_guard_title_snapshot','fn_h6_payments_append_only','fn_h6d_block_hard_delete'))),
   ('H6E-T05 RPCs financeiras canonicas: anon sem EXECUTE',
    (SELECT bool_and(NOT has_function_privilege('anon',p.oid,'EXECUTE'))
       FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
