@@ -29,6 +29,11 @@ DELETE FROM public.partner_order_financial_links
                           WHERE origin_id IN (SELECT id FROM h6c2_entregas));
 ALTER TABLE public.partner_order_financial_links ENABLE TRIGGER USER;
 
+-- A entrega faturada e imutavel por trigger (protecao H6) e o FK
+-- entregas.receivable_id e ON DELETE SET NULL; o gatilho e suspenso durante
+-- toda a remocao das fixtures descartaveis deste harness.
+ALTER TABLE public.entregas DISABLE TRIGGER USER;
+
 DELETE FROM public.receivable_payments WHERE installment_id IN
   (SELECT i.id FROM public.accounts_receivable_installments i
      JOIN public.accounts_receivable a ON a.id = i.receivable_id
@@ -42,7 +47,6 @@ DELETE FROM public.entrega_conferencia_itens WHERE entrega_id IN (SELECT id FROM
 ALTER TABLE public.entrega_reconciliacoes DISABLE TRIGGER USER;
 DELETE FROM public.entrega_reconciliacoes WHERE entrega_id IN (SELECT id FROM h6c2_entregas);
 ALTER TABLE public.entrega_reconciliacoes ENABLE TRIGGER USER;
-ALTER TABLE public.entregas DISABLE TRIGGER USER;
 DELETE FROM public.entregas WHERE id IN (SELECT id FROM h6c2_entregas);
 ALTER TABLE public.entregas ENABLE TRIGGER USER;
 

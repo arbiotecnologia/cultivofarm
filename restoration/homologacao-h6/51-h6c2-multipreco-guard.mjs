@@ -269,6 +269,9 @@ async function teardown() {
         OR receivable_id IN (SELECT id FROM public.accounts_receivable WHERE origin_id = ANY($2))`,
     [orders, entregas]);
   await admin.query("ALTER TABLE public.partner_order_financial_links ENABLE TRIGGER USER");
+  // entrega faturada é imutável (trigger H6) e o FK receivable_id é SET NULL:
+  // o gatilho fica suspenso durante toda a remoção das fixtures descartáveis.
+  await admin.query("ALTER TABLE public.entregas DISABLE TRIGGER USER");
   await admin.query(
     `DELETE FROM public.receivable_payments WHERE installment_id IN
        (SELECT i.id FROM public.accounts_receivable_installments i
@@ -282,9 +285,6 @@ async function teardown() {
   await admin.query("ALTER TABLE public.entrega_reconciliacoes DISABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.entrega_reconciliacoes WHERE entrega_id = ANY($1)`, [entregas]);
   await admin.query("ALTER TABLE public.entrega_reconciliacoes ENABLE TRIGGER USER");
-  // A entrega faturada é imutável por trigger (proteção H6); o gatilho é suspenso
-  // apenas para remover as fixtures descartáveis deste harness.
-  await admin.query("ALTER TABLE public.entregas DISABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.entregas WHERE id = ANY($1)`, [entregas]);
   await admin.query("ALTER TABLE public.entregas ENABLE TRIGGER USER");
   await admin.query(`DELETE FROM public.estoque_embalagens WHERE codigo_embalagem LIKE $1`, [`${TAG}%`]);
