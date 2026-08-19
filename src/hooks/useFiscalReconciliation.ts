@@ -11,6 +11,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buildFiscalEventIdempotencyKey } from "@/lib/fiscal/eventIdempotency";
 import type { Database } from "@/integrations/supabase/types";
 import {
   assertManualEditable,
@@ -209,6 +210,8 @@ export function useUnlinkFiscalInvoice() {
           p_invoice_id: prev.id,
           p_event_type: "MANUAL_UPDATED",
           p_notes: notes,
+          // H7b: chave obrigatória e determinística (retry não duplica evento).
+          p_idempotency_key: buildFiscalEventIdempotencyKey(prev.id, "MANUAL_UPDATED", notes),
         });
         if (rpcErr) throw rpcErr;
       }

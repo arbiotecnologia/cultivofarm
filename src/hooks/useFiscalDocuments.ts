@@ -13,6 +13,7 @@
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buildFiscalEventIdempotencyKey } from "@/lib/fiscal/eventIdempotency";
 import type { Database } from "@/integrations/supabase/types";
 import {
   buildInsertPayload,
@@ -288,6 +289,9 @@ export function useRegisterManualEvent() {
         p_invoice_id: invoiceId,
         p_event_type: eventType,
         p_notes: cleanNotes === "" ? undefined : cleanNotes,
+        // H7b: chave obrigatória e determinística — retry/duplo clique da mesma
+        // tentativa lógica reaproveita o evento em vez de duplicá-lo.
+        p_idempotency_key: buildFiscalEventIdempotencyKey(invoiceId, eventType, cleanNotes),
       });
       if (error) throw error;
       return data as string;
