@@ -47,10 +47,10 @@ else echo "D1/D2 FAIL — esperado 1 evento, obtido $N"; FAIL=1; fi
 
 # D3: reserva de numeração — propriedades transacionais exigidas.
 PROPS=$(psql "$STAGING_DSN" -tAc "
-  SELECT (position('FOR UPDATE' in prosrc)>0)::int
-       ||(position('pg_advisory' in prosrc)>0)::int
-       ||(position('idempotency_key' in prosrc)>0)::int
-       ||(position('assert_environment_homologation' in prosrc)>0)::int
+  SELECT (position('FOR UPDATE' in prosrc)>0)::int::text
+       ||(position('pg_advisory' in prosrc)>0)::int::text
+       ||(position('idempotency_key' in prosrc)>0)::int::text
+       ||(position('assert_environment_homologation' in prosrc)>0)::int::text
     FROM pg_proc WHERE proname='rpc_fiscal_reserve_nfe_number_v1';")
 if [ "$PROPS" = "1111" ]; then echo "D3 PASS — reserva com FOR UPDATE + advisory lock + idempotencia + gate";
 else echo "D3 FAIL — propriedades da reserva: $PROPS"; FAIL=1; fi
