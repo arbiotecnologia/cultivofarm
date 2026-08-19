@@ -241,3 +241,96 @@ Ressalvas remanescentes: **H6-006 (P3)** mensagem bruta de unicidade em estorno 
 ## GATE
 
 **H6 — APROVADA.** H7 (Fiscal) **não iniciada**.
+
+---
+
+# H6d — Correção focada após auditoria independente do H6b/H6c
+
+Ambiente: **staging `ikaauvsflpmamgxmkhoq`** (produção `navfzbwgwzruipouyfnk` intocada).
+Migration incremental nova (nenhuma migration histórica editada):
+`restoration/homologacao-h6/20260921000000_h6d_financeiro_delete_guard_snapshot_v1.sql`.
+
+> Observação de nomenclatura: o item antes registrado como "H6D-001 (P2) lacuna de
+> `schema_migrations`" pertence à frente H10 e não se confunde com os achados H6d abaixo.
+
+## Achados confirmados na auditoria direta
+
+| ID | Sev | Achado | Situação |
+|----|-----|--------|----------|
+| H6d-001 | P1 | Append-only das baixas só cobria `BEFORE UPDATE`; policies `rp_delete_admin_only`/`pp_delete_admin_only` permitiam DELETE físico por administrador | **Corrigido** |
+| H6d-002 | P1 | `accounts_receivable`/`accounts_payable` com policy `ALL` (`Financial staff full access`) permitiam DELETE direto; FKs `ON DELETE CASCADE` destruiriam parcelas e histórico | **Corrigido** |
+| H6d-003 | P1 | Guards de parcela protegiam só vínculo/número/`original_amount`; `due_date` e `net_amount` eram editáveis por UPDATE direto | **Corrigido** |
+| H6d-004 | P2 | `accounts_receivable.payment_method_id` (condição do título) fora do snapshot imutável | **Corrigido** |
+
+## Correções aplicadas
+
+- **Baixas append-only contra DELETE**: `fn_h6_payments_append_only()` passa a tratar `TG_OP='DELETE'`;
+  triggers `trg_h6_rp_append_only` / `trg_h6_pp_append_only` recriados como `BEFORE UPDATE OR DELETE`.
+  Policies `rp_delete_admin_only` / `pp_delete_admin_only` removidas e `DELETE` revogado de
+  `anon`/`authenticated`. Estorno (`fn_reverse_payment`) segue sendo a única correção operacional.
+- **Títulos e parcelas não excluíveis**: novo `fn_h6d_block_hard_delete()` em
+  `trg_h6d_ar_no_delete`, `trg_h6d_ap_no_delete`, `trg_h6d_ari_no_delete`, `trg_h6d_api_no_delete`
+  (o trigger de linha também dispara na cascata, bloqueando destruição via DELETE do pai).
+  Policy `ALL` substituída por `*_select_financial` / `*_insert_financial` / `*_update_financial`
+  nas 4 tabelas, sem policy de DELETE, e `DELETE` revogado de `anon`/`authenticated`.
+  Cancelamento continua por `rpc_cancel_accounts_receivable` / `rpc_cancel_accounts_payable`
+  (`status='CANCELED'`, modelo canônico — nenhum soft-delete paralelo criado).
+- **Snapshot de parcelas**: `fn_h6_guard_ar_installment_snapshot` / `..._ap_...` passam a bloquear
+  também `due_date`, `net_amount` e `created_at`. Continuam livres os campos derivados de
+  baixa/estorno: `received_amount`/`paid_amount`, `discount_amount`, `interest_amount`,
+  `penalty_amount`, `status`, `paid_at` (usados por `fn_recalc_receivable_installment` /
+  `fn_recalc_payable_installment`).
+- **Condição do título**: `fn_h6_guard_title_snapshot` bloqueia mudança de
+  `accounts_receivable.payment_method_id` após a criação. Campos fiscais/administrativos
+  (`fiscal_invoice_status`, `fiscal_invoice_number`, `fiscal_access_key`, `notes`, `status`, gateway/PIX)
+  permanecem atualizáveis por integrações. `receivable_payments.payment_method_id` (método da baixa)
+  não foi afetado.
+- **Escotilha de manutenção (staging)**: `fn_h6d_hard_delete_allowed()` — fail-closed, exige
+  `current_user IN ('postgres','supabase_admin')` **e** `SET arbio.allow_financial_hard_delete='on'`.
+  Não alcançável por PostgREST (`anon`/`authenticated`); `EXECUTE` revogado de PUBLIC/anon/authenticated.
+  Serve apenas a rotinas internas de rollback/fixture de staging.
+
+Todas as funções são `SECURITY DEFINER` com `search_path` explícito. Nenhuma RPC de
+baixa/estorno/faturamento foi redesenhada (`rpc_register_receivable_payment`,
+`rpc_register_payable_payment`, `fn_reverse_payment`, `fn_generate_receivable_from_entrega`
+preservadas, H5/H6b/H6c intactos).
+
+## Artefatos
+
+- Migration: `restoration/homologacao-h6/20260921000000_h6d_financeiro_delete_guard_snapshot_v1.sql`
+- Apply: `restoration/homologacao-h6/apply-h6d.sh` (guard de DSN staging)
+- Rollback: `restoration/homologacao-h6/rollback-h6d.sh` + `rollback-h6d.sql`
+- Postcheck estrutural: `restoration/homologacao-h6/55-h6d-postcheck.sql`
+- Comportamental (fixtures em transação revertida): `restoration/homologacao-h6/56-h6d-comportamental.sql`
+
+## Evidências
+
+| Verificação | Resultado |
+|---|---|
+| Postcheck estrutural `55-h6d` | **16/16 PASS** |
+| Comportamental `56-h6d` (A–H) | **21/21 PASS** |
+| A) baixa AR: UPDATE rejeitado, DELETE rejeitado, estorno OK, replay estável | PASS |
+| B) baixa AP: idem | PASS |
+| C) DELETE de título AR/AP e de parcela por staff financeiro | rejeitado; título/parcela/baixa preservados |
+| D) `rpc_cancel_accounts_receivable` / `..._payable` | funcionam e preservam registros |
+| E) `due_date`/`net_amount` por UPDATE direto | rejeitado; derivados seguem atualizáveis |
+| F) `accounts_receivable.payment_method_id` | rejeitado; método da baixa preservado |
+| G) regressão H6 `44` / H6b `46` / H6c `47` / comportamental `48` | 20 PASS / 0 FAIL em todos |
+| Reversibilidade APPLY → ROLLBACK → APPLY | PASS (contagens idênticas: `50\|30\|58\|30\|58`) |
+| Resíduo de fixtures | 0 (transação revertida) |
+| Typecheck | 0 erros |
+| Vitest | **3120 passed / 4 skipped** |
+| Binding | `ikaauvsflpmamgxmkhoq` (restaurado da baseline `c75bb87f` — drift de sandbox detectado no início) |
+| Produção `navfzbwgwzruipouyfnk` | intocada |
+
+## Pendências (P2/P3)
+
+- **P2** — não existe RPC formal de renegociação/reagendamento de vencimento. Com H6d o campo
+  ficou fail-closed; se o negócio exigir reagendamento, criar RPC com motivo + auditoria (frente futura).
+- **P3** — H6-006: estorno concorrente retorna a mensagem bruta de violação de unicidade.
+
+## GATE
+
+**H6 — APROVADA** (zero P0/P1). Nenhum DELETE físico operacional de baixa ou título é possível;
+`due_date`/`net_amount` imutáveis por via direta; sem regressão em baixa/estorno/cancelamento/faturamento.
+**H7 não iniciada.**
