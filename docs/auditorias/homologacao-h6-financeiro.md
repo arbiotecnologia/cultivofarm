@@ -334,3 +334,93 @@ preservadas, H5/H6b/H6c intactos).
 **H6 — APROVADA** (zero P0/P1). Nenhum DELETE físico operacional de baixa ou título é possível;
 `due_date`/`net_amount` imutáveis por via direta; sem regressão em baixa/estorno/cancelamento/faturamento.
 **H7 não iniciada.**
+
+---
+
+# FASE H6e — PROVENIÊNCIA DA MIGRATION CANÔNICA E MENOR PRIVILÉGIO DAS TRIGGER FUNCTIONS
+
+Ambiente: **staging `ikaauvsflpmamgxmkhoq`**. Produção `navfzbwgwzruipouyfnk` **não foi tocada**
+(todas as execuções via `STAGING_DSN` com guard fail-closed nos scripts de apply).
+
+## Achados da auditoria independente (confirmados)
+
+1. **Migration canônica ausente** — a migration H6d existia apenas em
+   `restoration/homologacao-h6/20260921000000_h6d_financeiro_delete_guard_snapshot_v1.sql`,
+   sem cópia em `supabase/migrations/`, quebrando reprodutibilidade do estado do banco a partir do repositório.
+2. **ACL residual** — cinco trigger functions mantinham EXECUTE herdado de PUBLIC, portanto acessível
+   a `anon` e `authenticated`.
+
+## ACL antes → depois
+
+| Função (`RETURNS trigger`) | ACL antes | anon/auth antes | ACL depois | anon/auth depois |
+|---|---|---|---|---|
+| `fn_h6_guard_ar_installment_snapshot()` | `{=X/postgres,postgres=X,anon=X,authenticated=X,service_role=X}` | true/true | `{postgres=X/postgres,service_role=X/postgres}` | false/false |
+| `fn_h6_guard_ap_installment_snapshot()` | idem | true/true | idem | false/false |
+| `fn_h6_guard_title_snapshot()` | idem | true/true | idem | false/false |
+| `fn_h6_payments_append_only()` | idem | true/true | idem | false/false |
+| `fn_h6d_block_hard_delete()` | idem | true/true | idem | false/false |
+| `fn_h6d_hard_delete_allowed()` | já fechada | false/false | inalterada | false/false |
+
+`service_role` mantido apenas para manutenção server-side controlada. Nenhum trigger foi recriado
+e nenhuma lógica funcional foi alterada.
+
+## Arquivos criados/alterados
+
+- `supabase/migrations/20260921000000_h6d_financeiro_delete_guard_snapshot_v1.sql` — **novo** (H6e-001),
+  byte-idêntico ao arquivo de `restoration/` (md5 `49f5dfa29155ddac3af78464220d283a`).
+- `supabase/migrations/20260922000000_h6e_financeiro_trigger_acl_v1.sql` — **migration nova** (H6e-002), idempotente.
+- `restoration/homologacao-h6/20260922000000_h6e_financeiro_trigger_acl_v1.sql` — cópia de execução.
+- `restoration/homologacao-h6/apply-h6e.sh` — apply fail-closed (aborta se o DSN não for staging).
+- `restoration/homologacao-h6/rollback-h6e.sql` — reversão da ACL ao estado pré-H6e.
+- `restoration/homologacao-h6/57-h6e-postcheck.sql` — postcheck estrutural.
+- `restoration/homologacao-h6/58-h6e-comportamental.sql` — postcheck comportamental (termina em ROLLBACK).
+
+Nenhuma migration histórica foi editada.
+
+## Paridade repo ↔ live
+
+Reaplicação transacional de H6d + H6e a partir de `supabase/migrations` com `ROLLBACK` final:
+
+| Resultado | Verificação |
+|---|---|
+| PASS | P1 definições das funções: repo == live |
+| PASS | P2 definições dos triggers: repo == live |
+| PASS | P3 policies financeiras: repo == live |
+| PASS | P4 ACL H6e estável após reaplicar (idempotência) |
+
+Nenhuma diferença entre `restoration/` e o live foi encontrada; nada foi mascarado.
+
+## Testes
+
+**Estrutural (`57-h6e-postcheck.sql`) — 6/6 PASS**: 5 trigger functions sem EXECUTE para PUBLIC/anon/authenticated;
+as 5 funções existem e retornam `trigger`; escotilha `fn_h6d_hard_delete_allowed` segue fechada;
+10 triggers H6/H6d permanecem vinculados; RPCs financeiras canônicas com `anon=false`,
+`SECURITY DEFINER` e `search_path` explícito.
+
+**Comportamental (`58-h6e-comportamental.sql`) — 5/5 PASS**, fixtures descartadas por ROLLBACK (zero resíduo):
+guard de título e guard de parcela **disparam normalmente sob `SET ROLE authenticated` mesmo sem EXECUTE**;
+DELETE físico de título continua bloqueado; `net_amount` continua imutável.
+
+**Regressão H6d — 16/16 PASS estrutural + 21/21 PASS comportamental** (`55`/`56`), incluindo
+UPDATE econômico rejeitado, DELETE de baixa/título/parcela rejeitado, estorno e cancelamento formais
+funcionando, idempotência H6b e unicidade de faturamento H5/H6 preservadas. Zero resíduo de fixtures.
+
+**Regressão fiscal H7 — 11/11 PASS** (`60-h7-postcheck.sql`) e **12/12 PASS** (`61-h7-seguranca-ambiente.sql`).
+Marcador: `project_ref=ikaauvsflpmamgxmkhoq`, `environment_label=STAGING`, `production_emission_allowed=false`;
+`nfe_environment_code` do emitente = `2`; `fn_fiscal_environment_gate_v1` continua bloqueando `tpAmb=1`;
+`anon` sem EXECUTE nas funções fiscais. Nenhuma transmissão externa/SEFAZ foi tentada;
+certificado A1 continua ausente e o readiness externo permanece **NOT_READY**.
+
+**Repositório**: typecheck 0 erros; Vitest **3120 passed / 4 skipped** (192 arquivos); build **SUCCESS**.
+Binding de staging confirmado (`.env`, `client.ts`, `types.ts` com 21.850 linhas restaurados da baseline
+`c75bb87f` após drift do sandbox; nenhum segredo exposto).
+
+## GATE H6e
+
+**H6 — MANTIDA APROVADA. H7 — MANTIDA APROVADA COM RESSALVAS EXTERNAS. H6e — APROVADA (zero P0/P1).**
+Migration H6d presente no caminho canônico; nenhuma das 5 trigger functions mantém EXECUTE para
+PUBLIC/anon/authenticated; sem regressão H6/H7. **H8 não iniciada.**
+
+Pendências remanescentes (inalteradas): **P2** — inexiste RPC formal de renegociação de vencimento
+(campo fail-closed); **P3** — mensagem bruta em estorno concorrente (H6-006);
+**P2 externo** — emissão SEFAZ dependente de certificado A1 ausente.
