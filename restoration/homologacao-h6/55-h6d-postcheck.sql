@@ -27,10 +27,7 @@ WITH t(check_id, ok) AS (
    (SELECT count(*)=12 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
      WHERE c.relname IN ('accounts_receivable','accounts_payable',
                          'accounts_receivable_installments','accounts_payable_installments')
-       AND p.polname LIKE '%\_select\_financial' ESCAPE '\'
-        OR (c.relname IN ('accounts_receivable','accounts_payable',
-                          'accounts_receivable_installments','accounts_payable_installments')
-            AND (p.polname LIKE '%\_insert\_financial' ESCAPE '\' OR p.polname LIKE '%\_update\_financial' ESCAPE '\')))),
+       AND p.polname IN (c.relname||'_select_financial', c.relname||'_insert_financial', c.relname||'_update_financial'))),
   ('H6D-T08 authenticated/anon sem DELETE em titulos e parcelas',
    (SELECT NOT bool_or(has_table_privilege(r, tb, 'DELETE'))
       FROM unnest(ARRAY['anon','authenticated']) r,
