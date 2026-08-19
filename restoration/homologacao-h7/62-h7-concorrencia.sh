@@ -42,6 +42,7 @@ insert_attempt "$TMP/c.log"
 N=$(psql "$STAGING_DSN" -tAc "SELECT count(*) FROM public.fiscal_events WHERE fiscal_invoice_id='$INV' AND idempotency_key='$KEY';")
 
 FAIL=0
+cat "$TMP"/*.log 1>&2
 if [ "$N" = "1" ]; then echo "D1/D2 PASS — 3 tentativas (2 simultaneas + 1 retry) => $N evento";
 else echo "D1/D2 FAIL — esperado 1 evento, obtido $N"; FAIL=1; fi
 
