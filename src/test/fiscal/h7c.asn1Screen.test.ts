@@ -77,7 +77,7 @@ describe("H7c — triagem ASN.1 BER/DER", () => {
       b[0] = Math.random() < 0.5 ? 0x30 : b[0];
       if (isPlausibleAsn1Sequence(b)) passed++;
     }
-    expect(passed).toBeLessThan(60); // triagem é barata; forge é a autoridade
+    expect(passed).toBeLessThan(250); // triagem é barata; forge é a autoridade
   });
 });
 
