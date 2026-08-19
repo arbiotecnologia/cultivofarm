@@ -154,7 +154,13 @@ Deno.serve(async (req) => {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  if (bytes.length < 2 || bytes[0] !== PKCS12_MAGIC[0] || bytes[1] !== PKCS12_MAGIC[1]) {
+  // DER: SEQUENCE (0x30) seguido de comprimento em forma curta (0x00-0x7f)
+  // ou longa (0x81-0x84). A validacao definitiva do PKCS#12 e feita pelo forge abaixo.
+  const derSequenceOk =
+    bytes.length >= 2 &&
+    bytes[0] === DER_SEQUENCE_TAG &&
+    (bytes[1] <= 0x7f || (bytes[1] >= 0x81 && bytes[1] <= 0x84));
+  if (!derSequenceOk) {
     return json({ error: "not_pkcs12" }, 400, headers);
   }
 
