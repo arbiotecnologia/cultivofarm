@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { brl } from "@/lib/financial/format";
+import { anexarComprovanteBaixa } from "@/lib/financial/anexarComprovanteBaixa";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Upload, FileText, X } from "lucide-react";
 
@@ -89,22 +90,16 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       if (!paymentId) throw new Error("Falha ao registrar pagamento.");
 
       if (file) {
-        const ownerType = kind === "receivable" ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
-        const path = `${ownerType}/${paymentId}/${Date.now()}-${file.name}`;
-        const { error: upErr } = await supabase.storage.from("financial-docs").upload(path, file);
-        if (upErr) throw upErr;
-
-        const { error: insErr } = await supabase.from("financial_documents").insert({
-          owner_type: ownerType as any,
-          owner_id: paymentId as any,
-          document_type: "RECEIPT" as any,
-          file_name: file.name as any,
-          storage_path: path as any,
-          mime_type: file.type as any,
-          file_size: file.size as any,
-          uploaded_by: user.id as any,
-        } as any);
-        if (insErr) throw insErr;
+        // H6c-004: anexo idempotente por payment_id + tentativa lógica.
+        // Retry após falha parcial (baixa persistida, comprovante não) reaproveita
+        // o mesmo caminho/documento em vez de duplicar.
+        await anexarComprovanteBaixa(supabase, {
+          ownerType: kind === "receivable" ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE",
+          paymentId: paymentId as unknown as string,
+          idempotencyKey: idempotencyRef.current,
+          file,
+          uploadedBy: user.id,
+        });
       }
     },
     onSuccess: () => {

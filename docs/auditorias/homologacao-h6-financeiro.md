@@ -156,3 +156,88 @@ preservados. Produção intocada.
 - Produção `navfzbwgwzruipouyfnk` intocada.
 
 **GATE H6 — APROVADA COM RESSALVAS (zero P0/P1). H7 não iniciada.**
+
+---
+
+# H6c-2 — FECHAMENTO DAS RESSALVAS DE EVIDÊNCIA/REVERSIBILIDADE
+
+Ambiente: **staging `ikaauvsflpmamgxmkhoq`** (produção `navfzbwgwzruipouyfnk` intocada). H7 não iniciada.
+
+## H6c-001 — entrega parcial com preços diferentes (agora PROVADO)
+
+Runner: `restoration/homologacao-h6/51-h6c2-multipreco-guard.mjs` — **10/10 PASS**.
+
+Fórmula server-side (`fn_entrega_valor_faturavel_v1`):
+
+```text
+base_aceita   = Σ (subtotal_snapshot_item × ratio_aceito_item)
+fator         = base_aceita / Σ subtotal_snapshot_item
+valor_canonico= round(total_snapshot_comercial × fator, 2)
+```
+
+Cenário: item A subtotal 1.000 (ratio aceito 1,00) e item B subtotal 3.000 (ratio aceito 0,50);
+total comercial do snapshot 3.600 (com desconto global).
+`fator = 2.500/4.000 = 0,625` → **valor canônico = R$ 2.250,00**.
+Um ratio global por quantidade (0,75) daria R$ 2.700,00 — **erro de R$ 450,00**, provado em M2.
+M3 confere `valor_faturavel_max` gravado (±R$ 0,01) e origem `B2B_PAYMENT_TERMS_SNAPSHOT`;
+M4 rejeita payload acima (2.700) e abaixo (2.000); M5 confirma **1 AR exatamente em 2.250,00**;
+M6 teardown com **0 resíduos**.
+
+## H6c-002 — rollback integral e reprodutível
+
+- `restoration/homologacao-h6/50-gerar-rollback-h6b.py` gera `rollback-h6b.sql` a partir das
+  migrations canônicas: restaura as definições **exatas** de `rpc_register_receivable_payment`,
+  `rpc_register_payable_payment`, `fn_reverse_payment`, `fn_entrega_guard_faturamento_v1` e
+  `fn_generate_receivable_from_entrega`, remove objetos novos H6b/H6c (helpers `fn_h6b_*`,
+  `fn_entrega_valor_faturavel_v1`, triggers `trg_h6b_*`/`trg_h6c_*`) e restaura grants
+  (`anon` sem EXECUTE, `authenticated` com EXECUTE).
+- `restoration/homologacao-h6/rollback-h6b.sh` automatiza e **falha fechado** fora do staging
+  (checa DSN e o marcador `_fiscal_staging_marker`).
+- Colunas aditivas (`request_fingerprint`, `valor_faturavel_origem/metodo`) permanecem —
+  rollback **lógico**, documentado, sem perda de trilha.
+- Postcheck `53-h6b-rollback-postcheck.sql`: **13/13 PASS**.
+- Prova `54-h6c-reversibilidade.sh` — **APPLY → ROLLBACK → APPLY: PASS**
+  (postcheck H6b 16/16, H6c 13/13; contagens idênticas nos três momentos:
+  `50|30|58|30|10|43` baixas AR / baixas AP / AR / AP / reconciliações / vínculos canônicos).
+
+## H6c-003 — guard integral cumpre a própria regra
+
+Migration `20260918000000_h6c2_guard_integral_canonico.sql` (cópia canônica em `supabase/migrations/`):
+sem conferência por item, quando há valor canônico resolvível o guard passa a operar em modo
+`integral_canonico` e **rejeita divergência acima ou abaixo de R$ 0,01**; sem valor canônico o
+modo legado é preservado (o guard não inventa preço). Provas G1 (2.000 exato = PASS),
+G2 (2.100 = FAIL), G3 (1.900 = FAIL), G4 (tolerância de R$ 0,01 preservada).
+
+## H6c-004 — retry do comprovante após baixa persistida
+
+`src/lib/financial/anexarComprovanteBaixa.ts`: caminho determinístico
+`owner_type/payment_id/idempotency_key-arquivo` + verificação prévia de documento equivalente;
+upload com `upsert` no mesmo caminho lógico e violação de unicidade tratada como reuso.
+Nenhum comprovante é apagado; bucket e RLS inalterados. `BaixaDialog.tsx` passa a usar o helper.
+Teste: `src/test/financeiro/comprovanteBaixaIdempotencia.test.ts`.
+
+## Evidências finais
+
+| Verificação | Resultado |
+|---|---|
+| Postcheck estrutural `46-h6b` | 16/16 PASS |
+| Postcheck `47-h6c` | 13/13 PASS |
+| Comportamental `48-h6c` | 12/12 PASS |
+| Concorrência `45-h6b` | 17/17 PASS |
+| Multi-preço + guard `51-h6c2` | 10/10 PASS |
+| Rollback `53` / reversibilidade `54` | 13/13 PASS / PASS |
+| Typecheck | 0 erros |
+| Vitest | 3111 passed / 4 skipped |
+| Build | SUCCESS |
+| Binding staging | 8/8 PASS (`ikaauvsflpmamgxmkhoq`) |
+| Resíduos H6C2 | 0 (`52-h6c2-limpeza-residual.sql`) |
+| `anon` EXECUTE em RPCs financeiras | nenhum |
+| SECURITY DEFINER + `search_path` | conforme |
+| Produção `navfzbwgwzruipouyfnk` | intocada |
+
+Ressalvas remanescentes: **H6-006 (P3)** mensagem bruta de unicidade em estorno concorrente;
+**H6D-001 (P2)** lacuna de `schema_migrations` delegada à H10. Zero P0/P1.
+
+## GATE
+
+**H6 — APROVADA.** H7 (Fiscal) **não iniciada**.
