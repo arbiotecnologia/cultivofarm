@@ -14,7 +14,7 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 INV=$(psql "$STAGING_DSN" -tAc "
   INSERT INTO public.fiscal_invoices (invoice_type, status, total_amount, created_by)
   SELECT 'NFE','DRAFT',0, (SELECT id FROM auth.users ORDER BY created_at LIMIT 1)
-  RETURNING id;" | tail -1)
+  RETURNING id;" | head -1)
 
 cleanup() {
   psql "$STAGING_DSN" -q -c "ALTER TABLE public.fiscal_events DISABLE TRIGGER trg_h7_fiscal_events_append_only;" >/dev/null 2>&1 || true
