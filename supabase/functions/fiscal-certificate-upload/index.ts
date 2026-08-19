@@ -154,15 +154,12 @@ Deno.serve(async (req) => {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  // DER: SEQUENCE (0x30) seguido de comprimento em forma curta (0x00-0x7f)
-  // ou longa (0x81-0x84). A validacao definitiva do PKCS#12 e feita pelo forge abaixo.
-  const derSequenceOk =
-    bytes.length >= 2 &&
-    bytes[0] === DER_SEQUENCE_TAG &&
-    (bytes[1] <= 0x7f || (bytes[1] >= 0x81 && bytes[1] <= 0x84));
-  if (!derSequenceOk) {
+  // H7c: triagem ASN.1 mínima (BER/DER, incluindo comprimento indefinido `30 80`).
+  // A autoridade real de formato é o forge (fromDer + pkcs12FromAsn1) logo abaixo.
+  if (!isPlausibleAsn1Sequence(bytes)) {
     return json({ error: "not_pkcs12" }, 400, headers);
   }
+
 
   // Extrai + valida PKCS#12: cert X.509 + private key + match crypto
   let subject = "";
