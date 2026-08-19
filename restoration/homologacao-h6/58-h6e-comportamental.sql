@@ -17,8 +17,8 @@ BEGIN
   THEN v_ok:=v_ok+1; RAISE NOTICE 'H6E-B00 authenticated sem EXECUTE : PASS';
   ELSE v_fail:=v_fail+1; RAISE WARNING 'H6E-B00 : FAIL'; END IF;
 
-  INSERT INTO public.accounts_receivable(total_amount, installment_count, origin_type, issue_date, first_due_date, created_by)
-  VALUES (500.00, 1, 'MANUAL', current_date, current_date+30, v_uid) RETURNING id INTO v_ar;
+  INSERT INTO public.accounts_receivable(description, total_amount, installment_count, origin_type, issue_date, first_due_date, created_by)
+  VALUES ('H6E-FIXTURE', 500.00, 1, 'MANUAL', current_date, current_date+30, v_uid) RETURNING id INTO v_ar;
   INSERT INTO public.accounts_receivable_installments(receivable_id, installment_number, original_amount, net_amount, due_date)
   VALUES (v_ar, 1, 500.00, 500.00, current_date+30) RETURNING id INTO v_ari;
 
