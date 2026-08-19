@@ -377,3 +377,7 @@ BEGIN
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated, service_role;', r.sig);
   END LOOP;
 END $$;
+
+-- H7-004b: remove a assinatura legada de 3 argumentos (sem idempotência).
+-- A versão de 4 argumentos possui default e atende as chamadas antigas.
+DROP FUNCTION IF EXISTS public.rpc_fiscal_event_manual(uuid, text, text);
