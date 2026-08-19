@@ -51,6 +51,19 @@ Migration canônica: `supabase/migrations/20260919000000_h7_fiscal_hardening_v1.
 
 Validações de repositório: Vitest **3111 PASS** (4 skipped), typecheck **0 erros**, build **SUCCESS**.
 
+## 3.1 Harnesses complementares H7 (segurança, ambiente, concorrência)
+
+Além do postcheck `60-h7-postcheck.sql`, foram criados três artefatos executáveis:
+
+| Artefato | Escopo | Resultado |
+| --- | --- | --- |
+| `restoration/homologacao-h7/guard-staging.sh` | Guard duro: aborta se o DSN apontar para a produção (`navfzbwgwzruipouyfnk`), se o marcador de ambiente não for `ikaauvsflpmamgxmkhoq/STAGING/prod=0`, ou se o emitente ativo estiver com `tpAmb=1` | OK |
+| `restoration/homologacao-h7/61-h7-seguranca-ambiente.sql` | 12 testes: RLS em todas as tabelas fiscais, `anon` sem EXECUTE, `search_path` fixo em SECURITY DEFINER, buckets privados, material de certificado fail-closed, marcador imutável e bloqueio duplo de produção, negação de `anon` em preflight/numeração/XML/documentos | **12 PASS / 0 FAIL** |
+| `restoration/homologacao-h7/62-h7-concorrencia.sh` | Sessões paralelas reais: 2 tentativas simultâneas + 1 retry da mesma chave lógica geram **1 único** evento; reserva de numeração com `FOR UPDATE` + advisory lock + idempotência + gate; índice único de documento ativo por origem | **4/4 PASS** |
+
+Os três scripts são transacionais/idempotentes e limpam a massa que criam
+(`61` termina em `ROLLBACK`; `62` remove documento e eventos no `trap`).
+
 ## 4. Pendências registradas (não bloqueiam H7)
 
 1. **`nfe_environment_code` do emitente ativo está ausente/inválido no staging** — o gate
@@ -58,7 +71,7 @@ Validações de repositório: Vitest **3111 PASS** (4 skipped), typecheck **0 er
    ensaio de homologação SEFAZ.
 2. **Eventos de cancelamento/CC-e formais** ainda não implementados em RPC dedicada; o
    manual só aceita `MANUAL_UPDATED` / `RECONCILIATION_*`.
-3. `src/integrations/supabase/types.ts` sofre *drift* quando a plataforma regenera tipos
+3. `src/integrations/supabase/types.ts`, `.env` e `client.ts` sofrem *drift* quando a plataforma regenera tipos
    fora do staging; restaurado a partir do baseline `c75bb87f` (21.850 linhas).
 
 ## 5. Veredito
