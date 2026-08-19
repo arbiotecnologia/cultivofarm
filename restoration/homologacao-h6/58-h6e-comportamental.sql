@@ -4,9 +4,12 @@
 \pset pager off
 BEGIN;
 DO $$
-DECLARE v_ok int:=0; v_fail int:=0; v_ar uuid; v_ari uuid; v_uid uuid;
+DECLARE v_ok int:=0; v_fail int:=0; v_ar uuid; v_ari uuid; v_uid uuid; v_cli uuid; v_pm uuid; v_cat uuid;
 BEGIN
-  SELECT id INTO v_uid FROM auth.users ORDER BY created_at LIMIT 1;
+  SELECT user_id INTO v_uid FROM public.user_roles WHERE role='administrador' LIMIT 1;
+  SELECT id INTO v_cli FROM public.clientes LIMIT 1;
+  SELECT id INTO v_pm  FROM public.payment_methods WHERE active LIMIT 1;
+  SELECT id INTO v_cat FROM public.financial_categories WHERE type='RECEITA' LIMIT 1;
 
   -- T0: authenticated realmente sem EXECUTE nas 5 trigger functions
   IF (SELECT bool_and(NOT has_function_privilege('authenticated',p.oid,'EXECUTE'))
@@ -17,10 +20,13 @@ BEGIN
   THEN v_ok:=v_ok+1; RAISE NOTICE 'H6E-B00 authenticated sem EXECUTE : PASS';
   ELSE v_fail:=v_fail+1; RAISE WARNING 'H6E-B00 : FAIL'; END IF;
 
-  INSERT INTO public.accounts_receivable(description, total_amount, installment_count, origin_type, issue_date, first_due_date, created_by)
-  VALUES ('H6E-FIXTURE', 500.00, 1, 'MANUAL', current_date, current_date+30, v_uid) RETURNING id INTO v_ar;
-  INSERT INTO public.accounts_receivable_installments(receivable_id, installment_number, original_amount, net_amount, due_date)
-  VALUES (v_ar, 1, 500.00, 500.00, current_date+30) RETURNING id INTO v_ari;
+  INSERT INTO public.accounts_receivable
+    (origin_type, customer_id, description, category_id, total_amount, issue_date, first_due_date,
+     installment_count, status, payment_method_id, created_by)
+  VALUES ('MANUAL', v_cli, 'H6E-FIXTURE AR', v_cat, 500, CURRENT_DATE, CURRENT_DATE + 30,
+          1, 'OPEN', v_pm, v_uid)
+  RETURNING id INTO v_ar;
+  SELECT id INTO v_ari FROM public.accounts_receivable_installments WHERE receivable_id = v_ar LIMIT 1;
 
   -- T1: guard de titulo dispara sob role authenticated
   BEGIN
