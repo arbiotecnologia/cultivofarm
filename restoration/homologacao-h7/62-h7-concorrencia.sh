@@ -29,7 +29,8 @@ insert_attempt() {
   psql "$STAGING_DSN" -tAc "
     INSERT INTO public.fiscal_events (fiscal_invoice_id, event_type, event_source, idempotency_key)
     VALUES ('$INV','MANUAL_UPDATED','USER','$KEY')
-    ON CONFLICT (fiscal_invoice_id, event_type, idempotency_key) DO NOTHING;" >"$1" 2>&1 || true
+    ON CONFLICT (fiscal_invoice_id, event_type, idempotency_key)
+      WHERE idempotency_key IS NOT NULL DO NOTHING;" >"$1" 2>&1 || true
 }
 
 # D1: duas tentativas simultâneas da mesma chave lógica.
