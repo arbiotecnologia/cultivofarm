@@ -26,7 +26,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_PASSWORD = 256;
 const MAX_DISPLAY_NAME = 200;
 const ALLOWED_EXT = [".pfx", ".p12"];
-const PKCS12_MAGIC = new Uint8Array([0x30, 0x82]);
+const DER_SEQUENCE_TAG = 0x30;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
@@ -154,7 +154,13 @@ Deno.serve(async (req) => {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  if (bytes.length < 2 || bytes[0] !== PKCS12_MAGIC[0] || bytes[1] !== PKCS12_MAGIC[1]) {
+  // DER: SEQUENCE (0x30) seguido de comprimento em forma curta (0x00-0x7f)
+  // ou longa (0x81-0x84). A validacao definitiva do PKCS#12 e feita pelo forge abaixo.
+  const derSequenceOk =
+    bytes.length >= 2 &&
+    bytes[0] === DER_SEQUENCE_TAG &&
+    (bytes[1] <= 0x7f || (bytes[1] >= 0x81 && bytes[1] <= 0x84));
+  if (!derSequenceOk) {
     return json({ error: "not_pkcs12" }, 400, headers);
   }
 
