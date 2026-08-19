@@ -171,3 +171,22 @@ autorizada; a produção permanece intocada. **H8 não iniciada.**
 - Typecheck: **0 erros**. Vitest: **3120 passed / 4 skipped**. Build: **SUCCESS**.
 - Binding conferido e mantido no staging `ikaauvsflpmamgxmkhoq` (drift de
   `types.ts`/`.env`/`client.ts` restaurado a partir da baseline `c75bb87f`).
+
+## 6. Reverificação H7 (2026-08-19)
+
+Reexecução somente-leitura do gate H7 a pedido, sem novas migrations e sem
+tocar a produção `navfzbwgwzruipouyfnk`.
+
+- Binding: `src/integrations/supabase/client.ts` permanece fixado no staging
+  `ikaauvsflpmamgxmkhoq`.
+- **Drift detectado e corrigido**: `.env` e `src/integrations/supabase/types.ts`
+  haviam sido regenerados fora do staging (types reduzido a 2.052 linhas,
+  `VITE_SUPABASE_URL` apontando para outro ref), derrubando 14 testes
+  contratuais (binding, SINIEF 49, Fase 3.15/3.19, schema on-farm).
+  Restaurados a partir da baseline `c75bb87f` (21.850 linhas).
+- Após restauração: typecheck **0 erros**; Vitest **3120 passed / 4 skipped**.
+- Migrations H7/H7b inalteradas: `20260919000000`, `20260919010000`,
+  `20260920000000`, `20260920010000`.
+- Veredito mantido: **GATE H7 — APROVADA COM RESSALVAS / PRONTA PARA SMOKE
+  EXTERNO**. Emissão de produção continua desligada nas duas camadas
+  (marcador de ambiente + gate `tpAmb`). **H8 não iniciada.**
