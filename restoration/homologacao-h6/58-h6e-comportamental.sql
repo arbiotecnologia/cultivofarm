@@ -4,12 +4,13 @@
 \pset pager off
 BEGIN;
 DO $$
-DECLARE v_ok int:=0; v_fail int:=0; v_ar uuid; v_ari uuid; v_uid uuid; v_cli uuid; v_pm uuid; v_cat uuid;
+DECLARE v_ok int:=0; v_fail int:=0; v_ar uuid; v_ari uuid; v_uid uuid; v_cli uuid; v_pm uuid; v_cat uuid; v_rows int;
 BEGIN
   SELECT user_id INTO v_uid FROM public.user_roles WHERE role='administrador' LIMIT 1;
   SELECT id INTO v_cli FROM public.clientes LIMIT 1;
   SELECT id INTO v_pm  FROM public.payment_methods WHERE active LIMIT 1;
   SELECT id INTO v_cat FROM public.financial_categories WHERE type='RECEITA' LIMIT 1;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_uid, 'role','authenticated')::text, true);
 
   -- T0: authenticated realmente sem EXECUTE nas 5 trigger functions
   IF (SELECT bool_and(NOT has_function_privilege('authenticated',p.oid,'EXECUTE'))
@@ -33,7 +34,8 @@ BEGIN
     SET LOCAL ROLE authenticated;
     BEGIN
       UPDATE public.accounts_receivable SET total_amount=999 WHERE id=v_ar;
-      v_fail:=v_fail+1; RAISE WARNING 'H6E-B01 guard de titulo NAO disparou : FAIL';
+      GET DIAGNOSTICS v_rows = ROW_COUNT;
+      v_fail:=v_fail+1; RAISE WARNING 'H6E-B01 guard de titulo NAO disparou (rows=%) : FAIL', v_rows;
     EXCEPTION WHEN insufficient_privilege THEN
       v_ok:=v_ok+1; RAISE NOTICE 'H6E-B01 bloqueado por RLS/privilegio : PASS';
     WHEN OTHERS THEN
@@ -42,7 +44,8 @@ BEGIN
     -- T2: guard de parcela dispara sob role authenticated
     BEGIN
       UPDATE public.accounts_receivable_installments SET due_date=current_date+90 WHERE id=v_ari;
-      v_fail:=v_fail+1; RAISE WARNING 'H6E-B02 guard de parcela NAO disparou : FAIL';
+      GET DIAGNOSTICS v_rows = ROW_COUNT;
+      v_fail:=v_fail+1; RAISE WARNING 'H6E-B02 guard de parcela NAO disparou (rows=%) : FAIL', v_rows;
     EXCEPTION WHEN insufficient_privilege THEN
       v_ok:=v_ok+1; RAISE NOTICE 'H6E-B02 bloqueado por RLS/privilegio : PASS';
     WHEN OTHERS THEN
