@@ -58,3 +58,26 @@ Data: 2026 — execução somente staging. H7 **não** iniciada.
 
 **H6 — APROVADA COM RESSALVAS** (ressalvas: H6-006 P3 e H6-B01 sem massa de dados para prova ao vivo).
 H7 não iniciada.
+
+## Adendo H7b — H6-P2 (menor privilégio nas trigger functions)
+
+Achado da auditoria independente: `fn_h6c_entrega_ar_b2b_link()` e
+`fn_h6c_set_canonical_payment_terms()` são `SECURITY DEFINER RETURNS trigger`
+com `search_path` fixo, mas ainda mantinham `EXECUTE` herdado de
+`PUBLIC`/`anon`/`authenticated`. Não eram RPCs diretamente exploráveis (não
+estão expostas via PostgREST como trigger functions), logo P2 e não P1.
+
+Correção aplicada em `supabase/migrations/20260920000000_h7b_fiscal_idempotencia_ambiente_v1.sql`
+(sem qualquer mudança de lógica):
+
+```sql
+REVOKE ALL ON FUNCTION public.fn_h6c_entrega_ar_b2b_link()        FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.fn_h6c_set_canonical_payment_terms() FROM PUBLIC, anon, authenticated;
+```
+
+ACL depois (staging): `postgres=X/postgres,service_role=X/postgres`.
+Os triggers continuam executando normalmente (execução ocorre sob o dono da
+função, não sob o chamador). Verificado por `restoration/homologacao-h7b/65-h7b-postcheck.sql`
+(T11 PASS) e pela suíte financeira completa.
+
+**H6-P2: CORRIGIDO.** O gate H6 permanece **APROVADA**.
