@@ -238,3 +238,109 @@ Complementado pelo teste contratual `src/test/config/connection-binding.static.t
 **GATE H7d — APROVADA · zero P0/P1 · binding de staging consistente.**
 Certificado A1 não inserido, nenhum segredo fiscal criado, `tpAmb` permanece
 2, `production_emission_allowed = 0`, produção intocada. H8 **não** iniciada.
+
+---
+
+## 19. FASE H7 (rodada A1) — Auditoria de prontidão do certificado digital
+
+Execução exclusiva no staging `ikaauvsflpmamgxmkhoq`. Produção
+`navfzbwgwzruipouyfnk` não foi acessada. Nenhum PFX, senha ou chave privada
+entrou em repo, banco, log ou chat.
+
+### 19.1 Inventário confirmado no staging
+
+- 22 tabelas `fiscal*`, **todas com RLS habilitada** (0 exceções).
+- Buckets: `fiscal-certificates` (privado, 10 MB), `fiscal-xml` (privado),
+  `fiscal-regulatorio` (privado); 4 policies de storage vinculadas.
+- `fiscal_environment_marker` = `ikaauvsflpmamgxmkhoq | STAGING |
+  production_emission_allowed=false`.
+- `company_fiscal_settings` ativo = `HOMOLOGATION`, `production_enabled=false`,
+  `nfe_enabled=false`, `nfse_enabled=false`, `nfe_provider=NONE`,
+  `certificate_ref=NULL`, `nfe_readiness_status=NOT_READY`.
+- `fiscal_certificates` = 0 linhas; `fiscal_certificate_material` = 0 linhas.
+- `anon` sem qualquer GRANT em tabelas fiscais (0); todas as funções
+  SECURITY DEFINER fiscais com `search_path` fixo (0 divergências).
+- Edge Functions fiscais: `fiscal-certificate-upload`,
+  `fiscal-certificate-revoke`, `fiscal-cnpj-lookup`, `fiscal-preflight`,
+  `fiscal-xml-engine`. Nenhum módulo paralelo criado.
+
+### 19.2 Rota exata para importar o A1
+
+`/configuracoes/fiscal/empresa` → seção **“Certificado Digital”**
+(`src/components/fiscal/certificados/CertificadoDigitalSecao.tsx` +
+`UploadCertificadoA1.tsx`) → selecionar o `.pfx`/`.p12`, digitar a senha no
+campo `type="password"` com `autoComplete="new-password"` e acionar
+**Importar** (botão com `disabled` durante o envio). Arquivo e senha vão
+direto para a Edge Function; nada é persistido no navegador.
+
+### 19.3 Alterações desta rodada
+
+| Arquivo | Mudança |
+|---|---|
+| `supabase/functions/_shared/fiscal/corsAllowlist.ts` | **novo** — allowlist canônica de origens públicas; o secret `FISCAL_CORS_ALLOWLIST`, quando presente, tem precedência |
+| `supabase/functions/fiscal-certificate-upload/index.ts` | usa a allowlist compartilhada; `decodeMasterKey` agora aceita base64 de 32 bytes **ou** deriva AES-256 via SHA-256 de segredo textual de alta entropia (fail-closed se ausente → `CERTIFICATE_VAULT_NOT_CONFIGURED`, 503) |
+| `supabase/functions/fiscal-certificate-revoke/index.ts` | allowlist compartilhada |
+| `supabase/functions/fiscal-xml-engine/index.ts` | allowlist compartilhada |
+| `src/test/fiscal/h7c.asn1Screen.test.ts` | asserção de controle atualizada para o helper compartilhado |
+| `.env`, `src/integrations/supabase/types.ts` | restaurados 3× ao baseline de staging (drift recorrente) |
+
+Nenhuma migration nova foi necessária: numeração, idempotência, snapshot
+imutável, guard de ambiente e append-only já estavam aplicados e foram
+revalidados.
+
+### 19.4 Testes desta rodada
+
+| Teste | Resultado |
+|---|---|
+| Gate de binding H7d | PASS (após 3 restaurações; drift reincidente) |
+| `guard-staging.sh` | PASS — `tpAmb=2`, produção fiscal off |
+| `60-h7-postcheck.sql` | 11 PASS / 0 FAIL |
+| `61-h7-seguranca-ambiente.sql` | 12 PASS / 0 FAIL |
+| `62-h7-concorrencia.sh` | 4/4 PASS |
+| RLS em tabelas fiscais / grants anon / search_path | 22 com RLS, 0 grants anon, 0 SECURITY DEFINER sem search_path |
+| CORS negativo (origem estranha) | bloqueado (403) |
+| POST sem sessão | bloqueado (403, sem vazamento) |
+| Suíte fiscal + suíte completa | 3.134 PASS, 4 skip |
+| typecheck / build | 0 erros / sucesso |
+
+### 19.5 Pendência bloqueante (infraestrutura, P1)
+
+O tooling de plataforma (deploy de Edge Functions e cofre de secrets) está
+vinculado ao projeto Cloud sandbox `yzszl…`, **não** ao staging
+`ikaauvsflpmamgxmkhoq` ao qual o app se conecta. Evidências:
+
+- `FISCAL_CERTIFICATE_MASTER_KEY` (gerado nesta rodada) e
+  `FISCAL_CORS_ALLOWLIST` foram gravados no cofre da plataforma, mas a função
+  em staging continua respondendo `cors_origin_not_allowed`;
+- o deploy das três funções retornou sucesso, porém o staging não registra
+  logs nem o novo comportamento.
+
+Consequência: **a importação real do A1 pela interface ainda não é executável
+em staging** até que os secrets fiscais e o deploy alcancem
+`ikaauvsflpmamgxmkhoq` (ação de infraestrutura/CLI com acesso ao projeto).
+Nada foi contornado, simulado ou marcado como autorizado.
+
+### 19.6 Outras pendências
+
+- Transmissão SEFAZ MG homologação: sem provider real implementado
+  (`nfe_provider=NONE`). Nenhuma autorização é simulada; a camada só será
+  ligada após o certificado ativo.
+- NFS-e permanece desacoplada e desligada.
+- Validação contábil das regras em `fiscal_tax_rules` continua pendente de
+  parecer do contador (campos sem validação seguem em status de pendência).
+
+### 19.7 Riscos
+
+- **P1 (infra)** — divergência entre projeto de secrets/deploy e projeto de
+  runtime (19.5).
+- **P2** — drift automático de `.env`/`types.ts` reincidiu 3× nesta sessão;
+  mitigado por detecção (gate + teste contratual), não por prevenção.
+- **P3** — allowlist de origens versionada exige atualização manual se novos
+  domínios forem publicados.
+
+### 19.8 Gate
+
+**GATE H7 — APROVADA COM RESSALVAS / AGUARDANDO CERTIFICADO E PARIDADE DE
+INFRAESTRUTURA.** Zero P0. Um P1 de infraestrutura (19.5), fora do código.
+Produção fiscal desabilitada, `tpAmb=2`, `production_emission_allowed=false`,
+produção intocada. H8 não iniciada.
