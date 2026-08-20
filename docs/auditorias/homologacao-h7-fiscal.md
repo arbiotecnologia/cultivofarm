@@ -501,3 +501,48 @@ zero P1 de código. Permanece o **P1 de infraestrutura** (deploy de Edge Functio
 e cofre de secrets da plataforma resolvem para o projeto sandbox, não para
 `ikaauvsflpmamgxmkhoq`), que precisa de paridade antes do upload real do PFX.
 Nenhuma transmissão SEFAZ; H8 não iniciada.
+
+## 23. Reexecução H7 — 2026-08-20 (auditoria + revalidação, somente staging)
+
+### 23.1 Binding
+Drift recorrente confirmado novamente: `.env` e `types.ts` haviam retornado ao
+projeto sandbox (`types.ts` com 2.052 linhas). Restaurados a partir do baseline
+de staging `c75bb87f` (`types.ts` 21.850 linhas). Gate estático:
+`H7d BINDING GATE: OK — staging ikaauvsflpmamgxmkhoq`. Produção
+`navfzbwgwzruipouyfnk` não foi tocada em nenhum momento.
+
+### 23.2 Evidências de execução (staging `ikaauvsflpmamgxmkhoq`)
+- `guard-staging.sh`: OK — `tpAmb='2'`, `production_emission_allowed=false`.
+- `60-h7-postcheck.sql`: **11 PASS / 0 FAIL** (gate único de ambiente, produção
+  bloqueada, normalização de status, imutabilidade econômica, transições
+  inválidas rejeitadas, cancelamento permitido, eventos append-only,
+  idempotência de evento, `anon` sem EXECUTE, assinatura legada removida).
+- `61-h7-seguranca-ambiente.sql`: **12 PASS / 0 FAIL** (RLS em todas as tabelas
+  fiscais, `anon` sem EXECUTE, `search_path` fixo em todos os SECURITY DEFINER
+  fiscais, buckets fiscais privados, `fiscal_certificate_material` fail-closed,
+  marcador STAGING imutável, preflight/numeração/XML/documentos negados a anon).
+- `62-h7-concorrencia.sh`: **4/4 PASS** (2 tentativas simultâneas + retry ⇒ 1
+  evento; reserva com `FOR UPDATE` + advisory lock; índice único de documento
+  ativo por origem).
+- Vitest fiscal: **1.511 PASS / 4 skip (93 arquivos)**. Typecheck: **0 erros**.
+
+### 23.3 Alterações
+Nenhuma migration nova, nenhuma Edge Function alterada, nenhum fluxo paralelo
+criado. Esta execução foi de auditoria + restauração de binding + revalidação.
+Arquivos alterados: `.env`, `src/integrations/supabase/types.ts` (ambos
+restaurados ao baseline de staging) e este documento.
+
+### 23.4 Gate
+**GATE H7 — APROVADA COM RESSALVAS.** Zero P0 e zero P1 de código/banco.
+Ressalvas mantidas:
+1. **P1 de infraestrutura** — deploys de Edge Functions e cofre de secrets da
+   plataforma resolvem para o projeto sandbox e não para
+   `ikaauvsflpmamgxmkhoq`; sem paridade, o upload real do PFX em staging
+   responde `403 cors_origin_not_allowed`.
+2. **Drift recorrente de binding** — `.env`/`types.ts` voltam ao sandbox entre
+   sessões; rodar `check-frontend-binding.sh` antes de qualquer ação fiscal.
+3. Parâmetros fiscais ainda não homologados pelo contador permanecem
+   configuráveis e bloqueiam emissão real.
+
+Produção fiscal **não ativada**. Nenhum PFX/senha recebido, gravado ou logado.
+H8 **não iniciada**.
