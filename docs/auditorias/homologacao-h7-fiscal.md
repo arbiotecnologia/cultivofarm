@@ -423,3 +423,23 @@ upload real do A1 não é executável em staging.**
 infraestrutura (20.5).** Produção `navfzbwgwzruipouyfnk` intocada; nenhuma
 migration ou deploy direcionado a produção; emissão de produção permanece
 desabilitada por marcador server-side. H8 **não** iniciada.
+
+## 21. Revalidação H7 — 2026-08-20
+
+Execução somente-leitura/validação em staging `ikaauvsflpmamgxmkhoq`. Nenhuma migration nova; nenhuma alteração de schema, rota, permissão ou provedor.
+
+**Drift corrigido (P2 reincidente):** `.env` apontava para o sandbox `yzszl…` e `types.ts` estava truncado (2.052 linhas). Ambos restaurados do baseline de staging `c75bb87f` (21.850 linhas). Gate estático `check-frontend-binding.sh`: OK.
+
+**Evidências:**
+- `guard-staging.sh`: OK — `tpAmb=2`, `production_emission_allowed=false`.
+- `60-h7-postcheck.sql`: 11/11 PASS (gate de ambiente, produção bloqueada, normalização de status, imutabilidade econômica, transições fail-closed, cancelamento, eventos append-only, idempotência, anon sem EXECUTE, assinatura legada removida).
+- `61-h7-seguranca-ambiente.sql`: 12/12 PASS (RLS em todas as tabelas fiscais, buckets privados, `fiscal_certificate_material` fail-closed, `search_path` fixo, marcador de ambiente não editável, anon negado em preflight/numeração/XML/documentos).
+- `62-h7-concorrencia.sh`: 4/4 PASS (2 transmissões simultâneas + retry ⇒ 1 evento; lock + idempotência; índice único de documento ativo por origem).
+- Typecheck: 0 erros. Vitest: 3.134 PASS / 4 skip (194 arquivos). Build: OK.
+
+**Pendências mantidas:**
+- P1 (infraestrutura, fora do código): deploy de Edge Functions e cofre de secrets da plataforma resolvem para o projeto sandbox, não para `ikaauvsflpmamgxmkhoq`; por isso o upload real do A1 em staging ainda responde `cors_origin_not_allowed` e não gera logs. Sem paridade, o teste criptográfico real do PFX não é executável.
+- Gate humano da senha do PFX: a senha deve ser digitada apenas no campo password de `/configuracoes/fiscal/empresa` → “Certificado Digital”, trafegando só até a Edge Function `fiscal-certificate-upload`. Nunca em chat, código, migration, tabela, log ou variável `VITE_*`.
+- P3: allowlist CORS versionada exige atualização manual ao adicionar domínios.
+
+Produção `navfzbwgwzruipouyfnk` intocada. H8 não iniciada.
