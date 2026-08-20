@@ -1,277 +1,165 @@
-# FASE H7 — Auditoria, Correção e Homologação do Módulo Fiscal
+# H7 — Auditoria e homologação do módulo fiscal AR Bio
 
-**Ambiente**: staging `ikaauvsflpmamgxmkhoq` (exclusivo). Produção `navfzbwgwzruipouyfnk` **não foi acessada**.
-**Escopo**: auditar antes de alterar, corrigir o necessário, retestar e **parar ao final de H7**.
-**Emissão real**: permanece **DESLIGADA** (`tpAmb=1` bloqueado por gate server-side).
+Data: 2026-08-20 · Ambiente: **staging `ikaauvsflpmamgxmkhoq`** ·
+Produção `navfzbwgwzruipouyfnk`: **intocada** (nenhuma leitura de escrita,
+migration, deploy ou seed).
 
-## 1. Inventário auditado (H7.0)
+Nenhum segredo (PFX, senha, chave privada, IV, ciphertext, DSN, JWT,
+service_role, master key) foi lido, registrado, logado ou versionado.
 
-- 21 tabelas `fiscal_%`, 22 migrations fiscais dedicadas (`20260721…` → `20260824…`).
-- RPCs centrais: `rpc_fiscal_calculate_invoice_v1`, `rpc_fiscal_reserve_nfe_number_v1`,
-  `rpc_fiscal_xml_prepare_v1`, `rpc_fiscal_xml_record_v1`, `rpc_fiscal_draft_save`,
-  `rpc_fiscal_event_manual`, `rpc_upsert_fiscal_invoice_manual`.
-- Unicidade de numeração já protegida por `ux_fi_env_doc_model_series_number_company`
-  e por índices em `fiscal_number_reservations`.
-- Estado inicial da base fiscal: **0 documentos** (`fiscal_invoices`), portanto nenhuma
-  correção exigiu backfill ou reescrita de dado histórico.
+## 1. Resumo executivo
 
-## 2. Achados e correções
+O módulo fiscal já existia e foi **reaproveitado integralmente**: nenhuma
+tabela, rota ou engine paralela foi criada nesta execução. As correções
+anteriores (H7, H7b, H7c) foram revalidadas do zero em staging e a única
+alteração de código desta rodada foi o **gate canônico
+`CERT_PASSWORD_REQUIRED`** exigido por H7-005.8.
 
-| ID | Sev | Achado | Correção |
-|----|-----|--------|----------|
-| H7-001 | P1 | Gate de ambiente sem código de erro estável; RPCs manuais fora do gate | `fn_fiscal_environment_gate_v1` como **fonte única**, com códigos `FISCAL_ENV_NOT_READY` / `FISCAL_PRODUCTION_DISABLED`; o assert legado passou a delegar (tokens antigos preservados) |
-| H7-002 | **P0** | `rpc_upsert_fiscal_invoice_manual` podia sobrescrever número, série, chave de acesso, total e status de documento **já autorizado/cancelado** | Guarda na RPC (`FISCAL_DOCUMENT_LOCKED`, `FISCAL_DOCUMENT_ENGINE_MANAGED`) + trigger `trg_h7_fiscal_invoice_immutable` com máquina de estados |
-| H7-003 | P1 | `status='ISSUED'` normalizava para `DRAFT`, **reabrindo itens** de documento emitido | Mapeamento canônico `ISSUED → AUTHORIZED` |
-| H7-004 | P1 | `rpc_fiscal_event_manual` sem idempotência: retry duplicava evento | `idempotency_key` + índice único + lock consultivo por documento + replay estável; assinatura legada de 3 argumentos removida |
-| H7-005 | P2 | `fiscal_events` aceitava UPDATE/DELETE | Trigger append-only `FISCAL_EVENTS_APPEND_ONLY` |
-| H7-006 | P2 | `anon` com EXECUTE em 7 helpers fiscais | REVOKE em bloco; grants restritos a `authenticated`/`service_role` |
+Resultado: **GATE H7 — APROVADA COM RESSALVAS**, zero P0/P1, com pendência
+única classificada como `AGUARDANDO CERT_PASSWORD_REQUIRED` (senha real do
+PFX) somada à configuração dos dois segredos do cofre. Produção fiscal
+permanece bloqueada por marcador server-side; H8 não iniciada.
 
-Migration canônica: `supabase/migrations/20260919000000_h7_fiscal_hardening_v1.sql`
-(cópia idêntica em `restoration/homologacao-h7/`).
+## 2. Inventário atual encontrado
 
-## 3. Retestes
+| Camada | Itens |
+| --- | --- |
+| Migrations fiscais | `20260919000000_h7_fiscal_hardening_v1.sql`, `20260919010000_h7_fiscal_preflight_marker_v1.sql`, `20260920000000_h7b_fiscal_idempotencia_ambiente_v1.sql`, `20260920010000_h7b_gate_xml_record_e_marcador_v1.sql` (+ base fiscal 3.x/F1–F4) |
+| Tabelas/views | 34 objetos fiscais, incl. `company_fiscal_settings`, `fiscal_environment_marker`, `fiscal_certificates`, `fiscal_certificate_material`, `fiscal_xml_runs`, `fiscal_xsd_registry`, `v_fiscal_certificate_readiness` |
+| Edge Functions | `fiscal-certificate-upload`, `fiscal-certificate-revoke`, `fiscal-xml-engine` |
+| Storage | bucket privado `fiscal-certificates` (`public=false`, 0 policies em `storage.objects`) |
+| Frontend | `UploadCertificadoA1.tsx`, `useFiscalCertificates.ts`, `useFiscalXmlEngine.ts`, `useRegisterOsCertificate.ts`, rotas `/configuracoes/fiscal/*` e `/fiscal/prontidao` |
+| Runners | `restoration/homologacao-h7/` (guard, postcheck, segurança/ambiente, concorrência) |
 
-`restoration/homologacao-h7/60-h7-postcheck.sql` (transacional, com `ROLLBACK` final):
+## 3. Arquitetura reaproveitada vs criada
 
-| Teste | Resultado |
-|-------|-----------|
-| T1 gate único presente | PASS |
-| T2 assert legado fail-closed com código estável | PASS |
-| T3 produção (`tpAmb=1`) bloqueada | PASS |
-| T4 `ISSUED → AUTHORIZED` | PASS |
-| T5 imutabilidade econômica em estado terminal | PASS |
-| T6 regressão de estado bloqueada | PASS |
-| T7 `AUTHORIZED → CANCELED` permitido | PASS |
-| T8 eventos append-only | PASS |
-| T9 idempotência de evento | PASS |
-| T10 `anon` sem EXECUTE fiscal | PASS |
-| T11 assinatura legada removida | PASS |
+- **Reaproveitado**: 100% do schema fiscal, o cofre AES-256-GCM, o motor XML
+  F4 com XSD oficial, a numeração idempotente, o marcador de ambiente e a
+  integração H5/H6.
+- **Criado nesta execução**: nada de infraestrutura. Apenas o código de gate
+  `CERT_PASSWORD_REQUIRED` na Edge Function de upload, seu reflexo na UI e o
+  teste correspondente.
 
-**11 PASS / 0 FAIL.**
+## 4. Matriz fiscal e snapshot
 
-Validações de repositório: Vitest **3111 PASS** (4 skipped), typecheck **0 erros**, build **SUCCESS**.
+Cadastro mestre (NCM, CEST, origem, CFOP, CST/CSOSN, ICMS/PIS/COFINS/IPI,
+unidades, GTIN, cBenef, informação adicional) permanece separado do snapshot
+do documento. O snapshot é imutável após emissão: `20260919000000` bloqueia
+alteração econômica/fiscal de documento terminal e o postcheck T5 comprova.
+Valores não confirmados continuam marcados como pendentes de validação
+contábil e **bloqueiam** a emissão em vez de serem presumidos.
 
-## 3.1 Harnesses complementares H7 (segurança, ambiente, concorrência)
+## 5. Preflight
 
-Além do postcheck `60-h7-postcheck.sql`, foram criados três artefatos executáveis:
+Preflight canônico server-side com retorno estruturado por campo/código
+(emitente, ambiente, destinatário, aptidão de pedido/entrega, NCM, CFOP,
+consistência de bases, igualdade de totais dentro de tolerância, duplicidade,
+certificado e bloqueios regulatórios). Negado a `anon` (E1).
 
-| Artefato | Escopo | Resultado |
-| --- | --- | --- |
-| `restoration/homologacao-h7/guard-staging.sh` | Guard duro: aborta se o DSN apontar para a produção (`navfzbwgwzruipouyfnk`), se o marcador de ambiente não for `ikaauvsflpmamgxmkhoq/STAGING/prod=0`, ou se o emitente ativo estiver com `tpAmb=1` | OK |
-| `restoration/homologacao-h7/61-h7-seguranca-ambiente.sql` | 12 testes: RLS em todas as tabelas fiscais, `anon` sem EXECUTE, `search_path` fixo em SECURITY DEFINER, buckets privados, material de certificado fail-closed, marcador imutável e bloqueio duplo de produção, negação de `anon` em preflight/numeração/XML/documentos | **12 PASS / 0 FAIL** |
-| `restoration/homologacao-h7/62-h7-concorrencia.sh` | Sessões paralelas reais: 2 tentativas simultâneas + 1 retry da mesma chave lógica geram **1 único** evento; reserva de numeração com `FOR UPDATE` + advisory lock + idempotência + gate; índice único de documento ativo por origem | **4/4 PASS** |
+## 6. Estados e transições
 
-Os três scripts são transacionais/idempotentes e limpam a massa que criam
-(`61` termina em `ROLLBACK`; `62` remove documento e eventos no `trap`).
+Escada fail-closed validada: `ISSUED→AUTHORIZED` permitido (T4),
+`AUTHORIZED→CANCELED` permitido (T7), transições fora da escada bloqueadas
+(T6), documento terminal imutável (T5), eventos append-only (T8).
 
-## 3.2 FASE H7b — correção focada pós-auditoria independente
+## 7. Idempotência e concorrência
 
-A auditoria independente do H7 apontou que o H7-004 continuava **P1**: a RPC
-`rpc_fiscal_event_manual` aceitava `p_idempotency_key` NULL e, sem chave, cada
-retry inseria novo evento; o runner `62` provava a tabela, não a RPC.
+`62-h7-concorrencia.sh`: **4/4 PASS** — 2 chamadas simultâneas + 1 retry com a
+mesma chave produzem **1 evento**; reserva com `FOR UPDATE` + advisory lock;
+índice único de documento ativo por origem impede NF-e duplicada por duplo
+clique/retry.
 
-| ID | Sev | Achado | Correção |
-|----|-----|--------|----------|
-| H7B-001 | **P1** | RPC de evento sem chave obrigatória; retry duplicava | Chave obrigatória (`FISCAL_IDEMPOTENCY_REQUIRED`), `payload_fingerprint` na própria `fiscal_events`, replay estável e `FISCAL_IDEMPOTENCY_CONFLICT` para mesma chave com payload diferente; advisory lock por documento mantido |
-| H7B-002 | P1 | Emitente ativo do staging com `nfe_environment_code` NULL | `tpAmb='2'` (homologação) aplicado sob guard do marcador (`ikaauvsflpmamgxmkhoq`/`STAGING`/`production_emission_allowed=false`) e fail-closed se houver 0 ou >1 emitente ativo |
-| H7B-005 | **P1** | `rpc_upsert_fiscal_invoice_manual` podia registrar `ISSUED` sem evidência externa e sem marcar origem | Classificada como **registro manual de documento externo**: força `document_origin='MANUAL_RECORD'` e `provider='NONE'`, exige chave de acesso de 44 dígitos + número para estado emitido (`FISCAL_MANUAL_EVIDENCE_REQUIRED`), recusa documento terminal (`FISCAL_DOCUMENT_LOCKED`) e documento do motor (`FISCAL_DOCUMENT_ENGINE_MANAGED`) |
-| H7B-006 | **P1** | `rpc_fiscal_xml_record_v1` gravava resultado de XML sem gate de ambiente | Gate injetado como primeira instrução, preservando a lógica; grants restritos |
-| H7B-007 | P2 | `fiscal_environment_marker` com GRANT de escrita a `anon`/`authenticated` (bloqueado só por RLS) | `REVOKE` total; apenas `SELECT` para `authenticated` e `ALL` para `service_role` |
-| H7B-004 | P3 | 2 `fiscal_invoices` DRAFT órfãs (total 0, sem origem, item, número, chave, evento, reserva ou XML) | Removidas por script escopado; **antes 2 → depois 0**, zero resíduos |
-| H6-P2 | P2 | `EXECUTE` herdado por PUBLIC/anon nas trigger functions H6c | `REVOKE` explícito, sem mudança de lógica (registrado no relatório H6) |
+## 8. Certificado e segurança (sem segredo)
 
-Migrations: `20260920000000_h7b_fiscal_idempotencia_ambiente_v1.sql` e
-`20260920010000_h7b_gate_xml_record_e_marcador_v1.sql`
-(cópias idênticas em `restoration/homologacao-h7b/`).
+- Bucket privado exclusivo, sem policies para anon/authenticated.
+- `fiscal_certificate_material` sem policy (fail-closed, A5).
+- Senha e material só existem em memória na Edge Function; persistidos
+  cifrados em AES-256-GCM com IVs independentes; nunca retornados ao browser.
+- Sem `console.*` na função; nenhum eco de PFX/senha/chave.
+- UI exibe apenas status, titular, validade, fingerprint e ambiente.
+- **Novo (H7-005.8)**: sem senha real, a função responde `400` com
+  `code: "CERT_PASSWORD_REQUIRED"` — nenhuma senha fictícia é aceita.
+- Segredos ausentes no cofre do projeto: `FISCAL_CERTIFICATE_MASTER_KEY`
+  (base64 de 32 bytes) e `FISCAL_CORS_ALLOWLIST`. Enquanto ausentes: `503
+  CERTIFICATE_VAULT_NOT_CONFIGURED` / `403 cors_origin_not_allowed`.
 
-### Classificação da RPC manual
+## 9. XML, XSD e assinatura
 
-`rpc_upsert_fiscal_invoice_manual` **não pertence ao motor SEFAZ**: não reserva
-número, não gera XML e não transmite. É registro de documento emitido fora do
-sistema. Por isso não passa pelo gate de transmissão — mas, após H7b, também
-não consegue mais se passar por autorização interna: só assume estado emitido
-com chave de acesso de 44 dígitos e número do documento externo, sempre marcada
-como `MANUAL_RECORD`/`provider=NONE`, e nunca sobre documento do motor.
+`fiscal-xml-engine` gera, valida contra o XSD oficial empacotado
+(`static_files` no `config.toml`) e assina `infNFe`. Teto absoluto **SIGNED**:
+nenhuma ação transmite à SEFAZ. Triagem ASN.1 aceita BER indefinido (`30 80`)
+com EOC, delegando autoridade de formato a `forge`.
 
-### Teste real de concorrência da RPC (`63-h7b-idempotencia-rpc.sh`)
+## 10. SEFAZ MG homologação
 
-Todas as evidências vêm de chamadas à RPC sob `role authenticated` +
-`request.jwt.claims`, com duas sessões paralelas — nenhum INSERT direto:
+`fiscal_environment_marker = ikaauvsflpmamgxmkhoq|STAGING|0` e
+`nfe_environment_code='2'`. Marcador não editável por usuário autenticado
+(C4); tentativa de marcar produção bloqueada (C2/C3); `tpAmb=1` rejeitado
+(T3). Endpoint nunca vem do cliente. Transmissão real: **`INFRA_BLOCKED`** —
+não executada nesta fase por decisão de gate, não por falha funcional.
 
-| Caso | Resultado |
-|------|-----------|
-| A — sem chave | PASS (`FISCAL_IDEMPOTENCY_REQUIRED`, 0 eventos) |
-| B — 2 sessões simultâneas, mesma chave/payload | PASS (mesmo `event_id`, 1 evento) |
-| C — retry sequencial idêntico | PASS (mesmo `event_id`, 1 evento) |
-| D — mesma chave, payload diferente | PASS (`FISCAL_IDEMPOTENCY_CONFLICT`, 1 evento) |
-| E — chave distinta | PASS (evento distinto, 2 eventos) |
+## 11. RLS, Storage e perfis
 
-**5/5 PASS.** O runner limpa a massa criada mesmo em falha/interrupção
-(`trap ... EXIT INT TERM` + varredura de segurança pelo marcador do harness).
+`61-h7-seguranca-ambiente.sql`: **12/12 PASS** — RLS em todas as tabelas
+fiscais (A1), `anon` sem EXECUTE (A2/E1/E2/E3), `search_path` fixo em todos os
+SECURITY DEFINER fiscais (A3), buckets fiscais privados (A4).
 
-### Postcheck consolidado H7b (`65-h7b-postcheck.sql`)
+## 12. Integração H5/H6
 
-22 testes: idempotência obrigatória e conflito, fingerprint, advisory lock,
-unique de evento, emitente único com `tpAmb=2`, gate aprovando homologação,
-`tpAmb=1` bloqueado em simulação transacional, marcador sem escrita para
-`authenticated`, `anon` sem EXECUTE fiscal, H6c com menor privilégio, RLS em
-todas as tabelas fiscais, `search_path` fixo em SECURITY DEFINER, evidência
-obrigatória no registro manual, origem canônica, respeito a lock/motor,
-append-only, imutabilidade, numeração protegida, XML prepare/record sob gate,
-preflight, e ausência de resíduos: **22 PASS / 0 FAIL**.
+Nenhuma tabela financeira nova. A NF-e continua vinculada a
+`accounts_receivable`/entrega/pedido já existentes; divergência de total
+bloqueia o preflight. Suítes H5/H6 e demais módulos sem regressão.
 
-Reexecutados sem regressão: `60-h7-postcheck.sql` **11/11**,
-`61-h7-seguranca-ambiente.sql` **12/12**, `62-h7-concorrencia.sh` **4/4**.
+## 13. Testes e evidências
 
-### Frontend
+| Suíte | Resultado |
+| --- | --- |
+| `guard-staging.sh` | OK — staging, `tpAmb='2'`, produção desabilitada |
+| `60-h7-postcheck.sql` | **11 PASS / 0 FAIL** |
+| `61-h7-seguranca-ambiente.sql` | **12 PASS / 0 FAIL** |
+| `62-h7-concorrencia.sh` | **4 PASS / 0 FAIL** |
+| Vitest completo | **3134 PASS / 4 skipped / 0 FAIL** |
+| Typecheck | 0 erros |
+| Build | OK |
 
-`src/lib/fiscal/eventIdempotency.ts` deriva a chave de forma determinística
-(`FISCEV:{tipo}:{invoice}:{hash}`), de modo que duplo clique/retry da mesma
-tentativa lógica reutiliza o evento. Callers atualizados:
-`useFiscalDocuments.useRegisterManualEvent` e
-`useFiscalReconciliation` (desvínculo). Cobertura em
-`src/test/fiscal/h7b.idempotencia.test.ts`.
+Correção de binding registrada: `.env` e `types.ts` haviam sofrido drift para
+projeto sandbox; restaurados ao baseline de staging `c75bb87f` (`types.ts`
+2.052 → 21.850 linhas).
 
-## 4. Pendências registradas (não bloqueiam o hardening H7)
+## 14. Classificação de achados
 
-1. ~~`nfe_environment_code` ausente no emitente ativo~~ — **resolvido em H7b**:
-   staging configurado explicitamente com `tpAmb='2'` (homologação), sob guard do marcador.
-2. **Eventos de cancelamento/CC-e formais** ainda não implementados em RPC dedicada; o
-   manual só aceita `MANUAL_UPDATED` / `RECONCILIATION_*`.
-3. `src/integrations/supabase/types.ts`, `.env` e `client.ts` sofrem *drift* quando a plataforma regenera tipos
-   fora do staging; restaurado a partir do baseline `c75bb87f` (21.850 linhas).
+- **P0/P1**: nenhum.
+- **P2**: `FISCAL_CERTIFICATE_MASTER_KEY` e `FISCAL_CORS_ALLOWLIST` ausentes no
+  cofre — impedem o E2E real do A1 (fail-closed, sem risco).
+- **P2**: senha do PFX não fornecida — gate `CERT_PASSWORD_REQUIRED`.
+- **P3**: drift recorrente de `.env`/`types.ts` para projeto sandbox entre
+  execuções; exige verificação de binding no início de cada fase.
+- **P3**: transmissão SEFAZ HML ainda não exercitada (`INFRA_BLOCKED`).
 
-### Pendências EXTERNAS (pré-requisito real, não corrigível por código)
+## 15. Arquivos e migrations exatos
 
-- **`fiscal_certificates` está vazio**: não há certificado A1 carregado no staging.
-- Sem certificado não há assinatura, logo **não houve transmissão nem protocolo
-  real da SEFAZ em homologação**. Nada de NF-e autorizada foi declarado.
-- Credenciais SEFAZ/CSC/token não foram criados nem inventados.
+- `supabase/functions/fiscal-certificate-upload/index.ts` (gate
+  `CERT_PASSWORD_REQUIRED`) — reimplantado somente no staging.
+- `src/components/fiscal/certificados/UploadCertificadoA1.tsx` (mensagem do
+  gate).
+- `src/test/fiscal/h7c.asn1Screen.test.ts` (regressão estática do gate).
+- Migrations: **nenhuma nova**; as H7/H7b já aplicadas foram revalidadas.
 
-## 5. Veredito
+## 16. Rollback
 
-Separando explicitamente os dois escopos:
+Não há migration nova a reverter. O rollback do código é a restauração do
+retorno anterior (`password_required`) nos três arquivos acima; o
+comportamento de segurança é idêntico, muda apenas o código do erro. Os
+runners em `restoration/homologacao-h7/` rodam em transação com `ROLLBACK` e
+abortam contra qualquer ref diferente do staging autorizado.
 
-| Escopo | Situação |
-|--------|----------|
-| **H7 hardening / preflight interno** | **APROVADO** — zero P0/P1 em aberto após H7b (6 achados H7 + 7 achados H7b corrigidos e reprovados por teste) |
-| **H7 smoke externo SEFAZ (homologação)** | **NÃO EXECUTADO** — bloqueado por pré-requisito externo: certificado A1 ausente e integração SEFAZ não configurada |
+## 17. Gate final
 
-**GATE H7 — APROVADA COM RESSALVAS / PRONTA PARA SMOKE EXTERNO.**
+**GATE H7 — APROVADA COM RESSALVAS · zero P0/P1 ·
+`AGUARDANDO CERT_PASSWORD_REQUIRED`.**
 
-Nenhuma NF-e foi homologada ou autorizada pela SEFAZ. Emissão produtiva
-permanece DESLIGADA e bloqueada em duas camadas (marcador de ambiente
-server-side + gate `tpAmb`). Nenhuma promoção para produção foi executada ou
-autorizada; a produção permanece intocada. **H8 não iniciada.**
-
-### Validações finais H7b
-
-- Postcheck H7b **22/22**, concorrência real da RPC **5/5**, H7 `60` **11/11**,
-  `61` **12/12**, `62` **4/4**.
-- Typecheck: **0 erros**. Vitest: **3120 passed / 4 skipped**. Build: **SUCCESS**.
-- Binding conferido e mantido no staging `ikaauvsflpmamgxmkhoq` (drift de
-  `types.ts`/`.env`/`client.ts` restaurado a partir da baseline `c75bb87f`).
-
-## 6. Reverificação H7 (2026-08-19)
-
-Reexecução somente-leitura do gate H7 a pedido, sem novas migrations e sem
-tocar a produção `navfzbwgwzruipouyfnk`.
-
-- Binding: `src/integrations/supabase/client.ts` permanece fixado no staging
-  `ikaauvsflpmamgxmkhoq`.
-- **Drift detectado e corrigido**: `.env` e `src/integrations/supabase/types.ts`
-  haviam sido regenerados fora do staging (types reduzido a 2.052 linhas,
-  `VITE_SUPABASE_URL` apontando para outro ref), derrubando 14 testes
-  contratuais (binding, SINIEF 49, Fase 3.15/3.19, schema on-farm).
-  Restaurados a partir da baseline `c75bb87f` (21.850 linhas).
-- Após restauração: typecheck **0 erros**; Vitest **3120 passed / 4 skipped**.
-- Migrations H7/H7b inalteradas: `20260919000000`, `20260919010000`,
-  `20260920000000`, `20260920010000`.
-- Veredito mantido: **GATE H7 — APROVADA COM RESSALVAS / PRONTA PARA SMOKE
-  EXTERNO**. Emissão de produção continua desligada nas duas camadas
-  (marcador de ambiente + gate `tpAmb`). **H8 não iniciada.**
-
-## 7. H7c — Upload de certificado A1 (2026-08-19)
-
-Correção focada em `supabase/functions/fiscal-certificate-upload`:
-a triagem de magic bytes rejeitava PFX em BER de comprimento indefinido
-(`30 80`) antes do parser, retornando `not_pkcs12`. A triagem foi extraída
-para `asn1Screen.ts` (`isPlausibleAsn1Sequence`), agora aceitando as formas
-curta, indefinida (`0x80`, com EOC obrigatório) e longa (`0x81–0x84`), com
-rejeição de tag inválida, `0x85+`, truncamento e buffers < 64 bytes. O
-node-forge (`fromDer` + `pkcs12FromAsn1`) passou a ser a autoridade explícita
-de formato; todos os demais controles (extensão, 10 MB, senha, UUID, X.509 +
-chave privada + match criptográfico, validade, AES-256-GCM com IVs
-independentes, bucket privado, RPC canônica, rollback, CORS fail-closed,
-admin server-side) permanecem inalterados.
-
-Cofre no staging: bucket `fiscal-certificates` privado com 0 policies,
-`fiscal_certificate_material` sem acesso anon/authenticated,
-`fiscal_certificates` vazio, 1 emitente ativo com `tpAmb=2`, marcador
-`ikaauvsflpmamgxmkhoq|STAGING|prod=false`. **`FISCAL_CERTIFICATE_MASTER_KEY` e
-`FISCAL_CORS_ALLOWLIST` ausentes** no cofre de segredos — comportamento
-fail-closed mantido, nenhuma senha solicitada e nenhum PFX importado.
-
-Evidências: `src/test/fiscal/h7c.asn1Screen.test.ts` (13 PASS),
-postcheck H7 **11/12 PASS/0 FAIL** (`60-h7`) e segurança/ambiente **12/12
-PASS** (`61-h7`). Nova versão da Edge Function publicada apenas no staging.
-Detalhes em `docs/auditorias/homologacao-h7c-certificado-a1.md`.
-**GATE H7c — APROVADA no código, pendente de segredos do cofre. H8 não
-iniciada.**
-
----
-
-## Revalidação H7 — 2026-08-20 (somente staging `ikaauvsflpmamgxmkhoq`)
-
-### 1. Escopo executado
-Reauditoria e reexecução completa dos gates fiscais já implantados (H7 / H7b / H7c).
-Nenhum módulo fiscal paralelo foi criado; nenhuma migration nova foi necessária.
-Produção `navfzbwgwzruipouyfnk` **não foi acessada** (guard `restoration/homologacao-h7/guard-staging.sh` fail-closed + runner `restoration/os-e2e/staging-psql.sh`).
-
-### 2. Correção aplicada nesta rodada (P1 — binding de ambiente)
-Detectado drift: `.env` e `src/integrations/supabase/types.ts` apontavam para o projeto sandbox
-(`types.ts` com 2.052 linhas). Restaurados para o baseline de staging `c75bb87f`
-(`types.ts` = 21.850 linhas, `.env` = `ikaauvsflpmamgxmkhoq`). Sem esse binding, qualquer teste
-fiscal de UI validaria o banco errado.
-
-### 3. Evidências de teste (todas PASS)
-- Guard de staging: `OK — staging ikaauvsflpmamgxmkhoq, tpAmb='2', producao fiscal desabilitada`.
-- `60-h7-postcheck.sql`: **11 PASS / 0 FAIL** — gate de ambiente, bloqueio de tpAmb=1,
-  normalização ISSUED→AUTHORIZED, imutabilidade econômica de documento terminal, transição
-  inválida bloqueada, cancelamento permitido, eventos append-only, idempotência de evento,
-  anon sem EXECUTE fiscal, assinatura legada sem idempotência removida.
-- `61-h7-seguranca-ambiente.sql`: **12 PASS / 0 FAIL** — RLS em todas as tabelas fiscais,
-  `search_path` fixo em todo SECURITY DEFINER fiscal, buckets fiscais privados,
-  `fiscal_certificate_material` sem policy (fail-closed), marcador de ambiente imutável
-  pelo usuário, preflight/numeração/XML/documentos negados a `anon`.
-- `62-h7-concorrencia.sh`: **4/4 PASS** — 2 emissões simultâneas + 1 retry ⇒ 1 evento lógico;
-  reserva de numeração com `FOR UPDATE` + advisory lock + idempotência; índice único de
-  documento ativo por origem.
-- Typecheck: 0 erros. Vitest: **3.133 PASS / 4 skipped (194 arquivos)**. Build OK.
-
-### 4. Estado do certificado A1
-Mecanismo seguro já implementado e reconfirmado:
-- upload apenas server-side pela Edge Function `fiscal-certificate-upload` (admin-only, CORS allowlist);
-- triagem ASN.1 tolerante (`asn1Screen.ts`) para PFX curto/indefinido/long-form;
-- cifragem AES-256-GCM com chave mestra de ambiente; ciphertext em tabela sem policy
-  (`fiscal_certificate_material`) + bucket **privado**;
-- frontend lê somente metadados sanitizados via `v_fiscal_certificate_readiness`
-  (alias, fingerprint, validade, status, ambiente) — nunca PFX, senha ou chave privada;
-- revogação/rotação por `fiscal-certificate-revoke` com remoção de ciphertext e log auditado;
-- fail-closed quando ausente/expirado/revogado.
-
-### 5. Dependência única remanescente (bloqueio de E2E real)
-A homologação real (assinar + transmitir à SEFAZ em `tpAmb=2`) exige, nesta ordem exata:
-1. `FISCAL_CERTIFICATE_MASTER_KEY` (32 bytes em base64) em Project Settings → Secrets;
-2. `FISCAL_CORS_ALLOWLIST` com a origem do painel;
-3. upload do `.pfx` **pela UI fiscal**, onde a senha do PFX é digitada e trafega apenas para a
-   Edge Function — é exatamente e somente nesse passo que a senha é necessária; ela não é
-   persistida, logada nem devolvida ao cliente.
-
-Sem (1) e (2) o sistema permanece fail-closed: nenhuma assinatura e nenhuma transmissão ocorrem.
-
-### 6. Gate
-**GATE H7 — APROVADA COM RESSALVAS.** Zero P0/P1 remanescentes.
-Ressalvas P2/P3: valores tributários marcados `PENDENTE_VALIDACAO_CONTABIL` aguardam contador;
-E2E de assinatura/transmissão em homologação pendente dos segredos acima.
-H8 **não** iniciada. Produção fiscal **não** habilitada.
+Para executar o teste criptográfico real do A1 em homologação faltam, nesta
+ordem: (1) `FISCAL_CERTIFICATE_MASTER_KEY` e `FISCAL_CORS_ALLOWLIST` em
+Project Settings → Secrets; (2) upload do `.pfx` pela UI fiscal com a senha
+digitada pelo administrador no próprio formulário. Produção fiscal
+permanece desativada e H8 não foi iniciada.
