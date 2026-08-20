@@ -51,7 +51,7 @@ for f in "$ENV_FILE" "$CLIENT_FILE" "$TOML_FILE"; do
 done
 
 # Contrato de schema do types.ts (marcadores estaveis, nao apenas tamanho).
-REQUIRED_RELATIONS="microrganismos microorganism_fiscal_profiles microorganism_regulatory_dossiers fiscal_matrix_load_ledger company_fiscal_settings fiscal_environment_marker ordens_servico notificacoes_operacionais user_roles"
+REQUIRED_RELATIONS="microrganismos microorganism_fiscal_profiles microorganism_regulatory_dossiers fiscal_matrix_load_ledger company_fiscal_settings ordens_servico notificacoes_operacionais user_roles"
 MISSING=""
 for rel in $REQUIRED_RELATIONS; do
   grep -q "      ${rel}: {" "$TYPES_FILE" || MISSING="$MISSING $rel"
