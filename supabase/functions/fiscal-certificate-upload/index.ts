@@ -133,7 +133,14 @@ Deno.serve(async (req) => {
 
   if (!(file instanceof File)) return json({ error: "file_required" }, 400, headers);
   if (!UUID_RE.test(companySettingsId)) return json({ error: "company_settings_id_invalid" }, 400, headers);
-  if (!password) return json({ error: "password_required" }, 400, headers);
+  // H7-005.8 — gate canonico: sem senha real do PFX nao ha validacao criptografica.
+  if (!password.trim()) {
+    return json(
+      { error: "Senha do certificado A1 nao fornecida", code: "CERT_PASSWORD_REQUIRED" },
+      400,
+      headers,
+    );
+  }
   if (password.length > MAX_PASSWORD) return json({ error: "password_too_long" }, 400, headers);
   if (displayName.length > MAX_DISPLAY_NAME) return json({ error: "display_name_too_long" }, 400, headers);
   if (file.name.length > 255) return json({ error: "file_name_too_long" }, 400, headers);

@@ -64,6 +64,14 @@ export default function UploadCertificadoA1({
       });
       if (error) throw error;
       const res = data as { certificate_id?: string; error?: string; code?: string };
+      if (res.code === "CERT_PASSWORD_REQUIRED") {
+        toast({
+          title: "Senha do certificado obrigatória",
+          description: "Informe a senha real do arquivo A1. Ela não é armazenada no navegador.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (res.code === "CERTIFICATE_VAULT_NOT_CONFIGURED") {
         setVaultUnavailable("Cofre de certificados ainda não configurado. Contate o administrador do sistema.");
         return;

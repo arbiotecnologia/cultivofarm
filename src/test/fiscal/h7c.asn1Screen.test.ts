@@ -111,6 +111,12 @@ describe("H7c — hardening preservado na Edge Function", () => {
     }
   });
 
+  test("H7-005.8 — gate canônico CERT_PASSWORD_REQUIRED sem senha", () => {
+    expect(src).toContain("CERT_PASSWORD_REQUIRED");
+    expect(src).toContain("password.trim()");
+    expect(src).not.toContain('"password_required"');
+  });
+
   test("não ecoa material sensível", () => {
     expect(src).not.toMatch(/console\.(log|error|info)\s*\(/);
     expect(src).not.toContain("p_encrypted_material");
