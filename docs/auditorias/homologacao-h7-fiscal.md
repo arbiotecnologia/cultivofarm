@@ -344,3 +344,82 @@ Nada foi contornado, simulado ou marcado como autorizado.
 INFRAESTRUTURA.** Zero P0. Um P1 de infraestrutura (19.5), fora do código.
 Produção fiscal desabilitada, `tpAmb=2`, `production_emission_allowed=false`,
 produção intocada. H8 não iniciada.
+
+---
+
+## 20. Revalidação H7 — 2026-08-20 (execução em fases, somente staging)
+
+### 20.1 Diagnóstico antes
+
+- **Drift de binding (P1, reincidente)**: `.env` apontava para o projeto
+  sandbox `yzszlzjpovmcteuxjznj` enquanto `client.ts`/`config.toml` apontavam
+  para o staging `ikaauvsflpmamgxmkhoq`; `src/integrations/supabase/types.ts`
+  truncado em 2.043 linhas (contrato de schema incompleto).
+
+### 20.2 Correção aplicada
+
+- `.env` e `src/integrations/supabase/types.ts` restaurados do baseline de
+  staging `c75bb87f` (types com 21.850 linhas).
+- Nenhuma migration nova foi necessária: o schema fiscal em staging já está no
+  estado certificado por H7/H7b/H7c/H7d (nenhum finding P0/P1 de banco nesta
+  rodada).
+
+### 20.3 Evidências de execução (staging `ikaauvsflpmamgxmkhoq`)
+
+| Suite | Resultado |
+|---|---|
+| `check-frontend-binding.sh` (gate estático) | OK |
+| `guard-staging.sh` (marcador + tpAmb) | OK — `tpAmb='2'`, produção fiscal desabilitada |
+| `60-h7-postcheck.sql` | **11 PASS / 0 FAIL** |
+| `61-h7-seguranca-ambiente.sql` | **12 PASS / 0 FAIL** |
+| `62-h7-concorrencia.sh` | **4/4 PASS** (D1–D4) |
+| Typecheck (`tsgo`) | 0 erros |
+| Vitest | **3.134 PASS**, 4 skipped, 193 arquivos |
+
+Cobertura por fase do escopo: snapshot imutável (T4–T7), append-only e
+idempotência de eventos (T8/T9), ACL anon (T10/A2/E1–E3), RLS fiscal (A1),
+`search_path` fixo em SECURITY DEFINER (A3), buckets fiscais privados (A4),
+material de certificado fail-closed (A5), hard guard de produção (T3/C1–C4),
+concorrência real com duas conexões (D1–D4).
+
+### 20.4 Provedor / emissão
+
+Nenhum provedor SEFAZ real foi acionado. Teto do motor permanece **SIGNED**
+(`fiscal-xml-engine`): geração, validação XSD e assinatura — sem transmissão.
+Todos os testes desta rodada são de contrato/comportamento em banco; **não há
+emissão real autorizada** e nada foi declarado como tal.
+
+### 20.5 Pendência de infraestrutura (P1 mantido, fora do código)
+
+As Edge Functions fiscais foram redeployadas pela plataforma, mas o deploy é
+direcionado ao projeto gerenciado do Lovable, não ao staging
+`ikaauvsflpmamgxmkhoq`. Verificação direta:
+
+```
+POST https://ikaauvsflpmamgxmkhoq.supabase.co/functions/v1/fiscal-certificate-upload
+Origin: https://cultivofarm.lovable.app  ->  403 {"error":"cors_origin_not_allowed"}
+```
+
+Ou seja, o staging ainda executa a versão anterior (sem o default de allowlist
+de `_shared/fiscal/corsAllowlist.ts` e sem a derivação SHA-256 da master key).
+Não há token de management do Supabase disponível no ambiente para deployar
+diretamente em `ikaauvsflpmamgxmkhoq`. **Enquanto essa paridade não existir, o
+upload real do A1 não é executável em staging.**
+
+### 20.6 Pendências para uso do PFX e senha
+
+1. Deploy das três funções fiscais no projeto `ikaauvsflpmamgxmkhoq`.
+2. `FISCAL_CERTIFICATE_MASTER_KEY` e `FISCAL_CORS_ALLOWLIST` presentes no
+   runtime desse mesmo projeto.
+3. Administrador acessa `/configuracoes/fiscal/empresa`, envia o `.pfx` e
+   digita a senha no formulário. A senha nunca é persistida: é usada apenas em
+   memória na Edge Function e o material é cifrado em AES-256-GCM.
+4. Nenhum PFX, senha, base64 ou `service_role` foi gravado em repositório,
+   migration, log, tabela pública ou mensagem de erro nesta execução.
+
+### 20.7 Gate
+
+**GATE H7 — APROVADA COM RESSALVAS · zero P0 · zero P1 de código · 1 P1 de
+infraestrutura (20.5).** Produção `navfzbwgwzruipouyfnk` intocada; nenhuma
+migration ou deploy direcionado a produção; emissão de produção permanece
+desabilitada por marcador server-side. H8 **não** iniciada.
