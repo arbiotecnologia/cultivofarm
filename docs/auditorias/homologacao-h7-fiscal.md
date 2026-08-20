@@ -218,3 +218,60 @@ PASS** (`61-h7`). Nova versão da Edge Function publicada apenas no staging.
 Detalhes em `docs/auditorias/homologacao-h7c-certificado-a1.md`.
 **GATE H7c — APROVADA no código, pendente de segredos do cofre. H8 não
 iniciada.**
+
+---
+
+## Revalidação H7 — 2026-08-20 (somente staging `ikaauvsflpmamgxmkhoq`)
+
+### 1. Escopo executado
+Reauditoria e reexecução completa dos gates fiscais já implantados (H7 / H7b / H7c).
+Nenhum módulo fiscal paralelo foi criado; nenhuma migration nova foi necessária.
+Produção `navfzbwgwzruipouyfnk` **não foi acessada** (guard `restoration/homologacao-h7/guard-staging.sh` fail-closed + runner `restoration/os-e2e/staging-psql.sh`).
+
+### 2. Correção aplicada nesta rodada (P1 — binding de ambiente)
+Detectado drift: `.env` e `src/integrations/supabase/types.ts` apontavam para o projeto sandbox
+(`types.ts` com 2.052 linhas). Restaurados para o baseline de staging `c75bb87f`
+(`types.ts` = 21.850 linhas, `.env` = `ikaauvsflpmamgxmkhoq`). Sem esse binding, qualquer teste
+fiscal de UI validaria o banco errado.
+
+### 3. Evidências de teste (todas PASS)
+- Guard de staging: `OK — staging ikaauvsflpmamgxmkhoq, tpAmb='2', producao fiscal desabilitada`.
+- `60-h7-postcheck.sql`: **11 PASS / 0 FAIL** — gate de ambiente, bloqueio de tpAmb=1,
+  normalização ISSUED→AUTHORIZED, imutabilidade econômica de documento terminal, transição
+  inválida bloqueada, cancelamento permitido, eventos append-only, idempotência de evento,
+  anon sem EXECUTE fiscal, assinatura legada sem idempotência removida.
+- `61-h7-seguranca-ambiente.sql`: **12 PASS / 0 FAIL** — RLS em todas as tabelas fiscais,
+  `search_path` fixo em todo SECURITY DEFINER fiscal, buckets fiscais privados,
+  `fiscal_certificate_material` sem policy (fail-closed), marcador de ambiente imutável
+  pelo usuário, preflight/numeração/XML/documentos negados a `anon`.
+- `62-h7-concorrencia.sh`: **4/4 PASS** — 2 emissões simultâneas + 1 retry ⇒ 1 evento lógico;
+  reserva de numeração com `FOR UPDATE` + advisory lock + idempotência; índice único de
+  documento ativo por origem.
+- Typecheck: 0 erros. Vitest: **3.133 PASS / 4 skipped (194 arquivos)**. Build OK.
+
+### 4. Estado do certificado A1
+Mecanismo seguro já implementado e reconfirmado:
+- upload apenas server-side pela Edge Function `fiscal-certificate-upload` (admin-only, CORS allowlist);
+- triagem ASN.1 tolerante (`asn1Screen.ts`) para PFX curto/indefinido/long-form;
+- cifragem AES-256-GCM com chave mestra de ambiente; ciphertext em tabela sem policy
+  (`fiscal_certificate_material`) + bucket **privado**;
+- frontend lê somente metadados sanitizados via `v_fiscal_certificate_readiness`
+  (alias, fingerprint, validade, status, ambiente) — nunca PFX, senha ou chave privada;
+- revogação/rotação por `fiscal-certificate-revoke` com remoção de ciphertext e log auditado;
+- fail-closed quando ausente/expirado/revogado.
+
+### 5. Dependência única remanescente (bloqueio de E2E real)
+A homologação real (assinar + transmitir à SEFAZ em `tpAmb=2`) exige, nesta ordem exata:
+1. `FISCAL_CERTIFICATE_MASTER_KEY` (32 bytes em base64) em Project Settings → Secrets;
+2. `FISCAL_CORS_ALLOWLIST` com a origem do painel;
+3. upload do `.pfx` **pela UI fiscal**, onde a senha do PFX é digitada e trafega apenas para a
+   Edge Function — é exatamente e somente nesse passo que a senha é necessária; ela não é
+   persistida, logada nem devolvida ao cliente.
+
+Sem (1) e (2) o sistema permanece fail-closed: nenhuma assinatura e nenhuma transmissão ocorrem.
+
+### 6. Gate
+**GATE H7 — APROVADA COM RESSALVAS.** Zero P0/P1 remanescentes.
+Ressalvas P2/P3: valores tributários marcados `PENDENTE_VALIDACAO_CONTABIL` aguardam contador;
+E2E de assinatura/transmissão em homologação pendente dos segredos acima.
+H8 **não** iniciada. Produção fiscal **não** habilitada.
