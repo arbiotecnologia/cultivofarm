@@ -163,3 +163,78 @@ ordem: (1) `FISCAL_CERTIFICATE_MASTER_KEY` e `FISCAL_CORS_ALLOWLIST` em
 Project Settings → Secrets; (2) upload do `.pfx` pela UI fiscal com a senha
 digitada pelo administrador no próprio formulário. Produção fiscal
 permanece desativada e H8 não foi iniciada.
+
+---
+
+## 18. FASE H7d — Drift de binding (achado da auditoria independente)
+
+**Correção da afirmação anterior:** o commit `49297455`, embora declarasse
+"H7 aprovado em staging", gravou `.env` apontando para o projeto
+sandbox `yzszlzjpovmcteuxjznj` e truncou `src/integrations/supabase/types.ts`
+para 2.052 linhas, enquanto `client.ts` e `supabase/config.toml` seguiam em
+`ikaauvsflpmamgxmkhoq`. Auditoria independente classificou como **P1** e
+invalidou qualquer teste UI/E2E fiscal daquele commit. O histórico de achados
+anteriores (H0-001/H0-002R) permanece válido — trata-se de reincidência.
+
+### 18.1 Binding antes/depois (sem expor chaves)
+
+| Arquivo | Antes (HEAD `49297455`) | Depois (H7d) |
+|---|---|---|
+| `.env` `VITE_SUPABASE_PROJECT_ID` | `yzszlzjpovmcteuxjznj` | `ikaauvsflpmamgxmkhoq` |
+| `.env` `VITE_SUPABASE_URL` | sandbox | `https://ikaauvsflpmamgxmkhoq.supabase.co` |
+| `.env` publishable key | chave sandbox | anon do staging (idêntica à do `client.ts`) |
+| `src/integrations/supabase/client.ts` | `ikaauvsflpmamgxmkhoq` (íntegro) | inalterado |
+| `supabase/config.toml` | `ikaauvsflpmamgxmkhoq` (íntegro) | inalterado |
+| `src/integrations/supabase/types.ts` | 2.052 linhas (stub sandbox) | 21.850 linhas (baseline staging `c75bb87f`) |
+
+Produção `navfzbwgwzruipouyfnk`: **não referenciada em nenhum arquivo de
+binding ativo; intocada**.
+
+### 18.2 Gate fail-closed de binding
+
+Novo `restoration/homologacao-h7/check-frontend-binding.sh` (estático, **sem
+acesso a banco**), invocado como primeira instrução de
+`restoration/homologacao-h7/guard-staging.sh` — fluxo único, sem runner
+paralelo. Aborta (exit 10) se: ref/URL do `.env` ≠ staging; `client.ts` ou
+`config.toml` fora do staging; qualquer ocorrência de ref sandbox ou de
+produção nos arquivos de binding; `types.ts` sem o contrato de relações
+estáveis (`microrganismos`, `microorganism_fiscal_profiles`,
+`microorganism_regulatory_dossiers`, `fiscal_matrix_load_ledger`,
+`company_fiscal_settings`, `ordens_servico`, `notificacoes_operacionais`,
+`user_roles`) — contrato de schema, não apenas contagem de linhas.
+Complementado pelo teste contratual `src/test/config/connection-binding.static.test.ts`.
+
+### 18.3 Resultados
+
+| Teste | Resultado |
+|---|---|
+| A. Gate de binding, estado real | **PASS** |
+| B. Negativo sandbox `yzsz…` (fixture temporária) | **FAIL esperado**, exit 10, sem tocar banco |
+| C. Negativo produção `navf…` em `.env` e em `client.ts` | **FAIL esperado**, exit 10, sem tocar banco |
+| D. `guard-staging.sh` | **PASS** — staging `ikaauvsflpmamgxmkhoq`, `tpAmb=2`, produção fiscal off |
+| E. `60-h7-postcheck.sql` | **11 PASS / 0 FAIL** |
+| E. `61-h7-seguranca-ambiente.sql` | **12 PASS / 0 FAIL** |
+| E. `62-h7-concorrencia.sh` | **4/4 PASS** |
+| F. typecheck | 0 erros |
+| F. Vitest | **3.134 PASS**, 4 skip (194 arquivos) |
+| F. build | sucesso |
+| G. Segredos novos versionados | nenhum (PFX/senha/master key/service_role ausentes) |
+
+`scripts/fiscal-secrets-scan.sh` continua marcando 3 ocorrências
+**pré-existentes e não sensíveis**: anon key do `client.ts`, JWT de exemplo em
+`scripts/rbac-audit/run-rbac-audit.ts` e DSN placeholder em
+`restoration/comunicacao-deploy/env.example`.
+
+### 18.4 Riscos residuais
+
+- **P2** — regeneração automática do backend Cloud pode reintroduzir o drift a
+  qualquer momento; mitigado apenas por detecção (gate + teste contratual),
+  não por prevenção.
+- **P3** — o gate valida arquivos versionados, não variáveis injetadas em
+  runtime pela plataforma.
+
+### 18.5 Gate H7d
+
+**GATE H7d — APROVADA · zero P0/P1 · binding de staging consistente.**
+Certificado A1 não inserido, nenhum segredo fiscal criado, `tpAmb` permanece
+2, `production_emission_allowed = 0`, produção intocada. H8 **não** iniciada.
