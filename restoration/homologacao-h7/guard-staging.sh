@@ -6,6 +6,9 @@ set -euo pipefail
 STAGING_REF_EXPECTED="ikaauvsflpmamgxmkhoq"
 PRODUCTION_REF_FORBIDDEN="navfzbwgwzruipouyfnk"
 
+# FASE H7d — gate estatico de binding de frontend ANTES de qualquer acesso a banco.
+"$(dirname "${BASH_SOURCE[0]}")/check-frontend-binding.sh"
+
 : "${STAGING_DSN:?STAGING_DSN nao definido}"
 
 # 1) Bloqueio por string do DSN (defesa 1).
