@@ -7,12 +7,12 @@
  * trilha de auditoria continua íntegra.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
-  const allow = (Deno.env.get("FISCAL_CORS_ALLOWLIST") ?? "")
-    .split(",").map((s) => s.trim()).filter(Boolean);
+  const allow = fiscalAllowedOrigins();
   const allowed = !!origin && allow.includes(origin);
   return {
     allowed,

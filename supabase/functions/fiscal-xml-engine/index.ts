@@ -21,6 +21,7 @@
  *     privada, JWT, service_role ou o próprio XML por canal não autenticado.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
 import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/nfe/buildNfeXml.ts";
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
 import { signNfeXml, verifyNfeSignature } from "../_shared/fiscal/nfe/signNfeXml.ts";
@@ -31,8 +32,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const MAX_IDEMPOTENCY = 200;
 
 function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
-  const allow = (Deno.env.get("FISCAL_CORS_ALLOWLIST") ?? "")
-    .split(",").map((s) => s.trim()).filter(Boolean);
+  const allow = fiscalAllowedOrigins();
   const allowed = !!origin && allow.includes(origin);
   return {
     allowed,
