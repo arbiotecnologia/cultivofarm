@@ -443,3 +443,61 @@ Execução somente-leitura/validação em staging `ikaauvsflpmamgxmkhoq`. Nenhum
 - P3: allowlist CORS versionada exige atualização manual ao adicionar domínios.
 
 Produção `navfzbwgwzruipouyfnk` intocada. H8 não iniciada.
+
+## 22. H7B/H7C — Auditoria runtime e hardening pré-certificado A1 (2026-08-20)
+
+Ambiente: staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk`:
+nenhuma leitura de escrita, nenhuma migration, nenhum deploy.
+
+### 22.1 Ressalva antiga H7A-001 (binding SQL) — SUPERADA
+A auditoria runtime desta execução consultou diretamente o staging via
+`STAGING_DSN` e confirmou tabelas, RLS, buckets, marcador de ambiente e grants.
+O finding H7A-001 fica **encerrado como superado**; permanece apenas o P2 de
+drift automático de `.env`/`types.ts`, detectado e corrigido pelo gate
+`check-frontend-binding.sh`.
+
+### 22.2 Drift corrigido nesta execução (P2)
+`.env` apontava para o sandbox `yzszl…` e `src/integrations/supabase/types.ts`
+estava truncado (2.052 linhas). Ambos restaurados do baseline de staging
+`c75bb87f` (`types.ts` = 21.850 linhas). Gate de binding: **OK**.
+`guard-staging.sh`: **OK — tpAmb='2', produção fiscal desabilitada.**
+
+### 22.3 Evidência runtime (staging)
+| Item | Resultado |
+| --- | --- |
+| Postcheck H7 (`60-h7-postcheck.sql`) | **11 PASS / 0 FAIL** (inclui T3 tpAmb=1 bloqueado, T5 imutabilidade, T8 append-only, T9 idempotência, T10 anon sem EXECUTE) |
+| Segurança/ambiente (`61-h7-seguranca-ambiente.sql`) | **12 PASS / 0 FAIL** (RLS em todas as tabelas fiscais, search_path fixo, buckets privados, `fiscal_certificate_material` sem policy, marcador STAGING não editável, anon negado em preflight/numeração/XML/documentos) |
+| Concorrência (`62-h7-concorrencia.sh`) | **4 PASS / 0 FAIL** (3 tentativas ⇒ 1 evento; reserva com FOR UPDATE + advisory lock; índice único de documento ativo) |
+| Buckets `fiscal-certificates` / `fiscal-regulatorio` / `fiscal-xml` | `public=false` |
+| Policies de cliente em `storage.objects` para `fiscal-certificates` | **0** |
+| `fiscal_certificates` / `fiscal_certificate_material` | **0 / 0 linhas** |
+| anon EXECUTE em `rpc_fiscal_homologation_readiness_v2`, `rpc_fiscal_nfe_readiness_v1`, `rpc_fiscal_certificate_register_a1`, `rpc_fiscal_xml_status_v1` | **false** nas quatro |
+| Emitente ativo | `tpAmb=2`, `HOMOLOGATION`, `nfe_enabled=false`, `production_enabled=false`, `NOT_READY`, UF `MG` |
+
+Todos os testes SQL rodaram em transação com `ROLLBACK`; nenhuma fixture
+persistida, nenhum dado fiscal alterado.
+
+### 22.4 Cofre A1 — estado
+- `fiscal-certificate-upload` mantém o desenho seguro já certificado: allowlist
+  CORS fail-closed, JWT em código, papel `administrador`, ≤ 10 MB, `.pfx`/`.p12`,
+  triagem ASN.1 BER/DER (`asn1Screen.ts`), PKCS#12 via node-forge, match
+  chave↔certificado, validade, AES-256-GCM com IVs independentes para material e
+  senha, ciphertext em bucket privado, registro atômico por RPC service-role e
+  rollback do objeto em falha. **Nenhuma alteração de desenho foi necessária.**
+- Sem master key ⇒ `503 CERTIFICATE_VAULT_NOT_CONFIGURED` (fail-closed).
+  Senha vazia ⇒ `CERT_PASSWORD_REQUIRED`. Nenhum `console.*`; a resposta nunca
+  contém senha, IV, ciphertext, `object_path`, material nem chave privada.
+- `UploadCertificadoA1.tsx`: arquivo em `ref`, senha em state, ambos limpos no
+  `finally`; **zero** uso de `localStorage`/`sessionStorage` em
+  `src/components/fiscal/`; botão bloqueado durante o envio (`pending`).
+
+### 22.5 Testes
+Suíte fiscal Vitest: **1.511 PASS / 4 skip (93 arquivos)**. Typecheck: **0 erros**.
+Build: **OK**.
+
+### 22.6 Gate
+**H7 PRONTO PARA IMPORTAÇÃO A1** no código e no banco de staging — zero P0,
+zero P1 de código. Permanece o **P1 de infraestrutura** (deploy de Edge Functions
+e cofre de secrets da plataforma resolvem para o projeto sandbox, não para
+`ikaauvsflpmamgxmkhoq`), que precisa de paridade antes do upload real do PFX.
+Nenhuma transmissão SEFAZ; H8 não iniciada.
