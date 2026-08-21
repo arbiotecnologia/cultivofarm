@@ -14,10 +14,21 @@ export const FISCAL_DEFAULT_ALLOWED_ORIGINS: readonly string[] = [
   "http://localhost:8080",
 ];
 
+/**
+ * H7b — Fonte única de verdade das origens fiscais.
+ *
+ * Aceita DOIS nomes de secret por compatibilidade histórica:
+ *   - `FISCAL_CORS_ALLOWLIST` (usado por certificate-upload/revoke/xml-engine)
+ *   - `FISCAL_ALLOWED_ORIGINS` (usado originalmente por fiscal-preflight)
+ * Quando ambos existem, a união é aplicada. Sem nenhum deles, cai no default
+ * versionado (origens públicas do app, que não são segredo). Nunca `*`.
+ */
 export function fiscalAllowedOrigins(): string[] {
-  const fromEnv = (Deno.env.get("FISCAL_CORS_ALLOWLIST") ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const parse = (name: string) =>
+    (Deno.env.get(name) ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  const fromEnv = [...new Set([...parse("FISCAL_CORS_ALLOWLIST"), ...parse("FISCAL_ALLOWED_ORIGINS")])];
   return fromEnv.length > 0 ? fromEnv : [...FISCAL_DEFAULT_ALLOWED_ORIGINS];
 }

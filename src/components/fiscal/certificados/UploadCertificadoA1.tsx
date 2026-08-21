@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { ShieldOff, Upload, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { checkFiscalBinding } from "@/config/fiscalBinding";
 
 export interface UploadCertificadoA1Props {
   companySettingsId: string;
@@ -49,6 +50,12 @@ export default function UploadCertificadoA1({
     }
     if (password.trim().length === 0) {
       toast({ title: "Informe a senha do certificado", variant: "destructive" });
+      return;
+    }
+    // H7b — fail-closed de binding: nunca enviar PFX fora do ambiente autorizado.
+    const binding = checkFiscalBinding();
+    if (!binding.ok) {
+      toast({ title: "Ambiente fiscal inválido", description: binding.message, variant: "destructive" });
       return;
     }
 
