@@ -643,3 +643,43 @@ binding. A execução para exatamente no ponto em que a senha do PFX é indispen
 **H7 — APROVADA COM RESSALVAS.** Zero P0/P1 de código e banco. Produção fiscal permanece
 hard-off (`production_emission_allowed = false`, `tpAmb = '2'`); produção `navfzbwgwzruipouyfnk`
 intocada. H8 não iniciada.
+
+## 26. Reexecução H7 — 2026-08-21 (auditoria + homologação completa, somente staging)
+
+### 26.1 Binding
+Drift detectado novamente (`.env`/`types.ts` apontando ao sandbox `yzszlzjpovmcteuxjznj`).
+Restaurados `.env`, `src/integrations/supabase/client.ts` e `src/integrations/supabase/types.ts`
+(21.850 linhas) da baseline de staging `c75bb87f`. `check-frontend-binding.sh`: **OK**.
+
+### 26.2 Guard de ambiente
+`guard-staging.sh`: **OK** — staging `ikaauvsflpmamgxmkhoq`, `tpAmb='2'`,
+`production_emission_allowed=false`. Produção `navfzbwgwzruipouyfnk` não acessada.
+
+### 26.3 Bateria de testes
+- `60-h7-postcheck.sql` (comportamental): **11 PASS / 0 FAIL** — gate de ambiente, produção
+  bloqueada, normalização de status, imutabilidade de documento autorizado, transições inválidas
+  rejeitadas, eventos append-only e idempotentes, anon sem EXECUTE fiscal.
+- `61-h7-seguranca-ambiente.sql` (estrutura/segurança/ambiente): **12 PASS / 0 FAIL** — RLS em
+  todas as tabelas fiscais, `search_path` fixo em SECURITY DEFINER, buckets fiscais privados,
+  material de certificado fail-closed, marcador de ambiente não editável, preflight/numeração/XML
+  negados a anon.
+- `62-h7-concorrencia.sh`: **4/4 PASS** — emissões concorrentes geram um único evento, retry não
+  duplica, reserva de numeração com `FOR UPDATE` + advisory lock, índice único de documento ativo.
+- Vitest: **3.134 PASS / 4 skip** (194 arquivos). Typecheck `tsgo`: **0 erros**. Build: **OK**.
+
+### 26.4 Certificado A1
+Arquitetura pronta e inalterada: PFX processado apenas server-side em
+`fiscal-certificate-upload` (triagem ASN.1, AES-256-GCM com `FISCAL_CERTIFICATE_MASTER_KEY`),
+metadados sanitizados persistidos, senha nunca persistida/logada e material de certificado sem
+policy de leitura. Sem senha fornecida, a função responde `CERT_PASSWORD_REQUIRED`.
+
+### 26.5 Achados
+- P0: nenhum. P1 de código/banco: nenhum.
+- P1 de infraestrutura (mantido, owner plataforma): deploys/secrets resolvem para o sandbox,
+  impedindo o upload real do A1 em staging (`403 cors_origin_not_allowed`).
+- P2: drift recorrente de binding — mitigado por gate fail-closed.
+- P3: NF-e HML ponta a ponta pendente da senha do PFX.
+
+### 26.6 Gate
+**H7 — APROVADA COM RESSALVAS / AGUARDANDO CERTIFICADO E SENHA PARA TESTE REAL HML.**
+Produção fiscal hard-off. H8 não iniciada.
