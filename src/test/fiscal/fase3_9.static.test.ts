@@ -69,8 +69,16 @@ describe("Fase 3.9 · (B) CORS seguro", () => {
     expect(entrySrc).not.toMatch(/Access-Control-Allow-Origin["']\s*:\s*["']\*/);
     // "*" só aparece em contexto de select("*", …), não em ACAO.
   });
-  test("lê a allowlist via env FISCAL_ALLOWED_ORIGINS", () => {
-    expect(entrySrc).toMatch(/FISCAL_ALLOWED_ORIGINS/);
+  // H7b: a allowlist migrou para o módulo compartilhado
+  // `_shared/fiscal/corsAllowlist.ts`, que lê FISCAL_ALLOWED_ORIGINS e
+  // FISCAL_CORS_ALLOWLIST. O entrypoint apenas delega.
+  test("lê a allowlist via módulo compartilhado (FISCAL_ALLOWED_ORIGINS suportado)", () => {
+    expect(entrySrc).toMatch(/fiscalAllowedOrigins/);
+    const shared = readFileSync(
+      resolve(__dirname, "../../../supabase/functions/_shared/fiscal/corsAllowlist.ts"),
+      "utf8",
+    );
+    expect(shared).toMatch(/FISCAL_ALLOWED_ORIGINS/);
   });
   test("default = allowlist vazia → nega origem de browser", () => {
     // parseAllowlist retorna [] quando env vazia; e branch de isBrowserOriginAllowed

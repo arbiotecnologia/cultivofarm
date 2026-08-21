@@ -683,3 +683,57 @@ policy de leitura. Sem senha fornecida, a função responde `CERT_PASSWORD_REQUI
 ### 26.6 Gate
 **H7 — APROVADA COM RESSALVAS / AGUARDANDO CERTIFICADO E SENHA PARA TESTE REAL HML.**
 Produção fiscal hard-off. H8 não iniciada.
+
+---
+
+## Seção 27 — H7b: correção focada do bloqueio P1 de infraestrutura fiscal
+
+**Escopo:** somente staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` intocada. H8 não iniciada. Nenhum PFX/senha utilizado.
+
+### Causa raiz (duas causas independentes)
+
+1. **CORS divergente entre funções fiscais.** `fiscal-certificate-upload`, `fiscal-certificate-revoke` e `fiscal-xml-engine` liam `FISCAL_CORS_ALLOWLIST` com default versionado, enquanto `fiscal-preflight` liaan outro nome (`FISCAL_ALLOWED_ORIGINS`) com **default vazio = nega toda origem de browser**. Sem o secret na plataforma (que resolve para o sandbox), qualquer chamada de browser ao preflight retornava 403 de origem. Essa divergência de nomes é a origem do sintoma `403 cors_origin_not_allowed`.
+2. **Drift de binding de deploy/secrets.** Os deploys de Edge Function e os secrets da plataforma resolvem para o projeto sandbox `yzszlzjpovmcteuxjznj`, não para o staging autorizado. Evidência direta obtida nesta fase (abaixo).
+
+### Correções aplicadas
+
+| Arquivo | Mudança |
+|---|---|
+| `supabase/functions/_shared/fiscal/corsAllowlist.ts` | Fonte única de verdade: união de `FISCAL_CORS_ALLOWLIST` + `FISCAL_ALLOWED_ORIGINS`, fallback para o default versionado. Nunca `*`. |
+| `supabase/functions/fiscal-preflight/index.ts` | Passa a delegar a `fiscalAllowedOrigins()`; elimina o default vazio. |
+| `supabase/functions/fiscal-binding-diagnostics/index.ts` (novo) | Diagnóstico fail-closed não sensível: `project_ref`, ambiente, `production_emission_allowed`, `binding_ok`. POST admin-only acrescenta apenas **presença booleana** de segredos e contagem de origens. Nunca valores. |
+| `src/config/fiscalBinding.ts` (novo) | Guard de cliente derivado da URL efetiva do cliente Supabase (não de `import.meta.env`, sujeito a drift). Fail-closed em ref desconhecido, produção ou divergente. |
+| `src/components/fiscal/certificados/UploadCertificadoA1.tsx` | Bloqueia o envio do PFX antes do `functions.invoke` quando o binding não é o staging autorizado. |
+| `restoration/homologacao-h7/63-h7b-binding-gate.sh` (novo) | Gate de runtime: origem válida/inválida, ausência de Origin, auth, project ref, produção proibida, emissão de produção. |
+| `src/test/fiscal/h7b.binding.static.test.ts` (novo) | Congela os invariantes acima. |
+| `src/integrations/supabase/types.ts` | Restaurado do baseline de staging `c75bb87f` (21.850 linhas) após novo drift. |
+
+Nenhuma migration histórica foi editada. Nenhuma mudança em produção.
+
+### Evidências de runtime (staging `ikaauvsflpmamgxmkhoq`)
+
+- Preflight CORS com origem autorizada: **200**, `Access-Control-Allow-Origin` refletindo exatamente a origem do preview.
+- `POST fiscal-certificate-upload` com origem autorizada e **sem sessão**: `401 {"error":"unauthorized"}` — erro **funcional**, não mais 403 de origem. **Teste A: PASS.**
+- Origem desconhecida: `403 cors_origin_not_allowed`. **Teste B: PASS.**
+- Sem header `Origin`: `403`. Anon negado. **Teste C: PASS.**
+- Guard de produção: nenhum endpoint fiscal referencia `navfzbwgwzruipouyfnk`; `production_emission_allowed=false`. **Teste E: PASS.**
+- Storage fiscal: buckets privados, material do certificado fail-closed, `fiscal_certificates` sem material em repo. **Teste F: PASS.**
+
+### P1 remanescente — comprovado, não resolvido
+
+O deploy de `fiscal-binding-diagnostics` resolveu para o **sandbox**: o endpoint responde em `yzszlzjpovmcteuxjznj` com `{"project_ref":"yzszlzjpovmcteuxjznj","binding_ok":false}` e retorna **404 no staging**. Ou seja, as ferramentas de deploy/secrets desta workspace estão vinculadas ao projeto sandbox, e não ao staging autorizado. **Teste D: FAIL no staging (função ausente).**
+
+Consequência: o código-fonte fiscal está correto e o endpoint de upload já implantado em staging está funcional e com CORS correto, mas **novas** versões de função e **novos** secrets (incluindo `FISCAL_CERTIFICATE_MASTER_KEY`) não alcançam `ikaauvsflpmamgxmkhoq` por via automatizada.
+
+**Ação humana exata necessária (única):** implantar as funções fiscais e definir os secrets diretamente no projeto staging `ikaauvsflpmamgxmkhoq`, com credencial própria desse projeto:
+
+```
+supabase link --project-ref ikaauvsflpmamgxmkhoq
+supabase secrets set FISCAL_CERTIFICATE_MASTER_KEY=<32 bytes base64>   # nunca commitar
+supabase functions deploy fiscal-binding-diagnostics fiscal-certificate-upload fiscal-preflight fiscal-certificate-revoke
+bash restoration/homologacao-h7/63-h7b-binding-gate.sh                  # deve sair 0
+```
+
+### Gate H7b
+
+**BLOQUEADA** — `binding_ok` não pôde ser comprovado em staging porque o deploy resolve para sandbox. O sintoma `403 cors_origin_not_allowed` no upload está **eliminado** no staging, mas a prova completa de binding (Teste D) exige a ação humana acima. Status: **NÃO** `CERT_IMPORT_READY`. Certificado A1 e senha não solicitados nem utilizados.

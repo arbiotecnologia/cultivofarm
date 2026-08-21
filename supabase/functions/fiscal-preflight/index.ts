@@ -19,6 +19,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
 import {
   evaluatePreflight,
   isRoleAllowedForPreflight,
@@ -47,12 +48,10 @@ const MAX_BODY_BYTES = 4 * 1024; // 4 KiB — só aceitamos {version?: string}
 const ALLOWED_HEADERS =
   "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version";
 
+// H7b: allowlist canônica compartilhada (FISCAL_CORS_ALLOWLIST /
+// FISCAL_ALLOWED_ORIGINS + default versionado). Nunca "*".
 function parseAllowlist(): string[] {
-  const raw = Deno.env.get("FISCAL_ALLOWED_ORIGINS") ?? "";
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  return fiscalAllowedOrigins();
 }
 
 function corsHeadersFor(req: Request): Record<string, string> {
