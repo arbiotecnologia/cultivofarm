@@ -588,3 +588,58 @@ H8 **não iniciada**.
 ### Gate
 **H7 — APROVADA COM RESSALVAS.** Zero P0/P1 de código e banco. Produção fiscal permanece OFF
 (`production_emission_allowed = false`, `tpAmb = 2`). H8 não iniciada.
+
+---
+
+## 25. Reexecução H7 — 2026-08-21 (auditoria + homologação, staging `ikaauvsflpmamgxmkhoq`)
+
+### 25.1 Drift de binding corrigido antes de qualquer acesso
+- `.env` e `src/integrations/supabase/types.ts` haviam voltado ao sandbox (`types.ts` com 2.052 linhas).
+- Restaurados a partir da baseline de staging `c75bb87f` (`types.ts` = 21.850 linhas).
+- `check-frontend-binding.sh`: **OK** (`.env`, `client.ts`, `config.toml`, `types.ts` consistentes).
+- `guard-staging.sh`: **OK** — staging `ikaauvsflpmamgxmkhoq`, `tpAmb='2'`, produção fiscal desabilitada.
+
+### 25.2 Evidências de teste (todas nesta execução)
+| Bateria | Resultado |
+| --- | --- |
+| `60-h7-postcheck.sql` (T1–T11) | **11 PASS / 0 FAIL** — gate de ambiente, produção bloqueada, `ISSUED→AUTHORIZED`, imutabilidade econômica, transição inválida rejeitada, cancelamento permitido, eventos append-only e idempotentes, `anon` sem EXECUTE, assinatura legada removida |
+| `61-h7-seguranca-ambiente.sql` (A/C/E) | **12 PASS / 0 FAIL** — RLS em todas as tabelas fiscais, `search_path` fixo em todos os SECURITY DEFINER fiscais, buckets fiscais privados, `fiscal_certificate_material` sem policy, marcador `ikaauvsflpmamgxmkhoq\|STAGING\|0`, dupla trava de produção, preflight/numeração/XML/documentos negados a `anon` |
+| `62-h7-concorrencia.sh` (D1–D4) | **4/4 PASS** — duas requisições simultâneas + retry ⇒ 1 evento; reserva com `FOR UPDATE` + advisory lock; índice único de documento ativo por origem |
+| `scripts/fiscal-secrets-scan.sh` | **OK** — nenhum valor secreto real no repositório |
+| Typecheck (`tsgo`, tsconfig.app) | **0 erros** |
+| Vitest (suíte completa) | **3.134 PASS / 4 skip** (194 arquivos) |
+
+### 25.3 Certificado A1
+- `public.fiscal_certificates`: **0 linhas** — nenhum certificado importado.
+- Esquema confirmado como metadados-only (`subject_name`, `issuer_name`, `serial_number`,
+  `valid_from`, `valid_until`, `fingerprint_sha256`, `key_usage`, `status`, trilha de revogação).
+  Nenhuma coluna de PFX/senha/chave privada na tabela comum; material cifrado permanece em
+  `fiscal_certificate_material`, fail-closed (sem policy).
+- Estado: **`CERTIFICADO_PENDENTE_IMPORTACAO`**.
+
+### 25.4 Ponto de parada
+Nenhuma alteração de código ou migration foi necessária nesta execução — apenas a restauração de
+binding. A execução para exatamente no ponto em que a senha do PFX é indispensável:
+
+**`NECESSARIO_SECRET_CERTIFICADO_HML`**
+
+- Onde inserir com segurança: tela `/configuracoes/fiscal/empresa` → bloco **Certificado A1** →
+  upload do `.pfx` + campo de senha, transmitidos apenas à Edge Function server-side
+  `fiscal-certificate-upload` (a senha nunca é persistida em tabela, log ou UI).
+- Ação retomada depois: validação de metadados e do CNPJ do certificado contra o emitente,
+  validade e capacidade de assinatura (teste G) e, na sequência, geração/assinatura/validação XSD
+  e transmissão NF-e em **homologação** (teste H).
+
+### 25.5 Achados
+- P0: nenhum. P1 de código/banco: nenhum.
+- P1 de infraestrutura (mantido, fora do código): deploys/secrets da plataforma resolvem para o
+  projeto sandbox e não para `ikaauvsflpmamgxmkhoq`, resultando em `403 cors_origin_not_allowed`
+  no upload em staging. Owner: plataforma/infra.
+- P2: drift recorrente de `.env`/`types.ts` para o sandbox — mitigação ativa via
+  `check-frontend-binding.sh` executado como gate fail-closed no `guard-staging.sh`.
+- P3: NF-e HML de ponta a ponta (teste H) permanece não executada por depender da senha do PFX.
+
+### 25.6 Gate
+**H7 — APROVADA COM RESSALVAS.** Zero P0/P1 de código e banco. Produção fiscal permanece
+hard-off (`production_emission_allowed = false`, `tpAmb = '2'`); produção `navfzbwgwzruipouyfnk`
+intocada. H8 não iniciada.
