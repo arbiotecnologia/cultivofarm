@@ -546,3 +546,45 @@ Ressalvas mantidas:
 
 Produção fiscal **não ativada**. Nenhum PFX/senha recebido, gravado ou logado.
 H8 **não iniciada**.
+
+## 24. Revalidação H7 — 2026-08-21 (staging ikaauvsflpmamgxmkhoq)
+
+### Binding
+- Drift recorrente detectado: `.env` e `src/integrations/supabase/types.ts` apontavam para o projeto sandbox.
+- Restaurados a partir do baseline de staging `c75bb87f` (`types.ts` = 21.850 linhas).
+- `restoration/homologacao-h7/check-frontend-binding.sh`: OK.
+- `restoration/homologacao-h7/guard-staging.sh`: OK — ref `ikaauvsflpmamgxmkhoq`, `tpAmb=2`, emissão de produção desabilitada.
+
+### Harness executado (staging)
+| Harness | Resultado |
+| --- | --- |
+| `60-h7-postcheck.sql` | 11 PASS / 0 FAIL |
+| `61-h7-seguranca-ambiente.sql` | 12 PASS / 0 FAIL |
+| `62-h7-concorrencia.sh` | 4 PASS / 0 FAIL |
+| `scripts/fiscal-secrets-scan.sh` | OK — nenhum segredo real |
+| Typecheck | 0 erros |
+| Vitest | 3.134 PASS / 4 skip (194 arquivos) |
+
+### Correção aplicada nesta execução
+- `scripts/fiscal-secrets-scan.sh`: adicionada classificação de falso-positivo comprovado
+  (JWT Supabase com `role=anon`, publishable por design; DSN de documentação com placeholder
+  literal `USER:PASSWORD@`). Fixtures de falha continuam falhando (`SUPABASE_SECRET`,
+  `PG_URL_WITH_PWD` real, `PEM_BLOCK`), preservando o poder de detecção do scanner.
+
+### Certificado A1
+- Estado: `CERTIFICADO_PENDENTE_IMPORTACAO`.
+- Mecanismo seguro pronto: Edge Function `fiscal-certificate-upload` (triagem ASN.1, AES-256-GCM,
+  fail-closed sem `FISCAL_CERTIFICATE_MASTER_KEY`), material em tabela sem policy (fail-closed),
+  buckets fiscais privados, frontend `UploadCertificadoA1.tsx` sem persistir senha.
+- Ponto exato de fornecimento seguro: tela `/configuracoes/fiscal/empresa` → "Certificado A1",
+  arquivo `.pfx` + senha digitados pelo operador, enviados apenas ao endpoint server-side.
+
+### Ressalva bloqueante (P1 de infraestrutura, fora do código)
+- Deploys/secrets da plataforma continuam resolvendo para o projeto sandbox e não para o staging
+  `ikaauvsflpmamgxmkhoq`; o endpoint de upload em staging responde `403 cors_origin_not_allowed`.
+- Enquanto essa paridade não for resolvida, a importação real do `.pfx` e a transmissão NF-e HML
+  não podem ser executadas pelo agente.
+
+### Gate
+**H7 — APROVADA COM RESSALVAS.** Zero P0/P1 de código e banco. Produção fiscal permanece OFF
+(`production_emission_allowed = false`, `tpAmb = 2`). H8 não iniciada.

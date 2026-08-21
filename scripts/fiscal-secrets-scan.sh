@@ -49,6 +49,30 @@ fail=0
 tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
 
+# H7 — falso-positivos conhecidos e comprovadamente NÃO secretos:
+#   * JWT Supabase com role "anon" (chave publishable, pública por design).
+#   * DSN de documentação com placeholder literal USER:PASSWORD / HOST.
+is_benign() {
+  local label="$1" content="$2"
+  case "$label" in
+    JWT)
+      local payload
+      payload=$(printf '%s' "$content" | rg -o --pcre2 'ey[A-Za-z0-9_-]{20,}\.([A-Za-z0-9_-]{20,})\.[A-Za-z0-9_-]{20,}' -r '$1' | head -1)
+      [ -n "$payload" ] || return 1
+      # base64url -> base64 com padding
+      payload=$(printf '%s' "$payload" | tr '_-' '/+')
+      while [ $(( ${#payload} % 4 )) -ne 0 ]; do payload="${payload}="; done
+      printf '%s' "$payload" | base64 -d 2>/dev/null | rg -q '"role"\s*:\s*"anon"' && return 0
+      return 1
+      ;;
+    PG_URL_WITH_PWD)
+      printf '%s' "$content" | rg -q 'USER:PASSWORD@|user:password@|<[^>]+>:<[^>]+>@' && return 0
+      return 1
+      ;;
+  esac
+  return 1
+}
+
 for entry in "${PATTERNS[@]}"; do
   label="${entry%%|*}"
   regex="${entry#*|}"
@@ -58,12 +82,17 @@ for entry in "${PATTERNS[@]}"; do
       file_line="${line%%:*}"
       rest="${line#*:}"
       lineno="${rest%%:*}"
+      content="${rest#*:}"
+      if is_benign "$label" "$content"; then
+        continue
+      fi
       # NUNCA ecoa o valor. Apenas localização + rótulo.
       echo "FISCAL SECRETS: [$label] em ${file_line}:${lineno} — valor mascarado"
       fail=1
     done <"$tmp"
   fi
 done
+
 
 # Arquivos .pfx/.p12 versionados
 while IFS= read -r f; do
