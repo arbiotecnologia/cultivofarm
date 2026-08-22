@@ -767,3 +767,36 @@ bash restoration/homologacao-h7/63-h7b-binding-gate.sh                  # deve s
 
 ### Gate H7 (reexecução)
 **BLOQUEADA pelo P1 de infraestrutura.** Código, banco, RLS, snapshots, idempotência e bloqueio hard de produção estão aprovados; produção `navfzbwgwzruipouyfnk` permanece intocada e emissão de produção continua desabilitada. H8 não iniciada.
+
+---
+
+## Seção 29 — Reexecução H7 (2026-08-22)
+
+### H7.0 Inventário/binding
+- Drift detectado no início: `.env` e `types.ts` apontando para sandbox (`types.ts` 2.052 linhas).
+- Restaurado para o baseline de homologação `c75bb87f`: `types.ts` 21.850 linhas, `.env` em `ikaauvsflpmamgxmkhoq`.
+- `check-frontend-binding.sh`: OK (.env, client.ts, config.toml, types.ts consistentes).
+- `guard-staging.sh`: OK — staging `ikaauvsflpmamgxmkhoq`, `tpAmb='2'`, produção fiscal desabilitada.
+
+### H7.1–H7.10 Evidências de reteste
+| Harness | Resultado |
+| --- | --- |
+| `60-h7-postcheck.sql` | 11 PASS / 0 FAIL (gate, ambiente, transições, imutabilidade, append-only, idempotência de evento, anon sem EXECUTE) |
+| `61-h7-seguranca-ambiente.sql` | 12 PASS / 0 FAIL (RLS em todas as tabelas fiscais, buckets privados, `fiscal_certificate_material` fail-closed, marcador não editável, anon negado) |
+| `62-h7-concorrencia.sh` | 4/4 PASS (2 emissões simultâneas + retry => 1 evento; advisory lock; índice único de documento ativo por origem) |
+| `63-h7b-binding-gate.sh` | 6 PASS / 2 FAIL — CORS e auth corretos; falhas exclusivas do endpoint `fiscal-binding-diagnostics` (HTTP 404, não implantado no staging) |
+| `fiscal-secrets-scan.sh` | OK — nenhum segredo real no repositório |
+| Vitest | 3.141 PASS / 4 skip (195 arquivos) |
+| Typecheck / Build | 0 erros / build OK |
+
+### H7.6 Certificado A1
+`fiscal_certificates` e `fiscal_certificate_material` seguem vazios; material sem policy (fail-closed), sem acesso via API. Fluxo server-side (triagem ASN.1 + AES-256-GCM + `CERT_PASSWORD_REQUIRED`) pronto. Subteste de assinatura real permanece `AGUARDANDO_CARGA_CERTIFICADO_REAL`.
+
+### Pendências
+- **P1 infraestrutura (persistente):** deploys de Edge Function e secrets da plataforma chegam ao sandbox, não ao staging `ikaauvsflpmamgxmkhoq`; por isso `fiscal-binding-diagnostics` responde 404 e o upload real de A1 não pode ser exercido pela UI de homologação. Requer implantação manual via CLI no ref de staging.
+- `AGUARDANDO_CARGA_CERTIFICADO_REAL` — PFX/senha não trafegaram por este canal.
+
+### Gate H7 (2026-08-22)
+**APROVADA COM RESSALVAS.** Zero P0. Nenhum sucesso fiscal simulado. Produção `navfzbwgwzruipouyfnk` intocada e emissão de produção HARD OFF. H8 não iniciada.
+
+**Ponto exato de inserção do certificado:** UI `/configuracoes/fiscal/empresa` → aba Certificados → componente `UploadCertificadoA1` (arquivo `.pfx/.p12` + senha), que envia direto à Edge Function `fiscal-certificate-upload`. Nada é persistido no navegador. Depende da implantação da função e do secret `FISCAL_CERTIFICATE_MASTER_KEY` no ref de staging.
