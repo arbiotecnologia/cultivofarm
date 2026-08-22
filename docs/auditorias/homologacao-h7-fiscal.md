@@ -737,3 +737,33 @@ bash restoration/homologacao-h7/63-h7b-binding-gate.sh                  # deve s
 ### Gate H7b
 
 **BLOQUEADA** — `binding_ok` não pôde ser comprovado em staging porque o deploy resolve para sandbox. O sintoma `403 cors_origin_not_allowed` no upload está **eliminado** no staging, mas a prova completa de binding (Teste D) exige a ação humana acima. Status: **NÃO** `CERT_IMPORT_READY`. Certificado A1 e senha não solicitados nem utilizados.
+
+---
+
+## Seção 28 — Reexecução H7 (auditoria + revalidação, staging `ikaauvsflpmamgxmkhoq`)
+
+### Drift de binding corrigido antes de qualquer teste
+`.env` e `src/integrations/supabase/types.ts` haviam voltado ao sandbox (`yzszlzjpovmcteuxjznj`, types com 2.052 linhas). Ambos restaurados a partir do baseline de staging `c75bb87f` (types com 21.850 linhas). `check-frontend-binding.sh`: **OK**. `guard-staging.sh`: **OK — tpAmb='2', produção fiscal desabilitada**.
+
+### Resultados dos testes obrigatórios
+| Teste | Harness | Resultado |
+| --- | --- | --- |
+| A/E — estrutural, snapshot imutável, idempotência | `60-h7-postcheck.sql` | **11 PASS / 0 FAIL** |
+| B/F/G — RLS, perfis, anon, ambiente, storage/certificado | `61-h7-seguranca-ambiente.sql` | **12 PASS / 0 FAIL** |
+| D — idempotência e concorrência de emissão | `62-h7-concorrencia.sh` | **4/4 PASS** |
+| Binding runtime das Edge Functions | `63-h7b-binding-gate.sh` | **6 PASS / 2 FAIL** (diagnóstico 404 no staging) |
+| H — regressão | Vitest | **3.141 PASS / 4 skip** |
+| H — tipos | `tsgo --noEmit` | **0 erros** |
+| Segredos em repositório | `scripts/fiscal-secrets-scan.sh` | **OK** |
+
+### Estado do certificado A1
+`fiscal_certificates` = 0 linhas e `fiscal_certificate_material` = 0 linhas. Material fail-closed (sem policy, sem SELECT via API, sem retorno por RPC). Nenhum PFX, senha, PEM ou base64 existe em repositório, migrations, fixtures ou logs. Nenhuma senha foi solicitada nesta execução.
+
+### Findings
+- **P0:** nenhum.
+- **P1 (infraestrutura, persistente):** deploys e secrets desta workspace resolvem para o sandbox; `fiscal-binding-diagnostics` retorna 404 no staging e `FISCAL_CERTIFICATE_MASTER_KEY` não pôde ser gravado em `ikaauvsflpmamgxmkhoq`.
+- **P2:** drift recorrente de `.env`/`types.ts` para sandbox, mitigado por `check-frontend-binding.sh` no guard.
+- **P3:** documentação de matriz fiscal por UF ainda depende de confirmação contábil (mantida como pendência de preflight, sem tributação inventada).
+
+### Gate H7 (reexecução)
+**BLOQUEADA pelo P1 de infraestrutura.** Código, banco, RLS, snapshots, idempotência e bloqueio hard de produção estão aprovados; produção `navfzbwgwzruipouyfnk` permanece intocada e emissão de produção continua desabilitada. H8 não iniciada.
