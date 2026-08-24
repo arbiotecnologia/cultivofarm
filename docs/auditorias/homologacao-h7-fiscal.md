@@ -800,3 +800,31 @@ bash restoration/homologacao-h7/63-h7b-binding-gate.sh                  # deve s
 **APROVADA COM RESSALVAS.** Zero P0. Nenhum sucesso fiscal simulado. Produção `navfzbwgwzruipouyfnk` intocada e emissão de produção HARD OFF. H8 não iniciada.
 
 **Ponto exato de inserção do certificado:** UI `/configuracoes/fiscal/empresa` → aba Certificados → componente `UploadCertificadoA1` (arquivo `.pfx/.p12` + senha), que envia direto à Edge Function `fiscal-certificate-upload`. Nada é persistido no navegador. Depende da implantação da função e do secret `FISCAL_CERTIFICATE_MASTER_KEY` no ref de staging.
+
+## Seção 30 — Execução H7 (2026-08-24)
+
+### 30.1 Binding
+Detectado novo drift do `.env`/`types.ts` para o sandbox; restaurado o baseline de homologação `c75bb87f` (`ikaauvsflpmamgxmkhoq`, `types.ts` 21.850 linhas). `check-frontend-binding.sh` e `guard-staging.sh`: OK (`tpAmb='2'`, `production_emission_allowed=false`).
+
+### 30.2 Correção aplicada
+`supabase/functions/fiscal-certificate-upload/index.ts` passou a aceitar, além do upload multipart existente, ingestão **server-side por secrets** (`{"source":"secret"}` em JSON), lendo `FISCAL_CERT_PFX_B64` e `FISCAL_CERT_PASSWORD` do ambiente da função. O PFX e a senha deixam de precisar trafegar pelo navegador. Sem os secrets, a função responde `CERTIFICATE_SECRET_PENDING` (503) — nenhum sucesso fiscal é simulado. Pipeline de validação/cifra/registro permanece único (sem fluxo paralelo).
+
+Documentação operacional: `docs/auditorias/homologacao-h7-certificado-secrets.md` (sem valores de segredo).
+
+### 30.3 Testes
+| Harness | Resultado |
+| --- | --- |
+| `60-h7-postcheck.sql` | 11 PASS / 0 FAIL |
+| `61-h7-seguranca-ambiente.sql` | 12 PASS / 0 FAIL |
+| `62-h7-concorrencia.sh` | 4/4 PASS |
+| `fiscal-secrets-scan.sh` | OK |
+| Vitest | 3.141 PASS / 4 skip |
+| Typecheck | 0 erros |
+
+### 30.4 Pendências
+- **P1 infraestrutura (persistente):** deploys/secrets da plataforma chegam ao sandbox, não ao ref de staging; exige implantação manual via CLI.
+- `CERTIFICATE_SECRET_PENDING` — cadastrar `FISCAL_CERT_PFX_B64` e `FISCAL_CERT_PASSWORD` no staging.
+- Pendências contábeis de tributação (lucro presumido / SEFAZ-MG) seguem marcadas para validação externa.
+
+### Gate H7 (2026-08-24)
+**APROVADA COM RESSALVAS.** Zero P0/P1 de código. Produção `navfzbwgwzruipouyfnk` intocada, emissão de produção HARD OFF, H8 não iniciada.
