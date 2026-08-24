@@ -828,3 +828,67 @@ Documentação operacional: `docs/auditorias/homologacao-h7-certificado-secrets.
 
 ### Gate H7 (2026-08-24)
 **APROVADA COM RESSALVAS.** Zero P0/P1 de código. Produção `navfzbwgwzruipouyfnk` intocada, emissão de produção HARD OFF, H8 não iniciada.
+
+---
+
+## Seção 31 — H7e: identidade do certificado A1 x CNPJ do emitente (2026-08-24)
+
+### Achado H7e-001 — P1 (CORRIGIDO)
+**Antes:** `fiscal-certificate-upload` validava senha, par chave/certificado, validade,
+fingerprint e keyUsage, mas **não verificava a identidade do titular**. Qualquer A1
+válido (inclusive de outro CNPJ ou um e-CPF) podia ser cifrado, enviado ao bucket
+privado e registrado para o emitente ativo.
+
+**Depois:** gate fail-closed antes de cifrar/upload/registro, com o CNPJ do emitente
+lido **server-side** de `company_fiscal_settings.cnpj` pelo `company_settings_id` já
+validado. Nenhum CNPJ é aceito do FormData/body nem devolvido em mensagem de erro.
+
+### Precedência de extração do CNPJ do titular
+Helper reutilizável `supabase/functions/_shared/fiscal/certHolderCnpj.ts` (puro, sem I/O):
+1. `subjectAltName` / `otherName` OID **2.16.76.1.3.3** — CNPJ da PJ titular (fonte
+   oficial ICP-Brasil, DOC-ICP-04).
+2. `subject.serialNumber` (OID 2.5.4.5) quando contiver exatamente 14 dígitos.
+3. `subject.CN` no padrão PJ `RAZAO SOCIAL:CNPJ` (sufixo `:` + 14 dígitos).
+
+Regras auxiliares:
+- Sequência solta de 14 dígitos em campo não relacionado (dNSName, meio do CN, OID
+  ICP diferente) **não** é aceita.
+- OID **2.16.76.1.3.1** (e-CPF) sem CNPJ de PJ ⇒ pessoa física, rejeitado.
+- OID **2.16.76.1.3.4** (responsável do e-CNPJ) não descaracteriza a PJ.
+- DV do CNPJ validado por `validateCnpjAlpha` (espelho do cliente) antes de comparar.
+
+### Códigos de erro estáveis
+| Código | HTTP | Situação |
+|---|---|---|
+| `CERT_CNPJ_NOT_FOUND` | 400 | Sem CNPJ inequívoco (inclui DV inválido, sanitizado) |
+| `CERT_HOLDER_IS_INDIVIDUAL` | 400 | Certificado de pessoa física / e-CPF |
+| `CERT_CNPJ_MISMATCH` | 409 | CNPJ do certificado ≠ CNPJ do emitente |
+| `ISSUER_CNPJ_INVALID` | 409 | `company_fiscal_settings.cnpj` ausente/inválido |
+| `CERT_PASSWORD_REQUIRED` | 400 | Preservado da fase H7-005.8 |
+
+### Achado H7e-002 — paridade código/runtime
+Versão canônica consolidada no repositório: `fiscalAllowedOrigins()` compartilhado,
+triagem ASN.1 BER/DER via `asn1Screen.ts` (sem magic `30 82`),
+`FISCAL_CERTIFICATE_MASTER_KEY` fail-closed, pipeline único para multipart e
+`source=secret`, mais a validação de CNPJ desta fase. **O runtime do staging segue
+atrasado** — o deploy direto em `ikaauvsflpmamgxmkhoq` é externo (P1 de infraestrutura,
+inalterado nesta fase).
+
+### Testes
+- `src/test/fiscal/h7e.certHolderCnpj.test.ts` — 13 testes (cenários A–F, precedência,
+  fallbacks, e-CNPJ com responsável, testes estáticos de leitura server-side do CNPJ e
+  de não-eco de material sensível). Fixtures 100% sintéticas, sem PFX/senha.
+- Regressão ASN.1 BER/DER: `h7c.asn1Screen.test.ts` 14/14 PASS.
+- Vitest fiscal: 1.531 PASS / 4 skip. Suite total: **3.154 PASS / 4 skip**.
+- Typecheck: 0 erros. Build: OK. `fiscal-secrets-scan.sh`: OK.
+- Binding: drift para sandbox detectado e restaurado ao baseline `c75bb87f`;
+  `check-frontend-binding.sh` OK (`ikaauvsflpmamgxmkhoq`).
+
+### Classificação
+- P0: nenhum. P1 de código: nenhum. P1 de infraestrutura: deploy do runtime de staging
+  (externo). P2: `fiscal_certificates` vazio (esperado). P3: docs de rotação.
+
+### Gate H7e
+**`CERT_IMPORT_CODE_READY`** — zero P0/P1 de código. `tpAmb=2`,
+`production_emission_allowed=false`, `production_enabled=false`. Produção
+`navfzbwgwzruipouyfnk` intocada. Nenhum PFX/senha manipulado. H8 não iniciada.
