@@ -23,6 +23,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
 import forge from "npm:node-forge@1";
 import { isPlausibleAsn1Sequence } from "./asn1Screen.ts";
+import { resolveCertificateHolderCnpj } from "../_shared/fiscal/certHolderCnpj.ts";
+import { validateCnpjAlpha } from "../_shared/fiscal/cnpj.ts";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_PASSWORD = 256;
@@ -212,8 +214,9 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   // Confere existência real do company_settings antes de qualquer trabalho pesado.
+  // H7e: o CNPJ do emitente NUNCA vem do cliente — sempre lido server-side aqui.
   const companyExists = await admin.from("company_fiscal_settings")
-    .select("id").eq("id", companySettingsId).maybeSingle();
+    .select("id, cnpj").eq("id", companySettingsId).maybeSingle();
   if (companyExists.error || !companyExists.data) {
     return json({ error: "company_settings_not_found" }, 404, headers);
   }
@@ -288,6 +291,50 @@ Deno.serve(async (req) => {
     const md3 = forge.md.sha256.create();
     md3.update(der);
     fingerprintHex = md3.digest().toHex();
+
+    // ---- H7e: identidade do titular (fail-closed) ----------------------------
+    // Nunca ecoa o CNPJ do certificado nem do emitente: apenas códigos estáveis.
+    const sanExt = cert.getExtension("subjectAltName") as { value?: string } | undefined;
+    let sanBytes: Uint8Array | null = null;
+    if (sanExt?.value) {
+      const raw = sanExt.value;
+      sanBytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) sanBytes[i] = raw.charCodeAt(i) & 0xff;
+    }
+    const cnField = cert.subject.getField("CN") as { value?: string } | null;
+    const snField = (cert.subject.getField("serialNumber")
+      ?? cert.subject.getField({ type: "2.5.4.5" })) as { value?: string } | null;
+
+    const holder = resolveCertificateHolderCnpj({
+      sanBytes,
+      subjectCn: cnField?.value ?? null,
+      subjectSerialNumber: snField?.value ?? null,
+    });
+    if (!holder.ok) {
+      return json(
+        {
+          error: holder.code === "CERT_HOLDER_IS_INDIVIDUAL"
+            ? "Certificado de pessoa fisica (e-CPF) nao e valido para emissao da pessoa juridica"
+            : "Nao foi possivel confirmar o CNPJ do titular do certificado",
+          code: holder.code === "CERT_CNPJ_INVALID" ? "CERT_CNPJ_NOT_FOUND" : holder.code,
+        },
+        400,
+        headers,
+      );
+    }
+    const issuerCnpj = String(companyExists.data.cnpj ?? "").replace(/\D/g, "");
+    if (issuerCnpj.length !== 14 || !validateCnpjAlpha(issuerCnpj)) {
+      return json({ error: "CNPJ do emitente invalido ou nao configurado", code: "ISSUER_CNPJ_INVALID" }, 409, headers);
+    }
+    if (issuerCnpj !== holder.cnpj) {
+      return json(
+        { error: "O certificado nao pertence ao CNPJ do emitente configurado", code: "CERT_CNPJ_MISMATCH" },
+        409,
+        headers,
+      );
+    }
+    // -------------------------------------------------------------------------
+
 
     const ku = cert.getExtension("keyUsage") as Record<string, unknown> | undefined;
     if (ku && typeof ku === "object") {
