@@ -129,37 +129,85 @@ Deno.serve(async (req) => {
     return json({ error: "Cofre nao configurado", code: "CERTIFICATE_VAULT_NOT_CONFIGURED" }, 503, headers);
   }
 
-  let form: FormData;
-  try {
-    form = await req.formData();
-  } catch {
-    return json({ error: "invalid_body" }, 400, headers);
-  }
+  // Duas fontes possíveis de material, ambas processadas server-side:
+  //  (a) `application/json` + { source: "secret" } => lê FISCAL_CERT_PFX_B64 /
+  //      FISCAL_CERT_PASSWORD dos Edge Function Secrets do staging. Nada de PFX
+  //      ou senha transita pelo navegador.
+  //  (b) multipart/form-data (fluxo admin existente na UI).
+  const contentType = req.headers.get("content-type") ?? "";
+  let bytes: Uint8Array;
+  let password: string;
+  let companySettingsId: string;
+  let displayName: string;
 
-  const file = form.get("file");
-  const password = String(form.get("password") ?? "");
-  const companySettingsId = String(form.get("company_settings_id") ?? "");
-  const displayName = String(form.get("display_name") ?? "Certificado A1");
+  if (contentType.includes("application/json")) {
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: "invalid_body" }, 400, headers);
+    }
+    if (String(body.source ?? "") !== "secret") {
+      return json({ error: "invalid_source" }, 400, headers);
+    }
+    companySettingsId = String(body.company_settings_id ?? "");
+    displayName = String(body.display_name ?? "Certificado A1");
+    if (!UUID_RE.test(companySettingsId)) return json({ error: "company_settings_id_invalid" }, 400, headers);
+    if (displayName.length > MAX_DISPLAY_NAME) return json({ error: "display_name_too_long" }, 400, headers);
 
-  if (!(file instanceof File)) return json({ error: "file_required" }, 400, headers);
-  if (!UUID_RE.test(companySettingsId)) return json({ error: "company_settings_id_invalid" }, 400, headers);
-  // H7-005.8 — gate canonico: sem senha real do PFX nao ha validacao criptografica.
-  if (!password.trim()) {
-    return json(
-      { error: "Senha do certificado A1 nao fornecida", code: "CERT_PASSWORD_REQUIRED" },
-      400,
-      headers,
-    );
-  }
-  if (password.length > MAX_PASSWORD) return json({ error: "password_too_long" }, 400, headers);
-  if (displayName.length > MAX_DISPLAY_NAME) return json({ error: "display_name_too_long" }, 400, headers);
-  if (file.name.length > 255) return json({ error: "file_name_too_long" }, 400, headers);
+    const pfxB64 = Deno.env.get("FISCAL_CERT_PFX_B64") ?? "";
+    password = Deno.env.get("FISCAL_CERT_PASSWORD") ?? "";
+    if (!pfxB64 || !password) {
+      return json(
+        { error: "Segredos do certificado A1 ausentes no ambiente", code: "CERTIFICATE_SECRET_PENDING" },
+        503,
+        headers,
+      );
+    }
+    try {
+      const bin = atob(pfxB64.replace(/\s+/g, ""));
+      if (bin.length > MAX_BYTES) return json({ error: "file_too_large" }, 413, headers);
+      const buf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      bytes = buf;
+    } catch {
+      return json({ error: "invalid_secret_encoding", code: "CERTIFICATE_SECRET_INVALID" }, 400, headers);
+    }
+  } else {
+    let form: FormData;
+    try {
+      form = await req.formData();
+    } catch {
+      return json({ error: "invalid_body" }, 400, headers);
+    }
 
-  const lower = file.name.toLowerCase();
-  if (!ALLOWED_EXT.some((e) => lower.endsWith(e))) {
-    return json({ error: "invalid_extension" }, 400, headers);
+    const file = form.get("file");
+    password = String(form.get("password") ?? "");
+    companySettingsId = String(form.get("company_settings_id") ?? "");
+    displayName = String(form.get("display_name") ?? "Certificado A1");
+
+    if (!(file instanceof File)) return json({ error: "file_required" }, 400, headers);
+    if (!UUID_RE.test(companySettingsId)) return json({ error: "company_settings_id_invalid" }, 400, headers);
+    // H7-005.8 — gate canonico: sem senha real do PFX nao ha validacao criptografica.
+    if (!password.trim()) {
+      return json(
+        { error: "Senha do certificado A1 nao fornecida", code: "CERT_PASSWORD_REQUIRED" },
+        400,
+        headers,
+      );
+    }
+    if (password.length > MAX_PASSWORD) return json({ error: "password_too_long" }, 400, headers);
+    if (displayName.length > MAX_DISPLAY_NAME) return json({ error: "display_name_too_long" }, 400, headers);
+    if (file.name.length > 255) return json({ error: "file_name_too_long" }, 400, headers);
+
+    const lower = file.name.toLowerCase();
+    if (!ALLOWED_EXT.some((e) => lower.endsWith(e))) {
+      return json({ error: "invalid_extension" }, 400, headers);
+    }
+    if (file.size > MAX_BYTES) return json({ error: "file_too_large" }, 413, headers);
+
+    bytes = new Uint8Array(await file.arrayBuffer());
   }
-  if (file.size > MAX_BYTES) return json({ error: "file_too_large" }, 413, headers);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
@@ -170,12 +218,12 @@ Deno.serve(async (req) => {
     return json({ error: "company_settings_not_found" }, 404, headers);
   }
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
   // H7c: triagem ASN.1 mínima (BER/DER, incluindo comprimento indefinido `30 80`).
   // A autoridade real de formato é o forge (fromDer + pkcs12FromAsn1) logo abaixo.
   if (!isPlausibleAsn1Sequence(bytes)) {
     return json({ error: "not_pkcs12" }, 400, headers);
   }
+
 
 
   // Extrai + valida PKCS#12: cert X.509 + private key + match crypto
