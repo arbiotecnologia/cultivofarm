@@ -1052,3 +1052,42 @@ Data: 2026-08-25. Escopo: auditar o existente, corrigir só lacunas, testar em s
 
 ### 35.6 Gate
 **H7 APROVADA CONDICIONALMENTE — CERT_IMPORT/HML PENDENTE.** Zero P0/P1 de software. Produção fiscal permanece bloqueada por marcador, `tpAmb=2` e guard de endpoints (`sefazEndpoints.ts`). H8 não iniciada.
+
+## 36. Reexecução H7 — 2026-08-25 (auditoria + revalidação, sem produção)
+
+### 36.1 Binding (H7d)
+- Drift reincidente: `.env` apontava para o sandbox `yzszlzjpovmcteuxjznj` e `types.ts` truncado (2.052 linhas).
+- Restaurado do baseline de staging `c75bb87f`: `.env` (2 refs `ikaauvsflpmamgxmkhoq`) e `types.ts` (21.850 linhas).
+- `check-frontend-binding.sh`: OK. `guard-staging.sh`: OK — staging `ikaauvsflpmamgxmkhoq`, `tpAmb=2`, produção fiscal desabilitada.
+- Produção `navfzbwgwzruipouyfnk`: nenhuma conexão, migration ou configuração. INTACTA.
+
+### 36.2 Estado fiscal auditado
+- `fiscal_certificates`=0, `fiscal_certificate_material`=0, `fiscal_document_series`=0, `fiscal_invoices`=0.
+- `v_fiscal_nfe_emitter_readiness` = **NOT_READY**, UF=MG, ambiente=2 (homologação), 5 BLOCK + 1 WARN:
+  `EMITTER_PIS_COFINS_REGIME_MISSING`, `EMITTER_SERIES_MISSING`, `EMITTER_ACCREDITATION_MISSING`,
+  `EMITTER_CERTIFICATE_MISSING`, `EMITTER_ACCOUNTING_NOT_VALIDATED`, WARN `EMITTER_IE_DV_NOT_IMPLEMENTED`.
+- Nenhum dado fiscal legal inventado; pendências permanecem atribuídas a contador/SEFAZ.
+
+### 36.3 Testes desta execução
+- `60-h7-postcheck.sql`: **11 PASS / 0 FAIL**.
+- `61-h7-seguranca-ambiente.sql`: **12 PASS / 0 FAIL** (RLS, buckets privados, material de certificado fail-closed, marcador STAGING, anon negado em preflight/numeração/XML/documentos).
+- `62-h7-concorrencia.sh`: **4/4 PASS** (2 tentativas simultâneas + retry ⇒ 1 evento; índice único de documento ativo).
+- Varredura de segredos no repositório: nenhum `.pfx`/`.p12`, nenhuma chave privada real (apenas a fixture proposital `scripts/fixtures/fiscal-scan/fail-secrets.txt`, usada para provar que o scanner falha).
+- Typecheck: 0 erros. Vitest: **3.163 PASS / 4 skipped (197 arquivos)**. Build: OK.
+- H7-9 D (NF-e HML real): **BLOCKED_EXTERNAL** — sem certificado A1 importado e sem série/credenciamento definidos. Nenhuma autorização simulada.
+
+### 36.4 Mecanismo seguro do PFX (inalterado e confirmado)
+- Upload por `supabase/functions/fiscal-certificate-upload` (Edge, server-side): PFX e senha vão apenas no corpo da requisição, cifrados em trânsito.
+- Material cifrado em AES-256-GCM com `FISCAL_CERTIFICATE_MASTER_KEY` e gravado em `fiscal_certificate_material` (tabela sem policy ⇒ inacessível a qualquer role do Data API).
+- `fiscal_certificates` guarda apenas metadados não secretos (titular, emissor, serial, thumbprint SHA-256, validade, status, ambiente).
+- Senha nunca é persistida, logada ou devolvida; ausência retorna `CERT_PASSWORD_REQUIRED`.
+- Tela do usuário: Configurações Fiscais → Certificado Digital → Upload A1 (`UploadCertificadoA1.tsx`). A senha deve ser digitada **somente** nesse campo — nunca no chat, repositório ou banco.
+
+### 36.5 Findings
+- Zero P0/P1 de software.
+- P2 — série NF-e, regime PIS/COFINS, credenciamento por UF e validação contábil pendentes de definição do contribuinte/contador.
+- P2 — transmissão SEFAZ-MG HML não executada (BLOCKED_EXTERNAL: certificado A1 + senha).
+- P3 — DV de IE por UF não verificado automaticamente (WARN documentado).
+
+### 36.6 Gate
+**H7: APROVADA COM RESSALVAS — BLOCKED_EXTERNAL (certificado A1 + parâmetros do contador).** Produção fiscal permanece bloqueada por marcador de ambiente, `tpAmb=2` e allowlist `sefazEndpoints.ts`. H8 não iniciada.
