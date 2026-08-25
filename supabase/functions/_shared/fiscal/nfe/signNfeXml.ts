@@ -63,21 +63,44 @@ export function canonicalizeInfNFe(xml: string, namespace: string): string {
   return fragment.replace("<infNFe ", `<infNFe xmlns="${namespace}" `);
 }
 
-function extractPkcs12(pfx: Uint8Array, password: string) {
-  let p12;
+/**
+ * H7d — material de assinatura vindo do cofre: certificado em PEM e chave
+ * privada em PKCS#8/PKCS#1 PEM **sem senha**. Nenhuma senha de PFX participa
+ * da assinatura.
+ */
+export interface SigningMaterial {
+  certPem: string;
+  keyPem: string;
+}
+
+function loadFromPem(material: SigningMaterial) {
+  let cert;
+  let key;
   try {
-    const asn1 = forge.asn1.fromDer(forge.util.createBuffer(pfx));
-    p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, password);
+    cert = forge.pki.certificateFromPem(material.certPem);
   } catch {
-    throw new NfeSignError("CERTIFICATE_UNREADABLE", "não foi possível abrir o PKCS#12");
+    throw new NfeSignError("CERTIFICATE_MISSING_X509", "certificado X.509 ilegível");
   }
-  const certBag = p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag]?.[0];
-  const shrouded = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
-  const plain = p12.getBags({ bagType: forge.pki.oids.keyBag });
-  const keyBag = shrouded[forge.pki.oids.pkcs8ShroudedKeyBag]?.[0] ?? plain[forge.pki.oids.keyBag]?.[0];
-  if (!certBag?.cert) throw new NfeSignError("CERTIFICATE_MISSING_X509", "certificado X.509 ausente");
-  if (!keyBag?.key) throw new NfeSignError("CERTIFICATE_MISSING_KEY", "chave privada ausente");
-  return { cert: certBag.cert, key: keyBag.key };
+  try {
+    key = forge.pki.privateKeyFromPem(material.keyPem);
+  } catch {
+    throw new NfeSignError("CERTIFICATE_MISSING_KEY", "chave privada ilegível");
+  }
+  if (!key) throw new NfeSignError("CERTIFICATE_MISSING_KEY", "chave privada ausente");
+  // Verificação chave↔certificado antes de assinar (fail-closed).
+  try {
+    const md = forge.md.sha256.create();
+    md.update("h7d-key-cert-binding");
+    const sig = (key as unknown as { sign: (m: unknown) => string }).sign(md);
+    const md2 = forge.md.sha256.create();
+    md2.update("h7d-key-cert-binding");
+    const ok = (cert.publicKey as unknown as { verify: (d: string, s: string) => boolean })
+      .verify(md2.digest().bytes(), sig);
+    if (!ok) throw new Error("mismatch");
+  } catch {
+    throw new NfeSignError("CERTIFICATE_KEY_MISMATCH", "chave privada não corresponde ao certificado");
+  }
+  return { cert, key };
 }
 
 /** Assina o XML da NF-e (enveloped) e devolve o documento assinado. */
@@ -85,11 +108,11 @@ export function signNfeXml(args: {
   xml: string;
   infNFeId: string;
   namespace: string;
-  pfx: Uint8Array;
-  password: string;
+  material: SigningMaterial;
   now?: Date;
 }): SignResult {
-  const { cert, key } = extractPkcs12(args.pfx, args.password);
+  const { cert, key } = loadFromPem(args.material);
+
 
   const now = args.now ?? new Date();
   if (cert.validity.notBefore > now) {
