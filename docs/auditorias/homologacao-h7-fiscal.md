@@ -1014,3 +1014,41 @@ Tela **Configurações Fiscais → Certificado Digital A1** (`UploadCertificadoA
 
 ### GATE H7 (2026-08-25)
 **APROVADA COM RESSALVAS / CERTIFICATE_PASSWORD_REQUIRED** — zero P0. Produção `navfzbwgwzruipouyfnk` intacta; emissão de produção bloqueada em três camadas (marcador, `production_enabled=false`, gate server-side). H8 não iniciada.
+
+---
+
+## 35. H7 — Reconciliação final (auditoria E2E, staging ikaauvsflpmamgxmkhoq)
+
+Data: 2026-08-25. Escopo: auditar o existente, corrigir só lacunas, testar em staging, parar antes de produção.
+
+### 35.1 Binding (H7.1)
+- Drift detectado novamente: `.env` apontava para o projeto sandbox e `src/integrations/supabase/types.ts` estava truncado (2.052 linhas).
+- Corrigido por restauração do baseline de staging `c75bb87f`: `.env` (2 refs `ikaauvsflpmamgxmkhoq`) e `types.ts` (21.850 linhas).
+- `check-frontend-binding.sh`: OK (.env, client.ts, config.toml, types.ts consistentes).
+- `guard-staging.sh`: OK — staging confirmado, `tpAmb=2`, produção fiscal desabilitada. Ref de produção `navfzbwgwzruipouyfnk` não tocada.
+
+### 35.2 Inventário (H7.0)
+- 28 tabelas fiscais, 10 views fiscais, 98 funções/RPCs fiscais no schema `public`.
+- Edge Functions fiscais canônicas: `fiscal-preflight`, `fiscal-xml-engine`, `fiscal-certificate-upload`, `fiscal-certificate-revoke`, `fiscal-cnpj-lookup`, `fiscal-binding-diagnostics`. Nenhum provider paralelo introduzido.
+- Dados de matriz: `fiscal_xsd_registry`=7, `fiscal_tax_rules`=6, `product_fiscal_profiles`=2, `fiscal_document_series`=0, `fiscal_invoices`=0.
+
+### 35.3 Readiness (H7.2)
+`v_fiscal_nfe_emitter_readiness` = `NOT_READY` (5 BLOCK / 1 WARN), sem dado inventado:
+- BLOCK `EMITTER_PIS_COFINS_REGIME_MISSING`, `EMITTER_SERIES_MISSING`, `EMITTER_ACCREDITATION_MISSING`, `EMITTER_CERTIFICATE_MISSING`, `EMITTER_ACCOUNTING_NOT_VALIDATED`.
+- WARN `EMITTER_IE_DV_NOT_IMPLEMENTED` (DV de IE da UF não verificado automaticamente).
+- Certificados: `fiscal_certificates`=0 e `fiscal_certificate_material`=0 → `CERT_IMPORT_PENDING`.
+
+### 35.4 Testes executados
+- `60-h7-postcheck.sql`: **11 PASS / 0 FAIL** (gate v1, produção bloqueada, normalização ISSUED→AUTHORIZED, imutabilidade, transições, append-only, idempotência de evento, anon sem EXECUTE).
+- `61-h7-seguranca-ambiente.sql`: **12 PASS / 0 FAIL** (RLS em todas as tabelas fiscais, buckets privados, material de certificado fail-closed, marcador STAGING, anon sem preflight/numeração/XML/documentos).
+- `62-h7-concorrencia.sh`: **4/4 PASS** (reserva com FOR UPDATE + advisory lock + idempotência; índice único de documento ativo).
+- Typecheck: 0 erros. Vitest: **3.163 PASS / 4 skipped (197 arquivos)**.
+
+### 35.5 Findings remanescentes (nenhum P0/P1 de software)
+- P2 — `fiscal_document_series` vazia: série NF-e depende de definição do contribuinte/contábil; não populada por decisão de não inventar dado legal.
+- P2 — regime PIS/COFINS e validação contábil pendentes (`needs_accounting_review`).
+- P2 — credenciamento por UF não registrado.
+- P2 — transmissão SEFAZ HML não executada: sem certificado A1 importado, gate condicional (nenhuma autorização simulada).
+
+### 35.6 Gate
+**H7 APROVADA CONDICIONALMENTE — CERT_IMPORT/HML PENDENTE.** Zero P0/P1 de software. Produção fiscal permanece bloqueada por marcador, `tpAmb=2` e guard de endpoints (`sefazEndpoints.ts`). H8 não iniciada.
