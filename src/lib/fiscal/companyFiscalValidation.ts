@@ -18,8 +18,47 @@
 import { z } from "zod";
 import type { Database, Json } from "@/integrations/supabase/types";
 
-type Row = Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
-type Update = Database["public"]["Tables"]["company_fiscal_settings"]["Update"];
+type CompanyFiscalExtraColumns = {
+  fiscal_email?: string | null;
+  phone?: string | null;
+  tax_regime?: string | null;
+  crt?: string | null;
+  primary_cnae?: string | null;
+  municipal_registration?: string | null;
+  state_registration?: string | null;
+  municipality_ibge_code?: string | null;
+  postal_code?: string | null;
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country_code?: string | null;
+  fiscal_environment?: string | null;
+  fiscal_provider?: string | null;
+  nfe_enabled?: boolean | null;
+  nfse_enabled?: boolean | null;
+  production_enabled?: boolean | null;
+  accounting_validated_at?: string | null;
+  nfe_series?: string | null;
+  nfse_series?: string | null;
+  nfe_configuration?: Json | null;
+  nfse_configuration?: Json | null;
+  nfe_provider?: string | null;
+  nfse_provider?: string | null;
+  nfe_credential_ref?: string | null;
+  nfse_credential_ref?: string | null;
+  certificate_ref?: string | null;
+  webhook_ref?: string | null;
+  configuration_notes?: string | null;
+  last_validation_at?: string | null;
+  last_validation_status?: string | null;
+  last_validation_summary?: Json | null;
+};
+
+type Row = Database["public"]["Tables"]["company_fiscal_settings"]["Row"] & CompanyFiscalExtraColumns;
+type Update = Database["public"]["Tables"]["company_fiscal_settings"]["Update"] & CompanyFiscalExtraColumns;
 
 import { unmaskCnpjAlpha, validateCnpjAlpha } from "./cnpjAlpha";
 
@@ -334,8 +373,8 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
     country_code: row.country_code ?? undefined,
     fiscal_environment: env,
     configuration_status: status,
-    nfe_enabled: row.nfe_enabled,
-    nfse_enabled: row.nfse_enabled,
+    nfe_enabled: row.nfe_enabled ?? false,
+    nfse_enabled: row.nfse_enabled ?? false,
     nfe_series: row.nfe_series ?? undefined,
     nfse_series: row.nfse_series ?? undefined,
     nfe_configuration: jsonObjectRecord(row.nfe_configuration),

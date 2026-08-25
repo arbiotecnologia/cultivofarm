@@ -36,9 +36,13 @@ WITH checks AS (
              AND grantee IN ('anon','authenticated','PUBLIC')
          ) = 0 THEN 'PASS' ELSE 'FAIL' END
   UNION ALL
-  -- 5. RPC de registro sem parâmetros de senha
-  SELECT 'H7D-5 RPC register_a1 sem parametros de senha',
-         CASE WHEN NOT EXISTS (
+  -- 5. RPC de registro sem overload legado e sem parâmetros de senha
+  SELECT 'H7D-5 RPC register_a1 overload unico sem senha',
+         CASE WHEN (
+           SELECT count(*)
+           FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+           WHERE n.nspname='public' AND p.proname='rpc_fiscal_certificate_register_a1'
+         ) = 1 AND NOT EXISTS (
            SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
            WHERE n.nspname='public' AND p.proname='rpc_fiscal_certificate_register_a1'
              AND pg_get_function_arguments(p.oid) ILIKE '%password%'

@@ -2,8 +2,9 @@
  * Fase Fiscal 3.15 — Hook para o singleton `company_fiscal_settings`.
  *
  * Contrato:
- *   - Tipos são a fonte da verdade (types.ts já contém todas as colunas
- *     e a RPC `rpc_fiscal_company_settings_init`). Não há casts locais.
+ *   - O schema fiscal de staging possui colunas aditivas que podem chegar
+ *     antes da regeneração do cliente. Este hook mantém um complemento local
+ *     estreito para preservar o typecheck sem editar arquivos auto-gerados.
  *   - RPC segura `rpc_fiscal_company_settings_init` (admin-only, com
  *     advisory lock transacional no banco).
  *   - Concorrência otimista por `configuration_version`.
@@ -17,8 +18,47 @@ import {
   type CompanyFiscalFormValues,
 } from "@/lib/fiscal/companyFiscalValidation";
 
-export type CompanyFiscalRow =
+type CompanyFiscalBaseRow =
   Database["public"]["Tables"]["company_fiscal_settings"]["Row"];
+
+export type CompanyFiscalRow = CompanyFiscalBaseRow & {
+  fiscal_email?: string | null;
+  phone?: string | null;
+  tax_regime?: string | null;
+  crt?: string | null;
+  primary_cnae?: string | null;
+  municipal_registration?: string | null;
+  state_registration?: string | null;
+  municipality_ibge_code?: string | null;
+  postal_code?: string | null;
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country_code?: string | null;
+  fiscal_environment?: string | null;
+  fiscal_provider?: string | null;
+  nfe_enabled?: boolean | null;
+  nfse_enabled?: boolean | null;
+  production_enabled?: boolean | null;
+  accounting_validated_at?: string | null;
+  nfe_series?: string | null;
+  nfse_series?: string | null;
+  nfe_configuration?: Database["public"]["Tables"]["company_fiscal_settings"]["Row"] extends { nfe_configuration: infer T } ? T : unknown;
+  nfse_configuration?: Database["public"]["Tables"]["company_fiscal_settings"]["Row"] extends { nfse_configuration: infer T } ? T : unknown;
+  nfe_provider?: string | null;
+  nfse_provider?: string | null;
+  nfe_credential_ref?: string | null;
+  nfse_credential_ref?: string | null;
+  certificate_ref?: string | null;
+  webhook_ref?: string | null;
+  configuration_notes?: string | null;
+  last_validation_at?: string | null;
+  last_validation_status?: string | null;
+  last_validation_summary?: unknown;
+};
 
 export const FISCAL_COMPANY_KEYS = {
   settings: ["fiscal", "company", "settings"] as const,
@@ -57,7 +97,7 @@ export function useFiscalCompanySettings(options: { enabled?: boolean } = {}) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
       }
-      return data ?? null;
+      return data ? data as CompanyFiscalRow : null;
     },
   });
 }
@@ -73,7 +113,7 @@ export function useInitFiscalCompanySettings() {
         throw new Error(errorMessage(error, "init_failed"));
       }
       if (!data) throw new Error("init_failed");
-      return data;
+      return data as CompanyFiscalRow;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: FISCAL_COMPANY_KEYS.settings }),
   });
@@ -102,7 +142,7 @@ export function useUpdateFiscalCompanySettings() {
         throw new Error(errorMessage(error, "update_failed"));
       }
       if (!data) throw new Error("conflict");
-      return data;
+      return data as CompanyFiscalRow;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: FISCAL_COMPANY_KEYS.settings }),
   });
@@ -134,12 +174,12 @@ export function computeReadiness(row: CompanyFiscalRow): CompanyFiscalReadiness 
     return v !== null && v !== undefined && v !== "";
   }).length;
   return {
-    fiscal_environment: row.fiscal_environment,
-    fiscal_provider: row.fiscal_provider,
-    configuration_status: row.configuration_status,
-    nfe_enabled: row.nfe_enabled,
-    nfse_enabled: row.nfse_enabled,
-    production_enabled: row.production_enabled,
+    fiscal_environment: row.fiscal_environment ?? "NOT_CONFIGURED",
+    fiscal_provider: row.fiscal_provider ?? "NONE",
+    configuration_status: row.configuration_status ?? "DRAFT",
+    nfe_enabled: row.nfe_enabled ?? false,
+    nfse_enabled: row.nfse_enabled ?? false,
+    production_enabled: row.production_enabled ?? false,
     accounting_validated: row.accounting_validated_at !== null,
     filled_score: filled,
     max_score: READINESS_FIELDS.length,
