@@ -310,7 +310,7 @@ async function regulatoryRpc<K extends RegulatoryFn>(
   fn: K,
   args: RegulatoryRpcArgs,
 ): Promise<Json | string | null> {
-  const rpcClient = supabase as unknown as RegulatoryRpcClient;
+  const rpcClient: RegulatoryRpcClient = supabase as never;
   const { data, error } = await rpcClient.rpc(fn, args);
   if (error) {
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");
