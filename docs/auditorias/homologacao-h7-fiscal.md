@@ -934,3 +934,39 @@ Fluxo pronto e fail-closed em `fiscal-certificate-upload`: CORS allowlist, JWT +
 
 ### GATE H7
 **APROVADA COM RESSALVAS** — zero P0. Produção permanece bloqueada em três camadas (marker, `production_enabled=false`, gate server-side). H8 não iniciada.
+
+---
+
+## Seção 33 — H7 (execução 2026-08-25): guard duro de endpoints SEFAZ
+
+### Diagnóstico
+- **Drift de binding P1 recorrente** (novamente): `.env`/`types.ts` reapontados para o sandbox (`types.ts` com 2.052 linhas). Restaurados do baseline staging `c75bb87f` (21.850 linhas). `check-frontend-binding.sh` e `guard-staging.sh`: OK — `ikaauvsflpmamgxmkhoq`, `tpAmb='2'`, produção fiscal desabilitada.
+- **Endpoints SEFAZ**: inventário confirmou que **não existe transporte SEFAZ implementado** no código (nenhuma Edge Function chama Web Service). Havia, portanto, ausência de guard de host — corrigido preventivamente nesta execução.
+- **Readiness do emitente** (`v_fiscal_nfe_emitter_readiness`) permanece `NOT_READY`, com 5 BLOCK + 1 WARN. Nenhuma pendência foi preenchida: todas exigem decisão/evidência humana (regime PIS/COFINS, série NF-e, credenciamento MG, certificado, validação contábil). Nada foi presumido.
+- `fiscal_certificates`: 0 linhas. `fiscal_certificate_material`: fail-closed (sem policy).
+
+### Alteração aplicada (única)
+- Novo módulo `supabase/functions/_shared/fiscal/sefazEndpoints.ts`:
+  - registro **estático e versionado** dos 6 Web Services NF-e 4.00 de **homologação** MG (`hnfe.fazenda.mg.gov.br/nfe2/services/...`): `NFeStatusServico4`, `NFeAutorizacao4`, `NFeRetAutorizacao4`, `NFeConsultaProtocolo4`, `NFeRecepcaoEvento4`, `NFeInutilizacao4`;
+  - `assertSefazEndpointAllowed(url, tpAmb)` **fail-closed**: hosts de produção conhecidos (`nfe.fazenda.mg.gov.br`, SVRS, SVAN/nacional) → `SEFAZ_PRODUCTION_HOST_BLOCKED`; `tpAmb!=2` → `SEFAZ_PRODUCTION_DISABLED`; host fora da allowlist → `SEFAZ_HOST_NOT_ALLOWLISTED`; sem TLS → `SEFAZ_ENDPOINT_NOT_TLS`; URL inválida → `SEFAZ_ENDPOINT_INVALID_URL`;
+  - nenhum endpoint é descoberto/baixado em runtime.
+- Testes: `src/test/fiscal/h7.sefazEndpoints.test.ts` (9 casos) — 100% PASS.
+
+### Resultados dos harnesses (staging)
+- `60-h7-postcheck.sql`: **11 PASS / 0 FAIL**.
+- `61-h7-seguranca-ambiente.sql`: **12 PASS / 0 FAIL** (RLS fiscal, anon sem EXECUTE, `search_path` fixo, buckets privados, marcador STAGING não editável, preflight/numeração/XML negados a anon).
+
+### Arquitetura real do certificado (reconfirmada)
+`fiscal_certificates` (metadados) + `fiscal_certificate_material` (material cifrado AES-256-GCM, `material_iv`/`key_version`, sem policy = inacessível a qualquer usuário) + Edge Functions `fiscal-certificate-upload` / `fiscal-certificate-revoke`. Senha do PFX trafega apenas por TLS até a Edge Function, é usada para abrir o PKCS#12 e **não é persistida em texto puro**. Validações server-side: extensão/tamanho/MIME, screening ASN.1 (`asn1Screen.ts`), senha, validade, fingerprint SHA-256 e **vínculo CNPJ titular × emitente** (`certHolderCnpj.ts`, precedência SAN OID 2.16.76.1.3.3 → serialNumber → CN), com rejeição de e-CPF.
+
+### Instrução segura para inserir o PFX real
+Tela **Configurações Fiscais → Certificado Digital A1** (`UploadCertificadoA1.tsx`) → selecionar o `.pfx/.p12`, informar a senha **nesse momento** e confirmar ambiente **Homologação**. O arquivo vai por multipart direto à Edge Function `fiscal-certificate-upload` (autenticada, papel admin/financeiro). Não anexar o PFX ao repositório, não colar a senha no chat antes desse passo, e não gerar signed URL de download do material.
+
+### Pendências
+- **P1 (infra)**: deploy manual das Edge Functions fiscais por CLI com `--project-ref ikaauvsflpmamgxmkhoq` (secrets da plataforma chegam ao sandbox).
+- **P2**: transporte SEFAZ HML não implementado (guard de host já pronto e testado).
+- **P2**: NFS-e depende de provedor externo.
+- **P3**: readiness do emitente aguarda 5 decisões humanas (nada presumido).
+
+### GATE H7 (2026-08-25)
+**APROVADA COM RESSALVAS** — zero P0. Nenhum host de produção alcançável; produção fiscal bloqueada em três camadas. H8 não iniciada.
