@@ -166,7 +166,11 @@ describe("H7d — SQL, rollback e postcheck", () => {
 
   test("apply é restrito ao staging e a RPC não recebe senha", () => {
     expect(apply).toContain("ikaauvsflpmamgxmkhoq");
-    expect(apply).not.toContain("navfzbwgwzruipouyfnk");
+    // Produção só pode aparecer como guarda de abortagem, nunca como alvo.
+    for (const m of apply.split("\n").filter((l) => l.includes("navfzbwgwzruipouyfnk"))) {
+      expect(m).toMatch(/RAISE|EXCEPTION|--|producao|produção/i);
+    }
+
     const rpcBody = apply.slice(apply.indexOf("CREATE OR REPLACE FUNCTION public.rpc_fiscal_certificate_register_a1"));
     expect(rpcBody).not.toMatch(/p_encrypted_password_b64|p_password_iv_b64/);
     expect(rpcBody).toMatch(/material_format_unsupported/);
