@@ -25,6 +25,8 @@ import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
 import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/nfe/buildNfeXml.ts";
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
 import { signNfeXml, verifyNfeSignature } from "../_shared/fiscal/nfe/signNfeXml.ts";
+import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
+
 import { validateAgainstOfficialXsd, XSD_PACKAGE, XSD_VALIDATOR } from "./xsdValidate.ts";
 
 const BUCKET = "fiscal-xml";
@@ -321,26 +323,33 @@ Deno.serve(async (req) => {
 
   const material = await admin
     .from("fiscal_certificate_material")
-    .select("object_path, encrypted_password, password_iv, material_iv")
+    .select("object_path, material_iv, key_version, material_format")
     .eq("certificate_id", certificateId).maybeSingle();
   if (material.error || !material.data) {
     return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
       detail: "material do certificado indisponível" }, 412, headers);
   }
+  // H7d — fail-closed: só o bundle de assinatura versionado é assinável.
+  if (!isSupportedVaultFormat(material.data.material_format as string | null)) {
+    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
+      detail: "formato do cofre incompatível: reimporte o certificado A1" }, 412, headers);
+  }
 
-  let pfx: Uint8Array;
-  let password: string;
+  // H7d — a senha original do PFX NÃO participa daqui: o cofre guarda apenas o
+  // bundle (cert + cadeia + chave PKCS#8) cifrado pela chave mestra.
+  let signingMaterial: { certPem: string; keyPem: string };
   try {
     const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path as string);
     if (dl.error || !dl.data) throw new Error("download");
     const cipher = new Uint8Array(await dl.data.arrayBuffer());
-    pfx = await aesGcmDecrypt(masterKey, fromBinaryColumn(material.data.material_iv as string), cipher);
-    const pwdPlain = await aesGcmDecrypt(
+    const plain = await aesGcmDecrypt(
       masterKey,
-      fromBinaryColumn(material.data.password_iv as string),
-      fromBinaryColumn(material.data.encrypted_password as string),
+      fromBinaryColumn(material.data.material_iv as string),
+      cipher,
     );
-    password = new TextDecoder().decode(pwdPlain);
+    const bundle = parseSigningBundle(new TextDecoder().decode(plain));
+    plain.fill(0);
+    signingMaterial = { certPem: bundle.certPem, keyPem: bundle.keyPem };
   } catch {
     return await fail("CERTIFICATE_DECRYPT_FAILED", "não foi possível abrir o certificado", 500);
   }
@@ -352,8 +361,7 @@ Deno.serve(async (req) => {
       xml: built.xml,
       infNFeId: built.infNFeId,
       namespace: NFE_NAMESPACE,
-      pfx,
-      password,
+      material: signingMaterial,
     });
     signedXml = result.signedXml;
     signatureMetadata = result.metadata as unknown as Record<string, unknown>;
@@ -361,9 +369,9 @@ Deno.serve(async (req) => {
     const e = err as { code?: string; message?: string };
     return await fail(e.code ?? "NFE_SIGN_FAILED", e.message ?? "falha ao assinar", 422);
   } finally {
-    pfx.fill(0);
-    password = "";
+    signingMaterial = { certPem: "", keyPem: "" };
   }
+
 
   // 5. Validação XSD 1.0 REAL (bundle oficial) sobre o documento assinado.
   const xsd = await validateAgainstOfficialXsd(signedXml);

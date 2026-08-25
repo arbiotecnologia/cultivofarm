@@ -1,4 +1,11 @@
-# H7 — Ingestão segura do certificado A1 por Edge Function Secrets (STAGING)
+# H7 — Ingestão segura do certificado A1 (STAGING)
+
+> **SUPERSEDIDO PELA FASE H7d.** A ingestão por secrets permanentes
+> (`FISCAL_CERT_PFX_B64` / `FISCAL_CERT_PASSWORD`) foi **removida do runtime**:
+> nenhuma senha ou PFX pode residir em Supabase Secrets. A única fonte é o
+> upload admin autenticado (`multipart/form-data`), e a senha existe apenas em
+> memória durante o POST. Ver
+> `docs/auditorias/homologacao-h7d-cofre-a1-sem-senha.md`.
 
 Este documento descreve **como** inserir o certificado A1 no staging
 `ikaauvsflpmamgxmkhoq` sem que PFX ou senha passem pelo navegador, pelo
@@ -43,7 +50,7 @@ Os três primeiros devem ser cadastrados **apenas** no projeto de staging
 
 1. Gerar o base64 do PFX localmente, em máquina confiável, sem gravar o
    resultado em arquivo versionado.
-2. Cadastrar `FISCAL_CERT_PFX_B64` e `FISCAL_CERT_PASSWORD` nos secrets do
+2. (REMOVIDO em H7d) não cadastrar PFX nem senha nos secrets do
    projeto de staging (Project Settings → Secrets ou CLI no ref de staging).
 3. Reimplantar `fiscal-certificate-upload` no ref de staging para que a função
    enxergue os novos secrets.

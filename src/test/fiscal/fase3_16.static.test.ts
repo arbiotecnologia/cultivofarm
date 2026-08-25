@@ -297,22 +297,24 @@ describe("Fase 3.16.2-A — Edge Function upload (hardening)", () => {
     expect(up).toMatch(/validity\.notAfter/);
   });
 
-  test("AES-256-GCM com IVs INDEPENDENTES para material e senha", () => {
+  // H7d — a senha do PFX deixou de ser cifrada e persistida: só o bundle de
+  // assinatura é cifrado, com um único IV independente por importação.
+  test("AES-256-GCM aplicado ao bundle de assinatura (sem cifra de senha)", () => {
     expect(up).toMatch(/AES-GCM/);
-    // Duas chamadas distintas de aesGcmEncrypt (uma para bytes, uma para senha)
     const enc = (up.match(/aesGcmEncrypt\(masterKey,/g) ?? []).length;
-    expect(enc).toBeGreaterThanOrEqual(2);
+    expect(enc).toBe(1);
+    expect(up).not.toMatch(/encPassword/);
   });
 
   test("chama RPC service-role register_a1 com STRINGS base64 (nunca Uint8Array direto)", () => {
     expect(up).toMatch(/rpc\("rpc_fiscal_certificate_register_a1"/);
-    expect(up).toMatch(/toB64\(encPassword\.cipher\)/);
-    expect(up).toMatch(/toB64\(encPassword\.iv\)/);
     expect(up).toMatch(/toB64\(encMaterial\.iv\)/);
+    expect(up).not.toMatch(/p_encrypted_password_b64|p_password_iv_b64/);
     // Não envia Uint8Array crua ao PostgREST (padrão .from().insert com bytea)
     expect(up).not.toMatch(/\.from\("fiscal_certificate_material"\)\.insert/);
     expect(up).not.toMatch(/encrypted_password:\s*encPassword\.cipher/);
   });
+
 
   test("rollback: remove objeto ao falhar RPC e não vaza mensagem interna", () => {
     expect(up).toMatch(/storage\.from\("fiscal-certificates"\)\.remove\(\[objectPath\]\)/);

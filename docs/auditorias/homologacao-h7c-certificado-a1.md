@@ -1,5 +1,10 @@
 # H7c — Upload de certificado A1 e revalidação do gate fiscal (staging)
 
+> **Atualizado pela Fase H7d:** o cofre não persiste mais a senha do PFX
+> (`encrypted_password`/`password_iv` removidos) e passa a guardar apenas o
+> bundle de assinatura `SIGNING_BUNDLE_V2` cifrado em AES-256-GCM. Ver
+> `docs/auditorias/homologacao-h7d-cofre-a1-sem-senha.md`.
+
 Data: 2026-08-19 · Ambiente: **staging `ikaauvsflpmamgxmkhoq`** ·
 Produção `navfzbwgwzruipouyfnk`: **intocada** (nenhuma leitura de escrita,
 nenhuma migration, nenhum deploy).

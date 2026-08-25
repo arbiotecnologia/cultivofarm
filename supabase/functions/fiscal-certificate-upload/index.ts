@@ -1,5 +1,5 @@
 /**
- * Fase Fiscal 3.16.2-A — Edge Function `fiscal-certificate-upload`.
+ * Fase Fiscal 3.16.2-A / H7d — Edge Function `fiscal-certificate-upload`.
  *
  * Admin-only. Fluxo:
  *   1. CORS fail-closed (origem ausente/desconhecida => 403).
@@ -8,13 +8,21 @@
  *   4. Verificação de UUID e existência de company_settings.
  *   5. Extração PKCS#12 (node-forge): exige cert X.509 + private key +
  *      correspondência criptográfica chave↔certificado.
- *   6. Verificação notBefore/notAfter.
- *   7. AES-256-GCM: cifrar material (bytes originais do PFX) + senha, com
- *      IVs aleatórios independentes.
- *   8. Upload ciphertext ao bucket privado `fiscal-certificates`.
+ *   6. Verificação notBefore/notAfter + identidade do titular (CNPJ).
+ *   7. H7d: a SENHA DO PFX é usada SOMENTE aqui, em memória, para abrir o
+ *      PKCS#12. Do material aberto extrai-se um BUNDLE DE ASSINATURA
+ *      (cert PEM + cadeia PEM + chave privada PKCS#8 PEM sem senha), que é
+ *      cifrado com AES-256-GCM pela chave mestra server-side. A senha (e
+ *      qualquer derivado dela) NUNCA é persistida em tabela, Storage,
+ *      Secrets, logs ou repositório.
+ *   8. Upload do ciphertext ao bucket privado `fiscal-certificates`.
  *   9. Registro atômico via RPC service-role `rpc_fiscal_certificate_register_a1`
- *      recebendo strings base64 (nunca Uint8Array direto ao PostgREST).
+ *      (sem parâmetros de senha).
  *  10. Em falha da RPC: remover objeto do storage antes de responder.
+ *
+ * Única fonte de material: upload admin autenticado (multipart/form-data).
+ * Não existe mais ingestão por secret permanente (`FISCAL_CERT_PFX_B64` /
+ * `FISCAL_CERT_PASSWORD` foram removidos do runtime).
  *
  * Não retorna e não loga: senha, IV, ciphertext, object_path, material,
  * mensagens internas do banco, JWT, service_role.
@@ -25,6 +33,12 @@ import forge from "npm:node-forge@1";
 import { isPlausibleAsn1Sequence } from "./asn1Screen.ts";
 import { resolveCertificateHolderCnpj } from "../_shared/fiscal/certHolderCnpj.ts";
 import { validateCnpjAlpha } from "../_shared/fiscal/cnpj.ts";
+import {
+  serializeSigningBundle,
+  SIGNING_BUNDLE_ALGORITHM,
+  SIGNING_BUNDLE_FORMAT,
+} from "../_shared/fiscal/certificateVault.ts";
+
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_PASSWORD = 256;
@@ -131,54 +145,30 @@ Deno.serve(async (req) => {
     return json({ error: "Cofre nao configurado", code: "CERTIFICATE_VAULT_NOT_CONFIGURED" }, 503, headers);
   }
 
-  // Duas fontes possíveis de material, ambas processadas server-side:
-  //  (a) `application/json` + { source: "secret" } => lê FISCAL_CERT_PFX_B64 /
-  //      FISCAL_CERT_PASSWORD dos Edge Function Secrets do staging. Nada de PFX
-  //      ou senha transita pelo navegador.
-  //  (b) multipart/form-data (fluxo admin existente na UI).
+  // H7d — FONTE ÚNICA: upload admin autenticado (multipart/form-data).
+  // A ingestão por secret permanente foi removida: nenhuma senha ou PFX pode
+  // residir em Supabase Secrets. A senha só existe nesta requisição.
   const contentType = req.headers.get("content-type") ?? "";
   let bytes: Uint8Array;
   let password: string;
   let companySettingsId: string;
   let displayName: string;
 
-  if (contentType.includes("application/json")) {
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return json({ error: "invalid_body" }, 400, headers);
-    }
-    if (String(body.source ?? "") !== "secret") {
-      return json({ error: "invalid_source" }, 400, headers);
-    }
-    companySettingsId = String(body.company_settings_id ?? "");
-    displayName = String(body.display_name ?? "Certificado A1");
-    if (!UUID_RE.test(companySettingsId)) return json({ error: "company_settings_id_invalid" }, 400, headers);
-    if (displayName.length > MAX_DISPLAY_NAME) return json({ error: "display_name_too_long" }, 400, headers);
-
-    const pfxB64 = Deno.env.get("FISCAL_CERT_PFX_B64") ?? "";
-    password = Deno.env.get("FISCAL_CERT_PASSWORD") ?? "";
-    if (!pfxB64 || !password) {
-      return json(
-        { error: "Segredos do certificado A1 ausentes no ambiente", code: "CERTIFICATE_SECRET_PENDING" },
-        503,
-        headers,
-      );
-    }
-    try {
-      const bin = atob(pfxB64.replace(/\s+/g, ""));
-      if (bin.length > MAX_BYTES) return json({ error: "file_too_large" }, 413, headers);
-      const buf = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-      bytes = buf;
-    } catch {
-      return json({ error: "invalid_secret_encoding", code: "CERTIFICATE_SECRET_INVALID" }, 400, headers);
-    }
-  } else {
+  if (!contentType.includes("multipart/form-data")) {
+    return json(
+      {
+        error: "Importacao permitida somente por upload admin autenticado",
+        code: "CERTIFICATE_UPLOAD_SOURCE_REQUIRED",
+      },
+      415,
+      headers,
+    );
+  }
+  {
     let form: FormData;
     try {
       form = await req.formData();
+
     } catch {
       return json({ error: "invalid_body" }, 400, headers);
     }
@@ -236,17 +226,22 @@ Deno.serve(async (req) => {
   let validFrom = "";
   let validUntil = "";
   let fingerprintHex = "";
+  // H7d — bundle de assinatura (PEMs) montado em memória; nunca contém senha.
+  let bundleJson = "";
   const keyUsages: string[] = [];
   try {
     const asn1 = forge.asn1.fromDer(forge.util.createBuffer(bytes));
     const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, password);
 
     const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-    const certBag = certBags[forge.pki.oids.certBag]?.[0];
+    const allCertBags = certBags[forge.pki.oids.certBag] ?? [];
+    const certBag = allCertBags[0];
     if (!certBag?.cert) {
       return json({ error: "pkcs12_missing_certificate" }, 400, headers);
     }
     const cert = certBag.cert;
+    const chainCerts = allCertBags.slice(1).map((b) => b.cert).filter(Boolean);
+
 
     // Private key: aceita pkcs8ShroudedKeyBag OU keyBag
     const shrouded = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
@@ -342,6 +337,19 @@ Deno.serve(async (req) => {
         if (ku[flag]) keyUsages.push(flag);
       }
     }
+
+    // ---- H7d: bundle de assinatura (sem senha) --------------------------------
+    // Chave privada exportada em PKCS#8 PEM NÃO cifrado por senha: quem protege
+    // o material é exclusivamente a chave mestra AES-256-GCM do cofre.
+    const keyPem = forge.pki.privateKeyInfoToPem(
+      forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(privateKey)),
+    );
+    bundleJson = serializeSigningBundle({
+      certPem: forge.pki.certificateToPem(cert),
+      keyPem,
+      chainPem: chainCerts.map((c) => forge.pki.certificateToPem(c)),
+    });
+    // -------------------------------------------------------------------------
   } catch (err) {
     const msg = err instanceof Error ? err.message : "pkcs12_error";
     if (/mac/i.test(msg) || /password/i.test(msg)) {
@@ -350,9 +358,17 @@ Deno.serve(async (req) => {
     return json({ error: "pkcs12_invalid" }, 400, headers);
   }
 
-  // Cifra material + senha com IVs independentes.
-  const encMaterial = await aesGcmEncrypt(masterKey, bytes);
-  const encPassword = await aesGcmEncrypt(masterKey, new TextEncoder().encode(password));
+  if (!bundleJson) {
+    return json({ error: "certificate_material_unavailable" }, 400, headers);
+  }
+
+  // H7d — cifra APENAS o bundle de assinatura. A senha do PFX morre aqui:
+  // não é cifrada, não é hasheada e não é enviada a nenhum destino persistente.
+  const bundleBytes = new TextEncoder().encode(bundleJson);
+  const encMaterial = await aesGcmEncrypt(masterKey, bundleBytes);
+  bundleBytes.fill(0);
+  bytes.fill(0);
+  password = "";
 
   const objectPath = `${companySettingsId}/${crypto.randomUUID()}.enc`;
 
@@ -378,10 +394,10 @@ Deno.serve(async (req) => {
     p_fingerprint_sha256: fingerprintHex,
     p_key_usage: keyUsages.length ? keyUsages : null,
     p_object_path: objectPath,
-    p_encrypted_password_b64: toB64(encPassword.cipher),
-    p_password_iv_b64: toB64(encPassword.iv),
     p_material_iv_b64: toB64(encMaterial.iv),
     p_key_version: 1,
+    p_material_format: SIGNING_BUNDLE_FORMAT,
+    p_material_algorithm: SIGNING_BUNDLE_ALGORITHM,
   });
 
   if (regErr || !regId) {
@@ -392,3 +408,4 @@ Deno.serve(async (req) => {
 
   return json({ certificate_id: regId, fingerprint_sha256: fingerprintHex }, 200, headers);
 });
+
