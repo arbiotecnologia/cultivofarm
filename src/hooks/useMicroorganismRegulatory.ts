@@ -310,7 +310,7 @@ async function regulatoryRpc<K extends RegulatoryFn>(
   fn: K,
   args: RegulatoryRpcArgs,
 ): Promise<Json | string | null> {
-  const rpcClient = supabase as RegulatoryRpcClient;
+  const rpcClient = supabase as unknown as RegulatoryRpcClient;
   const { data, error } = await rpcClient.rpc(fn, args);
   if (error) {
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");
@@ -411,9 +411,9 @@ export function useRegulatoryActions(microorganismId: string | null) {
 
   const ensureDraft = useMutation({
     mutationFn: async (): Promise<string> =>
-      regulatoryRpc("rpc_regulatory_dossier_ensure_draft", {
+      String(await regulatoryRpc("rpc_regulatory_dossier_ensure_draft", {
         p_microorganism_id: requireMicroorganism(microorganismId),
-      }),
+      }) ?? ""),
     onSuccess: invalidate,
   });
 
