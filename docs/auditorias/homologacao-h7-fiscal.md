@@ -970,3 +970,47 @@ Tela **Configurações Fiscais → Certificado Digital A1** (`UploadCertificadoA
 
 ### GATE H7 (2026-08-25)
 **APROVADA COM RESSALVAS** — zero P0. Nenhum host de produção alcançável; produção fiscal bloqueada em três camadas. H8 não iniciada.
+
+---
+
+## Seção 34 — H7 end-to-end (execução 2026-08-25, reauditoria)
+
+### Correção aplicada (única)
+- **Drift de binding P1 (recorrente)**: `.env` (`VITE_SUPABASE_PROJECT_ID`/`VITE_SUPABASE_URL`) e `src/integrations/supabase/types.ts` (2.052 linhas) estavam apontando para o sandbox. Restaurados do baseline staging `c75bb87f` (`ikaauvsflpmamgxmkhoq`, `types.ts` 21.850 linhas).
+- Gates: `check-frontend-binding.sh` OK; `guard-staging.sh` OK — `ikaauvsflpmamgxmkhoq`, `tpAmb='2'`, produção fiscal desabilitada.
+- Nenhum objeto novo criado: a arquitetura existente comportou toda a auditoria (nenhuma migration nova nesta execução).
+
+### Testes executados (staging ikaauvsflpmamgxmkhoq)
+| Harness | Escopo | Resultado |
+|---|---|---|
+| `60-h7-postcheck.sql` | gate de ambiente, normalização ISSUED→AUTHORIZED, imutabilidade, transições, append-only, idempotência de evento, ACL anon | **11 PASS / 0 FAIL** |
+| `61-h7-seguranca-ambiente.sql` | RLS fiscal, anon sem EXECUTE, `search_path` fixo, buckets privados, material de certificado fail-closed, marcador STAGING, preflight/numeração/XML negados a anon | **12 PASS / 0 FAIL** |
+| `62-h7-concorrencia.sh` | 2 chamadas simultâneas + replay ⇒ 1 evento; reserva com `FOR UPDATE` + advisory lock; índice único de documento ativo por origem | **4/4 PASS** |
+| Regressão | typecheck + Vitest + build | **3.163 PASS / 4 skipped**, typecheck 0 erros |
+
+### Inventário/cobertura observada
+- Emitente (`company_fiscal_settings`): CNPJ presente, `crt=3`, UF `MG`, `nfe_environment_code='2'`.
+- `v_fiscal_nfe_emitter_readiness` = **NOT_READY** — 5 BLOCK + 1 WARN, todos dependentes de decisão/evidência humana: `EMITTER_PIS_COFINS_REGIME_MISSING`, `EMITTER_SERIES_MISSING`, `EMITTER_ACCREDITATION_MISSING`, `EMITTER_CERTIFICATE_MISSING`, `EMITTER_ACCOUNTING_NOT_VALIDATED` (+ WARN `EMITTER_IE_DV_NOT_IMPLEMENTED`). **Nada foi presumido ou preenchido.**
+- Cobertura fiscal: produtos ativos 8 / com perfil 2; microrganismos ativos 25 / perfis 26; `customer_fiscal_profiles` 0; `fiscal_tax_rules` 6; `fiscal_operation_policies` 3; `fiscal_xsd_registry` 7 schemas oficiais.
+- Documentos: `fiscal_invoices` 0, `fiscal_xml_runs` 0, `fiscal_certificates` 0 (nenhuma emissão, nenhum certificado vinculado).
+
+### Findings H7-001..009
+- **H7-001 (certificado)**: arquitetura confirmada segura — bucket privado, material AES-256-GCM em `fiscal_certificate_material` (sem policy ⇒ inacessível a qualquer usuário), chave em secret server-side, senha só em memória na Edge Function, validação de titular (CNPJ) × emitente e rejeição de e-CPF. **Pendência: senha do PFX.**
+- **H7-002 (emitente/readiness)**: correto e fail-closed; pendências com códigos estáveis. **P3 humano.**
+- **H7-003/004 (perfis item/destinatário)**: cobertura parcial por design — preflight bloqueia item/cliente sem perfil; nenhum valor fiscal inventado. **P3.**
+- **H7-005 (snapshot/cálculo/preflight)**: imutabilidade comprovada (T5/T6); tolerância R$0,01 e unicidade por origem presentes.
+- **H7-006 (XML/XSD/assinatura)**: registry oficial presente; assinatura depende do A1. **P2 até o certificado.**
+- **H7-007 (transmissão HML)**: transporte não implementado; guard de host `sefazEndpoints.ts` fail-closed já testado — nenhum host de produção alcançável. **P2.**
+- **H7-008 (eventos)**: append-only + idempotência comprovados.
+- **H7-009 (financeiro/estoque/BI)**: nenhuma emissão existente; H5/H6 sem regressão na suíte.
+
+### Secrets ESPERADOS (apenas nomes)
+`FISCAL_CERTIFICATE_MASTER_KEY`, `FISCAL_CORS_ALLOWLIST`, `INTERNAL_FUNCTION_SECRET`, `STAGING_DSN`, `STAGING_REF`.
+
+### Pendências
+- **P1 (infra)**: deploy manual das Edge Functions fiscais por CLI com `--project-ref ikaauvsflpmamgxmkhoq`.
+- **P2**: transporte SEFAZ MG HML; NFS-e (provedor externo).
+- **P3**: 5 decisões humanas de readiness; cobertura de perfis fiscais.
+
+### GATE H7 (2026-08-25)
+**APROVADA COM RESSALVAS / CERTIFICATE_PASSWORD_REQUIRED** — zero P0. Produção `navfzbwgwzruipouyfnk` intacta; emissão de produção bloqueada em três camadas (marcador, `production_enabled=false`, gate server-side). H8 não iniciada.
