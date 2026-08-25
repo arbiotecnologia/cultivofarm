@@ -337,6 +337,19 @@ Deno.serve(async (req) => {
         if (ku[flag]) keyUsages.push(flag);
       }
     }
+
+    // ---- H7d: bundle de assinatura (sem senha) --------------------------------
+    // Chave privada exportada em PKCS#8 PEM NÃO cifrado por senha: quem protege
+    // o material é exclusivamente a chave mestra AES-256-GCM do cofre.
+    const keyPem = forge.pki.privateKeyInfoToPem(
+      forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(privateKey)),
+    );
+    bundleJson = serializeSigningBundle({
+      certPem: forge.pki.certificateToPem(cert),
+      keyPem,
+      chainPem: chainCerts.map((c) => forge.pki.certificateToPem(c)),
+    });
+    // -------------------------------------------------------------------------
   } catch (err) {
     const msg = err instanceof Error ? err.message : "pkcs12_error";
     if (/mac/i.test(msg) || /password/i.test(msg)) {
@@ -345,9 +358,17 @@ Deno.serve(async (req) => {
     return json({ error: "pkcs12_invalid" }, 400, headers);
   }
 
-  // Cifra material + senha com IVs independentes.
-  const encMaterial = await aesGcmEncrypt(masterKey, bytes);
-  const encPassword = await aesGcmEncrypt(masterKey, new TextEncoder().encode(password));
+  if (!bundleJson) {
+    return json({ error: "certificate_material_unavailable" }, 400, headers);
+  }
+
+  // H7d — cifra APENAS o bundle de assinatura. A senha do PFX morre aqui:
+  // não é cifrada, não é hasheada e não é enviada a nenhum destino persistente.
+  const bundleBytes = new TextEncoder().encode(bundleJson);
+  const encMaterial = await aesGcmEncrypt(masterKey, bundleBytes);
+  bundleBytes.fill(0);
+  bytes.fill(0);
+  password = "";
 
   const objectPath = `${companySettingsId}/${crypto.randomUUID()}.enc`;
 
@@ -373,10 +394,10 @@ Deno.serve(async (req) => {
     p_fingerprint_sha256: fingerprintHex,
     p_key_usage: keyUsages.length ? keyUsages : null,
     p_object_path: objectPath,
-    p_encrypted_password_b64: toB64(encPassword.cipher),
-    p_password_iv_b64: toB64(encPassword.iv),
     p_material_iv_b64: toB64(encMaterial.iv),
     p_key_version: 1,
+    p_material_format: SIGNING_BUNDLE_FORMAT,
+    p_material_algorithm: SIGNING_BUNDLE_ALGORITHM,
   });
 
   if (regErr || !regId) {
@@ -387,3 +408,4 @@ Deno.serve(async (req) => {
 
   return json({ certificate_id: regId, fingerprint_sha256: fingerprintHex }, 200, headers);
 });
+
