@@ -892,3 +892,45 @@ inalterado nesta fase).
 **`CERT_IMPORT_CODE_READY`** — zero P0/P1 de código. `tpAmb=2`,
 `production_emission_allowed=false`, `production_enabled=false`. Produção
 `navfzbwgwzruipouyfnk` intocada. Nenhum PFX/senha manipulado. H8 não iniciada.
+
+## Seção 32 — Reexecução H7 (2026-08-25): auditoria, correção de binding e revalidação
+
+Alvo exclusivo: staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` não foi tocada.
+
+### Correção aplicada (única)
+- **Drift de binding (P1 recorrente)**: `.env`, `src/integrations/supabase/client.ts` e `src/integrations/supabase/types.ts` haviam sido regravados pela plataforma apontando ao sandbox (`yzszlzjpovmcteuxjznj`, `types.ts` reduzido a 2.052 linhas). Restaurados a partir do baseline `c75bb87f` (staging, `types.ts` 21.850 linhas). Gate `check-frontend-binding.sh`: **OK**.
+- Nenhuma migration nova foi necessária: o schema fiscal já atende H7-001..H7-010.
+
+### Evidências de auditoria (read-only, staging)
+- `company_fiscal_settings`: `fiscal_environment=HOMOLOGATION`, `production_enabled=false`, `nfe_enabled=false`, `nfse_enabled=false`, `configuration_status=DRAFT`, `nfe_readiness_status=NOT_READY`, `certificate_ref=null`.
+- `fiscal_environment_marker`: `ikaauvsflpmamgxmkhoq|STAGING|production_emission_allowed=0`.
+- `fiscal_certificates` = 0 linhas; `fiscal_certificate_material` = 0 linhas (fail-closed, sem policy).
+- Buckets `fiscal-certificates`, `fiscal-xml`, `fiscal-regulatorio`: todos **privados**.
+- 96 funções/RPCs fiscais inventariadas; todas as SECURITY DEFINER fiscais com `search_path` fixo.
+- `rpc_fiscal_homologation_readiness_v2()` sem contexto autorizado → `FISCAL_FORBIDDEN` (autorização server-side, não frontend). Como administrador → `status=INCOMPLETE` com checklist determinístico: pendentes `nfe_configured`, `nfse_configured`, `product_ready`, `service_ready`, `customer_ready`, `certificate_active`; prontos `env_homologation`, `production_disabled`, `company_profile`, `vault_available`, `upload_function`, `drafts_source`.
+
+### Harness H7 (staging)
+| Suite | Resultado |
+|---|---|
+| `guard-staging.sh` | OK — tpAmb=2, produção fiscal desabilitada |
+| `60-h7-postcheck.sql` | **11 PASS / 0 FAIL** |
+| `61-h7-seguranca-ambiente.sql` | **12 PASS / 0 FAIL** |
+| `62-h7-concorrencia.sh` | **4/4 PASS** (reserva de número idempotente/transacional, evento único sob 3 tentativas) |
+| `63-h7b-binding-gate.sh` | 6 PASS / 2 FAIL — ambos por `fiscal-binding-diagnostics` retornar HTTP 404 no staging (função não implantada) |
+
+### Regressão
+- Typecheck (`tsgo`, tsconfig.app): 0 erros.
+- Vitest: **3.154 PASS**, 4 skipped, 195 arquivos.
+
+### Certificado A1 — ponto exato de parada
+Fluxo pronto e fail-closed em `fiscal-certificate-upload`: CORS allowlist, JWT + `has_role('administrador')`, exigência de senha (`CERT_PASSWORD_REQUIRED`), parse PKCS#12, match chave privada↔certificado, validade, `keyUsage`, identidade do titular vs CNPJ do emitente (`CERT_CNPJ_MISMATCH` / `CERT_HOLDER_IS_INDIVIDUAL`), cifra AES-256-GCM com `FISCAL_CERTIFICATE_MASTER_KEY` (32 bytes exigidos), ciphertext em bucket privado e registro por `rpc_fiscal_certificate_register_a1`. A UI (`UploadCertificadoA1.tsx`) limpa `File` e senha do estado no `finally`.
+**A senha do certificado só é necessária no instante do upload pela UI**, na tela de Configurações Fiscais → Certificados. Nada de PFX/senha/master key foi gravado em repositório, migrations, logs ou docs.
+
+### Pendências remanescentes
+- **P1 (infraestrutura, fora do código)**: canal de deploy de Edge Functions do ambiente está vinculado ao sandbox; `fiscal-binding-diagnostics` e `fiscal-preflight` não são implantáveis no ref `ikaauvsflpmamgxmkhoq` a partir daqui (não há `SUPABASE_ACCESS_TOKEN`). Requer deploy manual por CLI com `--project-ref ikaauvsflpmamgxmkhoq`. Não é um defeito de código fiscal e não permite emissão de produção.
+- **P2**: transmissão SEFAZ HML ainda não implementada — interface desacoplada preparada, nenhuma simulação de autorização.
+- **P2**: NFS-e auditada estruturalmente; depende de provedor externo não configurado.
+- **P3**: matriz fiscal sem produtos/serviços/clientes publicados — preflight bloqueia corretamente.
+
+### GATE H7
+**APROVADA COM RESSALVAS** — zero P0. Produção permanece bloqueada em três camadas (marker, `production_enabled=false`, gate server-side). H8 não iniciada.
