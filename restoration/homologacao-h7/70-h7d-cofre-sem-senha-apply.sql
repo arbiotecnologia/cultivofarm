@@ -81,6 +81,11 @@ REVOKE ALL ON public.fiscal_certificate_material FROM authenticated;
 GRANT ALL ON public.fiscal_certificate_material TO service_role;
 
 -- 4. Nova RPC de registro, sem qualquer parâmetro de senha -------------------
+-- H7D.1: remove explicitamente o overload legado de 15 parâmetros, cuja cauda
+-- era: object_path, encrypted_password_b64, password_iv_b64, material_iv_b64,
+-- key_version. A nova assinatura também tem 15 parâmetros, mas troca a cauda
+-- para: object_path, material_iv_b64, key_version, material_format,
+-- material_algorithm. O postcheck exige count(*)=1 para impedir coexistência.
 DROP FUNCTION IF EXISTS public.rpc_fiscal_certificate_register_a1(
   uuid, uuid, text, text, text, text, timestamptz, timestamptz, text,
   text[], text, text, text, text, integer
@@ -187,6 +192,22 @@ GRANT EXECUTE ON FUNCTION public.rpc_fiscal_certificate_register_a1(
   uuid, uuid, text, text, text, text, timestamptz, timestamptz, text,
   text[], text, text, integer, text, text
 ) TO service_role;
+
+DO $$
+DECLARE
+  v_overloads integer;
+BEGIN
+  SELECT count(*) INTO v_overloads
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname = 'rpc_fiscal_certificate_register_a1';
+
+  IF v_overloads <> 1 THEN
+    RAISE EXCEPTION 'H7d: overload inseguro de rpc_fiscal_certificate_register_a1 (% encontrados)', v_overloads;
+  END IF;
+END
+$$;
 
 COMMENT ON TABLE public.fiscal_certificate_material IS
   'H7d: guarda apenas o bundle de assinatura cifrado (AES-256-GCM, chave mestra server-side). A senha do PFX nunca e persistida.';

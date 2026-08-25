@@ -6,13 +6,9 @@
  * CFOP, CST/CSOSN, origem, GTIN, uCom/uTrib, fator de conversão) é inferida
  * no cliente a partir de espécie, nome comercial ou prática de mercado.
  *
- * Tipos: as relações e RPCs desta fase constam no arquivo canônico
- * `src/integrations/supabase/types.ts`, regenerado a partir do catálogo do
- * banco de staging (`restoration/fase-f2-correcao/gen-types.py`). Não há
- * mais boundary solto: `supabase.rpc` é chamado com nome e argumentos
- * verificados pelo compilador. A única conversão remanescente é a leitura
- * de payloads `Json` (retorno declarado das RPCs de leitura), feita no
- * helper `fromJson`, que é explícito e localizado.
+ * Tipos: as relações e RPCs desta fase pertencem ao catálogo canônico do
+ * banco de staging. Quando o cliente gerado ainda não lista essas RPCs,
+ * este hook usa uma fronteira local estreita com nomes enumerados.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -279,19 +275,43 @@ export function isRegulatoryPermissionError(err: unknown): boolean {
  * staging — nenhum cast de cliente é usado aqui.
  */
 type RegulatoryFunctions = Database["public"]["Functions"];
-type RegulatoryFn = Extract<
+type GeneratedRegulatoryFn = Extract<
   keyof RegulatoryFunctions,
   `rpc_regulatory_${string}` | "rpc_microorganism_regulatory_overview"
 >;
+type RegulatoryFn =
+  | GeneratedRegulatoryFn
+  | "rpc_microorganism_regulatory_overview"
+  | "rpc_regulatory_dossier_detail"
+  | "rpc_regulatory_dossier_ensure_draft"
+  | "rpc_regulatory_dossier_update_draft"
+  | "rpc_regulatory_presentation_upsert"
+  | "rpc_regulatory_ncm_candidate_add"
+  | "rpc_regulatory_ncm_candidate_decide"
+  | "rpc_regulatory_checklist_set"
+  | "rpc_regulatory_document_register"
+  | "rpc_regulatory_dossier_submit"
+  | "rpc_regulatory_review_decide"
+  | "rpc_regulatory_dossier_publish"
+  | "rpc_regulatory_dossier_block"
+  | "rpc_regulatory_dossier_new_version";
+
+type RegulatoryRpcValue = Json | Record<string, Json | undefined> | undefined;
+type RegulatoryRpcArgs = Record<string, RegulatoryRpcValue>;
+type RegulatoryRpcError = { code?: string; status?: number; message?: string };
+type RegulatoryRpcClient = {
+  rpc: (fn: RegulatoryFn, args: RegulatoryRpcArgs) => Promise<{
+    data: Json | string | null;
+    error: RegulatoryRpcError | null;
+  }>;
+};
 
 async function regulatoryRpc<K extends RegulatoryFn>(
   fn: K,
-  args: any,
-): Promise<any> {
-  const { data, error } = await (supabase as any).rpc(
-    fn,
-    args as any,
-  );
+  args: RegulatoryRpcArgs,
+): Promise<Json | string | null> {
+  const rpcClient = supabase as RegulatoryRpcClient;
+  const { data, error } = await rpcClient.rpc(fn, args);
   if (error) {
     if (isRegulatoryPermissionError(error)) throw new Error("permission_denied");
     throw new Error(error.message || "regulatory_rpc_failed");

@@ -6,8 +6,8 @@
  * contenção. NADA é transmitido à SEFAZ.
  *
  * Segredos: lidos apenas de variáveis de ambiente. Nenhum valor é impresso,
- * logado ou gravado em artefato. O PFX e a senha existem somente em memória
- * e em objeto cifrado no Storage, removidos pelo cleanup.
+ * logado ou gravado em artefato. O material de assinatura sintético existe
+ * somente em memória e em objeto cifrado no Storage, removido pelo cleanup.
  *
  * Uso: ./run.sh   (ver RUNBOOK.md)
  */
@@ -18,6 +18,11 @@ import {
 } from "../../supabase/functions/_shared/fiscal/nfe/signNfeXml.ts";
 import { NFE_NAMESPACE } from "../../supabase/functions/_shared/fiscal/nfe/buildNfeXml.ts";
 import { validateAgainstOfficialXsd } from "../../supabase/functions/fiscal-xml-engine/xsdValidate.ts";
+import {
+  serializeSigningBundle,
+  SIGNING_BUNDLE_ALGORITHM,
+  SIGNING_BUNDLE_FORMAT,
+} from "../../supabase/functions/_shared/fiscal/certificateVault.ts";
 
 // ---------------------------------------------------------------------
 // Ambiente (fail-closed)
@@ -159,7 +164,7 @@ async function callFn(opts: {
 // ---------------------------------------------------------------------
 // Certificado A1 de teste — gerado em runtime, NUNCA versionado
 // ---------------------------------------------------------------------
-function generateTestPfx(): { pfx: Uint8Array; password: string; meta: Record<string, string> } {
+function generateTestSigningBundle(): { bundle: Uint8Array; meta: Record<string, string> } {
   const keys = forge.pki.rsa.generateKeyPair(2048);
   const cert = forge.pki.createCertificate();
   cert.publicKey = keys.publicKey;
@@ -179,19 +184,20 @@ function generateTestPfx(): { pfx: Uint8Array; password: string; meta: Record<st
   ]);
   cert.sign(keys.privateKey, forge.md.sha256.create());
 
-  const password = b64(crypto.getRandomValues(new Uint8Array(24)));
-  const p12Asn1 = forge.pkcs12.toPkcs12Asn1(keys.privateKey, [cert], password, {
-    algorithm: "3des",
+  const keyPem = forge.pki.privateKeyInfoToPem(
+    forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(keys.privateKey)),
+  );
+  const bundleJson = serializeSigningBundle({
+    certPem: forge.pki.certificateToPem(cert),
+    keyPem,
+    chainPem: [],
   });
-  const der = forge.asn1.toDer(p12Asn1).getBytes();
-  const pfx = new Uint8Array(der.length);
-  for (let i = 0; i < der.length; i++) pfx[i] = der.charCodeAt(i) & 0xff;
+  const bundle = enc.encode(bundleJson);
 
   const fp = forge.md.sha256.create();
   fp.update(forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes());
   return {
-    pfx,
-    password,
+    bundle,
     meta: {
       subject: cert.subject.attributes.map((a: { shortName?: string; value?: string }) =>
         `${a.shortName}=${a.value}`).join(","),
@@ -361,10 +367,10 @@ try {
   // ---------- Certificado A1 sintético --------------------------------
   const key = fromB64(TEST_MASTER_KEY_B64);
   if (key.byteLength !== 32) throw new Error("chave de teste nao tem 32 bytes");
-  const { pfx, password, meta } = generateTestPfx();
-  const encMaterial = await aesGcmEncrypt(key, pfx);
-  const encPassword = await aesGcmEncrypt(key, enc.encode(password));
-  const objectPath = `f42-harness/${TAG}/a1-teste.pfx.enc`;
+  const { bundle, meta } = generateTestSigningBundle();
+  const encMaterial = await aesGcmEncrypt(key, bundle);
+  bundle.fill(0);
+  const objectPath = `f42-harness/${TAG}/a1-teste.signing-bundle-v2.enc`;
 
   const up = await admin.storage.from("fiscal-certificates")
     .upload(objectPath, encMaterial.ct, { contentType: "application/octet-stream", upsert: true });
@@ -383,10 +389,10 @@ try {
     p_fingerprint_sha256: meta.fingerprint,
     p_key_usage: ["digitalSignature", "nonRepudiation"],
     p_object_path: objectPath,
-    p_encrypted_password_b64: b64(encPassword.ct),
-    p_password_iv_b64: b64(encPassword.iv),
     p_material_iv_b64: b64(encMaterial.iv),
     p_key_version: 1,
+    p_material_format: SIGNING_BUNDLE_FORMAT,
+    p_material_algorithm: SIGNING_BUNDLE_ALGORITHM,
   });
   gate("T11", "registro do A1 sintetico (display_name F42-HARNESS-*)", !reg.error,
     reg.error ? String(reg.error.message).split(":")[0] : "ok");

@@ -53,9 +53,10 @@ adição à triagem binária.
 
 `.pfx`/`.p12` obrigatórios · ≤ 10 MB · arquivo real · senha não vazia e ≤ 256
 · `company_settings_id` UUID existente · certificado X.509 + chave privada +
-verificação criptográfica assinatura/verificação chave↔certificado ·
-`notBefore`/`notAfter` · AES-256-GCM com IVs independentes para material e
-senha · bucket privado `fiscal-certificates` · RPC canônica
+seleção do leaf por verificação criptográfica assinatura/verificação
+chave↔certificado, independente da ordem dos `certBag` · `notBefore`/`notAfter`
+· AES-256-GCM aplicado somente ao bundle de assinatura `SIGNING_BUNDLE_V2`
+(sem cifrar/persistir senha) · bucket privado `fiscal-certificates` · RPC canônica
 `rpc_fiscal_certificate_register_a1` · rollback do objeto em falha de registro
 · CORS fail-closed (`FISCAL_CORS_ALLOWLIST`, sem eco de origem desconhecida,
 inclusive no OPTIONS) · autorização admin server-side.

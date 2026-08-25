@@ -73,8 +73,11 @@ clique/retry.
 
 - Bucket privado exclusivo, sem policies para anon/authenticated.
 - `fiscal_certificate_material` sem policy (fail-closed, A5).
-- Senha e material só existem em memória na Edge Function; persistidos
-  cifrados em AES-256-GCM com IVs independentes; nunca retornados ao browser.
+- A senha do PFX existe somente durante o POST de importação e é descartada em
+  `finally`; nunca é persistida, nem cifrada. O cofre persiste apenas o bundle
+  de assinatura `SIGNING_BUNDLE_V2` cifrado em AES-256-GCM.
+- H7D.1: o certificado folha é selecionado por vínculo criptográfico com a
+  private key, sem depender da ordem dos `certBag` do PKCS#12.
 - Sem `console.*` na função; nenhum eco de PFX/senha/chave.
 - UI exibe apenas status, titular, validade, fingerprint e ambiente.
 - **Novo (H7-005.8)**: sem senha real, a função responde `400` com

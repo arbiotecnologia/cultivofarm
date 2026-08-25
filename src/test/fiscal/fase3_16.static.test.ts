@@ -27,6 +27,7 @@ const BRIDGE  = p("src/types/fiscalCertificateBridge.ts");
 const ADAPTER = p("src/lib/fiscal/certificateOsAdapter.ts");
 const EF_UPLOAD = p("supabase/functions/fiscal-certificate-upload/index.ts");
 const EF_REVOKE = p("supabase/functions/fiscal-certificate-revoke/index.ts");
+const EF_LEAF_HELPER = p("supabase/functions/fiscal-certificate-upload/certificateLeaf.ts");
 
 describe("Fase 3.16 — feature flags", () => {
   test("trava de emissão permanece false", () => {
@@ -257,6 +258,7 @@ describe("Fase 3.16 — A1 upload frontend", () => {
 
 describe("Fase 3.16.2-A — Edge Function upload (hardening)", () => {
   const up = readFileSync(EF_UPLOAD, "utf8");
+  const leafHelper = readFileSync(EF_LEAF_HELPER, "utf8");
 
   test("CORS fail-closed: origem ausente/desconhecida => 403 e Origin nunca ecoa", () => {
     expect(up).toMatch(/cors_origin_not_allowed/);
@@ -285,9 +287,11 @@ describe("Fase 3.16.2-A — Edge Function upload (hardening)", () => {
     expect(up).toMatch(/pkcs12_missing_private_key/);
     expect(up).toMatch(/pkcs8ShroudedKeyBag/);
     expect(up).toMatch(/private_key_does_not_match_certificate/);
+    expect(up).toMatch(/selectCertificateLeafForPrivateKey/);
+    expect(up).not.toMatch(/const certBag = allCertBags\[0\]/);
     // Verificação por sign/verify com nonce aleatório
     expect(up).toMatch(/random\.getBytesSync/);
-    expect(up).toMatch(/publicKey[\s\S]*verify/);
+    expect(leafHelper).toMatch(/publicKey[\s\S]*verify/);
   });
 
   test("verifica notBefore E notAfter", () => {

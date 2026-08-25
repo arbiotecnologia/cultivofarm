@@ -104,6 +104,7 @@ describe("H7c — hardening preservado na Edge Function", () => {
       "fiscal-certificates",
       "rpc_fiscal_certificate_register_a1",
       "pkcs12_missing_private_key",
+      "selectCertificateLeafForPrivateKey",
       "private_key_does_not_match_certificate",
       "certificate_expired",
       "certificate_not_yet_valid",
