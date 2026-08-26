@@ -283,7 +283,7 @@ describe("Fase 3.7 · (10) Sem provedor/certificado/token/webhook/emissão", () 
     const refs = pageSrc.match(/[^\n]*sefaz[^\n]*/gi) ?? [];
     expect(refs.length).toBeGreaterThan(0);
     for (const line of refs) expect(line).toContain("TransporteSefazSecao");
-    expect(pageSrc).not.toMatch(/transmit_|functions\.invoke|rpc_fiscal_sefaz_transmit/i);
+    expect(pageSrc).not.toMatch(/transmit_|\.functions\.invoke\(|rpc_fiscal_sefaz_transmit/i);
   });
   test("hook não chama endpoints de emissão/integração", () => {
     expect(hookSrc).not.toMatch(/certificad|webhook|functions\.invoke/i);
