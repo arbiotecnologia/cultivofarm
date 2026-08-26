@@ -65,7 +65,10 @@ CREATE INDEX IF NOT EXISTS ix_fiscal_sefaz_tx_invoice
   ON public.fiscal_sefaz_transmissions (fiscal_invoice_id, service, created_at DESC);
 
 -- 2. GRANTS (Data API): leitura interna via RLS; escrita só server-side.
+-- Default privileges do projeto concedem tudo a anon/authenticated: revogar.
 REVOKE ALL ON public.fiscal_sefaz_transmissions FROM PUBLIC;
+REVOKE ALL ON public.fiscal_sefaz_transmissions FROM anon;
+REVOKE ALL ON public.fiscal_sefaz_transmissions FROM authenticated;
 GRANT SELECT ON public.fiscal_sefaz_transmissions TO authenticated;
 GRANT ALL    ON public.fiscal_sefaz_transmissions TO service_role;
 
