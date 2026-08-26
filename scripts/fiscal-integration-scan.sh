@@ -36,9 +36,34 @@ INCLUDES=(
   --glob '!scripts/fixtures/**'
 )
 
+# H7-4 — allowlist ESTRITA para o label SEFAZ_HOST.
+# Estes dois arquivos declaram hosts oficiais como DADO ESTÁTICO auditável:
+#   - sefazEndpoints.ts: registro versionado + blocklist de produção (guard duro);
+#   - xsd/manifest.json: proveniência do pacote oficial de schemas (metadado).
+# Nenhum deles pode conter transporte; isso é verificado logo abaixo.
+SEFAZ_HOST_ALLOWLIST=(
+  'supabase/functions/_shared/fiscal/sefazEndpoints.ts'
+  'supabase/functions/fiscal-xml-engine/xsd/manifest.json'
+)
+
+is_allowlisted() { # $1=label $2=file
+  [ "$1" = "SEFAZ_HOST" ] || return 1
+  local f
+  for f in "${SEFAZ_HOST_ALLOWLIST[@]}"; do [ "$2" = "$f" ] && return 0; done
+  return 1
+}
+
 fail=0
 tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
+
+# Arquivos allowlisted não podem executar transporte de rede.
+for f in "${SEFAZ_HOST_ALLOWLIST[@]}"; do
+  if [ -f "$f" ] && rg -q --pcre2 '\b(fetch|XMLHttpRequest|axios|Deno\.connect)\s*\(' "$f"; then
+    echo "FISCAL INTEGRATION: [ALLOWLIST_VIOLATION] em ${f} — arquivo declarativo contém transporte"
+    fail=1
+  fi
+done
 
 for entry in "${PATTERNS[@]}"; do
   label="${entry%%|*}"
@@ -49,11 +74,13 @@ for entry in "${PATTERNS[@]}"; do
       file_line="${line%%:*}"
       rest="${line#*:}"
       lineno="${rest%%:*}"
+      if is_allowlisted "$label" "$file_line"; then continue; fi
       echo "FISCAL INTEGRATION: [$label] em ${file_line}:${lineno} — valor mascarado"
       fail=1
     done <"$tmp"
   fi
 done
+
 
 if [ "$fail" -eq 1 ]; then
   echo "FISCAL INTEGRATION SCAN: FAIL — integração fiscal prematura detectada em runtime."
