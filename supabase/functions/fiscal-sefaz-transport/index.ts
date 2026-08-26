@@ -1,0 +1,396 @@
+/**
+ * FASE H7f — Edge Function `fiscal-sefaz-transport`.
+ *
+ * Transporte SOAP NF-e 4.00 contra a SEFAZ-MG **HOMOLOGAÇÃO**. Não substitui
+ * o `fiscal-xml-engine` (que continua com teto SIGNED): esta função consome o
+ * XML já assinado e cuida exclusivamente do transporte, do retorno e da
+ * persistência append-only em `fiscal_sefaz_transmissions`.
+ *
+ * Ações (POST, perfil fiscal interno):
+ *   - `status`   — NFeStatusServico4
+ *   - `authorize`— NFeAutorizacao4 (lote síncrono, XML assinado do run)
+ *   - `receipt`  — NFeRetAutorizacao4 (consulta recibo)
+ *   - `consult`  — NFeConsultaProtocolo4
+ *   - `event`    — NFeRecepcaoEvento4 (cancelamento / CC-e já assinados)
+ *
+ * Invariantes fail-closed:
+ *   - allowlist rígida `https://hnfe.fazenda.mg.gov.br/`; host produtivo =>
+ *     `FISCAL_PRODUCTION_ENDPOINT_BLOCKED`;
+ *   - tpAmb=2 exigido no marcador, nas settings, no documento e no retorno;
+ *   - mTLS com o A1 aberto SOMENTE em memória; chave privada nunca sai daqui;
+ *   - idempotência + fingerprint na RPC; documento autorizado nunca reenviado;
+ *   - toda resposta/erro passa por `sanitizeSefazText`.
+ */
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
+import {
+  assertSefazEndpointAllowed,
+  resolveSefazEndpoint,
+  SefazEndpointError,
+  type SefazService,
+} from "../_shared/fiscal/sefazEndpoints.ts";
+import {
+  buildConsReciNFe,
+  buildConsSitNFe,
+  buildConsStatServ,
+  buildEnvEvento,
+  buildEnviNFe,
+  buildSoapEnvelope,
+  isAuthorized,
+  isRetryable,
+  parseSefazResult,
+  sanitizeSefazText,
+  SefazSoapError,
+  summarizeResponse,
+} from "../_shared/fiscal/nfe/sefazSoap.ts";
+import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
+
+const TPAMB = "2";
+const REQUEST_TIMEOUT_MS = 30_000;
+const MAX_IDEMPOTENCY = 200;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
+  const allow = fiscalAllowedOrigins();
+  const allowed = !!origin && allow.includes(origin);
+  return {
+    allowed,
+    headers: {
+      "Access-Control-Allow-Origin": allowed ? origin! : "null",
+      "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Vary": "Origin",
+    },
+  };
+}
+
+function json(body: unknown, status: number, headers: Record<string, string>): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...headers, "Content-Type": "application/json" },
+  });
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function decodeMasterKey(): Uint8Array | null {
+  const raw = Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY");
+  if (!raw) return null;
+  try {
+    const bin = atob(raw.trim());
+    if (bin.length !== 32) return null;
+    const out = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+function fromBinaryColumn(value: string): Uint8Array {
+  const v = String(value ?? "").trim();
+  if (v.startsWith("\\x") || v.startsWith("0x")) {
+    const hex = v.slice(2);
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    return out;
+  }
+  const bin = atob(v);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function aesGcmDecrypt(key: Uint8Array, iv: Uint8Array, cipher: Uint8Array): Promise<Uint8Array> {
+  const cryptoKey = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, cryptoKey, cipher);
+  return new Uint8Array(plain);
+}
+
+/** Material mTLS: existe apenas no escopo da requisição e é zerado no fim. */
+interface MtlsMaterial {
+  certPem: string;
+  keyPem: string;
+  certificateId: string;
+}
+
+// deno-lint-ignore no-explicit-any
+async function loadMtlsMaterial(admin: any): Promise<MtlsMaterial> {
+  const certRow = await admin
+    .from("v_fiscal_certificate_readiness")
+    .select("certificate_id, status, environment")
+    .eq("status", "AVAILABLE").eq("environment", "HOMOLOGATION")
+    .order("valid_until", { ascending: false }).limit(1).maybeSingle();
+  const certificateId = certRow.data?.certificate_id as string | undefined;
+  if (!certificateId) throw new SefazSoapError("CERTIFICATE_REQUIRED");
+
+  const masterKey = decodeMasterKey();
+  if (!masterKey) throw new SefazSoapError("CERTIFICATE_REQUIRED");
+
+  const material = await admin
+    .from("fiscal_certificate_material")
+    .select("object_path, material_iv, material_format")
+    .eq("certificate_id", certificateId).maybeSingle();
+  if (material.error || !material.data) throw new SefazSoapError("CERTIFICATE_REQUIRED");
+  if (!isSupportedVaultFormat(material.data.material_format as string | null)) {
+    throw new SefazSoapError("CERTIFICATE_REQUIRED");
+  }
+
+  let plain: Uint8Array | null = null;
+  try {
+    const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path);
+    if (dl.error || !dl.data) throw new Error("download");
+    plain = await aesGcmDecrypt(
+      masterKey,
+      fromBinaryColumn(material.data.material_iv as string),
+      new Uint8Array(await dl.data.arrayBuffer()),
+    );
+    const bundle = parseSigningBundle(new TextDecoder().decode(plain));
+    return { certPem: bundle.certPem, keyPem: bundle.keyPem, certificateId };
+  } catch {
+    throw new SefazSoapError("CERTIFICATE_DECRYPT_FAILED");
+  } finally {
+    plain?.fill(0);
+  }
+}
+
+/** POST SOAP 1.2 com mTLS. A chave privada só existe neste escopo. */
+async function postSoap(
+  url: string,
+  envelope: string,
+  material: MtlsMaterial,
+): Promise<{ httpStatus: number; body: string }> {
+  assertSefazEndpointAllowed(url, TPAMB);
+
+  // deno-lint-ignore no-explicit-any
+  const createHttpClient = (Deno as any).createHttpClient;
+  if (typeof createHttpClient !== "function") {
+    throw new SefazSoapError("SEFAZ_MTLS_UNAVAILABLE", "runtime sem suporte a mTLS");
+  }
+  const client = createHttpClient({ cert: material.certPem, key: material.keyPem });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      // @ts-expect-error opção específica do runtime Deno
+      client,
+      signal: ctrl.signal,
+      headers: { "Content-Type": "application/soap+xml; charset=utf-8" },
+      body: envelope,
+    });
+    return { httpStatus: res.status, body: await res.text() };
+  } finally {
+    clearTimeout(timer);
+    try {
+      client.close?.();
+    } catch { /* noop */ }
+  }
+}
+
+Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const { headers, allowed } = corsHeaders(origin);
+  if (req.method === "OPTIONS") return new Response("ok", { headers });
+  if (!allowed) return json({ error: "origin_not_allowed" }, 403, headers);
+  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
+
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401, headers);
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: "server_misconfigured" }, 500, headers);
+
+  const authed = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false },
+  });
+  const claims = await authed.auth.getClaims(authHeader.replace("Bearer ", ""));
+  const actor = claims.data?.claims?.sub as string | undefined;
+  if (!actor) return json({ error: "unauthorized" }, 401, headers);
+
+  // Autorização de negócio: perfil fiscal interno (fail-closed, server-side).
+  const canOperate = await authed.rpc("fn_fiscal_can_operate", { _uid: actor });
+  if (canOperate.error || canOperate.data !== true) {
+    return json({ error: "permission_denied" }, 403, headers);
+  }
+
+  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "invalid_body" }, 400, headers);
+  }
+
+  const action = String(body.action ?? "");
+  const idempotencyKey = String(body.idempotency_key ?? "").trim();
+  if (!idempotencyKey || idempotencyKey.length > MAX_IDEMPOTENCY) {
+    return json({ error: "idempotency_key_invalid" }, 400, headers);
+  }
+
+  const invoiceId = body.invoice_id ? String(body.invoice_id) : null;
+  const xmlRunId = body.run_id ? String(body.run_id) : null;
+  if (invoiceId && !UUID_RE.test(invoiceId)) return json({ error: "invoice_id_invalid" }, 400, headers);
+  if (xmlRunId && !UUID_RE.test(xmlRunId)) return json({ error: "run_id_invalid" }, 400, headers);
+
+  // 1. Resolve serviço + endpoint (allowlist dura de homologação MG).
+  let service: SefazService;
+  switch (action) {
+    case "status": service = "NFeStatusServico4"; break;
+    case "authorize": service = "NFeAutorizacao4"; break;
+    case "receipt": service = "NFeRetAutorizacao4"; break;
+    case "consult": service = "NFeConsultaProtocolo4"; break;
+    case "event": service = "NFeRecepcaoEvento4"; break;
+    default: return json({ error: "action_invalid" }, 400, headers);
+  }
+
+  let endpoint: string;
+  try {
+    endpoint = resolveSefazEndpoint(service, TPAMB);
+  } catch (err) {
+    const code = err instanceof SefazEndpointError ? err.code : "SEFAZ_ENDPOINT_INVALID";
+    return json({ error: "endpoint_blocked", code }, 403, headers);
+  }
+
+  // 2. Monta o corpo da mensagem (documento assinado vem do motor de XML).
+  let inner: string;
+  try {
+    if (action === "status") {
+      inner = buildConsStatServ(TPAMB);
+    } else if (action === "consult") {
+      inner = buildConsSitNFe(TPAMB, String(body.access_key ?? ""));
+    } else if (action === "receipt") {
+      inner = buildConsReciNFe(TPAMB, String(body.receipt ?? ""));
+    } else if (action === "authorize") {
+      if (!xmlRunId) return json({ error: "run_id_required" }, 400, headers);
+      const run = await admin
+        .from("fiscal_xml_runs")
+        .select("id, state, signed_path, storage_bucket, fiscal_invoice_id, access_key")
+        .eq("id", xmlRunId).maybeSingle();
+      if (run.error || !run.data) return json({ error: "run_not_found" }, 404, headers);
+      if (run.data.state !== "SIGNED" || !run.data.signed_path) {
+        return json({ error: "run_not_signed", code: "SEFAZ_DOCUMENT_NOT_SIGNED" }, 412, headers);
+      }
+      const dl = await admin.storage
+        .from(run.data.storage_bucket ?? "fiscal-xml")
+        .download(run.data.signed_path);
+      if (dl.error || !dl.data) return json({ error: "signed_xml_unavailable" }, 500, headers);
+      inner = buildEnviNFe({
+        tpAmb: TPAMB,
+        idLote: String(body.lote ?? Date.now()).slice(0, 15),
+        signedNfeXml: await dl.data.text(),
+      });
+    } else {
+      inner = buildEnvEvento({
+        tpAmb: TPAMB,
+        idLote: String(body.lote ?? Date.now()).slice(0, 15),
+        signedEventXml: String(body.event_xml ?? ""),
+      });
+    }
+  } catch (err) {
+    const e = err as { code?: string; message?: string };
+    return json({ error: "payload_invalid", code: e.code ?? "SEFAZ_PAYLOAD_INVALID" },
+      e.code === "FISCAL_PRODUCTION_ENDPOINT_BLOCKED" ? 403 : 422, headers);
+  }
+
+  const envelope = buildSoapEnvelope(service, inner);
+  const fingerprint = await sha256Hex(`${service}|${endpoint}|${inner}`);
+
+  // 3. Abre a transmissão (guard de ambiente + idempotência server-side).
+  const begun = await admin.rpc("rpc_fiscal_sefaz_transmit_begin_v1", {
+    _service: service,
+    _idempotency_key: idempotencyKey,
+    _request_fingerprint: fingerprint,
+    _endpoint_url: endpoint,
+    _invoice_id: invoiceId,
+    _xml_run_id: xmlRunId,
+    _actor: actor,
+  });
+  if (begun.error) {
+    const code = sanitizeSefazText(begun.error.message, 120).split(":")[0].trim() ||
+      "FISCAL_TRANSMISSION_BEGIN_FAILED";
+    const status = code.includes("PRODUCTION") ? 403 : 409;
+    return json({ error: "transmission_blocked", code }, status, headers);
+  }
+  const tx = begun.data as Record<string, unknown>;
+  const transmissionId = String(tx.transmissionId);
+
+  // Replay: devolve o resultado já persistido, sem novo POST à SEFAZ.
+  if (tx.idempotentReplay === true) {
+    return json({ ...tx, replayed: true }, 200, headers);
+  }
+
+  // 4. Transporte com mTLS.
+  let material: MtlsMaterial | null = null;
+  const started = Date.now();
+  try {
+    material = await loadMtlsMaterial(admin);
+    await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
+      _transmission_id: transmissionId, _state: "SENT", _patch: {},
+    });
+
+    const res = await postSoap(endpoint, envelope, material);
+    const result = parseSefazResult(res.body);
+    const durationMs = Date.now() - started;
+
+    if (result.tpAmb && result.tpAmb !== TPAMB) {
+      await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
+        _transmission_id: transmissionId, _state: "BLOCKED",
+        _patch: { errorCode: "FISCAL_PRODUCTION_ENDPOINT_BLOCKED" },
+      });
+      return json({ error: "environment_mismatch", code: "FISCAL_PRODUCTION_ENDPOINT_BLOCKED" }, 403, headers);
+    }
+
+    const ok = res.httpStatus >= 200 && res.httpStatus < 300 && !!result.cStat;
+    await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
+      _transmission_id: transmissionId,
+      _state: ok ? "SUCCEEDED" : "FAILED",
+      _patch: {
+        cStat: result.cStat, xMotivo: sanitizeSefazText(result.xMotivo ?? "", 200),
+        chNFe: result.chNFe, nProt: result.nProt, nRec: result.nRec,
+        tpAmb: result.tpAmb, dhRecbto: result.dhRecbto,
+        errorCode: ok ? null : "SEFAZ_TRANSPORT_FAILED",
+        responseSummary: summarizeResponse({ httpStatus: res.httpStatus, result, durationMs }),
+      },
+    });
+
+    return json({
+      transmissionId,
+      service,
+      state: ok ? "SUCCEEDED" : "FAILED",
+      environmentCode: TPAMB,
+      cStat: result.cStat,
+      xMotivo: sanitizeSefazText(result.xMotivo ?? "", 200),
+      chNFe: result.chNFe,
+      nProt: result.nProt,
+      nRec: result.nRec,
+      authorized: isAuthorized(result),
+      retrySafe: isRetryable(result),
+    }, ok ? 200 : 502, headers);
+  } catch (err) {
+    const e = err as { code?: string; message?: string };
+    const code = e.code ?? "SEFAZ_TRANSPORT_FAILED";
+    await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
+      _transmission_id: transmissionId,
+      _state: code === "CERTIFICATE_REQUIRED" ? "BLOCKED" : "FAILED",
+      _patch: {
+        errorCode: code,
+        responseSummary: { error: code, detail: sanitizeSefazText(e.message ?? "", 200) },
+      },
+    });
+    return json({ transmissionId, state: "FAILED", code },
+      code === "CERTIFICATE_REQUIRED" ? 412 : 502, headers);
+  } finally {
+    if (material) {
+      material.certPem = "";
+      material.keyPem = "";
+    }
+  }
+});
