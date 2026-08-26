@@ -29,7 +29,9 @@ declare -a PATTERNS=(
   'SUPABASE_SECRET|sb_secret_[A-Za-z0-9]{32,}'
   'SUPABASE_PAT|sbp_[a-f0-9]{40}'
   'PG_URL_WITH_PWD|postgres(ql)?://[A-Za-z0-9._-]+:[^@\s"'"'"'<>\[\]{}]{6,}@'
-  'PEM_BLOCK|-----BEGIN (CERTIFICATE|PRIVATE KEY|RSA PRIVATE KEY|ENCRYPTED PRIVATE KEY)-----'
+  # PEM_BLOCK: apenas quando há CORPO base64 real (>= 40 chars) após o delimitador.
+  # Delimitadores usados como constante/rótulo em código ou teste não são segredo.
+  'PEM_BLOCK|-----BEGIN (?:CERTIFICATE|PRIVATE KEY|RSA PRIVATE KEY|ENCRYPTED PRIVATE KEY)-----(?:[^A-Za-z0-9+/]){0,8}[A-Za-z0-9+/]{40,}'
 )
 
 # Escopo — sempre exclui build/caches, o próprio scanner e o outro scanner de integração.
@@ -76,7 +78,9 @@ is_benign() {
 for entry in "${PATTERNS[@]}"; do
   label="${entry%%|*}"
   regex="${entry#*|}"
-  rg -n --with-filename --pcre2 "${INCLUDES[@]}" -e "$regex" "${TARGETS[@]}" >"$tmp" 2>/dev/null || true
+  extra=()
+  [ "$label" = "PEM_BLOCK" ] && extra=(-U)
+  rg -n --with-filename --pcre2 "${extra[@]+${extra[@]}}" "${INCLUDES[@]}" -e "$regex" "${TARGETS[@]}" >"$tmp" 2>/dev/null || true
   if [ -s "$tmp" ]; then
     while IFS= read -r line; do
       file_line="${line%%:*}"
