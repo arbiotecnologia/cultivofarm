@@ -110,8 +110,43 @@ tentativa de `tpAmb=1` bloqueada em runtime (T3 PASS).
 5. Executar o deploy das funções `fiscal-certificate-upload`,
    `fiscal-certificate-revoke` e `fiscal-xml-engine` no staging.
 
-## 10. Gate
+## 10. Revalidação H7-A..H7-G (execução 2026-08-26)
 
-**GATE H7 — APROVADA COM RESSALVAS.** Zero P0. P1 de cofre resolvido; P1-operacional
-restante (H7-006) depende de deploy autorizado. Transmissão SEFAZ não realizada;
-produção permanece desligada. **H8 não iniciada.**
+Nenhuma tabela, rota, RPC, Edge Function ou módulo fiscal novo foi criado nesta
+execução: o fluxo canônico foi reauditado e revalidado.
+
+- **Drift de binding corrigido**: `.env` e `src/integrations/supabase/types.ts`
+  haviam voltado ao sandbox; restaurados à baseline de staging
+  (`ikaauvsflpmamgxmkhoq`, `types.ts` 21.850 linhas). `check-frontend-binding.sh`
+  e `guard-staging.sh` OK.
+- **H7-B (guarda dura)**: `fiscal_environment_marker = ikaauvsflpmamgxmkhoq|STAGING|0`,
+  `tpAmb=2`, `production_enabled=false`; tentativa de produção bloqueada
+  server-side (T3, C2, C3 PASS). Guarda independe do `.env` do frontend.
+- **H7-C (certificado)**: cofre `SIGNING_BUNDLE_V2` sem senha persistida (H7D-1..8
+  PASS), bucket privado sem policies, material sem grants para `anon`/`authenticated`,
+  RPC de registro só para `service_role`. Senha do PFX apenas em memória no POST.
+- **H7-D/E (snapshot e preflight)**: imutabilidade e append-only confirmados
+  (T5, T8 PASS); preflight negado a `anon` (E1) e readiness fail-closed (H7E-6/7).
+- **H7-F (idempotência)**: 3 tentativas concorrentes ⇒ 1 evento; reserva com
+  `FOR UPDATE` + advisory lock + índice único por origem (4/4 PASS).
+- **H7-G (RLS/permissões)**: RLS em todas as tabelas fiscais, `search_path` fixo
+  em todos os SECURITY DEFINER fiscais, `anon` sem EXECUTE (A1..A5, E1..E3 PASS).
+- **Segredos**: varredura em `src/` sem PFX, senha ou master key — apenas fixtures
+  de teste. Nada sensível em bundle, logs ou repositório.
+- **Regressão**: `tsgo --noEmit` 0 erros; Vitest 3.185 PASS / 4 skip / 0 FAIL;
+  build OK. H5 (entrega) e H6 (financeiro) íntegros.
+
+Pendências humanas permanecem as da seção 9 (credenciamento SEFAZ/MG, validação
+contábil, publicação da matriz fiscal, deploy das Edge Functions fiscais no
+staging e upload do A1 com senha).
+
+## 11. Gate
+
+**GATE — H7 — AGUARDANDO CERTIFICADO/SENHA.** Zero P0/P1 técnicos abertos:
+arquitetura, guardas de ambiente, cofre, snapshot, preflight, idempotência e RLS
+estão prontos e testados. A próxima ação segura é o upload do certificado A1 real
+na tela de certificados (`UploadCertificadoA1.tsx` → Edge Function
+`fiscal-certificate-upload`), com a senha digitada pelo usuário no momento do
+envio — precedido do deploy autorizado das três Edge Functions fiscais no staging.
+Transmissão SEFAZ não realizada; produção permanece desligada. **H8 não iniciada.**
+
