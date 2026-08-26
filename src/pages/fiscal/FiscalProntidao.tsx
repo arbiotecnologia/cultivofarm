@@ -37,6 +37,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProntidaoNfeSecao } from "@/components/fiscal/ProntidaoNfeSecao";
+import { TransporteSefazSecao } from "@/components/fiscal/TransporteSefazSecao";
 import {
   AlertTriangle, CheckCircle2, HelpCircle, Lock, RefreshCcw, ShieldOff,
 } from "lucide-react";
