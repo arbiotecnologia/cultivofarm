@@ -316,3 +316,48 @@ Nenhum P0. Nenhum P1 técnico.
 remanescente é **P1 operacional**: certificado A1 e senha ainda não importados,
 mais o deploy autorizado das Edge Functions. Transmissão real à SEFAZ **não foi
 executada**. Produção fiscal permanece desligada. **H8 não iniciada.**
+
+## 13. Revalidação independente — 2026-08-26 (staging `ikaauvsflpmamgxmkhoq`)
+
+Produção `navfzbwgwzruipouyfnk`: intocada. H8 não iniciada. Nenhum PFX, senha,
+chave privada, master key, DSN ou token foi lido, registrado ou versionado.
+
+### 13.1 Binding
+
+Detectado drift de `.env` + `src/integrations/supabase/types.ts` para o projeto
+sandbox `yzszlzjpovmcteuxjznj` (types truncado em 2.052 linhas). Ambos foram
+restaurados ao baseline de staging `c75bb87f` (types com 21.850 linhas).
+`check-frontend-binding.sh` e `guard-staging.sh`: OK (`tpAmb='2'`,
+`production_emission_allowed=false`).
+
+### 13.2 Evidência executada
+
+| Harness | Resultado |
+| --- | --- |
+| `60-h7-postcheck.sql` (gate, ciclo de vida, imutabilidade, anon) | 11 PASS / 0 FAIL |
+| `61-h7-seguranca-ambiente.sql` (RLS, search_path, buckets, marcador) | 12 PASS / 0 FAIL |
+| `72-h7d-postcheck.sql` (cofre A1 sem senha) | 8 PASS |
+| `75-h7e-postcheck.sql` (readiness do emitente) | 7 PASS / 0 FAIL |
+| `82-h7f-postcheck.sql` (transporte SEFAZ MG HML) | 11 PASS / 0 FAIL |
+| `62-h7-concorrencia.sh` (idempotência, reserva, índice único) | 4/4 OK |
+| `fiscal-secrets-scan.sh` | OK — nenhum segredo real |
+| `fiscal-integration-scan.sh` | OK — nenhum transporte fora do adapter |
+| `tsgo --noEmit` | 0 erros |
+| Vitest | 3.212 PASS / 4 skip |
+| Build | SUCCESS |
+
+### 13.3 Readiness do emitente (estado real hoje)
+
+`v_fiscal_nfe_emitter_readiness` → `NOT_READY`, fail-closed, com pendências
+estruturadas: `EMITTER_CERTIFICATE_MISSING` (BLOCK),
+`EMITTER_ACCREDITATION_MISSING` (BLOCK), `EMITTER_ACCOUNTING_NOT_VALIDATED`
+(BLOCK) e `EMITTER_IE_DV_NOT_IMPLEMENTED` (WARN). `fiscal_certificates`: 0 linhas
+— nenhum certificado importado, nenhuma senha existente em qualquer camada.
+
+### 13.4 Gate
+
+**GATE — H7 — APROVADA COM RESSALVAS (zero P0/P1 técnico).** Bloqueio
+remanescente classificado como **P1 operacional**: (a) importação do A1 com a
+senha digitada pelo operador na UI, (b) deploy autorizado das Edge Functions
+fiscais, (c) credenciamento SEFAZ-MG e validação contábil. Nenhuma transmissão
+real foi executada; produção fiscal permanece OFF; H8 não iniciada.
