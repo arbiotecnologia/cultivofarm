@@ -136,6 +136,20 @@ execução: o fluxo canônico foi reauditado e revalidado.
 - **Regressão**: `tsgo --noEmit` 0 erros; Vitest 3.185 PASS / 4 skip / 0 FAIL;
   build OK. H5 (entrega) e H6 (financeiro) íntegros.
 
+## 10.1 Revalidação 2026-08-26
+
+- Drift de binding detectado novamente (`.env`/`types.ts` apontando para sandbox)
+  e restaurado ao baseline autorizado `c75bb87f` (staging `ikaauvsflpmamgxmkhoq`,
+  `types.ts` 21.850 linhas). Gates de binding e staging OK (`tpAmb=2`).
+- Postchecks reexecutados: 60 (11 PASS/0 FAIL), 61 (12 PASS/0 FAIL),
+  72-H7d (8/8 PASS), 75-H7e (7 PASS/0 FAIL), concorrência 62 (4/4 PASS).
+- **Correção P3 → resolvida**: `scripts/fiscal-secrets-scan.sh` acusava
+  falso-positivo `PEM_BLOCK` em delimitadores usados como constante/rótulo
+  (`certificateVault.ts`, teste H7d). O padrão passou a exigir corpo base64 real
+  (≥ 40 chars, varredura multilinha); PEM verdadeiro continua sendo detectado
+  (validado com fixture temporária fora do repositório). Varredura do repo: OK.
+- Regressão: `tsgo --noEmit` 0 erros; Vitest 3.185 PASS / 4 skip / 0 FAIL.
+
 Pendências humanas permanecem as da seção 9 (credenciamento SEFAZ/MG, validação
 contábil, publicação da matriz fiscal, deploy das Edge Functions fiscais no
 staging e upload do A1 com senha).
