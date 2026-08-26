@@ -266,12 +266,24 @@ describe("Fase 3.7 · (9) Privacidade", () => {
 
 describe("Fase 3.7 · (10) Sem provedor/certificado/token/webhook/emissão", () => {
   const banned = [
-    "sefaz", "focusnfe", "webmania", "nfe.io",
+    "focusnfe", "webmania", "nfe.io",
     "SERVICE_ROLE", "service_role", "process.env.",
   ];
   test.each(banned)("token %s ausente do hook e da página", (t) => {
     expect(hookSrc.toLowerCase()).not.toContain(t.toLowerCase());
     expect(pageSrc.toLowerCase()).not.toContain(t.toLowerCase());
+  });
+  // H7f — a página passou a exibir o painel SOMENTE-LEITURA de transporte
+  // SEFAZ. A referência permitida é exclusivamente o componente; nenhuma ação
+  // de emissão/transmissão pode existir aqui.
+  test("hook permanece sem qualquer referência a SEFAZ", () => {
+    expect(hookSrc.toLowerCase()).not.toContain("sefaz");
+  });
+  test("página só referencia SEFAZ pelo painel de leitura", () => {
+    const refs = pageSrc.match(/[^\n]*sefaz[^\n]*/gi) ?? [];
+    expect(refs.length).toBeGreaterThan(0);
+    for (const line of refs) expect(line).toContain("TransporteSefazSecao");
+    expect(pageSrc).not.toMatch(/transmit_|\.functions\.invoke\(|rpc_fiscal_sefaz_transmit/i);
   });
   test("hook não chama endpoints de emissão/integração", () => {
     expect(hookSrc).not.toMatch(/certificad|webhook|functions\.invoke/i);
