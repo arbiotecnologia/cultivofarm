@@ -201,3 +201,118 @@ na tela de certificados (`UploadCertificadoA1.tsx` → Edge Function
 envio — precedido do deploy autorizado das três Edge Functions fiscais no staging.
 Transmissão SEFAZ não realizada; produção permanece desligada. **H8 não iniciada.**
 
+
+---
+
+## 12. H7f — Transporte NF-e 4.00 SEFAZ-MG HOMOLOGAÇÃO (26/08/2026)
+
+Produção `navfzbwgwzruipouyfnk`: **intocada**. H8 **não iniciada**. Nenhum PFX,
+senha, chave privada, master key, token ou DSN foi lido, logado ou versionado.
+
+### 12.1 Auditoria de paridade (H7.1)
+
+Reconfirmado no staging `ikaauvsflpmamgxmkhoq` antes de qualquer alteração:
+
+- `fiscal_environment_marker` = `ikaauvsflpmamgxmkhoq | STAGING | production_emission_allowed=false`;
+- `company_fiscal_settings`: `nfe_environment_code='2'`, produção desabilitada;
+- 22 tabelas `fiscal_*` presentes, todas com RLS; buckets fiscais privados;
+- Edge Functions existentes (`fiscal-certificate-upload`, `fiscal-certificate-revoke`,
+  `fiscal-preflight`, `fiscal-xml-engine`) **reutilizadas**, nenhuma substituída;
+- postchecks legados revalidados: 60 (11 PASS), 61 (12 PASS), 72-H7d (8 PASS),
+  75-H7e (7 PASS) — 0 FAIL;
+- **lacuna única confirmada**: não existia transporte SOAP. Nenhum módulo, cofre
+  ou tabela paralela foi criado para funções já existentes.
+
+Antes da auditoria o repositório apresentava drift de binding (`.env` e
+`types.ts` apontando para sandbox). Ambos foram restaurados ao baseline de
+staging `c75bb87f` (`types.ts` com 21.850 linhas) e o gate
+`check-frontend-binding.sh` voltou a passar.
+
+### 12.2 Transporte implementado (H7.3)
+
+Camada nova, **desacoplada** do `fiscal-xml-engine` (que mantém teto SIGNED):
+
+| Artefato | Papel |
+| --- | --- |
+| `supabase/functions/_shared/fiscal/nfe/sefazSoap.ts` | módulo puro: envelope SOAP 1.2, `consStatServ`/`consSitNFe`/`consReciNFe`/`enviNFe`/`envEvento`, parsing de `cStat`/`xMotivo`/`chNFe`/`nProt`/`nRec`/`dhRecbto`, classificação de retry e sanitização |
+| `supabase/functions/fiscal-sefaz-transport/index.ts` | Edge Function de transporte mTLS, ações `status`/`authorize`/`receipt`/`consult`/`event` |
+| `restoration/homologacao-h7/80-h7f-transporte-sefaz-apply.sql` | tabela `fiscal_sefaz_transmissions` + 3 RPCs + trigger append-only |
+| `restoration/homologacao-h7/81-h7f-transporte-sefaz-rollback.sql` | rollback autocontido, aborta se houver transmissão registrada |
+| `restoration/homologacao-h7/82-h7f-postcheck.sql` | 11 verificações H7F-1..H7F-11 |
+| `src/hooks/useFiscalSefazTransmissions.ts` / `src/components/fiscal/TransporteSefazSecao.tsx` | leitura sanitizada na Central de Prontidão existente |
+| `src/test/fiscal/h7f.transporteSefaz.test.ts` | 26 testes (SOAP puro + regressão estática de Edge/SQL) |
+
+Controles fail-closed:
+
+- allowlist rígida `https://hnfe.fazenda.mg.gov.br/` em **três camadas**
+  (`sefazEndpoints.ts`, CHECK da tabela e RPC de abertura); host produtivo
+  devolve o código estável `FISCAL_PRODUCTION_ENDPOINT_BLOCKED`;
+- `tpAmb=2` exigido no marcador, nas settings, no corpo da mensagem, no
+  documento assinado e no **retorno** da SEFAZ;
+- mTLS com o bundle `SIGNING_BUNDLE_V2` decifrado **somente em memória**;
+  `certPem`/`keyPem` zerados em `finally`; a senha do PFX não participa;
+- idempotência por chave única + `request_fingerprint`: replay devolve o
+  resultado existente sem novo POST; payload divergente falha com
+  `FISCAL_TRANSMISSION_IDEMPOTENCY_MISMATCH`; `pg_advisory_xact_lock` serializa
+  concorrência real;
+- documento já autorizado (`cStat` 100/150) nunca é reenviado (`alreadyAuthorized`);
+- retry automático proibido para `cStat` não retentáveis (100, 150, 204, 539, 110, 301, 302);
+- append-only: `DELETE` sempre rejeitado, estado terminal imutável, colunas de
+  identidade/endpoint/fingerprint imutáveis;
+- respostas e exceções passam por `sanitizeSefazText` (remove PEM, JWT,
+  `sb_secret_*` e base64 longo) antes de virar log, `response_summary` ou body.
+
+Nenhuma coluna de `fiscal_invoices`, `fiscal_events` ou `fiscal_xml_runs` foi
+alterada: o transporte registra apenas na sua própria tabela, preservando os
+snapshots e a imutabilidade já homologados em H7/H7d/H7e.
+
+### 12.3 Permissões (H7.7)
+
+`fiscal_sefaz_transmissions`: `anon` sem qualquer grant; `authenticated` apenas
+`SELECT` sob RLS `fn_fiscal_can_read_internal`; escrita exclusiva de
+`service_role`. `rpc_fiscal_sefaz_transmit_begin_v1` e
+`..._record_v1` restritas a `service_role`;
+`rpc_fiscal_sefaz_transmission_status_v1` é leitura sanitizada para perfil
+interno. Todas as funções novas são `SECURITY DEFINER` com
+`search_path = public, pg_temp`. A Edge Function valida `fn_fiscal_can_operate`
+antes de qualquer transporte — o frontend nunca autoriza.
+
+### 12.4 Testes
+
+- `82-h7f-postcheck.sql` no staging: **11 PASS / 0 FAIL** (RLS, grants, RPC
+  restrita, search_path, endpoint produtivo bloqueado, replay idempotente,
+  fingerprint divergente, retorno `tpAmb=1` bloqueado, estado terminal imutável,
+  append-only).
+- `src/test/fiscal/h7f.transporteSefaz.test.ts`: 26 PASS.
+- Postchecks legados 60/61/72/75 revalidados sem regressão.
+- `fiscal-secrets-scan.sh` OK; `fiscal-integration-scan.sh` OK.
+
+### 12.5 Findings
+
+| Sev | Achado | Situação |
+| --- | --- | --- |
+| P2 | GRANTs default do projeto concediam tudo a `anon`/`authenticated` na tabela nova | corrigido no apply com `REVOKE` explícito; coberto por H7F-2/H7F-3 |
+| P2 | Drift de binding (`.env`/`types.ts` em sandbox) | restaurado ao baseline de staging; gate de binding OK |
+| P1 (operacional) | Certificado A1 e senha ainda não importados | **bloqueio remanescente** — impede itens I..M dos testes |
+| P2 | Deploy das Edge Functions fiscais no staging depende de ação autorizada | pendente |
+
+Nenhum P0. Nenhum P1 técnico.
+
+### 12.6 Próximo passo exato
+
+1. Deploy autorizado no staging de `fiscal-certificate-upload`,
+   `fiscal-certificate-revoke`, `fiscal-xml-engine` e `fiscal-sefaz-transport`.
+2. Confirmar os secrets exigidos fail-closed: `FISCAL_CERTIFICATE_MASTER_KEY`
+   (32 bytes base64) e a allowlist de origens fiscais. Nenhum valor é inventado
+   em código: sem a master key o transporte devolve `CERTIFICATE_REQUIRED`.
+3. Importar o A1 em `/configuracoes/fiscal` → `UploadCertificadoA1.tsx`, com a
+   senha digitada no momento do envio (nunca persistida).
+4. Executar `status` (NFeStatusServico4) como primeiro contato real com MG
+   homologação e só então `authorize` de uma NF-e cujo preflight esteja aprovado.
+
+### 12.7 Gate
+
+**GATE — H7 — APROVADA COM RESSALVAS (zero P0/P1 técnico).** O único bloqueio
+remanescente é **P1 operacional**: certificado A1 e senha ainda não importados,
+mais o deploy autorizado das Edge Functions. Transmissão real à SEFAZ **não foi
+executada**. Produção fiscal permanece desligada. **H8 não iniciada.**
