@@ -152,7 +152,7 @@ describe("H7f — regressão estática da Edge Function", () => {
   it("usa a allowlist canônica e nunca hardcoda host de produção", () => {
     expect(src).toContain("resolveSefazEndpoint");
     expect(src).toContain("assertSefazEndpointAllowed");
-    expect(src).not.toContain("nfe.fazenda.mg.gov.br");
+    expect(src).not.toMatch(/(^|[^h])nfe\.fazenda\.mg\.gov\.br/);
   });
 
   it("opera somente em tpAmb=2", () => {
