@@ -193,7 +193,7 @@ Pendências humanas permanecem as da seção 9.
 
 ## 11. Gate
 
-**GATE — H7 — AGUARDANDO CERTIFICADO/SENHA.** Zero P0/P1 técnicos abertos:
+**GATE — H7 — TÉCNICO CONDICIONAL (aguardando certificado/senha).** Zero P0/P1:
 arquitetura, guardas de ambiente, cofre, snapshot, preflight, idempotência e RLS
 estão prontos e testados. A próxima ação segura é o upload do certificado A1 real
 na tela de certificados (`UploadCertificadoA1.tsx` → Edge Function
