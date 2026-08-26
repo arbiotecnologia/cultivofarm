@@ -154,9 +154,46 @@ Pendências humanas permanecem as da seção 9 (credenciamento SEFAZ/MG, valida�
 contábil, publicação da matriz fiscal, deploy das Edge Functions fiscais no
 staging e upload do A1 com senha).
 
+## 10.2 Revalidação 2026-08-26 (segunda passagem)
+
+Auditoria H7-0 reexecutada diretamente no staging antes de qualquer alteração.
+
+- **Binding**: `.env` e `src/integrations/supabase/types.ts` haviam sofrido drift
+  para o projeto sandbox. Restaurados ao baseline autorizado `c75bb87f`
+  (`ikaauvsflpmamgxmkhoq`, `types.ts` 21.850 linhas). `check-frontend-binding.sh`
+  e `guard-staging.sh`: OK (`tpAmb='2'`, produção fiscal desabilitada).
+  Produção `navfzbwgwzruipouyfnk` não foi tocada em nenhum momento.
+- **Inventário (H7-0)**: 39 objetos fiscais (tabelas + views) e 98 funções
+  fiscais no `public`; nenhuma tabela fiscal sem RLS; todos os buckets fiscais
+  (`fiscal-certificates`, `fiscal-xml`, `fiscal-regulatorio`) privados.
+  Arquitetura canônica confirmada como **integração direta SEFAZ preparada,
+  ainda sem transporte** — nenhuma segunda integração foi criada.
+- **Postchecks**: 60 (11 PASS/0 FAIL), 61 (12 PASS/0 FAIL), 72-H7d (8/8 PASS),
+  75-H7e (7 PASS/0 FAIL), concorrência 62 (4/4 PASS).
+- **Certificado**: `fiscal_certificates` vazio;
+  `v_fiscal_nfe_emitter_readiness` retorna `NOT_READY` com bloqueios estruturados
+  (`EMITTER_CERTIFICATE_MISSING`, `EMITTER_ACCREDITATION_MISSING`,
+  `EMITTER_ACCOUNTING_NOT_VALIDATED`). Fail-closed comprovado; nenhum certificado
+  fake utilizado. Varredura do repositório: nenhum `.pfx`/`.p12` presente.
+- **Correção P2 → resolvida**: `scripts/fiscal-integration-scan.sh` acusava
+  falso-positivo `SEFAZ_HOST` em `_shared/fiscal/sefazEndpoints.ts` (registro
+  versionado + blocklist de produção, artefato exigido por H7-4) e em
+  `fiscal-xml-engine/xsd/manifest.json` (proveniência do pacote oficial de
+  schemas). Foi adicionada allowlist **estrita por arquivo e apenas para o label
+  `SEFAZ_HOST`**, acompanhada de uma checagem nova `ALLOWLIST_VIOLATION` que
+  falha caso qualquer arquivo allowlisted passe a conter transporte
+  (`fetch`/`XMLHttpRequest`/`axios`/`Deno.connect`). Validado com três cenários:
+  repo limpo (OK), fixture de integração prematura (FAIL nos 3 labels) e
+  transporte injetado no arquivo allowlisted (FAIL por `ALLOWLIST_VIOLATION`).
+- **Segredos**: `fiscal-secrets-scan.sh` OK — nenhum segredo real no repositório.
+- **Regressão**: `tsgo --noEmit` 0 erros; Vitest 3.185 PASS / 4 skip / 0 FAIL.
+
+Pendências humanas permanecem as da seção 9.
+
+
 ## 11. Gate
 
-**GATE — H7 — AGUARDANDO CERTIFICADO/SENHA.** Zero P0/P1 técnicos abertos:
+**GATE — H7 — TÉCNICO CONDICIONAL (aguardando certificado/senha).** Zero P0/P1:
 arquitetura, guardas de ambiente, cofre, snapshot, preflight, idempotência e RLS
 estão prontos e testados. A próxima ação segura é o upload do certificado A1 real
 na tela de certificados (`UploadCertificadoA1.tsx` → Edge Function
