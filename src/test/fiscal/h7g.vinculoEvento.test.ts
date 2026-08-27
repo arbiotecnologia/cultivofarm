@@ -157,6 +157,7 @@ describe("H7G-002 — evento SEFAZ apenas server-side", () => {
   it("assina no servidor com o cofre A1 e nunca devolve XML nem chave", () => {
     expect(sign).toContain("parseSigningBundle");
     expect(sign).toContain("signEventoXml");
+    expect(read("supabase/functions/_shared/fiscal/nfe/signEventoXml.ts")).toContain("node-forge");
     expect(sign).toContain("material.keyPem = \"\"");
     expect(sign).not.toMatch(/signedXml\s*,?\s*\n\s*\}, 200/);
     expect(sign).not.toContain("keyPem:");

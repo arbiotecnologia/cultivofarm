@@ -13,11 +13,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
 import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
-import {
-  buildEventoXml,
-  FiscalEventXmlError,
-  signEventoXml,
-} from "../_shared/fiscal/nfe/buildEventoXml.ts";
+import { buildEventoXml, FiscalEventXmlError } from "../_shared/fiscal/nfe/buildEventoXml.ts";
+import { signEventoXml } from "../_shared/fiscal/nfe/signEventoXml.ts";
 
 const TPAMB = "2";
 const C_ORGAO = "31"; // MG
