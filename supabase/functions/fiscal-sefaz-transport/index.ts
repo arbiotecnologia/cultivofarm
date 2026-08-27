@@ -393,11 +393,12 @@ Deno.serve(async (req) => {
     }
 
     const ok = res.httpStatus >= 200 && res.httpStatus < 300 && !!result.cStat;
-    await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
+    const recorded = await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
       _transmission_id: transmissionId,
       _state: ok ? "SUCCEEDED" : "FAILED",
       _patch: {
-        cStat: result.cStat, xMotivo: sanitizeSefazText(result.xMotivo ?? "", 200),
+        cStat: result.cStat, protocolCStat: result.protocolCStat,
+        xMotivo: sanitizeSefazText(result.xMotivo ?? "", 200),
         chNFe: result.chNFe, nProt: result.nProt, nRec: result.nRec,
         tpAmb: result.tpAmb, dhRecbto: result.dhRecbto,
         errorCode: ok ? null : "SEFAZ_TRANSPORT_FAILED",
@@ -405,19 +406,25 @@ Deno.serve(async (req) => {
       },
     });
 
+    // H7G-004: `state` descreve apenas o TRANSPORTE. O resultado fiscal é o
+    // `outcome` derivado server-side do cStat/protocolo.
+    const outcome = (recorded.data as Record<string, unknown> | null)?.outcome ?? null;
     return json({
       transmissionId,
       service,
       state: ok ? "SUCCEEDED" : "FAILED",
+      transportState: ok ? "SUCCEEDED" : "FAILED",
+      outcome,
       environmentCode: TPAMB,
       cStat: result.cStat,
       xMotivo: sanitizeSefazText(result.xMotivo ?? "", 200),
       chNFe: result.chNFe,
       nProt: result.nProt,
       nRec: result.nRec,
-      authorized: isAuthorized(result),
+      authorized: isAuthorized(result) && outcome === "AUTHORIZED",
       retrySafe: isRetryable(result),
     }, ok ? 200 : 502, headers);
+
   } catch (err) {
     const e = err as { code?: string; message?: string };
     const code = e.code ?? "SEFAZ_TRANSPORT_FAILED";
