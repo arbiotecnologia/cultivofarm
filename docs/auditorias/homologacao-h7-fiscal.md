@@ -361,3 +361,105 @@ remanescente classificado como **P1 operacional**: (a) importação do A1 com a
 senha digitada pelo operador na UI, (b) deploy autorizado das Edge Functions
 fiscais, (c) credenciamento SEFAZ-MG e validação contábil. Nenhuma transmissão
 real foi executada; produção fiscal permanece OFF; H8 não iniciada.
+
+---
+
+## 14. Fase H7g — Correção focada após auditoria independente do transporte (2026-08-27)
+
+Escopo: staging `ikaauvsflpmamgxmkhoq` apenas. Produção `navfzbwgwzruipouyfnk`
+intocada. H8 não iniciada. Preservado o gate server-side de
+`rpc_fiscal_xml_prepare_v1` e a exigência de XSD oficial + XMLDSig antes de
+`SIGNED` no `fiscal-xml-engine`.
+
+### 14.1 H7G-001 — Vínculo canônico run ↔ invoice na autorização (P1, corrigido)
+
+- `supabase/functions/fiscal-sefaz-transport/index.ts`: em `action=authorize`, o
+  `invoice_id` passou a ser **derivado exclusivamente** de
+  `fiscal_xml_runs.fiscal_invoice_id`. O body deixou de ser autoridade; se
+  informado e divergente, a requisição é recusada com `SEFAZ_INVOICE_RUN_MISMATCH`
+  antes de abrir transmissão ou tocar a SEFAZ.
+- Validações prévias obrigatórias: `state='SIGNED'`, `signed_path` presente,
+  `environment_code='2'`, `access_key` com 44 dígitos e invoice do run existente.
+- Defense-in-depth no banco: trigger `trg_fiscal_sefaz_tx_link_guard` +
+  `rpc_fiscal_sefaz_transmit_begin_v1` recusam a mesma divergência mesmo em
+  chamada direta à RPC ou `INSERT` direto na tabela.
+- `alreadyAuthorized` passou a operar sobre o invoice canônico do run.
+
+### 14.2 H7G-002 — Evento SEFAZ deixa de aceitar XML do cliente (P1, corrigido)
+
+- `event_xml` foi **removido como autoridade de transporte**. Tanto o transporte
+  quanto o assinador recusam explicitamente o campo (`SEFAZ_EVENT_XML_NOT_ACCEPTED`).
+- Fluxo canônico sobre a tabela existente `fiscal_events` (sem motor paralelo),
+  com colunas mínimas adicionadas: `sefaz_event_code`, `sefaz_seq_evento`,
+  `sefaz_access_key`, `sefaz_reason`, `signed_xml_path`, `signed_xml_sha256`,
+  `sefaz_c_stat`, `sefaz_n_prot`.
+- RPCs server-side: `rpc_fiscal_event_sefaz_prepare_v1` (tipos oficiais 110111 /
+  110110, exige protocolo de autorização canônico na própria chave, motivo com
+  validação normativa, `fn_fiscal_can_operate`, idempotência com fingerprint e
+  advisory lock), `rpc_fiscal_event_sefaz_mark_signed_v1` e
+  `rpc_fiscal_event_sefaz_reconcile_v1` (append-only). Estado consolidado em
+  `v_fiscal_sefaz_event_state` (PREPARED → SIGNED → REGISTERED/REJECTED).
+- Geração e assinatura ocorrem apenas no servidor:
+  `supabase/functions/_shared/fiscal/nfe/buildEventoXml.ts` (puro) e
+  `signEventoXml.ts` (XMLDSig com o mesmo cofre A1, material só em memória).
+- Nova Edge Function `supabase/functions/fiscal-event-sign/index.ts`: prepara,
+  assina, grava o XML no bucket privado `fiscal-xml` e registra o hash. Nenhuma
+  resposta devolve XML, chave privada ou material de certificado.
+- `action=event` no transporte agora exige `fiscal_event_id`, carrega o evento
+  assinado do storage e deriva invoice/chave/tipo server-side; evento cruzado
+  entre notas é bloqueado (`SEFAZ_EVENT_INVOICE_MISMATCH`).
+
+### 14.3 H7G-003 — Reprodutibilidade da migration
+
+Auditado: não existia migration canônica equivalente ao H7f. Criada a migration
+incremental `supabase/migrations/20260926000000_h7g_transporte_evento_sefaz_v1.sql`,
+idempotente e reexecutável, representando o estado final H7f+H7g, sem editar
+migration histórica e fail-closed contra qualquer ambiente com emissão produtiva
+habilitada. Artefatos correspondentes em `restoration/homologacao-h7/`:
+`83-h7g-transporte-evento-apply.sql` (aplicado no staging),
+`84-h7g-transporte-evento-rollback.sql` e `85-h7g-postcheck.sql`. Identidade
+lógica verificada por teste estático de ausência de drift.
+
+### 14.4 H7G-004 — Semântica de resultado
+
+`fiscal_sefaz_transmissions.outcome` (`PENDING | PROCESSING | AUTHORIZED |
+REJECTED | EVENT_REGISTERED | TRANSPORT_ERROR`) é derivado server-side de
+cStat/protocolo. `state` passou a significar exclusivamente "transporte
+concluído". Consumidores auditados e ajustados:
+`src/hooks/useFiscalSefazTransmissions.ts` (helper `isFiscallyAuthorized`, que
+exige `outcome='AUTHORIZED'` **e** protocolo) e
+`src/components/fiscal/TransporteSefazSecao.tsx` (badges distintos de transporte
+e de resultado fiscal). Rejeição SEFAZ nunca marca documento como autorizado.
+
+### 14.5 Testes e evidências
+
+| Verificação | Resultado |
+| --- | --- |
+| `85-h7g-postcheck.sql` (staging, transacional) | **18 PASS** |
+| `60-h7-postcheck.sql` | 11 PASS |
+| `61-h7-seguranca-ambiente.sql` | 12 PASS |
+| `72-h7d-postcheck.sql` | 8 PASS |
+| `75-h7e-postcheck.sql` | 7 PASS |
+| `82-h7f-postcheck.sql` (assinatura atualizada p/ 8 args) | 11 PASS |
+| `62-h7-concorrencia.sh` | 4/4 PASS |
+| `src/test/fiscal/h7g.vinculoEvento.test.ts` | 23 PASS |
+| `fiscal-secrets-scan.sh` / `fiscal-integration-scan.sh` | OK |
+| `tsgo --noEmit` | 0 erros |
+| Vitest | **3.235 PASS** / 4 skip |
+
+Cobertura negativa comprovada no postcheck: invoice divergente na RPC e no
+`INSERT` direto, evento sem vínculo, evento em NF-e não autorizada, motivo fora
+da norma, tipo não oficial, evento cruzado entre invoices, mismatch de
+idempotência, rejeição não autorizando documento e ausência de `EXECUTE` para
+`anon`/`authenticated` nas RPCs de escrita (todas SECURITY DEFINER com
+`search_path` explícito).
+
+### 14.6 Gate
+
+**GATE — H7 — APROVADA COM RESSALVAS (zero P0/P1 técnico; H7G-001 e H7G-002
+fechados).** Nenhuma transmissão real foi executada — o A1 não está importado.
+Pendências operacionais mantidas: certificado A1 + senha, deploy runtime das
+Edge Functions fiscais (`fiscal-certificate-upload`, `fiscal-certificate-revoke`,
+`fiscal-xml-engine`, `fiscal-sefaz-transport`, `fiscal-event-sign`),
+credenciamento SEFAZ-MG, validação contábil e matriz fiscal. Produção fiscal
+permanece bloqueada. **H8 não iniciada.**
