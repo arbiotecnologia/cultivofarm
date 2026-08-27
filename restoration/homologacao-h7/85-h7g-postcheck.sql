@@ -240,15 +240,20 @@ BEGIN
     'NFeRecepcaoEvento4', 'H7G-EVT-TX', repeat('7', 64),
     'https://hnfe.fazenda.mg.gov.br/nfe2/services/NFeRecepcaoEvento4',
     NULL, NULL, v_actor, v_event);
+  v_tx := (v_res ->> 'transmissionId')::uuid;
   SELECT count(*) INTO v_n FROM public.fiscal_sefaz_transmissions
-   WHERE id = (v_res ->> 'transmissionId')::uuid
+   WHERE id = v_tx
      AND fiscal_event_id = v_event AND fiscal_invoice_id = v_inv_a;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL H7G-16: vinculo evento/invoice ausente'; END IF;
   v_pass := v_pass + 1; RAISE NOTICE 'PASS H7G-16 transmissao de evento vinculada';
 
   -- ===== H7G-17 reconciliação append-only preserva histórico =============
+  PERFORM public.rpc_fiscal_sefaz_transmit_record_v1(v_tx, 'SUCCEEDED', jsonb_build_object(
+    'cStat', '135', 'xMotivo', 'Evento registrado e vinculado a NF-e',
+    'nProt', '131260000000009', 'tpAmb', '2'));
   PERFORM public.rpc_fiscal_event_sefaz_reconcile_v1(
-    v_event, '135', '131260000000009', 'Evento registrado e vinculado a NF-e', v_actor);
+    v_event, v_tx, '135', 'Evento registrado e vinculado a NF-e',
+    '131260000000009', now());
   SELECT count(*) INTO v_n FROM public.fiscal_events
    WHERE fiscal_invoice_id = v_inv_a AND sefaz_event_code = '110111';
   IF v_n < 3 THEN RAISE EXCEPTION 'FAIL H7G-17: historico do evento nao e append-only (%)', v_n; END IF;
