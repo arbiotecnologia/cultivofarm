@@ -105,8 +105,17 @@ export function TransporteSefazSecao({ invoiceId }: { invoiceId?: string | null 
                   {t.nProt && (
                     <div className="text-xs text-muted-foreground">Protocolo {t.nProt}</div>
                   )}
+                  {isFiscallyAuthorized(t) && (
+                    <div className="text-xs text-muted-foreground">
+                      Autorização fiscal confirmada pelo protocolo.
+                    </div>
+                  )}
                 </div>
-                <Badge variant={stateVariant(t.state)}>{STATE_LABEL[t.state]}</Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={outcomeVariant(t.outcome)}>{OUTCOME_LABEL[t.outcome]}</Badge>
+                  <Badge variant={stateVariant(t.state)}>{STATE_LABEL[t.state]}</Badge>
+                </div>
+
               </li>
             ))}
           </ul>
