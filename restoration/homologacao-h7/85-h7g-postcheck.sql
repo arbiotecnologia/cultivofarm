@@ -147,12 +147,18 @@ BEGIN
   v_pass := v_pass + 1; RAISE NOTICE 'PASS H7G-09 outcome AUTHORIZED derivado de cStat/protocolo';
 
   -- ===== H7G-10 rejeição não vira autorização =============================
-  DECLARE v_tx_rej uuid;
+  DECLARE v_tx_rej uuid; v_run_b uuid;
   BEGIN
+    INSERT INTO public.fiscal_xml_runs (
+      fiscal_invoice_id, idempotency_key, schema_version, environment_code,
+      access_key, state, payload, payload_sha256, signed_path)
+    VALUES (v_inv_b, 'H7G-POSTCHECK-RUN-B', 'PL_009_V4', '2', v_key_b, 'SIGNED',
+            '{}'::jsonb, repeat('b', 64), 'nfe/' || v_inv_b || '/signed.xml')
+    RETURNING id INTO v_run_b;
     v_res := public.rpc_fiscal_sefaz_transmit_begin_v1(
       'NFeAutorizacao4', 'H7G-REJEICAO', repeat('f', 64),
       'https://hnfe.fazenda.mg.gov.br/nfe2/services/NFeAutorizacao4',
-      NULL, v_run, v_actor, NULL);
+      NULL, v_run_b, v_actor, NULL);
     v_tx_rej := (v_res ->> 'transmissionId')::uuid;
     PERFORM public.rpc_fiscal_sefaz_transmit_record_v1(v_tx_rej, 'SUCCEEDED', jsonb_build_object(
       'cStat', '539', 'xMotivo', 'Duplicidade de NF-e', 'tpAmb', '2'));
