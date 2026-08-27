@@ -10,10 +10,24 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type SefazTransmissionState = "PENDING" | "SENT" | "SUCCEEDED" | "FAILED" | "BLOCKED";
 
+/**
+ * H7G-004: `state` descreve SOMENTE o transporte (`SUCCEEDED` = "transporte
+ * concluído", jamais "NF-e autorizada"). O resultado fiscal é o `outcome`,
+ * derivado server-side de cStat/protocolo.
+ */
+export type SefazTransmissionOutcome =
+  | "PENDING"
+  | "PROCESSING"
+  | "AUTHORIZED"
+  | "REJECTED"
+  | "EVENT_REGISTERED"
+  | "TRANSPORT_ERROR";
+
 export interface SefazTransmission {
   transmissionId: string;
   service: string;
   state: SefazTransmissionState;
+  outcome: SefazTransmissionOutcome;
   environmentCode: string;
   endpointHost: string;
   cStat: string | null;
@@ -28,6 +42,12 @@ export interface SefazTransmission {
   createdAt: string;
   completedAt: string | null;
 }
+
+/** Autorização fiscal exige outcome canônico + protocolo; nunca só `state`. */
+export function isFiscallyAuthorized(t: Pick<SefazTransmission, "outcome" | "nProt">): boolean {
+  return t.outcome === "AUTHORIZED" && !!t.nProt;
+}
+
 
 export interface SefazTransmissionStatus {
   ceiling: "HOMOLOGATION";

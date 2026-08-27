@@ -9,23 +9,42 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  isFiscallyAuthorized,
   useFiscalSefazTransmissions,
+  type SefazTransmissionOutcome,
   type SefazTransmissionState,
 } from "@/hooks/useFiscalSefazTransmissions";
 
+// H7G-004: rótulo de transporte ≠ rótulo fiscal.
 const STATE_LABEL: Record<SefazTransmissionState, string> = {
   PENDING: "Aguardando",
   SENT: "Enviado",
-  SUCCEEDED: "Concluído",
+  SUCCEEDED: "Transporte concluído",
   FAILED: "Falhou",
   BLOCKED: "Bloqueado",
 };
 
+const OUTCOME_LABEL: Record<SefazTransmissionOutcome, string> = {
+  PENDING: "Sem resultado",
+  PROCESSING: "Em processamento",
+  AUTHORIZED: "Autorizada",
+  REJECTED: "Rejeitada",
+  EVENT_REGISTERED: "Evento registrado",
+  TRANSPORT_ERROR: "Erro de transporte",
+};
+
 function stateVariant(state: SefazTransmissionState) {
-  if (state === "SUCCEEDED") return "default" as const;
+  if (state === "SUCCEEDED") return "secondary" as const;
   if (state === "FAILED" || state === "BLOCKED") return "destructive" as const;
   return "secondary" as const;
 }
+
+function outcomeVariant(outcome: SefazTransmissionOutcome) {
+  if (outcome === "AUTHORIZED" || outcome === "EVENT_REGISTERED") return "default" as const;
+  if (outcome === "REJECTED" || outcome === "TRANSPORT_ERROR") return "destructive" as const;
+  return "outline" as const;
+}
+
 
 export function TransporteSefazSecao({ invoiceId }: { invoiceId?: string | null }) {
   const { data, isLoading, isError } = useFiscalSefazTransmissions(invoiceId);
@@ -86,8 +105,17 @@ export function TransporteSefazSecao({ invoiceId }: { invoiceId?: string | null 
                   {t.nProt && (
                     <div className="text-xs text-muted-foreground">Protocolo {t.nProt}</div>
                   )}
+                  {isFiscallyAuthorized(t) && (
+                    <div className="text-xs text-muted-foreground">
+                      Autorização fiscal confirmada pelo protocolo.
+                    </div>
+                  )}
                 </div>
-                <Badge variant={stateVariant(t.state)}>{STATE_LABEL[t.state]}</Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={outcomeVariant(t.outcome)}>{OUTCOME_LABEL[t.outcome]}</Badge>
+                  <Badge variant={stateVariant(t.state)}>{STATE_LABEL[t.state]}</Badge>
+                </div>
+
               </li>
             ))}
           </ul>
