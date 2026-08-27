@@ -34,9 +34,9 @@ BEGIN
   -- H7F-4: RPCs de escrita negadas a anon e authenticated
   SELECT NOT (
       has_function_privilege('anon',
-        'public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid)','EXECUTE')
+        'public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)','EXECUTE')
    OR has_function_privilege('authenticated',
-        'public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid)','EXECUTE')
+        'public.rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)','EXECUTE')
    OR has_function_privilege('anon',
         'public.rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)','EXECUTE')
    OR has_function_privilege('authenticated',
