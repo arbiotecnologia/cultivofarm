@@ -463,3 +463,118 @@ Edge Functions fiscais (`fiscal-certificate-upload`, `fiscal-certificate-revoke`
 `fiscal-xml-engine`, `fiscal-sefaz-transport`, `fiscal-event-sign`),
 credenciamento SEFAZ-MG, validação contábil e matriz fiscal. Produção fiscal
 permanece bloqueada. **H8 não iniciada.**
+
+---
+
+## 15. H7.0–H7.10 — Auditoria completa e correção da matriz fiscal (2026-08-27)
+
+### 15.1 Ambiente
+
+Detectado novamente drift dos arquivos auto-gerados (`.env` apontando para o
+sandbox e `types.ts` reduzido a 2.052 linhas). Restaurado o baseline de staging
+`c75bb87f` (`.env` = `ikaauvsflpmamgxmkhoq`, `types.ts` = 21.850 linhas).
+`guard-staging.sh` e `check-frontend-binding.sh`: **OK**
+(`tpAmb='2'`, `production_emission_allowed=0`, marcador `STAGING`).
+
+> Observação operacional: a plataforma reescreve `.env`/`types.ts` durante a
+> execução de comandos longos. O gate estático `connection-binding.static.test.ts`
+> detecta o drift corretamente — é o comportamento esperado, não um defeito.
+
+### 15.2 Estado fiscal auditado (leitura direta)
+
+| Item | Valor |
+| --- | --- |
+| `company_fiscal_settings` | 1 (MG, CRT=3, série HML 1, `nfe_environment_code=2`) |
+| `fiscal_tax_rules` | 6 — **0 PUBLISHED**, 6 SUPERSEDED |
+| `fiscal_certificates` / `fiscal_certificate_material` | 0 / 0 |
+| `fiscal_invoices` / `fiscal_xml_runs` / `fiscal_sefaz_transmissions` | 0 / 0 / 0 |
+| `service_fiscal_profiles` (NFS-e) | 0 |
+| `v_fiscal_nfe_emitter_readiness` | `NOT_READY` |
+
+Bloqueios de readiness (`BLOCK`): `EMITTER_ACCREDITATION_MISSING`,
+`EMITTER_CERTIFICATE_MISSING`, `EMITTER_ACCOUNTING_NOT_VALIDATED`.
+Warning informativo: `EMITTER_IE_DV_NOT_IMPLEMENTED`.
+
+### 15.3 Findings desta passagem
+
+| ID | Sev. | Descrição | Situação |
+| --- | --- | --- | --- |
+| H7-101 | **P1** | `fiscal_tax_rules`: regra `SUPERSEDED` podia voltar a `PUBLISHED` por `UPDATE` direto, contornando `rpc_fiscal_tax_rule_publish` (fonte oficial, base legal, segregação de funções). Conteúdo de versão arquivada também era mutável. | **CORRIGIDO** |
+| H7-102 | P2 | `authenticated` mantinha `DELETE`/`TRUNCATE`/`REFERENCES`/`TRIGGER` em `fiscal_tax_rules` (bloqueados apenas por ausência de policy). | **CORRIGIDO** |
+| H7-103 | P2 | NFS-e sem `service_fiscal_profiles` classificados. Estrutura existe (`v_service_fiscal_readiness`); não foram inventadas alíquotas municipais. | Pendência declarada |
+| H7-104 | P3 | Dígito verificador de IE-MG não é validado automaticamente (warning, não bloqueia). | Aceito |
+
+Sem P0. Nenhum caminho para produção encontrado.
+
+### 15.4 Correção aplicada
+
+`restoration/homologacao-h7/87-h7h-matriz-status-guard-apply.sql`
+(+ rollback `88-…`, migration canônica
+`supabase/migrations/20260927000000_h7h_matriz_status_guard_v1.sql`):
+
+- `tg_fiscal_tax_rule_immutable` passa a implementar **máquina de estados
+  fechada**: apenas `DRAFT → PUBLISHED` e `PUBLISHED → SUPERSEDED`. Qualquer
+  outra transição falha com `FISCAL_TAX_RULE_STATUS_TRANSITION_FORBIDDEN`.
+- Publicação exige `published_by`/`published_at` — sem eles,
+  `FISCAL_TAX_RULE_PUBLISH_CHANNEL` força o uso de `rpc_fiscal_tax_rule_publish`
+  (que exige fonte oficial, base legal, alçada e SoD).
+- Conteúdo de versões `PUBLISHED` **e** `SUPERSEDED` agora é imutável.
+- `search_path = public` explícito; guard de ambiente aborta fora do staging.
+- Menor privilégio: `REVOKE DELETE, TRUNCATE, REFERENCES, TRIGGER` de
+  `authenticated`; `REVOKE ALL` de `anon`.
+
+### 15.5 Verificação
+
+| Suite | Resultado |
+| --- | --- |
+| `guard-staging.sh` + `check-frontend-binding.sh` | OK |
+| `60-h7-postcheck.sql` | 11 PASS / 0 FAIL |
+| `61-h7-seguranca-ambiente.sql` | 12 PASS / 0 FAIL |
+| `72-h7d-postcheck.sql` (cofre A1) | 8 PASS |
+| `75-h7e-postcheck.sql` | 7 PASS / 0 FAIL |
+| `82-h7f-postcheck.sql` (transporte) | 11 PASS / 0 FAIL |
+| `85-h7g-postcheck.sql` (evento) | 18 PASS |
+| `86-h7h-matriz-preflight-postcheck.sql` (**novo**) | 11 PASS / 0 FAIL |
+| `62-h7-concorrencia.sh` | 4/4 PASS |
+| `fiscal-secrets-scan.sh` / `fiscal-integration-scan.sh` | OK / OK |
+| Vitest | **3.249 PASS** (as 14 falhas observadas eram exclusivamente drift de `.env`/`types.ts`; revalidadas 88/88 PASS com o baseline restaurado) |
+| `tsgo --noEmit` | 0 erros |
+| `bun run build` | SUCCESS |
+
+Novo teste estático: `src/test/fiscal/h7h.matrizStatusGuard.test.ts` (14 PASS)
+congela H7-101/H7-102 nos artefatos canônicos.
+
+### 15.6 Cobertura dos testes obrigatórios
+
+| Teste | Evidência |
+| --- | --- |
+| A. Gate de ambiente | 61 (C1–C4), 82 (H7F-6/H7F-9), guard-staging |
+| B. Certificado | 72-H7d (8 PASS): senha nunca persistida, material sem grants, bucket privado |
+| C. Tax readiness | **86-H7H-3/4/5/6**: superseded não resolve, ausência bloqueia, RTC sem engine |
+| D. Idempotência/concorrência | 62 (4/4), 82-H7F-7, 85-H7G-14 |
+| E. Snapshot imutável | 60-T5, 85-H7G-17 |
+| F. Status/imutabilidade | 60-T4/T6/T7/T8, **86-H7H-6** |
+| G. XML/XSD | `fiscal-xml-engine` + `xsdValidate.ts`, teto SIGNED |
+| H. Provider mock/retry | `h7f.transporteSefaz.test.ts`, 82-H7F-7 |
+| I. RLS A×B / anon | 61 (A1–A5, E1–E3), 72-H7D-4, 82-H7F-2/3 |
+| J. Regressão H5/H6 | suíte completa + typecheck + build |
+
+### 15.7 Gate
+
+**GATE H7 — APROVADA COM RESSALVAS (zero P0/P1 em aberto).**
+
+Pendências exclusivamente humanas/operacionais:
+
+1. Importar o certificado A1 `.pfx` com a senha via `UploadCertificadoA1.tsx`
+   (a senha nunca é persistida; só existe em memória durante a importação).
+2. Deploy runtime das Edge Functions fiscais (`fiscal-certificate-upload`,
+   `fiscal-certificate-revoke`, `fiscal-xml-engine`, `fiscal-sefaz-transport`,
+   `fiscal-event-sign`).
+3. Registrar o credenciamento SEFAZ-MG do emitente.
+4. Validação contábil (`accounting_validated`).
+5. Preparar e **publicar** a matriz fiscal ICMS/PIS/COFINS via
+   `rpc_fiscal_tax_rule_publish`, com fonte oficial e base legal. Nenhuma
+   alíquota foi presumida.
+6. Classificar `service_fiscal_profiles` para NFS-e.
+
+Produção (`navfzbwgwzruipouyfnk`) intocada. **H8 não iniciada.**
