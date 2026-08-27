@@ -260,7 +260,11 @@ Deno.serve(async (req) => {
   }
 
   // 2. Monta o corpo da mensagem (documento assinado vem do motor de XML).
+  //    H7G-001/002: invoice e evento são DERIVADOS server-side; o body nunca é
+  //    autoridade sobre o vínculo do documento transmitido.
   let inner: string;
+  let canonicalInvoiceId: string | null = invoiceId;
+  let canonicalEventId: string | null = null;
   try {
     if (action === "status") {
       inner = buildConsStatServ(TPAMB);
@@ -272,12 +276,26 @@ Deno.serve(async (req) => {
       if (!xmlRunId) return json({ error: "run_id_required" }, 400, headers);
       const run = await admin
         .from("fiscal_xml_runs")
-        .select("id, state, signed_path, storage_bucket, fiscal_invoice_id, access_key")
+        .select("id, state, signed_path, storage_bucket, fiscal_invoice_id, access_key, environment_code")
         .eq("id", xmlRunId).maybeSingle();
       if (run.error || !run.data) return json({ error: "run_not_found" }, 404, headers);
       if (run.data.state !== "SIGNED" || !run.data.signed_path) {
         return json({ error: "run_not_signed", code: "SEFAZ_DOCUMENT_NOT_SIGNED" }, 412, headers);
       }
+      if (String(run.data.environment_code ?? "") !== TPAMB) {
+        return json({ error: "environment_mismatch", code: "FISCAL_PRODUCTION_ENDPOINT_BLOCKED" }, 403, headers);
+      }
+      if (!/^[0-9]{44}$/.test(String(run.data.access_key ?? ""))) {
+        return json({ error: "access_key_invalid", code: "SEFAZ_ACCESS_KEY_INVALID" }, 422, headers);
+      }
+      if (!run.data.fiscal_invoice_id) {
+        return json({ error: "run_invoice_missing", code: "SEFAZ_RUN_INVOICE_MISSING" }, 422, headers);
+      }
+      // O invoice do body só é aceito se coincidir com o do run.
+      if (invoiceId && invoiceId !== run.data.fiscal_invoice_id) {
+        return json({ error: "invoice_run_mismatch", code: "SEFAZ_INVOICE_RUN_MISMATCH" }, 409, headers);
+      }
+      canonicalInvoiceId = run.data.fiscal_invoice_id as string;
       const dl = await admin.storage
         .from(run.data.storage_bucket ?? "fiscal-xml")
         .download(run.data.signed_path);
@@ -288,10 +306,34 @@ Deno.serve(async (req) => {
         signedNfeXml: await dl.data.text(),
       });
     } else {
+      // H7G-002: evento transporta APENAS o XML assinado server-side, obtido do
+      // evento fiscal canônico. XML de evento vindo do cliente é recusado.
+      if (body.event_xml !== undefined || body.signed_event_xml !== undefined) {
+        return json({ error: "event_xml_not_accepted", code: "SEFAZ_EVENT_XML_NOT_ACCEPTED" }, 400, headers);
+      }
+      const eventId = body.event_id ? String(body.event_id) : "";
+      if (!UUID_RE.test(eventId)) {
+        return json({ error: "event_id_required", code: "SEFAZ_EVENT_REQUIRED" }, 400, headers);
+      }
+      const ev = await admin
+        .from("v_fiscal_sefaz_event_state")
+        .select("event_id, fiscal_invoice_id, state, signed_xml_path, sefaz_access_key")
+        .eq("event_id", eventId).maybeSingle();
+      if (ev.error || !ev.data) return json({ error: "event_not_found", code: "SEFAZ_EVENT_NOT_FOUND" }, 404, headers);
+      if (ev.data.state !== "SIGNED" || !ev.data.signed_xml_path) {
+        return json({ error: "event_not_signed", code: "SEFAZ_EVENT_NOT_SIGNED" }, 412, headers);
+      }
+      if (invoiceId && invoiceId !== ev.data.fiscal_invoice_id) {
+        return json({ error: "event_invoice_mismatch", code: "SEFAZ_EVENT_INVOICE_MISMATCH" }, 409, headers);
+      }
+      canonicalEventId = eventId;
+      canonicalInvoiceId = ev.data.fiscal_invoice_id as string;
+      const dl = await admin.storage.from("fiscal-xml").download(ev.data.signed_xml_path);
+      if (dl.error || !dl.data) return json({ error: "signed_event_unavailable" }, 500, headers);
       inner = buildEnvEvento({
         tpAmb: TPAMB,
         idLote: String(body.lote ?? Date.now()).slice(0, 15),
-        signedEventXml: String(body.event_xml ?? ""),
+        signedEventXml: await dl.data.text(),
       });
     }
   } catch (err) {
@@ -303,16 +345,18 @@ Deno.serve(async (req) => {
   const envelope = buildSoapEnvelope(service, inner);
   const fingerprint = await sha256Hex(`${service}|${endpoint}|${inner}`);
 
-  // 3. Abre a transmissão (guard de ambiente + idempotência server-side).
+  // 3. Abre a transmissão (guard de ambiente + idempotência + vínculo canônico).
   const begun = await admin.rpc("rpc_fiscal_sefaz_transmit_begin_v1", {
     _service: service,
     _idempotency_key: idempotencyKey,
     _request_fingerprint: fingerprint,
     _endpoint_url: endpoint,
-    _invoice_id: invoiceId,
+    _invoice_id: canonicalInvoiceId,
     _xml_run_id: xmlRunId,
     _actor: actor,
+    _event_id: canonicalEventId,
   });
+
   if (begun.error) {
     const code = sanitizeSefazText(begun.error.message, 120).split(":")[0].trim() ||
       "FISCAL_TRANSMISSION_BEGIN_FAILED";
