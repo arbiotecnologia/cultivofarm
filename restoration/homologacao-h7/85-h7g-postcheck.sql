@@ -14,7 +14,6 @@ DECLARE
   v_key_a text := '31' || repeat('7', 42);
   v_key_b text := '31' || repeat('8', 42);
   v_res jsonb; v_txt text; v_pass int := 0; v_n int;
-  PROCEDURE_MISSING text;
 BEGIN
   SELECT project_ref, production_emission_allowed INTO v_ref, v_prod
     FROM public.fiscal_environment_marker LIMIT 1;
