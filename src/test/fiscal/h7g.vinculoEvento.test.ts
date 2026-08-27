@@ -159,8 +159,12 @@ describe("H7G-002 — evento SEFAZ apenas server-side", () => {
     expect(sign).toContain("signEventoXml");
     expect(read("supabase/functions/_shared/fiscal/nfe/signEventoXml.ts")).toContain("node-forge");
     expect(sign).toContain("material.keyPem = \"\"");
-    expect(sign).not.toMatch(/signedXml\s*,?\s*\n\s*\}, 200/);
-    expect(sign).not.toContain("keyPem:");
+    // Nenhuma resposta HTTP carrega XML assinado ou material do certificado.
+    for (const payload of sign.match(/json\(\{[\s\S]*?\}, \d{3}, headers\)/g) ?? []) {
+      expect(payload).not.toContain("signedXml");
+      expect(payload).not.toContain("keyPem");
+      expect(payload).not.toContain("certPem");
+    }
   });
 
   it("exige perfil fiscal interno e idempotência", () => {
