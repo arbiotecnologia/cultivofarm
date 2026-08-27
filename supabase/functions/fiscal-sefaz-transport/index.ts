@@ -8,18 +8,23 @@
  *
  * Ações (POST, perfil fiscal interno):
  *   - `status`   — NFeStatusServico4
- *   - `authorize`— NFeAutorizacao4 (lote síncrono, XML assinado do run)
+ *   - `authorize`— NFeAutorizacao4 (lote síncrono; invoice DERIVADO do run)
  *   - `receipt`  — NFeRetAutorizacao4 (consulta recibo)
  *   - `consult`  — NFeConsultaProtocolo4
- *   - `event`    — NFeRecepcaoEvento4 (cancelamento / CC-e já assinados)
+ *   - `event`    — NFeRecepcaoEvento4 (exige `event_id` de evento fiscal
+ *                  preparado e assinado server-side; `event_xml` é recusado)
  *
  * Invariantes fail-closed:
  *   - allowlist rígida `https://hnfe.fazenda.mg.gov.br/`; host produtivo =>
  *     `FISCAL_PRODUCTION_ENDPOINT_BLOCKED`;
  *   - tpAmb=2 exigido no marcador, nas settings, no documento e no retorno;
+ *   - vínculo canônico: `SEFAZ_INVOICE_RUN_MISMATCH` /
+ *     `SEFAZ_EVENT_INVOICE_MISMATCH` bloqueiam antes de qualquer POST;
+ *   - `state` = transporte; `outcome` = resultado fiscal (H7G-004);
  *   - mTLS com o A1 aberto SOMENTE em memória; chave privada nunca sai daqui;
  *   - idempotência + fingerprint na RPC; documento autorizado nunca reenviado;
  *   - toda resposta/erro passa por `sanitizeSefazText`.
+
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
