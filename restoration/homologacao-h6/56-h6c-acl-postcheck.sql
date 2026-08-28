@@ -15,7 +15,8 @@ WITH f AS (
   UNION ALL SELECT 'H6C-A02 authenticated sem EXECUTE nos helpers',
          NOT bool_or(has_function_privilege('authenticated', oid, 'EXECUTE')) FROM f
   UNION ALL SELECT 'H6C-A03 PUBLIC sem EXECUTE nos helpers',
-         NOT bool_or(acldefault('f', 10)::text IS NULL OR proacl_has_public(oid)) FROM f
+         NOT EXISTS (SELECT 1 FROM f, pg_proc p, aclexplode(p.proacl) a
+                      WHERE p.oid = f.oid AND a.grantee = 0)
   UNION ALL SELECT 'H6C-A04 service_role mantem EXECUTE',
          bool_and(has_function_privilege('service_role', oid, 'EXECUTE')) FROM f
   UNION ALL SELECT 'H6C-A05 helpers seguem SECURITY DEFINER',
