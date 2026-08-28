@@ -424,3 +424,71 @@ PUBLIC/anon/authenticated; sem regressão H6/H7. **H8 não iniciada.**
 Pendências remanescentes (inalteradas): **P2** — inexiste RPC formal de renegociação de vencimento
 (campo fail-closed); **P3** — mensagem bruta em estorno concorrente (H6-006);
 **P2 externo** — emissão SEFAZ dependente de certificado A1 ausente.
+
+---
+
+## FASE H6c (ACL) — Exposição de helpers financeiros SECURITY DEFINER
+
+Execução exclusiva em staging `ikaauvsflpmamgxmkhoq`; produção `navfzbwgwzruipouyfnk` intocada.
+
+### Finding H6-005 (P1) — helpers definer executáveis por `authenticated`
+
+`public.fn_entrega_valor_faturavel_v1(uuid)` e `public.fn_entrega_guard_faturamento_v1(uuid,numeric)`
+são `SECURITY DEFINER` com `search_path=public`, **não validam role/escopo do chamador** e mantinham
+`EXECUTE` para `authenticated`. Qualquer usuário autenticado podia informar um UUID arbitrário de
+entrega e inferir valor faturável, snapshot econômico e condição de faturamento fora do seu escopo.
+
+### Finding H6-006-ACL (P2) — helper de homologação exposto a PUBLIC/anon
+
+`public.fn_h6b_reconciliacao_valor_faturavel()` (helper de reconciliação/homologação) tinha ACL
+`{=X/postgres, anon=X, authenticated=X, ...}`. Mantida a função (evidência de homologação necessária),
+removida a exposição externa.
+
+### Callers auditados (repositório + banco)
+
+| Caller | Chama | Natureza |
+|--------|-------|----------|
+| `fn_generate_receivable_from_entrega` | `fn_entrega_guard_faturamento_v1` | interno, SECURITY DEFINER (owner `postgres`) |
+| `fn_entrega_guard_faturamento_v1` | `fn_entrega_valor_faturavel_v1` | interno, SECURITY DEFINER |
+| `fn_h6b_reconciliacao_valor_faturavel` | `fn_entrega_valor_faturavel_v1` | helper de homologação |
+
+Nenhum caller no frontend (`src/`), nenhuma chamada `.rpc()` direta, nenhum uso em Edge Functions.
+Não foi necessário criar RPC substituta nem checagem de escopo adicional (regra 4 não acionada).
+
+### ACL antes / depois
+
+| Função | Antes | Depois |
+|--------|-------|--------|
+| `fn_entrega_valor_faturavel_v1(uuid)` | `postgres=X, authenticated=X, service_role=X` | `postgres=X, service_role=X` |
+| `fn_entrega_guard_faturamento_v1(uuid,numeric)` | `postgres=X, authenticated=X, service_role=X` | `postgres=X, service_role=X` |
+| `fn_h6b_reconciliacao_valor_faturavel()` | `=X (PUBLIC), postgres=X, anon=X, authenticated=X, service_role=X` | `postgres=X, service_role=X` |
+
+Nenhuma mudança de lógica: cálculo econômico, `valor_faturavel_max`, precedência de snapshots,
+idempotência e estornos permanecem idênticos. Os três helpers seguem `SECURITY DEFINER` com
+`search_path=public`; como o owner é `postgres`, as chamadas internas dispensam grant a `authenticated`.
+
+### Artefatos
+
+- `supabase/migrations/20260928000000_h6c_fin_helpers_acl_v1.sql` (canônica, idempotente)
+- `restoration/homologacao-h6/20260928000000_h6c_fin_helpers_acl_v1.sql` (cópia de homologação)
+- `restoration/homologacao-h6/54-h6c-acl-helpers-apply.sh` (guard duro anti-produção)
+- `restoration/homologacao-h6/55-h6c-acl-helpers-rollback.sql`
+- `restoration/homologacao-h6/56-h6c-acl-postcheck.sql`
+- `src/test/financeiro/h6c.helpersAcl.static.test.ts`
+
+### Evidências de teste
+
+- Postcheck `56-h6c-acl-postcheck.sql`: **12/12 PASS** (anon/authenticated/PUBLIC sem EXECUTE,
+  `service_role` preservado, definer + `search_path` mantidos, fluxo canônico e idempotência H6b intactos).
+- Comportamental (transação revertida): `H6C-B01` authenticated bloqueado em `valor_faturavel` **PASS**;
+  `H6C-B02` authenticated bloqueado no guard **PASS**; `H6C-B03` anon bloqueado **PASS**;
+  `H6C-B04` execução interna pelo owner definer continua funcionando **PASS**.
+  Em todos os bloqueios o erro é `insufficient_privilege`, sem retorno de metadados financeiros.
+- Regressão: `46-h6b-postcheck.sql` **16/16 PASS**; `47-h6c-postcheck.sql` **13/13 PASS**.
+- Repositório: `tsgo` 0 erros; Vitest **3253 passed / 4 skipped**; build SUCCESS.
+
+### GATE H6c (ACL)
+
+**H6 — APROVADA (zero P0/P1).** Finding H6-005 (P1) corrigido; H6-006-ACL (P2) corrigido.
+Pendências remanescentes (inalteradas): **P2** — ausência de RPC formal de renegociação de vencimento;
+**P3** — mensagem bruta de unicidade em estorno concorrente. Produção intocada. **H7 não iniciada nesta execução.**
