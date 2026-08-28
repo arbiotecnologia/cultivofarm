@@ -578,3 +578,82 @@ Pendências exclusivamente humanas/operacionais:
 6. Classificar `service_fiscal_profiles` para NFS-e.
 
 Produção (`navfzbwgwzruipouyfnk`) intocada. **H8 não iniciada.**
+
+## 16. Revalidação H7 + prontidão para o certificado A1 (2026-08-28)
+
+Execução somente em staging `ikaauvsflpmamgxmkhoq`. Produção
+`navfzbwgwzruipouyfnk` intocada. Nenhuma DDL nova foi necessária: a auditoria
+não encontrou P0/P1 em aberto, portanto não houve migration nesta passagem.
+
+### 16.1 Guards de ambiente
+- `guard-staging.sh`: OK — `ref=ikaauvsflpmamgxmkhoq`, `label=STAGING`,
+  `production_emission_allowed=0`, `tpAmb='2'`.
+- `check-frontend-binding.sh`: `.env`, `client.ts`, `config.toml` e `types.ts`
+  consistentes com o staging.
+- `company_fiscal_settings` ativo: `HOMOLOGATION`, `production_enabled=false`,
+  `nfe_enabled=false`, `nfse_enabled=false`, `configuration_status=DRAFT`,
+  `certificate_ref` NULL, `nfe_readiness_status=NOT_READY`.
+
+### 16.2 Postchecks SQL (88 verificações, 0 FAIL)
+| Script | Resultado |
+| --- | --- |
+| `60-h7-postcheck.sql` | 11 PASS |
+| `61-h7-seguranca-ambiente.sql` | 12 PASS |
+| `72-h7d-postcheck.sql` (cofre sem senha) | 8 PASS |
+| `75-h7e-postcheck.sql` (readiness emitente) | 7 PASS |
+| `82-h7f-postcheck.sql` (transporte SEFAZ) | 11 PASS |
+| `85-h7g-postcheck.sql` (eventos/outcome) | 18 PASS |
+| `86-h7h-matriz-preflight-postcheck.sql` | 11 PASS |
+| `62-h7-concorrencia.sh` | 4/4 PASS |
+
+Destaques confirmados nesta passagem: RLS ativa em todas as tabelas fiscais;
+`anon` sem EXECUTE em RPC fiscal e sem acesso a documentos; buckets fiscais
+privados; `fiscal_certificate_material` com RLS e **sem policy** (fail-closed);
+senha do A1 não persistida em nenhuma coluna; endpoint de produção rejeitado;
+retorno com `tpAmb=1` bloqueado; replay idempotente não duplica NF-e; estado
+terminal imutável e transmissões append-only; matriz fiscal fail-closed
+(`FISCAL_TAX_RULE_NOT_FOUND`) e reativação de regra `SUPERSEDED` bloqueada
+(`FISCAL_TAX_RULE_STATUS_TRANSITION_FORBIDDEN`).
+
+### 16.3 Varreduras de segurança e higiene
+- `scripts/fiscal-secrets-scan.sh`: OK — nenhum segredo real no repositório.
+- `scripts/fiscal-integration-scan.sh`: OK — nenhum indicador de emissão fiscal
+  em runtime de frontend.
+- `git ls-files | grep -Ei '\.(pfx|p12)$'`: nenhum artefato de certificado
+  versionado.
+- `FISCAL_CERTIFICATE_MASTER_KEY`: presente como secret de runtime (valor nunca
+  lido, exibido ou logado).
+
+### 16.4 Qualidade
+`tsgo` 0 erros · Vitest **3.249 PASS** (200 arquivos, 1 skip) · build SUCCESS.
+
+### 16.5 Prontidão para o upload do A1 (item 11 do escopo)
+- **Tela canônica**: painel fiscal → `UploadCertificadoA1.tsx`
+  (`src/components/fiscal/certificados/`), acessível apenas a `administrador`.
+- **Endpoint canônico**: Edge Function `fiscal-certificate-upload`
+  (multipart: `file`, `password`, `company_settings_id`, `display_name`).
+- **`company_fiscal_settings` correto**: `e569e047-dc90-4f11-b89f-ac9002946722`
+  (AR Biotecnologia, ativo, MG, CRT 3, série 1, `tpAmb=2`).
+- **Senha**: informada apenas no momento do upload, trafega uma única vez para o
+  backend, é usada em memória para abrir o PKCS#12 e **não é persistida** (cofre
+  `SIGNING_BUNDLE_V2`). O frontend limpa `File` e senha ao final de qualquer
+  desfecho.
+- **Master key**: operacional como secret de runtime.
+- **CORS**: allowlist versionada em `_shared/fiscal/corsAllowlist.ts` cobre o
+  preview do projeto, `cultivofarm.lovable.app` e os domínios próprios; o secret
+  `FISCAL_CORS_ALLOWLIST`, quando presente, tem precedência.
+- **Bucket**: `fiscal-certificates` privado, sem policies de leitura direta.
+- **Testes imediatamente após o upload**: fingerprint SHA-256, janela de
+  validade (`not_before`/`not_after`), correspondência chave↔certificado,
+  vínculo em `certificate_ref` e assinatura de XML NF-e 4.00 em HML (`tpAmb=2`)
+  sem transmissão.
+
+### 16.6 Bloqueios remanescentes (todos humanos/operacionais)
+`EMITTER_CERTIFICATE_MISSING`, `EMITTER_ACCREDITATION_MISSING` (credenciamento
+SEFAZ-MG) e `EMITTER_ACCOUNTING_NOT_VALIDATED` (validação contábil da matriz
+ICMS/PIS/COFINS). Avisos: `EMITTER_IE_DV_NOT_IMPLEMENTED` (WARN).
+
+### 16.7 Gate
+**H7 — APROVADA COM RESSALVAS.** Zero P0/P1 técnicos. Produção fiscal
+permanece bloqueada por marcador de ambiente e por guard de endpoint. **H8 não
+iniciada.**
