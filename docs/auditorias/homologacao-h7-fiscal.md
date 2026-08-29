@@ -657,3 +657,64 @@ ICMS/PIS/COFINS). Avisos: `EMITTER_IE_DV_NOT_IMPLEMENTED` (WARN).
 **H7 — APROVADA COM RESSALVAS.** Zero P0/P1 técnicos. Produção fiscal
 permanece bloqueada por marcador de ambiente e por guard de endpoint. **H8 não
 iniciada.**
+
+---
+
+## H7i — Preparação segura para o certificado A1 (.pfx) — 2026-08-29
+
+### Diagnóstico inicial
+- **P1 (corrigido) H7-110 — drift de binding**: `.env` e `src/integrations/supabase/types.ts`
+  haviam derivado para o projeto sandbox `yzszlzjpovmcteuxjznj` enquanto `client.ts`
+  e `supabase/config.toml` seguiam no staging. Restaurados do baseline `c75bb87f`
+  (types.ts com 21.850 linhas). Gate estático de binding volta a PASS.
+- **P2 (corrigido) H7-111 — higiene de repositório**: `.gitignore` não bloqueava
+  `*.pfx`, `*.p12`, `*.key`, `*.jks`, `*.keystore`. Padrões adicionados; nenhum
+  material sensível estava versionado (verificado em `git ls-files`).
+- Nenhum P0 encontrado. Módulo fiscal existente reutilizado; nenhum fluxo paralelo criado.
+
+### Arquitetura encontrada (reutilizada)
+- 24 tabelas fiscais, **todas com RLS**; `anon` sem grants; buckets
+  `fiscal-certificates`, `fiscal-xml`, `fiscal-regulatorio` **privados**.
+- Cofre A1 sem senha (H7d): `fiscal_certificate_material` com RLS ativa e **zero
+  policies** (fail-closed), sem colunas de senha, formato/algoritmo versionados,
+  RPC `rpc_fiscal_certificate_register_a1` restrita a `service_role`.
+- Marcador de ambiente `fiscal_environment_marker` = `ikaauvsflpmamgxmkhoq|STAGING|prod_allowed=0`;
+  emitente ativo com `tpAmb=2`, `configuration_status=DRAFT`, `certificate_ref=NULL`,
+  `nfe_readiness_status=NOT_READY`.
+- Pipeline: `fiscal-preflight` → `fiscal-xml-engine` (XSD + assinatura, teto SIGNED)
+  → `fiscal-sefaz-transport` (H7f) → `fiscal-event-sign` (H7g) → `fiscal-certificate-upload/revoke`
+  → `fiscal-binding-diagnostics`.
+- Idempotência com unique: `fiscal_idempotency_keys`, `fiscal_calculation_runs.fcr_unique`,
+  `fiscal_xml_runs_idem_unique`.
+
+### Mecanismo exato de ingestão do PFX
+- **Endpoint canônico**: Edge Function `fiscal-certificate-upload` (multipart:
+  campo do arquivo + `password`), chamada pela tela **Configurações Fiscais →
+  Certificado Digital**. Nada de caminho de repositório, migration ou fixture.
+- Fluxo server-side: CORS allowlist (`FISCAL_CORS_ALLOWLIST`) → JWT + `has_role(administrador)`
+  → parse PKCS#12 → validação chave↔certificado, validade e fingerprint →
+  cifra AES-256-GCM com `FISCAL_CERTIFICATE_MASTER_KEY` → objeto **cifrado** no
+  bucket privado `fiscal-certificates` → registro de metadados via RPC
+  `service_role`; em falha, o objeto é removido.
+- **Senha**: trafega apenas no corpo da requisição TLS, vive somente em memória
+  da função e é zerada (`password = ""`) nos caminhos de sucesso e de erro.
+  Não é persistida, logada nem devolvida. Será solicitada **apenas** no momento
+  do upload real, pela própria tela — nunca no chat, código ou banco.
+- Teste imediato após o upload: fingerprint SHA-256, janela de validade,
+  correspondência chave↔certificado e assinatura de XML NF-e em `tpAmb=2`.
+
+### Resultados dos testes
+- Postchecks staging: 60 (11 PASS), 61 (12 PASS), 72/H7d (8 PASS), 75/H7e (7 PASS),
+  82/H7f (11 PASS), 85/H7g (18 PASS), 86/H7h (11 PASS) — **78 PASS / 0 FAIL**.
+- `guard-staging.sh` e `check-frontend-binding.sh`: OK.
+- Novo teste `src/test/fiscal/h7i.ingestaoCertificado.static.test.ts`: 4 PASS.
+- `tsgo`: 0 erros. Vitest: 3.261 testes, 0 falhas após a restauração do `.env`.
+
+### Pendências (não bloqueantes)
+- P2 — upload do certificado A1 real + senha (ação humana).
+- P2 — credenciamento SEFAZ-MG homologação.
+- P3 — validação contábil da matriz fiscal (lucro presumido) e classificação NFS-e.
+
+### Gate
+**H7 APROVADA COM RESSALVAS** — zero P0/P1. Produção `navfzbwgwzruipouyfnk` intocada;
+emissão de produção permanece fail-closed. H8 não iniciada.
