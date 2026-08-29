@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# H7 — material criptográfico de certificado digital (A1/A3).
+# Nunca versionar PFX/P12/chaves privadas. XSDs e certificados públicos
+# do projeto não usam estas extensões.
+*.pfx
+*.p12
+*.key
+*.jks
+*.keystore
