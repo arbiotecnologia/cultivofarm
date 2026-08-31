@@ -718,3 +718,91 @@ iniciada.**
 ### Gate
 **H7 APROVADA COM RESSALVAS** — zero P0/P1. Produção `navfzbwgwzruipouyfnk` intocada;
 emissão de produção permanece fail-closed. H8 não iniciada.
+
+---
+
+## Ciclo H7j — auditoria integral e exclusão física do documento fiscal (2026-08-31)
+
+### 1. Inventário verificado no staging (read-only)
+- 26 tabelas fiscais, **100% com RLS ativa**; `anon` sem grants de tabela e sem
+  `EXECUTE` em qualquer das 106 funções fiscais; 0 `SECURITY DEFINER` fiscal sem
+  `search_path` explícito.
+- Buckets `fiscal-certificates`, `fiscal-xml`, `fiscal-regulatorio`: privados.
+- Marcador de ambiente: `ikaauvsflpmamgxmkhoq | STAGING | production_emission_allowed=false`;
+  emitente `tpAmb=2`, `configuration_status=DRAFT`, `certificate_ref=NULL`,
+  `nfe_readiness_status=NOT_READY`.
+- Idempotência por unique em 12 constraints, entre elas `fiscal_idempotency_keys`,
+  `fcr_unique` (cálculo), `fiscal_xml_runs_idem_unique`, `fnr_unique_number`,
+  `fnr_unique_access_key` e `fiscal_invoice_items(fiscal_invoice_id,item_sequence)`.
+
+### 2. Fluxo canônico confirmado (sem módulo paralelo)
+`partner_orders`/`ordens_servico` → `entregas` → `accounts_receivable` →
+`fiscal_invoices` (+ `fiscal_invoice_items`) → `fiscal-preflight` →
+`fiscal-xml-engine` (XSD + assinatura) → `fiscal-sefaz-transport` (homologação MG)
+→ `fiscal_sefaz_transmissions` / `fiscal_events` → reconciliação financeira/BI.
+Vínculos por FK reais: `delivery_id → entregas`, `receivable_id → accounts_receivable`,
+`partner_order_id → partner_orders`, `customer_id → clientes`, itens com
+`entrega_id`, `lote_id`, `partner_order_item_id`.
+
+### 3. Snapshot histórico e valor fiscal
+`company_snapshot`, `customer_snapshot`, `fiscal_profile_snapshot`, `tax_snapshot`,
+`fiscal_totals_snapshot` no cabeçalho e `ncm/cest/cfop/cst_icms/csosn/origem_snapshot`
++ valores por item. Alterações econômicas em documento terminal são rejeitadas
+(`FISCAL_DOCUMENT_LOCKED`), e itens de documento não-rascunho são imutáveis e
+indeletáveis (`trg_fiscal_invoice_items_state_guard`). O valor fiscal vem do
+snapshot, não do preço corrente nem de campo livre do frontend.
+
+### 4. Findings deste ciclo
+- **H7-119 (P1, corrigido)** — drift de binding: `.env` e `types.ts` haviam voltado
+  para o sandbox `yzszlzjpovmcteuxjznj`. Restaurados do baseline `c75bb87f`
+  (`types.ts` = 21.850 linhas); `check-frontend-binding.sh` e `guard-staging.sh` OK.
+  Observação operacional: o `.env` é regenerado pela plataforma; a verdade de
+  runtime é `src/integrations/supabase/client.ts`, e é ela que os testes travam.
+- **H7-120 (P1, corrigido)** — **exclusão física do documento fiscal**: `authenticated`
+  com papel de staff tinha `DELETE` em `fiscal_invoices`, e documentos em estado
+  terminal (ISSUED/AUTHORIZED/CANCELED) eram removíveis, apagando o snapshot
+  histórico e, por `ON DELETE CASCADE`, os itens fiscais. Reproduzido antes da
+  correção (`PROBE-4 FAIL ... rows=1`).
+- **H7-121 (P2, corrigido)** — `TRUNCATE` concedido a `authenticated` em
+  `fiscal_invoices` e `fiscal_invoice_items` (contornaria qualquer trigger).
+
+### 5. Correção aplicada (H7j)
+`fn_h7j_fiscal_invoice_delete_guard()` + `trg_h7j_fiscal_invoice_delete_guard`
+(BEFORE DELETE, `SECURITY DEFINER`, `search_path=public`, EXECUTE apenas para
+`postgres`/`service_role`). Bloqueia com `FISCAL_DOCUMENT_DELETE_FORBIDDEN` quando
+o documento não é rascunho puro ou possui trilha (chave de acesso, número,
+autorização/cancelamento/rejeição, eventos, transmissões SEFAZ, numeração
+reservada). Rascunho sem trilha continua descartável — sem regressão de fluxo.
+`TRUNCATE` revogado de `authenticated` nas duas tabelas.
+
+Artefatos: `restoration/homologacao-h7/89-h7j-delete-guard-apply.sql`,
+`90-h7j-delete-guard-rollback.sql`, `91-h7j-postcheck.sql`, `92-h7j-runner.sh`
+(fail-fast: guard de staging → apply → postcheck). O SQL canônico está no apply,
+já aplicado no staging; a pasta `supabase/migrations` permanece sem edição de
+histórico nesta execução (gravação bloqueada pela plataforma para o alvo sandbox).
+
+### 6. Integração H5/H6 revalidada
+Nenhum gatilho de `fiscal_invoices` remove `accounts_receivable` ou `entregas`
+(H7J-7 PASS). Autorização fiscal não cria baixa/pagamento; cancelamento fiscal
+não apaga financeiro nem entrega — apenas marca `canceled_at`/`cancel_reason`.
+
+### 7. Ponto seguro de integração do material de assinatura (pendente)
+Único ponto autorizado: Edge Function **`fiscal-certificate-upload`** (multipart,
+admin-only, CORS allowlist), com cifra AES-256-GCM por `FISCAL_CERTIFICATE_MASTER_KEY`,
+objeto cifrado no bucket privado `fiscal-certificates` e metadados via RPC
+`service_role`. A senha existe apenas em memória da função e é zerada em sucesso
+e em erro. **Nenhum material criptográfico foi importado nesta execução.**
+`.gitignore` bloqueia `*.pfx`, `*.p12`, `*.key`, `*.jks`, `*.keystore`.
+
+### 8. Resultados
+- Postchecks staging: 60 (11), 61 (12), 72 (8), 75 (7), 82 (11), 85 (18), 86 (11),
+  **91/H7j (7)** — **85 PASS / 0 FAIL**.
+- Guards `check-frontend-binding.sh` e `guard-staging.sh`: OK (`tpAmb=2`,
+  produção fiscal desabilitada).
+- Teste novo `src/test/fiscal/h7j.deleteGuard.static.test.ts`.
+
+### 9. Gate H7j
+**H7 APROVADA COM RESSALVAS** — zero P0/P1 em aberto. Produção
+`navfzbwgwzruipouyfnk` intocada; emissão de produção fail-closed. Pendências
+humanas: certificado A1 + senha (somente pela tela), credenciamento SEFAZ-MG,
+validação contábil (lucro presumido) e classificação NFS-e. **H8 não iniciada.**
