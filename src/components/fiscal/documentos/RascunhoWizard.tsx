@@ -591,6 +591,9 @@ export default function RascunhoWizard({
               </CardContent>
             </Card>
             <div className="pt-4">
+              <PreflightNfeSecao invoiceId={invoiceId} />
+            </div>
+            <div className="pt-4">
               <GeracaoXmlNfeSecao invoiceId={invoiceId} />
             </div>
 
