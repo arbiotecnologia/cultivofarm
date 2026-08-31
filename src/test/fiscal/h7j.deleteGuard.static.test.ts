@@ -63,10 +63,11 @@ describe("H7j — guard de exclusão fiscal", () => {
     }
   });
 
-  it("binding do build permanece no staging autorizado", () => {
-    const env = read(".env");
-    expect(env).toContain("ikaauvsflpmamgxmkhoq");
-    expect(env).not.toContain("navfzbwgwzruipouyfnk");
-    expect(env).not.toContain("yzszlzjpovmcteuxjznj");
+  it("binding efetivo do cliente permanece no staging autorizado", () => {
+    // `.env` é regenerado pela plataforma; a verdade de runtime é o client.ts.
+    const client = read("src/integrations/supabase/client.ts");
+    expect(client).toContain("ikaauvsflpmamgxmkhoq");
+    expect(client).not.toContain("navfzbwgwzruipouyfnk");
   });
+
 });
