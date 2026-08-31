@@ -78,18 +78,19 @@ export function useFiscalPreflight(invoiceId: string | null, options: { enabled?
   });
 }
 
+const SECTION_ORDER: string[] = [
+  "AMBIENTE",
+  "EMITENTE",
+  "DESTINATARIO",
+  "DOCUMENTO",
+  "ITENS",
+  "TOTAIS",
+  "ORIGEM",
+  "CERTIFICADO",
+];
+
 /** Agrupa achados por seção preservando a ordem canônica de exibição. */
 export function groupBySection(findings: PreflightFinding[]): Array<[string, PreflightFinding[]]> {
-  const order: string[] = [
-    "AMBIENTE",
-    "EMITENTE",
-    "DESTINATARIO",
-    "DOCUMENTO",
-    "ITENS",
-    "TOTAIS",
-    "ORIGEM",
-    "CERTIFICADO",
-  ];
   const map = new Map<string, PreflightFinding[]>();
   for (const f of findings) {
     const key = f.section ?? "DOCUMENTO";
@@ -97,7 +98,9 @@ export function groupBySection(findings: PreflightFinding[]): Array<[string, Pre
     list.push(f);
     map.set(key, list);
   }
-  return [...map.entries()].sort(
-    (a, b) => (order.indexOf(a[0]) + 99) % 99 - ((order.indexOf(b[0]) + 99) % 99),
-  );
+  const rank = (s: string) => {
+    const i = SECTION_ORDER.indexOf(s);
+    return i === -1 ? SECTION_ORDER.length : i;
+  };
+  return [...map.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
 }
