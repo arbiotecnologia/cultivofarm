@@ -23,6 +23,12 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
+  fiscalAllowedOrigins,
+  isFiscalOriginAllowed,
+  normalizeOrigin,
+  FISCAL_RELEASE_ID,
+} from "../_shared/fiscal/corsAllowlist.ts";
+import {
   PREFLIGHT_ALLOWED_ROLES,
   maskRecursive,
 } from "../_shared/fiscal/preflight.ts";
@@ -45,8 +51,8 @@ const ALLOWED_HEADERS =
   "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version";
 
 function parseAllowlist(): string[] {
-  const raw = Deno.env.get("FISCAL_ALLOWED_ORIGINS") ?? "";
-  return raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+  // H7e: allowlist canônica compartilhada (default ∪ ambiente), nunca "*".
+  return fiscalAllowedOrigins();
 }
 function corsHeadersFor(req: Request): Record<string, string> {
   const origin = req.headers.get("Origin");
@@ -55,15 +61,16 @@ function corsHeadersFor(req: Request): Record<string, string> {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "600",
     "Vary": "Origin",
+    "X-AR-Bio-Function-Version": FISCAL_RELEASE_ID,
   };
   if (!origin) return base;
-  if (parseAllowlist().includes(origin)) base["Access-Control-Allow-Origin"] = origin;
+  if (isFiscalOriginAllowed(origin)) base["Access-Control-Allow-Origin"] = normalizeOrigin(origin)!;
   return base;
 }
 function isBrowserOriginAllowed(req: Request): boolean {
   const origin = req.headers.get("Origin");
   if (!origin) return true;
-  return parseAllowlist().includes(origin);
+  return isFiscalOriginAllowed(origin);
 }
 
 function correlationId(): string {

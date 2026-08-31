@@ -19,7 +19,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
+import { fiscalAllowedOrigins, isFiscalOriginAllowed, FISCAL_RELEASE_ID } from "../_shared/fiscal/corsAllowlist.ts";
 import {
   evaluatePreflight,
   isRoleAllowedForPreflight,
@@ -56,18 +56,18 @@ function parseAllowlist(): string[] {
 
 function corsHeadersFor(req: Request): Record<string, string> {
   const origin = req.headers.get("Origin");
-  const allowlist = parseAllowlist();
   const base: Record<string, string> = {
     "Access-Control-Allow-Headers": ALLOWED_HEADERS,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "600",
     "Vary": "Origin",
+    "X-AR-Bio-Function-Version": FISCAL_RELEASE_ID,
   };
   // Sem Origin (server-to-server): não incluímos ACAO. A autorização depende do JWT.
   if (!origin) return base;
   // Com Origin: só reflete se allowlisted. Default vazio = nega.
-  if (allowlist.includes(origin)) {
-    base["Access-Control-Allow-Origin"] = origin;
+  if (isFiscalOriginAllowed(origin)) {
+    base["Access-Control-Allow-Origin"] = new URL(origin).origin;
   }
   return base;
 }
@@ -75,7 +75,7 @@ function corsHeadersFor(req: Request): Record<string, string> {
 function isBrowserOriginAllowed(req: Request): boolean {
   const origin = req.headers.get("Origin");
   if (!origin) return true; // server-to-server: aceito, mas exige JWT depois
-  return parseAllowlist().includes(origin);
+  return isFiscalOriginAllowed(origin);
 }
 
 /* ───────────────────────────────── Utils ─────────────────────────────────── */
