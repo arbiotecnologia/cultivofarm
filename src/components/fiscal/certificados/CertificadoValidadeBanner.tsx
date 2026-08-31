@@ -10,7 +10,7 @@
  *
  * Estados:
  *   - `expired`: bloqueia homologação (destructive).
- *   - `expiring_soon` (<=30 dias): atenção, não bloqueia.
+ *   - `expiring_soon` (<=60 dias): atenção escalonada 60/30/15/7, não bloqueia.
  *   - `unknown`: validade não pôde ser verificada.
  *   - `valid` ou `none`: banner não é renderizado.
  */
@@ -118,6 +118,7 @@ export default function CertificadoValidadeBanner({
       variant={variant}
       data-testid="fiscal-cert-validity-banner"
       data-status={summary.status}
+      data-alert-tier={summary.alertTier ?? undefined}
       className={className}
     >
       <Icon className="h-4 w-4" aria-hidden />
