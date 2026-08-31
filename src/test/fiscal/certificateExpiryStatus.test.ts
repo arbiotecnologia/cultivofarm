@@ -50,7 +50,7 @@ describe("summarizeCertificateExpiry", () => {
     expect(r.worstDisplayName).toBe("A1 Empresa");
   });
 
-  it("<=30 dias => 'expiring_soon', não bloqueia, escolhe o pior", () => {
+  it("<=60 dias (H7-05) => 'expiring_soon', não bloqueia, escolhe o pior", () => {
     const r = summarizeCertificateExpiry([
       cert({ display_name: "A", days_until_expiration: 40 }),
       cert({ display_name: "B", days_until_expiration: 12 }),
@@ -59,8 +59,10 @@ describe("summarizeCertificateExpiry", () => {
     expect(r.blocksHomologation).toBe(false);
     expect(r.worstDaysRemaining).toBe(12);
     expect(r.worstDisplayName).toBe("B");
-    expect(r.expiringCount).toBe(1);
+    expect(r.expiringCount).toBe(2);
+    expect(r.alertTier).toBe(15);
   });
+
 
   it("expirado (status EXPIRED) => 'expired', bloqueia homologação", () => {
     const r = summarizeCertificateExpiry([

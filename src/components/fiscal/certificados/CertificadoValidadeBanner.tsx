@@ -10,7 +10,7 @@
  *
  * Estados:
  *   - `expired`: bloqueia homologação (destructive).
- *   - `expiring_soon` (<=30 dias): atenção, não bloqueia.
+ *   - `expiring_soon` (<=60 dias): atenção escalonada 60/30/15/7, não bloqueia.
  *   - `unknown`: validade não pôde ser verificada.
  *   - `valid` ou `none`: banner não é renderizado.
  */
@@ -103,18 +103,22 @@ export default function CertificadoValidadeBanner({
     summary.status === "expired"
       ? "Substitua o certificado A1 ou registre um novo para retomar a homologação."
     : summary.status === "expiring_soon"
-      ? "Providencie a renovação antes do vencimento; a homologação ainda pode prosseguir."
+      ? summary.alertTier !== null
+        ? `Alerta de ${summary.alertTier} dia(s): providencie a renovação antes do vencimento; a homologação ainda pode prosseguir.`
+        : "Providencie a renovação antes do vencimento; a homologação ainda pode prosseguir."
     : summary.status === "none"
       ? "Cadastre um certificado A1 para prosseguir com a homologação."
     : summary.status === "valid"
       ? "Nenhuma ação necessária no momento."
       : "Abra a seção de certificados para reenviar os metadados ou substituir o arquivo.";
 
+
   return (
     <Alert
       variant={variant}
       data-testid="fiscal-cert-validity-banner"
       data-status={summary.status}
+      data-alert-tier={summary.alertTier ?? undefined}
       className={className}
     >
       <Icon className="h-4 w-4" aria-hidden />
