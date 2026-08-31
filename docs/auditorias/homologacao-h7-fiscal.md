@@ -806,3 +806,43 @@ e em erro. **Nenhum material criptográfico foi importado nesta execução.**
 `navfzbwgwzruipouyfnk` intocada; emissão de produção fail-closed. Pendências
 humanas: certificado A1 + senha (somente pela tela), credenciamento SEFAZ-MG,
 validação contábil (lucro presumido) e classificação NFS-e. **H8 não iniciada.**
+
+---
+
+## H7k — Alerta antecipado de validade do certificado A1 (60/30/15/7)
+
+### 1. Finding
+**H7-130 (P3, corrigido)** — o requisito H7-05 exige alerta escalonado em
+60/30/15/7 dias antes do vencimento do certificado A1. O classificador só
+sinalizava atenção a partir de 30 dias, sem escalonamento visível ao operador.
+
+### 2. Correção (frontend/puro, sem backend)
+- `src/lib/fiscal/certificateExpiryStatus.ts`: novo `CERT_ALERT_TIERS =
+  [60,30,15,7]`, helper puro `certificateAlertTier()` e campo `alertTier` no
+  resumo; janela de atenção ampliada para 60 dias (não bloqueante).
+- `src/components/fiscal/certificados/CertificadoValidadeBanner.tsx`: exibe a
+  faixa atingida (`data-alert-tier` + texto). Continua sem renderizar PFX,
+  senha, `object_path`, fingerprint completo ou qualquer segredo.
+- Nenhuma mudança de banco, RLS, RPC, Edge Function, rota ou permissão.
+
+### 3. Testes
+- Novo `src/test/fiscal/h7k.certificadoAlertas.test.ts` (10 casos: limiares,
+  bordas 61/60/31/30/16/15/8/7/0, expirado e ausência de certificado).
+- `src/test/fiscal/certificateExpiryStatus.test.ts` atualizado para a janela de
+  60 dias.
+- Suíte completa: **3.281 PASS / 4 skipped**; `tsgo` sem erros; build OK.
+
+### 4. Revalidação de ambiente (mesma execução)
+- Drift de binding P1 recorrente da plataforma corrigido: `.env` e
+  `src/integrations/supabase/types.ts` restaurados do baseline autorizado
+  (`c75bb87f`, 21.850 linhas); `check-frontend-binding.sh` e `guard-staging.sh`
+  OK (`tpAmb=2`, produção fiscal desabilitada).
+- Postchecks staging reexecutados: 60 (11), 72 (8), 75 (7), 82 (11), 85 (18),
+  86 (11), 91 (7) — **73 PASS / 0 FAIL**.
+
+### 5. Gate H7k
+**H7 APROVADA COM RESSALVAS** — zero P0/P1. Produção `navfzbwgwzruipouyfnk`
+intocada. Bloqueio remanescente exclusivamente humano: importação do
+certificado A1 + senha pela tela (Edge Function `fiscal-certificate-upload`),
+credenciamento SEFAZ-MG, validação contábil (lucro presumido) e classificação
+NFS-e. **H8 não iniciada.**
