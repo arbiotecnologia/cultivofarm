@@ -262,10 +262,16 @@ describe("Fase 3.16.2-A — Edge Function upload (hardening)", () => {
 
   test("CORS fail-closed: origem ausente/desconhecida => 403 e Origin nunca ecoa", () => {
     expect(up).toMatch(/cors_origin_not_allowed/);
-    expect(up).toMatch(/allowed\s*\?\s*origin!?\s*:\s*"null"/);
-    // Sem fallback como allow[0] ?? "" (pattern do bug antigo)
-    expect(up).not.toMatch(/allow\[0\]\s*\?\?\s*""/);
+    // H7e: fail-closed agora vive no helper canônico compartilhado
+    expect(up).toMatch(/fiscalCorsHeaders\(origin/);
+    const helper = readFileSync(
+      p("supabase/functions/_shared/fiscal/corsAllowlist.ts"),
+      "utf8",
+    );
+    expect(helper).toMatch(/allowed\s*\?\s*normalized!?\s*:\s*"null"/);
+    expect(helper).not.toMatch(/allow\[0\]\s*\?\?\s*""/);
   });
+
 
   test("validação de UUID e existência da company_settings", () => {
     expect(up).toMatch(/UUID_RE/);

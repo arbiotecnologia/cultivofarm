@@ -130,7 +130,7 @@ describe("H7e — paridade e hardening na Edge Function", () => {
     expect(src).toContain('from "./asn1Screen.ts"');
     expect(src).not.toContain("PKCS12_MAGIC");
     for (const needle of [
-      "fiscalAllowedOrigins",
+      "fiscalCorsHeaders",
       "CERT_PASSWORD_REQUIRED",
       "FISCAL_CERTIFICATE_MASTER_KEY",
       "AES-GCM",

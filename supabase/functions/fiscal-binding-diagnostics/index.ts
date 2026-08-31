@@ -14,22 +14,14 @@
  * Nunca retorna: valores de secrets, chaves, senhas, caminhos de storage.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
+import { fiscalAllowedOrigins, fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 
 const EXPECTED_STAGING_REF = "ikaauvsflpmamgxmkhoq";
 const FORBIDDEN_PRODUCTION_REF = "navfzbwgwzruipouyfnk";
 
 function corsFor(origin: string | null): { allowed: boolean; headers: Record<string, string> } {
-  const allowed = !!origin && fiscalAllowedOrigins().includes(origin);
-  return {
-    allowed,
-    headers: {
-      "Access-Control-Allow-Origin": allowed ? origin! : "null",
-      "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Vary": "Origin",
-    },
-  };
+  const c = fiscalCorsHeaders(origin, "GET, POST, OPTIONS");
+  return { allowed: c.allowed, headers: c.headers };
 }
 
 function json(body: unknown, status: number, headers: Record<string, string>): Response {

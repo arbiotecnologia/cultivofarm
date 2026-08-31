@@ -21,7 +21,7 @@
  *     privada, JWT, service_role ou o próprio XML por canal não autenticado.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { fiscalAllowedOrigins } from "../_shared/fiscal/corsAllowlist.ts";
+import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/nfe/buildNfeXml.ts";
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
 import { signNfeXml, verifyNfeSignature } from "../_shared/fiscal/nfe/signNfeXml.ts";
@@ -34,17 +34,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const MAX_IDEMPOTENCY = 200;
 
 function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
-  const allow = fiscalAllowedOrigins();
-  const allowed = !!origin && allow.includes(origin);
-  return {
-    allowed,
-    headers: {
-      "Access-Control-Allow-Origin": allowed ? origin! : "null",
-      "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Vary": "Origin",
-    },
-  };
+  // H7e: helper canônico (união default ∪ ambiente, origem normalizada, sem wildcard).
+  const c = fiscalCorsHeaders(origin, "POST, OPTIONS");
+  return { allowed: c.allowed, headers: c.headers };
 }
 
 function json(body: unknown, status: number, headers: Record<string, string>): Response {

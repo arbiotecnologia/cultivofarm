@@ -95,7 +95,7 @@ describe("H7c — hardening preservado na Edge Function", () => {
       // H7: allowlist de origens agora vem do helper compartilhado
       // (`_shared/fiscal/corsAllowlist.ts`), que ainda honra o secret
       // FISCAL_CORS_ALLOWLIST quando presente.
-      "fiscalAllowedOrigins",
+      "fiscalCorsHeaders",
       "cors_origin_not_allowed",
       "has_role",
       "administrador",
