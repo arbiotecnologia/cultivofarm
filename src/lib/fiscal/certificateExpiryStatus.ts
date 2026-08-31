@@ -37,6 +37,11 @@ export interface CertExpirySummary {
   worstDisplayName: string | null;
   /** Deve impedir avanço de homologação (banner bloqueante). */
   blocksHomologation: boolean;
+  /**
+   * H7-05 — faixa de alerta antecipado do certificado ativo mais crítico.
+   * 60 / 30 / 15 / 7 dias; `null` quando não há alerta aplicável.
+   */
+  alertTier: 60 | 30 | 15 | 7 | null;
 }
 
 export interface CertExpiryInput {
@@ -47,12 +52,25 @@ export interface CertExpiryInput {
   display_name?: string | null;
 }
 
+/** H7-05 — limiares de alerta antecipado, do mais amplo ao mais crítico. */
+export const CERT_ALERT_TIERS = [60, 30, 15, 7] as const;
+
+/** Faixa de alerta correspondente aos dias restantes (menor faixa aplicável). */
+export function certificateAlertTier(days: number | null | undefined): 60 | 30 | 15 | 7 | null {
+  if (typeof days !== "number" || !Number.isFinite(days) || days < 0) return null;
+  let tier: 60 | 30 | 15 | 7 | null = null;
+  for (const t of CERT_ALERT_TIERS) {
+    if (days <= t) tier = t;
+  }
+  return tier;
+}
+
 function classifyOne(c: CertExpiryInput): "valid" | "expiring_soon" | "expired" | "unknown" {
   const days = c.days_until_expiration;
   if (c.status === "EXPIRED") return "expired";
   if (typeof days === "number" && Number.isFinite(days)) {
     if (days < 0) return "expired";
-    if (days <= 30) return "expiring_soon";
+    if (days <= CERT_ALERT_TIERS[0]) return "expiring_soon";
     return "valid";
   }
   if (c.status === "AVAILABLE") return "unknown";
@@ -75,6 +93,7 @@ export function summarizeCertificateExpiry(
       worstDaysRemaining: null,
       worstDisplayName: null,
       blocksHomologation: false,
+      alertTier: null,
     };
   }
 
@@ -116,5 +135,6 @@ export function summarizeCertificateExpiry(
     worstDaysRemaining,
     worstDisplayName,
     blocksHomologation: status === "expired",
+    alertTier: status === "expiring_soon" ? certificateAlertTier(worstDaysRemaining) : null,
   };
 }
