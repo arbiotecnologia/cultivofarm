@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldOff, Trash2, Plus, CheckCircle2, AlertTriangle, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import GeracaoXmlNfeSecao from "@/components/fiscal/documentos/GeracaoXmlNfeSecao";
+import PreflightNfeSecao from "@/components/fiscal/documentos/PreflightNfeSecao";
 
 import {
   emptyRascunho,
@@ -590,6 +591,9 @@ export default function RascunhoWizard({
                 </div>
               </CardContent>
             </Card>
+            <div className="pt-4">
+              <PreflightNfeSecao invoiceId={invoiceId} />
+            </div>
             <div className="pt-4">
               <GeracaoXmlNfeSecao invoiceId={invoiceId} />
             </div>
