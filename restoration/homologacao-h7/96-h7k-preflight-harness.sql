@@ -26,8 +26,8 @@ BEGIN
 
   -- Item deliberadamente inconsistente: líquido diverge de qtd x unitário.
   INSERT INTO public.fiscal_invoice_items
-    (fiscal_invoice_id, item_sequence, description, quantity, unit_value, net_value, commercial_unit)
-  VALUES (v_inv, 1, 'HARNESS H7K', 2, 10.00, 500.00, 'UN');
+    (fiscal_invoice_id, item_sequence, item_kind, description, quantity, unit_value, net_value, commercial_unit)
+  VALUES (v_inv, 1, 'OTHER', 'HARNESS H7K', 2, 10.00, 500.00, 'UN');
 
   PERFORM set_config('request.jwt.claim.sub', v_admin::text, true);
   PERFORM set_config('request.jwt.claims',
