@@ -6,9 +6,17 @@
 # UMA transação que termina SEMPRE em ROLLBACK, duas vezes seguidas, provando
 # idempotência sem persistir nada. Aborta se o DSN não for o staging.
 #
+# LIMITE CONHECIDO (medido em 2026-09): o staging JÁ tem o delta aplicado, e
+# parte das migrations é one-shot por desenho (ex.: 20260823000000_fase_f4_1_xsd_oficial
+# falha com FISCAL_XSD_REGISTRY_IMMUTABLE na reexecução, pois o registro de XSD é
+# versionado e imutável). Portanto este ensaio NÃO é prova de aplicabilidade em
+# produção: a prova válida é executar o delta em um banco temporário restaurado
+# a partir do baseline de produção (20260819020208). Ver manifest.md §7.
+#
 # Uso:
 #   STAGING_DSN='postgresql://...' restoration/promocao-producao/30-dry-run-staging.sh
 # =====================================================================
+
 set -euo pipefail
 
 PROD_REF="navfzbwgwzruipouyfnk"
