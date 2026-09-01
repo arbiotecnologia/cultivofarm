@@ -1,0 +1,954 @@
+_assert_visita_editavel(p_registro_id uuid)|1|search_path=public
+_avancar_os_status(p_origem text, p_os_id uuid, p_alvo text)|1|search_path=public, pg_temp
+_comunicacao_build_snapshot(_event_key text, _source_id uuid, _payload jsonb, _user_id uuid, _cliente_id uuid)|1|search_path=public
+_comunicacao_build_snapshot_v2(_event_key text, _source_type text, _source_id uuid, _payload jsonb, _user_id uuid, _cliente_id uuid)|1|search_path=public
+_comunicacao_can_deliver(_user_id uuid, _cliente_id uuid, _canal comunicacao_canal)|1|search_path=public
+_comunicacao_dlq_replay_rate_check(p_scope text, p_max_per_minute integer)|1|search_path=public
+_comunicacao_expand_event(_event_id uuid, _event_key text, _source_type text, _source_id uuid, _payload jsonb)|1|search_path=public, extensions
+_comunicacao_publish_system_event(_event_key text, _source_type text, _source_id uuid, _payload jsonb, _idempotency_key text)|1|search_path=public
+_comunicacao_require_admin()|1|search_path=public
+_comunicacao_resolve_recipients(_event_key text, _rule comunicacao_regras, _source_id uuid)|1|search_path=public
+_comunicacao_resolve_recipients_v2(_event_key text, _rule comunicacao_regras, _source_type text, _source_id uuid)|1|search_path=public
+_comunicacao_resolve_template(_chave text, _canal comunicacao_canal, _versao integer)|1|search_path=public
+_comunicacao_trg_os_onfarm_pronto_retirada()|1|search_path=public
+_comunicacao_trg_os_pronto_retirada()|1|search_path=public
+_comunicacao_trg_portal_solicitacao()|1|search_path=public, extensions
+_comunicacao_write_audit(_acao text, _entidade text, _entity_id uuid, _before jsonb, _after jsonb)|1|search_path=public
+_comunicacao_write_consent(_user_id uuid, _cliente_id uuid, _canal comunicacao_canal, _acao text, _source text)|1|search_path=public
+_cpp_audit(_acao text, _plan_id uuid, _old jsonb, _new jsonb, _motivo text)|1|search_path=public
+_cpp_validate_payload(p jsonb)|0|search_path=public
+_entrega_seed_checklist(_entrega_id uuid)|1|search_path=public
+_fiscal_rtc_assert_payload(payload jsonb, kind text)|0|search_path=pg_catalog, public
+_fiscal_rtc_can_read(uid uuid)|0|search_path=pg_catalog, public
+_notify_role(p_role app_role, p_tipo text, p_titulo text, p_mensagem text, p_link text)|1|search_path=public
+_portal_cliente_user_has_link(p_user uuid, p_cliente uuid)|1|search_path=public
+_refresh_esteira_laboratorio_after_change()|1|search_path=public
+_rpc_avancar_esteira_laboratorio_internal(p_os_id uuid, p_origem_os text, p_etapa_destino text, p_programacao_id uuid)|1|search_path=public, pg_temp
+_seed_cockpit_fixtures_impl(p_prefix text)|1|search_path=public
+_sync_planning_from_os()|1|search_path=public
+_validate_planning_integrity(p_partner_order_id uuid)|1|search_path=public
+_visita_lock_and_check(p_registro_id uuid, p_expected_version integer, p_require_approver boolean)|1|search_path=public
+_visita_log_status(p_registro_id uuid, p_acao text, p_status_anterior text, p_status_novo text, p_motivo text, p_version integer)|1|search_path=public
+add_b2b_payment_terms_note_secure(p_partner_order_id uuid, p_note text)|1|search_path=public
+approve_b2b_credit(p_partner_order_id uuid, p_notes text)|1|search_path=public
+approve_b2b_payment_terms_secure(p_partner_order_id uuid, p_notes text)|1|search_path=public
+approve_microorganism_profile_with_audit(p_profile_id uuid, p_checklist jsonb, p_aprovado_sem_fonte boolean)|1|search_path=public
+approve_partner_order(p_order_id uuid, p_approval_notes text, p_estimated_delivery_date date)|1|search_path=public
+approve_product_profile_with_audit(p_profile_id uuid, p_checklist jsonb, p_aprovado_sem_fonte boolean)|1|search_path=public
+aprovar_ficha_versao(p_versao_id uuid)|1|search_path=public
+archive_partner_simulation_secure(p_simulation_id uuid, p_reason text)|1|search_path=public
+assign_b2b_user_client_secure(p_user_id uuid, p_cliente_id uuid, p_assignment_type text, p_can_create_simulation boolean, p_can_monitor boolean, p_notes text)|1|search_path=public
+audit_partner_order_payment_terms()|1|search_path=public
+auto_advance_solicitacao_on_checkin()|1|search_path=public
+auto_advance_solicitacao_on_os()|1|search_path=public
+auto_advance_solicitacao_on_registro()|1|search_path=public
+auto_reject_partner_orders_no_items(p_horas integer)|1|search_path=public
+bulk_inserir_alvos(p_kind text, p_parent_id uuid, p_alvos jsonb)|1|search_path=public
+calculate_valor_dose_from_litro(p_valor_litro numeric)|0|search_path=public
+calculate_valor_ha_from_dose(p_dose_ml_ha numeric, p_valor_dose numeric)|0|search_path=public
+calculate_valor_litro_from_dose(p_valor_dose numeric)|0|search_path=public
+can_checkin_technical_visit(p_user_id uuid, p_registro_id uuid)|1|search_path=public
+can_checkout_technical_visit(p_user_id uuid, p_registro_id uuid)|1|search_path=public
+can_manage_catalog_tecnico(_uid uuid)|1|search_path=public
+can_manage_technical_visit(p_user_id uuid, p_registro_id uuid)|1|search_path=public
+can_user_access_alerta(p_alerta_id uuid)|1|search_path=public
+can_user_access_aplicacao(_aplicacao_id uuid)|1|search_path=public
+can_user_access_arquivo(_entidade_tipo text, _entidade_id uuid)|1|search_path=public
+can_user_access_cliente(_cliente_id uuid)|1|search_path=public
+can_user_access_cliente(_user_id uuid, _cliente_id uuid)|1|search_path=public
+can_user_access_estoque_embalagem(p_embalagem_id uuid)|1|search_path=public
+can_user_access_fazenda(_fazenda_id uuid)|1|search_path=public
+can_user_access_produto_etiqueta(p_etiqueta_id uuid)|1|search_path=public
+can_user_access_registro_consultor(_registro_id uuid)|1|search_path=public
+can_user_access_solicitacao(_solicitacao_id uuid)|1|search_path=public
+can_user_manage_aplicacao(_aplicacao_id uuid)|1|search_path=public
+can_user_manage_estoque_embalagem(p_embalagem_id uuid)|1|search_path=public
+can_view_bi_operacional(_uid uuid)|1|search_path=public
+can_view_catalog_internal(_uid uuid)|1|search_path=public
+can_view_technical_visit(p_user_id uuid, p_registro_id uuid)|1|search_path=public
+cancel_b2b_receivable_secure(p_partner_order_id uuid, p_motivo text)|1|search_path=public
+cancel_financial_receipt(_receipt_id uuid, _reason text)|1|search_path=public
+cash_dist(money, money)|0|
+catalog_audit_log()|1|search_path=public
+catalog_set_updated_at()|0|search_path=public
+catalog_sources_set_source_key()|0|search_path=public
+check_cliente_dependencies(_cliente_id uuid)|1|search_path=public
+check_fazenda_dependencies(_fazenda_id uuid)|1|search_path=public
+check_os_item_ref()|0|search_path=public
+check_os_status_transition()|1|search_path=public, pg_temp
+check_partner_order_sla()|1|search_path=public
+check_talhao_dependencies(_talhao_id uuid)|1|search_path=public
+comunicacao_audit_no_mutation()|0|search_path=public
+comunicacao_consent_no_mutation()|0|search_path=public
+comunicacao_dlq_replay_audit_no_mutation()|1|search_path=public
+comunicacao_outbox_touch()|0|search_path=public
+comunicacao_provider_receipts_no_mutation()|0|search_path=public
+comunicacao_templates_guard_immutable()|0|search_path=public
+convert_partner_simulation_to_order_secure(p_simulation_id uuid, p_observacoes text, p_payment_plan_id uuid, p_first_due_date date, p_installment_count integer, p_confirm_price_change boolean)|1|search_path=public
+create_partner_order_secure(p_partner_id uuid, p_observacoes text, p_items jsonb, p_requested_delivery_date date, p_payment_plan_id uuid, p_first_due_date date, p_installment_count integer, p_expected_cart_hash text, p_idempotency_key text)|1|search_path=public
+create_technical_visit_secure(p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_solicitacao_origem_id uuid, p_scheduled_at timestamp with time zone, p_visit_type tipo_visita, p_priority urgencia_consultor, p_initial_notes text, p_client_uuid uuid)|1|search_path=public
+date_dist(date, date)|0|
+enforce_checkin_immutability()|1|search_path=public
+enforce_cliente_id_for_produtor()|1|search_path=public
+enforce_diagnostico_immutability()|1|search_path=public
+enforce_micro_profile_approval()|0|search_path=public
+enforce_product_profile_approval()|0|search_path=public
+enforce_visit_immutability()|1|search_path=public
+exec_relatorios_set_atualizado_em()|0|search_path=public
+finish_technical_visit_secure(p_registro_id uuid, p_latitude numeric, p_longitude numeric, p_precisao_gps numeric, p_foto_url text, p_foto_path text, p_observacoes text, p_client_uuid uuid)|1|search_path=public
+fiscal_audit_trigger()|1|search_path=public, pg_temp
+fiscal_audit_trigger_microorganism_profiles()|1|search_path=public, pg_temp
+fiscal_invoice_items_state_guard()|0|search_path=public, pg_temp
+fiscal_json_has_sensitive_key(p jsonb)|0|search_path=public
+fiscal_rtc_has_sensitive_key(payload jsonb)|0|search_path=pg_catalog, public
+fiscal_sinief20_snapshot_immutable()|0|
+fiscal_validate_key_usage(p_arr jsonb)|0|
+fiscal_validate_snapshot_keys(p_obj jsonb, p_allowed text[], p_label text)|0|
+float4_dist(real, real)|0|
+float8_dist(double precision, double precision)|0|
+fn_assign_receipt_metadata()|1|search_path=public
+fn_audit_category_dre()|1|search_path=public
+fn_audit_financial_documents()|1|search_path=public
+fn_audit_fiscal_status()|1|search_path=public
+fn_avancar_etapa_esteira(p_origem text, p_os_id uuid, p_programacao_id uuid, p_etapa_destino text, p_usuario_id uuid)|1|search_path=public
+fn_b2b_apply_interest(p_net numeric, p_interest_type text, p_monthly_pct numeric, p_months numeric)|0|search_path=public
+fn_b2b_can_admin_plans(_user_id uuid)|1|search_path=public
+fn_b2b_cart_hash(p_partner_id uuid, p_plan_id uuid, p_cart jsonb, p_final numeric)|0|search_path=public
+fn_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric, p_exclude_order_id uuid)|1|search_path=public
+fn_b2b_guard_credit_approval_fields()|1|search_path=public
+fn_b2b_guard_order_items_immutable()|1|search_path=public
+fn_b2b_order_billing_eligibility(p_partner_order_id uuid)|1|search_path=public
+fn_b2b_order_priceable(p_order_id uuid)|0|search_path=public
+fn_b2b_plan_referenced(_plan_id uuid)|1|search_path=public
+fn_b2b_plan_selectable(_plan_id uuid, _ref timestamp with time zone)|1|search_path=public
+fn_b2b_resolve_base_unit_price(p_partner_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_ref_date date)|1|search_path=public
+fn_b2b_status_is_approved_or_later(p_status partner_order_status)|0|search_path=public
+fn_b2b_status_is_operational(p_status partner_order_status)|0|search_path=public
+fn_calc_next_generation_date(_freq text, _from_date date, _due_day integer)|0|search_path=public
+fn_calc_os_faturamento_totals()|0|search_path=public
+fn_catalogo_litro_canonico(p_produto_id uuid, p_microrganismo_id uuid, OUT litro numeric, OUT tiers integer)|1|search_path=public
+fn_catalogo_preco_canonico(p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric)|1|search_path=public
+fn_catalogo_sync_mestre_preco(p_produto_id uuid, p_microrganismo_id uuid)|1|search_path=public
+fn_cc_audit(p_entity text, p_entity_id uuid, p_action text, p_before jsonb, p_after jsonb, p_motivo text)|1|search_path=public
+fn_cc_can_prepare(p_uid uuid)|1|search_path=public
+fn_cc_can_publish(p_uid uuid)|1|search_path=public
+fn_cc_validate_item_input(p_plan_id uuid, p_pricing_mode text, p_condition_price numeric, p_discount_percent numeric)|0|search_path=public
+fn_cockpit_assert_b2b_liberado(p_partner_order_id uuid)|1|search_path=public, pg_temp
+fn_cockpit_assert_operador()|1|search_path=public, pg_temp
+fn_cockpit_assert_operador_origem(p_origem text)|1|search_path=public, pg_temp
+fn_cockpit_ctx_programacao(p_programacao_id uuid)|1|search_path=public, pg_temp
+fn_cockpit_is_gestor()|1|search_path=public, pg_temp
+fn_cockpit_is_hml_environment()|1|search_path=public, pg_temp
+fn_cockpit_norm_origem(p_origem text)|0|search_path=public, pg_temp
+fn_cockpit_payload_hash(p_payload jsonb)|0|search_path=public, extensions, pg_temp
+fn_cockpit_stage(p_status_oficial text)|0|search_path=public
+fn_comprovante_entrega_montar_v1(p_entrega_id uuid)|1|search_path=public, extensions, pg_temp
+fn_conformidade_perfil_vigente(p_produto_id uuid, p_categoria text)|1|search_path=public
+fn_cq_aprovado_avanca_os()|1|search_path=public
+fn_cq_autoria_servidor()|1|search_path=public, pg_temp
+fn_cq_resultado_imutavel()|1|search_path=public, pg_temp
+fn_cq_ultimo_resultado(p_lote_id uuid)|1|search_path=public, pg_temp
+fn_create_programacao_on_os_classica_insert()|1|search_path=public
+fn_create_programacao_on_os_onfarm_insert()|1|search_path=public
+fn_cultura_em_uso(_cultura_id uuid)|1|search_path=public
+fn_entrega_assert_confirmador(p_origem text)|1|search_path=public, pg_temp
+fn_entrega_build_snapshot_v1(p_entrega_id uuid)|1|search_path=public, extensions
+fn_entrega_cobertura_v1(p_entrega_id uuid)|1|search_path=public
+fn_entrega_confirmar_engine_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb, p_opcoes jsonb)|1|search_path=public, pg_temp
+fn_entrega_guard_faturamento_v1(p_entrega_id uuid, p_total numeric)|1|search_path=public
+fn_entrega_marcar_cancelamento()|1|search_path=public
+fn_entrega_valor_faturavel_v1(p_entrega_id uuid)|1|search_path=public
+fn_envase_avanca_os()|1|search_path=public
+fn_envase_material_imutavel()|1|search_path=public, pg_temp
+fn_estoque_ctx_close()|1|search_path=public
+fn_estoque_ctx_force(p_ctx jsonb)|1|search_path=public
+fn_estoque_ctx_open(p_ctx jsonb)|1|search_path=public
+fn_estoque_ctx_read()|1|search_path=public
+fn_estoque_fingerprint(p_acao text, p_item uuid, p_qtd numeric, p_payload jsonb)|0|search_path=public, extensions
+fn_estoque_pode_operar(_uid uuid, _acao text)|1|search_path=public
+fn_estoque_produto_guard()|1|search_path=public
+fn_fin_aging(_type text)|1|search_path=public
+fn_fin_cashflow(_from date, _to date, _granularity text, _mode text)|1|search_path=public
+fn_fin_dashboard_kpis(_from date, _to date)|1|search_path=public
+fn_fin_dre_summary(_from date, _to date, _regime text)|1|search_path=public
+fn_fin_expense_by_category(_from date, _to date, _regime text, _limit integer)|1|search_path=public
+fn_fin_inadimplencia()|1|search_path=public
+fn_fin_revenue_by_category(_from date, _to date, _regime text, _limit integer)|1|search_path=public
+fn_fin_revenue_by_customer(_from date, _to date, _regime text, _limit integer)|1|search_path=public
+fn_financial_audit()|1|search_path=public
+fn_financial_inconsistencies()|1|search_path=public
+fn_fiscal_access_key_dv(_key43 text)|0|
+fn_fiscal_apply_tax(r fiscal_tax_rules, _base numeric)|0|
+fn_fiscal_apply_tax_v2(r fiscal_tax_rules, _ctx jsonb)|0|
+fn_fiscal_assert_debtor_recipient(_invoice_id uuid)|1|search_path=public, pg_temp
+fn_fiscal_assert_environment_homologation()|1|search_path=public, pg_temp
+fn_fiscal_assert_staging_marker(p_operation text)|1|search_path=public, pg_temp
+fn_fiscal_base_components_valid(_c jsonb)|0|
+fn_fiscal_billing_allowed_delivery_status()|0|
+fn_fiscal_billing_allowed_order_status()|0|
+fn_fiscal_can_operate(_uid uuid)|1|search_path=public, pg_temp
+fn_fiscal_can_read_internal(_uid uuid)|1|search_path=public, pg_temp
+fn_fiscal_cep_is_valid(_cep text)|0|
+fn_fiscal_cnpj_is_valid(_v text)|0|
+fn_fiscal_company_crt()|1|search_path=public, pg_temp
+fn_fiscal_cpf_is_valid(_v text)|0|
+fn_fiscal_digits(_v text)|0|
+fn_fiscal_emitter_pendencies(_id uuid)|1|search_path=public, pg_temp
+fn_fiscal_emitter_pendencies_row(r company_fiscal_settings)|1|search_path=public, pg_temp
+fn_fiscal_emitter_status(_id uuid)|1|search_path=public, pg_temp
+fn_fiscal_environment_gate_v1(p_operation text)|1|search_path=public, pg_temp
+fn_fiscal_event_fingerprint_v1(_event_type text, _notes text)|0|search_path=public, pg_temp
+fn_fiscal_ibge_municipio_coerente(_cmun text, _uf text)|0|
+fn_fiscal_ie_check(_uf text, _ie text)|0|
+fn_fiscal_invoice_eligibility(_source_type text, _source_id uuid)|1|search_path=public, pg_temp
+fn_fiscal_invoice_eligibility(_source_type text, _source_id uuid, _current_invoice_id uuid)|1|search_path=public, pg_temp
+fn_fiscal_item_base(_components jsonb, _ctx jsonb)|0|
+fn_fiscal_item_profile_gate_eval(p_scope text, p_crt text, p_is_active boolean, p_profile_status text, p_accounting_validated_at timestamp with time zone, p_accounting_notes text, p_fiscal_description text, p_commercial_unit text, p_taxable_unit text, p_ncm text, p_origin_code text, p_cfop_in_state text, p_cfop_interstate text, p_icms_cst text, p_icms_csosn text, p_pis_cst text, p_cofins_cst text, p_regulatory jsonb)|0|search_path=pg_catalog, pg_temp
+fn_fiscal_official_url_allowlisted(_url text)|0|
+fn_fiscal_partner_fiscal_customer(_partner_id uuid)|1|search_path=public, pg_temp
+fn_fiscal_recipient_pendencies_row(r customer_fiscal_profiles)|1|search_path=public, pg_temp
+fn_fiscal_requirement_resolve(p_sales_channel text, p_operation_type text, p_uf text, p_scope_type text, p_scope_id uuid, p_ref_date date)|1|search_path=public
+fn_fiscal_resolve_operation(_direction text, _origin_uf text, _destination_uf text, _crt text, _final_consumer boolean, _taxpayer_indicator text, _ncm text, _product_category text, _sales_channel text, _ref_date date)|1|search_path=public, pg_temp
+fn_fiscal_resolve_tax_rule(_tax_kind text, _crt text, _origin_uf text, _destination_uf text, _ncm text, _product_category text, _final_consumer boolean, _taxpayer_indicator text, _ref_date date)|1|search_path=public, pg_temp
+fn_fiscal_round(_v numeric)|0|
+fn_fiscal_rule_validate_synthetic(_tax_kind text, _rule fiscal_tax_rules, _ctx jsonb)|0|
+fn_fiscal_scenario_coverage()|1|search_path=public, pg_temp
+fn_fiscal_sefaz_tx_guard()|1|search_path=public, pg_temp
+fn_fiscal_sefaz_tx_link_guard()|1|search_path=public, pg_temp
+fn_fiscal_status_is_terminal(_status text)|0|
+fn_fiscal_uf_ibge_code(_uf text)|0|
+fn_generate_payable_installments()|1|search_path=public
+fn_generate_receivable_from_entrega(_entrega_id uuid, _payload jsonb)|1|search_path=public
+fn_generate_receivable_installments()|1|search_path=public
+fn_generate_recurring_title(_template_id uuid, _reference_date date, _is_manual boolean)|1|search_path=public
+fn_gtin_is_valid(_gtin text)|0|
+fn_h6_guard_ap_installment_snapshot()|1|search_path=public
+fn_h6_guard_ar_installment_snapshot()|1|search_path=public
+fn_h6_guard_title_snapshot()|1|search_path=public
+fn_h6_payments_append_only()|1|search_path=public
+fn_h6b_num(p numeric)|0|
+fn_h6b_payment_fingerprint(p_kind text, p_installment_id uuid, p_payload jsonb)|0|search_path=public, extensions
+fn_h6b_reconciliacao_valor_faturavel()|1|search_path=public
+fn_h6c_entrega_ar_b2b_link()|1|search_path=public
+fn_h6c_set_canonical_payment_terms()|1|search_path=public
+fn_h6d_block_hard_delete()|1|search_path=public
+fn_h6d_hard_delete_allowed()|1|search_path=public, pg_temp
+fn_h7j_fiscal_invoice_delete_guard()|1|search_path=public
+fn_ledger_append_only()|1|search_path=public
+fn_mark_entrega_not_billable(_entrega_id uuid, _reason text)|1|search_path=public
+fn_mark_financial_overdue()|1|search_path=public
+fn_microorganism_regulatory_facts(p_microorganism_id uuid)|1|search_path=public, pg_temp
+fn_notify_lab_on_programacao()|1|search_path=public
+fn_onfarm_scope_cliente(_cliente_id uuid)|1|search_path=public
+fn_onfarm_scope_lote(_lote_id uuid)|1|search_path=public
+fn_os_assert_staging_exato()|1|search_path=public, pg_temp
+fn_produto_etiquetas_updated_at()|0|search_path=public
+fn_recalc_payable_installment()|1|search_path=public
+fn_recalc_receivable_installment()|1|search_path=public
+fn_recurring_generation_audit()|1|search_path=public
+fn_recurring_template_audit()|1|search_path=public
+fn_regulatory_can_approve(_layer text, _uid uuid)|1|search_path=public, pg_temp
+fn_regulatory_can_prepare(_uid uuid)|1|search_path=public, pg_temp
+fn_regulatory_can_read(_uid uuid)|1|search_path=public, pg_temp
+fn_regulatory_candidate_publication_guard()|1|search_path=public, pg_temp
+fn_regulatory_confidence_normalize(p_confidence text)|0|search_path=public
+fn_regulatory_ncm_source_guard()|1|search_path=public, pg_temp
+fn_regulatory_published_candidate_guard()|1|search_path=public, pg_temp
+fn_regulatory_storage_can_delete(_name text)|1|search_path=public, pg_temp
+fn_regulatory_storage_can_read(_name text)|1|search_path=public, pg_temp
+fn_regulatory_storage_can_write(_name text)|1|search_path=public, pg_temp
+fn_regulatory_storage_dossier_id(_name text)|0|
+fn_regulatory_storage_path_ok(_name text)|0|
+fn_resolve_b2b_cart(p_partner_id uuid, p_plan_id uuid, p_items jsonb, p_ref_date date)|0|search_path=public
+fn_resolve_commercial_price(p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_plan_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_ref_date date, p_quantity numeric)|0|search_path=public
+fn_reverse_payment(_payment_id uuid, _kind text, _reason text)|1|search_path=public
+fn_revert_recurring_generation(p_log_id uuid)|1|search_path=public
+fn_run_financial_inconsistency_check()|1|search_path=public
+fn_run_recurring_generation()|1|search_path=public
+fn_set_initial_next_generation()|0|search_path=public
+fn_sync_entrega_financial_status()|1|search_path=public
+fn_sync_os_classica_downstream()|1|search_path=public
+fn_sync_receipt_aliases()|0|search_path=public
+fn_sync_report_export_aliases()|0|search_path=public
+fn_upsert_alerta_operacional(p_tipo text, p_origem text, p_titulo text, p_descricao text, p_gravidade text, p_referencia_tabela text, p_referencia_id uuid, p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_consultor_id uuid, p_os_id uuid, p_registro_consultor_id uuid, p_solicitacao_id uuid, p_lote_id uuid, p_entrega_id uuid, p_proxima_acao text, p_metadata jsonb)|1|search_path=public
+fn_validate_entrega_confirmacao()|1|search_path=public
+fn_validate_entrega_estoque()|1|search_path=public
+fn_validate_envase_cq()|0|search_path=public, pg_temp
+fn_validate_envase_volume()|1|search_path=public
+gbt_bit_compress(internal)|0|
+gbt_bit_consistent(internal, bit, smallint, oid, internal)|0|
+gbt_bit_penalty(internal, internal, internal)|0|
+gbt_bit_picksplit(internal, internal)|0|
+gbt_bit_same(gbtreekey_var, gbtreekey_var, internal)|0|
+gbt_bit_union(internal, internal)|0|
+gbt_bool_compress(internal)|0|
+gbt_bool_consistent(internal, boolean, smallint, oid, internal)|0|
+gbt_bool_fetch(internal)|0|
+gbt_bool_penalty(internal, internal, internal)|0|
+gbt_bool_picksplit(internal, internal)|0|
+gbt_bool_same(gbtreekey2, gbtreekey2, internal)|0|
+gbt_bool_union(internal, internal)|0|
+gbt_bpchar_compress(internal)|0|
+gbt_bpchar_consistent(internal, character, smallint, oid, internal)|0|
+gbt_bytea_compress(internal)|0|
+gbt_bytea_consistent(internal, bytea, smallint, oid, internal)|0|
+gbt_bytea_penalty(internal, internal, internal)|0|
+gbt_bytea_picksplit(internal, internal)|0|
+gbt_bytea_same(gbtreekey_var, gbtreekey_var, internal)|0|
+gbt_bytea_union(internal, internal)|0|
+gbt_cash_compress(internal)|0|
+gbt_cash_consistent(internal, money, smallint, oid, internal)|0|
+gbt_cash_distance(internal, money, smallint, oid, internal)|0|
+gbt_cash_fetch(internal)|0|
+gbt_cash_penalty(internal, internal, internal)|0|
+gbt_cash_picksplit(internal, internal)|0|
+gbt_cash_same(gbtreekey16, gbtreekey16, internal)|0|
+gbt_cash_union(internal, internal)|0|
+gbt_date_compress(internal)|0|
+gbt_date_consistent(internal, date, smallint, oid, internal)|0|
+gbt_date_distance(internal, date, smallint, oid, internal)|0|
+gbt_date_fetch(internal)|0|
+gbt_date_penalty(internal, internal, internal)|0|
+gbt_date_picksplit(internal, internal)|0|
+gbt_date_same(gbtreekey8, gbtreekey8, internal)|0|
+gbt_date_union(internal, internal)|0|
+gbt_decompress(internal)|0|
+gbt_enum_compress(internal)|0|
+gbt_enum_consistent(internal, anyenum, smallint, oid, internal)|0|
+gbt_enum_fetch(internal)|0|
+gbt_enum_penalty(internal, internal, internal)|0|
+gbt_enum_picksplit(internal, internal)|0|
+gbt_enum_same(gbtreekey8, gbtreekey8, internal)|0|
+gbt_enum_union(internal, internal)|0|
+gbt_float4_compress(internal)|0|
+gbt_float4_consistent(internal, real, smallint, oid, internal)|0|
+gbt_float4_distance(internal, real, smallint, oid, internal)|0|
+gbt_float4_fetch(internal)|0|
+gbt_float4_penalty(internal, internal, internal)|0|
+gbt_float4_picksplit(internal, internal)|0|
+gbt_float4_same(gbtreekey8, gbtreekey8, internal)|0|
+gbt_float4_union(internal, internal)|0|
+gbt_float8_compress(internal)|0|
+gbt_float8_consistent(internal, double precision, smallint, oid, internal)|0|
+gbt_float8_distance(internal, double precision, smallint, oid, internal)|0|
+gbt_float8_fetch(internal)|0|
+gbt_float8_penalty(internal, internal, internal)|0|
+gbt_float8_picksplit(internal, internal)|0|
+gbt_float8_same(gbtreekey16, gbtreekey16, internal)|0|
+gbt_float8_union(internal, internal)|0|
+gbt_inet_compress(internal)|0|
+gbt_inet_consistent(internal, inet, smallint, oid, internal)|0|
+gbt_inet_penalty(internal, internal, internal)|0|
+gbt_inet_picksplit(internal, internal)|0|
+gbt_inet_same(gbtreekey16, gbtreekey16, internal)|0|
+gbt_inet_union(internal, internal)|0|
+gbt_int2_compress(internal)|0|
+gbt_int2_consistent(internal, smallint, smallint, oid, internal)|0|
+gbt_int2_distance(internal, smallint, smallint, oid, internal)|0|
+gbt_int2_fetch(internal)|0|
+gbt_int2_penalty(internal, internal, internal)|0|
+gbt_int2_picksplit(internal, internal)|0|
+gbt_int2_same(gbtreekey4, gbtreekey4, internal)|0|
+gbt_int2_union(internal, internal)|0|
+gbt_int4_compress(internal)|0|
+gbt_int4_consistent(internal, integer, smallint, oid, internal)|0|
+gbt_int4_distance(internal, integer, smallint, oid, internal)|0|
+gbt_int4_fetch(internal)|0|
+gbt_int4_penalty(internal, internal, internal)|0|
+gbt_int4_picksplit(internal, internal)|0|
+gbt_int4_same(gbtreekey8, gbtreekey8, internal)|0|
+gbt_int4_union(internal, internal)|0|
+gbt_int8_compress(internal)|0|
+gbt_int8_consistent(internal, bigint, smallint, oid, internal)|0|
+gbt_int8_distance(internal, bigint, smallint, oid, internal)|0|
+gbt_int8_fetch(internal)|0|
+gbt_int8_penalty(internal, internal, internal)|0|
+gbt_int8_picksplit(internal, internal)|0|
+gbt_int8_same(gbtreekey16, gbtreekey16, internal)|0|
+gbt_int8_union(internal, internal)|0|
+gbt_intv_compress(internal)|0|
+gbt_intv_consistent(internal, interval, smallint, oid, internal)|0|
+gbt_intv_decompress(internal)|0|
+gbt_intv_distance(internal, interval, smallint, oid, internal)|0|
+gbt_intv_fetch(internal)|0|
+gbt_intv_penalty(internal, internal, internal)|0|
+gbt_intv_picksplit(internal, internal)|0|
+gbt_intv_same(gbtreekey32, gbtreekey32, internal)|0|
+gbt_intv_union(internal, internal)|0|
+gbt_macad8_compress(internal)|0|
+gbt_macad8_consistent(internal, macaddr8, smallint, oid, internal)|0|
+gbt_macad8_fetch(internal)|0|
+gbt_macad8_penalty(internal, internal, internal)|0|
+gbt_macad8_picksplit(internal, internal)|0|
+gbt_macad8_same(gbtreekey16, gbtreekey16, internal)|0|
+gbt_macad8_union(internal, internal)|0|
+gbt_macad_compress(internal)|0|
+gbt_macad_consistent(internal, macaddr, smallint, oid, internal)|0|
+gbt_macad_fetch(internal)|0|
+gbt_macad_penalty(internal, internal, internal)|0|
+gbt_macad_picksplit(internal, internal)|0|
+gbt_macad_same(gbtreekey16, gbtreekey16, internal)|0|
+gbt_macad_union(internal, internal)|0|
+gbt_numeric_compress(internal)|0|
+gbt_numeric_consistent(internal, numeric, smallint, oid, internal)|0|
+gbt_numeric_penalty(internal, internal, internal)|0|
+gbt_numeric_picksplit(internal, internal)|0|
+gbt_numeric_same(gbtreekey_var, gbtreekey_var, internal)|0|
+gbt_numeric_union(internal, internal)|0|
+gbt_oid_compress(internal)|0|
+gbt_oid_consistent(internal, oid, smallint, oid, internal)|0|
+gbt_oid_distance(internal, oid, smallint, oid, internal)|0|
+gbt_oid_fetch(internal)|0|
+gbt_oid_penalty(internal, internal, internal)|0|
+gbt_oid_picksplit(internal, internal)|0|
+gbt_oid_same(gbtreekey8, gbtreekey8, internal)|0|
+gbt_oid_union(internal, internal)|0|
+gbt_text_compress(internal)|0|
+gbt_text_consistent(internal, text, smallint, oid, internal)|0|
+gbt_text_penalty(internal, internal, internal)|0|
+gbt_text_picksplit(internal, internal)|0|
+gbt_text_same(gbtreekey_var, gbtreekey_var, internal)|0|
+gbt_text_union(internal, internal)|0|
+gbt_time_compress(internal)|0|
+gbt_time_consistent(internal, time without time zone, smallint, oid, internal)|0|
+gbt_time_distance(internal, time without time zone, smallint, oid, internal)|0|
+gbt_time_fetch(internal)|0|
+gbt_time_penalty(internal, internal, internal)|0|
+gbt_time_picksplit(internal, internal)|0|
+gbt_time_same(gbtreekey16, gbtreekey16, internal)|0|
+gbt_time_union(internal, internal)|0|
+gbt_timetz_compress(internal)|0|
+gbt_timetz_consistent(internal, time with time zone, smallint, oid, internal)|0|
+gbt_ts_compress(internal)|0|
+gbt_ts_consistent(internal, timestamp without time zone, smallint, oid, internal)|0|
+gbt_ts_distance(internal, timestamp without time zone, smallint, oid, internal)|0|
+gbt_ts_fetch(internal)|0|
+gbt_ts_penalty(internal, internal, internal)|0|
+gbt_ts_picksplit(internal, internal)|0|
+gbt_ts_same(gbtreekey16, gbtreekey16, internal)|0|
+gbt_ts_union(internal, internal)|0|
+gbt_tstz_compress(internal)|0|
+gbt_tstz_consistent(internal, timestamp with time zone, smallint, oid, internal)|0|
+gbt_tstz_distance(internal, timestamp with time zone, smallint, oid, internal)|0|
+gbt_uuid_compress(internal)|0|
+gbt_uuid_consistent(internal, uuid, smallint, oid, internal)|0|
+gbt_uuid_fetch(internal)|0|
+gbt_uuid_penalty(internal, internal, internal)|0|
+gbt_uuid_picksplit(internal, internal)|0|
+gbt_uuid_same(gbtreekey32, gbtreekey32, internal)|0|
+gbt_uuid_union(internal, internal)|0|
+gbt_var_decompress(internal)|0|
+gbt_var_fetch(internal)|0|
+gbtreekey16_in(cstring)|0|
+gbtreekey16_out(gbtreekey16)|0|
+gbtreekey2_in(cstring)|0|
+gbtreekey2_out(gbtreekey2)|0|
+gbtreekey32_in(cstring)|0|
+gbtreekey32_out(gbtreekey32)|0|
+gbtreekey4_in(cstring)|0|
+gbtreekey4_out(gbtreekey4)|0|
+gbtreekey8_in(cstring)|0|
+gbtreekey8_out(gbtreekey8)|0|
+gbtreekey_var_in(cstring)|0|
+gbtreekey_var_out(gbtreekey_var)|0|
+gen_numero_solicitacao()|1|search_path=public
+generate_b2b_receivable_secure(p_partner_order_id uuid)|1|search_path=public
+generate_b2b_receivable_secure_impl(p_partner_order_id uuid)|1|search_path=public
+generate_production_orders_from_partner(p_partner_order_id uuid)|1|search_path=public
+gerar_codigo_lote(_ano integer)|1|search_path=public
+gerar_codigo_visita(_ano integer)|1|search_path=public
+get_b2b_partner_clients_for_assignment_secure(p_search text)|1|search_path=public
+get_b2b_technician_client_detail_secure(p_cliente_id uuid)|1|search_path=public
+get_b2b_technician_clients_secure(p_partner_id uuid, p_technician_user_id uuid)|1|search_path=public
+get_b2b_user_client_detail_secure(p_cliente_id uuid, p_scope text)|1|search_path=public
+get_b2b_user_client_simulations_secure(p_cliente_id uuid)|1|search_path=public
+get_b2b_user_clients_secure(p_user_id uuid, p_search text)|1|search_path=public
+get_b2b_user_role_for_partner(p_user_id uuid, p_partner_id uuid)|1|search_path=public
+get_cliente_id_for_user(_user_id uuid)|1|search_path=public
+get_cliente_ids_for_user(_user_id uuid)|1|search_path=public
+get_financial_alerts(p_reference_date date)|1|search_path=public
+get_financial_cashflow(p_start_date date, p_end_date date, p_view_mode text, p_group_by text)|1|search_path=public
+get_financial_dashboard_summary(p_start_date date, p_end_date date, p_cost_center_id uuid, p_category_id uuid, p_customer_id uuid)|1|search_path=public
+get_financial_dre_summary(p_start_date date, p_end_date date, p_regime text, p_cost_center_id uuid)|1|search_path=public
+get_financial_report_data(p_report_type text, p_start_date date, p_end_date date, p_customer_id uuid, p_category_id uuid, p_cost_center_id uuid, p_status text, p_regime text)|1|search_path=public
+get_my_available_portal_contexts()|1|search_path=public
+get_partner_catalog_secure(p_partner_id uuid)|1|search_path=public
+get_partner_catalog_tecnico_secure()|1|search_path=public
+get_partner_papel(_user_id uuid)|1|search_path=public
+get_portal_cliente_b2b_order_detail_secure(p_order_id uuid)|1|search_path=public
+get_portal_cliente_b2b_orders_secure(p_cliente_id uuid)|1|search_path=public
+get_portal_cliente_b2b_simulation_detail_secure(p_simulation_id uuid)|1|search_path=public
+get_portal_cliente_b2b_simulations_secure(p_cliente_id uuid)|1|search_path=public
+get_production_planning_detail(p_planning_id uuid)|1|search_path=public
+get_report_accountability(_scope jsonb)|1|search_path=public
+get_report_customer_statement(_customer_id uuid, _from date, _to date)|1|search_path=public
+get_report_delinquency(_as_of date)|1|search_path=public
+get_report_deliveries_billing_status(_from date, _to date)|1|search_path=public
+get_report_monthly_financial(_from date, _to date, _cost_center uuid, _regime text)|1|search_path=public
+get_report_nfe_pending(_filters jsonb)|1|search_path=public
+get_report_payables(_filters jsonb)|1|search_path=public
+get_report_receivables(_filters jsonb)|1|search_path=public
+get_top_financial_rankings(p_start_date date, p_end_date date, p_limit integer)|1|search_path=public
+get_user_partner_id()|1|search_path=public
+get_visit_organization_id(p_registro_id uuid)|1|search_path=public
+handle_new_user()|1|search_path=public
+has_active_user_cliente_access(_user_id uuid, _cliente_id uuid, _levels text[])|1|search_path=public
+has_completed_visit_presence(p_registro_id uuid)|1|search_path=public
+has_role(_user_id uuid, _role app_role)|1|search_path=public
+insert_partner_catalog_access_log_internal(p_action text, p_partner_id uuid, p_user_id uuid, p_cliente_id uuid, p_simulation_id uuid, p_order_id uuid, p_target_user_id uuid, p_details jsonb)|1|search_path=public
+int2_dist(smallint, smallint)|0|
+int4_dist(integer, integer)|0|
+int8_dist(bigint, bigint)|0|
+interval_dist(interval, interval)|0|
+is_active_visit_participant(p_user_id uuid, p_registro_id uuid)|1|search_path=public
+is_delivery_staff(_uid uuid)|1|search_path=public
+is_executivo(_uid uuid)|1|search_path=public
+is_financial_staff(_uid uuid)|1|search_path=public, pg_temp
+is_operational_staff(_uid uuid)|1|search_path=public
+is_technical_visit_editable_status(p_status text)|0|search_path=public
+is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)|1|search_path=public
+is_visit_org_manager(p_user_id uuid, p_registro_id uuid)|1|search_path=public
+is_visit_responsible(p_user_id uuid, p_registro_id uuid)|1|search_path=public
+issue_financial_receipt(_payment_id uuid, _description text)|1|search_path=public
+jsonb_get_array_safe(p_payload jsonb, p_key text)|0|search_path=public
+jsonb_object_keys_count(p jsonb)|0|search_path=public
+lab_request_replanning(p_os_id uuid, p_motivo text)|1|search_path=public
+link_partner_user(p_partner_id uuid, p_user_id uuid, p_papel text)|1|search_path=public
+log_catalog_change()|1|search_path=public
+log_estoque_movimentacao()|1|search_path=public
+log_my_access_denied_secure(p_context text, p_route_group text)|1|search_path=public
+log_os_onfarm_status_change()|1|search_path=public
+log_partner_catalog_access_secure(p_action text, p_item_tipo text, p_item_id uuid, p_cliente_id uuid, p_simulation_id uuid, p_order_id uuid, p_target_user_id uuid, p_details jsonb, p_partner_id uuid)|1|search_path=public
+log_report_export(_report_type text, _filters jsonb, _format text, _storage_bucket text, _storage_path text, _status text, _error text, _row_count integer)|1|search_path=public
+log_report_view(p_report_type text, p_filters jsonb)|1|search_path=public
+log_visita_checkin()|1|search_path=public
+lote_volume_envasado(_lote_id uuid)|1|search_path=public
+mask_sensitive_jsonb(v jsonb)|0|search_path=public, pg_temp
+normalizar_alvo(p_nome text)|0|search_path=public
+notify_consultor_atribuido_op()|1|search_path=public
+notify_consultor_on_confirmacao_produtor()|1|search_path=public
+notify_managers_on_simulation_sent()|1|search_path=public
+notify_solicitacao_atribuida()|1|search_path=public
+notify_visita_finalizada()|1|search_path=public
+oid_dist(oid, oid)|0|
+partner_apply_default_discount(p_partner_id uuid)|1|search_path=public
+partner_audit_trigger()|1|search_path=public, pg_temp
+partner_order_has_production(_order_id uuid)|1|search_path=public
+partner_order_sla_status(p_order_id uuid)|1|search_path=public
+partner_orders_audit_trigger()|1|search_path=public
+partner_ppp_compute_final()|0|search_path=public
+partner_reset_prices_to_default(p_partner_id uuid)|1|search_path=public
+partner_simulation_items_fill_snapshots()|0|search_path=public
+pode_acessar_recomendacao(_user_id uuid, _recomendacao_id uuid)|1|search_path=public
+prefixo_para_microrganismo(_tipo text)|0|search_path=public
+prefixo_para_produto(_tipo text)|0|search_path=public
+proximo_codigo(_prefixo text, _tabela text)|1|search_path=public
+publish_planning_to_lab(p_planning_id uuid)|1|search_path=public
+recalc_partner_order_production(p_partner_order_id uuid)|1|search_path=public
+recalc_partner_prices_on_default_change()|1|search_path=public
+recalc_partner_risk_score(p_partner_id uuid)|1|search_path=public
+refresh_esteira_laboratorio()|1|search_path=public
+refresh_partner_engagement(p_partner_id uuid)|1|search_path=public
+register_financial_report_export(p_report_type text, p_report_title text, p_filters jsonb, p_file_format text, p_storage_path text, p_status text, p_error_message text)|1|search_path=public
+register_my_login_redirect_secure(p_context text)|1|search_path=public
+regulatory_audit_trigger()|1|search_path=public, pg_temp
+regulatory_block_published_child_edit()|0|search_path=public, pg_temp
+regulatory_block_published_edit()|0|search_path=public, pg_temp
+regulatory_snapshot_immutable()|0|search_path=public, pg_temp
+regulatory_touch_updated_at()|0|search_path=public, pg_temp
+reject_b2b_payment_terms_secure(p_partner_order_id uuid, p_reason text)|1|search_path=public
+reject_partner_order(p_order_id uuid, p_approval_notes text)|1|search_path=public
+rejeitar_ficha_versao(p_versao_id uuid, p_observacao text)|1|search_path=public
+request_b2b_payment_terms_adjustment_secure(p_partner_order_id uuid, p_notes text)|1|search_path=public
+request_partner_order_items(p_order_id uuid, p_motivo text)|1|search_path=public
+reservar_estoque_item(p_item_id uuid, p_qty numeric, p_os_id uuid, p_os_tipo text, p_cliente_id uuid, p_partner_id uuid, p_partner_order_id uuid, p_observacao text)|1|search_path=public
+respond_b2b_order_quote_secure(p_order_id uuid, p_lines jsonb, p_first_due_date date, p_installment_count integer, p_motivo text)|1|search_path=public
+return_catalog_profile_to_review(p_kind text, p_profile_id uuid, p_motivo text)|1|search_path=public
+rls_auto_enable()|1|search_path=public
+rpc_activate_communication_template(p_template_id uuid)|1|search_path=public
+rpc_admin_communication_health_snapshot()|1|search_path=public
+rpc_admin_communication_outbox_metrics()|1|search_path=public
+rpc_admin_create_commercial_plan(p_payload jsonb)|1|search_path=public
+rpc_admin_list_commercial_plans(p_search text, p_status text, p_limit integer, p_offset integer)|1|search_path=public
+rpc_admin_list_communication_dead_letter(p_limit integer, p_offset integer)|1|search_path=public
+rpc_admin_reorder_commercial_plans(p_orders jsonb)|1|search_path=public
+rpc_admin_replay_communication_dead_letter(p_outbox_id uuid)|1|search_path=public
+rpc_admin_replay_communication_dead_letter_batch(p_limit integer)|1|search_path=public
+rpc_admin_set_commercial_plan_active(p_plan_id uuid, p_active boolean, p_motivo text)|1|search_path=public
+rpc_admin_set_default_commercial_plan(p_plan_id uuid)|1|search_path=public
+rpc_admin_set_whatsapp_consent(p_cliente_id uuid, p_user_id uuid, p_acao text, p_source text, p_justificativa text)|1|search_path=public
+rpc_admin_update_commercial_plan_metadata(p_plan_id uuid, p_name text, p_description text, p_sort_order integer)|1|search_path=public
+rpc_admin_version_commercial_plan(p_plan_id uuid, p_payload jsonb, p_motivo text)|1|search_path=public
+rpc_anexar_comprovante_entrega(p_entrega_id uuid, p_payload jsonb)|1|search_path=public
+rpc_aplicar_sla_alertas()|1|search_path=public
+rpc_archive_communication_template(p_template_id uuid)|1|search_path=public
+rpc_arquivar_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)|1|search_path=public
+rpc_assign_visit_technician(p_registro_id uuid, p_user_id uuid, p_role text)|1|search_path=public
+rpc_associate_microorganism_fiscal_product(p_microorganism_id uuid, p_product_id uuid)|1|search_path=public, pg_temp
+rpc_assumir_alerta(p_alerta_id uuid)|1|search_path=public
+rpc_ativar_monitoramento_visita(p_registro_id uuid, p_expected_version integer, p_tipo text, p_data_referencia date)|1|search_path=public
+rpc_atualizar_checklist_entrega(p_checklist_id uuid, p_concluido boolean, p_observacao text)|1|search_path=public
+rpc_atualizar_identificacao_visita(p_registro_id uuid, p_expected_version integer, p_payload jsonb)|1|search_path=public
+rpc_avancar_esteira_laboratorio(p_os_id uuid, p_origem text, p_etapa_destino text, p_programacao_id uuid)|1|search_path=public, pg_temp
+rpc_b2b_aging(p_partner_id uuid)|1|search_path=public
+rpc_b2b_aging_detalhado(p_from date, p_to date, p_partner_id uuid, p_status text)|1|search_path=public
+rpc_b2b_capacity_kpis()|1|search_path=public
+rpc_b2b_carteira_kpis(p_from date, p_to date)|1|search_path=public
+rpc_b2b_check_governance_block(p_partner_id uuid, p_acao text)|1|search_path=public
+rpc_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric, p_exclude_order_id uuid)|1|search_path=public
+rpc_b2b_executive_alerts()|1|search_path=public
+rpc_b2b_executive_dashboard()|1|search_path=public
+rpc_b2b_financial_kpis(p_from date, p_to date, p_partner_id uuid)|1|search_path=public
+rpc_b2b_governance_kpis()|1|search_path=public
+rpc_b2b_integrity_check()|1|search_path=public
+rpc_b2b_list_selectable_payment_plans()|1|search_path=public
+rpc_b2b_partner_credit(p_partner_id uuid)|1|search_path=public
+rpc_b2b_partner_profitability(p_from date, p_to date, p_partner_id uuid)|1|search_path=public
+rpc_b2b_revenue_forecast(p_partner_id uuid)|1|search_path=public
+rpc_bi_esteira_resumo(p_data_inicio timestamp with time zone, p_data_fim timestamp with time zone, p_cliente_id uuid, p_fazenda_id uuid, p_produto_id uuid, p_microrganismo_id uuid, p_origem_os text, p_status text)|1|search_path=public, pg_temp
+rpc_bi_fluxo_visitas_resumo(p_data_inicio timestamp with time zone, p_data_fim timestamp with time zone, p_cliente_id uuid, p_fazenda_id uuid, p_consultor_id uuid, p_status_solicitacao text, p_status_visita text)|1|search_path=public
+rpc_bi_visitas_por_cliente(p_cliente_id uuid, p_data_inicio date, p_data_fim date)|1|search_path=public
+rpc_bi_visitas_por_consultor(p_consultor_id uuid, p_data_inicio date, p_data_fim date)|1|search_path=public
+rpc_bi_visitas_por_fazenda(p_fazenda_id uuid, p_data_inicio date, p_data_fim date)|1|search_path=public
+rpc_bi_visitas_por_talhao(p_talhao_id uuid, p_data_inicio date, p_data_fim date)|1|search_path=public
+rpc_campaign_delete(p_id uuid)|1|search_path=public
+rpc_campaign_upsert(p_payload jsonb, p_id uuid)|1|search_path=public
+rpc_cancel_accounts_payable(p_id uuid, p_reason text)|1|search_path=public
+rpc_cancel_accounts_receivable(p_id uuid, p_reason text)|1|search_path=public
+rpc_cancel_communication_delivery(p_outbox_id uuid, p_worker_id text, p_reason text)|1|search_path=public
+rpc_cancel_financial_installment(p_installment_id uuid, p_kind text, p_reason text)|1|search_path=public
+rpc_cancelar_embalagem(p_embalagem_id uuid, p_motivo text)|1|search_path=public
+rpc_cancelar_etiqueta_produto(p_etiqueta_id uuid, p_motivo text)|1|search_path=public
+rpc_cc_archive_assignment(p_id uuid, p_motivo text)|1|search_path=public
+rpc_cc_bulk_adjust_apply(p_ids uuid[], p_percent numeric, p_motivo text)|1|search_path=public
+rpc_cc_bulk_adjust_preview(p_ids uuid[], p_percent numeric)|1|search_path=public
+rpc_cc_copy_default_table(p_plan_id uuid, p_target_scope text, p_partner_id uuid, p_customer_id uuid, p_motivo text)|1|search_path=public
+rpc_cc_delete_item_price(p_id uuid, p_motivo text)|1|search_path=public
+rpc_cc_history(p_entity text, p_entity_id uuid, p_limit integer)|1|search_path=public
+rpc_cc_list_assignments(p_status text)|1|search_path=public
+rpc_cc_list_item_prices(p_plan_id uuid, p_status text, p_assignment_id uuid)|1|search_path=public
+rpc_cc_publish_assignment(p_id uuid, p_motivo text)|1|search_path=public
+rpc_cc_publish_item_prices(p_ids uuid[], p_motivo text)|1|search_path=public
+rpc_cc_simulate_price(p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_plan_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_ref_date date, p_quantity numeric)|1|search_path=public
+rpc_cc_submit_assignment(p_id uuid, p_motivo text)|1|search_path=public
+rpc_cc_upsert_assignment(p_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_valid_from date, p_valid_until date, p_motivo text)|1|search_path=public
+rpc_cc_upsert_item_price(p_id uuid, p_assignment_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_min_quantity numeric, p_pricing_mode text, p_condition_price numeric, p_discount_percent numeric, p_valid_from date, p_valid_until date, p_is_exception boolean, p_motivo text)|1|search_path=public
+rpc_cc_validate_matrix(p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid)|1|search_path=public
+rpc_certificacao_catalogo(p_functions text[], p_tables text[])|1|search_path=public
+rpc_check_monitoramento_and_notify(_registro_id uuid)|1|search_path=public, pg_temp
+rpc_claim_communication_outbox(p_batch_size integer, p_worker_id text, p_lease_seconds integer)|1|search_path=public
+rpc_cockpit_cancelar_reserva_v1(p_item_id uuid, p_os_id uuid, p_origem text, p_motivo text)|1|search_path=public, pg_temp
+rpc_cockpit_confirmar_entrega_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb)|1|search_path=public, pg_temp
+rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb)|1|search_path=public, pg_temp
+rpc_cockpit_gerar_lote_v1(p_programacao_id uuid, p_os_id uuid, p_origem text, p_lote jsonb)|1|search_path=public, pg_temp
+rpc_cockpit_listar_esteira_v1(p_busca text, p_stages text[], p_origens text[], p_prioridades text[], p_atrasado boolean, p_de date, p_ate date, p_incluir_finalizadas boolean, p_limit integer, p_offset integer)|0|search_path=public, pg_temp
+rpc_cockpit_metricas_v1()|0|search_path=public, pg_temp
+rpc_cockpit_metricas_v2(p_busca text, p_stages text[], p_origens text[], p_prioridades text[], p_atrasado boolean, p_de date, p_ate date)|0|search_path=public, pg_temp
+rpc_cockpit_registrar_envase_v1(p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text, p_idempotency_key text, p_permitir_parcial boolean, p_motivo_parcial text)|1|search_path=public, extensions, pg_temp
+rpc_coletar_assinatura_digital_entrega(p_entrega_id uuid, p_payload jsonb)|1|search_path=public
+rpc_commercial_alerts()|1|search_path=public
+rpc_commercial_consolidated_dashboard(p_from date, p_to date, p_partner_id uuid, p_consultor uuid, p_region text, p_partner_type text)|1|search_path=public
+rpc_commercial_kpis(p_from date, p_to date, p_partner_id uuid, p_consultor uuid, p_region text)|1|search_path=public
+rpc_commercial_simulator(p_partner_id uuid, p_product_id uuid, p_quantidade numeric, p_desconto numeric)|1|search_path=public
+rpc_complete_communication_delivery(p_outbox_id uuid, p_worker_id text, p_provider_message_id text)|1|search_path=public
+rpc_confirmar_entrega_embalagens(p_entrega_id uuid)|1|search_path=public
+rpc_confirmar_recebimento_entrega(p_entrega_id uuid, p_payload jsonb)|1|search_path=public
+rpc_confirmar_separacao_embalagem(p_embalagem_id uuid)|1|search_path=public
+rpc_converter_visita_em_os(p_registro_id uuid, p_observacao text)|1|search_path=public
+rpc_create_communication_template(p_chave text, p_nome text, p_canal comunicacao_canal, p_assunto text, p_corpo text, p_variaveis jsonb)|1|search_path=public
+rpc_create_financial_title(p_kind text, p_payload jsonb)|1|search_path=public
+rpc_create_notificacao_operacional(_usuario_id uuid, _tipo text, _titulo text, _mensagem text, _link text, _source_type text, _source_id uuid, _idempotency_key text)|1|search_path=public, pg_temp
+rpc_create_operational_notification_secure(p_usuario_id uuid, p_titulo text, p_mensagem text, p_tipo text, p_link text)|1|search_path=public
+rpc_create_portal_notification_secure(_cliente_id uuid, _tipo text, _titulo text, _mensagem text, _link text, _source_type text, _source_id uuid, _idempotency_key text)|1|search_path=public, pg_temp
+rpc_create_portal_notification_secure(p_cliente_id uuid, p_titulo text, p_mensagem text, p_tipo text)|1|search_path=public
+rpc_criar_embalagens_pos_envase(p_payload jsonb)|1|search_path=public
+rpc_criar_visita_idempotente(p_client_uuid uuid, p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_cultura_id uuid, p_data_vistoria date, p_tipo_visita tipo_visita, p_objetivo_visita text, p_safra text, p_fase_fenologica text, p_solicitacao_id uuid, p_origem text, p_categoria_problema categoria_problema_consultor, p_nivel_pressao nivel_pressao, p_percentual_area_afetada numeric, p_urgencia urgencia_consultor, p_localizacao_na_area text, p_observacoes_tecnicas text, p_problema_principal text, p_area_hectares numeric, p_latitude numeric, p_longitude numeric, p_registro_origem_id uuid)|1|search_path=public
+rpc_dashboard_geral_lab_resumo()|1|search_path=public
+rpc_defer_communication_delivery(p_outbox_id uuid, p_worker_id text, p_reason text, p_delay_seconds integer)|1|search_path=public
+rpc_delete_diagnostico_visita(p_id uuid)|1|search_path=public
+rpc_delete_recomendacao_visita(p_id uuid)|1|search_path=public
+rpc_desativar_bank_account(p_id uuid, p_reason text)|1|search_path=public
+rpc_desativar_cost_center(p_id uuid, p_reason text)|1|search_path=public
+rpc_desativar_financial_category(p_id uuid, p_reason text)|1|search_path=public
+rpc_desativar_payment_method(p_id uuid, p_reason text)|1|search_path=public
+rpc_descartar_embalagem(p_embalagem_id uuid, p_motivo text)|1|search_path=public
+rpc_desvincular_etiqueta_entrega(p_entrega_id uuid, p_etiqueta_id uuid, p_motivo text)|1|search_path=public
+rpc_dispatch_inapp_notification(p_outbox_id uuid, p_cliente_id uuid, p_user_id uuid, p_titulo text, p_mensagem text)|1|search_path=public
+rpc_dispensar_assinatura_entrega(p_entrega_id uuid, p_motivo text)|1|search_path=public
+rpc_entrega_assinar_termo_v1(p_termo_id uuid, p_payload jsonb, p_idempotency_key text)|1|search_path=public, extensions
+rpc_entrega_cancelar_termo_v1(p_termo_id uuid, p_motivo text)|1|search_path=public
+rpc_entrega_confirmar_v1(p_entrega_id uuid, p_recebedor jsonb, p_opcoes jsonb)|1|search_path=public, pg_temp
+rpc_entrega_gerar_termo_v1(p_entrega_id uuid, p_template_versao text)|1|search_path=public, extensions
+rpc_entrega_reconciliar_v1(p_entrega_id uuid, p_idempotency_key text)|1|search_path=public, extensions
+rpc_entrega_reentrega_saldo_v1(p_entrega_id uuid, p_idempotency_key text)|1|search_path=public, extensions
+rpc_entrega_registrar_conferencia_v1(p_entrega_id uuid, p_itens jsonb)|1|search_path=public, extensions
+rpc_entrega_registrar_pdf_termo_v1(p_termo_id uuid, p_pdf_path text, p_pdf_hash text)|1|search_path=public
+rpc_enviar_visita_aprovacao(p_registro_id uuid, p_expected_version integer)|1|search_path=public
+rpc_estoque_operar_v1(p_acao text, p_item_id uuid, p_quantidade numeric, p_idempotency_key text, p_payload jsonb)|1|search_path=public
+rpc_estoque_reservar_v1(p_os_id uuid, p_origem text, p_itens jsonb, p_idempotency_key text, p_dados jsonb)|1|search_path=public
+rpc_executar_motor_alertas(p_tipo_execucao text, p_origem text)|1|search_path=public
+rpc_executivo_alertas_prioridades(p_filtros jsonb, p_limit integer)|1|search_path=public
+rpc_executivo_alertas_resumo(p_filtros jsonb)|1|search_path=public
+rpc_executivo_arquivar_relatorio(p_relatorio_id uuid, p_motivo text)|1|search_path=public
+rpc_executivo_cliente_detalhe(p_cliente_id uuid, p_filtros jsonb)|1|search_path=public
+rpc_executivo_clientes_ranking(p_filtros jsonb, p_limit integer)|1|search_path=public
+rpc_executivo_clientes_resumo(p_filtros jsonb)|1|search_path=public
+rpc_executivo_exportar_relatorio_evento(p_relatorio_id uuid, p_tipo_exportacao text)|1|search_path=public
+rpc_executivo_fazenda_detalhe(p_fazenda_id uuid, p_filtros jsonb)|1|search_path=public
+rpc_executivo_financeiro_gargalos(p_filtros jsonb, p_limit integer)|1|search_path=public
+rpc_executivo_financeiro_ranking_clientes(p_filtros jsonb, p_limit integer)|1|search_path=public
+rpc_executivo_financeiro_resumo(p_filtros jsonb)|1|search_path=public
+rpc_executivo_gargalos(p_filtros jsonb, p_limit integer)|1|search_path=public
+rpc_executivo_gerar_relatorio(p_tipo text, p_filtros jsonb, p_titulo text)|1|search_path=public
+rpc_executivo_listar_relatorios(p_filtros jsonb)|1|search_path=public
+rpc_executivo_obter_relatorio(p_relatorio_id uuid)|1|search_path=public
+rpc_executivo_plano_acao(p_filtros jsonb, p_limit integer)|1|search_path=public
+rpc_executivo_responsaveis_pendencias(p_filtros jsonb, p_limit integer)|1|search_path=public
+rpc_executivo_resumo_geral(p_filtros jsonb)|1|search_path=public
+rpc_executivo_timeline_operacional(p_filtros jsonb, p_limit integer)|1|search_path=public
+rpc_fail_communication_delivery(p_outbox_id uuid, p_worker_id text, p_error_code text, p_error_message text)|1|search_path=public
+rpc_fail_communication_delivery_v2(p_outbox_id uuid, p_worker_id text, p_error_code text, p_error_message text, p_is_permanent boolean)|1|search_path=public
+rpc_finalizar_visita_v2(p_registro_id uuid, p_expected_version integer)|1|search_path=public
+rpc_financial_document_soft_delete(p_document_id uuid, p_reason text)|1|search_path=public, pg_temp
+rpc_fiscal_calculate_invoice_v1(p_invoice_id uuid, p_idempotency_key text)|1|search_path=public, pg_temp
+rpc_fiscal_certificate_register_a1(p_company_settings_id uuid, p_created_by uuid, p_display_name text, p_subject_name text, p_issuer_name text, p_serial_number text, p_valid_from timestamp with time zone, p_valid_until timestamp with time zone, p_fingerprint_sha256 text, p_key_usage text[], p_object_path text, p_material_iv_b64 text, p_key_version integer, p_material_format text, p_material_algorithm text)|1|search_path=public, pg_temp
+rpc_fiscal_certificate_register_os(p_company_settings_id uuid, p_metadata jsonb)|1|search_path=public, pg_temp
+rpc_fiscal_certificate_revoke(p_certificate_id uuid, p_reason text)|1|search_path=public, pg_temp
+rpc_fiscal_company_rtc_get()|1|search_path=pg_catalog, public
+rpc_fiscal_company_rtc_save(payload jsonb, expected_revision text)|1|search_path=pg_catalog, public
+rpc_fiscal_company_settings_init()|1|search_path=public
+rpc_fiscal_draft_save(p_invoice_id uuid, p_invoice jsonb, p_items jsonb, p_expected_version integer)|1|search_path=public, pg_temp
+rpc_fiscal_draft_validate_homologation(p_invoice_id uuid)|1|search_path=public, pg_temp
+rpc_fiscal_emitter_accounting_validate(p_notes text)|1|search_path=public, pg_temp
+rpc_fiscal_emitter_request_accounting_review(p_notes text)|1|search_path=public, pg_temp
+rpc_fiscal_event_manual(p_invoice_id uuid, p_event_type text, p_notes text, p_idempotency_key text)|1|search_path=public, pg_temp
+rpc_fiscal_event_sefaz_mark_signed_v1(_event_id uuid, _signed_path text, _signed_sha256 text, _actor uuid)|1|search_path=public, pg_temp
+rpc_fiscal_event_sefaz_prepare_v1(_invoice_id uuid, _event_kind text, _reason text, _idempotency_key text, _actor uuid)|1|search_path=public, pg_temp
+rpc_fiscal_event_sefaz_reconcile_v1(_event_id uuid, _transmission_id uuid, _c_stat text, _x_motivo text, _n_prot text, _dh_registro timestamp with time zone)|1|search_path=public, pg_temp
+rpc_fiscal_homologation_readiness()|1|search_path=public, pg_temp
+rpc_fiscal_homologation_readiness_rtc_check()|0|search_path=pg_catalog, public
+rpc_fiscal_homologation_readiness_v2()|1|search_path=pg_catalog, public
+rpc_fiscal_item_readiness(p_scope text, p_item_id uuid)|1|search_path=public, pg_temp
+rpc_fiscal_nfe_readiness_v1()|1|search_path=public, pg_temp
+rpc_fiscal_operation_policy_publish(p_policy_id uuid, p_justification text)|1|search_path=public, pg_temp
+rpc_fiscal_preflight_v1(p_invoice_id uuid)|1|search_path=public, pg_temp
+rpc_fiscal_product_ibs_cbs_get(p_product_id uuid)|1|search_path=pg_catalog, public
+rpc_fiscal_product_ibs_cbs_save(p_product_id uuid, payload jsonb, expected_revision text)|1|search_path=pg_catalog, public
+rpc_fiscal_reserve_nfe_number_v1(p_invoice_id uuid, p_idempotency_key text)|1|search_path=public, pg_temp
+rpc_fiscal_rule_sod_override(p_scope text, p_target_id uuid, p_justification text)|1|search_path=public, pg_temp
+rpc_fiscal_sefaz_transmission_status_v1(_invoice_id uuid)|1|search_path=public, pg_temp
+rpc_fiscal_sefaz_transmit_begin_v1(_service text, _idempotency_key text, _request_fingerprint text, _endpoint_url text, _invoice_id uuid, _xml_run_id uuid, _actor uuid, _event_id uuid)|1|search_path=public, pg_temp
+rpc_fiscal_sefaz_transmit_record_v1(_transmission_id uuid, _state text, _patch jsonb)|1|search_path=public, pg_temp
+rpc_fiscal_service_ibs_cbs_get(p_service_id uuid)|1|search_path=pg_catalog, public
+rpc_fiscal_service_ibs_cbs_save(p_service_id uuid, payload jsonb, expected_revision text)|1|search_path=pg_catalog, public
+rpc_fiscal_service_profile_ibs_cbs_get(p_profile_id uuid)|1|search_path=pg_catalog, public
+rpc_fiscal_service_profile_ibs_cbs_save(p_profile_id uuid, payload jsonb, expected_revision text)|1|search_path=pg_catalog, public
+rpc_fiscal_tax_rule_publish(p_rule_id uuid, p_justification text)|1|search_path=public, pg_temp
+rpc_fiscal_xml_prepare_v1(p_invoice_id uuid, p_idempotency_key text)|1|search_path=public, pg_temp
+rpc_fiscal_xml_record_v1(p_run_id uuid, p_state text, p_patch jsonb)|1|search_path=public, pg_temp
+rpc_fiscal_xml_status_v1(p_invoice_id uuid)|1|search_path=public, pg_temp
+rpc_force_checkout_visita(p_registro_id uuid, p_target_user_id uuid, p_reason text)|1|search_path=public
+rpc_gerar_alertas_operacionais()|1|search_path=public
+rpc_gerar_etiqueta_produto(p_payload jsonb)|1|search_path=public
+rpc_gerar_etiquetas_embalagens_lote(p_payload jsonb)|1|search_path=public
+rpc_gerar_formulario_entrega(p_entrega_id uuid)|1|search_path=public
+rpc_get_comprovante_entrega_data(p_entrega_id uuid, p_reemissao boolean)|1|search_path=public, extensions, pg_temp
+rpc_get_my_visit_by_client_uuid(p_client_uuid uuid)|1|search_path=public
+rpc_get_visita_workspace(p_registro_id uuid)|1|search_path=public
+rpc_harness_purge_entregas_v1(p_entrega_ids uuid[])|1|search_path=public
+rpc_ignorar_alerta_operacional(p_alerta_id uuid, p_observacao text)|1|search_path=public
+rpc_iniciar_atendimento_solicitacao_v1(p_solicitacao_id uuid, p_client_uuid uuid)|1|search_path=public
+rpc_ler_embalagem_por_qr(p_codigo_ou_token text)|1|search_path=public
+rpc_liberar_recomendacao_produtor(p_registro_id uuid)|1|search_path=public
+rpc_listar_atendimentos_tecnicos_v1(p_aba text, p_search text, p_page integer, p_page_size integer)|1|search_path=public
+rpc_listar_visitas_tecnicas_v1(p_search text, p_status text[], p_de date, p_ate date, p_cliente_id uuid, p_fazenda_id uuid, p_page integer, p_page_size integer)|1|search_path=public
+rpc_marcar_etiqueta_impressa(p_etiqueta_id uuid, p_motivo text)|1|search_path=public
+rpc_marcar_notificacao_enviada(p_notificacao_id uuid, p_provider text, p_provider_message_id text)|1|search_path=public
+rpc_marcar_notificacao_falhou(p_notificacao_id uuid, p_erro text)|1|search_path=public
+rpc_marcar_resumo_enviado(p_resumo_id uuid, p_provider text, p_provider_message_id text)|1|search_path=public
+rpc_marcar_resumo_falhou(p_resumo_id uuid, p_erro text)|1|search_path=public
+rpc_message_set_status(p_id uuid, p_status text)|1|search_path=public
+rpc_microorganism_regulatory_overview()|1|search_path=public, pg_temp
+rpc_notificar_gestor(p_titulo text, p_mensagem text, p_link text)|1|search_path=public
+rpc_partner_commercial_history(p_partner_id uuid, p_from date, p_to date)|1|search_path=public
+rpc_partner_dashboard(p_partner_id uuid)|1|search_path=public
+rpc_partner_message_counters(p_partner_id uuid)|1|search_path=public
+rpc_portal_partner_credit_status()|1|search_path=public
+rpc_portal_partner_financial()|1|search_path=public
+rpc_portal_partner_financial(p_partner_id uuid)|1|search_path=public
+rpc_preparar_notificacoes_alertas()|1|search_path=public
+rpc_preparar_resumos_alertas(p_tipo_resumo text, p_periodo_inicio timestamp with time zone, p_periodo_fim timestamp with time zone)|1|search_path=public
+rpc_preview_administrative_broadcast_count(p_target_role app_role)|1|search_path=public
+rpc_programar_os_v1(p_os_id uuid, p_origem text, p_data_programada date)|1|search_path=public, pg_temp
+rpc_programar_retorno_visita(p_registro_id uuid, p_expected_version integer, p_data_prevista date, p_descricao text)|1|search_path=public
+rpc_publish_communication_event(p_event_key text, p_source_type text, p_source_id uuid, p_payload jsonb, p_idempotency_key text)|1|search_path=public
+rpc_publish_communication_event_v2(p_event_key text, p_source_type text, p_source_id uuid, p_payload jsonb, p_idempotency_key text)|1|search_path=public
+rpc_rastreio_produto_interno(p_etiqueta_id uuid)|1|search_path=public
+rpc_reabrir_alerta_operacional(p_alerta_id uuid, p_observacao text)|1|search_path=public
+rpc_reabrir_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)|1|search_path=public
+rpc_realizar_checkin_visita(p_registro_id uuid, p_client_uuid uuid, p_tipo tipo_checkin, p_latitude numeric, p_longitude numeric, p_precisao numeric, p_justificativa_sem_gps text, p_observacoes text, p_captured_at_local timestamp with time zone, p_solicitacao_id uuid, p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_foto_path text)|1|search_path=public
+rpc_realizar_checkout_visita(p_registro_id uuid, p_client_uuid uuid, p_latitude numeric, p_longitude numeric, p_precisao numeric, p_justificativa_sem_gps text, p_observacoes text, p_captured_at_local timestamp with time zone, p_foto_path text)|1|search_path=public
+rpc_recalcular_prioridade_alerta(p_alerta_id uuid)|1|search_path=public
+rpc_recalcular_separacao_entrega(p_entrega_id uuid)|1|search_path=public
+rpc_record_aplicacao_email(_aplicacao_id uuid, _email text, _status text, _idempotency_key text, _enviado_por uuid)|1|search_path=public, pg_temp
+rpc_record_whatsapp_delivery_status(p_provider_message_id text, p_status text, p_timestamp timestamp with time zone, p_error_code text)|1|search_path=public
+rpc_refresh_bi_operacional()|1|search_path=public
+rpc_register_payable_payment(p_installment_id uuid, p_payload jsonb)|1|search_path=public, extensions
+rpc_register_receivable_payment(p_installment_id uuid, p_payload jsonb)|1|search_path=public, extensions
+rpc_registrar_ocorrencia_entrega(p_entrega_id uuid, p_payload jsonb)|1|search_path=public
+rpc_registrar_primeira_resposta_alerta(p_alerta_id uuid)|1|search_path=public
+rpc_regulatory_checklist_set(p_dossier_id uuid, p_item_key text, p_state text, p_justification text, p_evidence_document_id uuid)|1|search_path=public, pg_temp
+rpc_regulatory_document_register(p_dossier_id uuid, p_doc_type text, p_title text, p_storage_path text, p_content_sha256 text, p_issuer text, p_issued_at date, p_valid_until date, p_source_key text, p_source_url text, p_consulted_at date, p_doc_version text)|1|search_path=public, pg_temp, storage
+rpc_regulatory_document_soft_delete(p_document_id uuid, p_reason text)|1|search_path=public, pg_temp
+rpc_regulatory_dossier_block(p_dossier_id uuid, p_reason text)|1|search_path=public, pg_temp
+rpc_regulatory_dossier_detail(p_microorganism_id uuid)|1|search_path=public, pg_temp
+rpc_regulatory_dossier_ensure_draft(p_microorganism_id uuid)|1|search_path=public, pg_temp
+rpc_regulatory_dossier_new_version(p_microorganism_id uuid, p_reason text)|1|search_path=public, pg_temp
+rpc_regulatory_dossier_publish(p_dossier_id uuid)|1|search_path=public, pg_temp
+rpc_regulatory_dossier_submit(p_dossier_id uuid)|1|search_path=public, pg_temp
+rpc_regulatory_dossier_update_draft(p_dossier_id uuid, p_patch jsonb)|1|search_path=public, pg_temp
+rpc_regulatory_ncm_candidate_add(p_dossier_id uuid, p_ncm text, p_justification text, p_cest text, p_confidence text, p_source_key text, p_source_url text, p_consulted_at date)|1|search_path=public, pg_temp
+rpc_regulatory_ncm_candidate_decide(p_candidate_id uuid, p_approve boolean, p_reason text, p_official_description text, p_table_version text, p_table_reference_date date)|1|search_path=public, pg_temp
+rpc_regulatory_presentation_upsert(p_dossier_id uuid, p_volume_ml integer, p_patch jsonb)|1|search_path=public, pg_temp
+rpc_regulatory_review_decide(p_dossier_id uuid, p_layer text, p_decision text, p_justification text)|1|search_path=public, pg_temp
+rpc_regulatory_sod_override(p_dossier_id uuid, p_reason text)|1|search_path=public, pg_temp
+rpc_regulatory_storage_cleanup_confirm(p_document_id uuid, p_success boolean)|1|search_path=public, pg_temp, storage
+rpc_remove_visit_technician(p_registro_id uuid, p_user_id uuid, p_reason text)|1|search_path=public
+rpc_reprovar_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)|1|search_path=public
+rpc_reservar_embalagem_entrega(p_embalagem_id uuid, p_entrega_id uuid, p_entrega_item_id uuid)|1|search_path=public
+rpc_resolve_commercial_prices(p_items jsonb, p_plan_id uuid, p_ref_date date, p_buyer jsonb)|1|search_path=public
+rpc_resolve_outbox_address(p_outbox_id uuid)|1|search_path=public
+rpc_resolver_alerta_operacional(p_alerta_id uuid, p_observacao text)|1|search_path=public
+rpc_resumo_atendimentos_tecnicos_v1()|1|search_path=public
+rpc_salvar_campo_visita(p_registro_consultor_id uuid, p_client_uuid uuid, p_payload jsonb, p_versao integer)|1|search_path=public
+rpc_service_apply_provider_settings(p_actor uuid, p_payload jsonb)|1|search_path=public, vault
+rpc_service_check_rate_limit(p_user uuid, p_action text, p_max integer, p_window_seconds integer)|1|search_path=public
+rpc_service_clear_provider_secret(p_slot text, p_actor uuid)|1|search_path=public, vault
+rpc_service_load_provider_runtime_config()|1|search_path=public, vault
+rpc_service_set_provider_secret(p_slot text, p_value text, p_actor uuid)|1|search_path=public, vault
+rpc_set_communication_template_metadata(p_template_id uuid, p_provider_template_name text, p_language_code text, p_parameter_mapping jsonb, p_provider_template_status text)|1|search_path=public
+rpc_skip_communication_delivery(p_outbox_id uuid, p_worker_id text, p_reason text)|1|search_path=public
+rpc_solicitar_ajuste_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)|1|search_path=public
+rpc_substituir_etiqueta_produto(p_etiqueta_id uuid, p_motivo text)|1|search_path=public
+rpc_update_communication_preferences(p_canal comunicacao_canal, p_enabled boolean, p_whatsapp_opt_in boolean)|1|search_path=public
+rpc_update_communication_template(p_template_id uuid, p_nome text, p_assunto text, p_corpo text, p_variaveis jsonb)|1|search_path=public
+rpc_upsert_communication_rule(p_rule_id uuid, p_event_key text, p_perfil app_role, p_estrategia text, p_canal comunicacao_canal, p_template_chave text, p_template_versao integer, p_condicoes jsonb, p_prioridade integer, p_enabled boolean, p_cooldown_seconds integer)|1|search_path=public
+rpc_upsert_diagnostico_visita(p_registro_id uuid, p_client_uuid uuid, p_payload jsonb, p_expected_versao integer)|1|search_path=public
+rpc_upsert_fiscal_invoice_manual(p_receivable_id uuid, p_payload jsonb)|1|search_path=public, pg_temp
+rpc_upsert_recomendacao_visita(p_registro_id uuid, p_client_uuid uuid, p_payload jsonb, p_expected_versao integer)|1|search_path=public
+rpc_validar_comprovante_entrega(p_validation_token uuid)|1|search_path=public
+rpc_validar_integridade_esteira(p_origem text, p_os_id uuid)|1|search_path=public, pg_temp
+rpc_validar_integridade_esteira(p_os_id uuid, p_origem_os text, p_acao_solicitada text)|0|search_path=public, auth, pg_temp
+rpc_validar_rastreio_produto(p_trace_token uuid)|1|search_path=public
+rpc_verify_communication_channel(p_user_id uuid, p_cliente_id uuid, p_canal comunicacao_canal, p_email_verificado boolean, p_telefone_verificado boolean)|1|search_path=public
+rpc_vincular_etiqueta_embalagem(p_embalagem_id uuid, p_etiqueta_id uuid)|1|search_path=public
+seed_cockpit_fixtures(p_prefix text)|1|search_path=public, pg_temp
+send_partner_simulation_to_manager_secure(p_simulation_id uuid)|1|search_path=public
+set_codigo_cliente()|1|search_path=public
+set_codigo_microrganismo()|1|search_path=public
+set_codigo_produto()|1|search_path=public
+set_codigo_visita()|1|search_path=public
+set_my_context_preference(p_context text, p_remember boolean)|1|search_path=public
+set_numero_os()|1|search_path=public
+set_numero_os_regular()|1|search_path=public
+set_partner_order_delivery_date(p_order_id uuid, p_estimated_delivery_date date)|1|search_path=public
+set_partner_user_papel(p_link_id uuid, p_papel text)|1|search_path=public
+set_pdf_status_default()|0|search_path=public
+set_updated_at()|0|search_path=public
+simulate_b2b_payment_plan_secure(p_partner_id uuid, p_payment_plan_id uuid, p_items jsonb, p_first_due_date date)|1|search_path=public
+start_technical_visit_secure(p_registro_id uuid, p_latitude numeric, p_longitude numeric, p_precisao_gps numeric, p_foto_url text, p_foto_path text, p_observacoes text, p_justificativa_sem_gps text, p_client_uuid uuid)|1|search_path=public
+sync_catalogo_volumes_calc()|0|search_path=public
+sync_microorganism_pricing()|0|search_path=public
+sync_os_onfarm_downstream()|1|search_path=public
+sync_product_pricing()|0|search_path=public
+sync_puc_to_ptc_fn()|1|search_path=public
+sync_talhao_safra_atual()|1|search_path=public
+sync_user_cliente_principal()|1|search_path=public
+tg_audit_partner_order_commercial()|1|search_path=public
+tg_auto_b2b_receivable()|1|search_path=public
+tg_b2b_block_receivable_before_approval()|1|search_path=public
+tg_b2b_enforce_plan_selectable()|1|search_path=public
+tg_block_partner_order_delete()|1|search_path=public
+tg_block_partner_order_edit_after_op()|1|search_path=public
+tg_block_partner_order_items_after_op()|1|search_path=public
+tg_block_planning_delete()|1|search_path=public
+tg_block_pofl_delete()|1|search_path=public
+tg_block_production_link_delete()|1|search_path=public
+tg_commercial_audit()|1|search_path=public
+tg_commercial_conditions_touch()|0|search_path=public
+tg_commercial_price_rules_audit()|1|search_path=public
+tg_commercial_price_rules_plan_mode_guard()|0|search_path=public
+tg_commercial_price_rules_producer_inert()|0|search_path=public
+tg_commercial_price_rules_touch()|0|search_path=public
+tg_cpp_guard_financial_immutability()|1|search_path=public
+tg_create_default_pfs()|1|search_path=public
+tg_culturas_block_delete_in_use()|1|search_path=public
+tg_culturas_stamp_desativacao()|1|search_path=public
+tg_entrega_conf_lock_after_sign()|0|search_path=public
+tg_entrega_reconc_immutability()|0|search_path=public
+tg_entrega_termos_immutability()|0|search_path=public
+tg_fiscal_certificates_audit()|1|search_path=public, pg_temp
+tg_fiscal_cfs_audit()|1|search_path=public
+tg_fiscal_emitter_refresh_readiness()|1|search_path=public, pg_temp
+tg_fiscal_homologation_evidence_guard()|1|search_path=public, pg_temp
+tg_fiscal_invoice_sync_normalized_status()|0|search_path=public, pg_temp
+tg_fiscal_operation_policy_immutable()|0|
+tg_fiscal_recipient_refresh_readiness()|1|search_path=public, pg_temp
+tg_fiscal_reservation_immutable()|1|search_path=public, pg_temp
+tg_fiscal_tax_rule_immutable()|0|search_path=public
+tg_fiscal_xml_runs_immutable()|1|search_path=public, pg_temp
+tg_fiscal_xsd_registry_immutable()|1|search_path=public, pg_temp
+tg_governance_audit()|1|search_path=public
+tg_h7_fiscal_events_append_only()|0|search_path=public, pg_temp
+tg_h7_fiscal_invoice_immutable_v1()|0|search_path=public, pg_temp
+tg_microorganism_fiscal_profiles_updated_at()|0|search_path=public
+tg_monitoramento_avisos_set_dref()|1|search_path=public, pg_temp
+tg_notify_payment_terms_pending()|1|search_path=public
+tg_partner_order_items_resolve_pending()|1|search_path=public
+tg_partner_orders_credit_guard()|1|search_path=public
+tg_partner_orders_require_items()|1|search_path=public
+tg_pcp_audit()|1|search_path=public
+tg_pcp_touch()|0|search_path=public
+tg_pfs_updated_at()|0|search_path=public
+tg_pofl_updated_at()|0|search_path=public
+tg_produto_etiquetas_snapshot_immutable()|0|search_path=public
+tg_protect_os_structural_fields()|1|search_path=public
+tg_ptc_updated_at()|0|search_path=public
+tg_recalc_planning_from_entrega()|1|search_path=public
+tg_recalc_planning_from_link()|1|search_path=public
+tg_recalc_planning_from_os()|1|search_path=public
+tg_recalc_risk_on_ar_change()|1|search_path=public
+tg_refresh_engagement()|1|search_path=public
+tg_set_current_price_table()|1|search_path=public
+tg_set_updated_at()|0|search_path=public
+tg_set_updated_at_notif()|0|search_path=public
+tg_sync_b2b_financial_status()|1|search_path=public
+tg_unique_current_price_table()|1|search_path=public
+tg_user_access_preferences_touch()|0|search_path=public
+time_dist(time without time zone, time without time zone)|0|
+trg_catalogo_volumes_sync_mestre()|1|search_path=public
+trg_clientes_audit()|1|search_path=public
+trg_entrega_sync_partner_order_fn()|1|search_path=public
+trg_mestre_guard_preco_canonico()|1|search_path=public
+trg_os_sync_partner_order_fn()|1|search_path=public
+trg_partner_order_timeline()|1|search_path=public
+trg_partner_order_to_planning_fn()|1|search_path=public
+ts_dist(timestamp without time zone, timestamp without time zone)|0|
+tstz_dist(timestamp with time zone, timestamp with time zone)|0|
+tva_touch_updated_at()|0|search_path=public
+unassign_b2b_user_client_secure(p_user_id uuid, p_cliente_id uuid, p_reason text)|1|search_path=public
+update_microorganism_b2b_description(p_profile_id uuid, p_explicacao_b2b text)|1|search_path=public
+update_partner_order_notes(p_order_id uuid, p_commercial_notes text)|1|search_path=public
+update_partner_order_status(p_order_id uuid, p_status partner_order_status, p_motivo text)|1|search_path=public
+update_product_b2b_description(p_profile_id uuid, p_explicacao_b2b text)|1|search_path=public
+update_updated_at_column()|0|search_path=public
+validate_catalog_approval_checklist(p_kind text, p_checklist jsonb, p_b2b_enabled boolean, p_has_sources boolean, p_aprovado_sem_fonte boolean)|0|search_path=public
+validate_estoque_entrada()|1|search_path=public
+validate_estoque_reserva()|1|search_path=public
+validate_micro_profile_approval()|0|search_path=public
+validate_partner_user_client_fn()|1|search_path=public
+validate_product_profile_approval()|0|search_path=public
+validate_registro_status_transition()|1|search_path=public
+validate_responsavel_producao()|1|search_path=public
+validate_retorno_tecnico_consistency()|0|search_path=public
+visitas_campo_guard()|0|search_path=public
