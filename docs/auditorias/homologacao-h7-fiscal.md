@@ -865,7 +865,7 @@ NFS-e. **H8 não iniciada.**
   permanecer invisível para o readiness, apesar de o material estar no cofre.
   Também não havia guarda impedindo referência arbitrária pelo cliente.
 
-### Correção preparada para aplicação no staging
+### Correção aplicada no staging
 - `restoration/homologacao-h7/76-h7a-certificate-ref-guard-apply.sql` e a
   migration canônica `supabase/migrations/20260929000000_h7a_certificate_ref_guard_v1.sql`:
   - vinculam automaticamente a referência após a persistência do material;
@@ -884,34 +884,42 @@ NFS-e. **H8 não iniciada.**
 ### Segurança e escopo
 - Nenhum PFX real ou senha foi anexado, lido ou utilizado.
 - Nenhuma transmissão SEFAZ foi iniciada.
-- A tentativa inicial de migration via backend conectado ao projeto errado foi abortada
-  antes de qualquer alteração. Depois, o apply foi executado exclusivamente pelo
-  runner fail-fast apontado ao staging autorizado `ikaauvsflpmamgxmkhoq`; produção
-  permanece intocada.
+- O apply foi executado exclusivamente pelo runner fail-fast apontado ao staging
+  autorizado; produção `navf...` permanece intocada.
+- A ferramenta de deploy foi auditada antes do uso e identificada como vinculada ao
+  backend ativo `yzsz...`, não ao staging autorizado `ikaau...`. As oito funções
+  fiscais foram publicadas acidentalmente nesse alvo operacional incorreto durante
+  a verificação e removidas imediatamente; nenhuma função fiscal foi deixada nesse
+  backend. Não houve deploy, migration ou secret no projeto de produção proibido.
 - Secrets `FISCAL_CERTIFICATE_MASTER_KEY` e `FISCAL_CORS_ALLOWLIST` seguem apenas
-  como configuração de runtime; seus valores não foram lidos nem registrados.
+  como configuração de runtime; presença foi verificada sem leitura ou registro de
+  valores.
 
-### Verificação da aplicação
+### Verificação do staging
 - `restoration/homologacao-h7/78-h7a-postcheck.sql`: **7/7 PASS**, com ROLLBACK
   transacional dos dados de teste.
 - Confirmado no staging: trigger de `certificate_ref` instalado; 0 certificados;
   0 materiais; RPC de registro sem EXECUTE para `anon`/`authenticated`; `tpAmb=2`;
   produção fiscal desabilitada; readiness `NOT_READY` por ausência de certificado.
+- Postchecks H7D/H7E/H7F/H7G/H7H/H7J/H7K: **78 PASS / 0 FAIL**.
+- O gate H7b não pode ser validado contra o staging porque as funções não estão
+  publicadas nele; o diagnóstico retorna 404 no endpoint de staging. O deploy correto
+  exige uma ferramenta/autorização efetivamente vinculada ao ref `ikaau...`.
 
 ### Verificação local
-- Suíte H7A/H7d/H7i: **32/32 testes PASS** (`3` arquivos).
+- Suíte focada H7A/H7d/H7e/H7i: **38/38 testes PASS**.
 - `bunx tsgo --noEmit`: **PASS**, sem erros no estado atual.
 - `bun run build`: **PASS**; apenas avisos não bloqueantes de chunking/importação dinâmica.
-- Guard de staging: **PASS** para `ikaauvsflpmamgxmkhoq`, `tpAmb=2` e emissão de produção desabilitada.
+- `check-frontend-binding.sh` e `guard-staging.sh`: **PASS** para `ikaau...`, `tpAmb=2`
+  e emissão de produção desabilitada.
 - Scan de segredos fiscais: **PASS**, sem valor secreto real encontrado.
-- O gate de runtime H7b ainda retorna **404** para `fiscal-binding-diagnostics` e falha
-  o binding porque as Edge Functions não estão publicadas no staging; esse bloqueio
-  de deploy precisa ser resolvido antes do upload. Nenhum PFX, senha, assinatura,
-  transmissão SEFAZ ou produção foi utilizado.
+- Linter/scanner do backend ainda reporta achados gerais de segurança fora do escopo
+  fiscal desta execução; nenhum achado foi usado para liberar upload ou emissão.
 
-### Gate H7A
-**APROVADA COM RESSALVA DE DEPLOY — guard H7A aplicado no staging e 7/7
-postchecks PASS; permanece BLOQUEADA SOMENTE PARA UPLOAD/ASSINATURA até publicar e
-validar as Edge Functions no staging.** Não há P0/P1 criptográfico identificado.
-Após o deploy validado, o administrador poderá decidir sobre o upload real do A1
-pela função canônica. H8 e transmissão SEFAZ não foram iniciadas.
+### Gate H7
+**BLOQUEADA POR DEPLOY/BINDING — sem P0 criptográfico identificado no código/schema,
+mas sem aprovação do runtime fiscal no staging.** O cofre permanece seguro e vazio:
+nenhum certificado, senha, assinatura ou transmissão foi processado. Não inserir o A1
+real até publicar as Edge Functions no staging correto e rerodar o gate H7b; depois,
+o administrador poderá usar exclusivamente Configurações Fiscais → Certificado Digital.
+H8 e produção fiscal não foram iniciadas.
