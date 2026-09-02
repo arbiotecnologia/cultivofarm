@@ -80,10 +80,11 @@ function EmissionOffBanner() {
   return (
     <Alert data-testid="fiscal-emission-off">
       <ShieldOff className="h-4 w-4" aria-hidden />
-      <AlertTitle>Emissão fiscal desativada</AlertTitle>
+      <AlertTitle>HOMOLOGAÇÃO — SEM VALOR FISCAL</AlertTitle>
       <AlertDescription>
-        Esta tela mantém apenas registros documentais MANUAIS. Nenhuma ação
-        aqui transmite, autoriza, cancela ou consulta documento fiscal.
+        Emissão fiscal desativada. Esta tela mantém apenas registros
+        documentais MANUAIS; nenhuma ação transmite, autoriza, cancela ou
+        consulta documento fiscal.
       </AlertDescription>
     </Alert>
   );
