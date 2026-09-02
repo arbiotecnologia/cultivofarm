@@ -846,3 +846,63 @@ intocada. Bloqueio remanescente exclusivamente humano: importação do
 certificado A1 + senha pela tela (Edge Function `fiscal-certificate-upload`),
 credenciamento SEFAZ-MG, validação contábil (lucro presumido) e classificação
 NFS-e. **H8 não iniciada.**
+
+---
+
+## H7A — Paridade final do cofre A1 e vínculo seguro (execução atual)
+
+### Diagnóstico
+- A migration histórica `20260724000000_fiscal_fase3_16_homologacao_certificados.sql`
+  introduziu o cofre legado com senha cifrada. O contrato posterior H7d,
+  representado por `restoration/homologacao-h7/70-h7d-cofre-sem-senha-apply.sql`,
+  removeu essa dependência e estabeleceu `SIGNING_BUNDLE_V2` com AES-256-GCM.
+- O runtime atual é compatível com esse contrato: `fiscal-xml-engine`,
+  `fiscal-event-sign` e `fiscal-sefaz-transport` validam o formato e decifram o
+  bundle apenas server-side; `signNfeXml.ts` recebe PEMs, sem senha.
+- A auditoria encontrou a lacuna **H7A-001 (P1)**: a RPC de registro persistia
+  `fiscal_certificates` e `fiscal_certificate_material`, mas não preenchia
+  `company_fiscal_settings.certificate_ref`. Assim, um upload válido poderia
+  permanecer invisível para o readiness, apesar de o material estar no cofre.
+  Também não havia guarda impedindo referência arbitrária pelo cliente.
+
+### Correção preparada para aplicação no staging
+- `restoration/homologacao-h7/76-h7a-certificate-ref-guard-apply.sql` e a
+  migration canônica `supabase/migrations/20260929000000_h7a_certificate_ref_guard_v1.sql`:
+  - vinculam automaticamente a referência após a persistência do material;
+  - exigem certificado ativo, não expirado, da mesma empresa e de
+    `HOMOLOGATION` para qualquer `certificate_ref` informado;
+  - mantêm a assinatura RPC sem parâmetros de senha, o bucket privado e o
+    contrato `SIGNING_BUNDLE_V2`;
+  - limpam `certificate_ref` na revogação, preservando idempotência e auditoria.
+- `restoration/homologacao-h7/77-h7a-certificate-ref-guard-rollback.sql` bloqueia
+  reversão enquanto houver A1 ativo e não reintroduz colunas ou parâmetros de
+  senha.
+- `src/test/fiscal/h7a.certificateRef.static.test.ts` cobre ambiente staging,
+  formato do bundle, vínculo por empresa/status/validade, ordem material →
+  referência, permissões RPC, revoke e rollback.
+
+### Segurança e escopo
+- Nenhum PFX real ou senha foi anexado, lido ou utilizado.
+- Nenhuma transmissão SEFAZ foi iniciada.
+- A tentativa de migration via backend conectado ao projeto errado foi abortada
+  antes de qualquer alteração: o alvo disponível não possuía o marcador/tabelas
+  do staging. Portanto, o apply H7A ainda precisa ser executado pelo pipeline
+  autorizado contra `ikaauvsflpmamgxmkhoq`; produção permanece intocada.
+- Secrets `FISCAL_CERTIFICATE_MASTER_KEY` e `FISCAL_CORS_ALLOWLIST` seguem apenas
+  como configuração de runtime; seus valores não foram lidos nem registrados.
+
+### Verificação local
+- Suíte H7A/H7d/H7i + regressão fiscal: **90/90 testes PASS** (`4` arquivos).
+- `bunx tsgo --noEmit`: **PASS**, sem erros no estado atual.
+- Guard de staging: **PASS** para `ikaauvsflpmamgxmkhoq`, `tpAmb=2` e emissão de produção desabilitada.
+- Scan de segredos fiscais: **PASS**, sem valor secreto real encontrado.
+- Nenhum teste de integração com certificado real foi executado; nenhum PFX ou senha foi utilizado.
+- O log histórico de preview ainda contém erros de drift de tipos, mas não reproduzidos no typecheck atual; a causa foi o binding gerado fora do staging, restaurado para o baseline autorizado.
+
+### Gate H7A
+**BLOQUEADA operacionalmente até aplicação da migration 76 no staging e
+revalidação dos postchecks.** O código e o contrato estão preparados, sem P0/P1
+criptográfico identificado; após o apply, executar somente em staging: postcheck
+H7A, suite estática, typecheck e build. Em seguida, e apenas após deploy validado,
+o administrador poderá decidir sobre o upload real do A1. H8 e transmissão SEFAZ
+não foram iniciadas.
