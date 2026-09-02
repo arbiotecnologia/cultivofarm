@@ -892,11 +892,12 @@ NFS-e. **H8 não iniciada.**
   como configuração de runtime; seus valores não foram lidos nem registrados.
 
 ### Verificação local
-- `src/test/fiscal/h7a.certificateRef.static.test.ts`: pendente de execução nesta
-  documentação; nenhum teste de integração com certificado foi executado.
-- Typecheck/build: o log de preview disponível contém erros históricos de drift
-  de `types.ts`/binding, não relacionados à H7A; não foram alterados arquivos
-  auto-gerados nesta passagem.
+- Suíte H7A/H7d/H7i + regressão fiscal: **90/90 testes PASS** (`4` arquivos).
+- `bunx tsgo --noEmit`: **PASS**, sem erros no estado atual.
+- Guard de staging: **PASS** para `ikaauvsflpmamgxmkhoq`, `tpAmb=2` e emissão de produção desabilitada.
+- Scan de segredos fiscais: **PASS**, sem valor secreto real encontrado.
+- Nenhum teste de integração com certificado real foi executado; nenhum PFX ou senha foi utilizado.
+- O log histórico de preview ainda contém erros de drift de tipos, mas não reproduzidos no typecheck atual; a causa foi o binding gerado fora do staging, restaurado para o baseline autorizado.
 
 ### Gate H7A
 **BLOQUEADA operacionalmente até aplicação da migration 76 no staging e
