@@ -916,6 +916,20 @@ NFS-e. **H8 não iniciada.**
 - Linter/scanner do backend ainda reporta achados gerais de segurança fora do escopo
   fiscal desta execução; nenhum achado foi usado para liberar upload ou emissão.
 
+### Revalidação H7 — execução atual
+- Backend hospedado respondendo normalmente; nenhuma alteração foi feita em produção.
+- Guards anti-produção existentes revalidados: `fn_fiscal_environment_gate_v1`,
+  `fn_fiscal_assert_environment_homologation` e marcador `STAGING`, com `tpAmb=2`.
+  O código estável vigente é `FISCAL_PRODUCTION_DISABLED`/`FISCAL_PRODUCTION_BLOCKED`;
+  não foi criado um código paralelo `FISCAL_PRODUCTION_BLOCKED_H7`.
+- Postchecks de staging reexecutados: H7 (11), segurança/ambiente (12), H7D (8),
+  H7E (7), H7F (11), H7G (18), H7H (11), H7J (7) e H7K (8), todos sem falhas.
+- Suíte local: typecheck PASS, build PASS, varredura de segredos PASS, varredura
+  de integração fiscal PASS e Vitest PASS (**3.301 testes, 4 skips, 0 falhas**).
+- UI corrigida nas telas fiscais canônicas `FiscalProntidao` e `FiscalDocumentos`:
+  banner permanente e explícito `HOMOLOGAÇÃO — SEM VALOR FISCAL`, sem criar rota,
+  módulo ou fluxo paralelo.
+
 ### Gate H7
 **BLOQUEADA POR DEPLOY/BINDING — sem P0 criptográfico identificado no código/schema,
 mas sem aprovação do runtime fiscal no staging.** O cofre permanece seguro e vazio:

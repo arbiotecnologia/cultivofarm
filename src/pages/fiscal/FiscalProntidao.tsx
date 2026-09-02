@@ -81,11 +81,11 @@ function Banner() {
   return (
     <Alert data-testid="fiscal-readiness-banner">
       <ShieldOff className="h-4 w-4" aria-hidden />
-      <AlertTitle>Preparação para homologação — emissão desativada</AlertTitle>
+      <AlertTitle>HOMOLOGAÇÃO — SEM VALOR FISCAL</AlertTitle>
       <AlertDescription>
-        Central somente leitura. Nenhuma ação transmite, autoriza, cancela,
-        inutiliza ou consulta documento fiscal externo. Gates externos
-        permanecem pendentes até evidência real registrada fora deste app.
+        Preparação para homologação com emissão desativada. Esta central é
+        somente leitura: nenhuma ação transmite, autoriza, cancela, inutiliza
+        ou consulta documento fiscal externo.
       </AlertDescription>
     </Alert>
   );
