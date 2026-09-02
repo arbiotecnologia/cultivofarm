@@ -924,9 +924,8 @@ NFS-e. **H8 não iniciada.**
   não foi criado um código paralelo `FISCAL_PRODUCTION_BLOCKED_H7`.
 - Postchecks de staging reexecutados: H7 (11), segurança/ambiente (12), H7D (8),
   H7E (7), H7F (11), H7G (18), H7H (11), H7J (7) e H7K (8), todos sem falhas.
-- Suíte local: typecheck PASS, build PASS, varredura de segredos PASS e varredura
-  de integração fiscal PASS. A suíte Vitest excedeu o timeout operacional desta
-  execução e permanece pendente de conclusão, sem evidência de falha funcional.
+- Suíte local: typecheck PASS, build PASS, varredura de segredos PASS, varredura
+  de integração fiscal PASS e Vitest PASS (**3.301 testes, 4 skips, 0 falhas**).
 - UI corrigida nas telas fiscais canônicas `FiscalProntidao` e `FiscalDocumentos`:
   banner permanente e explícito `HOMOLOGAÇÃO — SEM VALOR FISCAL`, sem criar rota,
   módulo ou fluxo paralelo.
