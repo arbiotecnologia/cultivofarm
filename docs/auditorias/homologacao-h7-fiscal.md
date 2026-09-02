@@ -884,25 +884,34 @@ NFS-e. **H8 não iniciada.**
 ### Segurança e escopo
 - Nenhum PFX real ou senha foi anexado, lido ou utilizado.
 - Nenhuma transmissão SEFAZ foi iniciada.
-- A tentativa de migration via backend conectado ao projeto errado foi abortada
-  antes de qualquer alteração: o alvo disponível não possuía o marcador/tabelas
-  do staging. Portanto, o apply H7A ainda precisa ser executado pelo pipeline
-  autorizado contra `ikaauvsflpmamgxmkhoq`; produção permanece intocada.
+- A tentativa inicial de migration via backend conectado ao projeto errado foi abortada
+  antes de qualquer alteração. Depois, o apply foi executado exclusivamente pelo
+  runner fail-fast apontado ao staging autorizado `ikaauvsflpmamgxmkhoq`; produção
+  permanece intocada.
 - Secrets `FISCAL_CERTIFICATE_MASTER_KEY` e `FISCAL_CORS_ALLOWLIST` seguem apenas
   como configuração de runtime; seus valores não foram lidos nem registrados.
 
+### Verificação da aplicação
+- `restoration/homologacao-h7/78-h7a-postcheck.sql`: **7/7 PASS**, com ROLLBACK
+  transacional dos dados de teste.
+- Confirmado no staging: trigger de `certificate_ref` instalado; 0 certificados;
+  0 materiais; RPC de registro sem EXECUTE para `anon`/`authenticated`; `tpAmb=2`;
+  produção fiscal desabilitada; readiness `NOT_READY` por ausência de certificado.
+
 ### Verificação local
-- Suíte H7A/H7d/H7i + regressão fiscal: **90/90 testes PASS** (`4` arquivos).
+- Suíte H7A/H7d/H7i: **32/32 testes PASS** (`3` arquivos).
 - `bunx tsgo --noEmit`: **PASS**, sem erros no estado atual.
+- `bun run build`: **PASS**; apenas avisos não bloqueantes de chunking/importação dinâmica.
 - Guard de staging: **PASS** para `ikaauvsflpmamgxmkhoq`, `tpAmb=2` e emissão de produção desabilitada.
 - Scan de segredos fiscais: **PASS**, sem valor secreto real encontrado.
-- Nenhum teste de integração com certificado real foi executado; nenhum PFX ou senha foi utilizado.
-- O log histórico de preview ainda contém erros de drift de tipos, mas não reproduzidos no typecheck atual; a causa foi o binding gerado fora do staging, restaurado para o baseline autorizado.
+- O gate de runtime H7b ainda retorna **404** para `fiscal-binding-diagnostics` e falha
+  o binding porque as Edge Functions não estão publicadas no staging; esse bloqueio
+  de deploy precisa ser resolvido antes do upload. Nenhum PFX, senha, assinatura,
+  transmissão SEFAZ ou produção foi utilizado.
 
 ### Gate H7A
-**BLOQUEADA operacionalmente até aplicação da migration 76 no staging e
-revalidação dos postchecks.** O código e o contrato estão preparados, sem P0/P1
-criptográfico identificado; após o apply, executar somente em staging: postcheck
-H7A, suite estática, typecheck e build. Em seguida, e apenas após deploy validado,
-o administrador poderá decidir sobre o upload real do A1. H8 e transmissão SEFAZ
-não foram iniciadas.
+**APROVADA COM RESSALVA DE DEPLOY — guard H7A aplicado no staging e 7/7
+postchecks PASS; permanece BLOQUEADA SOMENTE PARA UPLOAD/ASSINATURA até publicar e
+validar as Edge Functions no staging.** Não há P0/P1 criptográfico identificado.
+Após o deploy validado, o administrador poderá decidir sobre o upload real do A1
+pela função canônica. H8 e transmissão SEFAZ não foram iniciadas.
