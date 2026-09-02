@@ -43,8 +43,9 @@ describe("H7A — vínculo seguro do certificado A1", () => {
     expect(register).toContain("SET certificate_ref = v_id::text");
     expect(register.indexOf("INSERT INTO public.fiscal_certificate_material"))
       .toBeLessThan(register.indexOf("SET certificate_ref = v_id::text"));
-    expect(register).toContain("REVOKE ALL ON FUNCTION public.rpc_fiscal_certificate_register_a1");
-    expect(register).toContain("GRANT EXECUTE ON FUNCTION public.rpc_fiscal_certificate_register_a1");
+    expect(APPLY).toMatch(/REVOKE ALL ON FUNCTION public\.rpc_fiscal_certificate_register_a1[\s\S]*FROM anon/);
+    expect(APPLY).toMatch(/REVOKE ALL ON FUNCTION public\.rpc_fiscal_certificate_register_a1[\s\S]*FROM authenticated/);
+    expect(APPLY).toMatch(/GRANT EXECUTE ON FUNCTION public\.rpc_fiscal_certificate_register_a1[\s\S]*TO service_role/);
   });
 
   test("revogação limpa a referência e a função Edge usa a RPC canônica", () => {
