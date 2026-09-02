@@ -901,7 +901,7 @@ NFS-e. **H8 não iniciada.**
 - Confirmado no staging: trigger de `certificate_ref` instalado; 0 certificados;
   0 materiais; RPC de registro sem EXECUTE para `anon`/`authenticated`; `tpAmb=2`;
   produção fiscal desabilitada; readiness `NOT_READY` por ausência de certificado.
-- Postchecks H7D/H7E/H7F/H7G/H7H/H7J/H7K: **78 PASS / 0 FAIL**.
+- Postchecks H7D/H7E/H7A/H7F/H7G/H7H/H7J/H7K: **77 PASS / 0 FAIL**.
 - O gate H7b não pode ser validado contra o staging porque as funções não estão
   publicadas nele; o diagnóstico retorna 404 no endpoint de staging. O deploy correto
   exige uma ferramenta/autorização efetivamente vinculada ao ref `ikaau...`.
