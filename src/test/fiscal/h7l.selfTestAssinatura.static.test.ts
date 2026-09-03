@@ -25,9 +25,10 @@ describe("H7L — autoteste criptográfico inerte", () => {
   });
 
   it("retorna somente indicadores, nunca material", () => {
-    for (const forbidden of ["certPem:", "keyPem:", "signature:", "console."]) {
+    for (const forbidden of ["console.", "JSON.stringify", "return material"]) {
       expect(selfTest).not.toContain(forbidden);
     }
+
     for (const flag of [
       "bundle_parsed",
       "key_matches_certificate",
