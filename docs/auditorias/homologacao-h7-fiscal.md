@@ -937,3 +937,44 @@ nenhum certificado, senha, assinatura ou transmissão foi processado. Não inser
 real até publicar as Edge Functions no staging correto e rerodar o gate H7b; depois,
 o administrador poderá usar exclusivamente Configurações Fiscais → Certificado Digital.
 H8 e produção fiscal não foram iniciadas.
+
+---
+
+## Revalidação H7 — 2026-09-03 (somente staging, sem certificado/senha)
+
+### Ambiente
+- Drift de binding detectado no início (`.env` apontava para o backend gerenciado);
+  `.env` e `src/integrations/supabase/types.ts` foram restaurados do baseline `c75bb87f`.
+- `check-frontend-binding.sh`: OK — staging `ikaauvsflpmamgxmkhoq` consistente
+  (`.env`, `client.ts`, `config.toml`, `types.ts`).
+- `guard-staging.sh`: OK — marcador `STAGING`, `tpAmb='2'`, produção fiscal desabilitada.
+- Produção `navfzbwgwzruipouyfnk`: nenhuma conexão, migration, secret, função ou
+  transmissão nesta execução. Nenhum PFX/senha foi manipulado.
+
+### Inventário read-only do staging
+| Item | Valor |
+| --- | --- |
+| Tabelas fiscais (`public.fiscal%`) | 23 |
+| Tabelas fiscais sem RLS | 0 |
+| Funções fiscais | 106 |
+| SECURITY DEFINER fiscal sem `search_path` | 0 |
+| Funções fiscais com EXECUTE para `anon` | 0 |
+| `fiscal_invoices` / `fiscal_certificates` / `fiscal_sefaz_transmissions` | 0 / 0 / 0 |
+
+### Postchecks canônicos (staging)
+H7D 8 · H7E 7 · H7A 7 · H7F 11 · H7G 18 · H7J 7 · H7K 8 · H7H 11 →
+**77 PASS / 0 FAIL**.
+
+### Engenharia
+- `bunx tsgo --noEmit`: 0 erros.
+- `bunx vitest run`: 207 arquivos, **3.301 testes PASS**, 4 skips, 0 falhas.
+- `scripts/fiscal-secrets-scan.sh`: OK — nenhum valor secreto real no repositório.
+- Build do preview: `build OK`.
+
+### Gate
+**APROVADA COM RESSALVA DE DEPLOY.** Zero P0/P1 em código, schema, RLS, Storage,
+snapshot, numeração, idempotência e guards de ambiente. Ressalva P2 única e
+remanescente: as Edge Functions fiscais ainda não estão publicadas no staging
+autorizado (a ferramenta de deploy disponível está vinculada a outro backend), de modo
+que o gate de runtime H7b permanece `PASS=6 / FAIL=2` e o smoke real com A1 + SEFAZ HML
+continua suspenso. Produção fiscal permanece bloqueada; H8 não iniciada.
