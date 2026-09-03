@@ -32,11 +32,16 @@ BEGIN
     v_ok := v_ok+1; RAISE NOTICE 'H7E-5 PASS bloqueios automatizaveis resolvidos';
   ELSE v_fail := v_fail+1; RAISE WARNING 'H7E-5 FAIL bloqueios remanescentes: %', v_blocks; END IF;
 
-  IF coalesce(v_blocks,'') LIKE '%CERTIFICATE_MISSING%'
+  -- H7 (continuação): com o certificado A1 de homologação já registrado e vinculado,
+  -- CERTIFICATE_MISSING deixa de ser esperado. O bloqueio só permanece obrigatório
+  -- enquanto não houver `certificate_ref`. Os bloqueios de decisão humana
+  -- (credenciamento e validação contábil) continuam obrigatórios.
+  IF (r.certificate_ref IS NOT NULL OR coalesce(v_blocks,'') LIKE '%CERTIFICATE_MISSING%')
      AND coalesce(v_blocks,'') LIKE '%ACCREDITATION_MISSING%'
      AND coalesce(v_blocks,'') LIKE '%ACCOUNTING_NOT_VALIDATED%' THEN
     v_ok := v_ok+1; RAISE NOTICE 'H7E-6 PASS bloqueios humanos preservados (fail-closed)';
   ELSE v_fail := v_fail+1; RAISE WARNING 'H7E-6 FAIL bloqueio humano ausente: %', v_blocks; END IF;
+
 
   IF r.nfe_readiness_status = 'NOT_READY' THEN v_ok := v_ok+1; RAISE NOTICE 'H7E-7 PASS readiness continua NOT_READY';
   ELSE v_fail := v_fail+1; RAISE WARNING 'H7E-7 FAIL readiness=%', r.nfe_readiness_status; END IF;
