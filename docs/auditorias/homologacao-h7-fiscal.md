@@ -978,3 +978,63 @@ remanescente: as Edge Functions fiscais ainda não estão publicadas no staging
 autorizado (a ferramenta de deploy disponível está vinculada a outro backend), de modo
 que o gate de runtime H7b permanece `PASS=6 / FAIL=2` e o smoke real com A1 + SEFAZ HML
 continua suspenso. Produção fiscal permanece bloqueada; H8 não iniciada.
+
+---
+
+## H7 — Continuação após o registro real do certificado A1 (2026-09-03, 22:13 UTC)
+
+Execução restrita ao staging `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk`
+não foi acessada, consultada nem alterada em nenhum momento. Nenhum segredo
+(PFX, senha, chave privada, `object_path`, `material_iv`, fingerprint/serial
+completos) foi consultado, impresso, exportado ou registrado.
+
+### Fase 1 — Binding e guards
+| Verificação | Resultado |
+| --- | --- |
+| Drift de `.env`/`types.ts` detectado no início | Corrigido pela restauração do baseline `c75bb87f` |
+| `check-frontend-binding.sh` | PASS — `.env`, `client.ts`, `config.toml`, `types.ts` em `ikaauvsflpmamgxmkhoq` |
+| `guard-staging.sh` | PASS — marcador `STAGING`, `tpAmb='2'`, produção fiscal desabilitada |
+| `63-h7b-binding-gate.sh` (runtime das Edge Functions) | **PASS 8 / FAIL 0** — funções fiscais respondendo no staging, `binding_ok=true`, `production_emission_allowed=false`, CORS sem wildcard, origem desconhecida e chamada sem `Origin` rejeitadas (403), origem autorizada exige auth (401) |
+| Endpoint/fallback de produção ativo | Nenhum — diagnóstico sem qualquer referência ao ref de produção |
+| Certificado (metadados sanitizados) | `HOMOLOGATION` · `AVAILABLE` · ativo · CNPJ do subject confere com 41775946000107 · 287 dias de validade restantes · `keyUsage = digitalSignature, nonRepudiation, keyEncipherment` |
+| Cofre | `SIGNING_BUNDLE_V2` · `AES-256-GCM` · `key_version=1` · IV e material presentes (não lidos) |
+| Emitente | `cnpj` confere · `fiscal_environment=HOMOLOGATION` · `nfe_environment_code=2` · `configuration_status=DRAFT` · `certificate_ref` vinculado |
+
+### Fase 2 — Smoke técnico seguro
+| Teste | Resultado |
+| --- | --- |
+| Preflight sem sessão | PASS (negativo esperado) — `unauthenticated`, fail-closed |
+| Harness transacional de preflight (`96-h7k-...`, com ROLLBACK) | PASS 4/4 — `status=BLOCKED`, `canTransmit=false`, bloqueios estruturados: `EMITTER_ACCOUNTING_NOT_VALIDATED`, `EMITTER_ACCREDITATION_MISSING`, `FISCAL_FIELD_REQUIRED`, `FISCAL_ITEM_TOTAL_MISMATCH`, `FISCAL_TOTAL_MISMATCH` |
+| Detecção do certificado pelo motor de validação | PASS — o emitente real (41775946000107) resolve certificado de homologação ativo |
+| Autoteste criptográfico inerte | **Implementado** — `supabase/functions/_shared/fiscal/nfe/signSelfTest.ts` + `action=self_test` em `fiscal-event-sign`: decifra o bundle apenas em memória, confere módulo/expoente RSA chave↔certificado, assina e verifica o payload inerte `AR-BIO/H7/SELF-TEST/INERT`, valida janela temporal e key usage, zera o material no `finally`. Não persiste, não numera, não transmite, não loga material. Contrato coberto por `src/test/fiscal/h7l.selfTestAssinatura.static.test.ts` (5 PASS). **Execução em runtime pendente**: exige sessão de operador fiscal do staging (não disponível nesta execução). |
+| `fiscal-xml-engine` com fixture | **Não executado** — não há fixture de homologação segura sem documento econômico; executar exigiria criar rascunho fiscal, o que depende de dados contábeis. Registrado como pendência. |
+| `fiscal-sefaz-transport` `action=status` (NFeStatusServico4 HML) | **Não executado** — o transporte exige sessão autenticada de operador fiscal e mTLS com o A1. Nenhum XML fiscal foi enviado. Pendência de smoke assistido na UI. |
+| Storage | PASS — `fiscal-certificates` e `fiscal-xml` privados (`public=false`), 4 policies fiscais, **0** policies concedendo acesso a `anon`, nenhuma URL pública |
+| Auditoria de logs | PASS — `fiscal_audit_log` com 1.274 registros e **0** ocorrências de indicadores de vazamento (PEM de chave privada, base64 de PFX, senha, `service_role`, JWT) |
+
+### Fase 3 — Segurança e regressão
+| Verificação | Resultado |
+| --- | --- |
+| Tabelas fiscais sem RLS | 0 |
+| Funções fiscais SECURITY DEFINER sem `search_path` | 0 |
+| Views fiscais sem `security_invoker` | 0 |
+| Grants fiscais para `anon` | 0 |
+| Postchecks canônicos | H7 11 · Segurança/Ambiente 12 · H7D 8 · H7E 7 · H7A 7 · H7F 11 · H7G 18 · H7H 11 · H7J 7 · H7K 8 → **100 PASS / 0 FAIL** |
+| `bunx tsgo --noEmit` | PASS |
+| `bunx vitest run src/test/fiscal/` | 106 arquivos, **1.679 testes PASS**, 4 skips |
+| `bun run build` | PASS |
+| `scripts/fiscal-secrets-scan.sh` | OK |
+| Produção | Intocada — nenhum comando executado fora do staging (runner fail-closed recusa o ref de produção) |
+
+### Correções aplicadas (P2, reversíveis, somente staging/repositório)
+1. Restauração do binding (`.env`, `src/integrations/supabase/types.ts`) para o baseline `c75bb87f`.
+2. `restoration/homologacao-h7/75-h7e-postcheck.sql` — H7E-6 exigia `EMITTER_CERTIFICATE_MISSING` de forma incondicional; com o A1 legitimamente registrado a asserção passou a acusar falso FAIL. Agora o bloqueio de certificado só é exigido quando `certificate_ref IS NULL`; os bloqueios humanos (credenciamento e validação contábil) continuam obrigatórios.
+3. Autoteste criptográfico inerte (arquivos novos listados acima) e deploy de `fiscal-event-sign`.
+
+Nada foi habilitado: NF-e/NFS-e permanecem desligadas, `configuration_status` continua `DRAFT`, `nfe_readiness_status` continua `NOT_READY`, `accounting_validated_at` e credenciamento seguem pendentes. Nenhum CFOP, CST/CSOSN, NCM, CEST, alíquota, natureza de operação, credencial de provedor ou dado RTC/IBS/CBS foi preenchido.
+
+### Classificação do gate
+- **A) H7 técnica — APROVADA.** Binding, guards anti-produção, RLS/ACL/Storage, cofre A1 `SIGNING_BUNDLE_V2`, preflight fail-closed, imutabilidade, idempotência e ausência de vazamento em logs: 100 postchecks PASS, typecheck/testes/build PASS.
+- **B) H7 contábil/cadastral — PENDENTE HUMANA.** Faltam decisão contábil e cadastro: `accounting_validated`, credenciamento por UF, matriz RTC 2026, produtos/serviços/clientes com perfil fiscal completo. Não implementável sem fonte contábil/oficial.
+- **C) H7 SEFAZ homologação — PENDENTE.** Smoke assistido de `NFeStatusServico4` (HML) e execução em runtime do `action=self_test` exigem sessão de operador fiscal no staging; nenhum documento fiscal foi gerado ou transmitido.
+- **D) Elegibilidade para promoção — NÃO ELEGÍVEL.** Promoção depende de (B) e (C) concluídos. Produção permanece bloqueada e intocada.
