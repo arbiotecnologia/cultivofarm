@@ -15,6 +15,8 @@ import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
 import { buildEventoXml, FiscalEventXmlError } from "../_shared/fiscal/nfe/buildEventoXml.ts";
 import { signEventoXml } from "../_shared/fiscal/nfe/signEventoXml.ts";
+import { runSigningSelfTest } from "../_shared/fiscal/nfe/signSelfTest.ts";
+
 
 const TPAMB = "2";
 const C_ORGAO = "31"; // MG
@@ -149,7 +151,35 @@ Deno.serve(async (req) => {
     return json({ error: "event_xml_not_accepted", code: "SEFAZ_EVENT_XML_NOT_ACCEPTED" }, 400, headers);
   }
 
+
+  // H7 (continuação): autoteste criptográfico INERTE do cofre A1.
+  // Não gera XML fiscal, não reserva numeração, não persiste e não transmite.
+  if (String(body.action ?? "") === "self_test") {
+    const adminSelfTest = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    let selfTestMaterial: { certPem: string; keyPem: string } | null = null;
+    try {
+      selfTestMaterial = await loadSigningMaterial(adminSelfTest);
+      const report = runSigningSelfTest(selfTestMaterial);
+      return json({
+        action: "self_test",
+        environmentCode: TPAMB,
+        persisted: false,
+        transmitted: false,
+        ...report,
+      }, 200, headers);
+    } catch (err) {
+      const code = err instanceof FiscalEventXmlError ? err.code : "FISCAL_SELF_TEST_FAILED";
+      return json({ action: "self_test", error: "self_test_failed", code }, 412, headers);
+    } finally {
+      if (selfTestMaterial) {
+        selfTestMaterial.certPem = "";
+        selfTestMaterial.keyPem = "";
+      }
+    }
+  }
+
   const invoiceId = String(body.invoice_id ?? "");
+
   const eventKind = String(body.event_kind ?? "");
   const reason = String(body.reason ?? "");
   const idempotencyKey = String(body.idempotency_key ?? "").trim();
