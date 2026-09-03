@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CamposFaltantesEmpresa from "./CamposFaltantesEmpresa";
+import SmokesHomologacaoSecao from "./SmokesHomologacaoSecao";
 import ProntidaoConexoesSecao from "./ProntidaoConexoesSecao";
 import CertificadoValidadeBanner from "@/components/fiscal/certificados/CertificadoValidadeBanner";
 import {
@@ -217,6 +218,8 @@ export default function HomologacaoSecao({ companySettingsId }: Props) {
       <ProntidaoConexoesSecao companySettingsId={companySettingsId} />
 
       <CamposFaltantesEmpresa />
+
+      <SmokesHomologacaoSecao companySettingsId={companySettingsId} />
 
 
 

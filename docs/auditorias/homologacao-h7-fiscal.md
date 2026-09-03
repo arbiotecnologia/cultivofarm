@@ -1038,3 +1038,62 @@ Nada foi habilitado: NF-e/NFS-e permanecem desligadas, `configuration_status` co
 - **B) H7 contábil/cadastral — PENDENTE HUMANA.** Faltam decisão contábil e cadastro: `accounting_validated`, credenciamento por UF, matriz RTC 2026, produtos/serviços/clientes com perfil fiscal completo. Não implementável sem fonte contábil/oficial.
 - **C) H7 SEFAZ homologação — PENDENTE.** Smoke assistido de `NFeStatusServico4` (HML) e execução em runtime do `action=self_test` exigem sessão de operador fiscal no staging; nenhum documento fiscal foi gerado ou transmitido.
 - **D) Elegibilidade para promoção — NÃO ELEGÍVEL.** Promoção depende de (B) e (C) concluídos. Produção permanece bloqueada e intocada.
+
+---
+
+## H7 — Smokes autenticados na UI (2026-09-03, 22:2x UTC)
+
+Escopo: habilitar, na aba **já existente** “Configuração Fiscal → Homologação
+fiscal”, os dois smokes que exigem sessão real de administrador. Sem rota nova,
+sem fluxo paralelo, sem tabela nova. Somente staging `ikaauvsflpmamgxmkhoq`;
+produção `navfzbwgwzruipouyfnk` intocada. `fiscal-event-sign` **não** foi
+redesplegada (permanece a versão publicada diretamente no staging autorizado).
+
+### Card 1 — “Autoteste do certificado A1”
+- Botão admin-only `Testar certificado em memória`, habilitado apenas com
+  `fiscal_environment=HOMOLOGATION`, `nfe_environment_code=2`,
+  `production_enabled=false` e certificado ativo/`AVAILABLE`/vigente.
+- Invoca `supabase.functions.invoke('fiscal-event-sign', { body: { action: 'self_test' } })`
+  com o JWT normal da sessão.
+- Exibe apenas: bundle parseável, chave corresponde ao certificado, assinatura
+  verificada, validade, key usage, dias restantes, `persisted=false`,
+  `transmitted=false`, tpAmb e horário. Toda a resposta passa por allowlist
+  (`sanitizeSelfTestResponse`), fail-closed em `persisted`/`transmitted`.
+
+### Card 2 — “SEFAZ-MG — status do serviço em homologação”
+- Botão admin-only `Consultar SEFAZ HML`, bloqueado fora de homologação/tpAmb 2
+  ou com produção habilitada.
+- Invoca exclusivamente `fiscal-sefaz-transport` `action=status`
+  (**NFeStatusServico4**, endpoint `hnfe.fazenda.mg.gov.br`, allowlist dura
+  server-side). Nenhum documento, chave real, evento, inutilização,
+  cancelamento ou numeração é enviado.
+- Exibe apenas `cStat`, `xMotivo` normalizado (≤200 chars), tpAmb, latência e
+  horário. Erros aparecem como código estável sanitizado.
+
+### Garantias
+Sem exibição/registro de PFX, senha, PEM, assinatura, fingerprint/serial,
+`object_path`, IV ou resposta bruta; sem `console.*`; clique duplo impedido por
+`isPending`; nenhuma escrita (`update`/`insert`), nenhuma alteração de
+`configuration_status` (`DRAFT`) ou de `nfe_readiness_status` (`NOT_READY`);
+NF-e/NFS-e continuam desligadas.
+
+### Arquivos alterados
+| Arquivo | Ação |
+| --- | --- |
+| `src/lib/fiscal/homologationSmokeGate.ts` | novo — gate puro (admin/homologação/certificado) e sanitizadores |
+| `src/hooks/useFiscalHomologationSmokes.ts` | novo — mutations dos dois smokes com JWT do usuário |
+| `src/components/fiscal/homologacao/SmokesHomologacaoSecao.tsx` | novo — os dois cards admin-only |
+| `src/components/fiscal/homologacao/HomologacaoSecao.tsx` | integração da seção na aba existente |
+| `src/test/fiscal/h7m.smokesHomologacao.test.ts` | novo — 12 testes |
+| `restoration/homologacao-h7/75-h7e-postcheck.sql` | correção anterior do falso FAIL H7E-6 |
+| `.env`, `src/integrations/supabase/types.ts` | drift recorrente restaurado ao baseline `c75bb87f` |
+
+### Validações
+`check-frontend-binding.sh` OK (staging) · `bunx tsgo --noEmit` PASS ·
+`vitest src/test/fiscal/` **1.691 PASS / 4 skips / 0 falhas** (107 arquivos) ·
+`bun run build` PASS · `fiscal-secrets-scan.sh` OK.
+
+### Situação
+Botões prontos na prévia autenticada. Os smokes reais (autoteste do A1 e status
+SEFAZ HML) serão executados pelo administrador na UI; até lá, C) H7 SEFAZ
+homologação permanece **pendente** e D) promoção segue **não elegível**.
