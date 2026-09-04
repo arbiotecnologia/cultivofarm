@@ -118,8 +118,13 @@ alteração de DDL comprovadamente segura**:
   `Staff can manage client documents` (mesmo role, mesmo `USING`). Removida pela migration
   `20261002000000_h8b1_redundant_select_policy_v1` (ledger 657 → 658), com pré/pós-condições
   fail-fast, auditoria em `private.h8a_policy_audit` e rollback nominal fora de
-  `supabase/migrations`. Os demais 116 grupos têm predicados/perfis distintos e ficam como
-  pendência de H8-C.
+  `supabase/migrations`. **A remoção não reduziu o Advisor:** ele conta grupos
+  tabela+role+ação e o grupo `cliente_documentos / authenticated / SELECT` ainda tem duas
+  policies (`Staff can manage client documents` via `FOR ALL` e `Users can only view their
+  own client documents`). Portanto `multiple_permissive_policies` **permaneceu 146**; o que
+  mudou foram as métricas próprias: policies em `public` 541 → 540 e grupos locais 44 → 43.
+  Restam **43 grupos locais** e **117 grupos expandidos/finding-groups oficiais**,
+  totalizando as 146 ocorrências — pendência de H8-C.
 - `SECURITY DEFINER`: 648 funções auditadas — 0 sem `search_path` fixo, 0 com grant PUBLIC,
   2 com `anon` por desenho, 378 com `authenticated` (superfície já certificada em H7O).
   **Nenhuma revogação e nenhuma conversão para `SECURITY INVOKER`**, por ausência de prova
@@ -134,3 +139,16 @@ scans de segredo e integração fiscal OK. Invariantes preservados (648 SECDEF, 
 Detalhes, matriz de equivalência, rollback e decisão em
 `restoration/homologacao-h8/02-h8b-policies-rpcs.md`. Decisão: **GO homologação para H8-C /
 NO-GO produção**.
+
+### Revalidação independente (2026-09-04)
+
+Validação independente no Supabase oficial de homologação `ikaauvsflpmamgxmkhoq`, após o
+commit autoritativo `c322448d258601b4b035f0becca483f968cddb33`, confirmou: `ledger=658`,
+policies em `public`=540, policy `Staff can view all client documents` ausente e keeper
+`Staff can manage client documents` presente, `SECDEF=648` (0 sem `search_path`, 2 anon,
+378 authenticated), 24 views com 23 `security_invoker` (17 `=true` + 6 `=on`) e 1 interna
+sem grants, 6 cron. **Advisor de performance permaneceu 512 (147 WARN + 365 INFO)** com
+`multiple_permissive_policies=146`, `duplicate_index=1`, `unindexed_foreign_keys=172`,
+`unused_index=193`; **Advisor de segurança permaneceu 393 (383 WARN + 10 INFO + 0 ERROR)**.
+H8-B teve, portanto, **ganho estrutural sem delta de Advisor**. Decisão mantida:
+**GO homologação para H8-C / NO-GO produção**.
