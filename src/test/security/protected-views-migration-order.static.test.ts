@@ -100,7 +100,7 @@ export function eventsFor(sql: string, view: string): Event[] {
   // ALTER VIEW ... SET (security_invoker = true|false) e CREATE ... WITH (security_invoker = ...)
   push(
     new RegExp(
-      `\\b(?:alter\\s+view|create\\s+(?:or\\s+replace\\s+)?view)\\s+(?:if\\s+exists\\s+)?${name}\\b[\\s\\S]{0,400}?security_invoker\\s*=\\s*true`,
+      `\\b(?:alter\\s+view|create\\s+(?:or\\s+replace\\s+)?view)\\s+(?:if\\s+exists\\s+)?${name}\\b[^;]{0,400}?security_invoker\\s*=\\s*true`,
       "gi",
     ),
     "invoker_true",
