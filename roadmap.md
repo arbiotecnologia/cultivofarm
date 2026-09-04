@@ -57,7 +57,15 @@
 
 ## H8 — Abertura formal (somente diagnóstico, sem execução) — 05/09/2026
 - [x] Diagnóstico inicial, objetivos, dependências, riscos, critérios de aceite, plano de testes e prompt de execução: `restoration/homologacao-h8/00-h8-abertura-diagnostico.md`
-- [ ] H8-A — dívida de performance do Advisor (auth_rls_initplan, multiple_permissive_policies, duplicate_index, unindexed_foreign_keys, unused_index)
+- [x] H8-A — dívida de performance do Advisor: **executada no staging** (relatório `restoration/homologacao-h8/01-h8a-performance-advisor.md`)
+  - [x] H8-A1 `duplicate_index` — 32 índices redundantes removidos com prova de equivalência normalizada; grupos 28 → 1 (só `formulacoes`, sustentado por constraints)
+  - [x] H8-A2 `auth_rls_initplan` — 436 policies normalizadas via `ALTER POLICY` (`auth.uid()` → `( SELECT auth.uid() AS uid)`), sem mudar nome/comando/roles/USING/WITH CHECK; restantes 0
+  - [x] H8-A3 `multiple_permissive_policies` — apenas 2 policies literalmente redundantes removidas (`ppp_select`, `Portal: Ler safras dos talhões acessíveis`); 44 grupos com expressões distintas ficam como pendência de H8-B
+  - [x] `unused_index` (219) e `unindexed_foreign_keys` (172) não tocados, conforme escopo
+  - [x] Ledger 654 → 657; 59 repo-only continuam ausentes e bloqueadas (manifesto e teste estático atualizados)
+  - [x] Postcheck H7O PASS, harness 300 + 136 PASS, 648 SECURITY DEFINER / 0 sem `search_path` / 2 anon, 24 views (23 invoker), 6 cron, 7 RLS fail-closed, fiscal `HOMOLOGATION|2|false|DRAFT|NOT_READY`
+  - [x] Typecheck, build, Vitest completo e scans PASS; binding revalidado no início e no fim
+  - [x] Decisão: **GO staging para H8-B / NO-GO produção**
 - [ ] H8-B — redução do Grupo B de SECURITY DEFINER executáveis por `authenticated`
 - [ ] H8-C — reconciliação definitiva das 59 migrations repo-only (36 refletidas / 3 superadas / 20 em quarentena)
 - [ ] H8-D — observabilidade e runbook operacional de homologação

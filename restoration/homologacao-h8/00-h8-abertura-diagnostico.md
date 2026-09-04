@@ -90,3 +90,18 @@ escopo que a documentação existente já previa como remanescente após H7.
 > `unused_index`. Não toque em Edge Functions, secrets, certificado, flags fiscais nem
 > em schemas gerenciados. Ao final: Advisor security/performance, typecheck, build,
 > Vitest completo, scans, atualização de relatório e roadmap, e decisão GO/NO-GO.
+
+## 8. Status de execução — H8-A (atualizado)
+
+H8-A foi executada no staging `ikaauvsflpmamgxmkhoq` em três subfases independentes
+(H8-A1, H8-A2, H8-A3), todas aplicadas e registradas no ledger (654 → 657), com rollback
+versionado fora de `supabase/migrations` e ensaio rollback→reapply em transação descartada.
+
+Resultado resumido: `duplicate_index` 28 → 1 grupo (o remanescente é sustentado por
+constraints em `formulacoes`), `auth_rls_initplan` 436 → 0, `multiple_permissive_policies`
+reduzido apenas nos 2 casos de redundância literal — os 44 grupos com expressões distintas
+foram deliberadamente preservados e passam a ser pendência de H8-B. `unused_index` e
+`unindexed_foreign_keys` não foram tocados.
+
+Todos os gates de H7 continuam PASS. Detalhes, evidências e decisão GO/NO-GO em
+`restoration/homologacao-h8/01-h8a-performance-advisor.md`.
