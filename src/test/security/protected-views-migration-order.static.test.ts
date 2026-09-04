@@ -80,7 +80,17 @@ function finalStates(): Record<string, { state: ViewState; lastFile: string }> {
       // CREATE OR REPLACE nunca altera opções já existentes; DROP+CREATE zera.
       const dropped = events.some((e) => e.kind === "drop");
       const created = events.some((e) => e.kind === "create");
-      const reaffirmed = events.some((e) => e.kind === "invoker_true");
+      let reaffirmed = events.some((e) => e.kind === "invoker_true");
+      // Reafirmação dinâmica: bloco DO/EXECUTE format('ALTER VIEW ... security_invoker = true')
+      // sobre uma lista que inclui esta view (padrão usado por H7N P0 e H7O P4).
+      if (
+        !reaffirmed &&
+        /security_invoker\s*=\s*true/i.test(sql) &&
+        !/security_invoker\s*=\s*false/i.test(sql)
+      ) {
+        reaffirmed = true;
+        state = "invoker";
+      }
       if (dropped && created && !reaffirmed) state = "unsafe";
       result[view] = { state, lastFile: file };
     }
