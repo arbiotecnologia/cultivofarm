@@ -266,6 +266,11 @@ distintas e continua sendo contado como um finding.
 
 ## 9. Decisão
 
-**GO homologação para H8-C / NO-GO produção.** H8-B reduziu `multiple_permissive_policies`
-de 146 para 145 com equivalência formalmente provada, revisou integralmente a exposição
-`SECURITY DEFINER` sem revogações inseguras e preservou todos os invariantes de H7 e H8-A.
+**GO homologação para H8-C / NO-GO produção.** H8-B obteve **redução estrutural segura**
+— uma policy permissiva redundante removida em `cliente_documentos` com equivalência
+formalmente provada, policies 541 → 540 e grupos locais 44 → 43 — mas com **delta zero no
+Advisor**: `multiple_permissive_policies` **permaneceu 146**, performance permaneceu 512
+(147 WARN + 365 INFO) e segurança permaneceu 393 (383 WARN + 10 INFO + 0 ERROR). A fase
+também revisou integralmente a exposição `SECURITY DEFINER` sem revogações inseguras e
+preservou todos os invariantes de H7 e H8-A.
+
