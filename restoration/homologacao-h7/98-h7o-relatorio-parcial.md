@@ -168,3 +168,52 @@ Ambiente `HOMOLOGATION`, `tpAmb=2`, emissão de produção desabilitada, prontid
 Novos: `src/test/security/protected-views-migration-order.static.test.ts`, `src/test/config/binding-gate.integration.test.ts`, `restoration/homologacao-h7/h7o-inventario/advisor_splinter_after.txt`.
 Atualizados: `restoration/homologacao-h7/h7o-postcheck.sh` (diff de allowlist), este relatório, `docs/auditorias/homologacao-h7-fiscal.md`, `roadmap.md`, e restauração de binding em `.env`, `src/integrations/supabase/client.ts`, `src/integrations/supabase/types.ts`.
 Não alterados: migrations H7L/H7N/H7O, código de aplicação, Edge Functions, cofre A1, secrets, configuração fiscal, dados.
+
+
+---
+
+## 11. Rodada 4 — Correção de falso positivo apontada em revisão independente
+
+Revisão sobre o commit `382bbcf0f5350fcbdd9c19a4d200a5f9d5e4eb7a`. Escopo: **somente código/testes**. Nenhuma migration foi criada, alterada ou reaplicada; nenhum DDL/DML no staging (apenas leituras do postcheck). Produção `navfzbwgwzruipouyfnk` não consultada, não alterada, não promovida.
+
+### 11.1 Defeito confirmado
+
+Em `src/test/security/protected-views-migration-order.static.test.ts`, a reafirmação dinâmica era inferida pelo **arquivo inteiro** (`arquivo contém o nome da view` + `arquivo contém security_invoker = true`). Num arquivo misto — duas views protegidas, uma reafirmada dinamicamente e a outra recriada com `DROP`+`CREATE` sem reafirmação — ambas eram marcadas como `invoker`. Falso positivo confirmado e corrigido.
+
+Um segundo defeito foi encontrado durante a correção: a detecção **literal** de `security_invoker = true` usava janela `[\s\S]{0,400}`, que atravessava o `;` final do `CREATE` e casava com um bloco `DO` seguinte. A janela passou a ser `[^;]{0,400}`, restrita ao mesmo comando.
+
+### 11.2 Correção aplicada
+
+- Novo `dollarBlocks()`: segmenta o SQL em blocos dollar-quoted (`$tag$ … $tag$`).
+- Novo `dynamicEventsFor(sql, view)`: uma reafirmação dinâmica só é atribuída a uma view quando **o mesmo bloco** que executa `ALTER VIEW … SET (security_invoker = <valor>)` via `EXECUTE`/`format` contém o nome daquela view como literal (item de array/lista ou nome qualificado). Reafirmação para `false` é tratada simetricamente como insegura.
+- Máquina de estados extraída em funções puras exportadas (`eventsFor`, `applyEvents`, `finalStatesFor`), permitindo testes unitários determinísticos sem tocar em arquivos de migration.
+
+### 11.3 Testes negativos
+
+1. **Negativo simples (preservado e reexecutado)**: `DROP VIEW` + `CREATE VIEW` de `vw_esteira_laboratorio` sem reafirmação → estado `unsafe`, enquanto a outra view do baseline permanece `invoker`.
+2. **Caso misto (novo, determinístico)**: mesmo SQL cita duas views protegidas; `vw_esteira_laboratorio` é reafirmada dinamicamente por um bloco `DO … FOREACH … EXECUTE format(...)` cuja lista contém apenas ela; `vw_catalogo_ficha_produtos` sofre `DROP`+`CREATE` sem reafirmação. O gate aprova a primeira (`invoker`) e **reprova especificamente a segunda** (`unsafe`, apontando o arquivo `999_misto.sql`).
+3. **Escopo da lista**: view citada apenas em comentário, fora da lista do loop, não recebe nenhum evento de reafirmação.
+4. **P4 real**: as cinco views protegidas recebem reafirmação dinâmica comprovada por evento (não por presença de texto no arquivo).
+
+### 11.4 Resultados exatos desta rodada
+
+| Verificação | Resultado |
+|---|---|
+| Teste estático corrigido | **10/10 PASS** |
+| Suíte `src/test/config` + `src/test/security` | **20/20 PASS** (3 arquivos) |
+| Typecheck (`tsgo --noEmit -p tsconfig.app.json`) | 0 erro |
+| Build (`npm run build`) | OK |
+| Vitest completo | **3.330 PASS / 0 FAIL / 4 skip** (211 arquivos + 1 skip) |
+| `fiscal-secrets-scan.sh` | OK — nenhum valor secreto real |
+| `fiscal-integration-scan.sh` | OK — nenhum indicador de emissão fiscal em runtime |
+| `check-frontend-binding.sh` | OK — staging `ikaauvsflpmamgxmkhoq` |
+| `h7o-postcheck.sh` (somente leitura) | **H7O POSTCHECK: PASS** — allowlist 485 sem drift, diff H7N→H7O = 19 removidas / 0 adicionadas, 5/5 views `security_invoker`, rate-limit privado ativo, fiscal `HOMOLOGATION\|2\|false\|false\|false\|DRAFT\|NOT_READY`, extensões intocadas |
+
+Durante a rodada a plataforma voltou a regenerar `.env` e `types.ts` apontando para o sandbox (`types.ts` com 2.052 linhas), o que quebrou typecheck e o gate de binding; ambos foram restaurados do baseline autorizado `6c08a8f8` (21.850 linhas) e revalidados. Isso confirma o risco residual 5 da seção 10.9 e demonstra que os dois gates da suíte detectam o desvio.
+
+### 11.5 Arquivos desta rodada
+
+Alterados: `src/test/security/protected-views-migration-order.static.test.ts` (parser por view + 4 testes negativos), este relatório, e restauração de binding em `.env`, `src/integrations/supabase/client.ts`, `src/integrations/supabase/types.ts`.
+Não alterados: migrations (H7L/H7N/H7O), banco, configuração fiscal, Edge Functions, secrets, produção.
+
+**Decisão do gate H7O: mantida APROVADA** — o falso positivo era do teste, não do estado do banco; as cinco views continuam com `security_invoker = true` comprovado no staging.
