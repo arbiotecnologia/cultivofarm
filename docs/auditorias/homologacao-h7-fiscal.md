@@ -1363,3 +1363,21 @@ Relatório definitivo: `restoration/homologacao-h7/98-h7o-relatorio-parcial.md` 
 - Novos gates na suíte: ordem de migrations das 5 views protegidas (com verificação negativa) e execução do gate de binding de staging.
 - Invariantes fiscais confirmados por leitura: `HOMOLOGATION`, `tpAmb=2`, emissão de produção desabilitada, `DRAFT|NOT_READY`, 0 notas/0 eventos.
 - Produção `navfzbwgwzruipouyfnk`: não consultada, não alterada, não promovida. Promoção continua NÃO ELEGÍVEL.
+
+---
+
+### 13. Gate H7P — reconciliação final e prontidão pré-produção (2026-09-04, staging `ikaauvsflpmamgxmkhoq`)
+
+Relatório definitivo: `restoration/homologacao-h7/99-h7-relatorio-final.md`.
+
+- Binding regenerado novamente para o Cloud acidental (`yzszl…`, `types.ts` com 2.052 linhas); restaurado do baseline `6c08a8f8` (21.850 linhas) e revalidado no início e no fim.
+- Reconciliação recalculada: 713 arquivos vs. 654 versões no ledger → **59 repo-only**. Nenhuma pendente: 36 refletidas no catálogo, 3 superadas (banco à frente: `_rpc_avancar_esteira_laboratorio_internal`, `fn_validate_envase_cq`, `rpc_fiscal_preflight_v1`), 20 conflitantes do backend estranho (quarentena).
+- **Nenhum DDL aplicado; ledger permanece em 654.** Nenhuma linha artificial em `schema_migrations`, sem `db push`.
+- Novos gates: `h7p-repo-only-manifest.json` (sha256 por arquivo), `h7p-guard-repo-only.sh` (falha se qualquer das 59 versões entrar no ledger) e `src/test/security/h7p-repo-only-migrations.static.test.ts`.
+- SECURITY DEFINER: 648 em `public`, 0 sem `search_path`, apenas 2 executáveis por `anon` (validação com rate-limit e rastreio por token) — sem exposição insegura, sem revogação em massa.
+- `btree_gist` e `pg_net` mantidas em `public`: a primeira sustenta a constraint de exclusão `cpr_no_overlap`; a segunda é usada por `net.http_post`. WARN aceito, sem fixar versão.
+- Postcheck H7O PASS integral; harness 300 + 136 PASS; 5/5 views `security_invoker`; rate-limit e `pg_cron` (6 jobs) ativos; ciclo rollback→reapply do P4 reconvergido.
+- Typecheck 0 erro, build OK, Vitest **3.337 PASS / 0 FAIL / 4 skip**, scans de segredo e integração fiscal OK.
+- Fiscal inalterado: `STAGING`, `tpAmb=2`, emissão de produção desligada, emitente `DRAFT|NOT_READY`, certificado A1 conferido só por metadados.
+- Bloqueios externos: leaked-password protection, publicação das Edge Functions pelo runner autorizado, dados fiscais reais do emitente e autorização humana.
+- **Decisão: GO em staging, NO-GO para promoção.** Produção `navfzbwgwzruipouyfnk` não consultada nem alterada.
