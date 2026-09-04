@@ -79,7 +79,16 @@
   - [x] Guard `h7p-guard-repo-only.sh` e teste estático fortalecidos (9/9 PASS); guard falha em drift de hash, arquivo ausente, `apply_to_staging=true`, entrada no ledger, decisão/evidência ausente ou distribuição divergente
   - [x] Decisão: **GO homologação para H8-D / NO-GO produção**
 - [ ] Backlog performance/RLS (fora de H8): consolidação semântica dos 43 grupos locais / 117 finding-groups de `multiple_permissive_policies`, `unindexed_foreign_keys` (172) e `unused_index` (193)
-- [ ] H8-D — observabilidade e runbook operacional de homologação
+- [x] H8-D — observabilidade e runbook operacional de homologação: **executada em homologação** (relatórios `restoration/homologacao-h8/04-h8d-observabilidade-runbook.md` e `05-h8-relatorio-final.md`)
+  - [x] Suíte única `h8d-healthcheck.sh` + `h8d-healthcheck.sql`: read-only (`BEGIN READ ONLY`, sem DDL/DML, sem `SELECT *`), fail-closed de identidade (`exit 10`), idempotente (fingerprint de negócio idêntico em 3 execuções) e sanitizada (sem DSN/token/chave/certificado/PII)
+  - [x] 29 sinais em 8 categorias com status `OK|WARN|CRITICAL|UNKNOWN`, limiar justificado, timestamp UTC e resposta; saída JSON opcional para histórico/CI
+  - [x] Runbook: matriz de severidade/responsável/prazo, 13 procedimentos de incidente, política de privacidade e rotinas diária/semanal/mensal e pré/pós-migration
+  - [x] Testes estáticos + fixtures OK/WARN/CRITICAL/UNKNOWN (`src/test/security/h8d-healthcheck.static.test.ts`, 25/25 PASS), sem disparo de notificação
+  - [x] Sem DDL e sem migration: ledger permanece **658**; 59 repo-only ausentes e íntegras
+  - [x] Achado: cron `prune-old-audit-logs` falha por `created_at` em `financial_audit_log` (correta `performed_at`) e aborta as 13 sentenças — nenhuma poda ocorre; sem perda de dados
+  - [x] Decisão: **GO operacional em homologação / NO-GO produção**
+- [ ] H8-E — corrigir `prune-old-audit-logs` (usar `performed_at` em `financial_audit_log` e tornar cada `DELETE` independente); exige janela autorizada por alterar job destrutivo
+- [x] H8 consolidada: relatório final `restoration/homologacao-h8/05-h8-relatorio-final.md` — ledger 658, Advisors 512/393 (0 ERROR), invariantes estáveis, blockers B1/B3/B4 abertos
 - [ ] H8 permanece separada da promoção a produção; nenhuma migration H8 aplicada nesta rodada
 - [x] H8-B — consolidação de políticas RLS e revisão de RPCs `SECURITY DEFINER`: **executada no staging** (relatório `restoration/homologacao-h8/02-h8b-policies-rpcs.md`)
   - [x] Inventário integral das 146 ocorrências de `multiple_permissive_policies` (44 grupos locais / 117 expandidos) com `USING` e `WITH CHECK` completos
