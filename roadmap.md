@@ -74,10 +74,12 @@
 - [ ] H8 permanece separada da promoção a produção; nenhuma migration H8 aplicada nesta rodada
 - [x] H8-B — consolidação de políticas RLS e revisão de RPCs `SECURITY DEFINER`: **executada no staging** (relatório `restoration/homologacao-h8/02-h8b-policies-rpcs.md`)
   - [x] Inventário integral das 146 ocorrências de `multiple_permissive_policies` (44 grupos locais / 117 expandidos) com `USING` e `WITH CHECK` completos
-  - [x] H8-B1 `20261002000000_h8b1_redundant_select_policy_v1` — única consolidação provada (`cliente_documentos`: policy `SELECT` subsumida pela `FOR ALL` idêntica); 146 → **145**
-  - [x] 116 grupos restantes preservados por falta de equivalência lógica — pendência formal para H8-C
+  - [x] H8-B1 `20261002000000_h8b1_redundant_select_policy_v1` — única consolidação provada (`cliente_documentos`: policy `SELECT` subsumida pela `FOR ALL` idêntica)
+  - [x] Métricas separadas: policies em `public` 541 → **540** e grupos locais 44 → **43** (métricas próprias); Advisor oficial `multiple_permissive_policies` **permaneceu 146** — o grupo `cliente_documentos/authenticated/SELECT` ainda tem duas policies, então o finding persiste
+  - [x] Remanescentes: **43 grupos locais** + **117 grupos expandidos/finding-groups oficiais** = 146 ocorrências do Advisor — pendência formal para H8-C
+  - [x] Revalidação independente no Supabase oficial de homologação (2026-09-04, após `c322448d258601b4b035f0becca483f968cddb33`): performance **512** (147 WARN + 365 INFO) e segurança **393** (383 WARN + 10 INFO + 0 ERROR) — **delta zero**, ganho apenas estrutural
   - [x] 648 `SECURITY DEFINER` auditadas: 0 sem `search_path`, 0 grant PUBLIC, 2 anon por desenho, 378 `authenticated` (allowlist H7O sem drift) — **nenhuma revogação insegura**
   - [x] Ensaio rollback → reapply em transação descartada; rollback nominal fora de `supabase/migrations`; auditoria em `private.h8a_policy_audit`
   - [x] Ledger 657 → **658**; 59 repo-only continuam ausentes (manifesto e teste estático atualizados para 658)
   - [x] Postcheck H7O PASS, harness 300 + 136 PASS, typecheck/build/Vitest 3.337 PASS / 0 FAIL / 4 skip, scans OK, binding revalidado
-  - [x] Decisão: **GO homologação para H8-C / NO-GO produção**
+  - [x] Decisão: **GO homologação para H8-C / NO-GO produção** — redução estrutural segura, sem redução de findings do Advisor

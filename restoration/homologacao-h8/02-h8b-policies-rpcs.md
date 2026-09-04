@@ -22,10 +22,32 @@ Todas as leituras/escritas de banco passaram por `restoration/os-e2e/staging-psq
 que recusa DSN de produção. Nenhum DSN, chave, senha ou material de certificado foi
 impresso.
 
-> **Nota metodológica.** O advisor da plataforma Lovable está vinculado a outro backend
-> (sandbox) e por isso **não** foi usado como fonte de verdade. As contagens abaixo vêm de
-> consultas equivalentes executadas diretamente no catálogo do staging, exatamente como em
-> H8-A.
+> **Nota metodológica.** A fonte de verdade das métricas é a medição oficial do Advisor no
+> projeto Supabase de homologação `ikaauvsflpmamgxmkhoq`. As consultas de catálogo
+> executadas via `staging-psql.sh` são métricas **próprias e complementares** (contagem
+> bruta de policies e de grupos locais tabela+cmd+roles) e **não** são intercambiáveis com
+> a contagem do Advisor, que agrupa por tabela + role + ação. Ver §6.1.
+
+### Revalidação independente
+
+Validação independente executada no Supabase oficial de homologação
+`ikaauvsflpmamgxmkhoq` em **2026-09-04, após o commit autoritativo
+`c322448d258601b4b035f0becca483f968cddb33`**. Resultados oficiais confirmados:
+
+- `ledger=658`; policies em `public` = 540.
+- Policy `Staff can view all client documents` **ausente**; keeper
+  `Staff can manage client documents` **presente**.
+- `SECDEF=648`, sem `search_path`=0, `anon`=2, `authenticated`=378.
+- Views = 24, sendo 23 `security_invoker` (17 com `security_invoker=true` + 6 com
+  `security_invoker=on`) e 1 interna sem grants. Cron = 6.
+- **Advisor de performance: 512 = 147 WARN + 365 INFO** —
+  `multiple_permissive_policies=146`, `duplicate_index=1`,
+  `unindexed_foreign_keys=172`, `unused_index=193`.
+- **Advisor de segurança: 393 = 383 WARN + 10 INFO + 0 ERROR** —
+  `authenticated_security_definer_function_executable=378`,
+  `anon_security_definer_function_executable=2`, `rls_enabled_no_policy=10`,
+  `extension_in_public=2`, `auth_leaked_password_protection=1`.
+
 
 ---
 
@@ -62,12 +84,28 @@ Policies preservadas na mesma tabela (semânticas distintas, mantidas intactas):
 `Users can insert their own client documents`, `Users can only view their own client
 documents`, `Users can update their own client documents`.
 
+**Consequência para o Advisor (importante).** A remoção é semanticamente segura, mas o
+Advisor conta **grupos tabela + role + ação**, não policies brutas. Em
+`cliente_documentos / authenticated / SELECT` ainda permanecem duas policies —
+`Staff can manage client documents` (via `FOR ALL`) e
+`Users can only view their own client documents`. Portanto o grupo **continua gerando
+1 finding** e `multiple_permissive_policies` **permaneceu 146**. Qualquer afirmação de
+146 → 145 é incorreta e foi retificada neste relatório.
+
 ### 2.2 Não consolidado (pendência formal)
 
-Os demais 116 grupos têm predicados e/ou perfis diferentes entre si. Consolidá-los
-mudaria a lógica de autorização (tenant, vínculo cliente/parceiro, papel) e exige revisão
-por domínio com dono funcional. **Nenhuma alteração foi forçada apenas para reduzir a
+Nomenclatura exata das métricas remanescentes após H8-B:
+
+- **43 grupos locais remanescentes** (métrica própria: mesma tabela + mesmo `cmd` + mesmo
+  conjunto de roles, com mais de uma policy permissiva) — eram 44 antes da fase.
+- **117 grupos expandidos / finding-groups oficiais continuam**, totalizando as
+  **146 ocorrências** do Advisor, inalteradas.
+
+Esses grupos têm predicados e/ou perfis diferentes entre si. Consolidá-los mudaria a
+lógica de autorização (tenant, vínculo cliente/parceiro, papel) e exige revisão por
+domínio com dono funcional. **Nenhuma alteração foi forçada apenas para reduzir a
 métrica.**
+
 
 ---
 
@@ -161,19 +199,36 @@ vazia no staging, de modo que não há diferença de linhas observável por nenh
 | Invariante | Antes | Depois |
 | --- | --- | --- |
 | Ledger | 657 | **658** |
-| Policies em `public` | 541 | **540** |
-| Grupos permissivos locais | 44 | **43** |
-| `multiple_permissive_policies` (ocorrências) | 146 | **145** |
+| Policies em `public` (métrica própria) | 541 | **540** |
+| Grupos permissivos locais (métrica própria) | 44 | **43** |
+| **Advisor `multiple_permissive_policies` (oficial)** | 146 | **146 — sem alteração** |
+| Grupos expandidos / finding-groups oficiais | 117 | **117** |
 | `auth_rls_initplan` não escalado | 0 | **0** |
 | `duplicate_index` (grupos) | 1 | **1** (`formulacoes`, sustentado por constraints) |
 | `SECURITY DEFINER` | 648 | **648** |
 | Sem `search_path` fixo | 0 | **0** |
-| `EXECUTE` anon | 2 | **2** (por desenho) |
-| Views / `security_invoker` | 24 / 23 | **24 / 23** (+1 interna sem grants) |
+| `EXECUTE` anon / `authenticated` | 2 / 378 | **2 / 378** |
+| Views / `security_invoker` | 24 / 23 | **24 / 23** (17 `=true` + 6 `=on`, +1 interna sem grants) |
 | Cron ativos | 6 | **6** |
 | Tabelas RLS fail-closed | 7 | **7** |
 | Fiscal | `HOMOLOGATION`, `tpAmb=2`, `production_enabled=false`, `DRAFT/NOT_READY` | **inalterado** |
+| Advisor performance (oficial) | 512 (147 WARN + 365 INFO) | **512 (147 WARN + 365 INFO)** |
+| Advisor segurança (oficial) | 393 (383 WARN + 10 INFO + 0 ERROR) | **393 (383 WARN + 10 INFO + 0 ERROR)** |
 | Segurança: novos ERROR/WARN causados pela fase | — | **0** |
+
+### 6.1 Separação explícita das métricas
+
+| Métrica | Natureza | Antes | Depois | Delta |
+| --- | --- | --- | --- | --- |
+| Policies em `public` | própria (catálogo) | 541 | 540 | **−1** |
+| Grupos locais tabela+`cmd`+roles | própria (catálogo) | 44 | 43 | **−1** |
+| Advisor `multiple_permissive_policies` | **oficial (fonte de verdade)** | 146 | 146 | **0** |
+
+H8-B produziu **redução estrutural segura** (uma policy redundante a menos, com
+equivalência formalmente provada), mas **delta zero no Advisor**, porque o grupo
+`cliente_documentos / authenticated / SELECT` ainda contém duas policies permissivas
+distintas e continua sendo contado como um finding.
+
 
 ---
 
@@ -193,9 +248,12 @@ vazia no staging, de modo que não há diferença de linhas observável por nenh
 
 ## 8. Pendências e riscos
 
-1. **116 grupos permissivos remanescentes (145 ocorrências)** — exigem matriz funcional por
-   domínio e dono de negócio. Risco de consolidação apressada: ampliação silenciosa de
-   acesso. Escopo sugerido para H8-C.
+1. **43 grupos locais remanescentes** e **117 grupos expandidos / finding-groups oficiais**,
+   totalizando as **146 ocorrências** do Advisor — exigem matriz funcional por domínio e
+   dono de negócio. Risco de consolidação apressada: ampliação silenciosa de acesso.
+   Escopo sugerido para H8-C, que deve mirar a **redução de grupos tabela+role+ação**, e
+   não a contagem bruta de policies.
+
 2. **378 funções `SECURITY DEFINER` executáveis por `authenticated`** — superfície
    legítima e já certificada; qualquer revogação exige prova nominal de ausência de
    consumidor. Não tratar como dívida a zerar.
@@ -208,6 +266,11 @@ vazia no staging, de modo que não há diferença de linhas observável por nenh
 
 ## 9. Decisão
 
-**GO homologação para H8-C / NO-GO produção.** H8-B reduziu `multiple_permissive_policies`
-de 146 para 145 com equivalência formalmente provada, revisou integralmente a exposição
-`SECURITY DEFINER` sem revogações inseguras e preservou todos os invariantes de H7 e H8-A.
+**GO homologação para H8-C / NO-GO produção.** H8-B obteve **redução estrutural segura**
+— uma policy permissiva redundante removida em `cliente_documentos` com equivalência
+formalmente provada, policies 541 → 540 e grupos locais 44 → 43 — mas com **delta zero no
+Advisor**: `multiple_permissive_policies` **permaneceu 146**, performance permaneceu 512
+(147 WARN + 365 INFO) e segurança permaneceu 393 (383 WARN + 10 INFO + 0 ERROR). A fase
+também revisou integralmente a exposição `SECURITY DEFINER` sem revogações inseguras e
+preservou todos os invariantes de H7 e H8-A.
+
