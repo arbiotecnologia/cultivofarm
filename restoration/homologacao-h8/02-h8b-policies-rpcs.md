@@ -22,10 +22,32 @@ Todas as leituras/escritas de banco passaram por `restoration/os-e2e/staging-psq
 que recusa DSN de produção. Nenhum DSN, chave, senha ou material de certificado foi
 impresso.
 
-> **Nota metodológica.** O advisor da plataforma Lovable está vinculado a outro backend
-> (sandbox) e por isso **não** foi usado como fonte de verdade. As contagens abaixo vêm de
-> consultas equivalentes executadas diretamente no catálogo do staging, exatamente como em
-> H8-A.
+> **Nota metodológica.** A fonte de verdade das métricas é a medição oficial do Advisor no
+> projeto Supabase de homologação `ikaauvsflpmamgxmkhoq`. As consultas de catálogo
+> executadas via `staging-psql.sh` são métricas **próprias e complementares** (contagem
+> bruta de policies e de grupos locais tabela+cmd+roles) e **não** são intercambiáveis com
+> a contagem do Advisor, que agrupa por tabela + role + ação. Ver §6.1.
+
+### Revalidação independente
+
+Validação independente executada no Supabase oficial de homologação
+`ikaauvsflpmamgxmkhoq` em **2026-09-04, após o commit autoritativo
+`c322448d258601b4b035f0becca483f968cddb33`**. Resultados oficiais confirmados:
+
+- `ledger=658`; policies em `public` = 540.
+- Policy `Staff can view all client documents` **ausente**; keeper
+  `Staff can manage client documents` **presente**.
+- `SECDEF=648`, sem `search_path`=0, `anon`=2, `authenticated`=378.
+- Views = 24, sendo 23 `security_invoker` (17 com `security_invoker=true` + 6 com
+  `security_invoker=on`) e 1 interna sem grants. Cron = 6.
+- **Advisor de performance: 512 = 147 WARN + 365 INFO** —
+  `multiple_permissive_policies=146`, `duplicate_index=1`,
+  `unindexed_foreign_keys=172`, `unused_index=193`.
+- **Advisor de segurança: 393 = 383 WARN + 10 INFO + 0 ERROR** —
+  `authenticated_security_definer_function_executable=378`,
+  `anon_security_definer_function_executable=2`, `rls_enabled_no_policy=10`,
+  `extension_in_public=2`, `auth_leaked_password_protection=1`.
+
 
 ---
 
