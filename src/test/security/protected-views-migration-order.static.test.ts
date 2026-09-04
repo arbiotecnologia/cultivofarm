@@ -129,8 +129,7 @@ export function applyEvents(previous: ViewState, events: Event[]): ViewState {
     } else if (ev.kind === "create") {
       // DROP+CREATE zera as opções; CREATE OR REPLACE preserva as existentes.
       state = state === "invoker" ? "invoker" : "unsafe";
-      if (previous !== "invoker" || state !== "invoker") recreatedSemReafirmacao = true;
-      if (state === "absent") state = "unsafe";
+      if (state !== "invoker") recreatedSemReafirmacao = true;
     } else if (ev.kind === "invoker_true") {
       state = "invoker";
       recreatedSemReafirmacao = false;
