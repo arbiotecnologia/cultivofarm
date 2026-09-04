@@ -284,3 +284,112 @@ versões sem DDL novo. Os itens remanescentes (B1–B4) são exclusivamente bloq
 externos que dependem de configuração de plataforma, runner de deploy autorizado,
 dado fiscal real e decisão humana. Promoção **não elegível** até B1–B4 serem resolvidos
 e o gate reexecutado.
+
+---
+
+## 10. Gate H7Q — resolução dos bloqueios externos (2026-09-05, staging `ikaauvsflpmamgxmkhoq`)
+
+Rodada executada a partir de `c083faeb`. Nenhum DDL, nenhuma migration, nenhum secret,
+nenhum PFX lido, nenhum documento fiscal emitido. Produção `navfzbwgwzruipouyfnk`:
+**não consultada, não alterada, não promovida**.
+
+### 10.1 Binding
+Gate `check-frontend-binding.sh` acusou drift no início (`.env` regenerado para o Cloud
+`yzszl…`). `.env` e `types.ts` (21.850 linhas) restaurados do baseline `6c08a8f8`;
+`client.ts` já consistente. Gate reexecutado: **OK — staging `ikaauvsflpmamgxmkhoq`**.
+Toda operação de banco só ocorreu após esse PASS.
+
+### 10.2 B1 — leaked-password protection — **BLOQUEADO (externo)**
+Não existe no ambiente nenhum runner/token de administração vinculado ao staging
+(`SUPABASE_ACCESS_TOKEN`/PAT ausente); as ferramentas de configuração de auth
+disponíveis estão vinculadas ao projeto Cloud `yzszl…`, **não** ao staging autorizado.
+Habilitar por SQL é impossível: a opção pertence à configuração do GoTrue, não ao banco.
+Nenhum SQL foi inventado. Instrução operacional exata (executar por humano com acesso
+ao projeto de homologação):
+1. Abrir o projeto `ikaauvsflpmamgxmkhoq` → Authentication → Policies/Passwords.
+2. Ativar “Leaked password protection” (HaveIBeenPwned) e salvar.
+3. Testar com uma senha comprovadamente vazada em conta descartável de homologação;
+   esperado: cadastro/alteração recusado. Não registrar a credencial em log ou documento.
+4. Reexecutar o Advisor de segurança: o achado `auth_leaked_password_protection`
+   deve desaparecer (Security passaria a 392 achados).
+
+### 10.3 B2 — Edge Functions — **RESOLVIDO EM HOMOLOGAÇÃO (com ressalva de republicação)**
+Inventário: **38 diretórios** em `supabase/functions/` = 37 funções + `_shared`.
+Verificação de runtime contra o staging (somente OPTIONS/GET, sem efeito colateral):
+**37/37 publicadas e respondendo**, nenhuma ausente (0 × HTTP 404) —
+34 × 200, 3 × 204 (`fiscal-preflight`, `fiscal-cnpj-lookup`,
+`communication-provider-settings`) e 1 × 405 por contrato
+(`whatsapp-status-webhook`, sem preflight).
+Diagnóstico canônico `GET /functions/v1/fiscal-binding-diagnostics`:
+
+```
+project_ref=ikaauvsflpmamgxmkhoq  marker_project_ref=ikaauvsflpmamgxmkhoq
+environment=STAGING  production_emission_allowed=false  binding_ok=true
+```
+
+Nomes de secrets consumidos foram inventariados por leitura estática de
+`Deno.env.get(...)` (apenas **nomes**, nunca valores): `SUPABASE_URL`,
+`SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `FISCAL_CERTIFICATE_MASTER_KEY`,
+`FISCAL_TEST_CERTIFICATE_MASTER_KEY`, `INTERNAL_FUNCTION_SECRET`,
+`ALERTAS_CRON_SECRET`, `ALERTAS_SLA_SECRET`, `ALERTAS_NOTIFICACOES_SECRET`,
+`ALERTAS_RESUMO_SECRET`, `SMTP_*`, `VAPID_*`, `LOVABLE_API_KEY`,
+`GOOGLE_MAIL_API_KEY`, `APP_URL`, `SITE_URL`, `DENO_DEPLOYMENT_ID`.
+Nenhum secret foi criado, rotacionado ou lido; o PFX não foi acessado; nenhuma
+NF-e/NFS-e foi emitida.
+**Ressalva:** *republicar* qualquer função exige runner vinculado a
+`ikaauvsflpmamgxmkhoq` (`supabase functions deploy <nome> --project-ref ikaauvsflpmamgxmkhoq`),
+indisponível nesta sessão. Enquanto não houver esse runner, alterações de código de
+Edge Function permanecem **não implantáveis** — o conjunto atualmente publicado está
+validado e íntegro.
+
+### 10.4 B3 — cadastro fiscal do emitente — **BLOQUEADO (depende de dado real/contador)**
+`company_fiscal_settings`: 1 registro ativo. Presentes: razão social, nome fantasia,
+CNPJ, IE, regime (`LUCRO_PRESUMIDO`), CRT `3`, CNAE, endereço/UF/IBGE, série NF-e `1`,
+numeração inicial `1`, `fiscal_environment=HOMOLOGATION`, código de ambiente `2`.
+Ausente/vazio: `municipal_registration` (irrelevante enquanto `nfse_enabled=false`).
+Estado: `configuration_status=DRAFT`, `nfe_readiness_status=NOT_READY`,
+`production_enabled=false`, `nfe_enabled=false`, `nfse_enabled=false`.
+Pendências reais do motor de prontidão (nenhum dado inventado):
+
+| Código | Severidade | O que falta |
+| --- | --- | --- |
+| `EMITTER_ACCREDITATION_MISSING` | BLOCK | Registro do credenciamento do emitente na SEFAZ da UF |
+| `EMITTER_ACCOUNTING_NOT_VALIDATED` | BLOCK | Validação contábil formal do cadastro (contador responsável) |
+| `EMITTER_IE_DV_NOT_IMPLEMENTED` | WARN | Validação de DV da IE por UF não implementada |
+
+Certificado A1 conferido **apenas por metadados**: `status=AVAILABLE`,
+`environment=HOMOLOGATION`, validade 2026-06-17 → 2027-06-17. Senha, PFX e material
+criptográfico não foram lidos nem exibidos.
+
+### 10.5 Gates reexecutados nesta rodada
+| Gate | Resultado |
+| --- | --- |
+| `check-frontend-binding.sh` | PASS (após restauração) |
+| `h7p-guard-repo-only.sh` | PASS — nenhuma das 59 repo-only no ledger |
+| `h7o-postcheck.sh` | PASS integral (H7N preservada, 4 H7O com MD5 esperado, 8/8 guardas 42501, 19/19 revogações, rate-limit privado, 5 views invoker, allowlist 485 sem drift) |
+| Harness por perfis H7O / H7N | 300/300 e 136/136 PASS (transacionais, com ROLLBACK) |
+| Ledger | 654 — inalterado |
+| SECURITY DEFINER | 648 em `public`, 0 sem `search_path`, 2 anon por design |
+| RLS sem policy | 7 tabelas fail-closed (intencional) |
+| Views protegidas | 5/5 `security_invoker` |
+| `pg_cron` | 6 jobs ativos |
+| Fiscal | `HOMOLOGATION | tpAmb=2 | production=false | nfe=false | nfse=false | DRAFT | NOT_READY` |
+| Typecheck (`tsgo --noEmit`) | 0 erro |
+| Build (`npm run build`) | OK |
+| Vitest | **3.337 PASS / 0 FAIL / 4 skip** (212 arquivos) |
+| `fiscal-secrets-scan.sh` / `fiscal-integration-scan.sh` | PASS |
+| Advisor oficial | Ferramenta vinculada ao Cloud `yzszl…`; **não executável contra o staging** nesta sessão. Vale a verificação independente registrada na seção anterior: Security 393 (0 ERROR) e Performance 1001 (0 ERROR). Nenhuma correção ampla de performance nesta fase. |
+
+Nenhuma falha H7 nova foi encontrada; portanto nenhuma correção foi necessária e não há
+rollback pendente (rodada sem DDL).
+
+### 10.6 Decisão H7Q
+| Bloqueio | Estado após H7Q |
+| --- | --- |
+| B1 — leaked-password protection | ⛔ bloqueio externo (sem runner/console autorizado) |
+| B2 — Edge Functions | ✅ publicadas e validadas em staging; republicação depende de runner |
+| B3 — emitente fiscal READY | ⛔ depende de credenciamento SEFAZ e validação contábil |
+| B4 — autorização humana de promoção | ⛔ pendente |
+
+**H7 declarada tecnicamente concluída com bloqueios externos (B1, B3, B4).
+GO para staging / NO-GO para produção. Não elegível para promoção.**

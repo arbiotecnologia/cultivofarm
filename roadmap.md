@@ -43,3 +43,22 @@
 - [ ] Bloqueio externo B2: publicar as Edge Functions no staging pelo runner autorizado e validar `fiscal-binding-diagnostics`
 - [ ] Bloqueio externo B3: preencher dados fiscais reais do emitente (`DRAFT` → `READY`)
 - [ ] Bloqueio externo B4: autorização humana explícita para promoção a produção
+
+## H7q — Resolução dos bloqueios externos e gate definitivo (staging) — CONCLUÍDO COM BLOQUEIOS (05/09/2026)
+- [x] Gate de binding no início (drift para o Cloud `yzszl…` corrigido pelo baseline `6c08a8f8`) e revalidação
+- [ ] B1 — leaked-password protection: **bloqueado**, sem runner/PAT vinculado ao staging; instrução operacional documentada (seção 10.2 do relatório final)
+- [x] B2 — Edge Functions: 37 funções + `_shared` inventariadas; **37/37 publicadas no staging**; `fiscal-binding-diagnostics` → `binding_ok=true`, `STAGING`, `production_emission_allowed=false`; nenhum secret lido/rotacionado
+- [ ] B2 residual — republicação de funções exige runner `--project-ref ikaauvsflpmamgxmkhoq` (indisponível nesta sessão)
+- [ ] B3 — emitente fiscal: **bloqueado** por `EMITTER_ACCREDITATION_MISSING` e `EMITTER_ACCOUNTING_NOT_VALIDATED`; nenhum dado fiscal inventado
+- [ ] B4 — autorização humana explícita para promoção a produção
+- [x] Gates reexecutados: repo-only guard, postcheck H7O integral, harness 300 + 136 PASS, ledger 654 inalterado, 648 SECURITY DEFINER (0 sem `search_path`, 2 anon), 5/5 views invoker, 7 RLS fail-closed, 6 cron jobs
+- [x] Typecheck 0 erro, build OK, Vitest 3.337 PASS / 0 FAIL / 4 skip, scans de segredo e integração fiscal OK
+- [x] Decisão: **H7 tecnicamente concluída com bloqueios externos — GO staging / NO-GO produção**
+
+## H8 — Abertura formal (somente diagnóstico, sem execução) — 05/09/2026
+- [x] Diagnóstico inicial, objetivos, dependências, riscos, critérios de aceite, plano de testes e prompt de execução: `restoration/homologacao-h8/00-h8-abertura-diagnostico.md`
+- [ ] H8-A — dívida de performance do Advisor (auth_rls_initplan, multiple_permissive_policies, duplicate_index, unindexed_foreign_keys, unused_index)
+- [ ] H8-B — redução do Grupo B de SECURITY DEFINER executáveis por `authenticated`
+- [ ] H8-C — reconciliação definitiva das 59 migrations repo-only (36 refletidas / 3 superadas / 20 em quarentena)
+- [ ] H8-D — observabilidade e runbook operacional de homologação
+- [ ] H8 permanece separada da promoção a produção; nenhuma migration H8 aplicada nesta rodada
