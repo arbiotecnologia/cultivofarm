@@ -284,6 +284,7 @@ de uma tabela não aborte as demais.
 | Sanitização | 0 ocorrências de DSN/JWT/chave/e-mail/CPF/CNPJ no JSON; teste estático cobre todos os fixtures |
 | Testes estáticos H8-D | `src/test/security/h8d-healthcheck.static.test.ts` — **25/25 PASS** (inclui teste negativo de detecção de escrita) |
 | Binding | `H7d BINDING GATE: OK — staging ikaauvsflpmamgxmkhoq` |
+| Gate fail-closed comprovado em campo | Durante a fase o `.env` sofreu drift novamente; a suíte **abortou sozinha** com `H8-D GATE: ABORT — .env não está vinculado ao staging autorizado`, sem consultar o banco. Binding restaurado do baseline `6c08a8f8` e execução repetida com sucesso |
 | Guard 59 repo-only | PASS — hashes íntegros, 0 no ledger |
 | Ledger | **658** |
 | Postcheck H7O | **PASS** (todas as linhas, incl. allowlist 485, fiscal `HOMOLOGATION\|2\|false\|false\|false\|DRAFT\|NOT_READY`) |
