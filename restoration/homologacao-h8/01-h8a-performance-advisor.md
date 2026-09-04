@@ -86,6 +86,7 @@ POLICIES_PUBLIC=541
 | Harness H7O por perfis | **300/300 PASS**, 0 falhas |
 | Harness H7N por perfis | **136/136 PASS** |
 | `h7p-guard-repo-only.sh` | OK — 59 repo-only bloqueadas |
+| `h7n-postcheck.sh` (superseded) | FAIL esperado e pré-existente desde H7O: a allowlist H7N (504 funções) foi substituída pela de H7O (485, com as 19 revogações) e os wrappers privados passaram de 4 para 6. O postcheck vigente é o de H7O, que está PASS; o harness H7N segue 136/136 PASS. H8-A não alterou nenhuma função nem grant. |
 | Fiscal | `HOMOLOGATION | tpAmb=2 | production_enabled=false | DRAFT | NOT_READY` |
 | Typecheck (`tsgo`) | PASS |
 | Build (Vite/PWA) | PASS |
