@@ -107,7 +107,7 @@ export function eventsFor(sql: string, view: string): Event[] {
   );
   push(
     new RegExp(
-      `\\b(?:alter\\s+view|create\\s+(?:or\\s+replace\\s+)?view)\\s+(?:if\\s+exists\\s+)?${name}\\b[\\s\\S]{0,400}?security_invoker\\s*=\\s*false`,
+      `\\b(?:alter\\s+view|create\\s+(?:or\\s+replace\\s+)?view)\\s+(?:if\\s+exists\\s+)?${name}\\b[^;]{0,400}?security_invoker\\s*=\\s*false`,
       "gi",
     ),
     "invoker_false",
