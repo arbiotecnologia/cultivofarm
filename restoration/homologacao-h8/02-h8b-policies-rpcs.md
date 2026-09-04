@@ -199,19 +199,36 @@ vazia no staging, de modo que não há diferença de linhas observável por nenh
 | Invariante | Antes | Depois |
 | --- | --- | --- |
 | Ledger | 657 | **658** |
-| Policies em `public` | 541 | **540** |
-| Grupos permissivos locais | 44 | **43** |
-| `multiple_permissive_policies` (ocorrências) | 146 | **145** |
+| Policies em `public` (métrica própria) | 541 | **540** |
+| Grupos permissivos locais (métrica própria) | 44 | **43** |
+| **Advisor `multiple_permissive_policies` (oficial)** | 146 | **146 — sem alteração** |
+| Grupos expandidos / finding-groups oficiais | 117 | **117** |
 | `auth_rls_initplan` não escalado | 0 | **0** |
 | `duplicate_index` (grupos) | 1 | **1** (`formulacoes`, sustentado por constraints) |
 | `SECURITY DEFINER` | 648 | **648** |
 | Sem `search_path` fixo | 0 | **0** |
-| `EXECUTE` anon | 2 | **2** (por desenho) |
-| Views / `security_invoker` | 24 / 23 | **24 / 23** (+1 interna sem grants) |
+| `EXECUTE` anon / `authenticated` | 2 / 378 | **2 / 378** |
+| Views / `security_invoker` | 24 / 23 | **24 / 23** (17 `=true` + 6 `=on`, +1 interna sem grants) |
 | Cron ativos | 6 | **6** |
 | Tabelas RLS fail-closed | 7 | **7** |
 | Fiscal | `HOMOLOGATION`, `tpAmb=2`, `production_enabled=false`, `DRAFT/NOT_READY` | **inalterado** |
+| Advisor performance (oficial) | 512 (147 WARN + 365 INFO) | **512 (147 WARN + 365 INFO)** |
+| Advisor segurança (oficial) | 393 (383 WARN + 10 INFO + 0 ERROR) | **393 (383 WARN + 10 INFO + 0 ERROR)** |
 | Segurança: novos ERROR/WARN causados pela fase | — | **0** |
+
+### 6.1 Separação explícita das métricas
+
+| Métrica | Natureza | Antes | Depois | Delta |
+| --- | --- | --- | --- | --- |
+| Policies em `public` | própria (catálogo) | 541 | 540 | **−1** |
+| Grupos locais tabela+`cmd`+roles | própria (catálogo) | 44 | 43 | **−1** |
+| Advisor `multiple_permissive_policies` | **oficial (fonte de verdade)** | 146 | 146 | **0** |
+
+H8-B produziu **redução estrutural segura** (uma policy redundante a menos, com
+equivalência formalmente provada), mas **delta zero no Advisor**, porque o grupo
+`cliente_documentos / authenticated / SELECT` ainda contém duas policies permissivas
+distintas e continua sendo contado como um finding.
+
 
 ---
 
