@@ -140,7 +140,37 @@ log_report_view(text,jsonb)
 rpc_gerar_alertas_operacionais()
 rpc_recalcular_prioridade_alerta(uuid)
 rpc_substituir_etiqueta_produto(uuid,text)'
-actual_removed=$(diff <(grep -v '^#' "$ALLOW_H7N" | cut -f1) <(cut -f1 "$tmp") | sed -n 's/^< //p' | sed -E 's/\(([^)]*)\)$/(\1)/' | sed -E 's/, /,/g; s/[a-z_0-9]+ ([a-z]+)/\1/g' | sort)
+actual_removed=$( { diff <(grep -v '^#' "$ALLOW_H7N" | cut -f1) <(cut -f1 "$tmp") || true; } | sed -n 's/^< //p' | python3 -c '
+import sys,re
+out=[]
+for line in sys.stdin:
+    line=line.strip()
+    if not line: continue
+    m=re.match(r"^([^(]+)\((.*)\)$", line)
+    if not m:
+        out.append(line); continue
+    name, args = m.group(1), m.group(2)
+    parts=[]
+    depth=0; cur=""
+    for ch in args:
+        if ch=="(": depth+=1
+        if ch==")": depth-=1
+        if ch=="," and depth==0:
+            parts.append(cur); cur=""
+        else:
+            cur+=ch
+    if cur.strip(): parts.append(cur)
+    types=[]
+    for p in parts:
+        p=p.strip()
+        if not p: continue
+        toks=p.split()
+        # remove modo (IN/OUT/INOUT/VARIADIC) e nome do parametro
+        if toks and toks[0].upper() in ("IN","OUT","INOUT","VARIADIC"): toks=toks[1:]
+        types.append(toks[-1] if len(toks)==1 else " ".join(toks[1:]))
+    out.append(name + "(" + ",".join(types) + ")")
+print("\n".join(sorted(out)))
+' )
 if [ "$removed" = "19" ] && [ "$added" = "0" ] && [ "$(printf '%s\n' "$expected_removed" | sort)" = "$actual_removed" ]; then
   ok "allowlist H7N→H7O: exatamente as 19 assinaturas removidas, 0 adicionadas ($(grep -vc '^#' "$ALLOW_H7N") → $(wc -l < "$tmp"))"
 else
