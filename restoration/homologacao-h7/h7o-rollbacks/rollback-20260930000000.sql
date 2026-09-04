@@ -1,0 +1,392 @@
+-- H7O P1 ROLLBACK — restaura os corpos ORIGINAIS (pg_get_functiondef capturado no staging
+-- ikaauvsflpmamgxmkhoq em 2026-09-04, antes de 20260930000000_h7o_p1_guardas_42501_v1).
+-- Reversível e idempotente. Executar via restoration/os-e2e/staging-psql.sh -1 -f <este arquivo>.
+-- ATENÇÃO: reverte para o estado H7N (rpc_b2b_* voltam a filtrar em vez de lançar 42501).
+begin;
+
+-- === original: fn_generate_recurring_title
+CREATE OR REPLACE FUNCTION public.fn_generate_recurring_title(_template_id uuid, _reference_date date, _is_manual boolean DEFAULT false)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  t public.recurring_financial_templates%ROWTYPE;
+  v_new_id UUID;
+  v_user UUID;
+BEGIN
+  SELECT * INTO t FROM public.recurring_financial_templates WHERE id = _template_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Template não encontrado'; END IF;
+
+  IF NOT t.active THEN
+    INSERT INTO public.recurring_generation_log(template_id, reference_date, status, error_message, generated_by, generated_entity_type, amount)
+    VALUES (_template_id, _reference_date, 'SKIPPED', 'Template inativo', auth.uid(), t.type, t.amount);
+    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by, reason)
+    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_GENERATION_SKIPPED', jsonb_build_object('reference_date', _reference_date), auth.uid(), 'Template inativo');
+    RETURN NULL;
+  END IF;
+
+  IF t.end_date IS NOT NULL AND _reference_date > t.end_date THEN
+    INSERT INTO public.recurring_generation_log(template_id, reference_date, status, error_message, generated_by, generated_entity_type, amount)
+    VALUES (_template_id, _reference_date, 'SKIPPED', 'Após data final', auth.uid(), t.type, t.amount);
+    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by, reason)
+    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_GENERATION_SKIPPED', jsonb_build_object('reference_date', _reference_date), auth.uid(), 'Após data final');
+    RETURN NULL;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.recurring_generation_log WHERE template_id = _template_id AND reference_date = _reference_date AND status = 'SUCCESS') THEN
+    INSERT INTO public.recurring_generation_log(template_id, reference_date, status, error_message, generated_by, generated_entity_type, amount)
+    VALUES (_template_id, _reference_date, 'SKIPPED', 'Competência já gerada', auth.uid(), t.type, t.amount);
+    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by, reason)
+    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_GENERATION_SKIPPED', jsonb_build_object('reference_date', _reference_date), auth.uid(), 'Competência já gerada');
+    RETURN NULL;
+  END IF;
+
+  v_user := COALESCE(auth.uid(), t.created_by);
+
+  IF t.type = 'RECEIVABLE' THEN
+    INSERT INTO public.accounts_receivable(
+      origin_type, customer_id, description, category_id, cost_center_id,
+      total_amount, issue_date, first_due_date, installment_count, status,
+      fiscal_invoice_required, fiscal_invoice_status, notes, created_by,
+      recurring_template_id, reference_month, auto_generated, payment_method_id
+    ) VALUES (
+      'RECURRING', t.customer_id, t.description, t.category_id, t.cost_center_id,
+      t.amount, CURRENT_DATE, _reference_date, 1, 'OPEN',
+      COALESCE(t.fiscal_invoice_required, false),
+      CASE WHEN COALESCE(t.fiscal_invoice_required, false) THEN 'PENDING' ELSE 'NOT_REQUIRED' END,
+      t.notes, v_user,
+      t.id, date_trunc('month', _reference_date)::DATE, NOT _is_manual, t.payment_method_id
+    ) RETURNING id INTO v_new_id;
+
+    INSERT INTO public.recurring_generation_log(template_id, generated_entity_type, generated_entity_id, reference_date, amount, status, generated_by)
+    VALUES (_template_id, 'RECEIVABLE', v_new_id, _reference_date, t.amount, 'SUCCESS', v_user);
+
+    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by)
+    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_RECEIVABLE_GENERATED',
+            jsonb_build_object('receivable_id', v_new_id, 'reference_date', _reference_date, 'amount', t.amount, 'manual', _is_manual),
+            v_user);
+  ELSE
+    INSERT INTO public.accounts_payable(
+      origin_type, supplier_name, description, category_id, cost_center_id,
+      total_amount, issue_date, first_due_date, installment_count, status,
+      notes, created_by,
+      recurring_template_id, reference_month, auto_generated
+    ) VALUES (
+      'RECURRING', t.supplier_name, t.description, t.category_id, t.cost_center_id,
+      t.amount, CURRENT_DATE, _reference_date, 1, 'OPEN',
+      t.notes, v_user,
+      t.id, date_trunc('month', _reference_date)::DATE, NOT _is_manual
+    ) RETURNING id INTO v_new_id;
+
+    INSERT INTO public.recurring_generation_log(template_id, generated_entity_type, generated_entity_id, reference_date, amount, status, generated_by)
+    VALUES (_template_id, 'PAYABLE', v_new_id, _reference_date, t.amount, 'SUCCESS', v_user);
+
+    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by)
+    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_PAYABLE_GENERATED',
+            jsonb_build_object('payable_id', v_new_id, 'reference_date', _reference_date, 'amount', t.amount, 'manual', _is_manual),
+            v_user);
+  END IF;
+
+  UPDATE public.recurring_financial_templates
+    SET next_generation_date = public.fn_calc_next_generation_date(t.recurrence_frequency, _reference_date, t.due_day),
+        updated_at = now()
+    WHERE id = _template_id;
+
+  UPDATE public.recurring_financial_templates
+    SET active = false
+    WHERE id = _template_id AND end_date IS NOT NULL AND next_generation_date > end_date;
+
+  RETURN v_new_id;
+END $function$
+;
+
+-- === original: recalc_partner_risk_score
+CREATE OR REPLACE FUNCTION public.recalc_partner_risk_score(p_partner_id uuid)
+ RETURNS partner_risk_scores
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_dias_atraso numeric := 0;
+  v_vencidos int := 0;
+  v_pct numeric := 0;
+  v_freq int := 0;
+  v_meses int := 0;
+  v_limite numeric := 0;
+  v_aberto numeric := 0;
+  v_score int := 0;
+  v_level text := 'baixo';
+  v_row public.partner_risk_scores;
+BEGIN
+  IF p_partner_id IS NULL THEN RAISE EXCEPTION 'partner_id required'; END IF;
+
+  SELECT COALESCE(AVG(GREATEST(0, CURRENT_DATE - ari.due_date)),0)::numeric,
+         COUNT(*) FILTER (WHERE ari.status='OVERDUE' OR (ari.status IN ('OPEN','PARTIAL') AND ari.due_date < CURRENT_DATE))
+    INTO v_dias_atraso, v_vencidos
+  FROM accounts_receivable ar
+  JOIN accounts_receivable_installments ari ON ari.receivable_id = ar.id
+  WHERE ar.origin_type='B2B_ORDER' AND ar.partner_id = p_partner_id
+    AND ari.status IN ('OPEN','PARTIAL','OVERDUE');
+
+  SELECT COALESCE(credit_limit,0) INTO v_limite FROM partner_financial_settings WHERE partner_id = p_partner_id;
+  v_limite := COALESCE(v_limite,0);
+
+  SELECT COALESCE(SUM(ari.original_amount - ari.received_amount),0) INTO v_aberto
+  FROM accounts_receivable ar
+  JOIN accounts_receivable_installments ari ON ari.receivable_id = ar.id
+  WHERE ar.origin_type='B2B_ORDER' AND ar.partner_id = p_partner_id
+    AND ari.status IN ('OPEN','PARTIAL','OVERDUE');
+
+  v_pct := CASE WHEN v_limite > 0 THEN LEAST(100,(v_aberto/v_limite)*100) ELSE 0 END;
+
+  SELECT COUNT(*) INTO v_freq FROM partner_orders
+   WHERE partner_id = p_partner_id AND created_at >= now() - interval '30 days'
+     AND status NOT IN ('cancelado','reprovado');
+
+  SELECT GREATEST(0, EXTRACT(YEAR FROM age(now(), pa.created_at))*12 + EXTRACT(MONTH FROM age(now(), pa.created_at)))::int
+    INTO v_meses FROM partner_accounts pa WHERE id = p_partner_id;
+
+  -- score (peso): atraso 35, vencidos 25, util 20, freq -10, relacionamento -10
+  v_score := LEAST(100, GREATEST(0,
+      ROUND(LEAST(v_dias_atraso/90.0,1)*35)
+    + ROUND(LEAST(v_vencidos/5.0,1)*25)
+    + ROUND((v_pct/100.0)*20)
+    - ROUND(LEAST(v_freq/10.0,1)*10)
+    - ROUND(LEAST(COALESCE(v_meses,0)/24.0,1)*10)
+  ));
+  v_level := CASE
+    WHEN v_score <= 30 THEN 'baixo'
+    WHEN v_score <= 60 THEN 'medio'
+    WHEN v_score <= 80 THEN 'alto'
+    ELSE 'critico' END;
+
+  INSERT INTO partner_risk_scores (partner_id, score, risk_level, dias_medio_atraso, titulos_vencidos, pct_credito_utilizado, freq_compras_30d, meses_relacionamento, calculado_em)
+  VALUES (p_partner_id, v_score, v_level, v_dias_atraso, v_vencidos, v_pct, v_freq, COALESCE(v_meses,0), now())
+  ON CONFLICT (partner_id) DO UPDATE SET
+    score = EXCLUDED.score,
+    risk_level = EXCLUDED.risk_level,
+    dias_medio_atraso = EXCLUDED.dias_medio_atraso,
+    titulos_vencidos = EXCLUDED.titulos_vencidos,
+    pct_credito_utilizado = EXCLUDED.pct_credito_utilizado,
+    freq_compras_30d = EXCLUDED.freq_compras_30d,
+    meses_relacionamento = EXCLUDED.meses_relacionamento,
+    calculado_em = now()
+  RETURNING * INTO v_row;
+
+  INSERT INTO financial_governance_audit_log(usuario_id, partner_id, acao, dados_novos)
+  VALUES (auth.uid(), p_partner_id, 'score_recalculado', to_jsonb(v_row));
+
+  RETURN v_row;
+END;$function$
+;
+
+-- === original: check_cliente_dependencies
+CREATE OR REPLACE FUNCTION public.check_cliente_dependencies(_cliente_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT jsonb_build_object(
+    'fazendas',              (SELECT count(*) FROM fazendas WHERE cliente_id = _cliente_id),
+    'talhoes',               (SELECT count(*) FROM talhoes t JOIN fazendas f ON f.id = t.fazenda_id WHERE f.cliente_id = _cliente_id),
+    'ordens_servico',        (SELECT count(*) FROM ordens_servico WHERE cliente_id = _cliente_id),
+    'ordens_servico_onfarm', (SELECT count(*) FROM ordens_servico_onfarm WHERE cliente_id = _cliente_id),
+    'registros_consultor',   (SELECT count(*) FROM registros_consultor WHERE cliente_id = _cliente_id),
+    'portal_solicitacoes',   (SELECT count(*) FROM portal_solicitacoes WHERE cliente_id = _cliente_id),
+    'entregas',              (SELECT count(*) FROM entregas WHERE cliente_id = _cliente_id),
+    'usuarios',              (SELECT count(*) FROM profiles WHERE cliente_id = _cliente_id)
+  )
+$function$
+;
+
+-- === original: check_fazenda_dependencies
+CREATE OR REPLACE FUNCTION public.check_fazenda_dependencies(_fazenda_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT jsonb_build_object(
+    'talhoes',               (SELECT count(*) FROM talhoes WHERE fazenda_id = _fazenda_id),
+    'ordens_servico',        (SELECT count(*) FROM ordens_servico WHERE fazenda_id = _fazenda_id),
+    'ordens_servico_onfarm', (SELECT count(*) FROM ordens_servico_onfarm WHERE fazenda_id = _fazenda_id),
+    'registros_consultor',   (SELECT count(*) FROM registros_consultor WHERE fazenda_id = _fazenda_id),
+    'portal_solicitacoes',   (SELECT count(*) FROM portal_solicitacoes WHERE fazenda_id = _fazenda_id),
+    'alertas_agronomicos',   (SELECT count(*) FROM alertas_agronomicos WHERE fazenda_id = _fazenda_id),
+    'clima_dados',           (SELECT count(*) FROM clima_dados WHERE fazenda_id = _fazenda_id)
+  )
+$function$
+;
+
+-- === original: check_talhao_dependencies
+CREATE OR REPLACE FUNCTION public.check_talhao_dependencies(_talhao_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT jsonb_build_object(
+    'ordens_servico',        (SELECT count(*) FROM ordens_servico WHERE talhao_id = _talhao_id),
+    'ordens_servico_onfarm', (SELECT count(*) FROM ordens_servico_onfarm WHERE talhao_id = _talhao_id),
+    'registros_consultor',   (SELECT count(*) FROM registros_consultor WHERE talhao_id = _talhao_id),
+    'portal_solicitacoes',   (SELECT count(*) FROM portal_solicitacoes WHERE talhao_id = _talhao_id),
+    'alertas_agronomicos',   (SELECT count(*) FROM alertas_agronomicos WHERE talhao_id = _talhao_id)
+  )
+$function$
+;
+
+-- === original: rpc_b2b_aging
+CREATE OR REPLACE FUNCTION public.rpc_b2b_aging(p_partner_id uuid DEFAULT NULL::uuid)
+ RETURNS TABLE(faixa text, qtd_titulos integer, valor numeric, parceiros integer)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select h7n_guarded.*
+  from (
+WITH base AS (
+    SELECT ar.partner_id, ari.id,
+           (ari.original_amount - ari.received_amount) AS saldo,
+           GREATEST(0, (current_date - ari.due_date)) AS dias
+    FROM public.accounts_receivable ar
+    JOIN public.accounts_receivable_installments ari ON ari.receivable_id = ar.id
+    WHERE ar.origin_type = 'B2B_ORDER'
+      AND ar.status <> 'CANCELED'
+      AND ari.status IN ('OPEN','PARTIAL','OVERDUE')
+      AND (p_partner_id IS NULL OR ar.partner_id = p_partner_id)
+  ), faixas AS (
+    SELECT CASE
+             WHEN dias <= 30 THEN '0-30'
+             WHEN dias <= 60 THEN '31-60'
+             WHEN dias <= 90 THEN '61-90'
+             ELSE '90+'
+           END AS faixa, partner_id, saldo
+    FROM base
+  )
+  SELECT faixa, COUNT(*)::int, COALESCE(SUM(saldo),0), COUNT(DISTINCT partner_id)::int
+  FROM faixas GROUP BY faixa
+  ORDER BY CASE faixa WHEN '0-30' THEN 1 WHEN '31-60' THEN 2 WHEN '61-90' THEN 3 ELSE 4 END
+  ) as h7n_guarded
+  where public.has_role(auth.uid(), 'administrador'::public.app_role)
+      or public.has_role(auth.uid(), 'gestor'::public.app_role)
+      or public.has_role(auth.uid(), 'financeiro'::public.app_role)
+      or public.has_role(auth.uid(), 'gestor_comercial'::public.app_role)
+      or public.has_role(auth.uid(), 'administrativo'::public.app_role);
+$function$
+;
+
+-- === original: rpc_b2b_partner_profitability
+CREATE OR REPLACE FUNCTION public.rpc_b2b_partner_profitability(p_from date DEFAULT NULL::date, p_to date DEFAULT NULL::date, p_partner_id uuid DEFAULT NULL::uuid)
+ RETURNS TABLE(partner_id uuid, partner_name text, total_comprado numeric, total_recebido numeric, total_aberto numeric, ticket_medio numeric, qtd_pedidos integer, prazo_medio_pgto numeric, inadimplencia_pct numeric, risk_score integer, risk_level text)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select h7n_guarded.*
+  from (
+WITH pedidos AS (
+    SELECT po.partner_id, COUNT(*) AS qtd, SUM(po.total) AS total
+    FROM partner_orders po
+    WHERE po.status NOT IN ('cancelado','reprovado','rascunho')
+      AND (p_from IS NULL OR po.created_at >= p_from)
+      AND (p_to   IS NULL OR po.created_at <= (p_to + 1))
+      AND (p_partner_id IS NULL OR po.partner_id = p_partner_id)
+    GROUP BY po.partner_id
+  ),
+  recebidos AS (
+    SELECT ar.partner_id,
+      SUM(ari.received_amount) AS rec,
+      SUM(ari.original_amount - ari.received_amount) FILTER (WHERE ari.status IN ('OPEN','PARTIAL','OVERDUE')) AS aberto,
+      AVG(CASE WHEN ari.paid_at IS NOT NULL THEN EXTRACT(EPOCH FROM (ari.paid_at - ar.issue_date))/86400 END) AS prazo_med,
+      SUM(ari.original_amount - ari.received_amount) FILTER (WHERE ari.due_date < CURRENT_DATE AND ari.status IN ('OPEN','PARTIAL','OVERDUE')) AS vencido
+    FROM accounts_receivable ar
+    JOIN accounts_receivable_installments ari ON ari.receivable_id = ar.id
+    WHERE ar.origin_type='B2B_ORDER'
+      AND (p_partner_id IS NULL OR ar.partner_id = p_partner_id)
+    GROUP BY ar.partner_id
+  )
+  SELECT pa.id, COALESCE(pa.nome_fantasia, pa.razao_social),
+    COALESCE(p.total,0),
+    COALESCE(r.rec,0),
+    COALESCE(r.aberto,0),
+    CASE WHEN COALESCE(p.qtd,0) > 0 THEN ROUND(p.total/p.qtd,2) ELSE 0 END,
+    COALESCE(p.qtd,0)::int,
+    ROUND(COALESCE(r.prazo_med,0)::numeric,2),
+    CASE WHEN COALESCE(p.total,0) > 0 THEN ROUND((COALESCE(r.vencido,0)/p.total)*100,2) ELSE 0 END,
+    COALESCE(prs.score,0),
+    COALESCE(prs.risk_level,'baixo')
+  FROM partner_accounts pa
+  LEFT JOIN pedidos p ON p.partner_id = pa.id
+  LEFT JOIN recebidos r ON r.partner_id = pa.id
+  LEFT JOIN partner_risk_scores prs ON prs.partner_id = pa.id
+  WHERE pa.ativo = true AND pa.deleted_at IS NULL
+    AND (p_partner_id IS NULL OR pa.id = p_partner_id)
+    AND (p.qtd IS NOT NULL OR r.rec IS NOT NULL)
+  ORDER BY COALESCE(p.total,0) DESC
+  ) as h7n_guarded
+  where public.has_role(auth.uid(), 'administrador'::public.app_role)
+      or public.has_role(auth.uid(), 'gestor'::public.app_role)
+      or public.has_role(auth.uid(), 'financeiro'::public.app_role)
+      or public.has_role(auth.uid(), 'gestor_comercial'::public.app_role)
+      or public.has_role(auth.uid(), 'administrativo'::public.app_role);
+$function$
+;
+
+-- === original: rpc_validar_integridade_esteira(text,uuid) (overload de 3 args não é tocada)
+CREATE OR REPLACE FUNCTION public.rpc_validar_integridade_esteira(p_origem text, p_os_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+    v_integridade record;
+BEGIN
+    SELECT * INTO v_integridade FROM vw_os_integridade_esteira WHERE os_id = p_os_id AND origem_os = p_origem;
+    
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Dados de integridade não encontrados');
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'pode_finalizar', v_integridade.pode_finalizar,
+        'detalhes', jsonb_build_object(
+            'tem_programacao', v_integridade.tem_programacao,
+            'tem_lote', v_integridade.tem_lote,
+            'cq_resultado', v_integridade.cq_resultado,
+            'tem_envase', v_integridade.tem_envase,
+            'tem_estoque', v_integridade.tem_estoque,
+            'entrega_confirmada', v_integridade.entrega_confirmada,
+            'entrega_status', v_integridade.entrega_status
+        )
+    );
+END;
+$function$
+;
+
+-- ACLs originais (authenticated/service_role já possuem EXECUTE; nada a conceder).
+-- Pós-condição: corpos sem a guarda H7O.
+DO $post$
+DECLARE v_bad text := ''; r record;
+BEGIN
+  FOR r IN
+    SELECT p.proname, p.prosrc FROM pg_proc p
+     WHERE p.oid IN ('public.fn_generate_recurring_title(uuid,date,boolean)'::regprocedure,
+                     'public.recalc_partner_risk_score(uuid)'::regprocedure,
+                     'public.check_cliente_dependencies(uuid)'::regprocedure,
+                     'public.check_fazenda_dependencies(uuid)'::regprocedure,
+                     'public.check_talhao_dependencies(uuid)'::regprocedure,
+                     'public.rpc_validar_integridade_esteira(text,uuid)'::regprocedure,
+                     'public.rpc_b2b_aging(uuid)'::regprocedure,
+                     'public.rpc_b2b_partner_profitability(date,date,uuid)'::regprocedure)
+  LOOP
+    IF r.prosrc LIKE '%H7O%' THEN v_bad := v_bad || ' ' || r.proname; END IF;
+  END LOOP;
+  IF v_bad <> '' THEN RAISE EXCEPTION 'H7O P1 ROLLBACK ABORT: guarda H7O ainda presente em:%', v_bad; END IF;
+END $post$;
+commit;

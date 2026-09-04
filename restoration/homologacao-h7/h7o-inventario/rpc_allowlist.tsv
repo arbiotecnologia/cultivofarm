@@ -1,0 +1,487 @@
+# H7O allowlist — funções em public executáveis por anon/authenticated (staging) — gerada 2026-09-04T16:45:34Z
+# assinatura	security	anon	authenticated	tipo
+_fiscal_rtc_assert_payload(payload jsonb, kind text)	INVOKER	-	authenticated	f
+_fiscal_rtc_can_read(uid uuid)	INVOKER	-	authenticated	f
+add_b2b_payment_terms_note_secure(p_partner_order_id uuid, p_note text)	DEFINER	-	authenticated	f
+approve_b2b_credit(p_partner_order_id uuid, p_notes text)	DEFINER	-	authenticated	f
+approve_b2b_payment_terms_secure(p_partner_order_id uuid, p_notes text)	DEFINER	-	authenticated	f
+approve_microorganism_profile_with_audit(p_profile_id uuid, p_checklist jsonb, p_aprovado_sem_fonte boolean)	DEFINER	-	authenticated	f
+approve_partner_order(p_order_id uuid, p_approval_notes text, p_estimated_delivery_date date)	DEFINER	-	authenticated	f
+approve_product_profile_with_audit(p_profile_id uuid, p_checklist jsonb, p_aprovado_sem_fonte boolean)	DEFINER	-	authenticated	f
+aprovar_ficha_versao(p_versao_id uuid)	DEFINER	-	authenticated	f
+archive_partner_simulation_secure(p_simulation_id uuid, p_reason text)	DEFINER	-	authenticated	f
+assign_b2b_user_client_secure(p_user_id uuid, p_cliente_id uuid, p_assignment_type text, p_can_create_simulation boolean, p_can_monitor boolean, p_notes text)	DEFINER	-	authenticated	f
+bulk_inserir_alvos(p_kind text, p_parent_id uuid, p_alvos jsonb)	DEFINER	-	authenticated	f
+calculate_valor_dose_from_litro(p_valor_litro numeric)	INVOKER	anon	authenticated	f
+calculate_valor_ha_from_dose(p_dose_ml_ha numeric, p_valor_dose numeric)	INVOKER	anon	authenticated	f
+calculate_valor_litro_from_dose(p_valor_dose numeric)	INVOKER	anon	authenticated	f
+can_manage_catalog_tecnico(_uid uuid)	DEFINER	-	authenticated	f
+can_manage_technical_visit(p_user_id uuid, p_registro_id uuid)	DEFINER	-	authenticated	f
+can_user_access_alerta(p_alerta_id uuid)	DEFINER	-	authenticated	f
+can_user_access_aplicacao(_aplicacao_id uuid)	DEFINER	-	authenticated	f
+can_user_access_arquivo(_entidade_tipo text, _entidade_id uuid)	DEFINER	-	authenticated	f
+can_user_access_cliente(_cliente_id uuid)	DEFINER	-	authenticated	f
+can_user_access_estoque_embalagem(p_embalagem_id uuid)	DEFINER	-	authenticated	f
+can_user_access_fazenda(_fazenda_id uuid)	DEFINER	-	authenticated	f
+can_user_access_produto_etiqueta(p_etiqueta_id uuid)	DEFINER	-	authenticated	f
+can_user_access_registro_consultor(_registro_id uuid)	DEFINER	-	authenticated	f
+can_user_access_solicitacao(_solicitacao_id uuid)	DEFINER	-	authenticated	f
+can_user_manage_aplicacao(_aplicacao_id uuid)	DEFINER	-	authenticated	f
+can_user_manage_estoque_embalagem(p_embalagem_id uuid)	DEFINER	-	authenticated	f
+can_view_catalog_internal(_uid uuid)	DEFINER	-	authenticated	f
+can_view_technical_visit(p_user_id uuid, p_registro_id uuid)	DEFINER	-	authenticated	f
+cancel_b2b_receivable_secure(p_partner_order_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+cancel_financial_receipt(_receipt_id uuid, _reason text)	DEFINER	-	authenticated	f
+catalog_set_updated_at()	INVOKER	anon	authenticated	trigger
+catalog_sources_set_source_key()	INVOKER	anon	authenticated	trigger
+check_cliente_dependencies(_cliente_id uuid)	DEFINER	-	authenticated	f
+check_fazenda_dependencies(_fazenda_id uuid)	DEFINER	-	authenticated	f
+check_os_item_ref()	INVOKER	anon	authenticated	trigger
+check_partner_order_sla()	DEFINER	-	authenticated	f
+check_talhao_dependencies(_talhao_id uuid)	DEFINER	-	authenticated	f
+comunicacao_audit_no_mutation()	INVOKER	anon	authenticated	trigger
+comunicacao_consent_no_mutation()	INVOKER	anon	authenticated	trigger
+comunicacao_outbox_touch()	INVOKER	anon	authenticated	trigger
+comunicacao_provider_receipts_no_mutation()	INVOKER	anon	authenticated	trigger
+comunicacao_templates_guard_immutable()	INVOKER	anon	authenticated	trigger
+convert_partner_simulation_to_order_secure(p_simulation_id uuid, p_observacoes text, p_payment_plan_id uuid, p_first_due_date date, p_installment_count integer, p_confirm_price_change boolean)	DEFINER	-	authenticated	f
+create_partner_order_secure(p_partner_id uuid, p_observacoes text, p_items jsonb, p_requested_delivery_date date, p_payment_plan_id uuid, p_first_due_date date, p_installment_count integer, p_expected_cart_hash text, p_idempotency_key text)	DEFINER	-	authenticated	f
+create_technical_visit_secure(p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_solicitacao_origem_id uuid, p_scheduled_at timestamp with time zone, p_visit_type tipo_visita, p_priority urgencia_consultor, p_initial_notes text, p_client_uuid uuid)	DEFINER	-	authenticated	f
+enforce_micro_profile_approval()	INVOKER	anon	authenticated	trigger
+enforce_product_profile_approval()	INVOKER	anon	authenticated	trigger
+exec_relatorios_set_atualizado_em()	INVOKER	anon	authenticated	trigger
+finish_technical_visit_secure(p_registro_id uuid, p_latitude numeric, p_longitude numeric, p_precisao_gps numeric, p_foto_url text, p_foto_path text, p_observacoes text, p_client_uuid uuid)	DEFINER	-	authenticated	f
+fiscal_invoice_items_state_guard()	INVOKER	-	authenticated	trigger
+fiscal_json_has_sensitive_key(p jsonb)	INVOKER	-	authenticated	f
+fiscal_rtc_has_sensitive_key(payload jsonb)	INVOKER	-	authenticated	f
+fiscal_validate_key_usage(p_arr jsonb)	INVOKER	-	authenticated	f
+fiscal_validate_snapshot_keys(p_obj jsonb, p_allowed text[], p_label text)	INVOKER	-	authenticated	f
+fn_b2b_order_priceable(p_order_id uuid)	INVOKER	-	authenticated	f
+fn_b2b_status_is_approved_or_later(p_status partner_order_status)	INVOKER	-	authenticated	f
+fn_b2b_status_is_operational(p_status partner_order_status)	INVOKER	-	authenticated	f
+fn_calc_next_generation_date(_freq text, _from_date date, _due_day integer)	INVOKER	anon	authenticated	f
+fn_calc_os_faturamento_totals()	INVOKER	anon	authenticated	trigger
+fn_catalogo_preco_canonico(p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric)	DEFINER	-	authenticated	f
+fn_cockpit_is_hml_environment()	DEFINER	-	authenticated	f
+fn_cockpit_stage(p_status_oficial text)	INVOKER	-	authenticated	f
+fn_estoque_fingerprint(p_acao text, p_item uuid, p_qtd numeric, p_payload jsonb)	INVOKER	-	authenticated	f
+fn_fin_aging(_type text)	DEFINER	-	authenticated	f
+fn_fin_cashflow(_from date, _to date, _granularity text, _mode text)	DEFINER	-	authenticated	f
+fn_fin_dashboard_kpis(_from date, _to date)	DEFINER	-	authenticated	f
+fn_fin_dre_summary(_from date, _to date, _regime text)	DEFINER	-	authenticated	f
+fn_fin_expense_by_category(_from date, _to date, _regime text, _limit integer)	DEFINER	-	authenticated	f
+fn_fin_inadimplencia()	DEFINER	-	authenticated	f
+fn_fin_revenue_by_category(_from date, _to date, _regime text, _limit integer)	DEFINER	-	authenticated	f
+fn_fin_revenue_by_customer(_from date, _to date, _regime text, _limit integer)	DEFINER	-	authenticated	f
+fn_financial_inconsistencies()	DEFINER	-	authenticated	f
+fn_fiscal_access_key_dv(_key43 text)	INVOKER	-	authenticated	f
+fn_fiscal_apply_tax(r fiscal_tax_rules, _base numeric)	INVOKER	-	authenticated	f
+fn_fiscal_apply_tax_v2(r fiscal_tax_rules, _ctx jsonb)	INVOKER	-	authenticated	f
+fn_fiscal_base_components_valid(_c jsonb)	INVOKER	-	authenticated	f
+fn_fiscal_billing_allowed_delivery_status()	INVOKER	-	authenticated	f
+fn_fiscal_billing_allowed_order_status()	INVOKER	-	authenticated	f
+fn_fiscal_can_operate(_uid uuid)	DEFINER	-	authenticated	f
+fn_fiscal_can_read_internal(_uid uuid)	DEFINER	-	authenticated	f
+fn_fiscal_cep_is_valid(_cep text)	INVOKER	-	authenticated	f
+fn_fiscal_cnpj_is_valid(_v text)	INVOKER	-	authenticated	f
+fn_fiscal_company_crt()	DEFINER	-	authenticated	f
+fn_fiscal_cpf_is_valid(_v text)	INVOKER	-	authenticated	f
+fn_fiscal_digits(_v text)	INVOKER	-	authenticated	f
+fn_fiscal_environment_gate_v1(p_operation text)	DEFINER	-	authenticated	f
+fn_fiscal_event_fingerprint_v1(_event_type text, _notes text)	INVOKER	-	authenticated	f
+fn_fiscal_ibge_municipio_coerente(_cmun text, _uf text)	INVOKER	-	authenticated	f
+fn_fiscal_ie_check(_uf text, _ie text)	INVOKER	-	authenticated	f
+fn_fiscal_item_base(_components jsonb, _ctx jsonb)	INVOKER	-	authenticated	f
+fn_fiscal_item_profile_gate_eval(p_scope text, p_crt text, p_is_active boolean, p_profile_status text, p_accounting_validated_at timestamp with time zone, p_accounting_notes text, p_fiscal_description text, p_commercial_unit text, p_taxable_unit text, p_ncm text, p_origin_code text, p_cfop_in_state text, p_cfop_interstate text, p_icms_cst text, p_icms_csosn text, p_pis_cst text, p_cofins_cst text, p_regulatory jsonb)	INVOKER	-	authenticated	f
+fn_fiscal_official_url_allowlisted(_url text)	INVOKER	-	authenticated	f
+fn_fiscal_round(_v numeric)	INVOKER	-	authenticated	f
+fn_fiscal_rule_validate_synthetic(_tax_kind text, _rule fiscal_tax_rules, _ctx jsonb)	INVOKER	-	authenticated	f
+fn_fiscal_status_is_terminal(_status text)	INVOKER	-	authenticated	f
+fn_fiscal_uf_ibge_code(_uf text)	INVOKER	-	authenticated	f
+fn_generate_receivable_from_entrega(_entrega_id uuid, _payload jsonb)	DEFINER	-	authenticated	f
+fn_generate_recurring_title(_template_id uuid, _reference_date date, _is_manual boolean)	DEFINER	-	authenticated	f
+fn_gtin_is_valid(_gtin text)	INVOKER	-	authenticated	f
+fn_h6b_num(p numeric)	INVOKER	-	authenticated	f
+fn_h6b_payment_fingerprint(p_kind text, p_installment_id uuid, p_payload jsonb)	INVOKER	-	authenticated	f
+fn_mark_entrega_not_billable(_entrega_id uuid, _reason text)	DEFINER	-	authenticated	f
+fn_mark_financial_overdue()	DEFINER	-	authenticated	f
+fn_microorganism_regulatory_facts(p_microorganism_id uuid)	DEFINER	-	authenticated	f
+fn_onfarm_scope_cliente(_cliente_id uuid)	DEFINER	-	authenticated	f
+fn_onfarm_scope_lote(_lote_id uuid)	DEFINER	-	authenticated	f
+fn_produto_etiquetas_updated_at()	INVOKER	anon	authenticated	trigger
+fn_regulatory_can_approve(_layer text, _uid uuid)	DEFINER	-	authenticated	f
+fn_regulatory_can_prepare(_uid uuid)	DEFINER	-	authenticated	f
+fn_regulatory_can_read(_uid uuid)	DEFINER	-	authenticated	f
+fn_regulatory_confidence_normalize(p_confidence text)	INVOKER	anon	authenticated	f
+fn_regulatory_storage_can_delete(_name text)	DEFINER	-	authenticated	f
+fn_regulatory_storage_can_read(_name text)	DEFINER	-	authenticated	f
+fn_regulatory_storage_can_write(_name text)	DEFINER	-	authenticated	f
+fn_regulatory_storage_dossier_id(_name text)	INVOKER	-	authenticated	f
+fn_regulatory_storage_path_ok(_name text)	INVOKER	-	authenticated	f
+fn_reverse_payment(_payment_id uuid, _kind text, _reason text)	DEFINER	-	authenticated	f
+fn_revert_recurring_generation(p_log_id uuid)	DEFINER	-	authenticated	f
+fn_run_recurring_generation()	DEFINER	-	authenticated	f
+fn_set_initial_next_generation()	INVOKER	anon	authenticated	trigger
+fn_sync_receipt_aliases()	INVOKER	anon	authenticated	trigger
+fn_sync_report_export_aliases()	INVOKER	anon	authenticated	trigger
+fn_validate_envase_cq()	INVOKER	-	authenticated	trigger
+generate_b2b_receivable_secure(p_partner_order_id uuid)	DEFINER	-	authenticated	f
+get_b2b_partner_clients_for_assignment_secure(p_search text)	DEFINER	-	authenticated	f
+get_b2b_technician_client_detail_secure(p_cliente_id uuid)	DEFINER	-	authenticated	f
+get_b2b_technician_clients_secure(p_partner_id uuid, p_technician_user_id uuid)	DEFINER	-	authenticated	f
+get_b2b_user_client_detail_secure(p_cliente_id uuid, p_scope text)	DEFINER	-	authenticated	f
+get_b2b_user_client_simulations_secure(p_cliente_id uuid)	DEFINER	-	authenticated	f
+get_b2b_user_clients_secure(p_user_id uuid, p_search text)	DEFINER	-	authenticated	f
+get_cliente_id_for_user(_user_id uuid)	DEFINER	-	authenticated	f
+get_cliente_ids_for_user(_user_id uuid)	DEFINER	-	authenticated	f
+get_financial_alerts(p_reference_date date)	DEFINER	-	authenticated	f
+get_financial_cashflow(p_start_date date, p_end_date date, p_view_mode text, p_group_by text)	DEFINER	-	authenticated	f
+get_financial_dashboard_summary(p_start_date date, p_end_date date, p_cost_center_id uuid, p_category_id uuid, p_customer_id uuid)	DEFINER	-	authenticated	f
+get_financial_dre_summary(p_start_date date, p_end_date date, p_regime text, p_cost_center_id uuid)	DEFINER	-	authenticated	f
+get_financial_report_data(p_report_type text, p_start_date date, p_end_date date, p_customer_id uuid, p_category_id uuid, p_cost_center_id uuid, p_status text, p_regime text)	DEFINER	-	authenticated	f
+get_my_available_portal_contexts()	DEFINER	-	authenticated	f
+get_partner_catalog_secure(p_partner_id uuid)	DEFINER	-	authenticated	f
+get_partner_catalog_tecnico_secure()	DEFINER	-	authenticated	f
+get_portal_cliente_b2b_order_detail_secure(p_order_id uuid)	DEFINER	-	authenticated	f
+get_portal_cliente_b2b_orders_secure(p_cliente_id uuid)	DEFINER	-	authenticated	f
+get_portal_cliente_b2b_simulation_detail_secure(p_simulation_id uuid)	DEFINER	-	authenticated	f
+get_portal_cliente_b2b_simulations_secure(p_cliente_id uuid)	DEFINER	-	authenticated	f
+get_production_planning_detail(p_planning_id uuid)	DEFINER	-	authenticated	f
+get_report_accountability(_scope jsonb)	DEFINER	-	authenticated	f
+get_report_customer_statement(_customer_id uuid, _from date, _to date)	DEFINER	-	authenticated	f
+get_report_delinquency(_as_of date)	DEFINER	-	authenticated	f
+get_report_deliveries_billing_status(_from date, _to date)	DEFINER	-	authenticated	f
+get_report_monthly_financial(_from date, _to date, _cost_center uuid, _regime text)	DEFINER	-	authenticated	f
+get_report_nfe_pending(_filters jsonb)	DEFINER	-	authenticated	f
+get_report_payables(_filters jsonb)	DEFINER	-	authenticated	f
+get_report_receivables(_filters jsonb)	DEFINER	-	authenticated	f
+get_top_financial_rankings(p_start_date date, p_end_date date, p_limit integer)	DEFINER	-	authenticated	f
+get_user_partner_id()	DEFINER	-	authenticated	f
+has_active_user_cliente_access(_user_id uuid, _cliente_id uuid, _levels text[])	DEFINER	-	authenticated	f
+has_role(_user_id uuid, _role app_role)	DEFINER	-	authenticated	f
+is_active_visit_participant(p_user_id uuid, p_registro_id uuid)	DEFINER	-	authenticated	f
+is_delivery_staff(_uid uuid)	DEFINER	-	authenticated	f
+is_executivo(_uid uuid)	DEFINER	-	authenticated	f
+is_financial_staff(_uid uuid)	DEFINER	-	authenticated	f
+is_technical_visit_editable_status(p_status text)	INVOKER	anon	authenticated	f
+issue_financial_receipt(_payment_id uuid, _description text)	DEFINER	-	authenticated	f
+jsonb_get_array_safe(p_payload jsonb, p_key text)	INVOKER	anon	authenticated	f
+jsonb_object_keys_count(p jsonb)	INVOKER	anon	authenticated	f
+lab_request_replanning(p_os_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+link_partner_user(p_partner_id uuid, p_user_id uuid, p_papel text)	DEFINER	-	authenticated	f
+log_my_access_denied_secure(p_context text, p_route_group text)	DEFINER	-	authenticated	f
+log_partner_catalog_access_secure(p_action text, p_item_tipo text, p_item_id uuid, p_cliente_id uuid, p_simulation_id uuid, p_order_id uuid, p_target_user_id uuid, p_details jsonb, p_partner_id uuid)	DEFINER	-	authenticated	f
+log_report_export(_report_type text, _filters jsonb, _format text, _storage_bucket text, _storage_path text, _status text, _error text, _row_count integer)	DEFINER	-	authenticated	f
+mask_sensitive_jsonb(v jsonb)	INVOKER	anon	authenticated	f
+normalizar_alvo(p_nome text)	INVOKER	anon	authenticated	f
+partner_apply_default_discount(p_partner_id uuid)	DEFINER	-	authenticated	f
+partner_ppp_compute_final()	INVOKER	anon	authenticated	trigger
+partner_reset_prices_to_default(p_partner_id uuid)	DEFINER	-	authenticated	f
+partner_simulation_items_fill_snapshots()	INVOKER	anon	authenticated	trigger
+pode_acessar_recomendacao(_user_id uuid, _recomendacao_id uuid)	DEFINER	-	authenticated	f
+prefixo_para_microrganismo(_tipo text)	INVOKER	anon	authenticated	f
+prefixo_para_produto(_tipo text)	INVOKER	anon	authenticated	f
+publish_planning_to_lab(p_planning_id uuid)	DEFINER	-	authenticated	f
+recalc_partner_risk_score(p_partner_id uuid)	DEFINER	-	authenticated	f
+register_financial_report_export(p_report_type text, p_report_title text, p_filters jsonb, p_file_format text, p_storage_path text, p_status text, p_error_message text)	DEFINER	-	authenticated	f
+register_my_login_redirect_secure(p_context text)	DEFINER	-	authenticated	f
+regulatory_block_published_child_edit()	INVOKER	anon	authenticated	trigger
+regulatory_block_published_edit()	INVOKER	anon	authenticated	trigger
+regulatory_snapshot_immutable()	INVOKER	anon	authenticated	trigger
+regulatory_touch_updated_at()	INVOKER	anon	authenticated	trigger
+reject_b2b_payment_terms_secure(p_partner_order_id uuid, p_reason text)	DEFINER	-	authenticated	f
+reject_partner_order(p_order_id uuid, p_approval_notes text)	DEFINER	-	authenticated	f
+rejeitar_ficha_versao(p_versao_id uuid, p_observacao text)	DEFINER	-	authenticated	f
+request_b2b_payment_terms_adjustment_secure(p_partner_order_id uuid, p_notes text)	DEFINER	-	authenticated	f
+request_partner_order_items(p_order_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+reservar_estoque_item(p_item_id uuid, p_qty numeric, p_os_id uuid, p_os_tipo text, p_cliente_id uuid, p_partner_id uuid, p_partner_order_id uuid, p_observacao text)	DEFINER	-	authenticated	f
+respond_b2b_order_quote_secure(p_order_id uuid, p_lines jsonb, p_first_due_date date, p_installment_count integer, p_motivo text)	DEFINER	-	authenticated	f
+return_catalog_profile_to_review(p_kind text, p_profile_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_activate_communication_template(p_template_id uuid)	DEFINER	-	authenticated	f
+rpc_admin_communication_health_snapshot()	DEFINER	-	authenticated	f
+rpc_admin_communication_outbox_metrics()	DEFINER	-	authenticated	f
+rpc_admin_create_commercial_plan(p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_admin_list_commercial_plans(p_search text, p_status text, p_limit integer, p_offset integer)	DEFINER	-	authenticated	f
+rpc_admin_list_communication_dead_letter(p_limit integer, p_offset integer)	DEFINER	-	authenticated	f
+rpc_admin_reorder_commercial_plans(p_orders jsonb)	DEFINER	-	authenticated	f
+rpc_admin_replay_communication_dead_letter(p_outbox_id uuid)	DEFINER	-	authenticated	f
+rpc_admin_replay_communication_dead_letter_batch(p_limit integer)	DEFINER	-	authenticated	f
+rpc_admin_set_commercial_plan_active(p_plan_id uuid, p_active boolean, p_motivo text)	DEFINER	-	authenticated	f
+rpc_admin_set_default_commercial_plan(p_plan_id uuid)	DEFINER	-	authenticated	f
+rpc_admin_set_whatsapp_consent(p_cliente_id uuid, p_user_id uuid, p_acao text, p_source text, p_justificativa text)	DEFINER	-	authenticated	f
+rpc_admin_update_commercial_plan_metadata(p_plan_id uuid, p_name text, p_description text, p_sort_order integer)	DEFINER	-	authenticated	f
+rpc_admin_version_commercial_plan(p_plan_id uuid, p_payload jsonb, p_motivo text)	DEFINER	-	authenticated	f
+rpc_anexar_comprovante_entrega(p_entrega_id uuid, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_aplicar_sla_alertas()	DEFINER	-	authenticated	f
+rpc_archive_communication_template(p_template_id uuid)	DEFINER	-	authenticated	f
+rpc_arquivar_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)	DEFINER	-	authenticated	f
+rpc_assign_visit_technician(p_registro_id uuid, p_user_id uuid, p_role text)	DEFINER	-	authenticated	f
+rpc_associate_microorganism_fiscal_product(p_microorganism_id uuid, p_product_id uuid)	DEFINER	-	authenticated	f
+rpc_assumir_alerta(p_alerta_id uuid)	DEFINER	-	authenticated	f
+rpc_ativar_monitoramento_visita(p_registro_id uuid, p_expected_version integer, p_tipo text, p_data_referencia date)	DEFINER	-	authenticated	f
+rpc_atualizar_checklist_entrega(p_checklist_id uuid, p_concluido boolean, p_observacao text)	DEFINER	-	authenticated	f
+rpc_atualizar_identificacao_visita(p_registro_id uuid, p_expected_version integer, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_avancar_esteira_laboratorio(p_os_id uuid, p_origem text, p_etapa_destino text, p_programacao_id uuid)	DEFINER	-	authenticated	f
+rpc_b2b_aging(p_partner_id uuid)	DEFINER	-	authenticated	f
+rpc_b2b_aging_detalhado(p_from date, p_to date, p_partner_id uuid, p_status text)	DEFINER	-	authenticated	f
+rpc_b2b_capacity_kpis()	DEFINER	-	authenticated	f
+rpc_b2b_carteira_kpis(p_from date, p_to date)	DEFINER	-	authenticated	f
+rpc_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric, p_exclude_order_id uuid)	DEFINER	-	authenticated	f
+rpc_b2b_executive_alerts()	DEFINER	-	authenticated	f
+rpc_b2b_executive_dashboard()	DEFINER	-	authenticated	f
+rpc_b2b_financial_kpis(p_from date, p_to date, p_partner_id uuid)	DEFINER	-	authenticated	f
+rpc_b2b_governance_kpis()	DEFINER	-	authenticated	f
+rpc_b2b_integrity_check()	DEFINER	-	authenticated	f
+rpc_b2b_list_selectable_payment_plans()	DEFINER	-	authenticated	f
+rpc_b2b_partner_credit(p_partner_id uuid)	DEFINER	-	authenticated	f
+rpc_b2b_partner_profitability(p_from date, p_to date, p_partner_id uuid)	DEFINER	-	authenticated	f
+rpc_b2b_revenue_forecast(p_partner_id uuid)	DEFINER	-	authenticated	f
+rpc_bi_esteira_resumo(p_data_inicio timestamp with time zone, p_data_fim timestamp with time zone, p_cliente_id uuid, p_fazenda_id uuid, p_produto_id uuid, p_microrganismo_id uuid, p_origem_os text, p_status text)	DEFINER	-	authenticated	f
+rpc_bi_fluxo_visitas_resumo(p_data_inicio timestamp with time zone, p_data_fim timestamp with time zone, p_cliente_id uuid, p_fazenda_id uuid, p_consultor_id uuid, p_status_solicitacao text, p_status_visita text)	DEFINER	-	authenticated	f
+rpc_bi_visitas_por_cliente(p_cliente_id uuid, p_data_inicio date, p_data_fim date)	DEFINER	-	authenticated	f
+rpc_bi_visitas_por_consultor(p_consultor_id uuid, p_data_inicio date, p_data_fim date)	DEFINER	-	authenticated	f
+rpc_bi_visitas_por_fazenda(p_fazenda_id uuid, p_data_inicio date, p_data_fim date)	DEFINER	-	authenticated	f
+rpc_bi_visitas_por_talhao(p_talhao_id uuid, p_data_inicio date, p_data_fim date)	DEFINER	-	authenticated	f
+rpc_campaign_delete(p_id uuid)	DEFINER	-	authenticated	f
+rpc_campaign_upsert(p_payload jsonb, p_id uuid)	DEFINER	-	authenticated	f
+rpc_cancel_accounts_payable(p_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_cancel_accounts_receivable(p_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_cancel_financial_installment(p_installment_id uuid, p_kind text, p_reason text)	DEFINER	-	authenticated	f
+rpc_cancelar_embalagem(p_embalagem_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cancelar_etiqueta_produto(p_etiqueta_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_archive_assignment(p_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_bulk_adjust_apply(p_ids uuid[], p_percent numeric, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_bulk_adjust_preview(p_ids uuid[], p_percent numeric)	DEFINER	-	authenticated	f
+rpc_cc_copy_default_table(p_plan_id uuid, p_target_scope text, p_partner_id uuid, p_customer_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_delete_item_price(p_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_history(p_entity text, p_entity_id uuid, p_limit integer)	DEFINER	-	authenticated	f
+rpc_cc_list_assignments(p_status text)	DEFINER	-	authenticated	f
+rpc_cc_list_item_prices(p_plan_id uuid, p_status text, p_assignment_id uuid)	DEFINER	-	authenticated	f
+rpc_cc_publish_assignment(p_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_publish_item_prices(p_ids uuid[], p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_simulate_price(p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_plan_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_ref_date date, p_quantity numeric)	DEFINER	-	authenticated	f
+rpc_cc_submit_assignment(p_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_upsert_assignment(p_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_valid_from date, p_valid_until date, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_upsert_item_price(p_id uuid, p_assignment_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_min_quantity numeric, p_pricing_mode text, p_condition_price numeric, p_discount_percent numeric, p_valid_from date, p_valid_until date, p_is_exception boolean, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cc_validate_matrix(p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid)	DEFINER	-	authenticated	f
+rpc_check_monitoramento_and_notify(_registro_id uuid)	DEFINER	-	authenticated	f
+rpc_cockpit_cancelar_reserva_v1(p_item_id uuid, p_os_id uuid, p_origem text, p_motivo text)	DEFINER	-	authenticated	f
+rpc_cockpit_confirmar_entrega_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb)	DEFINER	-	authenticated	f
+rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb)	DEFINER	-	authenticated	f
+rpc_cockpit_gerar_lote_v1(p_programacao_id uuid, p_os_id uuid, p_origem text, p_lote jsonb)	DEFINER	-	authenticated	f
+rpc_cockpit_listar_esteira_v1(p_busca text, p_stages text[], p_origens text[], p_prioridades text[], p_atrasado boolean, p_de date, p_ate date, p_incluir_finalizadas boolean, p_limit integer, p_offset integer)	INVOKER	-	authenticated	f
+rpc_cockpit_metricas_v1()	INVOKER	-	authenticated	f
+rpc_cockpit_metricas_v2(p_busca text, p_stages text[], p_origens text[], p_prioridades text[], p_atrasado boolean, p_de date, p_ate date)	INVOKER	-	authenticated	f
+rpc_cockpit_registrar_envase_v1(p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text, p_idempotency_key text, p_permitir_parcial boolean, p_motivo_parcial text)	DEFINER	-	authenticated	f
+rpc_coletar_assinatura_digital_entrega(p_entrega_id uuid, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_commercial_alerts()	DEFINER	-	authenticated	f
+rpc_commercial_consolidated_dashboard(p_from date, p_to date, p_partner_id uuid, p_consultor uuid, p_region text, p_partner_type text)	DEFINER	-	authenticated	f
+rpc_commercial_kpis(p_from date, p_to date, p_partner_id uuid, p_consultor uuid, p_region text)	DEFINER	-	authenticated	f
+rpc_commercial_simulator(p_partner_id uuid, p_product_id uuid, p_quantidade numeric, p_desconto numeric)	DEFINER	-	authenticated	f
+rpc_confirmar_entrega_embalagens(p_entrega_id uuid)	DEFINER	-	authenticated	f
+rpc_confirmar_recebimento_entrega(p_entrega_id uuid, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_confirmar_separacao_embalagem(p_embalagem_id uuid)	DEFINER	-	authenticated	f
+rpc_converter_visita_em_os(p_registro_id uuid, p_observacao text)	DEFINER	-	authenticated	f
+rpc_create_communication_template(p_chave text, p_nome text, p_canal comunicacao_canal, p_assunto text, p_corpo text, p_variaveis jsonb)	DEFINER	-	authenticated	f
+rpc_create_financial_title(p_kind text, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_create_notificacao_operacional(_usuario_id uuid, _tipo text, _titulo text, _mensagem text, _link text, _source_type text, _source_id uuid, _idempotency_key text)	DEFINER	-	authenticated	f
+rpc_create_portal_notification_secure(_cliente_id uuid, _tipo text, _titulo text, _mensagem text, _link text, _source_type text, _source_id uuid, _idempotency_key text)	DEFINER	-	authenticated	f
+rpc_criar_embalagens_pos_envase(p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_criar_visita_idempotente(p_client_uuid uuid, p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_cultura_id uuid, p_data_vistoria date, p_tipo_visita tipo_visita, p_objetivo_visita text, p_safra text, p_fase_fenologica text, p_solicitacao_id uuid, p_origem text, p_categoria_problema categoria_problema_consultor, p_nivel_pressao nivel_pressao, p_percentual_area_afetada numeric, p_urgencia urgencia_consultor, p_localizacao_na_area text, p_observacoes_tecnicas text, p_problema_principal text, p_area_hectares numeric, p_latitude numeric, p_longitude numeric, p_registro_origem_id uuid)	DEFINER	-	authenticated	f
+rpc_dashboard_geral_lab_resumo()	DEFINER	-	authenticated	f
+rpc_delete_diagnostico_visita(p_id uuid)	DEFINER	-	authenticated	f
+rpc_delete_recomendacao_visita(p_id uuid)	DEFINER	-	authenticated	f
+rpc_desativar_bank_account(p_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_desativar_cost_center(p_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_desativar_financial_category(p_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_desativar_payment_method(p_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_descartar_embalagem(p_embalagem_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_desvincular_etiqueta_entrega(p_entrega_id uuid, p_etiqueta_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_dispensar_assinatura_entrega(p_entrega_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_entrega_assinar_termo_v1(p_termo_id uuid, p_payload jsonb, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_entrega_cancelar_termo_v1(p_termo_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_entrega_confirmar_v1(p_entrega_id uuid, p_recebedor jsonb, p_opcoes jsonb)	DEFINER	-	authenticated	f
+rpc_entrega_gerar_termo_v1(p_entrega_id uuid, p_template_versao text)	DEFINER	-	authenticated	f
+rpc_entrega_reconciliar_v1(p_entrega_id uuid, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_entrega_reentrega_saldo_v1(p_entrega_id uuid, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_entrega_registrar_conferencia_v1(p_entrega_id uuid, p_itens jsonb)	DEFINER	-	authenticated	f
+rpc_enviar_visita_aprovacao(p_registro_id uuid, p_expected_version integer)	DEFINER	-	authenticated	f
+rpc_estoque_operar_v1(p_acao text, p_item_id uuid, p_quantidade numeric, p_idempotency_key text, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_estoque_reservar_v1(p_os_id uuid, p_origem text, p_itens jsonb, p_idempotency_key text, p_dados jsonb)	DEFINER	-	authenticated	f
+rpc_executar_motor_alertas(p_tipo_execucao text, p_origem text)	DEFINER	-	authenticated	f
+rpc_executivo_alertas_prioridades(p_filtros jsonb, p_limit integer)	DEFINER	-	authenticated	f
+rpc_executivo_alertas_resumo(p_filtros jsonb)	DEFINER	-	authenticated	f
+rpc_executivo_arquivar_relatorio(p_relatorio_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_executivo_cliente_detalhe(p_cliente_id uuid, p_filtros jsonb)	DEFINER	-	authenticated	f
+rpc_executivo_clientes_ranking(p_filtros jsonb, p_limit integer)	DEFINER	-	authenticated	f
+rpc_executivo_clientes_resumo(p_filtros jsonb)	DEFINER	-	authenticated	f
+rpc_executivo_exportar_relatorio_evento(p_relatorio_id uuid, p_tipo_exportacao text)	DEFINER	-	authenticated	f
+rpc_executivo_fazenda_detalhe(p_fazenda_id uuid, p_filtros jsonb)	DEFINER	-	authenticated	f
+rpc_executivo_financeiro_gargalos(p_filtros jsonb, p_limit integer)	DEFINER	-	authenticated	f
+rpc_executivo_financeiro_ranking_clientes(p_filtros jsonb, p_limit integer)	DEFINER	-	authenticated	f
+rpc_executivo_financeiro_resumo(p_filtros jsonb)	DEFINER	-	authenticated	f
+rpc_executivo_gargalos(p_filtros jsonb, p_limit integer)	DEFINER	-	authenticated	f
+rpc_executivo_gerar_relatorio(p_tipo text, p_filtros jsonb, p_titulo text)	DEFINER	-	authenticated	f
+rpc_executivo_listar_relatorios(p_filtros jsonb)	DEFINER	-	authenticated	f
+rpc_executivo_obter_relatorio(p_relatorio_id uuid)	DEFINER	-	authenticated	f
+rpc_executivo_plano_acao(p_filtros jsonb, p_limit integer)	DEFINER	-	authenticated	f
+rpc_executivo_responsaveis_pendencias(p_filtros jsonb, p_limit integer)	DEFINER	-	authenticated	f
+rpc_executivo_resumo_geral(p_filtros jsonb)	DEFINER	-	authenticated	f
+rpc_executivo_timeline_operacional(p_filtros jsonb, p_limit integer)	DEFINER	-	authenticated	f
+rpc_finalizar_visita_v2(p_registro_id uuid, p_expected_version integer)	DEFINER	-	authenticated	f
+rpc_financial_document_soft_delete(p_document_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_fiscal_calculate_invoice_v1(p_invoice_id uuid, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_fiscal_certificate_register_os(p_company_settings_id uuid, p_metadata jsonb)	DEFINER	-	authenticated	f
+rpc_fiscal_certificate_revoke(p_certificate_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_fiscal_company_rtc_get()	DEFINER	-	authenticated	f
+rpc_fiscal_company_rtc_save(payload jsonb, expected_revision text)	DEFINER	-	authenticated	f
+rpc_fiscal_company_settings_init()	DEFINER	-	authenticated	f
+rpc_fiscal_draft_save(p_invoice_id uuid, p_invoice jsonb, p_items jsonb, p_expected_version integer)	DEFINER	-	authenticated	f
+rpc_fiscal_draft_validate_homologation(p_invoice_id uuid)	DEFINER	-	authenticated	f
+rpc_fiscal_emitter_accounting_validate(p_notes text)	DEFINER	-	authenticated	f
+rpc_fiscal_emitter_request_accounting_review(p_notes text)	DEFINER	-	authenticated	f
+rpc_fiscal_event_manual(p_invoice_id uuid, p_event_type text, p_notes text, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_fiscal_homologation_readiness()	DEFINER	-	authenticated	f
+rpc_fiscal_homologation_readiness_rtc_check()	INVOKER	-	authenticated	f
+rpc_fiscal_homologation_readiness_v2()	DEFINER	-	authenticated	f
+rpc_fiscal_item_readiness(p_scope text, p_item_id uuid)	DEFINER	-	authenticated	f
+rpc_fiscal_nfe_readiness_v1()	DEFINER	-	authenticated	f
+rpc_fiscal_operation_policy_publish(p_policy_id uuid, p_justification text)	DEFINER	-	authenticated	f
+rpc_fiscal_preflight_v1(p_invoice_id uuid)	DEFINER	-	authenticated	f
+rpc_fiscal_product_ibs_cbs_get(p_product_id uuid)	DEFINER	-	authenticated	f
+rpc_fiscal_product_ibs_cbs_save(p_product_id uuid, payload jsonb, expected_revision text)	DEFINER	-	authenticated	f
+rpc_fiscal_reserve_nfe_number_v1(p_invoice_id uuid, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_fiscal_rule_sod_override(p_scope text, p_target_id uuid, p_justification text)	DEFINER	-	authenticated	f
+rpc_fiscal_sefaz_transmission_status_v1(_invoice_id uuid)	DEFINER	-	authenticated	f
+rpc_fiscal_service_ibs_cbs_get(p_service_id uuid)	DEFINER	-	authenticated	f
+rpc_fiscal_service_ibs_cbs_save(p_service_id uuid, payload jsonb, expected_revision text)	DEFINER	-	authenticated	f
+rpc_fiscal_service_profile_ibs_cbs_get(p_profile_id uuid)	DEFINER	-	authenticated	f
+rpc_fiscal_service_profile_ibs_cbs_save(p_profile_id uuid, payload jsonb, expected_revision text)	DEFINER	-	authenticated	f
+rpc_fiscal_tax_rule_publish(p_rule_id uuid, p_justification text)	DEFINER	-	authenticated	f
+rpc_fiscal_xml_prepare_v1(p_invoice_id uuid, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_fiscal_xml_record_v1(p_run_id uuid, p_state text, p_patch jsonb)	DEFINER	-	authenticated	f
+rpc_fiscal_xml_status_v1(p_invoice_id uuid)	DEFINER	-	authenticated	f
+rpc_force_checkout_visita(p_registro_id uuid, p_target_user_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_gerar_etiqueta_produto(p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_gerar_etiquetas_embalagens_lote(p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_gerar_formulario_entrega(p_entrega_id uuid)	DEFINER	-	authenticated	f
+rpc_get_comprovante_entrega_data(p_entrega_id uuid, p_reemissao boolean)	DEFINER	-	authenticated	f
+rpc_get_my_visit_by_client_uuid(p_client_uuid uuid)	DEFINER	-	authenticated	f
+rpc_get_visita_workspace(p_registro_id uuid)	DEFINER	-	authenticated	f
+rpc_ignorar_alerta_operacional(p_alerta_id uuid, p_observacao text)	DEFINER	-	authenticated	f
+rpc_iniciar_atendimento_solicitacao_v1(p_solicitacao_id uuid, p_client_uuid uuid)	DEFINER	-	authenticated	f
+rpc_ler_embalagem_por_qr(p_codigo_ou_token text)	DEFINER	-	authenticated	f
+rpc_liberar_recomendacao_produtor(p_registro_id uuid)	DEFINER	-	authenticated	f
+rpc_listar_atendimentos_tecnicos_v1(p_aba text, p_search text, p_page integer, p_page_size integer)	DEFINER	-	authenticated	f
+rpc_listar_visitas_tecnicas_v1(p_search text, p_status text[], p_de date, p_ate date, p_cliente_id uuid, p_fazenda_id uuid, p_page integer, p_page_size integer)	DEFINER	-	authenticated	f
+rpc_marcar_etiqueta_impressa(p_etiqueta_id uuid, p_motivo text)	DEFINER	-	authenticated	f
+rpc_marcar_notificacao_enviada(p_notificacao_id uuid, p_provider text, p_provider_message_id text)	DEFINER	-	authenticated	f
+rpc_marcar_notificacao_falhou(p_notificacao_id uuid, p_erro text)	DEFINER	-	authenticated	f
+rpc_marcar_resumo_enviado(p_resumo_id uuid, p_provider text, p_provider_message_id text)	DEFINER	-	authenticated	f
+rpc_marcar_resumo_falhou(p_resumo_id uuid, p_erro text)	DEFINER	-	authenticated	f
+rpc_message_set_status(p_id uuid, p_status text)	DEFINER	-	authenticated	f
+rpc_microorganism_regulatory_overview()	DEFINER	-	authenticated	f
+rpc_notificar_gestor(p_titulo text, p_mensagem text, p_link text)	DEFINER	-	authenticated	f
+rpc_partner_commercial_history(p_partner_id uuid, p_from date, p_to date)	DEFINER	-	authenticated	f
+rpc_partner_dashboard(p_partner_id uuid)	DEFINER	-	authenticated	f
+rpc_partner_message_counters(p_partner_id uuid)	DEFINER	-	authenticated	f
+rpc_portal_partner_credit_status()	DEFINER	-	authenticated	f
+rpc_portal_partner_financial()	DEFINER	-	authenticated	f
+rpc_portal_partner_financial(p_partner_id uuid)	DEFINER	-	authenticated	f
+rpc_preparar_notificacoes_alertas()	DEFINER	-	authenticated	f
+rpc_preparar_resumos_alertas(p_tipo_resumo text, p_periodo_inicio timestamp with time zone, p_periodo_fim timestamp with time zone)	DEFINER	-	authenticated	f
+rpc_preview_administrative_broadcast_count(p_target_role app_role)	DEFINER	-	authenticated	f
+rpc_programar_os_v1(p_os_id uuid, p_origem text, p_data_programada date)	DEFINER	-	authenticated	f
+rpc_programar_retorno_visita(p_registro_id uuid, p_expected_version integer, p_data_prevista date, p_descricao text)	DEFINER	-	authenticated	f
+rpc_publish_communication_event(p_event_key text, p_source_type text, p_source_id uuid, p_payload jsonb, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_publish_communication_event_v2(p_event_key text, p_source_type text, p_source_id uuid, p_payload jsonb, p_idempotency_key text)	DEFINER	-	authenticated	f
+rpc_rastreio_produto_interno(p_etiqueta_id uuid)	DEFINER	-	authenticated	f
+rpc_reabrir_alerta_operacional(p_alerta_id uuid, p_observacao text)	DEFINER	-	authenticated	f
+rpc_reabrir_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)	DEFINER	-	authenticated	f
+rpc_realizar_checkin_visita(p_registro_id uuid, p_client_uuid uuid, p_tipo tipo_checkin, p_latitude numeric, p_longitude numeric, p_precisao numeric, p_justificativa_sem_gps text, p_observacoes text, p_captured_at_local timestamp with time zone, p_solicitacao_id uuid, p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_foto_path text)	DEFINER	-	authenticated	f
+rpc_realizar_checkout_visita(p_registro_id uuid, p_client_uuid uuid, p_latitude numeric, p_longitude numeric, p_precisao numeric, p_justificativa_sem_gps text, p_observacoes text, p_captured_at_local timestamp with time zone, p_foto_path text)	DEFINER	-	authenticated	f
+rpc_record_aplicacao_email(_aplicacao_id uuid, _email text, _status text, _idempotency_key text, _enviado_por uuid)	DEFINER	-	authenticated	f
+rpc_refresh_bi_operacional()	DEFINER	-	authenticated	f
+rpc_register_payable_payment(p_installment_id uuid, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_register_receivable_payment(p_installment_id uuid, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_registrar_ocorrencia_entrega(p_entrega_id uuid, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_registrar_primeira_resposta_alerta(p_alerta_id uuid)	DEFINER	-	authenticated	f
+rpc_regulatory_checklist_set(p_dossier_id uuid, p_item_key text, p_state text, p_justification text, p_evidence_document_id uuid)	DEFINER	-	authenticated	f
+rpc_regulatory_document_register(p_dossier_id uuid, p_doc_type text, p_title text, p_storage_path text, p_content_sha256 text, p_issuer text, p_issued_at date, p_valid_until date, p_source_key text, p_source_url text, p_consulted_at date, p_doc_version text)	DEFINER	-	authenticated	f
+rpc_regulatory_document_soft_delete(p_document_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_regulatory_dossier_block(p_dossier_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_regulatory_dossier_detail(p_microorganism_id uuid)	DEFINER	-	authenticated	f
+rpc_regulatory_dossier_ensure_draft(p_microorganism_id uuid)	DEFINER	-	authenticated	f
+rpc_regulatory_dossier_new_version(p_microorganism_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_regulatory_dossier_publish(p_dossier_id uuid)	DEFINER	-	authenticated	f
+rpc_regulatory_dossier_submit(p_dossier_id uuid)	DEFINER	-	authenticated	f
+rpc_regulatory_dossier_update_draft(p_dossier_id uuid, p_patch jsonb)	DEFINER	-	authenticated	f
+rpc_regulatory_ncm_candidate_add(p_dossier_id uuid, p_ncm text, p_justification text, p_cest text, p_confidence text, p_source_key text, p_source_url text, p_consulted_at date)	DEFINER	-	authenticated	f
+rpc_regulatory_ncm_candidate_decide(p_candidate_id uuid, p_approve boolean, p_reason text, p_official_description text, p_table_version text, p_table_reference_date date)	DEFINER	-	authenticated	f
+rpc_regulatory_presentation_upsert(p_dossier_id uuid, p_volume_ml integer, p_patch jsonb)	DEFINER	-	authenticated	f
+rpc_regulatory_review_decide(p_dossier_id uuid, p_layer text, p_decision text, p_justification text)	DEFINER	-	authenticated	f
+rpc_regulatory_sod_override(p_dossier_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_regulatory_storage_cleanup_confirm(p_document_id uuid, p_success boolean)	DEFINER	-	authenticated	f
+rpc_remove_visit_technician(p_registro_id uuid, p_user_id uuid, p_reason text)	DEFINER	-	authenticated	f
+rpc_reprovar_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)	DEFINER	-	authenticated	f
+rpc_reservar_embalagem_entrega(p_embalagem_id uuid, p_entrega_id uuid, p_entrega_item_id uuid)	DEFINER	-	authenticated	f
+rpc_resolve_commercial_prices(p_items jsonb, p_plan_id uuid, p_ref_date date, p_buyer jsonb)	DEFINER	-	authenticated	f
+rpc_resolver_alerta_operacional(p_alerta_id uuid, p_observacao text)	DEFINER	-	authenticated	f
+rpc_resumo_atendimentos_tecnicos_v1()	DEFINER	-	authenticated	f
+rpc_salvar_campo_visita(p_registro_consultor_id uuid, p_client_uuid uuid, p_payload jsonb, p_versao integer)	DEFINER	-	authenticated	f
+rpc_set_communication_template_metadata(p_template_id uuid, p_provider_template_name text, p_language_code text, p_parameter_mapping jsonb, p_provider_template_status text)	DEFINER	-	authenticated	f
+rpc_solicitar_ajuste_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)	DEFINER	-	authenticated	f
+rpc_update_communication_preferences(p_canal comunicacao_canal, p_enabled boolean, p_whatsapp_opt_in boolean)	DEFINER	-	authenticated	f
+rpc_update_communication_template(p_template_id uuid, p_nome text, p_assunto text, p_corpo text, p_variaveis jsonb)	DEFINER	-	authenticated	f
+rpc_upsert_communication_rule(p_rule_id uuid, p_event_key text, p_perfil app_role, p_estrategia text, p_canal comunicacao_canal, p_template_chave text, p_template_versao integer, p_condicoes jsonb, p_prioridade integer, p_enabled boolean, p_cooldown_seconds integer)	DEFINER	-	authenticated	f
+rpc_upsert_diagnostico_visita(p_registro_id uuid, p_client_uuid uuid, p_payload jsonb, p_expected_versao integer)	DEFINER	-	authenticated	f
+rpc_upsert_fiscal_invoice_manual(p_receivable_id uuid, p_payload jsonb)	DEFINER	-	authenticated	f
+rpc_upsert_recomendacao_visita(p_registro_id uuid, p_client_uuid uuid, p_payload jsonb, p_expected_versao integer)	DEFINER	-	authenticated	f
+rpc_validar_comprovante_entrega(p_validation_token uuid)	DEFINER	anon	authenticated	f
+rpc_validar_integridade_esteira(p_origem text, p_os_id uuid)	DEFINER	-	authenticated	f
+rpc_validar_integridade_esteira(p_os_id uuid, p_origem_os text, p_acao_solicitada text)	INVOKER	-	authenticated	f
+rpc_validar_rastreio_produto(p_trace_token uuid)	DEFINER	anon	authenticated	f
+rpc_verify_communication_channel(p_user_id uuid, p_cliente_id uuid, p_canal comunicacao_canal, p_email_verificado boolean, p_telefone_verificado boolean)	DEFINER	-	authenticated	f
+rpc_vincular_etiqueta_embalagem(p_embalagem_id uuid, p_etiqueta_id uuid)	DEFINER	-	authenticated	f
+seed_cockpit_fixtures(p_prefix text)	DEFINER	-	authenticated	f
+send_partner_simulation_to_manager_secure(p_simulation_id uuid)	DEFINER	-	authenticated	f
+set_my_context_preference(p_context text, p_remember boolean)	DEFINER	-	authenticated	f
+set_partner_order_delivery_date(p_order_id uuid, p_estimated_delivery_date date)	DEFINER	-	authenticated	f
+set_partner_user_papel(p_link_id uuid, p_papel text)	DEFINER	-	authenticated	f
+set_pdf_status_default()	INVOKER	anon	authenticated	trigger
+set_updated_at()	INVOKER	anon	authenticated	trigger
+simulate_b2b_payment_plan_secure(p_partner_id uuid, p_payment_plan_id uuid, p_items jsonb, p_first_due_date date)	DEFINER	-	authenticated	f
+start_technical_visit_secure(p_registro_id uuid, p_latitude numeric, p_longitude numeric, p_precisao_gps numeric, p_foto_url text, p_foto_path text, p_observacoes text, p_justificativa_sem_gps text, p_client_uuid uuid)	DEFINER	-	authenticated	f
+sync_catalogo_volumes_calc()	INVOKER	anon	authenticated	trigger
+sync_microorganism_pricing()	INVOKER	anon	authenticated	trigger
+sync_product_pricing()	INVOKER	anon	authenticated	trigger
+tg_commercial_conditions_touch()	INVOKER	anon	authenticated	trigger
+tg_commercial_price_rules_plan_mode_guard()	INVOKER	anon	authenticated	trigger
+tg_commercial_price_rules_producer_inert()	INVOKER	anon	authenticated	trigger
+tg_commercial_price_rules_touch()	INVOKER	anon	authenticated	trigger
+tg_entrega_conf_lock_after_sign()	INVOKER	anon	authenticated	trigger
+tg_entrega_reconc_immutability()	INVOKER	anon	authenticated	trigger
+tg_entrega_termos_immutability()	INVOKER	anon	authenticated	trigger
+tg_h7_fiscal_events_append_only()	INVOKER	-	authenticated	trigger
+tg_h7_fiscal_invoice_immutable_v1()	INVOKER	-	authenticated	trigger
+tg_microorganism_fiscal_profiles_updated_at()	INVOKER	-	authenticated	trigger
+tg_pcp_touch()	INVOKER	anon	authenticated	trigger
+tg_pfs_updated_at()	INVOKER	anon	authenticated	trigger
+tg_pofl_updated_at()	INVOKER	anon	authenticated	trigger
+tg_produto_etiquetas_snapshot_immutable()	INVOKER	anon	authenticated	trigger
+tg_ptc_updated_at()	INVOKER	anon	authenticated	trigger
+tg_set_updated_at()	INVOKER	anon	authenticated	trigger
+tg_set_updated_at_notif()	INVOKER	anon	authenticated	trigger
+tg_user_access_preferences_touch()	INVOKER	anon	authenticated	trigger
+tva_touch_updated_at()	INVOKER	anon	authenticated	trigger
+unassign_b2b_user_client_secure(p_user_id uuid, p_cliente_id uuid, p_reason text)	DEFINER	-	authenticated	f
+update_microorganism_b2b_description(p_profile_id uuid, p_explicacao_b2b text)	DEFINER	-	authenticated	f
+update_partner_order_notes(p_order_id uuid, p_commercial_notes text)	DEFINER	-	authenticated	f
+update_partner_order_status(p_order_id uuid, p_status partner_order_status, p_motivo text)	DEFINER	-	authenticated	f
+update_product_b2b_description(p_profile_id uuid, p_explicacao_b2b text)	DEFINER	-	authenticated	f
+update_updated_at_column()	INVOKER	anon	authenticated	trigger
+validate_catalog_approval_checklist(p_kind text, p_checklist jsonb, p_b2b_enabled boolean, p_has_sources boolean, p_aprovado_sem_fonte boolean)	INVOKER	anon	authenticated	f
+validate_micro_profile_approval()	INVOKER	anon	authenticated	trigger
+validate_product_profile_approval()	INVOKER	anon	authenticated	trigger
+validate_retorno_tecnico_consistency()	INVOKER	anon	authenticated	trigger
+visitas_campo_guard()	INVOKER	anon	authenticated	trigger
