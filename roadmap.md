@@ -58,11 +58,13 @@
 ## H8 — Abertura formal (somente diagnóstico, sem execução) — 05/09/2026
 - [x] Diagnóstico inicial, objetivos, dependências, riscos, critérios de aceite, plano de testes e prompt de execução: `restoration/homologacao-h8/00-h8-abertura-diagnostico.md`
 - [x] H8-A — dívida de performance do Advisor: **executada no staging** (relatório `restoration/homologacao-h8/01-h8a-performance-advisor.md`)
-  - [x] H8-A1 `duplicate_index` — 32 índices redundantes removidos com prova de equivalência normalizada; grupos 28 → 1 (só `formulacoes`, sustentado por constraints)
+  - [x] H8-A1 `duplicate_index` — 32 índices redundantes removidos com prova de equivalência normalizada; 28 → 1 (só `formulacoes`, sustentado por constraints)
   - [x] H8-A2 `auth_rls_initplan` — 436 policies normalizadas via `ALTER POLICY` (`auth.uid()` → `( SELECT auth.uid() AS uid)`), sem mudar nome/comando/roles/USING/WITH CHECK; restantes 0
-  - [x] H8-A3 `multiple_permissive_policies` — apenas 2 policies literalmente redundantes removidas (`ppp_select`, `Portal: Ler safras dos talhões acessíveis`); 44 grupos com expressões distintas ficam como pendência de H8-B
-  - [x] `unused_index` (219) e `unindexed_foreign_keys` (172) não tocados, conforme escopo
-  - [x] Ledger 654 → 657; 59 repo-only continuam ausentes e bloqueadas (manifesto e teste estático atualizados)
+  - [x] H8-A3 `multiple_permissive_policies` — apenas 2 policies literalmente redundantes removidas; 146 WARN seguem como pendência de consolidação semântica em H8-B
+  - [x] `unused_index` (219 → 193, redução colateral) e `unindexed_foreign_keys` (172) não tocados diretamente
+  - [x] Advisor oficial: performance 1001 → **512** (0 ERROR, 147 WARN, 365 INFO); security **393** (0 ERROR, 383 WARN, 10 INFO), sem novo achado
+  - [x] Ledger 654 → 657; 59 repo-only continuam ausentes e bloqueadas (manifesto e teste estático atualizados para 657)
+  - [x] Repositório reconciliado com as três migrations e rollbacks (nenhuma reaplicação, nenhuma migration nova)
   - [x] Postcheck H7O PASS, harness 300 + 136 PASS, 648 SECURITY DEFINER / 0 sem `search_path` / 2 anon, 24 views (23 invoker), 6 cron, 7 RLS fail-closed, fiscal `HOMOLOGATION|2|false|DRAFT|NOT_READY`
   - [x] Typecheck, build, Vitest completo e scans PASS; binding revalidado no início e no fim
   - [x] Decisão: **GO staging para H8-B / NO-GO produção**

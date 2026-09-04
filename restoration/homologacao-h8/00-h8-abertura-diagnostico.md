@@ -95,13 +95,14 @@ escopo que a documentação existente já previa como remanescente após H7.
 
 H8-A foi executada no staging `ikaauvsflpmamgxmkhoq` em três subfases independentes
 (H8-A1, H8-A2, H8-A3), todas aplicadas e registradas no ledger (654 → 657), com rollback
-versionado fora de `supabase/migrations` e ensaio rollback→reapply em transação descartada.
+versionado fora de `supabase/migrations`.
 
-Resultado resumido: `duplicate_index` 28 → 1 grupo (o remanescente é sustentado por
-constraints em `formulacoes`), `auth_rls_initplan` 436 → 0, `multiple_permissive_policies`
-reduzido apenas nos 2 casos de redundância literal — os 44 grupos com expressões distintas
-foram deliberadamente preservados e passam a ser pendência de H8-B. `unused_index` e
-`unindexed_foreign_keys` não foram tocados.
+Resultado oficial: performance 1001 → 512 achados (0 ERROR, 147 WARN, 365 INFO), com
+`auth_rls_initplan` 436 → 0, `duplicate_index` 28 → 1 (grupo remanescente sustentado por
+constraints em `formulacoes`), `unused_index` 219 → 193 por efeito colateral, e
+`multiple_permissive_policies` mantido em 146 WARN — os grupos com expressões distintas
+foram deliberadamente preservados e passam a ser pendência de H8-B. Segurança permanece
+393 achados com 0 ERROR.
 
-Todos os gates de H7 continuam PASS. Detalhes, evidências e decisão GO/NO-GO em
+Todos os gates de H7 continuam PASS. Detalhes, evidências, rollbacks e decisão GO/NO-GO em
 `restoration/homologacao-h8/01-h8a-performance-advisor.md`.

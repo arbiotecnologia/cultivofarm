@@ -7,8 +7,7 @@ import { resolve } from "node:path";
  * FASE H7P — gate estático contra reaplicação das migrations repo-only.
  *
  * O ledger do staging autorizado tem 657 versões (654 em H7P + 3 aplicadas na fase
- * H8-A: H8-A1 duplicate_index, H8-A2 auth_rls_initplan, H8-A3 policies redundantes);
- * o repositório tem mais
+ * H8-A: duplicate_index, auth_rls_initplan e policies redundantes); o repositório tem mais
  * arquivos do que isso. As 59 migrations excedentes foram reconciliadas na
  * H7P e NENHUMA delas deve ser aplicada:
  *   - 36 já refletidas semanticamente no catálogo;

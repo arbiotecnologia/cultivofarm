@@ -1,9 +1,7 @@
--- H8-A1 ROLLBACK — recria, com a definição original exata, os 32 índices duplicados
--- removidos pela migration 20261001000000_h8a1_duplicate_index_v1.
--- Não remove a tabela de auditoria private.h8a_index_audit (registro histórico).
--- Uso somente no staging ikaauvsflpmamgxmkhoq.
-
-BEGIN;
+-- H8-A1 ROLLBACK — recria os 32 índices duplicados removidos pela migration
+-- 20261001000000_h8a1_duplicate_index_v1.sql, com a definição original exata
+-- registrada em private.h8a_index_audit. Uso somente no staging ikaauvsflpmamgxmkhoq.
+-- Não remove o histórico de auditoria.
 
 CREATE UNIQUE INDEX IF NOT EXISTS fi_idempotency_uq ON public.fiscal_invoices USING btree (idempotency_key) WHERE (idempotency_key IS NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_alertas_notif_alerta ON public.alertas_notificacoes USING btree (alerta_id);
@@ -37,5 +35,3 @@ CREATE INDEX IF NOT EXISTS produto_etiquetas_trace_idx ON public.produto_etiquet
 CREATE UNIQUE INDEX IF NOT EXISTS uq_recurring_log_success ON public.recurring_generation_log USING btree (template_id, reference_date) WHERE (status = 'SUCCESS'::text);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_lotes_programacao_id ON public.lotes USING btree (programacao_id) WHERE (programacao_id IS NOT NULL);
 CREATE UNIQUE INDEX IF NOT EXISTS visitas_checkin_client_uuid_uniq ON public.visitas_checkin USING btree (client_uuid) WHERE (client_uuid IS NOT NULL);
-
-COMMIT;

@@ -1,5 +1,5 @@
 -- H8-A2 ROLLBACK — restaura, via ALTER POLICY, a expressão exata registrada em
--- private.h8a_policy_audit (coluna *_antes) para cada policy normalizada na fase H8-A2.
+-- private.h8a_policy_audit (colunas *_antes) para cada policy normalizada na fase H8-A2.
 -- Nome, comando, PERMISSIVE/RESTRICTIVE e roles nunca são tocados.
 -- Uso somente no staging ikaauvsflpmamgxmkhoq.
 
