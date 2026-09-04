@@ -1270,3 +1270,80 @@ configuração, secret ou certificado foi modificado nesta execução:
 
 - `docs/auditorias/homologacao-h7-fiscal.md`
 
+
+### 11. H7N — P0/P1 do Security Advisor aplicadas e versionadas (04/09/2026, 13:06–13:58 UTC)
+
+Escopo: staging `ikaauvsflpmamgxmkhoq` exclusivamente. Produção `navfzbwgwzruipouyfnk`
+**não foi consultada, migrada, publicada nem alterada**. Nenhuma promoção executada.
+Relatório detalhado: `restoration/homologacao-h7/97-h7n-p0p1-auditoria.md`.
+
+#### 11.1 Migrations forward (números exatos já aplicados no staging; não reaplicar)
+
+| Versão | Arquivo em `supabase/migrations/` | MD5 repo == ledger | Efeito |
+| --- | --- | --- | --- |
+| 20260904130615 | `20260904130615_h7n_p0_security_invoker.sql` | `6e2cf6fa…` | 5 views → `security_invoker=true`; 4 wrappers SECURITY DEFINER em schema `private` (não exposto) com predicado idêntico; grants authenticated/service_role, sem anon |
+| 20260904130758 | `20260904130758_h7n_p1_trigger_execute.sql` | `d90aa6fc…` | 27 funções de trigger sem EXECUTE para public/anon/authenticated |
+| 20260904130941 | `20260904130941_h7n_p1_rpc_guards.sql` | `11f71e30…` | guards de papel em 13 RPCs sensíveis (B2B/KPI, financeiro, mensagens) |
+| 20260904131239 | `20260904131239_h7n_p1_internal_helpers.sql` | `1be95ea1…` | 42 helpers internos sem EXECUTE para public/anon/authenticated |
+| 20260904131341 | `20260904131341_h7n_p2_search_path.sql` | `9e9768c4…` | `search_path=pg_catalog` em 4 funções IMMUTABLE |
+
+Conteúdo extraído de `supabase_migrations.schema_migrations.statements`; correspondência byte a byte verificada por
+`restoration/homologacao-h7/h7n-postcheck.sh` (5/5 PASS). Nenhum DDL foi reaplicado.
+
+#### 11.2 Rollbacks e ensaio
+
+Rollbacks explícitos, um por migração, em `restoration/homologacao-h7/h7n-rollbacks/` (fora de `supabase/migrations`), restaurando
+definições originais das views (`h7n-inventario/viewdefs.sql`), ACLs anteriores (27 triggers: authenticated em todas e anon em 4;
+42 helpers: authenticated), corpos das 13 RPCs sem guard e `search_path` original. **Não executados em definitivo.**
+Ensaio `rehearse-rollback-reapply.sh` em transação única descartada (13:41:51–13:42:21 UTC): rollback 5→1 (7/7 checks de estado
+pré-H7N PASS) → reapply 1→5 (7/7 checks pós-H7N PASS) → `ROLLBACK`; fingerprint de catálogo idêntico antes/depois
+(`138b4b37108333b7be000562b90e84a2`). Nada persistido.
+
+#### 11.3 Validação no staging (sem mutação)
+
+| Verificação | Resultado |
+| --- | --- |
+| Security Advisor — regras oficiais (`supabase/splinter`, `splinter.sql` sha256 `d8d558baad3e0383…`, executado em transação descartada) | **0 ERROR** (antes: 5 `security_definer_view`); WARN segurança **402** = 397 `authenticated_security_definer_function_executable` (antes 466) + 2 `anon_security_definer_function_executable` (antes 6) + 0 `function_search_path_mutable` (antes 4) + 2 `extension_in_public` + 1 `auth_leaked_password_protection` (verificada só pela API); **7 INFO** `rls_enabled_no_policy` (inalterado) |
+| Views `security_invoker` | 5/5 (`vw_os_integridade_esteira`, `vw_esteira_laboratorio`, `vw_fluxo_visita_tecnica`, `vw_catalogo_ficha_produtos`, `vw_catalogo_ficha_microrganismos`) |
+| Trigger functions SECURITY DEFINER expostas a authenticated/anon | 0 (de 27) |
+| RPCs sensíveis com guard | 13/13 |
+| Helpers internos sem EXECUTE de authenticated | 42/42 |
+| `search_path` endurecido | 4/4 |
+| Allowlist de RPCs (`h7n-inventario/rpc_allowlist.tsv`) | 504 funções `public` executáveis por anon/authenticated (397 DEFINER + 107 INVOKER); postcheck falha em drift |
+| Harness por perfil (`h7n-harness-perfis.sql`, 10 papéis reais + anon, transação descartada) | **136/136 PASS**: views filtradas pelo chamador; MVs privadas 42501; helpers/trigger diretos 42501; RPCs guardadas 42501 para não autorizados; anon sem acesso às views |
+| Ledger | 5 versões H7N presentes; ledger termina em `20260904131341` (650 versões) |
+| Estado fiscal | `fiscal_environment=HOMOLOGATION`, `nfe_environment_code=2`, `production_enabled=false`, `nfe_enabled=false`, `nfse_enabled=false`, `configuration_status=DRAFT`, `nfe_readiness_status=NOT_READY`, marcador `STAGING`/`production_emission_allowed=false` |
+| Documentos fiscais | `fiscal_invoices=0`, `fiscal_events=0`, `fiscal_sefaz_transmissions=1` (apenas a consulta `NFeStatusServico4` de 04/09, `SUCCEEDED`/`SERVICE_INFO`) |
+
+#### 11.4 Validação do repositório
+
+`bunx tsgo --noEmit` PASS · `bunx vite build` PASS · `scripts/fiscal-secrets-scan.sh` PASS ·
+`bunx vitest run` completo: 3.304 PASS / 14 FAIL / 4 skip, sendo os 14 FAIL exclusivamente de drift de binding
+(`.env`/`types.ts` regenerados pela plataforma para `yzszlzjpovmcteuxjznj` durante a execução); após restaurar o baseline
+`c75bb87f`, os 5 arquivos afetados reexecutados: 74/74 PASS → efetivo **3.318 PASS / 0 FAIL / 4 skip**.
+
+#### 11.5 Diferenças em relação ao esperado, alertas residuais e riscos
+
+- WARN adicional `public_bucket_allows_listing` (bucket `logos`, público por design) aparece no splinter atual; não constava na baseline (lint recente). Sem ação nesta rodada.
+- `rpc_b2b_aging` e `rpc_b2b_partner_profitability` (`LANGUAGE sql`) foram guardadas por filtro fail-closed (conjunto vazio para não autorizados) em vez de `RAISE 42501` — consistente em segurança, inconsistente em UX; alinhar em migração futura (P3).
+- 397 SECURITY DEFINER executáveis por authenticated permanecem como **dívida técnica inventariada** (P1 residual antes da promoção); 2 anon (QR/token) intencionais — `rpc_validar_comprovante_entrega` ainda sem rate-limit em banco (P2).
+- 2 `extension_in_public` (`btree_gist`, `pg_net`) e `auth_leaked_password_protection` (P2, decisão de política); 7 `rls_enabled_no_policy` fail-closed por design (P3).
+- `20260903182144_h7l_security_advisor_hardening` está no ledger do staging sem arquivo no repositório (fora deste escopo; não inventado). Migrations do repositório com nome posterior a `20260904131341` não estão no ledger do staging; em reconstrução por ordem de arquivo, executar `h7n-postcheck.sh` ao final (algumas recriam views de catálogo sem `security_invoker`).
+- Drift recorrente de `.env`/`types.ts` gerados pela plataforma: restaurar do baseline antes de qualquer gate (o `check-frontend-binding.sh` aborta em drift).
+
+#### 11.6 Classificação após H7N
+
+| Eixo | Situação |
+| --- | --- |
+| **A) H7 técnico** | **APROVADO** (mantido) — P0 do Advisor zerado; P1 de triggers/helpers/RPCs sensíveis aplicado com rollback ensaiado. |
+| **B) Contábil/cadastral** | **PENDENTE** (inalterado) — validação contábil, credenciamento UF, matriz RTC/cadastros. |
+| **C) Conectividade SEFAZ HML** | **APROVADA para status do serviço** (inalterado). |
+| **D) Promoção para produção** | **NÃO ELEGÍVEL e não executada** — dependências (B), homologação operacional de autorização e revisão P1 residual (397 SECURITY DEFINER) + pendências P2. Os 5 ERROR deixaram de ser bloqueio. |
+
+#### 11.7 Arquivos desta rodada
+
+Novos: as 5 migrations forward acima; `restoration/homologacao-h7/h7n-rollbacks/` (5 rollbacks + `rehearse-rollback-reapply.sh`);
+`restoration/homologacao-h7/h7n-postcheck.sh`; `restoration/homologacao-h7/h7n-harness-perfis.sql`;
+`restoration/homologacao-h7/h7n-inventario/rpc_allowlist.tsv`; `restoration/homologacao-h7/h7n-inventario/advisor_splinter_after.txt`.
+Atualizados: `restoration/homologacao-h7/97-h7n-p0p1-auditoria.md`, `roadmap.md`, este relatório.
+Não alterados: código de aplicação, Edge Functions, certificado/cofre A1, secrets, configuração fiscal, dados.
