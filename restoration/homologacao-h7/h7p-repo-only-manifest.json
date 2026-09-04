@@ -1,8 +1,9 @@
 {
   "fase": "H7P",
   "gerado_para": "staging ikaauvsflpmamgxmkhoq",
-  "ledger_versoes": 654,
+  "ledger_versoes": 657,
   "total_repo_only": 59,
+  "nota_h8a": "Ledger 654 -> 657 pela fase H8-A (20261001000000 H8-A1, 20261001010000 H8-A2, 20261001020000 H8-A3), todas aplicadas e registradas no staging. As 59 repo-only permanecem bloqueadas e ausentes do ledger.",
   "regra": "Nenhuma destas migrations pode ser aplicada ao staging. Toda necessidade futura exige NOVA migration H7P+ posterior ao ledger.",
   "entries": [
     {
