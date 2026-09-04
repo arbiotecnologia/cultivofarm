@@ -1347,3 +1347,19 @@ Novos: as 5 migrations forward acima; `restoration/homologacao-h7/h7n-rollbacks/
 `restoration/homologacao-h7/h7n-inventario/rpc_allowlist.tsv`; `restoration/homologacao-h7/h7n-inventario/advisor_splinter_after.txt`.
 Atualizados: `restoration/homologacao-h7/97-h7n-p0p1-auditoria.md`, `roadmap.md`, este relatório.
 Não alterados: código de aplicação, Edge Functions, certificado/cofre A1, secrets, configuração fiscal, dados.
+
+
+---
+
+### 12. Gate H7O — encerramento (2026-09-04, staging `ikaauvsflpmamgxmkhoq`)
+
+Relatório definitivo: `restoration/homologacao-h7/98-h7o-relatorio-parcial.md` (seção 10).
+
+- 4 migrations H7O aplicadas e registradas (`20260930000000`…`20260930030000`), MD5 repo == ledger; ledger em 654 versões. H7L e H7N intactas.
+- `h7o-postcheck.sh`: PASS integral. Allowlist 504 → 485, **exatamente 19 assinaturas removidas e 0 adicionadas**.
+- Advisor (splinter `d8d558baad3e0383`): **0 ERROR**; SECURITY 392 (378 authenticated secdef, 10 RLS fail-closed, 2 extension_in_public, 2 anon por design QR/token).
+- Ensaio rollback→reapply em transação descartada: 7 PRE + 7 POST PASS, fingerprint idêntico `9102cfe8a58e5c7e3fd843cf0131a90d`.
+- Suítes: typecheck 0 erro, build OK, Vitest 3.326 PASS / 4 skip / 0 FAIL, scans de segredo e de integração fiscal OK.
+- Novos gates na suíte: ordem de migrations das 5 views protegidas (com verificação negativa) e execução do gate de binding de staging.
+- Invariantes fiscais confirmados por leitura: `HOMOLOGATION`, `tpAmb=2`, emissão de produção desabilitada, `DRAFT|NOT_READY`, 0 notas/0 eventos.
+- Produção `navfzbwgwzruipouyfnk`: não consultada, não alterada, não promovida. Promoção continua NÃO ELEGÍVEL.

@@ -1,4 +1,7 @@
-# H7O — Relatório parcial (rodada 1) — staging `ikaauvsflpmamgxmkhoq`
+# H7O — Relatório DEFINITIVO (rodadas 1–3) — staging `ikaauvsflpmamgxmkhoq`
+
+> Rodada 1 (auditoria read-only) e rodada 2 (implementação) estão preservadas abaixo como histórico.
+> A rodada 3 (validação final e decisão de gate) está na seção 10, ao final do documento.
 
 Data: 2026-09-04 (UTC). Produção `navfzbwgwzruipouyfnk` **não consultada, não alterada, não promovida**.
 Nenhum DDL/DML foi executado no staging nesta rodada: apenas leituras de catálogo, ledger e corpos de função.
@@ -74,3 +77,94 @@ Conclusão preliminar: nenhuma precisa de policy; todas são deliberadamente fai
 
 ## 9. Pendências desta rodada (próxima execução)
 Objetivos 3–9, 11–14: migrations H7O (guardas das 6 funções, 42501 em `rpc_b2b_aging`/`rpc_b2b_partner_profitability`, revogações do Grupo A, rate-limit, reafirmação das views), rollbacks, gate determinístico de binding (pre-commit/CI), Advisor antes/depois, harness por perfil ampliado, typecheck/build/Vitest/scan, ensaio rollback→reapply, validação fiscal read-only e atualização de `docs/auditorias/homologacao-h7-fiscal.md`, `97-h7n-p0p1-auditoria.md` e roadmap.
+
+
+---
+
+## 10. Rodada 3 — Validação final e decisão do gate H7O
+
+Data: 2026-09-04 (UTC). Commit avaliado: `a0fcea0b6a6a1b40566ae656e508d049986c74db`.
+Produção `navfzbwgwzruipouyfnk`: **não consultada, não alterada, não publicada, não promovida**.
+
+### 10.1 Migrations H7O no ledger (não reaplicadas, não renumeradas)
+
+| Versão | MD5 repo == ledger |
+|---|---|
+| `20260930000000_h7o_p1_guardas_42501_v1` | `e6592d1a6126a71cb1163d3c8f48ed4b` |
+| `20260930010000_h7o_p2_revogacoes_helpers_v1` | `95f5c1a1023299095d7a12bd0e8bdb5a` |
+| `20260930020000_h7o_p3_rate_limit_validacao_publica_v1` | `ec0bedda1966b91615a2cade100ecd5b` |
+| `20260930030000_h7o_p4_reafirmar_security_invoker_views_v1` | `34c45a123a9fc880faed50889e250680` |
+
+Ledger do staging: **654 versões, máximo `20260930030000`**. H7L (`20260903182144`, MD5 `dc2ee1f7db4a0e2768a6adf29ac6310b`) e as 5 migrations H7N (`20260904130615`…`20260904131341`) intactas.
+
+### 10.2 `h7o-postcheck.sh` — PASS integral
+
+Correção aplicada no script: o cálculo do diff de allowlist abortava sob `set -euo pipefail` (diff retorna 1 quando há diferenças) e a normalização de assinaturas por `sed` era frágil — substituída por normalização determinística em Python.
+
+- 8 guardas `42501` presentes; `rpc_b2b_aging` e `rpc_b2b_partner_profitability` em PL/pgSQL com `42501`.
+- 19 revogações efetivas; `communication_provider_settings` sem grants `anon`/`authenticated`.
+- Rate-limit privado ativo (3 tabelas `private` com RLS e sem grants; RPC pública com verificação antes da leitura do token; job `pg_cron` de poda).
+- 5 views protegidas com `security_invoker=true`.
+- **Allowlist sem drift: 485 funções expostas. Diff H7N→H7O = exatamente 19 assinaturas removidas, 0 adicionadas (504 → 485).**
+- Fiscal: `HOMOLOGATION|2|false|false|false|DRAFT|NOT_READY`; `fiscal_invoices|fiscal_events|fiscal_sefaz_transmissions = 0|0|1`.
+- Extensões intocadas (`btree_gist@public`, `pg_net@public`), sem fixação de versão.
+- Saída final: `H7O POSTCHECK: PASS`.
+
+### 10.3 Teste estático de ordem de migrations (objetivo 2)
+
+Novo: `src/test/security/protected-views-migration-order.static.test.ts`. Percorre `supabase/migrations` em ordem cronológica, reconstrói o estado (`absent` / `invoker` / `unsafe`) das 5 views protegidas e exige que qualquer `CREATE`/`DROP+CREATE` seja seguido de reafirmação de `security_invoker` — inclusive reafirmação **dinâmica** (`DO`/`EXECUTE format('ALTER VIEW … SET (security_invoker = true)')`, padrão de H7N P0 e H7O P4).
+Resultado: **6/6 PASS**. Verificação negativa: uma migration temporária com `DROP VIEW` + `CREATE VIEW` de `vw_esteira_laboratorio` fez o teste falhar com mensagem acionável, comprovando que o gate não é vacuoso (arquivo temporário removido em seguida).
+
+### 10.4 Gate de binding integrado à suíte (objetivo 3)
+
+Novo: `src/test/config/binding-gate.integration.test.ts`, que executa `restoration/homologacao-h7/check-frontend-binding.sh` (estático, sem acesso a banco) dentro do Vitest e ainda assegura que a saída **não** contém JWT, chaves `sb_*`, DSN nem `service_role`.
+Resultado: PASS — `H7d BINDING GATE: OK — staging ikaauvsflpmamgxmkhoq (.env, client.ts, config.toml, types.ts consistentes)`.
+
+Drift no início da rodada: `.env` apontava para o sandbox (`yzszl…`) e `types.ts` tinha 2.052 linhas; ambos restaurados byte a byte do baseline autorizado (`6c08a8f8`, `types.ts` com 21.850 linhas) junto de `client.ts`. Nenhum valor secreto foi impresso.
+
+### 10.5 Suítes executadas (objetivo 4)
+
+| Verificação | Resultado |
+|---|---|
+| Typecheck (`tsgo --noEmit -p tsconfig.app.json`) | 0 erro |
+| Build (`npm run build`) | OK (PWA gerado, 20 entradas de precache) |
+| Vitest completo | **3.326 PASS / 0 FAIL / 4 skip**, 211 arquivos + 1 skip |
+| `scripts/fiscal-secrets-scan.sh` | OK — nenhum valor secreto real |
+| `scripts/fiscal-integration-scan.sh` | OK — nenhum indicador de emissão fiscal em runtime |
+
+Nenhuma falha atribuível à H7O; nenhuma falha preexistente remanescente.
+
+### 10.6 Ensaio rollback→reapply (transação descartada)
+
+`h7o-rollbacks/rehearse-rollback-reapply.sh`: 7 checks PRE (estado revertido) e 7 checks POST (estado reaplicado) **todos PASS**, com fingerprint de catálogo idêntico antes e depois (`SNAPSHOT_BEFORE = SNAPSHOT_AFTER = 9102cfe8a58e5c7e3fd843cf0131a90d`). `ROLLBACK` ao final: nada persistido.
+
+### 10.7 Advisor após H7O (splinter oficial, prefixo sha256 `d8d558baad3e0383`)
+
+Evidência em `restoration/homologacao-h7/h7o-inventario/advisor_splinter_after.txt`.
+
+- **0 ERROR** (nenhum `security_definer_view`).
+- SECURITY: 392 achados — 378 `authenticated_security_definer_function_executable` (era 397 antes das revogações), 10 `rls_enabled_no_policy` (tabelas fail-closed por design, incluindo as 3 novas tabelas privadas de rate-limit), 2 `extension_in_public` (decisão P2, não alteradas), 2 `anon_security_definer_function_executable` (`rpc_validar_comprovante_entrega` e `rpc_validar_rastreio_produto`, públicas por design QR/token, agora com rate-limit e resposta anti-enumeração).
+- PERFORMANCE: 1.002 achados informativos (initplan de RLS, índices não usados/duplicados, FKs sem índice) — fora do escopo de segurança desta fase.
+
+### 10.8 Invariantes fiscais (somente leitura)
+
+Ambiente `HOMOLOGATION`, `tpAmb=2`, emissão de produção desabilitada, prontidão `DRAFT|NOT_READY`, 0 notas e 0 eventos fiscais. Nenhuma Edge Function foi publicada nesta rodada.
+
+### 10.9 Riscos residuais
+
+1. 378 funções SECURITY DEFINER continuam executáveis por `authenticated` — todas com guarda própria ou delegada comprovada na rodada 1; redução adicional é decisão de produto (Grupo B / código morto).
+2. 59 migrations repo-only ainda não reconciliadas com o ledger do staging (item P2 do roadmap); a reconstrução por ordem de arquivo agora é protegida pelo teste estático das views.
+3. `btree_gist` e `pg_net` permanecem em `public` (mover exigiria recriação de constraints EXCLUDE e de chamadas `net.http_post`).
+4. `auth_leaked_password_protection` continua desligado — decisão de política, não técnica.
+5. Drift recorrente de `.env`/`types.ts` gerado pela plataforma: mitigado por dois gates na suíte, mas exige restauração manual quando ocorre.
+6. Publicação das Edge Functions no staging autorizado permanece bloqueada pela ferramenta de deploy (pendência herdada de H7e), sem impacto no gate H7O.
+
+### 10.10 Decisão do gate
+
+**H7O: APROVADO no staging `ikaauvsflpmamgxmkhoq`.** Todos os objetivos executáveis foram implementados, aplicados transacionalmente com registro correto no ledger, verificados por postcheck determinístico, harness por perfil, Advisor, ensaio de rollback e suítes completas. Produção permanece proibida e intocada; a promoção para produção continua **NÃO ELEGÍVEL** (dependências contábeis/cadastrais e itens P2 em aberto).
+
+### 10.11 Arquivos desta rodada
+
+Novos: `src/test/security/protected-views-migration-order.static.test.ts`, `src/test/config/binding-gate.integration.test.ts`, `restoration/homologacao-h7/h7o-inventario/advisor_splinter_after.txt`.
+Atualizados: `restoration/homologacao-h7/h7o-postcheck.sh` (diff de allowlist), este relatório, `docs/auditorias/homologacao-h7-fiscal.md`, `roadmap.md`, e restauração de binding em `.env`, `src/integrations/supabase/client.ts`, `src/integrations/supabase/types.ts`.
+Não alterados: migrations H7L/H7N/H7O, código de aplicação, Edge Functions, cofre A1, secrets, configuração fiscal, dados.

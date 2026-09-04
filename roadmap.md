@@ -20,3 +20,11 @@
 - [ ] P1 residual (pré-promoção): revisar individualmente os 397 SECURITY DEFINER executáveis por authenticated (348 com guard textual) a partir de `rpc_allowlist.tsv`
 - [ ] P2: rate-limit em banco para `rpc_validar_comprovante_entrega`; `extension_in_public` (btree_gist, pg_net); leaked-password protection; alinhar `rpc_b2b_aging`/`rpc_b2b_partner_profitability` para `RAISE 42501`
 - [ ] Ledger: versionar/decidir `20260903182144_h7l_security_advisor_hardening` (no staging, sem arquivo no repo) e ordem das migrations posteriores a `20260904131341`
+
+## H7o — Auditoria SECURITY DEFINER, rate-limit público e views (staging) — CONCLUÍDO (04/09/2026)
+- [x] Rodada 1: auditoria read-only das 397 SECURITY DEFINER, recuperação byte a byte de H7L, mapa de consumidores
+- [x] Rodada 2: 4 migrations aplicadas (guardas 42501, 19 revogações, rate-limit privado anti-enumeração, reafirmação das 5 views) + rollbacks fora de `supabase/migrations`
+- [x] Rodada 3: postcheck PASS, allowlist 504 → 485 (19 removidas / 0 adicionadas), Advisor 0 ERROR, ensaio rollback→reapply com fingerprint idêntico
+- [x] Gates novos na suíte: ordem de migrations das views protegidas (com teste negativo) e gate de binding de staging sem exposição de segredos
+- [x] Typecheck / build / Vitest 3.326 PASS / scans de segredo e integração fiscal OK; binding restaurado ao baseline autorizado
+- [ ] P2 remanescente: reconciliar as 59 migrations repo-only com o ledger, `extension_in_public` (btree_gist, pg_net), leaked-password protection e redução do Grupo B de SECURITY DEFINER
