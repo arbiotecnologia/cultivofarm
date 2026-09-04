@@ -44,6 +44,26 @@ for row in "${ROWS[@]}"; do
 done
 [ "$DRIFT" -eq 0 ] || fail "conteúdo de migration repo-only alterado (ver DRIFT acima)"
 
+# --- H8-C: decisao versionada obrigatoria por entry (fail-closed) ---
+node -e '
+const m=require(process.argv[1]);
+const allowedCls=new Set(["REFLETIDA_SEMANTICAMENTE_NO_CATALOGO","SUPERSEDED_DB_A_FRENTE","CONFLITANTE_BACKEND_ESTRANHO"]);
+const allowedDec=new Set(["BLOQUEADA_PERMANENTE_REFLETIDA","BLOQUEADA_PERMANENTE_SUPERSEDED","QUARENTENA_PERMANENTE"]);
+const dist={REFLETIDA_SEMANTICAMENTE_NO_CATALOGO:36,SUPERSEDED_DB_A_FRENTE:3,CONFLITANTE_BACKEND_ESTRANHO:20};
+const c={};
+if (m.entries.length!==59||m.total_repo_only!==59) throw new Error("total repo-only != 59");
+if (m.ledger_versoes!==658) throw new Error("ledger_versoes != 658");
+for (const e of m.entries){
+  if (e.apply_to_staging) throw new Error("apply_to_staging autorizado: "+e.file);
+  if (e.replay_prohibited!==true) throw new Error("replay_prohibited ausente: "+e.file);
+  if (!allowedCls.has(e.classification)) throw new Error("classificacao invalida: "+e.file);
+  if (!allowedDec.has(e.decision)) throw new Error("decisao ausente/invalida: "+e.file);
+  if (!e.reviewed_at||!e.reviewed_commit||!e.evidence_refs) throw new Error("evidencia ausente: "+e.file);
+  c[e.classification]=(c[e.classification]||0)+1;
+}
+for (const k of Object.keys(dist)) if (c[k]!==dist[k]) throw new Error("distribuicao divergente em "+k);
+' "$MANIFEST" || fail "manifesto H8-C incompleto ou distribuicao divergente"
+
 if [ -n "${STAGING_DSN:-}" ]; then
   printf '%s' "$STAGING_DSN" | grep -q "$PRODUCTION_REF_FORBIDDEN" && \
     fail "DSN aponta para producao"

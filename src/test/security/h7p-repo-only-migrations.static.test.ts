@@ -32,6 +32,11 @@ interface Entry {
   sha256: string;
   classification: string;
   apply_to_staging: boolean;
+  decision?: string;
+  replay_prohibited?: boolean;
+  reviewed_at?: string;
+  reviewed_commit?: string;
+  evidence_refs?: Record<string, unknown>;
 }
 
 const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
@@ -104,5 +109,31 @@ describe("H7P — manifesto de migrations repo-only", () => {
     // é legítimo apenas se também tiver sido aplicado (ledger cresce junto).
     const known = manifest.ledger_versoes + manifest.total_repo_only;
     expect(repoVersions.length).toBeLessThanOrEqual(known);
+  });
+
+  it("H8-C: cada entrada tem decisao definitiva, evidencia e proibicao de replay", () => {
+    const allowedDecisions = new Set([
+      "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "BLOQUEADA_PERMANENTE_SUPERSEDED",
+      "QUARENTENA_PERMANENTE",
+    ]);
+    const invalid = manifest.entries.filter(
+      (e) =>
+        !e.decision ||
+        !allowedDecisions.has(e.decision) ||
+        e.replay_prohibited !== true ||
+        !e.reviewed_at ||
+        !e.reviewed_commit ||
+        !e.evidence_refs,
+    );
+    expect(invalid.map((e) => e.file)).toEqual([]);
+  });
+
+  it("H8-C: a distribuicao permanece 36/3/20", () => {
+    const count = (c: string) =>
+      manifest.entries.filter((e) => e.classification === c).length;
+    expect(count("REFLETIDA_SEMANTICAMENTE_NO_CATALOGO")).toBe(36);
+    expect(count("SUPERSEDED_DB_A_FRENTE")).toBe(3);
+    expect(count("CONFLITANTE_BACKEND_ESTRANHO")).toBe(20);
   });
 });
