@@ -69,7 +69,16 @@ function finalStates(): Record<string, { state: ViewState; lastFile: string }> {
     for (const view of PROTECTED_VIEWS) {
       if (!sql.includes(view)) continue;
       const events = eventsFor(sql, view);
-      if (events.length === 0) continue;
+      // Reafirmação dinâmica (bloco DO com EXECUTE format('ALTER VIEW ... security_invoker = true')
+      // sobre uma lista que inclui esta view — padrão usado por H7N P0 e H7O P4).
+      const dynamicReaffirm =
+        !/security_invoker\s*=\s*false/i.test(sql) &&
+        /security_invoker\s*=\s*true/i.test(sql);
+      if (events.length === 0) {
+        if (dynamicReaffirm) result[view] = { state: "invoker", lastFile: file };
+        continue;
+      }
+
       let state = result[view].state;
       for (const ev of events) {
         if (ev.kind === "create") state = state === "invoker" ? "invoker" : "unsafe";
