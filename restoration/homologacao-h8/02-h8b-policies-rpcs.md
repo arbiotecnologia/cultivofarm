@@ -248,9 +248,12 @@ distintas e continua sendo contado como um finding.
 
 ## 8. Pendências e riscos
 
-1. **116 grupos permissivos remanescentes (145 ocorrências)** — exigem matriz funcional por
-   domínio e dono de negócio. Risco de consolidação apressada: ampliação silenciosa de
-   acesso. Escopo sugerido para H8-C.
+1. **43 grupos locais remanescentes** e **117 grupos expandidos / finding-groups oficiais**,
+   totalizando as **146 ocorrências** do Advisor — exigem matriz funcional por domínio e
+   dono de negócio. Risco de consolidação apressada: ampliação silenciosa de acesso.
+   Escopo sugerido para H8-C, que deve mirar a **redução de grupos tabela+role+ação**, e
+   não a contagem bruta de policies.
+
 2. **378 funções `SECURITY DEFINER` executáveis por `authenticated`** — superfície
    legítima e já certificada; qualquer revogação exige prova nominal de ausência de
    consumidor. Não tratar como dívida a zerar.
