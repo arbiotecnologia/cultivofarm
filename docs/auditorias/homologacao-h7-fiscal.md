@@ -1195,16 +1195,73 @@ respostas foram sanitizadas antes de exibição/registro.
 | **A) H7 técnico** | **APROVADO** — binding, guards anti-produção, cofre A1, autoteste criptográfico, status SEFAZ HML e ausência de vazamento validados em runtime. |
 | **B) Contábil/cadastral** | **PENDENTE** — validação contábil real, credenciamento SEFAZ-MG por UF, matriz fiscal RTC 2026 e cadastros fiscais de produtos/serviços/clientes. |
 | **C) Conectividade SEFAZ HML** | **APROVADA para status do serviço**; homologação operacional completa de autorização de NF-e permanece pendente até que (B) seja resolvido. |
-| **D) Promoção para produção** | **NÃO ELEGÍVEL e não executada** — depende de (B) e do ciclo de homologação SEFAZ concluído. |
+| **D) Promoção para produção** | **NÃO ELEGÍVEL e não executada** — depende de (B), do ciclo de homologação SEFAZ concluído **e da correção dos 5 ERROR do Security Advisor + da revisão P1 de funções SECURITY DEFINER executáveis por authenticated/anon**. |
 
-### 8. Pendência P2 de segurança para o gate de promoção
+### 8. Evidência do Supabase Security Advisor — 04/09/2026
 
-Revisar **48 WARN do Advisor** relativos a funções `SECURITY DEFINER` executáveis
-por `authenticated`. Classificar cada uma pelo princípio do menor privilégio
-antes de qualquer promoção para produção. **Não deve ser afirmada
-vulnerabilidade sem análise individual** de cada função: algumas podem ser
-necessárias por design (RPCs de leitura interna), enquanto outras podem
-precisar de `REVOKE EXECUTE` ou de escopo restrito a `service_role`/`postgres`.
+Varredura atual substitui a estimativa histórica de "48 WARN". Total de
+apontamentos: **491** — **5 ERROR**, **479 WARN**, **7 INFO**. Nenhum código,
+banco, Edge Function ou configuração foi alterado nesta consolidação; o registro
+serve como baseline auditável para o gate de promoção.
+
+#### 8.1 ERROR — `security_definer_view` (5 views)
+
+| View | Acesso configurado | Observação |
+| --- | --- | --- |
+| `vw_os_integridade_esteira` | `anon` sem SELECT; `authenticated` com SELECT | Definição contém filtros por `auth.uid()`/papel, mas roda com semântica do definidor. Eficácia dos filtros/RLS subjacentes precisa ser validada e corrigida antes de produção. |
+| `vw_esteira_laboratorio` | `anon` sem SELECT; `authenticated` com SELECT | Idem. |
+| `vw_fluxo_visita_tecnica` | `anon` sem SELECT; `authenticated` com SELECT | Idem. |
+| `vw_catalogo_ficha_produtos` | `anon` sem SELECT; `authenticated` com SELECT | Idem. |
+| `vw_catalogo_ficha_microrganismos` | `anon` sem SELECT; `authenticated` com SELECT | Idem. |
+
+**Não foi comprovada exploração.** O risco é a potencial elevação de contexto
+se a view `SECURITY DEFINER` acessar tabelas cujas RLS dependam de `auth.uid()`
+sem que a view reforce o mesmo filtro de chamador.
+
+#### 8.2 WARN — detalhamento dos 479 apontamentos
+
+| Código | Quantidade | Descrição |
+| --- | --- | --- |
+| `authenticated_security_definer_function_executable` | 466 | Funções `SECURITY DEFINER` com `EXECUTE` para `authenticated`. |
+| `anon_security_definer_function_executable` | 6 | Funções `SECURITY DEFINER` com `EXECUTE` para `anon`. |
+| `function_search_path_mutable` | 4 | Funções sem `search_path` fixo. |
+| `extension_in_public` | 2 | Extensões instaladas no schema `public`. |
+| `auth_leaked_password_protection` | 1 | Proteção de vazamento de senha do auth não habilitada. |
+
+#### 8.3 Inventário técnico das 466 funções `SECURITY DEFINER` executáveis por `authenticated`
+
+- **27** são funções de trigger também executáveis por `authenticated`.
+- **8** são helpers internos nomeados com prefixo `_` e não usados como trigger.
+- **348** funções não-trigger apresentam **indício textual** de guarda de autenticação/papel.
+- **83** funções não-trigger **não apresentam** esse indício textual.
+- **Todas as 466** têm `search_path` fixado segundo inspeção de catálogo (o Advisor ainda as classifica por outras regras).
+
+> A detecção textual é **triagem**, não prova de segurança. Funções com indício
+de guarda ainda precisam de revisão lógica; funções sem indício não são
+automaticamente vulneráveis, mas devem ser auditadas primeiro.
+
+#### 8.4 INFO — `rls_enabled_no_policy` (7 tabelas)
+
+Sete tabelas têm RLS habilitada sem política explícita. Devem ser revisadas
+individualmente para confirmar se são tabelas internas/fechadas (fail-closed
+por design) ou se precisam de políticas conforme o uso real.
+
+### 9. Prioridade de correção antes da promoção
+
+| Prioridade | Escopo | Ação esperada |
+| --- | --- | --- |
+| **P0** | 5 views `security_definer_view` | Validar e corrigir a semântica do definidor; garantir que filtros/RLS subjacentes sejam efetivos para o chamador; testar com usuários de diferentes papéis. |
+| **P1** | 27 funções de trigger + 6 funções `anon` + 83 funções sem indício de guarda | Revogar `EXECUTE` direto de `anon`/`authenticated` nas 27 triggers; revisar as 6 funções `anon` individualmente (duas RPCs de validação por token podem ser públicas por design, exigindo anti-enumeração/rate limit; triggers/guards não devem estar expostos); revisar primeiro as 83 funções sem indício textual de guarda. |
+| **P2** | 348 funções com indício de guarda + 8 helpers `_` + 4 `search_path` + extensões em `public` + `auth_leaked_password_protection` | Revisar as 348 com guardas para confirmar eficácia; aplicar allowlist explícita de RPCs; corrigir os 4 `search_path` restantes; avaliar extensões em `public`; habilitar leaked-password protection conforme política de segurança. |
+| **P3** | 7 INFO `rls_enabled_no_policy` | Confirmar tabelas internas/fechadas ou criar políticas conforme uso. |
+
+### 10. Arquivos alterados nesta consolidação
+
+Apenas o relatório abaixo foi alterado; nenhum código, banco, Edge Function,
+configuração, secret ou certificado foi modificado nesta execução:
+
+- `docs/auditorias/homologacao-h7-fiscal.md`
+
 
 ### 9. Arquivos alterados nesta consolidação
 
