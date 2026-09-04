@@ -147,12 +147,12 @@ já existentes (`FISCAL_CERTIFICATE_MASTER_KEY`, `FISCAL_CORS_ALLOWLIST`,
 
 ## 4. Objetivo 3 — Gate final
 
-### Advisor (antes → depois)
+### Advisor — duas leituras distintas
 
-Executado por consultas de catálogo diretamente no staging (o Advisor da plataforma
-está vinculado a outro projeto e não é autoritativo aqui):
+**(a) Durante a execução da H7P no Lovable** o diagnóstico foi feito por **consultas
+diretas ao catálogo** do staging (antes → depois):
 
-| Verificação | Antes | Depois |
+| Verificação de catálogo | Antes | Depois |
 | --- | --- | --- |
 | Tabelas expostas com RLS desligada | 0 | 0 |
 | Views sem `security_invoker` | 1 | 1 |
@@ -163,11 +163,42 @@ está vinculado a outro projeto e não é autoritativo aqui):
 | FKs sem índice (perf, WARN) | 172 | 172 |
 | Índices sem uso (perf, INFO) | 219 | 219 |
 
-- A única view sem `security_invoker` é `_src_vw_esteira_laboratorio`, view interna
-  **sem grant** para `anon` ou `authenticated` — sem exposição. As 5 views protegidas
-  estão `security_invoker=true`; outras 12 views de BI usam `security_invoker=on`.
-- FKs sem índice e índices sem uso são **WARN/INFO de performance preexistentes**,
-  não causados por H7; correção implicaria DDL amplo fora do escopo do gate.
+**(b) Verificação independente pós-entrega, com o Advisor oficial** do Supabase no
+staging `ikaauvsflpmamgxmkhoq` — **0 ERROR** em ambas as dimensões:
+
+| Security — 393 achados | Qtd. | Severidade | Tratamento |
+| --- | --- | --- | --- |
+| `authenticated_security_definer_function_executable` | 378 | WARN | Risco aceito — todas com `search_path` fixo e guarda própria/delegada ou uso estrutural; revogação em massa quebraria consumidores (H7O já revogou as 19 comprovadamente ociosas) |
+| `rls_enabled_no_policy` | 10 | WARN/INFO | **Fail-closed intencional** (inclui as 3 tabelas privadas de rate-limit, sem grant `anon`/`authenticated`) |
+| `extension_in_public` | 2 | WARN | Risco aceito — `btree_gist` sustenta a constraint de exclusão `cpr_no_overlap`; `pg_net` sustenta `net.http_post`. Mover recriaria constraints/quebraria envios |
+| `anon_security_definer_function_executable` | 2 | WARN | Por design — `rpc_validar_comprovante_entrega` (rate-limit + HMAC anti-enumeração da H7O) e `rpc_validar_rastreio_produto` (rastreio por token) |
+| `auth_leaked_password_protection` | 1 | WARN | **Bloqueio externo B1** — não alterável pelo mecanismo autorizado nesta fase |
+| **ERROR** | **0** | — | — |
+
+| Performance — 1001 achados | Qtd. | Severidade | Tratamento |
+| --- | --- | --- | --- |
+| `auth_rls_initplan` | 436 | WARN | Dívida preexistente; reescrita ampla de policies fora do escopo do gate |
+| `unindexed_foreign_keys` | 172 | WARN | Dívida preexistente |
+| `multiple_permissive_policies` | 146 | WARN | Dívida preexistente |
+| `unused_index` | 219 | INFO | Dívida preexistente |
+| `duplicate_index` | 28 | INFO | Dívida preexistente |
+| **ERROR** | **0** | — | — |
+
+Nenhum achado de performance é causado pela H7 e **nenhuma correção ampla de
+performance foi feita nesta fase**, por decisão explícita de escopo: exigiria DDL
+extenso sobre policies e índices, com risco desproporcional ao gate.
+
+- Catálogo confirmado de forma independente: **24 views públicas, 23 com
+  `security_invoker=true/on`**. A única sem a opção é `_src_vw_esteira_laboratorio`,
+  view interna com **0 grants** para `anon`/`authenticated` — sem exposição. As 5 views
+  protegidas pela H7O seguem `security_invoker=true`.
+- Demais confirmações independentes coincidem com as desta fase: ledger **654**; as
+  quatro migrations H7O presentes; **648** SECURITY DEFINER em `public`, 0 sem
+  `search_path` fixo, 2 executáveis por `anon`; 3 tabelas privadas de rate-limit com RLS
+  e 0 grants `anon`/`authenticated`; **6** cron jobs ativos; fiscal
+  `HOMOLOGATION` / `tpAmb=2` / `production_enabled=false` / `DRAFT` / `NOT_READY`;
+  `invoices=0`, `events=0`, `transmissions=1`.
+
 
 ### Execuções
 
