@@ -1,0 +1,248 @@
+{
+  "suite": "h8d-healthcheck",
+  "ambiente": "homologacao",
+  "project_ref": "ikaauvsflpmamgxmkhoq",
+  "gerado_em_utc": "2026-09-04T20:00:00Z",
+  "resumo": {
+    "total": 29,
+    "ok": 25,
+    "warn": 3,
+    "critical": 0,
+    "unknown": 1,
+    "status": "WARN"
+  },
+  "sinais": [
+    {
+      "categoria": "auth",
+      "sinal": "usuarios_sem_papel",
+      "status": "OK",
+      "medida": "4/18",
+      "limiar": "<= 4 (baseline medido em H8-D: contas técnicas de homologação); <= 8 = WARN",
+      "resposta": "Sem papel, todas as policies negam: atribuir via fluxo administrativo (user_roles é a única fonte de papel)."
+    },
+    {
+      "categoria": "auth",
+      "sinal": "usuarios_sem_perfil",
+      "status": "OK",
+      "medida": "4/18",
+      "limiar": "<= 4 (baseline medido em H8-D: contas técnicas de homologação); <= 8 = WARN",
+      "resposta": "Usuário sem profile trava o roteamento de portal. Criar perfil pelo fluxo administrativo, nunca por INSERT manual."
+    },
+    {
+      "categoria": "banco",
+      "sinal": "conexoes_em_uso",
+      "status": "OK",
+      "medida": "17/60",
+      "limiar": "<= 70% do max_connections",
+      "resposta": "Saturação sustentada em homologação costuma ser worker preso: identificar por state/wait_event, sem encerrar sessão de terceiros."
+    },
+    {
+      "categoria": "banco",
+      "sinal": "indices_duplicados_conhecidos",
+      "status": "UNKNOWN",
+      "medida": "1 (Advisor oficial H8-A)",
+      "limiar": "medido pelo Advisor, não pelo catálogo",
+      "resposta": "Advisor é a fonte oficial de duplicate_index/unused_index; este healthcheck não recalcula. Rodar Advisor no ritual semanal."
+    },
+    {
+      "categoria": "banco",
+      "sinal": "locks_longos",
+      "status": "OK",
+      "medida": "0",
+      "limiar": "0 sessões bloqueadas há mais de 5 minutos",
+      "resposta": "Lock longo durante migration = risco de janela travada: diagnosticar por pg_blocking_pids antes de qualquer cancelamento."
+    },
+    {
+      "categoria": "comunicacao",
+      "sinal": "eventos_nao_processados",
+      "status": "OK",
+      "medida": "0/140",
+      "limiar": "0 eventos fora de processed",
+      "resposta": "Evento preso indica falha na expansão transacional (rpc_publish_communication_event_v2). Seção 7.5."
+    },
+    {
+      "categoria": "comunicacao",
+      "sinal": "outbox_backlog",
+      "status": "WARN",
+      "medida": "12",
+      "limiar": "0 com entrega desligada; 1–50 = WARN; >50 = CRITICAL",
+      "resposta": "Flags de entrega estão OFF em homologação: backlog crescente indica produtor ativo sem consumidor. Seção 7.5 do runbook."
+    },
+    {
+      "categoria": "comunicacao",
+      "sinal": "outbox_dead_letter",
+      "status": "OK",
+      "medida": "0",
+      "limiar": "0 = OK; 1–5 = WARN; >5 = CRITICAL",
+      "resposta": "Reprocessar somente via fluxo de replay auditado (comunicacao_dlq_replay_audit). Nunca editar linhas manualmente."
+    },
+    {
+      "categoria": "comunicacao",
+      "sinal": "outbox_item_mais_antigo_min",
+      "status": "WARN",
+      "medida": "180",
+      "limiar": "<= 60min = OK; <= 1440min = WARN; acima = CRITICAL",
+      "resposta": "Fila vazia = UNKNOWN (sem baseline). Com backlog: verificar process-communication-outbox e leases expirados."
+    },
+    {
+      "categoria": "comunicacao",
+      "sinal": "outbox_leases_expirados",
+      "status": "OK",
+      "medida": "0",
+      "limiar": "0 = OK; 1–3 = WARN; >3 = CRITICAL",
+      "resposta": "Lease expirado indica worker morto no meio do lote; o próprio motor reclama o lease. Escalar se persistir por 2 ciclos."
+    },
+    {
+      "categoria": "comunicacao",
+      "sinal": "outbox_retry_alto",
+      "status": "OK",
+      "medida": "0",
+      "limiar": "itens pendentes com >= 3 tentativas: 0 = OK; <= 5 = WARN",
+      "resposta": "Retry crescente com provedor OFF sugere erro determinístico de template/destinatário. Ver comunicacao_audit_log."
+    },
+    {
+      "categoria": "cron",
+      "sinal": "execucao_mais_antiga",
+      "status": "OK",
+      "medida": "17h",
+      "limiar": "<= 26h desde a última execução bem-sucedida de qualquer job (o mais lento roda 1x/dia)",
+      "resposta": "Sem histórico = UNKNOWN: cron.job_run_details é podado; coletar baseline por 48h antes de escalar."
+    },
+    {
+      "categoria": "cron",
+      "sinal": "falhas_24h",
+      "status": "WARN",
+      "medida": "1",
+      "limiar": "0 falhas em 24h; 1–2 = WARN; >2 = CRITICAL",
+      "resposta": "Ler cron.job_run_details do job afetado (sem copiar payload) e seguir 7.4 do runbook."
+    },
+    {
+      "categoria": "cron",
+      "sinal": "jobs_ativos",
+      "status": "OK",
+      "medida": "6/6",
+      "limiar": "6 de 6 ativos (inventário H8-D)",
+      "resposta": "Job inativo ou novo job não inventariado: seção 7.4 do runbook (cron parado)."
+    },
+    {
+      "categoria": "fiscal",
+      "sinal": "ambiente_homologacao",
+      "status": "OK",
+      "medida": "HOMOLOGATION|tpAmb=2|producao=false",
+      "limiar": "HOMOLOGATION | tpAmb=2 | production_enabled=false",
+      "resposta": "Qualquer desvio é tentativa de emissão fora de homologação: bloquear e acionar 7.10 do runbook. Produção segue NO-GO."
+    },
+    {
+      "categoria": "fiscal",
+      "sinal": "readiness_esperada",
+      "status": "OK",
+      "medida": "DRAFT|NOT_READY",
+      "limiar": "DRAFT | NOT_READY (B3 aberto)",
+      "resposta": "READY sem credenciamento SEFAZ e validação contábil (B3) não é aceitável em H8. Confirmar origem da mudança."
+    },
+    {
+      "categoria": "identidade",
+      "sinal": "ledger_migrations",
+      "status": "OK",
+      "medida": "658",
+      "limiar": "= 658 (congelado em H8-C)",
+      "resposta": "Drift de ledger: comparar com h7p-repo-only-manifest.json e o runbook 04-h8d, seção 7.2. Não aplicar nada antes de identificar a origem."
+    },
+    {
+      "categoria": "identidade",
+      "sinal": "repo_only_destrutivas_aplicadas",
+      "status": "OK",
+      "medida": "0",
+      "limiar": "= 0 (as 4 destrutivas são permanentemente bloqueadas)",
+      "resposta": "Migration bloqueada aplicada indevidamente: acionar procedimento 7.3 do runbook. Não reverter por conta própria."
+    },
+    {
+      "categoria": "rls_rpc",
+      "sinal": "security_definer_sem_search_path",
+      "status": "OK",
+      "medida": "0",
+      "limiar": "= 0",
+      "resposta": "SECURITY DEFINER sem search_path fixo é vetor de escalada: corrigir na mesma janela (regressão RLS, seção 7.9)."
+    },
+    {
+      "categoria": "rls_rpc",
+      "sinal": "security_definer_total",
+      "status": "OK",
+      "medida": "648",
+      "limiar": "= 648 (baseline H8-C)",
+      "resposta": "Variação legítima só após migration aprovada; caso contrário investigar criação fora do fluxo."
+    },
+    {
+      "categoria": "rls_rpc",
+      "sinal": "tabelas_publicas_sem_rls",
+      "status": "OK",
+      "medida": "0",
+      "limiar": "= 0",
+      "resposta": "Tabela em public sem RLS fica aberta pela Data API: habilitar RLS na mesma janela."
+    },
+    {
+      "categoria": "rls_rpc",
+      "sinal": "tabelas_rls_fail_closed",
+      "status": "OK",
+      "medida": "7",
+      "limiar": "= 7 (baseline; RLS ligada e sem policy = negado por padrão)",
+      "resposta": "Aumento = tabela nova sem policy (esperado mas precisa de decisão). Redução = policy nova: revisar antes de aceitar."
+    },
+    {
+      "categoria": "rls_rpc",
+      "sinal": "views_security_invoker",
+      "status": "OK",
+      "medida": "23/24",
+      "limiar": "23 de 24 invoker; 1 interna sem grants",
+      "resposta": "View definer exposta pela Data API burla RLS: reaplicar H7O P4 (security_invoker)."
+    },
+    {
+      "categoria": "storage",
+      "sinal": "buckets_publicos",
+      "status": "OK",
+      "medida": "1/14",
+      "limiar": "apenas 1 bucket público (logos); demais privados",
+      "resposta": "Bucket sensível público expõe documentos fiscais/financeiros: privar imediatamente (7.8)."
+    },
+    {
+      "categoria": "storage",
+      "sinal": "policies_storage_objects",
+      "status": "OK",
+      "medida": "52",
+      "limiar": "> 0 policies em storage.objects",
+      "resposta": "Sem policy, todo acesso a arquivo privado depende só da service role: revisar antes de qualquer teste de upload."
+    },
+    {
+      "categoria": "superficie_publica",
+      "sinal": "rate_limit_sem_data_api",
+      "status": "OK",
+      "medida": "0 grant(s) indevido(s)",
+      "limiar": "nenhum GRANT a anon/authenticated em private.public_validation_rate_*",
+      "resposta": "Exposição do rate limit pela Data API quebra a proteção anti-abuso: revogar imediatamente (rollback H7O P3)."
+    },
+    {
+      "categoria": "superficie_publica",
+      "sinal": "rate_limit_validacao_publica",
+      "status": "OK",
+      "medida": "0 chave(s) na janela, pico 0",
+      "limiar": "pico < max_hits da política vigente em private.public_validation_rate_policy",
+      "resposta": "Pico no teto = possível abuso das 2 RPCs anon. Chaves são hash com pepper privado: nunca desidentificar. Seção 7.7."
+    },
+    {
+      "categoria": "superficie_publica",
+      "sinal": "rpcs_executaveis_por_anon",
+      "status": "OK",
+      "medida": "2",
+      "limiar": "= 2 (por desenho, validadas em H7O)",
+      "resposta": "Qualquer variação exige revisão imediata: comparar com o inventário H7O antes de revogar."
+    },
+    {
+      "categoria": "identidade",
+      "sinal": "guard_repo_only_59",
+      "status": "OK",
+      "medida": "íntegro",
+      "limiar": "59 migrations íntegras e ausentes do ledger",
+      "resposta": "Falha do guard bloqueia qualquer migration: seção 7.3 do runbook."
+    }
+  ]
+}
