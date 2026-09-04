@@ -37,6 +37,8 @@
 - [x] `btree_gist`/`pg_net` mantidas em `public` com justificativa (constraint `cpr_no_overlap` e `net.http_post`)
 - [x] Postcheck H7O PASS, harness 300 + 136 PASS, 5/5 views invoker, rate-limit e cron ativos, rollback→reapply reconvergido
 - [x] Typecheck / build / Vitest 3.337 PASS / scans OK; relatório final `restoration/homologacao-h7/99-h7-relatorio-final.md`
+- [x] Verificação independente pós-entrega com o Advisor oficial: Security 393 = **0 ERROR** / 383 WARN / 10 INFO; Performance 1001 = **0 ERROR** / 610 WARN / 391 INFO — WARN/INFO tratados como dívida aceita ou bloqueio externo, sem correção ampla de performance nesta fase
+- [x] Catálogo independente: 24 views públicas, 23 com `security_invoker`; a única exceção (`_src_vw_esteira_laboratorio`) é interna e sem grants
 - [ ] Bloqueio externo B1: habilitar leaked-password protection no staging e testar rejeição de senha vazada
 - [ ] Bloqueio externo B2: publicar as Edge Functions no staging pelo runner autorizado e validar `fiscal-binding-diagnostics`
 - [ ] Bloqueio externo B3: preencher dados fiscais reais do emitente (`DRAFT` → `READY`)
