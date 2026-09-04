@@ -1383,3 +1383,19 @@ Relatório definitivo: `restoration/homologacao-h7/99-h7-relatorio-final.md`.
 - Fiscal inalterado: `STAGING`, `tpAmb=2`, emissão de produção desligada, emitente `DRAFT|NOT_READY`, certificado A1 conferido só por metadados.
 - Bloqueios externos: leaked-password protection, publicação das Edge Functions pelo runner autorizado, dados fiscais reais do emitente e autorização humana.
 - **Decisão: GO em staging, NO-GO para promoção.** Produção `navfzbwgwzruipouyfnk` não consultada nem alterada.
+
+---
+
+### 14. Gate H7Q — resolução dos bloqueios externos (2026-09-05, staging `ikaauvsflpmamgxmkhoq`)
+
+Relatório completo: `restoration/homologacao-h7/99-h7-relatorio-final.md` (seção 10).
+
+- Binding: drift do `.env` para o Cloud `yzszl…` detectado no início; `.env`/`types.ts` (21.850 linhas) restaurados do baseline `6c08a8f8`; gate PASS antes de qualquer acesso a banco.
+- **B1 (leaked-password protection): bloqueado.** Não é configuração de banco e não há runner/PAT vinculado ao staging; instrução operacional exata documentada, sem SQL inventado.
+- **B2 (Edge Functions): resolvido em homologação.** 37 funções + `_shared`; 37/37 publicadas e respondendo no staging (0 ausentes). `fiscal-binding-diagnostics` retornou `project_ref=ikaauvsflpmamgxmkhoq`, `environment=STAGING`, `production_emission_allowed=false`, `binding_ok=true`. Somente nomes de secrets inventariados; nenhum secret criado/rotacionado/lido; PFX não acessado; nenhuma NF-e/NFS-e emitida. Republicação futura exige runner `--project-ref ikaauvsflpmamgxmkhoq`.
+- **B3 (emitente fiscal): bloqueado por dado real.** Cadastro presente e coerente (CNPJ, IE, `LUCRO_PRESUMIDO`, CRT 3, endereço, série 1, numeração 1, `HOMOLOGATION`/`tpAmb=2`); pendências reais: `EMITTER_ACCREDITATION_MISSING` (BLOCK), `EMITTER_ACCOUNTING_NOT_VALIDATED` (BLOCK) e `EMITTER_IE_DV_NOT_IMPLEMENTED` (WARN). Nada foi inventado. Certificado A1 só por metadados: `AVAILABLE`, `HOMOLOGATION`, validade 2026-06-17 → 2027-06-17.
+- Gates: binding, `h7p-guard-repo-only.sh`, `h7o-postcheck.sh` integral, harness 300 + 136 PASS, ledger 654 inalterado, 648 SECURITY DEFINER (0 sem `search_path`, 2 anon), 7 tabelas RLS fail-closed, 5/5 views `security_invoker`, 6 cron jobs, typecheck 0 erro, build OK, Vitest 3.337 PASS / 0 FAIL / 4 skip, scans de segredo e integração fiscal OK.
+- Advisor oficial não executável contra o staging nesta sessão (ferramenta vinculada ao Cloud `yzszl…`); valem as leituras independentes já registradas: Security 393 = 0 ERROR / 383 WARN / 10 INFO; Performance 1001 = 0 ERROR / 610 WARN / 391 INFO. Sem correção ampla de performance nesta fase.
+- Nenhum DDL, nenhuma migration, nenhuma flag alterada; emissão fiscal de produção permanece fail-closed. Produção `navfzbwgwzruipouyfnk`: intocada.
+- **Decisão: H7 tecnicamente concluída com bloqueios externos (B1, B3, B4). GO staging / NO-GO produção — não elegível para promoção.**
+- H8 formalmente **aberta apenas como diagnóstico** em `restoration/homologacao-h8/00-h8-abertura-diagnostico.md`; nenhuma migration ou mudança de produto H8 executada.
