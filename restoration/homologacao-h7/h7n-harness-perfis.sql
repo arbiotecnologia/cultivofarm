@@ -69,10 +69,10 @@ begin
     exception when others then insert into _h7n_res values (v_role,'trigger fn trg_mestre_guard_preco_canonico (direto)','SQLSTATE '||sqlstate,'0A000/42501',case when sqlstate in ('0A000','42501') then 'PASS' else 'FAIL' end); end;
 
     -- (c) RPCs guardadas (somente leitura): 42501 para papéis não autorizados, sucesso para autorizados.
-    -- rpc_b2b_aging é LANGUAGE sql: o guard H7N é um filtro (h7n_guarded) => não autorizado recebe 0 linhas (fail-closed), não 42501.
+    -- H7O (20260930000000): rpc_b2b_aging passou a plpgsql com RAISE 42501 para não autorizados (antes: filtro sql → 0 linhas).
     begin execute 'select count(*) from public.rpc_b2b_aging()' into v_out;
-      insert into _h7n_res values (v_role,'rpc_b2b_aging() [sql, guard por filtro]','rows='||v_out, case when v_role = any(aging_ok) then 'sucesso' else '0 linhas' end, case when v_role = any(aging_ok) or v_out='0' then 'PASS' else 'FAIL' end);
-    exception when others then insert into _h7n_res values (v_role,'rpc_b2b_aging() [sql, guard por filtro]','SQLSTATE '||sqlstate, case when v_role = any(aging_ok) then 'sucesso' else '0 linhas' end, case when sqlstate='42501' and not (v_role = any(aging_ok)) then 'PASS' else 'FAIL' end); end;
+      insert into _h7n_res values (v_role,'rpc_b2b_aging() [plpgsql, RAISE — H7O]','rows='||v_out, case when v_role = any(aging_ok) then 'sucesso' else '42501' end, case when v_role = any(aging_ok) then 'PASS' else 'FAIL' end);
+    exception when others then insert into _h7n_res values (v_role,'rpc_b2b_aging() [plpgsql, RAISE — H7O]','SQLSTATE '||sqlstate, case when v_role = any(aging_ok) then 'sucesso' else '42501' end, case when sqlstate='42501' and not (v_role = any(aging_ok)) then 'PASS' else 'FAIL' end); end;
     begin execute 'select count(*) from public.rpc_b2b_aging_detalhado()' into v_out;
       insert into _h7n_res values (v_role,'rpc_b2b_aging_detalhado() [plpgsql, RAISE]','rows='||v_out, case when v_role = any(aging_ok) then 'sucesso' else '42501' end, case when v_role = any(aging_ok) then 'PASS' else 'FAIL' end);
     exception when others then insert into _h7n_res values (v_role,'rpc_b2b_aging_detalhado() [plpgsql, RAISE]','SQLSTATE '||sqlstate, case when v_role = any(aging_ok) then 'sucesso' else '42501' end, case when sqlstate='42501' and not (v_role = any(aging_ok)) then 'PASS' else 'FAIL' end); end;
