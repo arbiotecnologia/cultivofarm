@@ -1,0 +1,30 @@
+-- H7n P1: trigger functions are not public RPCs.
+revoke execute on function public.comunicacao_dlq_replay_audit_no_mutation() from public, anon, authenticated;
+revoke execute on function public.enforce_checkin_immutability() from public, anon, authenticated;
+revoke execute on function public.enforce_diagnostico_immutability() from public, anon, authenticated;
+revoke execute on function public.enforce_visit_immutability() from public, anon, authenticated;
+revoke execute on function public.fiscal_audit_trigger() from public, anon, authenticated;
+revoke execute on function public.fiscal_audit_trigger_microorganism_profiles() from public, anon, authenticated;
+revoke execute on function public.fn_b2b_guard_credit_approval_fields() from public, anon, authenticated;
+revoke execute on function public.fn_b2b_guard_order_items_immutable() from public, anon, authenticated;
+revoke execute on function public.fn_cq_autoria_servidor() from public, anon, authenticated;
+revoke execute on function public.fn_cq_resultado_imutavel() from public, anon, authenticated;
+revoke execute on function public.fn_envase_material_imutavel() from public, anon, authenticated;
+revoke execute on function public.fn_estoque_produto_guard() from public, anon, authenticated;
+revoke execute on function public.fn_ledger_append_only() from public, anon, authenticated;
+revoke execute on function public.fn_regulatory_candidate_publication_guard() from public, anon, authenticated;
+revoke execute on function public.fn_regulatory_ncm_source_guard() from public, anon, authenticated;
+revoke execute on function public.fn_regulatory_published_candidate_guard() from public, anon, authenticated;
+revoke execute on function public.regulatory_audit_trigger() from public, anon, authenticated;
+revoke execute on function public.tg_b2b_block_receivable_before_approval() from public, anon, authenticated;
+revoke execute on function public.tg_block_pofl_delete() from public, anon, authenticated;
+revoke execute on function public.tg_commercial_price_rules_audit() from public, anon, authenticated;
+revoke execute on function public.tg_culturas_block_delete_in_use() from public, anon, authenticated;
+revoke execute on function public.tg_culturas_stamp_desativacao() from public, anon, authenticated;
+revoke execute on function public.tg_monitoramento_avisos_set_dref() from public, anon, authenticated;
+revoke execute on function public.tg_notify_payment_terms_pending() from public, anon, authenticated;
+revoke execute on function public.tg_pcp_audit() from public, anon, authenticated;
+revoke execute on function public.trg_catalogo_volumes_sync_mestre() from public, anon, authenticated;
+revoke execute on function public.trg_mestre_guard_preco_canonico() from public, anon, authenticated;
+
+

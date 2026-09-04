@@ -1,0 +1,46 @@
+# H7N — Advisor emulado com splinter oficial (sha256 prefix d8d558baad3e0383) — staging ikaauvsflpmamgxmkhoq — 2026-09-04T13:47:38Z
+
+== RESUMO POR NIVEL
+ level | count 
+-------+-------
+ INFO  |   398
+ WARN  |  1012
+(2 rows)
+
+== RESUMO POR REGRA
+ level |                        name                        | count 
+-------+----------------------------------------------------+-------
+ INFO  | rls_enabled_no_policy                              |     7
+ INFO  | unindexed_foreign_keys                             |   172
+ INFO  | unused_index                                       |   219
+ WARN  | anon_security_definer_function_executable          |     2
+ WARN  | auth_rls_initplan                                  |   436
+ WARN  | authenticated_security_definer_function_executable |   397
+ WARN  | duplicate_index                                    |    28
+ WARN  | extension_in_public                                |     2
+ WARN  | multiple_permissive_policies                       |   146
+ WARN  | public_bucket_allows_listing                       |     1
+(10 rows)
+
+== ERROR detalhe
+ name | detail 
+------+--------
+(0 rows)
+
+== WARN anon/search_path/extension detalhe
+                   name                    |                                                                                                                                       detail                                                                                                                                       
+-------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ anon_security_definer_function_executable | Function `public.rpc_validar_comprovante_entrega(p_validation_token uuid)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/rpc_validar_comprovante_entrega`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+ anon_security_definer_function_executable | Function `public.rpc_validar_rastreio_produto(p_trace_token uuid)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/rpc_validar_rastreio_produto`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+ extension_in_public                       | Extension \`btree_gist\` is installed in the public schema. Move it to another schema.
+ extension_in_public                       | Extension \`pg_net\` is installed in the public schema. Move it to another schema.
+(4 rows)
+
+== INFO detalhe
+ rls_enabled_no_policy  | Table \`public._f42_harness_fixtures\` has RLS enabled, but no policies exist
+ rls_enabled_no_policy  | Table \`public._fiscal_staging_marker\` has RLS enabled, but no policies exist
+ rls_enabled_no_policy  | Table \`public.commercial_payment_plans\` has RLS enabled, but no policies exist
+ rls_enabled_no_policy  | Table \`public.communication_provider_settings\` has RLS enabled, but no policies exist
+ rls_enabled_no_policy  | Table \`public.communication_provider_settings_rate_limit\` has RLS enabled, but no policies exist
+ rls_enabled_no_policy  | Table \`public.comunicacao_inapp_dispatch\` has RLS enabled, but no policies exist
+ rls_enabled_no_policy  | Table \`public.fiscal_certificate_material\` has RLS enabled, but no policies exist
