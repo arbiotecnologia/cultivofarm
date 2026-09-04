@@ -171,3 +171,31 @@ Escopo corrigido: os 43 grupos locais / 117 finding-groups de `multiple_permissi
 futuro. H8-D segue como observabilidade e runbook. Detalhes em
 `restoration/homologacao-h8/03-h8c-ledger-reconciliation.md`. Decisão: **GO homologação para
 H8-D / NO-GO produção**.
+
+### H8-D — observabilidade e runbook operacional (2026-09-04)
+
+Fase executada **sem DDL** e sem migration: ledger permanece **658** e as 59 repo-only seguem
+ausentes e íntegras. Binding sofreu drift na entrada e foi restaurado **somente** do baseline
+autorizado `6c08a8f8`.
+
+Entregue uma suíte única de healthcheck de homologação (`h8d-healthcheck.sh` +
+`h8d-healthcheck.sql`): **read-only** (coleta dentro de `BEGIN READ ONLY`, sem DDL/DML e sem
+`SELECT *`), **fail-closed de identidade** (aborta com `exit 10` fora do staging autorizado ou
+diante de qualquer referência a produção), **idempotente** (3 execuções com fingerprint de
+negócio `658|0|140|648|594` idêntico) e **sanitizada** (sem DSN, token, chave, certificado,
+CPF/CNPJ, e-mail, telefone ou payload). São **29 sinais** em 8 categorias — identidade, cron,
+comunicação/outbox, superfície pública, RLS/RPC, fiscal, storage, auth e banco — cada um com
+status `OK|WARN|CRITICAL|UNKNOWN`, limiar justificado, timestamp UTC e orientação de resposta,
+com saída JSON opcional para histórico/CI. Nenhuma tabela, rota ou dashboard paralelo foi criado.
+
+Execução real: **26 OK / 1 WARN / 0 CRITICAL / 2 UNKNOWN**. O WARN corresponde ao achado
+operacional da fase: o cron `prune-old-audit-logs` aborta desde 03/09 por referenciar
+`created_at` em `public.financial_audit_log` (coluna correta: `performed_at`), e como o job é um
+bloco transacional único **nenhuma poda de auditoria ocorre**. Sem risco de perda de dados;
+correção proposta e movida para **H8-E** por exigir alteração de job que executa `DELETE`.
+
+Gates: binding OK, guard das 59 PASS, postcheck H7O PASS, harnesses 300/300 e 136/136,
+typecheck 0, build OK, Vitest **3.364 PASS / 0 FAIL / 4 skip** (+25 casos estáticos H8-D),
+scans fiscais OK, Advisors inalterados (512 / 393, 0 novo ERROR e 0 novo WARN). Relatórios em
+`04-h8d-observabilidade-runbook.md` e `05-h8-relatorio-final.md`. Decisão: **GO operacional em
+homologação / NO-GO produção**.
