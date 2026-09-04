@@ -84,12 +84,28 @@ Policies preservadas na mesma tabela (semânticas distintas, mantidas intactas):
 `Users can insert their own client documents`, `Users can only view their own client
 documents`, `Users can update their own client documents`.
 
+**Consequência para o Advisor (importante).** A remoção é semanticamente segura, mas o
+Advisor conta **grupos tabela + role + ação**, não policies brutas. Em
+`cliente_documentos / authenticated / SELECT` ainda permanecem duas policies —
+`Staff can manage client documents` (via `FOR ALL`) e
+`Users can only view their own client documents`. Portanto o grupo **continua gerando
+1 finding** e `multiple_permissive_policies` **permaneceu 146**. Qualquer afirmação de
+146 → 145 é incorreta e foi retificada neste relatório.
+
 ### 2.2 Não consolidado (pendência formal)
 
-Os demais 116 grupos têm predicados e/ou perfis diferentes entre si. Consolidá-los
-mudaria a lógica de autorização (tenant, vínculo cliente/parceiro, papel) e exige revisão
-por domínio com dono funcional. **Nenhuma alteração foi forçada apenas para reduzir a
+Nomenclatura exata das métricas remanescentes após H8-B:
+
+- **43 grupos locais remanescentes** (métrica própria: mesma tabela + mesmo `cmd` + mesmo
+  conjunto de roles, com mais de uma policy permissiva) — eram 44 antes da fase.
+- **117 grupos expandidos / finding-groups oficiais continuam**, totalizando as
+  **146 ocorrências** do Advisor, inalteradas.
+
+Esses grupos têm predicados e/ou perfis diferentes entre si. Consolidá-los mudaria a
+lógica de autorização (tenant, vínculo cliente/parceiro, papel) e exige revisão por
+domínio com dono funcional. **Nenhuma alteração foi forçada apenas para reduzir a
 métrica.**
+
 
 ---
 
