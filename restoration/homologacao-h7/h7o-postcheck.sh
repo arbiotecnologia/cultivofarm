@@ -168,7 +168,7 @@ for line in sys.stdin:
         # remove modo (IN/OUT/INOUT/VARIADIC) e nome do parametro
         if toks and toks[0].upper() in ("IN","OUT","INOUT","VARIADIC"): toks=toks[1:]
         types.append(toks[-1] if len(toks)==1 else " ".join(toks[1:]))
-    out.append(f"{name}({\",\".join(types)})")
+    out.append(name + "(" + ",".join(types) + ")")
 print("\n".join(sorted(out)))
 ' )
 if [ "$removed" = "19" ] && [ "$added" = "0" ] && [ "$(printf '%s\n' "$expected_removed" | sort)" = "$actual_removed" ]; then
