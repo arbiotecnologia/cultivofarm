@@ -68,15 +68,24 @@
   - [x] Postcheck H7O PASS, harness 300 + 136 PASS, 648 SECURITY DEFINER / 0 sem `search_path` / 2 anon, 24 views (23 invoker), 6 cron, 7 RLS fail-closed, fiscal `HOMOLOGATION|2|false|DRAFT|NOT_READY`
   - [x] Typecheck, build, Vitest completo e scans PASS; binding revalidado no início e no fim
   - [x] Decisão: **GO staging para H8-B / NO-GO produção**
-- [ ] H8-B — redução do Grupo B de SECURITY DEFINER executáveis por `authenticated`
-- [ ] H8-C — reconciliação definitiva das 59 migrations repo-only (36 refletidas / 3 superadas / 20 em quarentena)
+- [x] H8-C — reconciliação definitiva das 59 migrations repo-only: **executada em homologação** (relatório `restoration/homologacao-h8/03-h8c-ledger-reconciliation.md`)
+  - [x] Fase somente leitura + documentação/guard: **nenhum DDL, nenhuma migration nova, ledger permanece 658**
+  - [x] Binding restaurado ao baseline autorizado (`6c08a8f8`) e revalidado para `ikaauvsflpmamgxmkhoq` no início e no fim
+  - [x] 59/59 entries reconciliadas individualmente contra o catálogo por consulta read-only; distribuição confirmada **36 REFLETIDA / 3 SUPERSEDED / 20 CONFLITANTE**; **0 INCONCLUSIVA**
+  - [x] Lacunas aparentes resolvidas nominalmente (`ux_lotes_programacao_id` ≡ `idx_lotes_programacao_id_unique`; policy `%I` = artefato de `format()`; 5 migrations de ACL/patch comprovadas por `proacl`/`relacl`/`proconfig`)
+  - [x] 4 migrations `destructive` (`20260825000000`, `20260916000000`, `20260917000000`, `20260927000000`) com análise de impacto e **bloqueio permanente**
+  - [x] Hashes SHA-256 das 59 idênticos na entrada e na saída (0 DRIFT); nenhum arquivo aplicado, movido, renomeado ou editado; 0 presentes no ledger
+  - [x] Manifesto com decisão versionada por entry (`decision`, `evidence_refs`, `reviewed_at`, `reviewed_commit`, `replay_prohibited`) e regra permanente: necessidade futura exige NOVA migration posterior a `20261002000000`
+  - [x] Guard `h7p-guard-repo-only.sh` e teste estático fortalecidos (9/9 PASS); guard falha em drift de hash, arquivo ausente, `apply_to_staging=true`, entrada no ledger, decisão/evidência ausente ou distribuição divergente
+  - [x] Decisão: **GO homologação para H8-D / NO-GO produção**
+- [ ] Backlog performance/RLS (fora de H8): consolidação semântica dos 43 grupos locais / 117 finding-groups de `multiple_permissive_policies`, `unindexed_foreign_keys` (172) e `unused_index` (193)
 - [ ] H8-D — observabilidade e runbook operacional de homologação
 - [ ] H8 permanece separada da promoção a produção; nenhuma migration H8 aplicada nesta rodada
 - [x] H8-B — consolidação de políticas RLS e revisão de RPCs `SECURITY DEFINER`: **executada no staging** (relatório `restoration/homologacao-h8/02-h8b-policies-rpcs.md`)
   - [x] Inventário integral das 146 ocorrências de `multiple_permissive_policies` (44 grupos locais / 117 expandidos) com `USING` e `WITH CHECK` completos
   - [x] H8-B1 `20261002000000_h8b1_redundant_select_policy_v1` — única consolidação provada (`cliente_documentos`: policy `SELECT` subsumida pela `FOR ALL` idêntica)
   - [x] Métricas separadas: policies em `public` 541 → **540** e grupos locais 44 → **43** (métricas próprias); Advisor oficial `multiple_permissive_policies` **permaneceu 146** — o grupo `cliente_documentos/authenticated/SELECT` ainda tem duas policies, então o finding persiste
-  - [x] Remanescentes: **43 grupos locais** + **117 grupos expandidos/finding-groups oficiais** = 146 ocorrências do Advisor — pendência formal para H8-C
+  - [x] Remanescentes: **43 grupos locais** + **117 grupos expandidos/finding-groups oficiais** = 146 ocorrências do Advisor — **movidos para backlog de performance/RLS futuro** (fora do escopo da H8-C, que é reconciliação de ledger)
   - [x] Revalidação independente no Supabase oficial de homologação (2026-09-04, após `c322448d258601b4b035f0becca483f968cddb33`): performance **512** (147 WARN + 365 INFO) e segurança **393** (383 WARN + 10 INFO + 0 ERROR) — **delta zero**, ganho apenas estrutural
   - [x] 648 `SECURITY DEFINER` auditadas: 0 sem `search_path`, 0 grant PUBLIC, 2 anon por desenho, 378 `authenticated` (allowlist H7O sem drift) — **nenhuma revogação insegura**
   - [x] Ensaio rollback → reapply em transação descartada; rollback nominal fora de `supabase/migrations`; auditoria em `private.h8a_policy_audit`

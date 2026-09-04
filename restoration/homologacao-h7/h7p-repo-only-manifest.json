@@ -13,7 +13,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 5
+      "objects_checked": 5,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 7,
+        "catalog_objects_checked": 8,
+        "catalog_objects_missing": "policies:Admins can manage fiscal settings",
+        "fingerprint": "1b7e524691f017f4",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134155",
@@ -22,7 +34,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 0,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": "policies:Admins can manage fiscal settings",
+        "fingerprint": "2ad7458e42d615fa",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134238",
@@ -31,7 +55,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 10
+      "objects_checked": 10,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 10,
+        "catalog_objects_checked": 12,
+        "catalog_objects_missing": "tables:evidencias; policies:Public read for system config",
+        "fingerprint": "c104920a372bf712",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134313",
@@ -40,7 +76,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 15
+      "objects_checked": 15,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 18,
+        "catalog_objects_checked": 19,
+        "catalog_objects_missing": "tables:evidencias",
+        "fingerprint": "078042be6d37e597",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134344",
@@ -49,7 +97,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 5
+      "objects_checked": 5,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 6,
+        "catalog_objects_checked": 6,
+        "catalog_objects_missing": null,
+        "fingerprint": "8844343b38da865c",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134417",
@@ -58,7 +118,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 4
+      "objects_checked": 4,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 5,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": "tables:produto_anexos+esteira_producao_v2",
+        "fingerprint": "d379bb96611ce709",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134501",
@@ -67,7 +139,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 4,
+        "catalog_objects_missing": null,
+        "fingerprint": "a374115df93a0565",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134547",
@@ -76,7 +160,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 3
+      "objects_checked": 3,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 6,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": "funcs:rpc_generate_idempotency_key",
+        "fingerprint": "6ab89f3846159b47",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134640",
@@ -85,7 +181,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 3
+      "objects_checked": 3,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 6,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": "views:vw_schema_health",
+        "fingerprint": "2873d13004239d21",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134732",
@@ -94,7 +202,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 6,
+        "catalog_objects_checked": 6,
+        "catalog_objects_missing": null,
+        "fingerprint": "eea5a2beeb613f32",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134822",
@@ -103,7 +223,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 4,
+        "catalog_objects_missing": null,
+        "fingerprint": "b9dbc2eb491da8b8",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812134916",
@@ -112,7 +244,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 3,
+        "catalog_objects_checked": 5,
+        "catalog_objects_missing": "tables:portal_notifications; alters:evidencias",
+        "fingerprint": "da4ff09a5b175fed",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812135012",
@@ -121,7 +265,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 6
+      "objects_checked": 6,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 6,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": "tables:cliente_campos_extras",
+        "fingerprint": "3222c462aba09dba",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812135124",
@@ -130,7 +286,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 6
+      "objects_checked": 6,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 7,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": null,
+        "fingerprint": "b46abdc8f33bb9ba",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812135212",
@@ -139,7 +307,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 4
+      "objects_checked": 4,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 6,
+        "catalog_objects_missing": "funcs:rpc_cockpit_criar_visita_v1+rpc_cockpit_finalizar_os_v1",
+        "fingerprint": "04a0a18cdb4a9f8c",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812135306",
@@ -148,7 +328,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 5
+      "objects_checked": 5,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 7,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": null,
+        "fingerprint": "6ab635aa2d075ff9",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812135402",
@@ -157,7 +349,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 4
+      "objects_checked": 4,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 5,
+        "catalog_objects_checked": 5,
+        "catalog_objects_missing": null,
+        "fingerprint": "23be7cecfb82e6dc",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812135450",
@@ -166,7 +370,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 6
+      "objects_checked": 6,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 6,
+        "catalog_objects_missing": "funcs:rpc_financeiro_conciliar_v1; views:vw_financial_settings_flat",
+        "fingerprint": "953f7688fae87790",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812135542",
@@ -175,7 +391,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 4,
+        "catalog_objects_missing": "alters:evidencias; funcs:rpc_financeiro_conciliar_v1",
+        "fingerprint": "c6331cffa1641467",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260812135640",
@@ -184,7 +412,19 @@
       "classification": "CONFLITANTE_BACKEND_ESTRANHO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 3
+      "objects_checked": 3,
+      "decision": "QUARENTENA_PERMANENTE",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 6,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": "policies:Authenticated access",
+        "fingerprint": "9d2585c7e67b09f3",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260824000000",
@@ -193,7 +433,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 5
+      "objects_checked": 5,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 7,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": null,
+        "fingerprint": "c1d21afd3336e4e2",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260825000000",
@@ -202,7 +454,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": true,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 3,
+        "catalog_objects_checked": 3,
+        "catalog_objects_missing": null,
+        "fingerprint": "22e03297148c6daf",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260827000000",
@@ -211,7 +475,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "224391e7987745bf",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260828000000",
@@ -220,7 +496,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 8
+      "objects_checked": 8,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 7,
+        "catalog_objects_checked": 8,
+        "catalog_objects_missing": "idx:ux_lotes_programacao_id",
+        "fingerprint": "e13294bcd30cd1b0",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260830000000",
@@ -229,7 +517,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 0
+      "objects_checked": 0,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 0,
+        "catalog_objects_checked": 0,
+        "catalog_objects_missing": null,
+        "fingerprint": "0c6c6eb6fe342141",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260831000000",
@@ -238,7 +538,19 @@
       "classification": "SUPERSEDED_DB_A_FRENTE",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "BLOQUEADA_PERMANENTE_SUPERSEDED",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 2,
+        "catalog_objects_missing": null,
+        "fingerprint": "ceb79020bb4d3570",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260831010000",
@@ -247,7 +559,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 0
+      "objects_checked": 0,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 0,
+        "catalog_objects_checked": 0,
+        "catalog_objects_missing": null,
+        "fingerprint": "2d0bef3b71a125bb",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260831020000",
@@ -256,7 +580,19 @@
       "classification": "SUPERSEDED_DB_A_FRENTE",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_SUPERSEDED",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "483b3caddc2f6702",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260831030000",
@@ -265,7 +601,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 0
+      "objects_checked": 0,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 0,
+        "catalog_objects_checked": 0,
+        "catalog_objects_missing": null,
+        "fingerprint": "b3b0b41e12626c05",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260901000000",
@@ -274,7 +622,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 3
+      "objects_checked": 3,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 4,
+        "catalog_objects_missing": null,
+        "fingerprint": "828d4ef443df1eff",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260902000000",
@@ -283,7 +643,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "2c0e0d07090f5c1f",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260903000000",
@@ -292,7 +664,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 2,
+        "catalog_objects_missing": null,
+        "fingerprint": "feecd8ca45b7dfad",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260903010000",
@@ -301,7 +685,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "33df696f94d46970",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260903020000",
@@ -310,7 +706,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 0
+      "objects_checked": 0,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "8d02886b686ec4b5",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260903030000",
@@ -319,7 +727,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 2,
+        "catalog_objects_missing": null,
+        "fingerprint": "f5e2d5590584f3f8",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260903040000",
@@ -328,7 +748,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "e81b973b5e9bee6b",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260905000000",
@@ -337,7 +769,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 14
+      "objects_checked": 14,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 14,
+        "catalog_objects_checked": 14,
+        "catalog_objects_missing": null,
+        "fingerprint": "56f9c1fafe69ad81",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260908000000",
@@ -346,7 +790,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 5
+      "objects_checked": 5,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 5,
+        "catalog_objects_checked": 5,
+        "catalog_objects_missing": null,
+        "fingerprint": "d91dac2cf890b0b8",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260909000000",
@@ -355,7 +811,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 7
+      "objects_checked": 7,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 7,
+        "catalog_objects_checked": 7,
+        "catalog_objects_missing": null,
+        "fingerprint": "b701c53b12752f13",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260910000000",
@@ -364,7 +832,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 4
+      "objects_checked": 4,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 4,
+        "catalog_objects_missing": null,
+        "fingerprint": "2655ff28d06f1a3c",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260911000000",
@@ -373,7 +853,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 2,
+        "catalog_objects_missing": null,
+        "fingerprint": "d94e8be91b8efb81",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260912000000",
@@ -382,7 +874,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 2,
+        "catalog_objects_missing": null,
+        "fingerprint": "f47119a15373553d",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260913000000",
@@ -391,7 +895,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 4
+      "objects_checked": 4,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 4,
+        "catalog_objects_missing": null,
+        "fingerprint": "a09d6bad33aadb43",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260914000000",
@@ -400,7 +916,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 2,
+        "catalog_objects_missing": null,
+        "fingerprint": "7e6576897ec8d40a",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260914010000",
@@ -409,7 +937,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 2,
+        "catalog_objects_missing": null,
+        "fingerprint": "c178dd48f78d648b",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260916000000",
@@ -418,7 +958,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": true,
-      "objects_checked": 10
+      "objects_checked": 10,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 13,
+        "catalog_objects_checked": 13,
+        "catalog_objects_missing": null,
+        "fingerprint": "e99d175b1b2ee8c6",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260917000000",
@@ -427,7 +979,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": true,
-      "objects_checked": 6
+      "objects_checked": 6,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 6,
+        "catalog_objects_checked": 6,
+        "catalog_objects_missing": null,
+        "fingerprint": "45b7829e7850ba4d",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260917010000",
@@ -436,7 +1000,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 2
+      "objects_checked": 2,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 2,
+        "catalog_objects_checked": 2,
+        "catalog_objects_missing": null,
+        "fingerprint": "051903ff512ed927",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260918000000",
@@ -445,7 +1021,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "8b9da17d459e5b49",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260919000000",
@@ -454,7 +1042,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 11
+      "objects_checked": 11,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 12,
+        "catalog_objects_checked": 12,
+        "catalog_objects_missing": null,
+        "fingerprint": "c14e984469acdba7",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260919010000",
@@ -463,7 +1063,19 @@
       "classification": "SUPERSEDED_DB_A_FRENTE",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 5
+      "objects_checked": 5,
+      "decision": "BLOQUEADA_PERMANENTE_SUPERSEDED",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 6,
+        "catalog_objects_checked": 6,
+        "catalog_objects_missing": null,
+        "fingerprint": "00c927242e751207",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260920000000",
@@ -472,7 +1084,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 3
+      "objects_checked": 3,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 4,
+        "catalog_objects_missing": null,
+        "fingerprint": "389ddf10a8c08fe2",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260920010000",
@@ -481,7 +1105,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "cfe498f480d00e50",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260921000000",
@@ -490,7 +1126,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 13
+      "objects_checked": 13,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 12,
+        "catalog_objects_checked": 13,
+        "catalog_objects_missing": "policies:%I",
+        "fingerprint": "97888924570e2658",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260922000000",
@@ -499,7 +1147,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 0
+      "objects_checked": 0,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 0,
+        "catalog_objects_checked": 0,
+        "catalog_objects_missing": null,
+        "fingerprint": "d31a41f0e505041c",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260926000000",
@@ -508,7 +1168,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 19
+      "objects_checked": 19,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 21,
+        "catalog_objects_checked": 21,
+        "catalog_objects_missing": null,
+        "fingerprint": "5d83f2171dcdf8d9",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260927000000",
@@ -517,7 +1189,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": true,
-      "objects_checked": 1
+      "objects_checked": 1,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 1,
+        "catalog_objects_checked": 1,
+        "catalog_objects_missing": null,
+        "fingerprint": "cb13de81f3c6ef99",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260928000000",
@@ -526,7 +1210,19 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 0
+      "objects_checked": 0,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 0,
+        "catalog_objects_checked": 0,
+        "catalog_objects_missing": null,
+        "fingerprint": "3bd3dd8520e08936",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     },
     {
       "version": "20260929000000",
@@ -535,7 +1231,37 @@
       "classification": "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO",
       "apply_to_staging": false,
       "destructive": false,
-      "objects_checked": 4
+      "objects_checked": 4,
+      "decision": "BLOQUEADA_PERMANENTE_REFLETIDA",
+      "reviewed_at": "2026-09-04",
+      "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+      "reviewed_phase": "H8-C",
+      "evidence_refs": {
+        "catalog_objects_matched": 4,
+        "catalog_objects_checked": 4,
+        "catalog_objects_missing": null,
+        "fingerprint": "f27679318f387bfd",
+        "source": "consulta read-only ao catalogo de homologacao ikaauvsflpmamgxmkhoq (2026-09-04)"
+      },
+      "replay_prohibited": true
     }
-  ]
+  ],
+  "h8c": {
+    "fase": "H8-C",
+    "reviewed_at": "2026-09-04",
+    "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
+    "ledger_versoes": 658,
+    "regra_futura": "Qualquer necessidade funcional destas 59 exige NOVA migration com versao posterior a 20261002000000. Aplicacao direta, movimentacao, renomeacao, edicao de SQL ou insercao no ledger sao permanentemente proibidas.",
+    "distribuicao": {
+      "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO": 36,
+      "SUPERSEDED_DB_A_FRENTE": 3,
+      "CONFLITANTE_BACKEND_ESTRANHO": 20
+    },
+    "destructive": [
+      "20260825000000",
+      "20260916000000",
+      "20260917000000",
+      "20260927000000"
+    ]
+  }
 }

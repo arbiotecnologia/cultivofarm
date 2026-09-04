@@ -152,3 +152,22 @@ sem grants, 6 cron. **Advisor de performance permaneceu 512 (147 WARN + 365 INFO
 `unused_index=193`; **Advisor de segurança permaneceu 393 (383 WARN + 10 INFO + 0 ERROR)**.
 H8-B teve, portanto, **ganho estrutural sem delta de Advisor**. Decisão mantida:
 **GO homologação para H8-C / NO-GO produção**.
+
+### H8-C — reconciliação definitiva das 59 repo-only (2026-09-04)
+
+Fase executada **sem DDL** e sem migration nova: ledger permanece **658** e as 59 migrations
+repo-only continuam **ausentes do ledger**, com hashes SHA-256 idênticos na entrada e na saída
+(0 DRIFT). As 59 foram reconciliadas **individualmente** por consulta read-only ao catálogo de
+homologação `ikaauvsflpmamgxmkhoq`, confirmando a distribuição **36 REFLETIDA / 3 SUPERSEDED /
+20 CONFLITANTE** e **0 INCONCLUSIVA**. As 4 entries `destructive` receberam análise de impacto
+e bloqueio permanente. O manifesto passou a registrar decisão versionada por entry
+(`decision`, `evidence_refs`, `reviewed_at`, `reviewed_commit`, `replay_prohibited`) e a regra
+permanente de que qualquer necessidade futura exige **nova** migration posterior a
+`20261002000000`; guard e teste estático foram fortalecidos para falhar em drift, aplicação,
+entrada no ledger, evidência ausente ou distribuição divergente.
+
+Escopo corrigido: os 43 grupos locais / 117 finding-groups de `multiple_permissive_policies`
+**não** pertencem à H8-C (que é ledger/reconciliação) e passam ao backlog de performance/RLS
+futuro. H8-D segue como observabilidade e runbook. Detalhes em
+`restoration/homologacao-h8/03-h8c-ledger-reconciliation.md`. Decisão: **GO homologação para
+H8-D / NO-GO produção**.
