@@ -1,0 +1,66 @@
+aplicacoes|Adm/Producao/Consultor read aplicacoes|SELECT|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrativo'::app_role) OR has_role(auth.uid(), 'producao'::app_role) OR has_role(auth.uid(), 'consultor_tecnico'::app_role))
+aplicacoes|Admin/Gestor/Aplicador total access on aplicacoes|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'aplicador'::app_role))
+aplicacoes|Cliente read own aplicacoes|SELECT|{authenticated}|PERMISSIVE|((EXISTS ( SELECT 1
+   FROM ordens_servico os
+  WHERE ((os.id = aplicacoes.ordem_servico_id) AND (os.cliente_id = ANY (get_cliente_ids_for_user(auth.uid())))))) OR (EXISTS ( SELECT 1
+   FROM ordens_servico_onfarm oso
+  WHERE ((oso.id = aplicacoes.ordem_servico_onfarm_id) AND (oso.cliente_id = ANY (get_cliente_ids_for_user(auth.uid())))))))
+aplicacoes|Financeiro read aplicacoes|SELECT|{authenticated}|PERMISSIVE|has_role(auth.uid(), 'financeiro'::app_role)
+clientes|Clients read access|SELECT|{authenticated}|PERMISSIVE|can_user_access_cliente(id)
+clientes|GestorComercial manage clients|ALL|{authenticated}|PERMISSIVE|has_role(auth.uid(), 'gestor_comercial'::app_role)
+clientes|Staff manage clients|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'administrativo'::app_role))
+controle_qualidade|Adm/Consultor read controle_qualidade|SELECT|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrativo'::app_role) OR has_role(auth.uid(), 'consultor_tecnico'::app_role))
+controle_qualidade|Admin/Gestor/Producao access on controle_qualidade|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'producao'::app_role))
+controle_qualidade|OnFarm scoped select cq|SELECT|{authenticated}|PERMISSIVE|fn_onfarm_scope_lote(lote_id)
+entregas|Admin/Gestor/Adm total access on entregas|ALL|{public}|PERMISSIVE|(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))
+entregas|Cliente read own entregas|SELECT|{public}|PERMISSIVE|(cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))
+entregas|Financeiro read entregas|SELECT|{public}|PERMISSIVE|has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)
+entregas|Producao/Aplicador read entregas|SELECT|{public}|PERMISSIVE|(has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'aplicador'::app_role))
+envase|Adm read envase|SELECT|{authenticated}|PERMISSIVE|has_role(auth.uid(), 'administrativo'::app_role)
+envase|Admin/Gestor/Producao access on envase|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'producao'::app_role))
+envase|OnFarm scoped select envase|SELECT|{authenticated}|PERMISSIVE|fn_onfarm_scope_lote(lote_id)
+estoque_produto|Adm read estoque_produto|SELECT|{authenticated}|PERMISSIVE|has_role(auth.uid(), 'administrativo'::app_role)
+estoque_produto|Admin/Gestor/Producao access on estoque_produto|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'producao'::app_role))
+estoque_produto|OnFarm scoped select estoque_produto|SELECT|{authenticated}|PERMISSIVE|(fn_onfarm_scope_lote(lote_id) OR fn_onfarm_scope_cliente(reservado_para_cliente_id))
+fazendas|Fazendas read access|SELECT|{authenticated}|PERMISSIVE|can_user_access_cliente(cliente_id)
+fazendas|Staff manage farms|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'administrativo'::app_role))
+lotes|Adm/Consultor read lotes|SELECT|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrativo'::app_role) OR has_role(auth.uid(), 'consultor_tecnico'::app_role))
+lotes|Admin/Gestor/Producao access on lotes|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'producao'::app_role))
+lotes|Financeiro read lotes|SELECT|{authenticated}|PERMISSIVE|has_role(auth.uid(), 'financeiro'::app_role)
+lotes|OnFarm scoped select lotes|SELECT|{authenticated}|PERMISSIVE|fn_onfarm_scope_lote(id)
+microorganism_technical_profiles|micro_tp_read_internal|SELECT|{authenticated}|PERMISSIVE|(can_view_catalog_internal(auth.uid()) OR ((status_validacao = 'aprovado'::text) AND (EXISTS ( SELECT 1
+   FROM microrganismos m
+  WHERE ((m.id = microorganism_technical_profiles.microrganismo_id) AND (m.ativo = true) AND (has_role(auth.uid(), 'cliente_produtor'::app_role) OR ((has_role(auth.uid(), 'parceiro_b2b'::app_role) OR has_role(auth.uid(), 'parceiro_b2b_tecnico'::app_role)) AND (COALESCE(m.b2b_enabled, false) = true))))))))
+microrganismos|Admin and Agronomo can insert/update microrganismos|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'tecnico_agronomo'::app_role))
+microrganismos|microrganismos_select_internal|SELECT|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'gestor_comercial'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role) OR has_role(auth.uid(), 'consultor_tecnico'::app_role) OR has_role(auth.uid(), 'tecnico_agronomo'::app_role) OR has_role(auth.uid(), 'producao'::app_role) OR has_role(auth.uid(), 'administrativo'::app_role) OR has_role(auth.uid(), 'aplicador'::app_role) OR has_role(auth.uid(), 'operador_onfarm'::app_role))
+microrganismos|micros_b2b_read|SELECT|{authenticated}|PERMISSIVE|((has_role(auth.uid(), 'parceiro_b2b'::app_role) OR has_role(auth.uid(), 'parceiro_b2b_tecnico'::app_role)) AND (ativo = true) AND (COALESCE(b2b_enabled, false) = true))
+ordens_servico|Admin/Gestor total access on ordens_servico|ALL|{public}|PERMISSIVE|(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role))
+ordens_servico|Cliente read own ordens_servico|SELECT|{public}|PERMISSIVE|(cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))
+ordens_servico|Financeiro read ordens_servico|SELECT|{public}|PERMISSIVE|has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)
+ordens_servico|GestorComercial read B2B ordens_servico|SELECT|{public}|PERMISSIVE|(has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) AND (origem = 'b2b'::text) AND (partner_order_id IS NOT NULL))
+ordens_servico|OnFarm/Aplicador scoped read ordens_servico|SELECT|{authenticated}|PERMISSIVE|fn_onfarm_scope_cliente(cliente_id)
+ordens_servico|Producao/Adm/Consultor read ordens_servico|SELECT|{public}|PERMISSIVE|(has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::app_role))
+ordens_servico_onfarm|Admin/Gestor total access on ordens_servico_onfarm|ALL|{public}|PERMISSIVE|(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role))
+ordens_servico_onfarm|Cliente read own ordens_servico_onfarm|SELECT|{public}|PERMISSIVE|(cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))
+ordens_servico_onfarm|Financeiro read ordens_servico_onfarm|SELECT|{public}|PERMISSIVE|has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)
+ordens_servico_onfarm|OnFarm/Aplicador scoped read os_onfarm|SELECT|{authenticated}|PERMISSIVE|fn_onfarm_scope_cliente(cliente_id)
+ordens_servico_onfarm|Producao/Adm/Consultor read ordens_servico_onfarm|SELECT|{public}|PERMISSIVE|(has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::app_role))
+partner_accounts|partner_accounts_select|SELECT|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor_comercial'::app_role))
+partner_accounts|partner_accounts_self_select|SELECT|{public}|PERMISSIVE|((has_role(auth.uid(), 'parceiro_b2b'::app_role) OR has_role(auth.uid(), 'parceiro_b2b_tecnico'::app_role)) AND (id = get_user_partner_id()))
+partner_orders|Financeiro read partner_orders|SELECT|{authenticated}|PERMISSIVE|has_role(auth.uid(), 'financeiro'::app_role)
+partner_orders|partner_orders_select|SELECT|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor_comercial'::app_role) OR (has_role(auth.uid(), 'parceiro_b2b'::app_role) AND (partner_id = get_user_partner_id())))
+product_technical_profiles|prod_tp_read_internal|SELECT|{authenticated}|PERMISSIVE|(can_view_catalog_internal(auth.uid()) OR ((status_validacao = 'aprovado'::text) AND (EXISTS ( SELECT 1
+   FROM produtos p
+  WHERE ((p.id = product_technical_profiles.produto_id) AND (p.ativo = true) AND (has_role(auth.uid(), 'cliente_produtor'::app_role) OR ((has_role(auth.uid(), 'parceiro_b2b'::app_role) OR has_role(auth.uid(), 'parceiro_b2b_tecnico'::app_role)) AND (COALESCE(p.b2b_enabled, false) = true))))))))
+produtos|Staff manage global products|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role))
+produtos|produtos_b2b_read|SELECT|{authenticated}|PERMISSIVE|((has_role(auth.uid(), 'parceiro_b2b'::app_role) OR has_role(auth.uid(), 'parceiro_b2b_tecnico'::app_role)) AND (ativo = true) AND (COALESCE(b2b_enabled, false) = true))
+produtos|produtos_select_internal|SELECT|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'gestor_comercial'::app_role) OR has_role(auth.uid(), 'financeiro'::app_role) OR has_role(auth.uid(), 'consultor_tecnico'::app_role) OR has_role(auth.uid(), 'tecnico_agronomo'::app_role) OR has_role(auth.uid(), 'producao'::app_role) OR has_role(auth.uid(), 'administrativo'::app_role) OR has_role(auth.uid(), 'aplicador'::app_role) OR has_role(auth.uid(), 'operador_onfarm'::app_role))
+programacao_producao|Adm/Consultor read programacao_producao|SELECT|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrativo'::app_role) OR has_role(auth.uid(), 'consultor_tecnico'::app_role))
+programacao_producao|Admin/Gestor/Producao access on programacao_producao|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'producao'::app_role))
+programacao_producao|OnFarm scoped select programacao|SELECT|{authenticated}|PERMISSIVE|((EXISTS ( SELECT 1
+   FROM ordens_servico os
+  WHERE ((os.id = programacao_producao.ordem_servico_id) AND fn_onfarm_scope_cliente(os.cliente_id)))) OR (EXISTS ( SELECT 1
+   FROM ordens_servico_onfarm o2
+  WHERE ((o2.id = programacao_producao.ordem_servico_onfarm_id) AND fn_onfarm_scope_cliente(o2.cliente_id)))))
+talhoes|Staff manage plots|ALL|{authenticated}|PERMISSIVE|(has_role(auth.uid(), 'administrador'::app_role) OR has_role(auth.uid(), 'gestor'::app_role) OR has_role(auth.uid(), 'administrativo'::app_role))
+talhoes|Talhoes read access|SELECT|{authenticated}|PERMISSIVE|can_user_access_fazenda(fazenda_id)

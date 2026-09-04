@@ -10,3 +10,9 @@
 - [ ] P2 promoção: exige `PROD_DSN` humano, PITR confirmado, quarentena das 20 migrations de sandbox e reconciliação do ledger do staging
 - [x] H7A — guard de `certificate_ref` aplicado exclusivamente no staging; postcheck 7/7 PASS; upload/assinatura aguardam publicação correta das Edge Functions
 - [x] H7 revalidada em 2026-09-03: binding restaurado, 77 postchecks PASS, typecheck/Vitest(3.301)/build/scan OK; ressalva única = publicação das Edge Functions no staging autorizado
+
+## H7n — P0/P1 Security Advisor (staging) — EM ANDAMENTO
+- [x] Auditoria read-only: views, grants, dependências, inventário de funções (restoration/homologacao-h7/97-h7n-p0p1-auditoria.md)
+- [ ] P0: migration reversível das 5 views (security_invoker + funções `private` com predicado idêntico) + testes por papel
+- [ ] P1: revogar EXECUTE nas 27 triggers + ~45 helpers internos comprovados; guardas nas 13 RPCs sem autorização; allowlist de RPCs + postcheck
+- [ ] Advisor antes/depois, typecheck/build/vitest/scan de segredos, atualizar docs/auditorias/homologacao-h7-fiscal.md
