@@ -1097,3 +1097,119 @@ NF-e/NFS-e continuam desligadas.
 Botões prontos na prévia autenticada. Os smokes reais (autoteste do A1 e status
 SEFAZ HML) serão executados pelo administrador na UI; até lá, C) H7 SEFAZ
 homologação permanece **pendente** e D) promoção segue **não elegível**.
+
+---
+
+## H7 — Evidência de runtime 04/09/2026 (somente staging)
+
+Execução ocorrida em **04/09/2026**, restrita ao staging
+`ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` permaneceu **intocada**.
+Nenhum PFX, senha, chave privada, master key, IV, `object_path`, fingerprint/serial
+completo ou resposta bruta foi registrado nesta consolidação.
+
+### 1. Autoteste do certificado A1 em memória
+
+| Indicador | Resultado |
+| --- | --- |
+| Ação | `self_test` em `fiscal-event-sign` (versão publicada no staging) |
+| Bundle parseável | **sim** |
+| Chave privada corresponde ao certificado | **sim** |
+| Assinatura verificável pela chave pública do certificado | **sim** |
+| Certificado dentro da validade | **sim** |
+| Key usage compatível com assinatura digital | **sim** |
+| `persisted` | **false** |
+| `transmitted` | **false** |
+| Material sensível descartado após o teste | **sim** (zerado em `finally` server-side) |
+
+O teste usou exclusivamente o payload inerte `AR-BIO/H7/SELF-TEST/INERT`; não
+reservou numeração, não gerou XML fiscal e não transmitiu qualquer documento.
+
+### 2. Consulta controlada ao status do serviço SEFAZ-MG HML
+
+| Campo | Valor observado |
+| --- | --- |
+| Serviço | `NFeStatusServico4` |
+| Host | `hnfe.fazenda.mg.gov.br` |
+| tpAmb | `2` (homologação) |
+| cStat | `107` |
+| xMotivo | `"Servico em operacao"` |
+| Latência na UI | `5152 ms` |
+| Horário local | `04/09/2026 09:37:19` |
+| Log da Edge Function `fiscal-sefaz-transport` | `POST` HTTP 200, versão 1, execução ~`4774 ms` |
+
+A chamada foi feita com autenticação JWT de administrador e `action=status`;
+nenhum XML fiscal, evento, inutilização, cancelamento, chave de acesso real ou
+reserva de numeração foi enviada.
+
+### 3. Registro técnico em `fiscal_sefaz_transmissions`
+
+| Campo | Valor |
+| --- | --- |
+| `service` | `NFeStatusServico4` |
+| `environment_code` | `2` |
+| `state` | `SUCCEEDED` |
+| `attempt` | `1` |
+| `outcome` | `SERVICE_INFO` |
+| Vínculo com `fiscal_invoices` | **nenhum** |
+| Vínculo com `fiscal_events` | **nenhum** |
+| Chave de acesso (`chNFe`) | **nenhuma** |
+| Protocolo (`nProt`) / recibo (`nRec`) | **nenhum** |
+
+### 4. Contagens após o teste
+
+| Objeto | Quantidade |
+| --- | --- |
+| `fiscal_invoices` | `0` |
+| `fiscal_events` | `0` |
+| `fiscal_sefaz_transmissions` | `1` (somente a consulta de status) |
+
+### 5. Estado fiscal preservado
+
+| Campo | Valor |
+| --- | --- |
+| `fiscal_environment` | `HOMOLOGATION` |
+| `nfe_environment_code` | `2` |
+| `production_enabled` | `false` |
+| `nfe_enabled` | `false` |
+| `nfse_enabled` | `false` |
+| `configuration_status` | `DRAFT` |
+| `nfe_readiness_status` | `NOT_READY` |
+| `accounting_validated_at` | `null` |
+| `sefaz_homologation_at` | `null` |
+
+Nenhuma flag de emissão foi habilitada; nenhum dado contábil/fiscal
+(CFOP, CST/CSOSN, NCM, CEST, alíquota, natureza de operação, RTC/IBS/CBS) foi
+preenchido.
+
+### 6. Higiene de logs
+
+Auditoria dos logs das Edge Functions `fiscal-event-sign` e
+`fiscal-sefaz-transport` não encontrou indicadores de vazamento de PFX/base64,
+senha, chave privada, `service_role`, JWT, `object_path`, IV ou plaintext. As
+respostas foram sanitizadas antes de exibição/registro.
+
+### 7. Classificação do gate H7
+
+| Dimensão | Status |
+| --- | --- |
+| **A) H7 técnico** | **APROVADO** — binding, guards anti-produção, cofre A1, autoteste criptográfico, status SEFAZ HML e ausência de vazamento validados em runtime. |
+| **B) Contábil/cadastral** | **PENDENTE** — validação contábil real, credenciamento SEFAZ-MG por UF, matriz fiscal RTC 2026 e cadastros fiscais de produtos/serviços/clientes. |
+| **C) Conectividade SEFAZ HML** | **APROVADA para status do serviço**; homologação operacional completa de autorização de NF-e permanece pendente até que (B) seja resolvido. |
+| **D) Promoção para produção** | **NÃO ELEGÍVEL e não executada** — depende de (B) e do ciclo de homologação SEFAZ concluído. |
+
+### 8. Pendência P2 de segurança para o gate de promoção
+
+Revisar **48 WARN do Advisor** relativos a funções `SECURITY DEFINER` executáveis
+por `authenticated`. Classificar cada uma pelo princípio do menor privilégio
+antes de qualquer promoção para produção. **Não deve ser afirmada
+vulnerabilidade sem análise individual** de cada função: algumas podem ser
+necessárias por design (RPCs de leitura interna), enquanto outras podem
+precisar de `REVOKE EXECUTE` ou de escopo restrito a `service_role`/`postgres`.
+
+### 9. Arquivos alterados nesta consolidação
+
+Apenas o relatório abaixo foi alterado; nenhum código, banco, Edge Function,
+configuração, secret ou certificado foi modificado nesta execução:
+
+- `docs/auditorias/homologacao-h7-fiscal.md`
+
