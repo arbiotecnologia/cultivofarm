@@ -106,3 +106,31 @@ foram deliberadamente preservados e passam a ser pendência de H8-B. Segurança 
 
 Todos os gates de H7 continuam PASS. Detalhes, evidências, rollbacks e decisão GO/NO-GO em
 `restoration/homologacao-h8/01-h8a-performance-advisor.md`.
+
+## 9. Status de execução — H8-B (atualizado)
+
+H8-B foi executada no staging `ikaauvsflpmamgxmkhoq` como auditoria com **uma única
+alteração de DDL comprovadamente segura**:
+
+- `multiple_permissive_policies`: dos 146 achados, apenas **1** admitiu prova formal de
+  equivalência — a policy `SELECT` `Staff can view all client documents` em
+  `public.cliente_documentos`, integralmente subsumida pela policy `FOR ALL`
+  `Staff can manage client documents` (mesmo role, mesmo `USING`). Removida pela migration
+  `20261002000000_h8b1_redundant_select_policy_v1` (ledger 657 → 658), com pré/pós-condições
+  fail-fast, auditoria em `private.h8a_policy_audit` e rollback nominal fora de
+  `supabase/migrations`. Os demais 116 grupos têm predicados/perfis distintos e ficam como
+  pendência de H8-C.
+- `SECURITY DEFINER`: 648 funções auditadas — 0 sem `search_path` fixo, 0 com grant PUBLIC,
+  2 com `anon` por desenho, 378 com `authenticated` (superfície já certificada em H7O).
+  **Nenhuma revogação e nenhuma conversão para `SECURITY INVOKER`**, por ausência de prova
+  nominal de ausência de consumidor.
+
+Gates: binding restaurado e revalidado, repo-only guard PASS, postcheck H7O PASS, harnesses
+300/300 e 136/136 PASS, typecheck 0 erro, build OK, Vitest 3.337 PASS / 0 FAIL / 4 skip,
+scans de segredo e integração fiscal OK. Invariantes preservados (648 SECDEF, 0 sem
+`search_path`, 2 anon, 24 views/23 invoker, 6 cron, 7 RLS fail-closed, fiscal
+`HOMOLOGATION|2|false|DRAFT|NOT_READY`).
+
+Detalhes, matriz de equivalência, rollback e decisão em
+`restoration/homologacao-h8/02-h8b-policies-rpcs.md`. Decisão: **GO homologação para H8-C /
+NO-GO produção**.
