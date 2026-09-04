@@ -178,10 +178,10 @@ staging `ikaauvsflpmamgxmkhoq` — **0 ERROR** em ambas as dimensões:
 | Performance — 1001 achados | Qtd. | Severidade | Tratamento |
 | --- | --- | --- | --- |
 | `auth_rls_initplan` | 436 | WARN | Dívida preexistente; reescrita ampla de policies fora do escopo do gate |
-| `unindexed_foreign_keys` | 172 | WARN | Dívida preexistente |
 | `multiple_permissive_policies` | 146 | WARN | Dívida preexistente |
+| `duplicate_index` | 28 | WARN | Dívida preexistente |
+| `unindexed_foreign_keys` | 172 | INFO | Dívida preexistente |
 | `unused_index` | 219 | INFO | Dívida preexistente |
-| `duplicate_index` | 28 | INFO | Dívida preexistente |
 | **ERROR** | **0** | — | — |
 
 Nenhum achado de performance é causado pela H7 e **nenhuma correção ampla de
