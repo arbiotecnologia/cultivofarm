@@ -1,0 +1,398 @@
+# H7O grafo de chamadas (alvo -> funções public/private referenciadas por nome no corpo)
+_assert_visita_editavel(p_registro_id uuid)	can_manage_technical_visit,is_active_visit_participant,is_technical_visit_editable_status
+_comunicacao_require_admin()	has_role
+_rpc_avancar_esteira_laboratorio_internal(p_os_id uuid, p_origem_os text, p_etapa_destino text, p_programacao_id uuid)	_avancar_os_status,rpc_validar_integridade_esteira
+add_b2b_payment_terms_note_secure(p_partner_order_id uuid, p_note text)	has_role
+approve_b2b_credit(p_partner_order_id uuid, p_notes text)	has_role
+approve_b2b_payment_terms_secure(p_partner_order_id uuid, p_notes text)	has_role
+approve_microorganism_profile_with_audit(p_profile_id uuid, p_checklist jsonb, p_aprovado_sem_fonte boolean)	has_role,validate_catalog_approval_checklist
+approve_partner_order(p_order_id uuid, p_approval_notes text, p_estimated_delivery_date date)	fn_b2b_credit_exposure,fn_b2b_order_priceable,has_role
+approve_product_profile_with_audit(p_profile_id uuid, p_checklist jsonb, p_aprovado_sem_fonte boolean)	has_role,validate_catalog_approval_checklist
+aprovar_ficha_versao(p_versao_id uuid)	has_role
+archive_partner_simulation_secure(p_simulation_id uuid, p_reason text)	get_user_partner_id,has_role,insert_partner_catalog_access_log_internal
+assign_b2b_user_client_secure(p_user_id uuid, p_cliente_id uuid, p_assignment_type text, p_can_create_simulation boolean, p_can_monitor boolean, p_notes text)	get_user_partner_id,has_role,insert_partner_catalog_access_log_internal
+bulk_inserir_alvos(p_kind text, p_parent_id uuid, p_alvos jsonb)	has_role,normalizar_alvo
+can_checkin_technical_visit(p_user_id uuid, p_registro_id uuid)	has_role,is_active_visit_participant
+can_manage_catalog_tecnico(_uid uuid)	has_role
+can_manage_technical_visit(p_user_id uuid, p_registro_id uuid)	has_role,is_visit_org_manager,is_visit_responsible
+can_user_access_alerta(p_alerta_id uuid)	has_role
+can_user_access_aplicacao(_aplicacao_id uuid)	get_cliente_ids_for_user,has_role,is_operational_staff
+can_user_access_arquivo(_entidade_tipo text, _entidade_id uuid)	can_user_access_aplicacao,can_user_access_cliente,can_user_access_fazenda,can_user_access_registro_consultor,can_user_access_solicitacao,has_role
+can_user_access_cliente(_cliente_id uuid)	get_cliente_ids_for_user,get_user_partner_id,has_active_user_cliente_access,has_role
+can_user_access_cliente(_user_id uuid, _cliente_id uuid)	has_active_user_cliente_access,has_role
+can_user_access_estoque_embalagem(p_embalagem_id uuid)	has_role
+can_user_access_fazenda(_fazenda_id uuid)	can_user_access_cliente
+can_user_access_produto_etiqueta(p_etiqueta_id uuid)	has_role
+can_user_access_registro_consultor(_registro_id uuid)	can_view_technical_visit,get_cliente_ids_for_user,has_role
+can_user_access_solicitacao(_solicitacao_id uuid)	get_cliente_ids_for_user,has_role
+can_user_manage_aplicacao(_aplicacao_id uuid)	has_role
+can_user_manage_estoque_embalagem(p_embalagem_id uuid)	has_role
+can_view_bi_operacional(_uid uuid)	has_role
+can_view_catalog_internal(_uid uuid)	has_role
+can_view_technical_visit(p_user_id uuid, p_registro_id uuid)	has_role,is_active_visit_participant,is_visit_org_manager,is_visit_responsible
+cancel_b2b_receivable_secure(p_partner_order_id uuid, p_motivo text)	has_role
+cancel_financial_receipt(_receipt_id uuid, _reason text)	has_role,is_financial_staff
+check_cliente_dependencies(_cliente_id uuid)	
+check_fazenda_dependencies(_fazenda_id uuid)	
+check_partner_order_sla()	partner_order_sla_status
+check_talhao_dependencies(_talhao_id uuid)	
+convert_partner_simulation_to_order_secure(p_simulation_id uuid, p_observacoes text, p_payment_plan_id uuid, p_first_due_date date, p_installment_count integer, p_confirm_price_change boolean)	create_partner_order_secure,fn_b2b_apply_interest,fn_b2b_cart_hash,fn_b2b_plan_selectable,fn_resolve_b2b_cart,get_user_partner_id,has_role,insert_partner_catalog_access_log_internal
+create_partner_order_secure(p_partner_id uuid, p_observacoes text, p_items jsonb, p_requested_delivery_date date, p_payment_plan_id uuid, p_first_due_date date, p_installment_count integer, p_expected_cart_hash text, p_idempotency_key text)	fn_b2b_apply_interest,fn_b2b_cart_hash,fn_b2b_credit_exposure,fn_b2b_plan_selectable,fn_resolve_b2b_cart,get_user_partner_id,has_role
+create_technical_visit_secure(p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_solicitacao_origem_id uuid, p_scheduled_at timestamp with time zone, p_visit_type tipo_visita, p_priority urgencia_consultor, p_initial_notes text, p_client_uuid uuid)	has_role
+finish_technical_visit_secure(p_registro_id uuid, p_latitude numeric, p_longitude numeric, p_precisao_gps numeric, p_foto_url text, p_foto_path text, p_observacoes text, p_client_uuid uuid)	has_role
+fn_catalogo_preco_canonico(p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric)	
+fn_cockpit_assert_operador()	has_role
+fn_cockpit_is_hml_environment()	
+fn_entrega_assert_confirmador(p_origem text)	fn_cockpit_norm_origem,has_role
+fn_entrega_confirmar_engine_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb, p_opcoes jsonb)	_rpc_avancar_esteira_laboratorio_internal,fn_cockpit_assert_b2b_liberado,fn_cockpit_norm_origem,fn_entrega_assert_confirmador,fn_estoque_ctx_open,fn_mark_entrega_not_billable
+fn_estoque_pode_operar(_uid uuid, _acao text)	has_role
+fn_fin_aging(_type text)	is_financial_staff
+fn_fin_cashflow(_from date, _to date, _granularity text, _mode text)	is_financial_staff
+fn_fin_dashboard_kpis(_from date, _to date)	is_financial_staff
+fn_fin_dre_summary(_from date, _to date, _regime text)	is_financial_staff
+fn_fin_expense_by_category(_from date, _to date, _regime text, _limit integer)	is_financial_staff
+fn_fin_inadimplencia()	is_financial_staff
+fn_fin_revenue_by_category(_from date, _to date, _regime text, _limit integer)	is_financial_staff
+fn_fin_revenue_by_customer(_from date, _to date, _regime text, _limit integer)	is_financial_staff
+fn_financial_inconsistencies()	is_financial_staff
+fn_fiscal_can_operate(_uid uuid)	has_role
+fn_fiscal_can_read_internal(_uid uuid)	has_role
+fn_fiscal_company_crt()	
+fn_fiscal_environment_gate_v1(p_operation text)	fn_fiscal_assert_staging_marker
+fn_generate_receivable_from_entrega(_entrega_id uuid, _payload jsonb)	fn_entrega_guard_faturamento_v1,fn_entrega_valor_faturavel_v1,is_financial_staff
+fn_generate_recurring_title(_template_id uuid, _reference_date date, _is_manual boolean)	fn_calc_next_generation_date
+fn_mark_entrega_not_billable(_entrega_id uuid, _reason text)	is_financial_staff
+fn_mark_financial_overdue()	has_role
+fn_microorganism_regulatory_facts(p_microorganism_id uuid)	
+fn_onfarm_scope_cliente(_cliente_id uuid)	has_role
+fn_onfarm_scope_lote(_lote_id uuid)	fn_onfarm_scope_cliente
+fn_regulatory_can_approve(_layer text, _uid uuid)	has_role
+fn_regulatory_can_prepare(_uid uuid)	has_role
+fn_regulatory_can_read(_uid uuid)	has_role
+fn_regulatory_storage_can_delete(_name text)	fn_regulatory_storage_can_write
+fn_regulatory_storage_can_read(_name text)	fn_regulatory_can_read,fn_regulatory_storage_dossier_id
+fn_regulatory_storage_can_write(_name text)	fn_regulatory_can_prepare,fn_regulatory_storage_dossier_id
+fn_reverse_payment(_payment_id uuid, _kind text, _reason text)	is_financial_staff
+fn_revert_recurring_generation(p_log_id uuid)	is_financial_staff
+fn_run_recurring_generation()	fn_generate_recurring_title
+generate_b2b_receivable_secure(p_partner_order_id uuid)	fn_b2b_order_priceable,generate_b2b_receivable_secure_impl,has_role
+generate_production_orders_from_partner(p_partner_order_id uuid)	has_role
+get_b2b_partner_clients_for_assignment_secure(p_search text)	get_user_partner_id,has_role
+get_b2b_technician_client_detail_secure(p_cliente_id uuid)	get_user_partner_id,has_role
+get_b2b_technician_clients_secure(p_partner_id uuid, p_technician_user_id uuid)	get_user_partner_id,has_role
+get_b2b_user_client_detail_secure(p_cliente_id uuid, p_scope text)	get_user_partner_id,has_role
+get_b2b_user_client_simulations_secure(p_cliente_id uuid)	get_user_partner_id,has_role
+get_b2b_user_clients_secure(p_user_id uuid, p_search text)	get_user_partner_id,has_role
+get_b2b_user_role_for_partner(p_user_id uuid, p_partner_id uuid)	has_role
+get_cliente_id_for_user(_user_id uuid)	
+get_cliente_ids_for_user(_user_id uuid)	
+get_financial_alerts(p_reference_date date)	is_financial_staff
+get_financial_cashflow(p_start_date date, p_end_date date, p_view_mode text, p_group_by text)	is_financial_staff
+get_financial_dashboard_summary(p_start_date date, p_end_date date, p_cost_center_id uuid, p_category_id uuid, p_customer_id uuid)	is_financial_staff
+get_financial_dre_summary(p_start_date date, p_end_date date, p_regime text, p_cost_center_id uuid)	is_financial_staff
+get_financial_report_data(p_report_type text, p_start_date date, p_end_date date, p_customer_id uuid, p_category_id uuid, p_cost_center_id uuid, p_status text, p_regime text)	get_financial_cashflow,get_financial_dre_summary,get_report_accountability,get_report_customer_statement,get_report_delinquency,get_report_deliveries_billing_status,get_report_monthly_financial,get_report_nfe_pending,get_report_payables,get_report_receivables,is_financial_staff,log_report_view
+get_my_available_portal_contexts()	
+get_partner_catalog_secure(p_partner_id uuid)	fn_b2b_resolve_base_unit_price,get_user_partner_id,has_role
+get_partner_catalog_tecnico_secure()	fn_resolve_commercial_price,get_user_partner_id,has_role
+get_portal_cliente_b2b_order_detail_secure(p_order_id uuid)	_portal_cliente_user_has_link
+get_portal_cliente_b2b_orders_secure(p_cliente_id uuid)	_portal_cliente_user_has_link
+get_portal_cliente_b2b_simulation_detail_secure(p_simulation_id uuid)	_portal_cliente_user_has_link
+get_portal_cliente_b2b_simulations_secure(p_cliente_id uuid)	_portal_cliente_user_has_link
+get_production_planning_detail(p_planning_id uuid)	has_role
+get_report_accountability(_scope jsonb)	get_report_customer_statement,is_financial_staff
+get_report_customer_statement(_customer_id uuid, _from date, _to date)	is_financial_staff
+get_report_delinquency(_as_of date)	is_financial_staff
+get_report_deliveries_billing_status(_from date, _to date)	is_financial_staff
+get_report_monthly_financial(_from date, _to date, _cost_center uuid, _regime text)	is_financial_staff
+get_report_nfe_pending(_filters jsonb)	is_financial_staff
+get_report_payables(_filters jsonb)	is_financial_staff
+get_report_receivables(_filters jsonb)	is_financial_staff
+get_top_financial_rankings(p_start_date date, p_end_date date, p_limit integer)	is_financial_staff
+get_user_partner_id()	
+has_active_user_cliente_access(_user_id uuid, _cliente_id uuid, _levels text[])	has_role
+has_role(_user_id uuid, _role app_role)	
+is_active_visit_participant(p_user_id uuid, p_registro_id uuid)	
+is_delivery_staff(_uid uuid)	has_role
+is_executivo(_uid uuid)	
+is_financial_staff(_uid uuid)	has_role
+is_operational_staff(_uid uuid)	has_role
+is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)	has_role
+is_visit_org_manager(p_user_id uuid, p_registro_id uuid)	get_visit_organization_id,has_role
+issue_financial_receipt(_payment_id uuid, _description text)	is_financial_staff
+lab_request_replanning(p_os_id uuid, p_motivo text)	has_role,refresh_esteira_laboratorio
+link_partner_user(p_partner_id uuid, p_user_id uuid, p_papel text)	has_role
+log_my_access_denied_secure(p_context text, p_route_group text)	get_my_available_portal_contexts,has_role
+log_partner_catalog_access_secure(p_action text, p_item_tipo text, p_item_id uuid, p_cliente_id uuid, p_simulation_id uuid, p_order_id uuid, p_target_user_id uuid, p_details jsonb, p_partner_id uuid)	get_user_partner_id,has_role
+log_report_export(_report_type text, _filters jsonb, _format text, _storage_bucket text, _storage_path text, _status text, _error text, _row_count integer)	is_financial_staff
+log_report_view(p_report_type text, p_filters jsonb)	is_financial_staff
+partner_apply_default_discount(p_partner_id uuid)	has_role
+partner_reset_prices_to_default(p_partner_id uuid)	has_role
+pode_acessar_recomendacao(_user_id uuid, _recomendacao_id uuid)	has_role
+publish_planning_to_lab(p_planning_id uuid)	_validate_planning_integrity,generate_production_orders_from_partner,has_role,refresh_esteira_laboratorio
+recalc_partner_risk_score(p_partner_id uuid)	
+register_financial_report_export(p_report_type text, p_report_title text, p_filters jsonb, p_file_format text, p_storage_path text, p_status text, p_error_message text)	is_financial_staff
+register_my_login_redirect_secure(p_context text)	get_my_available_portal_contexts
+reject_b2b_payment_terms_secure(p_partner_order_id uuid, p_reason text)	has_role
+reject_partner_order(p_order_id uuid, p_approval_notes text)	has_role
+rejeitar_ficha_versao(p_versao_id uuid, p_observacao text)	has_role
+request_b2b_payment_terms_adjustment_secure(p_partner_order_id uuid, p_notes text)	has_role
+request_partner_order_items(p_order_id uuid, p_motivo text)	has_role
+reservar_estoque_item(p_item_id uuid, p_qty numeric, p_os_id uuid, p_os_tipo text, p_cliente_id uuid, p_partner_id uuid, p_partner_order_id uuid, p_observacao text)	fn_estoque_ctx_open,fn_estoque_pode_operar
+respond_b2b_order_quote_secure(p_order_id uuid, p_lines jsonb, p_first_due_date date, p_installment_count integer, p_motivo text)	fn_b2b_apply_interest,fn_b2b_credit_exposure,fn_b2b_plan_selectable,has_role
+return_catalog_profile_to_review(p_kind text, p_profile_id uuid, p_motivo text)	has_role
+rpc_activate_communication_template(p_template_id uuid)	_comunicacao_write_audit,has_role
+rpc_admin_communication_health_snapshot()	_comunicacao_require_admin
+rpc_admin_communication_outbox_metrics()	_comunicacao_require_admin
+rpc_admin_create_commercial_plan(p_payload jsonb)	_cpp_audit,_cpp_validate_payload,fn_b2b_can_admin_plans
+rpc_admin_list_commercial_plans(p_search text, p_status text, p_limit integer, p_offset integer)	fn_b2b_can_admin_plans,fn_b2b_plan_referenced,fn_b2b_plan_selectable
+rpc_admin_list_communication_dead_letter(p_limit integer, p_offset integer)	_comunicacao_require_admin
+rpc_admin_reorder_commercial_plans(p_orders jsonb)	_cpp_audit,fn_b2b_can_admin_plans
+rpc_admin_replay_communication_dead_letter(p_outbox_id uuid)	_comunicacao_dlq_replay_rate_check,_comunicacao_require_admin,_comunicacao_write_audit
+rpc_admin_replay_communication_dead_letter_batch(p_limit integer)	_comunicacao_dlq_replay_rate_check,_comunicacao_require_admin,_comunicacao_write_audit
+rpc_admin_set_commercial_plan_active(p_plan_id uuid, p_active boolean, p_motivo text)	_cpp_audit,fn_b2b_can_admin_plans
+rpc_admin_set_default_commercial_plan(p_plan_id uuid)	_cpp_audit,fn_b2b_can_admin_plans,fn_b2b_plan_selectable
+rpc_admin_set_whatsapp_consent(p_cliente_id uuid, p_user_id uuid, p_acao text, p_source text, p_justificativa text)	has_role
+rpc_admin_update_commercial_plan_metadata(p_plan_id uuid, p_name text, p_description text, p_sort_order integer)	_cpp_audit,fn_b2b_can_admin_plans
+rpc_admin_version_commercial_plan(p_plan_id uuid, p_payload jsonb, p_motivo text)	_cpp_audit,_cpp_validate_payload,fn_b2b_can_admin_plans
+rpc_anexar_comprovante_entrega(p_entrega_id uuid, p_payload jsonb)	is_delivery_staff,rpc_gerar_formulario_entrega
+rpc_aplicar_sla_alertas()	has_role,rpc_recalcular_prioridade_alerta
+rpc_archive_communication_template(p_template_id uuid)	_comunicacao_write_audit,has_role
+rpc_arquivar_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)	_visita_lock_and_check,_visita_log_status
+rpc_assign_visit_technician(p_registro_id uuid, p_user_id uuid, p_role text)	can_manage_technical_visit
+rpc_associate_microorganism_fiscal_product(p_microorganism_id uuid, p_product_id uuid)	has_role
+rpc_assumir_alerta(p_alerta_id uuid)	can_user_access_alerta,rpc_recalcular_prioridade_alerta
+rpc_ativar_monitoramento_visita(p_registro_id uuid, p_expected_version integer, p_tipo text, p_data_referencia date)	_visita_lock_and_check
+rpc_atualizar_checklist_entrega(p_checklist_id uuid, p_concluido boolean, p_observacao text)	is_delivery_staff
+rpc_atualizar_identificacao_visita(p_registro_id uuid, p_expected_version integer, p_payload jsonb)	_visita_lock_and_check,is_technical_visit_editable_status
+rpc_avancar_esteira_laboratorio(p_os_id uuid, p_origem text, p_etapa_destino text, p_programacao_id uuid)	_rpc_avancar_esteira_laboratorio_internal,refresh_esteira_laboratorio
+rpc_b2b_aging(p_partner_id uuid)	has_role
+rpc_b2b_aging_detalhado(p_from date, p_to date, p_partner_id uuid, p_status text)	has_role
+rpc_b2b_capacity_kpis()	has_role
+rpc_b2b_carteira_kpis(p_from date, p_to date)	has_role
+rpc_b2b_credit_exposure(p_partner_id uuid, p_new_order_amount numeric, p_exclude_order_id uuid)	fn_b2b_credit_exposure,has_role
+rpc_b2b_executive_alerts()	has_role,rpc_b2b_revenue_forecast
+rpc_b2b_executive_dashboard()	has_role,rpc_b2b_carteira_kpis,rpc_b2b_revenue_forecast
+rpc_b2b_financial_kpis(p_from date, p_to date, p_partner_id uuid)	has_role
+rpc_b2b_governance_kpis()	has_role
+rpc_b2b_integrity_check()	has_role
+rpc_b2b_list_selectable_payment_plans()	has_role
+rpc_b2b_partner_credit(p_partner_id uuid)	fn_b2b_credit_exposure,has_role
+rpc_b2b_partner_profitability(p_from date, p_to date, p_partner_id uuid)	has_role
+rpc_b2b_revenue_forecast(p_partner_id uuid)	has_role
+rpc_bi_esteira_resumo(p_data_inicio timestamp with time zone, p_data_fim timestamp with time zone, p_cliente_id uuid, p_fazenda_id uuid, p_produto_id uuid, p_microrganismo_id uuid, p_origem_os text, p_status text)	can_view_bi_operacional,get_cliente_ids_for_user,has_role
+rpc_bi_fluxo_visitas_resumo(p_data_inicio timestamp with time zone, p_data_fim timestamp with time zone, p_cliente_id uuid, p_fazenda_id uuid, p_consultor_id uuid, p_status_solicitacao text, p_status_visita text)	can_view_bi_operacional,get_cliente_ids_for_user,has_role
+rpc_bi_visitas_por_cliente(p_cliente_id uuid, p_data_inicio date, p_data_fim date)	
+rpc_bi_visitas_por_consultor(p_consultor_id uuid, p_data_inicio date, p_data_fim date)	
+rpc_bi_visitas_por_fazenda(p_fazenda_id uuid, p_data_inicio date, p_data_fim date)	
+rpc_bi_visitas_por_talhao(p_talhao_id uuid, p_data_inicio date, p_data_fim date)	
+rpc_campaign_delete(p_id uuid)	has_role
+rpc_campaign_upsert(p_payload jsonb, p_id uuid)	has_role
+rpc_cancel_accounts_payable(p_id uuid, p_reason text)	is_financial_staff
+rpc_cancel_accounts_receivable(p_id uuid, p_reason text)	is_financial_staff
+rpc_cancel_financial_installment(p_installment_id uuid, p_kind text, p_reason text)	is_financial_staff
+rpc_cancelar_embalagem(p_embalagem_id uuid, p_motivo text)	can_user_manage_estoque_embalagem
+rpc_cancelar_etiqueta_produto(p_etiqueta_id uuid, p_motivo text)	has_role
+rpc_cc_archive_assignment(p_id uuid, p_motivo text)	fn_cc_audit,fn_cc_can_publish
+rpc_cc_bulk_adjust_apply(p_ids uuid[], p_percent numeric, p_motivo text)	fn_cc_audit,fn_cc_can_prepare
+rpc_cc_bulk_adjust_preview(p_ids uuid[], p_percent numeric)	fn_cc_can_prepare
+rpc_cc_copy_default_table(p_plan_id uuid, p_target_scope text, p_partner_id uuid, p_customer_id uuid, p_motivo text)	fn_cc_audit,fn_cc_can_prepare
+rpc_cc_delete_item_price(p_id uuid, p_motivo text)	fn_cc_audit,fn_cc_can_prepare
+rpc_cc_history(p_entity text, p_entity_id uuid, p_limit integer)	fn_cc_can_prepare
+rpc_cc_list_assignments(p_status text)	fn_cc_can_prepare
+rpc_cc_list_item_prices(p_plan_id uuid, p_status text, p_assignment_id uuid)	fn_cc_can_prepare
+rpc_cc_publish_assignment(p_id uuid, p_motivo text)	fn_cc_audit,fn_cc_can_publish
+rpc_cc_publish_item_prices(p_ids uuid[], p_motivo text)	fn_cc_audit,fn_cc_can_publish
+rpc_cc_simulate_price(p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_plan_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_ref_date date, p_quantity numeric)	fn_cc_can_prepare,fn_resolve_commercial_price
+rpc_cc_submit_assignment(p_id uuid, p_motivo text)	fn_cc_audit,fn_cc_can_prepare
+rpc_cc_upsert_assignment(p_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_valid_from date, p_valid_until date, p_motivo text)	fn_cc_audit,fn_cc_can_prepare
+rpc_cc_upsert_item_price(p_id uuid, p_assignment_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_min_quantity numeric, p_pricing_mode text, p_condition_price numeric, p_discount_percent numeric, p_valid_from date, p_valid_until date, p_is_exception boolean, p_motivo text)	fn_cc_audit,fn_cc_can_prepare,fn_cc_validate_item_input
+rpc_cc_validate_matrix(p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid)	fn_cc_can_prepare
+rpc_check_monitoramento_and_notify(_registro_id uuid)	has_role
+rpc_cockpit_cancelar_reserva_v1(p_item_id uuid, p_os_id uuid, p_origem text, p_motivo text)	fn_cockpit_assert_operador_origem,fn_cockpit_is_gestor,fn_estoque_ctx_open
+rpc_cockpit_confirmar_entrega_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb)	fn_entrega_confirmar_engine_v1
+rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb)	fn_cockpit_assert_operador_origem
+rpc_cockpit_gerar_lote_v1(p_programacao_id uuid, p_os_id uuid, p_origem text, p_lote jsonb)	fn_cockpit_assert_operador_origem
+rpc_cockpit_registrar_envase_v1(p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text, p_idempotency_key text, p_permitir_parcial boolean, p_motivo_parcial text)	_rpc_avancar_esteira_laboratorio_internal,fn_cockpit_assert_b2b_liberado,fn_cockpit_assert_operador_origem,fn_cockpit_ctx_programacao,fn_cockpit_is_gestor,fn_estoque_ctx_open
+rpc_coletar_assinatura_digital_entrega(p_entrega_id uuid, p_payload jsonb)	is_delivery_staff,rpc_gerar_formulario_entrega
+rpc_commercial_alerts()	has_role
+rpc_commercial_consolidated_dashboard(p_from date, p_to date, p_partner_id uuid, p_consultor uuid, p_region text, p_partner_type text)	has_role
+rpc_commercial_kpis(p_from date, p_to date, p_partner_id uuid, p_consultor uuid, p_region text)	has_role
+rpc_commercial_simulator(p_partner_id uuid, p_product_id uuid, p_quantidade numeric, p_desconto numeric)	has_role
+rpc_confirmar_entrega_embalagens(p_entrega_id uuid)	has_role,rpc_recalcular_separacao_entrega
+rpc_confirmar_recebimento_entrega(p_entrega_id uuid, p_payload jsonb)	is_delivery_staff
+rpc_confirmar_separacao_embalagem(p_embalagem_id uuid)	can_user_manage_estoque_embalagem,has_role,rpc_recalcular_separacao_entrega
+rpc_converter_visita_em_os(p_registro_id uuid, p_observacao text)	has_role
+rpc_create_communication_template(p_chave text, p_nome text, p_canal comunicacao_canal, p_assunto text, p_corpo text, p_variaveis jsonb)	_comunicacao_write_audit,has_role
+rpc_create_financial_title(p_kind text, p_payload jsonb)	is_financial_staff
+rpc_create_notificacao_operacional(_usuario_id uuid, _tipo text, _titulo text, _mensagem text, _link text, _source_type text, _source_id uuid, _idempotency_key text)	has_role
+rpc_create_portal_notification_secure(_cliente_id uuid, _tipo text, _titulo text, _mensagem text, _link text, _source_type text, _source_id uuid, _idempotency_key text)	has_role
+rpc_criar_embalagens_pos_envase(p_payload jsonb)	can_user_manage_estoque_embalagem,rpc_gerar_etiqueta_produto
+rpc_criar_visita_idempotente(p_client_uuid uuid, p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_cultura_id uuid, p_data_vistoria date, p_tipo_visita tipo_visita, p_objetivo_visita text, p_safra text, p_fase_fenologica text, p_solicitacao_id uuid, p_origem text, p_categoria_problema categoria_problema_consultor, p_nivel_pressao nivel_pressao, p_percentual_area_afetada numeric, p_urgencia urgencia_consultor, p_localizacao_na_area text, p_observacoes_tecnicas text, p_problema_principal text, p_area_hectares numeric, p_latitude numeric, p_longitude numeric, p_registro_origem_id uuid)	has_active_user_cliente_access,has_role
+rpc_dashboard_geral_lab_resumo()	is_executivo
+rpc_delete_diagnostico_visita(p_id uuid)	_assert_visita_editavel
+rpc_delete_recomendacao_visita(p_id uuid)	_assert_visita_editavel
+rpc_desativar_bank_account(p_id uuid, p_reason text)	is_financial_staff
+rpc_desativar_cost_center(p_id uuid, p_reason text)	is_financial_staff
+rpc_desativar_financial_category(p_id uuid, p_reason text)	is_financial_staff
+rpc_desativar_payment_method(p_id uuid, p_reason text)	is_financial_staff
+rpc_descartar_embalagem(p_embalagem_id uuid, p_motivo text)	can_user_manage_estoque_embalagem
+rpc_desvincular_etiqueta_entrega(p_entrega_id uuid, p_etiqueta_id uuid, p_motivo text)	has_role
+rpc_dispensar_assinatura_entrega(p_entrega_id uuid, p_motivo text)	has_role,rpc_gerar_formulario_entrega
+rpc_entrega_assinar_termo_v1(p_termo_id uuid, p_payload jsonb, p_idempotency_key text)	is_delivery_staff
+rpc_entrega_cancelar_termo_v1(p_termo_id uuid, p_motivo text)	has_role
+rpc_entrega_confirmar_v1(p_entrega_id uuid, p_recebedor jsonb, p_opcoes jsonb)	fn_entrega_confirmar_engine_v1
+rpc_entrega_gerar_termo_v1(p_entrega_id uuid, p_template_versao text)	fn_entrega_build_snapshot_v1,fn_entrega_cobertura_v1,is_delivery_staff
+rpc_entrega_reconciliar_v1(p_entrega_id uuid, p_idempotency_key text)	is_delivery_staff
+rpc_entrega_reentrega_saldo_v1(p_entrega_id uuid, p_idempotency_key text)	is_delivery_staff
+rpc_entrega_registrar_conferencia_v1(p_entrega_id uuid, p_itens jsonb)	fn_entrega_cobertura_v1,is_delivery_staff
+rpc_enviar_visita_aprovacao(p_registro_id uuid, p_expected_version integer)	has_active_user_cliente_access,has_role
+rpc_estoque_operar_v1(p_acao text, p_item_id uuid, p_quantidade numeric, p_idempotency_key text, p_payload jsonb)	fn_estoque_ctx_close,fn_estoque_ctx_open,fn_estoque_fingerprint,fn_estoque_pode_operar,has_role,reservar_estoque_item
+rpc_estoque_reservar_v1(p_os_id uuid, p_origem text, p_itens jsonb, p_idempotency_key text, p_dados jsonb)	fn_estoque_ctx_close,fn_estoque_ctx_force,fn_estoque_pode_operar,reservar_estoque_item
+rpc_executar_motor_alertas(p_tipo_execucao text, p_origem text)	has_role,rpc_gerar_alertas_operacionais
+rpc_executivo_alertas_prioridades(p_filtros jsonb, p_limit integer)	is_executivo
+rpc_executivo_alertas_resumo(p_filtros jsonb)	is_executivo
+rpc_executivo_arquivar_relatorio(p_relatorio_id uuid, p_motivo text)	is_executivo
+rpc_executivo_cliente_detalhe(p_cliente_id uuid, p_filtros jsonb)	is_executivo
+rpc_executivo_clientes_ranking(p_filtros jsonb, p_limit integer)	is_executivo
+rpc_executivo_clientes_resumo(p_filtros jsonb)	is_executivo
+rpc_executivo_exportar_relatorio_evento(p_relatorio_id uuid, p_tipo_exportacao text)	is_executivo
+rpc_executivo_fazenda_detalhe(p_fazenda_id uuid, p_filtros jsonb)	is_executivo
+rpc_executivo_financeiro_gargalos(p_filtros jsonb, p_limit integer)	is_executivo
+rpc_executivo_financeiro_ranking_clientes(p_filtros jsonb, p_limit integer)	is_executivo
+rpc_executivo_financeiro_resumo(p_filtros jsonb)	is_executivo
+rpc_executivo_gargalos(p_filtros jsonb, p_limit integer)	is_executivo
+rpc_executivo_gerar_relatorio(p_tipo text, p_filtros jsonb, p_titulo text)	is_executivo,jsonb_get_array_safe,rpc_executivo_alertas_prioridades,rpc_executivo_alertas_resumo,rpc_executivo_clientes_ranking,rpc_executivo_clientes_resumo,rpc_executivo_financeiro_gargalos,rpc_executivo_financeiro_ranking_clientes,rpc_executivo_financeiro_resumo,rpc_executivo_gargalos,rpc_executivo_plano_acao,rpc_executivo_responsaveis_pendencias,rpc_executivo_resumo_geral
+rpc_executivo_listar_relatorios(p_filtros jsonb)	is_executivo
+rpc_executivo_obter_relatorio(p_relatorio_id uuid)	is_executivo,jsonb_get_array_safe
+rpc_executivo_plano_acao(p_filtros jsonb, p_limit integer)	is_executivo
+rpc_executivo_responsaveis_pendencias(p_filtros jsonb, p_limit integer)	is_executivo
+rpc_executivo_resumo_geral(p_filtros jsonb)	is_executivo
+rpc_executivo_timeline_operacional(p_filtros jsonb, p_limit integer)	is_executivo
+rpc_finalizar_visita_v2(p_registro_id uuid, p_expected_version integer)	can_manage_technical_visit,is_active_visit_participant,is_technical_visit_editable_status
+rpc_financial_document_soft_delete(p_document_id uuid, p_reason text)	is_financial_staff
+rpc_fiscal_calculate_invoice_v1(p_invoice_id uuid, p_idempotency_key text)	fn_fiscal_apply_tax_v2,fn_fiscal_assert_debtor_recipient,fn_fiscal_assert_environment_homologation,fn_fiscal_can_operate,fn_fiscal_invoice_eligibility,fn_fiscal_resolve_operation,fn_fiscal_resolve_tax_rule,fn_fiscal_round
+rpc_fiscal_certificate_register_os(p_company_settings_id uuid, p_metadata jsonb)	fiscal_json_has_sensitive_key,fiscal_validate_key_usage,has_role
+rpc_fiscal_certificate_revoke(p_certificate_id uuid, p_reason text)	has_role
+rpc_fiscal_company_rtc_get()	_fiscal_rtc_can_read
+rpc_fiscal_company_rtc_save(payload jsonb, expected_revision text)	_fiscal_rtc_assert_payload,has_role
+rpc_fiscal_company_settings_init()	has_role
+rpc_fiscal_draft_save(p_invoice_id uuid, p_invoice jsonb, p_items jsonb, p_expected_version integer)	fiscal_json_has_sensitive_key,fiscal_validate_snapshot_keys,has_role
+rpc_fiscal_draft_validate_homologation(p_invoice_id uuid)	has_role
+rpc_fiscal_emitter_accounting_validate(p_notes text)	fn_regulatory_can_approve
+rpc_fiscal_emitter_request_accounting_review(p_notes text)	fn_regulatory_can_prepare
+rpc_fiscal_event_manual(p_invoice_id uuid, p_event_type text, p_notes text, p_idempotency_key text)	fn_fiscal_event_fingerprint_v1,has_role
+rpc_fiscal_homologation_readiness()	has_role
+rpc_fiscal_homologation_readiness_v2()	_fiscal_rtc_can_read,rpc_fiscal_homologation_readiness,rpc_fiscal_homologation_readiness_rtc_check
+rpc_fiscal_item_readiness(p_scope text, p_item_id uuid)	fn_fiscal_company_crt,fn_fiscal_item_profile_gate_eval,has_role
+rpc_fiscal_nfe_readiness_v1()	fn_fiscal_can_read_internal,fn_fiscal_scenario_coverage
+rpc_fiscal_operation_policy_publish(p_policy_id uuid, p_justification text)	fn_regulatory_can_approve
+rpc_fiscal_preflight_v1(p_invoice_id uuid)	fn_fiscal_emitter_pendencies_row,fn_fiscal_environment_gate_v1,fn_fiscal_recipient_pendencies_row,has_role,rpc_fiscal_draft_validate_homologation
+rpc_fiscal_product_ibs_cbs_get(p_product_id uuid)	_fiscal_rtc_can_read
+rpc_fiscal_product_ibs_cbs_save(p_product_id uuid, payload jsonb, expected_revision text)	_fiscal_rtc_assert_payload,has_role
+rpc_fiscal_reserve_nfe_number_v1(p_invoice_id uuid, p_idempotency_key text)	fn_fiscal_access_key_dv,fn_fiscal_assert_debtor_recipient,fn_fiscal_assert_environment_homologation,fn_fiscal_can_operate,fn_fiscal_digits,fn_fiscal_invoice_eligibility,fn_fiscal_uf_ibge_code
+rpc_fiscal_rule_sod_override(p_scope text, p_target_id uuid, p_justification text)	has_role
+rpc_fiscal_sefaz_transmission_status_v1(_invoice_id uuid)	fn_fiscal_can_read_internal
+rpc_fiscal_service_ibs_cbs_get(p_service_id uuid)	_fiscal_rtc_can_read
+rpc_fiscal_service_ibs_cbs_save(p_service_id uuid, payload jsonb, expected_revision text)	_fiscal_rtc_assert_payload,has_role
+rpc_fiscal_service_profile_ibs_cbs_get(p_profile_id uuid)	_fiscal_rtc_can_read
+rpc_fiscal_service_profile_ibs_cbs_save(p_profile_id uuid, payload jsonb, expected_revision text)	_fiscal_rtc_assert_payload,has_role
+rpc_fiscal_tax_rule_publish(p_rule_id uuid, p_justification text)	fn_regulatory_can_approve
+rpc_fiscal_xml_prepare_v1(p_invoice_id uuid, p_idempotency_key text)	fiscal_json_has_sensitive_key,fn_fiscal_assert_debtor_recipient,fn_fiscal_assert_environment_homologation,fn_fiscal_can_operate,fn_fiscal_digits,fn_fiscal_invoice_eligibility
+rpc_fiscal_xml_record_v1(p_run_id uuid, p_state text, p_patch jsonb)	fiscal_json_has_sensitive_key,fn_fiscal_environment_gate_v1
+rpc_fiscal_xml_status_v1(p_invoice_id uuid)	fn_fiscal_can_read_internal
+rpc_force_checkout_visita(p_registro_id uuid, p_target_user_id uuid, p_reason text)	can_manage_technical_visit,has_role
+rpc_gerar_alertas_operacionais()	fn_upsert_alerta_operacional,has_role
+rpc_gerar_etiqueta_produto(p_payload jsonb)	fn_conformidade_perfil_vigente,has_role
+rpc_gerar_etiquetas_embalagens_lote(p_payload jsonb)	rpc_gerar_etiqueta_produto
+rpc_gerar_formulario_entrega(p_entrega_id uuid)	_entrega_seed_checklist,is_delivery_staff
+rpc_get_comprovante_entrega_data(p_entrega_id uuid, p_reemissao boolean)	fn_comprovante_entrega_montar_v1,is_delivery_staff
+rpc_get_my_visit_by_client_uuid(p_client_uuid uuid)	has_active_user_cliente_access,has_role
+rpc_get_visita_workspace(p_registro_id uuid)	can_checkin_technical_visit,can_checkout_technical_visit,can_manage_technical_visit,can_view_technical_visit,has_role,is_active_visit_participant,is_technical_visit_editable_status,is_visit_org_manager,is_visit_responsible
+rpc_ignorar_alerta_operacional(p_alerta_id uuid, p_observacao text)	can_user_access_alerta,rpc_recalcular_prioridade_alerta
+rpc_iniciar_atendimento_solicitacao_v1(p_solicitacao_id uuid, p_client_uuid uuid)	has_active_user_cliente_access,has_role,rpc_criar_visita_idempotente
+rpc_ler_embalagem_por_qr(p_codigo_ou_token text)	can_user_access_estoque_embalagem
+rpc_liberar_recomendacao_produtor(p_registro_id uuid)	has_active_user_cliente_access,has_role
+rpc_listar_atendimentos_tecnicos_v1(p_aba text, p_search text, p_page integer, p_page_size integer)	can_manage_technical_visit,can_view_technical_visit,has_role
+rpc_listar_visitas_tecnicas_v1(p_search text, p_status text[], p_de date, p_ate date, p_cliente_id uuid, p_fazenda_id uuid, p_page integer, p_page_size integer)	can_manage_technical_visit,can_view_technical_visit,is_technical_visit_editable_status
+rpc_marcar_etiqueta_impressa(p_etiqueta_id uuid, p_motivo text)	has_role
+rpc_marcar_notificacao_enviada(p_notificacao_id uuid, p_provider text, p_provider_message_id text)	
+rpc_marcar_notificacao_falhou(p_notificacao_id uuid, p_erro text)	
+rpc_marcar_resumo_enviado(p_resumo_id uuid, p_provider text, p_provider_message_id text)	
+rpc_marcar_resumo_falhou(p_resumo_id uuid, p_erro text)	
+rpc_message_set_status(p_id uuid, p_status text)	get_user_partner_id,has_role
+rpc_microorganism_regulatory_overview()	fn_microorganism_regulatory_facts,fn_regulatory_can_read
+rpc_notificar_gestor(p_titulo text, p_mensagem text, p_link text)	is_operational_staff
+rpc_partner_commercial_history(p_partner_id uuid, p_from date, p_to date)	get_user_partner_id,has_role
+rpc_partner_dashboard(p_partner_id uuid)	get_user_partner_id,has_role
+rpc_partner_message_counters(p_partner_id uuid)	get_user_partner_id,has_role
+rpc_portal_partner_credit_status()	get_user_partner_id,rpc_b2b_partner_credit
+rpc_portal_partner_financial()	
+rpc_portal_partner_financial(p_partner_id uuid)	has_role
+rpc_preparar_notificacoes_alertas()	has_role
+rpc_preparar_resumos_alertas(p_tipo_resumo text, p_periodo_inicio timestamp with time zone, p_periodo_fim timestamp with time zone)	has_role
+rpc_preview_administrative_broadcast_count(p_target_role app_role)	_comunicacao_can_deliver,has_role
+rpc_programar_os_v1(p_os_id uuid, p_origem text, p_data_programada date)	refresh_esteira_laboratorio
+rpc_programar_retorno_visita(p_registro_id uuid, p_expected_version integer, p_data_prevista date, p_descricao text)	_visita_lock_and_check
+rpc_publish_communication_event(p_event_key text, p_source_type text, p_source_id uuid, p_payload jsonb, p_idempotency_key text)	_comunicacao_build_snapshot,_comunicacao_can_deliver,_comunicacao_resolve_recipients,_comunicacao_resolve_template,_comunicacao_write_audit,has_role
+rpc_publish_communication_event_v2(p_event_key text, p_source_type text, p_source_id uuid, p_payload jsonb, p_idempotency_key text)	_comunicacao_expand_event,_comunicacao_write_audit,has_role
+rpc_rastreio_produto_interno(p_etiqueta_id uuid)	can_user_access_produto_etiqueta,has_role
+rpc_reabrir_alerta_operacional(p_alerta_id uuid, p_observacao text)	can_user_access_alerta,rpc_recalcular_prioridade_alerta
+rpc_reabrir_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)	_visita_lock_and_check,has_role
+rpc_realizar_checkin_visita(p_registro_id uuid, p_client_uuid uuid, p_tipo tipo_checkin, p_latitude numeric, p_longitude numeric, p_precisao numeric, p_justificativa_sem_gps text, p_observacoes text, p_captured_at_local timestamp with time zone, p_solicitacao_id uuid, p_cliente_id uuid, p_fazenda_id uuid, p_talhao_id uuid, p_foto_path text)	_assert_visita_editavel,can_manage_technical_visit,is_active_visit_participant
+rpc_realizar_checkout_visita(p_registro_id uuid, p_client_uuid uuid, p_latitude numeric, p_longitude numeric, p_precisao numeric, p_justificativa_sem_gps text, p_observacoes text, p_captured_at_local timestamp with time zone, p_foto_path text)	_assert_visita_editavel,can_manage_technical_visit,is_active_visit_participant
+rpc_recalcular_prioridade_alerta(p_alerta_id uuid)	has_role
+rpc_record_aplicacao_email(_aplicacao_id uuid, _email text, _status text, _idempotency_key text, _enviado_por uuid)	has_role
+rpc_refresh_bi_operacional()	has_role
+rpc_register_payable_payment(p_installment_id uuid, p_payload jsonb)	fn_h6b_payment_fingerprint,is_financial_staff
+rpc_register_receivable_payment(p_installment_id uuid, p_payload jsonb)	fn_h6b_payment_fingerprint,is_financial_staff
+rpc_registrar_ocorrencia_entrega(p_entrega_id uuid, p_payload jsonb)	is_delivery_staff
+rpc_registrar_primeira_resposta_alerta(p_alerta_id uuid)	can_user_access_alerta,rpc_recalcular_prioridade_alerta
+rpc_regulatory_checklist_set(p_dossier_id uuid, p_item_key text, p_state text, p_justification text, p_evidence_document_id uuid)	fn_regulatory_can_prepare
+rpc_regulatory_document_register(p_dossier_id uuid, p_doc_type text, p_title text, p_storage_path text, p_content_sha256 text, p_issuer text, p_issued_at date, p_valid_until date, p_source_key text, p_source_url text, p_consulted_at date, p_doc_version text)	fn_regulatory_can_prepare,fn_regulatory_storage_dossier_id,fn_regulatory_storage_path_ok
+rpc_regulatory_document_soft_delete(p_document_id uuid, p_reason text)	fn_regulatory_can_prepare
+rpc_regulatory_dossier_block(p_dossier_id uuid, p_reason text)	fn_regulatory_can_prepare
+rpc_regulatory_dossier_detail(p_microorganism_id uuid)	fn_regulatory_can_read
+rpc_regulatory_dossier_ensure_draft(p_microorganism_id uuid)	fn_regulatory_can_prepare
+rpc_regulatory_dossier_new_version(p_microorganism_id uuid, p_reason text)	fn_regulatory_can_prepare
+rpc_regulatory_dossier_publish(p_dossier_id uuid)	fn_regulatory_can_prepare
+rpc_regulatory_dossier_submit(p_dossier_id uuid)	fn_regulatory_can_prepare
+rpc_regulatory_dossier_update_draft(p_dossier_id uuid, p_patch jsonb)	fn_regulatory_can_prepare
+rpc_regulatory_ncm_candidate_add(p_dossier_id uuid, p_ncm text, p_justification text, p_cest text, p_confidence text, p_source_key text, p_source_url text, p_consulted_at date)	fn_fiscal_official_url_allowlisted,fn_regulatory_can_prepare,fn_regulatory_confidence_normalize
+rpc_regulatory_ncm_candidate_decide(p_candidate_id uuid, p_approve boolean, p_reason text, p_official_description text, p_table_version text, p_table_reference_date date)	fn_regulatory_can_approve
+rpc_regulatory_presentation_upsert(p_dossier_id uuid, p_volume_ml integer, p_patch jsonb)	fn_gtin_is_valid,fn_regulatory_can_prepare
+rpc_regulatory_review_decide(p_dossier_id uuid, p_layer text, p_decision text, p_justification text)	fn_regulatory_can_approve,rpc_regulatory_sod_override
+rpc_regulatory_sod_override(p_dossier_id uuid, p_reason text)	has_role
+rpc_regulatory_storage_cleanup_confirm(p_document_id uuid, p_success boolean)	fn_regulatory_can_prepare
+rpc_remove_visit_technician(p_registro_id uuid, p_user_id uuid, p_reason text)	can_manage_technical_visit
+rpc_reprovar_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)	_visita_lock_and_check
+rpc_reservar_embalagem_entrega(p_embalagem_id uuid, p_entrega_id uuid, p_entrega_item_id uuid)	can_user_manage_estoque_embalagem,rpc_recalcular_separacao_entrega
+rpc_resolve_commercial_prices(p_items jsonb, p_plan_id uuid, p_ref_date date, p_buyer jsonb)	fn_resolve_commercial_price,has_role
+rpc_resolver_alerta_operacional(p_alerta_id uuid, p_observacao text)	can_user_access_alerta,rpc_recalcular_prioridade_alerta
+rpc_resumo_atendimentos_tecnicos_v1()	can_view_technical_visit,has_role
+rpc_salvar_campo_visita(p_registro_consultor_id uuid, p_client_uuid uuid, p_payload jsonb, p_versao integer)	has_active_user_cliente_access,has_role,is_technical_visit_editable_status
+rpc_set_communication_template_metadata(p_template_id uuid, p_provider_template_name text, p_language_code text, p_parameter_mapping jsonb, p_provider_template_status text)	_comunicacao_write_audit,has_role
+rpc_solicitar_ajuste_visita(p_registro_id uuid, p_expected_version integer, p_motivo text)	_visita_lock_and_check
+rpc_substituir_etiqueta_produto(p_etiqueta_id uuid, p_motivo text)	rpc_cancelar_etiqueta_produto,rpc_gerar_etiqueta_produto
+rpc_update_communication_preferences(p_canal comunicacao_canal, p_enabled boolean, p_whatsapp_opt_in boolean)	_comunicacao_write_consent
+rpc_update_communication_template(p_template_id uuid, p_nome text, p_assunto text, p_corpo text, p_variaveis jsonb)	_comunicacao_write_audit,has_role
+rpc_upsert_communication_rule(p_rule_id uuid, p_event_key text, p_perfil app_role, p_estrategia text, p_canal comunicacao_canal, p_template_chave text, p_template_versao integer, p_condicoes jsonb, p_prioridade integer, p_enabled boolean, p_cooldown_seconds integer)	_comunicacao_write_audit,has_role
+rpc_upsert_diagnostico_visita(p_registro_id uuid, p_client_uuid uuid, p_payload jsonb, p_expected_versao integer)	_assert_visita_editavel,can_manage_technical_visit,is_active_visit_participant
+rpc_upsert_fiscal_invoice_manual(p_receivable_id uuid, p_payload jsonb)	fn_fiscal_status_is_terminal,is_financial_staff
+rpc_upsert_recomendacao_visita(p_registro_id uuid, p_client_uuid uuid, p_payload jsonb, p_expected_versao integer)	_assert_visita_editavel,can_manage_technical_visit,is_active_visit_participant
+rpc_validar_comprovante_entrega(p_validation_token uuid)	
+rpc_validar_integridade_esteira(p_origem text, p_os_id uuid)	
+rpc_validar_rastreio_produto(p_trace_token uuid)	
+rpc_verify_communication_channel(p_user_id uuid, p_cliente_id uuid, p_canal comunicacao_canal, p_email_verificado boolean, p_telefone_verificado boolean)	_comunicacao_write_consent,has_role
+rpc_vincular_etiqueta_embalagem(p_embalagem_id uuid, p_etiqueta_id uuid)	can_user_manage_estoque_embalagem
+seed_cockpit_fixtures(p_prefix text)	_seed_cockpit_fixtures_impl,fn_cockpit_is_hml_environment,has_role
+send_partner_simulation_to_manager_secure(p_simulation_id uuid)	get_user_partner_id,has_role,insert_partner_catalog_access_log_internal
+set_my_context_preference(p_context text, p_remember boolean)	get_my_available_portal_contexts
+set_partner_order_delivery_date(p_order_id uuid, p_estimated_delivery_date date)	has_role
+set_partner_user_papel(p_link_id uuid, p_papel text)	has_role
+simulate_b2b_payment_plan_secure(p_partner_id uuid, p_payment_plan_id uuid, p_items jsonb, p_first_due_date date)	fn_b2b_apply_interest,fn_b2b_cart_hash,fn_b2b_credit_exposure,fn_b2b_plan_selectable,fn_resolve_b2b_cart,get_user_partner_id,has_role
+start_technical_visit_secure(p_registro_id uuid, p_latitude numeric, p_longitude numeric, p_precisao_gps numeric, p_foto_url text, p_foto_path text, p_observacoes text, p_justificativa_sem_gps text, p_client_uuid uuid)	has_role
+unassign_b2b_user_client_secure(p_user_id uuid, p_cliente_id uuid, p_reason text)	get_user_partner_id,has_role,insert_partner_catalog_access_log_internal
+update_microorganism_b2b_description(p_profile_id uuid, p_explicacao_b2b text)	has_role
+update_partner_order_notes(p_order_id uuid, p_commercial_notes text)	has_role
+update_partner_order_status(p_order_id uuid, p_status partner_order_status, p_motivo text)	fn_b2b_status_is_approved_or_later,fn_b2b_status_is_operational,has_role
+update_product_b2b_description(p_profile_id uuid, p_explicacao_b2b text)	has_role
