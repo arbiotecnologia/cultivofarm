@@ -132,7 +132,35 @@ Nenhuma das quatro é aplicável: em duas o efeito de ACL já está no catálogo
 
 ## 8. Invariantes e advisors
 
-Fase sem DDL: métricas devem permanecer estáveis em relação à H8-B — ledger 658, policies public 540, Advisor performance 512 (147 WARN + 365 INFO) e segurança 393 (383 WARN + 10 INFO + 0 ERROR), 648 SECURITY DEFINER, 0 sem `search_path`, 2 anon, 378 authenticated, 24 views / 23 `security_invoker`, 6 cron, fiscal `HOMOLOGATION / tpAmb=2 / production_enabled=false / DRAFT / NOT_READY`. Resultados da revalidação estão na seção de validações do commit desta fase.
+Fase sem DDL: métricas devem permanecer estáveis em relação à H8-B — ledger 658, policies public 540, Advisor performance 512 (147 WARN + 365 INFO) e segurança 393 (383 WARN + 10 INFO + 0 ERROR), 648 SECURITY DEFINER, 0 sem `search_path`, 2 anon, 378 authenticated, 24 views / 23 `security_invoker`, 6 cron, fiscal `HOMOLOGATION / tpAmb=2 / production_enabled=false / DRAFT / NOT_READY`. Resultados medidos ao final da fase (consulta read-only, 2026-09-04):
+
+| Verificação | Resultado |
+|---|---|
+| Binding | `H7d BINDING GATE: OK — staging ikaauvsflpmamgxmkhoq` (`.env`, `client.ts`, `config.toml`, `types.ts`) — restaurado do baseline `6c08a8f8` duas vezes durante a fase por drift do ambiente |
+| Ledger | **658** (inalterado) |
+| Repo-only guard | PASS — 59 íntegras, 0 no ledger |
+| Postcheck H7O | **PASS** (todas as linhas) |
+| Postcheck H7N | FAIL esperado e pré-existente desde H7O (allowlist 504→485 e wrappers privados 4→6) — postcheck vigente é o H7O |
+| Harness H7O por perfis | **300/300 PASS** (ROLLBACK) |
+| Harness H7N por perfis | **136/136 PASS** (ROLLBACK) |
+| Typecheck | 0 erro |
+| Build | OK (`build OK` no log de build) |
+| Vitest completo | **3.339 PASS / 0 FAIL / 4 skip** (212 arquivos; +2 casos H8-C) |
+| Scan de segredos | Nenhum segredo real; apenas fixtures de teste |
+| Policies em `public` | **540** (inalterado) |
+| `SECURITY DEFINER` | **648**, `0` sem `search_path`, **378** executáveis por `authenticated`, **2** por `anon` (por design) |
+| Views | **24**, sendo **23** `security_invoker` + 1 interna sem grants |
+| Tabelas com RLS e sem policy | **7** (fail-closed, inalterado) |
+| Extensões em `public` | **2** (`btree_gist`, `pg_net`) — decisão H7O: não mover |
+| Cron jobs | **6** |
+| Fiscal | `HOMOLOGATION\|2\|false\|false\|false\|DRAFT\|NOT_READY` |
+| Hash das 59 (entrada × saída) | 0 DRIFT nas duas medições |
+
+Como a fase não executou DDL, todas as categorias do Advisor permanecem nos valores oficiais
+da H8-B: performance **512** (0 ERROR / 147 WARN / 365 INFO) e segurança **393** (0 ERROR /
+383 WARN / 10 INFO). Os contadores de catálogo acima reproduzem exatamente as bases dessas
+categorias (378 `authenticated_security_definer_function_executable`, 2 `anon_...`,
+2 `extension_in_public`), confirmando ausência de novo ERROR/WARN causado pela H8-C.
 
 ## 9. Arquivos alterados
 
