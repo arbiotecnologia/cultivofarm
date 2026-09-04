@@ -28,3 +28,16 @@
 - [x] Gates novos na suíte: ordem de migrations das views protegidas (com teste negativo) e gate de binding de staging sem exposição de segredos
 - [x] Typecheck / build / Vitest 3.326 PASS / scans de segredo e integração fiscal OK; binding restaurado ao baseline autorizado
 - [ ] P2 remanescente: reconciliar as 59 migrations repo-only com o ledger, `extension_in_public` (btree_gist, pg_net), leaked-password protection e redução do Grupo B de SECURITY DEFINER
+
+## H7p — Reconciliação final e prontidão pré-produção (staging) — CONCLUÍDO (04/09/2026)
+- [x] Gate de binding no início e no fim; `.env`/`client.ts`/`types.ts` restaurados do baseline `6c08a8f8`
+- [x] Reconciliação das 59 migrations repo-only por catálogo/definições normalizadas: 36 refletidas, 3 superadas, 20 conflitantes — 0 pendentes, nenhum DDL aplicado (ledger 654)
+- [x] Mecanismo determinístico anti-reaplicação: manifesto sha256 + `h7p-guard-repo-only.sh` + teste estático no Vitest
+- [x] 648 SECURITY DEFINER revalidadas (0 sem `search_path`, 2 anon por design); nenhuma revogação em massa
+- [x] `btree_gist`/`pg_net` mantidas em `public` com justificativa (constraint `cpr_no_overlap` e `net.http_post`)
+- [x] Postcheck H7O PASS, harness 300 + 136 PASS, 5/5 views invoker, rate-limit e cron ativos, rollback→reapply reconvergido
+- [x] Typecheck / build / Vitest 3.337 PASS / scans OK; relatório final `restoration/homologacao-h7/99-h7-relatorio-final.md`
+- [ ] Bloqueio externo B1: habilitar leaked-password protection no staging e testar rejeição de senha vazada
+- [ ] Bloqueio externo B2: publicar as Edge Functions no staging pelo runner autorizado e validar `fiscal-binding-diagnostics`
+- [ ] Bloqueio externo B3: preencher dados fiscais reais do emitente (`DRAFT` → `READY`)
+- [ ] Bloqueio externo B4: autorização humana explícita para promoção a produção
