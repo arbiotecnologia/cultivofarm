@@ -41,7 +41,7 @@ BEGIN
     SELECT * INTO r_drop FROM pg_policies
      WHERE schemaname='public' AND tablename='cliente_documentos'
        AND policyname='Staff can view all client documents';
-    SELECT * INTO r_all INTO r_all FROM pg_policies
+    SELECT * INTO r_all FROM pg_policies
      WHERE schemaname='public' AND tablename='cliente_documentos'
        AND policyname='Staff can manage client documents';
 
