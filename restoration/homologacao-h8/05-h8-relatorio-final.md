@@ -47,7 +47,7 @@ wrappers privados 4→6); a referência vigente é o H7O.
 | **B1** | Proteção contra senha vazada (configuração externa de Auth) | Aberto — fora do alcance técnico das fases H7/H8 |
 | **B3** | Credenciamento SEFAZ e validação contábil | Aberto — mantém fiscal em `NOT_READY` |
 | **B4** | Autorização humana explícita de promoção | Aberto por definição — nenhuma automação de promoção existe |
-| **H8-E** | `prune-old-audit-logs` aborta por `created_at` inexistente em `financial_audit_log` (correta: `performed_at`); nenhuma poda ocorre | Aberto — correção proposta, exige janela autorizada (job faz `DELETE`) |
+| **H8-E** | `prune-old-audit-logs` abortava por coluna inexistente (`financial_audit_log` → `performed_at`; `clientes_audit_log` → `changed_at`) | **Corrigida em 2026-09-08** via `cron.alter_job`, migration `20261003000000`, ledger 658 → **659**, md5 `6fcccc17…` → `dbc129ea…`. Detalhes em `06-h8e-cron-retention-fix.md`. Validação funcional **pendente** do disparo de 03:15 UTC |
 | Backlog perf/RLS | 146 `multiple_permissive_policies`, 172 FKs sem índice, 193 índices não usados | Aberto — fora do escopo H8 |
 | Baselines UNKNOWN | Idade da fila e `duplicate_index` sem histórico local | Aberto — 30 dias de JSON antes de fixar limiar |
 
@@ -55,7 +55,7 @@ wrappers privados 4→6); a referência vigente é o H7O.
 
 ## 4. Decisão final
 
-Todos os critérios de conclusão da H8 foram atendidos em homologação: ledger congelado em 658,
+Todos os critérios de conclusão da H8 foram atendidos em homologação: ledger 658 e, após a H8-E, 659,
 59 repo-only reconciliadas e bloqueadas, invariantes estruturais estáveis, fiscal restrito à
 homologação, e agora um mecanismo de verificação **read-only, idempotente, sanitizado e
 testado** com runbook operacional utilizável.
