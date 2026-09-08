@@ -1,0 +1,7 @@
+{
+ "_nota": "Decisões manuais H9-D chaveadas pela ASSINATURA CANÔNICA COMPLETA (nome + tipos de argumento). Nunca por nome, para não colidir com sobrecargas.",
+ "rpc_bi_visitas_por_talhao(uuid,date,date)": [
+  "AUTH_COMPROVADA",
+  "Corpo lido manualmente: a função lê exclusivamente public.vw_fluxo_visita_tecnica, criada com security_invoker=true, que delega a private.h7n_fluxo_visita_tecnica(); esse helper filtra por papel interno (has_role) ou vínculo (consultor_id = auth.uid() / get_cliente_ids_for_user(auth.uid())). Teste em transação revertida com usuário authenticated sem papel: 0 linhas. Fail-closed para auth.uid() NULL, sem SQL dinâmico."
+ ]
+}

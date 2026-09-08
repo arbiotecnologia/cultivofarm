@@ -4,17 +4,21 @@ import { resolve } from "node:path";
 
 /**
  * H9-D — gate estático do inventário de funções `SECURITY DEFINER` executáveis por
- * `authenticated` na homologação.
+ * `authenticated` na homologação, e do dossiê do lote H9-D-L1.
  *
- * Aritmética obrigatória (retificação metodológica):
+ * Aritmética obrigatória:
  *   universo bruto            = 376
  *   fora do escopo profundo   =  84 (herdadas da H9-C, com referência explícita)
- *   escopo profundo H9-D      = 292 (186 PENDENTE_EVIDENCIA_ONDA_POSTERIOR +
- *                                    106 SEM_ESCRITA_NAO_AUDITADA_EM_PROFUNDIDADE)
+ *   escopo profundo H9-D      = 292
  *
- * Regex é apenas TRIAGEM: nenhuma linha AUTH_COMPROVADA/NAO_APLICAVEL pode usar
- * evidência genérica; cada uma cita o dossiê de leitura e a guarda da própria
- * assinatura (ou a decisão manual registrada).
+ * Regras de prova:
+ *   - regex/posição é apenas TRIAGEM e nunca promove uma assinatura;
+ *   - AUTH_COMPROVADA/NAO_APLICAVEL exigem evidência específica (dossiê ou decisão
+ *     manual) chaveada pela ASSINATURA CANÔNICA COMPLETA, nunca pelo nome;
+ *   - evidência vaga ("delegação a função guardada", frases genéricas de regex)
+ *     é proibida;
+ *   - o lote H9-D-L1 tem exatamente 30 assinaturas, únicas e sem colisão por
+ *     sobrecarga.
  */
 const ROOT = resolve(__dirname, "../../..");
 const DIR = resolve(ROOT, "restoration/homologacao-h9/h9d-inventario");
@@ -25,7 +29,31 @@ const resumo = JSON.parse(readFileSync(resolve(DIR, "resumo-h9d.json"), "utf8"))
   escopo_h9d: number;
   ledger: number;
   ambiente: string;
+  lotes_auditados: string[];
   por_classificacao: Record<string, number>;
+};
+
+const dossie = JSON.parse(readFileSync(resolve(DIR, "dossie-l1.json"), "utf8")) as {
+  ambiente: string;
+  ledger: number;
+  lote: string;
+  total: number;
+  assinaturas: Record<
+    string,
+    {
+      acl: string;
+      search_path: string;
+      body_md5: string;
+      body_len: number;
+      guarda_textual: string;
+      cadeia_transitiva: string;
+      null_fail_closed: string;
+      tenant_bola_idor: string;
+      sql_dinamico: string;
+      callsites: string;
+      classificacao: string;
+    }
+  >;
 };
 
 const tsv = readFileSync(resolve(DIR, "secdef-authenticated-inventory-h9d.tsv"), "utf8").trim().split("\n");
@@ -40,6 +68,7 @@ const ESCOPO = new Set([
 ]);
 
 const GENERICA = [
+  "delegação a função guardada",
   "guarda de identidade/papel precede o primeiro acesso sensivel",
   "guarda de identidade/papel precede o primeiro acesso sensível",
 ];
@@ -73,15 +102,15 @@ describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
     }
   });
 
-  it("nenhuma classificação conclusiva usa evidência genérica de regex", () => {
+  it("nenhuma classificação conclusiva usa evidência genérica ou vaga", () => {
     const conclusivas = rows.filter(
       (r) => r.classificacao_h9d === "AUTH_COMPROVADA" || r.classificacao_h9d === "NAO_APLICAVEL",
     );
     expect(conclusivas.length).toBeGreaterThan(0);
     for (const r of conclusivas) {
       expect(r.evidencia.length).toBeGreaterThan(60);
-      for (const g of GENERICA) expect(r.evidencia).not.toBe(g);
-      expect(/dossi|Corpo lido|corpo lido|teste|Primitivo|delega/.test(r.evidencia)).toBe(true);
+      for (const g of GENERICA) expect(r.evidencia.includes(g), `evidência vaga em ${r.signature}`).toBe(false);
+      expect(/dossi|Corpo lido|corpo lido|teste|Primitivo/.test(r.evidencia), r.signature).toBe(true);
     }
   });
 
@@ -89,9 +118,9 @@ describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
     const pend = rows.filter((r) => r.classificacao_h9d === "PENDENTE_EVIDENCIA");
     expect(pend.length).toBe(resumo.por_classificacao.PENDENTE_EVIDENCIA);
     for (const r of pend) {
-      expect(/Lote determinístico H9-D-L\d+|least-privilege|callsites|não foram comprovados|pendente/i.test(r.evidencia)).toBe(
-        true,
-      );
+      expect(/Lote determinístico H9-D-L\d+/.test(r.evidencia), r.signature).toBe(true);
+      // nenhuma pendente pode ser rotulada como já auditada no L1
+      expect(r.evidencia).not.toContain("Lote determinístico H9-D-L1.");
     }
   });
 
@@ -106,5 +135,69 @@ describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
     const sigs = rows.map((r) => r.signature);
     expect(new Set(sigs).size).toBe(sigs.length);
     expect([...sigs].sort()).toEqual(sigs);
+  });
+});
+
+describe("H9-D — dossiê do lote L1", () => {
+  const chaves = Object.keys(dossie.assinaturas);
+  const inventario = new Map(rows.map((r) => [r.signature, r]));
+
+  it("declara homologação, ledger e lote", () => {
+    expect(dossie.ambiente).toBe("ikaauvsflpmamgxmkhoq");
+    expect(dossie.ledger).toBe(662);
+    expect(dossie.lote).toBe("H9-D-L1");
+    expect(resumo.lotes_auditados).toContain("H9-D-L1");
+  });
+
+  it("contém exatamente 30 assinaturas únicas", () => {
+    expect(dossie.total).toBe(30);
+    expect(chaves).toHaveLength(30);
+    expect(new Set(chaves).size).toBe(30);
+  });
+
+  it("toda chave é assinatura canônica completa e existe no inventário", () => {
+    for (const k of chaves) {
+      expect(k, `chave sem lista de argumentos: ${k}`).toMatch(/^[a-z0-9_]+\(.*\)$/);
+      expect(inventario.has(k), `assinatura ausente do inventário: ${k}`).toBe(true);
+      expect(inventario.get(k)!.escopo_h9d).toBe("ESCOPO_PROFUNDO_H9D");
+    }
+  });
+
+  it("não há promoção por nome: cada nome sobrecarregado é tratado por assinatura", () => {
+    for (const k of chaves) {
+      const nome = k.slice(0, k.indexOf("("));
+      const mesmasBases = rows.filter((r) => r.signature.startsWith(`${nome}(`));
+      for (const r of mesmasBases) {
+        if (r.signature === k) continue;
+        // Uma sobrecarga não coberta pelo dossiê nunca pode herdar a evidência do L1.
+        expect(r.evidencia.includes("Lote H9-D-L1"), `colisão por overload em ${r.signature}`).toBe(false);
+      }
+    }
+  });
+
+  it("cada assinatura do L1 tem evidência específica e completa", () => {
+    for (const [k, d] of Object.entries(dossie.assinaturas)) {
+      expect(d.classificacao).toBe("AUTH_COMPROVADA");
+      expect(d.body_md5).toMatch(/^[0-9a-f]{32}$/);
+      expect(d.body_len).toBeGreaterThan(100);
+      expect(d.acl).toContain("authenticated");
+      expect(d.search_path).toContain("search_path");
+      expect(d.guarda_textual.length).toBeGreaterThan(20);
+      expect(d.cadeia_transitiva.length).toBeGreaterThan(20);
+      expect(d.null_fail_closed.length).toBeGreaterThan(3);
+      expect(d.tenant_bola_idor.length).toBeGreaterThan(10);
+      expect(d.sql_dinamico.length).toBeGreaterThan(3);
+      expect(d.callsites.length).toBeGreaterThan(10);
+      for (const g of GENERICA) expect(d.guarda_textual.includes(g), k).toBe(false);
+    }
+  });
+
+  it("o inventário reflete o dossiê nas 30 assinaturas do L1", () => {
+    for (const k of chaves) {
+      const r = inventario.get(k)!;
+      expect(r.classificacao_h9d).toBe("AUTH_COMPROVADA");
+      expect(r.evidencia).toContain("Lote H9-D-L1");
+      expect(r.evidencia).toContain(dossie.assinaturas[k].body_md5);
+    }
   });
 });

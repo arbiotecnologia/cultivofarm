@@ -166,5 +166,11 @@
 - [x] Quatro helpers novos `private.h7n_*` executáveis por `authenticated` identificados e lidos (filtram papel/tenant internamente); ficam para reconciliação formal do universo
 - [x] Comentário aritmético do gate H7P corrigido para explicitar `+1 H9-D1` fechando em 662; gate `src/test/security/h9d-inventario.static.test.ts` reescrito para rejeitar evidência genérica e exigir 84 + 292
 - [x] Nenhuma escrita no banco na rodada 2: ledger permanece **662**; crons, ACL, RLS, Auth, Storage, certificado, frontend e as 59 repo-only intocados; zero acesso à produção `navfzbwgwzruipouyfnk`
-- [ ] Pendentes: **B1**, **B3**, **B4**; evidência específica das **134** funções dos lotes `H9-D-L1..L5`; reconciliação dos quatro `private.h7n_*`; menor privilégio de `get_cliente_id_for_user`, `get_cliente_ids_for_user`, `fn_catalogo_preco_canonico`, `fn_fiscal_company_crt`, `fn_microorganism_regulatory_facts` e `fn_onfarm_scope_lote`
-- [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; H9-E não iniciada
+- [x] **Rodada 3 (lote H9-D-L1)**: gerador v2 passa a chavear decisões pela **assinatura canônica completa** (nunca pelo nome, sem colisão por sobrecarga), rejeita evidência vaga e não promove função por presença em readset
+- [x] **46 assinaturas** com evidência vaga ("delegação a função guardada") rebaixadas para `PENDENTE_EVIDENCIA`; **30 assinaturas do lote L1** auditadas em profundidade (corpo integral, ACL, `search_path`, cadeia transitiva, `auth.uid()`/papel/tenant, NULL fail-closed, callsites, BOLA/IDOR e SQL dinâmico) → dossiê `h9d-inventario/dossie-l1.json`
+- [x] Nova aritmética do escopo (soma 292): **137 AUTH_COMPROVADA**, **4 NAO_APLICAVEL**, **1 EXPOSICAO_COMPROVADA_CORRIGIDA**, **150 PENDENTE_EVIDENCIA** em lotes `H9-D-L2..L6`
+- [x] Gate `src/test/security/h9d-inventario.static.test.ts` exige exatamente as 30 assinaturas do L1, unicidade, evidência específica e ausência de colisão por sobrecarga
+- [x] Nenhuma escrita no banco na rodada 3: ledger **662**, SECDEF `authenticated` **376** / `anon` **2**, crons 1/2/5/8/9/18 ativos, guarda e ACL de `fn_run_recurring_generation()` preservadas, zero fixtures criadas
+- [ ] Pendentes: **B1**, **B3**, **B4**; evidência específica das **150** assinaturas dos lotes `H9-D-L2..L6`; reconciliação dos quatro `private.h7n_*`; menor privilégio de `get_cliente_id_for_user`, `get_cliente_ids_for_user`, `fn_catalogo_preco_canonico`, `fn_fiscal_company_crt`, `fn_microorganism_regulatory_facts` e `fn_onfarm_scope_lote`
+- [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; H9-E não iniciada; L2 só após auditoria independente do L1
+
