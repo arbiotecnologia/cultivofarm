@@ -5,10 +5,13 @@
  "fora_escopo_h9d": 84,
  "escopo_h9d": 292,
  "por_classificacao": {
-  "PENDENTE_EVIDENCIA": 134,
-  "AUTH_COMPROVADA": 153,
+  "AUTH_COMPROVADA": 137,
+  "PENDENTE_EVIDENCIA": 150,
   "NAO_APLICAVEL": 4,
   "EXPOSICAO_COMPROVADA_CORRIGIDA": 1
  },
- "metodologia": "regex apenas triagem; AUTH_COMPROVADA exige corpo lido e guarda textual específica"
+ "lotes_auditados": [
+  "H9-D-L1"
+ ],
+ "metodologia": "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites"
 }
