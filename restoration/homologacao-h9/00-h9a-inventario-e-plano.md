@@ -68,8 +68,9 @@ fora da API** (confirmado também pelo `h7o-postcheck.sh`: "tabelas private com 
 
 ### 2.4 Funções `SECURITY DEFINER` executáveis por `authenticated` (378)
 
-Quantidade **não** equivale a vulnerabilidade: 100% possuem `search_path` fixo (0 sem `search_path`) e todas
-aplicam verificação de papel internamente. Agrupamento por domínio (prefixo do nome, top 25 por volume):
+Quantidade **não** equivale a vulnerabilidade: `search_path` fixo confirmado em 100% (0 sem `search_path`);
+a autorização interna por função **permanece a ser comprovada por domínio na onda 3**. Agrupamento por domínio
+(prefixo do nome, top 25 por volume):
 
 | Domínio (prefixo) | Qtde | Exposição real |
 |---|---|---|
