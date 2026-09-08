@@ -161,8 +161,8 @@ completos de estatística e checagem de uso em rotinas raras; remover em lotes p
 
 | ID | Risco | Severidade | Mitigação |
 |---|---|---|---|
-| R1 | `.env` em drift para `yzszlzjpovmcteuxjznj`; binding gate em ABORT | Alta | Restaurar do baseline aprovado em fase com permissão de escrita (H9-B), antes de qualquer teste de frontend |
-| R2 | Divergência entre 10 (Advisor) e 7 (leitura direta) tabelas RLS sem policy | Média | Reconferir Advisor oficial na abertura de H9-B |
-| R3 | Commit-base indicado ≠ HEAD | Baixa | Confirmar histórico antes da promoção |
+| R1 | Drift de `.env` introduzido durante a geração H9-A, detectado na verificação independente e **restaurado do baseline `df8bd791`** | Encerrado | Binding gate reexecutado: OK (`ikaauvsflpmamgxmkhoq`); manter gate obrigatório no início de cada fase |
+| R2 | ~~Divergência 10 vs. 7~~ — **resolvida**: Advisor 10 = 7 `public` + 3 `private`, todas fail-closed | Encerrado | Nenhuma ação; reconferir no Advisor a cada fase |
+| R3 | Uso de HEAD efêmero do sandbox como referência | Baixa | Fonte de verdade é o baseline publicado `df8bd791` |
 | R4 | Consolidação de policies pode alterar visibilidade silenciosamente | Alta | Harness de matriz de acesso obrigatório antes/depois |
 | R5 | Remoção prematura de índices por estatística curta | Média | Regra dos 2 ciclos mensais |
