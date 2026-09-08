@@ -144,7 +144,7 @@
       "categoria": "identidade",
       "sinal": "ledger_migrations",
       "status": "CRITICAL",
-      "medida": "659",
+      "medida": "660",
       "limiar": "= 659 (H8-E)",
       "resposta": "Drift de ledger: comparar com h7p-repo-only-manifest.json e o runbook 04-h8d, seção 7.2. Não aplicar nada antes de identificar a origem."
     },
