@@ -33,10 +33,13 @@ rotas, Edge Functions, RLS, RPCs, triggers, cron, Storage ou Auth. Apenas leitur
 
 ### 2.2 Tabelas com RLS habilitada e sem policy (fail-closed)
 
-Confirmadas por leitura: **7** tabelas (a baseline de 10 do Advisor **não foi reproduzida**; diferença marcada
-como **PENDENTE DE EVIDÊNCIA** — reconferir no Advisor oficial na abertura de H9-B).
-Nenhuma delas possui grant para `anon`/`authenticated` (`grants_api = 0`), ou seja, **nenhuma está exposta pela
-Data API**: são inacessíveis por design e o acesso ocorre só via funções `SECURITY DEFINER`/`service_role`.
+O Advisor oficial reporta **10** tabelas, composição resolvida: **7 no schema `public` + 3 no schema `private`**.
+Não há divergência pendente. Verificação de privilégios efetivos em leitura (`has_table_privilege`) nas 10:
+`SELECT` para `anon` = falso e para `authenticated` = falso em todas, RLS habilitada e 0 policies — portanto
+**fail-closed** e fora da Data API; o acesso ocorre só via funções `SECURITY DEFINER`/`service_role`.
+As 3 tabelas `private` (`public_validation_rate_counters`, `public_validation_rate_pepper`,
+`public_validation_rate_policy`) são estruturas internas de rate-limit da validação pública e **devem permanecer
+fora da API** (confirmado também pelo `h7o-postcheck.sh`: "tabelas private com RLS e sem grants app: 3/3").
 
 | Tabela | Natureza | Grants anon/authenticated | Classificação | Ação proposta |
 |---|---|---|---|---|
