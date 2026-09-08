@@ -91,7 +91,7 @@
       "name": "h9dl2_authz_uid_scope_and_internal_reads_v1",
       "fase": "H9-D-L2",
       "path": "restoration/homologacao-h9/h9d-forwards/20261008000000_h9dl2_authz_uid_scope_and_internal_reads_v1.sql",
-      "sha256": "0a6e582d3294010759c1aa7bb32ee9cde1a0c037168d7891bd5dd4f248a30628",
+      "sha256": "3599344125c64583646ee18021e9cb1f225feacd0f10eb4dfe1599b4f1a35c08",
       "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261008000000_h9dl2_authz_uid_scope_and_internal_reads_v1_rollback.sql",
       "rollback_sha256": "db53857f15f106f53fa8d75615607c12fdde178a911c9114bde69ca7467332d6",
       "applied_to_staging": true,
@@ -109,7 +109,9 @@
         "teste_negativo": "apos o forward, todas as chamadas acima retornam NULL/false em transacao revertida",
         "teste_positivo": "administrador, financeiro, tecnico_agronomo, produtor em self-scope e sessao interna sem JWT preservados",
         "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l2.json",
-        "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md"
+        "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
+        "ensaio_rollback_reaplicacao": "rollback + reaplicacao em transacao descartada: 0 divergencias de md5(pg_get_functiondef) em public",
+        "secdef_authenticated": "376 preservado: fn_authz_uid_scope_ok(uuid) nao e executavel por authenticated/anon"
       }
     }
   ]
