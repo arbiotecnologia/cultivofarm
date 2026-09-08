@@ -133,6 +133,7 @@
 - [x] 10 tabelas RLS sem policy (7 `public` + 3 `private`) confirmadas fail-closed: 0 policies e 0 privilégios S/I/U/D para `anon` e `authenticated`; schema `private` sem USAGE para papéis de API; negação por papel testada
 - [x] `_f42_harness_fixtures` e `_fiscal_staging_marker` marcadas como exclusivas de staging — **não promover**
 - [x] Gates: binding OK, guard 59 PASS, postcheck H7O PASS, testes estáticos/T2/T6, typecheck, build e regressão PASS; ledger 659 → **660**; Advisors inalterados (nenhuma tabela/policy/índice/grant criado)
+- [x] Limpeza pós-teste com alvos exatos: 13 registros sintéticos de `produto_etiqueta_consultas` (IDs 19–31) e 5 contadores sintéticos de `private.public_validation_rate_counters` removidos; verificação final com **zero remanescentes**
 - [x] Zero acesso à produção `navfzbwgwzruipouyfnk`
 - [ ] Pendentes: **B1**, **B3**, **B4**; autorização interna das 378 SECDEF `authenticated` a comprovar na **H9-C**
 - [x] Decisão: **GO para H9-C / NO-GO produção**

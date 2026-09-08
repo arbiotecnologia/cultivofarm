@@ -67,6 +67,14 @@ Rollback nominal: `restoration/homologacao-h9/h9b-rollbacks/20261004000000_h9b1_
 | Linhas gravadas por tentativa | 1 sempre | 1 até o limite; **0** após `rate_limited` |
 | Teste executado | 2 chamadas → 2 linhas, contadores inalterados | 14 chamadas → 10 linhas e depois `status='rate_limited'`, contadores `token/origin/global = 14` |
 
+### 2.4 Limpeza dos dados sintéticos de teste
+
+Após os testes, os artefatos sintéticos foram removidos com alvos exatos, sem afetar dado real:
+**13 registros** de `public.produto_etiqueta_consultas` (IDs 19–31, todos com `etiqueta_id NULL`, gerados pelas
+chamadas anônimas de token inexistente) e **5 contadores** sintéticos de
+`private.public_validation_rate_counters`. Verificação final: **0 desses registros e 0 desses contadores
+remanescentes**. Nenhuma outra linha foi tocada; cron, RLS, funções e grants permaneceram inalterados.
+
 Reversibilidade comprovada: rollback aplicado (gate ausente) e forward reaplicado (gate presente,
 `SECURITY DEFINER`, `search_path=public`), sem efeito colateral.
 
