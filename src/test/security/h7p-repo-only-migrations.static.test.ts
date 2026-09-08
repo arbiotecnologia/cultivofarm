@@ -6,8 +6,8 @@ import { resolve } from "node:path";
 /**
  * FASE H7P — gate estático contra reaplicação das migrations repo-only.
  *
- * O ledger do staging autorizado tem 660 versões (654 em H7P + 3 aplicadas na fase
- * H8-A: duplicate_index, auth_rls_initplan e policies redundantes + 1 na H8-B1 + 1 na H8-E); o repositório tem mais
+ * O ledger do staging autorizado tem 661 versões (654 em H7P + 3 aplicadas na fase
+ * H8-A: duplicate_index, auth_rls_initplan e policies redundantes + 1 na H8-B1 + 1 na H8-E + 1 na H9-B1 + 1 na H9-C1); o repositório tem mais
  * arquivos do que isso. As 59 migrations excedentes foram reconciliadas na
  * H7P e NENHUMA delas deve ser aplicada:
  *   - 36 já refletidas semanticamente no catálogo;
@@ -49,8 +49,8 @@ const sha256 = (p: string) =>
   createHash("sha256").update(readFileSync(p)).digest("hex");
 
 describe("H7P — manifesto de migrations repo-only", () => {
-  it("declara exatamente 59 entradas contra o ledger de 660 versões", () => {
-    expect(manifest.ledger_versoes).toBe(660);
+  it("declara exatamente 59 entradas contra o ledger de 661 versões", () => {
+    expect(manifest.ledger_versoes).toBe(661);
     expect(manifest.total_repo_only).toBe(59);
     expect(manifest.entries).toHaveLength(59);
   });
@@ -105,7 +105,8 @@ describe("H7P — manifesto de migrations repo-only", () => {
     const repoVersions = readdirSync(MIGRATIONS_DIR)
       .filter((f) => /^\d{14}_.+\.sql$/.test(f))
       .map((f) => f.slice(0, 14));
-    // 660 aplicadas + 59 reconciliadas = 719. Qualquer arquivo novo posterior
+    // 661 aplicadas (uma delas, 20261005000000 da H9-C1, versionada fora de
+    // supabase/migrations) + 59 reconciliadas. Qualquer arquivo novo posterior
     // é legítimo apenas se também tiver sido aplicado (ledger cresce junto).
     const known = manifest.ledger_versoes + manifest.total_repo_only;
     expect(repoVersions.length).toBeLessThanOrEqual(known);
