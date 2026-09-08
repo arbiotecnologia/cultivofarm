@@ -1,0 +1,36 @@
+{
+  "fase": "H9",
+  "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
+  "ambiente": "staging ikaauvsflpmamgxmkhoq",
+  "producao_proibida": "navfzbwgwzruipouyfnk",
+  "ledger_versoes": 661,
+  "total_applied_forwards": 1,
+  "entries": [
+    {
+      "version": "20261005000000",
+      "name": "h9c1_least_privilege_secdef_v1",
+      "fase": "H9-C1",
+      "path": "restoration/homologacao-h9/h9c-forwards/20261005000000_h9c1_least_privilege_secdef_v1.sql",
+      "sha256": "24cd788e0b002ebd9dbc8b3daa28e7388790fdee8ac6b1976510e27460aabefd",
+      "rollback_path": "restoration/homologacao-h9/h9c-rollbacks/20261005000000_h9c1_least_privilege_secdef_v1_rollback.sql",
+      "rollback_sha256": "46f9a1320a9b93cc1b6ef6b7861174ab2944139cec2aaa4247f4485486668aec",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma passou a bloquear escrita direta em supabase/migrations/ durante a fase H9-C; o SQL exato aplicado foi versionado em restoration/homologacao-h9/h9c-forwards/ e registrado no ledger pelo proprio script.",
+      "efeito": "REVOKE EXECUTE de authenticated/anon/PUBLIC em public.check_partner_order_sla() e public.rpc_fiscal_xml_record_v1(uuid,text,jsonb); GRANT EXECUTE preservado para service_role.",
+      "destructive": false,
+      "reversible": true,
+      "applied_at": "2026-09-08",
+      "evidence_refs": {
+        "acl_pos": "check_partner_order_sla e rpc_fiscal_xml_record_v1 = {postgres=X/postgres,service_role=X/postgres}",
+        "secdef_authenticated": "378 -> 376",
+        "teste_negativo": "42501 para ambas em sessao authenticated de baixo privilegio",
+        "teste_positivo": "EXECUTE preservado para service_role em ambas",
+        "relatorio": "restoration/homologacao-h9/03-h9c-secdef-authenticated.md"
+      }
+    }
+  ]
+}

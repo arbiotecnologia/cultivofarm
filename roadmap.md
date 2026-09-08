@@ -151,3 +151,6 @@
 - [x] Zero acesso à produção `navfzbwgwzruipouyfnk`
 - [ ] Pendentes: **B1**, **B3**, **B4**; 186 funções do domínio F e 106 funções sem escrita a auditar em onda posterior
 - [x] Decisão: **GO homologação / NO-GO produção**
+- [x] Retificação final H9-C (08/09/2026, somente repositório/documentação; **zero escrita no banco**): manifesto H7P atualizado para `ledger_versoes` **661** e regra futura "posterior a `20261005000000`" (bloco `h8c` incluso), preservando as 59 entries/hashes/classificações/bloqueios; guard `h7p-guard-repo-only.sh` passa a exigir 661; teste estático H7P alinhado
+- [x] Novo rastreio de forward aplicado fora da pasta padrão: `restoration/homologacao-h9/h9c-applied-forwards.json` (versão, caminho, SHA-256 do forward e do rollback, ambiente, aplicada em staging, obrigatória no bundle de promoção, disjunta das 59 repo-only) + gate estático `src/test/security/h9c-applied-forwards.static.test.ts`
+- [x] Relatório H9-C retificado: Advisors de segurança **391** = 10 RLS sem policy + 2 extensões em `public` + 2 anon SECDEF + 376 authenticated SECDEF + 1 leaked-password; desempenho **510** inalterado; declarado que a promoção **não** pode depender de varrer apenas `supabase/migrations/` e que o guard H7P **não** cobre o forward fora da árvore (quem cobre é o novo gate)
