@@ -114,6 +114,19 @@ leitura de `private.public_validation_rate_counters` → `permission denied for 
 | Advisors | Inalterados por construção: a fase não criou tabela, policy, índice ou grant (security 393 / performance 510 conforme H9-A) |
 | Escrita em produção | **Zero** — nenhum acesso ao projeto de produção |
 
+### 4.1 Arquivos alterados
+
+`supabase/migrations/20261004000000_h9b1_rate_limit_rastreio_v1.sql` (novo),
+`restoration/homologacao-h9/h9b-rollbacks/20261004000000_h9b1_rate_limit_rastreio_v1_rollback.sql` (novo),
+`src/test/security/h9b-public-rpc-rate-limit.static.test.ts` (novo),
+`restoration/homologacao-h9/02-h9b-seguranca-critica.md` (novo), `roadmap.md`,
+e — estritamente por consequência do ledger 659 → 660 —
+`restoration/homologacao-h7/h7p-repo-only-manifest.json`,
+`restoration/homologacao-h7/h7p-guard-repo-only.sh` e
+`src/test/security/h7p-repo-only-migrations.static.test.ts` (apenas o contador; as 59 entradas,
+hashes, classificações 36/3/20 e decisões permanecem intactas).
+Binding (`.env`, `client.ts`, `types.ts`) restaurado do próprio commit `f5071fe0`, sem divergência residual.
+
 ## 5. Riscos e pendências
 
 | ID | Item | Situação |
