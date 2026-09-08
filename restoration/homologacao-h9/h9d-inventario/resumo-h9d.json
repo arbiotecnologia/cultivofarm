@@ -1,9 +1,9 @@
 {
   "total_auditado": 376,
   "por_classificacao": {
-    "AUTH_COMPROVADA": 319,
+    "AUTH_COMPROVADA": 323,
     "NAO_APLICAVEL": 47,
-    "PENDENTE_EVIDENCIA": 9,
+    "PENDENTE_EVIDENCIA": 5,
     "EXPOSICAO_COMPROVADA_CORRIGIDA": 1
   },
   "por_dominio": {

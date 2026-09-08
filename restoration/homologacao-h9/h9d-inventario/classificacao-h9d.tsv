@@ -52,13 +52,13 @@ F_OPERACAO_RELATORIO	fn_generate_receivable_from_entrega(uuid,jsonb)	1	AUTH_COMP
 F_OPERACAO_RELATORIO	fn_generate_recurring_title(uuid,date,boolean)	1	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	fn_mark_entrega_not_billable(uuid,text)	1	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 BD_FINANCEIRO	fn_mark_financial_overdue()	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
-F_OPERACAO_RELATORIO	fn_microorganism_regulatory_facts(uuid)	0	PENDENTE_EVIDENCIA	acesso sensivel sem guarda anterior detectada; requer leitura manual
+F_OPERACAO_RELATORIO	fn_microorganism_regulatory_facts(uuid)	0	PENDENTE_EVIDENCIA	metadados regulatorios internos (MAPA/NCM/CEST) legiveis por qualquer authenticated; sem PII e sem dado financeiro; menor privilegio a avaliar na H9-E
 F_OPERACAO_RELATORIO	fn_onfarm_scope_cliente(uuid)	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	fn_onfarm_scope_lote(uuid)	0	AUTH_COMPROVADA	delega a fn_onfarm_scope_cliente, que ancora em auth.uid()
 F_OPERACAO_RELATORIO	fn_regulatory_can_approve(text,uuid)	0	NAO_APLICAVEL	nenhum objeto sensivel acessado no corpo
 F_OPERACAO_RELATORIO	fn_regulatory_can_prepare(uuid)	0	NAO_APLICAVEL	nenhum objeto sensivel acessado no corpo
 F_OPERACAO_RELATORIO	fn_regulatory_can_read(uuid)	0	NAO_APLICAVEL	nenhum objeto sensivel acessado no corpo
-F_OPERACAO_RELATORIO	fn_regulatory_storage_can_delete(text)	0	PENDENTE_EVIDENCIA	acesso sensivel sem guarda anterior detectada; requer leitura manual
+F_OPERACAO_RELATORIO	fn_regulatory_storage_can_delete(text)	0	AUTH_COMPROVADA	delega a fn_regulatory_storage_can_write, que valida papel regulatorio; retorna apenas booleano
 F_OPERACAO_RELATORIO	fn_regulatory_storage_can_read(text)	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	fn_regulatory_storage_can_write(text)	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	fn_reverse_payment(uuid,text,text)	1	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
@@ -95,7 +95,7 @@ F_OPERACAO_RELATORIO	get_report_nfe_pending(jsonb)	0	AUTH_COMPROVADA	guarda de i
 F_OPERACAO_RELATORIO	get_report_payables(jsonb)	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	get_report_receivables(jsonb)	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	get_top_financial_rankings(date,date,integer)	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
-E_B2B_CLIENTE	get_user_partner_id()	0	PENDENTE_EVIDENCIA	acesso sensivel sem guarda anterior detectada; requer leitura manual
+E_B2B_CLIENTE	get_user_partner_id()	0	AUTH_COMPROVADA	ancorada em auth.uid(); nao aceita id arbitrario
 F_OPERACAO_RELATORIO	has_active_user_cliente_access(uuid,uuid,text[])	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	has_role(uuid,app_role)	0	NAO_APLICAVEL	predicado de papel usado por todas as policies RLS; revogar quebraria RLS; expoe apenas booleano
 F_OPERACAO_RELATORIO	is_active_visit_participant(uuid,uuid)	0	NAO_APLICAVEL	nenhum objeto sensivel acessado no corpo
@@ -212,8 +212,8 @@ F_OPERACAO_RELATORIO	rpc_create_portal_notification_secure(uuid,text,text,text,t
 F_OPERACAO_RELATORIO	rpc_criar_embalagens_pos_envase(jsonb)	1	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	rpc_criar_visita_idempotente(uuid,uuid,uuid,uuid,uuid,date,tipo_visita,text,text,text,uuid,text,categoria_problema_consultor,nivel_pressao,numeric,urgencia_consultor,text,text,text,numeric,numeric,numeric,uuid)	1	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	rpc_dashboard_geral_lab_resumo()	0	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
-F_OPERACAO_RELATORIO	rpc_delete_diagnostico_visita(uuid)	1	PENDENTE_EVIDENCIA	acesso sensivel sem guarda anterior detectada; requer leitura manual
-F_OPERACAO_RELATORIO	rpc_delete_recomendacao_visita(uuid)	1	PENDENTE_EVIDENCIA	acesso sensivel sem guarda anterior detectada; requer leitura manual
+F_OPERACAO_RELATORIO	rpc_delete_diagnostico_visita(uuid)	1	AUTH_COMPROVADA	_assert_visita_editavel executado antes do DELETE; leitura interna nao retornada ao chamador
+F_OPERACAO_RELATORIO	rpc_delete_recomendacao_visita(uuid)	1	AUTH_COMPROVADA	_assert_visita_editavel executado antes do DELETE; leitura interna nao retornada ao chamador
 F_OPERACAO_RELATORIO	rpc_desativar_bank_account(uuid,text)	1	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	rpc_desativar_cost_center(uuid,text)	1	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
 F_OPERACAO_RELATORIO	rpc_desativar_financial_category(uuid,text)	1	AUTH_COMPROVADA	guarda de identidade/papel precede o primeiro acesso sensivel
