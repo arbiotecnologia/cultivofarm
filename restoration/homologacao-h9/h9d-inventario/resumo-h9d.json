@@ -1,18 +1,14 @@
 {
-  "total_auditado": 376,
-  "por_classificacao": {
-    "AUTH_COMPROVADA": 323,
-    "NAO_APLICAVEL": 47,
-    "PENDENTE_EVIDENCIA": 5,
-    "EXPOSICAO_COMPROVADA_CORRIGIDA": 1
-  },
-  "por_dominio": {
-    "BD_FINANCEIRO": 64,
-    "E_B2B_CLIENTE": 64,
-    "F_OPERACAO_RELATORIO": 186,
-    "A_ADMIN": 25,
-    "C_FISCAL": 37
-  },
-  "ledger": 662,
-  "ambiente": "staging ikaauvsflpmamgxmkhoq"
+ "ambiente": "ikaauvsflpmamgxmkhoq",
+ "ledger": 662,
+ "total_bruto": 376,
+ "fora_escopo_h9d": 84,
+ "escopo_h9d": 292,
+ "por_classificacao": {
+  "PENDENTE_EVIDENCIA": 134,
+  "AUTH_COMPROVADA": 153,
+  "NAO_APLICAVEL": 4,
+  "EXPOSICAO_COMPROVADA_CORRIGIDA": 1
+ },
+ "metodologia": "regex apenas triagem; AUTH_COMPROVADA exige corpo lido e guarda textual específica"
 }
