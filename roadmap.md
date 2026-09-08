@@ -113,3 +113,14 @@
   - [x] Postcheck H7O PASS, harness 300 + 136 PASS, typecheck/build/Vitest 3.337 PASS / 0 FAIL / 4 skip, scans OK, binding revalidado
   - [x] Decisão: **GO homologação para H8-C / NO-GO produção** — redução estrutural segura, sem redução de findings do Advisor
 - [x] Correção de drift de binding (2026-09-08) — `.env` e `src/integrations/supabase/types.ts` restaurados exatamente do baseline aprovado `6c08a8f8`; `client.ts` preservado (sem divergência real). Nenhuma escrita em banco. Gates reexecutados: binding OK, guard 59 PASS, postcheck H7O PASS, typecheck 0 erro, build OK, Vitest 3.364 PASS / 0 FAIL / 4 skip. Leitura confirmou ledger 659, job 5 `15 3 * * *` ativo, md5 `dbc129eaf374196a06f3b911381703da`, `runid=7138 succeeded`; evidências da H8-E inalteradas. **H8 CONCLUÍDA em homologação / NO-GO produção** (B1, B3, B4 e backlog legado)
+
+## H9-A — Gate de preparação segura para produção (somente auditoria e documentação) — 08/09/2026
+- [x] **H8 CONCLUÍDA** em homologação (A–E); **produção NO-GO**
+- [x] **H9-A CONCLUÍDA — apenas planejamento**: nenhuma alteração em banco, código funcional, binding, migrations, cron, Storage ou Auth
+- [x] Documentos: `restoration/homologacao-h9/00-h9a-inventario-e-plano.md` e `restoration/homologacao-h9/01-h9a-matriz-testes-e-promocao.md`
+- [x] Estado lido: ledger **659** (última `20261003000000`), 6 cron ativos, jobid 5 `15 3 * * *` md5 `dbc129eaf374196a06f3b911381703da`
+- [x] Inventário nominal: B1/B3/B4; **7** tabelas RLS sem policy (todas com 0 grants de API → fail-closed; divergência vs. 10 do Advisor = PENDENTE DE EVIDÊNCIA); 2 RPCs `anon` (`rpc_validar_comprovante_entrega`, `rpc_validar_rastreio_produto`, ambas por token em rotas públicas); 378 SECDEF `authenticated` agrupadas por domínio; 2 extensões em `public` (`btree_gist`, `pg_net`); **172** FKs sem índice priorizadas por uso; **146** achados / **43** grupos de policies permissivas; índice duplicado de `formulacoes` (2 constraints UNIQUE equivalentes); **191** índices sem uso com estatística desde 2026-07-15 (insuficiente — sem autorização de remoção)
+- [x] 6 ondas de remediação, matriz de testes por perfil (desktop/mobile), checklist de promoção com PITR/dry-run/abort/rollback e requisito de grants+RLS explícitos para nova tabela em `public`
+- [ ] Gates externos pendentes: **B1** (proteção contra senha vazada — responsável: administrador do projeto), **B3** (parecer fiscal/contábil — responsável: responsável fiscal), **B4** (autorização humana de promoção — responsável: sponsor)
+- [ ] Risco aberto R1: `.env` em drift para `yzszlzjpovmcteuxjznj`; binding gate em ABORT — correção autorizada apenas em H9-B
+- [x] Decisão: **GO para H9-B (onda 2) / NO-GO produção**
