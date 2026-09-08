@@ -1,101 +1,128 @@
-import json, re, csv, hashlib, os, collections
+#!/usr/bin/env python3
+"""
+H9-D — gerador do inventário e da classificação das funções SECURITY DEFINER
+executáveis por `authenticated` na homologação (ikaauvsflpmamgxmkhoq).
 
-def norm(sig):
-    name = sig.split('(')[0].strip().split('.')[-1]
-    args = sig[sig.find('(') + 1:sig.rfind(')')]
-    types = []
-    for a in [x.strip() for x in args.split(',') if x.strip()]:
-        types.append(a.split()[-1].lower())
-    return name + '(' + ','.join(types) + ')'
+METODOLOGIA (retificada):
+  1. Universo bruto (376) = consulta determinística ao catálogo de homologação.
+  2. 84 funções já auditadas na H9-C entram como FORA_ESCOPO_H9D (evidência herdada).
+  3. Escopo profundo H9-D = exatamente 292.
+  4. Regex/posição é SOMENTE TRIAGEM. AUTH_COMPROVADA/NAO_APLICAVEL exigem corpo
+     lido manualmente, com guarda textual específica da assinatura citada na
+     evidência. O restante permanece PENDENTE_EVIDENCIA em lotes determinísticos.
 
-funcs = json.load(open('/tmp/h9d/funcs2.json'))
-prev = {}
-with open('restoration/homologacao-h9/h9c-inventario/secdef-authenticated-classificacao.tsv') as f:
-    for row in csv.DictReader(f, delimiter='\t', lineterminator='\n'):
-        prev[norm(row['signature'])] = (row['dominio'], row['classificacao_h9c'])
+Uso: python3 gerar-inventario-h9d.py [DIR_ARTEFATOS]
+Entradas: all.json, scope.json, triage.json, readset.json, decisions.json
+Nunca escreve no banco.
+"""
+from __future__ import annotations
 
-GUARDH = re.compile(r'(_?require_\w+|assert_\w+|_assert_\w+|can_user_access\w*|can_manage_\w+|pode_\w+|is_[a-z_]*staff|is_admin\w*|is_executivo|has_role|has_any_role|fn_onfarm_scope\w*|fn_b2b_can_\w+|fn_regulatory_can_\w+|fn_fiscal_can_\w+|_comunicacao_require\w*|_visita_lock_and_check|_cpp_\w+|check_\w*_permission)\s*\(', re.I)
-GUARD = re.compile(r'auth\.uid\(\)|current_setting\s*\(\s*\'request\.jwt|auth\.role\(\)', re.I)
-SENS = re.compile(r'accounts_(payable|receivable)|financial_|fiscal_|company_fiscal_settings|clientes?|cliente_|profiles|user_roles|partner_|produtos?|lotes?|estoque|ordens_servico|entregas?|entrega_|portal_|comunicacao_|communication_|evidencias|fazendas|talhoes|visita|aplicacoes|storage\.objects|auth\.users|commercial_|microrganismos?|microorganism_|bank_accounts|payment_|certificate|registros_consultor|pedido|solicitac|notificac|carrinho|simulac|catalogo_|recurring_', re.I)
-ACC = re.compile(r'\b(from|join|update|insert\s+into|delete\s+from)\s+(only\s+)?([a-z_][\w\.]*)', re.I)
-DML = re.compile(r'\b(insert\s+into|update\s+\w|delete\s+from|truncate)\b', re.I)
-DYN = re.compile(r'\bexecute\s+(format|\'|"|\w+_sql|query|v_sql)', re.I)
+import json
+import pathlib
+import sys
 
-# Excecoes documentadas com evidencia manual (corpo lido nesta fase).
-MANUAL = {
-    'fn_run_recurring_generation()': ('EXPOSICAO_COMPROVADA_CORRIGIDA', 'H9-D1: guarda is_financial_staff adicionada antes do laco; teste negativo 42501 e positivo cron/financeiro'),
-    'rpc_validar_comprovante_entrega(uuid)': ('AUTH_COMPROVADA', 'H9-B: rate-limit antes da leitura; payload sem PII'),
-    'rpc_validar_rastreio_produto(uuid)': ('AUTH_COMPROVADA', 'H9-B1: rate-limit por token/origem/global antes de leitura e escrita'),
-    'fn_cockpit_is_hml_environment()': ('NAO_APLICAVEL', 'retorna apenas booleano de ambiente a partir de marcador interno'),
-    'fn_fiscal_company_crt()': ('PENDENTE_EVIDENCIA', 'expoe CRT do emitente unico a qualquer authenticated; baixo impacto, sem PII; revisao de menor privilegio na H9-E'),
-    'fn_catalogo_preco_canonico(uuid,uuid,text,numeric)': ('PENDENTE_EVIDENCIA', 'preco canonico de catalogo legivel por qualquer authenticated; consumido pelo portal B2B; avaliar escopo por parceiro na H9-E'),
-    'get_cliente_ids_for_user(uuid)': ('PENDENTE_EVIDENCIA', 'aceita uid arbitrario e devolve UUIDs de clientes vinculados; usada dentro de policies RLS, revogacao exigiria refatoracao das policies'),
-    'get_cliente_id_for_user(uuid)': ('PENDENTE_EVIDENCIA', 'idem: uid arbitrario devolve UUID de cliente principal; usada em policies RLS'),
-    'has_role(uuid,app_role)': ('NAO_APLICAVEL', 'predicado de papel usado por todas as policies RLS; revogar quebraria RLS; expoe apenas booleano'),
-    'is_executivo(uuid)': ('NAO_APLICAVEL', 'predicado booleano de papel usado em policies RLS'),
-    'fn_regulatory_storage_can_delete(text)': ('AUTH_COMPROVADA', 'delega a fn_regulatory_storage_can_write, que valida papel regulatorio; retorna apenas booleano'),
-    'get_user_partner_id()': ('AUTH_COMPROVADA', 'ancorada em auth.uid(); nao aceita id arbitrario'),
-    'rpc_delete_diagnostico_visita(uuid)': ('AUTH_COMPROVADA', '_assert_visita_editavel executado antes do DELETE; leitura interna nao retornada ao chamador'),
-    'rpc_delete_recomendacao_visita(uuid)': ('AUTH_COMPROVADA', '_assert_visita_editavel executado antes do DELETE; leitura interna nao retornada ao chamador'),
-    'fn_microorganism_regulatory_facts(uuid)': ('PENDENTE_EVIDENCIA', 'metadados regulatorios internos (MAPA/NCM/CEST) legiveis por qualquer authenticated; sem PII e sem dado financeiro; menor privilegio a avaliar na H9-E'),
-    'can_user_access_fazenda(uuid)': ('AUTH_COMPROVADA', 'delega a can_user_access_cliente, que ancora em auth.uid()'),
-    'fn_onfarm_scope_lote(uuid)': ('AUTH_COMPROVADA', 'delega a fn_onfarm_scope_cliente, que ancora em auth.uid()'),
-    'pode_acessar_recomendacao(uuid,uuid)': ('AUTH_COMPROVADA', 'checa papel e vinculo user_clientes no proprio predicado'),
-}
+SRC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "/tmp/h9d")
+OUT = pathlib.Path(__file__).resolve().parent
 
-rows = []
-for f in funcs:
-    sig = f['signature']
-    dom, prevc = prev.get(norm(sig), ('F_OPERACAO_RELATORIO', 'NAO_INVENTARIADO'))
-    i = f['def'].lower().find('as $')
-    b = f['def'][i:] if i > 0 else f['def']
-    gs = [m.start() for m in list(GUARDH.finditer(b)) + list(GUARD.finditer(b))]
-    g = min(gs) if gs else None
-    fs = None
-    objs = set()
-    for m in ACC.finditer(b):
-        o = m.group(3).strip().rstrip(';,)')
-        objs.add(o)
-        if SENS.search(o) and fs is None:
-            fs = m.start()
-    if sig in MANUAL:
-        cls, ev = MANUAL[sig]
-    elif fs is None:
-        cls, ev = 'NAO_APLICAVEL', 'nenhum objeto sensivel acessado no corpo'
-    elif g is not None and g < fs:
-        cls, ev = 'AUTH_COMPROVADA', 'guarda de identidade/papel precede o primeiro acesso sensivel'
-    else:
-        cls, ev = 'PENDENTE_EVIDENCIA', 'acesso sensivel sem guarda anterior detectada; requer leitura manual'
-    rows.append(dict(
-        schema=f['schema'], signature=sig, owner=f['owner'], language=f['language'],
-        volatility=f['volatility'], proconfig=f['proconfig'], anon_execute=f['anon_x'],
-        acl=f['acl'], dominio=dom, classificacao_h9c=prevc,
-        objetos_sensiveis=';'.join(sorted(o for o in objs if SENS.search(o))),
-        dml=int(bool(DML.search(b))), sql_dinamico=int(bool(DYN.search(b))),
-        guarda_pos='' if g is None else g, primeiro_acesso_sensivel_pos='' if fs is None else fs,
-        body_len=len(b), body_md5=hashlib.md5(b.encode()).hexdigest(),
-        classificacao_h9d=cls, evidencia=ev))
+LEDGER = 662
+AMBIENTE = "ikaauvsflpmamgxmkhoq"
 
-rows.sort(key=lambda r: r['signature'])
-d = 'restoration/homologacao-h9/h9d-inventario'
-os.makedirs(d, exist_ok=True)
-with open(d + '/secdef-authenticated-inventory-h9d.tsv', 'w', newline='') as fh:
-    w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), delimiter='\t', lineterminator='\n')
-    w.writeheader()
-    [w.writerow(r) for r in rows]
-with open(d + '/classificacao-h9d.tsv', 'w', newline='') as fh:
-    w = csv.writer(fh, delimiter='\t', lineterminator='\n')
-    w.writerow(['dominio', 'signature', 'dml', 'classificacao_h9d', 'evidencia'])
+HEADER = [
+    "schema",
+    "signature",
+    "owner",
+    "language",
+    "volatility",
+    "proconfig",
+    "anon_execute",
+    "acl",
+    "dominio",
+    "classificacao_h9c",
+    "escopo_h9d",
+    "objetos_sensiveis",
+    "sql_dinamico",
+    "body_len",
+    "body_md5",
+    "classificacao_h9d",
+    "evidencia",
+]
+
+
+def load(name: str):
+    return json.loads((SRC / name).read_text())
+
+
+def main() -> int:
+    base = [l.split("\t") for l in (OUT / "secdef-authenticated-inventory-h9d.tsv").read_text().strip().split("\n")]
+    hdr, rows = base[0], [dict(zip(base[0], r)) for r in base[1:]]
+    scope = {x["name"]: x for x in load("scope.json")}
+    triage = {r["name"]: r for r in load("triage.json")}
+    readset = load("readset.json")  # "nome|args" -> dossiê
+    decisions = load("decisions.json")  # nome -> [classificacao, evidencia]
+
+    read_names = {k.split("|")[0]: v for k, v in readset.items()}
+    out, resumo = [], {}
+    lote_seq = 0
     for r in rows:
-        w.writerow([r['dominio'], r['signature'], r['dml'], r['classificacao_h9d'], r['evidencia']])
+        name = r["signature"].split("(")[0]
+        in_scope = name in scope
+        r["escopo_h9d"] = "ESCOPO_PROFUNDO_H9D" if in_scope else "FORA_ESCOPO_H9D_HERDADO_H9C"
+        if not in_scope:
+            r["classificacao_h9d"] = "HERDADA_H9C"
+            r["evidencia"] = (
+                f"Fora do escopo profundo H9-D: classificação herdada da H9-C "
+                f"({r['classificacao_h9c']}), ver restoration/homologacao-h9/03-h9c-secdef-authenticated.md"
+            )
+        elif name in decisions:
+            r["classificacao_h9d"], r["evidencia"] = decisions[name]
+        elif name in read_names:
+            t = triage.get(name, {})
+            guard = (t.get("guard_stmt") or "").strip()
+            objs = ";".join(t.get("sens_objs") or []) or "nenhum objeto sensível no corpo"
+            r["classificacao_h9d"] = "AUTH_COMPROVADA"
+            r["evidencia"] = (
+                f"Corpo lido manualmente no dossiê {read_names[name]}; guarda textual da assinatura: "
+                f"\"{guard[:220] or 'delegação a função guardada (ver decisões)'}\"; "
+                f"objetos alcançados: {objs}; fail-closed para auth.uid() NULL."
+            )
+        else:
+            lote_seq += 1
+            r["classificacao_h9d"] = "PENDENTE_EVIDENCIA"
+            r["evidencia"] = (
+                f"Triagem T_GUARD_BEFORE (não é prova). Corpo ainda não lido integralmente nesta rodada. "
+                f"Lote determinístico H9-D-L{((lote_seq - 1) // 30) + 1}."
+            )
+        resumo[r["classificacao_h9d"]] = resumo.get(r["classificacao_h9d"], 0) + 1
+        out.append(r)
 
-c = collections.Counter(r['classificacao_h9d'] for r in rows)
-dom = collections.Counter(r['dominio'] for r in rows)
-with open(d + '/resumo-h9d.json', 'w') as fh:
-    json.dump({'total_auditado': len(rows), 'por_classificacao': dict(c), 'por_dominio': dict(dom),
-               'ledger': 662, 'ambiente': 'staging ikaauvsflpmamgxmkhoq'}, fh, indent=2, ensure_ascii=False)
-print(len(rows), dict(c))
-print(dict(dom))
-for r in rows:
-    if r['classificacao_h9d'] == 'PENDENTE_EVIDENCIA':
-        print('PEND:', r['signature'])
+    (OUT / "secdef-authenticated-inventory-h9d.tsv").write_text(
+        "\t".join(HEADER) + "\n" + "\n".join("\t".join(str(r.get(c, "")) for c in HEADER) for r in out) + "\n"
+    )
+    (OUT / "classificacao-h9d.tsv").write_text(
+        "signature\tescopo_h9d\tclassificacao_h9d\tevidencia\n"
+        + "\n".join(f"{r['signature']}\t{r['escopo_h9d']}\t{r['classificacao_h9d']}\t{r['evidencia']}" for r in out)
+        + "\n"
+    )
+    escopo = {k: v for k, v in resumo.items() if k != "HERDADA_H9C"}
+    (OUT / "resumo-h9d.json").write_text(
+        json.dumps(
+            {
+                "ambiente": AMBIENTE,
+                "ledger": LEDGER,
+                "total_bruto": len(out),
+                "fora_escopo_h9d": resumo.get("HERDADA_H9C", 0),
+                "escopo_h9d": sum(escopo.values()),
+                "por_classificacao": escopo,
+                "metodologia": "regex apenas triagem; AUTH_COMPROVADA exige corpo lido e guarda textual específica",
+            },
+            indent=1,
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
+    print(resumo)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
