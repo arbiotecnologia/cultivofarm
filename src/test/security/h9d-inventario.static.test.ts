@@ -38,13 +38,14 @@ const dossie = JSON.parse(readFileSync(resolve(DIR, "dossie-l1.json"), "utf8")) 
   ledger: number;
   lote: string;
   total: number;
+  fonte_hash_sql: string;
   assinaturas: Record<
     string,
     {
       acl: string;
-      search_path: string;
-      body_md5: string;
-      body_len: number;
+      proconfig: string;
+      definition_md5: string;
+      definition_len: number;
       guarda_textual: string;
       cadeia_transitiva: string;
       null_fail_closed: string;
@@ -67,6 +68,40 @@ const ESCOPO = new Set([
   "PENDENTE_EVIDENCIA",
 ]);
 
+
+const L1_ESPERADAS: readonly string[] = [
+  "approve_microorganism_profile_with_audit(uuid,jsonb,boolean)",
+  "approve_product_profile_with_audit(uuid,jsonb,boolean)",
+  "check_cliente_dependencies(uuid)",
+  "create_technical_visit_secure(uuid,uuid,uuid,uuid,timestamp with time zone,tipo_visita,urgencia_consultor,text,uuid)",
+  "finish_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,uuid)",
+  "fn_fin_cashflow(date,date,text,text)",
+  "fn_fin_dashboard_kpis(date,date)",
+  "fn_fin_dre_summary(date,date,text)",
+  "fn_fin_expense_by_category(date,date,text,integer)",
+  "fn_fin_inadimplencia()",
+  "fn_fin_revenue_by_category(date,date,text,integer)",
+  "fn_fin_revenue_by_customer(date,date,text,integer)",
+  "fn_financial_inconsistencies()",
+  "fn_generate_recurring_title(uuid,date,boolean)",
+  "fn_mark_entrega_not_billable(uuid,text)",
+  "fn_revert_recurring_generation(uuid)",
+  "get_b2b_technician_client_detail_secure(uuid)",
+  "get_b2b_technician_clients_secure(uuid,uuid)",
+  "get_b2b_user_client_detail_secure(uuid,text)",
+  "get_financial_alerts(date)",
+  "get_financial_cashflow(date,date,text,text)",
+  "get_financial_dashboard_summary(date,date,uuid,uuid,uuid)",
+  "get_financial_dre_summary(date,date,text,uuid)",
+  "get_financial_report_data(text,date,date,uuid,uuid,uuid,text,text)",
+  "get_partner_catalog_secure(uuid)",
+  "get_partner_catalog_tecnico_secure()",
+  "get_production_planning_detail(uuid)",
+  "get_report_customer_statement(uuid,date,date)",
+  "get_report_delinquency(date)",
+  "get_report_deliveries_billing_status(date,date)",
+] as const;
+
 const GENERICA = [
   "delegação a função guardada",
   "guarda de identidade/papel precede o primeiro acesso sensivel",
@@ -76,7 +111,7 @@ const GENERICA = [
 describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
   it("declara homologação e o ledger corrente", () => {
     expect(resumo.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(resumo.ledger).toBe(662);
+    expect(resumo.ledger).toBe(663);
   });
 
   it("separa universo bruto, herança da H9-C e escopo profundo", () => {
@@ -124,11 +159,14 @@ describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
     }
   });
 
-  it("registra a exposição corrigida da H9-D1 exatamente uma vez", () => {
+  it("registra as duas exposições comprovadas e corrigidas (H9-D1 e H9-D-L1)", () => {
     const exp = rows.filter((r) => r.classificacao_h9d === "EXPOSICAO_COMPROVADA_CORRIGIDA");
-    expect(exp).toHaveLength(1);
-    expect(exp[0].signature.startsWith("fn_run_recurring_generation(")).toBe(true);
-    expect(exp[0].evidencia).toContain("20261006000000");
+    expect(exp).toHaveLength(2);
+    const d1 = exp.find((r) => r.signature.startsWith("fn_run_recurring_generation("))!;
+    expect(d1.evidencia).toContain("20261006000000");
+    const l1 = exp.find((r) => r.signature.startsWith("create_technical_visit_secure("))!;
+    expect(l1.evidencia).toContain("20261007000000");
+    expect(l1.evidencia).toContain("IDOR");
   });
 
   it("assinaturas são únicas e ordenadas de forma determinística", () => {
@@ -144,7 +182,7 @@ describe("H9-D — dossiê do lote L1", () => {
 
   it("declara homologação, ledger e lote", () => {
     expect(dossie.ambiente).toBe("ikaauvsflpmamgxmkhoq");
-    expect(dossie.ledger).toBe(662);
+    expect(dossie.ledger).toBe(663);
     expect(dossie.lote).toBe("H9-D-L1");
     expect(resumo.lotes_auditados).toContain("H9-D-L1");
   });
@@ -175,13 +213,22 @@ describe("H9-D — dossiê do lote L1", () => {
     }
   });
 
+  it("as chaves do L1 são exatamente as 30 assinaturas canônicas esperadas", () => {
+    expect([...chaves].sort()).toEqual([...L1_ESPERADAS].sort());
+  });
+
+  it("declara a consulta SQL reprodutível dos fingerprints do catálogo vivo", () => {
+    expect(dossie.fonte_hash_sql).toContain("md5(pg_get_functiondef(p.oid))");
+    expect(dossie.fonte_hash_sql).toContain("oidvectortypes(p.proargtypes)");
+  });
+
   it("cada assinatura do L1 tem evidência específica e completa", () => {
     for (const [k, d] of Object.entries(dossie.assinaturas)) {
-      expect(d.classificacao).toBe("AUTH_COMPROVADA");
-      expect(d.body_md5).toMatch(/^[0-9a-f]{32}$/);
-      expect(d.body_len).toBeGreaterThan(100);
+      expect(["AUTH_COMPROVADA", "EXPOSICAO_COMPROVADA_CORRIGIDA"]).toContain(d.classificacao);
+      expect(d.definition_md5).toMatch(/^[0-9a-f]{32}$/);
+      expect(d.definition_len).toBeGreaterThan(100);
       expect(d.acl).toContain("authenticated");
-      expect(d.search_path).toContain("search_path");
+      expect(d.proconfig).toContain("search_path");
       expect(d.guarda_textual.length).toBeGreaterThan(20);
       expect(d.cadeia_transitiva.length).toBeGreaterThan(20);
       expect(d.null_fail_closed.length).toBeGreaterThan(3);
@@ -195,9 +242,9 @@ describe("H9-D — dossiê do lote L1", () => {
   it("o inventário reflete o dossiê nas 30 assinaturas do L1", () => {
     for (const k of chaves) {
       const r = inventario.get(k)!;
-      expect(r.classificacao_h9d).toBe("AUTH_COMPROVADA");
+      expect(r.classificacao_h9d).toBe(dossie.assinaturas[k].classificacao);
       expect(r.evidencia).toContain("Lote H9-D-L1");
-      expect(r.evidencia).toContain(dossie.assinaturas[k].body_md5);
+      expect(r.evidencia).toContain(dossie.assinaturas[k].definition_md5);
     }
   });
 });
