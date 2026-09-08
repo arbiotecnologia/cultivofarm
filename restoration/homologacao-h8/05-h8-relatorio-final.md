@@ -55,7 +55,7 @@ wrappers privados 4→6); a referência vigente é o H7O.
 
 ## 4. Decisão final
 
-Todos os critérios de conclusão da H8 foram atendidos em homologação: ledger congelado em 658,
+Todos os critérios de conclusão da H8 foram atendidos em homologação: ledger 658 e, após a H8-E, 659,
 59 repo-only reconciliadas e bloqueadas, invariantes estruturais estáveis, fiscal restrito à
 homologação, e agora um mecanismo de verificação **read-only, idempotente, sanitizado e
 testado** com runbook operacional utilizável.
