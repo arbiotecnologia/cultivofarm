@@ -193,7 +193,7 @@ describe("H8-D — classificação de severidade por cenário", () => {
   it("execução real registrada mantém invariantes de homologação", () => {
     const r = carregar("baseline-real");
     const por = (n: string) => r.sinais.find((s) => s.sinal === n);
-    expect(por("ledger_migrations")?.medida).toBe("658");
+    expect(por("ledger_migrations")?.medida).toBe("659");
     expect(por("security_definer_total")?.medida).toBe("648");
     expect(por("security_definer_sem_search_path")?.medida).toBe("0");
     expect(por("rpcs_executaveis_por_anon")?.medida).toBe("2");
