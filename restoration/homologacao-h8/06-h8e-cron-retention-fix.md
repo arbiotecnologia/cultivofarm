@@ -160,10 +160,11 @@ espaços/nova-linha finais introduzidos pelo registro do ledger).
 O **WARN** do healthcheck é a falha **histórica** de 2026-09-08 03:15 UTC, anterior à correção.
 **Não foi mascarado**: permanecerá WARN até sair da janela de 24 h ou até o próximo ciclo bem-sucedido.
 
-**Advisors:** nenhuma nova consulta oficial foi executada nesta fase. Os valores oficiais
-permanecem os da H8-B (performance 512 = 147 WARN + 365 INFO; segurança 393 = 383 WARN +
-10 INFO + 0 ERROR). A alteração desta fase não cria objeto de banco, policy, índice, view,
-função ou grant — portanto não pode introduzir novo achado de Advisor.
+**Advisors (no momento da aplicação):** nenhuma nova consulta oficial foi executada. Os
+valores vigentes eram os da H8-B (performance 512; segurança 393 = 383 WARN + 10 INFO +
+0 ERROR). A alteração desta fase não cria objeto de banco, policy, índice, view, função ou
+grant — portanto não pode introduzir novo achado de Advisor. A releitura oficial posterior
+à validação funcional está na **seção 9** (segurança 393 inalterado; performance 510).
 
 ---
 
