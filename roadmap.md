@@ -124,3 +124,15 @@
 - [ ] Gates externos pendentes: **B1** (proteção contra senha vazada — responsável: administrador do projeto), **B3** (parecer fiscal/contábil — responsável: responsável fiscal), **B4** (autorização humana de promoção — responsável: sponsor)
 - [x] Correção obrigatória H9-A (2026-09-08): drift introduzido durante a geração H9-A, detectado na verificação independente e restaurado do baseline `df8bd791` (`.env` idêntico ao baseline; `client.ts`/`types.ts` com diff zero). Binding gate OK (`ikaauvsflpmamgxmkhoq`), guard H7P PASS, postcheck H7O PASS. Nenhuma escrita em banco. Commit-base autoritativo = `df8bd7919c32398dec8fed41332fccb7770e1e02`
 - [x] Decisão: **GO para H9-B (onda 2) / NO-GO produção**
+
+### Fase H9-B — Segurança crítica comprovada (homologação)
+- [x] Binding restaurado do commit autoritativo `f5071fe0` (drift automático de `.env` detectado no início e registrado); binding gate OK `ikaauvsflpmamgxmkhoq`
+- [x] `rpc_validar_comprovante_entrega`: `SECURITY DEFINER`, `search_path` fixo, sem SQL dinâmico, rate-limit (token 10/60s, origem 30/60s, global 600/60s) **antes** da leitura, payload sem PII, respostas idênticas para token nulo/inválido/inexistente — **sem vulnerabilidade**
+- [x] `rpc_validar_rastreio_produto`: **vulnerabilidade comprovada** — token inexistente gravava linha em `produto_etiqueta_consultas` sem qualquer limite e sem incrementar contadores
+- [x] Correção mínima `20261004000000_h9b1_rate_limit_rastreio_v1` (idempotente, reversível, só homologação) + rollback nominal em `restoration/homologacao-h9/h9b-rollbacks/`; teste: 14 chamadas → 10 linhas e depois `rate_limited`; rollback→reapply comprovado
+- [x] 10 tabelas RLS sem policy (7 `public` + 3 `private`) confirmadas fail-closed: 0 policies e 0 privilégios S/I/U/D para `anon` e `authenticated`; schema `private` sem USAGE para papéis de API; negação por papel testada
+- [x] `_f42_harness_fixtures` e `_fiscal_staging_marker` marcadas como exclusivas de staging — **não promover**
+- [x] Gates: binding OK, guard 59 PASS, postcheck H7O PASS, testes estáticos/T2/T6, typecheck, build e regressão PASS; ledger 659 → **660**; Advisors inalterados (nenhuma tabela/policy/índice/grant criado)
+- [x] Zero acesso à produção `navfzbwgwzruipouyfnk`
+- [ ] Pendentes: **B1**, **B3**, **B4**; autorização interna das 378 SECDEF `authenticated` a comprovar na **H9-C**
+- [x] Decisão: **GO para H9-C / NO-GO produção**
