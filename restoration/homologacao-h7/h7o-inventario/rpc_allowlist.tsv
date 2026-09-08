@@ -1,4 +1,4 @@
-# H7O allowlist — funções em public executáveis por anon/authenticated (staging) — gerada 2026-09-04T16:45:34Z
+# H7O allowlist — funções em public executáveis por anon/authenticated (staging) — gerada 2026-09-08T21:27:07Z
 # assinatura	security	anon	authenticated	tipo
 _fiscal_rtc_assert_payload(payload jsonb, kind text)	INVOKER	-	authenticated	f
 _fiscal_rtc_can_read(uid uuid)	INVOKER	-	authenticated	f
@@ -37,7 +37,6 @@ catalog_sources_set_source_key()	INVOKER	anon	authenticated	trigger
 check_cliente_dependencies(_cliente_id uuid)	DEFINER	-	authenticated	f
 check_fazenda_dependencies(_fazenda_id uuid)	DEFINER	-	authenticated	f
 check_os_item_ref()	INVOKER	anon	authenticated	trigger
-check_partner_order_sla()	DEFINER	-	authenticated	f
 check_talhao_dependencies(_talhao_id uuid)	DEFINER	-	authenticated	f
 comunicacao_audit_no_mutation()	INVOKER	anon	authenticated	trigger
 comunicacao_consent_no_mutation()	INVOKER	anon	authenticated	trigger
@@ -359,7 +358,6 @@ rpc_fiscal_service_profile_ibs_cbs_get(p_profile_id uuid)	DEFINER	-	authenticate
 rpc_fiscal_service_profile_ibs_cbs_save(p_profile_id uuid, payload jsonb, expected_revision text)	DEFINER	-	authenticated	f
 rpc_fiscal_tax_rule_publish(p_rule_id uuid, p_justification text)	DEFINER	-	authenticated	f
 rpc_fiscal_xml_prepare_v1(p_invoice_id uuid, p_idempotency_key text)	DEFINER	-	authenticated	f
-rpc_fiscal_xml_record_v1(p_run_id uuid, p_state text, p_patch jsonb)	DEFINER	-	authenticated	f
 rpc_fiscal_xml_status_v1(p_invoice_id uuid)	DEFINER	-	authenticated	f
 rpc_force_checkout_visita(p_registro_id uuid, p_target_user_id uuid, p_reason text)	DEFINER	-	authenticated	f
 rpc_gerar_etiqueta_produto(p_payload jsonb)	DEFINER	-	authenticated	f
