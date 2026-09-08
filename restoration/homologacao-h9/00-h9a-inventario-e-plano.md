@@ -16,8 +16,8 @@ rotas, Edge Functions, RLS, RPCs, triggers, cron, Storage ou Auth. Apenas leitur
 | Cron `prune-old-audit-logs` | `cron.job` jobid 5 | `15 3 * * *`, `active=true`, md5 `dbc129eaf374196a06f3b911381703da` |
 | Cron ativos | `cron.job` | 6 (jobids 1, 2, 5, 8, 9, 18) |
 | Última execução do jobid 5 | H8-E, runid 7138 | `succeeded`, `DELETE 0` (evidência preservada, não reexecutada) |
-| Binding do frontend | `restoration/homologacao-h7/check-frontend-binding.sh` | **ABORT — DRIFT**: `.env VITE_SUPABASE_PROJECT_ID='yzszlzjpovmcteuxjznj'` ≠ `ikaauvsflpmamgxmkhoq`. **Não corrigido nesta fase** (trava 4). Ver risco R1. |
-| Commit-base | `git log -1` no início da fase | `b9f800dc8666af253b45930ce5f839eda31fc842`. O commit-base indicado no pedido (`df8bd791…`) **não é o HEAD atual** — divergência registrada como **PENDENTE DE EVIDÊNCIA** (histórico gerido pela plataforma). |
+| Binding do frontend | `restoration/homologacao-h7/check-frontend-binding.sh` | **OK — staging `ikaauvsflpmamgxmkhoq`**. Registro histórico: houve drift introduzido durante a geração H9-A, detectado na verificação independente e restaurado do baseline `df8bd791` (`.env` e `types.ts` idênticos ao baseline; `client.ts` sem divergência). |
+| Commit-base | Baseline publicado autoritativo | `df8bd7919c32398dec8fed41332fccb7770e1e02`. O HEAD efêmero interno do sandbox não é fonte de verdade e não é usado como referência. |
 
 ---
 
@@ -33,10 +33,13 @@ rotas, Edge Functions, RLS, RPCs, triggers, cron, Storage ou Auth. Apenas leitur
 
 ### 2.2 Tabelas com RLS habilitada e sem policy (fail-closed)
 
-Confirmadas por leitura: **7** tabelas (a baseline de 10 do Advisor **não foi reproduzida**; diferença marcada
-como **PENDENTE DE EVIDÊNCIA** — reconferir no Advisor oficial na abertura de H9-B).
-Nenhuma delas possui grant para `anon`/`authenticated` (`grants_api = 0`), ou seja, **nenhuma está exposta pela
-Data API**: são inacessíveis por design e o acesso ocorre só via funções `SECURITY DEFINER`/`service_role`.
+O Advisor oficial reporta **10** tabelas, composição resolvida: **7 no schema `public` + 3 no schema `private`**.
+Não há divergência pendente. Verificação de privilégios efetivos em leitura (`has_table_privilege`) nas 10:
+`SELECT` para `anon` = falso e para `authenticated` = falso em todas, RLS habilitada e 0 policies — portanto
+**fail-closed** e fora da Data API; o acesso ocorre só via funções `SECURITY DEFINER`/`service_role`.
+As 3 tabelas `private` (`public_validation_rate_counters`, `public_validation_rate_pepper`,
+`public_validation_rate_policy`) são estruturas internas de rate-limit da validação pública e **devem permanecer
+fora da API** (confirmado também pelo `h7o-postcheck.sh`: "tabelas private com RLS e sem grants app: 3/3").
 
 | Tabela | Natureza | Grants anon/authenticated | Classificação | Ação proposta |
 |---|---|---|---|---|
@@ -47,6 +50,9 @@ Data API**: são inacessíveis por design e o acesso ocorre só via funções `S
 | `communication_provider_settings_rate_limit` | Controle de taxa | 0 | Fail-closed obrigatório | Manter sem policy |
 | `comunicacao_inapp_dispatch` | Fila interna de despacho | 0 | Fail-closed intencional | Manter sem policy |
 | `fiscal_certificate_material` | Material criptográfico do certificado | 0 | Fail-closed obrigatório | Manter sem policy, jamais expor |
+| `private.public_validation_rate_counters` | Contadores de rate-limit público | 0 | Interna, fora da API | Manter sem policy |
+| `private.public_validation_rate_pepper` | Segredo HMAC do rate-limit | 0 | Interna, fora da API | Manter sem policy, jamais expor |
+| `private.public_validation_rate_policy` | Política de rate-limit | 0 | Interna, fora da API | Manter sem policy |
 
 **Risco:** baixo. **Impacto funcional:** nenhum (nada depende de acesso direto). **Perfis afetados:** nenhum.
 **Testes:** negar `select` como `anon` e `authenticated` em cada tabela. **GO:** 0 grants de API e 0 leituras bem-sucedidas por perfil não-privilegiado.
@@ -62,12 +68,13 @@ Data API**: são inacessíveis por design e o acesso ocorre só via funções `S
 
 ### 2.4 Funções `SECURITY DEFINER` executáveis por `authenticated` (378)
 
-Quantidade **não** equivale a vulnerabilidade: 100% possuem `search_path` fixo (0 sem `search_path`) e todas
-aplicam verificação de papel internamente. Agrupamento por domínio (prefixo do nome, top 25 por volume):
+Quantidade **não** equivale a vulnerabilidade: `search_path` fixo confirmado em 100% (0 sem `search_path`);
+a autorização interna por função **permanece a ser comprovada por domínio na onda 3**. Agrupamento por domínio
+(prefixo do nome, top 25 por volume):
 
 | Domínio (prefixo) | Qtde | Exposição real |
 |---|---|---|
-| `rpc_fiscal_*` | 30 | Backoffice fiscal; gated por papel |
+| `rpc_fiscal_*` | 30 | Backoffice fiscal (autorização a comprovar na onda 3) |
 | `rpc_executivo_*` | 19 | Leitura agregada executiva |
 | `rpc_regulatory_*` / `fn_regulatory_*` | 22 | Regulatório/ficha técnica |
 | `rpc_cc_*` | 15 | Centro de custo/financeiro |
@@ -154,8 +161,8 @@ completos de estatística e checagem de uso em rotinas raras; remover em lotes p
 
 | ID | Risco | Severidade | Mitigação |
 |---|---|---|---|
-| R1 | `.env` em drift para `yzszlzjpovmcteuxjznj`; binding gate em ABORT | Alta | Restaurar do baseline aprovado em fase com permissão de escrita (H9-B), antes de qualquer teste de frontend |
-| R2 | Divergência entre 10 (Advisor) e 7 (leitura direta) tabelas RLS sem policy | Média | Reconferir Advisor oficial na abertura de H9-B |
-| R3 | Commit-base indicado ≠ HEAD | Baixa | Confirmar histórico antes da promoção |
+| R1 | Drift de `.env` introduzido durante a geração H9-A, detectado na verificação independente e **restaurado do baseline `df8bd791`** | Encerrado | Binding gate reexecutado: OK (`ikaauvsflpmamgxmkhoq`); manter gate obrigatório no início de cada fase |
+| R2 | ~~Divergência 10 vs. 7~~ — **resolvida**: Advisor 10 = 7 `public` + 3 `private`, todas fail-closed | Encerrado | Nenhuma ação; reconferir no Advisor a cada fase |
+| R3 | Uso de HEAD efêmero do sandbox como referência | Baixa | Fonte de verdade é o baseline publicado `df8bd791` |
 | R4 | Consolidação de policies pode alterar visibilidade silenciosamente | Alta | Harness de matriz de acesso obrigatório antes/depois |
 | R5 | Remoção prematura de índices por estatística curta | Média | Regra dos 2 ciclos mensais |

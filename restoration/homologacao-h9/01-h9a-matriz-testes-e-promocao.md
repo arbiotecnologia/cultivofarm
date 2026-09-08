@@ -61,13 +61,13 @@ CONTEXTO
 
 TAREFA 0 (obrigatória, antes de tudo)
 - Restaurar .env / client.ts / types.ts do baseline aprovado e fazer o binding gate passar em ikaauvsflpmamgxmkhoq.
-- Reconferir no Advisor oficial a divergência 10 x 7 tabelas RLS sem policy (risco R2 de H9-A).
+- Advisor `rls_enabled_no_policy` = 10 = 7 tabelas `public` + 3 `private` (rate-limit interno); composição resolvida em H9-A, sem pendência.
 
 ESCOPO PERMITIDO
 1. Revisar o payload das duas RPCs SECURITY DEFINER executáveis por anon
    (rpc_validar_comprovante_entrega, rpc_validar_rastreio_produto), confirmando ausência de PII excedente
    e rate-limit ativo. Só alterar se houver exposição comprovada, com migration nova + rollback nominal.
-2. Confirmar fail-closed das 7 tabelas com RLS sem policy: 0 grants para anon/authenticated e 0 leituras
+2. Confirmar fail-closed das 10 tabelas com RLS sem policy (7 `public` + 3 `private`): 0 grants para anon/authenticated e 0 leituras
    bem-sucedidas por perfil não privilegiado.
 3. Executar a matriz de testes T2 e T6 de H9-A.
 
