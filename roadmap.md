@@ -137,3 +137,17 @@
 - [x] Zero acesso à produção `navfzbwgwzruipouyfnk`
 - [ ] Pendentes: **B1**, **B3**, **B4**; autorização interna das 378 SECDEF `authenticated` a comprovar na **H9-C**
 - [x] Decisão: **GO para H9-C / NO-GO produção**
+
+### Fase H9-C — SECURITY DEFINER executáveis por `authenticated` (homologação)
+- [x] Binding restaurado do commit autoritativo `ed755d2e` (`.env` apontava para projeto indevido; `types.ts` truncado em 2.052 → 21.850 linhas); HEAD interno observado `a9312005` ≠ commit solicitado, divergência registrada; binding gate OK `ikaauvsflpmamgxmkhoq`
+- [x] Inventário determinístico TSV de **378** funções `public` `SECURITY DEFINER` com EXECUTE para `authenticated` (18 campos, MD5 do corpo) em `restoration/homologacao-h9/h9c-inventario/`; `search_path` fixo 378/378, grant `PUBLIC` 0
+- [x] Classificação por domínio: 25 admin, 64 financeiro, 38 fiscal, 65 B2B/cliente, 186 operação/relatório; evidência declarada sem sobrealegação (84 com guarda antes da primeira escrita, 106 sem escrita não auditadas em profundidade, 186 `PENDENTE_EVIDENCIA` para onda posterior)
+- [x] Auditoria profunda das 32 funções de escrita dos domínios A–E por ordenação guarda × primeira operação sensível; `rpc_create_financial_title` e `rpc_entrega_registrar_conferencia_v1` confirmadas seguras (falso positivo da heurística); SQL dinâmico de `rpc_create_financial_title` e `fn_cockpit_is_hml_environment` sem injeção
+- [x] **Duas vulnerabilidades comprovadas** em sessão `authenticated` de baixo privilégio (transação revertida): `check_partner_order_sla()` executou escrita administrativa sem qualquer autorização; `rpc_fiscal_xml_record_v1(uuid,text,jsonb)` alcançou a máquina de estados fiscal sem verificar usuário/papel
+- [x] Consumidores reais confirmados: cron `check-partner-order-sla` (jobid 2, `*/30 * * * *`, como `postgres`) e Edge Function `fiscal-xml-engine` (cliente `service_role`); nenhuma chamada em `src/`
+- [x] Correção mínima e reversível `20261005000000_h9c1_least_privilege_secdef_v1` — revoga EXECUTE de `authenticated`/`anon`/`PUBLIC` e preserva `service_role`; rollback nominal em `restoration/homologacao-h9/h9c-rollbacks/`
+- [x] Desvio registrado: escrita direta em `supabase/migrations/` passou a ser bloqueada pela plataforma; forward versionado em `restoration/homologacao-h9/h9c-forwards/` com registro próprio no ledger
+- [x] Verificação: ACLs reduzidas a `{postgres,service_role}`, teste negativo `42501` para ambas, teste positivo `service_role` OK, SECDEF `authenticated` **378 → 376**, ledger **660 → 661**, cron 2 e 5 ativos e inalterados, H9-B intacta, zero fixtures remanescentes
+- [x] Zero acesso à produção `navfzbwgwzruipouyfnk`
+- [ ] Pendentes: **B1**, **B3**, **B4**; 186 funções do domínio F e 106 funções sem escrita a auditar em onda posterior
+- [x] Decisão: **GO homologação / NO-GO produção**
