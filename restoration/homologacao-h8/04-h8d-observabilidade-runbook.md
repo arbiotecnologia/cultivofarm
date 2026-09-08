@@ -328,7 +328,7 @@ Advisor, typecheck/build/Vitest; registrar no ledger documental da fase.
 | **B1** — proteção contra senha vazada | Aberto; depende de configuração externa. Fora do alcance desta fase |
 | **B3** — credenciamento SEFAZ + validação contábil | Aberto; mantém fiscal em `NOT_READY` e produção NO-GO |
 | **B4** — autorização humana de promoção | Aberto por definição; nenhuma automação de promoção foi criada |
-| **H8-E** — `prune-old-audit-logs` (achado 8.1) | Aberto; correção proposta, exige janela autorizada |
+| **H8-E** — `prune-old-audit-logs` (achado 8.1) | **Corrigida em 2026-09-08** (`20261003000000`, ledger 659, ver `06-h8e-cron-retention-fix.md`); validação funcional pendente do disparo de 03:15 UTC. Nota: o achado 8.1 acima registra apenas `financial_audit_log`; a H8-E comprovou um segundo defeito idêntico em `clientes_audit_log` (`changed_at`), corrigido no mesmo ato. O sinal `ledger_migrations` deste runbook passou a esperar **659** |
 | Backlog performance/RLS | 146 `multiple_permissive_policies`, 172 `unindexed_foreign_keys`, 193 `unused_index`, 1 `duplicate_index` — fora da H8 |
 | Baselines UNKNOWN | Fila vazia e `duplicate_index` sem histórico local; coletar 30 dias de JSON antes de fixar limiar |
 | Drift recorrente de binding | Ocorreu de novo na entrada da fase; procedimento 7.1 é obrigatório no início de toda sessão |

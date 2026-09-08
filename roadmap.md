@@ -87,7 +87,15 @@
   - [x] Sem DDL e sem migration: ledger permanece **658**; 59 repo-only ausentes e íntegras
   - [x] Achado: cron `prune-old-audit-logs` falha por `created_at` em `financial_audit_log` (correta `performed_at`) e aborta as 13 sentenças — nenhuma poda ocorre; sem perda de dados
   - [x] Decisão: **GO operacional em homologação / NO-GO produção**
-- [ ] H8-E — corrigir `prune-old-audit-logs` (usar `performed_at` em `financial_audit_log` e tornar cada `DELETE` independente); exige janela autorizada por alterar job destrutivo
+- [x] H8-E — correção segura do cron `prune-old-audit-logs`: **executada em homologação** (relatório `restoration/homologacao-h8/06-h8e-cron-retention-fix.md`)
+  - [x] Achado adicional comprovado: `clientes_audit_log` usa `changed_at` (não `created_at`) — corrigido junto, pois o bloco é atômico e falharia mesmo assim
+  - [x] Correção mínima por `cron.alter_job(job_id := 5, …)`; `jobid`/`jobname`/`schedule`/`database`/`username`/`active` preservados; 13 sentenças mantidas atômicas
+  - [x] Migration `20261003000000_h8e_fix_prune_audit_logs_performed_at_v1` + rollback nominal fora de `supabase/migrations`; ensaio em transação descartada PASS; ledger **658 → 659**
+  - [x] md5 do `command`: `6fcccc17696cc2409fa5afba2a593e78` → `dbc129eaf374196a06f3b911381703da`
+  - [x] Manifesto/guard/testes/healthcheck atualizados para ledger 659; 59 repo-only seguem ausentes e íntegras
+  - [x] Decisão: **GO técnico em homologação / NO-GO produção** — validação funcional pendente do disparo de 03:15 UTC
+- [ ] H8-E (verificação) — confirmar em 2026-09-09, após 03:15 UTC: `status=succeeded`, sem erro de coluna e contagens de retenção coerentes
+- [ ] Backlog pós-H8-E — separar as 13 sentenças do bloco de retenção em execuções independentes (muda atomicidade; exige fase própria)
 - [x] H8 consolidada: relatório final `restoration/homologacao-h8/05-h8-relatorio-final.md` — ledger 658, Advisors 512/393 (0 ERROR), invariantes estáveis, blockers B1/B3/B4 abertos
 - [ ] H8 permanece separada da promoção a produção; nenhuma migration H8 aplicada nesta rodada
 - [x] H8-B — consolidação de políticas RLS e revisão de RPCs `SECURITY DEFINER`: **executada no staging** (relatório `restoration/homologacao-h8/02-h8b-policies-rpcs.md`)
