@@ -338,9 +338,10 @@ Advisor, typecheck/build/Vitest; registrar no ledger documental da fase.
 ## 12. Decisão
 
 Healthcheck é **read-only, idempotente, sanitizado, fail-closed e testado**; todos os gates
-vigentes passaram; Advisors e invariantes estáveis; ledger **658**; 59 repo-only ausentes e
-íntegras; fiscal em homologação com produção desligada.
+vigentes passaram; Advisors e invariantes estáveis; ledger **659** (após H8-E); 59 repo-only
+ausentes e íntegras; fiscal em homologação com produção desligada.
 
 **H8-D concluída. Decisão: GO operacional em homologação / NO-GO produção.**
+Com a conclusão funcional da H8-E em 2026-09-08, a **fase H8 está concluída em homologação**.
 Produção só poderá ser tratada em fase de promoção separada, após B1, B3 e B4, com autorização
 humana explícita.
