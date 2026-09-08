@@ -1,0 +1,18 @@
+{
+  "total_auditado": 376,
+  "por_classificacao": {
+    "AUTH_COMPROVADA": 323,
+    "NAO_APLICAVEL": 47,
+    "PENDENTE_EVIDENCIA": 5,
+    "EXPOSICAO_COMPROVADA_CORRIGIDA": 1
+  },
+  "por_dominio": {
+    "BD_FINANCEIRO": 64,
+    "E_B2B_CLIENTE": 64,
+    "F_OPERACAO_RELATORIO": 186,
+    "A_ADMIN": 25,
+    "C_FISCAL": 37
+  },
+  "ledger": 662,
+  "ambiente": "staging ikaauvsflpmamgxmkhoq"
+}
