@@ -93,8 +93,11 @@
   - [x] Migration `20261003000000_h8e_fix_prune_audit_logs_performed_at_v1` + rollback nominal fora de `supabase/migrations`; ensaio em transação descartada PASS; ledger **658 → 659**
   - [x] md5 do `command`: `6fcccc17696cc2409fa5afba2a593e78` → `dbc129eaf374196a06f3b911381703da`
   - [x] Manifesto/guard/testes/healthcheck atualizados para ledger 659; 59 repo-only seguem ausentes e íntegras
-  - [x] Decisão: **GO técnico em homologação / NO-GO produção** — validação funcional pendente do disparo de 03:15 UTC
-- [ ] H8-E (verificação) — confirmar em 2026-09-09, após 03:15 UTC: `status=succeeded`, sem erro de coluna e contagens de retenção coerentes
+  - [x] Decisão: **H8-E CONCLUÍDA** — GO técnico em homologação / NO-GO produção
+- [x] H8-E (verificação funcional) — **execução antecipada explicitamente autorizada** em 2026-09-08 15:04 UTC: `runid=7138`, `status=succeeded`, `return_message=DELETE 0`, sem erro de coluna; zero registros elegíveis (> 180 dias) antes e depois nas 13 tabelas; agenda restaurada (`15 3 * * *`, `active=true`, md5 `dbc129eaf374196a06f3b911381703da`); ledger permaneceu **659**; falha de 2026-09-08 03:15 UTC preservada como histórica
+  - [x] Invariantes revalidados: 648 SECDEF, 0 sem `search_path`, 2 anon, 378 authenticated, 6 cron ativos, 24 views / 23 `security_invoker`
+  - [x] Advisors: segurança **393** inalterado (0 ERROR); performance **510** (era 512, por `unused_index` 193 → 191) — variação dinâmica de estatística de uso, **não** estrutural e **não** regressão
+- [x] **FASE H8 CONCLUÍDA em homologação (A/B/C/D/E)** — NO-GO produção mantido; promoção depende de B1, B3, B4 e do backlog legado de performance/RLS
 - [ ] Backlog pós-H8-E — separar as 13 sentenças do bloco de retenção em execuções independentes (muda atomicidade; exige fase própria)
 - [x] H8 consolidada: relatório final `restoration/homologacao-h8/05-h8-relatorio-final.md` — ledger 658, Advisors 512/393 (0 ERROR), invariantes estáveis, blockers B1/B3/B4 abertos
 - [ ] H8 permanece separada da promoção a produção; nenhuma migration H8 aplicada nesta rodada

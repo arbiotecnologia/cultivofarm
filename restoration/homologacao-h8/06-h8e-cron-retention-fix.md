@@ -160,31 +160,63 @@ espaços/nova-linha finais introduzidos pelo registro do ledger).
 O **WARN** do healthcheck é a falha **histórica** de 2026-09-08 03:15 UTC, anterior à correção.
 **Não foi mascarado**: permanecerá WARN até sair da janela de 24 h ou até o próximo ciclo bem-sucedido.
 
-**Advisors:** nenhuma nova consulta oficial foi executada nesta fase. Os valores oficiais
-permanecem os da H8-B (performance 512 = 147 WARN + 365 INFO; segurança 393 = 383 WARN +
-10 INFO + 0 ERROR). A alteração desta fase não cria objeto de banco, policy, índice, view,
-função ou grant — portanto não pode introduzir novo achado de Advisor.
+**Advisors (no momento da aplicação):** nenhuma nova consulta oficial foi executada. Os
+valores vigentes eram os da H8-B (performance 512; segurança 393 = 383 WARN + 10 INFO +
+0 ERROR). A alteração desta fase não cria objeto de banco, policy, índice, view, função ou
+grant — portanto não pode introduzir novo achado de Advisor. A releitura oficial posterior
+à validação funcional está na **seção 9** (segurança 393 inalterado; performance 510).
 
 ---
 
-## 9. Status e verificação do próximo ciclo
+## 9. Validação funcional — execução antecipada autorizada (2026-09-08 15:04 UTC)
 
-> **Status: correção implantada; validação funcional pendente da próxima execução às 03:15 UTC.**
+> **Status: H8-E CONCLUÍDA.** A validação funcional deixou de ser pendente.
 
-Não se afirma sucesso da execução agendada antes do disparo real.
+O usuário autorizou **explicitamente** antecipar e executar o job de retenção em homologação.
+Essa execução substitui o critério anterior de aguardar 2026-09-09 03:15 UTC e constitui a
+evidência funcional válida da H8-E.
 
-**Procedimento de verificação (2026-09-09, após 03:15 UTC), read-only:**
+**Procedimento executado (homologação `ikaauvsflpmamgxmkhoq`; produção jamais consultada):**
 
-1. Consultar as execuções recentes do job `jobid=5` em `cron.job_run_details`.
-2. Critérios de aceite, cumulativos:
-   - `status = 'succeeded'`;
-   - `return_message` sem `column ... does not exist` e sem qualquer erro;
-   - contagens de retenção coerentes: nenhuma linha remanescente com mais de 180 dias nas
-     13 tabelas, e nenhuma remoção de linhas dentro da janela de retenção.
-3. Executar `restoration/homologacao-h8/h8d-healthcheck.sh`; o sinal `cron/falhas_24h` deve
-   voltar a **OK** (0) uma vez que a falha histórica saia da janela de 24 h.
-4. Em caso de nova falha: aplicar o rollback nominal (seção 4), registrar em incidente
-   conforme runbook `04-h8d`, seção 8, e **não** reagendar manualmente.
+1. **Pré-contagem:** zero registros elegíveis (> 180 dias) nas 13 tabelas do bloco.
+2. O próprio `jobid=5` foi reagendado para **uma janela única** em 2026-09-08 15:04 UTC —
+   sem alterar `command`, `jobname`, `database`, `username` ou `active`.
+3. Execução registrada em `cron.job_run_details`:
+
+| Campo | Valor |
+|---|---|
+| `runid` | **7138** |
+| `start_time` | 2026-09-08 15:04:00.092264 UTC |
+| `end_time` | 2026-09-08 15:04:00.128757 UTC |
+| `status` | **succeeded** |
+| `return_message` | `DELETE 0` |
+
+4. **Nenhum erro de coluna.** O defeito `column "created_at" does not exist` não reaparece.
+5. **Agenda original restaurada imediatamente:** `schedule = 15 3 * * *`, `active = true`,
+   `command` md5 **`dbc129eaf374196a06f3b911381703da`** (inalterado pela antecipação).
+6. **Pós-contagem:** zero registros com mais de 180 dias nas 13 tabelas — coerente com
+   `DELETE 0`; nenhuma linha dentro da janela de retenção foi removida.
+7. **Ledger permaneceu 659**; última migration `20261003000000`.
+
+**Falha histórica preservada:** a execução de **2026-09-08 03:15 UTC (`runid=7063`, `failed`)**
+e as anteriores permanecem em `cron.job_run_details` como evidência do defeito corrigido.
+Não foram apagadas nem mascaradas; o sinal `cron/falhas_24h` do healthcheck seguirá em WARN
+até a falha sair da janela de 24 h.
+
+**Invariantes revalidados após a execução:** 648 `SECURITY DEFINER`, 0 sem `search_path`,
+2 executáveis por `anon`, 378 por `authenticated`, 6 cron ativos, 24 views públicas
+(23 `security_invoker`).
+
+**Advisors oficiais:**
+
+| Advisor | Valor | Observação |
+|---|---|---|
+| Segurança | **393** (inalterado) | `rls_enabled_no_policy` 10 · `extension_in_public` 2 · SECDEF `anon` 2 · SECDEF `authenticated` 378 · leaked password protection 1 |
+| Performance | **510** | `unindexed_foreign_keys` 172 · `unused_index` **191** · `multiple_permissive_policies` 146 · `duplicate_index` 1 |
+
+O baseline anterior era **512** por conter 193 `unused_index`. A diferença de 2 é
+**melhoria dinâmica de estatística de uso de índices**, não alteração estrutural desta
+execução e **não** regressão. Nenhum objeto de banco foi criado, alterado ou removido.
 
 ---
 
@@ -192,15 +224,19 @@ Não se afirma sucesso da execução agendada antes do disparo real.
 
 | Risco | Severidade | Tratamento |
 |---|---|---|
-| Primeira execução corrigida remove backlog acumulado de >180 dias em 13 tabelas de uma vez | Baixa (dados de auditoria fora da política de retenção vigente) | Comportamento pretendido da política; execução única e transacional |
 | Bloco continua atômico: falha futura em qualquer tabela cancela as 13 podas | Média | Separação por sentença fica como backlog explícito (fora do escopo autorizado desta fase) |
-| Retenção não roda até 03:15 UTC | Baixa | Aceito; não se antecipa a agenda |
+| Primeira poda real com backlog acumulado ainda não observada (a execução validada removeu 0 linhas) | Baixa | Comportamento validado sintática e funcionalmente; o `DELETE 0` prova que as 13 sentenças executam sem erro de coluna |
+| Achados legados de Advisor (146 `multiple_permissive_policies`, 172 FKs sem índice, 191 índices não usados, 10 `rls_enabled_no_policy`, 2 `extension_in_public`, proteção de senha vazada) | Média | Backlog explícito, fora da H8; condicionam a promoção a produção |
 
 ---
 
 ## 11. Decisão
 
-- **GO técnico em homologação** — migration, rollback, ensaio e todos os gates passaram;
-  ledger 659; invariantes e configuração fiscal preservados.
-- **Validação funcional do cron: PENDENTE** do disparo de 03:15 UTC.
-- **NO-GO produção mantido.** Nenhuma promoção de banco ou aplicação foi realizada.
+- **H8-E CONCLUÍDA em homologação** — migration, rollback, ensaio, gates **e validação
+  funcional** (runid 7138, `succeeded`, `DELETE 0`) aprovados; ledger 659; job restaurado
+  em `15 3 * * *` com md5 `dbc129eaf374196a06f3b911381703da`; invariantes e configuração
+  fiscal preservados.
+- **Fase H8 concluída em homologação** (A/B/C/D/E).
+- **NO-GO produção mantido.** Nenhuma promoção de banco ou aplicação foi realizada, e os
+  blockers B1 (proteção contra senha vazada), B3 (credenciamento SEFAZ) e B4 (autorização
+  humana de promoção) seguem abertos.

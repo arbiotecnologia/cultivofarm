@@ -328,8 +328,8 @@ Advisor, typecheck/build/Vitest; registrar no ledger documental da fase.
 | **B1** — proteção contra senha vazada | Aberto; depende de configuração externa. Fora do alcance desta fase |
 | **B3** — credenciamento SEFAZ + validação contábil | Aberto; mantém fiscal em `NOT_READY` e produção NO-GO |
 | **B4** — autorização humana de promoção | Aberto por definição; nenhuma automação de promoção foi criada |
-| **H8-E** — `prune-old-audit-logs` (achado 8.1) | **Corrigida em 2026-09-08** (`20261003000000`, ledger 659, ver `06-h8e-cron-retention-fix.md`); validação funcional pendente do disparo de 03:15 UTC. Nota: o achado 8.1 acima registra apenas `financial_audit_log`; a H8-E comprovou um segundo defeito idêntico em `clientes_audit_log` (`changed_at`), corrigido no mesmo ato. O sinal `ledger_migrations` deste runbook passou a esperar **659** |
-| Backlog performance/RLS | 146 `multiple_permissive_policies`, 172 `unindexed_foreign_keys`, 193 `unused_index`, 1 `duplicate_index` — fora da H8 |
+| **H8-E** — `prune-old-audit-logs` (achado 8.1) | **CONCLUÍDA.** Corrigida em 2026-09-08 (`20261003000000`, ledger 659) e **validada funcionalmente** em execução antecipada autorizada: `runid=7138`, 2026-09-08 15:04 UTC, `succeeded`, `DELETE 0`, sem erro de coluna; agenda restaurada (`15 3 * * *`, `active=true`, md5 `dbc129ea…`). A falha de 2026-09-08 03:15 UTC fica preservada como histórica. Nota: o achado 8.1 acima registra apenas `financial_audit_log`; a H8-E comprovou um segundo defeito idêntico em `clientes_audit_log` (`changed_at`), corrigido no mesmo ato. Ver `06-h8e-cron-retention-fix.md` |
+| Backlog performance/RLS | 146 `multiple_permissive_policies`, 172 `unindexed_foreign_keys`, **191** `unused_index` (era 193; variação dinâmica de estatística de uso), 1 `duplicate_index` — fora da H8 |
 | Baselines UNKNOWN | Fila vazia e `duplicate_index` sem histórico local; coletar 30 dias de JSON antes de fixar limiar |
 | Drift recorrente de binding | Ocorreu de novo na entrada da fase; procedimento 7.1 é obrigatório no início de toda sessão |
 
@@ -338,9 +338,10 @@ Advisor, typecheck/build/Vitest; registrar no ledger documental da fase.
 ## 12. Decisão
 
 Healthcheck é **read-only, idempotente, sanitizado, fail-closed e testado**; todos os gates
-vigentes passaram; Advisors e invariantes estáveis; ledger **658**; 59 repo-only ausentes e
-íntegras; fiscal em homologação com produção desligada.
+vigentes passaram; Advisors e invariantes estáveis; ledger **659** (após H8-E); 59 repo-only
+ausentes e íntegras; fiscal em homologação com produção desligada.
 
 **H8-D concluída. Decisão: GO operacional em homologação / NO-GO produção.**
+Com a conclusão funcional da H8-E em 2026-09-08, a **fase H8 está concluída em homologação**.
 Produção só poderá ser tratada em fase de promoção separada, após B1, B3 e B4, com autorização
 humana explícita.
