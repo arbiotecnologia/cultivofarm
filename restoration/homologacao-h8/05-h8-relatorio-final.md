@@ -61,7 +61,17 @@ Todos os critérios de conclusão da H8 foram atendidos em homologação: ledger
 homologação, e agora um mecanismo de verificação **read-only, idempotente, sanitizado e
 testado** com runbook operacional utilizável.
 
-**H8 tecnicamente concluída. GO operacional em homologação / NO-GO produção.**
+Com a validação funcional do cron de retenção em 2026-09-08 (execução antecipada autorizada,
+`runid=7138`, `succeeded`), **não resta pendência funcional na H8**.
+
+**H8 CONCLUÍDA em homologação (A/B/C/D/E). GO operacional em homologação / NO-GO produção.**
+
+Parecer de prontidão para futura promoção: o ambiente de homologação está tecnicamente estável
+(0 ERROR de Advisor de segurança, invariantes preservados, ledger 659, fiscal em `tpAmb=2` com
+emissão de produção desabilitada), mas **não está pronto para promoção**: permanecem os findings
+legados (146 `multiple_permissive_policies`, 172 FKs sem índice, 191 índices não usados,
+10 `rls_enabled_no_policy`, 2 `extension_in_public`, proteção contra senha vazada desligada) e os
+blockers B1, B3 e B4.
 
 A promoção a produção depende de fase separada, com B1, B3 e B4 resolvidos e autorização humana
 explícita. Nenhuma etapa da H8 tocou, consultou ou preparou o ambiente de produção.
