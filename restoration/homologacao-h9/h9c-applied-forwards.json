@@ -3,8 +3,8 @@
   "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
-  "ledger_versoes": 661,
-  "total_applied_forwards": 1,
+  "ledger_versoes": 662,
+  "total_applied_forwards": 2,
   "entries": [
     {
       "version": "20261005000000",
@@ -30,6 +30,32 @@
         "teste_negativo": "42501 para ambas em sessao authenticated de baixo privilegio",
         "teste_positivo": "EXECUTE preservado para service_role em ambas",
         "relatorio": "restoration/homologacao-h9/03-h9c-secdef-authenticated.md"
+      }
+    },
+    {
+      "version": "20261006000000",
+      "name": "h9d1_authz_recurring_generation_v1",
+      "fase": "H9-D1",
+      "path": "restoration/homologacao-h9/h9d-forwards/20261006000000_h9d1_authz_recurring_generation_v1.sql",
+      "sha256": "cc5fe6a2d6664b5ec1a68fc2d64c11ff5738abf3ce8947a42577a5196a2841e5",
+      "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261006000000_h9d1_authz_recurring_generation_v1_rollback.sql",
+      "rollback_sha256": "1f153529b64cb71061b91bf0a5e77af0117d7f8cbc440ec4cfe04771016c0b7d",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma continua bloqueando escrita direta em supabase/migrations/; o SQL exato aplicado foi versionado em restoration/homologacao-h9/h9d-forwards/ e registrado no ledger.",
+      "efeito": "Adiciona guarda de autorizacao (is_financial_staff(auth.uid())) no topo de public.fn_run_recurring_generation(), preservando execucao sem JWT (cron jobid 1) e o callsite do frontend financeiro.",
+      "destructive": false,
+      "reversible": true,
+      "applied_at": "2026-09-08",
+      "evidence_refs": {
+        "exposicao": "authenticated sem papel financeiro executava a rotina, enumerava templates ativos e provocava escritas em recurring_generation_log e financial_audit_log (fixtures em transacao revertida; zero remanescentes)",
+        "teste_negativo": "42501 em sessao authenticated de baixo privilegio",
+        "teste_positivo": "sessao sem JWT (cron) e sessao de staff financeiro executam normalmente",
+        "acl": "postgres|authenticated|service_role preservada por design; a autorizacao passa a ser server-side",
+        "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md"
       }
     }
   ]
