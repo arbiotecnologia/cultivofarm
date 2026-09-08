@@ -177,7 +177,11 @@
 - [x] Dossiê L1 migrado para fingerprints reproduzíveis do catálogo vivo (`definition_md5 = md5(pg_get_functiondef(oid))`, `definition_len`, `acl`, `proconfig`), com a consulta SQL documentada; gate Vitest exige igualdade exata com a lista explícita das 30 assinaturas canônicas
 - [x] Evidência de `fn_generate_recurring_title` retificada: guarda condicional (NULL apenas no caminho interno do cron sem JWT), não é fail-closed genérico
 - [x] Nova aritmética do escopo (soma 292): **136 AUTH_COMPROVADA**, **4 NAO_APLICAVEL**, **2 EXPOSICAO_COMPROVADA_CORRIGIDA**, **150 PENDENTE_EVIDENCIA**
-- [ ] Pendentes: **B1**, **B3**, **B4**; evidência específica das **150** assinaturas dos lotes `H9-D-L2..L6`; reconciliação dos quatro `private.h7n_*`; menor privilégio de `get_cliente_id_for_user`, `get_cliente_ids_for_user`, `fn_catalogo_preco_canonico`, `fn_fiscal_company_crt`, `fn_microorganism_regulatory_facts` e `fn_onfarm_scope_lote`
-- [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; H9-E não iniciada; L2 só após auditoria independente desta retificação
+- [ ] Pendentes: **B1**, **B3**, **B4**; evidência específica das **121** assinaturas dos lotes `H9-D-L3..L7`; reconciliação dos quatro `private.h7n_*`; menor privilégio de `get_cliente_id_for_user`, `get_cliente_ids_for_user`, `fn_catalogo_preco_canonico`, `fn_fiscal_company_crt`, `fn_microorganism_regulatory_facts` e `fn_onfarm_scope_lote`
+- [x] **Rodada 5 (lote H9-D-L2)**: 30 assinaturas auditadas com corpo vivo, ACL, `search_path`, cadeia transitiva, callsites e prova dinâmica em transação revertida
+- [x] **12 exposições comprovadas** (BOLA em `get_cliente_id_for_user`, oráculo de papel em nove guardas por UID, leitura interna sem guarda em `fn_fiscal_company_crt` e `fn_microorganism_regulatory_facts`) corrigidas pelo forward reversível `20261008000000`; ledger 663 → 664; SECDEF mantido em 376/2
+- [x] Nova aritmética do escopo (soma 292): **153 AUTH_COMPROVADA**, **4 NAO_APLICAVEL**, **14 EXPOSICAO_COMPROVADA_CORRIGIDA**, **121 PENDENTE_EVIDENCIA** em lotes `H9-D-L3..L7`
+- [ ] `fn_catalogo_preco_canonico(uuid,uuid,text,numeric)`: preço canônico visível a qualquer `authenticated`; decisão de visibilidade comercial pendente do responsável de negócio
+- [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; H9-E não iniciada; L3 só após auditoria independente do L2
 
 
