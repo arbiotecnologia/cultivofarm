@@ -16,8 +16,8 @@ rotas, Edge Functions, RLS, RPCs, triggers, cron, Storage ou Auth. Apenas leitur
 | Cron `prune-old-audit-logs` | `cron.job` jobid 5 | `15 3 * * *`, `active=true`, md5 `dbc129eaf374196a06f3b911381703da` |
 | Cron ativos | `cron.job` | 6 (jobids 1, 2, 5, 8, 9, 18) |
 | Última execução do jobid 5 | H8-E, runid 7138 | `succeeded`, `DELETE 0` (evidência preservada, não reexecutada) |
-| Binding do frontend | `restoration/homologacao-h7/check-frontend-binding.sh` | **ABORT — DRIFT**: `.env VITE_SUPABASE_PROJECT_ID='yzszlzjpovmcteuxjznj'` ≠ `ikaauvsflpmamgxmkhoq`. **Não corrigido nesta fase** (trava 4). Ver risco R1. |
-| Commit-base | `git log -1` no início da fase | `b9f800dc8666af253b45930ce5f839eda31fc842`. O commit-base indicado no pedido (`df8bd791…`) **não é o HEAD atual** — divergência registrada como **PENDENTE DE EVIDÊNCIA** (histórico gerido pela plataforma). |
+| Binding do frontend | `restoration/homologacao-h7/check-frontend-binding.sh` | **OK — staging `ikaauvsflpmamgxmkhoq`**. Registro histórico: houve drift introduzido durante a geração H9-A, detectado na verificação independente e restaurado do baseline `df8bd791` (`.env` e `types.ts` idênticos ao baseline; `client.ts` sem divergência). |
+| Commit-base | Baseline publicado autoritativo | `df8bd7919c32398dec8fed41332fccb7770e1e02`. O HEAD efêmero interno do sandbox não é fonte de verdade e não é usado como referência. |
 
 ---
 
