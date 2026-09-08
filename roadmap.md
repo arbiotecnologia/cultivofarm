@@ -112,3 +112,4 @@
   - [x] Ledger 657 → **658**; 59 repo-only continuam ausentes (manifesto e teste estático atualizados para 658)
   - [x] Postcheck H7O PASS, harness 300 + 136 PASS, typecheck/build/Vitest 3.337 PASS / 0 FAIL / 4 skip, scans OK, binding revalidado
   - [x] Decisão: **GO homologação para H8-C / NO-GO produção** — redução estrutural segura, sem redução de findings do Advisor
+- [x] Correção de drift de binding (2026-09-08) — `.env` e `src/integrations/supabase/types.ts` restaurados exatamente do baseline aprovado `6c08a8f8`; `client.ts` preservado (sem divergência real). Nenhuma escrita em banco. Gates reexecutados: binding OK, guard 59 PASS, postcheck H7O PASS, typecheck 0 erro, build OK, Vitest 3.364 PASS / 0 FAIL / 4 skip. Leitura confirmou ledger 659, job 5 `15 3 * * *` ativo, md5 `dbc129eaf374196a06f3b911381703da`, `runid=7138 succeeded`; evidências da H8-E inalteradas. **H8 CONCLUÍDA em homologação / NO-GO produção** (B1, B3, B4 e backlog legado)

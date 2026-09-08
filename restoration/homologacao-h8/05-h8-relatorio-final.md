@@ -36,6 +36,22 @@
 | Aplicação | typecheck 0 erro · build OK · Vitest **3.364 PASS / 0 FAIL / 4 skip** · scans fiscais OK |
 | Gates | binding OK · guard 59 PASS · postcheck H7O PASS · harnesses 300/300 e 136/136 PASS |
 
+### 2.1 Correção de drift de binding (2026-09-08, pós-fechamento)
+
+O commit publicado `f8190f1b` havia alterado `.env` para um backend não autorizado e truncado
+`src/integrations/supabase/types.ts` (2.052 linhas). Ambos foram restaurados **exatamente** do
+baseline aprovado `6c08a8f8` (`.env` com o ref de homologação; `types.ts` com 21.850 linhas);
+`src/integrations/supabase/client.ts` não divergia do baseline e foi preservado. Nenhuma escrita
+em banco, migration, função, RLS ou cron foi feita, e as evidências do `runid=7138` permanecem
+inalteradas.
+
+Gates reexecutados após a correção: binding gate **OK** (`ikaauvsflpmamgxmkhoq`),
+`h7p-guard-repo-only.sh` **PASS** (59 íntegras, 0 no ledger), `h7o-postcheck.sh` **PASS**
+(allowlist 485 sem drift), typecheck **0 erro**, build **OK**, Vitest **3.364 PASS / 0 FAIL /
+4 skip** (inclui os 10 casos de binding). Confirmação read-only no banco: ledger **659**,
+job 5 `15 3 * * *` ativo, md5 `dbc129eaf374196a06f3b911381703da`, `runid=7138` `succeeded`
+(`DELETE 0`).
+
 Postcheck H7N segue em FAIL **pré-existente e esperado** desde H7O (allowlist 504→485 e
 wrappers privados 4→6); a referência vigente é o H7O.
 
