@@ -74,7 +74,7 @@ a autorização interna por função **permanece a ser comprovada por domínio n
 
 | Domínio (prefixo) | Qtde | Exposição real |
 |---|---|---|
-| `rpc_fiscal_*` | 30 | Backoffice fiscal; gated por papel |
+| `rpc_fiscal_*` | 30 | Backoffice fiscal (autorização a comprovar na onda 3) |
 | `rpc_executivo_*` | 19 | Leitura agregada executiva |
 | `rpc_regulatory_*` / `fn_regulatory_*` | 22 | Regulatório/ficha técnica |
 | `rpc_cc_*` | 15 | Centro de custo/financeiro |
