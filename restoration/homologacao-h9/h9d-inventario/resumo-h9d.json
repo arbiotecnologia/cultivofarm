@@ -7,11 +7,11 @@
     "EXPOSICAO_COMPROVADA_CORRIGIDA": 1
   },
   "por_dominio": {
-    "F_OPERACAO_RELATORIO": 354,
-    "BD_FINANCEIRO": 5,
-    "C_FISCAL": 6,
-    "E_B2B_CLIENTE": 9,
-    "A_ADMIN": 2
+    "BD_FINANCEIRO": 64,
+    "E_B2B_CLIENTE": 64,
+    "F_OPERACAO_RELATORIO": 186,
+    "A_ADMIN": 25,
+    "C_FISCAL": 37
   },
   "ledger": 662,
   "ambiente": "staging ikaauvsflpmamgxmkhoq"
