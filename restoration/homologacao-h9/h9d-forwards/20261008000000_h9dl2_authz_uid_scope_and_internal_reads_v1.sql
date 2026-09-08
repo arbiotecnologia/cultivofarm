@@ -289,3 +289,8 @@ BEGIN
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated, service_role', s);
   END LOOP;
 END $do$;
+
+-- Menor privilégio para o helper introduzido: só o próprio motor (owner/service_role)
+-- precisa executá-lo; as funções SECDEF chamadoras rodam como owner.
+REVOKE ALL ON FUNCTION public.fn_authz_uid_scope_ok(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_authz_uid_scope_ok(uuid) TO service_role;
