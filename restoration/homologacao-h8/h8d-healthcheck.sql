@@ -19,8 +19,8 @@ ledger AS (
 ),
 sig_ledger AS (
   SELECT 'identidade' AS categoria, 'ledger_migrations' AS sinal,
-         CASE WHEN n = 659 THEN 'OK' ELSE 'CRITICAL' END AS status,
-         n::text AS medida, '= 659 (H8-E)' AS limiar,
+         CASE WHEN n = 664 THEN 'OK' ELSE 'CRITICAL' END AS status,
+         n::text AS medida, '= 664 (H9-D-L2)' AS limiar,
          'Drift de ledger: comparar com h7p-repo-only-manifest.json e o runbook 04-h8d, seção 7.2. Não aplicar nada antes de identificar a origem.' AS resposta
   FROM ledger
 ),

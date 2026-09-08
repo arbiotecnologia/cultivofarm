@@ -3,8 +3,8 @@
   "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
-  "ledger_versoes": 663,
-  "total_applied_forwards": 3,
+  "ledger_versoes": 664,
+  "total_applied_forwards": 4,
   "entries": [
     {
       "version": "20261005000000",
@@ -84,6 +84,34 @@
         "teste_negativo": "T1 e T2 => 42501; T5 (client_uuid de outro ator) => 42501 request_rejected, sem vazar id",
         "teste_positivo": "T3 criacao legitima is_new=true; T4 retry do mesmo ator retorna mesmo id com is_new=false",
         "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md"
+      }
+    },
+    {
+      "version": "20261008000000",
+      "name": "h9dl2_authz_uid_scope_and_internal_reads_v1",
+      "fase": "H9-D-L2",
+      "path": "restoration/homologacao-h9/h9d-forwards/20261008000000_h9dl2_authz_uid_scope_and_internal_reads_v1.sql",
+      "sha256": "3599344125c64583646ee18021e9cb1f225feacd0f10eb4dfe1599b4f1a35c08",
+      "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261008000000_h9dl2_authz_uid_scope_and_internal_reads_v1_rollback.sql",
+      "rollback_sha256": "db53857f15f106f53fa8d75615607c12fdde178a911c9114bde69ca7467332d6",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma continua bloqueando escrita direta em supabase/migrations/; o SQL exato aplicado foi versionado em restoration/homologacao-h9/h9d-forwards/ e registrado no ledger.",
+      "efeito": "Cria public.fn_authz_uid_scope_ok(uuid) e aplica escopo de identidade (self/administrador/sessao interna) em can_manage_catalog_tecnico, can_view_catalog_internal, can_manage_technical_visit, can_view_technical_visit, fn_fiscal_can_operate, fn_fiscal_can_read_internal, fn_regulatory_can_approve, fn_regulatory_can_prepare, fn_regulatory_can_read e get_cliente_id_for_user; adiciona guarda de leitura interna em fn_fiscal_company_crt e fn_microorganism_regulatory_facts. Assinaturas, ACL e search_path preservados.",
+      "destructive": false,
+      "reversible": true,
+      "applied_at": "2026-09-08",
+      "evidence_refs": {
+        "exposicao": "BOLA/oraculo de papel: identidade authenticated sem papel e sem vinculo obtinha cliente_id de terceiro via get_cliente_id_for_user, respostas true de guardas de papel de terceiros, CRT fiscal da empresa e dossie regulatorio completo",
+        "teste_negativo": "apos o forward, todas as chamadas acima retornam NULL/false em transacao revertida",
+        "teste_positivo": "administrador, financeiro, tecnico_agronomo, produtor em self-scope e sessao interna sem JWT preservados",
+        "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l2.json",
+        "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
+        "ensaio_rollback_reaplicacao": "rollback + reaplicacao em transacao descartada: 0 divergencias de md5(pg_get_functiondef) em public",
+        "secdef_authenticated": "376 preservado: fn_authz_uid_scope_ok(uuid) nao e executavel por authenticated/anon"
       }
     }
   ]
