@@ -26,7 +26,7 @@ import pathlib
 
 OUT = pathlib.Path(__file__).resolve().parent
 
-LEDGER = 662
+LEDGER = 663
 AMBIENTE = "ikaauvsflpmamgxmkhoq"
 LOTE_TAM = 30
 
@@ -61,8 +61,9 @@ EVIDENCIA_VAGA = (
 
 def evidencia_dossie(sig: str, d: dict) -> str:
     return (
-        f"Lote H9-D-L1 — corpo integral lido no dossiê dossie-l1.json (body_md5 {d['body_md5']}, "
-        f"{d['body_len']} bytes). ACL: {d['acl']}; search_path: {d['search_path']}. "
+        f"Lote H9-D-L1 — definição integral lida do catálogo vivo e fingerprintada no dossiê dossie-l1.json "
+        f"(definition_md5 {d['definition_md5']} = md5(pg_get_functiondef(oid)), definition_len {d['definition_len']}). "
+        f"ACL: {d['acl']}; proconfig: {d['proconfig']}. "
         f"Guarda textual: \"{d['guarda_textual']}\". Cadeia transitiva: {d['cadeia_transitiva']}. "
         f"NULL fail-closed: {d['null_fail_closed']}. Tenant/BOLA/IDOR: {d['tenant_bola_idor']}. "
         f"SQL dinâmico: {d['sql_dinamico']}. Callsites reais: {d['callsites']}."
@@ -98,12 +99,11 @@ def main() -> int:
                 f"({r['classificacao_h9c']}), ver restoration/homologacao-h9/03-h9c-secdef-authenticated.md"
             )
             continue
-        if r["classificacao_h9d"] == "EXPOSICAO_COMPROVADA_CORRIGIDA":
-            conclusivas.append(r)
-            continue
         if sig in l1:
             r["classificacao_h9d"] = l1[sig]["classificacao"]
             r["evidencia"] = evidencia_dossie(sig, l1[sig])
+        elif r["classificacao_h9d"] == "EXPOSICAO_COMPROVADA_CORRIGIDA":
+            pass  # exposição comprovada e corrigida em rodada anterior (H9-D1)
         elif sig in decisoes:
             r["classificacao_h9d"], r["evidencia"] = decisoes[sig]
         elif r["classificacao_h9d"] in ("AUTH_COMPROVADA", "NAO_APLICAVEL") and not any(
@@ -156,6 +156,7 @@ def main() -> int:
                 "escopo_h9d": sum(escopo.values()),
                 "por_classificacao": escopo,
                 "lotes_auditados": ["H9-D-L1"],
+                "forwards_aplicados": ["20261006000000", "20261007000000"],
                 "metodologia": (
                     "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura "
                     "canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites"

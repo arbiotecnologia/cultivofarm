@@ -49,7 +49,7 @@ const sha256 = (p: string) =>
 describe("H9 — forwards aplicados fora de supabase/migrations", () => {
   it("declara o ambiente de homologação e o ledger corrente", () => {
     expect(manifest.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(manifest.ledger_versoes).toBe(662);
+    expect(manifest.ledger_versoes).toBe(663);
     expect(manifest.ledger_versoes).toBe(repoOnly.ledger_versoes);
     expect(manifest.entries).toHaveLength(manifest.total_applied_forwards);
   });
@@ -61,8 +61,8 @@ describe("H9 — forwards aplicados fora de supabase/migrations", () => {
     }
   });
 
-  it("as versões 20261005000000 e 20261006000000 aparecem exatamente uma vez", () => {
-    for (const v of ["20261005000000", "20261006000000"]) {
+  it("as versões 20261005000000, 20261006000000 e 20261007000000 aparecem exatamente uma vez", () => {
+    for (const v of ["20261005000000", "20261006000000", "20261007000000"]) {
       expect(manifest.entries.filter((e) => e.version === v)).toHaveLength(1);
     }
     const versions = manifest.entries.map((e) => e.version);

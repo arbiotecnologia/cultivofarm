@@ -2,9 +2,9 @@
 
 **Ambiente:** homologação `ikaauvsflpmamgxmkhoq` (exclusivo).
 **Produção `navfzbwgwzruipouyfnk`:** não acessada, não consultada, não migrada.
-**Ledger:** 662 (última `20261006000000`, exatamente uma vez).
+**Ledger:** 663 (última `20261007000000`, exatamente uma vez).
 **Status desta rodada (lote L1):** **H9-D CONTINUA — NO-GO para encerramento** (e NO-GO produção).
-**Alteração no banco nesta rodada:** nenhuma (auditoria/documentação/testes apenas).
+**Alteração no banco nesta rodada:** uma — forward `20261007000000` (correção de IDOR/BOLA em `create_technical_visit_secure`).
 
 ## 1. Metodologia (v2 — endurecida)
 
@@ -34,9 +34,9 @@ Classificação do escopo profundo (soma = 292):
 
 | Classificação | Qtd |
 | --- | --- |
-| AUTH_COMPROVADA (evidência específica por assinatura) | 137 |
+| AUTH_COMPROVADA (evidência específica por assinatura) | 136 |
 | NAO_APLICAVEL (corpo lido, sem dado sensível) | 4 |
-| EXPOSICAO_COMPROVADA_CORRIGIDA (H9-D1) | 1 |
+| EXPOSICAO_COMPROVADA_CORRIGIDA (H9-D1 + H9-D-L1) | 2 |
 | PENDENTE_EVIDENCIA (lotes H9-D-L2..L6) | 150 |
 
 Variação em relação à rodada anterior: **46 assinaturas** classificadas com a
@@ -88,6 +88,76 @@ resolve a idempotência por `p_client_uuid` antes da checagem de vínculo,
 retornando apenas o `id` de um registro já criado com aquele UUID fornecido pelo
 próprio chamador. Não há leitura de dado do registro nem enumeração viável.
 
+
+## 3.1 Retificação H9-D-L1 — IDOR/BOLA comprovado e corrigido
+
+`public.create_technical_visit_secure(uuid,uuid,uuid,uuid,timestamptz,tipo_visita,urgencia_consultor,text,uuid)`
+foi **reclassificada** de `AUTH_COMPROVADA` para `EXPOSICAO_COMPROVADA_CORRIGIDA`.
+A observação registrada na rodada anterior ("não há leitura de dado do registro
+nem enumeração viável") estava **errada**: o `id` retornado é dado alheio.
+
+**Antes (catálogo vivo, prova `h9d-inventario/prova-idor-antes.log`)** — a busca
+idempotente por `p_client_uuid` ocorria no passo 2, antes de qualquer
+autorização de cliente:
+
+- T1: `request.jwt.claim.sub` arbitrário, `p_cliente_id`/`p_fazenda_id`
+  inexistentes, `client_uuid` de registro de terceiro →
+  `registro_id = 3cc8d79b-8e32-40db-b194-463134fc220a`, `is_new = false`
+  (**idor_oracle_confirmed = true**).
+- T5: ator com vínculo legítimo no cliente, porém `client_uuid` criado por outro
+  ator → devolvia o `id` alheio.
+
+**Depois (`20261007000000`, prova `h9d-inventario/prova-idor-depois.log`)**:
+
+| Teste | Resultado |
+| --- | --- |
+| T1 — identidade arbitrária + `client_uuid` alheio | `42501 no_active_binding_or_insufficient_access` |
+| T2 — criação sem vínculo | `42501 no_active_binding_or_insufficient_access` |
+| T3 — criação legítima | `is_new = true` |
+| T4 — retry legítimo do mesmo ator/cliente | mesmo `id`, `is_new = false` |
+| T5 — `client_uuid` de outro ator | `42501 request_rejected` (genérico, sem vazar `id`) |
+
+Ordem imposta pela correção: autenticação → resolução de admin → autorização
+ativa (`user_clientes`, `execute`/`manage`, janela de validade) → idempotência
+escopada a `cliente_id = p_cliente_id` **e** `created_by = auth.uid()` (admin
+escopado ao cliente) → validações → insert → auditoria. Assinatura, defaults,
+retorno, validações, insert e log foram preservados; `search_path = public`
+fixo; ACL final `{postgres, authenticated, service_role}`, sem `PUBLIC`/`anon`.
+Fixtures somente em transação revertida; zero remanescentes.
+
+Forward: `h9d-forwards/20261007000000_h9dl1_authz_before_idempotency_visit_v1.sql`.
+Rollback: `h9d-rollbacks/20261007000000_h9dl1_authz_before_idempotency_visit_v1_rollback.sql`
+(restaura a definição anterior byte a byte, com a mesma ACL).
+
+## 3.2 Fingerprints reproduzíveis do dossiê L1
+
+Os campos `body_md5`/`body_len` foram substituídos por campos reproduzíveis
+diretamente do catálogo vivo — `definition_md5`, `definition_len`, `acl` e
+`proconfig` — nas 30 assinaturas, gerados por:
+
+```sql
+SELECT p.proname||'('||pg_catalog.oidvectortypes(p.proargtypes)||')' AS sig,
+       md5(pg_get_functiondef(p.oid))              AS definition_md5,
+       length(pg_get_functiondef(p.oid))::text     AS definition_len,
+       coalesce(p.proacl::text,'')                 AS acl,
+       coalesce(p.proconfig::text,'')              AS proconfig
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public';
+```
+
+O gate Vitest passou a exigir esse formato e a igualdade exata com a lista
+explícita das 30 assinaturas canônicas do L1 (não apenas `total = 30`).
+
+## 3.3 Correção da evidência de `fn_generate_recurring_title`
+
+A cadeia anterior afirmava simultaneamente "fail-closed" e permissão de
+`auth.uid()` NULL. Evidência retificada: a guarda é **condicional** — NULL é
+permitido por desenho apenas no caminho interno (pg_cron/`service_role`, sessão
+sem JWT, que não passa pelo PostgREST). Chamadas por `authenticated` sempre
+chegam com claim `sub`, portanto nunca com UID NULL, e ficam obrigadas a ser
+staff financeiro. Não é fail-closed genérico; o risco residual é a execução
+direta como `postgres`/`service_role`, restrita por ACL.
+
 ## 4. Exposição comprovada e corrigida (H9-D1) — preservada
 
 `public.fn_run_recurring_generation()` permanece com a guarda
@@ -100,7 +170,7 @@ preservada. Verificado nesta rodada em leitura.
 
 | Item | Resultado |
 | --- | --- |
-| Ledger | 662, `20261006000000` exatamente uma vez |
+| Ledger | 663, `20261007000000` exatamente uma vez |
 | SECDEF `public` executável por `authenticated` | 376 |
 | SECDEF `public` executável por `anon` | 2 |
 | Guarda e ACL de `fn_run_recurring_generation()` | presentes e inalteradas |
@@ -110,9 +180,9 @@ preservada. Verificado nesta rodada em leitura.
 
 ## 6. Decisão
 
-- **Nova vulnerabilidade comprovada nesta rodada:** nenhuma.
-- **Alteração no banco:** nenhuma; ledger permanece 662.
-- **H9-D:** CONTINUA. Encerramento condicionado à evidência específica das 150
+- **Nova vulnerabilidade comprovada nesta rodada:** uma (IDOR/BOLA em `create_technical_visit_secure`), corrigida por `20261007000000`.
+- **Alteração no banco:** um forward reversível; ledger 662 → 663.
+- **H9-D:** CONTINUA (L2 não iniciado, aguardando auditoria independente). Encerramento condicionado à evidência específica das 150
   assinaturas pendentes (lotes `H9-D-L2..L6`) e à reconciliação dos quatro
   helpers `private.h7n_*`.
 - **Produção:** NO-GO.
@@ -130,3 +200,10 @@ preservada. Verificado nesta rodada em leitura.
 - `src/test/security/h9d-inventario.static.test.ts` — gate estático do
   inventário e do lote L1 (30 assinaturas, unicidade, ausência de colisão por
   sobrecarga, evidência específica obrigatória).
+
+- `h9d-inventario/prova-idor-create-technical-visit.sql` — script de prova
+  (transacional, com savepoints e rollback total).
+- `h9d-inventario/prova-idor-antes.log` / `prova-idor-depois.log` — evidência
+  antes/depois.
+- `h9d-forwards/20261007000000_h9dl1_authz_before_idempotency_visit_v1.sql` e o
+  rollback correspondente.

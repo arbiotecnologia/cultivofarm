@@ -171,6 +171,13 @@
 - [x] Nova aritmética do escopo (soma 292): **137 AUTH_COMPROVADA**, **4 NAO_APLICAVEL**, **1 EXPOSICAO_COMPROVADA_CORRIGIDA**, **150 PENDENTE_EVIDENCIA** em lotes `H9-D-L2..L6`
 - [x] Gate `src/test/security/h9d-inventario.static.test.ts` exige exatamente as 30 assinaturas do L1, unicidade, evidência específica e ausência de colisão por sobrecarga
 - [x] Nenhuma escrita no banco na rodada 3: ledger **662**, SECDEF `authenticated` **376** / `anon` **2**, crons 1/2/5/8/9/18 ativos, guarda e ACL de `fn_run_recurring_generation()` preservadas, zero fixtures criadas
+- [x] **Rodada 4 (retificação H9-D-L1)**: IDOR/BOLA **comprovado** em `create_technical_visit_secure(...)` — a idempotência por `p_client_uuid` precedia a autorização e devolvia `registro_id` alheio (`idor_oracle_confirmed=true`); reclassificada de `AUTH_COMPROVADA` para `EXPOSICAO_COMPROVADA_CORRIGIDA`
+- [x] Forward reversível `20261007000000_h9dl1_authz_before_idempotency_visit_v1` aplicado **somente na homologação** (ledger **662 → 663**, aplicação única) com rollback byte a byte; ordem passa a ser auth → admin → vínculo `execute`/`manage` → idempotência escopada a cliente autorizado + `created_by = auth.uid()`; colisão fora de escopo falha genericamente (`42501 request_rejected`); assinatura, defaults, retorno, validações, insert, auditoria, `search_path` e ACL (`postgres`/`authenticated`/`service_role`) preservados
+- [x] Provas dinâmicas em transação revertida (T1 ataque, T2 sem vínculo, T3 criação legítima, T4 retry idempotente, T5 `client_uuid` de outro ator) — antes/depois em `h9d-inventario/prova-idor-*.log`; zero fixtures remanescentes
+- [x] Dossiê L1 migrado para fingerprints reproduzíveis do catálogo vivo (`definition_md5 = md5(pg_get_functiondef(oid))`, `definition_len`, `acl`, `proconfig`), com a consulta SQL documentada; gate Vitest exige igualdade exata com a lista explícita das 30 assinaturas canônicas
+- [x] Evidência de `fn_generate_recurring_title` retificada: guarda condicional (NULL apenas no caminho interno do cron sem JWT), não é fail-closed genérico
+- [x] Nova aritmética do escopo (soma 292): **136 AUTH_COMPROVADA**, **4 NAO_APLICAVEL**, **2 EXPOSICAO_COMPROVADA_CORRIGIDA**, **150 PENDENTE_EVIDENCIA**
 - [ ] Pendentes: **B1**, **B3**, **B4**; evidência específica das **150** assinaturas dos lotes `H9-D-L2..L6`; reconciliação dos quatro `private.h7n_*`; menor privilégio de `get_cliente_id_for_user`, `get_cliente_ids_for_user`, `fn_catalogo_preco_canonico`, `fn_fiscal_company_crt`, `fn_microorganism_regulatory_facts` e `fn_onfarm_scope_lote`
-- [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; H9-E não iniciada; L2 só após auditoria independente do L1
+- [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; H9-E não iniciada; L2 só após auditoria independente desta retificação
+
 

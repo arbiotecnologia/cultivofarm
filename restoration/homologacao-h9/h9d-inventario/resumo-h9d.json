@@ -1,17 +1,21 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
- "ledger": 662,
+ "ledger": 663,
  "total_bruto": 376,
  "fora_escopo_h9d": 84,
  "escopo_h9d": 292,
  "por_classificacao": {
-  "AUTH_COMPROVADA": 137,
+  "AUTH_COMPROVADA": 136,
   "PENDENTE_EVIDENCIA": 150,
-  "NAO_APLICAVEL": 4,
-  "EXPOSICAO_COMPROVADA_CORRIGIDA": 1
+  "EXPOSICAO_COMPROVADA_CORRIGIDA": 2,
+  "NAO_APLICAVEL": 4
  },
  "lotes_auditados": [
   "H9-D-L1"
+ ],
+ "forwards_aplicados": [
+  "20261006000000",
+  "20261007000000"
  ],
  "metodologia": "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites"
 }

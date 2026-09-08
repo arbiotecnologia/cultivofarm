@@ -3,8 +3,8 @@
   "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
-  "ledger_versoes": 662,
-  "total_applied_forwards": 2,
+  "ledger_versoes": 663,
+  "total_applied_forwards": 3,
   "entries": [
     {
       "version": "20261005000000",
@@ -55,6 +55,34 @@
         "teste_negativo": "42501 em sessao authenticated de baixo privilegio",
         "teste_positivo": "sessao sem JWT (cron) e sessao de staff financeiro executam normalmente",
         "acl": "postgres|authenticated|service_role preservada por design; a autorizacao passa a ser server-side",
+        "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md"
+      }
+    },
+    {
+      "version": "20261007000000",
+      "name": "h9dl1_authz_before_idempotency_visit_v1",
+      "fase": "H9-D-L1",
+      "path": "restoration/homologacao-h9/h9d-forwards/20261007000000_h9dl1_authz_before_idempotency_visit_v1.sql",
+      "sha256": "d6d0d6aded2cd7f1e20a4b9355cc3925abfebfaa91ee65ab77578127c3593881",
+      "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261007000000_h9dl1_authz_before_idempotency_visit_v1_rollback.sql",
+      "rollback_sha256": "b56175dc61ad7f42d0610ebcd79f8085657abb11395ec288438e72e4901f32e1",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma continua bloqueando escrita direta em supabase/migrations/; o SQL exato aplicado foi versionado em restoration/homologacao-h9/h9d-forwards/ e registrado no ledger.",
+      "efeito": "Corrige IDOR/BOLA em public.create_technical_visit_secure(...): a idempotencia por p_client_uuid passou a ocorrer somente APOS autenticacao e autorizacao ativa (admin ou vinculo execute/manage em user_clientes para p_cliente_id), escopada a cliente autorizado + created_by = auth.uid(); colisao fora de escopo falha genericamente (42501 request_rejected). Assinatura, defaults, retorno, validacoes, insert e auditoria preservados; search_path fixo e ACL postgres/authenticated/service_role sem PUBLIC/anon.",
+      "destructive": false,
+      "reversible": true,
+      "applied_at": "2026-09-08",
+      "evidence_refs": {
+        "exposicao": "idor_oracle_confirmed=true no estado anterior: sub arbitrario + p_cliente_id/p_fazenda_id inexistentes + client_uuid alheio retornava registro_id de terceiro (is_new=false)",
+        "prova_antes": "restoration/homologacao-h9/h9d-inventario/prova-idor-antes.log",
+        "prova_depois": "restoration/homologacao-h9/h9d-inventario/prova-idor-depois.log",
+        "script": "restoration/homologacao-h9/h9d-inventario/prova-idor-create-technical-visit.sql",
+        "teste_negativo": "T1 e T2 => 42501; T5 (client_uuid de outro ator) => 42501 request_rejected, sem vazar id",
+        "teste_positivo": "T3 criacao legitima is_new=true; T4 retry do mesmo ator retorna mesmo id com is_new=false",
         "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md"
       }
     }
