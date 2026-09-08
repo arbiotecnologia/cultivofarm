@@ -118,7 +118,8 @@ else
     bad "allowlist H7O com DRIFT ('<' allowlist, '>' banco)"; diff <(grep -v '^#' "$ALLOW_H7O") "$tmp" || true
   fi
 fi
-# diff H7N → H7O deve ser EXATAMENTE as 19 assinaturas (somente remoções; nenhuma adição).
+# diff H7N → H7O/H9-C deve ser EXATAMENTE as 19 assinaturas da H7O mais as 2 revogadas
+# pela migration 20261005000000_h9c1_least_privilege_secdef_v1 (somente remoções; nenhuma adição).
 removed=$(diff <(grep -v '^#' "$ALLOW_H7N" | cut -f1) <(cut -f1 "$tmp") | grep -c '^<' || true)
 added=$(diff <(grep -v '^#' "$ALLOW_H7N" | cut -f1) <(cut -f1 "$tmp") | grep -c '^>' || true)
 expected_removed='_assert_visita_editavel(uuid)
@@ -127,6 +128,7 @@ _rpc_avancar_esteira_laboratorio_internal(uuid,text,text,uuid)
 can_checkin_technical_visit(uuid,uuid)
 can_user_access_cliente(uuid,uuid)
 can_view_bi_operacional(uuid)
+check_partner_order_sla()
 fn_cockpit_assert_operador()
 fn_entrega_assert_confirmador(text)
 fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)
@@ -137,6 +139,7 @@ is_operational_staff(uuid)
 is_valid_b2b_partner_user(uuid,uuid)
 is_visit_org_manager(uuid,uuid)
 log_report_view(text,jsonb)
+rpc_fiscal_xml_record_v1(uuid,text,jsonb)
 rpc_gerar_alertas_operacionais()
 rpc_recalcular_prioridade_alerta(uuid)
 rpc_substituir_etiqueta_produto(uuid,text)'
