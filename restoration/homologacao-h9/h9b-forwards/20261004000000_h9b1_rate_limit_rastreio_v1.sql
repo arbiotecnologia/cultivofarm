@@ -95,6 +95,6 @@ BEGIN
     'mensagem', v_msg
   );
 END;
-$function$
+$function$;
 
 COMMIT;
