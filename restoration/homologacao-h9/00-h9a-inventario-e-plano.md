@@ -50,6 +50,9 @@ fora da API** (confirmado também pelo `h7o-postcheck.sh`: "tabelas private com 
 | `communication_provider_settings_rate_limit` | Controle de taxa | 0 | Fail-closed obrigatório | Manter sem policy |
 | `comunicacao_inapp_dispatch` | Fila interna de despacho | 0 | Fail-closed intencional | Manter sem policy |
 | `fiscal_certificate_material` | Material criptográfico do certificado | 0 | Fail-closed obrigatório | Manter sem policy, jamais expor |
+| `private.public_validation_rate_counters` | Contadores de rate-limit público | 0 | Interna, fora da API | Manter sem policy |
+| `private.public_validation_rate_pepper` | Segredo HMAC do rate-limit | 0 | Interna, fora da API | Manter sem policy, jamais expor |
+| `private.public_validation_rate_policy` | Política de rate-limit | 0 | Interna, fora da API | Manter sem policy |
 
 **Risco:** baixo. **Impacto funcional:** nenhum (nada depende de acesso direto). **Perfis afetados:** nenhum.
 **Testes:** negar `select` como `anon` e `authenticated` em cada tabela. **GO:** 0 grants de API e 0 leituras bem-sucedidas por perfil não-privilegiado.
