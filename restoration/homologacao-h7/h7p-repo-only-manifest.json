@@ -3,7 +3,7 @@
   "gerado_para": "staging ikaauvsflpmamgxmkhoq",
   "ledger_versoes": 660,
   "total_repo_only": 59,
-  "nota_h8a": "Ledger 654 -> 657 pela fase H8-A (20261001000000, 20261001010000, 20261001020000), todas aplicadas e registradas no staging. As 59 repo-only permanecem bloqueadas e ausentes do ledger. Ledger 657 -> 658 pela fase H8-B1 (20261002000000). Ledger 658 -> 659 pela fase H8-E (20261003000000, correcao de coluna no cron de retencao de auditoria via cron.alter_job).",
+  "nota_h8a": "Ledger 654 -> 657 pela fase H8-A (20261001000000, 20261001010000, 20261001020000), todas aplicadas e registradas no staging. As 59 repo-only permanecem bloqueadas e ausentes do ledger. Ledger 657 -> 658 pela fase H8-B1 (20261002000000). Ledger 658 -> 659 pela fase H8-E (20261003000000, correcao de coluna no cron de retencao de auditoria via cron.alter_job). Ledger 659 -> 660 pela fase H9-B1 (20261004000000, rate-limit aplicado antes de leitura/escrita na RPC publica de rastreio).",
   "regra": "Nenhuma destas migrations pode ser aplicada ao staging. Toda necessidade futura exige NOVA migration H7P+ posterior ao ledger.",
   "entries": [
     {
@@ -1251,7 +1251,7 @@
     "reviewed_at": "2026-09-04",
     "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
     "ledger_versoes": 660,
-    "regra_futura": "Qualquer necessidade funcional destas 59 exige NOVA migration com versao posterior a 20261002000000. Aplicacao direta, movimentacao, renomeacao, edicao de SQL ou insercao no ledger sao permanentemente proibidas.",
+    "regra_futura": "Qualquer necessidade funcional destas 59 exige NOVA migration com versao posterior a 20261004000000. Aplicacao direta, movimentacao, renomeacao, edicao de SQL ou insercao no ledger sao permanentemente proibidas.",
     "distribuicao": {
       "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO": 36,
       "SUPERSEDED_DB_A_FRENTE": 3,

@@ -105,7 +105,7 @@ describe("H7P — manifesto de migrations repo-only", () => {
     const repoVersions = readdirSync(MIGRATIONS_DIR)
       .filter((f) => /^\d{14}_.+\.sql$/.test(f))
       .map((f) => f.slice(0, 14));
-    // 660 aplicadas + 59 reconciliadas = 718. Qualquer arquivo novo posterior
+    // 660 aplicadas + 59 reconciliadas = 719. Qualquer arquivo novo posterior
     // é legítimo apenas se também tiver sido aplicado (ledger cresce junto).
     const known = manifest.ledger_versoes + manifest.total_repo_only;
     expect(repoVersions.length).toBeLessThanOrEqual(known);
