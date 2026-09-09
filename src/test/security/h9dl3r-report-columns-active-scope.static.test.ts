@@ -26,6 +26,11 @@ const ROLLBACK = resolve(
 const MANIFEST = resolve(ROOT, "restoration/homologacao-h9/h9c-applied-forwards.json");
 
 const forward = readFileSync(FORWARD, "utf8");
+/** Apenas o SQL executável: as linhas de comentário citam propositalmente os defeitos corrigidos. */
+const sql = forward
+  .split("\n")
+  .filter((l) => !l.trimStart().startsWith("--"))
+  .join("\n");
 const rollback = readFileSync(ROLLBACK, "utf8");
 const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
   ledger_versoes: number;
@@ -48,8 +53,8 @@ describe("H9-D-L3R — colunas vivas, enum válido e escopo de vínculo ativo", 
   });
 
   it("substitui as colunas inexistentes pelas colunas vivas nos quatro relatórios", () => {
-    expect(forward).not.toMatch(/\bi\.amount\b/);
-    expect(forward).not.toMatch(/\bar\.cliente_id\b/);
+    expect(sql).not.toMatch(/\bi\.amount\b/);
+    expect(sql).not.toMatch(/\bar\.cliente_id\b/);
     for (const fn of RELATORIOS) expect(forward).toContain(`FUNCTION public.${fn}(`);
     expect(forward).toContain("i.original_amount - COALESCE(i.received_amount,0) - COALESCE(i.discount_amount,0)");
     expect(forward).toContain("i.original_amount - COALESCE(i.paid_amount,0) - COALESCE(i.discount_amount,0)");
@@ -62,8 +67,8 @@ describe("H9-D-L3R — colunas vivas, enum válido e escopo de vínculo ativo", 
   });
 
   it("remove o valor inexistente do enum sem ampliar privilégios do laboratório", () => {
-    expect(forward).not.toContain("'laboratorio'::app_role");
-    expect(forward).not.toMatch(/has_role\([^)]*laboratorio/);
+    expect(sql).not.toContain("'laboratorio'::app_role");
+    expect(sql).not.toMatch(/laboratorio/);
     for (const papel of ["administrador", "producao", "gestor"]) {
       expect(forward).toContain(`public.has_role(v_uid,'${papel}'::app_role)`);
     }
