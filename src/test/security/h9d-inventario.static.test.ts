@@ -116,7 +116,7 @@ const GENERICA = [
 describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
   it("declara homologação e o ledger corrente", () => {
     expect(resumo.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(resumo.ledger).toBe(670);
+    expect(resumo.ledger).toBe(671);
   });
 
   it("separa universo bruto, herança da H9-C e escopo profundo", () => {
@@ -529,13 +529,14 @@ describe("H9-D — dossiê do lote L4 e retificação do oráculo de existência
   const chaves = Object.keys(dossieL4.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 670 e o lote L4", () => {
+  it("declara homologação, ledger 671 e o lote L4", () => {
     expect(dossieL4.ambiente).toBe("ikaauvsflpmamgxmkhoq");
-    expect(dossieL4.ledger).toBe(670);
+    expect(dossieL4.ledger).toBe(671);
     expect(dossieL4.lote).toBe("H9-D-L4");
     expect(resumo.lotes_auditados).toContain("H9-D-L4");
     expect(resumo.forwards_aplicados ?? []).toContain("20261013000000");
     expect(resumo.forwards_aplicados ?? []).toContain("20261014000000");
+    expect(resumo.forwards_aplicados ?? []).toContain("20261015000000");
   });
 
   it("contém exatamente as 30 assinaturas canônicas do lote", () => {
@@ -584,6 +585,32 @@ describe("H9-D — dossiê do lote L4 e retificação do oráculo de existência
       expect(d.observacao).toContain("20261014000000");
       expect(d.tenant_bola_idor).toContain("oraculo de existencia".replace("oraculo", "Sem oraculo").slice(0, 3));
     }
+  });
+
+  it("a retificação 2 elimina o oráculo de rpc_converter_visita_em_os", () => {
+    const r2 = (dossieL4 as unknown as { retificacao_l4_2: Record<string, unknown> }).retificacao_l4_2;
+    expect(r2).toBeTruthy();
+    expect(String(r2.ledger)).toContain("671");
+    const depois = r2.prova_depois as Record<string, string>;
+    expect(depois.tecnico_inexistente).toBe(depois.tecnico_real_alheia);
+    expect(depois.sem_papel_inexistente).toBe(depois.sem_papel_real);
+    expect(depois.admin_inexistente).toBe(depois.tecnico_inexistente);
+    const fw = readFileSync(
+      resolve(ROOT, "restoration/homologacao-h9/h9d-forwards/20261015000000_h9dl4r2_authz_scoped_convert_no_oracle_v1.sql"),
+      "utf8",
+    );
+    expect(fw).toContain("CREATE OR REPLACE FUNCTION public.rpc_converter_visita_em_os");
+    expect(fw).not.toContain("Visita técnica não encontrada.");
+    expect(fw).toContain("SET search_path TO 'public'");
+    expect(fw).not.toMatch(/GRANT[^;]*\b(PUBLIC|anon)\b/);
+    const rb = readFileSync(
+      resolve(
+        ROOT,
+        "restoration/homologacao-h9/h9d-rollbacks/20261015000000_h9dl4r2_authz_scoped_convert_no_oracle_v1_rollback.sql",
+      ),
+      "utf8",
+    );
+    expect(rb).toContain("Visita técnica não encontrada.");
   });
 
   it("o forward e o rollback da retificação existem em disco e são simétricos", () => {
