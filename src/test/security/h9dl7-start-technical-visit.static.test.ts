@@ -59,7 +59,7 @@ const clsRows = read("restoration/homologacao-h9/h9d-inventario/classificacao-h9
   .map((l) => l.split("\t"));
 
 describe("H9-D-L7 — dossiê da assinatura única", () => {
-  it("declara homologação, ledger 675 e a migration do lote", () => {
+  it("declara homologação, ledger 677 e a migration do lote", () => {
     for (const d of [dossie, decisoes]) {
       expect(d.ambiente).toBe("ikaauvsflpmamgxmkhoq");
       expect(d.producao_proibida).toBe("navfzbwgwzruipouyfnk");
@@ -148,7 +148,7 @@ describe("H9-D-L7 — forward e rollback", () => {
     }
   });
 
-  it("está rastreado no manifesto com hashes reais e ledger 675", () => {
+  it("está rastreado no manifesto com hashes reais e ledger 677", () => {
     const entry = manifest.entries.find((e) => e.version === "20261019000000");
     expect(entry, "forward não rastreado no manifesto").toBeTruthy();
     expect(entry!.sha256).toBe(sha256(FW_PATH));
@@ -161,10 +161,10 @@ describe("H9-D-L7 — forward e rollback", () => {
     expect(entry!.applied_at).toBe("2026-09-09");
     expect(dossie.forward_sha256).toBe(sha256(FW_PATH));
     expect(dossie.rollback_sha256).toBe(sha256(RB_PATH));
-    expect(manifest.ledger_versoes).toBe(675);
+    expect(manifest.ledger_versoes).toBe(677);
     expect(manifest.total_applied_forwards).toBe(manifest.entries.length);
-    expect(manifest.total_applied_forwards).toBe(15);
-    expect(h7p.ledger_versoes).toBe(675);
+    expect(manifest.total_applied_forwards).toBe(17);
+    expect(h7p.ledger_versoes).toBe(677);
     expect(h7p.total_repo_only).toBe(59);
   });
 
@@ -176,7 +176,10 @@ describe("H9-D-L7 — forward e rollback", () => {
     }
     const versions = manifest.entries.map((e) => e.version);
     expect(new Set(versions).size).toBe(versions.length);
-    expect(versions[versions.length - 1]).toBe("20261019000000");
+    expect(versions.filter((v) => v > "20261019000000")).toEqual([
+      "20261020000000",
+      "20261021000000",
+    ]);
   });
 });
 
