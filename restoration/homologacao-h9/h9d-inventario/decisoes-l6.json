@@ -2,14 +2,19 @@
  "ambiente": "ikaauvsflpmamgxmkhoq",
  "producao_proibida": "navfzbwgwzruipouyfnk",
  "lote": "H9-D-L6",
- "ledger": 673,
- "ultima_migration": "20261017000000",
+ "ledger": 674,
+ "ultima_migration": "20261018000000",
  "total": 30,
- "forward_aplicado": "20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1 (aplicado uma única vez; ledger 672 -> 673)",
+ "forward_aplicado": "20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1 (aplicado uma única vez; ledger 672 -> 673) + retificação 20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1 (aplicada uma única vez; ledger 673 -> 674)",
  "forward_path": "restoration/homologacao-h9/h9d-forwards/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1.sql",
- "forward_sha256": "2a8f83a629721c9e424f50022779274883cc7c3125678c2f6ae7e46a536509bc",
+ "forward_sha256": "631cca50e9485023b52468b6fdfdcf82c099f8b4cb87af28bd2d0d88b22e63b3",
  "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1_rollback.sql",
  "rollback_sha256": "c1177fac9995512abd7bdb6c488653df05aaf69a9d50d000efa376cd06364601",
+ "forward_l6r_path": "restoration/homologacao-h9/h9d-forwards/20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1.sql",
+ "forward_l6r_sha256": "1a78989816193a10ec09a2ef374bbe12dbd1d5d4471fbc454bdcd82c030a863b",
+ "rollback_l6r_path": "restoration/homologacao-h9/h9d-rollbacks/20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1_rollback.sql",
+ "rollback_l6r_sha256": "2589aef21cd81009f3b6a83a6bafee4a3861bb65b05c7761da7c3ffe63445048",
+ "incidente_rastreabilidade": "Apos a aplicacao e o registro unico da versao 20261017000000, o arquivo do forward foi emendado com REVOKE explicito de anon/authenticated sobre public._visita_scope_ok(uuid,uuid) e o SQL foi reexecutado sob a MESMA versao, sem novo registro no ledger — violacao da imutabilidade da migration aplicada. A H9-D-L6R reconstituiu o arquivo 20261017000000 no conteudo historico da PRIMEIRA aplicacao (apenas REVOKE FROM PUBLIC + GRANT service_role) e regularizou a revogacao explicita, de forma versionada e reversivel, pelo forward 20261018000000 (ledger 673 -> 674, ocorrencia unica).",
  "metodo": "Leitura integral de pg_get_functiondef das 30 assinaturas canônicas e de todos os helpers transitivos no catálogo vivo da homologação; ACL, owner, proconfig, volatilidade e OID lidos do catálogo; callsites mapeados por varredura em src/ e supabase/functions; provas dinâmicas executadas no staging com identidade authenticated sem papel, comparando recurso real alheio contra UUID inexistente, sempre em transação revertida quando há escrita. Regex serviu apenas como triagem — nenhuma classificação foi promovida por nome ou aparência.",
  "resumo_lote": {
   "AUTH_COMPROVADA": 26,
@@ -140,7 +145,7 @@
    "guarda_textual": "Mesmo padrão do check-in: _assert_visita_editavel era alcançado sem gate próprio, diferenciando inexistente, alheio editável e alheio fechado. O forward insere _visita_scope_ok imediatamente antes, com o erro já existente 'forbidden_visita_nao_atribuido' (42501).",
    "cadeia_transitiva": "Cadeia transitiva lida: public._visita_scope_ok(uuid,uuid) [novo, SECDEF, search_path=public, EXECUTE apenas service_role] = can_manage_technical_visit OR is_active_visit_participant OR registros_consultor.created_by/consultor_responsavel/consultor_profile_id = uid; can_manage_technical_visit = fn_authz_uid_scope_ok AND (has_role administrador OR is_visit_responsible OR is_visit_org_manager); is_active_visit_participant lê technical_visit_assignments com is_active=true; _assert_visita_editavel valida status por is_technical_visit_editable_status. Todos com search_path fixo e sem SQL dinâmico.",
    "callsites": "src/hooks/useFluxoVisitaTecnica.ts:503, src/hooks/useOfflineSync.ts:443, src/components/visita/PresencaCheckoutButton.tsx.",
-   "prova_individual": "Prova no staging, identidade sem papel, transação revertida: registro real alheio e UUID inexistente produzem resposta idêntica. Indistinguíveis. Resíduo zero. Registrada pendência funcional independente (predicado 'client_uuid = p_client_uuid::text' contra coluna uuid, que faz a função falhar fechada antes do gate): não é exposição e está fora do escopo de correção da L6."
+   "prova_individual": "Prova no staging, identidade sem papel, transação revertida: registro real alheio e UUID inexistente produzem a MESMA resposta forbidden_visita_nao_atribuido (42501). Indistinguíveis. Resíduo zero. O defeito funcional independente (predicado 'client_uuid = p_client_uuid::text' contra coluna uuid, que fazia a função falhar fechada com 42883 antes do gate) foi corrigido na H9-D-L6R pelo forward 20261018000000: a comparação passou a ser uuid = uuid, o checkout legítimo volta a retornar jsonb com id/data_hora_checkin/idempotent, e o fingerprint vivo migrou de 759eabc40273aa815319239cf23777a5 para 2b2cc2d7d51a37a515ef79823c28f690."
   },
   "rpc_registrar_ocorrencia_entrega(uuid,jsonb)": {
    "classificacao": "AUTH_COMPROVADA",
