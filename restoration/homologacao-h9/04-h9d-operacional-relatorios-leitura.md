@@ -574,8 +574,9 @@ função e ACL: **nenhum dado financeiro foi alterado**.
   (`uq_entregas_receivable_id`).
 - Negativos: `tecnico_agronomo` recebe `Acesso negado` antes de qualquer leitura; período invertido
   ⇒ `22023`; período vazio ⇒ 0 linhas sem erro.
-- Rollback → reaplicação: fingerprint `md5(pg_get_functiondef + proacl)` das três assinaturas
-  idêntico (`a33ec88a53469eb79634562e8643ec80`). Zero fixtures remanescentes.
+- Rollback → reaplicação: definições e ACL das três assinaturas idênticas. Fingerprint canônico reproduzível
+  `md5(string_agg(pg_get_functiondef(oid)||proacl, '|' ORDER BY proname))` = `22ad484f0edc6233c2eecdbdd4da1334`
+  (o valor `a33ec88a…` citado no ensaio veio de expressão ad hoc da sessão e não é reproduzível). Zero fixtures remanescentes.
 
 ### 12.4 Retificação sobre `fn_financial_inconsistencies`
 
