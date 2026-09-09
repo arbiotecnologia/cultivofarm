@@ -323,7 +323,7 @@ describe("H9-D-L6R — cadeia 20261017000000 histórica + 20261018000000 retific
     expect(versions.indexOf("20261018000000")).toBe(versions.indexOf("20261017000000") + 1);
     expect(versions.indexOf("20261018000000")).toBe(versions.indexOf("20261019000000") - 1);
     expect(manifest.ledger_versoes).toBe(679);
-    expect(manifest.total_applied_forwards).toBe(18);
+    expect(manifest.total_applied_forwards).toBe(19);
     expect(resumo.forwards_aplicados).toContain("20261018000000");
     expect(resumo.lotes_auditados).toContain("H9-D-L6R");
   });

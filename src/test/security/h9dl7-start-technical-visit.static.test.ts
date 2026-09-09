@@ -163,7 +163,7 @@ describe("H9-D-L7 — forward e rollback", () => {
     expect(dossie.rollback_sha256).toBe(sha256(RB_PATH));
     expect(manifest.ledger_versoes).toBe(679);
     expect(manifest.total_applied_forwards).toBe(manifest.entries.length);
-    expect(manifest.total_applied_forwards).toBe(18);
+    expect(manifest.total_applied_forwards).toBe(19);
     expect(h7p.ledger_versoes).toBe(679);
     expect(h7p.total_repo_only).toBe(59);
   });
