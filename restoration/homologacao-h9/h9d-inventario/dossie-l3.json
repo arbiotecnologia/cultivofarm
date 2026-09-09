@@ -194,7 +194,7 @@
   "log_my_access_denied_secure(text,text)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "668c39fa8716deab0a20c3dcadc98887",
+   "definition_md5": "667c39fa8716deab0a20c3dcadc98887",
    "definition_len": 2253,
    "guarda_textual": "grava exclusivamente o próprio auth.uid(); contexto e route_group são sanitizados/limitados no servidor",
    "cadeia_transitiva": "auth.uid() -> INSERT na tabela de auditoria de acesso negado; nenhum uid vem do cliente",
