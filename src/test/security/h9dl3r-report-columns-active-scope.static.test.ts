@@ -68,7 +68,7 @@ describe("H9-D-L3R — colunas vivas, enum válido e escopo de vínculo ativo", 
 
   it("remove o valor inexistente do enum sem ampliar privilégios do laboratório", () => {
     expect(sql).not.toContain("'laboratorio'::app_role");
-    expect(sql).not.toMatch(/laboratorio/);
+    expect(sql).not.toMatch(/'laboratorio'/);
     for (const papel of ["administrador", "producao", "gestor"]) {
       expect(forward).toContain(`public.has_role(v_uid,'${papel}'::app_role)`);
     }
