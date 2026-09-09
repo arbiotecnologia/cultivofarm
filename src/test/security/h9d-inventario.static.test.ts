@@ -116,7 +116,7 @@ const GENERICA = [
 describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
   it("declara homologação e o ledger corrente", () => {
     expect(resumo.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(resumo.ledger).toBe(665);
+    expect(resumo.ledger).toBe(666);
   });
 
   it("separa universo bruto, herança da H9-C e escopo profundo", () => {
@@ -403,9 +403,9 @@ describe("H9-D — dossiê do lote L3", () => {
   const chaves = Object.keys(dossieL3.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 665 e o lote L3", () => {
+  it("declara homologação, ledger 666 e o lote L3", () => {
     expect(dossieL3.ambiente).toBe("ikaauvsflpmamgxmkhoq");
-    expect(dossieL3.ledger).toBe(665);
+    expect(dossieL3.ledger).toBe(666);
     expect(dossieL3.lote).toBe("H9-D-L3");
     expect(resumo.lotes_auditados).toContain("H9-D-L3");
     expect(resumo.forwards_aplicados ?? []).toContain("20261009000000");
