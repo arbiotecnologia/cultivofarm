@@ -600,7 +600,8 @@ describe("H9-D — dossiê do lote L4 e retificação do oráculo de existência
       "utf8",
     );
     expect(fw).toContain("CREATE OR REPLACE FUNCTION public.rpc_converter_visita_em_os");
-    expect(fw).not.toContain("Visita técnica não encontrada.");
+    // a mensagem só pode aparecer no cabeçalho explicativo, nunca como retorno
+    expect(fw).not.toMatch(/RETURN jsonb_build_object\([^;]*'Visita técnica não encontrada\.'/);
     expect(fw).toContain("SET search_path TO 'public'");
     expect(fw).not.toMatch(/GRANT[^;]*\b(PUBLIC|anon)\b/);
     const rb = readFileSync(
