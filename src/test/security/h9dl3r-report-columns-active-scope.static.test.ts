@@ -42,7 +42,7 @@ const ESCOPO = ["get_cliente_ids_for_user", "get_cliente_id_for_user", "pode_ace
 
 describe("H9-D-L3R — colunas vivas, enum válido e escopo de vínculo ativo", () => {
   it("é um forward de homologação, sem menção à produção", () => {
-    expect(forward).toContain("ikaauvsljpovmcteuxjznj".replace("ljpovmcteuxjznj", "zjpovmcteuxjznj") === "" ? "" : "ikaauvsflpmamgxmkhoq");
+    expect(forward).toContain("ikaauvsflpmamgxmkhoq");
     expect(forward).not.toContain("navfzbwgwzruipouyfnk");
     expect(rollback).not.toContain("navfzbwgwzruipouyfnk");
   });
