@@ -600,3 +600,27 @@ exposições.
   e `get_financial_dre_summary`) permanece não verificada.
 
 **Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.** L4 e H9-E não iniciados.
+
+### 13.7 Adendo de auditoria independente (reprova no UUID indicado)
+
+A auditoria independente apontou o mesmo defeito: `SELECT *` do registro antes de
+`_assert_visita_editavel`, com sucesso silencioso para UUID inexistente e `42501 sem_permissao` para o
+diagnóstico real `b906cbf7-c7b1-4736-98c2-a5f281238068`. O apontamento está **integralmente coberto**
+pelo forward `20261013000000_h9dl4_authz_visit_domain_gate_v1` (rollback simétrico incluído).
+
+Reprova executada no catálogo vivo, em transação revertida, identidade `authenticated` sem papel de
+domínio:
+
+| caso | antes | depois |
+| --- | --- | --- |
+| diagnóstico real `b906cbf7-…` | `42501 sem_permissao` | `42501 sem_permissao` |
+| diagnóstico inexistente | sucesso silencioso (`void`) | `42501 sem_permissao` |
+| recomendação inexistente | sucesso silencioso (`void`) | `42501 sem_permissao` |
+| sem JWT, diagnóstico real | sucesso silencioso (`void`) | `42501 sem_permissao` |
+
+As quatro respostas passam a ser indistinguíveis, eliminando o oráculo. O corpo vivo confirma que a
+primeira instrução executável é `IF v_uid IS NULL THEN RAISE 'sem_permissao'` seguida do gate de
+capacidade, **antes** de qualquer leitura do recurso; `_assert_visita_editavel`, a edição legítima e a
+auditoria permanecem intactas. `rpc_delete_recomendacao_visita` recebeu a mesma correção mesmo sem
+recomendação real disponível para prova positiva, por o defeito ser estruturalmente idêntico e
+determinístico.
