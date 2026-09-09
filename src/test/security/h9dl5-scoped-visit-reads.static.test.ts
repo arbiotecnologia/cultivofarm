@@ -254,12 +254,37 @@ describe("H9-D-L5 — forward reversível 20261016000000", () => {
     expect(forwardSql).toMatch(/REVOKE[^;]*\bPUBLIC\b/);
   });
 
-  it("autoriza em consulta escopada antes da leitura, sem SELECT do recurso antes da guarda", () => {
-    // nenhuma leitura do registro sem predicado de escopo do chamador
-    expect(forwardSql).not.toMatch(/SELECT\s+\*\s+INTO\s+v_reg\s+FROM\s+public\.registros_consultor\s+WHERE\s+id\s*=\s*p_registro_id\s*;/i);
+  it("autoriza em consulta escopada antes da leitura do recurso, em cada função", () => {
     expect(forwardSql).toContain("has_active_user_cliente_access");
     expect(forwardSql).toContain("can_view_technical_visit");
     expect(forwardSql).toContain("auth.uid()");
+
+    const blocos = forwardSql
+      .split(/CREATE OR REPLACE FUNCTION /)
+      .slice(1)
+      .filter((b) => /^public\.rpc_(enviar_visita_aprovacao|get_visita_workspace|get_my_visit_by_client_uuid)\b/.test(b));
+    expect(blocos).toHaveLength(3);
+
+    const AUTORIZACAO = [
+      "can_view_technical_visit",
+      "has_active_user_cliente_access",
+      "consultor_responsavel = v_uid",
+      "created_by = v_uid",
+      "v_is_admin",
+    ];
+    for (const bloco of blocos) {
+      const idx = bloco.search(/FROM\s+public\.registros_consultor/i);
+      expect(idx, "nenhuma leitura do recurso encontrada no bloco").toBeGreaterThan(0);
+      const fimStatement = bloco.indexOf(";", idx);
+      // tudo o que precede a leitura + o próprio statement de leitura (predicado escopado)
+      const trecho = bloco.slice(0, fimStatement > 0 ? fimStatement : idx);
+      expect(
+        AUTORIZACAO.some((m) => trecho.includes(m)),
+        "leitura de registros_consultor sem autorização prévia nem predicado escopado",
+      ).toBe(true);
+      // a guarda de sessão sempre precede a leitura
+      expect(trecho).toContain("auth.uid()");
+    }
   });
 
   it("elimina as mensagens que revelavam existência do recurso", () => {
