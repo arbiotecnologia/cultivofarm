@@ -3,8 +3,8 @@
   "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
-  "ledger_versoes": 664,
-  "total_applied_forwards": 4,
+  "ledger_versoes": 665,
+  "total_applied_forwards": 5,
   "entries": [
     {
       "version": "20261005000000",
@@ -112,6 +112,34 @@
         "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
         "ensaio_rollback_reaplicacao": "rollback + reaplicacao em transacao descartada: 0 divergencias de md5(pg_get_functiondef) em public",
         "secdef_authenticated": "376 preservado: fn_authz_uid_scope_ok(uuid) nao e executavel por authenticated/anon"
+      }
+    },
+    {
+      "version": "20261009000000",
+      "name": "h9dl3_authz_uid_scope_and_internal_price_v1",
+      "fase": "H9-D-L3",
+      "path": "restoration/homologacao-h9/h9d-forwards/20261009000000_h9dl3_authz_uid_scope_and_internal_price_v1.sql",
+      "sha256": "eb4bcd292dbe3a342c566d34788a4aea107aa7df91dd31e1b2a1a732c1f7f385",
+      "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261009000000_h9dl3_authz_uid_scope_and_internal_price_v1_rollback.sql",
+      "rollback_sha256": "5ed792f7e96dbc1e34e89c653ab0f339314a5106c63be497aeaf9c291a13dfb0",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma continua bloqueando escrita direta em supabase/migrations/; o SQL exato aplicado foi versionado em restoration/homologacao-h9/h9d-forwards/ e registrado no ledger.",
+      "efeito": "Aplica escopo de identidade (fn_authz_uid_scope_ok) em get_cliente_ids_for_user, has_active_user_cliente_access, is_delivery_staff, is_financial_staff e pode_acessar_recomendacao; revoga EXECUTE de PUBLIC/anon/authenticated em fn_catalogo_preco_canonico(uuid,uuid,text,numeric), preservando service_role. Assinaturas, retornos, linguagem, volatilidade e search_path preservados.",
+      "destructive": false,
+      "reversible": true,
+      "applied_at": "2026-09-08",
+      "evidence_refs": {
+        "exposicao": "BOLA de tenant (cliente_id de terceiro), oraculos de papel/vinculo (financeiro, entrega, recomendacao, vinculo cliente) e leitura de preco interno do catalogo por qualquer authenticated, contornando a RLS de catalogo_volumes",
+        "teste_negativo": "apos o forward: cliente_id -> {}, oraculos -> false, preco direto -> 42501 permission denied",
+        "teste_positivo": "self-scope de produtor, financeiro, tecnico e aplicador preservados; sessao interna sem JWT preservada; fichas vw_catalogo_ficha_* inalteradas",
+        "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l3.json",
+        "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
+        "ensaio_rollback_reaplicacao": "rollback + reaplicacao em transacao descartada: EXECUTE volta a true e retorna a false; md5(pg_get_functiondef) identico ao estado aplicado",
+        "secdef_authenticated": "376 -> 375 (fn_catalogo_preco_canonico deixou de ser executavel por authenticated)"
       }
     }
   ]
