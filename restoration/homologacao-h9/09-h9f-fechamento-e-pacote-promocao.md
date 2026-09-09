@@ -137,30 +137,60 @@ Todos ativos, todos na janela agendada — **nenhuma execução extraordinária*
 disparada. Comunicações permaneceram desligadas: nenhum e-mail, WhatsApp, evento
 fiscal, pagamento ou webhook foi emitido nesta fase.
 
-## 7. Advisors — dívida legada, medida por SQL equivalente
+## 7. Advisors — dívida legada
 
 Nenhuma migration foi aplicada nesta fase, portanto os números **antes = depois**.
 
-| Indicador | Valor |
-| --- | --- |
-| Tabelas com RLS habilitada e sem policy | 7 |
-| Extensões no schema `public` | 2 |
-| Funções SECDEF executáveis por `anon` | 2 |
-| Funções SECDEF executáveis por `authenticated` | 375 |
-| FKs sem índice de suporte | 172 |
-| Índices sem uso registrado | 188 |
-| Combinações tabela/comando/papel com múltiplas policies permissivas | 43 |
+### 7.1 Baseline OFICIAL dos advisors de homologação (fonte de verdade)
+
+| Categoria | Advisor | Contagem |
+| --- | --- | --- |
+| Segurança | `rls_enabled_no_policy` | 10 |
+| Segurança | `extension_in_public` | 2 |
+| Segurança | `anon_security_definer_function_executable` | 2 |
+| Segurança | `authenticated_security_definer_function_executable` | 375 |
+| Segurança | `auth_leaked_password_protection` | 1 |
+| **Segurança — TOTAL** | | **390** |
+| Performance | `unindexed_foreign_keys` | 172 |
+| Performance | `unused_index` | 188 |
+| Performance | `multiple_permissive_policies` | 146 |
+| Performance | `duplicate_index` | 1 |
+| **Performance — TOTAL** | | **507** |
+
+Estes são os números oficiais, antes e depois desta fase (**390 / 507**, sem
+regressão atribuível a H9-E2 ou H9-F).
+
+### 7.2 Métrica auxiliar (SQL equivalente) — NÃO substitui o oficial
+
+Consultas SQL próprias, executadas em homologação por conveniência de leitura,
+retornaram valores divergentes em dois indicadores porque a definição da consulta
+não coincide com a regra do advisor oficial (granularidade de agrupamento e
+critério de "sem policy"):
+
+| Indicador auxiliar | Valor auxiliar | Oficial correspondente |
+| --- | --- | --- |
+| Tabelas com RLS habilitada e sem policy | 7 | **10** (`rls_enabled_no_policy`) |
+| Extensões no schema `public` | 2 | 2 |
+| Funções SECDEF executáveis por `anon` | 2 | 2 |
+| Funções SECDEF executáveis por `authenticated` | 375 | 375 |
+| FKs sem índice de suporte | 172 | 172 |
+| Índices sem uso registrado | 188 | 188 |
+| Combinações tabela/comando/papel com múltiplas policies permissivas | 43 | **146** (`multiple_permissive_policies`) |
+
+Em qualquer conflito, **prevalece o baseline oficial de 7.1**. A métrica auxiliar
+fica registrada apenas como leitura de apoio e para explicar a divergência.
 
 ### Backlog priorizado (janela separada, fora de H9)
 
 | Prioridade | Item | Risco | Observação |
 | --- | --- | --- | --- |
 | **P0** | 2 funções SECDEF executáveis por `anon` | exposição pública | revisar caso a caso; algumas são rastreio público legítimo com rate-limit (H9-B1) |
-| **P0** | 7 tabelas com RLS sem policy | dados inacessíveis ou dependentes de SECDEF | classificar entre "fechada por projeto" e "policy faltando" |
+| **P0** | 10 tabelas com RLS sem policy (oficial) | dados inacessíveis ou dependentes de SECDEF | classificar entre "fechada por projeto" e "policy faltando" |
 | **P1** | 172 FKs sem índice | degradação sob volume | indexar por domínio, medindo antes/depois |
-| **P1** | 43 combinações com múltiplas policies permissivas | custo de avaliação + risco de policy ampla oculta | consolidar por tabela, como iniciado em H8-A/H8-B |
+| **P1** | 146 ocorrências de múltiplas policies permissivas (oficial) | custo de avaliação + risco de policy ampla oculta | consolidar por tabela, como iniciado em H8-A/H8-B |
 | **P2** | 188 índices sem uso | custo de escrita/armazenamento | só remover após janela de observação em ambiente com carga real |
 | **P2** | 2 extensões em `public` | higiene de schema | mover exige janela e revisão de dependências |
+| **P2** | 1 índice duplicado | custo de escrita | remoção simples, janela própria |
 | **P2** | proteção contra senha vazada desativada | credencial fraca | decisão de produto |
 
 Não foi feita nenhuma correção em lote desses avisos: seriam mudanças amplas sem
