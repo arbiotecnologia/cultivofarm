@@ -121,12 +121,12 @@ describe("H9-D-L5 — dossiê do lote de 30 assinaturas", () => {
   const chaves = Object.keys(dossie.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 672 e a última migration do lote", () => {
+  it("declara homologação, ledger 674 e a última migration do lote", () => {
     expect(dossie.ambiente).toBe("ikaauvsflpmamgxmkhoq");
     expect(dossie.ledger).toBe(672);
     expect(dossie.ultima_migration).toBe("20261016000000");
     expect(dossie.lote).toBe("H9-D-L5");
-    expect(resumo.ledger).toBe(673);
+    expect(resumo.ledger).toBe(674);
     expect(resumo.lotes_auditados).toContain("H9-D-L5");
     expect(resumo.forwards_aplicados).toContain("20261016000000");
   });
@@ -225,8 +225,8 @@ describe("H9-D-L5 — dossiê do lote de 30 assinaturas", () => {
 describe("H9-D-L5 — forward reversível 20261016000000", () => {
   const entry = manifest.entries.find((e) => e.version === "20261016000000");
 
-  it("está rastreado no manifesto de applied-forwards com ledger 673", () => {
-    expect(manifest.ledger_versoes).toBe(673);
+  it("está rastreado no manifesto de applied-forwards com ledger 674", () => {
+    expect(manifest.ledger_versoes).toBe(674);
     expect(manifest.total_applied_forwards).toBe(13);
     expect(manifest.entries).toHaveLength(manifest.total_applied_forwards);
     expect(entry).toBeTruthy();
