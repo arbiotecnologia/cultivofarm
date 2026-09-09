@@ -346,6 +346,8 @@ describe("H9-D — dossiê do lote L2", () => {
 
   it("o inventário reflete o dossiê L2", () => {
     for (const k of chaves) {
+      // Reauditada no L3, que prevalece no inventário (ver bloco do lote L3).
+      if (REAUDITADAS_L2_L3.has(k)) continue;
       const r = inventario.get(k)!;
       expect(r.classificacao_h9d).toBe(dossieL2.assinaturas[k].classificacao);
       if (dossieL2.assinaturas[k].classificacao !== "PENDENTE_EVIDENCIA") {
