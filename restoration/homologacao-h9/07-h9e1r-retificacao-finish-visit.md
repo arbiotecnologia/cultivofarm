@@ -133,3 +133,25 @@ Portanto: **nenhuma correção histórica aplicada** — não há reclassificaç
   canônico gravado, idempotência provada, inventário e dossiês retificados, sem regressão.
 - **Promoção para produção: NO-GO** — riscos 1, 2 e 4 abertos e H9-E não concluída.
 - Lote encerrado aqui. Nenhum lote seguinte iniciado.
+
+## Fechamento da validação H9-E1R
+
+- Banco: homologação `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` e sandbox `yzszlzjpovmcteuxjznj` não foram acessados.
+- Ledger remoto confirmado: **678**; última versão `20261022000000`, ocorrência única.
+- `finish_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,uuid)`: md5 vivo `20515c14cf017e68bebc8f99ba3cd00a` (igual ao forward aplicado); ACL `postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres` — sem PUBLIC, sem anon.
+- Jobs cron 1, 2, 5, 8, 9 e 18 ativos, com os mesmos schedules anteriores.
+- Gates estáticos: `src/test/security` 15 arquivos / 197 testes verdes.
+- Suíte completa: **226 arquivos (225 passaram, 1 skipped), 3.521 testes (3.517 passaram, 4 skipped)**.
+- Typecheck (`tsgo --noEmit -p tsconfig.app.json`): **0 erros**. Build: OK.
+
+### Retificação dos gates estáticos (sem afrouxamento)
+- `h9d-inventario.static.test.ts`: a comparação dossiê L1 × inventário passou a declarar explicitamente a única assinatura retificada depois do L1 (`finish_technical_visit_secure`), exigindo `EXPOSICAO_COMPROVADA_CORRIGIDA` no inventário, `AUTH_COMPROVADA` no dossiê histórico e a marca `RETIFICACAO DE FALSO POSITIVO` na evidência. O dossiê L1 permanece intocado.
+- `h9dl5`, `h9dl6`, `h9dl7`: agregados correntes atualizados para ledger 678, 256 AUTH / 32 corrigidas / 4 N/A / 0 pendentes e 18 forwards aplicados; a L7 passa a exigir `20261020000000`, `20261021000000` e `20261022000000` como as versões posteriores a `20261019000000`. Asserções históricas de cada lote foram preservadas.
+- `h9e1r-finish-visit.static.test.ts`: a proibição de `registro_not_found` passou a incidir sobre o corpo executável (a partir de `CREATE OR REPLACE FUNCTION`), preservando os comentários que documentam o defeito histórico.
+
+### Risco operacional reincidente — binding
+Durante esta execução, `.env` e `src/integrations/supabase/types.ts` foram regenerados **três vezes** apontando para o sandbox `yzszlzjpovmcteuxjznj` (types reduzido a ~2.060 linhas). Em nenhum momento o sandbox foi acessado. O binding foi restaurado ao baseline autorizado (`ikaauvsflpmamgxmkhoq`, types com 21.850 linhas) e reconfirmado após a última validação. O gate `connection-binding.static.test.ts` detecta a regressão de forma fail-closed.
+
+### Veredito
+- H9-E1R: **GO em homologação**.
+- Promoção para produção: **NO-GO** — permanecem a concorrência multi-sessão real `UNVERIFIED`, o lookup pré-gate em `rpc_realizar_checkout_visita`, os 77 check-ins históricos `chegada_talhao` sem correção retroativa e o drift reincidente de binding.

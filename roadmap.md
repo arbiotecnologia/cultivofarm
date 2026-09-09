@@ -249,3 +249,6 @@
 - [x] Retificação de rastreabilidade: inventário H9-D muda de `AUTH_COMPROVADA` para `EXPOSICAO_COMPROVADA_CORRIGIDA` (agregados 376 = 84 + 292 → **256 AUTH + 32 corrigidas + 4 N/A + 0 pendentes**); adendo no dossiê `06-h9e1` corrigindo a conclusão falsa sem apagar o histórico; dossiê novo `07-h9e1r`; manifesto com 18 entradas e H7P em 678 com as 59 repo-only intactas em quarentena.
 - [ ] Risco aberto: concorrência multiessão do encerramento **UNVERIFIED** (exigiria fixtures commitadas, incompatível com resíduo zero); `rpc_realizar_checkout_visita` ainda busca `client_uuid` antes do gate de escopo; `_visita_scope_ok` amplia o encerramento a participantes/`created_by`; advisors gerenciados sem medição própria.
 - [x] Decisão: **H9-E1R CONCLUÍDA — GO em homologação**; promoção **NO-GO**; nenhum lote seguinte iniciado.
+
+- [x] H9-E1R validada: gates estáticos retificados, suíte 3.521 testes verde, typecheck 0 erros, build OK, ledger 678, crons ativos.
+- [ ] Promoção para produção: NO-GO (concorrência multi-sessão UNVERIFIED; pré-gate de `rpc_realizar_checkout_visita`; drift reincidente de binding).
