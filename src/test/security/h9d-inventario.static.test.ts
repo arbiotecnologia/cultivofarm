@@ -293,9 +293,9 @@ describe("H9-D — dossiê do lote L2", () => {
   const chaves = Object.keys(dossieL2.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 664 e o lote L2", () => {
+  it("declara homologação, ledger 666 e o lote L2", () => {
     expect(dossieL2.ambiente).toBe("ikaauvsflpmamgxmkhoq");
-    expect(dossieL2.ledger).toBe(664);
+    expect(dossieL2.ledger).toBe(666);
     expect(dossieL2.lote).toBe("H9-D-L2");
     expect(resumo.lotes_auditados).toContain("H9-D-L2");
     expect(resumo.forwards_aplicados ?? []).toContain("20261008000000");
