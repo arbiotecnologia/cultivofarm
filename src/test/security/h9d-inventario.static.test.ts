@@ -295,7 +295,7 @@ describe("H9-D — dossiê do lote L2", () => {
   const chaves = Object.keys(dossieL2.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 668 e o lote L2", () => {
+  it("declara homologação, ledger 668 (no momento do lote) e o lote L2", () => {
     expect(dossieL2.ambiente).toBe("ikaauvsflpmamgxmkhoq");
     expect(dossieL2.ledger).toBe(668);
     expect(dossieL2.lote).toBe("H9-D-L2");
@@ -405,7 +405,7 @@ describe("H9-D — dossiê do lote L3", () => {
   const chaves = Object.keys(dossieL3.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 668 e o lote L3", () => {
+  it("declara homologação, ledger 668 (no momento do lote) e o lote L3", () => {
     expect(dossieL3.ambiente).toBe("ikaauvsflpmamgxmkhoq");
     expect(dossieL3.ledger).toBe(668);
     expect(dossieL3.lote).toBe("H9-D-L3");
@@ -571,7 +571,7 @@ describe("H9-D — dossiê do lote L4 e retificação do oráculo de existência
     }
   });
 
-  it("as duas exclusões declaram a retificação 20261014000000 sem oráculo de existência", () => {
+  it("as duas exclusões declaram a retificação 20261014000000 (ledger 670, estado histórico) sem oráculo de existência", () => {
     const r = dossieL4.retificacao_l4;
     expect(r.prova_antes).toContain("b906cbf7-c7b1-4736-98c2-a5f281238068");
     expect(r.prova_antes).toContain("2767fb15-7f00-41d5-8360-622d6dea8de6");

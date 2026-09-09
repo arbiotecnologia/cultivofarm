@@ -696,3 +696,31 @@ Ensaio rollback→reaplicação: `forward = 9c4cfd4e1d197f376c5ec15674b6bb31`,
 Ledger 670 → 671, `20261015000000` registrada uma única vez. SECDEF 375/2; crons ativos 1,2,5,8,9,18.
 
 Decisão: **L4 CONCLUÍDO**; **H9-D CONTINUA** com 61 pendentes; produção **NO-GO**.
+
+## H9-D-L4 — Retificação documental (sem alteração de banco)
+
+Base: commit `1fe608d6fab5cafe87d8c495400980b59c0712e7`, staging `ikaauvsflpmamgxmkhoq`,
+ledger **671** (máx. `20261015000000`, ocorrência única). Nenhuma migration criada/aplicada,
+nenhum registro de ledger, nenhum rollback executado no banco. Produção `navfzbwgwzruipouyfnk`
+não acessada.
+
+Drift de artefatos corrigido nesta rodada:
+
+1. `h9d-inventario/secdef-authenticated-inventory-h9d.tsv`, linha
+   `rpc_converter_visita_em_os(uuid,text)`: `body_len` 6597 → **7224** e `body_md5`
+   `88bbe353…` → **`9c4cfd4e1d197f376c5ec15674b6bb31`** (estado vivo). Evidência reescrita para o
+   estado pós-retificação 2 (`20261015000000`), citando o valor histórico intermediário sem
+   apagá-lo; classificação `EXPOSICAO_COMPROVADA_CORRIGIDA` preservada.
+2. `h9d-inventario/dossie-l4.json`: `forward_aplicado` passa a listar as três versões
+   `20261013000000 + 20261014000000 + 20261015000000`; `fingerprint_forward` passa ao combinado
+   vivo **`e5d1ca64686e4c2d68e9f6066a6bc34f`**, com `fingerprint_forward_historico`
+   (`d9cfffa0…`) e notas explicando os fingerprints anteriores e o rollback específico
+   (`a4f5e228…`). Nenhuma evidência histórica sobrescrita.
+3. `h7p-repo-only-manifest.json`: `ledger_versoes` 670 → **671** e nota narrativa estendida com
+   `670 → 671 / 20261015000000` como estado final.
+4. Títulos/descrições de teste com totais obsoletos (“ledger de 668 versões”) corrigidos sem
+   enfraquecer nenhuma assertion; onde o ledger citado é histórico do lote (L2/L3, 668) o título
+   passou a dizer explicitamente “no momento do lote”.
+5. Varredura dos artefatos H9-D/H7P alterados: as ocorrências remanescentes de `670` e
+   `20261014000000` são históricas legítimas (blocos `retificacao_l4`, ensaio de rollback da
+   retificação 1, seção datada do relatório) e foram preservadas; nenhuma descreve o estado final.
