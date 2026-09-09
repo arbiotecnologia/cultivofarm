@@ -5,9 +5,9 @@
  "lote": "H9-D-L4",
  "total": 30,
  "commit_base": "eaa63c00eecabfc492ae21ba06782f882259f976",
- "forward_aplicado": "20261013000000_h9dl4_authz_visit_domain_gate_v1 + 20261014000000_h9dl4r_authz_scoped_delete_no_oracle_v1 (retificacao)",
+ "forward_aplicado": "20261013000000_h9dl4_authz_visit_domain_gate_v1 + 20261014000000_h9dl4r_authz_scoped_delete_no_oracle_v1 (retificacao 1) + 20261015000000_h9dl4r2_authz_scoped_convert_no_oracle_v1 (retificacao 2, estado final; ledger 670 -> 671)",
  "fonte_hash_sql": "SELECT p.proname||'('||pg_catalog.oidvectortypes(p.proargtypes)||')' AS sig, md5(pg_get_functiondef(p.oid)) AS definition_md5, length(pg_get_functiondef(p.oid))::text AS definition_len, coalesce(p.proacl::text,'') AS acl, coalesce(p.proconfig::text,'') AS proconfig, p.provolatile::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prosecdef;",
- "fingerprint_forward": "d9cfffa0121c3704e0d39270d2dade29",
+ "fingerprint_forward": "e5d1ca64686e4c2d68e9f6066a6bc34f",
  "fingerprint_rollback": "c8f4b2c1720926f1d877b2df4a413bac",
  "fingerprint_sql": "SELECT md5(string_agg(pg_get_functiondef(p.oid)||coalesce(p.proacl::text,''),'|' ORDER BY p.proname)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('rpc_delete_diagnostico_visita','rpc_delete_recomendacao_visita','rpc_converter_visita_em_os');",
  "metodo": "Leitura integral de pg_get_functiondef das 30 assinaturas e dos helpers transitivos; ACL/owner/proconfig/volatilidade lidos do catálogo vivo; callsites mapeados por varredura em src/ e supabase/functions; provas dinâmicas executadas com identidades reais em transações revertidas (sem JWT, authenticated sem papel de domínio, cliente_produtor, parceiro_b2b, consultor/técnico, financeiro e administrador). Nenhuma classificação por regex isolado.",
@@ -525,5 +525,8 @@
   "ensaio_rollback_reaplicacao": "forward=9c4cfd4e1d197f376c5ec15674b6bb31, rollback=a4f5e228fed7faf6809c0dba0e3e6716, reaplicacao=9c4cfd4e1d197f376c5ec15674b6bb31 (identico).",
   "ledger": "670 -> 671, 20261015000000 registrada uma unica vez",
   "zero_fixtures": "fixture transacional de recomendacao criada e revertida; residuos: registros_consultor_recomendacoes=0, visita_diagnosticos=1 (linha real original)."
- }
+ },
+ "fingerprint_forward_nota": "e5d1ca64686e4c2d68e9f6066a6bc34f e o fingerprint COMBINADO VIVO das 3 funcoes do L4 (fingerprint_sql) apos 20261015000000. Os valores historicos permanecem validos para o estado em que foram medidos e NAO foram sobrescritos: d9cfffa0121c3704e0d39270d2dade29 (combinado apos 20261013000000) e c8f4b2c1720926f1d877b2df4a413bac (combinado com o rollback de 20261013000000 aplicado). Os fingerprints por funcao ficam nas observacoes de cada assinatura e nos blocos retificacao_l4/retificacao_l4_2.",
+ "fingerprint_forward_historico": "d9cfffa0121c3704e0d39270d2dade29",
+ "fingerprint_rollback_nota": "c8f4b2c1720926f1d877b2df4a413bac refere-se ao estado combinado com o rollback do 20261013000000; o rollback especifico da retificacao 2 tem fingerprint a4f5e228fed7faf6809c0dba0e3e6716."
 }
