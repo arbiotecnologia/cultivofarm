@@ -667,3 +667,32 @@ Ensaio rollback → reaplicação na mesma sessão:
 registrada uma única vez.
 
 Decisão: **H9-D CONTINUA**; produção **NO-GO**. L5/H9-E não iniciados.
+
+## H9-D-L4 — Retificação 2 (20261015000000, ledger 671)
+
+`rpc_converter_visita_em_os(uuid,text)` ainda distinguia, para identidades **com** papel de domínio,
+`Visita técnica não encontrada.` (inexistente) de `Sem permissão para converter esta visita.` (alheia).
+Prova ANTES com `2767fb15-7f00-41d5-8360-622d6dea8de6` (tecnico_agronomo), em `BEGIN … ROLLBACK`.
+
+Correção: resolução e autorização em uma única consulta escopada ao chamador
+(admin/gestor, ou consultor/técnico responsável); quando nada resolve, retorna sempre a mesma
+mensagem genérica. Idempotência de OS existente, validações de status, auditoria, contrato JSONB,
+ACL (`postgres/authenticated/service_role`) e `search_path=public` preservados.
+
+Provas DEPOIS (transação revertida):
+
+| identidade | inexistente | visita real |
+|---|---|---|
+| sem papel `2a1ea60a` | Sem permissão… | Sem permissão… |
+| técnico alheio `2767fb15` | Sem permissão… | Sem permissão… |
+| administrador `b5c2ebd4` | Sem permissão… | Apenas visitas com recomendação aprovada… (fluxo legítimo) |
+
+Recomendações: fixture transacional criada e revertida — técnico alheio recebeu `void` e o registro
+permaneceu; administrador excluiu legitimamente (`restantes = 0`) antes do rollback. Resíduos finais:
+`registros_consultor_recomendacoes = 0`, `visita_diagnosticos = 1` (linha real original).
+
+Ensaio rollback→reaplicação: `forward = 9c4cfd4e1d197f376c5ec15674b6bb31`,
+`rollback = a4f5e228fed7faf6809c0dba0e3e6716`, `reaplicação = 9c4cfd4e1d197f376c5ec15674b6bb31`.
+Ledger 670 → 671, `20261015000000` registrada uma única vez. SECDEF 375/2; crons ativos 1,2,5,8,9,18.
+
+Decisão: **L4 CONCLUÍDO**; **H9-D CONTINUA** com 61 pendentes; produção **NO-GO**.
