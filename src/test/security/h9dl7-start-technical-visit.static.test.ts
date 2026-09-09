@@ -180,6 +180,8 @@ describe("H9-D-L7 — forward e rollback", () => {
       "20261020000000",
       "20261021000000",
       "20261022000000",
+      // H9-E2: forward posterior, monotônico, sem reabrir 170/180.
+      "20261023000000",
     ]);
   });
 });
