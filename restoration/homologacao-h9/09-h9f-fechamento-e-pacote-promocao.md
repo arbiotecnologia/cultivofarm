@@ -209,11 +209,18 @@ Playwright headless contra o app local, viewports 1280×1800 e 390×844, rotas `
 As mensagens de console observadas são avisos de desenvolvimento do React
 (`Function components cannot be given refs`), preexistentes e sem relação com H9.
 
-**Pendência declarada:** o smoke *autenticado* (fluxo feliz, clique duplicado,
-permissão negada em tela) **não foi executado**. O app aponta para um backend
-externo à instância gerenciada, e nenhuma sessão pôde ser criada sem credenciais
-fornecidas pelo usuário. A cobertura equivalente foi obtida no nível do banco
-(matriz adversarial e prova de concorrência), não na UI.
+**`smoke_autenticado = false` — EVIDÊNCIA PENDENTE, BLOQUEANTE DO GO INTEGRAL.**
+O smoke *autenticado* exigido pelo critério de aceite (fluxo feliz, clique
+duplicado e permissão negada em tela, desktop e mobile) **não foi executado**. O
+app aponta para um backend externo à instância gerenciada e nenhuma sessão pôde
+ser criada sem credenciais fornecidas pelo usuário. A cobertura obtida no nível
+do banco (matriz adversarial e prova de concorrência) **não substitui** essa
+prova de UI: ela não cobre o comportamento do cliente sob clique duplicado nem a
+apresentação de permissão negada.
+
+Consequência formal: enquanto `smoke_autenticado = false`, a **AUDITORIA H9
+INTEGRAL é NO-GO** (seção 13), independentemente de todos os demais gates estarem
+verdes.
 
 ## 9. Gates e testes executados
 
