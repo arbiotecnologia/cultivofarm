@@ -445,3 +445,88 @@ sem novas exposições.
   código, e permanece aberta.
 
 **Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.**
+
+---
+
+## 11. Rodada 8 — Retificação 2 do H9-D-L3 (extrato do cliente e integridade financeira)
+
+Homologação `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` não foi acessada.
+Forward `20261011000000_h9dl3r2_customer_statement_live_columns_v1.sql` (rollback exato ao lado).
+
+### 11.1 Defeito comprovado ANTES
+
+`public.get_report_customer_statement(uuid,date,date)` chamada por administrador falhava com
+`42703 column "valor_total" does not exist`. O corpo referenciava três objetos inexistentes:
+`entregas.valor_total`, `entregas.data_entrega` e `accounts_receivable_installments.amount`.
+O defeito derrubava também `get_report_accountability(jsonb)`, que delega ao extrato, e portanto
+as telas "Extrato Financeiro por Cliente" e "Prestação de Contas".
+
+Schema vivo: `entregas` tem `receivable_id`, `cliente_id`, `data_saida`, `entregue_em`, `status`
+e `quantidade_entregue`, sem qualquer coluna monetária; as parcelas usam `original_amount`,
+`received_amount`, `discount_amount`, `interest_amount`, `penalty_amount` e `net_amount`.
+
+### 11.2 Decisão sobre `delivered` (documentada, sem fluxo paralelo)
+
+Não existe valor monetário em `entregas`. `fn_entrega_valor_faturavel_v1` é a função canônica por
+entrega, mas depende de `os_faturamento_base.valor_total_faturavel`, que hoje não tem nenhuma
+linha com valor preenchido nem entrega vinculada — e o uso linha a linha violaria a proibição de
+N+1. A única fonte monetária inequívoca é o vínculo `entregas.receivable_id → accounts_receivable`.
+
+`delivered` passa a ser a **soma de `accounts_receivable.total_amount` dos títulos DISTINTOS
+vinculados a entregas confirmadas** do cliente no período (data = `COALESCE(entregue_em::date,
+data_saida)`), excluindo títulos cancelados. Entregas sem vínculo financeiro **não recebem
+estimativa**: são declaradas em `delivered_unlinked_count`, e `delivered_basis` explicita a base
+do cálculo. Dupla contagem é impossível também por estrutura: `entregas.receivable_id` é UNIQUE
+(`uq_entregas_receivable_id`); ainda assim a consulta usa `DISTINCT` defensivo.
+
+### 11.3 Correção aplicada
+
+Assinatura, retorno `jsonb`, chaves antigas (`customer_id`, `period`, `delivered`, `billed`,
+`received`, `open_balance`), guarda `is_financial_staff(auth.uid())` antes de qualquer leitura,
+ACL `postgres|authenticated|service_role` sem `PUBLIC`/`anon` e `search_path` fixo foram
+preservados. Saldo em aberto usa a fórmula canônica das funções já corrigidas na rodada 7:
+`original_amount - COALESCE(received_amount,0) - COALESCE(discount_amount,0)`. Datas nulas ou
+invertidas passam a falhar com `22023 Período inválido`. Sem `SELECT *`, sem subconsulta N+1.
+Chaves novas, apenas aditivas: `delivered_basis`, `delivered_deliveries_count`,
+`delivered_unlinked_count` e `received_net_of_reversals`.
+
+### 11.4 Provas DEPOIS (transação revertida)
+
+- Administrador e `financeiro`, cliente real: JSON válido e reconciliável —
+  `billed 7000.00`, `delivered 3000.00`, `received 1500.00`,
+  `received_net_of_reversals 1200.00`, `open_balance 5800.00`, `delivered_unlinked_count 2`.
+- Sem privilégio: `Acesso negado` **antes** de qualquer leitura.
+- Cliente inexistente: zeros sem erro. `get_report_accountability` com `customer_id` nulo: zeros.
+- Período invertido: `22023 Período inválido`.
+- Múltiplas entregas para o mesmo título: impossível de inserir —
+  `duplicate key value violates unique constraint "uq_entregas_receivable_id"`; fixtures revertidas.
+- Rollback → `42703` reproduzido; reaplicação → fingerprint idêntico
+  `317e63c67b98aca17d82bafe036d8c88 | {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} | {search_path=public}`.
+
+### 11.5 Integridade financeira — 10 de 58 parcelas
+
+Diagnóstico completo em `h9d-inventario/relatorio-integridade-received-amount.md`.
+`received_amount` coincide com a soma **líquida** de `receivable_payments` em **58/58** parcelas;
+diverge apenas contra a soma **bruta** (`is_reversal = false`) em **10/58**, exatamente as dez que
+têm pagamento `300.00` e estorno `-300.00`. A origem autoritativa é o gatilho `trg_recalc_ar_inst`
+→ `fn_recalc_receivable_installment()`, que soma todas as linhas incluindo estornos.
+**Nenhum valor financeiro foi alterado** — não há saneamento a executar.
+
+Risco residual: os relatórios de regime caixa somam apenas `is_reversal = false` e por isso
+superestimam o recebido em `3000.00` no conjunto atual. O contrato foi preservado e a diferença
+ficou observável em `received_net_of_reversals`; a uniformização do regime caixa fica proposta
+como próximo passo, fora do escopo autorizado.
+
+### 11.6 Estado final
+
+Ledger **667** (última `20261011000000`, registro único), SECDEF `authenticated` **375** /
+`anon` **2**, crons 1/2/5/8/9/18 ativos, zero fixtures. Classificações do escopo profundo
+**inalteradas** (177 / 4 / 20 / 91): o defeito era funcional, não uma nova exposição.
+
+### 11.7 Risco remanescente
+
+- `get_report_deliveries_billing_status` ainda referencia `entregas.data_entrega` e
+  `entregas.valor_total`; fora das funções autorizadas nesta rodada, registrado para autorização.
+- Regime caixa não uniforme entre relatórios (item 11.5).
+
+**Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.** L4 e H9-E não iniciados.
