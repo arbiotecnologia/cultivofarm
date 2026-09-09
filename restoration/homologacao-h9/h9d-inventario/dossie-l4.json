@@ -1,7 +1,7 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
  "producao_proibida": "navfzbwgwzruipouyfnk",
- "ledger": 670,
+ "ledger": 671,
  "lote": "H9-D-L4",
  "total": 30,
  "commit_base": "eaa63c00eecabfc492ae21ba06782f882259f976",
@@ -305,20 +305,20 @@
    "observacao": "Transição reservado->separado com movimentação e auditoria."
   },
   "rpc_converter_visita_em_os(uuid,text)": {
-   "definition_md5": "a4f5e228fed7faf6809c0dba0e3e6716",
-   "definition_len": 7193,
+   "definition_md5": "9c4cfd4e1d197f376c5ec15674b6bb31",
+   "definition_len": 7224,
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
    "volatilidade": "VOLATILE",
-   "guarda_textual": "ANTES: auth.uid() NULL => mensagem; em seguida LIA registros_consultor e só então avaliava papéis, produzindo mensagens distintas 'Visita técnica não encontrada.' vs 'Sem permissão para converter esta visita.'. DEPOIS: gate de capacidade (administrador/gestor/consultor_tecnico/tecnico_agronomo) ANTES de qualquer leitura, com mensagem única de permissão",
+   "guarda_textual": "ANTES: auth.uid() NULL => mensagem; em seguida LIA registros_consultor e só então avaliava papéis, produzindo mensagens distintas 'Visita técnica não encontrada.' vs 'Sem permissão para converter esta visita.'. DEPOIS: gate de capacidade (administrador/gestor/consultor_tecnico/tecnico_agronomo) ANTES de qualquer leitura, com mensagem única de permissão. RETIFICACAO 2 (20261015000000): resolucao + autorizacao em UMA consulta escopada ao chamador; inexistente e alheio retornam a MESMA mensagem generica.",
    "cadeia_transitiva": "has_role; registros_consultor; ordens_servico_onfarm; portal_solicitacoes; solicitacoes_timeline; registros_consultor_status_log; visitas_logs",
    "null_fail_closed": "auth.uid() NULL => 'Não autenticado' sem leitura",
-   "tenant_bola_idor": "Oráculo de existência comprovado: identidade cliente_produtor distinguia registro real de UUID inexistente. Corrigido: ambas as respostas passam a ser idênticas para quem não tem papel de domínio de visita",
+   "tenant_bola_idor": "Oráculo de existência comprovado: identidade cliente_produtor distinguia registro real de UUID inexistente. Corrigido: ambas as respostas passam a ser idênticas para quem não tem papel de domínio de visita. Retificacao 2: oraculo remanescente entre usuarios de dominio eliminado (tecnico alheio: inexistente e visita real alheia => mesma mensagem).",
    "sql_dinamico": "nenhum",
    "callsites": "src/hooks/useFluxoVisitaTecnica.ts:239",
-   "prova_dinamica": "ANTES (cliente_produtor): real => 'Sem permissão…', inexistente => 'Visita técnica não encontrada.' (respostas distintas). DEPOIS: ambas => 'Sem permissão para converter esta visita.'. Admin: inexistente => 'Visita técnica não encontrada.' (feedback operacional preservado); consultor não responsável => negado como antes",
+   "prova_dinamica": "ANTES (cliente_produtor): real => 'Sem permissão…', inexistente => 'Visita técnica não encontrada.' (respostas distintas). DEPOIS: ambas => 'Sem permissão para converter esta visita.'. Admin: inexistente => 'Visita técnica não encontrada.' (feedback operacional preservado); consultor não responsável => negado como antes POS-20261015000000 (transacao revertida): tecnico 2767fb15 inexistente e visita real alheia 9fa57957 => 'Sem permissao para converter esta visita.' identicas; sem papel 2a1ea60a idem; administrador b5c2ebd4 inexistente => mesma mensagem generica e visita real => validacao de status ('Apenas visitas com recomendacao aprovada...'), preservando o fluxo legitimo.",
    "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
-   "observacao": "Corrigido pelo forward 20261013000000_h9dl4_authz_visit_domain_gate_v1 (ledger 668->669), somente homologação, com rollback simétrico e ensaio rollback->reaplicação de fingerprint idêntico (d9cfffa0121c3704e0d39270d2dade29; estado com rollback c8f4b2c1720926f1d877b2df4a413bac). Assinatura, retorno jsonb, chaves e callsites preservados. Idempotência de OS já existente e matriz de permissão original intactas."
+   "observacao": "Corrigido pelo forward 20261013000000_h9dl4_authz_visit_domain_gate_v1 (ledger 668->669), somente homologação, com rollback simétrico e ensaio rollback->reaplicação de fingerprint idêntico (d9cfffa0121c3704e0d39270d2dade29; estado com rollback c8f4b2c1720926f1d877b2df4a413bac). Assinatura, retorno jsonb, chaves e callsites preservados. Idempotência de OS já existente e matriz de permissão original intactas. Retificado por 20261015000000_h9dl4r2_authz_scoped_convert_no_oracle_v1 (ledger 670->671), rollback simetrico e ensaio rollback->reaplicacao com fingerprint identico (forward/reaplicacao 9c4cfd4e1d197f376c5ec15674b6bb31; rollback a4f5e228fed7faf6809c0dba0e3e6716)."
   },
   "rpc_create_communication_template(text,text,comunicacao_canal,text,text,jsonb)": {
    "definition_md5": "58d13d7bdf0dd6489a6bbb17e68564f8",
@@ -509,5 +509,21 @@
   },
   "ensaio_rollback_reaplicacao": "forward=91eba8cac7995ddec016c09b36db20d2, rollback=193e96fa580d4507034278fe97c9040b, reaplicacao=91eba8cac7995ddec016c09b36db20d2 (identico)",
   "ledger": "669 -> 670, 20261014000000 registrada uma unica vez"
+ },
+ "retificacao_l4_2": {
+  "motivo": "Apos 20261013000000/20261014000000, rpc_converter_visita_em_os ainda distinguia 'Visita tecnica nao encontrada.' de 'Sem permissao para converter esta visita.' para usuarios COM papel de dominio.",
+  "prova_antes": "tecnico_agronomo real 2767fb15-7f00-41d5-8360-622d6dea8de6: UUID inexistente => 'Visita tecnica nao encontrada.'; visita real alheia 9fa57957-5fcb-4ff0-a9e6-dd0a4df53931 => 'Sem permissao para converter esta visita.' (BEGIN...ROLLBACK).",
+  "correcao": "Consulta escopada ao chamador (admin/gestor OU consultor/tecnico responsavel); quando nada resolve, mensagem generica unica. Idempotencia, transicoes, auditoria e contrato de retorno preservados.",
+  "prova_depois": {
+   "tecnico_inexistente": "Sem permissao para converter esta visita.",
+   "tecnico_real_alheia": "Sem permissao para converter esta visita.",
+   "sem_papel_inexistente": "Sem permissao para converter esta visita.",
+   "sem_papel_real": "Sem permissao para converter esta visita.",
+   "admin_inexistente": "Sem permissao para converter esta visita.",
+   "admin_real": "Apenas visitas com recomendacao aprovada podem ser convertidas em OS. (fluxo legitimo preservado)"
+  },
+  "ensaio_rollback_reaplicacao": "forward=9c4cfd4e1d197f376c5ec15674b6bb31, rollback=a4f5e228fed7faf6809c0dba0e3e6716, reaplicacao=9c4cfd4e1d197f376c5ec15674b6bb31 (identico).",
+  "ledger": "670 -> 671, 20261015000000 registrada uma unica vez",
+  "zero_fixtures": "fixture transacional de recomendacao criada e revertida; residuos: registros_consultor_recomendacoes=0, visita_diagnosticos=1 (linha real original)."
  }
 }
