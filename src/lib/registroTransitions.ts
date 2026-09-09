@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 export type RegistroStatus =
   | "rascunho"
+  | "em_andamento"
   | "finalizado"
   | "enviado_aprovacao"
   | "aprovado"
@@ -17,6 +18,7 @@ export type RegistroStatus =
 
 export const STATUS_LABEL_REGISTRO: Record<RegistroStatus, string> = {
   rascunho: "Rascunho",
+  em_andamento: "Em andamento",
   finalizado: "Finalizado",
   enviado_aprovacao: "Aguardando aprovação",
   aprovado: "Aprovado",
@@ -25,9 +27,10 @@ export const STATUS_LABEL_REGISTRO: Record<RegistroStatus, string> = {
   arquivado: "Arquivado",
 };
 
-/** Ordem canônica para exibir "etapa N de 5" (arquivado é estado terminal lateral). */
+/** Ordem canônica para exibir "etapa N de 6" (arquivado é estado terminal lateral). */
 export const STATUS_ORDER: RegistroStatus[] = [
   "rascunho",
+  "em_andamento",
   "finalizado",
   "enviado_aprovacao",
   "aprovado",
@@ -35,9 +38,11 @@ export const STATUS_ORDER: RegistroStatus[] = [
 ];
 
 /**
- * Matriz de transições permitidas. Espelha o trigger Postgres.
+ * Matriz de transições permitidas. Espelha o trigger Postgres
+ * `validate_registro_status_transition` (H9-E1, forward 20261020000000).
  *
- * - rascunho           → finalizado, arquivado
+ * - rascunho           → em_andamento (check-in), finalizado, arquivado
+ * - em_andamento       → finalizado (check-out), arquivado
  * - finalizado         → enviado_aprovacao, arquivado
  * - enviado_aprovacao  → aprovado, reprovado, rascunho (ajuste), finalizado, arquivado
  * - aprovado           → convertido_os, arquivado, enviado_aprovacao (reabertura admin)
@@ -46,7 +51,8 @@ export const STATUS_ORDER: RegistroStatus[] = [
  * - arquivado          → (terminal)
  */
 const TRANSITIONS: Record<RegistroStatus, RegistroStatus[]> = {
-  rascunho: ["finalizado", "arquivado"],
+  rascunho: ["em_andamento", "finalizado", "arquivado"],
+  em_andamento: ["finalizado", "arquivado"],
   finalizado: ["enviado_aprovacao", "arquivado"],
   enviado_aprovacao: ["aprovado", "reprovado", "rascunho", "finalizado", "arquivado"],
   aprovado: ["convertido_os", "arquivado", "enviado_aprovacao"],
