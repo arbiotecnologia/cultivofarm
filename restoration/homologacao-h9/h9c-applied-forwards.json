@@ -182,14 +182,15 @@
       "decisao_delivered": "entregas nao possui coluna monetaria e os_faturamento_base esta vazia (0 linhas com valor, 0 entregas vinculadas). delivered passa a ser a soma de accounts_receivable.total_amount dos titulos DISTINTOS vinculados a entregas confirmadas no periodo; entregas sem vinculo financeiro nao sao estimadas e sao declaradas em delivered_unlinked_count. Dupla contagem e impossivel tambem por constraint: uq_entregas_receivable_id (UNIQUE em entregas.receivable_id).",
       "teste_negativo": "cliente_produtor recebe 'Acesso negado' antes de qualquer leitura; periodo invertido ou data nula => 22023 'Periodo invalido'",
       "teste_positivo": "administrador e financeiro retornam JSON reconciliavel; cliente inexistente e customer_id nulo (via get_report_accountability) retornam zeros sem erro",
-      "integridade_financeira": "0 de 58 parcelas divergentes quando received_amount e comparado a soma liquida de receivable_payments (pagamentos + estornos). As 10 divergencias observadas anteriormente decorrem de comparar apenas is_reversal=false, ignorando os 10 estornos de -300.00. Nenhum dado financeiro foi alterado.",
+      "integridade_financeira": "0 divergencias reais: received_amount coincide com a soma LIQUIDA de receivable_payments (originais + estornos) em 58 de 58 parcelas (div_liquido=0). A contagem anterior de 10/58 era artefato de comparar apenas is_reversal=false, ignorando o par de estorno; os 10 estornos existentes tem todos reversed_payment_id (estornos_sem_par=0). Contrato auditado: fn_reverse_payment insere linha espelho append-only negativa, idempotente por reversed_payment_id, e trg_recalc_ar_inst -> fn_recalc_receivable_installment grava o valor liquido. Nenhum dado financeiro foi alterado.",
       "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
       "diagnostico_divergencias": "restoration/homologacao-h9/h9d-inventario/relatorio-integridade-received-amount.md",
       "ensaio_rollback_reaplicacao": "rollback aplicado (42703 reproduzido) e forward reaplicado: md5(pg_get_functiondef)+ACL+proconfig identicos (317e63c67b98aca17d82bafe036d8c88)",
       "secdef_authenticated": "375 authenticated / 2 anon preservados; nenhum GRANT novo",
       "destructive": false,
       "reversible": true,
-      "applied_at": "2026-09-09"
+      "applied_at": "2026-09-09",
+      "risco_residual_relatorio": "De relatorio, nao de dado: get_report_monthly_financial, get_report_customer_statement e fn_financial_inconsistencies somam apenas is_reversal=false e superestimam o recebido em 3000.00 no conjunto atual. O extrato passa a expor received_net_of_reversals; uniformizacao do regime caixa proposta como proximo passo."
     }
   ]
 }
