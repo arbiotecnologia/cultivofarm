@@ -119,3 +119,26 @@ Deltas de fixtures voltaram a zero após o rollback.
 - **H9-E1: GO em homologação.**
 - **Promoção para produção: NO-GO** — riscos 1 a 4 acima ainda abertos e H9-E não concluída.
 - Lote encerrado aqui; nenhum lote seguinte iniciado.
+
+---
+
+## ADENDO H9-E1R (retificação obrigatória, preserva o histórico acima)
+
+O texto original deste dossiê é mantido **sem edição** para rastreabilidade. Duas conclusões
+dele são **falsas** e ficam retificadas aqui:
+
+1. **FALSO:** "sem escopo/inexistente/`client_uuid` alheio permanecem `42501 not_visit_owner`
+   indistinguíveis" aplicado a `finish_technical_visit_secure`. A afirmação vale para
+   `start_technical_visit_secure`, **não** para o encerramento. Na definição viva pós-H9-E1
+   (fingerprint `1a23e69ad1909af5b6021d81fb9ed918`) o `SELECT` em `registros_consultor`
+   precedia a autorização: UUID inexistente devolvia `22023 registro_not_found` e registro
+   real alheio devolvia `42501 not_visit_owner` — **oráculo de existência comprovado**.
+2. **Risco remanescente 1 (`tipo_checkin='inicio_visita'`) foi reclassificado de "fora de
+   escopo" para defeito corrigível** e está resolvido. Ele deixava o ciclo semanticamente
+   aberto para `can_checkout_technical_visit` e `has_completed_visit_presence`.
+
+Ambos os pontos, mais a ausência de idempotência por `client_uuid`, foram corrigidos pelo
+forward `20261022000000_h9e1r_finish_visit_scope_checkout_idempotency_v1`
+(ledger 677 → 678, ocorrência única).
+
+Dossiê completo da retificação: `restoration/homologacao-h9/07-h9e1r-retificacao-finish-visit.md`.

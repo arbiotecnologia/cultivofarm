@@ -121,12 +121,12 @@ describe("H9-D-L5 — dossiê do lote de 30 assinaturas", () => {
   const chaves = Object.keys(dossie.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 677 no resumo e a última migration do lote", () => {
+  it("declara homologação, ledger 678 no resumo e a última migration do lote", () => {
     expect(dossie.ambiente).toBe("ikaauvsflpmamgxmkhoq");
     expect(dossie.ledger).toBe(672);
     expect(dossie.ultima_migration).toBe("20261016000000");
     expect(dossie.lote).toBe("H9-D-L5");
-    expect(resumo.ledger).toBe(675);
+    expect(resumo.ledger).toBe(678);
     expect(resumo.lotes_auditados).toContain("H9-D-L5");
     expect(resumo.forwards_aplicados).toContain("20261016000000");
   });
@@ -208,14 +208,14 @@ describe("H9-D-L5 — dossiê do lote de 30 assinaturas", () => {
       return acc;
     }, {});
     expect(cont.HERDADA_H9C).toBe(84);
-    // totais acumulados após a L6 (a L5 encerrou em 231/26/4/31)
-    expect(cont.AUTH_COMPROVADA).toBe(257);
-    expect(cont.EXPOSICAO_COMPROVADA_CORRIGIDA).toBe(31);
+    // totais acumulados após a retificação H9-E1R (a L5 encerrou em 231/26/4/31)
+    expect(cont.AUTH_COMPROVADA).toBe(256);
+    expect(cont.EXPOSICAO_COMPROVADA_CORRIGIDA).toBe(32);
     expect(cont.NAO_APLICAVEL).toBe(4);
     expect(cont.PENDENTE_EVIDENCIA ?? 0).toBe(0);
     expect(resumo.por_classificacao).toEqual({
-      AUTH_COMPROVADA: 257,
-      EXPOSICAO_COMPROVADA_CORRIGIDA: 31,
+      AUTH_COMPROVADA: 256,
+      EXPOSICAO_COMPROVADA_CORRIGIDA: 32,
       NAO_APLICAVEL: 4,
       PENDENTE_EVIDENCIA: 0,
     });
@@ -225,9 +225,9 @@ describe("H9-D-L5 — dossiê do lote de 30 assinaturas", () => {
 describe("H9-D-L5 — forward reversível 20261016000000", () => {
   const entry = manifest.entries.find((e) => e.version === "20261016000000");
 
-  it("está rastreado no manifesto de applied-forwards com ledger 677", () => {
-    expect(manifest.ledger_versoes).toBe(677);
-    expect(manifest.total_applied_forwards).toBe(17);
+  it("está rastreado no manifesto de applied-forwards com ledger 678", () => {
+    expect(manifest.ledger_versoes).toBe(678);
+    expect(manifest.total_applied_forwards).toBe(18);
     expect(manifest.entries).toHaveLength(manifest.total_applied_forwards);
     expect(entry).toBeTruthy();
     expect(entry!.registered_in_ledger).toBe(true);

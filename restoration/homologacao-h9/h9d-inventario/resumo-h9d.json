@@ -1,12 +1,12 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
- "ledger": 675,
+ "ledger": 678,
  "total_bruto": 376,
  "fora_escopo_h9d": 84,
  "escopo_h9d": 292,
  "por_classificacao": {
-  "AUTH_COMPROVADA": 257,
-  "EXPOSICAO_COMPROVADA_CORRIGIDA": 31,
+  "AUTH_COMPROVADA": 256,
+  "EXPOSICAO_COMPROVADA_CORRIGIDA": 32,
   "NAO_APLICAVEL": 4,
   "PENDENTE_EVIDENCIA": 0
  },
@@ -18,7 +18,8 @@
   "H9-D-L5",
   "H9-D-L6",
   "H9-D-L6R",
-  "H9-D-L7"
+  "H9-D-L7",
+  "H9-E1R (retificacao)"
  ],
  "forwards_aplicados": [
   "20261006000000",
@@ -34,7 +35,22 @@
   "20261016000000",
   "20261017000000",
   "20261018000000",
-  "20261019000000"
+  "20261019000000",
+  "20261020000000",
+  "20261021000000",
+  "20261022000000"
  ],
- "metodologia": "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites"
+ "metodologia": "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites",
+ "retificacoes": [
+  {
+   "lote": "H9-E1R",
+   "assinatura": "finish_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,uuid)",
+   "de": "AUTH_COMPROVADA",
+   "para": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "motivo": "Falso positivo do lote H9-D-L1: a evidencia afirmava autorizacao antes de qualquer leitura, mas o SELECT em registros_consultor precedia a prova de escopo, criando oraculo de existencia. Somam-se a semantica errada de checkout (inicio_visita) e a ausencia de idempotencia por client_uuid.",
+   "forward": "20261022000000_h9e1r_finish_visit_scope_checkout_idempotency_v1",
+   "ledger": "677 -> 678",
+   "evidencia_historica": "preservada em dossie-l1.json (definition_md5 74cab9081642637b1d0bf6f6743e4a01) e no dossie 07-h9e1r-retificacao-finish-visit.md"
+  }
+ ]
 }
