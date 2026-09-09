@@ -439,10 +439,10 @@ sem novas exposições.
 - `get_report_customer_statement(uuid,date,date)` também referencia `i.amount`,
   porém está fora das quatro funções autorizadas nesta rodada; fica registrado
   para autorização específica.
-- `received_amount` diverge da soma de `receivable_payments` em 10 de 58
-  parcelas. As funções financeiras canônicas usam a coluna denormalizada, que
-  foi mantida aqui por consistência; a divergência é risco de dado, não de
-  código, e permanece aberta.
+- ~~`received_amount` diverge da soma de `receivable_payments` em 10 de 58
+  parcelas~~ — **retificado na rodada 8**: a comparação usada aqui somava apenas
+  `is_reversal = false` e ignorava o par de estorno. Pela soma líquida correta,
+  há **0 divergências reais** (58/58 reconciliam). Ver item 11.5.
 
 **Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.**
 
@@ -503,17 +503,30 @@ Chaves novas, apenas aditivas: `delivered_basis`, `delivered_deliveries_count`,
 - Rollback → `42703` reproduzido; reaplicação → fingerprint idêntico
   `317e63c67b98aca17d82bafe036d8c88 | {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} | {search_path=public}`.
 
-### 11.5 Integridade financeira — 10 de 58 parcelas
+### 11.5 Integridade financeira — 0 divergências reais (58/58 reconciliam)
 
 Diagnóstico completo em `h9d-inventario/relatorio-integridade-received-amount.md`.
-`received_amount` coincide com a soma **líquida** de `receivable_payments` em **58/58** parcelas;
-diverge apenas contra a soma **bruta** (`is_reversal = false`) em **10/58**, exatamente as dez que
-têm pagamento `300.00` e estorno `-300.00`. A origem autoritativa é o gatilho `trg_recalc_ar_inst`
-→ `fn_recalc_receivable_installment()`, que soma todas as linhas incluindo estornos.
+
+**Não há corrupção de dado e não há divergência real.** A reconciliação correta é contra a soma
+**líquida** de `receivable_payments` (originais + estornos): `received_amount` coincide em
+**58/58** parcelas (`div_liquido = 0`). A contagem de 10/58 era artefato de somar apenas
+`is_reversal = false`, ignorando o par de estorno. As dez parcelas `OVERDUE` têm
+`received_amount = 0.00`, pagamento original `+300.00` e estorno `-300.00`; os **10** estornos
+existentes têm **todos** `reversed_payment_id` preenchido (`estornos_sem_par = 0`).
+
+Contrato auditado: `fn_reverse_payment(uuid,text,text)` exige sessão e `is_financial_staff`, motivo
+com no mínimo 5 caracteres, trava por advisory lock, recusa estornar um estorno ou parcela
+`CANCELED`, é idempotente por `reversed_payment_id` (replay devolve o mesmo id; motivo divergente
+levanta `FIN_IDEMPOTENCY_CONFLICT`) e insere uma linha espelho **append-only** com
+`amount_received`, desconto, juros e multa negados. O gatilho `trg_recalc_ar_inst` →
+`fn_recalc_receivable_installment()` soma todas as linhas, inclusive estornos, e por isso a coluna
+denormalizada é, por contrato, **líquida e correta**.
+
 **Nenhum valor financeiro foi alterado** — não há saneamento a executar.
 
-Risco residual: os relatórios de regime caixa somam apenas `is_reversal = false` e por isso
-superestimam o recebido em `3000.00` no conjunto atual. O contrato foi preservado e a diferença
+Risco residual — de **relatório**, não de dado: as funções de regime caixa somam apenas
+`is_reversal = false` e por isso superestimam o recebido em `3000.00` no conjunto atual
+(`fn_financial_inconsistencies` adota a mesma convenção). O contrato foi preservado e a diferença
 ficou observável em `received_net_of_reversals`; a uniformização do regime caixa fica proposta
 como próximo passo, fora do escopo autorizado.
 

@@ -99,11 +99,16 @@ describe("H9-D-L3R2 — extrato do cliente com colunas vivas", () => {
     expect((rollback.match(/CREATE OR REPLACE FUNCTION/g) ?? [])).toHaveLength(1);
   });
 
-  it("o diagnóstico de integridade registra 0/58 divergências líquidas e nenhuma alteração de dados", () => {
-    expect(diagnostico).toContain("**0 de 58**");
-    expect(diagnostico).toContain("**10 de 58**");
+  it("o diagnóstico de integridade registra 0 divergências reais e nenhuma alteração de dados", () => {
+    expect(diagnostico).toContain("**0 divergências reais. As 58 parcelas reconciliam.**");
+    expect(diagnostico).toContain("div_liquido = 0");
+    expect(diagnostico).toContain("estornos_sem_par = 0");
     expect(diagnostico).toContain("fn_recalc_receivable_installment");
+    expect(diagnostico).toContain("fn_reverse_payment");
     expect(diagnostico).toContain("**Nenhuma.**");
+    // a divergência aparente não pode voltar a ser descrita como risco de dado
+    expect(diagnostico).not.toMatch(/risco de dado/);
+    expect(diagnostico).toContain("de relatório, não de dado");
   });
 
   it("o forward está rastreado no manifesto de applied-forwards com ledger 667", () => {
