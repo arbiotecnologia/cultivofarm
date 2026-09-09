@@ -210,3 +210,4 @@
 - [ ] Risco remanescente: composição própria de `get_report_accountability(jsonb)` e o regime caixa de `get_financial_cashflow`/`get_financial_dre_summary` não reauditados
 - [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; L4 e H9-E não iniciados
 
+- [x] Adendo de auditoria independente do L4 (`SELECT *` antes de `_assert_visita_editavel`, oráculo confirmado com o UUID real `b906cbf7-c7b1-4736-98c2-a5f281238068`): tratado pelo mesmo forward `20261013000000`, com reprova antes/depois no UUID indicado e rollback simétrico já incluído
