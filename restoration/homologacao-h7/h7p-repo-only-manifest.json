@@ -1251,7 +1251,7 @@
     "reviewed_at": "2026-09-04",
     "reviewed_commit": "edc4b9d8efeb61c86cf13d05d8c3837c6212a0fd",
     "ledger_versoes": 668,
-    "regra_futura": "Qualquer necessidade funcional destas 59 exige NOVA migration com versao posterior a 20261011000000. Aplicacao direta, movimentacao, renomeacao, edicao de SQL ou insercao no ledger sao permanentemente proibidas.",
+    "regra_futura": "Qualquer necessidade funcional destas 59 exige NOVA migration com versao posterior a 20261012000000. Aplicacao direta, movimentacao, renomeacao, edicao de SQL ou insercao no ledger sao permanentemente proibidas.",
     "distribuicao": {
       "REFLETIDA_SEMANTICAMENTE_NO_CATALOGO": 36,
       "SUPERSEDED_DB_A_FRENTE": 3,
@@ -1263,6 +1263,5 @@
       "20260917000000",
       "20260927000000"
     ]
-  },
-  "regras": null
+  }
 }
