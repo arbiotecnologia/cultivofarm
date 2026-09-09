@@ -52,7 +52,7 @@ const allowedDec=new Set(["BLOQUEADA_PERMANENTE_REFLETIDA","BLOQUEADA_PERMANENTE
 const dist={REFLETIDA_SEMANTICAMENTE_NO_CATALOGO:36,SUPERSEDED_DB_A_FRENTE:3,CONFLITANTE_BACKEND_ESTRANHO:20};
 const c={};
 if (m.entries.length!==59||m.total_repo_only!==59) throw new Error("total repo-only != 59");
-if (m.ledger_versoes!==672) throw new Error("ledger_versoes != 672");
+if (m.ledger_versoes!==674) throw new Error("ledger_versoes != 674");
 for (const e of m.entries){
   if (e.apply_to_staging) throw new Error("apply_to_staging autorizado: "+e.file);
   if (e.replay_prohibited!==true) throw new Error("replay_prohibited ausente: "+e.file);

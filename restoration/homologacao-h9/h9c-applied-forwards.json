@@ -3,8 +3,8 @@
  "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
  "ambiente": "staging ikaauvsflpmamgxmkhoq",
  "producao_proibida": "navfzbwgwzruipouyfnk",
- "ledger_versoes": 673,
- "total_applied_forwards": 13,
+ "ledger_versoes": 674,
+ "total_applied_forwards": 14,
  "entries": [
   {
    "version": "20261005000000",
@@ -328,7 +328,7 @@
    "name": "h9dl6_authz_scoped_visit_writes_no_oracle_v1",
    "fase": "H9-D-L6",
    "path": "restoration/homologacao-h9/h9d-forwards/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1.sql",
-   "sha256": "2a8f83a629721c9e424f50022779274883cc7c3125678c2f6ae7e46a536509bc",
+   "sha256": "631cca50e9485023b52468b6fdfdcf82c099f8b4cb87af28bd2d0d88b22e63b3",
    "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1_rollback.sql",
    "rollback_sha256": "c1177fac9995512abd7bdb6c488653df05aaf69a9d50d000efa376cd06364601",
    "applied_to_staging": true,
@@ -340,12 +340,41 @@
    "efeito": "Autorizacao de escopo antes de qualquer leitura da visita em rpc_realizar_checkin_visita, rpc_realizar_checkout_visita, rpc_upsert_diagnostico_visita e rpc_salvar_campo_visita, via novo helper public._visita_scope_ok(uuid,uuid), eliminando o oraculo de existencia e o vazamento de status de visitas de terceiros.",
    "destructive": false,
    "reversible": true,
-   "applied_at": "2026-09-10",
+   "applied_at": "2026-09-09",
    "evidence_refs": {
     "prova_antes": "identidade sem escopo: inexistente => registro_nao_encontrado (P0002); alheio editavel => sem_permissao/forbidden_visita (42501); alheio fechado => visita_nao_editavel (42501)",
     "prova_depois": "identidade sem escopo: real alheio e inexistente => sem_permissao (42501) em rpc_salvar_campo_visita, forbidden_visita (42501) em rpc_upsert_diagnostico_visita e forbidden_visita_nao_atribuido (42501) em check-in/checkout, identicos",
     "acesso_legitimo": "dono/responsavel/participante/admin preservados: o helper e a uniao exata dos caminhos ja aceitos pelas 4 RPCs",
     "ledger": "672 -> 673, ocorrencia unica",
+    "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l6.json"
+   },
+   "incidente_rastreabilidade": "Apos a aplicacao e o registro unico desta versao, o arquivo foi emendado com REVOKE explicito de anon/authenticated sobre public._visita_scope_ok(uuid,uuid) e o SQL foi reexecutado sob a MESMA versao, sem novo registro no ledger. Isso violou a imutabilidade da migration aplicada. Em H9-D-L6R o arquivo foi reconstituido no conteudo historico da PRIMEIRA aplicacao (somente REVOKE FROM PUBLIC + GRANT service_role) e a revogacao explicita foi regularizada de forma versionada pelo forward 20261018000000."
+  },
+  {
+   "version": "20261018000000",
+   "name": "h9dl6r_acl_and_checkout_uuid_fix_v1",
+   "fase": "H9-D-L6R",
+   "path": "restoration/homologacao-h9/h9d-forwards/20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1.sql",
+   "sha256": "1a78989816193a10ec09a2ef374bbe12dbd1d5d4471fbc454bdcd82c030a863b",
+   "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1_rollback.sql",
+   "rollback_sha256": "2589aef21cd81009f3b6a83a6bafee4a3861bb65b05c7761da7c3ffe63445048",
+   "applied_to_staging": true,
+   "registered_in_ledger": true,
+   "required_in_promotion_bundle": true,
+   "repo_only_quarantined": false,
+   "outside_supabase_migrations": true,
+   "motivo_fora_da_pasta_padrao": "A plataforma bloqueia escrita direta em supabase/migrations/ desde a fase H9-C; o SQL exato aplicado esta versionado em restoration/homologacao-h9/h9d-forwards/ e registrado uma unica vez no ledger.",
+   "efeito": "Retificacao da L6: (1) regulariza de forma versionada a revogacao explicita de EXECUTE do helper public._visita_scope_ok(uuid,uuid) para PUBLIC, anon e authenticated, com GRANT apenas a service_role; (2) corrige defeito funcional vivo em rpc_realizar_checkout_visita, cuja idempotencia comparava visitas_checkin.client_uuid (coluna uuid) com p_client_uuid::text e falhava com 42883. Assinatura, retorno, gate de escopo antes de leitura, auditoria, idempotencia e transicoes preservados.",
+   "destructive": false,
+   "reversible": true,
+   "applied_at": "2026-09-09",
+   "evidence_refs": {
+    "prova_antes": "checkout legitimo abortava com 42883 operator does not exist: uuid = text",
+    "prova_depois": "checkout legitimo retorna jsonb com id/data_hora_checkin/idempotent=false; identidade sem escopo recebe forbidden_visita_nao_atribuido (42501) tanto para registro real alheio quanto para UUID inexistente",
+    "acl": "anon=false, authenticated=false, service_role=true em EXECUTE de public._visita_scope_ok(uuid,uuid); RPC com postgres/authenticated/service_role",
+    "fingerprint_checkout": "pre-180 759eabc40273aa815319239cf23777a5 -> pos-180 2b2cc2d7d51a37a515ef79823c28f690",
+    "ensaio": "rollback restaura 759eabc4... e reaplicacao restaura 2b2cc2d7... em transacao revertida; ledger permanece 674",
+    "ledger": "673 -> 674, ocorrencia unica",
     "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l6.json"
    }
   }

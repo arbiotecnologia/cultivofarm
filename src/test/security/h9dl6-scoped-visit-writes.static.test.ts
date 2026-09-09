@@ -50,6 +50,11 @@ const dossie = JSON.parse(readFileSync(resolve(DIR, "dossie-l6.json"), "utf8")) 
   total: number;
   forward_sha256: string;
   rollback_sha256: string;
+  forward_l6r_path: string;
+  forward_l6r_sha256: string;
+  rollback_l6r_path: string;
+  rollback_l6r_sha256: string;
+  incidente_rastreabilidade: string;
   assinaturas: Record<string, Entrada>;
 };
 const decisoes = JSON.parse(readFileSync(resolve(DIR, "decisoes-l6.json"), "utf8")) as {
@@ -117,13 +122,13 @@ const CORRIGIDAS = [
 ] as const;
 
 describe("H9-D-L6 — escopo e dossiê", () => {
-  it("declara homologação, ledger 673 e a última migration do lote", () => {
+  it("declara homologação, ledger 674 e a última migration do lote", () => {
     expect(dossie.ambiente).toBe("ikaauvsflpmamgxmkhoq");
     expect(dossie.producao_proibida).toBe("navfzbwgwzruipouyfnk");
-    expect(dossie.ledger).toBe(673);
-    expect(dossie.ultima_migration).toBe("20261017000000");
+    expect(dossie.ledger).toBe(674);
+    expect(dossie.ultima_migration).toBe("20261018000000");
     expect(dossie.lote).toBe("H9-D-L6");
-    expect(resumo.ledger).toBe(673);
+    expect(resumo.ledger).toBe(674);
     expect(resumo.lotes_auditados).toContain("H9-D-L6");
     expect(resumo.forwards_aplicados).toContain("20261017000000");
   });
@@ -204,7 +209,7 @@ describe("H9-D-L6 — forward e rollback", () => {
     expect(entry!.applied_to_staging).toBe(true);
     expect(entry!.registered_in_ledger).toBe(true);
     expect(entry!.repo_only_quarantined).toBe(false);
-    expect(manifest.ledger_versoes).toBe(673);
+    expect(manifest.ledger_versoes).toBe(674);
     expect(manifest.total_applied_forwards).toBe(manifest.entries.length);
     expect(dossie.forward_sha256).toBe(sha256(FW_PATH));
     expect(dossie.rollback_sha256).toBe(sha256(RB_PATH));
@@ -258,9 +263,12 @@ describe("H9-D-L6 — forward e rollback", () => {
     expect(fw).toContain("REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM PUBLIC");
     expect(fw).toContain("GRANT EXECUTE ON FUNCTION public._visita_scope_ok(uuid,uuid) TO service_role");
     expect(fw).not.toContain("GRANT EXECUTE ON FUNCTION public._visita_scope_ok(uuid,uuid) TO authenticated");
-    // default privileges do schema public concedem EXECUTE a anon/authenticated: revogação explícita
-    expect(fw).toContain("REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM anon;");
-    expect(fw).toContain("REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM authenticated;");
+    // Default privileges do schema public concedem EXECUTE a anon/authenticated. A revogação
+    // explícita NÃO pertence a este artefato histórico: ela foi aplicada como hotfix não
+    // versionado sob a mesma versão e só foi regularizada, de forma versionada, pela
+    // 20261018000000 (ver bloco H9-D-L6R abaixo).
+    expect(fw).not.toContain("public._visita_scope_ok(uuid,uuid) FROM anon");
+    expect(fw).not.toContain("public._visita_scope_ok(uuid,uuid) FROM authenticated");
   });
 
   it("não introduz mensagens novas que sirvam de oráculo de existência", () => {
@@ -286,5 +294,98 @@ describe("H9-D-L6 — forward e rollback", () => {
         expect(prod[i - 1].toLowerCase()).toMatch(/proibid|proibida|nunca/);
       }
     }
+  });
+});
+
+/**
+ * H9-D-L6R — retificação obrigatória:
+ *  1) a 20261017000000 permanece imutável, com o conteúdo histórico da PRIMEIRA aplicação
+ *     (sem o REVOKE explícito de anon/authenticated acrescentado depois como hotfix);
+ *  2) a 20261018000000 regulariza esse REVOKE de forma versionada e corrige o defeito
+ *     funcional vivo do checkout (`client_uuid = p_client_uuid::text` contra coluna uuid).
+ */
+const FW_L6R =
+  "restoration/homologacao-h9/h9d-forwards/20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1.sql";
+const RB_L6R =
+  "restoration/homologacao-h9/h9d-rollbacks/20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1_rollback.sql";
+const CHECKOUT_SIG =
+  "public.rpc_realizar_checkout_visita(uuid,uuid,numeric,numeric,numeric,text,text,timestamp with time zone,text)";
+
+describe("H9-D-L6R — cadeia 20261017000000 histórica + 20261018000000 retificadora", () => {
+  const fw170 = read(FW_PATH);
+  const fw180 = read(FW_L6R);
+  const rb180 = read(RB_L6R);
+
+  it("a sequência de forwards aplicados é 170 e depois 180, sem reaplicação", () => {
+    const versions = manifest.entries.map((e) => e.version);
+    expect(versions.filter((v) => v === "20261017000000")).toHaveLength(1);
+    expect(versions.filter((v) => v === "20261018000000")).toHaveLength(1);
+    expect(versions.indexOf("20261018000000")).toBe(versions.indexOf("20261017000000") + 1);
+    expect(versions.indexOf("20261018000000")).toBe(versions.length - 1);
+    expect(manifest.ledger_versoes).toBe(674);
+    expect(manifest.total_applied_forwards).toBe(14);
+    expect(resumo.forwards_aplicados).toContain("20261018000000");
+    expect(resumo.lotes_auditados).toContain("H9-D-L6R");
+  });
+
+  it("a 170 é o artefato histórico: sem REVOKE explícito de anon/authenticated no helper", () => {
+    expect(fw170).toContain("REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM PUBLIC;");
+    expect(fw170).not.toContain("public._visita_scope_ok(uuid,uuid) FROM anon");
+    expect(fw170).not.toContain("public._visita_scope_ok(uuid,uuid) FROM authenticated");
+    expect(fw170).toContain("GRANT EXECUTE ON FUNCTION public._visita_scope_ok(uuid,uuid) TO service_role;");
+  });
+
+  it("o incidente de hotfix não versionado está documentado, não escondido", () => {
+    const entry170 = manifest.entries.find((e) => e.version === "20261017000000") as
+      | Record<string, string>
+      | undefined;
+    expect(entry170!.incidente_rastreabilidade).toMatch(/MESMA versao|MESMA versão/);
+    expect(entry170!.incidente_rastreabilidade).toContain("20261018000000");
+    expect(String(dossie.incidente_rastreabilidade)).toContain("20261018000000");
+  });
+
+  it("a 180 regulariza a ACL do helper com revogação explícita e grant mínimo", () => {
+    for (const role of ["PUBLIC", "anon", "authenticated"]) {
+      expect(fw180).toContain(`REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM ${role};`);
+    }
+    expect(fw180).toContain("GRANT EXECUTE ON FUNCTION public._visita_scope_ok(uuid,uuid) TO service_role;");
+    expect(fw180).not.toMatch(/GRANT[^;]*_visita_scope_ok[^;]*\b(PUBLIC|anon|authenticated)\b/);
+  });
+
+  it("a 180 corrige a comparação do checkout para uuid = uuid", () => {
+    const body = fw180.slice(fw180.indexOf("CREATE OR REPLACE FUNCTION public.rpc_realizar_checkout_visita("));
+    expect(body).not.toContain("client_uuid = p_client_uuid::text");
+    expect(body).toContain("WHERE client_uuid = p_client_uuid LIMIT 1");
+    // gate de escopo antes da leitura da visita é preservado
+    const gateIdx = body.indexOf("public._visita_scope_ok(v_uid, p_registro_id)");
+    expect(gateIdx).toBeGreaterThan(-1);
+    expect(gateIdx).toBeLessThan(body.indexOf("public._assert_visita_editavel(p_registro_id)"));
+    // assinatura, retorno e search_path preservados
+    expect(fw180).toContain("SET search_path TO 'public'");
+    expect(fw180).toContain("RETURNS jsonb");
+    expect(fw180).toContain(`GRANT EXECUTE ON FUNCTION ${CHECKOUT_SIG} TO authenticated, service_role;`);
+  });
+
+  it("o rollback da 180 é fiel ao pré-180 e não reintroduz privilégio inseguro", () => {
+    // volta ao defeito conhecido, sem inventar estado novo
+    expect(rb180).toContain("client_uuid = p_client_uuid::text");
+    for (const role of ["PUBLIC", "anon", "authenticated"]) {
+      expect(rb180).toContain(`REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM ${role};`);
+    }
+    expect(rb180).not.toMatch(/GRANT[^;]*_visita_scope_ok[^;]*\b(PUBLIC|anon|authenticated)\b/);
+    expect(rb180).not.toMatch(/GRANT[^;]*\b(PUBLIC|anon)\b/);
+    expect(rb180.trim().endsWith("COMMIT;")).toBe(true);
+  });
+
+  it("hashes reais da 170 histórica e da 180 batem com o manifesto e o dossiê", () => {
+    const e170 = manifest.entries.find((e) => e.version === "20261017000000")!;
+    const e180 = manifest.entries.find((e) => e.version === "20261018000000")!;
+    expect(e170.sha256).toBe(sha256(FW_PATH));
+    expect(e180.sha256).toBe(sha256(FW_L6R));
+    expect(e180.rollback_sha256).toBe(sha256(RB_L6R));
+    expect(String(dossie.forward_l6r_sha256)).toBe(sha256(FW_L6R));
+    expect(String(dossie.rollback_l6r_sha256)).toBe(sha256(RB_L6R));
+    expect(e170.applied_at).toBe("2026-09-09");
+    expect(e180.applied_at).toBe("2026-09-09");
   });
 });

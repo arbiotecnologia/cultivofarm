@@ -1,6 +1,6 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
- "ledger": 673,
+ "ledger": 674,
  "total_bruto": 376,
  "fora_escopo_h9d": 84,
  "escopo_h9d": 292,
@@ -16,7 +16,8 @@
   "H9-D-L3",
   "H9-D-L4",
   "H9-D-L5",
-  "H9-D-L6"
+  "H9-D-L6",
+  "H9-D-L6R"
  ],
  "forwards_aplicados": [
   "20261006000000",
@@ -30,7 +31,8 @@
   "20261014000000",
   "20261015000000",
   "20261016000000",
-  "20261017000000"
+  "20261017000000",
+  "20261018000000"
  ],
  "metodologia": "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites"
 }

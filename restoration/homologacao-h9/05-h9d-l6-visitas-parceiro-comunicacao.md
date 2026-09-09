@@ -83,20 +83,24 @@ Ensaio de rollback + reaplicação executado em transação revertida, sem efeit
 
 ## Pendências e riscos
 
-1. `rpc_realizar_checkout_visita` contém defeito funcional **pré-existente e independente**:
-   o predicado `WHERE client_uuid = p_client_uuid::text` compara com a coluna `uuid`, produzindo
-   `42883 operator does not exist: uuid = text`. A função falha **fechada** (nada é lido ou
-   escrito), portanto não é exposição de segurança e não foi alterada nesta rodada, que se limita
-   ao mínimo necessário para as exposições comprovadas. Deve ser tratada em correção funcional
-   própria.
+1. `rpc_realizar_checkout_visita` continha defeito funcional **pré-existente e independente**:
+   o predicado `WHERE client_uuid = p_client_uuid::text` comparava com a coluna `uuid`, produzindo
+   `42883 operator does not exist: uuid = text`. A função falhava **fechada** (nada era lido ou
+   escrito), portanto não era exposição de segurança e ficou fora do escopo corretivo da L6.
+   **Resolvido na H9-D-L6R** pelo forward `20261018000000`: comparação tipada `client_uuid =
+   p_client_uuid`, com assinatura, retorno, gate de escopo, auditoria, idempotência e transições
+   preservados. Fingerprint vivo do checkout: `759eabc40273aa815319239cf23777a5` →
+   `2b2cc2d7d51a37a515ef79823c28f690`.
 2. `rpc_programar_os_v1` mantém `search_path = 'public', pg_temp`. Com `pg_temp` em última posição
    não há sombreamento de objetos de `public`; mantido como está por estar fora do escopo de
    correção da L6.
-3. Advisors gerenciados do Supabase (baseline 390 segurança / 508 performance) não puderam ser
-   reexecutados contra a homologação nesta rodada sem apontar ferramenta para outro projeto, o que
-   é proibido. Em substituição, a comparação foi feita no catálogo vivo da homologação
-   (SECDEF `authenticated`/`anon` 375/2, zero SECDEF sem `search_path`, crons 1,2,5,8,9,18), todos
-   idênticos ao baseline pós-L5 — nenhuma categoria nova foi introduzida pelo forward.
+3. Advisors gerenciados do Supabase **não foram medidos por mim** nesta rodada: a ferramenta
+   disponível poderia atingir outro projeto, o que é proibido. Registro, como referência
+   fornecida externamente pelo solicitante (não como medição própria): segurança **390**, exatamente
+   o baseline; performance **507**, com redução de 1 `unused_index` (188 contra 189) e demais
+   categorias 172/146/1 — não é regressão. Em substituição, verifiquei o catálogo vivo da
+   homologação (SECDEF `authenticated`/`anon` 375/2, zero SECDEF sem `search_path`,
+   crons 1,2,5,8,9,18), idêntico ao baseline pós-L5.
 4. Resta **1 assinatura PENDENTE_EVIDENCIA**: `start_technical_visit_secure(...)`, reservada para
    a H9-D-L7.
 
@@ -119,4 +123,63 @@ assinaturas, dossiê ↔ inventário, fingerprints vivos, hash forward/rollback 
 autorização escopada antes de leitura, `search_path` fixo, ausência de GRANT a PUBLIC/anon e
 ausência de mensagens que sirvam de oráculo.
 
-Situação: **L6 concluída**. L7, H9-E e promoção **não iniciados**. Produção permanece **NO-GO**.
+O gate foi ampliado na L6R para exigir a sequência `20261017000000` histórica + `20261018000000`
+retificadora, a **ausência** de REVOKE explícito de `anon`/`authenticated` na 170, a **presença**
+desse REVOKE na 180, a comparação UUID tipada no checkout, o rollback seguro quanto a ACL e o
+ledger/manifesto/guard em **674** com hashes reais.
+
+## H9-D-L6R — retificação de rastreabilidade, guard e defeito funcional
+
+### Incidente de rastreabilidade (declarado, não escondido)
+
+Após a aplicação e o registro **único** da versão `20261017000000`, o arquivo do forward foi
+emendado com `REVOKE ALL ... FROM anon` / `FROM authenticated` sobre
+`public._visita_scope_ok(uuid,uuid)` e o SQL foi **reexecutado sob a mesma versão**, sem novo
+registro no ledger. Isso violou a imutabilidade da migration aplicada. A L6R:
+
+- reconstituiu `20261017000000` no conteúdo histórico da **primeira** aplicação (apenas
+  `REVOKE ... FROM PUBLIC` + `GRANT service_role`), com SHA recalculado
+  `631cca50e9485023b52468b6fdfdcf82c099f8b4cb87af28bd2d0d88b22e63b3` e o incidente documentado na
+  entrada 170 do manifesto;
+- regularizou a revogação explícita de forma versionada e reversível pelo forward
+  `20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1`
+  (SHA `1a78989816193a10ec09a2ef374bbe12dbd1d5d4471fbc454bdcd82c030a863b`; rollback
+  `2589aef21cd81009f3b6a83a6bafee4a3861bb65b05c7761da7c3ffe63445048`).
+
+A versão 170 **não** foi reaplicada e **não** houve segunda inserção no ledger.
+
+### Aplicação
+
+Preflight em transação revertida, depois aplicação **única** no staging: ledger **673 → 674**,
+ocorrência da versão 180 = 1, última migration `20261018000000`. Ensaio de rollback + reaplicação
+feito somente dentro de transação revertida (checkout `759eabc4…` no rollback, `2b2cc2d7…` na
+reaplicação, ACL do helper inalterada, ledger permaneceu 674).
+
+### Estado vivo após a 180
+
+| Objeto | Fingerprint | ACL |
+| --- | --- | --- |
+| `_visita_scope_ok(uuid,uuid)` | `d8c3d611108200df201ffda45e558797` | postgres, service_role |
+| `rpc_realizar_checkin_visita` | `3aa7f5ef96de3e4c4e3b1d5aa73ca16c` | postgres, authenticated, service_role |
+| `rpc_realizar_checkout_visita` | `2b2cc2d7d51a37a515ef79823c28f690` | postgres, authenticated, service_role |
+| `rpc_salvar_campo_visita` | `dc1ff655ba3bf156d38817fbf0c073dd` | postgres, authenticated, service_role |
+| `rpc_upsert_diagnostico_visita` | `a20fa0ebeeac12595aa065b0d067bf02` | postgres, authenticated, service_role |
+
+### Provas dinâmicas (staging, transação revertida)
+
+- Identidade sem escopo, recurso real alheio × UUID inexistente: **indistinguíveis** —
+  `sem_permissao` (42501) em campo, `forbidden_visita` (42501) em diagnóstico e
+  `forbidden_visita_nao_atribuido` (42501) em check-in e checkout.
+- Chamada direta do helper por `authenticated`: `permission denied`; executável por `service_role`.
+- Checkout legítimo (cenário sintético em transação revertida): retorno `jsonb` com `id`,
+  `data_hora_checkin` e `idempotent=false`, **sem `42883`**.
+- Resíduo zero após rollback (`residuo_reg=0`, `residuo_obs=0`).
+
+### Rastreabilidade documental
+
+`h9c-applied-forwards.json` em **14 entradas / ledger 674** (170 histórica com o incidente, 180
+retificadora, hashes reais, `applied_at=2026-09-09`); `h7p-repo-only-manifest.json` e
+`h7p-guard-repo-only.sh` em **674**, com as **59 migrations repo-only intactas e em quarentena**.
+
+Situação: **L6 e L6R concluídas**. L7, H9-E e promoção **não iniciados**. Produção permanece
+**NO-GO**.

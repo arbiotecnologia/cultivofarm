@@ -460,11 +460,7 @@ BEGIN
 END;
 $function$;
 
--- Menor privilegio: o schema public tem default privileges que concedem EXECUTE a
--- anon/authenticated; a revogacao precisa ser explicita para esses papeis.
 REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM anon;
-REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public._visita_scope_ok(uuid,uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.rpc_realizar_checkin_visita(uuid,uuid,tipo_checkin,numeric,numeric,numeric,text,text,timestamp with time zone,uuid,uuid,uuid,uuid,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.rpc_realizar_checkout_visita(uuid,uuid,numeric,numeric,numeric,text,text,timestamp with time zone,text) FROM PUBLIC;

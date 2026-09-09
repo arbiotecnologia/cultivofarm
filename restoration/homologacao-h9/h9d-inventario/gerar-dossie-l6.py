@@ -28,10 +28,20 @@ FP = "/tmp/l6/fp.tsv"
 AMBIENTE = "ikaauvsflpmamgxmkhoq"
 PRODUCAO_PROIBIDA = "navfzbwgwzruipouyfnk"
 LOTE = "H9-D-L6"
-LEDGER = 673
-ULTIMA_MIGRATION = "20261017000000"
+LEDGER = 674
+ULTIMA_MIGRATION = "20261018000000"
 FORWARD = "restoration/homologacao-h9/h9d-forwards/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1.sql"
 ROLLBACK = "restoration/homologacao-h9/h9d-rollbacks/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1_rollback.sql"
+FORWARD_L6R = "restoration/homologacao-h9/h9d-forwards/20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1.sql"
+ROLLBACK_L6R = "restoration/homologacao-h9/h9d-rollbacks/20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1_rollback.sql"
+INCIDENTE_RASTREABILIDADE = (
+    "Apos a aplicacao e o registro unico da versao 20261017000000, o arquivo do forward foi emendado "
+    "com REVOKE explicito de anon/authenticated sobre public._visita_scope_ok(uuid,uuid) e o SQL foi "
+    "reexecutado sob a MESMA versao, sem novo registro no ledger — violacao da imutabilidade da migration "
+    "aplicada. A H9-D-L6R reconstituiu o arquivo 20261017000000 no conteudo historico da PRIMEIRA aplicacao "
+    "(apenas REVOKE FROM PUBLIC + GRANT service_role) e regularizou a revogacao explicita, de forma "
+    "versionada e reversivel, pelo forward 20261018000000 (ledger 673 -> 674, ocorrencia unica)."
+)
 
 METODO = (
     "Leitura integral de pg_get_functiondef das 30 assinaturas canônicas e de todos os helpers "
@@ -180,7 +190,7 @@ SIGS = {
         guarda="Mesmo padrão do check-in: _assert_visita_editavel era alcançado sem gate próprio, diferenciando inexistente, alheio editável e alheio fechado. O forward insere _visita_scope_ok imediatamente antes, com o erro já existente 'forbidden_visita_nao_atribuido' (42501).",
         cadeia=CADEIA_VISITA,
         callsites="src/hooks/useFluxoVisitaTecnica.ts:503, src/hooks/useOfflineSync.ts:443, src/components/visita/PresencaCheckoutButton.tsx.",
-        prova="Prova no staging, identidade sem papel, transação revertida: registro real alheio e UUID inexistente produzem resposta idêntica. Indistinguíveis. Resíduo zero. Registrada pendência funcional independente (predicado 'client_uuid = p_client_uuid::text' contra coluna uuid, que faz a função falhar fechada antes do gate): não é exposição e está fora do escopo de correção da L6.",
+        prova="Prova no staging, identidade sem papel, transação revertida: registro real alheio e UUID inexistente produzem a MESMA resposta forbidden_visita_nao_atribuido (42501). Indistinguíveis. Resíduo zero. O defeito funcional independente (predicado 'client_uuid = p_client_uuid::text' contra coluna uuid, que fazia a função falhar fechada com 42883 antes do gate) foi corrigido na H9-D-L6R pelo forward 20261018000000: a comparação passou a ser uuid = uuid, o checkout legítimo volta a retornar jsonb com id/data_hora_checkin/idempotent, e o fingerprint vivo migrou de 759eabc40273aa815319239cf23777a5 para 2b2cc2d7d51a37a515ef79823c28f690.",
     ),
     "rpc_registrar_ocorrencia_entrega(uuid,jsonb)": dict(
         classificacao=A,
@@ -323,11 +333,16 @@ def main():
         ledger=LEDGER,
         ultima_migration=ULTIMA_MIGRATION,
         total=len(SIGS),
-        forward_aplicado="20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1 (aplicado uma única vez; ledger 672 -> 673)",
+        forward_aplicado="20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1 (aplicado uma única vez; ledger 672 -> 673) + retificação 20261018000000_h9dl6r_acl_and_checkout_uuid_fix_v1 (aplicada uma única vez; ledger 673 -> 674)",
         forward_path=FORWARD,
         forward_sha256=sha256(FORWARD),
         rollback_path=ROLLBACK,
         rollback_sha256=sha256(ROLLBACK),
+        forward_l6r_path=FORWARD_L6R,
+        forward_l6r_sha256=sha256(FORWARD_L6R),
+        rollback_l6r_path=ROLLBACK_L6R,
+        rollback_l6r_sha256=sha256(ROLLBACK_L6R),
+        incidente_rastreabilidade=INCIDENTE_RASTREABILIDADE,
         metodo=METODO,
         resumo_lote=resumo_lote,
     )
@@ -369,7 +384,7 @@ def main():
             d = SIGS[sig]
             col[i_cls] = d["classificacao"]
             evid = "%s Corpo lido integralmente no lote determinístico %s; ver dossie-l6.json. %s %s" % (
-                "Exposição comprovada e corrigida pelo forward 20261017000000."
+                "Exposição comprovada e corrigida pelos forwards 20261017000000 e, na retificação L6R, 20261018000000."
                 if d["classificacao"] == X
                 else "Autorização comprovada.",
                 LOTE,
@@ -412,11 +427,12 @@ def main():
         fora_escopo_h9d=fora,
         escopo_h9d=escopo,
         por_classificacao={k: cont[k] for k in sorted(cont)},
-        lotes_auditados=["H9-D-L1", "H9-D-L2", "H9-D-L3", "H9-D-L4", "H9-D-L5", "H9-D-L6"],
+        lotes_auditados=["H9-D-L1", "H9-D-L2", "H9-D-L3", "H9-D-L4", "H9-D-L5", "H9-D-L6", "H9-D-L6R"],
         forwards_aplicados=[
             "20261006000000", "20261007000000", "20261008000000", "20261009000000",
             "20261010000000", "20261011000000", "20261012000000", "20261013000000",
             "20261014000000", "20261015000000", "20261016000000", "20261017000000",
+            "20261018000000",
         ],
         metodologia=(
             "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por "
