@@ -116,7 +116,7 @@ const GENERICA = [
 describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
   it("declara homologação e o ledger corrente", () => {
     expect(resumo.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(resumo.ledger).toBe(667);
+    expect(resumo.ledger).toBe(668);
   });
 
   it("separa universo bruto, herança da H9-C e escopo profundo", () => {
@@ -293,9 +293,9 @@ describe("H9-D — dossiê do lote L2", () => {
   const chaves = Object.keys(dossieL2.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 667 e o lote L2", () => {
+  it("declara homologação, ledger 668 e o lote L2", () => {
     expect(dossieL2.ambiente).toBe("ikaauvsflpmamgxmkhoq");
-    expect(dossieL2.ledger).toBe(667);
+    expect(dossieL2.ledger).toBe(668);
     expect(dossieL2.lote).toBe("H9-D-L2");
     expect(resumo.lotes_auditados).toContain("H9-D-L2");
     expect(resumo.forwards_aplicados ?? []).toContain("20261008000000");
@@ -403,9 +403,9 @@ describe("H9-D — dossiê do lote L3", () => {
   const chaves = Object.keys(dossieL3.assinaturas);
   const inventario = new Map(rows.map((r) => [r.signature, r]));
 
-  it("declara homologação, ledger 667 e o lote L3", () => {
+  it("declara homologação, ledger 668 e o lote L3", () => {
     expect(dossieL3.ambiente).toBe("ikaauvsflpmamgxmkhoq");
-    expect(dossieL3.ledger).toBe(667);
+    expect(dossieL3.ledger).toBe(668);
     expect(dossieL3.lote).toBe("H9-D-L3");
     expect(resumo.lotes_auditados).toContain("H9-D-L3");
     expect(resumo.forwards_aplicados ?? []).toContain("20261009000000");
