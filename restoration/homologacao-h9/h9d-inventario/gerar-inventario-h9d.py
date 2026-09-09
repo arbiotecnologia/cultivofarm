@@ -9,7 +9,7 @@ METODOLOGIA (retificada — v2):
   3. Escopo profundo H9-D = exatamente 292.
   4. Regex/posição é SOMENTE TRIAGEM e NUNCA promove uma função. Só é
      AUTH_COMPROVADA/NAO_APLICAVEL quem tiver decisão manual registrada em
-     `decisoes-h9d.json` ou dossiê de lote (`dossie-l1.json`, `dossie-l2.json`), sempre chaveada
+     `decisoes-h9d.json` ou dossiê de lote (`dossie-l1.json`, `dossie-l2.json`, `dossie-l3.json`), sempre chaveada
      pela ASSINATURA CANÔNICA COMPLETA (nome + tipos), nunca pelo nome — para
      não colidir com funções sobrecarregadas.
   5. Evidência vaga (ex.: "delegação a função guardada") é rejeitada e a
@@ -17,7 +17,7 @@ METODOLOGIA (retificada — v2):
 
 Uso: python3 gerar-inventario-h9d.py
 Entradas (no próprio diretório): secdef-authenticated-inventory-h9d.tsv,
-decisoes-h9d.json, dossie-l1.json, dossie-l2.json. Nunca escreve no banco.
+decisoes-h9d.json, dossie-l1.json, dossie-l2.json, dossie-l3.json. Nunca escreve no banco.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ import pathlib
 
 OUT = pathlib.Path(__file__).resolve().parent
 
-LEDGER = 664
+LEDGER = 665
 AMBIENTE = "ikaauvsflpmamgxmkhoq"
 LOTE_TAM = 30
 
@@ -82,9 +82,20 @@ def main() -> int:
     decisoes = {k: v for k, v in json.loads((OUT / "decisoes-h9d.json").read_text()).items() if not k.startswith("_")}
     l1 = json.loads((OUT / "dossie-l1.json").read_text())["assinaturas"]
     l2 = json.loads((OUT / "dossie-l2.json").read_text())["assinaturas"]
-    if set(l1) & set(l2):
+    l3 = json.loads((OUT / "dossie-l3.json").read_text())["assinaturas"]
+    # Exceção única e explícita: fn_catalogo_preco_canonico ficou PENDENTE_EVIDENCIA
+    # no L2 (decisão de contrato comercial em aberto) e foi resolvida no L3, que
+    # prevalece. Qualquer outra interseção entre lotes é erro.
+    reauditadas = {k for k in set(l2) & set(l3) if l2[k]["classificacao"] == "PENDENTE_EVIDENCIA"}
+    if set(l1) & set(l2) or set(l1) & set(l3) or (set(l2) & set(l3)) - reauditadas:
         raise SystemExit("assinatura auditada em dois lotes")
-    lotes = {**{k: ("H9-D-L1", v) for k, v in l1.items()}, **{k: ("H9-D-L2", v) for k, v in l2.items()}}
+    for k in reauditadas:
+        del l2[k]
+    lotes = {
+        **{k: ("H9-D-L1", v) for k, v in l1.items()},
+        **{k: ("H9-D-L2", v) for k, v in l2.items()},
+        **{k: ("H9-D-L3", v) for k, v in l3.items()},
+    }
 
     # Colisão por overload: o mesmo nome pode ter várias assinaturas; conferimos
     # que toda chave de decisão/dossiê existe como assinatura completa.
@@ -125,7 +136,7 @@ def main() -> int:
     # Lotes determinísticos: L1 já auditado; pendentes recebem L2..Ln por ordem
     # de assinatura, em blocos de 30.
     for i, r in enumerate(sorted(pendentes, key=lambda x: x["signature"])):
-        lote = (i // LOTE_TAM) + 3
+        lote = (i // LOTE_TAM) + 4
         if not r["evidencia"]:
             r["evidencia"] = (
                 "Triagem por regex/posição não é prova. Corpo ainda não lido integralmente com guarda "
@@ -159,8 +170,13 @@ def main() -> int:
                 "fora_escopo_h9d": resumo.get("HERDADA_H9C", 0),
                 "escopo_h9d": sum(escopo.values()),
                 "por_classificacao": escopo,
-                "lotes_auditados": ["H9-D-L1", "H9-D-L2"],
-                "forwards_aplicados": ["20261006000000", "20261007000000", "20261008000000"],
+                "lotes_auditados": ["H9-D-L1", "H9-D-L2", "H9-D-L3"],
+                "forwards_aplicados": [
+                    "20261006000000",
+                    "20261007000000",
+                    "20261008000000",
+                    "20261009000000",
+                ],
                 "metodologia": (
                     "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura "
                     "canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites"

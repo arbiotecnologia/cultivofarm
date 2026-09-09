@@ -60,6 +60,7 @@ type Dossie = {
 
 const dossie = JSON.parse(readFileSync(resolve(DIR, "dossie-l1.json"), "utf8")) as Dossie;
 const dossieL2 = JSON.parse(readFileSync(resolve(DIR, "dossie-l2.json"), "utf8")) as Dossie;
+const dossieL3 = JSON.parse(readFileSync(resolve(DIR, "dossie-l3.json"), "utf8")) as Dossie;
 
 const tsv = readFileSync(resolve(DIR, "secdef-authenticated-inventory-h9d.tsv"), "utf8").trim().split("\n");
 const header = tsv[0].split("\t");
@@ -115,7 +116,7 @@ const GENERICA = [
 describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
   it("declara homologação e o ledger corrente", () => {
     expect(resumo.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(resumo.ledger).toBe(664);
+    expect(resumo.ledger).toBe(665);
   });
 
   it("separa universo bruto, herança da H9-C e escopo profundo", () => {
@@ -351,6 +352,125 @@ describe("H9-D — dossiê do lote L2", () => {
         expect(r.evidencia).toContain("Lote H9-D-L2");
         expect(r.evidencia).toContain(dossieL2.assinaturas[k].definition_md5);
       }
+    }
+  });
+});
+
+const L3_ESPERADAS: readonly string[] = [
+  "fn_catalogo_preco_canonico(uuid,uuid,text,numeric)",
+  "get_cliente_ids_for_user(uuid)",
+  "get_my_available_portal_contexts()",
+  "get_report_monthly_financial(date,date,uuid,text)",
+  "get_report_nfe_pending(jsonb)",
+  "get_report_payables(jsonb)",
+  "get_report_receivables(jsonb)",
+  "get_top_financial_rankings(date,date,integer)",
+  "get_user_partner_id()",
+  "has_active_user_cliente_access(uuid,uuid,text[])",
+  "is_delivery_staff(uuid)",
+  "is_financial_staff(uuid)",
+  "lab_request_replanning(uuid,text)",
+  "log_my_access_denied_secure(text,text)",
+  "log_report_export(text,jsonb,text,text,text,text,text,integer)",
+  "pode_acessar_recomendacao(uuid,uuid)",
+  "publish_planning_to_lab(uuid)",
+  "return_catalog_profile_to_review(text,uuid,text)",
+  "rpc_activate_communication_template(uuid)",
+  "rpc_admin_communication_health_snapshot()",
+  "rpc_admin_communication_outbox_metrics()",
+  "rpc_admin_list_communication_dead_letter(integer,integer)",
+  "rpc_anexar_comprovante_entrega(uuid,jsonb)",
+  "rpc_archive_communication_template(uuid)",
+  "rpc_assign_visit_technician(uuid,uuid,text)",
+  "rpc_atualizar_checklist_entrega(uuid,boolean,text)",
+  "rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)",
+  "rpc_b2b_capacity_kpis()",
+  "rpc_b2b_credit_exposure(uuid,numeric,uuid)",
+  "rpc_b2b_executive_alerts()",
+] as const;
+
+/**
+ * Exceção única e explícita: `fn_catalogo_preco_canonico` ficou PENDENTE_EVIDENCIA
+ * no L2 (decisão de contrato comercial em aberto) e foi reauditada e resolvida no
+ * L3, que prevalece no inventário.
+ */
+const REAUDITADAS_L2_L3 = new Set(["fn_catalogo_preco_canonico(uuid,uuid,text,numeric)"]);
+
+describe("H9-D — dossiê do lote L3", () => {
+  const chaves = Object.keys(dossieL3.assinaturas);
+  const inventario = new Map(rows.map((r) => [r.signature, r]));
+
+  it("declara homologação, ledger 665 e o lote L3", () => {
+    expect(dossieL3.ambiente).toBe("ikaauvsflpmamgxmkhoq");
+    expect(dossieL3.ledger).toBe(665);
+    expect(dossieL3.lote).toBe("H9-D-L3");
+    expect(resumo.lotes_auditados).toContain("H9-D-L3");
+    expect(resumo.forwards_aplicados ?? []).toContain("20261009000000");
+  });
+
+  it("contém exatamente as 30 assinaturas canônicas do lote, sem overload nem herança", () => {
+    expect(dossieL3.total).toBe(30);
+    expect(chaves).toHaveLength(30);
+    expect([...chaves].sort()).toEqual([...L3_ESPERADAS].sort());
+    expect(new Set(chaves).size).toBe(30);
+    for (const k of chaves) {
+      expect(k).toMatch(/^[a-z0-9_]+\(.*\)$/);
+      expect(inventario.has(k), `assinatura ausente do inventário: ${k}`).toBe(true);
+      expect(inventario.get(k)!.escopo_h9d).toBe("ESCOPO_PROFUNDO_H9D");
+      const nome = k.slice(0, k.indexOf("("));
+      for (const r of rows.filter((x) => x.signature.startsWith(`${nome}(`) && x.signature !== k)) {
+        expect(r.evidencia.includes("Lote H9-D-L3"), `colisão por overload em ${r.signature}`).toBe(false);
+      }
+    }
+  });
+
+  it("não há interseção com L1 e a única reauditagem do L2 é declarada", () => {
+    for (const k of chaves) expect(Object.keys(dossie.assinaturas)).not.toContain(k);
+    const inter = chaves.filter((k) => Object.keys(dossieL2.assinaturas).includes(k));
+    for (const k of inter) {
+      expect(REAUDITADAS_L2_L3.has(k), `interseção não declarada: ${k}`).toBe(true);
+      expect(dossieL2.assinaturas[k].classificacao).toBe("PENDENTE_EVIDENCIA");
+    }
+  });
+
+  it("cada assinatura tem evidência específica e fingerprint vivo", () => {
+    for (const [k, d] of Object.entries(dossieL3.assinaturas)) {
+      expect(["AUTH_COMPROVADA", "EXPOSICAO_COMPROVADA_CORRIGIDA"], k).toContain(d.classificacao);
+      expect(d.definition_md5, k).toMatch(/^[0-9a-f]{32}$/);
+      expect(d.definition_len).toBeGreaterThan(100);
+      expect(d.proconfig).toContain("search_path");
+      expect(d.guarda_textual.length).toBeGreaterThan(20);
+      expect(d.cadeia_transitiva.length).toBeGreaterThan(20);
+      expect(d.null_fail_closed.length).toBeGreaterThan(3);
+      expect(d.tenant_bola_idor.length).toBeGreaterThan(10);
+      expect(d.sql_dinamico.length).toBeGreaterThan(3);
+      expect(d.callsites.length).toBeGreaterThan(10);
+      for (const g of GENERICA) expect(d.guarda_textual.includes(g), k).toBe(false);
+      // ACL viva: `authenticated` mantém EXECUTE, exceto onde a correção revogou.
+      if (k === "fn_catalogo_preco_canonico(uuid,uuid,text,numeric)") {
+        expect(d.acl.includes("authenticated")).toBe(false);
+      } else {
+        expect(d.acl).toContain("authenticated");
+      }
+    }
+  });
+
+  it("as 6 exposições do L3 citam o forward reversível aplicado na homologação", () => {
+    const corrigidas = Object.entries(dossieL3.assinaturas).filter(
+      ([, d]) => d.classificacao === "EXPOSICAO_COMPROVADA_CORRIGIDA",
+    );
+    expect(corrigidas).toHaveLength(6);
+    for (const [k, d] of corrigidas) {
+      expect((d as unknown as { observacao: string }).observacao, k).toContain("20261009000000");
+    }
+  });
+
+  it("o inventário reflete o dossiê L3", () => {
+    for (const k of chaves) {
+      const r = inventario.get(k)!;
+      expect(r.classificacao_h9d).toBe(dossieL3.assinaturas[k].classificacao);
+      expect(r.evidencia).toContain("Lote H9-D-L3");
+      expect(r.evidencia).toContain(dossieL3.assinaturas[k].definition_md5);
     }
   });
 });
