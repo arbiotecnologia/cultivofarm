@@ -3,8 +3,8 @@
   "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
-  "ledger_versoes": 666,
-  "total_applied_forwards": 6,
+  "ledger_versoes": 667,
+  "total_applied_forwards": 7,
   "entries": [
     {
       "version": "20261005000000",
@@ -163,6 +163,33 @@
       "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
       "ensaio_rollback_reaplicacao": "rollback aplicado (defeitos reproduzidos de novo) e forward reaplicado: 0 divergencias de md5(pg_get_functiondef) nas 8 assinaturas",
       "secdef_authenticated": "375 authenticated / 2 anon preservados; nenhum GRANT novo"
+    },
+    {
+      "version": "20261011000000",
+      "name": "h9dl3r2_customer_statement_live_columns_v1",
+      "fase": "H9-D-L3 (retificacao 2 — extrato do cliente e integridade financeira)",
+      "path": "restoration/homologacao-h9/h9d-forwards/20261011000000_h9dl3r2_customer_statement_live_columns_v1.sql",
+      "sha256": "3074953f754c7412805630dcc5f07d25090b82d857cb998193eaa55190d41219",
+      "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261011000000_h9dl3r2_customer_statement_live_columns_v1_rollback.sql",
+      "rollback_sha256": "297101f233b6bf7dc4b05f1d86882b421a68495e558627852ba17607d71fe98b",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma continua bloqueando escrita direta em supabase/migrations/; o SQL exato aplicado foi versionado em restoration/homologacao-h9/h9d-forwards/ e registrado no ledger.",
+      "evidencia": "Antes: get_report_customer_statement(uuid,date,date) falhava com 42703 para staff financeiro (entregas.valor_total, entregas.data_entrega e accounts_receivable_installments.amount inexistentes), derrubando tambem get_report_accountability(jsonb). Depois: JSON valido para administrador e financeiro (billed 7000.00, received 1500.00, received_net_of_reversals 1200.00, delivered 3000.00, open_balance 5800.00, delivered_unlinked_count 2).",
+      "decisao_delivered": "entregas nao possui coluna monetaria e os_faturamento_base esta vazia (0 linhas com valor, 0 entregas vinculadas). delivered passa a ser a soma de accounts_receivable.total_amount dos titulos DISTINTOS vinculados a entregas confirmadas no periodo; entregas sem vinculo financeiro nao sao estimadas e sao declaradas em delivered_unlinked_count. Dupla contagem e impossivel tambem por constraint: uq_entregas_receivable_id (UNIQUE em entregas.receivable_id).",
+      "teste_negativo": "cliente_produtor recebe 'Acesso negado' antes de qualquer leitura; periodo invertido ou data nula => 22023 'Periodo invalido'",
+      "teste_positivo": "administrador e financeiro retornam JSON reconciliavel; cliente inexistente e customer_id nulo (via get_report_accountability) retornam zeros sem erro",
+      "integridade_financeira": "0 de 58 parcelas divergentes quando received_amount e comparado a soma liquida de receivable_payments (pagamentos + estornos). As 10 divergencias observadas anteriormente decorrem de comparar apenas is_reversal=false, ignorando os 10 estornos de -300.00. Nenhum dado financeiro foi alterado.",
+      "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
+      "diagnostico_divergencias": "restoration/homologacao-h9/h9d-inventario/relatorio-integridade-received-amount.md",
+      "ensaio_rollback_reaplicacao": "rollback aplicado (42703 reproduzido) e forward reaplicado: md5(pg_get_functiondef)+ACL+proconfig identicos (317e63c67b98aca17d82bafe036d8c88)",
+      "secdef_authenticated": "375 authenticated / 2 anon preservados; nenhum GRANT novo",
+      "destructive": false,
+      "reversible": true,
+      "applied_at": "2026-09-09"
     }
   ]
 }
