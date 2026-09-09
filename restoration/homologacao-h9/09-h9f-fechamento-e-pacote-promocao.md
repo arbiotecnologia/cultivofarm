@@ -194,7 +194,7 @@ fornecidas pelo usuário. A cobertura equivalente foi obtida no nível do banco
 | Prova adversarial ampla H9-E2 (reexecutada) | 18 / 18 |
 | Concorrência real + cardinalidade + resíduo | 29 / 29 |
 | Testes de segurança + configuração (`src/test/security`, `src/test/config`) | 19 arquivos, 242 testes, 100% verdes |
-| Suíte COMPLETA do repositório (após a última alteração) | ver seção 12 |
+| Suíte COMPLETA do repositório (após a última alteração) | 227 arquivos aprovados + 1 pulado; **3.552 testes aprovados, 4 pulados, 0 falhas** |
 | Typecheck (`tsgo --noEmit`) | verde |
 | Build (`npm run build`) | verde |
 
@@ -258,8 +258,10 @@ produção ou de homologação legítimo foi alterado ou removido.
 
 ## 12. Suíte completa, riscos e pendências
 
-Resultados da suíte integral, typecheck e build estão registrados na seção 9 e
-foram executados **após a última alteração de arquivo** desta fase.
+Suíte integral: **228 arquivos (227 aprovados, 1 pulado) e 3.556 testes
+(3.552 aprovados, 4 pulados, 0 falhas)**. Typecheck (`tsgo --noEmit`) e build
+(`npm run build`) verdes. Os três foram executados **após a última alteração de
+arquivo** desta fase.
 
 **Pendências declaradas (não resolvidas nesta fase, por escopo ou por bloqueio externo):**
 
