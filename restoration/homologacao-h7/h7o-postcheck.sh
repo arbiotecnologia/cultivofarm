@@ -6,7 +6,7 @@
 #  4) P2: 19 assinaturas sem EXECUTE para anon/authenticated/PUBLIC; communication_provider_settings sem grants a anon/authenticated;
 #  5) P3: 3 tabelas private com RLS e sem grants; 2 funções private sem EXECUTE; pepper/política presentes; job pg_cron; RPC pública com rate-limit;
 #  6) P4: 5/5 views security_invoker;
-#  7) allowlist H7O/H9-C = allowlist H7N − exatamente as 21 assinaturas revogadas (19 H7O + 2 H9-C1; drift zero);
+#  7) allowlist H7O/H9-C = allowlist H7N − exatamente as 22 assinaturas revogadas (19 H7O + 2 H9-C1 + 1 H9-D-L3; drift zero);
 #  8) invariantes fiscais (HOMOLOGATION/tpAmb=2/produção off; nenhuma invoice/evento).
 # Uso: bash restoration/homologacao-h7/h7o-postcheck.sh
 #      H7O_ALLOWLIST_UPDATE=1 bash restoration/homologacao-h7/h7o-postcheck.sh  (regrava h7o-inventario/rpc_allowlist.tsv — revisar no diff)
@@ -129,6 +129,7 @@ can_checkin_technical_visit(uuid,uuid)
 can_user_access_cliente(uuid,uuid)
 can_view_bi_operacional(uuid)
 check_partner_order_sla()
+fn_catalogo_preco_canonico(uuid,uuid,text,numeric)
 fn_cockpit_assert_operador()
 fn_entrega_assert_confirmador(text)
 fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)
@@ -174,10 +175,10 @@ for line in sys.stdin:
     out.append(name + "(" + ",".join(types) + ")")
 print("\n".join(sorted(out)))
 ' )
-if [ "$removed" = "21" ] && [ "$added" = "0" ] && [ "$(printf '%s\n' "$expected_removed" | sort)" = "$actual_removed" ]; then
-  ok "allowlist H7N→H7O: exatamente as 21 assinaturas removidas (19 H7O + 2 H9-C1), 0 adicionadas ($(grep -vc '^#' "$ALLOW_H7N") → $(wc -l < "$tmp"))"
+if [ "$removed" = "22" ] && [ "$added" = "0" ] && [ "$(printf '%s\n' "$expected_removed" | sort)" = "$actual_removed" ]; then
+  ok "allowlist H7N→H7O: exatamente as 22 assinaturas removidas (19 H7O + 2 H9-C1 + 1 H9-D-L3), 0 adicionadas ($(grep -vc '^#' "$ALLOW_H7N") → $(wc -l < "$tmp"))"
 else
-  bad "allowlist H7N→H7O: removidas=$removed adicionadas=$added (esperado 21/0)"; diff <(grep -v '^#' "$ALLOW_H7N" | cut -f1) <(cut -f1 "$tmp") || true
+  bad "allowlist H7N→H7O: removidas=$removed adicionadas=$added (esperado 22/0)"; diff <(grep -v '^#' "$ALLOW_H7N" | cut -f1) <(cut -f1 "$tmp") || true
 fi
 anon_secdef=$(awk -F'\t' '$2=="DEFINER" && $3=="anon"' "$tmp" | wc -l)
 [ "$anon_secdef" = "2" ] && ok "SECURITY DEFINER com anon: 2 (rpc_validar_comprovante_entrega [rate-limit], rpc_validar_rastreio_produto) — por design" || bad "SECURITY DEFINER com anon: $anon_secdef (esperado 2)"

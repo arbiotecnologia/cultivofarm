@@ -1,4 +1,4 @@
-# H7O allowlist — funções em public executáveis por anon/authenticated (staging) — gerada 2026-09-08T21:27:07Z
+# H7O allowlist — funções em public executáveis por anon/authenticated (staging) — gerada 2026-09-09T00:37:32Z
 # assinatura	security	anon	authenticated	tipo
 _fiscal_rtc_assert_payload(payload jsonb, kind text)	INVOKER	-	authenticated	f
 _fiscal_rtc_can_read(uid uuid)	INVOKER	-	authenticated	f
@@ -60,7 +60,6 @@ fn_b2b_status_is_approved_or_later(p_status partner_order_status)	INVOKER	-	auth
 fn_b2b_status_is_operational(p_status partner_order_status)	INVOKER	-	authenticated	f
 fn_calc_next_generation_date(_freq text, _from_date date, _due_day integer)	INVOKER	anon	authenticated	f
 fn_calc_os_faturamento_totals()	INVOKER	anon	authenticated	trigger
-fn_catalogo_preco_canonico(p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric)	DEFINER	-	authenticated	f
 fn_cockpit_is_hml_environment()	DEFINER	-	authenticated	f
 fn_cockpit_stage(p_status_oficial text)	INVOKER	-	authenticated	f
 fn_estoque_fingerprint(p_acao text, p_item uuid, p_qtd numeric, p_payload jsonb)	INVOKER	-	authenticated	f
