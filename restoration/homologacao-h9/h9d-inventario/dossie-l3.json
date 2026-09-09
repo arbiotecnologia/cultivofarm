@@ -1,6 +1,6 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
- "ledger": 667,
+ "ledger": 668,
  "lote": "H9-D-L3",
  "total": 30,
  "fonte_hash_sql": "SELECT p.proname||'('||pg_catalog.oidvectortypes(p.proargtypes)||')' AS sig, md5(pg_get_functiondef(p.oid)) AS definition_md5, length(pg_get_functiondef(p.oid))::text AS definition_len, coalesce(p.proacl::text,'') AS acl, coalesce(p.proconfig::text,'') AS proconfig FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prosecdef;",

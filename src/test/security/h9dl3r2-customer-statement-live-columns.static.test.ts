@@ -108,11 +108,13 @@ describe("H9-D-L3R2 — extrato do cliente com colunas vivas", () => {
     expect(diagnostico).toContain("**Nenhuma.**");
     // a divergência aparente não pode voltar a ser descrita como risco de dado
     expect(diagnostico).not.toMatch(/risco de dado/);
-    expect(diagnostico).toContain("de relatório, não de dado");
+    // o risco de relatório foi resolvido na rodada 9 (regime caixa líquido)
+    expect(diagnostico).toContain("cash_basis = NET_OF_REVERSALS");
+    expect(diagnostico).toContain("20261012000000");
   });
 
-  it("o forward está rastreado no manifesto de applied-forwards com ledger 667", () => {
-    expect(manifest.ledger_versoes).toBe(667);
+  it("o forward está rastreado no manifesto de applied-forwards com ledger 668", () => {
+    expect(manifest.ledger_versoes).toBe(668);
     const e = manifest.entries.find((x) => x.version === "20261011000000");
     expect(e).toBeDefined();
     expect(e!.applied_to_staging).toBe(true);

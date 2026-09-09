@@ -66,11 +66,23 @@ O caráter append-only é garantido pelos gatilhos `trg_h6_rp_append_only` e `tr
 
 **Nenhuma.** Não houve `UPDATE`, `INSERT` ou `DELETE` em dados financeiros.
 
-## Risco residual — de relatório, não de dado
+## Regime caixa — uniformizado na rodada 9 (forward `20261012000000`)
 
-As funções de regime caixa (`get_report_monthly_financial`, `get_report_customer_statement`) e
-`fn_financial_inconsistencies` somam `receivable_payments` com `is_reversal = false`, o que
-**superestima o recebido em `3000.00` no conjunto atual**. O contrato dessas chaves foi preservado
-nesta rodada; o extrato passou a expor `received_net_of_reversals` para tornar a diferença
-observável sem quebrar consumidores. A uniformização do regime caixa em todos os relatórios é
-proposta como próximo passo, fora do escopo autorizado.
+O risco de **relatório** aqui registrado foi resolvido: `get_report_monthly_financial` e
+`get_report_customer_statement` passaram a expressar **regime caixa líquido**
+(`cash_basis = NET_OF_REVERSALS`), somando também as linhas negativas de estorno do contrato
+append-only. As métricas brutas continuam disponíveis em `received_gross` / `paid_gross`
+(e `received_net_of_reversals` no extrato), sem quebrar consumidores.
+
+Prova em homologação: `received` passou de `15450.00` (bruto) para `12450.00` (líquido), exatamente
+os `3000.00` de estornos pareados; `by_category` soma `12450.00`; `net_cash = 12450.00 - 13000.00
+= -550.00`. Não existem estornos em `payable_payments` no conjunto atual (`0` linhas), então a
+métrica de pagamentos é idêntica em bruto e líquido — a fórmula, porém, já é a mesma das entradas.
+
+## Retificação sobre `fn_financial_inconsistencies`
+
+A afirmação anterior de que essa função "soma apenas `is_reversal = false`" está **incorreta** e fica
+retificada. O corpo vivo usa o filtro **apenas** na regra `AR_CANCELED_WITH_PAYMENT` e, na mesma
+condição, exclui o pagamento original que possua linha de estorno
+(`NOT EXISTS (... rp2.reversed_payment_id = rp.id)`), ou seja, pares estornados **já não** são
+contados. A função **não foi alterada**, por ausência de defeito comprovado.

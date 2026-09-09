@@ -530,16 +530,72 @@ Risco residual — de **relatório**, não de dado: as funções de regime caixa
 ficou observável em `received_net_of_reversals`; a uniformização do regime caixa fica proposta
 como próximo passo, fora do escopo autorizado.
 
-### 11.6 Estado final
+### 11.6 Estado final da rodada 8
 
 Ledger **667** (última `20261011000000`, registro único), SECDEF `authenticated` **375** /
 `anon` **2**, crons 1/2/5/8/9/18 ativos, zero fixtures. Classificações do escopo profundo
 **inalteradas** (177 / 4 / 20 / 91): o defeito era funcional, não uma nova exposição.
 
-### 11.7 Risco remanescente
+## 12. Rodada 9 — retificação 3 do H9-D-L3 (relatório de entregas e regime caixa líquido)
 
-- `get_report_deliveries_billing_status` ainda referencia `entregas.data_entrega` e
-  `entregas.valor_total`; fora das funções autorizadas nesta rodada, registrado para autorização.
-- Regime caixa não uniforme entre relatórios (item 11.5).
+Forward `20261012000000_h9dl3r3_deliveries_report_and_net_cash_v1`, aplicado **somente em
+homologação** (`ikaauvsflpmamgxmkhoq`), ledger **667 → 668**. Migração puramente de definição de
+função e ACL: **nenhum dado financeiro foi alterado**.
+
+### 12.1 Provas antes
+
+- `get_report_deliveries_billing_status('2000-01-01','2100-01-01')` como administrador:
+  `ERROR: column e.data_entrega does not exist` (42703). `entregas` não possui `data_entrega` nem
+  coluna monetária; possui `data_saida`, `entregue_em` e `receivable_id`.
+- `get_report_monthly_financial`: `received = 15450.00`, enquanto a soma líquida de
+  `receivable_payments` no mesmo período é `12450.00` — superestimativa de exatamente `3000.00`
+  (10 estornos pareados).
+
+### 12.2 Correções
+
+| Função | Correção |
+| --- | --- |
+| `get_report_deliveries_billing_status(date,date)` | `delivery_date = COALESCE(entregue_em::date, data_saida)`; `total_value` vem **apenas** de `accounts_receivable.total_amount` do título vinculado, validando `ar.customer_id = e.cliente_id` e `ar.status <> 'CANCELED'`; sem título válido ⇒ `0` e `billed = false` (nunca estimativa); uma linha por entrega; validação de período `22023`; assinatura e colunas de retorno preservadas. |
+| `get_report_monthly_financial(date,date,uuid,text)` | `received`, `paid`, `net_cash` e `by_category` passam a **incluir** as linhas negativas de estorno (regime caixa líquido). Chaves anteriores preservadas; adicionados `cash_basis`, `received_gross`, `paid_gross` e `received_gross` por categoria. |
+| `get_report_customer_statement(uuid,date,date)` | `received` passa a ser **líquido**; `received_gross` e `received_net_of_reversals` explícitos; `delivered` passa a exigir `ar.customer_id = _customer_id`, impedindo contaminação por vínculo inconsistente. |
+| `fn_financial_inconsistencies()` | **Não alterada** — ver 12.4. |
+
+### 12.3 Provas depois (todas em transação revertida)
+
+- Entregas: administrador e financeiro executam; **42** linhas, **16** faturadas, total `24000.00`.
+- Mensal: `received = 12450.00` (líquido), `received_gross = 15450.00`, `paid = 13000.00`,
+  `net_cash = -550.00`, `by_category` somando exatamente `12450.00`. Não há estornos em
+  `payable_payments` (0 linhas), logo AP bruto = AP líquido.
+- Extrato: `received = received_net_of_reversals` e `received_gross` preservado à parte.
+- Fixtures sintéticas (revertidas): entrega com título válido ⇒ `1000.00 / billed=true`; título
+  **cancelado** ⇒ `0 / false`; entrega **sem título** ⇒ `0 / false`; título de **outro cliente** ⇒
+  `0 / false` e `delivered = 0` para esse cliente. Ponteiro órfão é estruturalmente impossível
+  (`entregas_receivable_id_fkey`); dupla contagem por título é impossível
+  (`uq_entregas_receivable_id`).
+- Negativos: `tecnico_agronomo` recebe `Acesso negado` antes de qualquer leitura; período invertido
+  ⇒ `22023`; período vazio ⇒ 0 linhas sem erro.
+- Rollback → reaplicação: fingerprint `md5(pg_get_functiondef + proacl)` das três assinaturas
+  idêntico (`a33ec88a53469eb79634562e8643ec80`). Zero fixtures remanescentes.
+
+### 12.4 Retificação sobre `fn_financial_inconsistencies`
+
+A afirmação de que a função "soma apenas `is_reversal = false`" está **retificada**: o filtro aparece
+somente na regra `AR_CANCELED_WITH_PAYMENT` e, na mesma condição, originais com linha de estorno são
+excluídos por `NOT EXISTS (... rp2.reversed_payment_id = rp.id)`. Sem defeito comprovado, a função
+**não foi tocada**.
+
+### 12.5 Estado final
+
+Ledger **668** (última `20261012000000`), SECDEF `authenticated` **375** / `anon` **2**, crons
+1/2/5/8/9/18 ativos, zero fixtures, produção não acessada. Classificações do escopo profundo
+**inalteradas** (177 / 4 / 20 / 91): eram defeitos funcionais e de semântica de relatório, não novas
+exposições.
+
+### 12.6 Risco remanescente
+
+- `get_report_accountability(jsonb)` herda o extrato corrigido, mas sua composição própria não foi
+  reauditada nesta rodada.
+- Uniformização do regime caixa em relatórios fora desta rodada (por exemplo `get_financial_cashflow`
+  e `get_financial_dre_summary`) permanece não verificada.
 
 **Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.** L4 e H9-E não iniciados.
