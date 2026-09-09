@@ -297,31 +297,52 @@ produção ou de homologação legítimo foi alterado ou removido.
 
 Suíte integral: **228 arquivos (227 aprovados, 1 pulado) e 3.556 testes
 (3.552 aprovados, 4 pulados, 0 falhas)**. Typecheck (`tsgo --noEmit`) e build
-(`npm run build`) verdes. Os três foram executados **após a última alteração de
-arquivo** desta fase.
+(`npm run build`) verdes.
+
+**Nota de rastreabilidade da retificação H9-FR:** a suíte integral acima foi
+executada na rodada H9-F, **antes** desta retificação documental/estática. A
+retificação H9-FR alterou apenas este dossiê e o teste estático
+`src/test/security/h9f-pacote-e-gate.static.test.ts`; nenhum código de aplicação,
+migration ou dado foi tocado. Após H9-FR foram reexecutados: gate de binding,
+teste estático H9-F, typecheck e build — todos verdes. **A suíte integral NÃO foi
+rerrodada após H9-FR**, e nenhuma afirmação em contrário deve ser lida aqui.
 
 **Pendências declaradas (não resolvidas nesta fase, por escopo ou por bloqueio externo):**
 
-1. Smoke autenticado de UI não executado — sem sessão disponível para o backend
-   externo de homologação (seção 8).
-2. Dívida legada de advisors (897 avisos originais) permanece aberta, com backlog
-   P0/P1/P2 na seção 7 — deliberadamente fora de H9.
+1. **Smoke autenticado de UI não executado** (`smoke_autenticado = false`) — sem
+   sessão disponível para o backend externo de homologação (seção 8). **Esta é a
+   única evidência pendente e é bloqueante do GO integral.**
+2. Dívida legada de advisors permanece aberta no baseline oficial **390 (segurança)
+   / 507 (performance)**, com backlog P0/P1/P2 na seção 7 — deliberadamente fora de H9.
 3. Drift de `.env`/`types.ts` provocado pela plataforma é recorrente: mitigado por
    gate, **não eliminado**. Qualquer execução futura deve rodar o gate antes de
    qualquer comando de banco.
 4. Promoção continua **não autorizada**; produção nunca foi tocada.
 
-## 13. Veredito
+## 13. Veredito (retificado em H9-FR)
 
-**AUDITORIA H9: GO** — no sentido estrito de “pacote pronto para uma futura
-promoção controlada”, com base em: ledger 679 consistente e sem duplicidade; três
-RPCs com contratos, hashes e ACLs esperados; matriz adversarial 12/12; prova
-adversarial ampla 18/18; concorrência real em duas sessões com resultado idêntico,
-cardinalidade exata e resíduo zero; gate de binding verde; segurança 242/242;
-suíte completa, typecheck e build verdes após a última alteração; manifesto
-promovível íntegro com rollbacks em ordem inversa e 59 migrations formalmente
-excluídas.
+Veredito binário, por escopo:
 
-**Este GO não autoriza tocar produção.** A promoção exige autorização humana
-explícita e uma janela própria, e as pendências da seção 12 devem ser lidas antes
-de qualquer decisão.
+| Escopo | Veredito |
+| --- | --- |
+| Backend / RPCs de visita / pacote de promoção | **GO técnico** |
+| **AUDITORIA H9 INTEGRAL** | **NO-GO** |
+| Promoção para produção | **NO-GO** |
+
+**GO técnico (backend/RPCs/pacote)** — sustentado por: ledger 679 consistente e sem
+duplicidade; três RPCs com contratos, hashes e ACLs esperados; matriz adversarial
+12/12; prova adversarial ampla 18/18; concorrência real em duas sessões com
+resultado idêntico, cardinalidade exata e resíduo zero; gate de binding verde;
+segurança 242/242; suíte integral, typecheck e build verdes na rodada H9-F;
+manifesto promovível íntegro com rollbacks em ordem inversa e 59 migrations
+formalmente excluídas.
+
+**AUDITORIA H9 INTEGRAL: NO-GO** — por **uma única evidência pendente**: o smoke
+autenticado de UI desktop/mobile (fluxo feliz, clique duplicado, permissão negada),
+exigido pelo critério de aceite e não executado (`smoke_autenticado = false`,
+seção 8). O veredito anterior de "AUDITORIA H9: GO" era incompatível com essa
+lacuna e fica **revogado por esta retificação**.
+
+**Promoção: NO-GO** — depende de (a) execução e aprovação do smoke autenticado e
+(b) autorização humana explícita posterior, em janela própria. Produção
+`navfzbwgwzruipouyfnk` e sandbox `yzszlzjpovmcteuxjznj` permanecem intocados.
