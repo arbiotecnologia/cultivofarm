@@ -8,7 +8,7 @@ import { resolve } from "node:path";
  *
  * O ledger do staging autorizado tem 662 versões (654 em H7P + 3 aplicadas na fase
  * H8-A: duplicate_index, auth_rls_initplan e policies redundantes + 1 na H8-B1 + 1 na H8-E
- * + 1 na H9-B1 + 1 na H9-C1 + 1 na H9-D1 + 1 na H9-D-L1 + 1 na H9-D-L2 + 1 na H9-D-L3 + 1 na retificação H9-D-L3 + 1 na retificação 2 do H9-D-L3 + 1 na retificação 3 do H9-D-L3 + 1 na H9-D-L4 = 669); o repositório tem mais
+ * + 1 na H9-B1 + 1 na H9-C1 + 1 na H9-D1 + 1 na H9-D-L1 + 1 na H9-D-L2 + 1 na H9-D-L3 + 1 na retificação H9-D-L3 + 1 na retificação 2 do H9-D-L3 = 668); o repositório tem mais
  * arquivos do que isso. As 59 migrations excedentes foram reconciliadas na
  * H7P e NENHUMA delas deve ser aplicada:
  *   - 36 já refletidas semanticamente no catálogo;
@@ -50,8 +50,8 @@ const sha256 = (p: string) =>
   createHash("sha256").update(readFileSync(p)).digest("hex");
 
 describe("H7P — manifesto de migrations repo-only", () => {
-  it("declara exatamente 59 entradas contra o ledger de 669 versões", () => {
-    expect(manifest.ledger_versoes).toBe(669);
+  it("declara exatamente 59 entradas contra o ledger de 668 versões", () => {
+    expect(manifest.ledger_versoes).toBe(668);
     expect(manifest.total_repo_only).toBe(59);
     expect(manifest.entries).toHaveLength(59);
   });
@@ -106,7 +106,7 @@ describe("H7P — manifesto de migrations repo-only", () => {
     const repoVersions = readdirSync(MIGRATIONS_DIR)
       .filter((f) => /^\d{14}_.+\.sql$/.test(f))
       .map((f) => f.slice(0, 14));
-    // 669 aplicadas (nove delas, 20261005000000 da H9-C1, 20261006000000 da H9-D1 e 20261007000000 da H9-D-L1 20261008000000 da H9-D-L2, 20261009000000 da H9-D-L3, 20261010000000, 20261011000000 e 20261012000000 das retificações do H9-D-L3 e 20261013000000 da H9-D-L4, versionadas fora de
+    // 668 aplicadas (sete delas, 20261005000000 da H9-C1, 20261006000000 da H9-D1 e 20261007000000 da H9-D-L1 20261008000000 da H9-D-L2, 20261009000000 da H9-D-L3, 20261010000000 e 20261011000000 das retificações do H9-D-L3, versionadas fora de
     // supabase/migrations) + 59 reconciliadas. Qualquer arquivo novo posterior
     // é legítimo apenas se também tiver sido aplicado (ledger cresce junto).
     const known = manifest.ledger_versoes + manifest.total_repo_only;

@@ -7,12 +7,13 @@
  "commit_base": "eaa63c00eecabfc492ae21ba06782f882259f976",
  "forward_aplicado": "20261013000000_h9dl4_authz_visit_domain_gate_v1",
  "fonte_hash_sql": "SELECT p.proname||'('||pg_catalog.oidvectortypes(p.proargtypes)||')' AS sig, md5(pg_get_functiondef(p.oid)) AS definition_md5, length(pg_get_functiondef(p.oid))::text AS definition_len, coalesce(p.proacl::text,'') AS acl, coalesce(p.proconfig::text,'') AS proconfig, p.provolatile::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prosecdef;",
- "metodo": "Leitura integral de pg_get_functiondef das 30 assinaturas + helpers transitivos; ACL/owner/proconfig/volatilidade lidos do catálogo vivo; callsites mapeados por varredura em src/ e supabase/functions; provas dinâmicas executadas com identidades reais em transações revertidas (sem JWT, authenticated sem papel de domínio, cliente_produtor, parceiro_b2b, consultor_tecnico, financeiro, administrador). Nenhuma classificação por regex isolado.",
+ "fingerprint_forward": "d9cfffa0121c3704e0d39270d2dade29",
+ "fingerprint_rollback": "c8f4b2c1720926f1d877b2df4a413bac",
+ "fingerprint_sql": "SELECT md5(string_agg(pg_get_functiondef(p.oid)||coalesce(p.proacl::text,''),'|' ORDER BY p.proname)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('rpc_delete_diagnostico_visita','rpc_delete_recomendacao_visita','rpc_converter_visita_em_os');",
+ "metodo": "Leitura integral de pg_get_functiondef das 30 assinaturas e dos helpers transitivos; ACL/owner/proconfig/volatilidade lidos do catálogo vivo; callsites mapeados por varredura em src/ e supabase/functions; provas dinâmicas executadas com identidades reais em transações revertidas (sem JWT, authenticated sem papel de domínio, cliente_produtor, parceiro_b2b, consultor/técnico, financeiro e administrador). Nenhuma classificação por regex isolado.",
  "resumo_classificacao": {
   "AUTH_COMPROVADA": 27,
-  "EXPOSICAO_COMPROVADA_CORRIGIDA": 3,
-  "PENDENTE_EVIDENCIA": 0,
-  "NAO_APLICAVEL": 0
+  "EXPOSICAO_COMPROVADA_CORRIGIDA": 3
  },
  "assinaturas": {
   "rpc_b2b_executive_dashboard()": {
@@ -317,7 +318,7 @@
    "callsites": "src/hooks/useFluxoVisitaTecnica.ts:239",
    "prova_dinamica": "ANTES (cliente_produtor): real => 'Sem permissão…', inexistente => 'Visita técnica não encontrada.' (respostas distintas). DEPOIS: ambas => 'Sem permissão para converter esta visita.'. Admin: inexistente => 'Visita técnica não encontrada.' (feedback operacional preservado); consultor não responsável => negado como antes",
    "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
-   "observacao": "Corrigido pelo forward 20261013000000_h9dl4_authz_visit_domain_gate_v1 (ledger 668->669), somente homologação, com rollback simétrico e ensaio rollback->reaplicação de fingerprint idêntico (a883be1722f2bed4417f3c10c8b9a944). Assinatura, retorno jsonb, chaves e callsites preservados. Idempotência de OS já existente e matriz de permissão original intactas."
+   "observacao": "Corrigido pelo forward 20261013000000_h9dl4_authz_visit_domain_gate_v1 (ledger 668->669), somente homologação, com rollback simétrico e ensaio rollback->reaplicação de fingerprint idêntico (d9cfffa0121c3704e0d39270d2dade29; estado com rollback c8f4b2c1720926f1d877b2df4a413bac). Assinatura, retorno jsonb, chaves e callsites preservados. Idempotência de OS já existente e matriz de permissão original intactas."
   },
   "rpc_create_communication_template(text,text,comunicacao_canal,text,text,jsonb)": {
    "definition_md5": "58d13d7bdf0dd6489a6bbb17e68564f8",
@@ -373,7 +374,7 @@
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
    "volatilidade": "VOLATILE",
-   "guarda_textual": "ANTES: nenhuma verificação própria; lia visita_diagnosticos e delegava a _assert_visita_editavel. DEPOIS: auth.uid() NULL => 42501 e gate de capacidade (administrador/gestor/consultor_tecnico/tecnico_agronomo) ANTES da leitura; _assert_visita_editavel preservado",
+   "guarda_textual": "ANTES: nenhuma verificação própria; fazia SELECT do registro em visita_diagnosticos e só então delegava a _assert_visita_editavel. DEPOIS: auth.uid() NULL => 42501 e gate de capacidade (administrador/gestor/consultor_tecnico/tecnico_agronomo) ANTES da leitura; _assert_visita_editavel preservado",
    "cadeia_transitiva": "_assert_visita_editavel -> can_manage_technical_visit, is_active_visit_participant, is_technical_visit_editable_status; visita_diagnosticos",
    "null_fail_closed": "ANTES: sem sessão retornava silenciosamente. DEPOIS: sem sessão => 42501",
    "tenant_bola_idor": "Oráculo de existência comprovado: cliente_produtor recebia retorno silencioso para UUID inexistente e 42501 'sem_permissao' para diagnóstico real de terceiro, permitindo enumerar IDs válidos. Corrigido: resposta 42501 uniforme",
@@ -381,7 +382,7 @@
    "callsites": "src/hooks/useOfflineSync.ts:612; src/pages/app/wizard/WizardDiagnosticoStep.tsx:160",
    "prova_dinamica": "ANTES: inexistente => sucesso silencioso; real alheio => 42501; sem JWT => sucesso silencioso. DEPOIS: os três => 42501 'sem_permissao'. Admin: inexistente => silencioso (idempotência preservada); diagnóstico real => exclusão legítima executada (transação revertida)",
    "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
-   "observacao": "Corrigido pelo forward 20261013000000 (ledger 668->669), somente homologação, rollback simétrico e fingerprint idêntico no ensaio. Contrato RETURNS void e callsites offline/wizard preservados."
+   "observacao": "Corrigido pelo forward 20261013000000 (ledger 668->669), somente homologação, rollback simétrico e fingerprint idêntico no ensaio. Contrato RETURNS void e callsites offline/wizard preservados. Adendo de auditoria independente reprovado no catálogo vivo com o UUID real b906cbf7-c7b1-4736-98c2-a5f281238068: real, inexistente e sessão sem JWT retornam agora 42501 'sem_permissao' de forma indistinguível; nenhum SELECT do recurso precede a autorização."
   },
   "rpc_delete_recomendacao_visita(uuid)": {
    "definition_md5": "1d2c13adce4713d10771944eefe04f49",
@@ -389,15 +390,15 @@
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
    "volatilidade": "VOLATILE",
-   "guarda_textual": "ANTES: nenhuma verificação própria antes da leitura. DEPOIS: auth.uid() NULL => 42501 e mesmo gate de capacidade antes da leitura; _assert_visita_editavel preservado",
+   "guarda_textual": "ANTES: nenhuma verificação própria antes da leitura do registro. DEPOIS: auth.uid() NULL => 42501 e mesmo gate de capacidade antes da leitura; _assert_visita_editavel preservado",
    "cadeia_transitiva": "_assert_visita_editavel e cadeia; registros_consultor_recomendacoes",
    "null_fail_closed": "ANTES: silencioso sem sessão. DEPOIS: 42501",
-   "tenant_bola_idor": "Mesmo oráculo de existência da RPC de diagnóstico, com a tabela de recomendações",
+   "tenant_bola_idor": "Mesmo oráculo de existência da RPC de diagnóstico, com a tabela de recomendações; defeito estruturalmente idêntico e determinístico",
    "sql_dinamico": "nenhum",
    "callsites": "src/hooks/useOfflineSync.ts:664; src/pages/app/wizard/WizardRecomendacaoStep.tsx:192",
    "prova_dinamica": "ANTES (cliente_produtor): inexistente => sucesso silencioso. DEPOIS: 42501 'sem_permissao'. Caminho legítimo de consultor/admin preservado",
    "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
-   "observacao": "Mesma migração 20261013000000; contrato e callsites preservados."
+   "observacao": "Mesma migração 20261013000000; contrato e callsites preservados. Adendo de auditoria independente: sem recomendação real disponível para prova positiva, a correção foi aplicada por identidade estrutural com a RPC de diagnóstico; prova depois com UUID inexistente e sem JWT retorna 42501 'sem_permissao'."
   },
   "rpc_desativar_bank_account(uuid,text)": {
    "definition_md5": "d39119ef2467dc90a5d9885deb35ca74",
@@ -442,7 +443,7 @@
    "null_fail_closed": "NULL => negado",
    "tenant_bola_idor": "UPDATE exige par (entrega_id, etiqueta_id) ativo; NOT FOUND => erro único que não distingue inexistente de já desvinculado",
    "sql_dinamico": "nenhum",
-   "callsites": "nenhum callsite direto no frontend",
+   "callsites": "nenhum callsite direto no frontend (uso administrativo)",
    "prova_dinamica": "cliente_produtor => ERROR 'Sem permissão'",
    "classificacao": "AUTH_COMPROVADA",
    "observacao": "Motivo obrigatório e auditoria; bloco EXCEPTION do audit log não mascara a operação principal."

@@ -1,7 +1,9 @@
--- H9-D-L4 ROLLBACK — 20261013000000
--- Restaura os corpos exatos anteriores (pre-H9-D-L4) das 3 RPCs.
--- Simetrico ao forward. Somente homologação ikaauvsflpmamgxmkhoq.
-
+-- H9-D-L4 ROLLBACK — 20261013000000_h9dl4_authz_visit_domain_gate_v1
+-- Restaura as definições EXATAS anteriores ao forward (capturadas de
+-- pg_get_functiondef no catálogo vivo da homologação ikaauvsflpmamgxmkhoq
+-- antes da aplicação, ledger 668).
+-- ATENÇÃO: reabre os oráculos de existência descritos no relatório H9-D-L4.
+-- Ambiente: SOMENTE homologação. Produção navfzbwgwzruipouyfnk é PROIBIDA.
 BEGIN;
 
 CREATE OR REPLACE FUNCTION public.rpc_delete_diagnostico_visita(p_id uuid)
@@ -20,9 +22,6 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.rpc_delete_diagnostico_visita(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.rpc_delete_diagnostico_visita(uuid) TO authenticated, service_role;
-
 CREATE OR REPLACE FUNCTION public.rpc_delete_recomendacao_visita(p_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -38,9 +37,6 @@ BEGIN
   DELETE FROM public.registros_consultor_recomendacoes WHERE id = p_id;
 END;
 $function$;
-
-REVOKE ALL ON FUNCTION public.rpc_delete_recomendacao_visita(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.rpc_delete_recomendacao_visita(uuid) TO authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.rpc_converter_visita_em_os(p_registro_id uuid, p_observacao text DEFAULT NULL::text)
  RETURNS jsonb
@@ -230,10 +226,12 @@ WHEN OTHERS THEN
   RETURN jsonb_build_object('success', false, 'message',
     'Erro ao converter visita em OS: ' || SQLERRM);
 END;
-$function$
-;
-
-REVOKE ALL ON FUNCTION public.rpc_converter_visita_em_os(uuid, text) FROM PUBLIC, anon;
+$function$;
+REVOKE ALL ON FUNCTION public.rpc_delete_diagnostico_visita(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.rpc_delete_recomendacao_visita(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.rpc_converter_visita_em_os(uuid, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.rpc_delete_diagnostico_visita(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_delete_recomendacao_visita(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.rpc_converter_visita_em_os(uuid, text) TO authenticated, service_role;
 
 COMMIT;

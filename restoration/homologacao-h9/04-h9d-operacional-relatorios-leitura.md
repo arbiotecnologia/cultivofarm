@@ -601,95 +601,26 @@ exposições.
 
 **Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.** L4 e H9-E não iniciados.
 
----
+### 13.7 Adendo de auditoria independente (reprova no UUID indicado)
 
-## 13. Lote H9-D-L4 — auditoria profunda determinística de 30 assinaturas
+A auditoria independente apontou o mesmo defeito: `SELECT *` do registro antes de
+`_assert_visita_editavel`, com sucesso silencioso para UUID inexistente e `42501 sem_permissao` para o
+diagnóstico real `b906cbf7-c7b1-4736-98c2-a5f281238068`. O apontamento está **integralmente coberto**
+pelo forward `20261013000000_h9dl4_authz_visit_domain_gate_v1` (rollback simétrico incluído).
 
-**Base:** commit `eaa63c00eecabfc492ae21ba06782f882259f976`; homologação `ikaauvsflpmamgxmkhoq`; ledger
-inicial **668** (última `20261012000000`). Produção `navfzbwgwzruipouyfnk` **não acessada**.
+Reprova executada no catálogo vivo, em transação revertida, identidade `authenticated` sem papel de
+domínio:
 
-### 13.1 Binding
+| caso | antes | depois |
+| --- | --- | --- |
+| diagnóstico real `b906cbf7-…` | `42501 sem_permissao` | `42501 sem_permissao` |
+| diagnóstico inexistente | sucesso silencioso (`void`) | `42501 sem_permissao` |
+| recomendação inexistente | sucesso silencioso (`void`) | `42501 sem_permissao` |
+| sem JWT, diagnóstico real | sucesso silencioso (`void`) | `42501 sem_permissao` |
 
-`.env` estava com drift para outro ref no HEAD de trabalho; foi restaurado a partir do commit base e
-toda a execução SQL usou exclusivamente o DSN de homologação. `client.ts` e `types.ts` permaneceram no
-baseline.
-
-### 13.2 Escopo e método
-
-As 30 assinaturas exigidas foram auditadas sem substituição (dossiê
-`restoration/homologacao-h9/h9d-inventario/dossie-l4.json`, exatamente 30 entradas). Para cada uma:
-definição integral via `pg_get_functiondef`, ACL, owner, `proconfig`, volatilidade, parâmetros e
-retorno, objetos acessados, SQL dinâmico, locks, helpers transitivos e callsites reais em `src/` e
-`supabase/functions/`. Nenhuma classificação foi feita por regex.
-
-Provas dinâmicas em transações revertidas, com identidades reais: sem JWT, `authenticated` sem papel de
-domínio, `cliente_produtor`, `parceiro_b2b`, consultor/técnico, financeiro e administrador; para cada
-RPC, recurso próprio, recurso alheio, UUID inexistente, `NULL`, repetição e estado incompatível.
-Fixtures criadas para provas de escopo cruzado foram inseridas e revertidas na mesma transação
-(verificação posterior: zero resíduos).
-
-### 13.3 Resultado
-
-- **27 AUTH_COMPROVADA** — todas fail-closed: `cliente_produtor` e sessão sem papel receberam negação
-  (`permission_denied`, `forbidden`, `not_authorized`, `Sem permissão`, `Acesso negado`,
-  `sem_permissao`) **antes** de qualquer leitura sensível.
-- **3 EXPOSICAO_COMPROVADA_CORRIGIDA** — `rpc_delete_diagnostico_visita(uuid)`,
-  `rpc_delete_recomendacao_visita(uuid)` e `rpc_converter_visita_em_os(uuid,text)`.
-- **0 PENDENTE_EVIDENCIA** neste lote.
-
-### 13.4 Exposição comprovada: oráculo de existência no domínio de visita técnica
-
-**Antes** (identidade `cliente_produtor`, transação revertida): as duas RPCs de exclusão liam a linha
-alvo **antes** de qualquer verificação própria e delegavam a `_assert_visita_editavel`; resultado —
-UUID inexistente retornava sucesso silencioso, enquanto registro real de terceiro retornava `42501`.
-`rpc_converter_visita_em_os` respondia `Visita técnica não encontrada.` para inexistente e
-`Sem permissão para converter esta visita.` para real. Em ambos os casos, um usuário sem papel de
-domínio conseguia **enumerar identificadores válidos** pela diferença de resposta.
-
-**Correção** — forward mínimo reversível
-`20261013000000_h9dl4_authz_visit_domain_gate_v1` (somente homologação): gate de capacidade
-(`administrador | gestor | consultor_tecnico | tecnico_agronomo`) e checagem de `auth.uid()` **antes**
-da primeira leitura, com mensagem única de permissão. `_assert_visita_editavel`, ownership,
-participação ativa, status editável, idempotência de OS já convertida, assinaturas, tipos de retorno,
-chaves de JSON, ACL (`postgres`/`authenticated`/`service_role`, sem `PUBLIC`/`anon`) e
-`search_path=public` foram preservados.
-
-**Depois:** para quem não tem papel de domínio, recurso real, UUID inexistente e sessão sem JWT
-produzem resposta idêntica (`42501 sem_permissao` nas exclusões; `Sem permissão para converter esta
-visita.` na conversão). Administrador e consultor responsável mantêm o feedback operacional e os
-caminhos legítimos.
-
-**Rollback e ensaio:** rollback simétrico em
-`h9d-rollbacks/20261013000000_h9dl4_authz_visit_domain_gate_v1_rollback.sql`; ensaio
-rollback → reaplicação reproduziu fingerprint idêntico
-`md5(string_agg(pg_get_functiondef(oid)||proacl,'|' ORDER BY proname))` = `a883be1722f2bed4417f3c10c8b9a944`
-(estado com rollback: `6852dc9dae12ec5f3895e6e7292c4c6d`). Ledger **668 → 669**, ocorrência única.
-Nenhum dado financeiro ou operacional alterado.
-
-### 13.5 Escopo cruzado dos agregados e do crédito
-
-- Dashboards e KPIs B2B/comerciais e `rpc_dashboard_geral_lab_resumo` exigem papel corporativo na
-  primeira instrução; parâmetros de parceiro/cliente são **filtros pós-autorização**, não vetor de
-  acesso. Agregações usam `FILTER` sobre a mesma base, sem `SELECT *` e sem dupla contagem.
-- `rpc_b2b_partner_credit(uuid)`: parceiro real chamando `partner_id` alheio ⇒ `forbidden`; próprio
-  `partner_id` ⇒ exposição correta. Escopo comprovado dinamicamente.
-- `rpc_b2b_list_selectable_payment_plans()`: parceiro só enxerga planos atribuídos ao seu
-  `partner_id` via `partner_users`, com vigência e `status = 'published'`.
-- `rpc_bi_fluxo_visitas_resumo(...)`: sem permissão devolve `{ok:false, reason:'sem_permissao'}` com
-  zero linhas; consultor/técnico limitado a visitas próprias ou a clientes vinculados.
-- `rpc_criar_visita_idempotente(...)`: produtor criando visita para cliente **alheio** ⇒
-  `technical_access_required` (fixture temporária revertida); para o próprio cliente vinculado, criação
-  legítima preservada.
-- `rpc_entrega_assinar_termo_v1(...)`: `pg_advisory_xact_lock` + `SELECT ... FOR UPDATE`, replay só com
-  a mesma `idempotency_key` **e** mesmo fingerprint SHA-256 do payload.
-
-### 13.6 Estado final verificado
-
-Ledger **669** (última `20261013000000`, ocorrência única); SECDEF público executável por
-`authenticated` **375** / `anon` **2**; crons ativos **1, 2, 5, 8, 9, 18**; zero fixtures remanescentes;
-binding exclusivamente `ikaauvsflpmamgxmkhoq`.
-
-Totais acumulados do escopo profundo H9-D (292): **204 AUTH_COMPROVADA**, **23
-EXPOSICAO_COMPROVADA_CORRIGIDA**, **4 NAO_APLICAVEL**, **61 PENDENTE_EVIDENCIA**.
-
-**Decisão: H9-D CONTINUA (61 assinaturas pendentes) / NO-GO produção.** L5 e H9-E não iniciados.
+As quatro respostas passam a ser indistinguíveis, eliminando o oráculo. O corpo vivo confirma que a
+primeira instrução executável é `IF v_uid IS NULL THEN RAISE 'sem_permissao'` seguida do gate de
+capacidade, **antes** de qualquer leitura do recurso; `_assert_visita_editavel`, a edição legítima e a
+auditoria permanecem intactas. `rpc_delete_recomendacao_visita` recebeu a mesma correção mesmo sem
+recomendação real disponível para prova positiva, por o defeito ser estruturalmente idêntico e
+determinístico.
