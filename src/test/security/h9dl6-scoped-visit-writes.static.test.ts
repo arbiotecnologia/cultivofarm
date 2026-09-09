@@ -258,9 +258,12 @@ describe("H9-D-L6 — forward e rollback", () => {
     expect(fw).toContain("REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM PUBLIC");
     expect(fw).toContain("GRANT EXECUTE ON FUNCTION public._visita_scope_ok(uuid,uuid) TO service_role");
     expect(fw).not.toContain("GRANT EXECUTE ON FUNCTION public._visita_scope_ok(uuid,uuid) TO authenticated");
-    // default privileges do schema public concedem EXECUTE a anon/authenticated: revogação explícita
-    expect(fw).toContain("REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM anon;");
-    expect(fw).toContain("REVOKE ALL ON FUNCTION public._visita_scope_ok(uuid,uuid) FROM authenticated;");
+    // Default privileges do schema public concedem EXECUTE a anon/authenticated. A revogação
+    // explícita NÃO pertence a este artefato histórico: ela foi aplicada como hotfix não
+    // versionado sob a mesma versão e só foi regularizada, de forma versionada, pela
+    // 20261018000000 (ver bloco H9-D-L6R abaixo).
+    expect(fw).not.toContain("public._visita_scope_ok(uuid,uuid) FROM anon");
+    expect(fw).not.toContain("public._visita_scope_ok(uuid,uuid) FROM authenticated");
   });
 
   it("não introduz mensagens novas que sirvam de oráculo de existência", () => {
