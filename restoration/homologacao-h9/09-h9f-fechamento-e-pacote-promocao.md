@@ -137,30 +137,60 @@ Todos ativos, todos na janela agendada — **nenhuma execução extraordinária*
 disparada. Comunicações permaneceram desligadas: nenhum e-mail, WhatsApp, evento
 fiscal, pagamento ou webhook foi emitido nesta fase.
 
-## 7. Advisors — dívida legada, medida por SQL equivalente
+## 7. Advisors — dívida legada
 
 Nenhuma migration foi aplicada nesta fase, portanto os números **antes = depois**.
 
-| Indicador | Valor |
-| --- | --- |
-| Tabelas com RLS habilitada e sem policy | 7 |
-| Extensões no schema `public` | 2 |
-| Funções SECDEF executáveis por `anon` | 2 |
-| Funções SECDEF executáveis por `authenticated` | 375 |
-| FKs sem índice de suporte | 172 |
-| Índices sem uso registrado | 188 |
-| Combinações tabela/comando/papel com múltiplas policies permissivas | 43 |
+### 7.1 Baseline OFICIAL dos advisors de homologação (fonte de verdade)
+
+| Categoria | Advisor | Contagem |
+| --- | --- | --- |
+| Segurança | `rls_enabled_no_policy` | 10 |
+| Segurança | `extension_in_public` | 2 |
+| Segurança | `anon_security_definer_function_executable` | 2 |
+| Segurança | `authenticated_security_definer_function_executable` | 375 |
+| Segurança | `auth_leaked_password_protection` | 1 |
+| **Segurança — TOTAL** | | **390** |
+| Performance | `unindexed_foreign_keys` | 172 |
+| Performance | `unused_index` | 188 |
+| Performance | `multiple_permissive_policies` | 146 |
+| Performance | `duplicate_index` | 1 |
+| **Performance — TOTAL** | | **507** |
+
+Estes são os números oficiais, antes e depois desta fase (**390 / 507**, sem
+regressão atribuível a H9-E2 ou H9-F).
+
+### 7.2 Métrica auxiliar (SQL equivalente) — NÃO substitui o oficial
+
+Consultas SQL próprias, executadas em homologação por conveniência de leitura,
+retornaram valores divergentes em dois indicadores porque a definição da consulta
+não coincide com a regra do advisor oficial (granularidade de agrupamento e
+critério de "sem policy"):
+
+| Indicador auxiliar | Valor auxiliar | Oficial correspondente |
+| --- | --- | --- |
+| Tabelas com RLS habilitada e sem policy | 7 | **10** (`rls_enabled_no_policy`) |
+| Extensões no schema `public` | 2 | 2 |
+| Funções SECDEF executáveis por `anon` | 2 | 2 |
+| Funções SECDEF executáveis por `authenticated` | 375 | 375 |
+| FKs sem índice de suporte | 172 | 172 |
+| Índices sem uso registrado | 188 | 188 |
+| Combinações tabela/comando/papel com múltiplas policies permissivas | 43 | **146** (`multiple_permissive_policies`) |
+
+Em qualquer conflito, **prevalece o baseline oficial de 7.1**. A métrica auxiliar
+fica registrada apenas como leitura de apoio e para explicar a divergência.
 
 ### Backlog priorizado (janela separada, fora de H9)
 
 | Prioridade | Item | Risco | Observação |
 | --- | --- | --- | --- |
 | **P0** | 2 funções SECDEF executáveis por `anon` | exposição pública | revisar caso a caso; algumas são rastreio público legítimo com rate-limit (H9-B1) |
-| **P0** | 7 tabelas com RLS sem policy | dados inacessíveis ou dependentes de SECDEF | classificar entre "fechada por projeto" e "policy faltando" |
+| **P0** | 10 tabelas com RLS sem policy (oficial) | dados inacessíveis ou dependentes de SECDEF | classificar entre "fechada por projeto" e "policy faltando" |
 | **P1** | 172 FKs sem índice | degradação sob volume | indexar por domínio, medindo antes/depois |
-| **P1** | 43 combinações com múltiplas policies permissivas | custo de avaliação + risco de policy ampla oculta | consolidar por tabela, como iniciado em H8-A/H8-B |
+| **P1** | 146 ocorrências de múltiplas policies permissivas (oficial) | custo de avaliação + risco de policy ampla oculta | consolidar por tabela, como iniciado em H8-A/H8-B |
 | **P2** | 188 índices sem uso | custo de escrita/armazenamento | só remover após janela de observação em ambiente com carga real |
 | **P2** | 2 extensões em `public` | higiene de schema | mover exige janela e revisão de dependências |
+| **P2** | 1 índice duplicado | custo de escrita | remoção simples, janela própria |
 | **P2** | proteção contra senha vazada desativada | credencial fraca | decisão de produto |
 
 Não foi feita nenhuma correção em lote desses avisos: seriam mudanças amplas sem
@@ -179,11 +209,18 @@ Playwright headless contra o app local, viewports 1280×1800 e 390×844, rotas `
 As mensagens de console observadas são avisos de desenvolvimento do React
 (`Function components cannot be given refs`), preexistentes e sem relação com H9.
 
-**Pendência declarada:** o smoke *autenticado* (fluxo feliz, clique duplicado,
-permissão negada em tela) **não foi executado**. O app aponta para um backend
-externo à instância gerenciada, e nenhuma sessão pôde ser criada sem credenciais
-fornecidas pelo usuário. A cobertura equivalente foi obtida no nível do banco
-(matriz adversarial e prova de concorrência), não na UI.
+**`smoke_autenticado = false` — EVIDÊNCIA PENDENTE, BLOQUEANTE DO GO INTEGRAL.**
+O smoke *autenticado* exigido pelo critério de aceite (fluxo feliz, clique
+duplicado e permissão negada em tela, desktop e mobile) **não foi executado**. O
+app aponta para um backend externo à instância gerenciada e nenhuma sessão pôde
+ser criada sem credenciais fornecidas pelo usuário. A cobertura obtida no nível
+do banco (matriz adversarial e prova de concorrência) **não substitui** essa
+prova de UI: ela não cobre o comportamento do cliente sob clique duplicado nem a
+apresentação de permissão negada.
+
+Consequência formal: enquanto `smoke_autenticado = false`, a **AUDITORIA H9
+INTEGRAL é NO-GO** (seção 13), independentemente de todos os demais gates estarem
+verdes.
 
 ## 9. Gates e testes executados
 
@@ -260,31 +297,52 @@ produção ou de homologação legítimo foi alterado ou removido.
 
 Suíte integral: **228 arquivos (227 aprovados, 1 pulado) e 3.556 testes
 (3.552 aprovados, 4 pulados, 0 falhas)**. Typecheck (`tsgo --noEmit`) e build
-(`npm run build`) verdes. Os três foram executados **após a última alteração de
-arquivo** desta fase.
+(`npm run build`) verdes.
+
+**Nota de rastreabilidade da retificação H9-FR:** a suíte integral acima foi
+executada na rodada H9-F, **antes** desta retificação documental/estática. A
+retificação H9-FR alterou apenas este dossiê e o teste estático
+`src/test/security/h9f-pacote-e-gate.static.test.ts`; nenhum código de aplicação,
+migration ou dado foi tocado. Após H9-FR foram reexecutados: gate de binding,
+teste estático H9-F, typecheck e build — todos verdes. **A suíte integral NÃO foi
+rerrodada após H9-FR**, e nenhuma afirmação em contrário deve ser lida aqui.
 
 **Pendências declaradas (não resolvidas nesta fase, por escopo ou por bloqueio externo):**
 
-1. Smoke autenticado de UI não executado — sem sessão disponível para o backend
-   externo de homologação (seção 8).
-2. Dívida legada de advisors (897 avisos originais) permanece aberta, com backlog
-   P0/P1/P2 na seção 7 — deliberadamente fora de H9.
+1. **Smoke autenticado de UI não executado** (`smoke_autenticado = false`) — sem
+   sessão disponível para o backend externo de homologação (seção 8). **Esta é a
+   única evidência pendente e é bloqueante do GO integral.**
+2. Dívida legada de advisors permanece aberta no baseline oficial **390 (segurança)
+   / 507 (performance)**, com backlog P0/P1/P2 na seção 7 — deliberadamente fora de H9.
 3. Drift de `.env`/`types.ts` provocado pela plataforma é recorrente: mitigado por
    gate, **não eliminado**. Qualquer execução futura deve rodar o gate antes de
    qualquer comando de banco.
 4. Promoção continua **não autorizada**; produção nunca foi tocada.
 
-## 13. Veredito
+## 13. Veredito (retificado em H9-FR)
 
-**AUDITORIA H9: GO** — no sentido estrito de “pacote pronto para uma futura
-promoção controlada”, com base em: ledger 679 consistente e sem duplicidade; três
-RPCs com contratos, hashes e ACLs esperados; matriz adversarial 12/12; prova
-adversarial ampla 18/18; concorrência real em duas sessões com resultado idêntico,
-cardinalidade exata e resíduo zero; gate de binding verde; segurança 242/242;
-suíte completa, typecheck e build verdes após a última alteração; manifesto
-promovível íntegro com rollbacks em ordem inversa e 59 migrations formalmente
-excluídas.
+Veredito binário, por escopo:
 
-**Este GO não autoriza tocar produção.** A promoção exige autorização humana
-explícita e uma janela própria, e as pendências da seção 12 devem ser lidas antes
-de qualquer decisão.
+| Escopo | Veredito |
+| --- | --- |
+| Backend / RPCs de visita / pacote de promoção | **GO técnico** |
+| **AUDITORIA H9 INTEGRAL** | **NO-GO** |
+| Promoção para produção | **NO-GO** |
+
+**GO técnico (backend/RPCs/pacote)** — sustentado por: ledger 679 consistente e sem
+duplicidade; três RPCs com contratos, hashes e ACLs esperados; matriz adversarial
+12/12; prova adversarial ampla 18/18; concorrência real em duas sessões com
+resultado idêntico, cardinalidade exata e resíduo zero; gate de binding verde;
+segurança 242/242; suíte integral, typecheck e build verdes na rodada H9-F;
+manifesto promovível íntegro com rollbacks em ordem inversa e 59 migrations
+formalmente excluídas.
+
+**AUDITORIA H9 INTEGRAL: NO-GO** — por **uma única evidência pendente**: o smoke
+autenticado de UI desktop/mobile (fluxo feliz, clique duplicado, permissão negada),
+exigido pelo critério de aceite e não executado (`smoke_autenticado = false`,
+seção 8). O veredito anterior de "AUDITORIA H9: GO" era incompatível com essa
+lacuna e fica **revogado por esta retificação**.
+
+**Promoção: NO-GO** — depende de (a) execução e aprovação do smoke autenticado e
+(b) autorização humana explícita posterior, em janela própria. Produção
+`navfzbwgwzruipouyfnk` e sandbox `yzszlzjpovmcteuxjznj` permanecem intocados.

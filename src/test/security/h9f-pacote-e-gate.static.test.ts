@@ -179,3 +179,83 @@ describe("H9-F — provas versionadas no repositório", () => {
     expect(src).toContain("v_pass <> 12");
   });
 });
+
+describe("H9-FR — retificação: contagens oficiais e veredito binário", () => {
+  const DOSSIE = resolve(
+    ROOT,
+    "restoration/homologacao-h9/09-h9f-fechamento-e-pacote-promocao.md",
+  );
+  const texto = readFileSync(DOSSIE, "utf8");
+
+  const OFICIAIS: Array<[string, number]> = [
+    ["rls_enabled_no_policy", 10],
+    ["extension_in_public", 2],
+    ["anon_security_definer_function_executable", 2],
+    ["authenticated_security_definer_function_executable", 375],
+    ["auth_leaked_password_protection", 1],
+    ["unindexed_foreign_keys", 172],
+    ["unused_index", 188],
+    ["multiple_permissive_policies", 146],
+    ["duplicate_index", 1],
+  ];
+
+  it("o dossiê registra o baseline OFICIAL dos advisors com as contagens exatas", () => {
+    const faltando = OFICIAIS.filter(
+      ([advisor, valor]) =>
+        !new RegExp(`\`${advisor}\`\\s*\\|\\s*${valor}\\s*\\|`).test(texto),
+    ).map(([advisor]) => advisor);
+    expect(faltando).toEqual([]);
+  });
+
+  it("os totais oficiais 390 (segurança) e 507 (performance) estão declarados", () => {
+    expect(texto).toMatch(/Segurança — TOTAL\*\*\s*\|\s*\|\s*\*\*390\*\*/);
+    expect(texto).toMatch(/Performance — TOTAL\*\*\s*\|\s*\|\s*\*\*507\*\*/);
+    expect(
+      OFICIAIS.filter(([, v]) => typeof v === "number").reduce(
+        (acc, [advisor, v]) =>
+          ["unindexed_foreign_keys", "unused_index", "multiple_permissive_policies", "duplicate_index"].includes(
+            advisor,
+          )
+            ? acc
+            : acc + v,
+        0,
+      ),
+    ).toBe(390);
+  });
+
+  it("as métricas SQL equivalentes ficam rotuladas como auxiliares, sem substituir o oficial", () => {
+    expect(texto).toContain("Métrica auxiliar (SQL equivalente) — NÃO substitui o oficial");
+    expect(texto).toContain("prevalece o baseline oficial");
+  });
+
+  it("o smoke autenticado está declarado como não executado e bloqueante", () => {
+    expect(texto).toContain("`smoke_autenticado = false`");
+    expect(texto).toContain("BLOQUEANTE DO GO INTEGRAL");
+  });
+
+  it("com smoke_autenticado=false o dossiê NÃO pode declarar GO integral", () => {
+    const smokeAutenticadoFalso = texto.includes("`smoke_autenticado = false`");
+    expect(smokeAutenticadoFalso).toBe(true);
+    // Enquanto a prova de UI autenticada não existir, o veredito integral é NO-GO.
+    expect(texto).toContain("**AUDITORIA H9 INTEGRAL** | **NO-GO**");
+    expect(texto).toMatch(/AUDITORIA H9 INTEGRAL: NO-GO/);
+    expect(texto).not.toMatch(/\*\*AUDITORIA H9: GO\*\*/);
+  });
+
+  it("o veredito é binário por escopo: GO técnico no backend, NO-GO integral e NO-GO promoção", () => {
+    expect(texto).toContain("| Backend / RPCs de visita / pacote de promoção | **GO técnico** |");
+    expect(texto).toContain("| Promoção para produção | **NO-GO** |");
+  });
+
+  it("a retificação declara que a suíte integral não foi rerrodada após H9-FR", () => {
+    expect(texto).toContain("A suíte integral NÃO foi\nrerrodada após H9-FR");
+  });
+
+  it("as evidências preservadas continuam registradas (12/12, 18/18, 29/29, ledger 679, 19 forwards)", () => {
+    expect(texto).toContain("12/12");
+    expect(texto).toContain("18/18");
+    expect(texto).toContain("29 PASS / 0 FAIL");
+    expect(texto).toContain("679");
+    expect(pacote.forwards).toHaveLength(19);
+  });
+});
