@@ -624,3 +624,46 @@ capacidade, **antes** de qualquer leitura do recurso; `_assert_visita_editavel`,
 auditoria permanecem intactas. `rpc_delete_recomendacao_visita` recebeu a mesma correção mesmo sem
 recomendação real disponível para prova positiva, por o defeito ser estruturalmente idêntico e
 determinístico.
+
+## H9-D-L4 — Retificação do adendo (20261014000000, ledger 670)
+
+Ambiente: homologação `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` não foi acessada.
+
+### Defeito remanescente comprovado
+O forward `20261013000000` (gate de capacidade antes da leitura) fechou apenas usuários **sem** papel.
+Entre usuários de domínio o oráculo de existência persistia:
+
+- identidade real `2767fb15-7f00-41d5-8360-622d6dea8de6` (tecnico_agronomo);
+- `rpc_delete_diagnostico_visita('00000000-…-0000000000ff')` → `void`;
+- `rpc_delete_diagnostico_visita('b906cbf7-c7b1-4736-98c2-a5f281238068')` → `ERROR 42501 sem_permissao`
+  (CONTEXT: `_assert_visita_editavel` linha 18).
+
+Prova executada em `BEGIN … ROLLBACK`; nenhum dado alterado.
+
+### Correção (`20261014000000_h9dl4r_authz_scoped_delete_no_oracle_v1`)
+Resolução e autorização passam a ocorrer em **uma única consulta escopada ao chamador**
+(`JOIN registros_consultor` com `can_manage_technical_visit` / `created_by` /
+`consultor_responsavel` / `is_active_visit_participant`). Se nada é resolvido no escopo,
+a função retorna `void` — comportamento idêntico para UUID inexistente e para recurso alheio.
+Não há mais `SELECT *` antes da autorização. `visita_nao_editavel` permanece apenas para recurso
+já autorizado (não revela existência a terceiros). Delete legítimo e auditoria preservados;
+assinaturas, retornos, ACL (`postgres/authenticated/service_role`, sem PUBLIC/anon) e
+`search_path=public` inalterados.
+
+### Provas DEPOIS (todas em transação revertida, zero fixtures)
+| identidade | UUID inexistente | UUID real alheio/próprio |
+|---|---|---|
+| sem papel `2a1ea60a-…790431` | `42501 sem_permissao` | `42501 sem_permissao` |
+| domínio alheio `2767fb15-…6dea8de6` (tecnico_agronomo) | `void` | `void` (indistinguível) |
+| dono/administrador `b5c2ebd4-…c49f1b583a` | `void` | delete legítimo executado (`restantes = 0`) |
+
+Após o `ROLLBACK`, `visita_diagnosticos` mantém a linha original (1). `registros_consultor_recomendacoes`
+não possui linhas reais; o mesmo padrão foi aplicado e provado com UUID inexistente.
+
+### Reversibilidade e ledger
+Ensaio rollback → reaplicação na mesma sessão:
+`forward = 91eba8cac7995ddec016c09b36db20d2`, `rollback = 193e96fa580d4507034278fe97c9040b`,
+`reaplicação = 91eba8cac7995ddec016c09b36db20d2` (idêntico). Ledger 669 → 670, `20261014000000`
+registrada uma única vez.
+
+Decisão: **H9-D CONTINUA**; produção **NO-GO**. L5/H9-E não iniciados.

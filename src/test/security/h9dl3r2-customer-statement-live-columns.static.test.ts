@@ -113,8 +113,8 @@ describe("H9-D-L3R2 — extrato do cliente com colunas vivas", () => {
     expect(diagnostico).toContain("20261012000000");
   });
 
-  it("o forward está rastreado no manifesto de applied-forwards com ledger 668", () => {
-    expect(manifest.ledger_versoes).toBe(668);
+  it("o forward está rastreado no manifesto de applied-forwards com ledger 670", () => {
+    expect(manifest.ledger_versoes).toBe(670);
     const e = manifest.entries.find((x) => x.version === "20261011000000");
     expect(e).toBeDefined();
     expect(e!.applied_to_staging).toBe(true);

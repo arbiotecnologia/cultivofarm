@@ -211,3 +211,5 @@
 - [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; L4 e H9-E não iniciados
 
 - [x] Adendo de auditoria independente do L4 (`SELECT *` antes de `_assert_visita_editavel`, oráculo confirmado com o UUID real `b906cbf7-c7b1-4736-98c2-a5f281238068`): tratado pelo mesmo forward `20261013000000`, com reprova antes/depois no UUID indicado e rollback simétrico já incluído
+
+- [x] H9-D-L4 retificação (20261014000000, ledger 670): exclusões de diagnóstico e recomendação de visita passam a resolver/autorizar em consulta única escopada ao chamador; UUID inexistente e recurso alheio ficam indistinguíveis também para usuários de domínio. Provas antes/depois com identidades reais em transação revertida, rollback simétrico e fingerprint reproduzido. Produção não tocada; L5/H9-E não iniciados.
