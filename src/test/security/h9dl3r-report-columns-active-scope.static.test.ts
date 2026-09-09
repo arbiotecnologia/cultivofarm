@@ -107,8 +107,8 @@ describe("H9-D-L3R — colunas vivas, enum válido e escopo de vínculo ativo", 
     expect(rollback).toContain("'laboratorio'");
   });
 
-  it("o forward está rastreado no manifesto de applied-forwards com ledger 671", () => {
-    expect(manifest.ledger_versoes).toBe(671);
+  it("o forward está rastreado no manifesto de applied-forwards com ledger 672", () => {
+    expect(manifest.ledger_versoes).toBe(672);
     const e = manifest.entries.find((x) => x.version === "20261010000000");
     expect(e).toBeDefined();
     expect(e!.applied_to_staging).toBe(true);
