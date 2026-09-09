@@ -59,7 +59,7 @@ const clsRows = read("restoration/homologacao-h9/h9d-inventario/classificacao-h9
   .map((l) => l.split("\t"));
 
 describe("H9-D-L7 — dossiê da assinatura única", () => {
-  it("declara homologação, ledger 677 e a migration do lote", () => {
+  it("declara homologação, ledger 678 e a migration do lote", () => {
     for (const d of [dossie, decisoes]) {
       expect(d.ambiente).toBe("ikaauvsflpmamgxmkhoq");
       expect(d.producao_proibida).toBe("navfzbwgwzruipouyfnk");
@@ -148,7 +148,7 @@ describe("H9-D-L7 — forward e rollback", () => {
     }
   });
 
-  it("está rastreado no manifesto com hashes reais e ledger 677", () => {
+  it("está rastreado no manifesto com hashes reais e ledger 678", () => {
     const entry = manifest.entries.find((e) => e.version === "20261019000000");
     expect(entry, "forward não rastreado no manifesto").toBeTruthy();
     expect(entry!.sha256).toBe(sha256(FW_PATH));
@@ -161,10 +161,10 @@ describe("H9-D-L7 — forward e rollback", () => {
     expect(entry!.applied_at).toBe("2026-09-09");
     expect(dossie.forward_sha256).toBe(sha256(FW_PATH));
     expect(dossie.rollback_sha256).toBe(sha256(RB_PATH));
-    expect(manifest.ledger_versoes).toBe(677);
+    expect(manifest.ledger_versoes).toBe(678);
     expect(manifest.total_applied_forwards).toBe(manifest.entries.length);
-    expect(manifest.total_applied_forwards).toBe(17);
-    expect(h7p.ledger_versoes).toBe(677);
+    expect(manifest.total_applied_forwards).toBe(18);
+    expect(h7p.ledger_versoes).toBe(678);
     expect(h7p.total_repo_only).toBe(59);
   });
 
@@ -179,6 +179,7 @@ describe("H9-D-L7 — forward e rollback", () => {
     expect(versions.filter((v) => v > "20261019000000")).toEqual([
       "20261020000000",
       "20261021000000",
+      "20261022000000",
     ]);
   });
 });
@@ -211,7 +212,7 @@ describe("H9-D — fechamento sem pendências", () => {
     expect(clsRows.filter((c) => c[2] === "HERDADA_H9C")).toHaveLength(84);
     const soma = Object.values(resumo.por_classificacao).reduce((a, b) => a + b, 0);
     expect(soma).toBe(292);
-    expect(resumo.ledger).toBe(675);
+    expect(resumo.ledger).toBe(678);
     expect(resumo.lotes_auditados).toContain("H9-D-L7");
     expect(resumo.forwards_aplicados).toContain("20261019000000");
   });

@@ -48,8 +48,8 @@ const TRIGGER = h9e1.find((e) => e.version === "20261020000000")!;
 const FINISH = h9e1.find((e) => e.version === "20261021000000")!;
 
 describe("H9-E1 — convergência do fluxo de visita", () => {
-  it("registra exatamente dois forwards no ledger 677", () => {
-    expect(manifest.ledger_versoes).toBe(677);
+  it("registra exatamente dois forwards no ledger 678", () => {
+    expect(manifest.ledger_versoes).toBe(678);
     expect(manifest.total_applied_forwards).toBe(manifest.entries.length);
     expect(h9e1.map((e) => e.version)).toEqual([
       "20261020000000",

@@ -116,7 +116,7 @@ const GENERICA = [
 describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
   it("declara homologação e o ledger corrente", () => {
     expect(resumo.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(resumo.ledger).toBe(675);
+    expect(resumo.ledger).toBe(678);
   });
 
   it("separa universo bruto, herança da H9-C e escopo profundo", () => {
@@ -164,9 +164,16 @@ describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
     }
   });
 
-  it("registra as exposições comprovadas e corrigidas (H9-D1, L1 a L7)", () => {
+  it("registra as exposições comprovadas e corrigidas (H9-D1, L1 a L7 e a retificação H9-E1R)", () => {
     const exp = rows.filter((r) => r.classificacao_h9d === "EXPOSICAO_COMPROVADA_CORRIGIDA");
-    expect(exp).toHaveLength(31);
+    expect(exp).toHaveLength(32);
+    // H9-E1R: falso positivo do L1 retificado; a evidência histórica não é apagada.
+    const e1r = exp.filter((r) => r.evidencia.includes("20261022000000"));
+    expect(e1r).toHaveLength(1);
+    expect(e1r[0].signature).toBe(
+      "finish_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,uuid)",
+    );
+    expect(e1r[0].evidencia).toContain("RETIFICACAO DE FALSO POSITIVO");
     expect(exp.filter((r) => r.evidencia.includes("20261019000000"))).toHaveLength(1);
     expect(exp.filter((r) => r.evidencia.includes("20261017000000"))).toHaveLength(4);
     expect(exp.filter((r) => r.evidencia.includes("20261016000000"))).toHaveLength(3);
@@ -251,12 +258,30 @@ describe("H9-D — dossiê do lote L1", () => {
     }
   });
 
-  it("o inventário reflete o dossiê nas 30 assinaturas do L1", () => {
+  // H9-E1R: `finish_technical_visit_secure` foi retificada depois do L1 (falso positivo).
+  // O dossiê L1 é histórico e permanece intocado; o inventário passa a divergir dele
+  // exatamente nesta assinatura, e a divergência é declarada, não silenciada.
+  const RETIFICADAS_POS_L1 = new Set([
+    "finish_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,uuid)",
+  ]);
+
+  it("o inventário reflete o dossiê nas assinaturas do L1 não retificadas depois", () => {
     for (const k of chaves) {
       const r = inventario.get(k)!;
+      if (RETIFICADAS_POS_L1.has(k)) continue;
       expect(r.classificacao_h9d).toBe(dossie.assinaturas[k].classificacao);
       expect(r.evidencia).toContain("Lote H9-D-L1");
       expect(r.evidencia).toContain(dossie.assinaturas[k].definition_md5);
+    }
+  });
+
+  it("as assinaturas retificadas depois do L1 declaram a retificação e o dossiê histórico", () => {
+    for (const k of RETIFICADAS_POS_L1) {
+      expect(dossie.assinaturas[k].classificacao).toBe("AUTH_COMPROVADA");
+      const r = inventario.get(k)!;
+      expect(r.classificacao_h9d).toBe("EXPOSICAO_COMPROVADA_CORRIGIDA");
+      expect(r.evidencia).toContain("RETIFICACAO DE FALSO POSITIVO");
+      expect(r.evidencia).toContain("H9-D-L1");
     }
   });
 });

@@ -3,8 +3,8 @@
   "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
-  "ledger_versoes": 677,
-  "total_applied_forwards": 17,
+  "ledger_versoes": 678,
+  "total_applied_forwards": 18,
   "entries": [
     {
       "version": "20261005000000",
@@ -462,6 +462,35 @@
         "ensaio": "preflight em transacao integralmente revertida: forward -> fluxo completo OK, rollback -> 74cab9081642637b1d0bf6f6743e4a01 byte-fiel; residuo zero",
         "ledger": "676 -> 677, ocorrencia unica",
         "provas": "restoration/homologacao-h9/h9e-provas/h9e1-prova-e2e-start-finish.sql"
+      }
+    },
+    {
+      "version": "20261022000000",
+      "name": "h9e1r_finish_visit_scope_checkout_idempotency_v1",
+      "fase": "H9-E1R",
+      "path": "restoration/homologacao-h9/h9e-forwards/20261022000000_h9e1r_finish_visit_scope_checkout_idempotency_v1.sql",
+      "sha256": "fa75cd1a98ad9004bcbb3b98125e6087d55766030f4148cbb70672c9455066ce",
+      "rollback_path": "restoration/homologacao-h9/h9e-rollbacks/20261022000000_h9e1r_finish_visit_scope_checkout_idempotency_v1_rollback.sql",
+      "rollback_sha256": "2d83629bdd56da20a4c95dc2efd83791406456e108ccfc0d0e93c52eb65ad1e9",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma bloqueia escrita direta em supabase/migrations/ desde a fase H9-C; o SQL exato aplicado esta versionado em restoration/homologacao-h9/h9e-forwards/ e registrado uma unica vez no ledger.",
+      "efeito": "Retifica public.finish_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,uuid): (1) prova de escopo via public._visita_scope_ok(auth.uid(), p_registro_id) ANTES de qualquer leitura sensivel, tornando UUID inexistente e registro alheio indistinguiveis (42501 not_visit_owner); (2) encerramento passa a gravar tipo_checkin='checkout' em vez de 'inicio_visita', convergindo com can_checkout_technical_visit, has_completed_visit_presence e rpc_realizar_checkout_visita; (3) idempotencia por client_uuid apos o gate de escopo, com conflito fail-closed (22023 idempotency_conflict), lock de linha e captura de unique_violation. Assinatura, retorno, owner, ACL, SECURITY DEFINER e search_path preservados.",
+      "destructive": false,
+      "reversible": true,
+      "applied_at": "2026-09-09",
+      "evidence_refs": {
+        "prova_antes": "UUID inexistente -> 22023 registro_not_found vs registro alheio real -> 42501 not_visit_owner (oraculo de existencia); encerramento gravava inicio_visita=2 e checkout=0; can_checkout_technical_visit=true e has_completed_visit_presence=false apos finalizar (ciclo aberto); duplo clique -> 22023 visit_not_in_progress",
+        "prova_depois": "UUID inexistente e registro alheio -> ambos 42501 not_visit_owner; anon -> 42501 permission denied; dono e administrador finalizam; checkout=2 e inicio_visita=0; can_checkout_technical_visit=false e has_completed_visit_presence=true (ciclo fechado); duplo clique com mesmo client_uuid -> mesmo checkout_id, sem novo evento; reuso conflitante -> 22023 idempotency_conflict; estado incompativel, diagnostico e problema_principal preservados",
+        "acl": "postgres=X,authenticated=X,service_role=X; sem PUBLIC e sem anon; search_path=public; owner postgres; OID 24597 preservado",
+        "fingerprint": "pre 1a23e69ad1909af5b6021d81fb9ed918 -> pos 20515c14cf017e68bebc8f99ba3cd00a",
+        "ensaio": "preflight em transacao integralmente revertida: forward -> 20515c14cf017e68bebc8f99ba3cd00a, rollback -> 1a23e69ad1909af5b6021d81fb9ed918 byte-fiel; residuo zero",
+        "ledger": "677 -> 678, ocorrencia unica",
+        "dados_historicos": "nenhuma correcao historica aplicada: public.visitas_checkin nao possui nenhuma linha tipo_checkin='inicio_visita' nem 'checkout' (apenas chegada_talhao=77), logo nenhuma linha foi criada pela versao defeituosa",
+        "provas": "restoration/homologacao-h9/h9e-provas/h9e1r-prova-finish-visit.sql"
       }
     }
   ]
