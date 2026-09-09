@@ -257,3 +257,109 @@ visibilidade comercial e depende do responsável de negócio. Como a função é
 consumida por `h7n_catalogo_ficha_microrganismos`, `h7n_catalogo_ficha_produtos`
 e pelos resolvedores de preço B2B, nenhuma correção foi aplicada nesta rodada.
 Segue para o lote `H9-D-L3`.
+
+
+## 9. Lote H9-D-L3 — resultado
+
+Ambiente: homologação `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk`
+não foi acessada em nenhum momento. Ledger antes **664** (`20261008000000`),
+depois **665** (`20261009000000`). Universo SECDEF `authenticated`/`anon`:
+**376/2** antes, **375/2** depois (o preço canônico deixou de ser executável por
+`authenticated`).
+
+As 30 assinaturas exigidas foram lidas integralmente (`pg_get_functiondef`) no
+catálogo vivo, com ACL, `proconfig`, retorno, objetos tocados, cadeia transitiva
+e callsites registrados em `h9d-inventario/dossie-l3.json`, com fingerprint
+reproduzível (`md5`/`length` da definição viva).
+
+### 9.1 Exposições comprovadas e corrigidas (6)
+
+Provas dinâmicas em transação revertida, com sessão `authenticated` de um
+usuário sem papel e sem vínculo:
+
+| Assinatura | Antes | Depois |
+| --- | --- | --- |
+| `get_cliente_ids_for_user(uuid)` | devolvia `{b05e3c22-…}` para o uid de um produtor alheio | `{}` |
+| `has_active_user_cliente_access(uuid,uuid,text[])` | `true` para uid de terceiro | `false` |
+| `is_financial_staff(uuid)` | `true` para uid de financeiro alheio | `false` |
+| `is_delivery_staff(uuid)` | `true` para uid de administrador alheio | `false` |
+| `pode_acessar_recomendacao(uuid,uuid)` | `true` para uid de técnico alheio (fixture transacional) | `false` |
+| `fn_catalogo_preco_canonico(uuid,uuid,text,numeric)` | produtor lia **0 linhas** em `catalogo_volumes` e ainda assim obtinha `150.000000/litro` e `15.00/ha` para produto arbitrário | `ERROR: permission denied for function` |
+
+O forward `20261009000000_h9dl3_authz_uid_scope_and_internal_price_v1.sql`
+reaproveita `public.fn_authz_uid_scope_ok(uuid)` (criado na L2: self,
+administrador ou sessão interna sem JWT) nas cinco funções de identidade/papel e
+revoga `EXECUTE` de `PUBLIC`/`anon`/`authenticated` no preço canônico,
+preservando `service_role`. Assinaturas, parâmetros, defaults, retorno,
+linguagem, volatilidade e `search_path` (inclusive `public, pg_temp` em
+`is_financial_staff`) foram preservados; nenhum fluxo paralelo foi criado.
+
+**Caminhos legítimos preservados (prova depois):** usuário financeiro continua
+`true` em `is_financial_staff(auth.uid())`; produtor resolve o próprio
+`cliente_id`; técnico mantém `has_active_user_cliente_access` do próprio
+vínculo; aplicador mantém `is_delivery_staff(self)`; administrador continua
+consultando terceiros; sessão interna sem JWT (`auth.uid() IS NULL`, cron e
+`service_role`) mantém acesso completo; as fichas `vw_catalogo_ficha_*`
+continuam devolvendo 8 produtos com preço, sem alteração de regra comercial.
+
+**Reversibilidade:** `rollback` + reaplicação em transação descartada devolveu o
+`EXECUTE` a `authenticated` e voltou a revogá-lo, com
+`md5(pg_get_functiondef)` idêntico ao estado aplicado.
+
+### 9.2 Decisão de contrato do preço canônico
+
+A pendência comercial deixada na L2 foi resolvida sem inventar regra de negócio:
+o que era ambíguo (quem pode ver preço) permanece definido pelas views
+`vw_catalogo_ficha_produtos` / `vw_catalogo_ficha_microrganismos`
+(`security_invoker`), cuja regra — perfil técnico aprovado e `b2b_enabled` para
+parceiros, ou papel interno via `can_view_catalog_internal` — não foi tocada. O
+que era inequivocamente inseguro (consultar o preço de **qualquer** produto por
+chamada direta, contornando a RLS de `catalogo_volumes`) foi removido. Todos os
+consumidores legítimos executam em contexto de owner e seguem funcionando.
+
+### 9.3 AUTH_COMPROVADA (24)
+
+Todas com prova dinâmica de fail-closed para ator `authenticated` sem papel:
+
+- Financeiro (`get_report_payables`, `get_report_receivables`,
+  `get_report_nfe_pending`, `get_report_monthly_financial`,
+  `get_top_financial_rankings`, `log_report_export`): `P0001 Acesso negado` via
+  `is_financial_staff(auth.uid())`, agora também com escopo de identidade.
+- Comunicação administrativa (`rpc_activate_communication_template`,
+  `rpc_archive_communication_template`, `rpc_admin_communication_health_snapshot`,
+  `rpc_admin_communication_outbox_metrics`,
+  `rpc_admin_list_communication_dead_letter`): `42501 apenas administrador` via
+  `_comunicacao_require_admin()`.
+- Operação e entrega (`rpc_anexar_comprovante_entrega`,
+  `rpc_atualizar_checklist_entrega`, `rpc_assign_visit_technician`,
+  `rpc_avancar_esteira_laboratorio`, `publish_planning_to_lab`,
+  `return_catalog_profile_to_review`): guarda com `auth.uid()` antes de qualquer
+  escrita.
+- B2B e identidade (`rpc_b2b_capacity_kpis`, `rpc_b2b_executive_alerts`,
+  `rpc_b2b_credit_exposure`, `get_user_partner_id`,
+  `get_my_available_portal_contexts`, `log_my_access_denied_secure`): sem
+  parâmetro de ator ou com o parceiro conferido contra o vínculo do chamador.
+- `lab_request_replanning(uuid,text)`: guarda anterior às escritas.
+
+### 9.4 Riscos funcionais pré-existentes (não são exposições; não corrigidos)
+
+1. `lab_request_replanning` testa `has_role(v_uid,'laboratorio')`, e
+   `laboratorio` não existe no enum `app_role`: a guarda aborta com `22P02`
+   para qualquer chamador. É fail-closed, porém a função está inoperante também
+   para o staff legítimo.
+2. A família de relatórios financeiros referencia colunas inexistentes no schema
+   vivo (`accounts_receivable_installments.amount`,
+   `accounts_receivable.cliente_id`); a autorização funciona, mas o corpo falha
+   depois dela. As colunas reais são `original_amount`/`net_amount` e
+   `customer_id`.
+
+Ambos exigem decisão funcional e ficam registrados para a fase seguinte.
+
+### 9.5 Aritmética do escopo profundo após a L3 (soma 292)
+
+**177 AUTH_COMPROVADA**, **4 NAO_APLICAVEL**, **20
+EXPOSICAO_COMPROVADA_CORRIGIDA**, **91 PENDENTE_EVIDENCIA** (lotes
+`H9-D-L4..L7`).
+
+**Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.** H9-E e o
+lote L4 não foram iniciados.
