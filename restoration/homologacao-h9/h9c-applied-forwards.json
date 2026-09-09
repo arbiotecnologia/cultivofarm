@@ -4,7 +4,7 @@
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
   "ledger_versoes": 668,
-  "total_applied_forwards": 7,
+  "total_applied_forwards": 8,
   "entries": [
     {
       "version": "20261005000000",
