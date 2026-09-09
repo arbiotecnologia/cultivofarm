@@ -227,7 +227,7 @@ describe("H9-D-L5 — forward reversível 20261016000000", () => {
 
   it("está rastreado no manifesto de applied-forwards com ledger 674", () => {
     expect(manifest.ledger_versoes).toBe(674);
-    expect(manifest.total_applied_forwards).toBe(13);
+    expect(manifest.total_applied_forwards).toBe(14);
     expect(manifest.entries).toHaveLength(manifest.total_applied_forwards);
     expect(entry).toBeTruthy();
     expect(entry!.registered_in_ledger).toBe(true);
