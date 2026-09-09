@@ -1,6 +1,6 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
- "ledger": 665,
+ "ledger": 666,
  "lote": "H9-D-L3",
  "total": 30,
  "fonte_hash_sql": "SELECT p.proname||'('||pg_catalog.oidvectortypes(p.proargtypes)||')' AS sig, md5(pg_get_functiondef(p.oid)) AS definition_md5, length(pg_get_functiondef(p.oid))::text AS definition_len, coalesce(p.proacl::text,'') AS acl, coalesce(p.proconfig::text,'') AS proconfig FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prosecdef;",
@@ -22,8 +22,8 @@
   "get_cliente_ids_for_user(uuid)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "2984f364596e63fa0ac2281c2b721582",
-   "definition_len": 454,
+   "definition_md5": "c80d5900692d960f649d0a9f7850fe2c",
+   "definition_len": 1071,
    "guarda_textual": "Antes: resolvia user_clientes/profiles para QUALQUER _user_id recebido por parâmetro. Depois: fn_authz_uid_scope_ok(_user_id) exige _user_id = auth.uid(), administrador ou sessão interna antes de qualquer leitura",
    "cadeia_transitiva": "fn_authz_uid_scope_ok(uuid) -> auth.uid()/has_role(administrador); leitura de public.user_clientes e public.profiles",
    "null_fail_closed": "sim — retorna ARRAY[]::uuid[] quando o escopo não é permitido; nunca NULL",
@@ -31,7 +31,8 @@
    "sql_dinamico": "nenhum",
    "callsites": "políticas RLS de portal e RPCs do portal do produtor, sempre com auth.uid(); rollback de L2 mantido",
    "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
-   "observacao": "Exposição comprovada dinamicamente em transação revertida (sessão authenticated sem papel e sem vínculo) e corrigida pelo forward 20261009000000_h9dl3_authz_uid_scope_and_internal_price_v1, aplicado somente na homologação ikaauvsflpmamgxmkhoq (ledger 664→665), com rollback simétrico em h9d-rollbacks e ensaio rollback→reaplicação em transação descartada com fingerprint idêntico. Prova depois: mesma chamada é fail-closed; caminhos legítimos (self-scope, administrador, papéis internos e sessão interna sem JWT) preservados."
+   "observacao": "Exposição comprovada dinamicamente em transação revertida (sessão authenticated sem papel e sem vínculo) e corrigida pelo forward 20261009000000_h9dl3_authz_uid_scope_and_internal_price_v1, aplicado somente na homologação ikaauvsflpmamgxmkhoq (ledger 664→665), com rollback simétrico em h9d-rollbacks e ensaio rollback→reaplicação em transação descartada com fingerprint idêntico. Prova depois: mesma chamada é fail-closed; caminhos legítimos (self-scope, administrador, papéis internos e sessão interna sem JWT) preservados.",
+   "retificacao_20261010000000": "Retificação 20261010000000: além do escopo self/admin (L3), passou a exigir vínculo em public.user_clientes com is_active=true, revoked_at IS NULL e janela de vigência corrente; o fallback profiles.cliente_id só sobrevive se existir vínculo ativo equivalente. Prova transacional revertida: antes 5/5 vínculos (inativo, revogado, futuro, expirado, ativo) eram devolvidos; depois apenas o ativo. Nenhuma fixture remanescente."
   },
   "get_my_available_portal_contexts()": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
@@ -49,8 +50,8 @@
   "get_report_monthly_financial(date,date,uuid,text)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "5e4d940e63a0b02947935f77edcf5ae2",
-   "definition_len": 4129,
+   "definition_md5": "47564a7265c99b67646c6b63c1d3fb13",
+   "definition_len": 4002,
    "guarda_textual": "IF NOT public.is_financial_staff(auth.uid()) THEN RAISE EXCEPTION 'Acesso negado' antes do SQL agregador",
    "cadeia_transitiva": "is_financial_staff(uuid) endurecida -> fn_authz_uid_scope_ok + has_role financeiro",
    "null_fail_closed": "sim — auth.uid() NULL aborta",
@@ -58,13 +59,14 @@
    "sql_dinamico": "nenhum",
    "callsites": "dashboards financeiros; chamada sempre com a sessão do usuário",
    "classificacao": "AUTH_COMPROVADA",
-   "observacao": "Prova dinâmica: P0001 'Acesso negado' para ator sem papel. Defeito funcional pré-existente (i.amount) registrado como risco."
+   "observacao": "Prova dinâmica: P0001 'Acesso negado' para ator sem papel. Defeito funcional pré-existente (i.amount) registrado como risco.",
+   "retificacao_20261010000000": "Retificação 20261010000000: substituídas as referências à coluna inexistente i.amount (42703) pelas colunas vivas original_amount/received_amount/paid_amount/discount_amount, com a fórmula canônica de saldo idêntica a fn_fin_aging. Guarda is_financial_staff preservada e provada: produtor recebe 'Acesso negado' antes de qualquer leitura; administrador e financeiro obtêm resultado."
   },
   "get_report_nfe_pending(jsonb)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "1e6f96af70fef5bf3ff17d89c859ff66",
-   "definition_len": 1100,
+   "definition_md5": "7116a4d9e85bb20ec54c740f7d3e5a24",
+   "definition_len": 1085,
    "guarda_textual": "IF NOT public.is_financial_staff(auth.uid()) THEN RAISE EXCEPTION 'Acesso negado' — guarda no início, antes de qualquer RETURN QUERY",
    "cadeia_transitiva": "is_financial_staff(uuid) (endurecida por 20261009000000) -> fn_authz_uid_scope_ok + has_role(administrador|gestor|financeiro)",
    "null_fail_closed": "sim — auth.uid() NULL faz is_financial_staff retornar false e a função aborta",
@@ -72,13 +74,14 @@
    "sql_dinamico": "nenhum",
    "callsites": "páginas financeiras (src/pages/financeiro) via supabase.rpc, sempre com a sessão do próprio usuário",
    "classificacao": "AUTH_COMPROVADA",
-   "observacao": "Prova dinâmica: ator authenticated sem papel recebeu P0001 'Acesso negado'. Defeito funcional pré-existente registrado como risco (colunas i.amount/ar.cliente_id inexistentes no schema vivo) — não é questão de autorização e não foi alterado nesta rodada."
+   "observacao": "Prova dinâmica: ator authenticated sem papel recebeu P0001 'Acesso negado'. Defeito funcional pré-existente registrado como risco (colunas i.amount/ar.cliente_id inexistentes no schema vivo) — não é questão de autorização e não foi alterado nesta rodada.",
+   "retificacao_20261010000000": "Retificação 20261010000000: ar.cliente_id -> ar.customer_id (coluna viva). Guarda is_financial_staff preservada e provada."
   },
   "get_report_payables(jsonb)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "3b55657a60a865ca908d491e61aaa480",
-   "definition_len": 1374,
+   "definition_md5": "e619ffef9ddc99d9e326edb3ade68e4f",
+   "definition_len": 1212,
    "guarda_textual": "IF NOT public.is_financial_staff(auth.uid()) THEN RAISE EXCEPTION 'Acesso negado' — guarda no início, antes de qualquer RETURN QUERY",
    "cadeia_transitiva": "is_financial_staff(uuid) (endurecida por 20261009000000) -> fn_authz_uid_scope_ok + has_role(administrador|gestor|financeiro)",
    "null_fail_closed": "sim — auth.uid() NULL faz is_financial_staff retornar false e a função aborta",
@@ -86,13 +89,14 @@
    "sql_dinamico": "nenhum",
    "callsites": "páginas financeiras (src/pages/financeiro) via supabase.rpc, sempre com a sessão do próprio usuário",
    "classificacao": "AUTH_COMPROVADA",
-   "observacao": "Prova dinâmica: ator authenticated sem papel recebeu P0001 'Acesso negado'. Defeito funcional pré-existente registrado como risco (colunas i.amount/ar.cliente_id inexistentes no schema vivo) — não é questão de autorização e não foi alterado nesta rodada."
+   "observacao": "Prova dinâmica: ator authenticated sem papel recebeu P0001 'Acesso negado'. Defeito funcional pré-existente registrado como risco (colunas i.amount/ar.cliente_id inexistentes no schema vivo) — não é questão de autorização e não foi alterado nesta rodada.",
+   "retificacao_20261010000000": "Retificação 20261010000000: i.amount -> original_amount e saldo = original_amount - paid_amount - discount_amount. Guarda is_financial_staff preservada e provada (30 linhas para staff, 'Acesso negado' para produtor)."
   },
   "get_report_receivables(jsonb)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "0e8cd83f2627c920f4be188e2d7f5ba3",
-   "definition_len": 1588,
+   "definition_md5": "970a18caa86f578cd31de2a56f002f6f",
+   "definition_len": 1417,
    "guarda_textual": "IF NOT public.is_financial_staff(auth.uid()) THEN RAISE EXCEPTION 'Acesso negado' — guarda no início, antes de qualquer RETURN QUERY",
    "cadeia_transitiva": "is_financial_staff(uuid) (endurecida por 20261009000000) -> fn_authz_uid_scope_ok + has_role(administrador|gestor|financeiro)",
    "null_fail_closed": "sim — auth.uid() NULL faz is_financial_staff retornar false e a função aborta",
@@ -100,7 +104,8 @@
    "sql_dinamico": "nenhum",
    "callsites": "páginas financeiras (src/pages/financeiro) via supabase.rpc, sempre com a sessão do próprio usuário",
    "classificacao": "AUTH_COMPROVADA",
-   "observacao": "Prova dinâmica: ator authenticated sem papel recebeu P0001 'Acesso negado'. Defeito funcional pré-existente registrado como risco (colunas i.amount/ar.cliente_id inexistentes no schema vivo) — não é questão de autorização e não foi alterado nesta rodada."
+   "observacao": "Prova dinâmica: ator authenticated sem papel recebeu P0001 'Acesso negado'. Defeito funcional pré-existente registrado como risco (colunas i.amount/ar.cliente_id inexistentes no schema vivo) — não é questão de autorização e não foi alterado nesta rodada.",
+   "retificacao_20261010000000": "Retificação 20261010000000: i.amount -> original_amount e saldo = original_amount - received_amount - discount_amount. Guarda is_financial_staff preservada e provada (56 linhas para staff, 'Acesso negado' para produtor)."
   },
   "get_top_financial_rankings(date,date,integer)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
@@ -174,8 +179,8 @@
   "lab_request_replanning(uuid,text)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "6c4bd095d9cad1388739c01d83108352",
-   "definition_len": 2221,
+   "definition_md5": "55486998e1ad435f3e508b4d3eef7611",
+   "definition_len": 2180,
    "guarda_textual": "valida motivo e em seguida IF NOT (has_role administrador|producao|gestor|laboratorio) THEN RAISE 'forbidden' — guarda anterior a qualquer SELECT FOR UPDATE, INSERT ou UPDATE",
    "cadeia_transitiva": "has_role(auth.uid(),...) sobre public.user_roles; depois ordens_servico/production_planning com FOR UPDATE",
    "null_fail_closed": "sim — v_uid NULL não satisfaz nenhum papel",
@@ -183,7 +188,8 @@
    "sql_dinamico": "nenhum",
    "callsites": "cockpit de laboratório (esteira de produção)",
    "classificacao": "AUTH_COMPROVADA",
-   "observacao": "Risco funcional pré-existente registrado: o literal 'laboratorio' não existe no enum app_role, então a guarda aborta com 22P02 para qualquer chamador — comportamento fail-closed, porém a função está inoperante também para o staff legítimo. Não corrigido nesta rodada por não ser exposição de segurança."
+   "observacao": "Risco funcional pré-existente registrado: o literal 'laboratorio' não existe no enum app_role, então a guarda aborta com 22P02 para qualquer chamador — comportamento fail-closed, porém a função está inoperante também para o staff legítimo. Não corrigido nesta rodada por não ser exposição de segurança.",
+   "retificacao_20261010000000": "Retificação 20261010000000: removido o valor inexistente 'laboratorio' do enum app_role, que levantava 22P02 (invalid input value for enum app_role) antes de qualquer decisão de negócio. Escopo mantido exatamente em administrador|producao|gestor, idêntico a publish_planning_to_lab; nenhum privilégio ampliado. Prova: administrador agora atinge a regra de negócio (order_not_found) e produtor recebe 'forbidden'."
   },
   "log_my_access_denied_secure(text,text)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
@@ -215,8 +221,8 @@
   "pode_acessar_recomendacao(uuid,uuid)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "11b8045832935440345ddddfaf0a2eae",
-   "definition_len": 870,
+   "definition_md5": "be52f7fd22273056cc2e4d6201fb8c12",
+   "definition_len": 1090,
    "guarda_textual": "Antes: papel/vínculo avaliados sobre _user_id arbitrário. Depois: fn_authz_uid_scope_ok(_user_id) AND EXISTS(...)",
    "cadeia_transitiva": "fn_authz_uid_scope_ok(uuid) -> auth.uid(); has_role; join registros_consultor_recomendacoes x registros_consultor x user_clientes",
    "null_fail_closed": "sim — escopo inválido retorna false",
@@ -224,7 +230,8 @@
    "sql_dinamico": "nenhum",
    "callsites": "três policies RLS de public.recomendacao_comentarios, todas passando auth.uid()",
    "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
-   "observacao": "Exposição comprovada dinamicamente em transação revertida (sessão authenticated sem papel e sem vínculo) e corrigida pelo forward 20261009000000_h9dl3_authz_uid_scope_and_internal_price_v1, aplicado somente na homologação ikaauvsflpmamgxmkhoq (ledger 664→665), com rollback simétrico em h9d-rollbacks e ensaio rollback→reaplicação em transação descartada com fingerprint idêntico. Prova depois: mesma chamada é fail-closed; caminhos legítimos (self-scope, administrador, papéis internos e sessão interna sem JWT) preservados."
+   "observacao": "Exposição comprovada dinamicamente em transação revertida (sessão authenticated sem papel e sem vínculo) e corrigida pelo forward 20261009000000_h9dl3_authz_uid_scope_and_internal_price_v1, aplicado somente na homologação ikaauvsflpmamgxmkhoq (ledger 664→665), com rollback simétrico em h9d-rollbacks e ensaio rollback→reaplicação em transação descartada com fingerprint idêntico. Prova depois: mesma chamada é fail-closed; caminhos legítimos (self-scope, administrador, papéis internos e sessão interna sem JWT) preservados.",
+   "retificacao_20261010000000": "Retificação 20261010000000: o ramo de vínculo passou a exigir is_active/revoked_at/janela vigente; papéis internos e escopo self/admin preservados."
   },
   "publish_planning_to_lab(uuid)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
@@ -422,5 +429,6 @@
    "classificacao": "AUTH_COMPROVADA",
    "observacao": "Prova dinâmica: 42501 permission_denied para ator sem papel."
   }
- }
+ },
+ "retificacao": "Fingerprints e ACLs revalidados após o forward 20261010000000 (ledger 666). Classificações inalteradas: os defeitos corrigidos aqui são funcionais (colunas/enum inexistentes) ou endurecimento do escopo já classificado, sem novas exposições."
 }

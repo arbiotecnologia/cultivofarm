@@ -3,8 +3,8 @@
   "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
-  "ledger_versoes": 665,
-  "total_applied_forwards": 5,
+  "ledger_versoes": 666,
+  "total_applied_forwards": 6,
   "entries": [
     {
       "version": "20261005000000",
@@ -141,6 +141,28 @@
         "ensaio_rollback_reaplicacao": "rollback + reaplicacao em transacao descartada: EXECUTE volta a true e retorna a false; md5(pg_get_functiondef) identico ao estado aplicado",
         "secdef_authenticated": "376 -> 375 (fn_catalogo_preco_canonico deixou de ser executavel por authenticated)"
       }
+    },
+    {
+      "version": "20261010000000",
+      "name": "h9dl3r_report_columns_lab_role_active_scope_v1",
+      "fase": "H9-D-L3 (retificacao funcional e de escopo ativo)",
+      "path": "restoration/homologacao-h9/h9d-forwards/20261010000000_h9dl3r_report_columns_lab_role_active_scope_v1.sql",
+      "sha256": "6f7ef6f07dd3f7f882571fc6a2964acb1ba477a5bb226c0298a064885b2d5f5a",
+      "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261010000000_h9dl3r_report_columns_lab_role_active_scope_v1_rollback.sql",
+      "rollback_sha256": "b53546aaa0ab7a4f3c85e94652c7250ac04f8e8230e3c06dff8708ad213d15bd",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma continua bloqueando escrita direta em supabase/migrations/; o SQL exato aplicado foi versionado em restoration/homologacao-h9/h9d-forwards/ e registrado no ledger.",
+      "evidencia": "Antes: get_report_monthly_financial/get_report_payables/get_report_receivables falhavam com 42703 'column i.amount does not exist', get_report_nfe_pending com 'column ar.cliente_id does not exist' e lab_request_replanning com 22P02 'invalid input value for enum app_role: laboratorio'; get_cliente_ids_for_user/get_cliente_id_for_user/pode_acessar_recomendacao aceitavam vinculos inativos, revogados, futuros e expirados (5/5 devolvidos em transacao revertida). Depois: relatorios retornam para staff financeiro (30 payables, 56 receivables), lab atinge a regra de negocio, escopo devolve apenas o vinculo ativo.",
+      "teste_negativo": "produtor recebe 'Acesso negado' nos quatro relatorios e 'forbidden' no replanejamento; BOLA cross-uid devolve {} e NULL",
+      "teste_positivo": "administrador e financeiro nos relatorios; escopo self com vinculo ativo preservado; fn_catalogo_preco_canonico segue negada a authenticated e as views de catalogo seguem legiveis (8 e 25 linhas)",
+      "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l3.json",
+      "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
+      "ensaio_rollback_reaplicacao": "rollback aplicado (defeitos reproduzidos de novo) e forward reaplicado: 0 divergencias de md5(pg_get_functiondef) nas 8 assinaturas",
+      "secdef_authenticated": "375 authenticated / 2 anon preservados; nenhum GRANT novo"
     }
   ]
 }

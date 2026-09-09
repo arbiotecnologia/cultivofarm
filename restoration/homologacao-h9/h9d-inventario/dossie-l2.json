@@ -1,6 +1,6 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
- "ledger": 664,
+ "ledger": 666,
  "lote": "H9-D-L2",
  "total": 30,
  "fonte_hash_sql": "SELECT p.proname||'('||pg_catalog.oidvectortypes(p.proargtypes)||')' AS sig,  md5(pg_get_functiondef(p.oid)) AS definition_md5,  length(pg_get_functiondef(p.oid))::text AS definition_len,  coalesce(p.proacl::text,'') AS acl,  coalesce(p.proconfig::text,'') AS proconfig FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public';",
@@ -414,8 +414,8 @@
   "get_cliente_id_for_user(uuid)": {
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
-   "definition_md5": "e4cec701debb226b9aa805a194336326",
-   "definition_len": 430,
+   "definition_md5": "c841d35d2c1381d98f7fbd512c2b3e51",
+   "definition_len": 618,
    "guarda_textual": "fn_authz_uid_scope_ok(_user_id) antes de consultar profiles/user_clientes",
    "cadeia_transitiva": "fn_authz_uid_scope_ok; profiles; user_clientes",
    "null_fail_closed": "sim — retorna NULL (fail-closed) quando o alvo não é o próprio usuário",
@@ -423,7 +423,9 @@
    "sql_dinamico": "nenhum",
    "callsites": "policies de storage.objects e registros_consultor_pdf_versions, sempre com auth.uid(); prova P4 mantém o produtor lendo o próprio cliente",
    "observacao": "Exposição comprovada dinamicamente em transação revertida (identidade authenticated sem papel e sem vínculo) e corrigida pelo forward 20261008000000_h9dl2_authz_uid_scope_and_internal_reads_v1 aplicado só na homologação (ledger 663→664), com rollback simétrico em h9d-rollbacks. Prova depois: mesma chamada retorna fail-closed; perfis legítimos (administrador, financeiro, técnico, produtor self-scope) e sessão interna sem JWT preservados.",
-   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA"
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "retificacao_20261010000000": "Retificação 20261010000000: mesmo predicado de vínculo ativo/vigente/não revogado, mantendo ORDER BY principal DESC, created_at ASC e o escopo self/admin. Prova transacional revertida confirma retorno somente do vínculo ativo e NULL para uid de terceiro."
   }
- }
+ },
+ "retificacao": "Fingerprints e ACLs revalidados após o forward 20261010000000 (ledger 666). Classificações inalteradas: os defeitos corrigidos aqui são funcionais (colunas/enum inexistentes) ou endurecimento do escopo já classificado, sem novas exposições."
 }

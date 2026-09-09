@@ -341,7 +341,7 @@ Todas com prova dinâmica de fail-closed para ator `authenticated` sem papel:
   parâmetro de ator ou com o parceiro conferido contra o vínculo do chamador.
 - `lab_request_replanning(uuid,text)`: guarda anterior às escritas.
 
-### 9.4 Riscos funcionais pré-existentes (não são exposições; não corrigidos)
+### 9.4 Riscos funcionais pré-existentes (registrados na rodada 6; corrigidos na rodada 7)
 
 1. `lab_request_replanning` testa `has_role(v_uid,'laboratorio')`, e
    `laboratorio` não existe no enum `app_role`: a guarda aborta com `22P02`
@@ -363,3 +363,85 @@ EXPOSICAO_COMPROVADA_CORRIGIDA**, **91 PENDENTE_EVIDENCIA** (lotes
 
 **Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.** H9-E e o
 lote L4 não foram iniciados.
+
+
+## 10. Rodada 7 — retificação funcional e de escopo ativo do L3 (`20261010000000`)
+
+Ambiente: homologação `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk` não
+foi acessada. Ledger **665 → 666** (aplicação única). H9-E e o lote L4 não foram
+iniciados.
+
+### 10.1 Defeitos reproduzidos ANTES da correção (transação revertida)
+
+| Assinatura | Erro observado |
+| --- | --- |
+| `get_report_monthly_financial(date,date,uuid,text)` | `42703 column i.amount does not exist` |
+| `get_report_payables(jsonb)` | `42703 column i.amount does not exist` |
+| `get_report_receivables(jsonb)` | `42703 column i.amount does not exist` |
+| `get_report_nfe_pending(jsonb)` | `42703 column ar.cliente_id does not exist` |
+| `lab_request_replanning(uuid,text)` | `22P02 invalid input value for enum app_role: "laboratorio"` |
+| `get_cliente_ids_for_user(uuid)` | devolveu **5 de 5** vínculos: inativo, revogado, futuro, expirado e ativo |
+| `get_cliente_id_for_user(uuid)` / `pode_acessar_recomendacao(uuid,uuid)` | aceitavam vínculo sem filtro de vigência |
+
+Fixtures criadas apenas dentro da transação (`TESTE_L3R_*`); contagem final de
+remanescentes: **0**.
+
+### 10.2 Correção aplicada
+
+- **Relatórios**: colunas vivas `original_amount`, `received_amount`,
+  `paid_amount`, `discount_amount` e `accounts_receivable.customer_id`. Saldo
+  pela fórmula canônica já usada por `fn_fin_aging` e `fn_fin_dashboard_kpis`:
+  `original_amount - COALESCE(recebido/pago,0) - COALESCE(discount_amount,0)`.
+  Assinaturas, retornos, filtros, ordenação e a guarda `is_financial_staff`
+  foram preservados.
+- **Laboratório**: removido o valor inexistente `laboratorio`; escopo mantido
+  exatamente em `administrador|producao|gestor`, idêntico a
+  `publish_planning_to_lab`. Nenhum papel novo foi incluído.
+- **Escopo de vínculo**: `get_cliente_ids_for_user`, `get_cliente_id_for_user` e
+  `pode_acessar_recomendacao` passam a exigir `is_active = true`,
+  `revoked_at IS NULL` e janela de vigência corrente. O fallback
+  `profiles.cliente_id` só sobrevive quando existir vínculo ativo equivalente
+  (compatibilidade verificada: os 4 perfis com `cliente_id` têm vínculo ativo).
+- `fn_authz_uid_scope_ok` e o escopo self/admin das rodadas 5 e 6 foram
+  preservados; nenhum `GRANT` novo, sem `PUBLIC`/`anon`, `search_path` fixo.
+
+### 10.3 Provas DEPOIS da correção
+
+- Administrador e `financeiro`: `get_report_monthly_financial` retorna JSON
+  (`received = 15450.00`), `get_report_payables` 30 linhas,
+  `get_report_receivables` 56 linhas, `get_report_nfe_pending` 0 linhas.
+- `cliente_produtor`: `Acesso negado` nos quatro relatórios (antes de qualquer
+  leitura) e `forbidden` em `lab_request_replanning`.
+- `lab_request_replanning` como administrador alcança a regra de negócio
+  (`order_not_found`), não mais o erro de enum.
+- Escopo: apenas o vínculo ativo é devolvido; BOLA cross-uid devolve `{}` e
+  `NULL`; escopo legítimo do produtor preservado.
+- Catálogo pós-L3 confirmado: `vw_catalogo_ficha_produtos` (8) e
+  `vw_catalogo_ficha_microrganismos` (25) legíveis; chamada direta a
+  `fn_catalogo_preco_canonico` segue `permission denied`.
+
+### 10.4 Ensaio de reversão
+
+Rollback aplicado → os cinco erros originais voltaram exatamente; forward
+reaplicado → **0 divergências** de `md5(pg_get_functiondef)` nas oito
+assinaturas. Ledger permanece 666 (registro único).
+
+### 10.5 Estado final
+
+Ledger **666** (última `20261010000000`), SECDEF `authenticated` **375** /
+`anon` **2**, crons 1/2/5/8/9/18 ativos, zero fixtures remanescentes.
+Classificações do escopo profundo **inalteradas** (177 / 4 / 20 / 91): os
+defeitos desta rodada são funcionais ou endurecimento de escopo já classificado,
+sem novas exposições.
+
+### 10.6 Risco funcional remanescente (não corrigido)
+
+- `get_report_customer_statement(uuid,date,date)` também referencia `i.amount`,
+  porém está fora das quatro funções autorizadas nesta rodada; fica registrado
+  para autorização específica.
+- `received_amount` diverge da soma de `receivable_payments` em 10 de 58
+  parcelas. As funções financeiras canônicas usam a coluna denormalizada, que
+  foi mantida aqui por consistência; a divergência é risco de dado, não de
+  código, e permanece aberta.
+
+**Decisão: H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção.**

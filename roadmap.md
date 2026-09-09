@@ -190,5 +190,10 @@
 - [x] Riscos funcionais pré-existentes registrados (não são exposições): enum `laboratorio` inexistente em `lab_request_replanning` e colunas inexistentes na família `get_report_*`
 - [x] Gate L3 no `src/test/security/h9d-inventario.static.test.ts` (set exato das 30, unicidade, sem overload/herança, interseção L2 declarada), manifesto H7P e guard atualizados para ledger 665
 - [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; H9-E e o lote L4 não iniciados
-
+- [x] **Rodada 7 (retificação funcional H9-D-L3)**: reproduzidos em homologação `42703 column i.amount` nos três relatórios, `42703 column ar.cliente_id` em `get_report_nfe_pending`, `22P02 enum app_role: laboratorio` em `lab_request_replanning` e escopo devolvendo 5/5 vínculos (inativo, revogado, futuro, expirado, ativo)
+- [x] Forward reversível `20261010000000_h9dl3r_report_columns_lab_role_active_scope_v1` aplicado **somente na homologação** (ledger 665 → 666): colunas vivas + fórmula canônica de saldo nos quatro relatórios, remoção do valor inexistente do enum sem ampliar papéis (`administrador|producao|gestor`) e exigência de vínculo `is_active`/`revoked_at IS NULL`/vigência em `get_cliente_ids_for_user`, `get_cliente_id_for_user` e `pode_acessar_recomendacao`
+- [x] Provas depois: staff financeiro lê os quatro relatórios; produtor recebe `Acesso negado`/`forbidden`; BOLA cross-uid devolve `{}`/`NULL`; catálogo pós-L3 intacto (views 8/25 linhas, `fn_catalogo_preco_canonico` negada); ensaio rollback→reaplicação com 0 divergências de fingerprint; zero fixtures remanescentes
+- [x] Classificações do escopo profundo **inalteradas** (177 / 4 / 20 / 91); manifesto H7P, `h9c-applied-forwards.json`, dossiês L2/L3, inventário e novo gate `src/test/security/h9dl3r-report-columns-active-scope.static.test.ts` atualizados para ledger 666
+- [ ] Riscos remanescentes: `get_report_customer_statement(uuid,date,date)` ainda usa `i.amount` (fora do escopo autorizado) e 10 de 58 parcelas com `received_amount` divergente da soma de pagamentos
+- [x] Decisão: **H9-D CONTINUA (NO-GO para encerramento) / NO-GO produção**; L4 e H9-E não iniciados
 
