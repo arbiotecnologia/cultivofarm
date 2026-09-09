@@ -155,3 +155,25 @@ Durante esta execução, `.env` e `src/integrations/supabase/types.ts` foram reg
 ### Veredito
 - H9-E1R: **GO em homologação**.
 - Promoção para produção: **NO-GO** — permanecem a concorrência multi-sessão real `UNVERIFIED`, o lookup pré-gate em `rpc_realizar_checkout_visita`, os 77 check-ins históricos `chegada_talhao` sem correção retroativa e o drift reincidente de binding.
+
+---
+
+## ADENDO H9-E2 (posterior) — o GO desta fase era **provisório**
+
+Registro histórico preservado acima; nada foi reescrito. A auditoria
+independente da fase H9-E2 comprovou que a correção aqui documentada era
+**parcial**:
+
+1. Em `finish_technical_visit_secure`, a busca idempotente por `client_uuid`
+   ainda ocorria **antes** do `FOR UPDATE`, e o estado era avaliado antes da
+   rebusca pós-lock: em duas sessões realmente concorrentes a segunda recebia
+   `22023 visit_not_in_progress` em vez do resultado vencedor.
+2. Em `rpc_realizar_checkin_visita` e `rpc_realizar_checkout_visita` o lookup
+   por `client_uuid` precedia o gate `_visita_scope_ok`, mantendo o oráculo
+   `idempotency_conflict` vs `forbidden_visita_nao_atribuido`.
+3. O comentário “autorização de escopo ANTES de qualquer leitura” não
+   descrevia o corpo efetivo das RPCs canônicas.
+
+Corrigido pelo forward `20261023000000_h9e2_visit_rpcs_authz_and_concurrent_idempotency_v1`
+(ledger 678 → 679), com prova multi-sessão 13/13 e prova de autorização 18/18.
+Ver `08-h9e2-authz-e-idempotencia-concorrente.md`.

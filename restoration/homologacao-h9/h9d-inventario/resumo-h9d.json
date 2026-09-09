@@ -1,6 +1,6 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
- "ledger": 678,
+ "ledger": 679,
  "total_bruto": 376,
  "fora_escopo_h9d": 84,
  "escopo_h9d": 292,
@@ -19,7 +19,8 @@
   "H9-D-L6",
   "H9-D-L6R",
   "H9-D-L7",
-  "H9-E1R (retificacao)"
+  "H9-E1R (retificacao)",
+  "H9-E2 (retificacao concorrente)"
  ],
  "forwards_aplicados": [
   "20261006000000",
@@ -38,7 +39,8 @@
   "20261019000000",
   "20261020000000",
   "20261021000000",
-  "20261022000000"
+  "20261022000000",
+  "20261023000000"
  ],
  "metodologia": "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites",
  "retificacoes": [
@@ -51,6 +53,16 @@
    "forward": "20261022000000_h9e1r_finish_visit_scope_checkout_idempotency_v1",
    "ledger": "677 -> 678",
    "evidencia_historica": "preservada em dossie-l1.json (definition_md5 74cab9081642637b1d0bf6f6743e4a01) e no dossie 07-h9e1r-retificacao-finish-visit.md"
+  },
+  {
+   "lote": "H9-E2",
+   "assinatura": "finish_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,uuid); rpc_realizar_checkin_visita(...); rpc_realizar_checkout_visita(...)",
+   "de": "EXPOSICAO_COMPROVADA_CORRIGIDA (correcao parcial)",
+   "para": "EXPOSICAO_COMPROVADA_CORRIGIDA (correcao completa)",
+   "motivo": "As correcoes H9-D-L6 e H9-E1R eram parciais: nas duas RPCs canonicas o lookup por client_uuid ainda precedia o gate _visita_scope_ok (oraculo), e no encerramento a busca idempotente precedia o lock, quebrando a idempotencia concorrente. Os agregados nao mudam: as tres assinaturas ja estavam na categoria corrigida.",
+   "forward": "20261023000000_h9e2_visit_rpcs_authz_and_concurrent_idempotency_v1",
+   "ledger": "678 -> 679",
+   "evidencia_historica": "preservada nos dossies 05-h9d-l6, 07-h9e1r e no novo 08-h9e2"
   }
  ]
 }

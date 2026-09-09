@@ -122,13 +122,13 @@ const CORRIGIDAS = [
 ] as const;
 
 describe("H9-D-L6 — escopo e dossiê", () => {
-  it("declara homologação, ledger 678 no resumo e a última migration do lote", () => {
+  it("declara homologação, ledger 679 no resumo e a última migration do lote", () => {
     expect(dossie.ambiente).toBe("ikaauvsflpmamgxmkhoq");
     expect(dossie.producao_proibida).toBe("navfzbwgwzruipouyfnk");
     expect(dossie.ledger).toBe(674);
     expect(dossie.ultima_migration).toBe("20261018000000");
     expect(dossie.lote).toBe("H9-D-L6");
-    expect(resumo.ledger).toBe(678);
+    expect(resumo.ledger).toBe(679);
     expect(resumo.lotes_auditados).toContain("H9-D-L6");
     expect(resumo.forwards_aplicados).toContain("20261017000000");
   });
@@ -209,7 +209,7 @@ describe("H9-D-L6 — forward e rollback", () => {
     expect(entry!.applied_to_staging).toBe(true);
     expect(entry!.registered_in_ledger).toBe(true);
     expect(entry!.repo_only_quarantined).toBe(false);
-    expect(manifest.ledger_versoes).toBe(678);
+    expect(manifest.ledger_versoes).toBe(679);
     expect(manifest.total_applied_forwards).toBe(manifest.entries.length);
     expect(dossie.forward_sha256).toBe(sha256(FW_PATH));
     expect(dossie.rollback_sha256).toBe(sha256(RB_PATH));
@@ -322,8 +322,8 @@ describe("H9-D-L6R — cadeia 20261017000000 histórica + 20261018000000 retific
     expect(versions.filter((v) => v === "20261018000000")).toHaveLength(1);
     expect(versions.indexOf("20261018000000")).toBe(versions.indexOf("20261017000000") + 1);
     expect(versions.indexOf("20261018000000")).toBe(versions.indexOf("20261019000000") - 1);
-    expect(manifest.ledger_versoes).toBe(678);
-    expect(manifest.total_applied_forwards).toBe(18);
+    expect(manifest.ledger_versoes).toBe(679);
+    expect(manifest.total_applied_forwards).toBe(19);
     expect(resumo.forwards_aplicados).toContain("20261018000000");
     expect(resumo.lotes_auditados).toContain("H9-D-L6R");
   });
