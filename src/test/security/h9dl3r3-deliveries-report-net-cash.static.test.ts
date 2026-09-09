@@ -101,8 +101,8 @@ describe("H9-D-L3R3 — relatório de entregas e regime caixa líquido (20261012
     expect(rollback).toContain("e.data_entrega"); // restaura o estado anterior fielmente
   });
 
-  it("o forward está rastreado no manifesto de applied-forwards com ledger 672", () => {
-    expect(manifest.ledger_versoes).toBe(672);
+  it("o forward está rastreado no manifesto de applied-forwards com ledger 673", () => {
+    expect(manifest.ledger_versoes).toBe(673);
     const entry = manifest.entries.find((e) => e.version === "20261012000000");
     expect(entry).toBeDefined();
     expect(entry?.applied_to_staging).toBe(true);

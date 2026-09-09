@@ -1,0 +1,500 @@
+{
+ "ambiente": "ikaauvsflpmamgxmkhoq",
+ "producao_proibida": "navfzbwgwzruipouyfnk",
+ "lote": "H9-D-L6",
+ "ledger": 673,
+ "ultima_migration": "20261017000000",
+ "total": 30,
+ "forward_aplicado": "20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1 (aplicado uma única vez; ledger 672 -> 673)",
+ "forward_path": "restoration/homologacao-h9/h9d-forwards/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1.sql",
+ "forward_sha256": "2a8f83a629721c9e424f50022779274883cc7c3125678c2f6ae7e46a536509bc",
+ "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1_rollback.sql",
+ "rollback_sha256": "c1177fac9995512abd7bdb6c488653df05aaf69a9d50d000efa376cd06364601",
+ "metodo": "Leitura integral de pg_get_functiondef das 30 assinaturas canônicas e de todos os helpers transitivos no catálogo vivo da homologação; ACL, owner, proconfig, volatilidade e OID lidos do catálogo; callsites mapeados por varredura em src/ e supabase/functions; provas dinâmicas executadas no staging com identidade authenticated sem papel, comparando recurso real alheio contra UUID inexistente, sempre em transação revertida quando há escrita. Regex serviu apenas como triagem — nenhuma classificação foi promovida por nome ou aparência.",
+ "resumo_lote": {
+  "AUTH_COMPROVADA": 26,
+  "EXPOSICAO_COMPROVADA_CORRIGIDA": 4
+ },
+ "assinaturas": {
+  "rpc_listar_visitas_tecnicas_v1(text,text[],date,date,uuid,uuid,integer,integer)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Corpo lido: v_uid := auth.uid() com RAISE 'unauthenticated' (42501) antes de qualquer leitura; a CTE base filtra cada linha por can_view_technical_visit(v_uid, r.id) ANTES da paginação, e a capacidade de edição vem de can_manage_technical_visit.",
+   "cadeia_transitiva": "can_view_technical_visit = fn_authz_uid_scope_ok AND (administrador OR is_visit_responsible OR is_active_visit_participant OR is_visit_org_manager); todos SECDEF com search_path=public.",
+   "callsites": "src/hooks/useVisitasTecnicas* e telas de agenda técnica; nenhum callsite passa identidade por parâmetro.",
+   "prova_individual": "Listagem escopada: identidade authenticated sem papel recebe conjunto vazio, sem diferença entre filtro que casaria com visita alheia e filtro sem correspondência. Sem escrita.",
+   "fingerprint_vivo": {
+    "definition_md5": "ae8b774a1de8f980b602a7767e87b78c",
+    "definition_len": 3475,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "s",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_marcar_etiqueta_impressa(uuid,text)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Autenticação e papel (administrador/gestor/producao/operador_onfarm/administrativo) verificados ANTES do SELECT ... FOR UPDATE em produto_etiquetas.",
+   "cadeia_transitiva": "has_role(uuid,app_role) SECDEF stable com search_path=public; nenhuma outra função chamada.",
+   "callsites": "src/pages/etiquetas/* — apenas perfis internos de produção.",
+   "prova_individual": "Identidade sem papel recebe 42501 antes de qualquer leitura; a mensagem 'Etiqueta não encontrada' só é alcançável por staff interno cujo escopo já cobre todas as etiquetas — não constitui oráculo entre tenants.",
+   "fingerprint_vivo": {
+    "definition_md5": "530d9055b76830a4161f58633c41e7d1",
+    "definition_len": 2484,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_message_set_status(uuid,text)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "A autorização é uma consulta única escopada: staff OU existência da mensagem já vinculada ao partner do chamador; só então o UPDATE ocorre.",
+   "cadeia_transitiva": "get_user_partner_id() lê partner_users pelo auth.uid(); has_role para staff.",
+   "callsites": "src/pages/portal-parceiro/* (central de mensagens).",
+   "prova_individual": "Mensagem real de outro parceiro e UUID inexistente produzem o mesmo erro de permissão; nenhuma linha é alterada (transação revertida, resíduo zero).",
+   "fingerprint_vivo": {
+    "definition_md5": "32c2e1ae01bc9ea54ef7592a32ff7269",
+    "definition_len": 881,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_notificar_gestor(text,text,text)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "v_uid := auth.uid() com fail-closed e is_operational_staff(v_uid) antes do INSERT em notificacoes; destinatários derivados de user_roles gestor, nunca de parâmetro.",
+   "cadeia_transitiva": "is_operational_staff SECDEF com search_path=public, EXECUTE apenas postgres/service_role, alcançada de forma transitiva.",
+   "callsites": "chamada por rotinas internas e por supabase/functions de alertas.",
+   "prova_individual": "Identidade sem papel: 42501 antes de escrever. Prova mutante em transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "55e6ad05e0e99f0386ed25876b8f7f33",
+    "definition_len": 1165,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_partner_commercial_history(uuid,date,date)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Autoriza antes de ler: administrador/gestor OU p_partner_id igual a get_user_partner_id(); parceiro nulo falha fechado.",
+   "cadeia_transitiva": "get_user_partner_id() e has_role, ambos SECDEF com search_path=public.",
+   "callsites": "src/pages/portal-parceiro/ e painéis comerciais internos.",
+   "prova_individual": "Parceiro de outro tenant recebe 42501 idêntico ao de partner_id inexistente; nenhuma linha comercial é revelada.",
+   "fingerprint_vivo": {
+    "definition_md5": "3c6198745b51853e6258adb23397eb4d",
+    "definition_len": 1439,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "s",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_partner_dashboard(uuid)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Resolve o partner alvo (parâmetro ou padrão do chamador) e exige administrador/gestor OU igualdade com o partner do chamador ANTES de qualquer leitura de pedidos/mensagens.",
+   "cadeia_transitiva": "get_user_partner_id() e has_role, ambos SECDEF stable com search_path=public e fail-closed em identidade nula; nenhuma outra função é chamada.",
+   "callsites": "src/pages/portal-parceiro/DashboardParceiro*.",
+   "prova_individual": "Partner alheio e partner inexistente retornam o mesmo 42501 para identidade sem escopo.",
+   "fingerprint_vivo": {
+    "definition_md5": "32834e9308bf5a0fd0b7071cd7e0a660",
+    "definition_len": 1718,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "s",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_partner_message_counters(uuid)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Exige administrador/gestor OU chamador com partner não nulo igual ao alvo; parâmetro nulo cai para o partner do próprio chamador.",
+   "cadeia_transitiva": "get_user_partner_id() e has_role, ambos SECDEF stable com search_path=public; leitura agregada de partner_messages sem SQL dinâmico.",
+   "callsites": "src/pages/portal-parceiro/ (badge de mensagens).",
+   "prova_individual": "Identidade sem papel e sem partner recebe 42501; contadores nunca são calculados com filtro nulo para não-staff.",
+   "fingerprint_vivo": {
+    "definition_md5": "5b049aa45efddf8aff1b92b14a759a46",
+    "definition_len": 1147,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "s",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_portal_partner_financial()": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Sem parâmetro de identidade: o filtro é derivado de partner_users pelo auth.uid(). Sessão sem sub produz conjunto vazio (fail-closed por construção).",
+   "cadeia_transitiva": "partner_users lido diretamente com predicado user_id = auth.uid().",
+   "callsites": "src/pages/portal-parceiro/Financeiro*.",
+   "prova_individual": "Chamada anônima retorna vazio, não erro distinto; identidade de outro parceiro só vê o próprio financeiro.",
+   "fingerprint_vivo": {
+    "definition_md5": "d0c0bde8782e5af5e00fa1833649bb22",
+    "definition_len": 1190,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "s",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_portal_partner_financial(uuid)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "O partner_id recebido só é honrado quando o chamador é staff financeiro/administrativo; caso contrário é substituído pelo partner do próprio chamador antes da leitura.",
+   "cadeia_transitiva": "has_role (SECDEF stable, search_path=public) e leitura de partner_users com predicado user_id = auth.uid(); sem SQL dinâmico.",
+   "callsites": "src/pages/financeiro/ e portal do parceiro.",
+   "prova_individual": "Parceiro que informa partner_id alheio recebe apenas os próprios dados — sem BOLA e sem erro que diferencie a existência do partner alvo.",
+   "fingerprint_vivo": {
+    "definition_md5": "5590c0f07c29f79e5eed35bbe10e8ab5",
+    "definition_len": 1759,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "s",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_preparar_notificacoes_alertas()": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Aceita apenas service_role (execução interna/cron) ou administrador/gestor autenticado; qualquer outra identidade falha fechado antes de ler alertas e antes do INSERT.",
+   "cadeia_transitiva": "has_role; leitura de configuracoes de alerta e escrita idempotente por chave.",
+   "callsites": "supabase/functions/enviar-alertas-notificacoes e cron interno.",
+   "prova_individual": "Identidade authenticated sem papel: 42501 antes de qualquer escrita; execução repetida não duplica notificações (chave idempotente). Transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "4ea6320c70090054e8f0550442cfedf8",
+    "definition_len": 5779,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_preview_administrative_broadcast_count(app_role)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "administrador/gestor exigido antes de contar destinatários; retorna apenas agregados, nunca identidades.",
+   "cadeia_transitiva": "has_role; leitura de user_roles e regras de entrega.",
+   "callsites": "src/pages/configuracoes/ (comunicados administrativos).",
+   "prova_individual": "Identidade sem papel: 42501. Papel inexistente e papel sem destinatários retornam a mesma forma agregada.",
+   "fingerprint_vivo": {
+    "definition_md5": "a071b67abc49844e43e079dfd83089fd",
+    "definition_len": 1537,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_programar_os_v1(uuid,text,date)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Autenticação e papel operacional verificados antes do SELECT ... FOR UPDATE da OS; a transição de status é validada contra a escada de ciclo de vida.",
+   "cadeia_transitiva": "has_role; funções de escada de status; escrita em eventos da OS.",
+   "callsites": "src/hooks/useEsteiraLaboratory.ts e src/pages/operacao/CockpitLaboratory.tsx.",
+   "prova_individual": "Identidade sem papel: 42501 antes de ler a OS. search_path é fixo em 'public, pg_temp' — pg_temp em ÚLTIMA posição não permite sombreamento de objetos de public, portanto não é vetor de search_path hijacking; mantido como está para não alterar comportamento fora do escopo da correção.",
+   "fingerprint_vivo": {
+    "definition_md5": "3e7479b964f0927a36442770c25e8562",
+    "definition_len": 3795,
+    "proconfig": "search_path=public, pg_temp",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_publish_communication_event(text,text,uuid,jsonb,text)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Exige administrador antes de validar evento/fonte e antes do INSERT idempotente; a expansão de destinatários é server-side.",
+   "cadeia_transitiva": "has_role; helpers de expansão de destinatários do módulo de comunicação, todos com search_path fixo.",
+   "callsites": "src/features/comunicacao/ e supabase/functions/_shared/comunicacao/.",
+   "prova_individual": "Identidade sem papel: 42501 antes de qualquer leitura de fonte. Mensagens que diferenciam fonte inexistente só são alcançáveis por administrador, cujo escopo já é global — não há oráculo entre tenants. Escrita idempotente por chave; transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "f6fb2a73c3fbe4fae1c61b72a1d046ee",
+    "definition_len": 5764,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_publish_communication_event_v2(text,text,uuid,jsonb,text)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Mesma guarda administrativa da v1, com expansão delegada a _comunicacao_expand_event e inserção idempotente por chave.",
+   "cadeia_transitiva": "has_role; _comunicacao_expand_event (SECDEF, search_path=public, sem SQL dinâmico).",
+   "callsites": "src/features/comunicacao/ e triggers do módulo de comunicação.",
+   "prova_individual": "Identidade sem papel: 42501. Reexecução com a mesma chave não duplica eventos. Transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "67c7469c89c06728c5d38158fe341a31",
+    "definition_len": 4515,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_rastreio_produto_interno(uuid)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Autentica, bloqueia cliente_produtor e chama can_user_access_produto_etiqueta(p_etiqueta_id) ANTES do SELECT da etiqueta.",
+   "cadeia_transitiva": "can_user_access_produto_etiqueta lido integralmente: retorna false para etiqueta inexistente E para etiqueta alheia, e true para perfis internos independentemente da existência.",
+   "callsites": "src/pages/public/RastrearProduto.tsx (via rota interna) e telas de etiquetas.",
+   "prova_individual": "Para identidade sem escopo, etiqueta real alheia e UUID inexistente produzem exatamente 'Sem permissão para rastreio interno' — indistinguíveis. 'Etiqueta não encontrada' só é alcançável por staff interno de escopo global.",
+   "fingerprint_vivo": {
+    "definition_md5": "91091b79658e14567d6f8d412d2e2022",
+    "definition_len": 2550,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_reabrir_visita(uuid,integer,text)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Exige motivo não vazio e papel administrador ANTES de _visita_lock_and_check; só então trava, valida versão, atualiza status e registra auditoria.",
+   "cadeia_transitiva": "_visita_lock_and_check (SECDEF, search_path=public) e has_role.",
+   "callsites": "src/pages/app/wizard/ e telas de aprovação de visita.",
+   "prova_individual": "Não administrador: 42501 antes de qualquer leitura — visita inexistente e visita alheia são indistinguíveis. Escrita em transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "beb9990680797a05aed7499d0054a445",
+    "definition_len": 1255,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_realizar_checkin_visita(uuid,uuid,tipo_checkin,numeric,numeric,numeric,text,text,timestamp with time zone,uuid,uuid,uuid,uuid,text)": {
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "guarda_textual": "ANTES da correção o corpo chamava _assert_visita_editavel(p_registro_id) sem gate próprio: registro inexistente devolvia 'registro_nao_encontrado' (P0002), registro alheio editável devolvia 'sem_permissao' (42501) e registro alheio já fechado devolvia 'visita_nao_editavel' (42501) — três respostas distintas que enumeram registros_consultor e vazam o status de visitas de terceiros. O forward 20261017000000 insere _visita_scope_ok(v_uid, p_registro_id) imediatamente antes daquela chamada, com o MESMO erro já usado pela função ('forbidden_visita_nao_atribuido', 42501). Assinatura, retorno, idempotência por client_uuid e regra de negócio preservados.",
+   "cadeia_transitiva": "Cadeia transitiva lida: public._visita_scope_ok(uuid,uuid) [novo, SECDEF, search_path=public, EXECUTE apenas service_role] = can_manage_technical_visit OR is_active_visit_participant OR registros_consultor.created_by/consultor_responsavel/consultor_profile_id = uid; can_manage_technical_visit = fn_authz_uid_scope_ok AND (has_role administrador OR is_visit_responsible OR is_visit_org_manager); is_active_visit_participant lê technical_visit_assignments com is_active=true; _assert_visita_editavel valida status por is_technical_visit_editable_status. Todos com search_path fixo e sem SQL dinâmico.",
+   "callsites": "src/hooks/useFluxoVisitaTecnica.ts:117, src/hooks/useOfflineSync.ts:443, src/lib/offlineCheckinQueue.ts:67 — nenhum depende do código de erro anterior.",
+   "prova_individual": "Prova no staging, identidade authenticated sem papel, transação revertida: registro real alheio → 42501 forbidden_visita_nao_atribuido; UUID inexistente → 42501 forbidden_visita_nao_atribuido. Indistinguíveis. Resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "3aa7f5ef96de3e4c4e3b1d5aa73ca16c",
+    "definition_len": 6737,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_realizar_checkout_visita(uuid,uuid,numeric,numeric,numeric,text,text,timestamp with time zone,text)": {
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "guarda_textual": "Mesmo padrão do check-in: _assert_visita_editavel era alcançado sem gate próprio, diferenciando inexistente, alheio editável e alheio fechado. O forward insere _visita_scope_ok imediatamente antes, com o erro já existente 'forbidden_visita_nao_atribuido' (42501).",
+   "cadeia_transitiva": "Cadeia transitiva lida: public._visita_scope_ok(uuid,uuid) [novo, SECDEF, search_path=public, EXECUTE apenas service_role] = can_manage_technical_visit OR is_active_visit_participant OR registros_consultor.created_by/consultor_responsavel/consultor_profile_id = uid; can_manage_technical_visit = fn_authz_uid_scope_ok AND (has_role administrador OR is_visit_responsible OR is_visit_org_manager); is_active_visit_participant lê technical_visit_assignments com is_active=true; _assert_visita_editavel valida status por is_technical_visit_editable_status. Todos com search_path fixo e sem SQL dinâmico.",
+   "callsites": "src/hooks/useFluxoVisitaTecnica.ts:503, src/hooks/useOfflineSync.ts:443, src/components/visita/PresencaCheckoutButton.tsx.",
+   "prova_individual": "Prova no staging, identidade sem papel, transação revertida: registro real alheio e UUID inexistente produzem resposta idêntica. Indistinguíveis. Resíduo zero. Registrada pendência funcional independente (predicado 'client_uuid = p_client_uuid::text' contra coluna uuid, que faz a função falhar fechada antes do gate): não é exposição e está fora do escopo de correção da L6.",
+   "fingerprint_vivo": {
+    "definition_md5": "759eabc40273aa815319239cf23777a5",
+    "definition_len": 5446,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_registrar_ocorrencia_entrega(uuid,jsonb)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Autentica e exige is_delivery_staff(v_uid) antes de consultar entregas e antes do INSERT de ocorrência e auditoria.",
+   "cadeia_transitiva": "is_delivery_staff = fn_authz_uid_scope_ok AND (administrador/gestor/administrativo/producao/operador_onfarm/aplicador).",
+   "callsites": "src/pages/app/entregas/ (registro de ocorrência).",
+   "prova_individual": "Identidade sem papel: 42501 antes de ler a entrega. A diferenciação de entrega inexistente só existe para staff de logística, cujo escopo já cobre todas as entregas. Escrita em transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "4ab44031359ba45091b5a94087389b67",
+    "definition_len": 1257,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_remove_visit_technician(uuid,uuid,text)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "can_manage_technical_visit é exigido antes de verificar ciclo aberto e antes do UPDATE da atribuição.",
+   "cadeia_transitiva": "can_manage_technical_visit e leitura de technical_visit_assignments.",
+   "callsites": "src/pages/app/wizard/ (equipe da visita).",
+   "prova_individual": "Identidade sem escopo: 42501 idêntico para visita alheia e visita inexistente; 'atribuicao_inexistente' só ocorre depois de autorizado. Transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "6f301158f1c4c0e2cc12744a7885ed36",
+    "definition_len": 2238,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_resolve_commercial_prices(jsonb,uuid,date,jsonb)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Autentica, exige papel comercial/staff ou parceiro válido e resolve o partner do chamador antes de acionar o motor de preços; produtor direto e partner ambíguo falham fechados.",
+   "cadeia_transitiva": "get_user_partner_id(), has_role, fn_catalogo_preco_canonico e helpers de precedência comercial, todos com search_path fixo.",
+   "callsites": "src/hooks/useSimulateB2BPaymentPlan.ts e telas de carrinho B2B.",
+   "prova_individual": "Parceiro de outro tenant não obtém preços de terceiros; identidade sem papel recebe 42501 antes de qualquer leitura de tabela de preços.",
+   "fingerprint_vivo": {
+    "definition_md5": "fc740b48a5c31fbbda2047ea9cde9363",
+    "definition_len": 2518,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "s",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_resumo_atendimentos_tecnicos_v1()": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Autentica e exige administrador/gestor ou papel técnico; o agregado é calculado somente sobre visitas aprovadas por can_view_technical_visit.",
+   "cadeia_transitiva": "can_view_technical_visit = fn_authz_uid_scope_ok AND (administrador OR responsável OR participante ativo OR gestor da organização) e has_role; ambos SECDEF com search_path fixo.",
+   "callsites": "src/pages/app/ (resumo de atendimentos).",
+   "prova_individual": "Identidade sem escopo recebe agregado zerado, sem diferença entre ausência de dados e dados alheios.",
+   "fingerprint_vivo": {
+    "definition_md5": "3baab99656b60c39c81db562ff872d0f",
+    "definition_len": 2484,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "s",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)": {
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "guarda_textual": "ANTES da correção o corpo executava 'SELECT * INTO v_registro FROM registros_consultor WHERE id = ...' e disparava 'registro_nao_encontrado' (P0002) ANTES de calcular admin/created_by/escopo de cliente, enquanto registro alheio existente disparava 'sem_permissao' (42501) — oráculo de existência. O forward 20261017000000 calcula a autorização primeiro e só revela 'registro_nao_encontrado' a quem já tem escopo (administrador), preservando a UX legítima.",
+   "cadeia_transitiva": "has_role(administrador) e has_active_user_cliente_access(uid, cliente_id, ARRAY['execute','manage']) — ambos SECDEF, search_path=public, fail-closed em NULL.",
+   "callsites": "src/pages/app/wizard/WizardCampoStep.tsx:192 e src/hooks/useOfflineSync.ts:559 — nenhum depende do código de erro anterior.",
+   "prova_individual": "Prova no staging, identidade authenticated sem papel, transação revertida: registro real alheio → 42501 sem_permissao; UUID inexistente → 42501 sem_permissao. Indistinguíveis. Resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "dc1ff655ba3bf156d38817fbf0c073dd",
+    "definition_len": 3547,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_set_communication_template_metadata(uuid,text,text,jsonb,text)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "administrador exigido antes do lock do template e antes da validação/gravação de metadados.",
+   "cadeia_transitiva": "has_role; leitura e lock de comunicacao_templates.",
+   "callsites": "src/pages/configuracoes/ (módulo de comunicação).",
+   "prova_individual": "Identidade sem papel: 42501 antes de tocar o template. Transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "bec407fa9047c217f25452b1f048648b",
+    "definition_len": 4975,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_update_communication_template(uuid,text,text,text,jsonb)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "administrador exigido antes do lock/UPDATE, com regra de imutabilidade de status preservada.",
+   "cadeia_transitiva": "has_role (SECDEF stable, search_path=public); lock e UPDATE em comunicacao_templates, sem SQL dinâmico.",
+   "callsites": "src/pages/configuracoes/ (módulo de comunicação).",
+   "prova_individual": "Identidade sem papel: 42501. Template inexistente só é diferenciado para administrador, de escopo global. Transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "17d5eb7ba39448dae4f257de25e74dd2",
+    "definition_len": 1261,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_upsert_communication_rule(uuid,text,app_role,text,comunicacao_canal,text,integer,jsonb,integer,boolean,integer)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "administrador exigido antes de validar evento/template e antes do INSERT/UPDATE da regra.",
+   "cadeia_transitiva": "has_role; comunicacao_regras e comunicacao_templates.",
+   "callsites": "src/pages/configuracoes/ (regras de comunicação).",
+   "prova_individual": "Identidade sem papel: 42501 antes de qualquer escrita. Transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "29564c52c8207a61a5132f5a25509952",
+    "definition_len": 3538,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_upsert_diagnostico_visita(uuid,uuid,jsonb,integer)": {
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "guarda_textual": "ANTES da correção a função chamava PERFORM _assert_visita_editavel(p_registro_id) antes do seu próprio teste de escopo, expondo três respostas distintas (P0002 registro_nao_encontrado, 42501 sem_permissao, 42501 visita_nao_editavel) para quem não tem escopo algum. O forward 20261017000000 acrescenta o fail-closed explícito de sessão e o gate _visita_scope_ok imediatamente antes daquela chamada, reutilizando o erro já existente 'forbidden_visita' (42501).",
+   "cadeia_transitiva": "Cadeia transitiva lida: public._visita_scope_ok(uuid,uuid) [novo, SECDEF, search_path=public, EXECUTE apenas service_role] = can_manage_technical_visit OR is_active_visit_participant OR registros_consultor.created_by/consultor_responsavel/consultor_profile_id = uid; can_manage_technical_visit = fn_authz_uid_scope_ok AND (has_role administrador OR is_visit_responsible OR is_visit_org_manager); is_active_visit_participant lê technical_visit_assignments com is_active=true; _assert_visita_editavel valida status por is_technical_visit_editable_status. Todos com search_path fixo e sem SQL dinâmico.",
+   "callsites": "src/pages/app/wizard/WizardDiagnosticoStep.tsx:138 e src/hooks/useOfflineSync.ts:621 — nenhum depende do código de erro anterior.",
+   "prova_individual": "Prova no staging, identidade authenticated sem papel, transação revertida: registro real alheio → 42501 forbidden_visita; UUID inexistente → 42501 forbidden_visita. Indistinguíveis. Resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "a20fa0ebeeac12595aa065b0d067bf02",
+    "definition_len": 4565,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_upsert_recomendacao_visita(uuid,uuid,jsonb,integer)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Padrão de referência do domínio: autentica, calcula escopo (can_manage/participante) e só então chama _assert_visita_editavel, trava a visita e faz o upsert; inexistente e alheio já produziam o mesmo 42501.",
+   "cadeia_transitiva": "Cadeia transitiva lida: public._visita_scope_ok(uuid,uuid) [novo, SECDEF, search_path=public, EXECUTE apenas service_role] = can_manage_technical_visit OR is_active_visit_participant OR registros_consultor.created_by/consultor_responsavel/consultor_profile_id = uid; can_manage_technical_visit = fn_authz_uid_scope_ok AND (has_role administrador OR is_visit_responsible OR is_visit_org_manager); is_active_visit_participant lê technical_visit_assignments com is_active=true; _assert_visita_editavel valida status por is_technical_visit_editable_status. Todos com search_path fixo e sem SQL dinâmico.",
+   "callsites": "src/pages/app/wizard/ e src/hooks/useOfflineSync.ts.",
+   "prova_individual": "Prova no staging: registro alheio e UUID inexistente indistinguíveis, sem correção necessária. Corrida de idempotência tratada por captura de unique_violation. Transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "42f87a90cb7d1be324b43bb3867b3a28",
+    "definition_len": 5789,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "rpc_verify_communication_channel(uuid,uuid,comunicacao_canal,boolean,boolean)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "administrador exigido antes de gravar preferências de canal e o registro de consentimento.",
+   "cadeia_transitiva": "has_role; comunicacao_preferencias e auditoria de consentimento.",
+   "callsites": "src/pages/configuracoes/ e central de notificações.",
+   "prova_individual": "Identidade sem papel: 42501 antes de qualquer escrita. Transação revertida, resíduo zero.",
+   "fingerprint_vivo": {
+    "definition_md5": "ab44609c125b7c1157d03a13790851b4",
+    "definition_len": 2176,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  },
+  "simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": {
+   "classificacao": "AUTH_COMPROVADA",
+   "guarda_textual": "Autentica e exige administrador/financeiro/gestor OU parceiro B2B do mesmo partner ANTES de ler parceiro, plano e catálogo; técnico de parceiro e produtor falham fechados; a assinatura canônica do carrinho é calculada no servidor.",
+   "cadeia_transitiva": "get_user_partner_id(), has_role, rpc_resolve_commercial_prices e helpers de precedência comercial.",
+   "callsites": "src/hooks/useSimulateB2BPaymentPlan.ts:83.",
+   "prova_individual": "Parceiro alheio: 42501 antes de qualquer leitura, idêntico para partner inexistente; nenhuma condição financeira de terceiros é revelada. Função somente de leitura.",
+   "fingerprint_vivo": {
+    "definition_md5": "0bbd1c83652c1dd529192cf731708c02",
+    "definition_len": 7612,
+    "proconfig": "search_path=public",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "volatilidade": "v",
+    "owner": "postgres",
+    "security_definer": true
+   }
+  }
+ }
+}

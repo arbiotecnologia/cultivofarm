@@ -126,7 +126,7 @@ describe("H9-D-L5 — dossiê do lote de 30 assinaturas", () => {
     expect(dossie.ledger).toBe(672);
     expect(dossie.ultima_migration).toBe("20261016000000");
     expect(dossie.lote).toBe("H9-D-L5");
-    expect(resumo.ledger).toBe(672);
+    expect(resumo.ledger).toBe(673);
     expect(resumo.lotes_auditados).toContain("H9-D-L5");
     expect(resumo.forwards_aplicados).toContain("20261016000000");
   });
@@ -208,15 +208,16 @@ describe("H9-D-L5 — dossiê do lote de 30 assinaturas", () => {
       return acc;
     }, {});
     expect(cont.HERDADA_H9C).toBe(84);
-    expect(cont.AUTH_COMPROVADA).toBe(231);
-    expect(cont.EXPOSICAO_COMPROVADA_CORRIGIDA).toBe(26);
+    // totais acumulados após a L6 (a L5 encerrou em 231/26/4/31)
+    expect(cont.AUTH_COMPROVADA).toBe(257);
+    expect(cont.EXPOSICAO_COMPROVADA_CORRIGIDA).toBe(30);
     expect(cont.NAO_APLICAVEL).toBe(4);
-    expect(cont.PENDENTE_EVIDENCIA).toBe(31);
+    expect(cont.PENDENTE_EVIDENCIA).toBe(1);
     expect(resumo.por_classificacao).toEqual({
-      AUTH_COMPROVADA: 231,
-      EXPOSICAO_COMPROVADA_CORRIGIDA: 26,
+      AUTH_COMPROVADA: 257,
+      EXPOSICAO_COMPROVADA_CORRIGIDA: 30,
       NAO_APLICAVEL: 4,
-      PENDENTE_EVIDENCIA: 31,
+      PENDENTE_EVIDENCIA: 1,
     });
   });
 });
@@ -224,9 +225,9 @@ describe("H9-D-L5 — dossiê do lote de 30 assinaturas", () => {
 describe("H9-D-L5 — forward reversível 20261016000000", () => {
   const entry = manifest.entries.find((e) => e.version === "20261016000000");
 
-  it("está rastreado no manifesto de applied-forwards com ledger 672", () => {
-    expect(manifest.ledger_versoes).toBe(672);
-    expect(manifest.total_applied_forwards).toBe(12);
+  it("está rastreado no manifesto de applied-forwards com ledger 673", () => {
+    expect(manifest.ledger_versoes).toBe(673);
+    expect(manifest.total_applied_forwards).toBe(13);
     expect(manifest.entries).toHaveLength(manifest.total_applied_forwards);
     expect(entry).toBeTruthy();
     expect(entry!.registered_in_ledger).toBe(true);

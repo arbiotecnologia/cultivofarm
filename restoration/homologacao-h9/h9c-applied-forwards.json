@@ -3,8 +3,8 @@
  "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
  "ambiente": "staging ikaauvsflpmamgxmkhoq",
  "producao_proibida": "navfzbwgwzruipouyfnk",
- "ledger_versoes": 672,
- "total_applied_forwards": 12,
+ "ledger_versoes": 673,
+ "total_applied_forwards": 13,
  "entries": [
   {
    "version": "20261005000000",
@@ -321,6 +321,32 @@
     "fingerprint_rollback": "a712880703a25542aadd8db9aa5c038d",
     "ledger": "671 -> 672, ocorrencia unica",
     "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l5.json"
+   }
+  },
+  {
+   "version": "20261017000000",
+   "name": "h9dl6_authz_scoped_visit_writes_no_oracle_v1",
+   "fase": "H9-D-L6",
+   "path": "restoration/homologacao-h9/h9d-forwards/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1.sql",
+   "sha256": "2a8f83a629721c9e424f50022779274883cc7c3125678c2f6ae7e46a536509bc",
+   "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261017000000_h9dl6_authz_scoped_visit_writes_no_oracle_v1_rollback.sql",
+   "rollback_sha256": "c1177fac9995512abd7bdb6c488653df05aaf69a9d50d000efa376cd06364601",
+   "applied_to_staging": true,
+   "registered_in_ledger": true,
+   "required_in_promotion_bundle": true,
+   "repo_only_quarantined": false,
+   "outside_supabase_migrations": true,
+   "motivo_fora_da_pasta_padrao": "A plataforma bloqueia escrita direta em supabase/migrations/ desde a fase H9-C; o SQL exato aplicado esta versionado em restoration/homologacao-h9/h9d-forwards/ e registrado uma unica vez no ledger.",
+   "efeito": "Autorizacao de escopo antes de qualquer leitura da visita em rpc_realizar_checkin_visita, rpc_realizar_checkout_visita, rpc_upsert_diagnostico_visita e rpc_salvar_campo_visita, via novo helper public._visita_scope_ok(uuid,uuid), eliminando o oraculo de existencia e o vazamento de status de visitas de terceiros.",
+   "destructive": false,
+   "reversible": true,
+   "applied_at": "2026-09-10",
+   "evidence_refs": {
+    "prova_antes": "identidade sem escopo: inexistente => registro_nao_encontrado (P0002); alheio editavel => sem_permissao/forbidden_visita (42501); alheio fechado => visita_nao_editavel (42501)",
+    "prova_depois": "identidade sem escopo: real alheio e inexistente => sem_permissao (42501) em rpc_salvar_campo_visita, forbidden_visita (42501) em rpc_upsert_diagnostico_visita e forbidden_visita_nao_atribuido (42501) em check-in/checkout, identicos",
+    "acesso_legitimo": "dono/responsavel/participante/admin preservados: o helper e a uniao exata dos caminhos ja aceitos pelas 4 RPCs",
+    "ledger": "672 -> 673, ocorrencia unica",
+    "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l6.json"
    }
   }
  ]
