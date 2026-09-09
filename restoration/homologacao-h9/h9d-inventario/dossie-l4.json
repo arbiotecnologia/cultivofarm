@@ -1,11 +1,11 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
  "producao_proibida": "navfzbwgwzruipouyfnk",
- "ledger": 669,
+ "ledger": 670,
  "lote": "H9-D-L4",
  "total": 30,
  "commit_base": "eaa63c00eecabfc492ae21ba06782f882259f976",
- "forward_aplicado": "20261013000000_h9dl4_authz_visit_domain_gate_v1",
+ "forward_aplicado": "20261013000000_h9dl4_authz_visit_domain_gate_v1 + 20261014000000_h9dl4r_authz_scoped_delete_no_oracle_v1 (retificacao)",
  "fonte_hash_sql": "SELECT p.proname||'('||pg_catalog.oidvectortypes(p.proargtypes)||')' AS sig, md5(pg_get_functiondef(p.oid)) AS definition_md5, length(pg_get_functiondef(p.oid))::text AS definition_len, coalesce(p.proacl::text,'') AS acl, coalesce(p.proconfig::text,'') AS proconfig, p.provolatile::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prosecdef;",
  "fingerprint_forward": "d9cfffa0121c3704e0d39270d2dade29",
  "fingerprint_rollback": "c8f4b2c1720926f1d877b2df4a413bac",
@@ -369,36 +369,36 @@
    "observacao": "Blocos EXCEPTION WHEN OTHERS degradam para lista de indisponíveis sem vazar SQLERRM."
   },
   "rpc_delete_diagnostico_visita(uuid)": {
-   "definition_md5": "e3c521940131fcb55a9eb0bedbc04ac6",
-   "definition_len": 986,
+   "definition_md5": "a5246ad84fddf1645d8355f7308ce817",
+   "definition_len": 1566,
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
    "volatilidade": "VOLATILE",
-   "guarda_textual": "ANTES: nenhuma verificação própria; fazia SELECT do registro em visita_diagnosticos e só então delegava a _assert_visita_editavel. DEPOIS: auth.uid() NULL => 42501 e gate de capacidade (administrador/gestor/consultor_tecnico/tecnico_agronomo) ANTES da leitura; _assert_visita_editavel preservado",
+   "guarda_textual": "auth.uid() NULL => 42501; capacidade de dominio (administrador/gestor/consultor_tecnico/tecnico_agronomo) antes de qualquer leitura; resolucao do recurso em consulta unica escopada ao chamador (20261014000000).",
    "cadeia_transitiva": "_assert_visita_editavel -> can_manage_technical_visit, is_active_visit_participant, is_technical_visit_editable_status; visita_diagnosticos",
    "null_fail_closed": "ANTES: sem sessão retornava silenciosamente. DEPOIS: sem sessão => 42501",
-   "tenant_bola_idor": "Oráculo de existência comprovado: cliente_produtor recebia retorno silencioso para UUID inexistente e 42501 'sem_permissao' para diagnóstico real de terceiro, permitindo enumerar IDs válidos. Corrigido: resposta 42501 uniforme",
+   "tenant_bola_idor": "Sem oraculo de existencia: UUID inexistente e UUID alheio produzem exatamente void para usuario de dominio e exatamente 42501 para usuario sem papel. Delete legitimo do dono/admin preservado.",
    "sql_dinamico": "nenhum",
    "callsites": "src/hooks/useOfflineSync.ts:612; src/pages/app/wizard/WizardDiagnosticoStep.tsx:160",
-   "prova_dinamica": "ANTES: inexistente => sucesso silencioso; real alheio => 42501; sem JWT => sucesso silencioso. DEPOIS: os três => 42501 'sem_permissao'. Admin: inexistente => silencioso (idempotência preservada); diagnóstico real => exclusão legítima executada (transação revertida)",
+   "prova_dinamica": "{\"sem_papel (2a1ea60a-d266-4530-b186-760779790431)\": \"inexistente => 42501 sem_permissao; alheio real => 42501 sem_permissao (uniforme, sem oraculo)\", \"dominio_alheio (2767fb15-7f00-41d5-8360-622d6dea8de6, tecnico_agronomo)\": \"inexistente => void; diagnostico real alheio => void; recomendacao inexistente => void (indistinguiveis)\", \"dominio_proprio/admin (b5c2ebd4-7cdf-4647-a585-6ec49f1b583a, dono do registro rascunho)\": \"inexistente => void; diagnostico proprio real => delete legitimo executado (restantes=0 dentro da transacao)\", \"residuos\": \"apos ROLLBACK: visita_diagnosticos mantem 1 linha (estado original); zero fixtures criadas\"}",
    "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
-   "observacao": "Corrigido pelo forward 20261013000000 (ledger 668->669), somente homologação, rollback simétrico e fingerprint idêntico no ensaio. Contrato RETURNS void e callsites offline/wizard preservados. Adendo de auditoria independente reprovado no catálogo vivo com o UUID real b906cbf7-c7b1-4736-98c2-a5f281238068: real, inexistente e sessão sem JWT retornam agora 42501 'sem_permissao' de forma indistinguível; nenhum SELECT do recurso precede a autorização."
+   "observacao": "Corrigida em duas etapas: 20261013000000 (gate de capacidade) e 20261014000000 (retificacao — resolucao escopada, elimina enumeracao cross-tenant entre usuarios de dominio)."
   },
   "rpc_delete_recomendacao_visita(uuid)": {
-   "definition_md5": "1d2c13adce4713d10771944eefe04f49",
-   "definition_len": 1035,
+   "definition_md5": "d3f250c3eed59aed5220552d510efc79",
+   "definition_len": 1611,
    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
    "proconfig": "{search_path=public}",
    "volatilidade": "VOLATILE",
-   "guarda_textual": "ANTES: nenhuma verificação própria antes da leitura do registro. DEPOIS: auth.uid() NULL => 42501 e mesmo gate de capacidade antes da leitura; _assert_visita_editavel preservado",
+   "guarda_textual": "auth.uid() NULL => 42501; capacidade de dominio (administrador/gestor/consultor_tecnico/tecnico_agronomo) antes de qualquer leitura; resolucao do recurso em consulta unica escopada ao chamador (20261014000000).",
    "cadeia_transitiva": "_assert_visita_editavel e cadeia; registros_consultor_recomendacoes",
    "null_fail_closed": "ANTES: silencioso sem sessão. DEPOIS: 42501",
-   "tenant_bola_idor": "Mesmo oráculo de existência da RPC de diagnóstico, com a tabela de recomendações; defeito estruturalmente idêntico e determinístico",
+   "tenant_bola_idor": "Sem oraculo de existencia: UUID inexistente e UUID alheio produzem exatamente void para usuario de dominio e exatamente 42501 para usuario sem papel. Delete legitimo do dono/admin preservado.",
    "sql_dinamico": "nenhum",
    "callsites": "src/hooks/useOfflineSync.ts:664; src/pages/app/wizard/WizardRecomendacaoStep.tsx:192",
-   "prova_dinamica": "ANTES (cliente_produtor): inexistente => sucesso silencioso. DEPOIS: 42501 'sem_permissao'. Caminho legítimo de consultor/admin preservado",
+   "prova_dinamica": "{\"sem_papel (2a1ea60a-d266-4530-b186-760779790431)\": \"inexistente => 42501 sem_permissao; alheio real => 42501 sem_permissao (uniforme, sem oraculo)\", \"dominio_alheio (2767fb15-7f00-41d5-8360-622d6dea8de6, tecnico_agronomo)\": \"inexistente => void; diagnostico real alheio => void; recomendacao inexistente => void (indistinguiveis)\", \"dominio_proprio/admin (b5c2ebd4-7cdf-4647-a585-6ec49f1b583a, dono do registro rascunho)\": \"inexistente => void; diagnostico proprio real => delete legitimo executado (restantes=0 dentro da transacao)\", \"residuos\": \"apos ROLLBACK: visita_diagnosticos mantem 1 linha (estado original); zero fixtures criadas\"}",
    "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
-   "observacao": "Mesma migração 20261013000000; contrato e callsites preservados. Adendo de auditoria independente: sem recomendação real disponível para prova positiva, a correção foi aplicada por identidade estrutural com a RPC de diagnóstico; prova depois com UUID inexistente e sem JWT retorna 42501 'sem_permissao'."
+   "observacao": "Corrigida em duas etapas: 20261013000000 (gate de capacidade) e 20261014000000 (retificacao — resolucao escopada, elimina enumeracao cross-tenant entre usuarios de dominio)."
   },
   "rpc_desativar_bank_account(uuid,text)": {
    "definition_md5": "d39119ef2467dc90a5d9885deb35ca74",
@@ -496,5 +496,18 @@
    "classificacao": "AUTH_COMPROVADA",
    "observacao": "Cancelamento auditado com motivo."
   }
+ },
+ "retificacao_l4": {
+  "motivo": "O gate de capacidade do 20261013000000 fechou apenas usuarios SEM papel; entre usuarios de dominio (consultor/tecnico/gestor/admin) o oraculo de existencia persistia: inexistente => void, alheio real => 42501 sem_permissao em _assert_visita_editavel.",
+  "prova_antes": "identidade real 2767fb15-7f00-41d5-8360-622d6dea8de6 (tecnico_agronomo): rpc_delete_diagnostico_visita('00000000-0000-0000-0000-0000000000ff') => void; rpc_delete_diagnostico_visita('b906cbf7-c7b1-4736-98c2-a5f281238068') => ERROR 42501 sem_permissao (CONTEXT _assert_visita_editavel linha 18). BEGIN...ROLLBACK, nenhum dado alterado.",
+  "correcao": "Resolucao + autorizacao em UMA consulta escopada ao chamador (JOIN registros_consultor com can_manage_technical_visit / created_by / consultor_responsavel / is_active_visit_participant). Nada resolvido no escopo => RETURN void, identico para inexistente e alheio. Status nao editavel continua sinalizado apenas para recurso ja autorizado.",
+  "prova_depois": {
+   "sem_papel (2a1ea60a-d266-4530-b186-760779790431)": "inexistente => 42501 sem_permissao; alheio real => 42501 sem_permissao (uniforme, sem oraculo)",
+   "dominio_alheio (2767fb15-7f00-41d5-8360-622d6dea8de6, tecnico_agronomo)": "inexistente => void; diagnostico real alheio => void; recomendacao inexistente => void (indistinguiveis)",
+   "dominio_proprio/admin (b5c2ebd4-7cdf-4647-a585-6ec49f1b583a, dono do registro rascunho)": "inexistente => void; diagnostico proprio real => delete legitimo executado (restantes=0 dentro da transacao)",
+   "residuos": "apos ROLLBACK: visita_diagnosticos mantem 1 linha (estado original); zero fixtures criadas"
+  },
+  "ensaio_rollback_reaplicacao": "forward=91eba8cac7995ddec016c09b36db20d2, rollback=193e96fa580d4507034278fe97c9040b, reaplicacao=91eba8cac7995ddec016c09b36db20d2 (identico)",
+  "ledger": "669 -> 670, 20261014000000 registrada uma unica vez"
  }
 }
