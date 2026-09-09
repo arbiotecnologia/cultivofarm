@@ -20,10 +20,7 @@ BEGIN
   PERFORM public._assert_visita_editavel(v_diag.registro_id);
   DELETE FROM public.visita_diagnosticos WHERE id = p_id;
 END;
-$function$
-
-
-===FUNC=== rpc_delete_recomendacao_visita(uuid);
+$function$;
 
 CREATE OR REPLACE FUNCTION public.rpc_delete_recomendacao_visita(p_id uuid)
  RETURNS void
@@ -39,10 +36,7 @@ BEGIN
   PERFORM public._assert_visita_editavel(v_rec.registro_consultor_id);
   DELETE FROM public.registros_consultor_recomendacoes WHERE id = p_id;
 END;
-$function$
-
-
-===FUNC=== rpc_desativar_bank_account(uuid,text);
+$function$;
 
 CREATE OR REPLACE FUNCTION public.rpc_converter_visita_em_os(p_registro_id uuid, p_observacao text DEFAULT NULL::text)
  RETURNS jsonb
@@ -232,11 +226,7 @@ WHEN OTHERS THEN
   RETURN jsonb_build_object('success', false, 'message',
     'Erro ao converter visita em OS: ' || SQLERRM);
 END;
-$function$
-
-
-===FUNC=== rpc_create_communication_template(text,text,comunicacao_canal,text,text,jsonb);
-
+$function$;
 REVOKE ALL ON FUNCTION public.rpc_delete_diagnostico_visita(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.rpc_delete_recomendacao_visita(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.rpc_converter_visita_em_os(uuid, text) FROM PUBLIC;
