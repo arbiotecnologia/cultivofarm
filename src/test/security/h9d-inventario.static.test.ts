@@ -116,7 +116,7 @@ const GENERICA = [
 describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
   it("declara homologação e o ledger corrente", () => {
     expect(resumo.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(resumo.ledger).toBe(671);
+    expect(resumo.ledger).toBe(672);
   });
 
   it("separa universo bruto, herança da H9-C e escopo profundo", () => {
@@ -164,9 +164,10 @@ describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
     }
   });
 
-  it("registra as exposições comprovadas e corrigidas (H9-D1, L1, L2, L3 e L4)", () => {
+  it("registra as exposições comprovadas e corrigidas (H9-D1, L1, L2, L3, L4 e L5)", () => {
     const exp = rows.filter((r) => r.classificacao_h9d === "EXPOSICAO_COMPROVADA_CORRIGIDA");
-    expect(exp).toHaveLength(23);
+    expect(exp).toHaveLength(26);
+    expect(exp.filter((r) => r.evidencia.includes("20261016000000"))).toHaveLength(3);
     expect(exp.filter((r) => r.evidencia.includes("20261013000000"))).toHaveLength(3);
     expect(exp.filter((r) => r.evidencia.includes("20261014000000"))).toHaveLength(2);
     expect(exp.filter((r) => r.evidencia.includes("20261008000000"))).toHaveLength(12);

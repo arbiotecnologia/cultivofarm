@@ -3,8 +3,8 @@
  "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
  "ambiente": "staging ikaauvsflpmamgxmkhoq",
  "producao_proibida": "navfzbwgwzruipouyfnk",
- "ledger_versoes": 671,
- "total_applied_forwards": 11,
+ "ledger_versoes": 672,
+ "total_applied_forwards": 12,
  "entries": [
   {
    "version": "20261005000000",
@@ -294,6 +294,34 @@
    "destructive": false,
    "reversible": true,
    "applied_at": "2026-09-09"
+  },
+  {
+   "version": "20261016000000",
+   "name": "h9dl5_authz_scoped_visit_reads_no_oracle_v1",
+   "fase": "H9-D-L5",
+   "path": "restoration/homologacao-h9/h9d-forwards/20261016000000_h9dl5_authz_scoped_visit_reads_no_oracle_v1.sql",
+   "sha256": "9021543a537943735bb2a4dbf8691fd133d5a78a12ac68da549bc59f2a7afc33",
+   "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261016000000_h9dl5_authz_scoped_visit_reads_no_oracle_v1_rollback.sql",
+   "rollback_sha256": "92cb5d129d0e5f2fc06208c180416c1c4b5f6a6221558f2c16d43f984b4b1741",
+   "applied_to_staging": true,
+   "registered_in_ledger": true,
+   "required_in_promotion_bundle": true,
+   "repo_only_quarantined": false,
+   "outside_supabase_migrations": true,
+   "motivo_fora_da_pasta_padrao": "A plataforma bloqueia escrita direta em supabase/migrations/ desde a fase H9-C; o SQL exato aplicado esta versionado em restoration/homologacao-h9/h9d-forwards/ e registrado uma unica vez no ledger.",
+   "efeito": "Resolucao e autorizacao em consulta unica escopada ao chamador em rpc_enviar_visita_aprovacao(uuid,integer), rpc_get_visita_workspace(uuid) e rpc_get_my_visit_by_client_uuid(uuid), eliminando o oraculo de existencia (registro inexistente e registro alheio passam a produzir resposta identica).",
+   "destructive": false,
+   "reversible": true,
+   "applied_at": "2026-09-09",
+   "evidence_refs": {
+    "prova_antes": "identidade sem escopo: real => sem_permissao / forbidden_visita / forbidden; inexistente => registro_nao_encontrado / registro_inexistente / not_found",
+    "prova_depois": "identidade sem escopo (aplicador): real e inexistente => sem_permissao (42501), forbidden_visita (42501) e {ok:false,error:not_found} identicos",
+    "acesso_legitimo": "dono/consultor responsavel continua lendo o workspace e operando a transicao valida (ensaio em transacao revertida)",
+    "fingerprint_forward": "a3dc5f924e11096ee29e542133482975",
+    "fingerprint_rollback": "a712880703a25542aadd8db9aa5c038d",
+    "ledger": "671 -> 672, ocorrencia unica",
+    "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l5.json"
+   }
   }
  ]
 }

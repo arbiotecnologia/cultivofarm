@@ -1,0 +1,284 @@
+{
+ "lote": "H9-D-L5",
+ "ambiente": "ikaauvsflpmamgxmkhoq",
+ "producao_proibida": "navfzbwgwzruipouyfnk",
+ "commit_base": "c66acbb2168e4f5837081ca2f3b89e82eaeaf40f",
+ "forward_aplicado": "20261016000000_h9dl5_authz_scoped_visit_reads_no_oracle_v1 (aplicado uma unica vez; ledger 671 -> 672)",
+ "fingerprint_rollback": "a712880703a25542aadd8db9aa5c038d",
+ "metodo": "Leitura integral de pg_get_functiondef das 30 assinaturas e dos helpers transitivos no catalogo vivo da homologacao; ACL/owner/proconfig/volatilidade lidos do catalogo; callsites mapeados por varredura em src/ e supabase/functions; provas dinamicas no staging com identidades sem JWT, authenticated sem papel, perfil de dominio alheio e dono/admin, sempre em transacao revertida quando ha escrita. Regex serviu apenas como triagem.",
+ "assinaturas": {
+  "rpc_entrega_gerar_termo_v1(uuid,text)": {
+   "guarda_textual": "Corpo lido: v_uid := auth.uid(); `IF v_uid IS NULL THEN RAISE sessao_invalida` e `IF NOT is_delivery_staff(v_uid) THEN RAISE sem_permissao` precedem a leitura da entrega e a geracao do termo.",
+   "cadeia_transitiva": "public.is_delivery_staff(uuid) lido integralmente: has_role administrador/gestor/logistica/producao conforme matriz de entrega; SECURITY DEFINER, search_path fixo, false para uid NULL.",
+   "null_fail_closed": "Sessao ausente aborta antes de tocar entregas; termo ja assinado tambem aborta (termo_ja_assinado), preservando imutabilidade.",
+   "tenant_bola_idor": "Sem BOLA: apenas staff de entrega opera; o identificador da entrega nao concede acesso por si so. Prova no staging: identidade sem papel recebe sem_permissao antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/components/entregas/TermoEntregaPanel.tsx e supabase/functions/entrega-runtime-harness/index.ts.",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_entrega_reconciliar_v1(uuid,text)": {
+   "guarda_textual": "Corpo lido: guarda de sessao (42501) e is_delivery_staff (42501) antes de qualquer SELECT; em seguida idempotency_key obrigatoria e validacao de status/conferencia.",
+   "cadeia_transitiva": "public.is_delivery_staff(uuid) lido integralmente: has_role administrador/gestor/logistica/producao conforme matriz de entrega; SECURITY DEFINER, search_path fixo, false para uid NULL.",
+   "null_fail_closed": "uid NULL e perfil sem permissao abortam com insufficient_privilege; conferencia ausente/pendente bloqueia a reconciliacao.",
+   "tenant_bola_idor": "Sem BOLA: escrita restrita a staff; idempotencia com deteccao de payload divergente (idempotency_payload_mismatch) impede replay e concorrencia dupla. Prova no staging com transacao revertida.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "supabase/functions/entrega-runtime-harness/index.ts (harness de homologacao) e fluxo de conferencia de entregas.",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_entrega_reentrega_saldo_v1(uuid,text)": {
+   "guarda_textual": "Corpo lido: sessao e is_delivery_staff verificados (ERRCODE insufficient_privilege) antes de ler a entrega; exige entrega ja reconciliada e saldo recusado existente.",
+   "cadeia_transitiva": "public.is_delivery_staff(uuid) lido integralmente: has_role administrador/gestor/logistica/producao conforme matriz de entrega; SECURITY DEFINER, search_path fixo, false para uid NULL.",
+   "null_fail_closed": "Sem sessao, sem papel, entrega inexistente, nao reconciliada ou sem saldo => excecao; nenhum caminho gera saldo sem validacao.",
+   "tenant_bola_idor": "Sem BOLA: operacao de staff; idempotency_key obrigatoria evita duplicidade de reentrega. Prova no staging: sem papel => sem_permissao.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "supabase/functions/entrega-runtime-harness/index.ts e fluxo de reentrega no modulo de entregas.",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_enviar_visita_aprovacao(uuid,integer)": {
+   "guarda_textual": "Corpo vivo lido: uid NULL => 42501; resolucao e autorizacao em CONSULTA UNICA ESCOPADA (admin OR created_by OR consultor_responsavel OR has_active_user_cliente_access) com FOR UPDATE; registro inexistente e registro alheio caem no mesmo `sem_permissao` 42501.",
+   "cadeia_transitiva": "has_role e has_active_user_cliente_access (auditada no L3) na cadeia; ambas SECURITY DEFINER com search_path fixo e fail-closed.",
+   "null_fail_closed": "uid NULL, registro fora do escopo, transicao invalida e version_conflict abortam sem escrita.",
+   "tenant_bola_idor": "Sem oraculo de existencia: prova no staging com identidade sem escopo (aplicador) => 'sem_permissao' identico para UUID real e inexistente. Antes da correcao, real => sem_permissao e inexistente => registro_nao_encontrado (P0002).",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useFluxoVisitaTecnica.ts e src/pages/app/wizard/WizardRevisaoStep.tsx.",
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "observacao": "Exposicao comprovada (oraculo de existencia) corrigida pelo forward reversivel 20261016000000_h9dl5_authz_scoped_visit_reads_no_oracle_v1, aplicado uma unica vez na homologacao (ledger 671 -> 672)."
+  },
+  "rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb)": {
+   "guarda_textual": "Corpo lido: validacao sintatica da acao, depois `IF auth.uid() IS NULL THEN ESTQ_NAO_AUTENTICADO` e `IF NOT <perfil autorizado> THEN ESTQ_SEM_PERMISSAO` antes de qualquer leitura ou escrita de item de estoque.",
+   "cadeia_transitiva": "Cadeia com has_role (administrador/gestor/producao/operador) e helpers de escopo do motor de estoque; todos SECURITY DEFINER com search_path fixo.",
+   "null_fail_closed": "Acao invalida, sessao ausente, perfil nao autorizado, item inexistente, quantidade nao positiva, status invalido e saldo insuficiente abortam a operacao.",
+   "tenant_bola_idor": "Sem BOLA: a operacao exige perfil de estoque; idempotency_key com deteccao de conflito de payload garante concorrencia deterministica. Prova no staging: com acao valida, identidade sem papel recebe ESTQ_SEM_PERMISSAO.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/lib/estoque/motorEstoque.ts e suites src/test/estoque/*.test.ts.",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_alertas_prioridades(jsonb,integer)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoAlertasPrioridades.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_alertas_resumo(jsonb)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoAlertasResumo.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_cliente_detalhe(uuid,jsonb)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoClienteDetalhe.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_clientes_ranking(jsonb,integer)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoClientesRanking.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_clientes_resumo(jsonb)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoClientesResumo.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_fazenda_detalhe(uuid,jsonb)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoClienteDetalhe.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_financeiro_ranking_clientes(jsonb,integer)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoFinanceiroRanking.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_financeiro_resumo(jsonb)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoFinanceiroResumo.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_gargalos(jsonb,integer)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoGargalos.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_listar_relatorios(jsonb)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoRelatorios.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_plano_acao(jsonb,integer)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoPlanoAcao.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_responsaveis_pendencias(jsonb,integer)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoResponsaveisPendencias.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_resumo_geral(jsonb)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoResumo.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_executivo_timeline_operacional(jsonb,integer)": {
+   "guarda_textual": "Corpo lido integralmente: v_uid := auth.uid() e bloqueio `IF v_uid IS NULL OR NOT public.is_executivo(v_uid) THEN RAISE EXCEPTION ... ERRCODE 42501` como primeiro statement executavel, antes de qualquer SELECT em tabela de negocio.",
+   "cadeia_transitiva": "public.is_executivo(uuid) lido integralmente: exige has_role administrador OU gestor; SECURITY DEFINER com search_path fixo; retorna false para uid NULL, portanto fail-closed na cadeia.",
+   "null_fail_closed": "uid NULL cai no mesmo RAISE 42501; nenhum ramo retorna dados quando a guarda falha (fail-closed).",
+   "tenant_bola_idor": "Escopo interno global e intencional para administrador/gestor do Portal Executivo; filtros jsonb do chamador restringem periodo/limite mas nunca ampliam alem do escopo interno ja autorizado — nao ha parametro que troque de tenant. Prova no staging: identidade sem papel recebe 42501 antes de qualquer leitura.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useExecutivoTimeline.ts (Portal Executivo, leitura agregada; sem uso em Edge Function).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_fiscal_homologation_readiness()": {
+   "guarda_textual": "Corpo lido: uid NULL => FISCAL_FORBIDDEN 42501; em seguida has_role administrador/gestor/financeiro consolidado em v_authorized, com FISCAL_FORBIDDEN antes de qualquer leitura fiscal.",
+   "cadeia_transitiva": "has_role SECURITY DEFINER; leitura restrita a metadados de prontidao fiscal, sem exposicao de certificado ou segredo.",
+   "null_fail_closed": "Sem sessao ou sem papel financeiro/gestao => 42501; nenhum ramo retorna prontidao parcial.",
+   "tenant_bola_idor": "Sem BOLA: funcao sem parametro de recurso; nao ha escopo manipulavel pelo chamador.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useFiscalHomologationReadiness.ts (painel fiscal interno).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_fiscal_item_readiness(text,uuid)": {
+   "guarda_textual": "Corpo lido: bloqueio unico combinando uid NULL e ausencia de has_role administrador/gestor/financeiro => FISCAL_FORBIDDEN 42501, antes de resolver o item; escopo invalido => FISCAL_INVALID_SCOPE.",
+   "cadeia_transitiva": "has_role SECURITY DEFINER com search_path 'public, pg_temp'; leitura de readiness fiscal sem dados de certificado.",
+   "null_fail_closed": "Sessao ausente, perfil nao autorizado e escopo desconhecido abortam antes da leitura do item.",
+   "tenant_bola_idor": "Sem BOLA: o par (tipo,item) so e resolvido apos a autorizacao por papel fiscal interno; a funcao nao possui tenant por cliente.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "Sem callsite direto no frontend: uso administrativo/servidor a partir do motor fiscal; ACL restrita a authenticated e service_role.",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_fiscal_sefaz_transmission_status_v1(uuid)": {
+   "guarda_textual": "Corpo lido: primeiro statement e `IF NOT public.fn_fiscal_can_read_internal(auth.uid()) THEN RAISE FISCAL_FORBIDDEN`, antes de qualquer SELECT de transmissao.",
+   "cadeia_transitiva": "fn_fiscal_can_read_internal(uuid) lido integralmente: exige papel interno fiscal (administrador/gestor/financeiro) e retorna false para uid NULL.",
+   "null_fail_closed": "uid NULL propaga false no helper e cai no FISCAL_FORBIDDEN; nenhum status vaza sem papel.",
+   "tenant_bola_idor": "Sem BOLA: leitura fiscal interna; o id de transmissao nao concede acesso isoladamente. Prova no staging: sem papel => FISCAL_FORBIDDEN.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useFiscalSefazTransmissions.ts (monitor de transmissoes).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_fiscal_xml_status_v1(uuid)": {
+   "guarda_textual": "Corpo lido: guarda fn_fiscal_can_read_internal(auth.uid()) como primeiro statement, com FISCAL_FORBIDDEN explicito antes de ler fiscal_xml_runs.",
+   "cadeia_transitiva": "fn_fiscal_can_read_internal(uuid) SECURITY DEFINER, search_path fixo, fail-closed para uid NULL.",
+   "null_fail_closed": "Sem papel interno nao ha retorno parcial nem contagem; excecao imediata.",
+   "tenant_bola_idor": "Sem BOLA: identificador de execucao so e resolvido apos autorizacao. Prova no staging: sem papel => FISCAL_FORBIDDEN.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useFiscalXmlEngine.ts (execucoes de XML da NF-e).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_force_checkout_visita(uuid,uuid,text)": {
+   "guarda_textual": "Corpo lido: uid NULL => 42501; motivo obrigatorio => 22023; autorizacao `has_role administrador OR can_manage_technical_visit(v_uid, p_registro_id)` com forbidden_force_checkout 42501 antes de encerrar ciclo.",
+   "cadeia_transitiva": "can_manage_technical_visit(uuid,uuid) auditada no lote L2 (AUTH_COMPROVADA): resolve responsavel, equipe ativa e escopo do cliente; SECURITY DEFINER com search_path fixo.",
+   "null_fail_closed": "Sem sessao, sem motivo, sem permissao ou sem ciclo aberto => excecao; nenhum checkout silencioso.",
+   "tenant_bola_idor": "Sem BOLA: a autorizacao e por recurso (registro da visita), nao apenas por papel; auditoria registra o motivo. Prova no staging: sem papel => forbidden_force_checkout.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "Sem callsite direto no frontend: acao administrativa de suporte; ACL restrita a authenticated (REVOKE de PUBLIC/anon na migration de origem).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_gerar_etiqueta_produto(jsonb)": {
+   "guarda_textual": "Corpo lido: `IF v_uid IS NULL THEN RAISE 'Nao autenticado'` e verificacao de has_role administrador/gestor/producao/operador_onfarm antes de resolver embalagem, envase e lote.",
+   "cadeia_transitiva": "has_role(uuid,app_role) SECURITY DEFINER com search_path fixo; consulta user_roles em tabela dedicada, sem papel no perfil.",
+   "null_fail_closed": "Lote ausente/inexistente, embalagem inexistente e lote sem CQ aprovado bloqueiam a emissao (label_cq_not_approved).",
+   "tenant_bola_idor": "Sem BOLA: geracao restrita a perfis de producao; vinculo obrigatorio ao lote e ao status de qualidade. Prova no staging: sem papel => 'Sem permissao para gerar etiqueta'.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/components/etiquetas/EtiquetaProdutoActions.tsx e src/components/estoque/GerarEtiquetaEmbalagemDialog.tsx.",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_gerar_formulario_entrega(uuid)": {
+   "guarda_textual": "Corpo lido: `IF v_uid IS NULL THEN RAISE 'Sessao invalida'` e `IF NOT is_delivery_staff(v_uid)` antes de ler a entrega; entrega cancelada e recusada.",
+   "cadeia_transitiva": "public.is_delivery_staff(uuid) lido integralmente: has_role administrador/gestor/logistica/producao conforme matriz de entrega; SECURITY DEFINER, search_path fixo, false para uid NULL.",
+   "null_fail_closed": "Sessao ausente e perfil nao autorizado abortam antes da leitura; status cancelada bloqueia a emissao.",
+   "tenant_bola_idor": "Sem BOLA: somente staff de entrega emite formulario. Prova no staging: sem papel => 'Sem permissao para gerar formulario de entrega'.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/components/entregas/EntregaComprovantePanel.tsx e src/test/entregas/comprovanteEntregaPdf.test.ts.",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_get_comprovante_entrega_data(uuid,boolean)": {
+   "guarda_textual": "Corpo lido: COMPROVANTE_UNAUTHENTICATED para uid NULL e COMPROVANTE_FORBIDDEN para nao is_delivery_staff, ambos antes do SELECT da entrega; validacoes de integridade documental na sequencia.",
+   "cadeia_transitiva": "public.is_delivery_staff(uuid) lido integralmente: has_role administrador/gestor/logistica/producao conforme matriz de entrega; SECURITY DEFINER, search_path fixo, false para uid NULL.",
+   "null_fail_closed": "Falta de cliente, OS, itens, lote, quantidade, volume ou data de confirmacao aborta a montagem do comprovante (fail-closed documental).",
+   "tenant_bola_idor": "Sem BOLA: leitura restrita ao staff de entrega; o parametro de reemissao nao amplia escopo. Prova no staging: sem papel => COMPROVANTE_FORBIDDEN.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/pages/Entregas.tsx (pre-visualizacao e emissao do comprovante).",
+   "classificacao": "AUTH_COMPROVADA"
+  },
+  "rpc_get_my_visit_by_client_uuid(uuid)": {
+   "guarda_textual": "Corpo vivo lido: resolucao escopada por admin, consultor responsavel ou gestor com acesso ativo ao cliente; nenhum SELECT por client_uuid precede a autorizacao.",
+   "cadeia_transitiva": "has_role e has_active_user_cliente_access (auditada no L3) na cadeia; SECURITY DEFINER com search_path fixo.",
+   "null_fail_closed": "Retorno uniforme {ok:false,error:'not_found'} quando nao ha visita autorizada; nunca retorna dados parciais.",
+   "tenant_bola_idor": "Sem oraculo de existencia: prova no staging => payload identico {ok:false,error:'not_found'} para client_uuid real alheio e inexistente. Antes da correcao havia distincao 'forbidden' vs 'not_found'.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/pages/app/MobileVisitaWizard.tsx (abertura da visita por UUID do cliente).",
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "observacao": "Exposicao comprovada (oraculo de existencia) corrigida pelo forward reversivel 20261016000000_h9dl5_authz_scoped_visit_reads_no_oracle_v1, aplicado uma unica vez na homologacao (ledger 671 -> 672)."
+  },
+  "rpc_get_visita_workspace(uuid)": {
+   "guarda_textual": "Corpo vivo lido: uid NULL => 42501; `IF NOT public.can_view_technical_visit(v_uid, p_registro_id) THEN RAISE forbidden_visita 42501` ANTES da leitura do registro; a montagem do workspace so ocorre apos a autorizacao.",
+   "cadeia_transitiva": "can_view_technical_visit, is_visit_org_manager, can_manage_technical_visit, is_technical_visit_editable_status e is_active_visit_participant, todas SECURITY DEFINER com search_path fixo.",
+   "null_fail_closed": "Sem sessao ou sem visibilidade => excecao; nenhum campo do workspace e montado.",
+   "tenant_bola_idor": "Sem oraculo de existencia: prova no staging => 'forbidden_visita' identico para UUID real alheio e inexistente. Antes da correcao, inexistente retornava 'registro_inexistente' (P0002).",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useVisitaWorkspace.ts e src/components/visita/AcompanhamentoVisita.tsx; src/lib/visita/wizardWorkspaceState.ts trata forbidden_visita.",
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "observacao": "Exposicao comprovada (oraculo de existencia) corrigida pelo forward reversivel 20261016000000_h9dl5_authz_scoped_visit_reads_no_oracle_v1, aplicado uma unica vez na homologacao (ledger 671 -> 672)."
+  },
+  "rpc_listar_atendimentos_tecnicos_v1(text,text,integer,integer)": {
+   "guarda_textual": "Corpo lido: v_uid := auth.uid(); calcula v_is_admin (administrador/gestor) e v_is_tech (vinculo tecnico ativo) e retorna {ok:false,error:'forbidden'} antes de listar; a listagem em si e filtrada por can_view_technical_visit(v_uid, r.id).",
+   "cadeia_transitiva": "can_view_technical_visit e can_manage_technical_visit auditadas no L2 (AUTH_COMPROVADA); ambas SECURITY DEFINER com search_path fixo e fail-closed.",
+   "null_fail_closed": "Aba invalida retorna erro de validacao sem dados; ausencia de papel/vinculo retorna forbidden sem linhas.",
+   "tenant_bola_idor": "Sem BOLA: paginacao e aba nao ampliam escopo; nao-admin so ve visitas em que pode atuar (s.consultor_atribuido = v_uid) e a projecao passa por can_view_technical_visit por linha.",
+   "sql_dinamico": "Sem SQL dinamico (nenhum EXECUTE format); consultas estaticas parametrizadas.",
+   "callsites": "src/hooks/useAtendimentosTecnicos.ts (lista de atendimentos tecnicos).",
+   "classificacao": "AUTH_COMPROVADA"
+  }
+ }
+}

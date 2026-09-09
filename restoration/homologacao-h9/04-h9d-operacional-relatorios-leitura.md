@@ -724,3 +724,73 @@ Drift de artefatos corrigido nesta rodada:
 5. Varredura dos artefatos H9-D/H7P alterados: as ocorrências remanescentes de `670` e
    `20261014000000` são históricas legítimas (blocos `retificacao_l4`, ensaio de rollback da
    retificação 1, seção datada do relatório) e foram preservadas; nenhuma descreve o estado final.
+
+## H9-D-L5 — 30 assinaturas auditadas e correção 20261016000000 (ledger 672)
+
+Base: staging `ikaauvsflpmamgxmkhoq`; produção `navfzbwgwzruipouyfnk` não acessada em nenhum momento.
+Incidente inicial da rodada: `.env` havia sido commitado apontando para um projeto sandbox
+(`yzszlzjpovmcteuxjznj`). `.env` e `src/integrations/supabase/types.ts` (21.850 linhas) foram
+restaurados do baseline `ec7bfed1`; `client.ts` já apontava para a homologação. Nenhuma referência a
+sandbox ou a produção permanece em `.env`/`client.ts`.
+
+Escopo: as 30 assinaturas do lote (entregas, estoque, etiquetas, comprovante, Portal Executivo,
+fiscal e visitas técnicas), com leitura integral de `pg_get_functiondef`, ACL, `proconfig`,
+volatilidade, cadeia transitiva de helpers e mapeamento de callsites em `src/` e
+`supabase/functions/`.
+
+Resultado derivado: **27 AUTH_COMPROVADA + 3 EXPOSICAO_COMPROVADA_CORRIGIDA**.
+
+### Exposições comprovadas (oráculo de existência) e correção
+
+| função | antes (identidade sem escopo) | depois |
+|---|---|---|
+| `rpc_enviar_visita_aprovacao(uuid,integer)` | real `sem_permissao` × inexistente `registro_nao_encontrado` | ambos `sem_permissao` (42501) |
+| `rpc_get_visita_workspace(uuid)` | real `forbidden_visita` × inexistente `registro_inexistente` | ambos `forbidden_visita` (42501) |
+| `rpc_get_my_visit_by_client_uuid(uuid)` | real `forbidden` × inexistente `not_found` | ambos `{"ok":false,"error":"not_found"}` |
+
+Forward reversível `20261016000000_h9dl5_authz_scoped_visit_reads_no_oracle_v1`, aplicado **uma única
+vez** (ledger 671 → 672, ocorrência 1). Resolução e autorização passam a ocorrer em consulta única
+escopada ao chamador (admin, criador, consultor responsável ou acesso ativo ao cliente); o workspace
+autoriza por `can_view_technical_visit` **antes** da leitura. Assinatura, retorno, callsites, regras
+de transição, versionamento otimista e auditoria preservados. `search_path=public`, `REVOKE` de
+PUBLIC e `GRANT` apenas a `authenticated`/`service_role`.
+
+SHA256 `forward = 9021543a537943735bb2a4dbf8691fd133d5a78a12ac68da549bc59f2a7afc33`;
+`rollback = 92cb5d129d0e5f2fc06208c180416c1c4b5f6a6221558f2c16d43f984b4b1741`.
+Fingerprints vivos: `forward/reaplicação = a3dc5f924e11096ee29e542133482975`,
+`rollback = a712880703a25542aadd8db9aa5c038d`.
+
+### Provas dinâmicas (somente staging, transações revertidas)
+
+- Identidade sem escopo (`8e9c2ca1…`, aplicador): UUID real alheio e UUID inexistente produzem
+  respostas **idênticas** nas três funções.
+- Identidades com escopo de domínio sobre o cliente (`77905960…`, `85998744…`, `2767fb15…`) são
+  legitimamente autorizadas pela consulta escopada; a distinção que resta (`transicao_invalida`) é
+  sobre um registro que a identidade **pode** ler, portanto não é oráculo.
+- Acesso legítimo preservado: o dono/consultor responsável (`79cdba52…`) continua abrindo o workspace
+  e recebe `transicao_invalida` para uma visita ainda em `rascunho`, comportamento de negócio correto.
+- Varredura fail-closed das 30 com identidade `cliente_produtor`: todas bloqueiam antes de qualquer
+  leitura sensível.
+- Resíduo zero: o registro de prova permanece `rascunho|2`; ledger permanece 672.
+
+### Indicadores no staging
+
+`SECDEF authenticated/anon = 375/2`; extensões em `public` = 2; FK sem índice = 172; índices não
+utilizados = 189; crons ativos = 1,2,5,8,9,18 (6). Todos idênticos ao baseline. O linter gerenciado
+da plataforma aponta para outra instância e **não** foi usado como fonte; as métricas acima vieram de
+consultas equivalentes ao catálogo do staging. A contagem de políticas permissivas múltiplas é
+reportada na granularidade de grupo (48 grupos; 136 combinações papel×comando entre `anon`,
+`authenticated` e `service_role`) e não é diretamente comparável às 146 linhas de finding do baseline;
+o lote L5 não criou, alterou ou removeu policy, índice ou RLS, logo não há regressão possível por ele.
+
+### Artefatos
+
+`decisoes-l5.json`, `gerar-dossie-l5.py`, `dossie-l5.json` (exatamente 30 assinaturas com fingerprint
+vivo), inventário de 376 linhas atualizado, `resumo-h9d.json` (ledger 672), `h9c-applied-forwards.json`
+(12 forwards, ledger 672), manifesto e guard H7P em 672, e o gate estático
+`src/test/security/h9dl5-scoped-visit-reads.static.test.ts`.
+
+Aritmética derivada do inventário (376): **84 herdadas + 231 AUTH_COMPROVADA + 26
+EXPOSICAO_COMPROVADA_CORRIGIDA + 4 NAO_APLICAVEL + 31 PENDENTE_EVIDENCIA**.
+
+Decisão: **L5 CONCLUÍDO**; **H9-D CONTINUA** com 31 pendentes; produção **NO-GO**. L6/H9-E não iniciados.
