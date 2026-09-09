@@ -50,6 +50,11 @@ const dossie = JSON.parse(readFileSync(resolve(DIR, "dossie-l6.json"), "utf8")) 
   total: number;
   forward_sha256: string;
   rollback_sha256: string;
+  forward_l6r_path: string;
+  forward_l6r_sha256: string;
+  rollback_l6r_path: string;
+  rollback_l6r_sha256: string;
+  incidente_rastreabilidade: string;
   assinaturas: Record<string, Entrada>;
 };
 const decisoes = JSON.parse(readFileSync(resolve(DIR, "decisoes-l6.json"), "utf8")) as {
