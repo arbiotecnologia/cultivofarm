@@ -164,10 +164,11 @@ describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
     }
   });
 
-  it("registra as exposições comprovadas e corrigidas (H9-D1, H9-D-L1 e H9-D-L2)", () => {
+  it("registra as exposições comprovadas e corrigidas (H9-D1, L1, L2 e L3)", () => {
     const exp = rows.filter((r) => r.classificacao_h9d === "EXPOSICAO_COMPROVADA_CORRIGIDA");
-    expect(exp).toHaveLength(14);
+    expect(exp).toHaveLength(20);
     expect(exp.filter((r) => r.evidencia.includes("20261008000000"))).toHaveLength(12);
+    expect(exp.filter((r) => r.evidencia.includes("20261009000000"))).toHaveLength(6);
     const d1 = exp.find((r) => r.signature.startsWith("fn_run_recurring_generation("))!;
     expect(d1.evidencia).toContain("20261006000000");
     const l1 = exp.find((r) => r.signature.startsWith("create_technical_visit_secure("))!;
