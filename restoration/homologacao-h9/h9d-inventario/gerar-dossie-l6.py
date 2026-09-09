@@ -427,11 +427,12 @@ def main():
         fora_escopo_h9d=fora,
         escopo_h9d=escopo,
         por_classificacao={k: cont[k] for k in sorted(cont)},
-        lotes_auditados=["H9-D-L1", "H9-D-L2", "H9-D-L3", "H9-D-L4", "H9-D-L5", "H9-D-L6"],
+        lotes_auditados=["H9-D-L1", "H9-D-L2", "H9-D-L3", "H9-D-L4", "H9-D-L5", "H9-D-L6", "H9-D-L6R"],
         forwards_aplicados=[
             "20261006000000", "20261007000000", "20261008000000", "20261009000000",
             "20261010000000", "20261011000000", "20261012000000", "20261013000000",
             "20261014000000", "20261015000000", "20261016000000", "20261017000000",
+            "20261018000000",
         ],
         metodologia=(
             "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por "
