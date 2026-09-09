@@ -213,7 +213,7 @@
       "teste_negativo": "tecnico_agronomo recebe 'Acesso negado' antes de qualquer leitura; periodo invertido/nulo => 22023 'Periodo invalido'; entrega sem titulo, titulo cancelado e titulo de outro cliente => total_value 0 e billed=false; ponteiro orfao e estruturalmente impossivel (FK entregas_receivable_id_fkey).",
       "teste_positivo": "administrador e financeiro executam os tres relatorios; extrato do cliente C1 sintetico contou apenas o titulo valido (1000.00) e ignorou o cancelado e o de outro cliente; cliente C2 sintetico com titulo de C1 recebeu delivered 0.",
       "relatorio": "restoration/homologacao-h9/04-h9d-operacional-relatorios-leitura.md",
-      "ensaio_rollback_reaplicacao": "rollback aplicado e forward reaplicado: md5(pg_get_functiondef+proacl) das 3 assinaturas identico (a33ec88a53469eb79634562e8643ec80).",
+      "ensaio_rollback_reaplicacao": "rollback aplicado e forward reaplicado na mesma sessao sem divergencia de definicao/ACL. fingerprint canonico reproduzivel md5(string_agg(pg_get_functiondef(oid)||proacl,'|' order by proname)) = 22ad484f0edc6233c2eecdbdd4da1334 (verificado apos a aplicacao, ledger 668, ocorrencia unica de 20261012000000). O valor a33ec88a53469eb79634562e8643ec80 citado durante o ensaio foi calculado por expressao ad hoc da sessao e NAO e reproduzivel; vale como registro do ensaio rollback->reaplicacao (executado na mesma sessao, sem divergencia), nao como fingerprint verificavel.",
       "secdef_authenticated": "375 authenticated / 2 anon preservados; nenhum GRANT novo (apenas reafirmacao de authenticated/service_role e revogacao de PUBLIC/anon).",
       "dados_financeiros_alterados": false,
       "destructive": false,
