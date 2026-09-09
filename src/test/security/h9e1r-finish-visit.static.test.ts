@@ -151,8 +151,8 @@ describe("H9-E1R — autorização antes da leitura no encerramento da visita", 
 describe("H9-E1R — rastreabilidade no manifesto e no ledger", () => {
   const entry = manifest.entries.find((e) => e.version === VERSION)!;
 
-  it("o manifesto registra a versão exatamente uma vez, no ledger 678", () => {
-    expect(manifest.ledger_versoes).toBe(678);
+  it("o manifesto registra a versão exatamente uma vez, no ledger 679", () => {
+    expect(manifest.ledger_versoes).toBe(679);
     expect(manifest.entries.filter((e) => e.version === VERSION)).toHaveLength(1);
     expect(manifest.entries).toHaveLength(manifest.total_applied_forwards);
     expect(entry.name).toBe(NAME);
@@ -190,7 +190,7 @@ describe("H9-E1R — retificação do inventário H9-D", () => {
   });
 
   it("os agregados refletem a retificação sem apagar o histórico", () => {
-    expect(resumo.ledger).toBe(678);
+    expect(resumo.ledger).toBe(679);
     expect(resumo.por_classificacao.AUTH_COMPROVADA).toBe(256);
     expect(resumo.por_classificacao.EXPOSICAO_COMPROVADA_CORRIGIDA).toBe(32);
     expect(resumo.por_classificacao.NAO_APLICAVEL).toBe(4);

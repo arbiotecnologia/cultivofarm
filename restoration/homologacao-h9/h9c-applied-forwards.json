@@ -3,8 +3,8 @@
   "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
   "ambiente": "staging ikaauvsflpmamgxmkhoq",
   "producao_proibida": "navfzbwgwzruipouyfnk",
-  "ledger_versoes": 678,
-  "total_applied_forwards": 18,
+  "ledger_versoes": 679,
+  "total_applied_forwards": 19,
   "entries": [
     {
       "version": "20261005000000",
@@ -491,6 +491,35 @@
         "ledger": "677 -> 678, ocorrencia unica",
         "dados_historicos": "nenhuma correcao historica aplicada: public.visitas_checkin nao possui nenhuma linha tipo_checkin='inicio_visita' nem 'checkout' (apenas chegada_talhao=77), logo nenhuma linha foi criada pela versao defeituosa",
         "provas": "restoration/homologacao-h9/h9e-provas/h9e1r-prova-finish-visit.sql"
+      }
+    },
+    {
+      "version": "20261023000000",
+      "name": "h9e2_visit_rpcs_authz_and_concurrent_idempotency_v1",
+      "fase": "H9-E2",
+      "path": "restoration/homologacao-h9/h9e-forwards/20261023000000_h9e2_visit_rpcs_authz_and_concurrent_idempotency_v1.sql",
+      "sha256": "33ae040962d24249f23bd0841f14452a85107eefc7fe5df1aa04cb8cc98460fe",
+      "rollback_path": "restoration/homologacao-h9/h9e-rollbacks/20261023000000_h9e2_visit_rpcs_authz_and_concurrent_idempotency_v1_rollback.sql",
+      "rollback_sha256": "8bc175b8daac55c495dadf716937486d54e84c8abcbe4915968664500beba61f",
+      "applied_to_staging": true,
+      "registered_in_ledger": true,
+      "required_in_promotion_bundle": true,
+      "repo_only_quarantined": false,
+      "outside_supabase_migrations": true,
+      "motivo_fora_da_pasta_padrao": "A plataforma bloqueia escrita direta em supabase/migrations/ desde a fase H9-C; o SQL exato aplicado esta versionado em restoration/homologacao-h9/h9e-forwards/ e registrado uma unica vez no ledger.",
+      "efeito": "Converge autorizacao e idempotencia concorrente de tres RPCs de visita. (1) finish_technical_visit_secure: lock do registro ANTES da busca idempotente e busca pos-lock ANTES da rejeicao por estado, eliminando visit_not_in_progress na segunda sessao concorrente. (2) rpc_realizar_checkin_visita e (3) rpc_realizar_checkout_visita: gate public._visita_scope_ok movido para ANTES de qualquer SELECT em visitas_checkin, eliminando o oraculo idempotency_conflict vs forbidden_visita_nao_atribuido; derivacoes de papel calculadas apos o gate; lock por registro adicionado ao check-in; busca idempotente pos-lock antes de checkout_duplicado e de checkin_duplicado_para_tipo_no_ciclo. Assinaturas, retornos JSON/RETURNS TABLE, OIDs, owner, ACL, SECURITY DEFINER e search_path preservados.",
+      "destructive": false,
+      "reversible": true,
+      "applied_at": "2026-09-09",
+      "evidence_refs": {
+        "prova_antes": "multi-sessao real (2 conexoes psql): finish -> sessao B recebe 22023 visit_not_in_progress:finalizado; checkout -> sessao B recebe 22023 checkout_duplicado; checkin -> ja convergia. 13 verificacoes, 2 falhas reproduzidas, residuo zero.",
+        "prova_depois": "multi-sessao real: as tres RPCs devolvem a B exatamente o mesmo id vencedor, com bloqueio observado durante a retencao do lock e exatamente um visitas_checkin por cenario. 13/13 PASS, residuo zero. Autorizacao: 18/18 PASS, incluindo as 4 combinacoes (registro inexistente|alheio) x (client_uuid existente|aleatorio) indistinguiveis por RPC.",
+        "acl": "postgres=X,authenticated=X,service_role=X nas tres funcoes; sem PUBLIC e sem anon; search_path=public; owner postgres; OIDs 24597, 24798 e 24800 preservados",
+        "fingerprint": "finish 20515c14cf017e68bebc8f99ba3cd00a -> b007454aa21a70aa545ee0a5a100e22f; checkin 3aa7f5ef96de3e4c4e3b1d5aa73ca16c -> d929e5dc354f3a802b8ab2d41c3b466e; checkout 2b2cc2d7d51a37a515ef79823c28f690 -> 735ebbfad7106dac1f5e77218ed21f70",
+        "ensaio": "preflight em transacao integralmente revertida, com guardas pre (ledger 678, OIDs e md5 das tres funcoes) e pos (ordem gate < lock < busca idempotente, contratos, ACL, search_path)",
+        "ledger": "678 -> 679, ocorrencia unica",
+        "dados_historicos": "nenhuma correcao historica aplicada; linhas ja gravadas permanecem validas (visitas_checkin e append-only)",
+        "provas": "restoration/homologacao-h9/h9e-provas/h9e2-prova-concorrencia-multisessao.py e restoration/homologacao-h9/h9e-provas/h9e2-prova-authz-sem-oraculo.sql"
       }
     }
   ]

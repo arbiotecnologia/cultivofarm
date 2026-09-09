@@ -116,7 +116,7 @@ const GENERICA = [
 describe("H9-D — inventário de SECURITY DEFINER por authenticated", () => {
   it("declara homologação e o ledger corrente", () => {
     expect(resumo.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(resumo.ledger).toBe(678);
+    expect(resumo.ledger).toBe(679);
   });
 
   it("separa universo bruto, herança da H9-C e escopo profundo", () => {
