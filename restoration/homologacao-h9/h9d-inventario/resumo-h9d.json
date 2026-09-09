@@ -1,14 +1,14 @@
 {
  "ambiente": "ikaauvsflpmamgxmkhoq",
- "ledger": 674,
+ "ledger": 675,
  "total_bruto": 376,
  "fora_escopo_h9d": 84,
  "escopo_h9d": 292,
  "por_classificacao": {
   "AUTH_COMPROVADA": 257,
-  "EXPOSICAO_COMPROVADA_CORRIGIDA": 30,
+  "EXPOSICAO_COMPROVADA_CORRIGIDA": 31,
   "NAO_APLICAVEL": 4,
-  "PENDENTE_EVIDENCIA": 1
+  "PENDENTE_EVIDENCIA": 0
  },
  "lotes_auditados": [
   "H9-D-L1",
@@ -17,7 +17,8 @@
   "H9-D-L4",
   "H9-D-L5",
   "H9-D-L6",
-  "H9-D-L6R"
+  "H9-D-L6R",
+  "H9-D-L7"
  ],
  "forwards_aplicados": [
   "20261006000000",
@@ -32,7 +33,8 @@
   "20261015000000",
   "20261016000000",
   "20261017000000",
-  "20261018000000"
+  "20261018000000",
+  "20261019000000"
  ],
  "metodologia": "regex apenas triagem; AUTH_COMPROVADA/NAO_APLICAVEL exigem decisão manual por assinatura canônica completa, com guarda textual, cadeia transitiva, fail-closed e callsites"
 }

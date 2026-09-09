@@ -1,0 +1,38 @@
+{
+ "ambiente": "ikaauvsflpmamgxmkhoq",
+ "producao_proibida": "navfzbwgwzruipouyfnk",
+ "lote": "H9-D-L7",
+ "ledger": 675,
+ "ultima_migration": "20261019000000",
+ "total": 1,
+ "forward_aplicado": "20261019000000_h9dl7_start_visit_scope_and_idempotency_v1 (aplicado uma unica vez; ledger 674 -> 675)",
+ "forward_path": "restoration/homologacao-h9/h9d-forwards/20261019000000_h9dl7_start_visit_scope_and_idempotency_v1.sql",
+ "forward_sha256": "ef8bc2e815fa7740ebba9eba487684ce0db06a0c584350e38768a088828f0b00",
+ "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261019000000_h9dl7_start_visit_scope_and_idempotency_v1_rollback.sql",
+ "rollback_sha256": "d19daaff54b7050d60d4cfe1aba33d251905cab409da08333ec9c9536cd440a6",
+ "metodo": "Assinatura canonica completa, pg_get_functiondef integral, ACL/owner/prosecdef/proconfig/volatilidade/OID, helpers transitivos, callsites em src/ e supabase/functions/, provas adversariais em transacao revertida no staging. Regex e nome nunca classificam.",
+ "resumo_lote": "Unica assinatura pendente do H9-D fechada. Exposicoes comprovadas (oraculo de existencia e BOLA/IDOR na idempotencia) corrigidas pelo forward reversivel 20261019000000, com preflight em transacao revertida, aplicacao unica e rollback exato para o fingerprint pre-L7 e627fdff91374ada08cdcd4fbf72c557.",
+ "incidente_preflight": "O primeiro preflight desta fase envolveu os artefatos, que ja contem BEGIN/COMMIT proprios, em uma transacao externa; o COMMIT interno encerrou a transacao e o par forward+rollback ficou efetivado no staging antes do ROLLBACK final, que apenas emitiu 'there is no transaction in progress'. O ledger NAO foi tocado (permaneceu 674) e nenhum dado foi alterado. O efeito residual foi apenas a normalizacao de CRLF para LF no corpo da funcao (fingerprint 5cab21724fda5fde040c10748386c35d). O rollback foi reconstruido preservando os bytes CRLF originais e reaplicado, restaurando o fingerprint exato e627fdff91374ada08cdcd4fbf72c557 antes do preflight correto e da aplicacao unica da 20261019000000. Incidente registrado por transparencia.",
+ "assinaturas": {
+  "start_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,text,uuid)": {
+   "classificacao": "EXPOSICAO_COMPROVADA_CORRIGIDA",
+   "guarda_textual": "Corpo lido integralmente (72 linhas antes, 78 depois). Antes da 20261019000000 a funcao autenticava com auth.uid() (28000) mas executava o SELECT de idempotencia por client_uuid e o SELECT em registros_consultor ANTES de qualquer autorizacao. Depois da correcao a capacidade administrativa e avaliada e public._visita_scope_ok(v_uid, p_registro_id) e exigido ANTES de qualquer leitura; NULL resolve fail-closed via COALESCE(...,false) e o unico erro possivel para identidade sem escopo e not_visit_owner (42501).",
+   "cadeia_transitiva": "public._visita_scope_ok(uuid,uuid) — SQL, STABLE, SECURITY DEFINER, search_path=public, EXECUTE apenas para postgres/service_role — combina can_manage_technical_visit, is_active_visit_participant e a autoria em registros_consultor (created_by, consultor_responsavel, consultor_profile_id), com fail-closed em NULL. has_role(uuid,app_role) SECDEF/STABLE/search_path=public. Trigger preexistente validate_registro_status_transition permanece intocada.",
+   "callsites": "Busca recursiva em src/ e supabase/functions/: nenhum callsite de aplicacao invoca a funcao (apenas a migration de origem 20260716203929 e o tipo gerado em src/integrations/supabase/types.ts). O check-in de produto usa rpc_realizar_checkin_visita (src/hooks/useFluxoVisitaTecnica.ts). Ainda assim a funcao permanece alcancavel por qualquer identidade authenticated via PostgREST, o que torna a correcao obrigatoria.",
+   "prova_individual": "Antes (staging, sub arbitrario 0000...00aa): registro real alheio -> not_visit_owner (42501); UUID inexistente -> registro_not_found (22023) — oraculo de existencia; client_uuid real de terceiro -> retornou (01a72cfc-5870-4148-9c70-dabc79e90120, false), BOLA/IDOR antes de qualquer autorizacao. Depois: registro real alheio, UUID inexistente, NULL e client_uuid alheio produzem respostas indistinguiveis (not_visit_owner, 42501); anon recebe permission denied for function. Idempotencia legitima preservada: o dono do check-in recebe o proprio checkin_id com is_new=false. Resíduo zero (delta visitas_checkin=0, delta visitas_logs=0) em todos os ensaios, executados em transacao revertida.",
+   "fingerprint_vivo": {
+    "definition_md5": "1f5e5484078b843ac68e810376d360e2",
+    "definition_len": 2711,
+    "functiondef_md5": "2b9d1fb6ae2851c154849e4179c48978",
+    "functiondef_md5_pre_l7": "e627fdff91374ada08cdcd4fbf72c557",
+    "proconfig": "search_path=public",
+    "acl": "postgres=X/postgres|authenticated=X/postgres|service_role=X/postgres",
+    "owner": "postgres",
+    "security_definer": true,
+    "volatilidade": "VOLATILE",
+    "oid": 24596,
+    "overloads": 1
+   }
+  }
+ }
+}

@@ -183,3 +183,86 @@ retificadora, hashes reais, `applied_at=2026-09-09`); `h7p-repo-only-manifest.js
 
 Situação: **L6 e L6R concluídas**. L7, H9-E e promoção **não iniciados**. Produção permanece
 **NO-GO**.
+
+---
+
+## H9-D-L7 — fechamento da última assinatura pendente (20261019000000, ledger 674 → 675)
+
+**Ambiente exclusivo:** homologação `ikaauvsflpmamgxmkhoq`. Produção `navfzbwgwzruipouyfnk`
+não foi acessada, consultada, testada, alterada nem promovida. Sandbox não utilizado.
+
+**Escopo exato (1 assinatura):**
+`public.start_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,text,uuid)`
+— OID 24596, overload único, `SECURITY DEFINER`, owner `postgres`, `VOLATILE`,
+`search_path=public`, ACL `postgres/authenticated/service_role`.
+
+### Exposições comprovadas (antes da correção)
+
+| Prova (sub arbitrário `0000…00aa`) | Resultado |
+| --- | --- |
+| Registro real alheio | `not_visit_owner` (42501) |
+| UUID inexistente | `registro_not_found` (22023) → **oráculo de existência** |
+| `client_uuid` real de terceiro | retornou `checkin_id 01a72cfc-5870-4148-9c70-dabc79e90120`, `is_new=false` → **BOLA/IDOR** antes de qualquer autorização |
+| `anon` | `permission denied for function` |
+
+Causa: a idempotência por `client_uuid` e a leitura de `registros_consultor` ocorriam **antes**
+de qualquer verificação de escopo. Nenhum callsite de aplicação usa a função (busca recursiva em
+`src/` e `supabase/functions/`), mas ela permanece alcançável por qualquer identidade
+`authenticated` via API — daí a obrigatoriedade da correção.
+
+### Correção mínima (forward reversível `20261019000000`)
+
+- `public._visita_scope_ok(v_uid, p_registro_id)` exigido **antes de qualquer leitura**, com
+  `COALESCE(...,false)` (fail-closed em NULL) e resposta única `not_visit_owner` (42501).
+- Idempotência escopada: `WHERE client_uuid = p_client_uuid AND (admin OR consultor_id = auth.uid())`.
+- Preservados: assinatura, tipo de retorno, ACL mínima (sem `PUBLIC`/`anon`), `search_path=public`,
+  validação de status, transições, autoria e auditoria em `visitas_logs`.
+- Fingerprint vivo: `pg_get_functiondef` `e627fdff91374ada08cdcd4fbf72c557` → `2b9d1fb6ae2851c154849e4179c48978`
+  (`prosrc` `1f5e5484078b843ac68e810376d360e2`, 2.711 bytes).
+- Rollback exato para o estado pré-L7 (com os defeitos documentados), sem afrouxar ACL e sem tocar no ledger.
+
+### Incidente de preflight (declarado, não escondido)
+
+O primeiro preflight envolveu os artefatos — que já contêm `BEGIN/COMMIT` próprios — em uma
+transação externa. O `COMMIT` interno encerrou a transação, de modo que o par forward+rollback
+ficou efetivado no staging antes do `ROLLBACK` final, que apenas emitiu
+`there is no transaction in progress`. **O ledger não foi tocado (permaneceu 674) e nenhum dado foi
+alterado.** O único efeito residual foi a normalização de `CRLF` para `LF` no corpo da função
+(fingerprint `5cab21724fda5fde040c10748386c35d`). O rollback foi reconstruído preservando os bytes
+`CRLF` originais e reaplicado, restaurando o fingerprint exato `e627fdff…`; só então foi executado
+o preflight correto (sem `BEGIN/COMMIT` aninhados) e a aplicação única da `20261019000000`.
+
+### Provas dinâmicas após a correção (staging, transação revertida)
+
+- Registro real alheio, UUID inexistente, `NULL` e `client_uuid` alheio: **indistinguíveis** —
+  `not_visit_owner` (42501) em todos os casos.
+- `anon`: `permission denied for function start_technical_visit_secure`.
+- Idempotência legítima preservada: o dono do check-in recebe o próprio `checkin_id` com `is_new=false`.
+- Resíduo zero: `delta visitas_checkin = 0`, `delta visitas_logs = 0`.
+- Preflight: forward → `2b9d1fb6…`; rollback → `e627fdff…` exato; ledger inalterado durante o ensaio.
+- Defeito funcional **preexistente e fora do escopo L7**: a trigger `validate_registro_status_transition`
+  rejeita `rascunho → em_andamento` no check-in inicial. Reproduzido **igualmente** com a definição
+  pré-L7 na mesma transação revertida — portanto não é regressão desta fase; registrado como risco aberto.
+
+### Fechamento do H9-D
+
+| Métrica | Valor |
+| --- | --- |
+| Universo bruto | 376 |
+| Herdadas H9-C (fora do escopo profundo) | 84 |
+| Escopo profundo | 292 |
+| `AUTH_COMPROVADA` | 257 |
+| `EXPOSICAO_COMPROVADA_CORRIGIDA` | 31 |
+| `NAO_APLICAVEL` | 4 |
+| `PENDENTE_EVIDENCIA` | **0** |
+
+`h9c-applied-forwards.json` em **15 entradas / ledger 675**; `h7p-repo-only-manifest.json` e
+`h7p-guard-repo-only.sh` em **675**, com as **59 migrations repo-only intactas e em quarentena**.
+As versões `20261017000000` e `20261018000000` permanecem fechadas, com ocorrência única e sem reaplicação.
+
+**Advisors do staging (valores independentes informados pelo solicitante, não medidos nesta sessão —
+a ferramenta gerenciada disponível poderia atingir outro projeto):** security 390; performance 507
+(172 unindexed FK, 188 unused index, 146 multiple permissive, 1 duplicate).
+
+**Decisão formal:** **H9-D CONCLUÍDA — GO em homologação**, sem assinaturas pendentes.
+**Produção permanece NO-GO.** H9-E e promoção **não iniciados**.

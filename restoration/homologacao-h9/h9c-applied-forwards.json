@@ -3,8 +3,8 @@
  "proposito": "Rastrear forwards efetivamente aplicados em homologacao que NAO puderam ser gravados em supabase/migrations por bloqueio da plataforma. Estes NAO se confundem com as 59 migrations repo-only em quarentena permanente do manifesto H7P: aquelas sao proibidas de aplicar; estas ja estao aplicadas e sao OBRIGATORIAS no bundle de promocao.",
  "ambiente": "staging ikaauvsflpmamgxmkhoq",
  "producao_proibida": "navfzbwgwzruipouyfnk",
- "ledger_versoes": 674,
- "total_applied_forwards": 14,
+ "ledger_versoes": 675,
+ "total_applied_forwards": 15,
  "entries": [
   {
    "version": "20261005000000",
@@ -376,6 +376,35 @@
     "ensaio": "rollback restaura 759eabc4... e reaplicacao restaura 2b2cc2d7... em transacao revertida; ledger permanece 674",
     "ledger": "673 -> 674, ocorrencia unica",
     "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l6.json"
+   }
+  },
+  {
+   "version": "20261019000000",
+   "name": "h9dl7_start_visit_scope_and_idempotency_v1",
+   "fase": "H9-D-L7",
+   "path": "restoration/homologacao-h9/h9d-forwards/20261019000000_h9dl7_start_visit_scope_and_idempotency_v1.sql",
+   "sha256": "ef8bc2e815fa7740ebba9eba487684ce0db06a0c584350e38768a088828f0b00",
+   "rollback_path": "restoration/homologacao-h9/h9d-rollbacks/20261019000000_h9dl7_start_visit_scope_and_idempotency_v1_rollback.sql",
+   "rollback_sha256": "d19daaff54b7050d60d4cfe1aba33d251905cab409da08333ec9c9536cd440a6",
+   "applied_to_staging": true,
+   "registered_in_ledger": true,
+   "required_in_promotion_bundle": true,
+   "repo_only_quarantined": false,
+   "outside_supabase_migrations": true,
+   "motivo_fora_da_pasta_padrao": "A plataforma bloqueia escrita direta em supabase/migrations/ desde a fase H9-C; o SQL exato aplicado esta versionado em restoration/homologacao-h9/h9d-forwards/ e registrado uma unica vez no ledger.",
+   "efeito": "Fecha a ultima assinatura pendente do H9-D: public.start_technical_visit_secure(uuid,numeric,numeric,numeric,text,text,text,text,uuid). Exige public._visita_scope_ok antes de qualquer leitura de visita ou de check-in (elimina o oraculo registro_not_found) e escopa a idempotencia por client_uuid ao autor do check-in ou administrador (elimina BOLA/IDOR). Assinatura, retorno, ACL, search_path, transicoes, autoria e auditoria preservados.",
+   "destructive": false,
+   "reversible": true,
+   "applied_at": "2026-09-09",
+   "evidence_refs": {
+    "prova_antes": "registro alheio -> 42501 not_visit_owner; UUID inexistente -> 22023 registro_not_found; client_uuid alheio -> retornava checkin_id 01a72cfc-5870-4148-9c70-dabc79e90120 com is_new=false",
+    "prova_depois": "registro alheio, UUID inexistente, NULL e client_uuid alheio -> not_visit_owner (42501) indistinguiveis; anon -> permission denied; idempotencia legitima do dono preservada (is_new=false)",
+    "acl": "postgres/authenticated/service_role em EXECUTE; sem PUBLIC e sem anon; search_path=public",
+    "fingerprint": "pre-190 functiondef e627fdff91374ada08cdcd4fbf72c557 -> pos-190 2b9d1fb6ae2851c154849e4179c48978 (prosrc 1f5e5484078b843ac68e810376d360e2)",
+    "ensaio": "preflight em transacao revertida: forward -> 2b9d1fb6..., rollback -> e627fdff... exato; ledger inalterado durante o ensaio",
+    "incidente": "primeiro preflight efetivou forward+rollback fora de transacao (artefatos com BEGIN/COMMIT proprios); ledger e dados intactos; efeito residual apenas CRLF->LF, revertido com rollback fiel antes da aplicacao unica",
+    "ledger": "674 -> 675, ocorrencia unica",
+    "dossie": "restoration/homologacao-h9/h9d-inventario/dossie-l7.json"
    }
   }
  ]
