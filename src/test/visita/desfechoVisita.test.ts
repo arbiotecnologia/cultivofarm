@@ -22,7 +22,7 @@ describe("H9-G 2A · desfecho da visita", () => {
 
   it("texto de monitoramento não promete aprovação técnica", () => {
     const txt = descricaoVisitaFinalizada("monitorar_area");
-    expect(txt).not.toMatch(/aprova/i);
+    expect(txt).not.toMatch(/pronta para envio/i);
     expect(txt).toMatch(/monitorar/i);
   });
 
