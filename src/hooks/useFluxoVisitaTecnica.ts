@@ -3,6 +3,7 @@ import { useAuth } from "./useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { mensagemAmigavelVisita, codigoTecnicoVisita } from "@/lib/visita/visitaErrorMessages";
 
 export type FluxoResponse = {
   success: boolean;
@@ -158,8 +159,13 @@ export function useFluxoVisitaTecnica() {
 
       return { success: true, message: "Check-in realizado", data: { id: checkin.id, data_hora_checkin: checkin.data_hora_checkin, idempotent: !!checkin.idempotent } };
     } catch (error: any) {
-      console.error("Erro em registrarCheckin:", error);
-      return { success: false, message: error?.message || "Erro no check-in", error: error?.message };
+      // H9-GR: código técnico só no log interno; usuário recebe texto amigável.
+      console.error("Erro em registrarCheckin:", codigoTecnicoVisita(error) ?? error?.message, error);
+      return {
+        success: false,
+        message: mensagemAmigavelVisita(error, "Não foi possível registrar o check-in. Tente novamente."),
+        error: error?.message,
+      };
     }
   };
 
