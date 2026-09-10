@@ -72,6 +72,7 @@ import { ProblemaSelector } from "@/components/visita/ProblemaSelector";
 import { gerarResumoEncerramento } from "@/lib/visitaResumo";
 import { serializePlanoMonitoramento, parsePlanoMonitoramento, stripPlanoMonitoramento } from "@/lib/planoMonitoramento";
 import { serializePlanoRetorno, parsePlanoRetorno, stripPlanoRetorno } from "@/lib/planoRetorno";
+import { mensagemAmigavelVisita, codigoTecnicoVisita } from "@/lib/visita/visitaErrorMessages";
 
 // ---------- Helpers ----------
 function translateError(msg: string): string {
@@ -95,7 +96,11 @@ function translateError(msg: string): string {
   if (msg.includes("problema principal")) return "Informe o problema principal antes de finalizar.";
   if (msg.includes("descrição técnica")) return "Preencha a descrição técnica antes de finalizar.";
   if (msg.includes("check_violation")) return "Dados inconsistentes. Verifique os campos obrigatórios.";
-  
+
+  // H9-GR: códigos técnicos das RPCs de visita nunca chegam crus à interface.
+  const codigo = codigoTecnicoVisita(msg);
+  if (codigo) return mensagemAmigavelVisita(msg);
+
   return `Erro: ${msg}`;
 }
 
@@ -573,15 +578,21 @@ export default function VisitaTecnica() {
   const saveMutation = useMutation({
     mutationFn: async ({ payload, finalizar, edit }: { payload: any; finalizar: boolean; edit?: { motivo: string } }) => {
       let currentRegistroId = id;
-      
+
+      // H9-GR: a finalização NUNCA é gravada por UPDATE direto. O status só muda
+      // pelo RPC seguro `rpc_finalizar_visita_v2`, que grava atomicamente
+      // status + finalized_at + finalized_by + version + histórico.
+      const { status: _statusIgnorado, ...payloadSemStatus } = (payload ?? {}) as any;
+      const payloadPersistivel = finalizar ? payloadSemStatus : payload;
+
       if (isNew) {
         const insertPayload = {
-          ...payload,
+          ...payloadPersistivel,
           created_by: user!.id,
           consultor_responsavel: user!.id,
           consultor_profile_id: profile?.id || null,
           hora_inicio: new Date().toISOString(),
-          status: finalizar ? "finalizado" : "rascunho",
+          status: "rascunho",
           solicitacao_id: solicitacaoIdParam,
         };
         const { data, error } = await supabase
@@ -594,7 +605,7 @@ export default function VisitaTecnica() {
       } else {
         const { error } = await supabase
           .from("registros_consultor")
-          .update(payload)
+          .update(payloadPersistivel)
           .eq("id", id);
         if (error) throw error;
       }
@@ -618,6 +629,22 @@ export default function VisitaTecnica() {
           const { error: diagError } = await supabase.from("visita_diagnosticos").insert(diagsToInsert);
           if (diagError) console.error("Erro ao salvar diagnósticos:", diagError);
         }
+      }
+
+      // H9-GR: finalização atômica via RPC auditado (após persistir campos e diagnósticos).
+      if (finalizar && currentRegistroId) {
+        const { data: atual, error: versaoError } = await supabase
+          .from("registros_consultor")
+          .select("version")
+          .eq("id", currentRegistroId)
+          .single();
+        if (versaoError) throw versaoError;
+
+        const { error: finalizeError } = await supabase.rpc("rpc_finalizar_visita_v2" as any, {
+          p_registro_id: currentRegistroId,
+          p_expected_version: (atual as any)?.version ?? 1,
+        } as any);
+        if (finalizeError) throw finalizeError;
       }
 
       // Log de edição pós-finalização
