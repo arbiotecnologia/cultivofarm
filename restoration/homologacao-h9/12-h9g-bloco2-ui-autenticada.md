@@ -123,3 +123,57 @@ Bloco 2A preservado integralmente.
 - Correções: **GO**.
 - `smoke_autenticado`: **false** — falta o perfil autenticado **sem permissão** (desktop e mobile).
 - **AUDITORIA H9 INTEGRAL: NO-GO.** **Promoção para produção: NÃO AUTORIZADA.**
+
+---
+
+# H9-G Bloco 2C — Estado infinito em rota de visita para perfil sem permissão
+
+Base: commit `773770a36c2708a7398af64b0a797775512ec9a6`; ledger 682; STAGING `ikaauvsflpmamgxmkhoq`.
+Nenhuma migration criada; RLS, RPCs e contratos de servidor intocados. Blocos 2A e 2B preservados.
+
+## Reprodução
+
+- Usuário `produtor@arbio.com` (`cliente_produtor`, id `85998744-78fd-41ae-b74e-2b763e7f8089`).
+- Acesso direto a `/visita-tecnica/2572bce1-203c-4237-a61a-e3eb308cc023` (desktop e mobile).
+- RLS não expôs o registro, mas a UI ficava >10 s em "Carregando...", sem negar acesso nem voltar.
+
+## Causa
+
+As três rotas internas (`/visita-tecnica`, `/visita-tecnica/nova`, `/visita-tecnica/:id`) estavam
+dentro do grupo `ProtectedRoutes` → `AppLayout`. A decisão de autorização só ocorria depois de
+montar o layout interno e encadear redirecionamentos dependentes de carregamentos assíncronos
+(`usePortalCliente`, dashboards do portal), o que permitia um estado de carregamento sem prazo
+máximo. Não havia um estado distinto para "sem permissão", "não encontrado" e "erro".
+
+## Correção (mínima, apenas frontend)
+
+- `src/lib/visita/visitaRouteAccess.ts` (novo): decisão pura e fail-closed com cinco estados
+  (`carregando`, `erro`, `nao_autenticado`, `negado`, `permitido`) e prazo máximo de 8 s.
+  A decisão não depende do UUID solicitado — id existente e inexistente são indistinguíveis.
+- `src/components/guards/VisitaRouteGuard.tsx` (novo): aplica a decisão ANTES de qualquer layout
+  interno ou consulta. Anônimo → `/auth`; autenticado sem permissão → `/sem-permissao` (tela
+  neutra com ação de voltar); falha ou prazo esgotado → tela neutra com "Tentar novamente" e
+  "Voltar". Nunca renderiza conteúdo antes da decisão (sem flash) e não expõe nomes ou IDs.
+- `src/App.tsx`: as três rotas passam a um grupo próprio `VisitaRouteGuard > ProtectedRoutes`,
+  preservando `RoleGuard`, layout e comportamento de admin/técnico autorizado.
+
+## Testes
+
+- `src/test/visita/visitaRouteAccess.test.ts` (10): carregando, prazo esgotado, erro, anônimo,
+  produtor, financeiro, sem papel, admin/consultor/técnico/gestor, multipapel.
+- `src/test/visita/visitaRouteGuard.test.tsx` (9): produtor desktop e mobile, financeiro, anônimo,
+  UUID existente vs. inexistente com marcação idêntica, erro de rede, ausência de flash e prazo
+  esgotado, admin e consultor autorizados.
+- Suíte `src/test/visita/**`: 43/43.
+
+## Verificações
+
+- Gate de binding: houve drift de `.env`/`types.ts` para o sandbox; restaurados de `4cf3e2ae`
+  (`ikaauvsflpmamgxmkhoq`, 21.850 linhas) sem acessar produção ou sandbox.
+- Typecheck OK; build OK; ledger permanece 682; nenhum evento externo disparado.
+
+## Veredito do bloco 2C
+
+- Correção: **GO técnico**.
+- `smoke_autenticado`: **false** — exige reteste real com `produtor@arbio.com` em desktop e mobile.
+- **AUDITORIA H9 INTEGRAL: NO-GO.** **Promoção para produção: NÃO AUTORIZADA.**

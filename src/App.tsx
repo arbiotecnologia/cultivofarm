@@ -20,6 +20,7 @@ import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 import { AppPortalGuard } from "@/components/guards/AppPortalGuard";
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
 import { ProducerFeatureGuard } from "@/components/guards/ProducerFeatureGuard";
+import { VisitaRouteGuard } from "@/components/guards/VisitaRouteGuard";
 import Clientes from "@/pages/Clientes";
 import Fazendas from "@/pages/Fazendas";
 import Talhoes from "@/pages/Talhoes";
@@ -466,6 +467,15 @@ const App = () => (
                 <Route path="usuarios-clientes" element={<ParceiroUsuariosClientesB2B />} />
               </Route>
 
+              {/* H9-G Bloco 2C — Visita técnica interna: guard fail-closed ANTES do layout interno. */}
+              <Route element={<VisitaRouteGuard />}>
+                <Route element={<ProtectedRoutes />}>
+                  <Route path="/visita-tecnica" element={<RoleGuard><VisitaTecnicaLista /></RoleGuard>} />
+                  <Route path="/visita-tecnica/nova" element={<RoleGuard><VisitaTecnica /></RoleGuard>} />
+                  <Route path="/visita-tecnica/:id" element={<RoleGuard><VisitaTecnica /></RoleGuard>} />
+                </Route>
+              </Route>
+
               {/* Admin routes */}
               <Route element={<ProtectedRoutes />}>
                 <Route path="/" element={<Index />} />
@@ -495,9 +505,7 @@ const App = () => (
                 <Route path="/relatorios" element={<RoleGuard><Relatorios /></RoleGuard>} />
                 <Route path="/consultor-tecnico" element={<RoleGuard><ConsultorTecnico /></RoleGuard>} />
                 <Route path="/fluxo-tecnico" element={<RoleGuard><FluxoTecnico /></RoleGuard>} />
-                <Route path="/visita-tecnica" element={<RoleGuard><VisitaTecnicaLista /></RoleGuard>} />
-                <Route path="/visita-tecnica/nova" element={<RoleGuard><VisitaTecnica /></RoleGuard>} />
-                <Route path="/visita-tecnica/:id" element={<RoleGuard><VisitaTecnica /></RoleGuard>} />
+                {/* H9-G 2C: rotas de visita movidas para grupo próprio, sob VisitaRouteGuard. */}
                 <Route path="/bi-agronomico" element={<RoleGuard><BIAgronomico /></RoleGuard>} />
                 <Route path="/bi-operacional" element={<RoleGuard><BIOperacional /></RoleGuard>} />
                 <Route path="/alertas-operacionais" element={<RoleGuard><AlertasOperacionais /></RoleGuard>} />
