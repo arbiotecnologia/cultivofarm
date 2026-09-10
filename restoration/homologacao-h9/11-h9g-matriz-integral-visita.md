@@ -94,3 +94,65 @@ residuo_fazenda=0 residuo_talhao=0 residuo_logs=297 residuo_eventos=0 repl_role=
 
 Requer login manual no preview: entrar primeiro com o perfil autorizado (`admin@arbio.com`) e avisar
 quando o login estiver concluído, para executar o fluxo real de visita em desktop e mobile.
+
+---
+
+## Bloco 2F — Ações read-only indevidas e consistência multiportal
+
+Base: commit `8d02ba6b`; binding staging `ikaauvsflpmamgxmkhoq` restaurado (havia drift local para o
+sandbox proibido; o sandbox não foi consultado). Sem migration — todas as falhas são de frontend/sessão.
+
+### 1. "Salvar" ativo em visita finalizada / usuário somente leitura
+
+Reprodução: VT-2026-0006 (`2572bce1-…`), finalizada.
+`tecnico_agronomo@arbio.com` (read no cliente, não participante) via os campos travados, mas o botão
+"Salvar" continuava ativo e o clique era no-op silencioso. `gestor@arbio.com` também via "Salvar"
+ativo antes de entrar na edição justificada.
+
+Causa: os três botões de salvar e o "Finalizar" da barra inferior dependiam apenas de
+`saveMutation.isPending`; `isReadOnly` não era aplicado a eles.
+
+Correção: nova fonte canônica `src/lib/visita/acoesPersistencia.ts`
+(`resolveVisitaAcoes` → `readOnly | canPersist | showSave | showFinalize`), consumida por
+`src/pages/VisitaTecnica.tsx`. Fora do modo de edição, ou sem permissão efetiva, as ações de
+persistência deixam de ser renderizadas; status pós-aprovação permanecem travados mesmo em edição.
+Rascunho/visita nova e o salvamento canônico do 2B seguem intactos (loading, sucesso/erro,
+prevenção de clique duplo).
+
+### 2. Cabeçalho técnico ignorava o contexto ativo
+
+`fagner@arbio.com` (consultor_tecnico + parceiro_b2b) no Portal Técnico via "Gestor B2B" e apenas "Sair".
+Causa: `UserMenu` derivava o rótulo de `role` (primaryRole fixo) e só mostrava "Trocar de portal"
+quando o layout passava a prop — o cabeçalho de campo/visita não passava.
+
+Correção: `src/components/UserMenu.tsx` passou a ler o contexto ativo canônico
+(`readActiveContext` do 2E) e a compor o rótulo com `getPortalDisplayLabel`; oferece "Trocar de portal"
+sempre que `get_my_available_portal_contexts` retornar ≥ 2 contextos, usando `useSwitchPortal`
+(sem logout). Como todas as variantes de cabeçalho usam `PortalTopBar → UserMenu`, não há duplicação.
+Portal B2B mantém rótulo e menu atuais. Permissões e RLS inalteradas.
+
+### 3. Logout técnico "herdava" o portal no novo login
+
+Causa real: `src/pages/app/MobileLogin.tsx` redirecionava para `/app` assim que houvesse sessão,
+ignorando o seletor. O `signOut` canônico de `useAuth` já limpava o contexto efêmero.
+
+Correção: o login de campo agora envia para `/selecionar-portal`, que decide sozinho — contexto único
+ou preferência "Entrar diretamente neste portal" abrem direto; multipapel com remember=false volta a
+ver o seletor. Troca de usuário continua limpando o contexto (2E).
+
+### Provas
+
+- `src/test/visita/acoesPersistencia.test.ts` (9) — leitor, gestor fora/dentro da edição, rascunho,
+  status travados e uso da fonte canônica na página.
+- `src/test/visita/cabecalhoContexto.static.test.ts` (7) — rótulo por contexto, trocar de portal,
+  ausência de duplicação entre cabeçalhos, logout limpa contexto, login passa pelo seletor.
+- Suíte de visita: 82/82. Regressões multiportal/mobile: 21/21. Typecheck e build verdes.
+- Binding conferido antes e depois: `ikaauvsflpmamgxmkhoq`. Nenhuma migration criada; nenhum evento externo.
+  A contagem remota do ledger (682) não foi reconsultada nesta rodada: a ferramenta gerenciada de SQL
+  aponta para o sandbox proibido; fail-closed, nada foi executado contra o banco.
+
+### Veredito do bloco
+
+- Correções: **GO técnico**. `smoke_autenticado` permanece **false**.
+- **H9 integral e promoção: NO-GO** até o reteste real por perfil (técnico read-only, gestor,
+  multipapel técnico/B2B, logout/novo login) em desktop e mobile.
