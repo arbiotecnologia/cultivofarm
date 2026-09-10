@@ -50,3 +50,24 @@ G1 alvo correto · G2 prechecks completos · G3 ledger de staging estável · G4
 | Fase P2 | **BLOQUEADA** |
 | Promoção geral H9 | **NO-GO** |
 | Dry-run em homologação | **NÃO EXECUTADO** — login de staging pendente |
+
+---
+
+## 7. Tentativa de execução dos prechecks — 2026-09-10 19:21 UTC
+
+**Resultado: PARADA FAIL-CLOSED. Nenhum comando executado, nenhum banco consultado.**
+
+Verificação de alvo antes de qualquer consulta:
+
+| Verificação | Resultado |
+|---|---|
+| Ref exigido pelo pacote | `ikaauvsflpmamgxmkhoq` (homologação) |
+| Ref efetivo do canal gerenciado deste ambiente | `yzszlzjpovmcteuxjznj` (**SANDBOX — proibido**) |
+| Canal autenticado para homologação | **ausente** |
+| SQL emitido | nenhum |
+
+O canal de banco disponível neste ambiente resolve para o Sandbox proibido, e não para a homologação. Conforme a barreira de ambiente e a regra fail-closed do plano (etapa D0), a execução foi interrompida antes de `01-prechecks-readonly-staging.sql`.
+
+**Condição para retomar:** o operador precisa renovar o login autenticado apontando para `ikaauvsflpmamgxmkhoq` e executar os prechecks por esse canal, arquivando a saída bruta com SHA-256. Este dossiê será então atualizado com o resultado real.
+
+**Vereditos inalterados:** A1 `NO-OP` (fora do ledger); A2..A5 `NO-GO`; P2 `BLOQUEADA`; promoção geral `NO-GO`; dry-run `NÃO EXECUTADO`.
