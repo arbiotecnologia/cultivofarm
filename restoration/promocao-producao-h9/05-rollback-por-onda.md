@@ -101,7 +101,13 @@ isso estão fora do pacote. Cada uma exige, antes de qualquer promoção:
 - Cron: `rollback-sql/20261003000000__promocao_cron_rollback.sql`, restauração
   real do `command` a partir do baseline capturado em transação.
 - Convergência: `rollback-sql/20261101000000_promocao_convergencia_ledger_v1_rollback.sql`,
-  que **recusa** remover as tabelas se já houver histórico de promoção.
+  que **recusa** remover as tabelas se houver QUALQUER registro de promoção ou
+  baseline. A migration não insere linha própria (P0d): quem registra é o
+  runner, depois do postcheck — logo, rollback só é possível com tabelas vazias.
+- Views (P0d): `rollback-sql/20261102000000_p0d_security_invoker_views_v1_rollback.sql`,
+  restaura o baseline de `reloptions` capturado em transação (`RESET` quando a
+  opção era ausente). Reverter reintroduz a vulnerabilidade e exige autorização
+  humana explícita.
 - Destrutivas condicionadas: precheck aborta antes de qualquer efeito; havendo
   efeito, a reversão depende de restore point/PITR — por isso o backup
   comprovado é pré-requisito da onda.

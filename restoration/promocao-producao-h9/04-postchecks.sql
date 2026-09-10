@@ -75,6 +75,31 @@ WHERE n.nspname='public' AND c.relkind='v'
   AND 'security_invoker=on' <> ALL (coalesce(c.reloptions,'{}'))
 ORDER BY 1;
 
+-- 4g. P0d: as 3 views alvo devem estar com security_invoker=true.  Esperado: 3.
+SELECT count(*) AS views_invoker_ok
+FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+WHERE n.nspname='public' AND c.relkind='v'
+  AND c.relname IN ('vw_esteira_laboratorio','vw_fluxo_visita_tecnica','_src_vw_esteira_laboratorio')
+  AND 'security_invoker=true' = ANY (coalesce(c.reloptions,'{}'));
+
+-- 4h. P0d: nenhum acesso novo à view interna.  Esperado: 0 linhas.
+SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+WHERE n.nspname='public' AND c.relname='_src_vw_esteira_laboratorio'
+  AND (has_table_privilege('anon', c.oid, 'SELECT')
+    OR has_table_privilege('authenticated', c.oid, 'SELECT'));
+
+-- ---------------------------------------------------------------------------
+-- 4i. P0d: evidência de hash honesta no registro de convergência.
+--     Nenhum valor pode ser digest não-SHA-256; o formato é garantido por CHECK
+--     e o valor vem do manifesto externo, inserido pelo RUNNER após postcheck.
+--     Esperado: 0 linhas.
+-- ---------------------------------------------------------------------------
+SELECT version, sha256_origem
+FROM public.promocao_execucao_registro
+WHERE sha256_origem !~ '^[0-9a-f]{64}$'
+   OR (sha256_artefato IS NOT NULL AND sha256_artefato !~ '^[0-9a-f]{64}$')
+ORDER BY 1;
+
 -- ---------------------------------------------------------------------------
 -- 5. Integridade estrutural
 -- ---------------------------------------------------------------------------

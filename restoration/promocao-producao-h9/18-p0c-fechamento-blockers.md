@@ -84,7 +84,9 @@ que `20261026000000`). Cria `public.promocao_execucao_registro` e
 `public.promocao_rollback_baseline` com RLS habilitada, **zero policies**,
 `REVOKE` de PUBLIC/anon/authenticated e acesso somente `service_role`/`postgres`.
 Idempotente. Registra origem → artefato → SHA-256 → status → onda → executor →
-timestamp. Documenta o fluxo suportado: execução SQL bem-sucedida → postcheck →
+timestamp. **Retificado na P0d**: a migration não insere a própria linha e as
+colunas `sha256_*` têm `CHECK` de 64 hex; o registro é feito pelo runner após
+execução e postcheck, com o SHA-256 real do manifesto (ver `20-p0d-...`). Documenta o fluxo suportado: execução SQL bem-sucedida → postcheck →
 `supabase migration repair --status applied <version>`; **nunca** escrita direta
 em `supabase_migrations.schema_migrations`. Inclui apenas o próprio registro; não
 falsifica migrations não executadas. Rollback em
@@ -125,3 +127,11 @@ e aplicada **também em homologação**.
 de backup/restore point recente. Todos os blockers técnicos da P0/P0b estão
 fechados. Assim que o operador comprovar backup/PITR imediatamente antes da
 onda, o veredito vira **GO PARA ONDA P1**. Produção não foi acessada nesta fase.
+
+
+## Adendo P0d
+
+Dois pontos do P0c foram retificados em `20-p0d-correcao-evidencia.md`:
+a view interna `public._src_vw_esteira_laboratorio` (agora coberta pelo
+artefato `20261102000000`, onda P1) e a evidência de hash da convergência
+(concatenação de MD5 em campo `sha256_origem` removida).
