@@ -59,3 +59,67 @@ Ledger remoto: **682** — nenhuma migration criada neste bloco (defeitos eram e
 - `smoke_autenticado`: **false** — falta o perfil autenticado **sem permissão** (desktop e mobile).
 - **AUDITORIA H9 INTEGRAL: NO-GO.**
 - **Promoção para produção: NÃO AUTORIZADA.**
+
+---
+
+# H9-G Bloco 2B — perda silenciosa de nota e timeline de edição justificada
+
+Ambiente único: STAGING `ikaauvsflpmamgxmkhoq` (gate OK antes e depois). Produção e sandbox não acessados.
+Ledger remoto: **682** — nenhuma migration criada (o motivo já é persistido em
+`registros_consultor_status_log`; todos os defeitos eram de frontend).
+Bloco 2A preservado integralmente.
+
+## Defeito 3 — nota rápida descartada pela finalização
+
+- Causa raiz: `buildPayload()` montava `observacoes_tecnicas` apenas com
+  `serializeConduta(...)`. As notas rápidas, que vivem serializadas nesse mesmo campo,
+  nunca entravam no payload — nem no autosave, nem no salvamento explícito, nem no
+  salvamento que antecede a RPC de finalização. A nota existia somente no estado local.
+- Correção: `observacoes_tecnicas` passa a ser `serializeNotes(serializeConduta(...), notes)`.
+  Como o payload já é persistido ANTES de `rpc_finalizar_visita_v2` e qualquer erro de
+  persistência interrompe o fluxo (`throw`), a finalização deixa de descartar dados e não
+  finaliza parcialmente. Nenhum bloqueio adicional foi necessário.
+
+## Defeito 4 — dois botões de salvar com comportamento divergente
+
+- Causa: existiam duas implementações (`handleSaveDraft` e `handleSaveEdit`) com regras
+  próprias de motivo, feedback e saída do modo edição.
+- Correção: uma única função canônica `salvarCanonico()` decide o modo (rascunho, edição
+  justificada, bloqueado), exige motivo, mostra sucesso/erro, sai do modo edição e revalida
+  histórico/timeline. `handleSaveDraft` e `handleSaveEdit` passam a ser a mesma referência,
+  usada pelo botão inferior, pelo Ctrl/Cmd+S e pelo botão "Salvar alterações" do banner.
+  Clique duplo é ignorado enquanto `saveMutation.isPending`, tanto ao salvar quanto ao finalizar.
+
+## Defeito 5 — timeline omitia o motivo da edição
+
+- Causa: a timeline formatava apenas `status_anterior → status_novo`, descartando `motivo`.
+- Correção: `src/lib/visita/statusLogTimeline.ts` como fonte única. `finalizado→finalizado`
+  é rotulado "Edição justificada (Finalizado)" e exibe motivo, autor e data. O autor é
+  resolvido por nome em `profiles`; UUIDs nunca são exibidos. Histórico preservado.
+
+## Fotos / áudios / anexos
+
+- Auditados: são inseridos em `registros_consultor_arquivos` no momento do upload, fora do
+  payload da visita. O salvamento e a finalização não os tocam — não há perda nem duplicação
+  de upload. Regressão estática garante que o salvamento não faz `insert` de arquivos.
+
+## Arquivos alterados
+
+- `src/lib/visita/statusLogTimeline.ts` (novo)
+- `src/pages/VisitaTecnica.tsx`
+- `src/components/visita/VisitaTimeline.tsx`
+- `src/test/visita/statusLogTimeline.test.ts` (novo)
+- `src/test/visita/visitaTecnicaSalvamento.static.test.ts` (novo)
+
+## Verificações
+
+- Gate de binding: OK antes e depois (houve drift de `.env`/`types.ts`; restaurado de `4cf3e2ae`
+  sem qualquer acesso a ambiente proibido).
+- Testes direcionados `src/test/visita/**`: 24/24.
+- Typecheck: OK. Build: OK. Ledger permanece 682. Nenhum e-mail, WhatsApp, fiscal ou webhook.
+
+## Veredito do bloco 2B
+
+- Correções: **GO**.
+- `smoke_autenticado`: **false** — falta o perfil autenticado **sem permissão** (desktop e mobile).
+- **AUDITORIA H9 INTEGRAL: NO-GO.** **Promoção para produção: NÃO AUTORIZADA.**
