@@ -26,6 +26,14 @@
 ### Onda P2
 - **NO-GO / bloqueada** até autorização explícita, arquivamento das evidências da P1 e dry-run verde da variante H7n.
 
+### Promoção estrutural para o CultivoFarm `swzpzcwiasxmjutrmvkm`
+- Pacote de preparação criado em `restoration/promocao-cultivofarm/`: prechecks somente leitura, gerador do baseline estrutural, pós-checks/gates, rollback por onda, runbook local e manifesto de exclusões. Relatório: `restoration/promocao-cultivofarm/10-relatorio-final.md`.
+- Escopo: apenas schema, funções, views, RLS, policies, índices e triggers. Sem dados, sem usuários (só `admin@arbio.com` na etapa posterior), sem Storage, sem harnesses, sem as 20 migrations de sandbox.
+- Estratégia: baseline por `pg_dump --schema-only` da homologação, não replay das 721 migrations.
+- **Bloqueios:** sem canal autenticado para `swzpzcwiasxmjutrmvkm` neste ambiente (execução é local); sessão de homologação expirada impede gerar o dump; backup/PITR do CultivoFarm não confirmado; `.env` do repositório em drift para o sandbox.
+- **Ação manual necessária:** obter a connection string e confirmar backups no dashboard do CultivoFarm, habilitar extensões e rodar `supabase link --project-ref swzpzcwiasxmjutrmvkm` localmente.
+- Veredito: preparação concluída, promoção **NO-GO**.
+
 
 ## Concluídas
 - **Onda P1 da promoção H9 (produção `navfzbwgwzruipouyfnk`)** — convergência `20261101000000` e authz `20261006000000` / `20261015000000` aplicadas e pós-checadas; ledger 490/`20260723000000` → 493/`20261101000000`; 3 registros `APLICADA`/`P1` em `public.promocao_execucao_registro`; tabelas de convergência com RLS, zero policies, sem SELECT para anon/authenticated, vazias e sem baseline. Registro: `restoration/promocao-producao-h9/25-p1-conclusao-convergencia-e-authz.md`.

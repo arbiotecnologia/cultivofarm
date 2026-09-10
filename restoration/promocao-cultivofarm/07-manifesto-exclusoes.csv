@@ -1,0 +1,39 @@
+categoria,item,motivo,acao
+migration_sandbox,20260812134101_604206f7-71a8-4fde-b41b-537f6479446a.sql,Origem sandbox yzszl; recria app_role com 3 rotulos e user_roles,EXCLUIR
+migration_sandbox,20260812134155_245d0079-9267-453c-8423-158f2fd81ce7.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134238_0b1155d2-e6ff-4811-8ed0-915706f54e56.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134313_f3b6054d-f393-407b-a9d1-cfe5de019a32.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134344_7efd6b71-d7e9-4630-b779-d4ea6f1b62ad.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134417_9da45add-c5b2-47db-8aab-e55153a7ca11.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134501_b23b4b9d-fbb7-4c16-b9fa-be78284f92b0.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134547_e8fb7992-9708-4f53-90d9-35cfaba3fe6e.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134640_8de48d83-c45e-4b00-bf5a-f92067012de8.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134732_8ffaf385-2037-4c17-b5a2-8a180a282b70.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134822_438e288d-07e1-4991-bb89-563c8dba44d1.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812134916_e41eb879-11ae-4e93-bfed-d8d1b33b4e9b.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812135012_c2c8b2e7-36d8-461b-ba76-3488771ad5a4.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812135124_08d0ab81-80cc-422a-b1a1-44de6d957250.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812135212_0bb0dddc-9f8c-47f9-b67b-8d88e6f469b1.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812135306_435efc40-c569-4264-a950-274f97d7fbad.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812135402_01cf0d55-1fc6-475b-9874-0b0858b00204.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812135450_0d475ca3-9f1d-49e6-8b87-e9be40fd755b.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812135542_c1b2e104-40f1-48a4-8f85-bfb15802d199.sql,Origem sandbox yzszl,EXCLUIR
+migration_sandbox,20260812135640_16cf8527-ff57-4693-866c-b9cdba21c7dc.sql,Origem sandbox yzszl,EXCLUIR
+dados,Todas as tabelas transacionais e mestres,Promocao e estrutural; dados nao migram,EXCLUIR
+dados,clientes / fazendas / talhoes / ordens_servico / entregas / financeiro / estoque,Massa sintetica de homologacao (residuo H6B-),EXCLUIR
+auth,18 usuarios do staging,Usuarios de homologacao (@arbio-staging.test e harness),EXCLUIR
+auth,admin@arbio.com,Unico usuario previsto,CRIAR NA ETAPA POSTERIOR
+storage,14 buckets do staging,Estrutura de bucket recriada na etapa posterior; objetos nao migram,ADIAR
+storage,29 objetos (consultor-arquivos, fiscal-xml tpAmb=2),Arquivos de teste,EXCLUIR
+harness,supabase/tests/**,Fixtures e harnesses de homologacao,EXCLUIR
+harness,scripts/tests/**,Harness de runtime,EXCLUIR
+harness,e2e/**,Testes de interface,EXCLUIR
+ambiente,fiscal_environment_marker,Marcador especifico de ambiente,ESTRUTURA SIM / VALOR RECONFIGURADO
+ambiente,_fiscal_staging_marker,Marcador exclusivo de homologacao,EXCLUIR
+ambiente,company_fiscal_settings,Configuracao por ambiente,ESTRUTURA SIM / VALOR RECONFIGURADO
+ambiente,fiscal_document_series,Numeracao fiscal reinicia no novo ambiente,ESTRUTURA SIM / VALOR RECONFIGURADO
+ambiente,codigo_sequencias,Sequencias por ambiente,ESTRUTURA SIM / VALOR RECONFIGURADO
+ambiente,promocao_execucao_registro / promocao_rollback_baseline,Registro de execucao especifico da producao AR Bio,AVALIAR NA ONDA 7
+integracao,Edge Functions (18+),Fora do escopo estrutural desta promocao,ADIAR
+integracao,Secrets do Vault,Recriados manualmente no novo projeto,ADIAR
+integracao,Jobs pg_cron,Definicao promovida desabilitada,CRIAR INATIVO
