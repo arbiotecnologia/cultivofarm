@@ -10,9 +10,11 @@
 ### Convergir homologação
 - Aplicar `20261006000000`, `20261015000000` e `20261101000000` também em `ikaauvsflpmamgxmkhoq`, para que os dois ledgers avancem juntos.
 
-### Variante H7n específica de produção
-- Gerar diff de contratos staging x produção, escrever a variante `H7n-PROD` recortada aos objetos existentes e rodar dry-run em homologação.
-- **Bloqueio:** promoção direta das 5 migrations H7n é NO-GO — 2 de 5 views alvo, views de catálogo, `fn_catalogo_preco_canonico` e os 4 helpers não existem em produção. Registro: `restoration/promocao-producao-h9/26-h7n-auditoria-compatibilidade-producao.md`.
+### Variante H7n específica de produção — onda A1 preparada
+- Pacote `restoration/promocao-producao-h9/h7n-prod/` gerado: diff de contratos, censo, prechecks, forward `20261103000000`, pós-checks, rollback fail-closed e critérios de aceite. Registro: `restoration/promocao-producao-h9/27-h7n-prod-pacote-variante.md`.
+- **Pendente:** dry-run em homologação com a matriz de 10 perfis, prechecks em produção e confirmação de backup antes de qualquer execução.
+- **Bloqueio A2..A5:** censo de dependências em produção, diff de corpos das RPCs do P1b, promoção prévia de `fn_catalogo_preco_canonico`, views de catálogo e 4 helpers da P2, e classificação dos 277 SECURITY DEFINER.
+
 
 ### Onda P2
 - **NO-GO / bloqueada** até autorização explícita, arquivamento das evidências da P1 e dry-run verde da variante H7n.
