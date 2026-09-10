@@ -13,6 +13,7 @@
 #   EXCLUIDA_SANDBOX  -> as 20 migrations do sandbox yzszl
 #   EXCLUIDA_HARNESS  -> harness/fixture/seed/smoke declarados no nome
 #   EXCLUIDA_MARKER   -> marcador de ambiente de homologação
+#   REVISAO_REF_GUARD -> guarda de ref de outro projeto embutida no SQL
 #   REVISAO_DML       -> estrutural, mas com DML detectado: revisão humana
 #
 # Uso:
