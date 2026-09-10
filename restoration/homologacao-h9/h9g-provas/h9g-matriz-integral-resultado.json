@@ -1,0 +1,103 @@
+{
+  "total": 8,
+  "pass": 7,
+  "fail": 1,
+  "casos": [
+    {
+      "id": "V1.1",
+      "grupo": "1-Listagem",
+      "perfil": "tecnico",
+      "precondicao": "sessao valida",
+      "acao": "listar visitas (default)",
+      "esperado": "jsonb com total/itens, sem erro",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"page\": 1, \"items\": [], \"total\": 0, \"has_more\": false, \"page_size\": 25}",
+      "status": "PASS",
+      "tabelas": "registros_consultor",
+      "limpeza": "finally"
+    },
+    {
+      "id": "V1.2",
+      "grupo": "1-Listagem",
+      "perfil": "tecnico",
+      "precondicao": "busca sem resultado",
+      "acao": "busca vazia",
+      "esperado": "total=0 sem erro",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"page\": 1, \"items\": [], \"total\": 0, \"has_more\": false, \"page_size\": 25}",
+      "status": "PASS",
+      "tabelas": "registros_consultor",
+      "limpeza": "finally"
+    },
+    {
+      "id": "V1.3",
+      "grupo": "1-Listagem",
+      "perfil": "tecnico",
+      "precondicao": "paginacao",
+      "acao": "pagina 2 tamanho 5",
+      "esperado": "retorna pagina sem erro",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"page\": 2, \"items\": [], \"total\": 0, \"has_more\": false, \"page_size\": 5}",
+      "status": "PASS",
+      "tabelas": "registros_consultor",
+      "limpeza": "finally"
+    },
+    {
+      "id": "V1.4",
+      "grupo": "1-Listagem",
+      "perfil": "tecnico",
+      "precondicao": "filtros status+data",
+      "acao": "filtrar finalizadas",
+      "esperado": "retorna sem erro",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"page\": 1, \"items\": [], \"total\": 0, \"has_more\": false, \"page_size\": 25}",
+      "status": "PASS",
+      "tabelas": "registros_consultor",
+      "limpeza": "finally"
+    },
+    {
+      "id": "V1.5",
+      "grupo": "1-Listagem",
+      "perfil": "anonimo",
+      "precondicao": "sem sessao",
+      "acao": "listar sem autenticar",
+      "esperado": "unauthenticated (42501)",
+      "observado": "ERROR:  unauthenticated ⏎ CONTEXT:  PL/pgSQL function rpc_listar_visitas_tecnicas_v1(text,text[],date,date,uuid,uuid,integer,integer) line 11 at RAISE",
+      "status": "PASS",
+      "tabelas": "-",
+      "limpeza": "n/a"
+    },
+    {
+      "id": "V1.6",
+      "grupo": "1-Listagem",
+      "perfil": "tecnico",
+      "precondicao": "painel",
+      "acao": "resumo de atendimentos",
+      "esperado": "contadores sem erro",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"todos\": 0, \"demandas\": 0, \"fazendas\": 0, \"os_ativas\": 0, \"aguardando\": 0, \"concluidos\": 0, \"ocorrencias\": 0, \"em_andamento\": 0, \"monitoramento\": 0}",
+      "status": "PASS",
+      "tabelas": "registros_consultor",
+      "limpeza": "finally"
+    },
+    {
+      "id": "V2.1",
+      "grupo": "2-Criacao",
+      "perfil": "tecnico",
+      "precondicao": "cliente/fazenda/talhao/cultura validos",
+      "acao": "criar visita (rascunho)",
+      "esperado": "registro_id retornado, status rascunho",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": false, \"error\": \"technical_access_required\"}",
+      "status": "FAIL",
+      "tabelas": "registros_consultor",
+      "limpeza": "finally"
+    },
+    {
+      "id": "V14.1",
+      "grupo": "14-Limpeza",
+      "perfil": "sistema",
+      "precondicao": "fim da matriz",
+      "acao": "remover fixtures temporarias",
+      "esperado": "residuo zero das fixtures H9GM",
+      "observado": "apagados_filhos=0 ⏎ residuo_registros=0 residuo_cliente=0 residuo_checkin=0",
+      "status": "PASS",
+      "tabelas": "todas do dominio visita",
+      "limpeza": "finally"
+    }
+  ]
+}
