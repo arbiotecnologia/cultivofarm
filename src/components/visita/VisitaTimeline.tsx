@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { STATUS_LABEL_REGISTRO, type RegistroStatus } from "@/lib/registroTransitions";
 import { cn } from "@/lib/utils";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { descreverStatusLog } from "@/lib/visita/statusLogTimeline";
+
 
 interface VisitaTimelineProps {
   registroId: string;
@@ -47,16 +49,40 @@ export function VisitaTimeline({ registroId, talhaoId, className }: VisitaTimeli
           .order("uploaded_at", { ascending: false }),
       ]);
 
+      // Nomes dos autores dos registros de status (sem expor UUIDs na UI).
+      const autorIds = Array.from(
+        new Set((logs || []).map((l: any) => l.changed_by).filter(Boolean)),
+      );
+      const autorNomes = new Map<string, string>();
+      if (autorIds.length) {
+        const { data: perfis } = await (supabase as any)
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", autorIds);
+        (perfis || []).forEach((p: any) => {
+          if (p?.user_id && p?.nome) autorNomes.set(p.user_id, p.nome);
+        });
+      }
+
       (logs || []).forEach((l: any) => {
-        const fromLabel = l.status_anterior ? STATUS_LABEL_REGISTRO[l.status_anterior as RegistroStatus] || l.status_anterior : "—";
-        const toLabel = STATUS_LABEL_REGISTRO[l.status_novo as RegistroStatus] || l.status_novo;
+        const { title, detail } = descreverStatusLog(
+          {
+            status_anterior: l.status_anterior,
+            status_novo: l.status_novo,
+            motivo: l.motivo,
+            autorNome: l.changed_by ? autorNomes.get(l.changed_by) ?? null : null,
+          },
+          (s) => (s ? STATUS_LABEL_REGISTRO[s as RegistroStatus] || s : "—"),
+        );
         items.push({
           ts: l.changed_at,
           icon: GitCommit,
-          title: `Status: ${fromLabel} → ${toLabel}`,
+          title,
+          detail,
           variant: "primary",
         });
       });
+
 
       (checkins || []).forEach((c: any) => {
         items.push({

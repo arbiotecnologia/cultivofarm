@@ -562,7 +562,15 @@ export default function VisitaTecnica() {
       localizacao_na_area: diagnosticos[0]?.localizacao || null,
       historico_resumido: historicoResumido || null,
       condicoes_climaticas_observadas: condicoesClimaticas || null,
-      observacoes_tecnicas: serializeConduta(diagnosticos[0]?.descricao || "", condutaAtualizada) || null,
+      // H9-G 2B: as notas rápidas vivem serializadas dentro de observacoes_tecnicas.
+      // Elas PRECISAM entrar no payload, senão qualquer salvamento (inclusive o
+      // que antecede a finalização) descarta silenciosamente as notas locais.
+      observacoes_tecnicas:
+        serializeNotes(
+          serializeConduta(diagnosticos[0]?.descricao || "", condutaAtualizada),
+          notes,
+        ) || null,
+
       urgencia: urgencia as any,
       necessidade_intervencao: necessidadeIntervencao as any,
       risco_produtivo: riscoProdutivo as any,
@@ -1037,18 +1045,44 @@ export default function VisitaTecnica() {
     necessidadeIntervencao, riscoProdutivo, conduta, encerramento, notes,
   ]);
 
-  const handleSaveDraft = () => {
-    // Em visitas finalizadas, "salvar rápido" não se aplica:
-    // se estiver no modo edição, use o botão "Salvar alterações" do banner (exige motivo);
-    // se estiver bloqueado, ignore.
-    if ((visita as any)?.status && (visita as any).status !== "rascunho") {
-      if (uiMode === "editing") {
-        handleSaveEdit();
+  /**
+   * H9-G 2B — ação de salvar CANÔNICA e única.
+   * O botão inferior ("Salvar"), o atalho Ctrl/Cmd+S e o botão do banner
+   * ("Salvar alterações") chamam exatamente esta função. Ela decide o modo:
+   *  - rascunho: salva o rascunho;
+   *  - finalizada em edição: salva exigindo motivo e registra no histórico;
+   *  - finalizada bloqueada: nada a salvar.
+   * Cliques repetidos são ignorados enquanto houver salvamento em andamento.
+   */
+  const salvarCanonico = () => {
+    if (saveMutation.isPending) return;
+    const statusAtual = (visita as any)?.status;
+    if (statusAtual && statusAtual !== "rascunho") {
+      if (uiMode !== "editing") return;
+      if (!editMotivo || editMotivo.trim().length < 5) {
+        toast.error("Motivo da edição é obrigatório (mínimo 5 caracteres).");
+        return;
       }
+      saveMutation.mutate(
+        { payload: buildPayload(), finalizar: false, edit: { motivo: editMotivo.trim() } },
+        {
+          onSuccess: () => {
+            toast.success("Alterações salvas no histórico da visita.");
+            setEditMotivo("");
+            setUiMode("locked");
+            queryClient.invalidateQueries({ queryKey: ["visita-status-log", id] });
+            queryClient.invalidateQueries({ queryKey: ["visita-timeline", id] });
+            refetchVisita();
+          },
+        }
+      );
       return;
     }
     saveMutation.mutate({ payload: buildPayload(), finalizar: false });
   };
+
+  const handleSaveDraft = salvarCanonico;
+
 
   // Atalho Ctrl/Cmd+S para salvar rascunho
   useEffect(() => {
@@ -1113,23 +1147,9 @@ export default function VisitaTecnica() {
     refetchVisita();
     setUiMode("locked");
   };
-  const handleSaveEdit = () => {
-    if (!editMotivo || editMotivo.trim().length < 5) {
-      toast.error("Motivo da edição é obrigatório (mínimo 5 caracteres).");
-      return;
-    }
-    saveMutation.mutate(
-      { payload: buildPayload(), finalizar: false, edit: { motivo: editMotivo.trim() } },
-      {
-        onSuccess: () => {
-          toast.success("Alterações salvas no histórico da visita.");
-          setEditMotivo("");
-          setUiMode("locked");
-          queryClient.invalidateQueries({ queryKey: ["visita-status-log", id] });
-        },
-      }
-    );
-  };
+  // Banner e barra inferior compartilham a MESMA ação canônica.
+  const handleSaveEdit = salvarCanonico;
+
 
   const handleFinalize = async () => {
     // Validação para evitar retorno duplicado acidental - Fase 10.2.1.3
@@ -1223,11 +1243,16 @@ export default function VisitaTecnica() {
   };
 
   const doFinalize = () => {
+    // H9-G 2B: um único envio por vez. O payload já carrega TODAS as alterações
+    // locais (inclusive notas rápidas); ele é persistido antes da RPC de
+    // finalização e, se o salvamento falhar, a finalização não acontece.
+    if (saveMutation.isPending) return;
     saveMutation.mutate({
       payload: buildPayload({ status: "finalizado", hora_fim: new Date().toISOString() }),
       finalizar: true,
     });
   };
+
 
   // -------- PDF --------
   const { data: ordensConsolidado = [] } = useQuery({
