@@ -16,6 +16,11 @@
 - **Veredito A1:** `NO-OP / NAO EXECUTADA` — estado-alvo já existe; não registrar no ledger.
 - **Bloqueio A2..A5:** censo de dependências arquivado, diff de corpos das RPCs do P1b, promoção prévia de `fn_catalogo_preco_canonico`, views de catálogo e 4 helpers da P2, e classificação dos 277 SECURITY DEFINER.
 
+### Dry-run H7n-PROD em homologação (preparado, não executado)
+- Pacote criado em `restoration/promocao-producao-h9/h7n-prod/dry-run/`: checklist de dependências A2..A5/P2, prechecks somente leitura e plano com 12 gates de aceite. Registro: `restoration/promocao-producao-h9/29-h7n-prod-dry-run-homologacao-preparado.md`.
+- **Bloqueio:** o Supabase de homologação `ikaauvsflpmamgxmkhoq` exige novo login autenticado; sem ele nenhum dry-run pode ser executado, nem somente leitura.
+- Vereditos preservados: A1 `NO-OP` (fora do ledger), A2..A5 `NO-GO`, P2 `BLOQUEADA`, promoção `NO-GO`.
+
 
 
 ### Onda P2
