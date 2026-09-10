@@ -164,3 +164,27 @@ como aplicada — a onda para nesse ponto.
 - **P1: BLOQUEADA** — falta canal direto autenticado à produção
   `navfzbwgwzruipouyfnk` e CLI Supabase para o reparo de ledger.
 - **P2: NO-GO** — depende de P1 concluída e verificada.
+
+## 8. Tentativa de execução da P1 — 2026-09-10, 16:53 UTC
+
+Solicitação: executar a P1 "na máquina do operador" com o CLI autenticado.
+
+Verificação de canal, feita antes de qualquer escrita:
+
+| Canal | Observado | Resultado |
+|---|---|---|
+| Conexão `psql` do ambiente | banco gerenciado deste ambiente, refs presentes: `ikaauvsflpmamgxmkhoq`, `yzszlzjpovmcteuxjznj` | produção **ausente** |
+| CLI `supabase` | não instalado neste ambiente | `migration repair` **indisponível** |
+| Canal para `navfzbwgwzruipouyfnk` | inexistente | **ACESSO AUSENTE** |
+| Máquina do operador (Windows local) | fora do alcance deste ambiente | **inacessível** |
+
+Este ambiente **não é** a máquina do operador e não tem shell nela. A P1
+permanece **NÃO EXECUTADA**, parada fail-closed antes da primeira escrita.
+Zero SQL executado, nenhum banco de produção acessado, nenhuma migration
+marcada como aplicada, nenhum ledger/postcheck/advisor real coletado — e,
+portanto, nenhum resultado desses foi inventado no dossiê.
+
+Para concluir a P1, o runbook da seção 6 precisa ser executado **pelo operador**,
+no terminal da máquina que tem acesso à produção, e as saídas (`ledger antes/
+depois`, logs de pre/postcheck, Security Advisor) devem ser trazidas de volta
+para registro aqui.
