@@ -16,14 +16,14 @@ import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { getHomeForRole } from "@/lib/permissions";
+import { resolveSafeHome } from "@/lib/navigation/safeHome";
 import {
   VISITA_GUARD_TIMEOUT_MS,
   resolveVisitaRouteAccess,
 } from "@/lib/visita/visitaRouteAccess";
 
 export function VisitaRouteGuard({ children }: { children?: ReactNode }) {
-  const { user, roles, role, loading, error, refresh } = useAuth();
+  const { user, roles, primaryRole, loading, error, refresh } = useAuth();
   const navigate = useNavigate();
   const [timedOut, setTimedOut] = useState(false);
 
@@ -82,7 +82,7 @@ export function VisitaRouteGuard({ children }: { children?: ReactNode }) {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate(getHomeForRole(role), { replace: true })}
+              onClick={() => navigate(resolveSafeHome({ hasUser: !!user, roles, primaryRole }), { replace: true })}
               aria-label="Voltar"
             >
               <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
