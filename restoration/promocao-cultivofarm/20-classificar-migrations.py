@@ -88,6 +88,11 @@ def classify(path: Path) -> tuple[str, str]:
     except OSError as exc:  # pragma: no cover
         return ("REVISAO_DML", f"Falha de leitura: {exc}")
 
+    for ref in REFS_ESTRANHOS:
+        if ref in body:
+            return ("REVISAO_REF_GUARD",
+                    f"Contem ref de outro projeto '{ref}' (guarda abortaria no CultivoFarm)")
+
     for marker in MARKER_PATTERNS:
         if marker in body:
             return ("EXCLUIDA_MARKER", f"Contem marcador de ambiente/teste '{marker}'")
