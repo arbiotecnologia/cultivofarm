@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { STATUS_LABEL_REGISTRO, type RegistroStatus } from "@/lib/registroTransitions";
 import { cn } from "@/lib/utils";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { descreverStatusLog } from "@/lib/visita/statusLogTimeline";
+
 
 interface VisitaTimelineProps {
   registroId: string;
