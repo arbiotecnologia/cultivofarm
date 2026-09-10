@@ -132,14 +132,14 @@ export function UserMenu({ settingsTo, onSwitchPortal }: UserMenuProps = {}) {
             </DropdownMenuItem>
           )}
 
-          {onSwitchPortal && (
-            <DropdownMenuItem onClick={onSwitchPortal} className="cursor-pointer">
+          {handleSwitchPortal && (
+            <DropdownMenuItem onClick={handleSwitchPortal} className="cursor-pointer">
               <Repeat className="h-4 w-4 mr-2 text-muted-foreground" aria-hidden="true" />
               <span>Trocar de portal</span>
             </DropdownMenuItem>
           )}
 
-          {(settingsPath || onSwitchPortal) && <DropdownMenuSeparator className="my-1" />}
+          {(settingsPath || handleSwitchPortal) && <DropdownMenuSeparator className="my-1" />}
 
 
           <DropdownMenuItem

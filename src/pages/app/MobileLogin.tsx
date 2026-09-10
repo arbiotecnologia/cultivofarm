@@ -26,7 +26,10 @@ export default function MobileLogin() {
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
   const logoUrl = config?.logo_url || null;
 
-  if (user) return <Navigate to="/app" replace />;
+  // H9-G 2F — após autenticar, o destino é decidido pelo seletor canônico:
+  // ele redireciona sozinho quando há um único contexto ou preferência salva
+  // ("Entrar diretamente neste portal"). Nunca herda contexto efêmero antigo.
+  if (user) return <Navigate to="/selecionar-portal" replace />;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
