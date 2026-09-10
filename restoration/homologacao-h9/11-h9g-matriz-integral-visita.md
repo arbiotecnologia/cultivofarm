@@ -156,3 +156,89 @@ ver o seletor. Troca de usuário continua limpando o contexto (2E).
 - Correções: **GO técnico**. `smoke_autenticado` permanece **false**.
 - **H9 integral e promoção: NO-GO** até o reteste real por perfil (técnico read-only, gestor,
   multipapel técnico/B2B, logout/novo login) em desktop e mobile.
+
+---
+
+## H9-G BLOCO 2G — FECHAMENTO DO SMOKE AUTENTICADO
+
+HEAD auditado: `da776d991457ee912733a7f6c384c69766ca52f4`.
+Binding conferido antes e depois: `H9F BINDING GATE: OK — staging ikaauvsflpmamgxmkhoq`.
+Desvio local do `.env`/`types.ts` para o sandbox foi detectado e restaurado a partir de `4cf3e2ae`
+(21.850 linhas de contrato). Nenhum acesso a sandbox ou produção.
+
+### 1. Auditoria do diff 2A–2F
+`git diff --stat 1bf55b05..HEAD`: 29 arquivos, +1934/-111. Zero arquivos em
+`supabase/migrations/`, zero `.sql`, zero `supabase/functions/`. Alterações exclusivamente de
+frontend (guards, hooks, libs de visita/navegação), testes e dossiês. Nenhum segredo, DSN ou
+binding proibido introduzido — comprovado pelo gate estático.
+
+### 2. Suíte integral (execução única final)
+```
+Test Files  240 passed | 1 skipped (241)
+     Tests  3651 passed | 4 skipped (3655)
+  Duration  105.33s
+```
+Zero falhas. Nenhum snapshot atualizado, nenhum teste mascarado.
+
+### 3. Direcionados / typecheck / build
+- `src/test/visita` + multiportal + mobile: **18 arquivos / 158 testes aprovados**.
+- `npx tsgo --noEmit -p tsconfig.app.json`: `TS_OK`.
+- `npx vite build`: `built in 32.26s`, PWA v1.2.0, 20 entradas de precache.
+
+### 4. Banco
+Prova independente fornecida pelo operador: `ledger_count=682`, `latest_version=20261026000000`.
+Nenhuma migration no 2F nem no 2G. Nenhuma ferramenta SQL gerenciada foi usada — a disponível
+aponta para o sandbox proibido (fail-closed).
+
+### 5. Resíduo de fixtures H9-G
+Harness canônico `h9g-provas/h9g-matriz-integral-visita.py`, último resultado registrado:
+`total=68, pass=68, fail=0`, com cleanup H9GM concluído e resíduo zero. Os blocos 2B–2G não
+criaram novas fixtures (nenhuma escrita em banco), portanto o resíduo permanece zero. O histórico
+legítimo da visita descartável VT-2026-0006 foi preservado integralmente.
+
+### 6. Matriz autenticada por perfil (smoke real do operador)
+
+| Perfil | Resultado |
+|---|---|
+| Administrador | CRUD integral da visita desktop/mobile: criação, identificação, check-in, duplicidade amigável, diagnóstico, severidade/percentuais, evidências/nota, quatro desfechos, aviso sem foto, finalização, reabertura justificada e timeline — OK |
+| Produtor (`cliente_produtor`) | Rota interna negada desktop/mobile; Voltar → `/app` — OK |
+| Consultor Técnico | Leitura permitida; sem Editar — OK |
+| Administrativo | Leitura permitida; sem Editar — OK |
+| Aplicador | Rota interna negada; Voltar → `/app` — OK |
+| Operador OnFarm | Rota negada; cockpit preservado — OK |
+| Produção | Rota interna negada — OK |
+| Parceiro B2B | Rota interna negada — OK |
+| Parceiro B2B Técnico | Rota interna negada — OK |
+| Financeiro | Login OK; visita → tela neutra "Acesso não autorizado" sem dados; Voltar → Dashboard Financeiro; logout OK |
+| Técnico Agrônomo | Login OK; leitura permitida (`has_active_user_cliente_access=true`, `is_active_visit_participant=false`); após 2F **nenhum** botão Editar/Salvar/Finalizar; conteúdo read-only |
+| Gestor | Fora de edição: "Editar visita" visível, Salvar/Finalizar ausentes; Editar exigiu motivo mínimo; após reabrir, Salvar apareceu e funcionou, saiu da edição e voltou a ocultar Salvar; banco confirmou `registros_consultor_status_log` finalizado→finalizado com motivo exato, `changed_by` e `changed_at` |
+| Gestor Comercial | Acesso negado neutro sem dados; Voltar → "Comercial B2B Consolidado"; logout OK |
+| Multipapel `fagner` | Login sem preferência abriu o seletor; Portal Técnico → `/app` AR Bio Campo e visita direta OK; reload preservou contexto; menu exibiu "Consultor Técnico" e "Trocar de portal"; troca sem logout; com Portal B2B ativo a visita foi negada sem vazamento; Sair encerrou sessão; novo login com `remember=false` voltou ao seletor sem herdar contexto |
+
+Quatro perfis de teste (financeiro, tecnico_agronomo, gestor, comercial) tiveram senha de teste
+redefinida em staging antes do smoke; as credenciais não são registradas neste dossiê.
+
+### 7. Arquivos e blocos 2A–2F
+- 2A: `src/lib/visita/evidenciasCount.ts`, `src/lib/visita/desfechoVisita.ts`,
+  `VisitaStatusBanner.tsx`, `VisitaTecnica.tsx`.
+- 2B: `src/lib/visita/statusLogTimeline.ts`, `VisitaTimeline.tsx`, `VisitaTecnica.tsx`
+  (salvamento canônico + persistência antes da finalização).
+- 2C: `src/lib/visita/visitaRouteAccess.ts`, `src/components/guards/VisitaRouteGuard.tsx`, `src/App.tsx`.
+- 2D: `src/lib/navigation/safeHome.ts`, `src/pages/SemPermissao.tsx`.
+- 2E: `src/lib/navigation/portalRoleContext.ts`, `RoleGuard`/`App.tsx`, `useAuth.tsx`.
+- 2F: `src/lib/visita/acoesPersistencia.ts`, `UserMenu.tsx`, `MobileLogin.tsx`.
+- Testes: `src/test/visita/*` (10 arquivos novos no período).
+
+### 8. Riscos residuais
+- 59 migrations repo-only continuam em quarentena (`BLOQUEADA_PERMANENTE`), fora do pacote de promoção.
+- Ferramenta SQL gerenciada do ambiente aponta para o sandbox; toda verificação de banco depende
+  de prova externa/DSN de staging. Risco operacional recorrente de drift de `.env`/`types.ts`,
+  mitigado pelo gate de binding integrado à suíte.
+- Produção nunca foi acessada nem comparada; a paridade prod↔staging permanece não verificada e
+  é escopo do preflight.
+
+### 9. Veredito
+- `smoke_autenticado` = **true**.
+- H9-G: **GO**.
+- AUDITORIA H9 INTEGRAL: **GO PARA PREFLIGHT DE PROMOÇÃO** (não é promoção executada).
+- Produção `navfzbwgwzruipouyfnk`: **NÃO AUTORIZADA** neste bloco.
