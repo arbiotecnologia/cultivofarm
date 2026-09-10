@@ -41,6 +41,13 @@ SANDBOX_UUID_NAME = re.compile(
 # --- Nomes que denunciam artefato de teste -----------------------------
 HARNESS_NAME = re.compile(r"(harness|fixture|seed|smoke|_teste_|_test_)", re.I)
 
+# --- Refs de outros projetos embutidos no SQL (guardas fail-closed) ----
+REFS_ESTRANHOS = (
+    "ikaauvsflpmamgxmkhoq",  # homologação AR Bio
+    "navfzbwgwzruipouyfnk",  # produção AR Bio
+    "yzszlzjpovmcteuxjznj",  # sandbox proibido
+)
+
 # --- Marcadores de ambiente de homologação -----------------------------
 MARKER_PATTERNS = (
     "_fiscal_staging_marker",
