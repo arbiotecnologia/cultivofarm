@@ -216,3 +216,13 @@ Gate de binding → **OK, homologação `ikaauvsflpmamgxmkhoq`**, sem conexão d
 ## Veredito P0b
 **NO-GO para a onda P1.** Cinco blockers permanecem, e nenhum deles é apenas a
 prova humana de backup.
+
+
+## Adendo P0c
+
+Fechamento dos blockers técnicos em `18-p0c-fechamento-blockers.md`; validador
+determinístico em `19-validacao-p0c.py`. Classificação final das 192 versões:
+135 PROMOVER, 47 PROMOVIVEL_COM_ARTEFATO, 3 PROMOVIVEL_CONDICIONADO,
+7 STAGING_ONLY, **0 BLOQUEADA**. Nenhum SQL executado, nenhum banco acessado,
+nenhuma migration histórica editada. Veredito: NO-GO apenas pela prova humana
+de backup/restore point.

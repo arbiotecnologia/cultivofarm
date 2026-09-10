@@ -253,3 +253,21 @@ Só após P1–P5 aprovadas.
 - **119 BLOQUEADA/REQUER_DECISÃO** — ver coluna `motivo` do manifesto.
 - **2 STAGING_ONLY** — `20260729004107`, `20260731162508`; nunca promover.
 - **59 repo-only em quarentena** — BLOQUEADA_PERMANENTE, fora do pacote.
+
+
+## Adendo P0c — ordem e artefatos por onda
+
+1. **P1** abre com a migration de convergência
+   `20261101000000_promocao_convergencia_ledger_v1.sql`, aplicada em produção
+   **e** em homologação, pois as ondas seguintes registram nela origem →
+   artefato → SHA-256 → status e o baseline de rollback do cron.
+2. **P2** — fundações e observabilidade: as 3 destrutivas condicionadas e o
+   artefato de cron `20261003000000__promocao_cron.sql`.
+3. **P3** — comunicação: `20260727161408__promocao.sql`, com flags de entrega
+   `false` e slots de segredo `NULL`.
+4. **P4** — fiscal fail-closed: `20260903182144__promocao.sql`.
+5. **P5** — visita H9: `20261023000000__promocao.sql`.
+6. **P6** — frontend e Edge Functions, posterior e fora desta fase.
+
+Regra invariável: onde existe artefato derivado, aplica-se **o artefato**, nunca
+o arquivo histórico. Versões `STAGING_ONLY` nunca entram em nenhuma onda.

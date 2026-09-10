@@ -48,3 +48,21 @@ Rollback é forward-only mais restore point. Para `DROP COLUMN` e
 `DELETE` de topo, se houvesse dado, o único caminho de reversão seria
 restore/PITR. Como **o backup diário não está comprovado**, essas três
 permanecem **NO-GO** até prova humana de backup/PITR.
+
+
+## Adendo P0c — provas de produção e retirada do blocker
+
+Leitura autorizada somente-leitura em produção:
+
+- `monitoramento_avisos.data_referencia` **não existe** → o `DROP COLUMN`
+  condicional de `20260727035330` não é acionado no baseline atual;
+- `public._motor_b2b_fase7_proofs` **não existe** → o `DROP TABLE` de
+  `20260730030920` é no-op; se aparecer, o precheck aborta em vez de apagar;
+- órfãos de `estoque_movimentacoes` contra `estoque_produto` = **0** → o
+  `DELETE` de topo de `20260804022556` é no-op; qualquer linha encontrada no
+  instante da onda aborta a transação antes de qualquer efeito.
+
+As três passam a **PROMOVIVEL_CONDICIONADO**, com precheck fail-closed na mesma
+transação, `lock_timeout='5s'`, `statement_timeout='60s'` e backup obrigatório.
+O blocker técnico de reescrita está retirado; permanece apenas a exigência
+humana de backup/restore point comprovado.

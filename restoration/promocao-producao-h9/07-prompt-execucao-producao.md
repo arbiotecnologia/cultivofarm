@@ -57,3 +57,17 @@ Não declarar "produção promovida" enquanto P2–P6 não estiverem concluídas
 Para as ondas seguintes, reutilizar este mesmo texto trocando a onda, a lista de
 versões, o restore point e a seção de rollback. A onda P6 (frontend e Edge
 Functions) exige prompt próprio e só após P1–P5 aprovadas.
+
+
+## Adendo P0c — pré-condições de partida
+
+Antes do primeiro comando da onda P1:
+
+1. backup/restore point recente **comprovado por prova humana** (único blocker
+   remanescente);
+2. `19-validacao-p0c.py` verde no HEAD que será promovido;
+3. binding local em homologação `ikaauvsflpmamgxmkhoq`, sem qualquer referência
+   a sandbox;
+4. convergência `20261101000000` movida para `supabase/migrations/` e aplicada
+   em produção e homologação;
+5. flags de entrega e-mail/WhatsApp/fiscal/webhook desligadas do início ao fim.

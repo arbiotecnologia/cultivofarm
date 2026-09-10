@@ -67,3 +67,19 @@ em produção; nunca são copiadas. Usuários são recriados por convite/e-mail 
 Ao abortar: registrar onda, migration, erro literal, saída dos postchecks,
 rollback aplicado e estado final do ledger. Não tentar "consertar em produção"
 sem nova janela e nova autorização.
+
+
+## Adendo P0c — convergência do ledger, passo a passo
+
+Para cada version da onda, nesta ordem:
+
+1. resolver o ref do alvo por canal externo e, só então, na mesma transação,
+   `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`;
+2. `SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='60s';`
+3. aplicar **o artefato derivado** quando existir, senão o arquivo histórico;
+4. rodar os pós-checks; qualquer falha → `ROLLBACK` e a onda para;
+5. `INSERT` do par origem → artefato → SHA-256 → status → onda em
+   `public.promocao_execucao_registro`;
+6. registrar o ledger pelo caminho suportado
+   `supabase migration repair --status applied <version>` — nunca escrita direta
+   em `supabase_migrations.schema_migrations`.

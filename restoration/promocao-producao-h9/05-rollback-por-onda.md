@@ -94,3 +94,14 @@ isso estão fora do pacote. Cada uma exige, antes de qualquer promoção:
 1. prova de que o objeto/linha alvo não existe em produção, ou
 2. rollback SQL específico, ensaiado em banco temporário restaurado do baseline
    de produção, com evidência anexada.
+
+
+## Adendo P0c — rollbacks concretos
+
+- Cron: `rollback-sql/20261003000000__promocao_cron_rollback.sql`, restauração
+  real do `command` a partir do baseline capturado em transação.
+- Convergência: `rollback-sql/20261101000000_promocao_convergencia_ledger_v1_rollback.sql`,
+  que **recusa** remover as tabelas se já houver histórico de promoção.
+- Destrutivas condicionadas: precheck aborta antes de qualquer efeito; havendo
+  efeito, a reversão depende de restore point/PITR — por isso o backup
+  comprovado é pré-requisito da onda.

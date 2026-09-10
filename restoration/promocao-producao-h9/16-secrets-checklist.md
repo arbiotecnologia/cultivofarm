@@ -49,3 +49,13 @@ qualquer conexão de banco e retornou OK.
 - [ ] nenhuma flag de entrega externa ligada
 - [ ] backup/PITR comprovado por evidência humana
 - [ ] ref do alvo validado por canal externo antes de definir `promocao.target_ref`
+
+
+## Adendo P0c — nenhum segredo é pré-requisito da onda
+
+Os nomes externos (`FISCAL_CERTIFICATE_MASTER_KEY`, `FISCAL_CORS_ALLOWLIST`,
+`INTERNAL_FUNCTION_SECRET`, `LOVABLE_API_KEY`) **não existem** em produção, e
+isso é o esperado: as integrações externas permanecem desligadas nesta onda.
+A estrutura de comunicação é promovida com os 4 slots de segredo `NULL` e todas
+as flags de entrega `false`, verificados por pós-check fail-closed. Nenhum
+segredo é criado, copiado, lido por valor ou registrado.

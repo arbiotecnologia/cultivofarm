@@ -46,3 +46,19 @@ Encaminhamento exigido antes de qualquer onda que a inclua:
 - `pg_cron` e `pg_net` já existem em produção; não recriar com versão fixada.
 - Postcheck de cada onda: contagem de jobs, `jobname`, `schedule` e `active`
   iguais ao esperado, sem job de entrega externa ativo.
+
+
+## Adendo P0c — baseline real de produção e artefato emitido
+
+Baseline lido em produção: `jobid=5`, `jobname='prune-old-audit-logs'`,
+`schedule='15 3 * * *'`, `database='postgres'`, `username='postgres'`,
+`active=true`, `md5(command)='e14782b8984dd461684fdbdc2c4008ff'`, com o defeito
+presente (`created_at` em `financial_audit_log` e em `clientes_audit_log`).
+Catálogo: `financial_audit_log.performed_at` e `clientes_audit_log.changed_at`.
+
+Artefato: `promotion-sql/20261003000000__promocao_cron.sql`; rollback real em
+`rollback-sql/20261003000000__promocao_cron_rollback.sql`, que restaura o
+`command` capturado em `public.promocao_rollback_baseline` dentro da transação
+de aplicação. O artefato troca **somente** os dois nomes de coluna, prova
+exatamente 2 linhas alteradas, preserva os demais `DELETE`s e todos os
+metadados, não executa `DELETE` e não agenda job novo. Onda **P2**.

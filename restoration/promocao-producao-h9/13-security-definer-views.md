@@ -59,3 +59,13 @@ tabela base, nunca revertendo para `security definer`.
 `ALTER VIEW … SET (security_invoker = false)`. Registrado apenas para
 completude: reverter reintroduz a vulnerabilidade e exige autorização humana
 explícita.
+
+
+## Adendo P0c — confirmação pelo advisor de produção
+
+O Security Advisor de produção confirma **exatamente 2** ERROR
+`security_definer_view`: `public.vw_esteira_laboratorio` e
+`public.vw_fluxo_visita_tecnica`, ambos corrigidos por `20260904130615` dentro
+do pacote. A terceira candidata estática, `public._src_vw_esteira_laboratorio`,
+não aparece no advisor; permanece como verificação de precheck da onda e, se
+existir com `SECURITY DEFINER`, exige decisão antes de prosseguir.

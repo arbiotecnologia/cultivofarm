@@ -117,3 +117,21 @@ final de versões aprovadas. Blocker registrado.
 `17-validacao-p0b.py` reprova qualquer artefato que contenha ref do sandbox, ref
 de homologação em código executável, marcador de homologação, UUID literal,
 `service_role`, senha, certificado ou chave privada. Estado atual: aprovado.
+
+
+## 8. Adendo P0c — destino final dos guards
+
+Censo revisado por leitura direta (ref ou marcador em qualquer posição do
+arquivo): **106 versões**, e não 103. A contagem da P0b usava o motivo textual
+do manifesto e não enxergava `20260801221902`.
+
+| Destino | Qtde |
+|---|---|
+| G0 — menção só em comentário, promover arquivo histórico | 53 |
+| G1/G2 — artefato derivado em `promotion-sql/` | 46 |
+| STAGING_ONLY — não promover | 7 |
+
+As 3 pendências `REQUER_DECISAO` da P0b foram fechadas: `20260729004013` é
+drill de rollback (STAGING_ONLY); `20260903182144` e `20261023000000` têm
+artefato derivado gerado por `gerar-promotion-manuais.py`. Não resta nenhuma
+version `BLOQUEADA_REQUER_DECISAO`.
