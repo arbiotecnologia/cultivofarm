@@ -75,4 +75,4 @@ BEGIN
 
   RETURN jsonb_build_object('ok', true, 'registro_id', v_new_id, 'solicitacao_id', v_sol_id, 'version', v_new_version);
 END;
-$function$
+$function$;

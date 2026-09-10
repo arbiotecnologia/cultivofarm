@@ -78,7 +78,7 @@ BEGIN
 
   RETURN jsonb_build_object('ok', true, 'registro_id', v_new_id, 'solicitacao_id', v_sol_id, 'version', v_new_version);
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.rpc_programar_retorno_visita(uuid,integer,date,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.rpc_programar_retorno_visita(uuid,integer,date,text) FROM anon;
