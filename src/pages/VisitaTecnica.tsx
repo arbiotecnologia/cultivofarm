@@ -1147,23 +1147,9 @@ export default function VisitaTecnica() {
     refetchVisita();
     setUiMode("locked");
   };
-  const handleSaveEdit = () => {
-    if (!editMotivo || editMotivo.trim().length < 5) {
-      toast.error("Motivo da edição é obrigatório (mínimo 5 caracteres).");
-      return;
-    }
-    saveMutation.mutate(
-      { payload: buildPayload(), finalizar: false, edit: { motivo: editMotivo.trim() } },
-      {
-        onSuccess: () => {
-          toast.success("Alterações salvas no histórico da visita.");
-          setEditMotivo("");
-          setUiMode("locked");
-          queryClient.invalidateQueries({ queryKey: ["visita-status-log", id] });
-        },
-      }
-    );
-  };
+  // Banner e barra inferior compartilham a MESMA ação canônica.
+  const handleSaveEdit = salvarCanonico;
+
 
   const handleFinalize = async () => {
     // Validação para evitar retorno duplicado acidental - Fase 10.2.1.3
