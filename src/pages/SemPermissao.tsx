@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
-import { getHomeForRole } from "@/lib/permissions";
+import { resolveSafeHome } from "@/lib/navigation/safeHome";
 
 /**
  * Página 403 — Acesso não autorizado.
@@ -15,7 +15,7 @@ export default function SemPermissao() {
   const location = useLocation() as {
     state?: { requested?: "b2b" | "technical"; from?: string };
   };
-  const { role, signOut, user } = useAuth();
+  const { roles, primaryRole, signOut, user } = useAuth();
   const { data } = useAvailableContexts();
 
   const canSwitch =
@@ -23,16 +23,18 @@ export default function SemPermissao() {
   const hasSingleOther =
     data && data.available_contexts.length === 1 ? data.available_contexts[0] : null;
 
+  // H9-G Bloco 2D — destino canônico único. Nunca usa histórico (evita voltar
+  // à rota negada) e só envia a `/acesso-pendente` quem realmente não tem papel.
   const goHome = () => {
-    if (hasSingleOther === "b2b") {
-      navigate("/portal-parceiro/dashboard", { replace: true });
-    } else if (hasSingleOther === "technical") {
-      navigate(getHomeForRole(role), { replace: true });
-    } else if (data && data.available_contexts.length === 0) {
-      navigate("/acesso-pendente", { replace: true });
-    } else {
-      navigate(getHomeForRole(role), { replace: true });
-    }
+    navigate(
+      resolveSafeHome({
+        hasUser: !!user,
+        roles,
+        primaryRole,
+        availableContexts: data?.available_contexts ?? null,
+      }),
+      { replace: true },
+    );
   };
 
   return (

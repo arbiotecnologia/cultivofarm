@@ -177,3 +177,27 @@ máximo. Não havia um estado distinto para "sem permissão", "não encontrado" 
 - Correção: **GO técnico**.
 - `smoke_autenticado`: **false** — exige reteste real com `produtor@arbio.com` em desktop e mobile.
 - **AUDITORIA H9 INTEGRAL: NO-GO.** **Promoção para produção: NÃO AUTORIZADA.**
+
+## Bloco 2D — Destino do botão "Voltar" após acesso negado
+
+Reprodução (produtor@arbio.com, desktop): tela neutra "Acesso não autorizado" correta,
+porém "Voltar" levava a `/acesso-pendente`, embora a sessão tenha portal ativo.
+
+Causa: `SemPermissao.goHome` decidia apenas por `available_contexts` da RPC de portais.
+Para `cliente_produtor` a lista vem vazia (não é contexto B2B/técnico), caindo no ramo
+`/acesso-pendente`. O guard de visita usava `getHomeForRole(role)` sem considerar multipapel.
+
+Correção (frontend-only, sem migration):
+- novo resolvedor canônico `src/lib/navigation/safeHome.ts` (`resolveSafeHome`, `getEffectiveRole`):
+  anônimo → `/auth`; papéis administrativos → home própria; ≥2 contextos → `/selecionar-portal`;
+  contexto único B2B → `/portal-parceiro/dashboard`; `cliente_produtor` → `/app`;
+  demais papéis → `getHomeForRole`; `/acesso-pendente` somente sem papel algum;
+- `src/pages/SemPermissao.tsx` e `src/components/guards/VisitaRouteGuard.tsx` passam a usar o resolvedor;
+- nenhum uso de histórico do navegador — impossível voltar à rota negada;
+- bloqueio neutro e ausência de flash do Bloco 2C preservados; 2A/2B intactos.
+
+Provas: `src/test/visita/safeHome.test.ts` (produtor, financeiro, admin, multipapel,
+anônimo, contexto único B2B, sem papel, ausência de loop `/sem-permissao`↔`/acesso-pendente`).
+Suíte de visita 53/53, typecheck e build verdes. Ledger permanece 682; binding staging
+`ikaauvsflpmamgxmkhoq` restaurado após drift local. `smoke_autenticado=false` até reteste real.
+H9 integral e promoção: NO-GO.
