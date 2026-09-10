@@ -466,6 +466,15 @@ const App = () => (
                 <Route path="usuarios-clientes" element={<ParceiroUsuariosClientesB2B />} />
               </Route>
 
+              {/* H9-G Bloco 2C — Visita técnica interna: guard fail-closed ANTES do layout interno. */}
+              <Route element={<VisitaRouteGuard />}>
+                <Route element={<ProtectedRoutes />}>
+                  <Route path="/visita-tecnica" element={<RoleGuard><VisitaTecnicaLista /></RoleGuard>} />
+                  <Route path="/visita-tecnica/nova" element={<RoleGuard><VisitaTecnica /></RoleGuard>} />
+                  <Route path="/visita-tecnica/:id" element={<RoleGuard><VisitaTecnica /></RoleGuard>} />
+                </Route>
+              </Route>
+
               {/* Admin routes */}
               <Route element={<ProtectedRoutes />}>
                 <Route path="/" element={<Index />} />
