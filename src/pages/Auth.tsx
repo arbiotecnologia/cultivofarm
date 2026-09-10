@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff, Leaf } from "lucide-react";
 import { toast } from "sonner";
-import sMboloArBio from "@/assets/s-mbolo-ar-bio.png";
+import logoCultivoFarm from "@/assets/logo-cultivofarm.png.asset.json";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { traduzirErroAuth } from "@/lib/auth-errors";
 
@@ -64,15 +64,13 @@ export default function Auth() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             {configLoading ? (
-              <Skeleton className="h-12 w-12 rounded-xl" />
-            ) : logoUrl ? (
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden bg-primary p-1">
-                <img src={logoUrl} alt={nomeEmpresa} className="h-full w-full object-contain" />
-              </div>
+              <Skeleton className="h-14 w-56 rounded-xl" />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-transparent">
-                <img src={sMboloArBio} alt={nomeEmpresa} className="h-full w-full object-contain" />
-              </div>
+              <img
+                src={logoCultivoFarm.url}
+                alt="CultivoFarm — Tecnologia que cultiva resultados"
+                className="h-16 w-auto max-w-full object-contain"
+              />
             )}
           </div>
           {configLoading ? (
