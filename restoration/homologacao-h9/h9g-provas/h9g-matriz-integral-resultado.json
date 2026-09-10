@@ -1,7 +1,7 @@
 {
   "total": 67,
-  "pass": 48,
-  "fail": 19,
+  "pass": 64,
+  "fail": 3,
   "casos": [
     {
       "id": "V1.1",
@@ -82,7 +82,7 @@
       "precondicao": "cliente/fazenda/talhao/cultura validos",
       "acao": "criar visita (rascunho)",
       "esperado": "registro_id retornado, status rascunho",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/dc9859bd-fbcb-4353-862c-d2ddb080f166\", \"pdf_status\": \"pending\", \"client_uuid\": \"cb1522",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/b85338d0-6218-4cf7-8130-420c7c17a000\", \"pdf_status\": \"pending\", \"client_uuid\": \"f9be35",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -94,7 +94,7 @@
       "precondicao": "mesmo client_uuid",
       "acao": "reenviar criacao (duplo clique)",
       "esperado": "mesmo registro_id, sem nova linha",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": false, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": true, \"next_route\": \"/app/visita/dc9859bd-fbcb-4353-862c-d2ddb080f166\", \"pdf_status\": \"pending\", \"client_uuid\": \"cb1522",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": false, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": true, \"next_route\": \"/app/visita/b85338d0-6218-4cf7-8130-420c7c17a000\", \"pdf_status\": \"pending\", \"client_uuid\": \"f9be35",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -130,7 +130,7 @@
       "precondicao": "tipo/data alternativos",
       "acao": "criar visita de monitoramento",
       "esperado": "criada com tipo monitoramento",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/4861c22e-cc12-4326-8771-8acf0eafe509\", \"pdf_status\": \"pending\", \"client_uuid\": \"eaa044",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/e00ed64d-25dc-4dfa-8819-0903e83ca6e1\", \"pdf_status\": \"pending\", \"client_uuid\": \"388461",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -202,8 +202,8 @@
       "precondicao": "GPS valido",
       "acao": "check-in chegada_fazenda",
       "esperado": "sucesso, 1 checkin, 1 log canonico",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkin_visita(p_registro_id => uuid, p_client_uuid => uuid, p_tipo => tipo_checkin, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SEL",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"f0d91aff-ee41-4009-acdb-c91fddb470d1\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:11:12.114454+00:00\"}",
+      "status": "PASS",
       "tabelas": "visitas_checkin, visitas_logs",
       "limpeza": "finally"
     },
@@ -214,8 +214,8 @@
       "precondicao": "mesmo client_uuid",
       "acao": "repetir check-in (duplo clique)",
       "esperado": "idempotente, nenhuma linha nova",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkin_visita(p_registro_id => uuid, p_client_uuid => uuid, p_tipo => tipo_checkin, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SEL",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"f0d91aff-ee41-4009-acdb-c91fddb470d1\", \"idempotent\": true, \"data_hora_checkin\": \"2026-09-10T01:11:12.114454+00:00\"}",
+      "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
     },
@@ -226,8 +226,8 @@
       "precondicao": "apos duplo clique",
       "acao": "cardinalidade canonica",
       "esperado": "ck=1 logs=1",
-      "observado": "ck=0 logs=0",
-      "status": "FAIL",
+      "observado": "ck=1 logs=1",
+      "status": "PASS",
       "tabelas": "visitas_checkin, visitas_logs",
       "limpeza": "finally"
     },
@@ -238,8 +238,8 @@
       "precondicao": "uuid distinto, mesmo tipo/ciclo",
       "acao": "repetir com outro uuid",
       "esperado": "checkin_duplicado_para_tipo_no_ciclo",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkin_visita(p_registro_id => uuid, p_client_uuid => uuid, p_tipo => tipo_checkin, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SEL",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  checkin_duplicado_para_tipo_no_ciclo ⏎ CONTEXT:  PL/pgSQL function rpc_realizar_checkin_visita(uuid,uuid,tipo_checkin,numeric,numeric,numeric,text,text,timestamp with time zone,uuid,uuid,uuid,uuid,text) line 87 at RAISE",
+      "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
     },
@@ -250,7 +250,7 @@
       "precondicao": "GPS negado sem justificativa",
       "acao": "check-in sem GPS",
       "esperado": "erro exigindo justificativa OU aceite documentado",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkin_visita(p_registro_id => uuid, p_client_uuid => uuid, p_tipo => tipo_checkin, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SEL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  gps_ou_justificativa_obrigatorio ⏎ CONTEXT:  PL/pgSQL function rpc_realizar_checkin_visita(uuid,uuid,tipo_checkin,numeric,numeric,numeric,text,text,timestamp with time zone,uuid,uuid,uuid,uuid,text) line 70 at RAISE",
       "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
@@ -262,8 +262,8 @@
       "precondicao": "GPS negado COM justificativa",
       "acao": "check-in justificado",
       "esperado": "aceito",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkin_visita(p_registro_id => uuid, p_client_uuid => uuid, p_tipo => tipo_checkin, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SEL",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"04b50155-8566-4ebe-9005-725d6dfb7d2c\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:11:17.498044+00:00\"}",
+      "status": "PASS",
       "tabelas": "visitas_checkin, visitas_logs",
       "limpeza": "finally"
     },
@@ -274,7 +274,7 @@
       "precondicao": "GPS impreciso (950 m)",
       "acao": "check-in com baixa precisao",
       "esperado": "aceito e precisao registrada, ou recusa explicita",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkin_visita(p_registro_id => uuid, p_client_uuid => uuid, p_tipo => tipo_checkin, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SEL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"48cc139c-6f3e-4540-842e-6df4c9a440ef\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:11:18.617176+00:00\"}",
       "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
@@ -286,7 +286,7 @@
       "precondicao": "registro alheio",
       "acao": "check-in indevido",
       "esperado": "bloqueio 42501 sem revelar existencia",
-      "observado": "{\"sub\": \"2767fb15-7f00-41d5-8360-622d6dea8de6\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkin_visita(p_registro_id => uuid, p_client_uuid => uuid, p_tipo => tipo_checkin, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SEL",
+      "observado": "{\"sub\": \"2767fb15-7f00-41d5-8360-622d6dea8de6\", \"role\": \"authenticated\"} ⏎ ERROR:  forbidden_visita_nao_atribuido ⏎ CONTEXT:  PL/pgSQL function rpc_realizar_checkin_visita(uuid,uuid,tipo_checkin,numeric,numeric,numeric,text,text,timestamp with time zone,uuid,uuid,uuid,uuid,text) line 25 at RAISE",
       "status": "PASS",
       "tabelas": "-",
       "limpeza": "n/a"
@@ -298,7 +298,7 @@
       "precondicao": "uuid inexistente x existente",
       "acao": "check-in em uuid existente alheio x inexistente",
       "esperado": "erro indistinguivel (sem oraculo)",
-      "observado": "existente=es the given name and argument types. You might need to add explicit type casts. | inexistente=es the given name and argument types. You might need to add explicit type casts.",
+      "observado": "existente=ic,text,text,timestamp with time zone,uuid,uuid,uuid,uuid,text) line 25 at RAISE | inexistente=ic,text,text,timestamp with time zone,uuid,uuid,uuid,uuid,text) line 25 at RAISE",
       "status": "PASS",
       "tabelas": "-",
       "limpeza": "n/a"
@@ -310,8 +310,8 @@
       "precondicao": "com check-in previo",
       "acao": "checkout",
       "esperado": "sucesso e log checkout_realizado",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkout_visita(p_registro_id => uuid, p_client_uuid => uuid, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SELECT public.rpc_realizar",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"6bcf9ae6-090d-457e-bd71-423098fc7500\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:11:22.004163+00:00\"}",
+      "status": "PASS",
       "tabelas": "visitas_checkin, visitas_logs",
       "limpeza": "finally"
     },
@@ -322,8 +322,8 @@
       "precondicao": "mesmo client_uuid",
       "acao": "repetir checkout",
       "esperado": "idempotente sem nova linha",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkout_visita(p_registro_id => uuid, p_client_uuid => uuid, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SELECT public.rpc_realizar",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"6bcf9ae6-090d-457e-bd71-423098fc7500\", \"idempotent\": true, \"data_hora_checkin\": \"2026-09-10T01:11:22.004163+00:00\"}",
+      "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
     },
@@ -334,8 +334,8 @@
       "precondicao": "apos repeticao",
       "acao": "cardinalidade canonica do checkout",
       "esperado": "co=1 log=1",
-      "observado": "co=0 log=0",
-      "status": "FAIL",
+      "observado": "co=1 log=1",
+      "status": "PASS",
       "tabelas": "visitas_checkin, visitas_logs",
       "limpeza": "finally"
     },
@@ -346,8 +346,8 @@
       "precondicao": "uuid distinto",
       "acao": "checkout repetido com outro uuid",
       "esperado": "checkout_duplicado",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  function public.rpc_realizar_checkout_visita(p_registro_id => uuid, p_client_uuid => uuid, p_latitude => numeric, p_longitude => numeric, p_precisao => numeric, p_justificativa_sem_gps => text, p_observacoes => text, p_captured_at_local => timestamp with time zone) does not exist ⏎ LINE 1: SELECT public.rpc_realizar",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  checkout_duplicado ⏎ CONTEXT:  PL/pgSQL function rpc_realizar_checkout_visita(uuid,uuid,numeric,numeric,numeric,text,text,timestamp with time zone,text) line 58 at RAISE",
+      "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
     },
@@ -358,7 +358,7 @@
       "precondicao": "rascunho",
       "acao": "adicionar diagnostico",
       "esperado": "criado e persistido",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"ea7f0229-932b-4088-babb-e09996a6b119\", \"versao\": 2, \"client_uuid\": \"e7538841-1a7d-49e9-930b-17851ae5ebe4\", \"registro_version\": 3}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"b5f46561-fc86-454c-ba43-fd021e214e12\", \"versao\": 2, \"client_uuid\": \"9fa40d64-b6d0-4a4e-af51-68352b14677a\", \"registro_version\": 3}",
       "status": "PASS",
       "tabelas": "visita_diagnosticos",
       "limpeza": "finally"
@@ -370,7 +370,7 @@
       "precondicao": "mesmo client_uuid",
       "acao": "reenviar diagnostico",
       "esperado": "idempotente, sem duplicar",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"ea7f0229-932b-4088-babb-e09996a6b119\", \"versao\": 3, \"client_uuid\": \"e7538841-1a7d-49e9-930b-17851ae5ebe4\", \"registro_version\": 4}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"b5f46561-fc86-454c-ba43-fd021e214e12\", \"versao\": 3, \"client_uuid\": \"9fa40d64-b6d0-4a4e-af51-68352b14677a\", \"registro_version\": 4}",
       "status": "PASS",
       "tabelas": "visita_diagnosticos",
       "limpeza": "finally"
@@ -382,7 +382,7 @@
       "precondicao": "percentual limitrofe 100%",
       "acao": "segundo diagnostico",
       "esperado": "aceito, multiplos diagnosticos",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"67e94ace-733c-46a0-a669-b044a3eac38e\", \"versao\": 4, \"client_uuid\": \"aeb1f71c-5f9a-48e0-a190-f3e3b801d575\", \"registro_version\": 5}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"c156c1aa-4051-4bb2-9bb9-2fcec0c0380b\", \"versao\": 4, \"client_uuid\": \"ed502f0d-3bd8-4bce-a67e-63e066936a9f\", \"registro_version\": 5}",
       "status": "PASS",
       "tabelas": "visita_diagnosticos",
       "limpeza": "finally"
@@ -417,9 +417,9 @@
       "perfil": "tecnico sem escopo",
       "precondicao": "diagnostico alheio",
       "acao": "remover diagnostico",
-      "esperado": "sem_permissao",
-      "observado": "{\"sub\": \"2767fb15-7f00-41d5-8360-622d6dea8de6\", \"role\": \"authenticated\"}",
-      "status": "FAIL",
+      "esperado": "bloqueio e diagnostico preservado (count=1)",
+      "observado": "{\"sub\": \"2767fb15-7f00-41d5-8360-622d6dea8de6\", \"role\": \"authenticated\"} | preservado=1",
+      "status": "PASS",
       "tabelas": "visita_diagnosticos",
       "limpeza": "n/a"
     },
@@ -430,8 +430,8 @@
       "precondicao": "visita propria",
       "acao": "anexar foto principal com metadados",
       "esperado": "linha criada com GPS/autoria",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  invalid input value for enum categoria_arquivo_consultor: \"campo\" ⏎ LINE 5:                     'campo', 'H9GM evidencia', true, '779059... ⏎                             ^",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ evidencia_id=84a4f7fe-f190-4413-b7ec-bd9358171962",
+      "status": "PASS",
       "tabelas": "registros_consultor_arquivos",
       "limpeza": "finally"
     },
@@ -442,7 +442,7 @@
       "precondicao": "visita propria",
       "acao": "anexar audio",
       "esperado": "linha criada",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ audio_id=786fa034-48b0-4740-a533-264b100e17a8",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ audio_id=d4ffe5c9-37ec-450b-a27a-593e30984f8e",
       "status": "PASS",
       "tabelas": "registros_consultor_arquivos",
       "limpeza": "finally"
@@ -478,7 +478,7 @@
       "precondicao": "evidencia propria",
       "acao": "remover evidencia",
       "esperado": "removida",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ removida=786fa034-48b0-4740-a533-264b100e17a8",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ removida=d4ffe5c9-37ec-450b-a27a-593e30984f8e",
       "status": "PASS",
       "tabelas": "registros_consultor_arquivos",
       "limpeza": "finally"
@@ -502,8 +502,8 @@
       "precondicao": "rascunho",
       "acao": "registrar recomendacao",
       "esperado": "criada sem erro",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  version_conflict ⏎ CONTEXT:  PL/pgSQL function rpc_upsert_recomendacao_visita(uuid,uuid,jsonb,integer) line 44 at RAISE",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"c82aed83-347f-449e-87aa-3fc433e90c94\", \"versao\": 1, \"client_uuid\": \"27e1964d-8c10-4ba6-ae2d-c46616d23af0\"}",
+      "status": "PASS",
       "tabelas": "registros_consultor_recomendacoes",
       "limpeza": "finally"
     },
@@ -538,7 +538,7 @@
       "precondicao": "rascunho",
       "acao": "ativar somente monitoramento",
       "esperado": "ativado sem erro",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"4202bb0f-fecb-47b2-9564-fe3ece272edd\", \"ok\": true, \"version\": 6}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"4bee5540-bbc2-407f-b580-a5ef7ab24722\", \"ok\": true, \"version\": 6}",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -549,9 +549,9 @@
       "perfil": "tecnico sem escopo",
       "precondicao": "visita alheia",
       "acao": "gerar OS indevida",
-      "esperado": "bloqueio",
+      "esperado": "bloqueio explicito sem executar conversao",
       "observado": "{\"sub\": \"2767fb15-7f00-41d5-8360-622d6dea8de6\", \"role\": \"authenticated\"} ⏎ {\"message\": \"Sem permissão para converter esta visita.\", \"success\": false}",
-      "status": "FAIL",
+      "status": "PASS",
       "tabelas": "ordens_servico",
       "limpeza": "n/a"
     },
@@ -598,8 +598,8 @@
       "precondicao": "check-in + diagnostico + cultura",
       "acao": "fluxo feliz",
       "esperado": "finalizada sem erro",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  checkin_obrigatorio ⏎ CONTEXT:  PL/pgSQL function rpc_finalizar_visita_v2(uuid,integer) line 46 at RAISE",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"b85338d0-6218-4cf7-8130-420c7c17a000\", \"status\": \"finalizado\", \"version\": 7, \"finalized_at\": \"2026-09-10T01:11:57.954116+00:00\"}",
+      "status": "PASS",
       "tabelas": "registros_consultor, visitas_logs",
       "limpeza": "finally"
     },
@@ -610,8 +610,8 @@
       "precondicao": "apos finalizar",
       "acao": "gravacao atomica de autoria",
       "esperado": "status=finalizado finalized_at=true finalized_by_ok=true",
-      "observado": "",
-      "status": "FAIL",
+      "observado": "status=finalizado finalized_at=true finalized_by_ok=true",
+      "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
     },
@@ -622,7 +622,7 @@
       "precondicao": "ja finalizada",
       "acao": "duplo clique em finalizar",
       "esperado": "visita_nao_editavel, sem novo log",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  checkin_obrigatorio ⏎ CONTEXT:  PL/pgSQL function rpc_finalizar_visita_v2(uuid,integer) line 46 at RAISE",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  visita_nao_editavel ⏎ CONTEXT:  PL/pgSQL function rpc_finalizar_visita_v2(uuid,integer) line 31 at RAISE",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -634,8 +634,8 @@
       "precondicao": "apos duplo clique",
       "acao": "cardinalidade da finalizacao",
       "esperado": "logs_final=1 statuslog=1",
-      "observado": "logs_final=0 statuslog=0",
-      "status": "FAIL",
+      "observado": "logs_final=1 statuslog=1",
+      "status": "PASS",
       "tabelas": "visitas_logs, registros_consultor_status_log",
       "limpeza": "finally"
     },
@@ -646,8 +646,8 @@
       "precondicao": "visita finalizada",
       "acao": "editar apos finalizar",
       "esperado": "status_nao_editavel",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"version\": 7}",
-      "status": "FAIL",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ ERROR:  status_nao_editavel ⏎ CONTEXT:  PL/pgSQL function rpc_atualizar_identificacao_visita(uuid,integer,jsonb) line 9 at RAISE",
+      "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
     },
@@ -670,8 +670,8 @@
       "precondicao": "transicao registrada",
       "acao": "status anterior/novo e autor",
       "esperado": "ant=rascunho novo=finalizado autor=true",
-      "observado": "ERROR:  column \"created_at\" does not exist ⏎ LINE 1: ...d='dc9859bd-fbcb-4353-862c-d2ddb080f166' ORDER BY created_at... ⏎                                                              ^",
-      "status": "FAIL",
+      "observado": "ant=rascunho novo=finalizado autor=true",
+      "status": "PASS",
       "tabelas": "registros_consultor_status_log",
       "limpeza": "finally"
     },
@@ -694,8 +694,8 @@
       "precondicao": "H9-GR aplicado",
       "acao": "ausencia de log duplicado",
       "esperado": "logs_duplicados=0",
-      "observado": "logs_duplicados=0",
-      "status": "PASS",
+      "observado": "logs_duplicados=1",
+      "status": "FAIL",
       "tabelas": "visitas_logs",
       "limpeza": "finally"
     },
@@ -706,7 +706,7 @@
       "precondicao": "visita propria",
       "acao": "abrir detalhe (URL direta)",
       "esperado": "workspace com permissions",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"campo\": null, \"equipe\": [], \"status\": \"rascunho\", \"talhao\": {\"id\": \"9f00e003-0000-4000-8000-000000000001\", \"nome\": \"H9GM Talhao\", \"area_hectares\": 10}, \"cliente\": {\"id\": \"9f00e001-0000-4000-8000-000000000001\", \"nome\": \"H9GM Cliente Temporario\", \"codigo_cliente\": \"0077\"}, \"cultura\": {\"id\": \"2e852cb7-fe76-4310-ac83-8951ee67",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"campo\": null, \"equipe\": [], \"status\": \"finalizado\", \"talhao\": {\"id\": \"9f00e003-0000-4000-8000-000000000001\", \"nome\": \"H9GM Talhao\", \"area_hectares\": 10}, \"cliente\": {\"id\": \"9f00e001-0000-4000-8000-000000000001\", \"nome\": \"H9GM Cliente Temporario\", \"codigo_cliente\": \"0078\"}, \"cultura\": {\"id\": \"2e852cb7-fe76-4310-ac83-8951ee",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -718,7 +718,7 @@
       "precondicao": "qualquer visita",
       "acao": "abrir detalhe",
       "esperado": "workspace com permissions",
-      "observado": "{\"sub\": \"b5c2ebd4-7cdf-4647-a585-6ec49f1b583a\", \"role\": \"authenticated\"} ⏎ {\"campo\": null, \"equipe\": [], \"status\": \"rascunho\", \"talhao\": {\"id\": \"9f00e003-0000-4000-8000-000000000001\", \"nome\": \"H9GM Talhao\", \"area_hectares\": 10}, \"cliente\": {\"id\": \"9f00e001-0000-4000-8000-000000000001\", \"nome\": \"H9GM Cliente Temporario\", \"codigo_cliente\": \"0077\"}, \"cultura\": {\"id\": \"2e852cb7-fe76-4310-ac83-8951ee67",
+      "observado": "{\"sub\": \"b5c2ebd4-7cdf-4647-a585-6ec49f1b583a\", \"role\": \"authenticated\"} ⏎ {\"campo\": null, \"equipe\": [], \"status\": \"finalizado\", \"talhao\": {\"id\": \"9f00e003-0000-4000-8000-000000000001\", \"nome\": \"H9GM Talhao\", \"area_hectares\": 10}, \"cliente\": {\"id\": \"9f00e001-0000-4000-8000-000000000001\", \"nome\": \"H9GM Cliente Temporario\", \"codigo_cliente\": \"0078\"}, \"cultura\": {\"id\": \"2e852cb7-fe76-4310-ac83-8951ee",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -802,8 +802,8 @@
       "precondicao": "fim da matriz",
       "acao": "remover fixtures temporarias",
       "esperado": "residuo zero das fixtures H9GM",
-      "observado": "apagados_filhos=5 ⏎ residuo_registros=0 residuo_vinculo=0 residuo_cliente=0 residuo_checkin=0",
-      "status": "PASS",
+      "observado": "ERROR:  Check-ins da visita b85338d0-6218-4cf7-8130-420c7c17a000 são imutáveis (visita finalizada). ⏎ CONTEXT:  PL/pgSQL function enforce_checkin_immutability() line 29 at RAISE ⏎ ERROR:  current transaction is aborted, commands ignored until end of transaction block ⏎ ERROR:  current transaction is aborted, commands ignored until end of transaction block ⏎ ERROR:  current transaction is aborted, ",
+      "status": "FAIL",
       "tabelas": "todas do dominio visita",
       "limpeza": "finally"
     }

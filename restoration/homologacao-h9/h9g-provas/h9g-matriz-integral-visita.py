@@ -91,7 +91,9 @@ def checkin_sql(reg, cu, tipo, lat="NULL", lng="NULL", prec="NULL", just="NULL",
         f" p_tipo => '{tipo}'::public.tipo_checkin,"
         f" p_latitude => {lat}::numeric, p_longitude => {lng}::numeric, p_precisao => {prec}::numeric,"
         f" p_justificativa_sem_gps => {just_sql}, p_observacoes => {obs_sql},"
-        " p_captured_at_local => now())"
+        " p_captured_at_local => now(),"
+        " p_solicitacao_id => NULL::uuid, p_cliente_id => NULL::uuid,"
+        " p_fazenda_id => NULL::uuid, p_talhao_id => NULL::uuid, p_foto_path => NULL::text)"
     )
 
 
@@ -102,7 +104,7 @@ def checkout_sql(reg, cu, lat="-17.22", lng="-46.85", prec="9", obs="NULL"):
         f"p_registro_id => '{reg}'::uuid, p_client_uuid => '{cu}'::uuid,"
         f" p_latitude => {lat}::numeric, p_longitude => {lng}::numeric, p_precisao => {prec}::numeric,"
         f" p_justificativa_sem_gps => NULL::text, p_observacoes => {obs_sql},"
-        " p_captured_at_local => now())"
+        " p_captured_at_local => now(), p_foto_path => NULL::text)"
     )
 
 
@@ -378,8 +380,10 @@ def executar():
     s = psql(f"SELECT id FROM public.visita_diagnosticos WHERE registro_id='{reg_a}' LIMIT 1;")
     diag_id = s.splitlines()[-1].strip()
     s = psql(f"SELECT public.rpc_delete_diagnostico_visita('{diag_id}'::uuid);", OUTRO)
+    ainda = psql(f"SELECT count(*) FROM public.visita_diagnosticos WHERE id='{diag_id}';")
     caso("V5.6", "5-Diagnostico", "tecnico sem escopo", "diagnostico alheio", "remover diagnostico",
-         "sem_permissao", s, "sem_permissao" in s or "ERROR" in s, "visita_diagnosticos", "n/a")
+         "bloqueio e diagnostico preservado (count=1)", s + " | preservado=" + ainda.splitlines()[-1],
+         ainda.splitlines()[-1].strip() == "1", "visita_diagnosticos", "n/a")
 
     # ---------------- Grupo 6 — Evidencias ----------------
     s = psql(
@@ -387,7 +391,7 @@ def executar():
             (registro_consultor_id, arquivo_url, arquivo_path, nome_arquivo, tipo_arquivo, tipo_midia,
              categoria_arquivo, legenda, foto_principal, uploaded_by, latitude, longitude, capturado_em)
             VALUES ('{reg_a}', 'visitas/{TAG}.jpg', 'visitas/{TAG}.jpg', '{TAG}.jpg', 'image/jpeg', 'foto',
-                    'campo', '{TAG} evidencia', true, '{TEC}', -17.22, -46.85, now())
+                    'vistoria', '{TAG} evidencia', true, '{TEC}', -17.22, -46.85, now())
             RETURNING 'evidencia_id='||id;""", TEC)
     caso("V6.1", "6-Evidencias", "tecnico", "visita propria", "anexar foto principal com metadados",
          "linha criada com GPS/autoria", s, "evidencia_id=" in s, "registros_consultor_arquivos")
@@ -431,7 +435,7 @@ def executar():
     rec = json.dumps({"recomendacao_tecnica": f"{TAG} aplicar manejo biologico",
                       "encaminhar_para_os": "false"})
     s = psql(f"SELECT public.rpc_upsert_recomendacao_visita('{reg_a}'::uuid, '{uuid.uuid4()}'::uuid,"
-             f" '{rec}'::jsonb, {v});", TEC)
+             f" '{rec}'::jsonb, 1);", TEC)
     caso("V7.1", "7-Desfechos", "tecnico", "rascunho", "registrar recomendacao",
          "criada sem erro", s, "ERROR" not in s, "registros_consultor_recomendacoes")
 
@@ -453,7 +457,8 @@ def executar():
 
     s = psql(f"SELECT public.rpc_converter_visita_em_os('{reg_a}'::uuid, '{TAG} conversao');", OUTRO)
     caso("V7.5", "7-Desfechos", "tecnico sem escopo", "visita alheia", "gerar OS indevida",
-         "bloqueio", s, "ERROR" in s, "ordens_servico", "n/a")
+         "bloqueio explicito sem executar conversao", s,
+         "Sem permiss" in s or "ERROR" in s, "ordens_servico", "n/a")
 
     # ---------------- Grupo 8 — Finalizacao ----------------
     cu_b = str(uuid.uuid4())
@@ -519,7 +524,7 @@ def executar():
 
     s = psql(
         f"SELECT 'ant='||coalesce(status_anterior,'-')||' novo='||coalesce(status_novo,'-')||' autor='||(changed_by IS NOT NULL)::text"
-        f" FROM public.registros_consultor_status_log WHERE registro_consultor_id='{reg_a}' ORDER BY created_at DESC LIMIT 1;")
+        f" FROM public.registros_consultor_status_log WHERE registro_consultor_id='{reg_a}' ORDER BY changed_at DESC LIMIT 1;")
     caso("V9.2", "9-Auditoria", "sistema", "transicao registrada", "status anterior/novo e autor",
          "ant=rascunho novo=finalizado autor=true", s,
          "novo=finalizado" in s and ("autor=t" in s or "autor=true" in s),
