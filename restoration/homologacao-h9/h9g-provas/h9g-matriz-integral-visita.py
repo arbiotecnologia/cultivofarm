@@ -161,9 +161,16 @@ def setup():
 
 
 def cleanup():
+    """Limpeza idempotente de fixtures H9GM.
+
+    session_replication_role=replica e usado APENAS dentro da transacao curta de
+    limpeza (SET LOCAL), porque visitas finalizadas tem triggers de imutabilidade.
+    O valor volta a 'origin' no COMMIT e isso e comprovado apos a transacao.
+    """
     saida = psql(
         f"""
-        SET session_replication_role = replica;
+        BEGIN;
+        SET LOCAL session_replication_role = replica;
         WITH base AS (SELECT id FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%')
         , regs AS (SELECT id FROM base UNION SELECT r.id FROM public.registros_consultor r JOIN base b ON r.registro_origem_id = b.id)
         , d1 AS (DELETE FROM public.visitas_logs WHERE registro_consultor_id IN (SELECT id FROM regs) RETURNING 1)
@@ -178,19 +185,32 @@ def cleanup():
         DELETE FROM public.registros_consultor
          WHERE registro_origem_id IN (SELECT id FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%');
         DELETE FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%';
+        DELETE FROM public.registros_consultor WHERE cliente_id = '{CLIENTE}';
+        DELETE FROM public.comunicacao_eventos
+         WHERE source_type = 'portal_solicitacoes'
+           AND (source_id IN (SELECT id FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}')
+                OR payload->>'cliente_id' = '{CLIENTE}');
         DELETE FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}';
-        DELETE FROM public.user_clientes WHERE id = '{VINCULO}';
-        DELETE FROM public.talhoes WHERE id = '{TALHAO}';
-        DELETE FROM public.fazendas WHERE id = '{FAZENDA}';
+        DELETE FROM public.user_clientes WHERE id = '{VINCULO}' OR cliente_id = '{CLIENTE}';
+        DELETE FROM public.talhoes WHERE id = '{TALHAO}' OR fazenda_id = '{FAZENDA}';
+        DELETE FROM public.fazendas WHERE id = '{FAZENDA}' OR cliente_id = '{CLIENTE}';
         DELETE FROM public.clientes WHERE id = '{CLIENTE}';
-        SELECT 'residuo_registros='||(SELECT count(*) FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%')
-             ||' residuo_vinculo='||(SELECT count(*) FROM public.user_clientes WHERE id='{VINCULO}')
+        COMMIT;
+        SELECT 'residuo_registros='||(SELECT count(*) FROM public.registros_consultor
+                 WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%' OR cliente_id='{CLIENTE}')
+             ||' residuo_vinculo='||(SELECT count(*) FROM public.user_clientes WHERE id='{VINCULO}' OR cliente_id='{CLIENTE}')
              ||' residuo_solicitacoes='||(SELECT count(*) FROM public.portal_solicitacoes WHERE cliente_id='{CLIENTE}')
              ||' residuo_cliente='||(SELECT count(*) FROM public.clientes WHERE id='{CLIENTE}')
-             ||' residuo_checkin='||(SELECT count(*) FROM public.visitas_checkin c JOIN public.registros_consultor r ON r.id=c.registro_consultor_id WHERE r.observacoes_tecnicas LIKE '{TAG}%');
+             ||' residuo_fazenda='||(SELECT count(*) FROM public.fazendas WHERE id='{FAZENDA}')
+             ||' residuo_talhao='||(SELECT count(*) FROM public.talhoes WHERE id='{TALHAO}')
+             ||' residuo_logs='||(SELECT count(*) FROM public.visitas_logs l
+                 WHERE NOT EXISTS (SELECT 1 FROM public.registros_consultor r WHERE r.id = l.registro_consultor_id))
+             ||' residuo_eventos='||(SELECT count(*) FROM public.comunicacao_eventos WHERE payload->>'cliente_id' = '{CLIENTE}')
+             ||' repl_role='||current_setting('session_replication_role');
         """
     )
     return saida
+
 
 
 def executar():
@@ -451,6 +471,16 @@ def executar():
     caso("V7.2", "7-Desfechos", "tecnico", "rascunho", "agendar retorno",
          "agendado sem erro", s, "ERROR" not in s, "registros_consultor")
 
+    s = psql(
+        f"SELECT 'duracao='||coalesce(ps.duracao_estimada::text,'NULL')||' tipo_demanda='||coalesce(rr.tipo_demanda::text,'NULL')"
+        f"||' tipo_visita='||coalesce(rr.tipo_visita::text,'NULL')"
+        f" FROM public.registros_consultor rr JOIN public.portal_solicitacoes ps ON ps.id = rr.solicitacao_id"
+        f" WHERE rr.registro_origem_id='{reg_a}' ORDER BY rr.created_at DESC LIMIT 1;")
+    ok_ret = "duracao=120" in s and ("tipo_demanda=outro" in s or "tipo_demanda=" in s and "tipo_demanda=NULL" not in s)
+    caso("V7.2b", "7-Desfechos", "sistema", "forwards 20261025/20261026 aplicados", "inspecionar retorno gerado",
+         "duracao_estimada valida e tipo_demanda herdado/fallback 'outro'", s, ok_ret,
+         "portal_solicitacoes, registros_consultor", "n/a")
+
     s = psql(f"SELECT public.rpc_programar_retorno_visita('{reg_a}'::uuid, 1, NULL, NULL);", TEC)
     caso("V7.3", "7-Desfechos", "tecnico", "campo condicional ausente", "retorno sem data",
          "data_prevista_obrigatoria", s, "data_prevista_obrigatoria" in s, "registros_consultor")
@@ -584,16 +614,24 @@ def executar():
 
     # ---------------- Grupo 13 — Integracoes ----------------
     s = psql(
-        "SELECT 'comunicacao_pendente='||(SELECT count(*) FROM public.communication_events"
+        "SELECT 'eventos='||(SELECT count(*) FROM public.comunicacao_eventos"
         " WHERE created_at > now() - interval '30 minutes')"
-        "||' entregas='||(SELECT count(*) FROM public.communication_deliveries"
-        " WHERE created_at > now() - interval '30 minutes');")
+        "||' outbox='||(SELECT count(*) FROM public.comunicacao_outbox"
+        " WHERE created_at > now() - interval '30 minutes')"
+        "||' inapp='||(SELECT count(*) FROM public.comunicacao_inapp_dispatch"
+        " WHERE created_at > now() - interval '30 minutes')"
+        "||' recibos='||(SELECT count(*) FROM public.comunicacao_provider_receipts"
+        " WHERE received_at > now() - interval '30 minutes');")
+    s2 = psql(
+        "SELECT 'enfileirados='||coalesce(sum(outbox_enqueued),0)||' de_eventos='||count(*)"
+        " FROM public.comunicacao_eventos WHERE created_at > now() - interval '30 minutes';")
     caso("V13.1", "13-Integracoes", "sistema", "durante toda a matriz", "verificar disparos externos",
-         "nenhuma entrega real criada (flags OFF)", s,
-         "entregas=0" in s or "ERROR" in s, "communication_*", "n/a")
+         "outbox=0 inapp=0 recibos=0 e nenhum evento enfileirado para entrega externa",
+         s + " | " + s2,
+         "outbox=0 inapp=0 recibos=0" in s and "enfileirados=0" in s2, "comunicacao_*", "n/a")
 
     s = psql(
-        "SELECT 'nfe='||(SELECT count(*) FROM public.fiscal_xml_runs WHERE created_at > now() - interval '30 minutes');")
+        "SELECT 'nfe='||(SELECT count(*) FROM public.fiscal_xml_runs WHERE prepared_at > now() - interval '30 minutes');")
     caso("V13.2", "13-Integracoes", "sistema", "durante toda a matriz", "verificar fiscal",
          "nenhuma execucao fiscal", s, "nfe=0" in s or "ERROR" in s, "fiscal_xml_runs", "n/a")
 
