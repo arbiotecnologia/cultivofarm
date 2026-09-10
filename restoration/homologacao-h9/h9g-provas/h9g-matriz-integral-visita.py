@@ -161,9 +161,16 @@ def setup():
 
 
 def cleanup():
+    """Limpeza idempotente de fixtures H9GM.
+
+    session_replication_role=replica e usado APENAS dentro da transacao curta de
+    limpeza (SET LOCAL), porque visitas finalizadas tem triggers de imutabilidade.
+    O valor volta a 'origin' no COMMIT e isso e comprovado apos a transacao.
+    """
     saida = psql(
         f"""
-        SET session_replication_role = replica;
+        BEGIN;
+        SET LOCAL session_replication_role = replica;
         WITH base AS (SELECT id FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%')
         , regs AS (SELECT id FROM base UNION SELECT r.id FROM public.registros_consultor r JOIN base b ON r.registro_origem_id = b.id)
         , d1 AS (DELETE FROM public.visitas_logs WHERE registro_consultor_id IN (SELECT id FROM regs) RETURNING 1)
@@ -178,19 +185,27 @@ def cleanup():
         DELETE FROM public.registros_consultor
          WHERE registro_origem_id IN (SELECT id FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%');
         DELETE FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%';
+        DELETE FROM public.registros_consultor WHERE cliente_id = '{CLIENTE}';
         DELETE FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}';
-        DELETE FROM public.user_clientes WHERE id = '{VINCULO}';
-        DELETE FROM public.talhoes WHERE id = '{TALHAO}';
-        DELETE FROM public.fazendas WHERE id = '{FAZENDA}';
+        DELETE FROM public.user_clientes WHERE id = '{VINCULO}' OR cliente_id = '{CLIENTE}';
+        DELETE FROM public.talhoes WHERE id = '{TALHAO}' OR fazenda_id = '{FAZENDA}';
+        DELETE FROM public.fazendas WHERE id = '{FAZENDA}' OR cliente_id = '{CLIENTE}';
         DELETE FROM public.clientes WHERE id = '{CLIENTE}';
-        SELECT 'residuo_registros='||(SELECT count(*) FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%')
-             ||' residuo_vinculo='||(SELECT count(*) FROM public.user_clientes WHERE id='{VINCULO}')
+        COMMIT;
+        SELECT 'residuo_registros='||(SELECT count(*) FROM public.registros_consultor
+                 WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%' OR cliente_id='{CLIENTE}')
+             ||' residuo_vinculo='||(SELECT count(*) FROM public.user_clientes WHERE id='{VINCULO}' OR cliente_id='{CLIENTE}')
              ||' residuo_solicitacoes='||(SELECT count(*) FROM public.portal_solicitacoes WHERE cliente_id='{CLIENTE}')
              ||' residuo_cliente='||(SELECT count(*) FROM public.clientes WHERE id='{CLIENTE}')
-             ||' residuo_checkin='||(SELECT count(*) FROM public.visitas_checkin c JOIN public.registros_consultor r ON r.id=c.registro_consultor_id WHERE r.observacoes_tecnicas LIKE '{TAG}%');
+             ||' residuo_fazenda='||(SELECT count(*) FROM public.fazendas WHERE id='{FAZENDA}')
+             ||' residuo_talhao='||(SELECT count(*) FROM public.talhoes WHERE id='{TALHAO}')
+             ||' residuo_logs='||(SELECT count(*) FROM public.visitas_logs l
+                 WHERE NOT EXISTS (SELECT 1 FROM public.registros_consultor r WHERE r.id = l.registro_consultor_id))
+             ||' repl_role='||current_setting('session_replication_role');
         """
     )
     return saida
+
 
 
 def executar():
