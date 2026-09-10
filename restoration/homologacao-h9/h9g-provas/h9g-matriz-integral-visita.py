@@ -188,7 +188,8 @@ def cleanup():
         DELETE FROM public.registros_consultor WHERE cliente_id = '{CLIENTE}';
         DELETE FROM public.comunicacao_eventos
          WHERE source_type = 'portal_solicitacoes'
-           AND source_id IN (SELECT id FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}');
+           AND (source_id IN (SELECT id FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}')
+                OR payload->>'cliente_id' = '{CLIENTE}');
         DELETE FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}';
         DELETE FROM public.user_clientes WHERE id = '{VINCULO}' OR cliente_id = '{CLIENTE}';
         DELETE FROM public.talhoes WHERE id = '{TALHAO}' OR fazenda_id = '{FAZENDA}';
@@ -204,6 +205,7 @@ def cleanup():
              ||' residuo_talhao='||(SELECT count(*) FROM public.talhoes WHERE id='{TALHAO}')
              ||' residuo_logs='||(SELECT count(*) FROM public.visitas_logs l
                  WHERE NOT EXISTS (SELECT 1 FROM public.registros_consultor r WHERE r.id = l.registro_consultor_id))
+             ||' residuo_eventos='||(SELECT count(*) FROM public.comunicacao_eventos WHERE payload->>'cliente_id' = '{CLIENTE}')
              ||' repl_role='||current_setting('session_replication_role');
         """
     )
