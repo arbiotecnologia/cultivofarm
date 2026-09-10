@@ -163,7 +163,9 @@ def setup():
 def cleanup():
     saida = psql(
         f"""
-        WITH regs AS (SELECT id FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%')
+        SET session_replication_role = replica;
+        WITH base AS (SELECT id FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%')
+        , regs AS (SELECT id FROM base UNION SELECT r.id FROM public.registros_consultor r JOIN base b ON r.registro_origem_id = b.id)
         , d1 AS (DELETE FROM public.visitas_logs WHERE registro_consultor_id IN (SELECT id FROM regs) RETURNING 1)
         , d2 AS (DELETE FROM public.visitas_checkin WHERE registro_consultor_id IN (SELECT id FROM regs) RETURNING 1)
         , d3 AS (DELETE FROM public.visita_diagnosticos WHERE registro_id IN (SELECT id FROM regs) RETURNING 1)
@@ -173,13 +175,17 @@ def cleanup():
         , d7 AS (DELETE FROM public.visitas_campo WHERE registro_consultor_id IN (SELECT id FROM regs) RETURNING 1)
         SELECT 'apagados_filhos='||((SELECT count(*) FROM d1)+(SELECT count(*) FROM d2)+(SELECT count(*) FROM d3)
                +(SELECT count(*) FROM d4)+(SELECT count(*) FROM d5)+(SELECT count(*) FROM d6)+(SELECT count(*) FROM d7));
+        DELETE FROM public.registros_consultor
+         WHERE registro_origem_id IN (SELECT id FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%');
         DELETE FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%';
+        DELETE FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}';
         DELETE FROM public.user_clientes WHERE id = '{VINCULO}';
         DELETE FROM public.talhoes WHERE id = '{TALHAO}';
         DELETE FROM public.fazendas WHERE id = '{FAZENDA}';
         DELETE FROM public.clientes WHERE id = '{CLIENTE}';
         SELECT 'residuo_registros='||(SELECT count(*) FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%')
              ||' residuo_vinculo='||(SELECT count(*) FROM public.user_clientes WHERE id='{VINCULO}')
+             ||' residuo_solicitacoes='||(SELECT count(*) FROM public.portal_solicitacoes WHERE cliente_id='{CLIENTE}')
              ||' residuo_cliente='||(SELECT count(*) FROM public.clientes WHERE id='{CLIENTE}')
              ||' residuo_checkin='||(SELECT count(*) FROM public.visitas_checkin c JOIN public.registros_consultor r ON r.id=c.registro_consultor_id WHERE r.observacoes_tecnicas LIKE '{TAG}%');
         """
