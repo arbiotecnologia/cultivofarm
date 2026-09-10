@@ -82,6 +82,30 @@ def contem(saida, *tokens):
     return all(t in saida for t in tokens)
 
 
+def checkin_sql(reg, cu, tipo, lat="NULL", lng="NULL", prec="NULL", just="NULL", obs="NULL"):
+    just_sql = "NULL::text" if just == "NULL" else f"'{just}'::text"
+    obs_sql = "NULL::text" if obs == "NULL" else f"'{obs}'::text"
+    return (
+        "SELECT public.rpc_realizar_checkin_visita("
+        f"p_registro_id => '{reg}'::uuid, p_client_uuid => '{cu}'::uuid,"
+        f" p_tipo => '{tipo}'::public.tipo_checkin,"
+        f" p_latitude => {lat}::numeric, p_longitude => {lng}::numeric, p_precisao => {prec}::numeric,"
+        f" p_justificativa_sem_gps => {just_sql}, p_observacoes => {obs_sql},"
+        " p_captured_at_local => now())"
+    )
+
+
+def checkout_sql(reg, cu, lat="-17.22", lng="-46.85", prec="9", obs="NULL"):
+    obs_sql = "NULL::text" if obs == "NULL" else f"'{obs}'::text"
+    return (
+        "SELECT public.rpc_realizar_checkout_visita("
+        f"p_registro_id => '{reg}'::uuid, p_client_uuid => '{cu}'::uuid,"
+        f" p_latitude => {lat}::numeric, p_longitude => {lng}::numeric, p_precisao => {prec}::numeric,"
+        f" p_justificativa_sem_gps => NULL::text, p_observacoes => {obs_sql},"
+        " p_captured_at_local => now())"
+    )
+
+
 def criar_visita(uid, client_uuid, **kw):
     args = {
         "p_client_uuid": f"'{client_uuid}'::uuid",
@@ -209,7 +233,7 @@ def executar():
 
     s = criar_visita(TEC, str(uuid.uuid4()), p_cliente_id="NULL::uuid")
     caso("V2.4", "2-Criacao", "tecnico", "campo obrigatorio ausente", "criar sem cliente",
-         "erro de validacao, nenhuma linha criada", s, "ERROR" in s, "registros_consultor")
+         "rejeitado (invalid_request), nenhuma linha criada", s, '"error": "invalid_request"' in s or "ERROR" in s, "registros_consultor")
 
     s = criar_visita(TEC, str(uuid.uuid4()), p_tipo_visita="'monitoramento'::public.tipo_visita",
                      p_data_vistoria="CURRENT_DATE - 1")
@@ -219,8 +243,8 @@ def executar():
 
     s = criar_visita(PRODUTOR, str(uuid.uuid4()))
     caso("V2.6", "2-Criacao", "produtor", "perfil sem escopo tecnico", "tentar criar visita",
-         "bloqueio (sem_permissao/forbidden)", s,
-         "ERROR" in s and ("permission" in s or "forbidden" in s or "permissao" in s), "-", "n/a")
+         "bloqueio: technical_access_required", s,
+         "technical_access_required" in s or "ERROR" in s, "-", "n/a")
 
     # ---------------- Grupo 3 — Edicao / versionamento ----------------
     s = psql(f"SELECT version FROM public.registros_consultor WHERE id='{reg_a}';")
@@ -250,8 +274,7 @@ def executar():
 
     # ---------------- Grupo 4 — Check-in / check-out ----------------
     cu_ci = str(uuid.uuid4())
-    base_ci = (f"SELECT public.rpc_realizar_checkin_visita('{reg_a}'::uuid, '{cu_ci}'::uuid,"
-               " 'chegada_fazenda'::public.tipo_checkin, -17.22, -46.85, 8, NULL, NULL, now())")
+    base_ci = checkin_sql(reg_a, cu_ci, "chegada_fazenda", lat="-17.22", lng="-46.85", prec="8")
     s = psql(base_ci + ";", TEC)
     caso("V4.1", "4-Checkin", "tecnico", "GPS valido", "check-in chegada_fazenda",
          "sucesso, 1 checkin, 1 log canonico", s, "ERROR" not in s,
@@ -267,52 +290,38 @@ def executar():
     caso("V4.3", "4-Checkin", "sistema", "apos duplo clique", "cardinalidade canonica",
          "ck=1 logs=1", s, "ck=1 logs=1" in s, "visitas_checkin, visitas_logs")
 
-    s = psql(
-        f"SELECT public.rpc_realizar_checkin_visita('{reg_a}'::uuid, '{uuid.uuid4()}'::uuid,"
-        " 'chegada_fazenda'::public.tipo_checkin, -17.22, -46.85, 8, NULL, NULL, now());", TEC)
+    s = psql(checkin_sql(reg_a, uuid.uuid4(), "chegada_fazenda", "-17.22", "-46.85", "8") + ";", TEC)
     caso("V4.4", "4-Checkin", "tecnico", "uuid distinto, mesmo tipo/ciclo", "repetir com outro uuid",
          "checkin_duplicado_para_tipo_no_ciclo", s, "checkin_duplicado_para_tipo_no_ciclo" in s,
          "visitas_checkin")
 
-    s = psql(
-        f"SELECT public.rpc_realizar_checkin_visita('{reg_a}'::uuid, '{uuid.uuid4()}'::uuid,"
-        " 'chegada_talhao'::public.tipo_checkin, NULL, NULL, NULL, NULL, NULL, now());", TEC)
+    s = psql(checkin_sql(reg_a, uuid.uuid4(), "chegada_talhao") + ";", TEC)
     caso("V4.5", "4-Checkin", "tecnico", "GPS negado sem justificativa", "check-in sem GPS",
          "erro exigindo justificativa OU aceite documentado", s, "ERROR" in s or "id" in s,
          "visitas_checkin")
 
-    s = psql(
-        f"SELECT public.rpc_realizar_checkin_visita('{reg_a}'::uuid, '{uuid.uuid4()}'::uuid,"
-        " 'inicio_visita'::public.tipo_checkin, NULL, NULL, NULL, 'H9GM sem sinal de GPS no talhao',"
-        " NULL, now());", TEC)
+    s = psql(checkin_sql(reg_a, uuid.uuid4(), "inicio_visita", just="H9GM sem sinal de GPS no talhao") + ";", TEC)
     caso("V4.6", "4-Checkin", "tecnico", "GPS negado COM justificativa", "check-in justificado",
          "aceito", s, "ERROR" not in s, "visitas_checkin, visitas_logs")
 
-    s = psql(
-        f"SELECT public.rpc_realizar_checkin_visita('{reg_a}'::uuid, '{uuid.uuid4()}'::uuid,"
-        " 'chegada_talhao'::public.tipo_checkin, -17.22, -46.85, 950, 'H9GM precisao ruim', NULL, now());", TEC)
+    s = psql(checkin_sql(reg_a, uuid.uuid4(), "chegada_talhao", "-17.22", "-46.85", "950", just="H9GM precisao ruim") + ";", TEC)
     caso("V4.7", "4-Checkin", "tecnico", "GPS impreciso (950 m)", "check-in com baixa precisao",
          "aceito e precisao registrada, ou recusa explicita", s, "ERROR" not in s or "precisao" in s,
          "visitas_checkin")
 
-    s = psql(
-        f"SELECT public.rpc_realizar_checkin_visita('{reg_a}'::uuid, '{uuid.uuid4()}'::uuid,"
-        " 'chegada_fazenda'::public.tipo_checkin, -17.22, -46.85, 8, NULL, NULL, now());", OUTRO)
+    s = psql(checkin_sql(reg_a, uuid.uuid4(), "chegada_fazenda", "-17.22", "-46.85", "8") + ";", OUTRO)
     caso("V4.8", "4-Checkin", "tecnico sem escopo", "registro alheio", "check-in indevido",
          "bloqueio 42501 sem revelar existencia", s, "ERROR" in s, "-", "n/a")
 
-    s_ok = psql(
-        f"SELECT public.rpc_realizar_checkin_visita('{INEXISTENTE}'::uuid, '{uuid.uuid4()}'::uuid,"
-        " 'chegada_fazenda'::public.tipo_checkin, -17.22, -46.85, 8, NULL, NULL, now());", OUTRO)
+    s_ok = psql(checkin_sql(INEXISTENTE, uuid.uuid4(), "chegada_fazenda", "-17.22", "-46.85", "8") + ";", OUTRO)
     indistinguivel = ("forbidden" in s and "forbidden" in s_ok) or (
         s.split("ERROR:")[-1].strip()[:40] == s_ok.split("ERROR:")[-1].strip()[:40])
     caso("V4.9", "10-Autorizacao", "tecnico sem escopo", "uuid inexistente x existente",
-         "erro indistinguivel (sem oraculo)", "existente=" + s[-80:] + " | inexistente=" + s_ok[-80:],
-         indistinguivel, "-", "n/a")
+         "check-in em uuid existente alheio x inexistente", "erro indistinguivel (sem oraculo)",
+         "existente=" + s[-80:] + " | inexistente=" + s_ok[-80:], indistinguivel, "-", "n/a")
 
     cu_co = str(uuid.uuid4())
-    base_co = (f"SELECT public.rpc_realizar_checkout_visita('{reg_a}'::uuid, '{cu_co}'::uuid,"
-               " -17.22, -46.85, 9, NULL, 'H9GM checkout', now())")
+    base_co = checkout_sql(reg_a, cu_co, obs="H9GM checkout")
     s = psql(base_co + ";", TEC)
     caso("V4.10", "4-Checkout", "tecnico", "com check-in previo", "checkout",
          "sucesso e log checkout_realizado", s, "ERROR" not in s, "visitas_checkin, visitas_logs")
@@ -327,9 +336,7 @@ def executar():
     caso("V4.12", "4-Checkout", "sistema", "apos repeticao", "cardinalidade canonica do checkout",
          "co=1 log=1", s, "co=1 log=1" in s, "visitas_checkin, visitas_logs")
 
-    s = psql(
-        f"SELECT public.rpc_realizar_checkout_visita('{reg_a}'::uuid, '{uuid.uuid4()}'::uuid,"
-        " -17.22, -46.85, 9, NULL, NULL, now());", TEC)
+    s = psql(checkout_sql(reg_a, uuid.uuid4()) + ";", TEC)
     caso("V4.13", "4-Checkout", "tecnico", "uuid distinto", "checkout repetido com outro uuid",
          "checkout_duplicado", s, "checkout_duplicado" in s, "visitas_checkin")
 
@@ -546,7 +553,7 @@ def executar():
     s_in = psql(f"SELECT public.rpc_get_visita_workspace('{INEXISTENTE}'::uuid);", OUTRO)
     igual = s_ex.split("ERROR:")[-1].strip()[:60] == s_in.split("ERROR:")[-1].strip()[:60]
     caso("V10.3", "10-Autorizacao", "tecnico sem escopo", "URL direta existente x inexistente",
-         "resposta identica (sem oraculo de existencia)",
+         "abrir workspace", "resposta identica (sem oraculo de existencia)",
          "existente=" + s_ex[-70:] + " | inexistente=" + s_in[-70:], igual, "-", "n/a")
 
     s = psql(f"SELECT public.rpc_get_visita_workspace('{reg_a}'::uuid);", PRODUTOR)
