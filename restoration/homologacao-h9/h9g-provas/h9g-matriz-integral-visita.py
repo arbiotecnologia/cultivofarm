@@ -616,7 +616,7 @@ def executar():
         "||' inapp='||(SELECT count(*) FROM public.comunicacao_inapp_dispatch"
         " WHERE created_at > now() - interval '30 minutes')"
         "||' recibos='||(SELECT count(*) FROM public.comunicacao_provider_receipts"
-        " WHERE created_at > now() - interval '30 minutes');")
+        " WHERE received_at > now() - interval '30 minutes');")
     caso("V13.1", "13-Integracoes", "sistema", "durante toda a matriz", "verificar disparos externos",
          "eventos=0 outbox=0 inapp=0 recibos=0 (flags OFF)", s,
          "eventos=0 outbox=0 inapp=0 recibos=0" in s, "comunicacao_*", "n/a")

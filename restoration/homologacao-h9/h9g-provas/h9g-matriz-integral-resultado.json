@@ -82,7 +82,7 @@
       "precondicao": "cliente/fazenda/talhao/cultura validos",
       "acao": "criar visita (rascunho)",
       "esperado": "registro_id retornado, status rascunho",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/c4947012-0705-436c-bb43-8725251b2af5\", \"pdf_status\": \"pending\", \"client_uuid\": \"8657d3",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/03e593a7-562d-42a5-b5b6-be42fa2b79ab\", \"pdf_status\": \"pending\", \"client_uuid\": \"7049ef",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -94,7 +94,7 @@
       "precondicao": "mesmo client_uuid",
       "acao": "reenviar criacao (duplo clique)",
       "esperado": "mesmo registro_id, sem nova linha",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": false, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": true, \"next_route\": \"/app/visita/c4947012-0705-436c-bb43-8725251b2af5\", \"pdf_status\": \"pending\", \"client_uuid\": \"8657d3",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": false, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": true, \"next_route\": \"/app/visita/03e593a7-562d-42a5-b5b6-be42fa2b79ab\", \"pdf_status\": \"pending\", \"client_uuid\": \"7049ef",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -130,7 +130,7 @@
       "precondicao": "tipo/data alternativos",
       "acao": "criar visita de monitoramento",
       "esperado": "criada com tipo monitoramento",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/f3244a21-4af9-4316-97b0-d95e442b58ba\", \"pdf_status\": \"pending\", \"client_uuid\": \"c30cda",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/da5e5989-6b36-4b0b-8ed3-88b4098693d5\", \"pdf_status\": \"pending\", \"client_uuid\": \"a54d70",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -202,7 +202,7 @@
       "precondicao": "GPS valido",
       "acao": "check-in chegada_fazenda",
       "esperado": "sucesso, 1 checkin, 1 log canonico",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"9c541c30-bd60-4778-90e8-e35de3a1572a\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:28:16.977012+00:00\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"480167e8-0a5e-4a4e-977c-c2e004788987\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:29:56.948481+00:00\"}",
       "status": "PASS",
       "tabelas": "visitas_checkin, visitas_logs",
       "limpeza": "finally"
@@ -214,7 +214,7 @@
       "precondicao": "mesmo client_uuid",
       "acao": "repetir check-in (duplo clique)",
       "esperado": "idempotente, nenhuma linha nova",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"9c541c30-bd60-4778-90e8-e35de3a1572a\", \"idempotent\": true, \"data_hora_checkin\": \"2026-09-10T01:28:16.977012+00:00\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"480167e8-0a5e-4a4e-977c-c2e004788987\", \"idempotent\": true, \"data_hora_checkin\": \"2026-09-10T01:29:56.948481+00:00\"}",
       "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
@@ -262,7 +262,7 @@
       "precondicao": "GPS negado COM justificativa",
       "acao": "check-in justificado",
       "esperado": "aceito",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"4ab5bfaf-a770-4d60-af51-41d8493fb235\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:28:22.387362+00:00\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"51da86b3-4fce-4458-ac22-0011fe664b0e\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:30:02.382219+00:00\"}",
       "status": "PASS",
       "tabelas": "visitas_checkin, visitas_logs",
       "limpeza": "finally"
@@ -274,7 +274,7 @@
       "precondicao": "GPS impreciso (950 m)",
       "acao": "check-in com baixa precisao",
       "esperado": "aceito e precisao registrada, ou recusa explicita",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"8d2487c2-0618-4711-9c2c-4a36c08ac213\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:28:23.516908+00:00\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"ae6fba8a-f9b7-4111-8382-779d951fe738\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:30:03.497646+00:00\"}",
       "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
@@ -310,7 +310,7 @@
       "precondicao": "com check-in previo",
       "acao": "checkout",
       "esperado": "sucesso e log checkout_realizado",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"a2716d4b-cda0-4743-8bca-5a7ad4c11f10\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:28:26.876925+00:00\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"a98f5d11-1f27-43a2-8754-76e42f30c475\", \"idempotent\": false, \"data_hora_checkin\": \"2026-09-10T01:30:06.845981+00:00\"}",
       "status": "PASS",
       "tabelas": "visitas_checkin, visitas_logs",
       "limpeza": "finally"
@@ -322,7 +322,7 @@
       "precondicao": "mesmo client_uuid",
       "acao": "repetir checkout",
       "esperado": "idempotente sem nova linha",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"a2716d4b-cda0-4743-8bca-5a7ad4c11f10\", \"idempotent\": true, \"data_hora_checkin\": \"2026-09-10T01:28:26.876925+00:00\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"a98f5d11-1f27-43a2-8754-76e42f30c475\", \"idempotent\": true, \"data_hora_checkin\": \"2026-09-10T01:30:06.845981+00:00\"}",
       "status": "PASS",
       "tabelas": "visitas_checkin",
       "limpeza": "finally"
@@ -358,7 +358,7 @@
       "precondicao": "rascunho",
       "acao": "adicionar diagnostico",
       "esperado": "criado e persistido",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"276f1fb3-1adb-4a75-b044-8e0c448d9fe9\", \"versao\": 2, \"client_uuid\": \"43100e6f-d6bf-4275-85cb-dde8ded331b0\", \"registro_version\": 3}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"9a1b862a-6364-4c10-8f63-663281c0c029\", \"versao\": 2, \"client_uuid\": \"b70096f9-c83e-492c-a96a-626a0a98387d\", \"registro_version\": 3}",
       "status": "PASS",
       "tabelas": "visita_diagnosticos",
       "limpeza": "finally"
@@ -370,7 +370,7 @@
       "precondicao": "mesmo client_uuid",
       "acao": "reenviar diagnostico",
       "esperado": "idempotente, sem duplicar",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"276f1fb3-1adb-4a75-b044-8e0c448d9fe9\", \"versao\": 3, \"client_uuid\": \"43100e6f-d6bf-4275-85cb-dde8ded331b0\", \"registro_version\": 4}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"9a1b862a-6364-4c10-8f63-663281c0c029\", \"versao\": 3, \"client_uuid\": \"b70096f9-c83e-492c-a96a-626a0a98387d\", \"registro_version\": 4}",
       "status": "PASS",
       "tabelas": "visita_diagnosticos",
       "limpeza": "finally"
@@ -382,7 +382,7 @@
       "precondicao": "percentual limitrofe 100%",
       "acao": "segundo diagnostico",
       "esperado": "aceito, multiplos diagnosticos",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"f2b57baa-c4f9-4ff6-9516-800d877f5bfc\", \"versao\": 4, \"client_uuid\": \"7ee51bc3-ffd2-41a9-937a-14752178e715\", \"registro_version\": 5}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"f52ca8a9-bafa-4c8d-a7e7-d6e5061c32bf\", \"versao\": 4, \"client_uuid\": \"db3ddcd7-c0ae-4e7a-8fe8-565a3e9bfad6\", \"registro_version\": 5}",
       "status": "PASS",
       "tabelas": "visita_diagnosticos",
       "limpeza": "finally"
@@ -430,7 +430,7 @@
       "precondicao": "visita propria",
       "acao": "anexar foto principal com metadados",
       "esperado": "linha criada com GPS/autoria",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ evidencia_id=12e8330c-81ca-467b-a9e4-f9f686b620d2",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ evidencia_id=5fcd46f5-785d-4fe8-b521-0f44bca5a26c",
       "status": "PASS",
       "tabelas": "registros_consultor_arquivos",
       "limpeza": "finally"
@@ -442,7 +442,7 @@
       "precondicao": "visita propria",
       "acao": "anexar audio",
       "esperado": "linha criada",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ audio_id=36f35600-9684-420d-8814-9d8213f7a191",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ audio_id=08a8992c-1ecd-4e34-adf0-4c729bac4943",
       "status": "PASS",
       "tabelas": "registros_consultor_arquivos",
       "limpeza": "finally"
@@ -478,7 +478,7 @@
       "precondicao": "evidencia propria",
       "acao": "remover evidencia",
       "esperado": "removida",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ removida=36f35600-9684-420d-8814-9d8213f7a191",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ removida=08a8992c-1ecd-4e34-adf0-4c729bac4943",
       "status": "PASS",
       "tabelas": "registros_consultor_arquivos",
       "limpeza": "finally"
@@ -502,7 +502,7 @@
       "precondicao": "rascunho",
       "acao": "registrar recomendacao",
       "esperado": "criada sem erro",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"0fb9d530-70da-4d16-8f04-f52f6a8c3323\", \"versao\": 1, \"client_uuid\": \"764ea242-2c0a-4d45-b3d6-66369acff141\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"0af06797-7668-4586-a0cb-7656a0bbeeb4\", \"versao\": 1, \"client_uuid\": \"44d0a267-e444-4834-a80a-d8b496d6ffb5\"}",
       "status": "PASS",
       "tabelas": "registros_consultor_recomendacoes",
       "limpeza": "finally"
@@ -514,7 +514,7 @@
       "precondicao": "rascunho",
       "acao": "agendar retorno",
       "esperado": "agendado sem erro",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"version\": 6, \"registro_id\": \"f64e4215-d551-46a0-8d79-25566162f5e1\", \"solicitacao_id\": \"f14eb27d-409d-454f-889d-d4300c2b0703\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"version\": 6, \"registro_id\": \"7fbdf3e0-aa38-483b-9a66-d9ea0fba5a83\", \"solicitacao_id\": \"f9cf11ba-9066-47ae-8c50-04b75fb53972\"}",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -550,7 +550,7 @@
       "precondicao": "rascunho",
       "acao": "ativar somente monitoramento",
       "esperado": "ativado sem erro",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"39842d86-0f12-45fc-8c77-05a0a1403414\", \"ok\": true, \"version\": 7}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"84ca0311-ce9f-4b6f-bf56-36e13607279f\", \"ok\": true, \"version\": 7}",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -610,7 +610,7 @@
       "precondicao": "check-in + diagnostico + cultura",
       "acao": "fluxo feliz",
       "esperado": "finalizada sem erro",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"c4947012-0705-436c-bb43-8725251b2af5\", \"status\": \"finalizado\", \"version\": 8, \"finalized_at\": \"2026-09-10T01:29:03.265687+00:00\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"id\": \"03e593a7-562d-42a5-b5b6-be42fa2b79ab\", \"status\": \"finalizado\", \"version\": 8, \"finalized_at\": \"2026-09-10T01:30:43.464247+00:00\"}",
       "status": "PASS",
       "tabelas": "registros_consultor, visitas_logs",
       "limpeza": "finally"
@@ -718,7 +718,7 @@
       "precondicao": "visita propria",
       "acao": "abrir detalhe (URL direta)",
       "esperado": "workspace com permissions",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"campo\": null, \"equipe\": [], \"status\": \"finalizado\", \"talhao\": {\"id\": \"9f00e003-0000-4000-8000-000000000001\", \"nome\": \"H9GM Talhao\", \"area_hectares\": 10}, \"cliente\": {\"id\": \"9f00e001-0000-4000-8000-000000000001\", \"nome\": \"H9GM Cliente Temporario\", \"codigo_cliente\": \"0086\"}, \"cultura\": {\"id\": \"2e852cb7-fe76-4310-ac83-8951ee",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"campo\": null, \"equipe\": [], \"status\": \"finalizado\", \"talhao\": {\"id\": \"9f00e003-0000-4000-8000-000000000001\", \"nome\": \"H9GM Talhao\", \"area_hectares\": 10}, \"cliente\": {\"id\": \"9f00e001-0000-4000-8000-000000000001\", \"nome\": \"H9GM Cliente Temporario\", \"codigo_cliente\": \"0087\"}, \"cultura\": {\"id\": \"2e852cb7-fe76-4310-ac83-8951ee",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -730,7 +730,7 @@
       "precondicao": "qualquer visita",
       "acao": "abrir detalhe",
       "esperado": "workspace com permissions",
-      "observado": "{\"sub\": \"b5c2ebd4-7cdf-4647-a585-6ec49f1b583a\", \"role\": \"authenticated\"} ⏎ {\"campo\": null, \"equipe\": [], \"status\": \"finalizado\", \"talhao\": {\"id\": \"9f00e003-0000-4000-8000-000000000001\", \"nome\": \"H9GM Talhao\", \"area_hectares\": 10}, \"cliente\": {\"id\": \"9f00e001-0000-4000-8000-000000000001\", \"nome\": \"H9GM Cliente Temporario\", \"codigo_cliente\": \"0086\"}, \"cultura\": {\"id\": \"2e852cb7-fe76-4310-ac83-8951ee",
+      "observado": "{\"sub\": \"b5c2ebd4-7cdf-4647-a585-6ec49f1b583a\", \"role\": \"authenticated\"} ⏎ {\"campo\": null, \"equipe\": [], \"status\": \"finalizado\", \"talhao\": {\"id\": \"9f00e003-0000-4000-8000-000000000001\", \"nome\": \"H9GM Talhao\", \"area_hectares\": 10}, \"cliente\": {\"id\": \"9f00e001-0000-4000-8000-000000000001\", \"nome\": \"H9GM Cliente Temporario\", \"codigo_cliente\": \"0087\"}, \"cultura\": {\"id\": \"2e852cb7-fe76-4310-ac83-8951ee",
       "status": "PASS",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -790,7 +790,7 @@
       "precondicao": "durante toda a matriz",
       "acao": "verificar disparos externos",
       "esperado": "eventos=0 outbox=0 inapp=0 recibos=0 (flags OFF)",
-      "observado": "ERROR:  column \"created_at\" does not exist ⏎ LINE 1: ...) FROM public.comunicacao_provider_receipts WHERE created_at... ⏎                                                              ^",
+      "observado": "eventos=5 outbox=0 inapp=0 recibos=0",
       "status": "FAIL",
       "tabelas": "comunicacao_*",
       "limpeza": "n/a"
