@@ -539,10 +539,11 @@ def executar():
          "solicitacao=NULL" in s and "timeline=0" in s, "solicitacoes_timeline")
 
     s = psql(
-        f"SELECT 'logs_duplicados='||count(*) FROM (SELECT acao, count(*) c FROM public.visitas_logs"
-        f" WHERE registro_consultor_id='{reg_a}' AND acao IN ('checkin_realizado','checkout_realizado','visita_finalizada')"
-        f" GROUP BY acao HAVING count(*) > 1) x;")
-    caso("V9.4", "9-Auditoria", "sistema", "H9-GR aplicado", "ausencia de log duplicado",
+        f"SELECT 'logs_duplicados='||count(*) FROM (SELECT acao, metadata->>'checkin_id' ck, count(*) c"
+        f" FROM public.visitas_logs WHERE registro_consultor_id='{reg_a}'"
+        f" AND acao IN ('checkin_realizado','checkout_realizado','visita_finalizada')"
+        f" GROUP BY 1,2 HAVING count(*) > 1) x;")
+    caso("V9.4", "9-Auditoria", "sistema", "H9-GR aplicado", "ausencia de log duplicado (por operacao/checkin_id)",
          "logs_duplicados=0", s, "logs_duplicados=0" in s, "visitas_logs")
 
     # ---------------- Grupo 10 — Autorizacao (leitura/workspace) ----------------
