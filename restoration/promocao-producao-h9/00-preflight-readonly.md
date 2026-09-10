@@ -157,7 +157,22 @@ Produção hoje: 324 achados de segurança (incluindo **2 ERROR
 4. Backup/restore point de produção não comprovado.
 5. Delta 192 ainda não confirmado contra os dois ledgers reais (sem acesso nesta P0).
 6. 2 ERROR `security_definer_view` em produção sem correção mapeada no pacote.
+7. Edge Function `hml-b2b-runtime-harness` é de homologação e deve ser excluída
+   explicitamente do deploy da onda P6.
 
-O manifesto, o plano de ondas, os prechecks/postchecks, o rollback por onda e o
-runbook estão completos e revisáveis — mas a execução permanece **não
-autorizada**.
+O manifesto, o plano de ondas, os prechecks/postchecks, o rollback por onda, o
+runbook e o validador estático estão completos e revisáveis — mas a execução
+permanece **não autorizada**.
+
+## 10. Validação estática do pacote
+
+`restoration/promocao-producao-h9/08-validacao-estatica.py` — resultado
+`VALIDACAO_ESTATICA_OK`. Verifica: 192 linhas, 192 versões únicas, todas acima
+de `20260723000000`, ordem cronológica, interseção zero com as 59 em quarentena,
+existência de cada arquivo, ausência de referência ao sandbox, e — para toda
+linha `PROMOVER` — ausência de guarda fixa de staging, de ref literal de
+homologação, de UUID literal, de DDL destrutivo e de material de chave privada.
+Confere também que todo `PROMOVER` tem onda, que nenhum não-promovível tem onda,
+que os 8 artefatos da P0 existem e que os `.sql` desta fase não contêm nenhum
+comando de escrita.
+
