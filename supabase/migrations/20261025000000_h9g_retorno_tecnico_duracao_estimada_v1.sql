@@ -1,3 +1,5 @@
+BEGIN;
+
 -- H9-G ADENDO: corrige agendamento de retorno tecnico (duracao_estimada obrigatoria pelo trigger
 -- validate_retorno_tecnico_consistency). Forward-only; nenhuma assinatura, ACL ou contrato alterado.
 CREATE OR REPLACE FUNCTION public.rpc_programar_retorno_visita(p_registro_id uuid, p_expected_version integer, p_data_prevista date, p_descricao text DEFAULT NULL::text)
@@ -77,3 +79,13 @@ BEGIN
   RETURN jsonb_build_object('ok', true, 'registro_id', v_new_id, 'solicitacao_id', v_sol_id, 'version', v_new_version);
 END;
 $function$
+
+REVOKE ALL ON FUNCTION public.rpc_programar_retorno_visita(uuid,integer,date,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.rpc_programar_retorno_visita(uuid,integer,date,text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.rpc_programar_retorno_visita(uuid,integer,date,text) TO authenticated, service_role;
+
+INSERT INTO supabase_migrations.schema_migrations (version, name)
+VALUES ('20261025000000', 'h9g_retorno_tecnico_duracao_estimada_v1')
+ON CONFLICT (version) DO NOTHING;
+
+COMMIT;
