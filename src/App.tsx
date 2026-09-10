@@ -8,6 +8,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { canAccess, getHomeForRole } from "@/lib/permissions";
+import {
+  homeForActiveContext,
+  readActiveContext,
+  resolveEffectiveRouteRole,
+} from "@/lib/navigation/portalRoleContext";
+
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "@/pages/Auth";
 import Index from "@/pages/Index";
@@ -203,15 +209,26 @@ const queryClient = new QueryClient({
 });
 
 function RoleGuard({ children }: { children: React.ReactNode }) {
-  const { role } = useAuth();
+  const { role, roles } = useAuth();
   const location = useLocation();
 
-  if (!canAccess(role, location.pathname)) {
-    return <Navigate to={getHomeForRole(role)} replace />;
+  // H9-G Bloco 2E — decisão canônica considerando o contexto de portal ativo,
+  // evitando que o `primaryRole` (prioridade fixa) descarte o portal escolhido.
+  const activeContext = readActiveContext();
+  const { allowed } = resolveEffectiveRouteRole({
+    roles,
+    primaryRole: role,
+    path: location.pathname,
+    activeContext,
+  });
+
+  if (!allowed) {
+    return <Navigate to={homeForActiveContext(roles, role, activeContext)} replace />;
   }
 
   return <>{children}</>;
 }
+
 
 function ProtectedRoutes() {
   const { user, role, loading, error, refresh, signOut } = useAuth();
