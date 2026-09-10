@@ -82,7 +82,7 @@
       "precondicao": "cliente/fazenda/talhao/cultura validos",
       "acao": "criar visita (rascunho)",
       "esperado": "registro_id retornado, status rascunho",
-      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": false, \"error\": \"technical_access_required\"}",
+      "observado": "{\"sub\": \"77905960-8e07-4214-b1c9-516a381fcd28\", \"role\": \"authenticated\"} ⏎ {\"ok\": true, \"origem\": \"visita_avulsa\", \"status\": \"rascunho\", \"created\": true, \"version\": 1, \"can_edit\": true, \"next_step\": \"continuar\", \"cultura_id\": \"2e852cb7-fe76-4310-ac83-8951ee675415\", \"idempotent\": false, \"next_route\": \"/app/visita/cfea06ff-5321-4f87-b1e3-d4f47359f1c6\", \"pdf_status\": \"pending\", \"client_uuid\": \"c0d5df",
       "status": "FAIL",
       "tabelas": "registros_consultor",
       "limpeza": "finally"
@@ -94,7 +94,7 @@
       "precondicao": "fim da matriz",
       "acao": "remover fixtures temporarias",
       "esperado": "residuo zero das fixtures H9GM",
-      "observado": "apagados_filhos=0 ⏎ residuo_registros=0 residuo_cliente=0 residuo_checkin=0",
+      "observado": "apagados_filhos=0 ⏎ residuo_registros=0 residuo_vinculo=0 residuo_cliente=0 residuo_checkin=0",
       "status": "PASS",
       "tabelas": "todas do dominio visita",
       "limpeza": "finally"

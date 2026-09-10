@@ -41,6 +41,7 @@ TAG = "H9GM"
 CLIENTE = "9f00e001-0000-4000-8000-000000000001"
 FAZENDA = "9f00e002-0000-4000-8000-000000000001"
 TALHAO = "9f00e003-0000-4000-8000-000000000001"
+VINCULO = "9f00e004-0000-4000-8000-000000000001"
 INEXISTENTE = "9f00ffff-0000-4000-8000-0000000000ff"
 
 resultados = []
@@ -119,6 +120,9 @@ def setup():
         INSERT INTO public.talhoes (id, fazenda_id, nome, area_hectares)
           VALUES ('{TALHAO}', '{FAZENDA}', '{TAG} Talhao', 10)
           ON CONFLICT (id) DO NOTHING;
+        INSERT INTO public.user_clientes (id, user_id, cliente_id, is_active, access_level)
+          VALUES ('{VINCULO}', '{TEC}', '{CLIENTE}', true, 'execute')
+          ON CONFLICT (id) DO NOTHING;
         """
     )
 
@@ -137,10 +141,12 @@ def cleanup():
         SELECT 'apagados_filhos='||((SELECT count(*) FROM d1)+(SELECT count(*) FROM d2)+(SELECT count(*) FROM d3)
                +(SELECT count(*) FROM d4)+(SELECT count(*) FROM d5)+(SELECT count(*) FROM d6)+(SELECT count(*) FROM d7));
         DELETE FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%';
+        DELETE FROM public.user_clientes WHERE id = '{VINCULO}';
         DELETE FROM public.talhoes WHERE id = '{TALHAO}';
         DELETE FROM public.fazendas WHERE id = '{FAZENDA}';
         DELETE FROM public.clientes WHERE id = '{CLIENTE}';
         SELECT 'residuo_registros='||(SELECT count(*) FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%')
+             ||' residuo_vinculo='||(SELECT count(*) FROM public.user_clientes WHERE id='{VINCULO}')
              ||' residuo_cliente='||(SELECT count(*) FROM public.clientes WHERE id='{CLIENTE}')
              ||' residuo_checkin='||(SELECT count(*) FROM public.visitas_checkin c JOIN public.registros_consultor r ON r.id=c.registro_consultor_id WHERE r.observacoes_tecnicas LIKE '{TAG}%');
         """
@@ -577,7 +583,7 @@ finally:
                            precondicao="fim da matriz", acao="remover fixtures temporarias",
                            esperado="residuo zero das fixtures H9GM",
                            observado=residuo.replace("\n", " ⏎ ")[:400],
-                           status="PASS" if "residuo_registros=0" in residuo and "residuo_cliente=0" in residuo else "FAIL",
+                           status="PASS" if "residuo_registros=0" in residuo and "residuo_cliente=0" in residuo and "residuo_vinculo=0" in residuo else "FAIL",
                            tabelas="todas do dominio visita", limpeza="finally"))
 
 falhas = [r for r in resultados if r["status"] == "FAIL"]
