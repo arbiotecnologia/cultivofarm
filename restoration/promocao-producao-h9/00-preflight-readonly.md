@@ -98,7 +98,7 @@ migrations, com a guarda parametrizada (por exemplo, comparando
 autorizado) em vez de fixada em staging, e sem qualquer UUID de fixture. Esse
 trabalho de reescrita é uma fase própria (P0b), **não autorizada neste bloco**.
 
-## 5. Artefatos STAGING_ONLY e prova de não dependência
+## 5. Artefatos STAGING_ONLY e dependências reais do código
 
 Objetos exclusivos de homologação identificados na base:
 `_f42_harness_fixtures`, `_fiscal_staging_marker`,
@@ -106,12 +106,24 @@ Objetos exclusivos de homologação identificados na base:
 `fiscal_environment_marker`, `hml_fixture_registry`.
 
 Migrations cujos statements tocam **exclusivamente** esses objetos (2):
-`20260729004107_33189736-…`, `20260731162508_64dbda4c-…`.
+`20260729004107_33189736-…`, `20260731162508_64dbda4c-…`. Nenhuma entra em onda.
 
-Prova de não dependência do aplicativo: nenhuma referência a esses nomes existe
-em `src/`, `supabase/functions/` ou nos tipos gerados — a busca textual retorna
-somente arquivos de `restoration/`, `docs/` e `supabase/tests/`. A verificação é
-reexecutável e está registrada no runbook (`06`, passo 2).
+**Correção de honestidade:** a busca textual reexecutável
+(`rg` sobre `src/` e `supabase/functions/`) **encontra** referências. Elas foram
+lidas uma a uma e classificadas:
+
+| Origem | Objeto | Comportamento na ausência do objeto |
+|---|---|---|
+| `supabase/functions/fiscal-xml-engine/index.ts` | `_fiscal_staging_marker` | fail-closed benigno: sem o marcador a função devolve sempre a chave mestra normal; a via de teste é inalcançável |
+| `supabase/functions/fiscal-binding-diagnostics/index.ts` | `fiscal_environment_marker` | diagnóstico: retorna `null` e segue |
+| `supabase/functions/hml-b2b-runtime-harness/index.ts` | `_fiscal_staging_marker` | **lança `STAGING_GUARD`** — é harness de homologação |
+| `src/test/fiscal/**` (guards, runners, testes estáticos) | `_fiscal_staging_marker` | somente teste; não vai para runtime de produção |
+
+Conclusão: o aplicativo de produção **não depende** desses objetos, com **uma
+exceção operacional**: a Edge Function `hml-b2b-runtime-harness` é de
+homologação e **não pode ser deployada em produção** na onda P6. Registrado como
+blocker 7 na §9. A verificação é reexecutável e está no runbook (`06`, passo 5).
+
 
 ## 6. Quarentena das 59 repo-only
 
