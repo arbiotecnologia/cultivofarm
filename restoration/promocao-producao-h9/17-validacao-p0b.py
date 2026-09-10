@@ -51,10 +51,10 @@ chk(not (quar & set(vers)), f"zero intersecao com a quarentena ({len(quar)} vers
 
 # ------------------------------------------------------- artefatos derivados
 art = list(csv.DictReader(open(os.path.join(P, "10-manifesto-artefatos-promocao.csv"), encoding="utf-8")))
-chk(len(art) == 49, f"49 linhas no manifesto de artefatos apos a P0c (real {len(art)})")
+chk(len(art) == 50, f"50 linhas no manifesto de artefatos apos a P0d (real {len(art)})")
 emit = [r for r in art if r["classe"] == "PROMOVIVEL_COM_ARTEFATO"]
 dec = [r for r in art if r["classe"] == "REQUER_DECISAO"]
-chk(len(emit) == 48, f"48 artefatos emitidos apos a P0c (real {len(emit)})")
+chk(len(emit) == 49, f"49 artefatos emitidos apos a P0d (real {len(emit)})")
 chk(len(dec) == 0, f"nenhum alvo em REQUER_DECISAO apos a P0c (real {len(dec)})")
 
 for r in art:
@@ -70,7 +70,15 @@ for r in emit:
     chk(STG not in exe, f"artefato sem ref de homologacao executavel: {r['version']}")
     chk(not any(m in exe for m in MARKERS), f"artefato sem marcador de homologacao: {r['version']}")
     chk(SBX not in txt, f"artefato sem ref de sandbox: {r['version']}")
-    if r["version"] != "20261101000000":  # convergencia nao e artefato derivado
+    if r["version"] == "20261101000000":
+        continue  # convergencia nao e artefato derivado de migration
+    if r["version"] == "20261102000000":
+        # hardening P0d: guarda vem apos \set/BEGIN/SET LOCAL, antes de qualquer DDL
+        chk("promocao.target_ref" in exe and PROD in exe, f"guarda canonica presente: {r['version']}")
+        chk(exe.index("promocao.target_ref") < exe.upper().index("ALTER VIEW"),
+            f"guarda antes de qualquer DDL: {r['version']}")
+        continue
+    if True:
         chk("promocao.target_ref" in exe and PROD in exe, f"guarda canonica presente: {r['version']}")
         chk(exe.strip().upper().startswith("DO $PROMO_GUARD$"), f"guarda e o primeiro comando: {r['version']}")
 

@@ -142,6 +142,48 @@ def main():
     for v in ("vw_esteira_laboratorio", "vw_fluxo_visita_tecnica"):
         chk(v in views, f"view {v} não mapeada")
 
+    # 9b) P0d — hardening preventivo das 3 views (artefato 20261102000000)
+    vrel = "restoration/promocao-producao-h9/promotion-sql/20261102000000_p0d_security_invoker_views_v1.sql"
+    chk(os.path.exists(os.path.join(ROOT, vrel)), "artefato P0d de views ausente")
+    if os.path.exists(os.path.join(ROOT, vrel)):
+        vs = open(os.path.join(ROOT, vrel), encoding="utf-8").read()
+        for v in ("vw_esteira_laboratorio", "vw_fluxo_visita_tecnica", "_src_vw_esteira_laboratorio"):
+            chk(f"ALTER VIEW public.{v} " in vs.replace("      ", " ").replace("     ", " ")
+                .replace("    ", " ").replace("   ", " ").replace("  ", " "),
+                f"artefato P0d sem ALTER VIEW de {v}")
+        chk(vs.count("security_invoker = true)") == 3, "artefato P0d sem os 3 security_invoker")
+        chk("PRECHECK_FALHOU" in vs, "artefato P0d sem precheck fail-closed")
+        chk("POSTCHECK_FALHOU" in vs and "v_ok <> 3" in vs, "artefato P0d sem pós-check 3/3")
+        chk("POSTCHECK_ACL_FALHOU" in vs, "artefato P0d sem pós-check de ACL")
+        chk(PROD in vs, "artefato P0d sem guarda canônica de promoção")
+        chk(not re.search(r"^\s*GRANT\b", strip_comments(vs), re.M | re.I),
+            "artefato P0d concede acesso novo")
+        chk(os.path.exists(os.path.join(
+            ROOT, "restoration/promocao-producao-h9/rollback-sql/"
+                  "20261102000000_p0d_security_invoker_views_v1_rollback.sql")),
+            "rollback P0d de views ausente")
+    views13 = open(os.path.join(P, "13-security-definer-views.md"), encoding="utf-8").read()
+    chk("_src_vw_esteira_laboratorio" in views13 and "20261102000000" in views13,
+        "13 não documenta a view interna e o artefato P0d")
+
+    # 9c) P0d — honestidade criptográfica: nenhum MD5 em campo sha256_*
+    HEX64 = re.compile(r"^[0-9a-f]{64}$")
+    for a in arows:
+        for campo in ("sha256_origem", "sha256_artefato"):
+            val = (a.get(campo) or "").strip()
+            if val and val != "—":
+                chk(bool(HEX64.match(val)), f"{a['version']}: {campo} não é hex64: {val[:12]}")
+    for a in arows:
+        rel = a["artefato"]
+        if not rel or not os.path.exists(os.path.join(ROOT, rel)):
+            continue
+        txt = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        chk(not re.search(r"md5\s*\([^)]*\)\s*\|\|\s*md5\s*\(", txt),
+            f"{rel}: concatenação de MD5 (falsificaria SHA-256)")
+        for linha in txt.splitlines():
+            if "sha256" in linha.lower() and "md5(" in linha.lower():
+                chk(False, f"{rel}: md5() na mesma expressão de campo sha256_*")
+
     # 10) convergência criada e NÃO executada
     conv_rel = "restoration/promocao-producao-h9/promotion-sql/20261101000000_promocao_convergencia_ledger_v1.sql"
     chk(os.path.exists(os.path.join(ROOT, conv_rel)), "migration de convergência ausente")
@@ -150,6 +192,13 @@ def main():
     chk("ENABLE ROW LEVEL SECURITY" in conv and "CREATE POLICY" not in conv,
         "convergência sem deny-by-default")
     chk("IF NOT EXISTS" in conv, "convergência não idempotente")
+    conve = strip_comments(conv)
+    chk("INSERT INTO public.promocao_execucao_registro" not in conve,
+        "convergência insere a própria linha (autorreferência de SHA-256)")
+    chk("md5(" not in conve, "convergência usa md5() em código executável")
+    chk(conve.count("[0-9a-f]{64}") == 2, "convergência sem CHECK de formato nos 2 campos sha256_*")
+    chk("migration repair --status applied" in conv,
+        "convergência não documenta o fluxo suportado de registro pelo runner")
     chk(not os.path.exists(os.path.join(
         ROOT, "supabase/migrations/20261101000000_promocao_convergencia_ledger_v1.sql")),
         "convergência já colocada em supabase/migrations (seria execução)")

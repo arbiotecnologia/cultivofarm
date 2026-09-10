@@ -30,9 +30,11 @@ CREATE TABLE IF NOT EXISTS public.promocao_execucao_registro (
   id              bigserial PRIMARY KEY,
   version         text        NOT NULL,
   origem          text        NOT NULL,
-  sha256_origem   text        NOT NULL,
+  sha256_origem   text        NOT NULL
+                  CHECK (sha256_origem ~ '^[0-9a-f]{64}$'),
   artefato        text,
-  sha256_artefato text,
+  sha256_artefato text
+                  CHECK (sha256_artefato IS NULL OR sha256_artefato ~ '^[0-9a-f]{64}$'),
   status          text        NOT NULL
                   CHECK (status IN ('APLICADA','NAO_APLICADA','JA_SATISFEITA','STAGING_ONLY','ABORTADA')),
   onda            text        NOT NULL,
@@ -65,15 +67,27 @@ COMMENT ON TABLE public.promocao_execucao_registro IS
 COMMENT ON TABLE public.promocao_rollback_baseline IS
   'Baselines capturados em transação durante a promoção (ex.: cron.job.command anterior) para rollback real. Sem segredos.';
 
--- Registro final da própria convergência. Não inventa migrations não executadas.
-INSERT INTO public.promocao_execucao_registro
-  (version, origem, sha256_origem, artefato, sha256_artefato, status, onda, observacao)
-SELECT
-  '20261101000000',
-  'restoration/promocao-producao-h9/promotion-sql/20261101000000_promocao_convergencia_ledger_v1.sql',
-  md5('convergencia-promocao-h9-v1') || md5('estrutura'),
-  NULL, NULL, 'APLICADA', 'P1',
-  'Estrutura de convergência criada. Cada version promovida registra a própria linha após execução e postcheck.'
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.promocao_execucao_registro WHERE version = '20261101000000'
-);
+-- ---------------------------------------------------------------------------
+-- EVIDÊNCIA DE HASH — REGRA CRIPTOGRÁFICA
+-- ---------------------------------------------------------------------------
+-- Esta migration NÃO insere a própria linha. Motivo: o SHA-256 do arquivo não
+-- pode ser embutido dentro do próprio arquivo (autorreferência), e é PROIBIDO
+-- gravar qualquer outro digest (MD5, concatenação de MD5, etc.) em coluna
+-- `sha256_*`. As colunas têm CHECK de formato hexadecimal de 64 caracteres,
+-- mas o formato sozinho não prova o algoritmo: a garantia real é o runner.
+--
+-- Fluxo obrigatório, inclusive para esta version:
+--   1. executar o SQL desta version;
+--   2. rodar os postchecks da onda;
+--   3. `supabase migration repair --status applied 20261101000000`;
+--   4. só então o RUNNER insere a linha de auditoria, usando o SHA-256 final
+--      já fixado em 10-manifesto-artefatos-promocao.csv:
+--
+--   INSERT INTO public.promocao_execucao_registro
+--     (version, origem, sha256_origem, artefato, sha256_artefato, status, onda, observacao)
+--   VALUES ('20261101000000', '<caminho do arquivo>', '<sha256_origem do manifesto>',
+--           NULL, NULL, 'APLICADA', 'P1',
+--           'Estrutura de convergência criada; registro inserido pelo runner após postcheck.');
+--
+-- Enquanto o runner não inserir, a tabela fica vazia e o status desta version
+-- NÃO pode ser declarado APLICADA em nenhum relatório.

@@ -83,3 +83,30 @@ Para cada version da onda, nesta ordem:
 6. registrar o ledger pelo caminho suportado
    `supabase migration repair --status applied <version>` — nunca escrita direta
    em `supabase_migrations.schema_migrations`.
+
+
+## Adendo P0d — evidência de hash e hardening de views
+
+### 1. Registro da convergência (`20261101000000`)
+
+A migration **não insere** a própria linha. É proibido gravar MD5 (ou
+concatenação de MD5) em coluna `sha256_*`; e o SHA-256 do próprio arquivo não
+pode ser embutido nele mesmo. Ordem obrigatória:
+
+1. executar `promotion-sql/20261101000000_promocao_convergencia_ledger_v1.sql`;
+2. rodar os postchecks da onda P1 (`04-postchecks.sql`, itens 4g–4i);
+3. `supabase migration repair --status applied 20261101000000`;
+4. só então o runner insere a linha de auditoria, usando o `sha256_origem`
+   **real** publicado em `10-manifesto-artefatos-promocao.csv`.
+
+Antes do passo 4 a version **não pode** ser reportada como `APLICADA`. As
+colunas `sha256_origem`/`sha256_artefato` têm `CHECK` de 64 hex minúsculos.
+
+### 2. Hardening de views (`20261102000000`, onda P1)
+
+Executar após a convergência (usa `promocao_rollback_baseline`) e antes das
+ondas que consomem as views. Aplica `security_invoker = true` em
+`vw_esteira_laboratorio`, `vw_fluxo_visita_tecnica` e
+`_src_vw_esteira_laboratorio`, sem conceder acesso novo. Pós-check interno
+exige 3/3 e ACL inalterada; em seguida rodar o Security Advisor de produção e
+exigir **zero** ERROR `security_definer_view`.

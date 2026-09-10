@@ -67,5 +67,31 @@ O Security Advisor de produção confirma **exatamente 2** ERROR
 `security_definer_view`: `public.vw_esteira_laboratorio` e
 `public.vw_fluxo_visita_tecnica`, ambos corrigidos por `20260904130615` dentro
 do pacote. A terceira candidata estática, `public._src_vw_esteira_laboratorio`,
-não aparece no advisor; permanece como verificação de precheck da onda e, se
-existir com `SECURITY DEFINER`, exige decisão antes de prosseguir.
+não aparece no advisor.
+
+## Adendo P0d — leitura autorizada em produção e decisão final
+
+Leitura somente-leitura em produção confirmou:
+
+| View | relkind | reloptions | security_invoker | anon SELECT | authenticated SELECT |
+|---|---|---|---|---|---|
+| `public.vw_esteira_laboratorio` | v | NULL | não | — | — |
+| `public.vw_fluxo_visita_tecnica` | v | NULL | não | — | — |
+| `public._src_vw_esteira_laboratorio` | v | NULL | não | false | false |
+
+`_src_vw_esteira_laboratorio` deixa de ser "pendência menor". Foi criado o
+artefato **`promotion-sql/20261102000000_p0d_security_invoker_views_v1.sql`**,
+incluído na onda **P1**, que:
+
+- guarda canônica `promocao.target_ref = navfzbwgwzruipouyfnk`;
+- precheck fail-closed de existência e `relkind='v'` das 3 views;
+- captura o baseline de `reloptions` em `promocao_rollback_baseline`;
+- aplica `ALTER VIEW … SET (security_invoker = true)` nas 3;
+- **não concede acesso novo** — nenhum `GRANT`; os `REVOKE` atuais permanecem;
+- pós-check exige **3/3** com `security_invoker=true` e pós-check de ACL exige
+  que `_src_vw_esteira_laboratorio` continue sem SELECT para anon/authenticated;
+- rollback real em `rollback-sql/20261102000000_..._rollback.sql`, restaurando
+  o baseline capturado (inclusive `RESET` quando a opção era ausente).
+
+Após a onda, o Security Advisor de produção deve continuar exigindo **zero**
+ERROR `security_definer_view`.
