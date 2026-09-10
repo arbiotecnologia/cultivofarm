@@ -16,6 +16,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { useAvailableContexts } from "@/hooks/useAvailableContexts";
+import { useSwitchPortal } from "@/hooks/useSwitchPortal";
+import { readActiveContext } from "@/lib/navigation/portalRoleContext";
+import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
 
 interface UserMenuProps {
   /**
@@ -28,14 +32,27 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ settingsTo, onSwitchPortal }: UserMenuProps = {}) {
-  const { profile, user, role, signOut } = useAuth();
+  const { profile, user, role, primaryRole, roles, signOut } = useAuth();
   const navigate = useNavigate();
+  const { data: contexts } = useAvailableContexts();
+  const switchPortal = useSwitchPortal();
 
   const nome = (profile as { nome?: string | null } | null)?.nome ?? null;
   const email = (profile as { email?: string | null } | null)?.email ?? user?.email ?? null;
   const iniciais = getIniciais(nome, email);
   const nomeExibicao = getNomeExibicao(nome, email);
-  const roleLabel = getRoleLabel(role);
+
+  // H9-G 2F — rótulo derivado do contexto ativo canônico, nunca do papel fixo.
+  const activeCtx = readActiveContext();
+  const roleLabel =
+    activeCtx && activeCtx !== "b2b"
+      ? getPortalDisplayLabel({ activeCtx, primaryRole, roles })
+      : getRoleLabel(role);
+
+  // "Trocar de portal" é oferecido sempre que existirem ≥ 2 contextos reais.
+  const canSwitchPortal = (contexts?.available_contexts?.length ?? 0) >= 2;
+  const handleSwitchPortal =
+    onSwitchPortal ?? (canSwitchPortal ? () => { void switchPortal(); } : undefined);
 
   const settingsPath =
     settingsTo === null
@@ -115,14 +132,14 @@ export function UserMenu({ settingsTo, onSwitchPortal }: UserMenuProps = {}) {
             </DropdownMenuItem>
           )}
 
-          {onSwitchPortal && (
-            <DropdownMenuItem onClick={onSwitchPortal} className="cursor-pointer">
+          {handleSwitchPortal && (
+            <DropdownMenuItem onClick={handleSwitchPortal} className="cursor-pointer">
               <Repeat className="h-4 w-4 mr-2 text-muted-foreground" aria-hidden="true" />
               <span>Trocar de portal</span>
             </DropdownMenuItem>
           )}
 
-          {(settingsPath || onSwitchPortal) && <DropdownMenuSeparator className="my-1" />}
+          {(settingsPath || handleSwitchPortal) && <DropdownMenuSeparator className="my-1" />}
 
 
           <DropdownMenuItem
