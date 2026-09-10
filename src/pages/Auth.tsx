@@ -62,22 +62,17 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-6">
             {configLoading ? (
-              <Skeleton className="h-14 w-56 rounded-xl" />
+              <Skeleton className="h-24 w-72 rounded-xl" />
             ) : (
               <img
                 src={logoCultivoFarm.url}
                 alt="CultivoFarm — Tecnologia que cultiva resultados"
-                className="h-16 w-auto max-w-full object-contain"
+                className="h-24 sm:h-28 w-auto max-w-full object-contain"
               />
             )}
           </div>
-          {configLoading ? (
-            <Skeleton className="h-7 w-48 mx-auto" />
-          ) : (
-            <CardTitle className="text-2xl">{nomeEmpresa} On-Farm Manager</CardTitle>
-          )}
           <CardDescription>
             {isLogin ? "Entre na sua conta" : "Crie sua conta"}
           </CardDescription>
