@@ -72,6 +72,7 @@ import { ProblemaSelector } from "@/components/visita/ProblemaSelector";
 import { gerarResumoEncerramento } from "@/lib/visitaResumo";
 import { serializePlanoMonitoramento, parsePlanoMonitoramento, stripPlanoMonitoramento } from "@/lib/planoMonitoramento";
 import { serializePlanoRetorno, parsePlanoRetorno, stripPlanoRetorno } from "@/lib/planoRetorno";
+import { mensagemAmigavelVisita, codigoTecnicoVisita } from "@/lib/visita/visitaErrorMessages";
 
 // ---------- Helpers ----------
 function translateError(msg: string): string {
@@ -95,7 +96,11 @@ function translateError(msg: string): string {
   if (msg.includes("problema principal")) return "Informe o problema principal antes de finalizar.";
   if (msg.includes("descrição técnica")) return "Preencha a descrição técnica antes de finalizar.";
   if (msg.includes("check_violation")) return "Dados inconsistentes. Verifique os campos obrigatórios.";
-  
+
+  // H9-GR: códigos técnicos das RPCs de visita nunca chegam crus à interface.
+  const codigo = codigoTecnicoVisita(msg);
+  if (codigo) return mensagemAmigavelVisita(msg);
+
   return `Erro: ${msg}`;
 }
 
