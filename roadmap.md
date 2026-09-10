@@ -2,18 +2,18 @@
 
 ## Em aberto
 
-### Fechar a onda P1 da promoção H9 (produção `navfzbwgwzruipouyfnk`)
-- **Estado:** P1 PARCIAL. Hardening `security_invoker` das 3 views aplicado com sucesso pela máquina do operador (3/3, ACLs idênticas, Security Advisor com 0 errors). Ledger inalterado em 490 / `20260723000000`.
-- **Pendente:** `20261101000000` (convergência/ledger), `20261006000000` e `20261015000000` (authz), pós-checks, `migration repair` e registro de auditoria.
-- **Bloqueio:** o canal Lovable não alcança a produção; execução ocorre na máquina do operador. O artefato de convergência precisa ser salvo localmente e conferido pelo SHA-256 `65de029b…d0d7137`.
-- **Registro:** `restoration/promocao-producao-h9/24-p1-parcial-hardening-views.md`.
-
 ### Anexar evidências locais da P1
-- Arquivar `p1-security-invoker-production.sql` e as saídas de pre/post-check em `restoration/promocao-producao-h9/evidencias/`, com SHA-256.
+- Arquivar em `restoration/promocao-producao-h9/evidencias/`, com SHA-256: `p1-security-invoker-production.sql` e as saídas brutas de pre/post-check das três unidades executadas.
+- Arquivar a leitura literal do Security Advisor de produção pós-convergência.
+- **Bloqueio:** os arquivos existem apenas na máquina do operador.
+
+### Convergir homologação
+- Aplicar `20261006000000`, `20261015000000` e `20261101000000` também em `ikaauvsflpmamgxmkhoq`, para que os dois ledgers avancem juntos.
 
 ### Onda P2
-- **BLOQUEADA** até a convergência da P1 ser executada, pós-checada e refletida no ledger real.
+- **NO-GO / bloqueada** até autorização explícita e arquivamento das evidências da P1.
 
 ## Concluídas
-- Hardening `security_invoker` das 3 views de produção (P0d), incluindo `public._src_vw_esteira_laboratorio`.
+- **Onda P1 da promoção H9 (produção `navfzbwgwzruipouyfnk`)** — convergência `20261101000000` e authz `20261006000000` / `20261015000000` aplicadas e pós-checadas; ledger 490/`20260723000000` → 493/`20261101000000`; 3 registros `APLICADA`/`P1` em `public.promocao_execucao_registro`; tabelas de convergência com RLS, zero policies, sem SELECT para anon/authenticated, vazias e sem baseline. Registro: `restoration/promocao-producao-h9/25-p1-conclusao-convergencia-e-authz.md`.
+- Hardening `security_invoker` das 3 views de produção (P0d), incluindo `public._src_vw_esteira_laboratorio` — mantido explicitamente fora do ledger, sem version fictícia.
 - Exportação integral dos artefatos P1 para execução manual local.
