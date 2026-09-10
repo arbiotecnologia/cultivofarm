@@ -52,3 +52,17 @@ SELECT to_regclass('auth.users') IS NOT NULL AS auth_users_ok;
 Forward-only: `DROP POLICY` / `DROP TABLE` da tabela pública criada, apenas se
 ela estiver vazia. Nada em schema gerenciado é tocado, logo não há reversão de
 `auth` a fazer.
+
+
+## Adendo P0c — decisão corrigida: PROMOVER
+
+Evidência de produção: o schema `vault` existe, `vault.decrypted_secrets`
+existe e o executor tem `USAGE`+`SELECT`. Nenhum segredo externo é necessário
+para aplicar o schema: os 4 slots `secret_*` nascem `NULL` e todas as flags de
+entrega nascem `false`.
+
+Artefato: `promotion-sql/20260727161408__promocao.sql` — guarda canônica de
+promoção, precheck de Vault/`auth.users` e pós-check de flags `false`,
+`secret_* IS NULL`, ausência de policy, ACL sem anon/authenticated/PUBLIC e RPC
+de runtime executável somente por `service_role`. Nenhum segredo é criado ou
+copiado; integrações permanecem desligadas. Onda **P3**.

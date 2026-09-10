@@ -463,35 +463,26 @@ CREATE TRIGGER trg_fiscal_audit_microorganism_fiscal_profiles
 AFTER INSERT OR UPDATE OR DELETE ON public.microorganism_fiscal_profiles
 FOR EACH ROW EXECUTE FUNCTION public.fiscal_audit_trigger();
 
--- B.2 Quarentena determinística dos perfis sintéticos identificados na auditoria.
--- Idempotente: só age em linhas ainda não quarentenadas.
-UPDATE public.microorganism_fiscal_profiles
-SET profile_status = 'BLOCKED',
-    is_active = false,
-    accounting_notes = left(
-      'QUARENTENA F1 (' || to_char(now() AT TIME ZONE 'UTC','YYYY-MM-DD') || '): '
-      || 'classificacao sintetica de homologacao, sem laudo/rotulo/registro MAPA '
-      || 'e sem validacao contabil. Nao publicada, nao apta e nao utilizavel em '
-      || 'faturamento. Valores fiscais originais preservados na linha; old/new em '
-      || 'public.fiscal_audit_log. | NOTA ORIGINAL: '
-      || coalesce(accounting_notes,'(vazia)'), 4000)
-WHERE id = '5b3817dd-9894-408f-b4f2-06bb57f6fb56'::uuid
-  AND profile_status <> 'BLOCKED';
-
-UPDATE public.product_fiscal_profiles
-SET profile_status = 'BLOCKED',
-    is_active = false,
-    accounting_notes = left(
-      'QUARENTENA F1 (' || to_char(now() AT TIME ZONE 'UTC','YYYY-MM-DD') || '): '
-      || 'classificacao sintetica de homologacao, sem laudo/rotulo/registro MAPA '
-      || 'e sem validacao contabil. Nao publicada, nao apta e nao utilizavel em '
-      || 'faturamento. Valores fiscais originais preservados na linha; old/new em '
-      || 'public.fiscal_audit_log. | NOTA ORIGINAL: '
-      || coalesce(accounting_notes,'(vazia)'), 4000)
-WHERE id IN (
-    'e848af9d-1a10-4066-9d98-b03a49c284b8'::uuid,
-    '4120a677-0d7f-46a6-aa6a-48b748b879ba'::uuid)
-  AND profile_status <> 'BLOCKED';
+-- [P0c] Quarentena de perfis fiscais SINTÉTICOS de homologação removida do
+-- artefato de promoção: os 3 UUIDs são linhas de fixture que não existem em
+-- produção. Em vez de propagá-los, o artefato exige fail-closed que eles não
+-- existam no alvo; se existirem, a onda aborta e escala para decisão humana.
+DO $p0c_fixtures$
+DECLARE
+  v_n int;
+BEGIN
+  SELECT count(*) INTO v_n FROM public.microorganism_fiscal_profiles
+   WHERE id::text = ANY (string_to_array(current_setting('promocao.fixture_ids', true), ','));
+  IF v_n > 0 THEN
+    RAISE EXCEPTION 'F1_ABORT: perfis sinteticos de homologacao presentes no alvo (%)', v_n;
+  END IF;
+  SELECT count(*) INTO v_n FROM public.product_fiscal_profiles
+   WHERE id::text = ANY (string_to_array(current_setting('promocao.fixture_ids', true), ','));
+  IF v_n > 0 THEN
+    RAISE EXCEPTION 'F1_ABORT: perfis sinteticos de produto presentes no alvo (%)', v_n;
+  END IF;
+END
+$p0c_fixtures$;
 
 -- B.3 Pós-check fail-closed embutido
 DO $post$
@@ -513,15 +504,7 @@ BEGIN
     RAISE EXCEPTION 'F1_ABORT: % grants residuais para anon/PUBLIC', v_bad;
   END IF;
 
-  SELECT count(*) INTO v_bad FROM public.microorganism_fiscal_profiles
-  WHERE id='5b3817dd-9894-408f-b4f2-06bb57f6fb56'::uuid
-    AND (profile_status <> 'BLOCKED' OR is_active <> false);
-  IF v_bad > 0 THEN RAISE EXCEPTION 'F1_ABORT: perfil sintetico de microrganismo nao quarentenado'; END IF;
 
-  SELECT count(*) INTO v_bad FROM public.product_fiscal_profiles
-  WHERE id IN ('e848af9d-1a10-4066-9d98-b03a49c284b8'::uuid,'4120a677-0d7f-46a6-aa6a-48b748b879ba'::uuid)
-    AND (profile_status <> 'BLOCKED' OR is_active <> false);
-  IF v_bad > 0 THEN RAISE EXCEPTION 'F1_ABORT: perfil sintetico de produto nao quarentenado'; END IF;
 
   RAISE NOTICE 'F1_HARDENING_FISCAL_OK';
 END
