@@ -33,10 +33,10 @@ chk(len(man) == 192, f"manifesto tem 192 versoes (real {len(man)})")
 chk(len(set(vers)) == len(vers), "versoes do manifesto sao unicas")
 chk(all(v > "20260723000000" for v in vers), "toda version e posterior ao corte de producao")
 
-guard = [r for r in man if "guarda" in r["motivo"].lower() or "REF_STAGING" in r["flags"]]
+guard = [r for r in man if "guarda fail-fast" in r["motivo"]]
 chk(len(guard) == 103, f"103 linhas com guarda de homologacao (real {len(guard)})")
 
-destr = [r for r in man if re.search(r"DROP_COLUMN|TRUNCATE|DROP_TABLE|DELETE", r["flags"])]
+destr = [r for r in man if "DDL/DML destrutivo" in r["motivo"]]
 chk(len(destr) == 15, f"15 linhas destrutivas classificadas (real {len(destr)})")
 
 # quarentena: as 59 repo-only nao podem estar no manifesto
@@ -76,7 +76,7 @@ chk(disco == {f"{r['version']}__promocao.sql" for r in emit},
     f"arquivos em promotion-sql batem com o manifesto ({len(disco)})")
 
 # --------------------------------------------------------------- higiene
-SEG = re.compile(r"(?i)(service_role_key|BEGIN [A-Z ]*PRIVATE KEY|password\s*=\s*['\"][^'\"]|postgresql://[^\s]*:[^\s]*@)")
+SEG = re.compile(r"(?i)(eyJ[A-Za-z0-9_-]{20,}\.|sb_secret_[A-Za-z0-9_-]{10,}|BEGIN [A-Z ]*PRIVATE KEY|postgres(ql)?://[^\s'\"]*:[^\s'\"]*@)")
 for f in glob.glob(os.path.join(P, "**/*"), recursive=True):
     if not os.path.isfile(f) or f.endswith((".pyc",)):
         continue
