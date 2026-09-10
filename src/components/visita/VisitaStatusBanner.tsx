@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { STATUS_LABEL_REGISTRO } from "@/lib/registroTransitions";
+import {
+  desfechoGeraArtefatoAprovavel, descricaoVisitaFinalizada, etapaAtivaFinalizada,
+} from "@/lib/visita/desfechoVisita";
 
 interface Props {
   status?: string;
@@ -46,9 +49,9 @@ const ETAPAS_FLUXO: FluxoEtapa[] = [
   { key: "concluida", label: "Concluída", icon: Flag },
 ];
 
-function getEtapaAtiva(status?: string): string {
+function getEtapaAtiva(status?: string, proximoPasso?: string): string {
   switch (status) {
-    case "finalizado": return "aprovacao";
+    case "finalizado": return etapaAtivaFinalizada(proximoPasso);
     case "enviado_aprovacao": return "aprovacao";
     case "aprovado": return "produtor";
     case "convertido_os": return "os";
@@ -67,6 +70,8 @@ export function VisitaStatusBanner({
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
+  const [liberando, setLiberando] = useState(false);
+  const geraArtefatoAprovavel = desfechoGeraArtefatoAprovavel(proximoPasso);
 
   if (!status || status === "rascunho") return null;
 
@@ -97,7 +102,7 @@ export function VisitaStatusBanner({
   }
 
   const label = STATUS_LABEL_REGISTRO[status] || status;
-  const etapaAtiva = getEtapaAtiva(status);
+  const etapaAtiva = getEtapaAtiva(status, proximoPasso);
   const etapaIdx = ETAPAS_FLUXO.findIndex(e => e.key === etapaAtiva);
 
   // Contextual title / description / CTA
@@ -108,7 +113,7 @@ export function VisitaStatusBanner({
 
   if (status === "finalizado") {
     titulo = `Visita finalizada${dateLabel ? ` em ${dateLabel}` : ""}`;
-    descricao = "Pronta para envio à aprovação técnica.";
+    descricao = descricaoVisitaFinalizada(proximoPasso);
     tone = "emerald";
   } else if (status === "enviado_aprovacao") {
     titulo = "Aguardando aprovação técnica";
@@ -176,13 +181,25 @@ export function VisitaStatusBanner({
                 <Pencil className="h-4 w-4 mr-1" /> Editar visita
               </Button>
             )}
-            {registroId && (status === "finalizado" || status === "enviado_aprovacao") && (role === "administrador" || role === "gestor") && (
-              <Button 
-                size="sm" 
+            {registroId && geraArtefatoAprovavel && (status === "finalizado" || status === "enviado_aprovacao") && (role === "administrador" || role === "gestor") && (
+              <Button
+                size="sm"
+                disabled={liberando}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                onClick={() => liberarRecomendacaoParaProdutor(registroId)}
+                onClick={async () => {
+                  if (liberando) return;
+                  setLiberando(true);
+                  try {
+                    const res = await liberarRecomendacaoParaProdutor(registroId);
+                    if (!res?.success && !res?.message) {
+                      toast.error("Não foi possível liberar para o produtor.");
+                    }
+                  } finally {
+                    setLiberando(false);
+                  }
+                }}
               >
-                <CheckCircle2 className="h-4 w-4" /> 
+                {liberando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Liberar para Produtor
               </Button>
             )}
