@@ -70,8 +70,13 @@ for r in emit:
     chk(STG not in exe, f"artefato sem ref de homologacao executavel: {r['version']}")
     chk(not any(m in exe for m in MARKERS), f"artefato sem marcador de homologacao: {r['version']}")
     chk(SBX not in txt, f"artefato sem ref de sandbox: {r['version']}")
-    if r["version"] in ("20261101000000", "20261102000000"):
-        # convergencia e hardening P0d nao sao artefatos derivados de migration
+    if r["version"] == "20261101000000":
+        continue  # convergencia nao e artefato derivado de migration
+    if r["version"] == "20261102000000":
+        # hardening P0d: guarda vem apos \set/BEGIN/SET LOCAL, antes de qualquer DDL
+        chk("promocao.target_ref" in exe and PROD in exe, f"guarda canonica presente: {r['version']}")
+        chk(exe.index("promocao.target_ref") < exe.upper().index("ALTER VIEW"),
+            f"guarda antes de qualquer DDL: {r['version']}")
         continue
     if True:
         chk("promocao.target_ref" in exe and PROD in exe, f"guarda canonica presente: {r['version']}")
