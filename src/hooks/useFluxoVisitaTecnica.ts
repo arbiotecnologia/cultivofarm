@@ -527,8 +527,13 @@ export function useFluxoVisitaTecnica() {
         data: { id: co.id, data_hora_checkin: co.data_hora_checkin, idempotent: !!co.idempotent },
       };
     } catch (error: any) {
-      console.error("Erro em registrarCheckout:", error);
-      return { success: false, message: error?.message || "Erro no checkout", error: error?.message };
+      // H9-GR: código técnico só no log interno; usuário recebe texto amigável.
+      console.error("Erro em registrarCheckout:", codigoTecnicoVisita(error) ?? error?.message, error);
+      return {
+        success: false,
+        message: mensagemAmigavelVisita(error, "Não foi possível encerrar a presença. Tente novamente."),
+        error: error?.message,
+      };
     }
   };
 
