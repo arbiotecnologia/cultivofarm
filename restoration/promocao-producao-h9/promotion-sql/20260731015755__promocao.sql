@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260731015755_beced84b-0e3f-46a8-a29d-218771555108.sql
--- SHA-256 da origem: d3bca5f82342866e8c7ac716411fdeb3d2ac872bab96a186cc87115f531b18f5
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260731015755_beced84b-0e3f-46a8-a29d-218771555108.sql
+-- SHA-256 orig: d3bca5f82342866e8c7ac716411fdeb3d2ac872bab96a186cc87115f531b18f5
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -22,13 +22,8 @@ $promo_guard$;
 -- ============================================================
 -- FASE B parte 2 — RPCs de condições/preços (staging only)
 -- ============================================================
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public._fiscal_staging_marker
-                 WHERE marker='STAGING' AND project_ref='navfzbwgwzruipouyfnk') THEN
-    RAISE EXCEPTION 'ABORT: marcador STAGING ausente';
-  END IF;
-END$$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- Alinha vocabulário de escopo com commercial_price_rules ('producer')
 ALTER TABLE public.commercial_payment_plan_assignments

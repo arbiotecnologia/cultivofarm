@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260731015931_d970d467-904a-45df-bf56-1852d1973aea.sql
--- SHA-256 da origem: 7623957e737f047d56afe58e6b607182ef376f10b19eae37e336949fbff8454a
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260731015931_d970d467-904a-45df-bf56-1852d1973aea.sql
+-- SHA-256 orig: 7623957e737f047d56afe58e6b607182ef376f10b19eae37e336949fbff8454a
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -22,13 +22,8 @@ $promo_guard$;
 -- ============================================================
 -- FASE C — Gate fiscal, política parametrizável e vínculos
 -- ============================================================
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public._fiscal_staging_marker
-                 WHERE marker='STAGING' AND project_ref='navfzbwgwzruipouyfnk') THEN
-    RAISE EXCEPTION 'ABORT: marcador STAGING ausente';
-  END IF;
-END$$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- ---------- 1) Política fiscal parametrizável ----------
 CREATE TABLE IF NOT EXISTS public.fiscal_operation_policies (

@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260730021620_2399d6cb-5b57-46d1-a867-d4403b908e0c.sql
--- SHA-256 da origem: f784cc385275751cf08ad21444751be0e5fcc89bb6dd081a0d0e123a36ca9aab
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: to_regclass(marcador) -> true
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260730021620_2399d6cb-5b57-46d1-a867-d4403b908e0c.sql
+-- SHA-256 orig: f784cc385275751cf08ad21444751be0e5fcc89bb6dd081a0d0e123a36ca9aab
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -22,18 +22,8 @@ $promo_guard$;
 -- STAGING_GUARD normalizado (portatil / forward-only):
 -- recusa apenas ambiente comprovadamente de PRODUCAO. Em banco novo (marker ausente)
 -- a migration segue adiante, tornando o replay reprodutivel fora deste projeto.
-DO $guard$
-DECLARE v_ref text;
-BEGIN
-  IF true THEN
-    EXECUTE 'SELECT project_ref FROM public._fiscal_staging_marker WHERE marker = ''STAGING'' LIMIT 1'
-      INTO v_ref;
-  END IF;
-  IF v_ref = 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'STAGING_GUARD: project_ref de PRODUCAO recusado';
-  END IF;
-END
-$guard$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- 1) EXECUTE mínimo nas auxiliares internas (idempotente)
 REVOKE ALL ON FUNCTION public._cpp_validate_payload(jsonb) FROM PUBLIC, anon, authenticated;

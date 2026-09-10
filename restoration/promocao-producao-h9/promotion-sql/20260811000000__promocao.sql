@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260811000000_higienizacao_objetos_hml_sinteticos.sql
--- SHA-256 da origem: 0208cb2928522898cc564d7153e6dff075f38a098e5b121d411f3f36e352c862
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260811000000_higienizacao_objetos_hml_sinteticos.sql
+-- SHA-256 orig: 0208cb2928522898cc564d7153e6dff075f38a098e5b121d411f3f36e352c862
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -46,36 +46,8 @@ $promo_guard$;
 -- ---------------------------------------------------------------------
 -- GUARD FAIL-CLOSED DE AMBIENTE (PROMOVIVEL)
 -- ---------------------------------------------------------------------
-DO $guard$
-DECLARE
-  v_count int;
-  v_marker text;
-  v_ref text;
-BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: public._fiscal_staging_marker ausente';
-  END IF;
+-- [guarda de homologação removida pelo gerador de promoção]
 
-  EXECUTE 'SELECT count(*) FROM public._fiscal_staging_marker' INTO v_count;
-  IF v_count <> 1 THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marcador de ambiente com % linhas (esperado exatamente 1)', v_count;
-  END IF;
-
-  EXECUTE 'SELECT marker, project_ref FROM public._fiscal_staging_marker'
-    INTO v_marker, v_ref;
-
-  IF v_marker IS NULL OR v_ref IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marker/project_ref NULL nao e ambiente autorizado';
-  END IF;
-
-  IF NOT (
-       (v_marker = 'STAGING'    AND v_ref = 'navfzbwgwzruipouyfnk')
-    OR (v_marker = 'PRODUCTION' AND v_ref = 'navfzbwgwzruipouyfnk')
-  ) THEN
-    RAISE EXCEPTION 'GUARD_ABORT: par (marker, project_ref) nao autorizado';
-  END IF;
-END
-$guard$;
 
 -- ---------------------------------------------------------------------
 -- 1) Adapter fiscal SIMULADO — remove TODAS as assinaturas.

@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260805041601_752b9122-f0e1-4646-9c4a-7c1393deae8d.sql
--- SHA-256 da origem: ff80941e9d2e657c15d08e64262bc7f2ff069150c547a3940e3a2b62c3c7963a
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260805041601_752b9122-f0e1-4646-9c4a-7c1393deae8d.sql
+-- SHA-256 orig: ff80941e9d2e657c15d08e64262bc7f2ff069150c547a3940e3a2b62c3c7963a
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -19,26 +19,8 @@ BEGIN
 END
 $promo_guard$;
 
-DO $guard$
-DECLARE
-  c_expected constant text := 'navfzbwgwzruipouyfnk';
-  c_prod constant text := 'navfzbwgwzruipouyfnk';
-  v_ref text;
-  v_count integer;
-BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marcador de staging inexistente';
-  END IF;
-  SELECT count(*), min(project_ref) INTO v_count, v_ref
-    FROM public._fiscal_staging_marker WHERE marker = 'STAGING';
-  IF v_count <> 1 OR v_ref IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marcador de staging ausente ou ambiguo';
-  END IF;
-  IF v_ref = c_prod OR v_ref IS DISTINCT FROM c_expected THEN
-    RAISE EXCEPTION 'GUARD_ABORT: ambiente nao autorizado';
-  END IF;
-END
-$guard$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 CREATE OR REPLACE FUNCTION public.rpc_finalizar_visita_v2(
   p_registro_id uuid,

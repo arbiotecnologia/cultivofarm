@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260730020619_2f7835f8-3e7c-4331-a0c9-24348bf1ed0f.sql
--- SHA-256 da origem: bec4cfe8ab3cfd6814f33542780b1b332070fad0134cd780f7c6c94e3f137409
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: to_regclass(marcador) -> true
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260730020619_2f7835f8-3e7c-4331-a0c9-24348bf1ed0f.sql
+-- SHA-256 orig: bec4cfe8ab3cfd6814f33542780b1b332070fad0134cd780f7c6c94e3f137409
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -25,18 +25,8 @@ $promo_guard$;
 -- STAGING_GUARD normalizado (portatil / forward-only):
 -- recusa apenas ambiente comprovadamente de PRODUCAO. Em banco novo (marker ausente)
 -- a migration segue adiante, tornando o replay reprodutivel fora deste projeto.
-DO $guard$
-DECLARE v_ref text;
-BEGIN
-  IF true THEN
-    EXECUTE 'SELECT project_ref FROM public._fiscal_staging_marker WHERE marker = ''STAGING'' LIMIT 1'
-      INTO v_ref;
-  END IF;
-  IF v_ref = 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'STAGING_GUARD: project_ref de PRODUCAO recusado';
-  END IF;
-END
-$guard$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- Baseline fail-fast: as 4 RPCs operacionais devem estar exatamente no estado auditado
 DO $baseline$

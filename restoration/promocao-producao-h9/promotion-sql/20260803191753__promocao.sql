@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260803191753_8907559b-3c81-4d7a-913a-ff6865bec9e5.sql
--- SHA-256 da origem: 078e16e4997a5cbc4ec073436fc7a69c23dbb00502ff8ed4daa9fbc824be1745
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: leitura de marcador -> GUC; literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260803191753_8907559b-3c81-4d7a-913a-ff6865bec9e5.sql
+-- SHA-256 orig: 078e16e4997a5cbc4ec073436fc7a69c23dbb00502ff8ed4daa9fbc824be1745
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -22,18 +22,8 @@ $promo_guard$;
 -- ============================================================
 -- Guarda de ambiente: STAGING ikaauvsflpmamgxmkhoq apenas
 -- ============================================================
-DO $guard$
-DECLARE v_ref text;
-BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marker inexistente';
-  END IF;
-  SELECT current_setting('promocao.target_ref', true) INTO v_ref;
-  IF v_ref IS DISTINCT FROM 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'GUARD_ABORT: ambiente % nao autorizado', coalesce(v_ref,'<null>');
-  END IF;
-END
-$guard$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- ============================================================
 -- 1. registros_consultor_recomendacoes — vazamento cross-cliente

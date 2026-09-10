@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260729023833_96d32366-672c-4efa-a43f-0b3a39965deb.sql
--- SHA-256 da origem: 41e707ebe971028faac8ab92327297c50a7bcd944780cfc659fb27c9b6bcfd03
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: to_regclass(marcador) -> true
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260729023833_96d32366-672c-4efa-a43f-0b3a39965deb.sql
+-- SHA-256 orig: 41e707ebe971028faac8ab92327297c50a7bcd944780cfc659fb27c9b6bcfd03
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -22,18 +22,8 @@ $promo_guard$;
 -- STAGING_GUARD normalizado (portatil / forward-only):
 -- recusa apenas ambiente comprovadamente de PRODUCAO. Em banco novo (marker ausente)
 -- a migration segue adiante, tornando o replay reprodutivel fora deste projeto.
-DO $guard$
-DECLARE v_ref text;
-BEGIN
-  IF true THEN
-    EXECUTE 'SELECT project_ref FROM public._fiscal_staging_marker WHERE marker = ''STAGING'' LIMIT 1'
-      INTO v_ref;
-  END IF;
-  IF v_ref = 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'STAGING_GUARD: project_ref de PRODUCAO recusado';
-  END IF;
-END
-$guard$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)
 RETURNS jsonb

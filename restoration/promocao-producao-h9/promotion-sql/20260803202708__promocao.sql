@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260803202708_5f230644-c336-406d-973e-d9ffea526bfd.sql
--- SHA-256 da origem: ad5a07fa44158cbf95d9a92f3ead0c5a962aa5ea14c1cabe33170c67ee10e0b3
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: leitura de marcador -> GUC; literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260803202708_5f230644-c336-406d-973e-d9ffea526bfd.sql
+-- SHA-256 orig: ad5a07fa44158cbf95d9a92f3ead0c5a962aa5ea14c1cabe33170c67ee10e0b3
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -22,17 +22,8 @@ $promo_guard$;
 -- =========================================================
 -- Guard de ambiente: somente staging
 -- =========================================================
-DO $g$
-DECLARE v text;
-BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD: ambiente nao identificado';
-  END IF;
-  SELECT current_setting('promocao.target_ref', true) INTO v;
-  IF v IS DISTINCT FROM 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'GUARD: somente staging ikaauvsflpmamgxmkhoq';
-  END IF;
-END $g$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- =========================================================
 -- 1) PERFIL DE CONFORMIDADE E ROTULAGEM VERSIONADO

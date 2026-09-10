@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260805031852_07770aec-ddb2-4430-9ad9-e8314759fda9.sql
--- SHA-256 da origem: b92506be6f115e645b5dbb31fd42ce4319afce7d169e3f938ddba2410638e356
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260805031852_07770aec-ddb2-4430-9ad9-e8314759fda9.sql
+-- SHA-256 orig: b92506be6f115e645b5dbb31fd42ce4319afce7d169e3f938ddba2410638e356
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -22,36 +22,8 @@ $promo_guard$;
 -- ============================================================================
 -- GUARD FAIL-CLOSED DE STAGING (P0-4) — executa ANTES de qualquer DDL/DML.
 -- ============================================================================
-DO $guard$
-DECLARE
-  v_marker text;
-  v_ref    text;
-  c_expected constant text := 'navfzbwgwzruipouyfnk';
-  c_prod     constant text := 'navfzbwgwzruipouyfnk';
-BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marcador de staging inexistente — ambiente nao comprovavel';
-  END IF;
+-- [guarda de homologação removida pelo gerador de promoção]
 
-  SELECT marker, project_ref INTO v_marker, v_ref
-    FROM public._fiscal_staging_marker WHERE marker = 'STAGING' LIMIT 1;
-
-  IF v_marker IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: nenhuma linha marker=STAGING encontrada';
-  END IF;
-  IF v_ref = c_prod THEN
-    RAISE EXCEPTION 'GUARD_ABORT: ambiente de PRODUCAO (%) — execucao proibida', c_prod;
-  END IF;
-  IF v_ref IS DISTINCT FROM c_expected THEN
-    RAISE EXCEPTION 'GUARD_ABORT: project_ref % difere do staging autorizado %', coalesce(v_ref,'<null>'), c_expected;
-  END IF;
-  IF EXISTS (SELECT 1 FROM public._fiscal_staging_marker WHERE project_ref = c_prod) THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marker contem ref de PRODUCAO';
-  END IF;
-
-  RAISE NOTICE 'GUARD_OK: staging % autorizado', c_expected;
-END
-$guard$;
 
 -- ============================================================================
 -- P0-1 — Motor único: cultura opcional em origens sem cultura conhecida.

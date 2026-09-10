@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260731015524_920deb5e-d5d8-4b76-9c20-762cdf6ba277.sql
--- SHA-256 da origem: 48c266e516d7f6ceac20e77512e2dcfa4d2ad6477dc803ae8097b2068249087d
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260731015524_920deb5e-d5d8-4b76-9c20-762cdf6ba277.sql
+-- SHA-256 orig: 48c266e516d7f6ceac20e77512e2dcfa4d2ad6477dc803ae8097b2068249087d
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -25,15 +25,8 @@ $promo_guard$;
 -- ============================================================
 
 -- Gate: recusa execução fora do staging marcado.
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public._fiscal_staging_marker
-    WHERE marker = 'STAGING' AND project_ref = 'navfzbwgwzruipouyfnk'
-  ) THEN
-    RAISE EXCEPTION 'ABORT: marcador STAGING ausente — migration recusada';
-  END IF;
-END$$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- ------------------------------------------------------------
 -- 1) Atribuições de plano por parceiro/produtor

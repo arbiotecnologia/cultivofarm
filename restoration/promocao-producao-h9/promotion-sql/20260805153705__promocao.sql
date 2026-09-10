@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260805153705_a30b97c8-b824-4119-8bfe-702faa88a6b1.sql
--- SHA-256 da origem: 0b535934e480b0d8084382052d3a7a3966a6cfbe2649f4348d6ae6812fe9c9d5
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: leitura de marcador -> GUC; literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260805153705_a30b97c8-b824-4119-8bfe-702faa88a6b1.sql
+-- SHA-256 orig: 0b535934e480b0d8084382052d3a7a3966a6cfbe2649f4348d6ae6812fe9c9d5
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -29,37 +29,8 @@ $promo_guard$;
 -- Rollback logico: restoration/visita-portais-tecnicos/rollback-consolidacao.sql
 -- ============================================================================
 
-DO $guard$
-DECLARE
-  c_expected constant text := 'navfzbwgwzruipouyfnk';
-  c_prod     constant text := 'navfzbwgwzruipouyfnk';
-  v_rows integer;
-  v_ref  text;
-BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: tabela public._fiscal_staging_marker inexistente';
-  END IF;
+-- [guarda de homologação removida pelo gerador de promoção]
 
-  SELECT count(*) INTO v_rows
-    FROM public._fiscal_staging_marker
-   WHERE marker = 'STAGING';
-  IF v_rows <> 1 THEN
-    RAISE EXCEPTION 'GUARD_ABORT: esperada exatamente 1 linha marker=STAGING, encontradas %', v_rows;
-  END IF;
-
-  SELECT current_setting('promocao.target_ref', true) INTO v_ref;
-
-  IF v_ref IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: project_ref nulo no marcador de staging';
-  END IF;
-  IF v_ref = c_prod THEN
-    RAISE EXCEPTION 'GUARD_ABORT: ambiente de producao recusado';
-  END IF;
-  IF v_ref IS DISTINCT FROM c_expected THEN
-    RAISE EXCEPTION 'GUARD_ABORT: ambiente % nao autorizado', v_ref;
-  END IF;
-END
-$guard$;
 
 -- (2) _assert_visita_editavel — vinculo com o cliente nao basta.
 CREATE OR REPLACE FUNCTION public._assert_visita_editavel(p_registro_id uuid)

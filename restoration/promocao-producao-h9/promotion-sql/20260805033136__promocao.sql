@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260805033136_7af48a56-abc9-49f9-9242-c15695568e2b.sql
--- SHA-256 da origem: 28f3202927c4a412d361dc6155e346285ce18550338cd5bd0dc2b465d08513ef
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: leitura de marcador -> GUC; literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260805033136_7af48a56-abc9-49f9-9242-c15695568e2b.sql
+-- SHA-256 orig: 28f3202927c4a412d361dc6155e346285ce18550338cd5bd0dc2b465d08513ef
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -19,17 +19,8 @@ BEGIN
 END
 $promo_guard$;
 
-DO $guard$
-DECLARE v_ref text; c_expected constant text := 'navfzbwgwzruipouyfnk'; c_prod constant text := 'navfzbwgwzruipouyfnk';
-BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: marcador de staging inexistente';
-  END IF;
-  SELECT current_setting('promocao.target_ref', true) INTO v_ref;
-  IF v_ref IS NULL OR v_ref = c_prod OR v_ref IS DISTINCT FROM c_expected THEN
-    RAISE EXCEPTION 'GUARD_ABORT: ambiente % nao autorizado', coalesce(v_ref,'<null>');
-  END IF;
-END $guard$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 DO $patch$
 DECLARE v_oid oid; v_def text; v_new text;

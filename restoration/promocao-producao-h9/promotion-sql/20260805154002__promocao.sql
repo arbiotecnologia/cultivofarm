@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260805154002_f26e37d5-f5aa-4376-b51d-317ff61a7616.sql
--- SHA-256 da origem: f915adebf4686aa9689911fe219c3454c94d2a480fc2c36b77c842ddd40b4aef
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: leitura de marcador -> GUC; literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260805154002_f26e37d5-f5aa-4376-b51d-317ff61a7616.sql
+-- SHA-256 orig: f915adebf4686aa9689911fe219c3454c94d2a480fc2c36b77c842ddd40b4aef
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -19,25 +19,8 @@ BEGIN
 END
 $promo_guard$;
 
-DO $guard$
-DECLARE
-  c_expected constant text := 'navfzbwgwzruipouyfnk';
-  c_prod     constant text := 'navfzbwgwzruipouyfnk';
-  v_rows integer; v_ref text;
-BEGIN
-  IF to_regclass('public._fiscal_staging_marker') IS NULL THEN
-    RAISE EXCEPTION 'GUARD_ABORT: tabela public._fiscal_staging_marker inexistente';
-  END IF;
-  SELECT count(*) INTO v_rows FROM public._fiscal_staging_marker WHERE marker = 'STAGING';
-  IF v_rows <> 1 THEN
-    RAISE EXCEPTION 'GUARD_ABORT: esperada exatamente 1 linha marker=STAGING, encontradas %', v_rows;
-  END IF;
-  SELECT current_setting('promocao.target_ref', true) INTO v_ref;
-  IF v_ref IS NULL THEN RAISE EXCEPTION 'GUARD_ABORT: project_ref nulo no marcador de staging'; END IF;
-  IF v_ref = c_prod THEN RAISE EXCEPTION 'GUARD_ABORT: ambiente de producao recusado'; END IF;
-  IF v_ref IS DISTINCT FROM c_expected THEN RAISE EXCEPTION 'GUARD_ABORT: ambiente % nao autorizado', v_ref; END IF;
-END
-$guard$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- Fail-closed em logica ternaria: comparacoes com colunas nulas nao podem
 -- produzir NULL e escapar do IF NOT (...).

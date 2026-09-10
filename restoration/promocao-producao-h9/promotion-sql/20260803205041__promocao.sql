@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260803205041_a3f46297-9903-42e7-a8a3-369bdc7902d1.sql
--- SHA-256 da origem: 8f224660925cf6663e968d8ac1db5cb37050604707d4d26bb15e8c09f3f2c156
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: leitura de marcador -> GUC; literal de ref homologacao -> producao
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260803205041_a3f46297-9903-42e7-a8a3-369bdc7902d1.sql
+-- SHA-256 orig: 8f224660925cf6663e968d8ac1db5cb37050604707d4d26bb15e8c09f3f2c156
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -25,14 +25,8 @@ $promo_guard$;
 -- Ambiente: staging ikaauvsflpmamgxmkhoq
 -- ============================================================
 
-DO $g$
-DECLARE v text;
-BEGIN
-  SELECT current_setting('promocao.target_ref', true) INTO v;
-  IF v IS DISTINCT FROM 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'GUARD: somente staging ikaauvsflpmamgxmkhoq';
-  END IF;
-END $g$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- ------------------------------------------------------------
 -- 1) Termo versionado e imutável

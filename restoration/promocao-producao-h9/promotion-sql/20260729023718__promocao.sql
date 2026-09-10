@@ -1,14 +1,14 @@
 -- ============================================================================
--- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É UMA MIGRATION HISTÓRICA
--- Origem: supabase/migrations/20260729023718_2f545695-8315-4416-b6a0-1f167380021b.sql
--- SHA-256 da origem: 587a4fa165413e0e5fdebcb0c5f4364ab6eecafac18cf862a35b2503ebcec44f
--- Gerado por: restoration/promocao-producao-h9/gerar-promotion-sql.py (determinístico)
--- Transformação aplicada: to_regclass(marcador) -> true
--- O arquivo de origem NÃO foi alterado.
+-- ARTEFATO DERIVADO DE PROMOÇÃO — NÃO É MIGRATION HISTÓRICA, NÃO EDITE
+-- Origem      : supabase/migrations/20260729023718_2f545695-8315-4416-b6a0-1f167380021b.sql
+-- SHA-256 orig: 587a4fa165413e0e5fdebcb0c5f4364ab6eecafac18cf862a35b2503ebcec44f
+-- Gerador     : restoration/promocao-producao-h9/gerar-promotion-sql.py
+-- Transformação: 1 bloco(s) DO de guarda removido(s); guarda canônica de promoção prefixada
 --
--- Guarda canônica: o runner valida o ref do alvo por canal externo e só então
--- executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela marcadora
--- de homologação é consultada.
+-- A guarda de homologação foi REMOVIDA e substituída pela guarda canônica de
+-- promoção. O runner valida o ref do alvo por canal externo (API/DSN) e só
+-- então executa `SET LOCAL promocao.target_ref = 'navfzbwgwzruipouyfnk'`. Nenhuma tabela
+-- marcadora de homologação é consultada em produção.
 -- ============================================================================
 DO $promo_guard$
 BEGIN
@@ -22,18 +22,8 @@ $promo_guard$;
 -- STAGING_GUARD normalizado (portatil / forward-only):
 -- recusa apenas ambiente comprovadamente de PRODUCAO. Em banco novo (marker ausente)
 -- a migration segue adiante, tornando o replay reprodutivel fora deste projeto.
-DO $guard$
-DECLARE v_ref text;
-BEGIN
-  IF true THEN
-    EXECUTE 'SELECT project_ref FROM public._fiscal_staging_marker WHERE marker = ''STAGING'' LIMIT 1'
-      INTO v_ref;
-  END IF;
-  IF v_ref = 'navfzbwgwzruipouyfnk' THEN
-    RAISE EXCEPTION 'STAGING_GUARD: project_ref de PRODUCAO recusado';
-  END IF;
-END
-$guard$;
+-- [guarda de homologação removida pelo gerador de promoção]
+
 
 -- =====================================================================
 -- 1. RESOLVER CANONICO (unico lugar com formula de preco unitario)
