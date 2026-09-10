@@ -1243,11 +1243,16 @@ export default function VisitaTecnica() {
   };
 
   const doFinalize = () => {
+    // H9-G 2B: um único envio por vez. O payload já carrega TODAS as alterações
+    // locais (inclusive notas rápidas); ele é persistido antes da RPC de
+    // finalização e, se o salvamento falhar, a finalização não acontece.
+    if (saveMutation.isPending) return;
     saveMutation.mutate({
       payload: buildPayload({ status: "finalizado", hora_fim: new Date().toISOString() }),
       finalizar: true,
     });
   };
+
 
   // -------- PDF --------
   const { data: ordensConsolidado = [] } = useQuery({
