@@ -10,10 +10,12 @@
 ### Convergir homologação
 - Aplicar `20261006000000`, `20261015000000` e `20261101000000` também em `ikaauvsflpmamgxmkhoq`, para que os dois ledgers avancem juntos.
 
-### Variante H7n específica de produção — onda A1 preparada
-- Pacote `restoration/promocao-producao-h9/h7n-prod/` gerado: diff de contratos, censo, prechecks, forward `20261103000000`, pós-checks, rollback fail-closed e critérios de aceite. Registro: `restoration/promocao-producao-h9/27-h7n-prod-pacote-variante.md`.
-- **Pendente:** dry-run em homologação com a matriz de 10 perfis, prechecks em produção e confirmação de backup antes de qualquer execução.
-- **Bloqueio A2..A5:** censo de dependências em produção, diff de corpos das RPCs do P1b, promoção prévia de `fn_catalogo_preco_canonico`, views de catálogo e 4 helpers da P2, e classificação dos 277 SECURITY DEFINER.
+### Variante H7n específica de produção — onda A1 reclassificada como NO-OP
+- Pacote `restoration/promocao-producao-h9/h7n-prod/` gerado e baixado localmente (ZIP SHA-256 `a80832ab0c1cb6c979243b49f45944226f79ca2931b46012295b32f0e44c0d97`). Registros: `restoration/promocao-producao-h9/27-h7n-prod-pacote-variante.md` e `restoration/promocao-producao-h9/28-h7n-prod-a1-noop-evidencia-real.md`.
+- **Evidência real de produção (2026-09-10):** censo somente leitura em `navfzbwgwzruipouyfnk` confirmou ledger 493/`20261101000000`, 3/3 views alvo com `security_invoker=true`, ACLs preservadas, schema `private` ausente, 277 `SECURITY DEFINER` para `authenticated`, e objetos ausentes (views de catálogo, `fn_catalogo_preco_canonico`, 4 helpers P2).
+- **Veredito A1:** `NO-OP / NAO EXECUTADA` — estado-alvo já existe; não registrar no ledger.
+- **Bloqueio A2..A5:** censo de dependências arquivado, diff de corpos das RPCs do P1b, promoção prévia de `fn_catalogo_preco_canonico`, views de catálogo e 4 helpers da P2, e classificação dos 277 SECURITY DEFINER.
+
 
 
 ### Onda P2
