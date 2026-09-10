@@ -176,3 +176,43 @@ Confere também que todo `PROMOVER` tem onda, que nenhum não-promovível tem on
 que os 8 artefatos da P0 existem e que os `.sql` desta fase não contêm nenhum
 comando de escrita.
 
+
+---
+
+# ADENDO P0b — Resolução de blockers (somente arquivos, zero SQL)
+
+Nenhum banco foi acessado. Nenhuma migration histórica foi editada. Nenhuma
+Edge Function foi deployada. Nenhuma integração externa foi disparada.
+
+## Artefatos criados nesta fase
+`09-p0b-resolucao-guards.md`, `10-manifesto-artefatos-promocao.csv`,
+`11-destrutivas-precheck-rollback.md`, `12-auth-schema-decision.md`,
+`13-security-definer-views.md`, `14-edge-functions-manifest.csv`,
+`15-cron-manifest.md`, `16-secrets-checklist.md`, `17-validacao-p0b.py`,
+`gerar-promotion-sql.py` e 43 cópias derivadas em `promotion-sql/`.
+
+## Blockers da P0 — situação
+| # | Blocker P0 | Situação P0b |
+|---|---|---|
+| 1 | 103 guardas fixas de homologação | **RESOLVIDO em 100/103** — 54 comment-only promovem o histórico, 43 ganham artefato derivado com guarda canônica. 3 pendentes de reescrita manual. |
+| 2 | 15 destrutivas sem rollback | **REDUZIDO a 3** — 9 são DELETE em corpo de função, 2 são só ACL, 1 é falso positivo. As 3 reais têm precheck de contagem, abort-on-nonzero e protocolo próprio. |
+| 3 | migration auth/RLS | **RECLASSIFICADO** — não toca `auth`; o bloqueio real é a disponibilidade de Vault em produção. |
+| 4 | 2 views security definer | **IDENTIFICADAS** — `vw_esteira_laboratorio` e `vw_fluxo_visita_tecnica`; correção já existe em `20260904130615`, alocada na onda P1. |
+| 5 | 37 Edge Functions | **CLASSIFICADAS** — 9 preservar produção, 13 não deployar, 8 requerem segredo/config, 7 requerem decisão, 0 promovidas sem prova de authz. |
+| 6 | Convergência de ledger | **ESTRATÉGIA DEFINIDA** — execução controlada + `migration repair` como registro + migration de convergência. A migration ainda não foi escrita. |
+| 7 | Backup diário não comprovado | **ABERTO** — exige prova humana. |
+
+## Blockers remanescentes (todos impedem P1)
+1. reescrita manual revisada de `20260729004013`, `20260903182144`, `20261023000000`;
+2. `20261003000000` (cron de auditoria) — aborta em produção por `md5(command)` divergente; exige leitura autorizada do baseline de produção;
+3. disponibilidade e privilégio de `vault` em produção para `20260727161408`;
+4. escrita da migration de convergência de ledger;
+5. prova humana de backup/PITR.
+
+## Validação
+`python3 restoration/promocao-producao-h9/17-validacao-p0b.py` → **440 verificações OK, 0 falhas, `VALIDACAO_P0B_OK`**.
+Gate de binding → **OK, homologação `ikaauvsflpmamgxmkhoq`**, sem conexão de banco.
+
+## Veredito P0b
+**NO-GO para a onda P1.** Cinco blockers permanecem, e nenhum deles é apenas a
+prova humana de backup.
