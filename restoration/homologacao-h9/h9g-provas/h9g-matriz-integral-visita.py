@@ -104,9 +104,16 @@ def registro_id_de(saida):
         linha = linha.strip()
         if linha.startswith("{"):
             try:
-                return json.loads(linha).get("registro_id")
+                obj = json.loads(linha)
             except json.JSONDecodeError:
                 continue
+            if obj.get("registro_id"):
+                return obj["registro_id"]
+            if obj.get("id"):
+                return obj["id"]
+            rota = obj.get("next_route") or ""
+            if rota.startswith("/app/visita/"):
+                return rota.rsplit("/", 1)[-1]
     return None
 
 
