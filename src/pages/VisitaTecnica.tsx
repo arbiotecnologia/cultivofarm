@@ -1575,22 +1575,24 @@ export default function VisitaTecnica() {
             <Input value={safra} onChange={(e) => setSafra(e.target.value)} placeholder="Ex: 2024/25" />
           </div>
         </div>
-        <div className="flex justify-end pt-3 mt-2 border-t">
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleSaveDraft}
-            disabled={saveMutation.isPending || isReadOnly}
-            className="h-9"
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-            ) : (
-              <Save className="h-4 w-4 mr-1.5" />
-            )}
-            Salvar e continuar
-          </Button>
-        </div>
+        {acoesVisita.showSave && (
+          <div className="flex justify-end pt-3 mt-2 border-t">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSaveDraft}
+              disabled={saveMutation.isPending}
+              className="h-9"
+            >
+              {saveMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+              ) : (
+                <Save className="h-4 w-4 mr-1.5" />
+              )}
+              Salvar e continuar
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -1974,20 +1976,22 @@ export default function VisitaTecnica() {
                   <Loader2 className="h-3 w-3 animate-spin" /> Salvando…
                 </span>
               )}
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleSaveDraft} 
-                disabled={saveMutation.isPending}
-                className="h-8 sm:h-9"
-              >
-                {saveMutation.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Save className="h-3.5 w-3.5" />
-                )}
-                <span className="hidden sm:inline ml-1.5">Salvar</span>
-              </Button>
+              {acoesVisita.showSave && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={saveMutation.isPending}
+                  className="h-8 sm:h-9"
+                >
+                  {saveMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
+                  <span className="hidden sm:inline ml-1.5">Salvar</span>
+                </Button>
+              )}
               <Button 
                 size="sm" 
                 variant="outline" 
@@ -2251,25 +2255,29 @@ export default function VisitaTecnica() {
         >
           <Activity className="h-4 w-4" /> Áudio
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex-col h-12 gap-0.5 text-[10px]"
-          onClick={handleSaveDraft}
-          disabled={saveMutation.isPending}
-        >
-          {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Salvar
-        </Button>
-        <Button
-          size="sm"
-          className="flex-col h-12 gap-0.5 text-[10px]"
-          onClick={handleFinalize}
-          disabled={saveMutation.isPending || isReadOnly}
-        >
-          <CheckCircle2 className="h-4 w-4" />
-          Finalizar
-        </Button>
+        {acoesVisita.showSave && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-col h-12 gap-0.5 text-[10px]"
+            onClick={handleSaveDraft}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Salvar
+          </Button>
+        )}
+        {acoesVisita.showFinalize && (
+          <Button
+            size="sm"
+            className="flex-col h-12 gap-0.5 text-[10px]"
+            onClick={handleFinalize}
+            disabled={saveMutation.isPending}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Finalizar
+          </Button>
+        )}
       </div>
 
       {/* AlertDialog: confirmar finalizar sem fotos */}
