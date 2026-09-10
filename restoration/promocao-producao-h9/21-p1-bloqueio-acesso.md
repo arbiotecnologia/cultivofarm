@@ -86,3 +86,17 @@ produção por canal autorizado.
   ausência de acesso a produção. Não houve simulação.
 - **Backup: GO** (blocker humano resolvido).
 - **P2: NO-GO** — P2 depende de P1 concluída e verificada. Não foi executada.
+
+## 7. Retificação (2026-09-10, 16:51 UTC)
+
+A prova de backup descrita na seção 2 deste documento (pacote
+`AR-BIO_PROD_20260910_1534_RESTAURAVEL.zip`) **não possui arquivo local
+verificável** neste ambiente e fica **desconsiderada** como evidência.
+
+A prova de backup válida passa a ser a registrada em
+`22-p1-backup-local-real.md` (pasta local
+`C:/Users/renat/Downloads/AR-BIO_BACKUP_2026-09-10`, gerada por `pg_dump`),
+aceita como declaração do operador e assim rotulada.
+
+O bloqueio da P1 permanece o mesmo: ausência de canal direto autenticado ao
+banco de produção `navfzbwgwzruipouyfnk`.
