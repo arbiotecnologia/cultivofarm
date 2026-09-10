@@ -495,9 +495,7 @@ const App = () => (
                 <Route path="/relatorios" element={<RoleGuard><Relatorios /></RoleGuard>} />
                 <Route path="/consultor-tecnico" element={<RoleGuard><ConsultorTecnico /></RoleGuard>} />
                 <Route path="/fluxo-tecnico" element={<RoleGuard><FluxoTecnico /></RoleGuard>} />
-                <Route path="/visita-tecnica" element={<RoleGuard><VisitaTecnicaLista /></RoleGuard>} />
-                <Route path="/visita-tecnica/nova" element={<RoleGuard><VisitaTecnica /></RoleGuard>} />
-                <Route path="/visita-tecnica/:id" element={<RoleGuard><VisitaTecnica /></RoleGuard>} />
+                {/* H9-G 2C: rotas de visita movidas para grupo próprio, sob VisitaRouteGuard. */}
                 <Route path="/bi-agronomico" element={<RoleGuard><BIAgronomico /></RoleGuard>} />
                 <Route path="/bi-operacional" element={<RoleGuard><BIOperacional /></RoleGuard>} />
                 <Route path="/alertas-operacionais" element={<RoleGuard><AlertasOperacionais /></RoleGuard>} />
