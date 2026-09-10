@@ -74,6 +74,7 @@ import { gerarResumoEncerramento } from "@/lib/visitaResumo";
 import { serializePlanoMonitoramento, parsePlanoMonitoramento, stripPlanoMonitoramento } from "@/lib/planoMonitoramento";
 import { serializePlanoRetorno, parsePlanoRetorno, stripPlanoRetorno } from "@/lib/planoRetorno";
 import { mensagemAmigavelVisita, codigoTecnicoVisita } from "@/lib/visita/visitaErrorMessages";
+import { resolveVisitaAcoes } from "@/lib/visita/acoesPersistencia";
 
 // ---------- Helpers ----------
 function translateError(msg: string): string {
