@@ -1129,6 +1129,16 @@ export default function VisitaTecnica() {
     (visita as any)?.created_by === user?.id
   );
 
+  // H9-G 2F — fonte canônica única das ações de persistência.
+  const acoesVisita = resolveVisitaAcoes({
+    isNew,
+    status: registroStatus,
+    uiMode,
+    canEdit: registroStatus === "rascunho" || uiMode === "editing" || canReopen,
+  });
+
+
+
   // Garante uiMode coerente quando o registro carrega/muda
   useEffect(() => {
     if (!registroStatus) return;
