@@ -466,6 +466,16 @@ def executar():
     caso("V7.2", "7-Desfechos", "tecnico", "rascunho", "agendar retorno",
          "agendado sem erro", s, "ERROR" not in s, "registros_consultor")
 
+    s = psql(
+        f"SELECT 'duracao='||coalesce(ps.duracao_estimada::text,'NULL')||' tipo_demanda='||coalesce(rr.tipo_demanda::text,'NULL')"
+        f"||' tipo_visita='||coalesce(rr.tipo_visita::text,'NULL')"
+        f" FROM public.registros_consultor rr JOIN public.portal_solicitacoes ps ON ps.id = rr.solicitacao_id"
+        f" WHERE rr.registro_origem_id='{reg_a}' ORDER BY rr.created_at DESC LIMIT 1;")
+    ok_ret = "duracao=120" in s and ("tipo_demanda=outro" in s or "tipo_demanda=" in s and "tipo_demanda=NULL" not in s)
+    caso("V7.2b", "7-Desfechos", "sistema", "forwards 20261025/20261026 aplicados", "inspecionar retorno gerado",
+         "duracao_estimada valida e tipo_demanda herdado/fallback 'outro'", s, ok_ret,
+         "portal_solicitacoes, registros_consultor", "n/a")
+
     s = psql(f"SELECT public.rpc_programar_retorno_visita('{reg_a}'::uuid, 1, NULL, NULL);", TEC)
     caso("V7.3", "7-Desfechos", "tecnico", "campo condicional ausente", "retorno sem data",
          "data_prevista_obrigatoria", s, "data_prevista_obrigatoria" in s, "registros_consultor")
@@ -599,16 +609,20 @@ def executar():
 
     # ---------------- Grupo 13 — Integracoes ----------------
     s = psql(
-        "SELECT 'comunicacao_pendente='||(SELECT count(*) FROM public.communication_events"
+        "SELECT 'eventos='||(SELECT count(*) FROM public.comunicacao_eventos"
         " WHERE created_at > now() - interval '30 minutes')"
-        "||' entregas='||(SELECT count(*) FROM public.communication_deliveries"
+        "||' outbox='||(SELECT count(*) FROM public.comunicacao_outbox"
+        " WHERE created_at > now() - interval '30 minutes')"
+        "||' inapp='||(SELECT count(*) FROM public.comunicacao_inapp_dispatch"
+        " WHERE created_at > now() - interval '30 minutes')"
+        "||' recibos='||(SELECT count(*) FROM public.comunicacao_provider_receipts"
         " WHERE created_at > now() - interval '30 minutes');")
     caso("V13.1", "13-Integracoes", "sistema", "durante toda a matriz", "verificar disparos externos",
-         "nenhuma entrega real criada (flags OFF)", s,
-         "entregas=0" in s or "ERROR" in s, "communication_*", "n/a")
+         "eventos=0 outbox=0 inapp=0 recibos=0 (flags OFF)", s,
+         "eventos=0 outbox=0 inapp=0 recibos=0" in s, "comunicacao_*", "n/a")
 
     s = psql(
-        "SELECT 'nfe='||(SELECT count(*) FROM public.fiscal_xml_runs WHERE created_at > now() - interval '30 minutes');")
+        "SELECT 'nfe='||(SELECT count(*) FROM public.fiscal_xml_runs WHERE prepared_at > now() - interval '30 minutes');")
     caso("V13.2", "13-Integracoes", "sistema", "durante toda a matriz", "verificar fiscal",
          "nenhuma execucao fiscal", s, "nfe=0" in s or "ERROR" in s, "fiscal_xml_runs", "n/a")
 
