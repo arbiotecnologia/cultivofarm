@@ -186,6 +186,9 @@ def cleanup():
          WHERE registro_origem_id IN (SELECT id FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%');
         DELETE FROM public.registros_consultor WHERE observacoes_tecnicas LIKE '{TAG}%' OR objetivo_visita LIKE '{TAG}%';
         DELETE FROM public.registros_consultor WHERE cliente_id = '{CLIENTE}';
+        DELETE FROM public.comunicacao_eventos
+         WHERE source_type = 'portal_solicitacoes'
+           AND source_id IN (SELECT id FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}');
         DELETE FROM public.portal_solicitacoes WHERE cliente_id = '{CLIENTE}';
         DELETE FROM public.user_clientes WHERE id = '{VINCULO}' OR cliente_id = '{CLIENTE}';
         DELETE FROM public.talhoes WHERE id = '{TALHAO}' OR fazenda_id = '{FAZENDA}';
@@ -617,9 +620,13 @@ def executar():
         " WHERE created_at > now() - interval '30 minutes')"
         "||' recibos='||(SELECT count(*) FROM public.comunicacao_provider_receipts"
         " WHERE received_at > now() - interval '30 minutes');")
+    s2 = psql(
+        "SELECT 'enfileirados='||coalesce(sum(outbox_enqueued),0)||' de_eventos='||count(*)"
+        " FROM public.comunicacao_eventos WHERE created_at > now() - interval '30 minutes';")
     caso("V13.1", "13-Integracoes", "sistema", "durante toda a matriz", "verificar disparos externos",
-         "eventos=0 outbox=0 inapp=0 recibos=0 (flags OFF)", s,
-         "eventos=0 outbox=0 inapp=0 recibos=0" in s, "comunicacao_*", "n/a")
+         "outbox=0 inapp=0 recibos=0 e nenhum evento enfileirado para entrega externa",
+         s + " | " + s2,
+         "outbox=0 inapp=0 recibos=0" in s and "enfileirados=0" in s2, "comunicacao_*", "n/a")
 
     s = psql(
         "SELECT 'nfe='||(SELECT count(*) FROM public.fiscal_xml_runs WHERE prepared_at > now() - interval '30 minutes');")
