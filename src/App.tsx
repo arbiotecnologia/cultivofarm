@@ -20,6 +20,7 @@ import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 import { AppPortalGuard } from "@/components/guards/AppPortalGuard";
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
 import { ProducerFeatureGuard } from "@/components/guards/ProducerFeatureGuard";
+import { VisitaRouteGuard } from "@/components/guards/VisitaRouteGuard";
 import Clientes from "@/pages/Clientes";
 import Fazendas from "@/pages/Fazendas";
 import Talhoes from "@/pages/Talhoes";
