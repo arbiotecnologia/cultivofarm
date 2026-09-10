@@ -562,7 +562,15 @@ export default function VisitaTecnica() {
       localizacao_na_area: diagnosticos[0]?.localizacao || null,
       historico_resumido: historicoResumido || null,
       condicoes_climaticas_observadas: condicoesClimaticas || null,
-      observacoes_tecnicas: serializeConduta(diagnosticos[0]?.descricao || "", condutaAtualizada) || null,
+      // H9-G 2B: as notas rápidas vivem serializadas dentro de observacoes_tecnicas.
+      // Elas PRECISAM entrar no payload, senão qualquer salvamento (inclusive o
+      // que antecede a finalização) descarta silenciosamente as notas locais.
+      observacoes_tecnicas:
+        serializeNotes(
+          serializeConduta(diagnosticos[0]?.descricao || "", condutaAtualizada),
+          notes,
+        ) || null,
+
       urgencia: urgencia as any,
       necessidade_intervencao: necessidadeIntervencao as any,
       risco_produtivo: riscoProdutivo as any,
