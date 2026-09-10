@@ -16,7 +16,7 @@
 # Uso:
 #   restoration/promocao-cultivofarm/22-montar-pacote-estrutural.sh gerado/
 #   INCLUIR_REVISADAS=lista.txt ... (opcional, uma migration por linha,
-#   somente após revisão humana registrada em 24-revisao-dml.md)
+#   somente após revisão humana registrada em 27-revisao-humana.md)
 # =====================================================================
 set -euo pipefail
 
