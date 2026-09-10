@@ -59,6 +59,7 @@ import { VisitaTimeline } from "@/components/visita/VisitaTimeline";
 import { RoteiroVisita } from "@/components/visita/roteiro/RoteiroVisita";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { parseNotes, serializeNotes, type QuickNote } from "@/components/visita/NotasRapidas";
+import { contarEvidencias } from "@/lib/visita/evidenciasCount";
 import { EnviarPdfVisitaDialog } from "@/components/visita/EnviarPdfVisitaDialog";
 import { VisitaStatusBanner } from "@/components/visita/VisitaStatusBanner";
 import { generateVisitaPdf, sharePdf, type VisitaPdfData } from "@/lib/pdfVisita";
@@ -2058,7 +2059,7 @@ export default function VisitaTecnica() {
                       <AccordionContent>{diagnosticoBlock}</AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="evidencias">
-                      <AccordionTrigger className="text-sm font-semibold">4 · Evidências ({(arquivos as any[]).length})</AccordionTrigger>
+                      <AccordionTrigger className="text-sm font-semibold">4 · Evidências ({contarEvidencias(arquivos as any[], notes)})</AccordionTrigger>
                       <AccordionContent>{evidenciasBlock}</AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="monitoramento" className="border-none">
@@ -2137,7 +2138,7 @@ export default function VisitaTecnica() {
                   <AccordionContent>{diagnosticoBlock}</AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="evidencias">
-                  <AccordionTrigger className="text-sm font-semibold">4 · Evidências ({(arquivos as any[]).length})</AccordionTrigger>
+                  <AccordionTrigger className="text-sm font-semibold">4 · Evidências ({contarEvidencias(arquivos as any[], notes)})</AccordionTrigger>
                   <AccordionContent>{evidenciasBlock}</AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="encerramento">
