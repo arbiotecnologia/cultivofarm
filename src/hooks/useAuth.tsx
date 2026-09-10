@@ -141,6 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // H9-G Bloco 2E — contexto de portal nunca pode ser herdado por outro
+    // usuário: qualquer troca de identidade limpa a escolha persistida.
+    let lastUserId: string | null = null;
     // Escuta mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -148,11 +151,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
 
+        const nextUserId = session?.user?.id ?? null;
+        if (lastUserId && nextUserId && lastUserId !== nextUserId) {
+          clearActivePortalContext();
+        }
+        lastUserId = nextUserId;
+
         if (session?.user) {
           setLoading(true);
           setError(null);
           fetchProfileAndRole(session.user.id);
         } else {
+
           setProfile(null);
           setRoles([]);
           setPrimaryRole(null);
