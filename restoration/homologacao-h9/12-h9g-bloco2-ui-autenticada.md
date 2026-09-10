@@ -201,3 +201,40 @@ anônimo, contexto único B2B, sem papel, ausência de loop `/sem-permissao`↔`
 Suíte de visita 53/53, typecheck e build verdes. Ledger permanece 682; binding staging
 `ikaauvsflpmamgxmkhoq` restaurado após drift local. `smoke_autenticado=false` até reteste real.
 H9 integral e promoção: NO-GO.
+
+## Bloco 2E — Contexto multipapel entre guards da visita
+
+Reprodução real (fagner@arbio.com, `consultor_tecnico` + `parceiro_b2b`): após escolher
+explicitamente "Acessar Portal Técnico", `/app` mostrou o contexto correto, mas o deep link
+`/visita-tecnica/2572bce1-203c-4237-a61a-e3eb308cc023` redirecionava a `/portal-parceiro/pedidos`.
+
+Causa única (decisão duplicada e incompatível entre guards):
+- `VisitaRouteGuard` autorizava olhando TODOS os papéis (ignorando o contexto ativo);
+- `RoleGuard` (`src/App.tsx`) decidia apenas pelo `primaryRole`, calculado por prioridade fixa
+  em `ROLE_PRIORITY`, onde `parceiro_b2b` precede `consultor_tecnico`. Logo
+  `canAccess("parceiro_b2b", "/visita-tecnica/:id") === false` e o redirecionamento ia para
+  `getHomeForRole("parceiro_b2b")`.
+
+Correção (frontend-only, sem migration, sem rota paralela):
+- nova fonte canônica `src/lib/navigation/portalRoleContext.ts`:
+  `rolesForActiveContext` (filtra apenas papéis de portal, preservando papéis internos),
+  `resolveEffectiveRouteRole` (papel de maior prioridade, dentro do contexto, que autoriza a rota)
+  e `homeForActiveContext` (redirecionamento coerente com o contexto ativo);
+- `RoleGuard` passa a usar essa fonte em vez de `canAccess(primaryRole, path)`;
+- `VisitaRouteGuard`/`visitaRouteAccess` recebem o contexto ativo — com Portal B2B ativo as rotas
+  técnicas voltam a ser negadas de forma neutra (Bloco 2C preservado, sem flash, sem oráculo de UUID);
+- `useAuth` limpa o contexto persistido quando a identidade da sessão muda (nenhuma herança entre usuários);
+- contexto continua em `sessionStorage` → sobrevive a refresh; logout já limpava.
+
+Não regridem: admin, gestor e usuários de papel único (papéis internos nunca são filtrados;
+sem contexto persistido o comportamento é idêntico ao anterior). RLS segue como autoridade final.
+
+Provas: `src/test/visita/portalRoleContext.test.ts` e
+`src/test/visita/visitaRouteGuardContexto.test.tsx` (técnico acessa, B2B nega, refresh mantém
+contexto, contexto limpo não é herdado, deep link, UUID existente/inexistente indistinguíveis,
+admin e papel único sem regressão). Suíte de visita 66/66; testes multiportal/integração 54/54;
+typecheck e build verdes. Ledger permanece 682, sem migration, sem eventos externos.
+Binding staging `ikaauvsflpmamgxmkhoq` restaurado após novo drift local (`.env` e `types.ts`, 21.850 linhas).
+
+Veredito 2E: **GO técnico**; `smoke_autenticado=false` até reteste real com fagner@arbio.com.
+**AUDITORIA H9 INTEGRAL: NO-GO. Promoção: NÃO AUTORIZADA.**

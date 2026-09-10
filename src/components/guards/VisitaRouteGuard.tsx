@@ -17,6 +17,8 @@ import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveSafeHome } from "@/lib/navigation/safeHome";
+import { readActiveContext } from "@/lib/navigation/portalRoleContext";
+
 import {
   VISITA_GUARD_TIMEOUT_MS,
   resolveVisitaRouteAccess,
@@ -42,7 +44,9 @@ export function VisitaRouteGuard({ children }: { children?: ReactNode }) {
     error,
     hasUser: !!user,
     roles,
+    activeContext: readActiveContext(),
   });
+
 
   if (state === "carregando") {
     return (

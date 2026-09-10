@@ -13,6 +13,9 @@
  * - `permitido`   → autorizado (RLS continua sendo a autoridade final).
  */
 import { getAccessLevel } from "@/lib/permissions";
+import { rolesForActiveContext } from "@/lib/navigation/portalRoleContext";
+import type { ActivePortalContext } from "@/lib/activePortalContext";
+
 
 /** Prazo máximo de espera antes de assumir falha (nunca spinner infinito). */
 export const VISITA_GUARD_TIMEOUT_MS = 8000;
@@ -35,20 +38,27 @@ export interface VisitaRouteAccessInput {
   error?: unknown;
   hasUser: boolean;
   roles: readonly string[];
+  /** Contexto de portal escolhido explicitamente (H9-G Bloco 2E). */
+  activeContext?: ActivePortalContext | null;
 }
 
-export function hasVisitaModuleAccess(roles: readonly string[]): boolean {
-  return roles.some((r) => getAccessLevel(r, VISITA_PERMISSION_PATH) !== "none");
+export function hasVisitaModuleAccess(
+  roles: readonly string[],
+  activeContext?: ActivePortalContext | null,
+): boolean {
+  const scoped = rolesForActiveContext(roles, activeContext);
+  return scoped.some((r) => getAccessLevel(r, VISITA_PERMISSION_PATH) !== "none");
 }
 
 export function resolveVisitaRouteAccess(
   input: VisitaRouteAccessInput,
 ): VisitaRouteAccessState {
-  const { loading, timedOut, error, hasUser, roles } = input;
+  const { loading, timedOut, error, hasUser, roles, activeContext } = input;
 
   if (error) return "erro";
   if (loading) return timedOut ? "erro" : "carregando";
   if (!hasUser) return "nao_autenticado";
   if (!roles || roles.length === 0) return "negado";
-  return hasVisitaModuleAccess(roles) ? "permitido" : "negado";
+  return hasVisitaModuleAccess(roles, activeContext) ? "permitido" : "negado";
 }
+
