@@ -64,12 +64,12 @@ export default function Auth() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-6">
             {configLoading ? (
-              <Skeleton className="h-24 w-72 rounded-xl" />
+              <Skeleton className="h-36 w-96 rounded-xl" />
             ) : (
               <img
                 src={logoCultivoFarm.url}
                 alt="CultivoFarm — Tecnologia que cultiva resultados"
-                className="h-24 sm:h-28 w-auto max-w-full object-contain"
+                className="h-36 sm:h-44 w-auto max-w-full object-contain"
               />
             )}
           </div>
