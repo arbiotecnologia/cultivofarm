@@ -224,7 +224,9 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
+        {isError ? (
+          <ProfileLoadErrorState busy={isFetching} onRetry={() => { void refetch(); }} />
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
         ) : (
           <div className="space-y-3 min-w-0">
