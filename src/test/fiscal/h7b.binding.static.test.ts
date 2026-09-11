@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 const root = resolve(__dirname, "../../..");
 const read = (p: string) => readFileSync(resolve(root, p), "utf8");
 
-const STAGING = "ikaauvsflpmamgxmkhoq";
+const CULTIVOFARM = "swzpzcwiasxmjutrmvkm";
 const PRODUCTION = "navfzbwgwzruipouyfnk";
 
 describe("H7b — allowlist CORS fiscal unificada", () => {
@@ -31,8 +31,8 @@ describe("H7b — allowlist CORS fiscal unificada", () => {
 describe("H7b — diagnóstico de binding", () => {
   const diag = read("supabase/functions/fiscal-binding-diagnostics/index.ts");
 
-  it("fixa o staging esperado e proíbe produção", () => {
-    expect(diag).toContain(STAGING);
+  it("fixa o CultivoFarm esperado e proíbe produção", () => {
+    expect(diag).toContain(CULTIVOFARM);
     expect(diag).toContain(PRODUCTION);
     expect(diag).toContain("binding_ok");
   });

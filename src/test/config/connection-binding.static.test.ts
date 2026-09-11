@@ -5,17 +5,17 @@ import { resolve } from "node:path";
 /**
  * Guarda fail-closed do vinculo de backend.
  *
- * Contexto: o backend Cloud acidental (prefixo "yzszl") ja regenerou .env e
- * src/integrations/supabase/types.ts mais de uma vez, apontando a aplicacao
- * para um projeto que NAO e o staging autorizado. Este teste falha na suite
+ * Contexto: bindings divergentes ja regeneraram .env e types.ts, apontando a
+ * aplicacao para projetos que NAO sao o CultivoFarm autorizado. Este teste falha na suite
  * antes que a divergencia chegue a uma auditoria.
  *
- * Ambiente autorizado: staging ikaauvsflpmamgxmkhoq.
+ * Ambiente autorizado: CultivoFarm swzpzcwiasxmjutrmvkm.
  * Producao navfzbwgwzruipouyfnk NUNCA pode aparecer como conexao.
  */
 
 const ROOT = resolve(__dirname, "../../..");
-const STAGING_REF = "ikaauvsflpmamgxmkhoq";
+const CULTIVOFARM_REF = "swzpzcwiasxmjutrmvkm";
+const LEGACY_STAGING_REF = "ikaauvsflpmamgxmkhoq";
 const PRODUCTION_REF = "navfzbwgwzruipouyfnk";
 const ACCIDENTAL_REF_PREFIX = "yzszl";
 
@@ -33,19 +33,19 @@ describe("Vinculo de backend — .env / client.ts / config.toml", () => {
   const client = read("src/integrations/supabase/client.ts");
   const toml = read("supabase/config.toml");
 
-  it(".env aponta para o staging autorizado", () => {
-    expect(envValue(env, "VITE_SUPABASE_PROJECT_ID")).toBe(STAGING_REF);
+  it(".env aponta para o CultivoFarm autorizado", () => {
+    expect(envValue(env, "VITE_SUPABASE_PROJECT_ID")).toBe(CULTIVOFARM_REF);
     expect(envValue(env, "VITE_SUPABASE_URL")).toBe(
-      `https://${STAGING_REF}.supabase.co`,
+      `https://${CULTIVOFARM_REF}.supabase.co`,
     );
   });
 
-  it("client.ts aponta para o staging autorizado", () => {
-    expect(client).toContain(`https://${STAGING_REF}.supabase.co`);
+  it("client.ts aponta para o CultivoFarm autorizado", () => {
+    expect(client).toContain(`https://${CULTIVOFARM_REF}.supabase.co`);
   });
 
-  it("config.toml aponta para o staging autorizado", () => {
-    expect(toml).toMatch(new RegExp(`^project_id\\s*=\\s*"${STAGING_REF}"`, "m"));
+  it("config.toml aponta para o CultivoFarm autorizado", () => {
+    expect(toml).toMatch(new RegExp(`^project_id\\s*=\\s*"${CULTIVOFARM_REF}"`, "m"));
   });
 
   it("a chave publicavel do .env e exatamente a anon do client.ts", () => {
@@ -86,9 +86,19 @@ describe("Vinculo de backend — .env / client.ts / config.toml", () => {
       ).toBe(false);
     }
   });
+
+  it("staging legado nunca aparece como conexao ativa", () => {
+    for (const [name, content] of [
+      [".env", env],
+      ["client.ts", client],
+      ["config.toml", toml],
+    ] as const) {
+      expect(content.includes(LEGACY_STAGING_REF), `${name} referencia staging legado`).toBe(false);
+    }
+  });
 });
 
-describe("Contrato de tipos do staging", () => {
+describe("Contrato de tipos esperado pelo CultivoFarm", () => {
   const types = read("src/integrations/supabase/types.ts");
 
   it("types.ts nao e um stub", () => {
