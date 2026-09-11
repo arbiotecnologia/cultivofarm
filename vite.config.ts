@@ -48,6 +48,7 @@ export default defineConfig(({ mode }) => ({
         importScripts: ["push-sw.js"],
         maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+        globIgnores: ["api/**"],
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/functions\//],
         cleanupOutdatedCaches: true,
