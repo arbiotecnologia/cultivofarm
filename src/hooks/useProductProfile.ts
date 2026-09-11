@@ -57,45 +57,54 @@ export interface ProductComposicao {
   insumo_nome: string | null;
 }
 
+/** CAT-10 — lança se QUALQUER consulta falhar; nunca degrada erro em vazio. */
+export async function fetchProductProfileBundle(client: any, produtoId: string) {
+  const [pRes, tRes, cRes, fRes] = await Promise.all([
+    client.from("product_technical_profiles").select("*").eq("produto_id", produtoId).maybeSingle(),
+    client.from("product_target_recommendations").select("*").eq("produto_id", produtoId).eq("ativo", true).order("prioridade"),
+    client.from("product_crop_recommendations").select("*").eq("produto_id", produtoId).eq("ativo", true),
+    client
+      .from("formulacoes")
+      .select("microrganismo_id, component_insumo_id, volume_ml, proporcao, microrganismos(id,nome,nome_cientifico,funcao_agronomica,tipo), insumo:produtos!formulacoes_component_insumo_id_fkey(nome)")
+      .eq("produto_id", produtoId),
+  ]);
+  const erro = [pRes, tRes, cRes, fRes].find((r) => r?.error)?.error;
+  if (erro) {
+    throw new Error(erro.message || "Não foi possível carregar a ficha técnica");
+  }
+  const composicao: ProductComposicao[] = ((fRes.data ?? []) as any[]).map((f) => ({
+    microrganismo_id: f.microrganismo_id,
+    component_insumo_id: f.component_insumo_id,
+    volume_ml: f.volume_ml,
+    proporcao: f.proporcao,
+    microrganismo: f.microrganismos
+      ? {
+          id: f.microrganismos.id,
+          nome: f.microrganismos.nome,
+          nome_cientifico: f.microrganismos.nome_cientifico,
+          funcao_agronomica: f.microrganismos.funcao_agronomica,
+          tipo: f.microrganismos.tipo,
+        }
+      : null,
+    insumo_nome: f.insumo?.nome ?? null,
+  }));
+  return {
+    profile: (pRes.data as ProductProfile | null) ?? null,
+    targets: (tRes.data ?? []) as any[],
+    crops: (cRes.data ?? []) as any[],
+    composicao,
+  };
+}
+
 export function useProductProfile(produtoId: string | null | undefined) {
   return useQuery({
     queryKey: ["product-profile", produtoId],
     enabled: !!produtoId,
-    queryFn: async () => {
-      const [pRes, tRes, cRes, fRes] = await Promise.all([
-        (supabase as any).from("product_technical_profiles").select("*").eq("produto_id", produtoId!).maybeSingle(),
-        (supabase as any).from("product_target_recommendations").select("*").eq("produto_id", produtoId!).eq("ativo", true).order("prioridade"),
-        (supabase as any).from("product_crop_recommendations").select("*").eq("produto_id", produtoId!).eq("ativo", true),
-        (supabase as any)
-          .from("formulacoes")
-          .select("microrganismo_id, component_insumo_id, volume_ml, proporcao, microrganismos(id,nome,nome_cientifico,funcao_agronomica,tipo), insumo:produtos!formulacoes_component_insumo_id_fkey(nome)")
-          .eq("produto_id", produtoId!),
-      ]);
-      const composicao: ProductComposicao[] = ((fRes.data ?? []) as any[]).map((f) => ({
-        microrganismo_id: f.microrganismo_id,
-        component_insumo_id: f.component_insumo_id,
-        volume_ml: f.volume_ml,
-        proporcao: f.proporcao,
-        microrganismo: f.microrganismos
-          ? {
-              id: f.microrganismos.id,
-              nome: f.microrganismos.nome,
-              nome_cientifico: f.microrganismos.nome_cientifico,
-              funcao_agronomica: f.microrganismos.funcao_agronomica,
-              tipo: f.microrganismos.tipo,
-            }
-          : null,
-        insumo_nome: f.insumo?.nome ?? null,
-      }));
-      return {
-        profile: (pRes.data as ProductProfile | null) ?? null,
-        targets: (tRes.data ?? []) as any[],
-        crops: (cRes.data ?? []) as any[],
-        composicao,
-      };
-    },
+    retry: false,
+    queryFn: () => fetchProductProfileBundle(supabase as any, produtoId!),
   });
 }
+
 
 export function useUpsertProductProfile() {
   const qc = useQueryClient();

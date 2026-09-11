@@ -42,24 +42,33 @@ export interface MicroCrop {
   ativo: boolean;
 }
 
+/** CAT-10 — lança se QUALQUER consulta falhar; nunca degrada erro em vazio. */
+export async function fetchMicroProfileBundle(client: any, microId: string) {
+  const [pRes, tRes, cRes] = await Promise.all([
+    client.from("microorganism_technical_profiles").select("*").eq("microrganismo_id", microId).maybeSingle(),
+    client.from("microorganism_targets").select("*").eq("microrganismo_id", microId).eq("ativo", true).order("prioridade"),
+    client.from("microorganism_crop_recommendations").select("*").eq("microrganismo_id", microId).eq("ativo", true),
+  ]);
+  const erro = [pRes, tRes, cRes].find((r) => r?.error)?.error;
+  if (erro) {
+    throw new Error(erro.message || "Não foi possível carregar a ficha técnica");
+  }
+  return {
+    profile: (pRes.data as MicroProfile | null) ?? null,
+    targets: (tRes.data ?? []) as any[],
+    crops: (cRes.data ?? []) as any[],
+  };
+}
+
 export function useMicroorganismProfile(microId: string | null | undefined) {
   return useQuery({
     queryKey: ["micro-profile", microId],
     enabled: !!microId,
-    queryFn: async () => {
-      const [pRes, tRes, cRes] = await Promise.all([
-        (supabase as any).from("microorganism_technical_profiles").select("*").eq("microrganismo_id", microId!).maybeSingle(),
-        (supabase as any).from("microorganism_targets").select("*").eq("microrganismo_id", microId!).eq("ativo", true).order("prioridade"),
-        (supabase as any).from("microorganism_crop_recommendations").select("*").eq("microrganismo_id", microId!).eq("ativo", true),
-      ]);
-      return {
-        profile: (pRes.data as MicroProfile | null) ?? null,
-        targets: (tRes.data ?? []) as any[],
-        crops: (cRes.data ?? []) as any[],
-      };
-    },
+    retry: false,
+    queryFn: () => fetchMicroProfileBundle(supabase as any, microId!),
   });
 }
+
 
 export function useUpsertMicroProfile() {
   const qc = useQueryClient();
