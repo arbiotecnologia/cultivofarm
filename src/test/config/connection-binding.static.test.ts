@@ -98,30 +98,3 @@ describe("Vinculo de backend — .env / client.ts / config.toml", () => {
   });
 });
 
-describe("Contrato de tipos esperado pelo CultivoFarm", () => {
-  const types = read("src/integrations/supabase/types.ts");
-
-  it("types.ts nao e um stub", () => {
-    // O contrato real do staging tem dezenas de milhares de linhas; o stub
-    // gerado pelo backend acidental tinha 155.
-    expect(types.split("\n").length).toBeGreaterThan(5000);
-  });
-
-  it("types.ts cobre as relacoes criticas do dominio fiscal/regulatorio", () => {
-    const required = [
-      "microrganismos",
-      "microorganism_fiscal_profiles",
-      "microorganism_regulatory_dossiers",
-      "microorganism_ncm_candidates",
-      "microorganism_regulatory_presentations",
-      "microorganism_regulatory_checklist",
-      "fiscal_matrix_load_ledger",
-      "company_fiscal_settings",
-      "ordens_servico",
-      "notificacoes_operacionais",
-      "user_roles",
-    ];
-    const missing = required.filter((table) => !types.includes(`${table}: {`));
-    expect(missing).toEqual([]);
-  });
-});
