@@ -130,7 +130,7 @@ export function validarRequisicao(
       entidade_id: id,
       campo,
       origem,
-      job_id: jobId,
+      job_id: jobId as string | null,
     },
   };
 }

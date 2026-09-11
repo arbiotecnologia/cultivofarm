@@ -31,7 +31,7 @@ describe("cliente do fluxo Gerar com IA", () => {
   it("não envia segredo nem service_role no corpo/headers", async () => {
     const fetchImpl = vi.fn(respostaOk);
     await gerarFichaCampo({ ...base, fetchImpl: fetchImpl as any });
-    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    const init = (fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1];
     const serializado = JSON.stringify({ headers: init.headers, body: init.body });
     expect(serializado).not.toMatch(/service_role|LOVABLE_API_KEY|sb_secret/i);
     expect(JSON.parse(String(init.body))).toEqual({
