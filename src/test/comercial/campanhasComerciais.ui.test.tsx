@@ -19,18 +19,22 @@ const campanhas = [
   },
 ];
 
+const EMPTY: string[] = [];
+
 vi.mock("@/hooks/useCommercial", () => ({
   useCommercialCampaigns: () => ({ data: campanhas, isLoading: false }),
   useSaveCampaign: () => ({ mutateAsync: saveMutateAsync, isPending: false }),
   useDeleteCampaign: () => ({ mutate: delMutate, isPending: false }),
-  useCampaignPartners: () => ({ data: [] }),
-  useCampaignClientes: () => ({ data: [] }),
+  useCampaignPartners: () => ({ data: EMPTY }),
+  useCampaignClientes: () => ({ data: EMPTY }),
   useSetCampaignPartners: () => ({ mutateAsync: setPartnersMutateAsync, isPending: false }),
   useSetCampaignClientes: () => ({ mutateAsync: setClientesMutateAsync, isPending: false }),
 }));
 
+const PARCEIROS = { items: [] as any[] };
+
 vi.mock("@/hooks/useParceirosB2B", () => ({
-  useParceirosB2B: () => ({ data: { items: [] } }),
+  useParceirosB2B: () => ({ data: PARCEIROS }),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
