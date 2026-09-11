@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -367,13 +367,13 @@ export default function ComunicacaoConfigTab() {
         toast.error("Sessão expirada", { description: "Faça login novamente como administrador." });
         return;
       }
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-communication-email`;
+      const url = `${SUPABASE_URL}/functions/v1/test-communication-email`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
-          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ to, subject: "Teste SMTP AR Bio", message: "E-mail de teste enviado pela aba Comunicação." }),
       });

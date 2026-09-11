@@ -58,7 +58,7 @@ export const FEATURE_FLAGS: Record<FeatureFlagName, boolean> = {
 
 function readComunicacaoModuleEnvFlag(): boolean {
   try {
-    return import.meta.env?.VITE_COMUNICACAO_MODULE_ENABLED === "true";
+    return import.meta.env.VITE_COMUNICACAO_MODULE_ENABLED === "true";
   } catch {
     return false;
   }
@@ -66,7 +66,7 @@ function readComunicacaoModuleEnvFlag(): boolean {
 
 function readComunicacaoBroadcastTabEnvFlag(): boolean {
   try {
-    return import.meta.env?.VITE_COMUNICACAO_BROADCAST_TAB_ENABLED === "true";
+    return import.meta.env.VITE_COMUNICACAO_BROADCAST_TAB_ENABLED === "true";
   } catch {
     return false;
   }
