@@ -48,6 +48,7 @@
 
 - [x] CultivoFarm: pacote determinístico local gerado (20..27) — 314 incluídas, 260 REVISAO_DML, 126 REVISAO_REF_GUARD, 20 sandbox, 1 marker. Promoção NO-GO até revisão humana.
 - [x] Logomarca CultivoFarm aplicada na tela `/auth` + favicon; `src/integrations/supabase/types.ts` restaurado do baseline `f3e125c6` (21.850 linhas) após regeneração indevida do Sandbox — typecheck limpo.
+- [x] CAT-05: removida superfície destrutiva "Recarregar Catálogo A.R Bio v1.3" de `src/components/protocolos/ProdutosTab.tsx`; teste estático 6/6; typecheck e build OK; binding CultivoFarm preservado.
 
 ## Correção da prévia — 2026-09-11
 - [x] Contrato TypeScript completo restaurado do baseline f3e125c6 (21.850 linhas); compilação automática build OK e testes direcionados 305/305. Sem acesso ao banco.
