@@ -1,5 +1,9 @@
 # Roadmap de Tarefas
 
+## Catálogo na prévia — lote atual
+- Tratamento atômico de erros do catálogo e revisão técnica implementado; validação direcionada em andamento.
+- Prova autenticada depende de sessão no destino canônico; nenhum acesso a outros ambientes autorizado.
+
 ## Em aberto
 
 ### Anexar evidências locais da P1

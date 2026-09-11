@@ -14,6 +14,7 @@ import { useCatalogoUnificado, CatalogoUnificadoRow, CatalogoScope, catalogoRevi
 import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CatalogoQueryErrorState } from "./CatalogoQueryErrorState";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
 
@@ -55,7 +56,7 @@ export function CatalogoCardsGrid({
   filterRow,
   fichaOrigem = "protocolos",
 }: Props) {
-  const { data, isLoading } = useCatalogoUnificado(scope);
+  const { data, isLoading, error, refetch, isFetching } = useCatalogoUnificado(scope);
 
   const [search, setSearch] = useState("");
   const [tipo, setTipo] = useState<CatalogTipoFiltro>("todos");
@@ -200,6 +201,7 @@ export function CatalogoCardsGrid({
   );
   const restantes = sorted.length - visiveis.length;
 
+  if (error) return <CatalogoQueryErrorState error={error} retry={refetch} busy={isFetching} />;
 
   return (
     <div className="space-y-4">

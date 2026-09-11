@@ -4,11 +4,12 @@ import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
 import { CatalogoKpis } from "@/components/catalogo/CatalogoKpis";
 import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
 import { useTabParam } from "@/lib/navigation/useTabParam";
+import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
 
 const SUB_TABS = ["catalogo", "revisao"] as const;
 
 export function CatalogoTecnicoTab() {
-  const { data: rows = [] } = useCatalogoUnificado("admin");
+  const { data: rows = [], error, isLoading, isFetching, refetch } = useCatalogoUnificado("admin");
   const [sub, setSub] = useTabParam("sub", SUB_TABS, "catalogo");
 
   return (
@@ -21,9 +22,11 @@ export function CatalogoTecnicoTab() {
         <RevisaoTecnicaPanel />
       </TabsContent>
       <TabsContent value="catalogo" className="space-y-4">
-        <CatalogoKpis rows={rows} />
-
-        <CatalogoCardsGrid scope="admin" />
+        {error ? <CatalogoQueryErrorState error={error} retry={refetch} busy={isFetching} /> :
+          isLoading ? <p role="status">Carregando catálogo…</p> : <>
+            <CatalogoKpis rows={rows} />
+            <CatalogoCardsGrid scope="admin" />
+          </>}
       </TabsContent>
     </Tabs>
   );
