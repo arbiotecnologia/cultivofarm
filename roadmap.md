@@ -51,3 +51,4 @@
 
 ## Correção da prévia — 2026-09-11
 - [x] Contrato TypeScript completo restaurado do baseline f3e125c6 (21.850 linhas); compilação automática build OK e testes direcionados 305/305. Sem acesso ao banco.
+- [ ] Regressão às 18:20 UTC: contrato gerado novamente reduzido a 2.060 linhas, com tabelas e colunas ausentes nos erros de compilação. Bloqueio: arquivo gerado protegido contra edição; corrigir a integração geradora antes de restaurar o contrato. Sem acesso ao banco, deploy ou alteração de binding.
