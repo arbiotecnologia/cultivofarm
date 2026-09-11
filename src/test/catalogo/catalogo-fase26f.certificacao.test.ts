@@ -32,9 +32,9 @@ describe("26F — rotas preservadas", () => {
   });
 });
 
-describe("26F — navegação e abas do Catálogo AR Bio", () => {
-  it("menu exibe Catálogo AR Bio", () => {
-    expect(nav).toContain("Catálogo AR Bio");
+describe("26F — navegação e abas do Catálogo", () => {
+  it("menu exibe Catálogo", () => {
+    expect(nav).toContain("Catálogo");
   });
 
   it("abas canônicas e aliases preservados", () => {

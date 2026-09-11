@@ -131,9 +131,9 @@ describe("FASE 27E — mobile/produtor sem exposição interna", () => {
 });
 
 describe("FASE 27E — rotas e navegação", () => {
-  it("navigation mantém rótulo Catálogo AR Bio e rota /base-tecnica", () => {
+  it("navigation mantém rótulo Catálogo e rota /base-tecnica", () => {
     const c = read(NAV);
-    expect(c).toContain("Catálogo AR Bio");
+    expect(c).toContain('label: "Catálogo"');
     expect(c).toContain("/base-tecnica");
     expect(c).toContain('legacyRoutes: ["/protocolos", "/comercial/catalogo"]');
   });

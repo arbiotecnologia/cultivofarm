@@ -24,8 +24,9 @@ describe("Fase 29 — unificação: apenas o Catálogo Técnico permanece", () =
     expect(fs.existsSync(path.resolve(process.cwd(), "src/pages/comercial/CatalogoComercial.tsx"))).toBe(false);
   });
 
-  it("o item 'Catálogo AR Bio' assume a rota legada e as palavras-chave do catálogo", () => {
+  it("o item 'Catálogo' assume a rota legada e as palavras-chave do catálogo", () => {
     const item = navigation.find((i) => i.id === "protocolos")!;
+    expect(item.label).toBe("Catálogo");
     expect(item.legacyRoutes).toContain("/comercial/catalogo");
     const kw = (item.searchKeywords ?? []).map((k) => k.toLowerCase());
     for (const termo of ["catálogo", "catalogo", "portfólio", "catálogo técnico"]) {
