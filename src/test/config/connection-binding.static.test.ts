@@ -22,48 +22,31 @@ const ACCIDENTAL_REF_PREFIX = "yzszl";
 const read = (relative: string): string =>
   readFileSync(resolve(ROOT, relative), "utf8");
 
-const envValue = (env: string, key: string): string | null => {
-  const match = env.match(new RegExp(`^${key}\\s*=\\s*(.*)$`, "m"));
-  if (!match) return null;
-  return match[1].trim().replace(/^["']|["']$/g, "");
-};
-
-describe("Vinculo de backend — .env / client.ts / config.toml", () => {
-  const env = read(".env");
+describe("Vinculo de backend — cliente runtime / config.toml", () => {
   const client = read("src/integrations/supabase/client.ts");
   const toml = read("supabase/config.toml");
 
-  it(".env aponta para o CultivoFarm autorizado", () => {
-    expect(envValue(env, "VITE_SUPABASE_PROJECT_ID")).toBe(CULTIVOFARM_REF);
-    expect(envValue(env, "VITE_SUPABASE_URL")).toBe(
-      `https://${CULTIVOFARM_REF}.supabase.co`,
-    );
-  });
-
   it("client.ts aponta para o CultivoFarm autorizado", () => {
+    const guard = read("src/integrations/supabase/bindingGuard.ts");
+    expect(guard).toContain(CULTIVOFARM_REF);
     expect(client).toContain(`https://${CULTIVOFARM_REF}.supabase.co`);
+    expect(client).not.toContain("import.meta.env");
   });
 
   it("config.toml aponta para o CultivoFarm autorizado", () => {
     expect(toml).toMatch(new RegExp(`^project_id\\s*=\\s*"${CULTIVOFARM_REF}"`, "m"));
   });
 
-  it("a chave publicavel do .env e exatamente a anon do client.ts", () => {
+  it("o cliente preserva uma chave publicavel sem usar fallback ambiental", () => {
     const fromClient = client.match(
       /const SUPABASE_PUBLISHABLE_KEY = "([^"]+)"/,
     )?.[1];
-    expect(fromClient, "client.ts sem chave anon").toBeTruthy();
-
-    const fromEnv = envValue(env, "VITE_SUPABASE_PUBLISHABLE_KEY");
-    if (fromEnv !== null) {
-      // Comparacao sem revelar o valor.
-      expect(fromEnv === fromClient).toBe(true);
-    }
+    expect(fromClient?.startsWith("sb_publishable_"), "client.ts sem chave publicavel").toBe(true);
+    expect(client).not.toContain("VITE_SUPABASE_PUBLISHABLE_KEY");
   });
 
   it("nenhum arquivo de conexao referencia o backend acidental", () => {
     for (const [name, content] of [
-      [".env", env],
       ["client.ts", client],
       ["config.toml", toml],
     ] as const) {
@@ -76,7 +59,6 @@ describe("Vinculo de backend — .env / client.ts / config.toml", () => {
 
   it("producao nunca aparece como conexao", () => {
     for (const [name, content] of [
-      [".env", env],
       ["client.ts", client],
       ["config.toml", toml],
     ] as const) {
@@ -112,6 +94,10 @@ describe("Vinculo de backend — .env / client.ts / config.toml", () => {
   it("client.ts exporta as constantes canonicas", () => {
     expect(client).toMatch(/export const SUPABASE_URL\s*=/);
     expect(client).toMatch(/export const SUPABASE_PUBLISHABLE_KEY\s*=/);
+    expect(client).toContain("assertCanonicalSupabaseBinding(SUPABASE_URL)");
+    expect(client.indexOf("assertCanonicalSupabaseBinding(SUPABASE_URL)")).toBeLessThan(
+      client.indexOf("createClient<Database>"),
+    );
   });
 
   it("featureFlags.ts nao expande o objeto completo de ambiente", () => {
@@ -121,7 +107,6 @@ describe("Vinculo de backend — .env / client.ts / config.toml", () => {
 
   it("staging legado nunca aparece como conexao ativa", () => {
     for (const [name, content] of [
-      [".env", env],
       ["client.ts", client],
       ["config.toml", toml],
     ] as const) {

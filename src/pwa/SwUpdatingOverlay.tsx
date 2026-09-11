@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { isServiceWorkerUpdateInProgress } from "./registerSW";
 
 export const SW_UPDATING_EVENT = "pwa:updating-start";
 
 export function SwUpdatingOverlay() {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(isServiceWorkerUpdateInProgress);
 
   useEffect(() => {
     const handler = () => setVisible(true);

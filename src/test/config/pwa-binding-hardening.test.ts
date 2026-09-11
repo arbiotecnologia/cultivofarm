@@ -1,0 +1,67 @@
+import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import {
+  CANONICAL_SUPABASE_HOST,
+  validateSupabaseBinding,
+} from "@/integrations/supabase/bindingGuard";
+
+const ROOT = resolve(__dirname, "../../..");
+const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
+
+describe("P0-03A — binding fail-closed", () => {
+  it("aceita somente o host HTTPS canônico", () => {
+    expect(validateSupabaseBinding(`https://${CANONICAL_SUPABASE_HOST}`)).toEqual({ ok: true });
+  });
+
+  it.each([
+    "yzszlzjpovmcteuxjznj",
+    "ikaauvsflpmamgxmkhoq",
+    "navfzbwgwzruipouyfnk",
+  ])("rejeita o ref legado %s", (ref) => {
+    expect(validateSupabaseBinding(`https://${ref}.supabase.co`).ok).toBe(false);
+  });
+
+  it("rejeita protocolo inseguro e host semelhante", () => {
+    expect(validateSupabaseBinding(`http://${CANONICAL_SUPABASE_HOST}`).ok).toBe(false);
+    expect(validateSupabaseBinding(`https://${CANONICAL_SUPABASE_HOST}.example.com`).ok).toBe(false);
+  });
+});
+
+describe("P0-03A — atualização obrigatória", () => {
+  const vite = read("vite.config.ts");
+  const register = read("src/pwa/registerSW.ts");
+  const app = read("src/App.tsx");
+
+  it("ativa tomada automática de controle e limpeza de caches antigos", () => {
+    expect(vite).toMatch(/clientsClaim:\s*true/);
+    expect(vite).toMatch(/skipWaiting:\s*true/);
+    expect(vite).toMatch(/cleanupOutdatedCaches:\s*true/);
+    expect(vite).toContain('handler: "NetworkFirst"');
+  });
+
+  it("não oferece adiamento da atualização", () => {
+    expect(app).not.toContain("SwUpdatePrompt");
+    expect(() => read("src/pwa/SwUpdatePrompt.tsx")).toThrow();
+    expect(register).not.toContain("Depois");
+    expect(register).not.toContain("pwa:update-available");
+  });
+
+  it("mantém trava de recarga, fallback e limpeza de observadores", () => {
+    expect(register).toContain("reloadingOnControllerChange");
+    expect(register).toContain("RECENT_RELOAD_KEY");
+    expect(register).toContain("RELOAD_LOOP_GUARD_MS");
+    expect(register).toContain("controllerchange");
+    expect(register).toContain("removeEventListener");
+    expect(register).toContain("clearInterval");
+    expect(register).toContain("visibilitychange");
+    expect(register).toContain('addEventListener("online"');
+  });
+
+  it("preserva os bloqueios de preview, iframe e kill-switch", () => {
+    expect(register).toContain("!import.meta.env.PROD");
+    expect(register).toContain("window.self !== window.top");
+    expect(register).toContain('get("sw") === "off"');
+    expect(register).toContain('hostname.startsWith("id-preview--")');
+  });
+});
