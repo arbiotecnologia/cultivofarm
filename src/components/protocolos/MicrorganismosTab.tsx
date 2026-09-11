@@ -162,59 +162,69 @@ export function MicrorganismosTab() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
 
-    // Código: enviar null quando vazio ou ainda igual à sugestão automática —
-    // o trigger no servidor (`set_codigo_microrganismo`) gera atomicamente.
-    const codigoDigitado = form.codigo?.trim() || "";
-    const codigoFinal = codigoDigitado && !ehCodigoAutomatico(codigoDigitado, PREFIXOS_MICRO)
-      ? codigoDigitado
-      : (form.id ? (codigoDigitado || null) : null);
+    await runExclusive(savingRef, async () => {
+      setSaving(true);
+      try {
+        // Código: enviar null quando vazio ou ainda igual à sugestão automática —
+        // o trigger no servidor (`set_codigo_microrganismo`) gera atomicamente.
+        const codigoDigitado = form.codigo?.trim() || "";
+        const codigoFinal = codigoDigitado && !ehCodigoAutomatico(codigoDigitado, PREFIXOS_MICRO)
+          ? codigoDigitado
+          : (form.id ? (codigoDigitado || null) : null);
 
-    const payload = {
-      nome: form.nome,
-      nome_cientifico: form.nome_cientifico || null,
-      tipo: form.tipo as any,
-      concentracao_label: formatConcentracaoDisplay(formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente)),
-      concentracao_ufc_ml: formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente),
-      dose_ml_ha: form.dose_ml_ha ? Number(form.dose_ml_ha) : 100,
-      valor_dose_brl: form.valor_dose_brl,
-      valor_litro_brl: form.valor_litro_brl,
-      funcao_agronomica: form.funcao_agronomica || null,
-      fornecedor: form.fornecedor || null,
-      safra_referencia: form.safra_referencia || null,
-      meio_cultivo: form.meio_cultivo || null,
-      producao_on_farm: form.producao_on_farm,
-      observacoes: form.observacoes || null,
-      codigo: codigoFinal,
-      descricao: form.descricao?.trim() || null,
-      preco_tabela: form.preco_tabela,
-      b2b_enabled: form.b2b_enabled,
-      ativo: form.ativo,
-    };
+        const payload = {
+          nome: form.nome,
+          nome_cientifico: form.nome_cientifico || null,
+          tipo: form.tipo as any,
+          concentracao_label: formatConcentracaoDisplay(formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente)),
+          concentracao_ufc_ml: formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente),
+          dose_ml_ha: form.dose_ml_ha ? Number(form.dose_ml_ha) : 100,
+          valor_dose_brl: form.valor_dose_brl,
+          valor_litro_brl: form.valor_litro_brl,
+          funcao_agronomica: form.funcao_agronomica || null,
+          fornecedor: form.fornecedor || null,
+          safra_referencia: form.safra_referencia || null,
+          meio_cultivo: form.meio_cultivo || null,
+          producao_on_farm: form.producao_on_farm,
+          observacoes: form.observacoes || null,
+          codigo: codigoFinal,
+          descricao: form.descricao?.trim() || null,
+          preco_tabela: form.preco_tabela,
+          b2b_enabled: form.b2b_enabled,
+          ativo: form.ativo,
+        };
 
-    let error;
-    if (form.id) {
-      const { error: err } = await (supabase as any)
-        .from("microrganismos")
-        .update(payload)
-        .eq("id", form.id);
-      error = err;
-    } else {
-      const { error: err } = await (supabase as any)
-        .from("microrganismos")
-        .insert([payload]);
-      error = err;
-    }
+        let error;
+        if (form.id) {
+          const { error: err } = await (supabase as any)
+            .from("microrganismos")
+            .update(payload)
+            .eq("id", form.id);
+          error = err;
+        } else {
+          const { error: err } = await (supabase as any)
+            .from("microrganismos")
+            .insert([payload]);
+          error = err;
+        }
 
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
 
-    toast.success(form.id ? "Microrganismo atualizado!" : "Microrganismo cadastrado!");
-    setOpen(false);
-    resetForm();
-    fetch();
+        toast.success(form.id ? "Microrganismo atualizado!" : "Microrganismo cadastrado!");
+        setOpen(false);
+        resetForm();
+        await fetch();
+      } catch (err: any) {
+        toast.error(err?.message || "Erro inesperado ao salvar microrganismo");
+      } finally {
+        setSaving(false);
+      }
+    });
   };
 
 
