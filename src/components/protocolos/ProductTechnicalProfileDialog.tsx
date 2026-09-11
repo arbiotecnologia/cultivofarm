@@ -377,13 +377,13 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
         <div className="flex flex-col gap-3 border-t pt-3 mt-2">
           <div className="flex flex-wrap gap-2 justify-end">
             <Button variant="outline" size="sm" onClick={copyResumoB2B}>Copiar resumo B2B</Button>
-            {canEditFull && data?.profile?.id && (
+            {!isError && canEditFull && data?.profile?.id && (
               <ReturnToReviewButton kind="produto" profileId={data.profile.id} onDone={refetch} />
             )}
-            {canEditB2BOnly && !canEditFull && (
+            {!isError && canEditB2BOnly && !canEditFull && (
               <Button size="sm" onClick={save} disabled={upsert.isPending}>Salvar texto B2B</Button>
             )}
-            {canEditFull && (
+            {!isError && canEditFull && (
               <>
                 <Button size="sm" variant="outline" disabled={upsert.isPending}
                   onClick={() => handleSaveWithStatus("rascunho")}>

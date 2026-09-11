@@ -354,13 +354,13 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
         <div className="flex flex-col gap-3 border-t pt-3 mt-2">
           <div className="flex flex-wrap gap-2 justify-end">
             <Button variant="outline" size="sm" onClick={copyResumo}>Copiar resumo</Button>
-            {canEditFull && data?.profile?.id && (
+            {!isError && canEditFull && data?.profile?.id && (
               <ReturnToReviewButton kind="micro" profileId={data.profile.id} onDone={refetch} />
             )}
-            {canEditB2BOnly && !canEditFull && (
+            {!isError && canEditB2BOnly && !canEditFull && (
               <Button size="sm" onClick={save} disabled={upsert.isPending}>Salvar texto B2B</Button>
             )}
-            {canEditFull && (
+            {!isError && canEditFull && (
               <>
                 <Button size="sm" variant="outline" disabled={upsert.isPending}
                   onClick={() => handleSaveWithStatus("rascunho")}>
