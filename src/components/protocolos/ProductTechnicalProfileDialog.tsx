@@ -25,6 +25,13 @@ import { ReturnToReviewButton } from "./catalog/ReturnToReviewButton";
 import { ApprovalChecklistDialog, ChecklistItem } from "./catalog/ApprovalChecklistDialog";
 import { ProfileField } from "./catalog/ProfileField";
 import { ProfileFieldAI } from "./catalog/ProfileFieldAI";
+import { ProfileLoadErrorState } from "./catalog/ProfileLoadErrorState";
+import {
+  buildProductFormDefaults,
+  emptyProductForm,
+  mapProductProfileToForm,
+  type ProductFormState,
+} from "@/lib/catalogo/fichaFormDefaults";
 import { VersoesHistoricoTab } from "./catalog/VersoesHistoricoTab";
 import { useEffectiveCatalogSources } from "@/hooks/useEffectiveCatalogSources";
 import {
@@ -71,24 +78,12 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
   const canDeleteSources = role ? ADMIN_ROLES.includes(role) : false;
   const isAdminOrGestor = role ? ADMIN_ROLES.includes(role) : false;
 
-  const { data, isLoading, refetch } = useProductProfile(produto?.id);
+  const { data, isLoading, isError, isSuccess, isFetching, refetch } = useProductProfile(produto?.id);
   const upsert = useUpsertProductProfile();
   const log = useLogCatalogAccess();
   const { hasSources } = useEffectiveCatalogSources("produto", produto?.id, data?.profile?.id);
 
-  const [form, setForm] = useState({
-    resumo_curto: "",
-    beneficio_combinado: "",
-    explicacao_tecnica: "",
-    explicacao_produtor: "",
-    explicacao_b2b: "",
-    indicacoes_uso: "",
-    janela_aplicacao: "",
-    cuidados_aplicacao: "",
-    compatibilidade: "",
-    observacoes_regulatorias: "",
-    status_validacao: "rascunho" as "rascunho" | "em_revisao" | "aprovado" | "arquivado",
-  });
+  const [form, setForm] = useState<ProductFormState>(() => buildProductFormDefaults(produto));
 
   const [previaLoading, setPreviaLoading] = useState(false);
   const [auditLog, setAuditLog] = useState<any[]>([]);
@@ -99,30 +94,20 @@ export function ProductTechnicalProfileDialog({ open, onOpenChange, produto, ori
     if (open && produto) log({ entidade_tipo: "produto", entidade_id: produto.id, origem });
   }, [open, produto, log, origem]);
 
+  // CAT-09: o estado é sempre substituído por completo — nunca herda a ficha anterior.
   useEffect(() => {
-    if (data?.profile) {
-      setForm({
-        resumo_curto: data.profile.resumo_curto ?? "",
-        beneficio_combinado: data.profile.beneficio_combinado ?? "",
-        explicacao_tecnica: data.profile.explicacao_tecnica ?? "",
-        explicacao_produtor: data.profile.explicacao_produtor ?? "",
-        explicacao_b2b: data.profile.explicacao_b2b ?? "",
-        indicacoes_uso: data.profile.indicacoes_uso ?? "",
-        janela_aplicacao: data.profile.janela_aplicacao ?? "",
-        cuidados_aplicacao: data.profile.cuidados_aplicacao ?? "",
-        compatibilidade: data.profile.compatibilidade ?? "",
-        observacoes_regulatorias: data.profile.observacoes_regulatorias ?? "",
-        status_validacao: data.profile.status_validacao,
-      });
-    } else if (produto) {
-      setForm((f) => ({
-        ...f,
-        resumo_curto: produto.descricao ?? f.resumo_curto,
-        explicacao_tecnica: produto.modo_acao ?? f.explicacao_tecnica,
-        indicacoes_uso: produto.funcao_completa ?? f.indicacoes_uso,
-      }));
+    if (isError) return;
+    if (!produto) {
+      setForm(emptyProductForm());
+      return;
     }
-  }, [data?.profile, produto]);
+    if (isSuccess && data?.profile) {
+      setForm(mapProductProfileToForm(data.profile));
+      return;
+    }
+    setForm(buildProductFormDefaults(produto));
+  }, [produto?.id, produto, data?.profile, isError, isSuccess]);
+
 
   useEffect(() => {
     if (open && produto && canSeeAudit && data?.profile?.id) {

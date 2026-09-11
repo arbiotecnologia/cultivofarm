@@ -22,6 +22,13 @@ import { ReturnToReviewButton } from "./catalog/ReturnToReviewButton";
 import { ApprovalChecklistDialog, ChecklistItem } from "./catalog/ApprovalChecklistDialog";
 import { ProfileField } from "./catalog/ProfileField";
 import { ProfileFieldAI } from "./catalog/ProfileFieldAI";
+import { ProfileLoadErrorState } from "./catalog/ProfileLoadErrorState";
+import {
+  buildMicroFormDefaults,
+  emptyMicroForm,
+  mapMicroProfileToForm,
+  type MicroFormState,
+} from "@/lib/catalogo/fichaFormDefaults";
 import { VersoesHistoricoTab } from "./catalog/VersoesHistoricoTab";
 import { useEffectiveCatalogSources } from "@/hooks/useEffectiveCatalogSources";
 import {
