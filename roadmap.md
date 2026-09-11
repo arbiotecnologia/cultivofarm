@@ -1,8 +1,8 @@
 # Roadmap de Tarefas
 
 ## Catálogo na prévia — lote atual
-- Tratamento atômico de erros do catálogo e revisão técnica implementado; validação direcionada em andamento.
-- Prova autenticada depende de sessão no destino canônico; nenhum acesso a outros ambientes autorizado.
+- Tratamento atômico de erros do catálogo e revisão técnica implementado; testes direcionados 24/24.
+- Logs da prévia: único destino CultivoFarm; Produtos respondeu HTTP 200 com []. Causa do retorno vazio não comprovada. Validação automática bloqueada por tipos gerados truncados (arquivo protegido); nenhum banco acessado.
 
 ## Em aberto
 
