@@ -4,6 +4,29 @@
 
 - [Manual do Usuário](./docs/MANUAL-DO-USUARIO.md) — todos os recursos e processos de uso do sistema.
 - [Referência Técnica](./docs/REFERENCIA-TECNICA.md) — arquitetura, ambientes, segurança e implantação.
+- [Runbook de implantação da geração com IA](./docs/runbook-deploy-ai-generate-ficha-campo.md)
+
+## Geração de ficha com IA (`ai-generate-ficha-campo`)
+
+Destino único autorizado: projeto CultivoFarm `swzpzcwiasxmjutrmvkm`.
+Rota: `/functions/v1/ai-generate-ficha-campo` (exige `Authorization: Bearer` de sessão válida).
+
+Segredos necessários no ambiente da função (apenas nomes — nunca versionar valores,
+nunca colar em chat, nunca expor no frontend):
+
+| Segredo | Origem | Uso |
+|---|---|---|
+| `LOVABLE_API_KEY` | Gateway de IA da Lovable | Chamada ao modelo de linguagem |
+| `SUPABASE_URL` | Injetado pela plataforma no projeto CultivoFarm | Cliente server-side |
+| `SUPABASE_SERVICE_ROLE_KEY` | Injetado pela plataforma no projeto CultivoFarm | Leitura de microrganismo/produto e gravação do rascunho `pendente` |
+
+Conferir com `supabase secrets list` antes do deploy e implantar com
+`supabase functions deploy ai-generate-ficha-campo` após
+`supabase link --project-ref swzpzcwiasxmjutrmvkm`.
+
+Enquanto a função não estiver implantada, a interface trata `404` como
+"geração com IA ainda não disponível neste ambiente", sem spinner infinito.
+
 
 ## Project info
 
