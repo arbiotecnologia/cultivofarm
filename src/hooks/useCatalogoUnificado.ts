@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { consultarCatalogo } from "@/lib/catalogoQueries";
 
 export interface CatalogoUnificadoRow {
   id: string;
@@ -115,7 +116,7 @@ export function useCatalogoUnificado(scope: CatalogoScope = "interno") {
     gcTime: CATALOGO_UNIFICADO_GC_TIME,
     refetchOnWindowFocus: false,
     queryFn: async (): Promise<CatalogoUnificadoRow[]> => {
-      const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await Promise.all([
+      const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await consultarCatalogo([
         (supabase as any).from("produtos").select(PRODUTOS_SELECT).order("nome"),
         (supabase as any).from("microrganismos").select(MICROORGANISMOS_SELECT).order("nome"),
         (supabase as any).from("product_technical_profiles").select(PRODUCT_PROFILES_SELECT),

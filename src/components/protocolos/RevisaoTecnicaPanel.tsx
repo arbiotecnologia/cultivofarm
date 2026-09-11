@@ -10,6 +10,8 @@ import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { MicroorganismTechnicalProfileDialog } from "./MicroorganismTechnicalProfileDialog";
 import { ProductTechnicalProfileDialog } from "./ProductTechnicalProfileDialog";
 import { useTabParam } from "@/lib/navigation/useTabParam";
+import { consultarCatalogo } from "@/lib/catalogoQueries";
+import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
 
 const REV_TABS = ["micro", "prod"] as const;
 
@@ -35,10 +37,10 @@ export function RevisaoTecnicaPanel() {
   const [openProd, setOpenProd] = useState<any | null>(null);
   const [rev, setRev] = useTabParam("rev", REV_TABS, "micro");
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, error, isFetching, refetch } = useQuery({
     queryKey: ["catalogo-tecnico-revisao"],
     queryFn: async (): Promise<Item[]> => {
-      const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await Promise.all([
+      const [prod, micro, prodProf, microProf, formul, sources, microTargets, prodTargets] = await consultarCatalogo([
         (supabase as any).from("produtos").select("id,nome,codigo,tipo,descricao,funcao_completa,ativo,b2b_enabled").eq("ativo", true).order("nome"),
         (supabase as any).from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").eq("ativo", true).order("nome"),
         (supabase as any).from("product_technical_profiles").select("id,produto_id,status_validacao,resumo_curto,explicacao_b2b,explicacao_produtor,explicacao_tecnica,beneficio_combinado,cuidados_aplicacao,updated_at"),
@@ -161,6 +163,9 @@ export function RevisaoTecnicaPanel() {
     { key: "b2b_sem_texto", label: "B2B sem texto", count: kpis.b2bSemTexto },
     { key: "rascunhos", label: "Rascunhos com conteúdo", count: rascunhoItems.length },
   ];
+
+  if (error) return <CatalogoQueryErrorState error={error} retry={refetch} busy={isFetching} />;
+  if (isLoading) return <p role="status">Carregando revisão técnica…</p>;
 
   return (
     <div className="space-y-4">
