@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Props {
@@ -35,11 +35,11 @@ export function ProfileFieldAI({
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("Sessão expirada. Entre novamente para gerar com IA.");
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-generate-ficha-campo`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-generate-ficha-campo`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ entidade_tipo: entidadeTipo, entidade_id: entidadeId, campo, origem: "ia_manual" }),
