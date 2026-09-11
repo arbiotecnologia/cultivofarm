@@ -51,8 +51,8 @@ export default defineConfig(({ mode }) => ({
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/functions\//],
         cleanupOutdatedCaches: true,
-        clientsClaim: false,
-        skipWaiting: false,
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             // HTML navigations — always NetworkFirst, never cache-first.
