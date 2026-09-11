@@ -95,10 +95,7 @@ export function ProdutosTab() {
   const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
-  const { roles } = useAuth();
-  const isAdmin = roles.includes("administrador");
 
-  
   const [form, setForm] = useState({
     id: "",
     codigo: "",
