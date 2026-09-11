@@ -20,7 +20,7 @@ describe("consultas atômicas", () => {
     await expect(consultarCatalogo(responses)).rejects.toThrow(fonte);
   });
   it("rejeita falha total e rejeição de transporte", async () => {
-    await expect(consultarCatalogo(CATALOGO_FONTES.map(() => Promise.reject(new Error("secret")))))).rejects.toThrow("Produtos, Microrganismos");
+    await expect(consultarCatalogo(CATALOGO_FONTES.map(() => Promise.reject(new Error("secret"))))).rejects.toThrow("Produtos, Microrganismos");
   });
   it("preserva sucesso com dados", async () => {
     await expect(consultarCatalogo([Promise.resolve({ data: [{ id: "1" }], error: null })])).resolves.toEqual([{ data: [{ id: "1" }], error: null }]);
