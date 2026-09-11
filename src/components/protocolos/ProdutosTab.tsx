@@ -81,6 +81,155 @@ interface Produto {
 }
 
 
+// ── CAT-06/CAT-07 ────────────────────────────────────────────────────────────
+// Colunas restauráveis (apenas as que `handleSave` altera / precisa reinserir).
+export const PRODUTO_SNAPSHOT_COLUMNS =
+  "nome, codigo, tipo, dose_ml_ha, modo_aplicacao, valor_ha_brl, valor_dose_brl, valor_litro_brl, funcao_completa, versao_catalogo, ativo, b2b_enabled, e_insumo, estoque_minimo";
+export const FORMULACAO_SNAPSHOT_COLUMNS =
+  "produto_id, microrganismo_id, component_insumo_id, volume_ml, proporcao, e_volume_fixo";
+
+export type SaveProdutoOutcome =
+  | { status: "ok"; produtoId: string }
+  | { status: "error"; message: string }
+  | { status: "critical"; message: string };
+
+const MSG_CRITICO =
+  "Falha crítica: a reversão automática não foi concluída. NÃO repita a operação e contate o suporte imediatamente.";
+
+/**
+ * CAT-06 — grava produto + composição com compensação best-effort.
+ * Nunca reporta sucesso quando alguma etapa falha; sinaliza `critical`
+ * quando a própria reversão falha.
+ */
+export async function saveProdutoComCompensacao(opts: {
+  client: any;
+  produtoId: string | null;
+  payload: Record<string, any>;
+  buildFormulacoes: (produtoId: string) => any[];
+}): Promise<SaveProdutoOutcome> {
+  const { client, produtoId, payload, buildFormulacoes } = opts;
+
+  if (produtoId) {
+    // 1) snapshot ANTES de qualquer escrita
+    const snapProduto = await client
+      .from("produtos")
+      .select(PRODUTO_SNAPSHOT_COLUMNS)
+      .eq("id", produtoId)
+      .maybeSingle();
+    if (snapProduto.error || !snapProduto.data) {
+      return {
+        status: "error",
+        message: snapProduto.error?.message || "Não foi possível ler o estado atual do produto.",
+      };
+    }
+    const snapFormulacoes = await client
+      .from("formulacoes")
+      .select(FORMULACAO_SNAPSHOT_COLUMNS)
+      .eq("produto_id", produtoId);
+    if (snapFormulacoes.error) {
+      return { status: "error", message: snapFormulacoes.error.message };
+    }
+    const formulacoesAnteriores = (snapFormulacoes.data ?? []) as any[];
+
+    const compensar = async (motivo: string): Promise<SaveProdutoOutcome> => {
+      const falhas: string[] = [];
+      const upd = await client.from("produtos").update(snapProduto.data).eq("id", produtoId);
+      if (upd?.error) falhas.push(upd.error.message);
+      const del = await client.from("formulacoes").delete().eq("produto_id", produtoId);
+      if (del?.error) falhas.push(del.error.message);
+      if (!del?.error && formulacoesAnteriores.length > 0) {
+        const ins = await client.from("formulacoes").insert(formulacoesAnteriores);
+        if (ins?.error) falhas.push(ins.error.message);
+      }
+      if (falhas.length > 0) return { status: "critical", message: MSG_CRITICO };
+      return { status: "error", message: motivo };
+    };
+
+    // 2) fluxo atual
+    const upd = await client.from("produtos").update(payload).eq("id", produtoId);
+    if (upd?.error) return { status: "error", message: upd.error.message };
+
+    const formulacoesPayload = buildFormulacoes(produtoId);
+
+    const del = await client.from("formulacoes").delete().eq("produto_id", produtoId);
+    if (del?.error) return await compensar(del.error.message);
+
+    if (formulacoesPayload.length > 0) {
+      const ins = await client.from("formulacoes").insert(formulacoesPayload);
+      if (ins?.error) return await compensar(ins.error.message);
+    }
+    return { status: "ok", produtoId };
+  }
+
+  // Produto novo
+  const criado = await client.from("produtos").insert([payload]).select();
+  if (criado?.error) return { status: "error", message: criado.error.message };
+  const novoId = criado?.data?.[0]?.id as string;
+
+  const formulacoesPayload = buildFormulacoes(novoId);
+  if (formulacoesPayload.length > 0) {
+    const ins = await client.from("formulacoes").insert(formulacoesPayload);
+    if (ins?.error) {
+      const delProduto = await client.from("produtos").delete().eq("id", novoId);
+      if (delProduto?.error) return { status: "critical", message: MSG_CRITICO };
+      return { status: "error", message: ins.error.message };
+    }
+  }
+  return { status: "ok", produtoId: novoId };
+}
+
+/**
+ * CAT-07 — carrega catálogo. Só devolve dados quando as 4 consultas passam.
+ */
+export async function carregarCatalogoProdutos(client: any): Promise<
+  | { error: string }
+  | { produtos: any[]; microrganismos: any[]; profileStatusMap: Record<string, string> }
+> {
+  const [produtosResult, formulacoesResult, microrganismosResult, profilesResult] = await Promise.all([
+    client.from("produtos").select("*").order("nome"),
+    client
+      .from("formulacoes")
+      .select("id, produto_id, microrganismo_id, component_insumo_id, volume_ml, proporcao, e_volume_fixo"),
+    client
+      .from("microrganismos")
+      .select("id, nome, nome_cientifico, concentracao_ufc_ml, valor_dose_brl, dose_ml_ha, codigo, tipo")
+      .order("codigo", { nullsFirst: false })
+      .order("nome"),
+    client.from("product_technical_profiles").select("produto_id,status_validacao"),
+  ]);
+
+  const error =
+    produtosResult?.error || formulacoesResult?.error || microrganismosResult?.error || profilesResult?.error;
+  if (error) return { error: error.message || "Erro ao carregar produtos" };
+
+  const profileStatusMap: Record<string, string> = {};
+  (profilesResult.data ?? []).forEach((x: any) => {
+    profileStatusMap[x.produto_id] = x.status_validacao;
+  });
+
+  const microrganismosData = (microrganismosResult.data ?? []) as any[];
+  const produtosData = (produtosResult.data ?? []) as any[];
+  const microMap = new Map(microrganismosData.map((m: any) => [m.id, m]));
+  const productNameMap = new Map(produtosData.map((p: any) => [p.id, p.nome]));
+  const formulacoesByProduct = ((formulacoesResult.data ?? []) as any[]).reduce((acc: any, f: any) => {
+    if (!f.produto_id) return acc;
+    const formulacao = {
+      ...f,
+      microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined,
+      insumos: f.component_insumo_id ? { nome: productNameMap.get(f.component_insumo_id) || "Insumo" } : undefined,
+    };
+    acc[f.produto_id] = [...(acc[f.produto_id] ?? []), formulacao];
+    return acc;
+  }, {});
+
+  const produtos = produtosData.map((produto: any) => ({
+    ...produto,
+    formulacoes: formulacoesByProduct[produto.id] ?? [],
+  }));
+
+  return { produtos, microrganismos: microrganismosData, profileStatusMap };
+}
+
 export function ProdutosTab() {
   const [items, setItems] = useState<Produto[]>([]);
   const [filteredItems, setFilteredItems] = useState<Produto[]>([]);
@@ -125,60 +274,20 @@ export function ProdutosTab() {
 
 
 
-  const fetchMicrorganismos = async () => {
-    const { data } = await (supabase as any).from("microrganismos").select("id, nome, nome_cientifico, concentracao_ufc_ml, valor_dose_brl, dose_ml_ha, codigo, tipo").order("codigo", { nullsFirst: false }).order("nome");
-    if (data) setMicrorganismos(data as Microrganismo[]);
-  };
-
   const fetch = async () => {
-    const [produtosResult, formulacoesResult, microrganismosResult, profilesResult] = await Promise.all([
-      (supabase as any).from("produtos").select("*").order("nome"),
-      (supabase as any)
-        .from("formulacoes")
-        .select("id, produto_id, microrganismo_id, component_insumo_id, volume_ml, proporcao, e_volume_fixo"),
-      (supabase as any)
-        .from("microrganismos")
-        .select("id, nome, nome_cientifico, concentracao_ufc_ml, valor_dose_brl, dose_ml_ha, codigo, tipo"),
-      (supabase as any).from("product_technical_profiles").select("produto_id,status_validacao"),
-    ]);
-    const pmap: Record<string, string> = {};
-    (profilesResult.data ?? []).forEach((x: any) => { pmap[x.produto_id] = x.status_validacao; });
-    setProfileStatusMap(pmap);
-
-    const error = produtosResult.error || formulacoesResult.error || microrganismosResult.error;
-    
-    if (error) {
+    const result = await carregarCatalogoProdutos(supabase as any);
+    if ("error" in result) {
       toast.error("Erro ao carregar produtos");
       return;
     }
-    
-    if (produtosResult.data) {
-      const microMap = new Map((microrganismosResult.data ?? []).map((m) => [m.id, m]));
-      const productNameMap = new Map(produtosResult.data.map((p) => [p.id, p.nome]));
-      const formulacoesByProduct = ((formulacoesResult as any).data ?? []).reduce((acc: any, f: any) => {
-        if (!f.produto_id) return acc;
-        const formulacao: Formulacao = {
-          ...f,
-          microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined,
-          insumos: f.component_insumo_id ? { nome: productNameMap.get(f.component_insumo_id) || "Insumo" } : undefined,
-        } as Formulacao;
-        acc[f.produto_id] = [...(acc[f.produto_id] ?? []), formulacao];
-        return acc;
-      }, {});
-
-      const produtos = produtosResult.data.map((produto) => ({
-        ...produto,
-        formulacoes: formulacoesByProduct[produto.id] ?? [],
-      })) as unknown as Produto[];
-
-      setItems(produtos);
-      setFilteredItems(produtos);
-    }
+    setProfileStatusMap(result.profileStatusMap);
+    setMicrorganismos(result.microrganismos as Microrganismo[]);
+    setItems(result.produtos as unknown as Produto[]);
+    setFilteredItems(result.produtos as unknown as Produto[]);
   };
 
   useEffect(() => {
     fetch();
-    fetchMicrorganismos();
   }, []);
 
   useEffect(() => {
@@ -232,32 +341,22 @@ export function ProdutosTab() {
     // (só em `microrganismos`). Não enviar ao Supabase — evita schema-cache error.
 
 
-    let produtoNovoCriadoId: string | null = null;
-
     try {
-      let produtoId = form.id;
-      if (form.id) {
-        const { error } = await (supabase as any).from("produtos").update(payload).eq("id", form.id);
-        if (error) throw error;
-      } else {
-        const { data, error } = await (supabase as any).from("produtos").insert([payload]).select();
-        if (error) throw error;
-        produtoId = data![0].id;
-        produtoNovoCriadoId = produtoId;
+      const outcome = await saveProdutoComCompensacao({
+        client: supabase as any,
+        produtoId: form.id || null,
+        payload,
+        // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
+        buildFormulacoes: (id: string) => buildFormulacoesPayload(id, form.composicao),
+      });
+
+      if (outcome.status === "critical") {
+        toast.error(outcome.message);
+        return;
       }
-
-
-      // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
-      const formulacoesPayload = buildFormulacoesPayload(produtoId!, form.composicao);
-
-      // Sync composition (idempotent delete then insert) — só se editando
-      if (form.id) {
-        const { error: delErr } = await (supabase as any).from("formulacoes").delete().eq("produto_id", produtoId);
-        if (delErr) throw delErr;
-      }
-      if (formulacoesPayload.length > 0) {
-        const { error: insErr } = await (supabase as any).from("formulacoes").insert(formulacoesPayload);
-        if (insErr) throw insErr;
+      if (outcome.status === "error") {
+        toast.error(outcome.message || "Erro ao salvar produto");
+        return;
       }
 
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
@@ -265,10 +364,7 @@ export function ProdutosTab() {
       resetForm();
       fetch();
     } catch (err: any) {
-      if (!form.id && produtoNovoCriadoId) {
-        await (supabase as any).from("produtos").delete().eq("id", produtoNovoCriadoId);
-      }
-      toast.error(err.message || "Erro ao salvar produto");
+      toast.error(err?.message || "Erro ao salvar produto");
     } finally {
       savingRef.current = false;
       setSaving(false);
