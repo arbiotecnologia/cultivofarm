@@ -53,3 +53,8 @@
 ## Correção da prévia — 2026-09-11
 - [x] Contrato TypeScript completo restaurado do baseline f3e125c6 (21.850 linhas); compilação automática build OK e testes direcionados 305/305. Sem acesso ao banco.
 - [ ] Regressão às 18:20 UTC: contrato gerado novamente reduzido a 2.060 linhas, com tabelas e colunas ausentes nos erros de compilação. Bloqueio: arquivo gerado protegido contra edição; corrigir a integração geradora antes de restaurar o contrato. Sem acesso ao banco, deploy ou alteração de binding.
+
+## 2026-09-11 19:26 UTC — Restaurar types.ts após build errors pós-CAT-06
+- Bloqueio: build-errors.log mostra types.ts truncado (tabelas ausentes: registros_consultor_arquivos, microorganism_targets, formulacoes, etc.).
+- Ação: restaurar src/integrations/supabase/types.ts do baseline completo; rodar typecheck/build.
+- Restrições: não alterar .env, client.ts, config.toml, banco, migrations, backend.
