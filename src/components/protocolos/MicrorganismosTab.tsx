@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,42 @@ import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
 import { VolumesChips } from "./VolumesChips";
 import { gerarProximoCodigoMicro, ehCodigoAutomatico, PREFIXOS_MICRO } from "@/lib/protocolos/autoCodigo";
+
+/** CAT-08 · carga consistente: só aplica dados se ambas as consultas passarem. */
+export async function carregarMicrorganismosCatalogo(client: any): Promise<
+  | { ok: true; items: any[]; profileStatusMap: Record<string, string> }
+  | { ok: false; error: any }
+> {
+  const [microResult, profilesResult] = await Promise.all([
+    client.from("microrganismos").select("*").order("nome"),
+    client.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao"),
+  ]);
+
+  if (microResult?.error || profilesResult?.error) {
+    return { ok: false, error: microResult?.error ?? profilesResult?.error };
+  }
+
+  const profileStatusMap: Record<string, string> = {};
+  (profilesResult?.data ?? []).forEach((p: any) => {
+    profileStatusMap[p.microrganismo_id] = p.status_validacao;
+  });
+
+  return { ok: true, items: (microResult?.data ?? []) as any[], profileStatusMap };
+}
+
+/** CAT-08 · executa `fn` apenas se nenhuma execução estiver em voo. */
+export async function runExclusive<T>(
+  ref: { current: boolean },
+  fn: () => Promise<T>,
+): Promise<T | undefined> {
+  if (ref.current) return undefined;
+  ref.current = true;
+  try {
+    return await fn();
+  } finally {
+    ref.current = false;
+  }
+}
 
 interface Microrganismo {
   id: string;
