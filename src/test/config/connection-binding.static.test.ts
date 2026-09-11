@@ -87,6 +87,38 @@ describe("Vinculo de backend — .env / client.ts / config.toml", () => {
     }
   });
 
+  it("paginas com Edge Functions reutilizam as constantes canonicas do cliente", () => {
+    const pages = [
+      "src/components/protocolos/catalog/ProfileFieldAI.tsx",
+      "src/pages/configuracoes/ComunicacaoConfigTab.tsx",
+    ] as const;
+
+    for (const page of pages) {
+      const content = read(page);
+      expect(content, `${page} sem import das constantes`).toMatch(
+        /import\s*{[^}]*SUPABASE_URL[^}]*SUPABASE_PUBLISHABLE_KEY[^}]*}\s*from\s*"@\/integrations\/supabase\/client"/s,
+      );
+      expect(
+        content.includes("VITE_SUPABASE_URL"),
+        `${page} ainda le VITE_SUPABASE_URL`,
+      ).toBe(false);
+      expect(
+        content.includes("VITE_SUPABASE_PUBLISHABLE_KEY"),
+        `${page} ainda le VITE_SUPABASE_PUBLISHABLE_KEY`,
+      ).toBe(false);
+    }
+  });
+
+  it("client.ts exporta as constantes canonicas", () => {
+    expect(client).toMatch(/export const SUPABASE_URL\s*=/);
+    expect(client).toMatch(/export const SUPABASE_PUBLISHABLE_KEY\s*=/);
+  });
+
+  it("featureFlags.ts nao expande o objeto completo de ambiente", () => {
+    const flags = read("src/config/featureFlags.ts");
+    expect(flags.includes("import.meta.env?"), "featureFlags usa import.meta.env?").toBe(false);
+  });
+
   it("staging legado nunca aparece como conexao ativa", () => {
     for (const [name, content] of [
       [".env", env],
