@@ -48,3 +48,6 @@
 
 - [x] CultivoFarm: pacote determinístico local gerado (20..27) — 314 incluídas, 260 REVISAO_DML, 126 REVISAO_REF_GUARD, 20 sandbox, 1 marker. Promoção NO-GO até revisão humana.
 - [x] Logomarca CultivoFarm aplicada na tela `/auth` + favicon; `src/integrations/supabase/types.ts` restaurado do baseline `f3e125c6` (21.850 linhas) após regeneração indevida do Sandbox — typecheck limpo.
+
+## Correção da prévia — 2026-09-11
+- [ ] Restaurar contrato TypeScript completo após regeneração incompleta e verificar compilação automática, sem acesso ao banco.
