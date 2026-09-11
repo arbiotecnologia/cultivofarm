@@ -126,26 +126,14 @@ export function MicrorganismosTab() {
   });
 
   const fetch = async () => {
-    const { data, error } = await (supabase as any)
-      .from("microrganismos")
-      .select("*")
-      .order("nome");
-    
-    if (error) {
+    const result = await carregarMicrorganismosCatalogo(supabase as any);
+    if (!result.ok) {
       toast.error("Erro ao carregar microrganismos");
       return;
     }
-    
-    if (data) {
-      setItems(data as Microrganismo[]);
-      setFilteredItems(data as Microrganismo[]);
-      const { data: profiles } = await sbClient
-        .from("microorganism_technical_profiles")
-        .select("microrganismo_id,status_validacao");
-      const map: Record<string, string> = {};
-      (profiles ?? []).forEach((p: any) => { map[p.microrganismo_id] = p.status_validacao; });
-      setProfileStatusMap(map);
-    }
+    setItems(result.items as Microrganismo[]);
+    setFilteredItems(result.items as Microrganismo[]);
+    setProfileStatusMap(result.profileStatusMap);
   };
 
   useEffect(() => {
