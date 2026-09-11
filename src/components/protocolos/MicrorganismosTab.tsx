@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,42 @@ import { CatalogoVolumesDialog } from "./CatalogoVolumesDialog";
 import { VolumesChips } from "./VolumesChips";
 import { gerarProximoCodigoMicro, ehCodigoAutomatico, PREFIXOS_MICRO } from "@/lib/protocolos/autoCodigo";
 
+/** CAT-08 · carga consistente: só aplica dados se ambas as consultas passarem. */
+export async function carregarMicrorganismosCatalogo(client: any): Promise<
+  | { ok: true; items: any[]; profileStatusMap: Record<string, string> }
+  | { ok: false; error: any }
+> {
+  const [microResult, profilesResult] = await Promise.all([
+    client.from("microrganismos").select("*").order("nome"),
+    client.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao"),
+  ]);
+
+  if (microResult?.error || profilesResult?.error) {
+    return { ok: false, error: microResult?.error ?? profilesResult?.error };
+  }
+
+  const profileStatusMap: Record<string, string> = {};
+  (profilesResult?.data ?? []).forEach((p: any) => {
+    profileStatusMap[p.microrganismo_id] = p.status_validacao;
+  });
+
+  return { ok: true, items: (microResult?.data ?? []) as any[], profileStatusMap };
+}
+
+/** CAT-08 · executa `fn` apenas se nenhuma execução estiver em voo. */
+export async function runExclusive<T>(
+  ref: { current: boolean },
+  fn: () => Promise<T>,
+): Promise<T | undefined> {
+  if (ref.current) return undefined;
+  ref.current = true;
+  try {
+    return await fn();
+  } finally {
+    ref.current = false;
+  }
+}
+
 interface Microrganismo {
   id: string;
   nome: string;
@@ -62,6 +98,8 @@ export function MicrorganismosTab() {
   const [volumesEdit, setVolumesEdit] = useState<Microrganismo | null>(null);
   const [profileStatusMap, setProfileStatusMap] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
   const [fichaMicro, setFichaMicro] = useState<Microrganismo | null>(null);
@@ -90,26 +128,14 @@ export function MicrorganismosTab() {
   });
 
   const fetch = async () => {
-    const { data, error } = await (supabase as any)
-      .from("microrganismos")
-      .select("*")
-      .order("nome");
-    
-    if (error) {
+    const result = await carregarMicrorganismosCatalogo(supabase as any);
+    if (!result.ok) {
       toast.error("Erro ao carregar microrganismos");
       return;
     }
-    
-    if (data) {
-      setItems(data as Microrganismo[]);
-      setFilteredItems(data as Microrganismo[]);
-      const { data: profiles } = await sbClient
-        .from("microorganism_technical_profiles")
-        .select("microrganismo_id,status_validacao");
-      const map: Record<string, string> = {};
-      (profiles ?? []).forEach((p: any) => { map[p.microrganismo_id] = p.status_validacao; });
-      setProfileStatusMap(map);
-    }
+    setItems(result.items as Microrganismo[]);
+    setFilteredItems(result.items as Microrganismo[]);
+    setProfileStatusMap(result.profileStatusMap);
   };
 
   useEffect(() => {
@@ -138,59 +164,69 @@ export function MicrorganismosTab() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current) return;
 
-    // Código: enviar null quando vazio ou ainda igual à sugestão automática —
-    // o trigger no servidor (`set_codigo_microrganismo`) gera atomicamente.
-    const codigoDigitado = form.codigo?.trim() || "";
-    const codigoFinal = codigoDigitado && !ehCodigoAutomatico(codigoDigitado, PREFIXOS_MICRO)
-      ? codigoDigitado
-      : (form.id ? (codigoDigitado || null) : null);
+    await runExclusive(savingRef, async () => {
+      setSaving(true);
+      try {
+        // Código: enviar null quando vazio ou ainda igual à sugestão automática —
+        // o trigger no servidor (`set_codigo_microrganismo`) gera atomicamente.
+        const codigoDigitado = form.codigo?.trim() || "";
+        const codigoFinal = codigoDigitado && !ehCodigoAutomatico(codigoDigitado, PREFIXOS_MICRO)
+          ? codigoDigitado
+          : (form.id ? (codigoDigitado || null) : null);
 
-    const payload = {
-      nome: form.nome,
-      nome_cientifico: form.nome_cientifico || null,
-      tipo: form.tipo as any,
-      concentracao_label: formatConcentracaoDisplay(formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente)),
-      concentracao_ufc_ml: formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente),
-      dose_ml_ha: form.dose_ml_ha ? Number(form.dose_ml_ha) : 100,
-      valor_dose_brl: form.valor_dose_brl,
-      valor_litro_brl: form.valor_litro_brl,
-      funcao_agronomica: form.funcao_agronomica || null,
-      fornecedor: form.fornecedor || null,
-      safra_referencia: form.safra_referencia || null,
-      meio_cultivo: form.meio_cultivo || null,
-      producao_on_farm: form.producao_on_farm,
-      observacoes: form.observacoes || null,
-      codigo: codigoFinal,
-      descricao: form.descricao?.trim() || null,
-      preco_tabela: form.preco_tabela,
-      b2b_enabled: form.b2b_enabled,
-      ativo: form.ativo,
-    };
+        const payload = {
+          nome: form.nome,
+          nome_cientifico: form.nome_cientifico || null,
+          tipo: form.tipo as any,
+          concentracao_label: formatConcentracaoDisplay(formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente)),
+          concentracao_ufc_ml: formatConcentracaoValue(form.concentracao_mantissa, form.concentracao_expoente),
+          dose_ml_ha: form.dose_ml_ha ? Number(form.dose_ml_ha) : 100,
+          valor_dose_brl: form.valor_dose_brl,
+          valor_litro_brl: form.valor_litro_brl,
+          funcao_agronomica: form.funcao_agronomica || null,
+          fornecedor: form.fornecedor || null,
+          safra_referencia: form.safra_referencia || null,
+          meio_cultivo: form.meio_cultivo || null,
+          producao_on_farm: form.producao_on_farm,
+          observacoes: form.observacoes || null,
+          codigo: codigoFinal,
+          descricao: form.descricao?.trim() || null,
+          preco_tabela: form.preco_tabela,
+          b2b_enabled: form.b2b_enabled,
+          ativo: form.ativo,
+        };
 
-    let error;
-    if (form.id) {
-      const { error: err } = await (supabase as any)
-        .from("microrganismos")
-        .update(payload)
-        .eq("id", form.id);
-      error = err;
-    } else {
-      const { error: err } = await (supabase as any)
-        .from("microrganismos")
-        .insert([payload]);
-      error = err;
-    }
+        let error;
+        if (form.id) {
+          const { error: err } = await (supabase as any)
+            .from("microrganismos")
+            .update(payload)
+            .eq("id", form.id);
+          error = err;
+        } else {
+          const { error: err } = await (supabase as any)
+            .from("microrganismos")
+            .insert([payload]);
+          error = err;
+        }
 
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
 
-    toast.success(form.id ? "Microrganismo atualizado!" : "Microrganismo cadastrado!");
-    setOpen(false);
-    resetForm();
-    fetch();
+        toast.success(form.id ? "Microrganismo atualizado!" : "Microrganismo cadastrado!");
+        setOpen(false);
+        resetForm();
+        await fetch();
+      } catch (err: any) {
+        toast.error(err?.message || "Erro inesperado ao salvar microrganismo");
+      } finally {
+        setSaving(false);
+      }
+    });
   };
 
 
@@ -519,7 +555,7 @@ export function MicrorganismosTab() {
 
                 <div className="flex justify-between items-center bg-muted/50 p-3 rounded-lg text-xs text-muted-foreground italic">
                   <span>* Valores e doses meramente referenciais. A aplicação exige prescrição agronômica vigente.</span>
-                  <Button type="submit" size="sm">Salvar Alterações</Button>
+                  <Button type="submit" size="sm" disabled={saving}>{saving ? "Salvando…" : "Salvar Alterações"}</Button>
                 </div>
               </form>
             </DialogContent>
