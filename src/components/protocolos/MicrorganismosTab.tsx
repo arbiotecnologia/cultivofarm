@@ -555,7 +555,7 @@ export function MicrorganismosTab() {
 
                 <div className="flex justify-between items-center bg-muted/50 p-3 rounded-lg text-xs text-muted-foreground italic">
                   <span>* Valores e doses meramente referenciais. A aplicação exige prescrição agronômica vigente.</span>
-                  <Button type="submit" size="sm">Salvar Alterações</Button>
+                  <Button type="submit" size="sm" disabled={saving}>{saving ? "Salvando…" : "Salvar Alterações"}</Button>
                 </div>
               </form>
             </DialogContent>
