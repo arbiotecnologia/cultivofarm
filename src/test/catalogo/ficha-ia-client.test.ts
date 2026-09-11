@@ -18,7 +18,7 @@ describe("cliente do fluxo Gerar com IA", () => {
   it("usa exclusivamente o Supabase canônico CultivoFarm", async () => {
     const fetchImpl = vi.fn(respostaOk);
     await gerarFichaCampo({ ...base, fetchImpl: fetchImpl as any });
-    const url = fetchImpl.mock.calls[0][0] as string;
+    const url = (fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[0];
     expect(url).toBe(`${SUPABASE_URL}/functions/v1/ai-generate-ficha-campo`);
     expect(url).toContain("swzpzcwiasxmjutrmvkm");
   });
