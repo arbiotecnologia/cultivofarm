@@ -183,7 +183,6 @@ export function ProdutosTab() {
   useEffect(() => {
     fetch();
     fetchMicrorganismos();
-    isCatalogoARBioV13Aplicado().then(setCatalogoAplicado).catch(() => setCatalogoAplicado(false));
   }, []);
 
   const handleRecarregarCatalogo = async () => {
