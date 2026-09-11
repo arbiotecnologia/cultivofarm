@@ -67,26 +67,12 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
   const canDeleteSources = role ? ADMIN_ROLES.includes(role) : false;
   const isAdminOrGestor = role ? ADMIN_ROLES.includes(role) : false;
 
-  const { data, isLoading, refetch } = useMicroorganismProfile(micro?.id);
+  const { data, isLoading, isError, isSuccess, isFetching, refetch } = useMicroorganismProfile(micro?.id);
   const upsert = useUpsertMicroProfile();
   const log = useLogCatalogAccess();
   const { hasSources } = useEffectiveCatalogSources("micro", micro?.id, data?.profile?.id);
 
-
-  const [form, setForm] = useState({
-    resumo_curto: "",
-    mecanismo_acao: "",
-    beneficios_agronomicos: "",
-    explicacao_tecnica: "",
-    explicacao_produtor: "",
-    explicacao_b2b: "",
-    indicacoes_uso: "",
-    cuidados_aplicacao: "",
-    compatibilidade: "",
-    armazenamento: "",
-    observacoes_regulatorias: "",
-    status_validacao: "rascunho" as "rascunho" | "em_revisao" | "aprovado" | "arquivado",
-  });
+  const [form, setForm] = useState<MicroFormState>(() => buildMicroFormDefaults(micro));
 
   const [auditLog, setAuditLog] = useState<any[]>([]);
   const [confirmNoSourceOpen, setConfirmNoSourceOpen] = useState(false);
@@ -96,32 +82,20 @@ export function MicroorganismTechnicalProfileDialog({ open, onOpenChange, micro,
     if (open && micro) log({ entidade_tipo: "microrganismo", entidade_id: micro.id, origem });
   }, [open, micro, log, origem]);
 
+  // CAT-09: o estado é sempre substituído por completo — nunca herda a ficha anterior.
   useEffect(() => {
-    if (data?.profile) {
-      setForm({
-        resumo_curto: data.profile.resumo_curto ?? "",
-        mecanismo_acao: data.profile.mecanismo_acao ?? "",
-        beneficios_agronomicos: data.profile.beneficios_agronomicos ?? "",
-        explicacao_tecnica: data.profile.explicacao_tecnica ?? "",
-        explicacao_produtor: data.profile.explicacao_produtor ?? "",
-        explicacao_b2b: data.profile.explicacao_b2b ?? "",
-        indicacoes_uso: data.profile.indicacoes_uso ?? "",
-        cuidados_aplicacao: data.profile.cuidados_aplicacao ?? "",
-        compatibilidade: data.profile.compatibilidade ?? "",
-        armazenamento: data.profile.armazenamento ?? "",
-        observacoes_regulatorias: data.profile.observacoes_regulatorias ?? "",
-        status_validacao: data.profile.status_validacao,
-      });
-    } else if (micro) {
-      // pré-preenche se ainda não existe
-      setForm((f) => ({
-        ...f,
-        resumo_curto: micro.descricao ?? f.resumo_curto,
-        beneficios_agronomicos: micro.funcao_agronomica ?? f.beneficios_agronomicos,
-        observacoes_regulatorias: micro.observacoes ?? f.observacoes_regulatorias,
-      }));
+    if (isError) return;
+    if (!micro) {
+      setForm(emptyMicroForm());
+      return;
     }
-  }, [data?.profile, micro]);
+    if (isSuccess && data?.profile) {
+      setForm(mapMicroProfileToForm(data.profile));
+      return;
+    }
+    setForm(buildMicroFormDefaults(micro));
+  }, [micro?.id, micro, data?.profile, isError, isSuccess]);
+
 
   useEffect(() => {
     if (open && micro && canSeeAudit) {
