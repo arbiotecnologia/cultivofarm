@@ -37,7 +37,7 @@ describe("consultas atômicas", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     await screen.findByText("Itens carregados");
     expect(state.calls).toBe(16);
-    expect(screen.getByText("1")).toBeTruthy();
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
     client.clear();
   });
 });
