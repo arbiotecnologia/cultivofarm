@@ -185,37 +185,6 @@ export function ProdutosTab() {
     fetchMicrorganismos();
   }, []);
 
-  const handleRecarregarCatalogo = async () => {
-    setReloading(true);
-    try {
-      const wipe = await wipeCatalogoProdutos();
-      if (!wipe.ok) {
-        toast.error(`Falha no wipe: ${wipe.error ?? "erro"}${wipe.table ? ` (${wipe.table})` : ""}`, {
-          description: wipe.detail,
-        });
-        return;
-      }
-      const seed = await importCatalogoARBioV13();
-      if (seed.microrganismosFaltantes.length > 0) {
-        toast.error("Microrganismos ausentes no cadastro", {
-          description: seed.microrganismosFaltantes.join(", "),
-        });
-        return;
-      }
-      toast.success(`Catálogo A.R Bio v1.3 aplicado`, {
-        description: `${seed.inseridos} inseridos, ${seed.atualizados} atualizados, ${seed.formulacoesCriadas} formulações. Total removido: ${wipe.totalDeleted ?? 0} registros.`,
-      });
-      await fetch();
-      setCatalogoAplicado(true);
-      setReloadOpen(false);
-    } catch (e) {
-      toast.error("Erro ao aplicar catálogo", { description: (e as Error).message });
-    } finally {
-      setReloading(false);
-    }
-  };
-
-
   useEffect(() => {
     let result = items;
     if (search) {
