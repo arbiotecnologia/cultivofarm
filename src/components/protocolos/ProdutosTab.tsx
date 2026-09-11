@@ -98,12 +98,6 @@ export function ProdutosTab() {
   const [filterTipo, setFilterTipo] = useState("todos");
   const { roles } = useAuth();
   const isAdmin = roles.includes("administrador");
-  const [reloadOpen, setReloadOpen] = useState(false);
-  const [reloading, setReloading] = useState(false);
-
-
-
-  const [catalogoAplicado, setCatalogoAplicado] = useState(false);
 
   
   const [form, setForm] = useState({
