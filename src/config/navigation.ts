@@ -114,11 +114,11 @@ export const navigation: NavItem[] = [
   // "Catálogo Técnico" de /base-tecnica — a rota antiga apenas redireciona.
 
   // Fase 26B: o rótulo permanece "Base Técnica" — há teste de contrato
-  // Fase 26C: rótulo visual passa a ser "Catálogo AR Bio". Rota canônica
+  // Fase 26C: rótulo visual passa a ser "Catálogo". Rota canônica
   // (/base-tecnica), id, legacyRoutes (/protocolos), permissões e filhos
   // permanecem inalterados — apenas o texto exibido muda.
   {
-    id: "protocolos", label: "Catálogo AR Bio", icon: FileText, route: "/base-tecnica",
+    id: "protocolos", label: "Catálogo", icon: FileText, route: "/base-tecnica",
     section: "Comercial e Relacionamento", subSection: "Produtos e Planejamento", order: 11,
     platforms: ["desktop"], legacyRoutes: ["/protocolos", "/comercial/catalogo"],
     searchKeywords: ["base técnica", "base tecnica", "base técnica agronômica", "catálogo", "catalogo", "catálogo comercial", "catalogo comercial", "portfólio", "portfolio", "catálogo ar bio", "catalogo ar bio", "produtos", "produto", "microrganismos", "culturas", "alvos", "recomendações", "recomendacoes", "ficha técnica", "catálogo técnico", "catalogo tecnico", "protocolo", "protocolos", "manejo", "protocolo agronômico"],

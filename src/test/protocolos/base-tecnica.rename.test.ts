@@ -8,8 +8,8 @@ const read = (p: string) => fs.readFileSync(path.resolve(process.cwd(), p), "utf
 describe("Base Técnica Agronômica — renomeação de interface", () => {
   const item = navigation.find((i) => i.id === "protocolos");
 
-  it("o menu apresenta o rótulo 'Catálogo AR Bio' (Fase 26C)", () => {
-    expect(item?.label).toBe("Catálogo AR Bio");
+  it("o menu apresenta o rótulo 'Catálogo' (Fase 26C)", () => {
+    expect(item?.label).toBe("Catálogo");
   });
 
   it("a rota canônica é /base-tecnica e /protocolos apenas redireciona", () => {
@@ -23,11 +23,13 @@ describe("Base Técnica Agronômica — renomeação de interface", () => {
     expect(app.match(/<Protocolos \/>/g)?.length).toBe(1);
   });
 
-  it("a busca do menu encontra Base Técnica, Catálogo AR Bio, Produtos, Culturas e ainda Protocolos", () => {
+  it("a busca do menu encontra Base Técnica, Catálogo, Produtos, Culturas e ainda Protocolos", () => {
     const kw = (item?.searchKeywords ?? []).map((k) => k.toLowerCase());
     for (const termo of [
       "base técnica",
       "base tecnica",
+      "catálogo",
+      "catalogo",
       "catálogo ar bio",
       "catalogo ar bio",
       "catálogo técnico",
@@ -40,6 +42,19 @@ describe("Base Técnica Agronômica — renomeação de interface", () => {
     ]) {
       expect(kw).toContain(termo);
     }
+  });
+
+  it("o item exibe 'Catálogo', não 'Catálogo AR Bio', mas mantém rota, filhos e parâmetros", () => {
+    expect(item?.label).toBe("Catálogo");
+    expect(item?.label).not.toBe("Catálogo AR Bio");
+    expect(item?.route).toBe("/base-tecnica");
+    expect(item?.children?.map((c) => c.route)).toEqual([
+      "/base-tecnica?tab=produtos",
+      "/base-tecnica?tab=microrganismos",
+      "/base-tecnica?tab=catalogo-tecnico",
+      "/base-tecnica?tab=culturas",
+      "/base-tecnica?tab=problemas",
+    ]);
   });
 
   it("aceita aliases de aba convertidos para o valor canônico", () => {

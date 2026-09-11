@@ -39,16 +39,16 @@ describe("FASE 28A — artefatos de certificação presentes", () => {
   });
 });
 
-describe("FASE 28A — rotas do Catálogo AR Bio preservadas", () => {
+describe("FASE 28A — rotas do Catálogo preservadas", () => {
   it("/base-tecnica e /protocolos continuam registrados", () => {
     const c = read(APP);
     expect(c).toMatch(/path="\/base-tecnica"/);
     expect(c).toMatch(/path="\/protocolos"[\s\S]{0,120}to="\/base-tecnica"/);
   });
 
-  it("navegação mantém o rótulo Catálogo AR Bio e a rota legada", () => {
+  it("navegação mantém o rótulo Catálogo e a rota legada", () => {
     const c = read(NAV);
-    expect(c).toContain("Catálogo AR Bio");
+    expect(c).toContain('label: "Catálogo"');
     expect(c).toContain('legacyRoutes: ["/protocolos", "/comercial/catalogo"]');
   });
 });
