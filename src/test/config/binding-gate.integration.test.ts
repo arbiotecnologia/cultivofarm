@@ -9,8 +9,8 @@ import { resolve } from "node:path";
  * O gate `restoration/homologacao-h7/check-frontend-binding.sh` é estático
  * (não acessa banco, não lê segredos) e é o mesmo usado por `guard-staging.sh`
  * e pelo aplicador de migrations. Aqui ele passa a rodar também no Vitest,
- * garantindo que qualquer drift de `.env`, `client.ts`, `config.toml` ou
- * `types.ts` quebre a suíte antes de qualquer execução contra o banco.
+ * garantindo que qualquer drift de `.env`, `client.ts` ou `config.toml`
+ * quebre a suíte antes de qualquer execução contra o banco.
  *
  * Nada de segredo é registrado: o script imprime apenas o project ref
  * (público, pois faz parte da URL) e mensagens de diagnóstico.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -7,9 +7,9 @@ import { resolve } from "node:path";
 /**
  * H9-F — gates estáticos de fechamento da auditoria H9.
  *
- * 1. O gate de ambiente (`h9f-binding-gate.sh`) roda dentro da suíte: qualquer
- *    drift de `.env`, `client.ts`, `config.toml` ou `types.ts` para o sandbox
- *    Lovable Cloud quebra os testes antes de qualquer acesso a banco.
+ * 1. O gate histórico de ambiente (`h9f-binding-gate.sh`) permanece fail-closed
+ *    para o staging da auditoria H9. Após a troca canônica para CultivoFarm,
+ *    ele deve rejeitar o binding atual, sem substituir o gate vigente H7d.
  * 2. O pacote de promoção é verificado: 19 forwards na ordem exata, cada um com
  *    rollback correspondente, hashes conferidos e as 59 migrations
  *    BLOQUEADA_PERMANENTE formalmente excluídas.
@@ -64,22 +64,16 @@ describe("H9-F — gate de ambiente executável", () => {
     expect(existsSync(GATE)).toBe(true);
   });
 
-  it("o gate aprova o binding atual sem expor segredos", () => {
-    let output: string;
-    try {
-      output = execFileSync("bash", [GATE], {
-        cwd: ROOT,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-    } catch (error) {
-      const err = error as { stdout?: string; stderr?: string };
-      throw new Error(
-        `Gate H9-F reprovou: ${`${err.stdout ?? ""}${err.stderr ?? ""}`.trim()}`,
-      );
-    }
-    expect(output).toContain("H9F BINDING GATE: OK");
-    expect(output).toContain(STAGING_REF);
+  it("o gate histórico rejeita o binding CultivoFarm sem expor segredos", () => {
+    const result = spawnSync("bash", [GATE], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const output = `${result.stdout}${result.stderr}`;
+
+    expect(result.status).not.toBe(0);
+    expect(output).toContain("H9F BINDING GATE: ABORT");
     for (const pattern of SECRET_PATTERNS) {
       expect(pattern.test(output), `saída casou com ${pattern}`).toBe(false);
     }
