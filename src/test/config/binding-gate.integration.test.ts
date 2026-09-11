@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
- * H7O item 3 — Integração do gate de binding de staging na suíte de testes.
+ * H7O item 3 — Integração do gate de binding CultivoFarm na suíte de testes.
  *
  * O gate `restoration/homologacao-h7/check-frontend-binding.sh` é estático
  * (não acessa banco, não lê segredos) e é o mesmo usado por `guard-staging.sh`
@@ -25,7 +25,7 @@ const SECRET_PATTERNS = [
   /service_role/i,
 ];
 
-describe("Gate de binding de staging", () => {
+describe("Gate de binding CultivoFarm", () => {
   it("o script do gate existe no repositório", () => {
     expect(existsSync(GATE)).toBe(true);
   });
@@ -45,9 +45,21 @@ describe("Gate de binding de staging", () => {
     }
 
     expect(output).toContain("H7d BINDING GATE: OK");
-    expect(output).toContain("ikaauvsflpmamgxmkhoq");
+    expect(output).toContain("swzpzcwiasxmjutrmvkm");
     for (const pattern of SECRET_PATTERNS) {
       expect(pattern.test(output), `saída do gate casou com ${pattern}`).toBe(false);
     }
+  });
+
+  it("falha fechado quando o projeto esperado diverge do binding atual", () => {
+    const result = spawnSync("bash", [GATE], {
+      cwd: ROOT,
+      encoding: "utf8",
+      env: { ...process.env, CULTIVOFARM_REF_EXPECTED: "ref-divergente" },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain("H7d BINDING GATE: ABORT");
   });
 });

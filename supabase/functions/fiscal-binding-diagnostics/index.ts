@@ -16,7 +16,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { fiscalAllowedOrigins, fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 
-const EXPECTED_STAGING_REF = "ikaauvsflpmamgxmkhoq";
+const EXPECTED_PROJECT_REF = "swzpzcwiasxmjutrmvkm";
 const FORBIDDEN_PRODUCTION_REF = "navfzbwgwzruipouyfnk";
 
 function corsFor(origin: string | null): { allowed: boolean; headers: Record<string, string> } {
@@ -80,15 +80,15 @@ Deno.serve(async (req) => {
   }
 
   const bindingOk =
-    projectRef === EXPECTED_STAGING_REF &&
+    projectRef === EXPECTED_PROJECT_REF &&
     projectRef !== FORBIDDEN_PRODUCTION_REF &&
-    (markerRef === null || markerRef === EXPECTED_STAGING_REF) &&
+    (markerRef === null || markerRef === EXPECTED_PROJECT_REF) &&
     productionAllowed !== true;
 
   const base = {
     contract: "fiscal-binding-diagnostics/1.0.0",
     project_ref: projectRef,
-    expected_staging_ref: EXPECTED_STAGING_REF,
+    expected_project_ref: EXPECTED_PROJECT_REF,
     marker_project_ref: markerRef,
     environment,
     production_emission_allowed: productionAllowed,

@@ -58,11 +58,11 @@ describe("H7i — ingestão segura do certificado A1", () => {
     expect(fn).toContain("has_role");
   });
 
-  it("binding de frontend permanece no staging autorizado", () => {
+  it("binding de frontend permanece no CultivoFarm autorizado", () => {
     const client = read("src/integrations/supabase/client.ts");
-    expect(client).toContain("https://ikaauvsflpmamgxmkhoq.supabase.co");
+    expect(client).toContain("https://swzpzcwiasxmjutrmvkm.supabase.co");
     expect(client).not.toContain("navfzbwgwzruipouyfnk");
     const toml = read("supabase/config.toml");
-    expect(toml).toContain('project_id = "ikaauvsflpmamgxmkhoq"');
+    expect(toml).toContain('project_id = "swzpzcwiasxmjutrmvkm"');
   });
 });

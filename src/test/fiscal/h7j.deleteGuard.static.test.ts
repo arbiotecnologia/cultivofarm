@@ -63,10 +63,10 @@ describe("H7j — guard de exclusão fiscal", () => {
     }
   });
 
-  it("binding efetivo do cliente permanece no staging autorizado", () => {
+  it("binding efetivo do cliente permanece no CultivoFarm autorizado", () => {
     // `.env` é regenerado pela plataforma; a verdade de runtime é o client.ts.
     const client = read("src/integrations/supabase/client.ts");
-    expect(client).toContain("ikaauvsflpmamgxmkhoq");
+    expect(client).toContain("swzpzcwiasxmjutrmvkm");
     expect(client).not.toContain("navfzbwgwzruipouyfnk");
   });
 
