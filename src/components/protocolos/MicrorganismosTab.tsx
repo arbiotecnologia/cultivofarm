@@ -98,6 +98,8 @@ export function MicrorganismosTab() {
   const [volumesEdit, setVolumesEdit] = useState<Microrganismo | null>(null);
   const [profileStatusMap, setProfileStatusMap] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
   const [fichaMicro, setFichaMicro] = useState<Microrganismo | null>(null);
