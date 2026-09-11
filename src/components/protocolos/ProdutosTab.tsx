@@ -525,47 +525,6 @@ export function ProdutosTab() {
 
 
 
-          {isAdmin && !catalogoAplicado && (
-            <AlertDialog open={reloadOpen} onOpenChange={setReloadOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="hidden md:flex">
-                  <RefreshCcw className="h-4 w-4 mr-1" />
-                  Recarregar Catálogo A.R Bio v1.3
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Recarregar Catálogo A.R Bio v1.3</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        Esta ação apaga <strong>todos os produtos</strong> e todo o histórico operacional
-                        e fiscal vinculado (lotes, ordens de serviço, aplicações, entregas, notas fiscais,
-                        estoques, formulações). Em seguida, insere os 7 produtos do catálogo A.R Bio v1.3.
-                      </p>
-                      <p className="text-destructive font-medium">
-                        Ação irreversível. Confirme apenas em ambiente homologado.
-                      </p>
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={reloading}>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={(e) => { e.preventDefault(); handleRecarregarCatalogo(); }}
-                    disabled={reloading}
-                  >
-                    {reloading ? (
-                      <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Aplicando…</>
-                    ) : (
-                      "Confirmar wipe e recarga"
-                    )}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-
 
 
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { resetForm(); composicaoTouched.current = false; lastSuggestion.current = null; } }}>
