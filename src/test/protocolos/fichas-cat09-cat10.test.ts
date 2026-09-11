@@ -160,11 +160,15 @@ describe("CAT-10 · erro bloqueia escrita e oferece retry", () => {
       expect(src).toContain("{isError ? (");
       expect(src).toContain("<ProfileLoadErrorState");
       expect(src).toContain("onRetry={() => { void refetch(); }}");
-      // nenhuma ação de escrita/IA renderizada com erro
-      const acoes = src.match(/\{(!isError && )?canEditFull && \(/g) ?? [];
+      // nenhuma ação de escrita renderizada no rodapé quando há erro
+      const rodape = src.slice(src.indexOf('border-t pt-3 mt-2"'));
+      const acoes = rodape.match(/\{(!isError && )?can(EditFull|EditB2BOnly)[^\n]*&& \(/g) ?? [];
       expect(acoes.length).toBeGreaterThan(0);
       expect(acoes.every((a) => a.includes("!isError"))).toBe(true);
+      // formulário/IA só renderizam no ramo sem erro
+      expect(src.indexOf("{isError ? (")).toBeLessThan(src.indexOf("<ProfileFieldAI"));
       expect(src).toContain("{!isError && canEditB2BOnly && !canEditFull && (");
+
     });
 
     it(`ficha de ${nome} não usa o estado anterior como fallback`, () => {
