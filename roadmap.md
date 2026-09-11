@@ -58,3 +58,8 @@
 - Bloqueio: build-errors.log mostra types.ts truncado (tabelas ausentes: registros_consultor_arquivos, microorganism_targets, formulacoes, etc.).
 - Ação: restaurar src/integrations/supabase/types.ts do baseline completo; rodar typecheck/build.
 - Restrições: não alterar .env, client.ts, config.toml, banco, migrations, backend.
+
+## 2026-09-11 21:00 UTC — Build errors pós-validação de destino
+- Tarefa: corrigir typecheck/build errors reportados no preview; inclui erros preexistentes de types.ts truncado.
+- Ação: restaurar src/integrations/supabase/types.ts do baseline completo (21.850 linhas); restaurar .env para CultivoFarm; rodar typecheck/build.
+- Restrições: somente frontend/repositório; não acessar banco, migrations, backend, deploy ou publicação.
