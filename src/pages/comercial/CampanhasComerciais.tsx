@@ -21,8 +21,13 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -107,6 +112,8 @@ export default function CampanhasComerciais() {
 
   const [partnerSel, setPartnerSel] = useState<string[]>([]);
   const [clienteSel, setClienteSel] = useState<string[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null);
 
   useEffect(() => { setPartnerSel(linkedPartners); }, [linkedPartners]);
   useEffect(() => { setClienteSel(linkedClientes); }, [linkedClientes]);
@@ -114,31 +121,51 @@ export default function CampanhasComerciais() {
   const handleNew = () => {
     setForm({ nome: "", descricao: "", data_inicio: "", data_fim: "", ativa: true, tipo_publico: "b2b" });
     setPartnerSel([]); setClienteSel([]);
+    setFormError(null);
     setOpen(true);
   };
 
   const handleEdit = (c: any) => {
     setForm({ ...c });
+    setFormError(null);
     setOpen(true);
   };
 
-  const handleSave = () => {
-    if (!form.nome || !form.data_inicio || !form.data_fim) return;
-    save.mutate(form, {
-      onSuccess: async (_data, _vars) => {
-        // Quando editando uma campanha existente, persistir vínculos
-        if (form.id) {
-          const showB2b = form.tipo_publico === "b2b" || form.tipo_publico === "ambos";
-          const showCom = form.tipo_publico === "comercial" || form.tipo_publico === "ambos";
-          if (showB2b) await setPartners.mutateAsync({ campaign_id: form.id, partner_ids: partnerSel });
-          else await setPartners.mutateAsync({ campaign_id: form.id, partner_ids: [] });
-          if (showCom) await setClientes.mutateAsync({ campaign_id: form.id, cliente_ids: clienteSel });
-          else await setClientes.mutateAsync({ campaign_id: form.id, cliente_ids: [] });
-        }
-        setOpen(false);
-      },
-    });
+  const handleSave = async () => {
+    const nome = String(form.nome ?? "").trim();
+    const inicio = String(form.data_inicio ?? "").trim();
+    const fim = String(form.data_fim ?? "").trim();
+
+    if (!nome || !inicio || !fim) {
+      setFormError("Preencha nome, data de início e data de fim.");
+      return;
+    }
+    if (fim < inicio) {
+      setFormError("A data de fim deve ser igual ou posterior à data de início.");
+      return;
+    }
+    setFormError(null);
+
+    const payload = { ...form, nome, data_inicio: inicio, data_fim: fim };
+    try {
+      await save.mutateAsync(payload);
+      if (form.id) {
+        const wantB2b = form.tipo_publico === "b2b" || form.tipo_publico === "ambos";
+        const wantCom = form.tipo_publico === "comercial" || form.tipo_publico === "ambos";
+        await setPartners.mutateAsync({ campaign_id: form.id, partner_ids: wantB2b ? partnerSel : [] });
+        await setClientes.mutateAsync({ campaign_id: form.id, cliente_ids: wantCom ? clienteSel : [] });
+      }
+      setOpen(false);
+    } catch (e: any) {
+      setFormError(e?.message ? `Não foi possível salvar: ${e.message}` : "Não foi possível salvar a campanha. Tente novamente.");
+    }
   };
+
+  const nomeTrim = String(form.nome ?? "").trim();
+  const inicioVal = String(form.data_inicio ?? "").trim();
+  const fimVal = String(form.data_fim ?? "").trim();
+  const formValido = !!nomeTrim && !!inicioVal && !!fimVal && fimVal >= inicioVal;
+  const salvando = save.isPending || setPartners.isPending || setClientes.isPending;
 
   const tipo = (form.tipo_publico ?? "b2b") as CampaignPublico;
   const showB2b = tipo === "b2b" || tipo === "ambos";
@@ -188,7 +215,12 @@ export default function CampanhasComerciais() {
                           <Badge variant={c.ativa ? "default" : "outline"}>{c.ativa ? "Ativa" : "Inativa"}</Badge>
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" onClick={() => del.mutate(c.id)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Excluir campanha ${c.nome}`}
+                            onClick={() => setPendingDelete({ id: c.id, nome: c.nome })}
+                          >
                             <Trash className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -205,33 +237,41 @@ export default function CampanhasComerciais() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form.id ? "Editar campanha" : "Nova campanha"}</DialogTitle>
+            <DialogDescription>
+              Informe nome e vigência da campanha. A data de fim deve ser igual ou posterior à data de início.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            {formError && (
+              <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {formError}
+              </div>
+            )}
             <div>
-              <label className="text-xs text-muted-foreground">Nome</label>
-              <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+              <Label htmlFor="campanha-nome" className="text-xs text-muted-foreground">Nome</Label>
+              <Input id="campanha-nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Descrição</label>
-              <Textarea rows={3} value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
+              <Label htmlFor="campanha-descricao" className="text-xs text-muted-foreground">Descrição</Label>
+              <Textarea id="campanha-descricao" rows={3} value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-muted-foreground">Início</label>
-                <Input type="date" value={form.data_inicio ?? ""} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
+                <Label htmlFor="campanha-inicio" className="text-xs text-muted-foreground">Início</Label>
+                <Input id="campanha-inicio" type="date" value={form.data_inicio ?? ""} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Fim</label>
-                <Input type="date" value={form.data_fim ?? ""} onChange={(e) => setForm({ ...form, data_fim: e.target.value })} />
+                <Label htmlFor="campanha-fim" className="text-xs text-muted-foreground">Fim</Label>
+                <Input id="campanha-fim" type="date" value={form.data_fim ?? ""} onChange={(e) => setForm({ ...form, data_fim: e.target.value })} />
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Público-alvo</label>
+              <Label htmlFor="campanha-publico" className="text-xs text-muted-foreground">Público-alvo</Label>
               <Select
                 value={tipo}
                 onValueChange={(v: CampaignPublico) => setForm({ ...form, tipo_publico: v })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="campanha-publico"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="b2b">Parceiros B2B</SelectItem>
                   <SelectItem value="comercial">Clientes (Comercial)</SelectItem>
@@ -280,10 +320,32 @@ export default function CampanhasComerciais() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={save.isPending}>Salvar</Button>
+            <Button onClick={handleSave} disabled={!formValido || salvando}>
+              {salvando ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => { if (!o) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a campanha <strong>{pendingDelete?.nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (pendingDelete) del.mutate(pendingDelete.id); setPendingDelete(null); }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
