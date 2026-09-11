@@ -50,4 +50,4 @@
 - [x] Logomarca CultivoFarm aplicada na tela `/auth` + favicon; `src/integrations/supabase/types.ts` restaurado do baseline `f3e125c6` (21.850 linhas) após regeneração indevida do Sandbox — typecheck limpo.
 
 ## Correção da prévia — 2026-09-11
-- [ ] Restaurar contrato TypeScript completo após regeneração incompleta e verificar compilação automática, sem acesso ao banco.
+- [x] Contrato TypeScript completo restaurado do baseline f3e125c6 (21.850 linhas); compilação automática build OK e testes direcionados 305/305. Sem acesso ao banco.
