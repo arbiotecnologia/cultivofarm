@@ -56,7 +56,7 @@ describe("CAT-08 · carregamento consistente", () => {
 
     expect(out.ok).toBe(false);
     expect(out).not.toHaveProperty("items");
-    if (!out.ok) expect(out.error.message).toBe("perfis falhou");
+    expect((out as { ok: false; error: any }).error.message).toBe("perfis falhou");
   });
 
   it("erro em microrganismos não aplica dados parciais", async () => {
