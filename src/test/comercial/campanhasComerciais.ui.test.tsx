@@ -19,7 +19,7 @@ const campanhas = [
   },
 ];
 
-const EMPTY: string[] = [];
+const { EMPTY, PARCEIROS } = vi.hoisted(() => ({ EMPTY: [] as string[], PARCEIROS: { items: [] as any[] } }));
 
 vi.mock("@/hooks/useCommercial", () => ({
   useCommercialCampaigns: () => ({ data: campanhas, isLoading: false }),
@@ -30,8 +30,6 @@ vi.mock("@/hooks/useCommercial", () => ({
   useSetCampaignPartners: () => ({ mutateAsync: setPartnersMutateAsync, isPending: false }),
   useSetCampaignClientes: () => ({ mutateAsync: setClientesMutateAsync, isPending: false }),
 }));
-
-const PARCEIROS = { items: [] as any[] };
 
 vi.mock("@/hooks/useParceirosB2B", () => ({
   useParceirosB2B: () => ({ data: PARCEIROS }),
