@@ -341,32 +341,22 @@ export function ProdutosTab() {
     // (só em `microrganismos`). Não enviar ao Supabase — evita schema-cache error.
 
 
-    let produtoNovoCriadoId: string | null = null;
-
     try {
-      let produtoId = form.id;
-      if (form.id) {
-        const { error } = await (supabase as any).from("produtos").update(payload).eq("id", form.id);
-        if (error) throw error;
-      } else {
-        const { data, error } = await (supabase as any).from("produtos").insert([payload]).select();
-        if (error) throw error;
-        produtoId = data![0].id;
-        produtoNovoCriadoId = produtoId;
+      const outcome = await saveProdutoComCompensacao({
+        client: supabase as any,
+        produtoId: form.id || null,
+        payload,
+        // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
+        buildFormulacoes: (id: string) => buildFormulacoesPayload(id, form.composicao),
+      });
+
+      if (outcome.status === "critical") {
+        toast.error(outcome.message);
+        return;
       }
-
-
-      // Monta payload sanitizado (filtra vazios + dedup) — ver src/lib/protocolos/composicaoSync.ts
-      const formulacoesPayload = buildFormulacoesPayload(produtoId!, form.composicao);
-
-      // Sync composition (idempotent delete then insert) — só se editando
-      if (form.id) {
-        const { error: delErr } = await (supabase as any).from("formulacoes").delete().eq("produto_id", produtoId);
-        if (delErr) throw delErr;
-      }
-      if (formulacoesPayload.length > 0) {
-        const { error: insErr } = await (supabase as any).from("formulacoes").insert(formulacoesPayload);
-        if (insErr) throw insErr;
+      if (outcome.status === "error") {
+        toast.error(outcome.message || "Erro ao salvar produto");
+        return;
       }
 
       toast.success(form.id ? "Produto atualizado!" : "Produto cadastrado!");
@@ -374,10 +364,7 @@ export function ProdutosTab() {
       resetForm();
       fetch();
     } catch (err: any) {
-      if (!form.id && produtoNovoCriadoId) {
-        await (supabase as any).from("produtos").delete().eq("id", produtoNovoCriadoId);
-      }
-      toast.error(err.message || "Erro ao salvar produto");
+      toast.error(err?.message || "Erro ao salvar produto");
     } finally {
       savingRef.current = false;
       setSaving(false);
