@@ -274,60 +274,20 @@ export function ProdutosTab() {
 
 
 
-  const fetchMicrorganismos = async () => {
-    const { data } = await (supabase as any).from("microrganismos").select("id, nome, nome_cientifico, concentracao_ufc_ml, valor_dose_brl, dose_ml_ha, codigo, tipo").order("codigo", { nullsFirst: false }).order("nome");
-    if (data) setMicrorganismos(data as Microrganismo[]);
-  };
-
   const fetch = async () => {
-    const [produtosResult, formulacoesResult, microrganismosResult, profilesResult] = await Promise.all([
-      (supabase as any).from("produtos").select("*").order("nome"),
-      (supabase as any)
-        .from("formulacoes")
-        .select("id, produto_id, microrganismo_id, component_insumo_id, volume_ml, proporcao, e_volume_fixo"),
-      (supabase as any)
-        .from("microrganismos")
-        .select("id, nome, nome_cientifico, concentracao_ufc_ml, valor_dose_brl, dose_ml_ha, codigo, tipo"),
-      (supabase as any).from("product_technical_profiles").select("produto_id,status_validacao"),
-    ]);
-    const pmap: Record<string, string> = {};
-    (profilesResult.data ?? []).forEach((x: any) => { pmap[x.produto_id] = x.status_validacao; });
-    setProfileStatusMap(pmap);
-
-    const error = produtosResult.error || formulacoesResult.error || microrganismosResult.error;
-    
-    if (error) {
+    const result = await carregarCatalogoProdutos(supabase as any);
+    if ("error" in result) {
       toast.error("Erro ao carregar produtos");
       return;
     }
-    
-    if (produtosResult.data) {
-      const microMap = new Map((microrganismosResult.data ?? []).map((m) => [m.id, m]));
-      const productNameMap = new Map(produtosResult.data.map((p) => [p.id, p.nome]));
-      const formulacoesByProduct = ((formulacoesResult as any).data ?? []).reduce((acc: any, f: any) => {
-        if (!f.produto_id) return acc;
-        const formulacao: Formulacao = {
-          ...f,
-          microrganismos: f.microrganismo_id ? microMap.get(f.microrganismo_id) : undefined,
-          insumos: f.component_insumo_id ? { nome: productNameMap.get(f.component_insumo_id) || "Insumo" } : undefined,
-        } as Formulacao;
-        acc[f.produto_id] = [...(acc[f.produto_id] ?? []), formulacao];
-        return acc;
-      }, {});
-
-      const produtos = produtosResult.data.map((produto) => ({
-        ...produto,
-        formulacoes: formulacoesByProduct[produto.id] ?? [],
-      })) as unknown as Produto[];
-
-      setItems(produtos);
-      setFilteredItems(produtos);
-    }
+    setProfileStatusMap(result.profileStatusMap);
+    setMicrorganismos(result.microrganismos as Microrganismo[]);
+    setItems(result.produtos as unknown as Produto[]);
+    setFilteredItems(result.produtos as unknown as Produto[]);
   };
 
   useEffect(() => {
     fetch();
-    fetchMicrorganismos();
   }, []);
 
   useEffect(() => {
