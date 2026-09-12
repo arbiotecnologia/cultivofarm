@@ -120,6 +120,8 @@ export default function AgendaTecnica() {
   });
 
   const handleMoveItem = (id: string, newDate: Date) => {
+    // Bloqueia reagendamentos em rajada enquanto houver um em andamento.
+    if (moveMutation.isPending) return;
     moveMutation.mutate({ id, newDate });
   };
 
@@ -165,17 +167,28 @@ export default function AgendaTecnica() {
     enabled: !!user,
   });
 
-  const filtered = useMemo(() => {
+  /**
+   * Filtros que valem em qualquer visualização (status/urgência).
+   * O período NÃO entra aqui: o calendário tem cursor próprio e precisa
+   * receber também as visitas de dias/semanas fora do período atual.
+   */
+  const filteredSemPeriodo = useMemo(() => {
     return (solicitacoes || []).filter((s: any) => {
-      const dt = new Date(s.data_prevista_atendimento);
-      if (periodo === "hoje" && !isToday(dt)) return false;
-      if (periodo === "semana" && !isThisWeek(dt, { weekStartsOn: 1 })) return false;
-      if (periodo === "mes" && !isThisMonth(dt)) return false;
       if (statusFilter !== "todos" && s.status !== statusFilter) return false;
       if (urgenciaFilter !== "todas" && s.urgencia !== urgenciaFilter) return false;
       return true;
     });
-  }, [solicitacoes, periodo, statusFilter, urgenciaFilter]);
+  }, [solicitacoes, statusFilter, urgenciaFilter]);
+
+  const filtered = useMemo(() => {
+    return filteredSemPeriodo.filter((s: any) => {
+      const dt = new Date(s.data_prevista_atendimento);
+      if (periodo === "hoje" && !isToday(dt)) return false;
+      if (periodo === "semana" && !isThisWeek(dt, { weekStartsOn: 1 })) return false;
+      if (periodo === "mes" && !isThisMonth(dt)) return false;
+      return true;
+    });
+  }, [filteredSemPeriodo, periodo]);
 
   const grupos = useMemo(() => {
     const map = new Map<string, any[]>();
