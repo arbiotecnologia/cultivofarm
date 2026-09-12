@@ -40,22 +40,6 @@ export function usePartnerCommercialHistory(partnerId: string | null | undefined
   });
 }
 
-// ---------- Simulador ----------
-export function useCommercialSimulator() {
-  return useMutation({
-    mutationFn: async (input: { partner_id: string; product_id: string; quantidade: number; desconto: number }) => {
-      const { data, error } = await supabase.rpc("rpc_commercial_simulator" as any, {
-        p_partner_id: input.partner_id,
-        p_product_id: input.product_id,
-        p_quantidade: input.quantidade,
-        p_desconto: input.desconto,
-      });
-      if (error) throw error;
-      return data as any;
-    },
-  });
-}
-
 // ---------- Dashboard parceiro ----------
 export function usePartnerDashboardPremium(partnerId?: string | null) {
   return useQuery({
