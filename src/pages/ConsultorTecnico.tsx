@@ -339,7 +339,10 @@ export default function ConsultorTecnico() {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-mono-data">{consultores.length}</div>
+            <div className="text-2xl font-bold font-mono-data">
+              {isLoading ? "…" : isError ? "—" : consultores.length}
+            </div>
+
           </CardContent>
         </Card>
         <Card>
