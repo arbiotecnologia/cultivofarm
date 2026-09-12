@@ -47,6 +47,70 @@ export function validateSimulation(f: SimulationForm, needsDate = false) {
   if ((needsDate && !f.due) || (f.due && !Number.isFinite(Date.parse(f.due)))) errors.due = 'Informe o primeiro vencimento válido.';
   return errors;
 }
+/** Unidade/volume de uma linha publicada da matriz, elegível para simulação. */
+export interface MatrixPresentation {
+  key: string;
+  unit_type: 'hectare' | 'litro' | 'dose' | 'unidade';
+  volume_ml: number | null;
+  min_quantity: number;
+}
+
+export interface MatrixPresentationRow {
+  plan_id: string;
+  buyer_scope: string;
+  partner_id: string | null;
+  customer_id: string | null;
+  product_id: string | null;
+  microrganismo_id: string | null;
+  unit_type: MatrixPresentation['unit_type'];
+  volume_ml: number | null;
+  min_quantity: number;
+  status: string;
+  valid_from: string;
+  valid_until: string | null;
+}
+
+export function presentationKey(unit: string, volume: number | null) {
+  return `${unit}|${volume ?? ''}`;
+}
+
+/**
+ * Apresentações realmente aplicáveis ao item dentro do plano/parceiro/vigência.
+ * Nunca assume hectare: só devolve unidades existentes em linhas publicadas.
+ */
+export function matrixPresentations(
+  rows: MatrixPresentationRow[],
+  o: { planId: string; partnerId: string; itemId: string; today?: string },
+): MatrixPresentation[] {
+  const today = o.today ?? new Date().toISOString().slice(0, 10);
+  if (!o.planId || !o.itemId) return [];
+  const out = new Map<string, MatrixPresentation>();
+  for (const r of rows) {
+    if (r.plan_id !== o.planId || r.status !== 'published' || r.customer_id != null) continue;
+    if (r.product_id !== o.itemId && r.microrganismo_id !== o.itemId) continue;
+    if (r.valid_from > today || (r.valid_until != null && r.valid_until < today)) continue;
+    const scopeOk = o.partnerId
+      ? (r.buyer_scope === 'partner' && r.partner_id === o.partnerId) || (r.buyer_scope === 'default' && r.partner_id == null)
+      : r.buyer_scope === 'default' && r.partner_id == null;
+    if (!scopeOk) continue;
+    const key = presentationKey(r.unit_type, r.volume_ml);
+    const prev = out.get(key);
+    const min = Number.isFinite(r.min_quantity) ? r.min_quantity : 0;
+    if (!prev || min < prev.min_quantity) out.set(key, { key, unit_type: r.unit_type, volume_ml: r.volume_ml, min_quantity: min });
+  }
+  return [...out.values()].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+export function validateMatrixSimulation(f: { presentation: MatrixPresentation | null; quantity: string }) {
+  const errors: Record<string, string> = {};
+  if (!f.presentation) errors.presentation = 'Selecione a apresentação (unidade) da regra vigente.';
+  const qty = Number(f.quantity);
+  if (!f.quantity.trim() || !Number.isFinite(qty) || qty <= 0) errors.quantity = 'Informe uma quantidade finita maior que zero.';
+  else if (f.presentation && qty < f.presentation.min_quantity) errors.quantity = `Quantidade mínima da regra: ${f.presentation.min_quantity}.`;
+  if (f.presentation && f.presentation.unit_type === 'unidade' && !(Number(f.presentation.volume_ml) > 0)) errors.presentation = 'A apresentação por unidade exige volume definido na regra.';
+  return errors;
+}
+
 export function assignmentApplies(a: PlanAssignment, partner: string, now = Date.now()) {
   if (!partner || !Number.isFinite(now) || a.status !== 'published') return false;
   // Assignment validity uses SQL DATE, inclusive at both ends (CURRENT_DATE).

@@ -46,6 +46,7 @@ import { AlertCircle, Loader2, Plus, Trash2, CheckCircle2, Copy, Percent, FlaskC
 import { brl } from "@/lib/financial/format";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { SOB_CONSULTA_LABEL } from "@/lib/catalogo/unidades";
+import { matrixPresentations, validateMatrixSimulation, type MatrixPresentationRow } from "@/lib/comercial/validation";
 
 const NONE = "__none__";
 
@@ -113,6 +114,9 @@ export function MatrizConfiguravelTab() {
   const [adjustPreview, setAdjustPreview] = useState<BulkAdjustPreviewRow[] | null>(null);
   const [simOpen, setSimOpen] = useState(false);
   const [simResult, setSimResult] = useState<Record<string, unknown> | null>(null);
+  const [simItem, setSimItem] = useState("");
+  const [simPresentation, setSimPresentation] = useState("");
+  const [simQuantity, setSimQuantity] = useState("1");
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const itemName = useMemo(() => {
@@ -137,6 +141,22 @@ export function MatrizConfiguravelTab() {
   );
 
   useEffect(() => { setSelected(current => current.filter(id => draftIds.includes(id))); }, [draftIds]);
+
+  const simPresentations = useMemo(
+    () => matrixPresentations(items as unknown as MatrixPresentationRow[], {
+      planId: planFilter,
+      partnerId: partnerFilter,
+      itemId: simItem,
+    }),
+    [items, planFilter, partnerFilter, simItem],
+  );
+  const simErrors = useMemo(
+    () => validateMatrixSimulation({
+      presentation: simPresentations.find((p) => p.key === simPresentation) ?? null,
+      quantity: simQuantity,
+    }),
+    [simPresentations, simPresentation, simQuantity],
+  );
 
   function deleteDraft(id: string) {
     if (del.isPending || !confirm("Excluir este rascunho? Esta ação não pode ser desfeita.")) return;
@@ -661,31 +681,81 @@ export function MatrizConfiguravelTab() {
             <p className="text-sm text-muted-foreground">
               Usa o mesmo resolvedor do carrinho. Selecione condição e parceiro nos filtros e escolha um item.
             </p>
-            <Select
-              onValueChange={(v) => {
-                if (!planFilter) return toast.error("Selecione a condição no filtro.");
-                const isProduct = (lookups?.produtos ?? []).some((p) => p.id === v);
+            <div>
+              <Label htmlFor="sim-item">Item</Label>
+              <Select
+                value={simItem}
+                onValueChange={(v) => { setSimItem(v); setSimPresentation(""); setSimResult(null); }}
+              >
+                <SelectTrigger id="sim-item"><SelectValue placeholder="Selecione o item" /></SelectTrigger>
+                <SelectContent>
+                  {(lookups?.produtos ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                  {(lookups?.microrganismos ?? []).map((m) => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="sim-presentation">Apresentação (unidade da regra vigente)</Label>
+              <Select
+                value={simPresentation}
+                onValueChange={(v) => { setSimPresentation(v); setSimResult(null); }}
+                disabled={!simItem || simPresentations.length === 0}
+              >
+                <SelectTrigger id="sim-presentation" aria-invalid={!!simErrors.presentation}>
+                  <SelectValue placeholder="Selecione a apresentação" />
+                </SelectTrigger>
+                <SelectContent>
+                  {simPresentations.map((p) => (
+                    <SelectItem key={p.key} value={p.key}>
+                      {p.unit_type}{p.volume_ml ? ` · ${p.volume_ml} mL` : ""} · mín. {p.min_quantity}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {simItem && simPresentations.length === 0 && (
+                <p className="text-xs text-destructive mt-1">
+                  Nenhuma regra publicada e vigente para este item nesta condição/parceiro.
+                </p>
+              )}
+              {simErrors.presentation && <p className="text-xs text-destructive mt-1">{simErrors.presentation}</p>}
+            </div>
+            <div>
+              <Label htmlFor="sim-quantity">Quantidade</Label>
+              <Input
+                id="sim-quantity"
+                type="number"
+                min={0}
+                step="any"
+                value={simQuantity}
+                aria-invalid={!!simErrors.quantity}
+                onChange={(e) => { setSimQuantity(e.target.value); setSimResult(null); }}
+              />
+              {simErrors.quantity && <p className="text-xs text-destructive mt-1">{simErrors.quantity}</p>}
+            </div>
+            <Button
+              disabled={!planFilter || !simItem || Object.keys(simErrors).length > 0 || simulate.isPending}
+              onClick={() => {
+                const presentation = simPresentations.find((p) => p.key === simPresentation);
+                if (!planFilter || !simItem || !presentation) return;
+                const isProduct = (lookups?.produtos ?? []).some((p) => p.id === simItem);
                 simulate.mutate(
                   {
                     buyer_scope: partnerFilter ? "partner" : "default",
                     partner_id: partnerFilter || null,
                     customer_id: null,
                     plan_id: planFilter,
-                    product_id: isProduct ? v : null,
-                    microrganismo_id: isProduct ? null : v,
-                    unit_type: "hectare",
-                    volume_ml: null,
+                    product_id: isProduct ? simItem : null,
+                    microrganismo_id: isProduct ? null : simItem,
+                    unit_type: presentation.unit_type,
+                    volume_ml: presentation.volume_ml,
+                    quantity: Number(simQuantity),
                   },
                   { onSuccess: (r) => setSimResult(r), onError },
                 );
               }}
             >
-              <SelectTrigger><SelectValue placeholder="Selecione o item" /></SelectTrigger>
-              <SelectContent>
-                {(lookups?.produtos ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
-                {(lookups?.microrganismos ?? []).map((m) => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
+              Simular preço
+            </Button>
             {simulate.isPending && <p className="text-sm">Simulando…</p>}
             {simResult && (
               <pre className="text-xs bg-muted p-2 rounded-md overflow-x-auto">

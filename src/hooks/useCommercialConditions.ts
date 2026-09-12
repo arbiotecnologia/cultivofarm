@@ -340,6 +340,7 @@ export function useSimulateConditionPrice() {
       microrganismo_id: string | null;
       unit_type: ConditionUnitType;
       volume_ml: number | null;
+      quantity: number;
     }) => {
       const { data, error } = await rpc("rpc_cc_simulate_price", {
         p_buyer_scope: v.buyer_scope,
@@ -351,6 +352,7 @@ export function useSimulateConditionPrice() {
         p_unit_type: v.unit_type,
         p_volume_ml: v.volume_ml,
         p_ref_date: new Date().toISOString().slice(0, 10),
+        p_quantity: v.quantity,
       });
       if (error) throw new Error(conditionErrorMessage(error.message));
       return data as Record<string, unknown>;
