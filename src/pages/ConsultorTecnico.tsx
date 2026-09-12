@@ -282,7 +282,7 @@ export default function ConsultorTecnico() {
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ROLES_EQUIPE_TECNICA as unknown as string[]);
+        .in("role", [...ROLES_EQUIPE_TECNICA]);
       if (rolesError) throw rolesError;
 
       if (!roles || roles.length === 0) return { consultores: [], orfaos: [] as string[] };
