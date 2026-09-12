@@ -466,9 +466,15 @@ export default function FluxoTecnico() {
 
         <TabsContent value="os-onfarm" className="space-y-4 pt-4">
             <div className="flex flex-wrap gap-2">
-               <Input placeholder="Buscar OS..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+               <Input
+                 placeholder="Buscar por nº da OS, cliente ou fazenda..."
+                 aria-label="Buscar ordem de serviço por número, cliente ou fazenda"
+                 value={searchOS}
+                 onChange={(e) => setSearchOS(e.target.value)}
+                 className="max-w-sm"
+               />
                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filtrar Status" /></SelectTrigger>
+                  <SelectTrigger className="w-[180px]" aria-label="Filtrar ordens por status"><SelectValue placeholder="Filtrar Status" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos Status</SelectItem>
                     {Object.entries(STATUS_OS_ONFARM).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
@@ -487,22 +493,52 @@ export default function FluxoTecnico() {
                       </TableRow>
                   </TableHeader>
                   <TableBody>
-                     {filteredOS.length === 0 ? (
-                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhuma OS encontrada.</TableCell></TableRow>
+                     {loadingOS ? (
+                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                     ) : errorOS ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8">
+                            <p className="text-sm text-destructive">Não foi possível carregar as ordens de serviço.</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-3"
+                              onClick={() => { void refetchOS(); }}
+                              disabled={fetchingOS}
+                            >
+                              {fetchingOS ? "Tentando..." : "Tentar novamente"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                     ) : filteredOS.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            {searchOS.trim() || filterStatus !== "all"
+                              ? "Nenhuma OS corresponde aos filtros aplicados."
+                              : "Nenhuma OS encontrada."}
+                          </TableCell>
+                        </TableRow>
                      ) : filteredOS.map((o) => (
                           <TableRow key={o.id}>
-                              <TableCell className="font-mono font-bold">{o.numero_os}</TableCell>
+                              <TableCell className="font-mono font-bold">{textoOuTraco(o.numero_os)}</TableCell>
                               <TableCell>
                                 <Badge variant={o.origem === "recomendacao_tecnica" ? "secondary" : "outline"} className="text-[10px]">
                                   {o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"}
                                 </Badge>
                               </TableCell>
-                              <TableCell>{o.clientes?.nome}</TableCell>
+                              <TableCell>{textoOuTraco(o.clientes?.nome)}</TableCell>
                               <TableCell>
-                                <Badge className={STATUS_OS_ONFARM[o.status]?.color}>{STATUS_OS_ONFARM[o.status]?.label || o.status}</Badge>
+                                <Badge className={STATUS_OS_ONFARM[o.status]?.color}>{STATUS_OS_ONFARM[o.status]?.label || textoOuTraco(o.status)}</Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button size="sm" variant="ghost" onClick={() => { setSelectedOSId(o.id); setShowHistory(true); }}><History className="h-4 w-4" /></Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`Ver histórico da OS ${o.numero_os ?? ""}`}
+                                  onClick={() => { setSelectedOS(o); setShowHistory(true); }}
+                                >
+                                  <History className="h-4 w-4" />
+                                </Button>
                               </TableCell>
                           </TableRow>
                      ))}
@@ -510,6 +546,7 @@ export default function FluxoTecnico() {
               </Table>
             </Card>
         </TabsContent>
+
       </Tabs>
 
       <Sheet open={showReview} onOpenChange={setShowReview}>
