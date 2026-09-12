@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -301,6 +301,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
     } catch (e: any) {
       toast.error(e.message || "Erro ao salvar");
     } finally {
+      submittingRef.current = false;
       setSaving(false);
     }
   };
