@@ -241,18 +241,20 @@ export default function MonitoramentoAlertas() {
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
             <div className="relative w-full sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Filtrar por cliente, fazenda ou talhão..." 
-                value={search} 
-                onChange={(e) => setSearch(e.target.value)} 
+              <Input
+                placeholder="Filtrar por cliente, fazenda, talhão ou descrição..."
+                aria-label="Filtrar monitoramentos por cliente, fazenda, talhão ou descrição"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 h-10"
               />
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto" role="group" aria-label="Filtro de vencimento">
               <Button 
                 variant={filter === "all" ? "default" : "outline"} 
                 size="sm" 
                 onClick={() => setFilter("all")}
+                aria-pressed={filter === "all"}
                 className="flex-1 sm:flex-none"
               >
                 Todos
@@ -261,6 +263,7 @@ export default function MonitoramentoAlertas() {
                 variant={filter === "overdue" ? "destructive" : "outline"} 
                 size="sm" 
                 onClick={() => setFilter("overdue")}
+                aria-pressed={filter === "overdue"}
                 className="flex-1 sm:flex-none"
               >
                 Vencidos
@@ -269,6 +272,7 @@ export default function MonitoramentoAlertas() {
                 variant={filter === "expiring" ? "secondary" : "outline"} 
                 size="sm" 
                 onClick={() => setFilter("expiring")}
+                aria-pressed={filter === "expiring"}
                 className="flex-1 sm:flex-none bg-amber-100 text-amber-800 hover:bg-amber-200"
               >
                 Vencendo
@@ -277,17 +281,31 @@ export default function MonitoramentoAlertas() {
           </div>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              Carregando monitoramentos...
+            </div>
+          ) : isError ? (
+            <div className="py-12 flex flex-col items-center gap-3 text-center">
+              <p className="text-sm text-destructive">
+                Não foi possível carregar os monitoramentos.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+                {isFetching ? "Atualizando..." : "Tentar novamente"}
+              </Button>
+            </div>
+          ) : (
           <ResponsiveTable
-            mobileCards={filteredAlertas.map((a) => (
+            mobileCards={filteredAlertas.map((a: any) => (
               <MobileCard
                 key={a.id}
-                title={(a.talhoes as any)?.fazendas?.clientes?.nome || "Cliente"}
-                subtitle={`${(a.fazendas as any)?.nome} • ${(a.talhoes as any)?.nome}`}
+                title={textoOuTraco(a.talhoes?.fazendas?.clientes?.nome)}
+                subtitle={`${textoOuTraco(a.fazendas?.nome)} • ${textoOuTraco(a.talhoes?.nome)}`}
                 status={getStatusBadge(a.data_vencimento)}
                 content={[
                   { label: "Vencimento", value: a.data_vencimento ? formatDateDisplay(a.data_vencimento) : "—" },
-                  { label: "Tipo", value: a.tipo_alerta?.toUpperCase() },
-                  { label: "Descrição", value: a.descricao },
+                  { label: "Tipo", value: textoOuTraco(a.tipo_alerta ? String(a.tipo_alerta).toUpperCase() : null) },
+                  { label: "Descrição", value: textoOuTraco(a.descricao) },
                 ]}
                 actions={
                   <div className="flex gap-2 w-full mt-2">
@@ -295,19 +313,16 @@ export default function MonitoramentoAlertas() {
                       variant="outline" 
                       className="flex-1" 
                       size="sm"
-                      onClick={() => {
-                        setSelectedAlert(a);
-                        setNewDate(a.data_vencimento || "");
-                        setIsRescheduling(true);
-                      }}
+                      onClick={() => abrirReprogramacao(a)}
                     >
                       <RefreshCw className="h-4 w-4 mr-2" /> Reprogramar
                     </Button>
                     <Button 
                       className="flex-1" 
                       size="sm"
-                      onClick={() => navigate(`/visita-tecnica/${a.registro_origem_id || ""}${a.registro_origem_id ? "?tab=roteiro" : ""}`)}
+                      onClick={() => navigate(`/visita-tecnica/${a.registro_origem_id}?tab=roteiro`)}
                       disabled={!a.registro_origem_id}
+                      title={a.registro_origem_id ? "Ver roteiro da visita de origem" : "Sem visita de origem vinculada"}
                     >
                       <Eye className="h-4 w-4 mr-2" /> Ver Roteiro
                     </Button>
@@ -331,19 +346,21 @@ export default function MonitoramentoAlertas() {
                   {filteredAlertas.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground italic">
-                        Nenhum monitoramento pendente encontrado com os filtros aplicados.
+                        {search.trim() || filter !== "all"
+                          ? "Nenhum monitoramento corresponde aos filtros aplicados."
+                          : "Nenhum monitoramento pendente."}
                       </td>
                     </tr>
                   ) : (
-                    filteredAlertas.map((a) => (
+                    filteredAlertas.map((a: any) => (
                       <tr key={a.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex flex-col">
                             <span className="font-semibold text-foreground">
-                              {(a.talhoes as any)?.fazendas?.clientes?.nome || "Cliente"}
+                              {textoOuTraco(a.talhoes?.fazendas?.clientes?.nome)}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {(a.fazendas as any)?.nome} • {(a.talhoes as any)?.nome}
+                              {textoOuTraco(a.fazendas?.nome)} • {textoOuTraco(a.talhoes?.nome)}
                             </span>
                           </div>
                         </td>
@@ -353,8 +370,8 @@ export default function MonitoramentoAlertas() {
                         <td className="px-4 py-3">
                           {getStatusBadge(a.data_vencimento)}
                         </td>
-                        <td className="px-4 py-3 max-w-xs truncate" title={a.descricao}>
-                          {a.descricao}
+                        <td className="px-4 py-3 max-w-xs truncate" title={typeof a.descricao === "string" ? a.descricao : undefined}>
+                          {textoOuTraco(a.descricao)}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-2">
@@ -362,19 +379,17 @@ export default function MonitoramentoAlertas() {
                               variant="ghost" 
                               size="icon" 
                               title="Reprogramar"
-                              onClick={() => {
-                                setSelectedAlert(a);
-                                setNewDate(a.data_vencimento || "");
-                                setIsRescheduling(true);
-                              }}
+                              aria-label="Reprogramar monitoramento"
+                              onClick={() => abrirReprogramacao(a)}
                             >
                               <RefreshCw className="h-4 w-4 text-primary" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              title="Ver Roteiro da visita de origem"
-                              onClick={() => navigate(`/visita-tecnica/${a.registro_origem_id || ""}${a.registro_origem_id ? "?tab=roteiro" : ""}`)}
+                              title={a.registro_origem_id ? "Ver roteiro da visita de origem" : "Sem visita de origem vinculada"}
+                              aria-label="Ver roteiro da visita de origem"
+                              onClick={() => navigate(`/visita-tecnica/${a.registro_origem_id}?tab=roteiro`)}
                               disabled={!a.registro_origem_id}
                             >
                               <Eye className="h-4 w-4" />
@@ -388,10 +403,21 @@ export default function MonitoramentoAlertas() {
               </table>
             </div>
           </ResponsiveTable>
+          )}
         </CardContent>
       </Card>
 
-      <Dialog open={isRescheduling} onOpenChange={setIsRescheduling}>
+      <Dialog
+        open={isRescheduling}
+        onOpenChange={(open) => {
+          if (rescheduleMutation.isPending) return;
+          setIsRescheduling(open);
+          if (!open) {
+            setSelectedAlert(null);
+            setNewDate("");
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Reprogramar Monitoramento</DialogTitle>
@@ -406,21 +432,32 @@ export default function MonitoramentoAlertas() {
                 id="date"
                 type="date"
                 value={newDate}
-                min={new Date().toISOString().split("T")[0]}
+                min={hoje}
+                aria-invalid={!validacaoData.ok}
                 onChange={(e) => setNewDate(e.target.value)}
               />
+              {!validacaoData.ok && validacaoData.erro && (
+                <p className="text-xs text-destructive">{validacaoData.erro}</p>
+              )}
             </div>
             {selectedAlert && (
               <div className="p-3 bg-muted rounded-lg text-xs space-y-1">
-                <p><strong>Cliente:</strong> {(selectedAlert.talhoes as any)?.fazendas?.clientes?.nome}</p>
-                <p><strong>Fazenda:</strong> {selectedAlert.fazendas?.nome}</p>
-                <p><strong>Talhão:</strong> {selectedAlert.talhoes?.nome}</p>
+                <p><strong>Cliente:</strong> {textoOuTraco(selectedAlert.talhoes?.fazendas?.clientes?.nome)}</p>
+                <p><strong>Fazenda:</strong> {textoOuTraco(selectedAlert.fazendas?.nome)}</p>
+                <p><strong>Talhão:</strong> {textoOuTraco(selectedAlert.talhoes?.nome)}</p>
+                <p><strong>Data atual:</strong> {selectedAlert.data_vencimento ? formatDateDisplay(selectedAlert.data_vencimento) : "—"}</p>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRescheduling(false)}>Cancelar</Button>
-            <Button onClick={handleReschedule} disabled={rescheduleMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setIsRescheduling(false)}
+              disabled={rescheduleMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleReschedule} disabled={rescheduleMutation.isPending || !validacaoData.ok}>
               {rescheduleMutation.isPending && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
               Confirmar Nova Data
             </Button>
@@ -430,3 +467,4 @@ export default function MonitoramentoAlertas() {
     </div>
   );
 }
+
