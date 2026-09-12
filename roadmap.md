@@ -59,7 +59,8 @@
 - Ação: restaurar src/integrations/supabase/types.ts do baseline completo; rodar typecheck/build.
 - Restrições: não alterar .env, client.ts, config.toml, banco, migrations, backend.
 
-## 2026-09-11 21:00 UTC — Build errors pós-validação de destino
-- [x] Corrigido: `src/integrations/supabase/types.ts` restaurado do baseline completo (21.850 linhas); `.env` restaurado para CultivoFarm (`swzpzcwiasxmjutrmvkm`).
-- [x] Typecheck limpo; build OK; testes focados CAT-05 a CAT-10 passaram 38/38.
-- Restrições respeitadas: sem acesso a banco, migrations, backend, deploy ou publicação.
+## 2026-09-12 03:49 UTC — Build errors pós-renomeação da migration comercial
+- [ ] Corrigir: `src/integrations/supabase/types.ts` truncado novamente (erros de tabelas/colunas ausentes); restaurar baseline completo (21.850 linhas).
+- [ ] Verificar `.env` aponta exclusivamente para CultivoFarm (`swzpzcwiasxmjutrmvkm`).
+- [ ] Rodar typecheck, testes CAT-05 a CAT-10 e build; restaurar arquivos gerados se automação os truncar/trocar.
+- Restrições: sem acesso a banco, migrations, backend, deploy ou publicação.
