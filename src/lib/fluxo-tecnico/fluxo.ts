@@ -67,10 +67,15 @@ export function requerMotivo(tipo: string | null | undefined): boolean {
 }
 
 /** Valida o comentário da decisão, sem inventar limites de negócio. */
+export interface ResultadoValidacao {
+  ok: boolean;
+  erro?: string;
+}
+
 export function validarComentarioDecisao(
   tipo: string | null | undefined,
   comentario: string,
-): { ok: true } | { ok: false; erro: string } {
+): ResultadoValidacao {
   if (!requerMotivo(tipo)) return { ok: true };
   if ((comentario ?? "").trim().length === 0) {
     return { ok: false, erro: "Informe o motivo para esta decisão." };
