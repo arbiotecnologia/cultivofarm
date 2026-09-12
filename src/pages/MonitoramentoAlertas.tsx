@@ -204,8 +204,8 @@ export default function MonitoramentoAlertas() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {alertas.filter(a => a.data_vencimento && isBefore(parseISO(a.data_vencimento), new Date().setHours(0,0,0,0))).length}
+            <div className="text-2xl font-bold text-destructive" aria-live="polite">
+              {indicadores.vencidos}
             </div>
           </CardContent>
         </Card>
@@ -216,28 +216,25 @@ export default function MonitoramentoAlertas() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-700">
-              {alertas.filter(a => {
-                if (!a.data_vencimento) return false;
-                const d = parseISO(a.data_vencimento);
-                const t = new Date(); t.setHours(0,0,0,0);
-                const tom = new Date(); tom.setDate(tom.getDate() + 2); tom.setHours(0,0,0,0);
-                return d >= t && d < tom;
-              }).length}
+            <div className="text-2xl font-bold text-amber-700" aria-live="polite">
+              {indicadores.vencendo}
             </div>
           </CardContent>
         </Card>
         <Card className="bg-emerald-50 border-emerald-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2 text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" /> Total em monitoramento
+              <CheckCircle2 className="h-4 w-4" /> Em monitoramento (filtro atual)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-700">{alertas.length}</div>
+            <div className="text-2xl font-bold text-emerald-700" aria-live="polite">
+              {indicadores.total}
+            </div>
           </CardContent>
         </Card>
       </div>
+
 
       <Card>
         <CardHeader className="pb-3 border-b mb-4">
