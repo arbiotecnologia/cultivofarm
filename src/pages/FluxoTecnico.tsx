@@ -42,6 +42,15 @@ import { parseNotes } from "@/components/visita/NotasRapidas";
 import { getClienteLabel } from "@/lib/clienteLabel";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { RecomendacaoChat } from "@/components/shared/RecomendacaoChat";
+import {
+  blockedOSReason,
+  matchTexto,
+  podeDecidirRegistro,
+  requerMotivo,
+  textoOuTraco,
+  validarComentarioDecisao,
+} from "@/lib/fluxo-tecnico/fluxo";
+
 
 const STATUS_APROVACAO: Record<string, { label: string; color: string }> = {
   pendente: { label: "Pendente", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
@@ -86,26 +95,34 @@ export default function FluxoTecnico() {
   const navigate = useNavigate();
   const { user, role } = useAuth();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [searchAprov, setSearchAprov] = useState("");
+  const [searchOS, setSearchOS] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedRegistro, setSelectedRegistro] = useState<any>(null);
   const [showReview, setShowReview] = useState(false);
   const [actionDialog, setActionDialog] = useState<{ open: boolean; type: string }>({ open: false, type: "" });
   const [comentario, setComentario] = useState("");
-  const [selectedOSId, setSelectedOSId] = useState<string | null>(null);
+  const [selectedOS, setSelectedOS] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
 
   const isAdmin = role === "administrador";
   const isGestor = role === "gestor";
   
-  const { data: pendentes = [], refetch: refetchPendentes } = useQuery({
+  const {
+    data: pendentes = [],
+    refetch: refetchPendentes,
+    isLoading: loadingPendentes,
+    isError: errorPendentes,
+    isFetching: fetchingPendentes,
+  } = useQuery({
     queryKey: ["fluxo-pendentes"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("registros_consultor")
         .select("*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), culturas(nome)")
         .eq("status", "enviado_aprovacao")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data || []) as any[];
     },
     refetchInterval: 300000,
@@ -114,22 +131,30 @@ export default function FluxoTecnico() {
   const { data: aprovacoes = [], refetch: refetchAprovacoes } = useQuery({
     queryKey: ["aprovacoes-todas"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("aprovacoes_tecnicas")
         .select("*, aprovado_por_perfil:aprovado_por(nome), registros_consultor(*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), culturas(nome))")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data || []) as any[];
     },
     refetchInterval: 300000,
   });
 
-  const { data: ordensOnFarm = [], refetch: refetchOS } = useQuery({
+  const {
+    data: ordensOnFarm = [],
+    refetch: refetchOS,
+    isLoading: loadingOS,
+    isError: errorOS,
+    isFetching: fetchingOS,
+  } = useQuery({
     queryKey: ["os-onfarm"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("ordens_servico_onfarm")
         .select("*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome), programacao_producao!ordem_servico_onfarm_id(lotes(id, status, controle_qualidade(resultado)))")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data || []) as any[];
     },
     refetchInterval: 300000,
@@ -138,10 +163,11 @@ export default function FluxoTecnico() {
   const { data: allRegistros = [] } = useQuery({
     queryKey: ["all-registros-dashboard"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("registros_consultor")
         .select("*, clientes(nome, codigo_cliente), fazendas(nome), culturas(nome)")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data || []) as any[];
     },
   });
@@ -152,6 +178,7 @@ export default function FluxoTecnico() {
     refetchOS();
     queryClient.invalidateQueries({ queryKey: ["all-registros-dashboard"] });
   };
+
 
   const openReview = (registro: any) => {
     setSelectedRegistro(registro);
@@ -168,6 +195,23 @@ export default function FluxoTecnico() {
     mutationFn: async ({ registro, type, newStatus, comentario, isReopen }: {
       registro: any; type: string; newStatus: RegistroStatus; comentario: string; isReopen?: boolean;
     }) => {
+      if (!podeDecidirRegistro(registro.status)) {
+        throw new Error("Esta recomendação não está mais aguardando aprovação.");
+      }
+
+      // Transição condicionada ao status lido: se outro usuário já decidiu,
+      // nenhuma linha é afetada e a decisão é abortada antes de gerar registros.
+      const { data: updated, error: updErr } = await supabase
+        .from("registros_consultor")
+        .update({ status: newStatus as any })
+        .eq("id", registro.id)
+        .eq("status", registro.status)
+        .select("id");
+      if (updErr) throw updErr;
+      if (!updated || updated.length === 0) {
+        throw new Error("Esta recomendação já foi decidida por outro usuário. Atualize a fila.");
+      }
+
       const { error: aprError } = await supabase.from("aprovacoes_tecnicas").insert({
         registro_consultor_id: registro.id,
         status_aprovacao: type,
@@ -178,12 +222,6 @@ export default function FluxoTecnico() {
         override: isReopen || false,
       } as any);
       if (aprError) throw aprError;
-
-      const { error: updErr } = await supabase
-        .from("registros_consultor")
-        .update({ status: newStatus as any })
-        .eq("id", registro.id);
-      if (updErr) throw updErr;
 
       await supabase.from("registros_consultor_status_log").insert({
         registro_consultor_id: registro.id,
@@ -226,26 +264,32 @@ export default function FluxoTecnico() {
         }
       }
     },
+    onError: (err: any) => {
+      toast.error(err?.message || "Não foi possível registrar a decisão.");
+      refetchAll();
+    },
   });
 
   const gerarOSMutation = useMutation({
     mutationFn: async (registro: any) => {
-      const { data: recs } = await supabase
+      const { data: recs, error: recsErr } = await supabase
         .from("registros_consultor_recomendacoes")
         .select("*, produtos(nome, dose_ml_ha)")
         .eq("registro_consultor_id", registro.id);
+      if (recsErr) throw recsErr;
 
       if (!recs || recs.length === 0) throw new Error("Nenhuma recomendação encontrada.");
 
       const urgencia = registro.urgencia;
       const prioridade = urgencia === "critica" ? "alta" : urgencia === "alta" ? "alta" : "media";
 
+      const criadas: string[] = [];
       for (const rec of recs) {
         const dose = rec.dose_recomendada_valor || 0;
         const area = registro.area_hectares || 0;
         const volumeTotal = dose * area;
 
-        await supabase.from("ordens_servico_onfarm").insert({
+        const { data: osRow, error: osErr } = await supabase.from("ordens_servico_onfarm").insert({
           registro_consultor_id: registro.id,
           cliente_id: registro.cliente_id,
           fazenda_id: registro.fazenda_id,
@@ -258,17 +302,45 @@ export default function FluxoTecnico() {
           data_recomendada: new Date().toISOString().split("T")[0],
           prioridade: prioridade as any,
           status: "aberta" as any,
-        } as any);
+        } as any).select("id").maybeSingle();
+        if (osErr) {
+          throw new Error(
+            criadas.length > 0
+              ? `Falha ao gerar parte das OS (${criadas.length} já criada(s)). Verifique a aba OS On-Farm antes de repetir. Detalhe: ${osErr.message}`
+              : `Falha ao gerar a OS: ${osErr.message}`,
+          );
+        }
+        if (osRow?.id) criadas.push(osRow.id as string);
       }
 
-      await supabase.from("registros_consultor").update({ status: "convertido_os" as any }).eq("id", registro.id);
+      const { error: convErr } = await supabase
+        .from("registros_consultor")
+        .update({ status: "convertido_os" as any })
+        .eq("id", registro.id);
+      if (convErr) throw convErr;
     },
-    onSuccess: () => { toast.success("OS gerada!"); refetchAll(); }
+    onSuccess: () => { toast.success("OS gerada!"); refetchAll(); },
+    onError: (err: any) => {
+      toast.error(err?.message || "Não foi possível gerar as Ordens de Serviço.");
+      refetchAll();
+    },
   });
 
   const handleApproval = () => {
     if (!selectedRegistro) return;
+    if (approvalMutation.isPending) return;
     const type = actionDialog.type;
+
+    const motivo = validarComentarioDecisao(type, comentario);
+    if (!motivo.ok) {
+      toast.error(motivo.erro);
+      return;
+    }
+    if (!podeDecidirRegistro(selectedRegistro.status)) {
+      toast.error("Esta recomendação não está mais aguardando aprovação.");
+      return;
+    }
+
     let newStatus: RegistroStatus = "enviado_aprovacao";
     if (type === "aprovado") newStatus = "aprovado";
     if (type === "reprovado") newStatus = "reprovado";
@@ -277,23 +349,37 @@ export default function FluxoTecnico() {
     approvalMutation.mutate({ registro: selectedRegistro, type, newStatus, comentario });
   };
 
-  const handleOSStatusChange = async (osId: string, newStatus: string) => {
-      await supabase.from("ordens_servico_onfarm").update({ status: newStatus as any }).eq("id", osId);
-      refetchOS();
+  const handleOSStatusChange = async (os: any, newStatus: string) => {
+    const motivo = blockedOSReason(os?.status, newStatus);
+    if (motivo) {
+      toast.error(motivo);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("ordens_servico_onfarm")
+      .update({ status: newStatus as any })
+      .eq("id", os.id)
+      .eq("status", os.status)
+      .select("id");
+    if (error) {
+      toast.error(error.message || "Não foi possível atualizar a OS.");
+    } else if (!data || data.length === 0) {
+      toast.error("O status desta OS foi alterado por outro usuário. Atualize a lista.");
+    } else {
+      toast.success("Status da OS atualizado.");
+    }
+    refetchOS();
   };
 
-  const filteredPendentes = pendentes.filter(r => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return r.clientes?.nome?.toLowerCase().includes(s) || r.fazendas?.nome?.toLowerCase().includes(s);
+  const filteredPendentes = pendentes.filter((r) =>
+    matchTexto([r.clientes?.nome, r.fazendas?.nome, r.talhoes?.nome], searchAprov),
+  );
+
+  const filteredOS = ordensOnFarm.filter((o) => {
+    if (filterStatus !== "all" && o.status !== filterStatus) return false;
+    return matchTexto([o.numero_os, o.clientes?.nome, o.fazendas?.nome], searchOS);
   });
 
-  const filteredOS = ordensOnFarm.filter(o => {
-    if (filterStatus !== "all" && o.status !== filterStatus) return false;
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return o.numero_os?.toLowerCase().includes(s) || o.clientes?.nome?.toLowerCase().includes(s);
-  });
 
   const pendentesCount = pendentes.length;
   const aprovadosCount = aprovacoes.filter((a: any) => a.status_aprovacao === "aprovado").length;
@@ -324,7 +410,13 @@ export default function FluxoTecnico() {
         <TabsContent value="aprovacoes" className="space-y-4 pt-4">
            <div className="flex items-center gap-2">
              <Search className="h-4 w-4 text-muted-foreground" />
-             <Input placeholder="Buscar cliente..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+             <Input
+               placeholder="Buscar cliente, fazenda ou talhão..."
+               aria-label="Buscar recomendação por cliente, fazenda ou talhão"
+               value={searchAprov}
+               onChange={(e) => setSearchAprov(e.target.value)}
+               className="max-w-sm"
+             />
            </div>
            <Card>
              <Table>
@@ -338,18 +430,39 @@ export default function FluxoTecnico() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                 {filteredPendentes.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhuma recomendação pendente.</TableCell></TableRow>
+                 {loadingPendentes ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                 ) : errorPendentes ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <p className="text-sm text-destructive">Não foi possível carregar a fila de aprovação.</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => { void refetchPendentes(); }}
+                          disabled={fetchingPendentes}
+                        >
+                          {fetchingPendentes ? "Tentando..." : "Tentar novamente"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                 ) : filteredPendentes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        {searchAprov.trim() ? "Nenhuma recomendação corresponde à busca." : "Nenhuma recomendação pendente."}
+                      </TableCell>
+                    </TableRow>
                  ) : filteredPendentes.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{formatDateDisplay(r.data_vistoria)}</TableCell>
+                      <TableCell>{formatDateDisplay(r.data_vistoria) || "—"}</TableCell>
                       <TableCell>
                         <Badge variant={r.solicitacao_id ? "secondary" : "outline"} className="text-[10px]">
                           {r.solicitacao_id ? "Demanda" : "Rotina"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{r.clientes?.nome}</TableCell>
-                      <TableCell>{r.fazendas?.nome}</TableCell>
+                      <TableCell className="font-medium">{textoOuTraco(r.clientes?.nome)}</TableCell>
+                      <TableCell>{textoOuTraco(r.fazendas?.nome)}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="ghost" onClick={() => openReview(r)}><Eye className="h-4 w-4 mr-1" /> Revisar</Button>
                       </TableCell>
@@ -359,11 +472,18 @@ export default function FluxoTecnico() {
              </Table>
            </Card>
         </TabsContent>
+
         <TabsContent value="os-onfarm" className="space-y-4 pt-4">
             <div className="flex flex-wrap gap-2">
-               <Input placeholder="Buscar OS..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+               <Input
+                 placeholder="Buscar por nº da OS, cliente ou fazenda..."
+                 aria-label="Buscar ordem de serviço por número, cliente ou fazenda"
+                 value={searchOS}
+                 onChange={(e) => setSearchOS(e.target.value)}
+                 className="max-w-sm"
+               />
                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filtrar Status" /></SelectTrigger>
+                  <SelectTrigger className="w-[180px]" aria-label="Filtrar ordens por status"><SelectValue placeholder="Filtrar Status" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos Status</SelectItem>
                     {Object.entries(STATUS_OS_ONFARM).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
@@ -382,22 +502,52 @@ export default function FluxoTecnico() {
                       </TableRow>
                   </TableHeader>
                   <TableBody>
-                     {filteredOS.length === 0 ? (
-                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhuma OS encontrada.</TableCell></TableRow>
+                     {loadingOS ? (
+                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                     ) : errorOS ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8">
+                            <p className="text-sm text-destructive">Não foi possível carregar as ordens de serviço.</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-3"
+                              onClick={() => { void refetchOS(); }}
+                              disabled={fetchingOS}
+                            >
+                              {fetchingOS ? "Tentando..." : "Tentar novamente"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                     ) : filteredOS.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            {searchOS.trim() || filterStatus !== "all"
+                              ? "Nenhuma OS corresponde aos filtros aplicados."
+                              : "Nenhuma OS encontrada."}
+                          </TableCell>
+                        </TableRow>
                      ) : filteredOS.map((o) => (
                           <TableRow key={o.id}>
-                              <TableCell className="font-mono font-bold">{o.numero_os}</TableCell>
+                              <TableCell className="font-mono font-bold">{textoOuTraco(o.numero_os)}</TableCell>
                               <TableCell>
                                 <Badge variant={o.origem === "recomendacao_tecnica" ? "secondary" : "outline"} className="text-[10px]">
                                   {o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"}
                                 </Badge>
                               </TableCell>
-                              <TableCell>{o.clientes?.nome}</TableCell>
+                              <TableCell>{textoOuTraco(o.clientes?.nome)}</TableCell>
                               <TableCell>
-                                <Badge className={STATUS_OS_ONFARM[o.status]?.color}>{STATUS_OS_ONFARM[o.status]?.label || o.status}</Badge>
+                                <Badge className={STATUS_OS_ONFARM[o.status]?.color}>{STATUS_OS_ONFARM[o.status]?.label || textoOuTraco(o.status)}</Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button size="sm" variant="ghost" onClick={() => { setSelectedOSId(o.id); setShowHistory(true); }}><History className="h-4 w-4" /></Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`Ver histórico da OS ${o.numero_os ?? ""}`}
+                                  onClick={() => { setSelectedOS(o); setShowHistory(true); }}
+                                >
+                                  <History className="h-4 w-4" />
+                                </Button>
                               </TableCell>
                           </TableRow>
                      ))}
@@ -405,6 +555,7 @@ export default function FluxoTecnico() {
               </Table>
             </Card>
         </TabsContent>
+
       </Tabs>
 
       <Sheet open={showReview} onOpenChange={setShowReview}>
@@ -440,18 +591,61 @@ export default function FluxoTecnico() {
                 <DialogDescription>Confirma a ação para esta recomendação técnica?</DialogDescription>
               </DialogHeader>
               <div className="py-4">
-                <Label>Observações (obrigatório se não for aprovação)</Label>
-                <Textarea value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Descreva o motivo..." className="mt-1" />
+                <Label htmlFor="comentario-decisao">
+                  {requerMotivo(actionDialog.type) ? "Motivo (obrigatório)" : "Observações (opcional)"}
+                </Label>
+                <Textarea
+                  id="comentario-decisao"
+                  value={comentario}
+                  onChange={(e) => setComentario(e.target.value)}
+                  placeholder="Descreva o motivo..."
+                  className="mt-1"
+                  aria-required={requerMotivo(actionDialog.type)}
+                />
+                {requerMotivo(actionDialog.type) && comentario.trim().length === 0 && (
+                  <p className="mt-2 text-xs text-destructive">Informe o motivo para esta decisão.</p>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setActionDialog({ open: false, type: "" })}>Cancelar</Button>
-                <Button onClick={handleApproval} disabled={approvalMutation.isPending}>
+                <Button
+                  onClick={handleApproval}
+                  disabled={
+                    approvalMutation.isPending ||
+                    (requerMotivo(actionDialog.type) && comentario.trim().length === 0)
+                  }
+                >
                   {approvalMutation.isPending ? "Processando..." : "Confirmar"}
                 </Button>
               </DialogFooter>
           </DialogContent>
       </Dialog>
+
+      <Sheet open={showHistory} onOpenChange={(open) => { setShowHistory(open); if (!open) setSelectedOS(null); }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Histórico da OS {textoOuTraco(selectedOS?.numero_os)}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div className="text-sm grid grid-cols-2 gap-2">
+              <div className="text-muted-foreground">Cliente:</div><div>{textoOuTraco(selectedOS?.clientes?.nome)}</div>
+              <div className="text-muted-foreground">Fazenda:</div><div>{textoOuTraco(selectedOS?.fazendas?.nome)}</div>
+              <div className="text-muted-foreground">Status atual:</div>
+              <div>{STATUS_OS_ONFARM[selectedOS?.status]?.label || textoOuTraco(selectedOS?.status)}</div>
+            </div>
+            <Separator />
+            {selectedOS?.registro_consultor_id ? (
+              <OSFlowTimeline registroId={selectedOS.registro_consultor_id} />
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                Esta OS não tem recomendação técnica de origem, portanto não há linha do tempo de fluxo.
+              </p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
+
   );
 }
 
