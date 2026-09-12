@@ -479,7 +479,7 @@ export default function ConsultorTecnico() {
                     <TableCell>
                       <div className="flex flex-col text-xs gap-1">
                         <div className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> {c.email || '—'}</div>
-                        <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {formatTelefone(c.telefone) || '—'}</div>
+                        <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {formatTelefone((c as any).telefone as string | undefined) || '—'}</div>
                       </div>
                     </TableCell>
                     <TableCell className="font-mono-data text-xs">{(c as any).crea || '—'}</TableCell>
