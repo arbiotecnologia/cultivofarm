@@ -4,13 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Sprout, Calendar, User, FlaskConical, Wind, Camera, CheckCircle2 } from "lucide-react";
+import { Plus, Sprout, Calendar, User, FlaskConical, Wind, Camera, AlertTriangle } from "lucide-react";
 import { ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AplicacaoFormDialog } from "@/components/aplicacao/AplicacaoFormDialog";
 import { AplicacaoCard } from "@/components/aplicacao/AplicacaoCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { formatDateDisplay } from "@/lib/date-utils";
 
 
@@ -20,7 +19,7 @@ export default function Aplicacoes() {
   const [detalhe, setDetalhe] = useState<any | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  const { data: aplicacoes = [], isLoading } = useQuery({
+  const { data: aplicacoes = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["aplicacoes", showHistory],
     queryFn: async () => {
       let query = supabase
@@ -58,11 +57,23 @@ export default function Aplicacoes() {
         </div>
       </div>
 
-      <AplicacaoFormDialog open={open} onOpenChange={setOpen} />
+      {open && <AplicacaoFormDialog open={open} onOpenChange={setOpen} />}
 
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Sprout className="h-5 w-5" />Aplicações Realizadas</CardTitle></CardHeader>
         <CardContent className={isMobile ? "p-3" : "p-0 sm:p-6 sm:pt-0"}>
+          {isError ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center" role="alert">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+              <p className="text-sm text-muted-foreground">
+                Não foi possível carregar as aplicações.
+                {(error as Error)?.message ? ` (${(error as Error).message})` : ""}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>Tentar novamente</Button>
+            </div>
+          ) : isLoading ? (
+            <div className="py-10 text-center text-sm text-muted-foreground">Carregando aplicações…</div>
+          ) : (
           <ResponsiveTable
             mobileCards={
               aplicacoes.length === 0 ? (
@@ -74,7 +85,7 @@ export default function Aplicacoes() {
                     title={a.os?.clientes?.nome || "Cliente —"}
                     subtitle={`${a.os?.fazendas?.nome || ""} • ${a.os?.talhoes?.nome || ""}`}
                     content={[
-                      { label: "Data", value: a.data_aplicacao, icon: <Calendar className="h-3 w-3" /> },
+                      { label: "Data", value: formatDateDisplay(a.data_aplicacao), icon: <Calendar className="h-3 w-3" /> },
                       { label: "Dose", value: `${a.dose_aplicada || "—"} mL/ha`, icon: <FlaskConical className="h-3 w-3" /> },
                       { label: "Responsável", value: a.responsavel || "—", icon: <User className="h-3 w-3" /> },
                       { label: "Clima", value: a.condicoes_climaticas || "—", icon: <Wind className="h-3 w-3" /> },
@@ -125,6 +136,7 @@ export default function Aplicacoes() {
               </TableBody>
             </Table>
           </ResponsiveTable>
+          )}
         </CardContent>
       </Card>
 
