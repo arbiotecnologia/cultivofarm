@@ -1,4 +1,4 @@
-import { validatePlan } from "@/lib/comercial/validation";
+import { validatePlan, planFinancialErrors } from "@/lib/comercial/validation";
 import { useMemo, useState } from "react";
 import {
   useAdminCommercialPlans,
@@ -61,7 +61,12 @@ const brl = (v: number) =>
 const fmtDate = (v: string | null) =>
   v ? new Date(v).toLocaleDateString("pt-BR") : "—";
 
-function preview(form: PaymentPlanPayload, base = 100000) {
+/**
+ * Preview do cronograma. Retorna null quando qualquer parâmetro financeiro
+ * estiver fora dos limites do formulário — nunca calcula valores negativos.
+ */
+export function preview(form: PaymentPlanPayload, base = 100000) {
+  if (Object.keys(planFinancialErrors(form)).length > 0) return null;
   const liquido = base * (1 - (Number(form.discount_percent) || 0) / 100);
   const meses = Number(form.months_count) || 0;
   const taxa = (Number(form.monthly_interest_percent) || 0) / 100;
