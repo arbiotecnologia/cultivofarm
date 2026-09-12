@@ -31,6 +31,15 @@ import { cn } from "@/lib/utils";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useMetricasOperacionais } from "@/hooks/useMetricasOperacionais";
 import { formatMetric } from "@/lib/metrics-utils";
+import {
+  ROLES_EQUIPE_TECNICA,
+  mapConsultores,
+  rolesOrfaos,
+  emailsDuplicados,
+  filtrarConsultores,
+  isConsultorAtivo,
+} from "@/lib/equipe-tecnica/consultores";
+
 
 
 
