@@ -28,6 +28,7 @@ import { formatDateTimeDisplay, formatTimeDisplay } from "@/lib/date-utils";
 import { AgendaCalendarGrid } from "@/components/agenda/AgendaCalendarGrid";
 import { MapaVisitaPopover } from "@/components/agenda/MapaVisitaPopover";
 import { SyncStatusBadge } from "@/components/agenda/SyncStatusBadge";
+import { isWithinGridRange } from "@/lib/agenda/grid";
 
 const URGENCIA_BORDER: Record<string, string> = {
   baixa: "border-l-blue-400",
@@ -50,25 +51,31 @@ export default function AgendaTecnica() {
 
   const moveMutation = useMutation({
     mutationFn: async ({ id, newDate }: { id: string; newDate: Date }) => {
-      // Registrar log de reagendamento
-      await supabase.from("visitas_logs").insert({
+      if (!isWithinGridRange(newDate)) {
+        throw new Error("HORARIO_FORA_DA_AGENDA");
+      }
+
+      // A atualização vem primeiro: o log só existe se o reagendamento existir.
+      const { error } = await supabase
+        .from("portal_solicitacoes")
+        .update({
+          data_prevista_atendimento: newDate.toISOString(),
+          // Se for reagendado, resetamos a confirmação do produtor para pendente
+          confirmacao_produtor: "pendente"
+        })
+        .eq("id", id);
+      if (error) throw error;
+
+      // Log de auditoria — best-effort, nunca antes da atualização.
+      const { error: logError } = await supabase.from("visitas_logs").insert({
         solicitacao_id: id,
         acao: "reagendamento",
         descricao: `Reagendado via agenda para ${formatDateTimeDisplay(newDate)}`,
         usuario_id: user?.id,
       });
+      if (logError) console.error("Erro ao registrar log de reagendamento:", logError);
 
-      const { error } = await supabase
-        .from("portal_solicitacoes")
-        .update({ 
-          data_prevista_atendimento: newDate.toISOString(),
-          // Se for reagendado, resetamos a confirmação do produtor para pendente
-          confirmacao_produtor: "pendente" 
-        })
-        .eq("id", id);
-      if (error) throw error;
-
-      // Sincronizar com calendário externo (outbound)
+      // Sincronizar com calendário externo (outbound), só após sucesso
       try {
         await supabase.functions.invoke("sync-calendar-event", {
           body: { solicitacaoId: id, action: "update" }
@@ -82,11 +89,16 @@ export default function AgendaTecnica() {
       queryClient.invalidateQueries({ queryKey: ["agenda-tecnica"] });
     },
     onError: (err: any) => {
-      let message = err.message || "Erro ao reagendar visita";
+      let message = err?.message || "Erro ao reagendar visita";
       if (message.includes("CONFLITO_AGENDA")) {
         message = "Este horário já está ocupado por outra visita.";
       }
+      if (message.includes("HORARIO_FORA_DA_AGENDA")) {
+        message = "Horário fora da faixa exibida na agenda (07:00 às 19:00).";
+      }
       toast.error(message);
+      // Restaura visualmente o estado real do servidor após a falha.
+      queryClient.invalidateQueries({ queryKey: ["agenda-tecnica"] });
     }
   });
 
@@ -108,6 +120,8 @@ export default function AgendaTecnica() {
   });
 
   const handleMoveItem = (id: string, newDate: Date) => {
+    // Bloqueia reagendamentos em rajada enquanto houver um em andamento.
+    if (moveMutation.isPending) return;
     moveMutation.mutate({ id, newDate });
   };
 
@@ -153,17 +167,28 @@ export default function AgendaTecnica() {
     enabled: !!user,
   });
 
-  const filtered = useMemo(() => {
+  /**
+   * Filtros que valem em qualquer visualização (status/urgência).
+   * O período NÃO entra aqui: o calendário tem cursor próprio e precisa
+   * receber também as visitas de dias/semanas fora do período atual.
+   */
+  const filteredSemPeriodo = useMemo(() => {
     return (solicitacoes || []).filter((s: any) => {
-      const dt = new Date(s.data_prevista_atendimento);
-      if (periodo === "hoje" && !isToday(dt)) return false;
-      if (periodo === "semana" && !isThisWeek(dt, { weekStartsOn: 1 })) return false;
-      if (periodo === "mes" && !isThisMonth(dt)) return false;
       if (statusFilter !== "todos" && s.status !== statusFilter) return false;
       if (urgenciaFilter !== "todas" && s.urgencia !== urgenciaFilter) return false;
       return true;
     });
-  }, [solicitacoes, periodo, statusFilter, urgenciaFilter]);
+  }, [solicitacoes, statusFilter, urgenciaFilter]);
+
+  const filtered = useMemo(() => {
+    return filteredSemPeriodo.filter((s: any) => {
+      const dt = new Date(s.data_prevista_atendimento);
+      if (periodo === "hoje" && !isToday(dt)) return false;
+      if (periodo === "semana" && !isThisWeek(dt, { weekStartsOn: 1 })) return false;
+      if (periodo === "mes" && !isThisMonth(dt)) return false;
+      return true;
+    });
+  }, [filteredSemPeriodo, periodo]);
 
   const grupos = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -263,7 +288,7 @@ export default function AgendaTecnica() {
       </Card>
 
       {isLoading && <p className="text-muted-foreground">Carregando...</p>}
-      {!isLoading && grupos.length === 0 && (
+      {!isLoading && grupos.length === 0 && view !== "diario" && view !== "semanal" && (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             Nenhuma visita agendada nesse período.
@@ -310,10 +335,11 @@ export default function AgendaTecnica() {
         </Card>
       ) : view === "diario" || view === "semanal" ? (
         <AgendaCalendarGrid
-          items={filtered}
+          items={filteredSemPeriodo}
           mode={view}
           onItemClick={handleIniciarVisita}
           onItemMove={handleMoveItem}
+          isMoving={moveMutation.isPending}
         />
       ) : (
         <div className="space-y-4">
