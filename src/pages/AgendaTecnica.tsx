@@ -288,7 +288,7 @@ export default function AgendaTecnica() {
       </Card>
 
       {isLoading && <p className="text-muted-foreground">Carregando...</p>}
-      {!isLoading && grupos.length === 0 && (
+      {!isLoading && grupos.length === 0 && view !== "diario" && view !== "semanal" && (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             Nenhuma visita agendada nesse período.
@@ -335,10 +335,11 @@ export default function AgendaTecnica() {
         </Card>
       ) : view === "diario" || view === "semanal" ? (
         <AgendaCalendarGrid
-          items={filtered}
+          items={filteredSemPeriodo}
           mode={view}
           onItemClick={handleIniciarVisita}
           onItemMove={handleMoveItem}
+          isMoving={moveMutation.isPending}
         />
       ) : (
         <div className="space-y-4">
