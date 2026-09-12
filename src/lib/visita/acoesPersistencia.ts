@@ -39,8 +39,11 @@ export interface VisitaAcoes {
 export function resolveVisitaAcoes(input: VisitaAcoesInput): VisitaAcoes {
   const { isNew, status, uiMode, canEdit } = input;
 
+  // Visita ainda não persistida: só existe a ação de salvar. Finalizar depende
+  // de um registro no servidor (check-in, evidências e status não existem
+  // antes disso), então a ação não é oferecida.
   if (isNew) {
-    return { readOnly: false, canPersist: true, showSave: true, showFinalize: true };
+    return { readOnly: false, canPersist: true, showSave: true, showFinalize: false };
   }
 
   const finalizada = !!status && status !== "rascunho";

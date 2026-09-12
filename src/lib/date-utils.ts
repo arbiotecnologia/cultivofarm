@@ -19,6 +19,16 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const isDateOnlyString = (v: unknown): v is string =>
   typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
+/**
+ * String já no padrão brasileiro DD/MM/YYYY.
+ *
+ * Sem esta checagem, `new Date("12/09/2026")` era interpretado como
+ * mês/dia/ano (padrão norte-americano) e 12/09/2026 virava 09/12/2026 —
+ * exatamente o deslocamento observado no cabeçalho da visita técnica.
+ */
+const isBrDateString = (v: unknown): v is string =>
+  typeof v === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(v);
+
 const toDate = (date: DateInput): Date | null => {
   if (date === null || date === undefined || date === "") return null;
   if (date instanceof Date) return isNaN(date.getTime()) ? null : date;
@@ -33,6 +43,8 @@ const toDate = (date: DateInput): Date | null => {
 export const formatDateDisplay = (date: DateInput): string => {
   if (date === null || date === undefined || date === "") return "";
   try {
+    // Já está em pt-BR: devolve sem reinterpretar (evita virar mês/dia).
+    if (isBrDateString(date)) return date;
     if (isDateOnlyString(date)) {
       const [y, m, d] = date.split("-");
       return `${d}/${m}/${y}`;
@@ -50,6 +62,8 @@ export const formatDateDisplay = (date: DateInput): string => {
  */
 export const formatDateTimeDisplay = (date: DateInput): string => {
   if (date === null || date === undefined || date === "") return "";
+  // DD/MM/YYYY sem hora: preserva a data pt-BR em vez de reinterpretá-la.
+  if (isBrDateString(date)) return date;
   const d = toDate(date);
   if (!d) return String(date);
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
