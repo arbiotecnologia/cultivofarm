@@ -257,37 +257,46 @@ export default function ConsultorTecnico() {
 
 
   // Consultores são usuários com roles específicas (tecnico_agronomo, consultor_tecnico)
-  const { data: consultores = [], isLoading } = useQuery({
+  const {
+    data: consultoresData,
+    isLoading,
+    isError,
+    error: consultoresError,
+    refetch: refetchConsultores,
+    isFetching,
+  } = useQuery({
     queryKey: ["consultores-tecnicos"],
     queryFn: async () => {
       // 1. Buscar perfis que possuem roles de consultor/agrônomo
-      const { data: roles } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["tecnico_agronomo", "consultor_tecnico", "gestor"]);
+        .in("role", ROLES_EQUIPE_TECNICA as unknown as string[]);
+      if (rolesError) throw rolesError;
 
-      if (!roles || roles.length === 0) return [];
+      if (!roles || roles.length === 0) return { consultores: [], orfaos: [] as string[] };
 
       const userIds = roles.map(r => r.user_id);
-      
-      const { data: profiles } = await supabase
+
+      const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
         .in("user_id", userIds)
         .order("nome");
+      if (profilesError) throw profilesError;
 
-      return (profiles || []).map(p => ({
-        ...p,
-        role: roles.find(r => r.user_id === p.user_id)?.role,
-      }));
+      return {
+        consultores: mapConsultores(roles, profiles as any[]),
+        orfaos: rolesOrfaos(roles, profiles as any[]),
+      };
     }
   });
 
-  const filtered = consultores.filter(c => 
-    c.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    c.email?.toLowerCase().includes(search.toLowerCase()) ||
-    (c as any).crea?.toLowerCase().includes(search.toLowerCase())
-  );
+  const consultores = consultoresData?.consultores ?? [];
+  const orfaos = consultoresData?.orfaos ?? [];
+  const duplicados = useMemo(() => emailsDuplicados(consultores), [consultores]);
+  const filtered = useMemo(() => filtrarConsultores(consultores, search), [consultores, search]);
+
 
   return (
     <div className="space-y-6">
