@@ -143,17 +143,17 @@ export function AgendaCalendarGrid({ items, mode, onItemClick, onItemMove, isMov
                   onDrop={(e) => {
                     e.preventDefault();
                     e.currentTarget.classList.remove("bg-primary/5");
-                    if (!draggedId || !onItemMove) return;
-                    
+                    if (!draggedId || !onItemMove || isMoving) {
+                      setDraggedId(null);
+                      return;
+                    }
+
                     const rect = e.currentTarget.getBoundingClientRect();
-                    const offsetY = e.clientY - rect.top;
-                    const hourFraction = offsetY / SLOT_HEIGHT;
-                    const finalHour = Math.floor(hourFraction) + HOUR_START;
-                    
-                    // Snap para 00 ou 30 minutos
-                    const minutes = (hourFraction % 1) >= 0.5 ? 30 : 0;
-                    
-                    const newDate = setMinutes(setHours(d, finalHour), minutes);
+                    const newDate = resolveDropDate(d, e.clientY - rect.top);
+                    if (!isWithinGridRange(newDate)) {
+                      setDraggedId(null);
+                      return;
+                    }
                     onItemMove(draggedId, newDate);
                     setDraggedId(null);
                   }}
@@ -170,7 +170,7 @@ export function AgendaCalendarGrid({ items, mode, onItemClick, onItemMove, isMov
                   {dayItems.map((s: any) => {
                     const dt = new Date(s.data_prevista_atendimento);
                     const hour = dt.getHours() + dt.getMinutes() / 60;
-                    if (hour < HOUR_START || hour > HOUR_END) return null;
+                    if (!isWithinGridRange(dt)) return null;
                     const top = (hour - HOUR_START) * SLOT_HEIGHT;
                     const isCompleted = s.status === 'concluida';
                     const duration = s.duracao_estimada || 120;
@@ -186,7 +186,7 @@ export function AgendaCalendarGrid({ items, mode, onItemClick, onItemMove, isMov
                       <button
                         key={s.id}
                         type="button"
-                        draggable={!isCompleted}
+                        draggable={!isCompleted && !isMoving}
                         onDragStart={() => setDraggedId(s.id)}
                         onDragEnd={() => setDraggedId(null)}
                         onClick={() => onItemClick(s.id)}
