@@ -1,4 +1,4 @@
-import { validatePlan } from "@/lib/comercial/validation";
+import { validatePlan, planFinancialErrors } from "@/lib/comercial/validation";
 import { useMemo, useState } from "react";
 import {
   useAdminCommercialPlans,
@@ -61,7 +61,12 @@ const brl = (v: number) =>
 const fmtDate = (v: string | null) =>
   v ? new Date(v).toLocaleDateString("pt-BR") : "—";
 
-function preview(form: PaymentPlanPayload, base = 100000) {
+/**
+ * Preview do cronograma. Retorna null quando qualquer parâmetro financeiro
+ * estiver fora dos limites do formulário — nunca calcula valores negativos.
+ */
+export function preview(form: PaymentPlanPayload, base = 100000) {
+  if (Object.keys(planFinancialErrors(form)).length > 0) return null;
   const liquido = base * (1 - (Number(form.discount_percent) || 0) / 100);
   const meses = Number(form.months_count) || 0;
   const taxa = (Number(form.monthly_interest_percent) || 0) / 100;
@@ -688,24 +693,32 @@ export default function CommercialPaymentPlansPage() {
                   <CardDescription>Base de referência {brl(100000)} — não persiste pedido</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Valor líquido</span>
-                    <span>{brl(sim.liquido)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Juros</span>
-                    <span>{brl(sim.juros)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium">
-                    <span>Total final</span>
-                    <span>{brl(sim.final)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      {form.installment_count}x de
-                    </span>
-                    <span>{brl(sim.parcela)}</span>
-                  </div>
+                  {sim === null ? (
+                    <p role="status" className="text-muted-foreground">
+                      Corrija os campos destacados para visualizar o cronograma
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Valor líquido</span>
+                        <span>{brl(sim.liquido)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Juros</span>
+                        <span>{brl(sim.juros)}</span>
+                      </div>
+                      <div className="flex justify-between font-medium">
+                        <span>Total final</span>
+                        <span>{brl(sim.final)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          {form.installment_count}x de
+                        </span>
+                        <span>{brl(sim.parcela)}</span>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
