@@ -87,8 +87,10 @@ export default function ConsultorTecnico() {
   });
 
   const handleUpdateCaption = (id: string) => {
+    if (updateCaptionMutation.isPending) return;
     updateCaptionMutation.mutate({ id, descricao: captionValue });
   };
+
 
   const handleDownloadImage = async (url: string, filename: string, caption?: string) => {
     try {
