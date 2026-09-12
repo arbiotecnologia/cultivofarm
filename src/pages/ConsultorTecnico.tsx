@@ -31,6 +31,15 @@ import { cn } from "@/lib/utils";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useMetricasOperacionais } from "@/hooks/useMetricasOperacionais";
 import { formatMetric } from "@/lib/metrics-utils";
+import {
+  ROLES_EQUIPE_TECNICA,
+  mapConsultores,
+  rolesOrfaos,
+  emailsDuplicados,
+  filtrarConsultores,
+  isConsultorAtivo,
+} from "@/lib/equipe-tecnica/consultores";
+
 
 
 
@@ -78,8 +87,10 @@ export default function ConsultorTecnico() {
   });
 
   const handleUpdateCaption = (id: string) => {
+    if (updateCaptionMutation.isPending) return;
     updateCaptionMutation.mutate({ id, descricao: captionValue });
   };
+
 
   const handleDownloadImage = async (url: string, filename: string, caption?: string) => {
     try {
@@ -257,37 +268,46 @@ export default function ConsultorTecnico() {
 
 
   // Consultores são usuários com roles específicas (tecnico_agronomo, consultor_tecnico)
-  const { data: consultores = [], isLoading } = useQuery({
+  const {
+    data: consultoresData,
+    isLoading,
+    isError,
+    error: consultoresError,
+    refetch: refetchConsultores,
+    isFetching,
+  } = useQuery({
     queryKey: ["consultores-tecnicos"],
     queryFn: async () => {
       // 1. Buscar perfis que possuem roles de consultor/agrônomo
-      const { data: roles } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["tecnico_agronomo", "consultor_tecnico", "gestor"]);
+        .in("role", [...ROLES_EQUIPE_TECNICA]);
+      if (rolesError) throw rolesError;
 
-      if (!roles || roles.length === 0) return [];
+      if (!roles || roles.length === 0) return { consultores: [], orfaos: [] as string[] };
 
       const userIds = roles.map(r => r.user_id);
-      
-      const { data: profiles } = await supabase
+
+      const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
         .in("user_id", userIds)
         .order("nome");
+      if (profilesError) throw profilesError;
 
-      return (profiles || []).map(p => ({
-        ...p,
-        role: roles.find(r => r.user_id === p.user_id)?.role,
-      }));
+      return {
+        consultores: mapConsultores(roles, profiles as any[]),
+        orfaos: rolesOrfaos(roles, profiles as any[]),
+      };
     }
   });
 
-  const filtered = consultores.filter(c => 
-    c.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    c.email?.toLowerCase().includes(search.toLowerCase()) ||
-    (c as any).crea?.toLowerCase().includes(search.toLowerCase())
-  );
+  const consultores = consultoresData?.consultores ?? [];
+  const orfaos = consultoresData?.orfaos ?? [];
+  const duplicados = useMemo(() => emailsDuplicados(consultores), [consultores]);
+  const filtered = useMemo(() => filtrarConsultores(consultores, search), [consultores, search]);
+
 
   return (
     <div className="space-y-6">
@@ -321,7 +341,10 @@ export default function ConsultorTecnico() {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-mono-data">{consultores.length}</div>
+            <div className="text-2xl font-bold font-mono-data">
+              {isLoading ? "…" : isError ? "—" : consultores.length}
+            </div>
+
           </CardContent>
         </Card>
         <Card>
@@ -362,16 +385,32 @@ export default function ConsultorTecnico() {
         </Card>
       </div>
 
+      {!isLoading && !isError && (orfaos.length > 0 || duplicados.length > 0) && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+          {orfaos.length > 0 && (
+            <p>{orfaos.length} usuário(s) com papel técnico sem cadastro de perfil correspondente.</p>
+          )}
+          {duplicados.length > 0 && (
+            <p>{duplicados.length} e-mail(s) repetido(s) entre perfis técnicos — verifique cadastros duplicados.</p>
+          )}
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <Input 
               placeholder="Buscar por nome, e-mail ou CREA..." 
+              aria-label="Buscar consultor por nome, e-mail ou CREA"
               value={search} 
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-md"
             />
+
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
@@ -390,9 +429,34 @@ export default function ConsultorTecnico() {
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8">Carregando...</TableCell></TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <p className="text-sm text-destructive">
+                      Não foi possível carregar a equipe técnica.
+                      {(consultoresError as any)?.message ? ` (${(consultoresError as any).message})` : ""}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => { void refetchConsultores(); }}
+                      disabled={isFetching}
+                    >
+                      {isFetching ? "Tentando..." : "Tentar novamente"}
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum consultor encontrado</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    {search.trim()
+                      ? "Nenhum consultor corresponde à busca"
+                      : "Nenhum consultor cadastrado. O cadastro é feito em Configurações > Usuários."}
+                  </TableCell>
+                </TableRow>
               ) : (
+
                 filtered.map((c) => (
                   <TableRow
                     key={c.id}
@@ -415,7 +479,7 @@ export default function ConsultorTecnico() {
                     <TableCell>
                       <div className="flex flex-col text-xs gap-1">
                         <div className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> {c.email || '—'}</div>
-                        <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {formatTelefone(c.telefone) || '—'}</div>
+                        <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {formatTelefone((c as any).telefone as string | undefined) || '—'}</div>
                       </div>
                     </TableCell>
                     <TableCell className="font-mono-data text-xs">{(c as any).crea || '—'}</TableCell>
@@ -426,8 +490,13 @@ export default function ConsultorTecnico() {
                     </TableCell>
                     <TableCell className="text-xs">{(c as any).especialidade || 'Geral'}</TableCell>
                     <TableCell>
-                      <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                      {isConsultorAtivo(c as any) ? (
+                        <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">Inativo</Badge>
+                      )}
                     </TableCell>
+
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
