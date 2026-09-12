@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, MapPin, AlertTriangle, Sprout, FlaskConical, Cloud, Camera, X, ImageIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { validarAplicacao } from "@/lib/aplicacoes/validacao";
 import { EvidenciasUploader, uploadEvidencias, PendingEvidencia } from "./EvidenciasUploader";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 
@@ -64,6 +65,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
   const [evidencias, setEvidencias] = useState<PendingEvidencia[]>([]);
   const [evidenciasParaManter, setEvidenciasParaManter] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const submittingRef = useRef(false);
 
   // Busca dados da aplicação para retificação
   const { data: aplicacaoOriginal, isLoading: loadingOriginal } = useQuery({
@@ -188,10 +190,24 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
   };
 
   const submit = async () => {
-    if (!osId) return toast.error("Selecione a OS");
-    if (!doseAplicada || !areaAplicada) return toast.error("Informe dose e área");
-    if (rectifyId && !motivoRetificacao) return toast.error("Informe o motivo da retificação");
-    
+    if (submittingRef.current) return;
+    const erro = validarAplicacao({
+      osId,
+      doseAplicada,
+      areaAplicada,
+      volumeCalda,
+      pressaoBar,
+      umidade,
+      vento,
+      temperatura,
+      horaInicio,
+      horaFim,
+      rectifyId,
+      motivoRetificacao,
+    });
+    if (erro) return toast.error(erro);
+
+    submittingRef.current = true;
     setSaving(true);
     try {
       const aplicacaoData = {
