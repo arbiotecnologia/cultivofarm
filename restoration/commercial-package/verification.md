@@ -1,7 +1,7 @@
 # Simulador e Condições — verificação local
 
 - Implementação local, sem acesso a banco, publicação ou aplicação de migration.
-- Migration pendente: `20260912033537_commercial_simulator_hardening_v1.sql`.
+- Migration pendente: `20261027000000_commercial_simulator_hardening_v1.sql`.
 - Nenhum dado HML/FaseE alterado ou criado.
 - Teste focado: `bun run test -- src/test/comercial/commercial-package.test.tsx`: 38/38 aprovados (rodada final, 2026-09-12 UTC).
 - Regressão CAT-09/10: 17/17 aprovados.
@@ -17,7 +17,7 @@
 - src/components/comercial/AtribuicoesPlanosTab.tsx
 - src/components/comercial/MatrizConfiguravelTab.tsx
 - src/test/comercial/commercial-package.test.tsx
-- supabase/migrations/20260912033537_commercial_simulator_hardening_v1.sql
+- supabase/migrations/20261027000000_commercial_simulator_hardening_v1.sql
 
 ## Gate de aplicação
 NO-GO enquanto configuração gerenciada/tipos não forem reconciliados e compilação e smoke autenticado não forem aprovados no destino autorizado.
@@ -26,7 +26,7 @@ A migration aborta se a assinatura canônica estiver ausente ou houver dependên
 Não há prova de execução ou privilégio efetivo no servidor; o contrato de migration é estático.
 
 ## Ajuste final — 2026-09-12
-- Migration renomeada com timestamp UTC atual `20260912033537`, conteúdo SQL preservado. Existem migrations futuras até `20261026000000`: não é possível ficar depois de todas e antes das datas futuras simultaneamente. Nenhuma migration histórica renomeada.
+- Migration renomeada com timestamp `20261027000000` (posterior à maior versão existente `20261026000000`), conteúdo SQL preservado. Nenhuma migration histórica renomeada.
 - Elegibilidade exige atribuição publicada, datas válidas, vigência inclusiva por dia e parceiro selecionado. Escopo parceiro exige correspondência e ausência de customer; default exige ambos os destinatários nulos. Planos continuam restritos à RPC de planos selecionáveis; plano apenas ativo não basta.
 - Contrato local: publicação de assignment permite default; proibição de default_scope_not_publishable pertence às linhas da matriz, não às atribuições. Servidor permanece autoridade final.
 - Removido bloqueio de navegação por parâmetros. aria-invalid cobre parceiro, plano, item, quantidade, volume e vencimento.
