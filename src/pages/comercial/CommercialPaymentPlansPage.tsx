@@ -1,3 +1,4 @@
+import { validatePlan } from "@/lib/comercial/validation";
 import { useMemo, useState } from "react";
 import {
   useAdminCommercialPlans,
@@ -100,6 +101,8 @@ export default function CommercialPaymentPlansPage() {
   const [current, setCurrent] = useState<AdminCommercialPlanRow | null>(null);
   const [form, setForm] = useState<PaymentPlanPayload>(empty);
 
+  const errors = validatePlan(form, mode);
+  const fieldError = (key: string) => errors[key] ? <p id={`plan-${key}-error`} role="alert" className="text-sm text-destructive">{errors[key]}</p> : null;
   const sim = useMemo(() => preview(form), [form]);
   const denied = isError && String((error as any)?.message ?? "").includes("not_authorized");
 
@@ -139,7 +142,7 @@ export default function CommercialPaymentPlansPage() {
   }
 
   function submit() {
-    if (saving) return;
+    if (saving || Object.keys(errors).length > 0) return;
     const onError = (e: unknown) => toast.error(planErrorMessage(e));
     if (mode === "create") {
       create.mutate(form, {
@@ -458,37 +461,40 @@ export default function CommercialPaymentPlansPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Nome</Label>
-                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                </div>
+                  <Label htmlFor="plan-name">Nome</Label>
+                  <Input id="plan-name" aria-invalid={!!errors.name} aria-describedby="plan-name-error" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                {fieldError("name")}
+</div>
                 <div>
-                  <Label>Código</Label>
-                  <Input
+                  <Label htmlFor="plan-code">Código</Label>
+                  <Input id="plan-code" aria-invalid={!!errors.code} aria-describedby="plan-code-error"
                     value={form.code}
                     disabled={mode === "metadata"}
                     onChange={(e) => setForm({ ...form, code: e.target.value })}
                   />
-                </div>
+                {fieldError("code")}
+</div>
               </div>
 
               <div>
-                <Label>Descrição</Label>
-                <Textarea
+                <Label htmlFor="plan-description">Descrição</Label>
+                <Textarea id="plan-description" aria-invalid={!!errors.description} aria-describedby="plan-description-error"
                   rows={2}
                   value={form.description ?? ""}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
-              </div>
+              {fieldError("description")}
+</div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Tipo</Label>
+                  <Label htmlFor="plan-plan_type">Tipo</Label>
                   <Select
                     value={form.plan_type}
                     disabled={mode === "metadata"}
                     onValueChange={(v) => setForm({ ...form, plan_type: v })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="plan-plan_type" aria-invalid={!!errors.plan_type} aria-describedby="plan-plan_type-error">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -500,15 +506,16 @@ export default function CommercialPaymentPlansPage() {
                       <SelectItem value="custom">Personalizado</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                {fieldError("plan_type")}
+</div>
                 <div>
-                  <Label>Modo de precificação</Label>
+                  <Label htmlFor="plan-pricing_mode">Modo de precificação</Label>
                   <Select
                     value={form.pricing_mode}
                     disabled={mode === "metadata"}
                     onValueChange={(v) => setForm({ ...form, pricing_mode: v })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="plan-pricing_mode" aria-invalid={!!errors.pricing_mode} aria-describedby="plan-pricing_mode-error">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -517,76 +524,82 @@ export default function CommercialPaymentPlansPage() {
                       <SelectItem value="quote_only">Somente cotação</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                {fieldError("pricing_mode")}
+</div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label>Prazo (dias)</Label>
-                  <Input
+                  <Label htmlFor="plan-max_days">Prazo (dias)</Label>
+                  <Input id="plan-max_days" aria-invalid={!!errors.max_days} aria-describedby="plan-max_days-error"
                     type="number"
                     min={0}
                     disabled={mode === "metadata"}
-                    value={form.max_days}
-                    onChange={(e) => setForm({ ...form, max_days: Number(e.target.value) || 0 })}
+                    value={Number.isFinite(form.max_days) ? form.max_days : ""}
+                    onChange={(e) => setForm({ ...form, max_days: e.target.value === "" ? NaN : Number(e.target.value) })}
                   />
-                </div>
+                {fieldError("max_days")}
+</div>
                 <div>
-                  <Label>Meses</Label>
-                  <Input
+                  <Label htmlFor="plan-months_count">Meses</Label>
+                  <Input id="plan-months_count" aria-invalid={!!errors.months_count} aria-describedby="plan-months_count-error"
                     type="number"
                     min={0}
                     disabled={mode === "metadata"}
-                    value={form.months_count}
-                    onChange={(e) => setForm({ ...form, months_count: Number(e.target.value) || 0 })}
+                    value={Number.isFinite(form.months_count) ? form.months_count : ""}
+                    onChange={(e) => setForm({ ...form, months_count: e.target.value === "" ? NaN : Number(e.target.value) })}
                   />
-                </div>
+                {fieldError("months_count")}
+</div>
                 <div>
-                  <Label>Parcelas</Label>
-                  <Input
+                  <Label htmlFor="plan-installment_count">Parcelas</Label>
+                  <Input id="plan-installment_count" aria-invalid={!!errors.installment_count} aria-describedby="plan-installment_count-error"
                     type="number"
                     min={1}
                     disabled={mode === "metadata"}
-                    value={form.installment_count}
-                    onChange={(e) => setForm({ ...form, installment_count: Number(e.target.value) || 1 })}
+                    value={Number.isFinite(form.installment_count) ? form.installment_count : ""}
+                    onChange={(e) => setForm({ ...form, installment_count: e.target.value === "" ? NaN : Number(e.target.value) })}
                   />
-                </div>
+                {fieldError("installment_count")}
+</div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label>Desconto (%)</Label>
-                  <Input
+                  <Label htmlFor="plan-discount_percent">Desconto (%)</Label>
+                  <Input id="plan-discount_percent" aria-invalid={!!errors.discount_percent} aria-describedby="plan-discount_percent-error"
                     type="number"
                     min={0}
                     max={100}
                     step="0.01"
                     disabled={mode === "metadata"}
-                    value={form.discount_percent}
-                    onChange={(e) => setForm({ ...form, discount_percent: Number(e.target.value) || 0 })}
+                    value={Number.isFinite(form.discount_percent) ? form.discount_percent : ""}
+                    onChange={(e) => setForm({ ...form, discount_percent: e.target.value === "" ? NaN : Number(e.target.value) })}
                   />
-                </div>
+                {fieldError("discount_percent")}
+</div>
                 <div>
-                  <Label>Juros (% a.m.)</Label>
-                  <Input
+                  <Label htmlFor="plan-monthly_interest_percent">Juros (% a.m.)</Label>
+                  <Input id="plan-monthly_interest_percent" aria-invalid={!!errors.monthly_interest_percent} aria-describedby="plan-monthly_interest_percent-error"
                     type="number"
                     min={0}
                     step="0.01"
                     disabled={mode === "metadata"}
-                    value={form.monthly_interest_percent}
+                    value={Number.isFinite(form.monthly_interest_percent) ? form.monthly_interest_percent : ""}
                     onChange={(e) =>
-                      setForm({ ...form, monthly_interest_percent: Number(e.target.value) || 0 })
+                      setForm({ ...form, monthly_interest_percent: e.target.value === "" ? NaN : Number(e.target.value) })
                     }
                   />
-                </div>
+                {fieldError("monthly_interest_percent")}
+</div>
                 <div>
-                  <Label>Tipo de juros</Label>
+                  <Label htmlFor="plan-interest_type">Tipo de juros</Label>
                   <Select
                     value={form.interest_type}
                     disabled={mode === "metadata"}
                     onValueChange={(v) => setForm({ ...form, interest_type: v })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="plan-interest_type" aria-invalid={!!errors.interest_type} aria-describedby="plan-interest_type-error">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -595,49 +608,59 @@ export default function CommercialPaymentPlansPage() {
                       <SelectItem value="compound">Composto</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                {fieldError("interest_type")}
+</div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Início da vigência</Label>
-                  <Input
+                  <Label htmlFor="plan-valid_from">Início da vigência</Label>
+                  <Input id="plan-valid_from" aria-invalid={!!errors.valid_from} aria-describedby="plan-valid_from-error"
                     type="date"
                     disabled={mode === "metadata"}
                     value={form.valid_from?.slice(0, 10) ?? ""}
                     onChange={(e) => setForm({ ...form, valid_from: e.target.value || null })}
                   />
-                </div>
+                {fieldError("valid_from")}
+</div>
                 <div>
-                  <Label>Fim da vigência</Label>
-                  <Input
+                  <Label htmlFor="plan-valid_until">Fim da vigência</Label>
+                  <Input id="plan-valid_until" aria-invalid={!!errors.valid_until} aria-describedby="plan-valid_until-error"
                     type="date"
                     disabled={mode === "metadata"}
                     value={form.valid_until?.slice(0, 10) ?? ""}
                     onChange={(e) => setForm({ ...form, valid_until: e.target.value || null })}
                   />
-                </div>
+                {fieldError("valid_until")}
+</div>
               </div>
 
               <div>
-                <Label>Ordem de exibição</Label>
-                <Input
+                <Label htmlFor="plan-minimum_order_amount">Valor mínimo do pedido</Label>
+                <Input id="plan-minimum_order_amount" type="number" step="0.01" min={0} disabled={mode === "metadata"} value={form.minimum_order_amount ?? ""} aria-describedby="plan-minimum_order_amount-error" onChange={e => setForm({ ...form, minimum_order_amount: e.target.value === "" ? null : Number(e.target.value) })} />
+                {fieldError("minimum_order_amount")}
+              </div>
+              <div>
+                <Label htmlFor="plan-sort_order">Ordem de exibição</Label>
+                <Input id="plan-sort_order" aria-invalid={!!errors.sort_order} aria-describedby="plan-sort_order-error"
                   type="number"
                   min={0}
-                  value={form.sort_order ?? 0}
-                  onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) || 0 })}
+                  value={Number.isFinite(form.sort_order) ? form.sort_order : ""}
+                  onChange={(e) => setForm({ ...form, sort_order: e.target.value === "" ? NaN : Number(e.target.value) })}
                 />
-              </div>
+              {fieldError("sort_order")}
+</div>
 
               {mode === "version" && (
                 <div>
-                  <Label>Motivo da nova versão</Label>
-                  <Textarea
+                  <Label htmlFor="plan-motivo">Motivo da nova versão</Label>
+                  <Textarea id="plan-motivo" aria-invalid={!!errors.motivo} aria-describedby="plan-motivo-error"
                     rows={2}
                     value={form.motivo ?? ""}
                     onChange={(e) => setForm({ ...form, motivo: e.target.value })}
                   />
-                </div>
+                {fieldError("motivo")}
+</div>
               )}
 
               <div className="space-y-2 pt-1">
@@ -647,8 +670,8 @@ export default function CommercialPaymentPlansPage() {
                   ["requires_guarantee", "Exige garantia"],
                 ].map(([key, label]) => (
                   <div key={key} className="flex items-center justify-between">
-                    <Label className="text-sm font-normal">{label}</Label>
-                    <Switch
+                    <Label htmlFor={`plan-${key}`} className="text-sm font-normal">{label}</Label>
+                    <Switch id={`plan-${key}`}
                       checked={Boolean((form as any)[key])}
                       disabled={mode === "metadata"}
                       onCheckedChange={(v) => setForm({ ...form, [key]: v } as PaymentPlanPayload)}
@@ -702,7 +725,7 @@ export default function CommercialPaymentPlansPage() {
             <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button onClick={submit} disabled={saving}>
+            <Button onClick={submit} disabled={saving || Object.keys(errors).length > 0}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {mode === "version" ? "Criar nova versão" : "Salvar"}
             </Button>

@@ -1,216 +1,95 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useCommercialSimulator } from "@/hooks/useCommercial";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
-import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
-import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
-import { BookOpen } from "lucide-react";
-import { brl as fmt } from "@/lib/financial/format";
-import { PrecoComDesconto } from "@/components/comercial/PrecoComDesconto";
-import { TotaisCarrinho } from "@/components/comercial/TotaisCarrinho";
-import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useSimulateB2BPaymentPlan, type SimulateResult } from '@/hooks/useSimulateB2BPaymentPlan';
+import { useCommercialPaymentPlans } from '@/hooks/useCommercialPaymentPlans';
+import { usePlanAssignments } from '@/hooks/useCommercialConditions';
+import { useCatalogoUnificado } from '@/hooks/useCatalogoUnificado';
+import { validateSimulation, assignmentApplies, type SimulationForm } from '@/lib/comercial/validation';
+import { PaymentSimulationSummary } from '@/components/comercial/PaymentSimulationSummary';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { brl } from '@/lib/financial/format';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 
 export default function SimuladorComercial() {
-  const sim = useCommercialSimulator();
-  const [partnerId, setPartnerId] = useState<string>("");
-  const [productId, setProductId] = useState<string>("");
-  const [quantidade, setQuantidade] = useState<string>("1");
-  const [desconto, setDesconto] = useState<string>("0");
-  const [catalogOpen, setCatalogOpen] = useState(false);
-
-  type SimulationFormSnapshot = {
-    partnerId: string;
-    productId: string;
-    quantidade: string;
-    desconto: string;
-  };
-  const [lastSimulatedValues, setLastSimulatedValues] =
-    useState<SimulationFormSnapshot | null>(null);
-
-  const currentValues: SimulationFormSnapshot = { partnerId, productId, quantidade, desconto };
-  const areEqual = (a: SimulationFormSnapshot, b: SimulationFormSnapshot) =>
-    a.partnerId === b.partnerId &&
-    a.productId === b.productId &&
-    a.quantidade === b.quantidade &&
-    a.desconto === b.desconto;
-  const hasAnyMeaningfulInput = (v: SimulationFormSnapshot) =>
-    !!v.partnerId || !!v.productId || v.quantidade !== "1" || v.desconto !== "0";
-  const isDirty = lastSimulatedValues
-    ? !areEqual(currentValues, lastSimulatedValues)
-    : hasAnyMeaningfulInput(currentValues);
-  useUnsavedChanges(isDirty);
-
-  const { data: partners = [] } = useQuery({
-    queryKey: ["partner-accounts-active-sim"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("partner_accounts")
-        .select("id, razao_social")
-        .eq("ativo", true)
-        .order("razao_social");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const { data: products = [] } = useQuery({
-    queryKey: ["produtos-b2b-sim"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("produtos")
-        .select("id, nome, codigo, tipo")
-        .eq("ativo", true)
-        .eq("b2b_enabled", true)
-        .order("nome");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const selectedProduct = useMemo(
-    () => (products as any[]).find((p) => p.id === productId) ?? null,
-    [products, productId],
-  );
-
-  const handleSim = () => {
-    if (!partnerId || !productId) return;
-    const snapshot = { partnerId, productId, quantidade, desconto };
-    sim.mutate(
-      {
-        partner_id: partnerId,
-        product_id: productId,
-        quantidade: Number(quantidade) || 0,
-        desconto: Number(desconto) || 0,
-      },
-      { onSuccess: () => setLastSimulatedValues(snapshot) },
-    );
-  };
-
-  const r = sim.data;
-
-  return (
-    <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold">Simulador Comercial</h1>
-        <p className="text-sm text-muted-foreground">Simule preço, desconto e rentabilidade de operações B2B.</p>
+  const sim = useSimulateB2BPaymentPlan();
+  const plans = useCommercialPaymentPlans();
+  const assignments = usePlanAssignments('published');
+  const catalog = useCatalogoUnificado('interno');
+  const partners = useQuery({ queryKey: ['partner-accounts-active-sim'], queryFn: async () => {
+    const { data, error } = await supabase.from('partner_accounts').select('id, razao_social').eq('ativo', true).order('razao_social');
+    if (error) throw error;
+    return data ?? [];
+  }});
+  const [form, setForm] = useState<SimulationForm>({ partner: '', plan: '', item: '', unit: 'hectare', quantity: '1', volume: '', due: '' });
+  const [result, setResult] = useState<SimulateResult | null>(null);
+  const [failure, setFailure] = useState('');
+  const [pending, setPending] = useState(false);
+  const revision = useRef(0);
+  const busy = useRef(false);
+  useUnsavedChanges(!result && Boolean(form.partner || form.item));
+  const availablePlans = (plans.data ?? []).filter(p => (assignments.data ?? []).some(a => a.plan_id === p.id && assignmentApplies(a, form.partner)));
+  const plan = availablePlans.find(p => p.id === form.plan);
+  const items = (catalog.data ?? []).filter(i => i.ativo && i.b2b_enabled);
+  const item = items.find(i => `${i.tipo}:${i.id}` === form.item);
+  const needsDate = Boolean(plan && plan.max_days > 0 && plan.pricing_mode !== 'quote_only');
+  const errors = validateSimulation(form, needsDate);
+  if (form.plan && !plan) errors.plan = 'Esta condição não está disponível para o parceiro.';
+  if (form.item && (!item || item.ficha_status !== 'aprovado')) errors.item = 'O item não possui ficha técnica aprovada.';
+  if (form.partner && !partners.data?.some(p => p.id === form.partner)) errors.partner = 'Parceiro indisponível.';
+  const queries = [partners, plans, assignments, catalog];
+  const loading = queries.some(q => q.isLoading);
+  const loadError = queries.find(q => q.isError)?.error;
+  function change<K extends keyof SimulationForm>(key: K, value: SimulationForm[K]) {
+    revision.current += 1;
+    setResult(null); setFailure(''); sim.reset();
+    setForm(f => ({ ...f, [key]: value, ...(key === 'partner' ? { plan: '', due: '' } : {}), ...(key === 'plan' ? { due: '' } : {}) }));
+  }
+  async function simulate() {
+    if (busy.current || loading || loadError || Object.keys(errors).length || !item || !plan) return;
+    busy.current = true; setPending(true); setResult(null); setFailure('');
+    const requestRevision = revision.current;
+    try {
+      const data = await sim.mutateAsync({ partner_id: form.partner, payment_plan_id: form.plan,
+        items: [{ item_id: item.id, item_tipo: item.tipo, quantidade: Number(form.quantity), unidade_medida: form.unit, volume_ml: form.unit === 'unidade' ? Number(form.volume) : null }],
+        first_due_date: needsDate ? form.due : null });
+      if (requestRevision === revision.current) setResult(data);
+    } catch (e) {
+      if (requestRevision === revision.current) setFailure(`Não foi possível simular. ${e && typeof e === 'object' && 'message' in e ? String(e.message) : 'Tente novamente.'}`);
+    } finally { busy.current = false; setPending(false); }
+  }
+  const errorFor = (key: string) => errors[key] ? <p id={`sim-${key}-error`} role="alert" className="text-sm text-destructive">{errors[key]}</p> : null;
+  return <main className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto">
+    <h1 className="text-2xl font-bold">Simulador Comercial</h1>
+    {loading && <p role="status">Carregando opções…</p>}
+    {loadError && <div role="alert"><p>Não foi possível carregar as opções da simulação.</p><Button variant="outline" onClick={() => queries.forEach(q => void q.refetch())}>Tentar novamente</Button></div>}
+    {!loading && !loadError && <form onSubmit={e => { e.preventDefault(); void simulate(); }} className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div><Label htmlFor="sim-partner">Parceiro</Label><Select value={form.partner} onValueChange={v => change('partner', v)}><SelectTrigger id="sim-partner" aria-describedby="sim-partner-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{partners.data?.map(p => <SelectItem key={p.id} value={p.id}>{p.razao_social}</SelectItem>)}</SelectContent></Select>{errorFor('partner')}{!partners.data?.length && <p>Nenhum parceiro ativo.</p>}</div>
+        <div><Label htmlFor="sim-plan">Condição de pagamento</Label><Select value={form.plan} onValueChange={v => change('plan', v)} disabled={!form.partner}><SelectTrigger id="sim-plan" aria-describedby="sim-plan-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{availablePlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select>{errorFor('plan')}{form.partner && !availablePlans.length && <p>Nenhuma condição publicada e vigente para este parceiro.</p>}</div>
+        <div className="md:col-span-2"><Label htmlFor="sim-item">Produto ou microrganismo</Label><Select value={form.item} onValueChange={v => change('item', v)}><SelectTrigger id="sim-item" aria-describedby="sim-item-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{items.map(i => <SelectItem key={`${i.tipo}:${i.id}`} value={`${i.tipo}:${i.id}`} disabled={i.ficha_status !== 'aprovado'}>{i.nome} · {i.tipo}{i.ficha_status !== 'aprovado' ? ' — ficha não aprovada' : ''}</SelectItem>)}</SelectContent></Select>{errorFor('item')}{!items.length && <p>Nenhum item B2B ativo.</p>}</div>
+        <div><Label htmlFor="sim-unit">Unidade</Label><Select value={form.unit} onValueChange={v => change('unit', v as SimulationForm['unit'])}><SelectTrigger id="sim-unit"><SelectValue /></SelectTrigger><SelectContent>{(['hectare', 'litro', 'dose', 'unidade'] as const).map(u => <SelectItem key={u} value={u}>{u === 'unidade' ? 'Volume comercial' : u}</SelectItem>)}</SelectContent></Select></div>
+        <div><Label htmlFor="sim-quantity">Quantidade</Label><Input id="sim-quantity" type="number" step="any" value={form.quantity} aria-invalid={!!errors.quantity} aria-describedby="sim-quantity-error" onChange={e => change('quantity', e.target.value)} />{errorFor('quantity')}</div>
+        {form.unit === 'unidade' && <div><Label htmlFor="sim-volume">Volume (mL)</Label><Input id="sim-volume" type="number" step="any" value={form.volume} aria-describedby="sim-volume-error" onChange={e => change('volume', e.target.value)} />{errorFor('volume')}</div>}
+        {needsDate && <div><Label htmlFor="sim-due">Primeiro vencimento</Label><Input id="sim-due" type="date" value={form.due} aria-describedby="sim-due-error" onChange={e => change('due', e.target.value)} />{errorFor('due')}</div>}
       </div>
-
-      <Card>
-        <CardHeader><CardTitle className="text-base">Parâmetros</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid md:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground">Parceiro</label>
-              <Select value={partnerId} onValueChange={setPartnerId}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {partners.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.razao_social}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Produto</label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0 border rounded-md px-3 py-2 text-sm bg-muted/30">
-                  {selectedProduct ? (
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Badge variant="outline" className="text-[9px] uppercase">{selectedProduct.tipo}</Badge>
-                      <span className="truncate">{selectedProduct.nome}</span>
-                      {selectedProduct.codigo && <span className="font-mono text-[10px] text-muted-foreground">{selectedProduct.codigo}</span>}
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground">Nenhum produto selecionado</span>
-                  )}
-                </div>
-                <Sheet open={catalogOpen} onOpenChange={setCatalogOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm"><BookOpen className="h-4 w-4 mr-1" /> Catálogo</Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-                    <SheetHeader>
-                      <SheetTitle>Catálogo Comercial</SheetTitle>
-                      <SheetDescription>Selecione um produto B2B para simular.</SheetDescription>
-                    </SheetHeader>
-                    <div className="mt-4">
-                      <CatalogoCardsGrid
-                        scope="interno"
-                        filterRow={(r) => r.tipo === "produto" && r.ativo && r.b2b_enabled}
-                        showStatusFilter={false}
-                        showB2BFilter={false}
-                        hideApprovedBadge
-                        actionSlot={(r) => (
-                          <Button size="sm" onClick={() => { setProductId(r.id); setCatalogOpen(false); }}>
-                            Selecionar
-                          </Button>
-                        )}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Quantidade</label>
-              <Input type="number" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Desconto (%)</label>
-              <Input type="number" value={desconto} onChange={(e) => setDesconto(e.target.value)} />
-            </div>
-          </div>
-          <Button onClick={handleSim} disabled={sim.isPending || !partnerId || !productId}>
-            {sim.isPending ? "Calculando..." : "Simular"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {r && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Resultado</CardTitle>
-            {r.price_source_label && (
-              <p className="text-xs text-muted-foreground">{r.price_source_label}</p>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border rounded-md p-3 bg-primary/5 border-primary/30">
-              <div className="text-xs text-muted-foreground mb-1">Preço unitário</div>
-              <PrecoComDesconto
-                valorCheio={r.preco_tabela}
-                valorFinal={r.preco_final}
-                descontoPct={r.preco_tabela > 0 ? (1 - r.preco_final / r.preco_tabela) * 100 : 0}
-                size="lg"
-              />
-            </div>
-            <TotaisCarrinho
-              subtotalCheio={Number(r.preco_tabela ?? 0) * (Number(quantidade) || 0)}
-              totalFinal={Number(r.valor_total ?? 0)}
-              labelTotal="Valor Total"
-            />
-            <div className="grid md:grid-cols-3 gap-3 text-sm">
-              <Kpi label="Custo Estimado/un" value={fmt(r.custo_estimado_unitario)} />
-              <Kpi label="Margem Unitária" value={fmt(r.margem_unitaria)} />
-              <Kpi label="Margem %" value={`${Number(r.margem_pct ?? 0).toFixed(2)}%`} />
-              <Kpi label="Rentabilidade Total" value={fmt(r.rentabilidade_total)} highlight />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function Kpi({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className={`border rounded-md p-3 ${highlight ? "bg-primary/5 border-primary/30" : ""}`}>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-semibold text-lg">{value}</div>
-    </div>
-  );
+      {plan?.pricing_mode === 'quote_only' && <p role="status">Sob consulta — esta condição exige cotação.</p>}
+      <Button type="submit" disabled={pending || Object.keys(errors).length > 0}>{pending ? 'Calculando…' : 'Simular'}</Button>
+    </form>}
+    {failure && <p role="alert" className="text-destructive">{failure}</p>}
+    {result && <section aria-label="Resultado" className="space-y-3 border-t pt-4">
+      <h2 className="text-lg font-semibold">Resultado</h2>
+      {result.items?.map((line, index) => <div key={`${line.item_tipo}:${line.item_id}:${index}`} className="border-b py-2 text-sm space-y-1">
+        <p className="font-medium">{line.nome || item?.nome || line.item_id} · {line.quantidade} {line.unidade_medida}</p>
+        <p>Origem: {line.price_source ?? 'Sob consulta'} · Modo: {line.pricing_mode ?? 'Sob consulta'}</p>
+        {line.quote_required ? <p>Sob consulta — exige cotação.</p> : <p>Unitário: {line.unit_price == null ? '—' : brl(line.unit_price)} · Subtotal: {line.subtotal == null ? '—' : brl(line.subtotal)}</p>}
+        {line.reason_code && <p>{line.reason_code}</p>}
+      </div>)}
+      <PaymentSimulationSummary simulation={result} />
+      {!result.quote_required && <p className="font-semibold">Total final: {brl(result.amounts.final_amount)}</p>}
+    </section>}
+  </main>;
 }

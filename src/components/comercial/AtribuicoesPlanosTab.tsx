@@ -113,6 +113,45 @@ export function AtribuicoesPlanosTab() {
     });
   }
 
+  function assignmentActions(a: PlanAssignment) {
+    return <>                      {a.status === "draft" && (
+                        <Button
+                          size="sm" disabled={submit.isPending || publish.isPending || archive.isPending}
+                          variant="outline"
+                          onClick={() =>
+                            submit.mutate({ id: a.id }, { onSuccess: () => toast.success("Enviado para aprovação"), onError })
+                          }
+                        >
+                          <Send className="h-3.5 w-3.5 mr-1" /> Solicitar aprovação
+                        </Button>
+                      )}
+                      {canPublish && a.status !== "published" && a.status !== "archived" && (
+                        <Button
+                          size="sm" disabled={submit.isPending || publish.isPending || archive.isPending}
+                          onClick={() => {
+                            if (!confirm("Publicar esta atribuição? O plano passa a ficar elegível para o destino.")) return;
+                            publish.mutate({ id: a.id }, { onSuccess: () => toast.success("Atribuição publicada"), onError });
+                          }}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Publicar
+                        </Button>
+                      )}
+                      {canPublish && a.status !== "archived" && (
+                        <Button
+                          size="sm" disabled={submit.isPending || publish.isPending || archive.isPending}
+                          variant="ghost"
+                          onClick={() => {
+                            const motivo = prompt("Motivo do arquivamento:") ?? "";
+                            if (!motivo.trim()) return;
+                            archive.mutate({ id: a.id, motivo }, { onSuccess: () => toast.success("Arquivada"), onError });
+                          }}
+                        >
+                          <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar
+                        </Button>
+                      )}
+</>;
+  }
+
   if (denied) {
     return (
       <Alert variant="destructive">
@@ -192,41 +231,7 @@ export function AtribuicoesPlanosTab() {
                       <Badge variant={statusVariant(a.status)}>{STATUS_LABEL[a.status] ?? a.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-1">
-                      {a.status === "draft" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            submit.mutate({ id: a.id }, { onSuccess: () => toast.success("Enviado para aprovação"), onError })
-                          }
-                        >
-                          <Send className="h-3.5 w-3.5 mr-1" /> Solicitar aprovação
-                        </Button>
-                      )}
-                      {canPublish && a.status !== "published" && a.status !== "archived" && (
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            if (!confirm("Publicar esta atribuição? O plano passa a ficar elegível para o destino.")) return;
-                            publish.mutate({ id: a.id }, { onSuccess: () => toast.success("Atribuição publicada"), onError });
-                          }}
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Publicar
-                        </Button>
-                      )}
-                      {canPublish && a.status !== "archived" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            const motivo = prompt("Motivo do arquivamento:") ?? "";
-                            if (!motivo.trim()) return;
-                            archive.mutate({ id: a.id, motivo }, { onSuccess: () => toast.success("Arquivada"), onError });
-                          }}
-                        >
-                          <Archive className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
+                      {assignmentActions(a)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -250,16 +255,7 @@ export function AtribuicoesPlanosTab() {
                   {targetLabel(a)} · {formatDateDisplay(a.valid_from)}
                 </p>
                 <div className="flex gap-2">
-                  {a.status === "draft" && (
-                    <Button size="sm" variant="outline" onClick={() => submit.mutate({ id: a.id }, { onError })}>
-                      Solicitar aprovação
-                    </Button>
-                  )}
-                  {canPublish && a.status !== "published" && a.status !== "archived" && (
-                    <Button size="sm" onClick={() => publish.mutate({ id: a.id }, { onError })}>
-                      Publicar
-                    </Button>
-                  )}
+                  {assignmentActions(a)}
                 </div>
               </div>
             ))}
@@ -274,9 +270,9 @@ export function AtribuicoesPlanosTab() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label>Condição de pagamento</Label>
+              <Label htmlFor="assignment-field-1">Condição de pagamento</Label>
               <Select value={form.plan_id} onValueChange={(v) => setForm({ ...form, plan_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger id="assignment-field-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {plans.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>
@@ -285,14 +281,14 @@ export function AtribuicoesPlanosTab() {
               </Select>
             </div>
             <div>
-              <Label>Escopo</Label>
+              <Label htmlFor="assignment-field-2">Escopo</Label>
               <Select
                 value={form.buyer_scope}
                 onValueChange={(v) =>
                   setForm({ ...form, buyer_scope: v as ConditionScope, partner_id: null, customer_id: null })
                 }
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="assignment-field-2"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="partner">Parceiro B2B</SelectItem>
                   <SelectItem value="default">Tabela padrão (modelo)</SelectItem>
@@ -301,9 +297,9 @@ export function AtribuicoesPlanosTab() {
             </div>
             {form.buyer_scope === "partner" && (
               <div>
-                <Label>Parceiro</Label>
+                <Label htmlFor="assignment-field-3">Parceiro</Label>
                 <Select value={form.partner_id ?? ""} onValueChange={(v) => setForm({ ...form, partner_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger id="assignment-field-3"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     {(lookups?.partners ?? []).map((p) => (
                       <SelectItem key={p.id} value={p.id}>{p.nome_fantasia || p.razao_social}</SelectItem>
@@ -314,16 +310,16 @@ export function AtribuicoesPlanosTab() {
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Vigência inicial</Label>
-                <Input
+                <Label htmlFor="assignment-field-4">Vigência inicial</Label>
+                <Input id="assignment-field-4"
                   type="date"
                   value={form.valid_from ?? ""}
                   onChange={(e) => setForm({ ...form, valid_from: e.target.value || null })}
                 />
               </div>
               <div>
-                <Label>Vigência final</Label>
-                <Input
+                <Label htmlFor="assignment-field-5">Vigência final</Label>
+                <Input id="assignment-field-5"
                   type="date"
                   value={form.valid_until ?? ""}
                   onChange={(e) => setForm({ ...form, valid_until: e.target.value || null })}
@@ -331,8 +327,8 @@ export function AtribuicoesPlanosTab() {
               </div>
             </div>
             <div>
-              <Label>Motivo / observação</Label>
-              <Textarea
+              <Label htmlFor="assignment-field-6">Motivo / observação</Label>
+              <Textarea id="assignment-field-6"
                 value={form.motivo ?? ""}
                 onChange={(e) => setForm({ ...form, motivo: e.target.value || null })}
               />
