@@ -113,6 +113,9 @@ export function MatrizConfiguravelTab() {
   const [adjustPreview, setAdjustPreview] = useState<BulkAdjustPreviewRow[] | null>(null);
   const [simOpen, setSimOpen] = useState(false);
   const [simResult, setSimResult] = useState<Record<string, unknown> | null>(null);
+  const [simItem, setSimItem] = useState("");
+  const [simPresentation, setSimPresentation] = useState("");
+  const [simQuantity, setSimQuantity] = useState("1");
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const itemName = useMemo(() => {
