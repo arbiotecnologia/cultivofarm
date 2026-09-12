@@ -401,7 +401,13 @@ export default function FluxoTecnico() {
         <TabsContent value="aprovacoes" className="space-y-4 pt-4">
            <div className="flex items-center gap-2">
              <Search className="h-4 w-4 text-muted-foreground" />
-             <Input placeholder="Buscar cliente..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+             <Input
+               placeholder="Buscar cliente, fazenda ou talhão..."
+               aria-label="Buscar recomendação por cliente, fazenda ou talhão"
+               value={searchAprov}
+               onChange={(e) => setSearchAprov(e.target.value)}
+               className="max-w-sm"
+             />
            </div>
            <Card>
              <Table>
@@ -415,18 +421,39 @@ export default function FluxoTecnico() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                 {filteredPendentes.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhuma recomendação pendente.</TableCell></TableRow>
+                 {loadingPendentes ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                 ) : errorPendentes ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <p className="text-sm text-destructive">Não foi possível carregar a fila de aprovação.</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => { void refetchPendentes(); }}
+                          disabled={fetchingPendentes}
+                        >
+                          {fetchingPendentes ? "Tentando..." : "Tentar novamente"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                 ) : filteredPendentes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        {searchAprov.trim() ? "Nenhuma recomendação corresponde à busca." : "Nenhuma recomendação pendente."}
+                      </TableCell>
+                    </TableRow>
                  ) : filteredPendentes.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{formatDateDisplay(r.data_vistoria)}</TableCell>
+                      <TableCell>{formatDateDisplay(r.data_vistoria) || "—"}</TableCell>
                       <TableCell>
                         <Badge variant={r.solicitacao_id ? "secondary" : "outline"} className="text-[10px]">
                           {r.solicitacao_id ? "Demanda" : "Rotina"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{r.clientes?.nome}</TableCell>
-                      <TableCell>{r.fazendas?.nome}</TableCell>
+                      <TableCell className="font-medium">{textoOuTraco(r.clientes?.nome)}</TableCell>
+                      <TableCell>{textoOuTraco(r.fazendas?.nome)}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="ghost" onClick={() => openReview(r)}><Eye className="h-4 w-4 mr-1" /> Revisar</Button>
                       </TableCell>
@@ -436,6 +463,7 @@ export default function FluxoTecnico() {
              </Table>
            </Card>
         </TabsContent>
+
         <TabsContent value="os-onfarm" className="space-y-4 pt-4">
             <div className="flex flex-wrap gap-2">
                <Input placeholder="Buscar OS..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
