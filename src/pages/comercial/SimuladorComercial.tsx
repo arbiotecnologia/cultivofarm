@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSimulateB2BPaymentPlan, type SimulateResult } from '@/hooks/useSimulateB2BPaymentPlan';
 import { useCommercialPaymentPlans } from '@/hooks/useCommercialPaymentPlans';
-import { usePlanAssignments } from '@/hooks/useCommercialConditions';
+import { conditionErrorMessage, usePlanAssignments } from '@/hooks/useCommercialConditions';
 import { useCatalogoUnificado } from '@/hooks/useCatalogoUnificado';
 import { validateSimulation, assignmentApplies, type SimulationForm } from '@/lib/comercial/validation';
 import { PaymentSimulationSummary } from '@/components/comercial/PaymentSimulationSummary';
@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { brl } from '@/lib/financial/format';
-import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 
 export default function SimuladorComercial() {
   const sim = useSimulateB2BPaymentPlan();
@@ -30,7 +29,6 @@ export default function SimuladorComercial() {
   const [pending, setPending] = useState(false);
   const revision = useRef(0);
   const busy = useRef(false);
-  useUnsavedChanges(!result && Boolean(form.partner || form.item));
   const availablePlans = (plans.data ?? []).filter(p => (assignments.data ?? []).some(a => a.plan_id === p.id && assignmentApplies(a, form.partner)));
   const plan = availablePlans.find(p => p.id === form.plan);
   const items = (catalog.data ?? []).filter(i => i.ativo && i.b2b_enabled);
@@ -58,7 +56,9 @@ export default function SimuladorComercial() {
         first_due_date: needsDate ? form.due : null });
       if (requestRevision === revision.current) setResult(data);
     } catch (e) {
-      if (requestRevision === revision.current) setFailure(`Não foi possível simular. ${e && typeof e === 'object' && 'message' in e ? String(e.message) : 'Tente novamente.'}`);
+      const raw = e && typeof e === 'object' && 'message' in e ? String(e.message) : '';
+      const mapped = conditionErrorMessage(raw);
+      if (requestRevision === revision.current) setFailure(mapped !== raw ? mapped : 'Não foi possível simular. Revise os parâmetros e tente novamente.');
     } finally { busy.current = false; setPending(false); }
   }
   const errorFor = (key: string) => errors[key] ? <p id={`sim-${key}-error`} role="alert" className="text-sm text-destructive">{errors[key]}</p> : null;
@@ -68,13 +68,13 @@ export default function SimuladorComercial() {
     {loadError && <div role="alert"><p>Não foi possível carregar as opções da simulação.</p><Button variant="outline" onClick={() => queries.forEach(q => void q.refetch())}>Tentar novamente</Button></div>}
     {!loading && !loadError && <form onSubmit={e => { e.preventDefault(); void simulate(); }} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <div><Label htmlFor="sim-partner">Parceiro</Label><Select value={form.partner} onValueChange={v => change('partner', v)}><SelectTrigger id="sim-partner" aria-describedby="sim-partner-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{partners.data?.map(p => <SelectItem key={p.id} value={p.id}>{p.razao_social}</SelectItem>)}</SelectContent></Select>{errorFor('partner')}{!partners.data?.length && <p>Nenhum parceiro ativo.</p>}</div>
-        <div><Label htmlFor="sim-plan">Condição de pagamento</Label><Select value={form.plan} onValueChange={v => change('plan', v)} disabled={!form.partner}><SelectTrigger id="sim-plan" aria-describedby="sim-plan-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{availablePlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select>{errorFor('plan')}{form.partner && !availablePlans.length && <p>Nenhuma condição publicada e vigente para este parceiro.</p>}</div>
-        <div className="md:col-span-2"><Label htmlFor="sim-item">Produto ou microrganismo</Label><Select value={form.item} onValueChange={v => change('item', v)}><SelectTrigger id="sim-item" aria-describedby="sim-item-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{items.map(i => <SelectItem key={`${i.tipo}:${i.id}`} value={`${i.tipo}:${i.id}`} disabled={i.ficha_status !== 'aprovado'}>{i.nome} · {i.tipo}{i.ficha_status !== 'aprovado' ? ' — ficha não aprovada' : ''}</SelectItem>)}</SelectContent></Select>{errorFor('item')}{!items.length && <p>Nenhum item B2B ativo.</p>}</div>
+        <div><Label htmlFor="sim-partner">Parceiro</Label><Select value={form.partner} onValueChange={v => change('partner', v)}><SelectTrigger id="sim-partner" aria-invalid={!!errors.partner} aria-describedby="sim-partner-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{partners.data?.map(p => <SelectItem key={p.id} value={p.id}>{p.razao_social}</SelectItem>)}</SelectContent></Select>{errorFor('partner')}{!partners.data?.length && <p>Nenhum parceiro ativo.</p>}</div>
+        <div><Label htmlFor="sim-plan">Condição de pagamento</Label><Select value={form.plan} onValueChange={v => change('plan', v)} disabled={!form.partner}><SelectTrigger id="sim-plan" aria-invalid={!!errors.plan} aria-describedby="sim-plan-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{availablePlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select>{errorFor('plan')}{form.partner && !availablePlans.length && <p>Nenhuma condição publicada e vigente para este parceiro.</p>}</div>
+        <div className="md:col-span-2"><Label htmlFor="sim-item">Produto ou microrganismo</Label><Select value={form.item} onValueChange={v => change('item', v)}><SelectTrigger id="sim-item" aria-invalid={!!errors.item} aria-describedby="sim-item-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{items.map(i => <SelectItem key={`${i.tipo}:${i.id}`} value={`${i.tipo}:${i.id}`} disabled={i.ficha_status !== 'aprovado'}>{i.nome} · {i.tipo}{i.ficha_status !== 'aprovado' ? ' — ficha não aprovada' : ''}</SelectItem>)}</SelectContent></Select>{errorFor('item')}{!items.length && <p>Nenhum item B2B ativo.</p>}</div>
         <div><Label htmlFor="sim-unit">Unidade</Label><Select value={form.unit} onValueChange={v => change('unit', v as SimulationForm['unit'])}><SelectTrigger id="sim-unit"><SelectValue /></SelectTrigger><SelectContent>{(['hectare', 'litro', 'dose', 'unidade'] as const).map(u => <SelectItem key={u} value={u}>{u === 'unidade' ? 'Volume comercial' : u}</SelectItem>)}</SelectContent></Select></div>
         <div><Label htmlFor="sim-quantity">Quantidade</Label><Input id="sim-quantity" type="number" step="any" value={form.quantity} aria-invalid={!!errors.quantity} aria-describedby="sim-quantity-error" onChange={e => change('quantity', e.target.value)} />{errorFor('quantity')}</div>
-        {form.unit === 'unidade' && <div><Label htmlFor="sim-volume">Volume (mL)</Label><Input id="sim-volume" type="number" step="any" value={form.volume} aria-describedby="sim-volume-error" onChange={e => change('volume', e.target.value)} />{errorFor('volume')}</div>}
-        {needsDate && <div><Label htmlFor="sim-due">Primeiro vencimento</Label><Input id="sim-due" type="date" value={form.due} aria-describedby="sim-due-error" onChange={e => change('due', e.target.value)} />{errorFor('due')}</div>}
+        {form.unit === 'unidade' && <div><Label htmlFor="sim-volume">Volume (mL)</Label><Input id="sim-volume" type="number" step="any" value={form.volume} aria-invalid={!!errors.volume} aria-describedby="sim-volume-error" onChange={e => change('volume', e.target.value)} />{errorFor('volume')}</div>}
+        {needsDate && <div><Label htmlFor="sim-due">Primeiro vencimento</Label><Input id="sim-due" type="date" value={form.due} aria-invalid={!!errors.due} aria-describedby="sim-due-error" onChange={e => change('due', e.target.value)} />{errorFor('due')}</div>}
       </div>
       {plan?.pricing_mode === 'quote_only' && <p role="status">Sob consulta — esta condição exige cotação.</p>}
       <Button type="submit" disabled={pending || Object.keys(errors).length > 0}>{pending ? 'Calculando…' : 'Simular'}</Button>
