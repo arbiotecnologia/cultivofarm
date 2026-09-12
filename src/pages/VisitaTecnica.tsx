@@ -75,6 +75,7 @@ import { serializePlanoMonitoramento, parsePlanoMonitoramento, stripPlanoMonitor
 import { serializePlanoRetorno, parsePlanoRetorno, stripPlanoRetorno } from "@/lib/planoRetorno";
 import { mensagemAmigavelVisita, codigoTecnicoVisita } from "@/lib/visita/visitaErrorMessages";
 import { resolveVisitaAcoes } from "@/lib/visita/acoesPersistencia";
+import { resolveEtapasAcionaveis, clampPercentualArea } from "@/lib/visita/etapasVisita";
 
 // ---------- Helpers ----------
 function translateError(msg: string): string {
@@ -266,6 +267,8 @@ export default function VisitaTecnica() {
   const problemaRef = useRef<HTMLInputElement | null>(null);
   const descricaoRef = useRef<HTMLTextAreaElement | null>(null);
   const resumoRef = useRef<HTMLTextAreaElement | null>(null);
+  /** Trava de uma finalização por vez (inclui a checagem assíncrona). */
+  const finalizandoRef = useRef(false);
 
   // -------- Queries --------
   const { data: clientes = [] } = useQuery({
@@ -1138,6 +1141,23 @@ export default function VisitaTecnica() {
     canEdit: registroStatus === "rascunho" || uiMode === "editing" || canReopen,
   });
 
+  /**
+   * Máquina de etapas: define o que já pode ser acionado e qual é o PRIMEIRO
+   * requisito bloqueante. Identificação e visita persistida vêm antes de
+   * check-in, evidências, diagnóstico, PDF, envio e finalização.
+   */
+  const etapas = resolveEtapasAcionaveis({
+    isNew,
+    clienteId,
+    fazendaId,
+    talhaoId,
+    dataVisita,
+    temCheckin: checkinExists,
+    diagnosticos,
+    encerramento,
+    isFinalized,
+  });
+
 
 
   // Garante uiMode coerente quando o registro carrega/muda
@@ -1163,94 +1183,69 @@ export default function VisitaTecnica() {
 
 
   const handleFinalize = async () => {
-    // Validação para evitar retorno duplicado acidental - Fase 10.2.1.3
-    if (encerramento.proximoPasso === "programar_nova_visita") {
-      const { data: existingRetorno } = await supabase
-        .from("portal_solicitacoes")
-        .select("id")
-        .eq("registro_origem_id", id)
-        .eq("tipo_demanda", "retorno_tecnico")
-        .in("status", ["pendente", "aberta", "atribuida", "agendada", "em_visita", "checkin_realizado"])
-        .maybeSingle();
+    // Um clique por vez: enquanto a checagem assíncrona de retorno duplicado
+    // roda, novos cliques são ignorados (evita finalização duplicada).
+    if (finalizandoRef.current || saveMutation.isPending) return;
 
-      if (existingRetorno) {
-        // Buscar se já existe registro_consultor para este retorno
-        const { data: existingVisit } = await supabase
-          .from("registros_consultor")
+    // ORDEM CANÔNICA: a mensagem sempre aponta o PRIMEIRO requisito bloqueante
+    // (identificação → visita salva → check-in → diagnóstico → desfecho),
+    // antes de qualquer consulta ao servidor.
+    const bloqueio = etapas.bloqueio;
+    if (bloqueio) {
+      toast.error(bloqueio.mensagem);
+      setActiveStep(bloqueio.etapa);
+      setTimeout(() => {
+        if (bloqueio.codigo === "DIAGNOSTICO_OBRIGATORIO") problemaRef.current?.focus();
+        if (bloqueio.codigo === "DESCRICAO_OBRIGATORIA") descricaoRef.current?.focus();
+      }, 120);
+      return;
+    }
+
+    finalizandoRef.current = true;
+    try {
+      // Validação para evitar retorno duplicado acidental - Fase 10.2.1.3
+      if (encerramento.proximoPasso === "programar_nova_visita") {
+        const { data: existingRetorno } = await supabase
+          .from("portal_solicitacoes")
           .select("id")
-          .eq("solicitacao_id", existingRetorno.id)
+          .eq("registro_origem_id", id)
+          .eq("tipo_demanda", "retorno_tecnico")
+          .in("status", ["pendente", "aberta", "atribuida", "agendada", "em_visita", "checkin_realizado"])
           .maybeSingle();
 
-        if (existingVisit) {
-          toast.info("Já existe um retorno técnico em andamento para esta visita.");
-          navigate(`/visita-tecnica/${existingVisit.id}`);
-          return;
+        if (existingRetorno) {
+          // Buscar se já existe registro_consultor para este retorno
+          const { data: existingVisit } = await supabase
+            .from("registros_consultor")
+            .select("id")
+            .eq("solicitacao_id", existingRetorno.id)
+            .maybeSingle();
+
+          if (existingVisit) {
+            toast.info("Já existe um retorno técnico em andamento para esta visita.");
+            navigate(`/visita-tecnica/${existingVisit.id}`);
+            return;
+          }
+
+          const confirm = window.confirm("Já existe uma solicitação de retorno aberta para esta visita. Deseja criar um novo retorno mesmo assim?");
+          if (!confirm) {
+            navigate("/solicitacoes");
+            return;
+          }
         }
+      }
 
-        const confirm = window.confirm("Já existe uma solicitação de retorno aberta para esta visita. Deseja criar um novo retorno mesmo assim?");
-        if (!confirm) {
-          navigate("/solicitacoes");
-          return;
-        }
-      }
-    }
-
-    if (!diagnosticos.some(d => !!d.problema.trim())) {
-      toast.error("Informe pelo menos um diagnóstico antes de finalizar.");
-      setActiveStep("diagnostico");
-      problemaRef.current?.focus();
-      return;
-    }
-    if (!descricaoTecnica.trim()) {
-      toast.error("Preencha a descrição técnica antes de finalizar.");
-      setActiveStep("diagnostico");
-      descricaoRef.current?.focus();
-      return;
-    }
-    if (encerramento.proximoPasso === "monitorar_area") {
-      if (!encerramento.monitoramentoItens || encerramento.monitoramentoItens.length === 0) {
-        toast.error("Selecione pelo menos um item para monitorar.");
-        setActiveStep("encerramento");
+      if (fotos.length === 0) {
+        setConfirmFinalizeNoPhotos(true);
         return;
       }
-      if (!encerramento.dataProximaVisita) {
-        toast.error("Informe a data da próxima avaliação.");
-        setActiveStep("encerramento");
-        return;
-      }
+      doFinalize();
+    } catch (e: any) {
+      // Recuperação visual: nada foi gravado, o usuário pode tentar de novo.
+      toast.error(translateError(e?.message || "Não foi possível finalizar a visita."));
+    } finally {
+      finalizandoRef.current = false;
     }
-
-    if (!checkinExists) {
-      toast.error("Faça o check-in (ou justifique sem GPS) antes de finalizar.");
-      setActiveStep("checkin");
-      return;
-    }
-    if (encerramento.proximoPasso === "gerar_os") {
-      if (!encerramento.osItens || encerramento.osItens.length === 0) {
-        toast.error("Adicione pelo menos um item (produto ou microrganismo) para gerar OS.");
-        setActiveStep("encerramento");
-        return;
-      }
-      if (encerramento.osItens.some(i => {
-        const semSelecao = (i.tipo === "microrganismo") ? !i.microrganismoId : !i.produtoId;
-        return semSelecao || !i.doseMlHa || !i.areaHa;
-      })) {
-        toast.error("Preencha todos os campos obrigatórios dos itens da OS.");
-        setActiveStep("encerramento");
-        return;
-      }
-      if (!encerramento.osDataAplicacao) {
-        toast.error("Informe a data desejada para aplicação.");
-        setActiveStep("encerramento");
-        return;
-      }
-    }
-
-    if (fotos.length === 0) {
-      setConfirmFinalizeNoPhotos(true);
-      return;
-    }
-    doFinalize();
   };
 
   const doFinalize = () => {
@@ -1728,7 +1723,8 @@ export default function VisitaTecnica() {
                     className="pr-7 h-12 text-base font-mono-data"
                     value={diag.incidencia}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      // Faixa canônica 0–100: o campo nunca guarda valor fora dela.
+                      const val = clampPercentualArea(e.target.value);
                       updateDiagnostico(diag.id, "incidencia", val);
                       if (index === 0 && Number(val) > 50 && diag.severidade === "alto") {
                         setUrgencia("critica");
@@ -1996,7 +1992,8 @@ export default function VisitaTecnica() {
                 size="sm" 
                 variant="outline" 
                 onClick={handleExportPdf} 
-                disabled={generatingPdf || !isFinalized}
+                title={!etapas.podeGerarPdf ? "Disponível após finalizar a visita" : undefined}
+                disabled={generatingPdf || !etapas.podeGerarPdf}
                 className="h-8 sm:h-9"
               >
                 {generatingPdf ? (
@@ -2009,7 +2006,8 @@ export default function VisitaTecnica() {
               <Button 
                 size="sm" 
                 onClick={() => setEnviarEmailOpen(true)} 
-                disabled={!isFinalized}
+                title={!etapas.podeEnviar ? "Disponível após finalizar a visita" : undefined}
+                disabled={!etapas.podeEnviar}
                 className="h-8 sm:h-9"
               >
                 <Mail className="h-3.5 w-3.5" />
@@ -2272,7 +2270,8 @@ export default function VisitaTecnica() {
             size="sm"
             className="flex-col h-12 gap-0.5 text-[10px]"
             onClick={handleFinalize}
-            disabled={saveMutation.isPending}
+            title={!etapas.finalizarAcionavel ? "Salve a visita antes de finalizar" : undefined}
+            disabled={saveMutation.isPending || !etapas.finalizarAcionavel}
           >
             <CheckCircle2 className="h-4 w-4" />
             Finalizar

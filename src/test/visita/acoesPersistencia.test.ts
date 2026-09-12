@@ -14,9 +14,11 @@ import { resolve } from "node:path";
 import { resolveVisitaAcoes } from "@/lib/visita/acoesPersistencia";
 
 describe("resolveVisitaAcoes", () => {
-  it("visita nova permite salvar e finalizar", () => {
+  // Corrigido na auditoria da visita: antes de existir registro salvo não há
+  // check-in, evidências nem status — Finalizar não pode ser oferecido.
+  it("visita nova permite salvar, mas não finalizar", () => {
     const a = resolveVisitaAcoes({ isNew: true, status: null, uiMode: "editing" });
-    expect(a).toEqual({ readOnly: false, canPersist: true, showSave: true, showFinalize: true });
+    expect(a).toEqual({ readOnly: false, canPersist: true, showSave: true, showFinalize: false });
   });
 
   it("rascunho preserva salvar e finalizar", () => {
