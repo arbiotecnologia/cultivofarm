@@ -42,6 +42,15 @@ import { parseNotes } from "@/components/visita/NotasRapidas";
 import { getClienteLabel } from "@/lib/clienteLabel";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { RecomendacaoChat } from "@/components/shared/RecomendacaoChat";
+import {
+  blockedOSReason,
+  matchTexto,
+  podeDecidirRegistro,
+  requerMotivo,
+  textoOuTraco,
+  validarComentarioDecisao,
+} from "@/lib/fluxo-tecnico/fluxo";
+
 
 const STATUS_APROVACAO: Record<string, { label: string; color: string }> = {
   pendente: { label: "Pendente", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
