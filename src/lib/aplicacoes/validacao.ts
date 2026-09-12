@@ -4,6 +4,7 @@
  */
 export type EntradaAplicacao = {
   osId?: string | null;
+  dataAplicacao?: string;
   doseAplicada?: string | number | null;
   areaAplicada?: string | number | null;
   volumeCalda?: string | number | null;
@@ -26,6 +27,14 @@ const num = (v: unknown): number | null => {
 /** Retorna a primeira mensagem de erro bloqueante, ou null quando válido. */
 export function validarAplicacao(e: EntradaAplicacao): string | null {
   if (!e.osId) return "Selecione a OS";
+  if (e.dataAplicacao !== undefined) {
+    const data = new Date(`${e.dataAplicacao}T12:00`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.dataAplicacao) || !Number.isFinite(data.getTime()) || dataLocal(data).slice(0, 10) !== e.dataAplicacao)
+      return "Informe uma data de aplicação válida";
+    if ([e.horaInicio, e.horaFim].some(h => h && h.slice(0, 10) !== e.dataAplicacao))
+      return "Data e horários devem corresponder ao mesmo dia da aplicação";
+  }
+  if (e.horaFim && !e.horaInicio) return "Informe a hora de início antes do término";
 
   const dose = num(e.doseAplicada);
   const area = num(e.areaAplicada);
@@ -58,4 +67,10 @@ export function validarAplicacao(e: EntradaAplicacao): string | null {
   if (e.rectifyId && !e.motivoRetificacao) return "Informe o motivo da retificação";
 
   return null;
+}
+
+/** Valor civil para inputs locais; nunca desloca a exibição para UTC. */
+export function dataLocal(data = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}T${pad(data.getHours())}:${pad(data.getMinutes())}`;
 }
