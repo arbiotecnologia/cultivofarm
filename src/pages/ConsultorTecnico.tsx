@@ -383,16 +383,32 @@ export default function ConsultorTecnico() {
         </Card>
       </div>
 
+      {!isLoading && !isError && (orfaos.length > 0 || duplicados.length > 0) && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+          {orfaos.length > 0 && (
+            <p>{orfaos.length} usuário(s) com papel técnico sem cadastro de perfil correspondente.</p>
+          )}
+          {duplicados.length > 0 && (
+            <p>{duplicados.length} e-mail(s) repetido(s) entre perfis técnicos — verifique cadastros duplicados.</p>
+          )}
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <Input 
               placeholder="Buscar por nome, e-mail ou CREA..." 
+              aria-label="Buscar consultor por nome, e-mail ou CREA"
               value={search} 
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-md"
             />
+
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
