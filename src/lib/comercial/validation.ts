@@ -1,21 +1,31 @@
 import type { PaymentPlanPayload } from '@/hooks/useCommercialPaymentPlansAdmin';
 import type { PlanAssignment } from '@/hooks/useCommercialConditions';
 
+/**
+ * Erros dos parâmetros financeiros do plano (faixas idênticas às do formulário).
+ * Usado tanto pela validação completa quanto pelo preview do cronograma.
+ */
+export function planFinancialErrors(p: PaymentPlanPayload) {
+  const errors: Record<string, string> = {};
+  const ranges = { discount_percent: [0, 100], monthly_interest_percent: [0, 100], installment_count: [1, 60], months_count: [0, 60], max_days: [0, 1095] } as const;
+  for (const key of Object.keys(ranges) as Array<keyof typeof ranges>) {
+    const [min, max] = ranges[key];
+    if (!Number.isFinite(p[key]) || p[key] < min || p[key] > max || (['installment_count', 'max_days'].includes(key) && !Number.isInteger(p[key]))) errors[key] = `Informe um valor ${['installment_count', 'max_days'].includes(key) ? 'inteiro ' : ''}entre ${min} e ${max}.`;
+  }
+  if (p.minimum_order_amount != null && (!Number.isFinite(p.minimum_order_amount) || p.minimum_order_amount < 0)) errors.minimum_order_amount = 'Informe um mínimo não negativo.';
+  return errors;
+}
+
 export function validatePlan(p: PaymentPlanPayload, mode = 'create', now = Date.now()) {
   const errors: Record<string, string> = {};
   if (!p.name.trim()) errors.name = 'Informe o nome.';
   if (!p.code.trim()) errors.code = 'Informe o código.';
   if (!Number.isSafeInteger(p.sort_order ?? 0)) errors.sort_order = 'Informe uma ordem inteira válida.';
   if (mode === 'metadata') return errors;
-  const ranges = { discount_percent: [0, 100], monthly_interest_percent: [0, 100], installment_count: [1, 60], months_count: [0, 60], max_days: [0, 1095] } as const;
-  for (const key of Object.keys(ranges) as Array<keyof typeof ranges>) {
-    const [min, max] = ranges[key];
-    if (!Number.isFinite(p[key]) || p[key] < min || p[key] > max || (['installment_count', 'max_days'].includes(key) && !Number.isInteger(p[key]))) errors[key] = `Informe um valor ${['installment_count', 'max_days'].includes(key) ? 'inteiro ' : ''}entre ${min} e ${max}.`;
-  }
+  Object.assign(errors, planFinancialErrors(p));
   if (!['cash', 'short_term', 'medium_term', 'extended_term', 'harvest', 'custom'].includes(p.plan_type)) errors.plan_type = 'Tipo inválido.';
   if (!['none', 'simple', 'compound'].includes(p.interest_type)) errors.interest_type = 'Tipo de juros inválido.';
   if (!['discount_from_base', 'fixed_item_price', 'quote_only'].includes(p.pricing_mode)) errors.pricing_mode = 'Modo inválido.';
-  if (p.minimum_order_amount != null && (!Number.isFinite(p.minimum_order_amount) || p.minimum_order_amount < 0)) errors.minimum_order_amount = 'Informe um mínimo não negativo.';
   const start = p.valid_from ? Date.parse(p.valid_from) : now;
   if (!Number.isFinite(start)) errors.valid_from = 'Data inicial inválida.';
   if (p.valid_until && (!Number.isFinite(Date.parse(p.valid_until)) || Date.parse(p.valid_until) <= start)) errors.valid_until = 'A data final deve ser posterior ao início da vigência.';
