@@ -582,18 +582,61 @@ export default function FluxoTecnico() {
                 <DialogDescription>Confirma a ação para esta recomendação técnica?</DialogDescription>
               </DialogHeader>
               <div className="py-4">
-                <Label>Observações (obrigatório se não for aprovação)</Label>
-                <Textarea value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Descreva o motivo..." className="mt-1" />
+                <Label htmlFor="comentario-decisao">
+                  {requerMotivo(actionDialog.type) ? "Motivo (obrigatório)" : "Observações (opcional)"}
+                </Label>
+                <Textarea
+                  id="comentario-decisao"
+                  value={comentario}
+                  onChange={(e) => setComentario(e.target.value)}
+                  placeholder="Descreva o motivo..."
+                  className="mt-1"
+                  aria-required={requerMotivo(actionDialog.type)}
+                />
+                {requerMotivo(actionDialog.type) && comentario.trim().length === 0 && (
+                  <p className="mt-2 text-xs text-destructive">Informe o motivo para esta decisão.</p>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setActionDialog({ open: false, type: "" })}>Cancelar</Button>
-                <Button onClick={handleApproval} disabled={approvalMutation.isPending}>
+                <Button
+                  onClick={handleApproval}
+                  disabled={
+                    approvalMutation.isPending ||
+                    (requerMotivo(actionDialog.type) && comentario.trim().length === 0)
+                  }
+                >
                   {approvalMutation.isPending ? "Processando..." : "Confirmar"}
                 </Button>
               </DialogFooter>
           </DialogContent>
       </Dialog>
+
+      <Sheet open={showHistory} onOpenChange={(open) => { setShowHistory(open); if (!open) setSelectedOS(null); }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Histórico da OS {textoOuTraco(selectedOS?.numero_os)}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div className="text-sm grid grid-cols-2 gap-2">
+              <div className="text-muted-foreground">Cliente:</div><div>{textoOuTraco(selectedOS?.clientes?.nome)}</div>
+              <div className="text-muted-foreground">Fazenda:</div><div>{textoOuTraco(selectedOS?.fazendas?.nome)}</div>
+              <div className="text-muted-foreground">Status atual:</div>
+              <div>{STATUS_OS_ONFARM[selectedOS?.status]?.label || textoOuTraco(selectedOS?.status)}</div>
+            </div>
+            <Separator />
+            {selectedOS?.registro_consultor_id ? (
+              <OSFlowTimeline registroId={selectedOS.registro_consultor_id} />
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                Esta OS não tem recomendação técnica de origem, portanto não há linha do tempo de fluxo.
+              </p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
+
   );
 }
 
