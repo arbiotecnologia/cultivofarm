@@ -141,6 +141,22 @@ export function MatrizConfiguravelTab() {
 
   useEffect(() => { setSelected(current => current.filter(id => draftIds.includes(id))); }, [draftIds]);
 
+  const simPresentations = useMemo(
+    () => matrixPresentations(items as unknown as MatrixPresentationRow[], {
+      planId: planFilter,
+      partnerId: partnerFilter,
+      itemId: simItem,
+    }),
+    [items, planFilter, partnerFilter, simItem],
+  );
+  const simErrors = useMemo(
+    () => validateMatrixSimulation({
+      presentation: simPresentations.find((p) => p.key === simPresentation) ?? null,
+      quantity: simQuantity,
+    }),
+    [simPresentations, simPresentation, simQuantity],
+  );
+
   function deleteDraft(id: string) {
     if (del.isPending || !confirm("Excluir este rascunho? Esta ação não pode ser desfeita.")) return;
     del.mutate({ id }, { onSuccess: () => toast.success("Rascunho excluído"), onError });
