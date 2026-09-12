@@ -14,19 +14,20 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const TECH_ROLES = ['administrador', 'gestor', 'consultor_tecnico', 'tecnico_agronomo'];
 const AI_TIMEOUT_MS = 45_000;
-const MODELO = 'openai/gpt-5-mini';
+const MODELO = 'gemini-3.8-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return j({ error: 'Método não suportado' }, 405);
   try {
-    if (!LOVABLE_API_KEY) return j({ error: 'Geração por IA indisponível (configuração ausente)' }, 503);
+    if (!GEMINI_API_KEY) return j({ error: 'Geração por IA indisponível (configuração ausente)' }, 503);
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) return j({ error: 'Não autenticado' }, 401);
@@ -107,21 +108,31 @@ Deno.serve(async (req) => {
     const timer = setTimeout(() => ctrl.abort(), AI_TIMEOUT_MS);
     let aiRes: Response;
     try {
-      aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      aiRes = await fetch(GEMINI_URL, {
         method: 'POST',
         signal: ctrl.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Lovable-API-Key': LOVABLE_API_KEY,
-          'X-Lovable-AIG-SDK': 'direct-fetch',
+          'x-goog-api-key': GEMINI_API_KEY,
         },
         body: JSON.stringify({
-          model: MODELO,
-          messages: [
-            { role: 'system', content: 'Responde estritamente em JSON válido.' },
-            { role: 'user', content: prompt },
-          ],
-          response_format: { type: 'json_object' },
+          systemInstruction: {
+            parts: [{ text: 'Responda estritamente em JSON válido e siga as regras agronômicas fornecidas.' }],
+          },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1200,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                texto: { type: 'STRING' },
+                justificativa: { type: 'STRING' },
+              },
+              required: ['texto'],
+            },
+          },
         }),
       });
     } catch {
@@ -131,14 +142,18 @@ Deno.serve(async (req) => {
     }
 
     if (aiRes.status === 429) return j({ error: 'Limite de uso atingido. Tente novamente em instantes.' }, 429);
-    if (aiRes.status === 402) return j({ error: 'Créditos de IA esgotados.' }, 402);
-    if (aiRes.status === 403) return j({ error: 'Geração por IA indisponível: limite de créditos do workspace atingido.' }, 403);
+    if (aiRes.status === 401 || aiRes.status === 403) {
+      return j({ error: 'Geração por IA indisponível (credencial do provedor inválida).' }, 503);
+    }
     if (!aiRes.ok) return j({ error: 'Serviço de IA indisponível no momento.' }, 502);
 
     const aiData = await aiRes.json().catch(() => null);
     let resultado;
     try {
-      resultado = parseRespostaIA(aiData?.choices?.[0]?.message?.content ?? '');
+      const raw = (aiData?.candidates?.[0]?.content?.parts ?? [])
+        .map((part: { text?: unknown }) => typeof part?.text === 'string' ? part.text : '')
+        .join('');
+      resultado = parseRespostaIA(raw);
     } catch {
       return j({ error: 'A IA retornou uma resposta inválida. Tente novamente.' }, 502);
     }
@@ -177,3 +192,4 @@ function j(b: unknown, status = 200) {
     status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 }
+
