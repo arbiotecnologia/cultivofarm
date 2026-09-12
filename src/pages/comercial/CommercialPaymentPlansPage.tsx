@@ -693,24 +693,32 @@ export default function CommercialPaymentPlansPage() {
                   <CardDescription>Base de referência {brl(100000)} — não persiste pedido</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Valor líquido</span>
-                    <span>{brl(sim.liquido)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Juros</span>
-                    <span>{brl(sim.juros)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium">
-                    <span>Total final</span>
-                    <span>{brl(sim.final)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      {form.installment_count}x de
-                    </span>
-                    <span>{brl(sim.parcela)}</span>
-                  </div>
+                  {sim === null ? (
+                    <p role="status" className="text-muted-foreground">
+                      Corrija os campos destacados para visualizar o cronograma
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Valor líquido</span>
+                        <span>{brl(sim.liquido)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Juros</span>
+                        <span>{brl(sim.juros)}</span>
+                      </div>
+                      <div className="flex justify-between font-medium">
+                        <span>Total final</span>
+                        <span>{brl(sim.final)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          {form.installment_count}x de
+                        </span>
+                        <span>{brl(sim.parcela)}</span>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
