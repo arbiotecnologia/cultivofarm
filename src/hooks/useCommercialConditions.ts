@@ -340,6 +340,7 @@ export function useSimulateConditionPrice() {
       microrganismo_id: string | null;
       unit_type: ConditionUnitType;
       volume_ml: number | null;
+      quantity: number;
     }) => {
       const { data, error } = await rpc("rpc_cc_simulate_price", {
         p_buyer_scope: v.buyer_scope,
