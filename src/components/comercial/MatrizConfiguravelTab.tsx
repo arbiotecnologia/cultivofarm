@@ -6,7 +6,7 @@
  * simulação server-side. A publicação projeta a regra em `commercial_price_rules`,
  * que é a fonte consumida pelo carrinho.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useConditionItemPrices,
   useSaveItemPrice,
@@ -136,6 +136,13 @@ export function MatrizConfiguravelTab() {
     [visible],
   );
 
+  useEffect(() => { setSelected(current => current.filter(id => draftIds.includes(id))); }, [draftIds]);
+
+  function deleteDraft(id: string) {
+    if (del.isPending || !confirm("Excluir este rascunho? Esta ação não pode ser desfeita.")) return;
+    del.mutate({ id }, { onSuccess: () => toast.success("Rascunho excluído"), onError });
+  }
+
   const denied = isError && String((error as Error)?.message ?? "").includes("permissão");
 
   function onError(e: unknown) {
@@ -206,9 +213,9 @@ export function MatrizConfiguravelTab() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row">
           <div>
-            <Label className="text-xs">Condição</Label>
+            <Label htmlFor="matrix-field-1" className="text-xs">Condição</Label>
             <Select value={planFilter || NONE} onValueChange={(v) => setPlanFilter(v === NONE ? "" : v)}>
-              <SelectTrigger className="sm:w-64"><SelectValue placeholder="Todas" /></SelectTrigger>
+              <SelectTrigger id="matrix-field-1" className="sm:w-64"><SelectValue placeholder="Todas" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NONE}>Todas</SelectItem>
                 {plans.map((p) => (
@@ -218,9 +225,9 @@ export function MatrizConfiguravelTab() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Parceiro</Label>
+            <Label htmlFor="matrix-field-2" className="text-xs">Parceiro</Label>
             <Select value={partnerFilter || NONE} onValueChange={(v) => setPartnerFilter(v === NONE ? "" : v)}>
-              <SelectTrigger className="sm:w-56"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectTrigger id="matrix-field-2" className="sm:w-56"><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NONE}>Todos</SelectItem>
                 {(lookups?.partners ?? []).map((p) => (
@@ -371,7 +378,7 @@ export function MatrizConfiguravelTab() {
                           size="icon"
                           variant="ghost"
                           aria-label="Excluir rascunho"
-                          onClick={() => del.mutate({ id: i.id }, { onSuccess: () => toast.success("Rascunho excluído"), onError })}
+                          disabled={del.isPending} onClick={() => deleteDraft(i.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -385,12 +392,15 @@ export function MatrizConfiguravelTab() {
 
           {/* Mobile — cartões por condição */}
           <div className="md:hidden divide-y">
+            <div className="p-4 flex items-center gap-2"><Checkbox id="matrix-mobile-all" checked={draftIds.length > 0 && selected.length === draftIds.length} onCheckedChange={c => setSelected(c ? draftIds : [])} /><Label htmlFor="matrix-mobile-all">Selecionar todos os rascunhos</Label></div>
             {isLoading && <div className="p-4 text-center text-sm">Carregando…</div>}
             {!isLoading && visible.length === 0 && (
               <div className="p-4 text-center text-sm text-muted-foreground">Nenhum preço cadastrado.</div>
             )}
             {visible.map((i) => (
               <div key={i.id} className="p-4 space-y-1">
+                <div className="flex items-center gap-2"><Checkbox id={`matrix-mobile-${i.id}`} disabled={!draftIds.includes(i.id)} checked={selected.includes(i.id)} onCheckedChange={c => setSelected(s => c ? [...new Set([...s, i.id])] : s.filter(id => id !== i.id))} /><Label htmlFor={`matrix-mobile-${i.id}`}>Selecionar preço</Label></div>
+                {i.status === "draft" && <Button size="sm" variant="ghost" disabled={del.isPending} onClick={() => deleteDraft(i.id)}><Trash2 className="h-4 w-4 mr-1" />Excluir rascunho</Button>}
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-sm">
                     {itemName.get(i.product_id ?? i.microrganismo_id ?? "") ?? "—"}
@@ -423,21 +433,21 @@ export function MatrizConfiguravelTab() {
           <DialogHeader><DialogTitle>Preço da condição (rascunho)</DialogTitle></DialogHeader>
           <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
             <div>
-              <Label>Condição de pagamento</Label>
+              <Label htmlFor="matrix-field-3">Condição de pagamento</Label>
               <Select value={form.plan_id} onValueChange={(v) => setForm({ ...form, plan_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger id="matrix-field-3"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Escopo</Label>
+              <Label htmlFor="matrix-field-4">Escopo</Label>
               <Select
                 value={form.buyer_scope}
                 onValueChange={(v) => setForm({ ...form, buyer_scope: v as ConditionScope, partner_id: null, customer_id: null })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="matrix-field-4"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="partner">Parceiro B2B</SelectItem>
                   <SelectItem value="default">Tabela padrão (modelo)</SelectItem>
@@ -446,9 +456,9 @@ export function MatrizConfiguravelTab() {
             </div>
             {form.buyer_scope === "partner" && (
               <div>
-                <Label>Parceiro</Label>
+                <Label htmlFor="matrix-field-5">Parceiro</Label>
                 <Select value={form.partner_id ?? ""} onValueChange={(v) => setForm({ ...form, partner_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger id="matrix-field-5"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     {(lookups?.partners ?? []).map((p) => (
                       <SelectItem key={p.id} value={p.id}>{p.nome_fantasia || p.razao_social}</SelectItem>
@@ -459,12 +469,12 @@ export function MatrizConfiguravelTab() {
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Produto</Label>
+                <Label htmlFor="matrix-field-6">Produto</Label>
                 <Select
                   value={form.product_id ?? NONE}
                   onValueChange={(v) => setForm({ ...form, product_id: v === NONE ? null : v, microrganismo_id: null })}
                 >
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectTrigger id="matrix-field-6"><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NONE}>—</SelectItem>
                     {(lookups?.produtos ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
@@ -472,12 +482,12 @@ export function MatrizConfiguravelTab() {
                 </Select>
               </div>
               <div>
-                <Label>Microrganismo</Label>
+                <Label htmlFor="matrix-field-7">Microrganismo</Label>
                 <Select
                   value={form.microrganismo_id ?? NONE}
                   onValueChange={(v) => setForm({ ...form, microrganismo_id: v === NONE ? null : v, product_id: null })}
                 >
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectTrigger id="matrix-field-7"><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NONE}>—</SelectItem>
                     {(lookups?.microrganismos ?? []).map((m) => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}
@@ -487,9 +497,9 @@ export function MatrizConfiguravelTab() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label>Unidade</Label>
+                <Label htmlFor="matrix-field-8">Unidade</Label>
                 <Select value={form.unit_type} onValueChange={(v) => setForm({ ...form, unit_type: v as ConditionUnitType })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="matrix-field-8"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="hectare">Hectare</SelectItem>
                     <SelectItem value="dose">Dose</SelectItem>
@@ -499,8 +509,8 @@ export function MatrizConfiguravelTab() {
                 </Select>
               </div>
               <div>
-                <Label>Volume (mL)</Label>
-                <Input
+                <Label htmlFor="matrix-field-9">Volume (mL)</Label>
+                <Input id="matrix-field-9"
                   type="number"
                   value={form.volume_ml ?? ""}
                   onChange={(e) => setForm({ ...form, volume_ml: e.target.value ? Number(e.target.value) : null })}
@@ -508,8 +518,8 @@ export function MatrizConfiguravelTab() {
                 />
               </div>
               <div>
-                <Label>Qtd. mínima</Label>
-                <Input
+                <Label htmlFor="matrix-field-10">Qtd. mínima</Label>
+                <Input id="matrix-field-10"
                   type="number"
                   value={form.min_quantity}
                   onChange={(e) => setForm({ ...form, min_quantity: Number(e.target.value) || 0 })}
@@ -518,14 +528,14 @@ export function MatrizConfiguravelTab() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Modo</Label>
+                <Label htmlFor="matrix-field-11">Modo</Label>
                 <Select
                   value={form.pricing_mode}
                   onValueChange={(v) =>
                     setForm({ ...form, pricing_mode: v as ConditionPricingMode, condition_price: null, discount_percent: null })
                   }
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="matrix-field-11"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="fixed_item_price">Preço fixo</SelectItem>
                     <SelectItem value="discount_from_base">Desconto sobre base</SelectItem>
@@ -534,8 +544,8 @@ export function MatrizConfiguravelTab() {
                 </Select>
               </div>
               <div>
-                <Label>{form.pricing_mode === "discount_from_base" ? "Desconto (%)" : "Preço"}</Label>
-                <Input
+                <Label htmlFor="matrix-field-12">{form.pricing_mode === "discount_from_base" ? "Desconto (%)" : "Preço"}</Label>
+                <Input id="matrix-field-12"
                   type="number"
                   step="0.01"
                   disabled={form.pricing_mode === "quote_only"}
@@ -557,12 +567,12 @@ export function MatrizConfiguravelTab() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Vigência inicial</Label>
-                <Input type="date" value={form.valid_from ?? ""} onChange={(e) => setForm({ ...form, valid_from: e.target.value || null })} />
+                <Label htmlFor="matrix-field-13">Vigência inicial</Label>
+                <Input id="matrix-field-13" type="date" value={form.valid_from ?? ""} onChange={(e) => setForm({ ...form, valid_from: e.target.value || null })} />
               </div>
               <div>
-                <Label>Vigência final</Label>
-                <Input type="date" value={form.valid_until ?? ""} onChange={(e) => setForm({ ...form, valid_until: e.target.value || null })} />
+                <Label htmlFor="matrix-field-14">Vigência final</Label>
+                <Input id="matrix-field-14" type="date" value={form.valid_until ?? ""} onChange={(e) => setForm({ ...form, valid_until: e.target.value || null })} />
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -570,8 +580,8 @@ export function MatrizConfiguravelTab() {
               <Label htmlFor="exc">Exceção comercial (exige motivo)</Label>
             </div>
             <div>
-              <Label>Motivo</Label>
-              <Textarea value={form.motivo ?? ""} onChange={(e) => setForm({ ...form, motivo: e.target.value || null })} />
+              <Label htmlFor="matrix-field-15">Motivo</Label>
+              <Textarea id="matrix-field-15" value={form.motivo ?? ""} onChange={(e) => setForm({ ...form, motivo: e.target.value || null })} />
             </div>
           </div>
           <DialogFooter>
@@ -589,8 +599,8 @@ export function MatrizConfiguravelTab() {
           <DialogHeader><DialogTitle>Reajuste em massa ({selected.length} itens)</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label>Percentual (+/-)</Label>
-              <Input type="number" step="0.01" value={adjustPercent} onChange={(e) => setAdjustPercent(Number(e.target.value) || 0)} />
+              <Label htmlFor="matrix-field-16">Percentual (+/-)</Label>
+              <Input id="matrix-field-16" type="number" step="0.01" value={adjustPercent} onChange={(e) => setAdjustPercent(Number(e.target.value) || 0)} />
             </div>
             <Button
               variant="outline"
@@ -615,8 +625,8 @@ export function MatrizConfiguravelTab() {
               </div>
             )}
             <div>
-              <Label>Motivo</Label>
-              <Textarea value={adjustMotivo} onChange={(e) => setAdjustMotivo(e.target.value)} />
+              <Label htmlFor="matrix-field-17">Motivo</Label>
+              <Textarea id="matrix-field-17" value={adjustMotivo} onChange={(e) => setAdjustMotivo(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
