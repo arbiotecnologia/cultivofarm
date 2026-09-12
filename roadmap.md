@@ -1,7 +1,9 @@
 # Roadmap de Tarefas
 
 ## Aplicações — unidades (correção focada)
-- Em execução: unidade explícita da recomendação, total dimensional, limpeza ao trocar OS e coerência temporal.
+- Concluído frontend seguro: bloqueio por unidade ausente no contrato da OS, cálculo dimensional sem conversão, limpeza ao trocar OS e coerência temporal; testes puros 19/19.
+- Pendente: habilitação multiunidade exige vínculo persistente OS/prescrição e snapshot de unidade ausentes no contrato atual; não houve alteração de banco.
+- Typecheck/build não executados manualmente (restrição do ambiente); log automático segue com erros preexistentes de tipos gerados.
 - Bloqueio externo identificado antes das edições: conexão local divergente e tipos gerados com 2.060 linhas; arquivos protegidos não alterados.
 
 ## Catálogo na prévia — lote atual
