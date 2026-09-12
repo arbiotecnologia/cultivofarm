@@ -48,16 +48,24 @@ export default function MonitoramentoAlertas() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "overdue" | "expiring">("all");
+  const [filter, setFilter] = useState<FiltroAlerta>("all");
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [newDate, setNewDate] = useState("");
   const [isRescheduling, setIsRescheduling] = useState(false);
+
+  const hoje = hojeSaoPaulo();
 
   useEffect(() => {
     document.title = "Alertas de Monitoramento | AR Bio";
   }, []);
 
-  const { data: alertas = [], isLoading } = useQuery({
+  const {
+    data: alertas = [],
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: ["alertas-monitoramento-gestor"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -78,16 +86,25 @@ export default function MonitoramentoAlertas() {
 
   const rescheduleMutation = useMutation({
     mutationFn: async ({ id, date, registroId }: { id: string; date: string; registroId?: string }) => {
-      const { error: alertError } = await supabase
+      // Atualização condicionada ao status: se outro usuário concluiu o
+      // monitoramento nesse intervalo, nenhuma linha é afetada e abortamos.
+      const { data: updated, error: alertError } = await supabase
         .from("alertas_agronomicos")
-        .update({ 
+        .update({
           data_vencimento: date,
           nivel_risco: "medio", // Reset risk when rescheduled
           updated_at: new Date().toISOString()
         })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("status", "monitoramento")
+        .select("id");
 
       if (alertError) throw alertError;
+      if (!updated || updated.length === 0) {
+        throw new Error(
+          "Este monitoramento já foi concluído ou alterado por outro usuário. Atualize a lista.",
+        );
+      }
 
       if (registroId) {
         const { error: regError } = await supabase
@@ -101,78 +118,76 @@ export default function MonitoramentoAlertas() {
       toast.success("Monitoramento reprogramado com sucesso");
       queryClient.invalidateQueries({ queryKey: ["alertas-monitoramento-gestor"] });
       setSelectedAlert(null);
+      setNewDate("");
       setIsRescheduling(false);
     },
     onError: (err: any) => {
-      toast.error("Erro ao reprogramar: " + err.message);
+      toast.error(err?.message || "Não foi possível reprogramar o monitoramento.");
+      queryClient.invalidateQueries({ queryKey: ["alertas-monitoramento-gestor"] });
     }
   });
 
-  const filteredAlertas = alertas.filter((a) => {
-    const clienteNome = (a.talhoes as any)?.fazendas?.clientes?.nome || "";
-    const fazendaNome = (a.fazendas as any)?.nome || "";
-    const talhaoNome = (a.talhoes as any)?.nome || "";
-    
-    const matchesSearch = 
-      clienteNome.toLowerCase().includes(search.toLowerCase()) ||
-      fazendaNome.toLowerCase().includes(search.toLowerCase()) ||
-      talhaoNome.toLowerCase().includes(search.toLowerCase()) ||
-      a.descricao?.toLowerCase().includes(search.toLowerCase());
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dueDate = a.data_vencimento ? parseISO(a.data_vencimento) : null;
-
-    let matchesFilter = true;
-    if (filter === "overdue") {
-      matchesFilter = dueDate ? isBefore(dueDate, today) : false;
-    } else if (filter === "expiring") {
-      const tomorrow = addDays(today, 1);
-      matchesFilter = dueDate ? (isToday(dueDate) || isToday(isBefore(dueDate, tomorrow) ? dueDate : today)) : false;
-      // Simplified "vencendo" (today or tomorrow)
-      if (dueDate) {
-        const d = new Date(dueDate);
-        d.setHours(0,0,0,0);
-        const t = new Date(today);
-        const tom = new Date(today);
-        tom.setDate(tom.getDate() + 2);
-        matchesFilter = d >= t && d < tom;
-      }
-    }
-
-    return matchesSearch && matchesFilter;
+  const filteredAlertas = filtrarAlertas(alertas as any[], {
+    busca: search,
+    filtro: filter,
+    hoje,
   });
 
-  const getStatusBadge = (date: string) => {
-    if (!date) return <Badge variant="outline">Sem data</Badge>;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const d = parseISO(date);
-    
-    if (isBefore(d, today)) {
-      return <Badge variant="destructive" className="animate-pulse">Vencido</Badge>;
+  const indicadores = calcularIndicadores(filteredAlertas, hoje);
+
+  const getStatusBadge = (date: unknown) => {
+    const classificacao = classificarVencimento(date, hoje);
+    const rotulo = ROTULO_VENCIMENTO[classificacao];
+    if (classificacao === "sem_data") return <Badge variant="outline">{rotulo}</Badge>;
+    if (classificacao === "vencido") {
+      return <Badge variant="destructive" className="animate-pulse">{rotulo}</Badge>;
     }
-    if (isToday(d)) {
-      return <Badge variant="default" className="bg-amber-500">Vence hoje</Badge>;
+    if (classificacao === "hoje") {
+      return <Badge variant="default" className="bg-amber-500">{rotulo}</Badge>;
     }
-    const tomorrow = addDays(today, 1);
-    if (d.toDateString() === tomorrow.toDateString()) {
-      return <Badge variant="secondary" className="bg-amber-100 text-amber-700">Vence amanhã</Badge>;
+    if (classificacao === "amanha") {
+      return <Badge variant="secondary" className="bg-amber-100 text-amber-700">{rotulo}</Badge>;
     }
-    return <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200">Em dia</Badge>;
+    return (
+      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200">
+        {rotulo}
+      </Badge>
+    );
+  };
+
+  const validacaoData = selectedAlert
+    ? validarNovaData(newDate, hoje, selectedAlert.data_vencimento)
+    : { ok: false as const };
+
+  const abrirReprogramacao = (alerta: any) => {
+    if (!podeReprogramar(alerta?.status)) {
+      toast.error("Este monitoramento não está mais em aberto.");
+      return;
+    }
+    setSelectedAlert(alerta);
+    setNewDate(toDataCivil(alerta?.data_vencimento) || "");
+    setIsRescheduling(true);
   };
 
   const handleReschedule = () => {
-    if (!newDate) {
-      toast.error("Selecione uma nova data");
+    if (rescheduleMutation.isPending) return;
+    if (!selectedAlert) return;
+    if (!podeReprogramar(selectedAlert.status)) {
+      toast.error("Este monitoramento não está mais em aberto.");
       return;
     }
-    rescheduleMutation.mutate({ 
-      id: selectedAlert.id, 
-      date: newDate, 
-      registroId: selectedAlert.registro_origem_id 
+    const validacao = validarNovaData(newDate, hoje, selectedAlert.data_vencimento);
+    if (!validacao.ok) {
+      toast.error(validacao.erro);
+      return;
+    }
+    rescheduleMutation.mutate({
+      id: selectedAlert.id,
+      date: newDate,
+      registroId: selectedAlert.registro_origem_id
     });
   };
+
 
   return (
     <div className="container mx-auto p-4 space-y-6">
