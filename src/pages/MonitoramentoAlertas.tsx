@@ -12,9 +12,20 @@ import {
   ChevronRight, ArrowRight, CheckCircle2, RefreshCw, X, Eye
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { isBefore, isToday, addDays, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { formatDateDisplay } from "@/lib/date-utils";
+import {
+  calcularIndicadores,
+  classificarVencimento,
+  filtrarAlertas,
+  hojeSaoPaulo,
+  podeReprogramar,
+  ROTULO_VENCIMENTO,
+  textoOuTraco,
+  toDataCivil,
+  validarNovaData,
+  type FiltroAlerta,
+} from "@/lib/monitoramento/alertas";
+
 import { toast } from "sonner";
 import {
   Dialog,
