@@ -2,8 +2,16 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, AlertTriangle, CloudOff } from "lucide-react";
 import { formatTimeDisplay } from "@/lib/date-utils";
-import { addDays, subDays, startOfWeek, format, isSameDay, setHours, setMinutes } from "date-fns";
+import { addDays, subDays, startOfWeek, format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  HOUR_START,
+  HOUR_END,
+  SLOT_HEIGHT,
+  TOTAL_HEIGHT,
+  isWithinGridRange,
+  resolveDropDate,
+} from "@/lib/agenda/grid";
 
 const URGENCIA_BORDER: Record<string, string> = {
   baixa: "border-l-blue-400",
@@ -21,19 +29,16 @@ const STATUS_BG: Record<string, string> = {
   concluida: "bg-green-500/15",
 };
 
-const HOUR_START = 7;
-const HOUR_END = 19;
-const SLOT_HEIGHT = 48; // px per hour
-const TOTAL_HEIGHT = (HOUR_END - HOUR_START + 1) * SLOT_HEIGHT;
-
 interface Props {
   items: any[];
   mode: "diario" | "semanal";
   onItemClick: (id: string) => void;
   onItemMove?: (id: string, newDate: Date) => void;
+  /** Reagendamento em andamento: bloqueia novos arrastes até concluir. */
+  isMoving?: boolean;
 }
 
-export function AgendaCalendarGrid({ items, mode, onItemClick, onItemMove }: Props) {
+export function AgendaCalendarGrid({ items, mode, onItemClick, onItemMove, isMoving }: Props) {
   const [cursor, setCursor] = useState<Date>(new Date());
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
