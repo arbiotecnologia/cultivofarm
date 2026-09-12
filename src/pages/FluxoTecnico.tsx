@@ -186,6 +186,23 @@ export default function FluxoTecnico() {
     mutationFn: async ({ registro, type, newStatus, comentario, isReopen }: {
       registro: any; type: string; newStatus: RegistroStatus; comentario: string; isReopen?: boolean;
     }) => {
+      if (!podeDecidirRegistro(registro.status)) {
+        throw new Error("Esta recomendação não está mais aguardando aprovação.");
+      }
+
+      // Transição condicionada ao status lido: se outro usuário já decidiu,
+      // nenhuma linha é afetada e a decisão é abortada antes de gerar registros.
+      const { data: updated, error: updErr } = await supabase
+        .from("registros_consultor")
+        .update({ status: newStatus as any })
+        .eq("id", registro.id)
+        .eq("status", registro.status)
+        .select("id");
+      if (updErr) throw updErr;
+      if (!updated || updated.length === 0) {
+        throw new Error("Esta recomendação já foi decidida por outro usuário. Atualize a fila.");
+      }
+
       const { error: aprError } = await supabase.from("aprovacoes_tecnicas").insert({
         registro_consultor_id: registro.id,
         status_aprovacao: type,
@@ -196,12 +213,6 @@ export default function FluxoTecnico() {
         override: isReopen || false,
       } as any);
       if (aprError) throw aprError;
-
-      const { error: updErr } = await supabase
-        .from("registros_consultor")
-        .update({ status: newStatus as any })
-        .eq("id", registro.id);
-      if (updErr) throw updErr;
 
       await supabase.from("registros_consultor_status_log").insert({
         registro_consultor_id: registro.id,
@@ -244,26 +255,32 @@ export default function FluxoTecnico() {
         }
       }
     },
+    onError: (err: any) => {
+      toast.error(err?.message || "Não foi possível registrar a decisão.");
+      refetchAll();
+    },
   });
 
   const gerarOSMutation = useMutation({
     mutationFn: async (registro: any) => {
-      const { data: recs } = await supabase
+      const { data: recs, error: recsErr } = await supabase
         .from("registros_consultor_recomendacoes")
         .select("*, produtos(nome, dose_ml_ha)")
         .eq("registro_consultor_id", registro.id);
+      if (recsErr) throw recsErr;
 
       if (!recs || recs.length === 0) throw new Error("Nenhuma recomendação encontrada.");
 
       const urgencia = registro.urgencia;
       const prioridade = urgencia === "critica" ? "alta" : urgencia === "alta" ? "alta" : "media";
 
+      const criadas: string[] = [];
       for (const rec of recs) {
         const dose = rec.dose_recomendada_valor || 0;
         const area = registro.area_hectares || 0;
         const volumeTotal = dose * area;
 
-        await supabase.from("ordens_servico_onfarm").insert({
+        const { data: osRow, error: osErr } = await supabase.from("ordens_servico_onfarm").insert({
           registro_consultor_id: registro.id,
           cliente_id: registro.cliente_id,
           fazenda_id: registro.fazenda_id,
@@ -276,17 +293,45 @@ export default function FluxoTecnico() {
           data_recomendada: new Date().toISOString().split("T")[0],
           prioridade: prioridade as any,
           status: "aberta" as any,
-        } as any);
+        } as any).select("id").maybeSingle();
+        if (osErr) {
+          throw new Error(
+            criadas.length > 0
+              ? `Falha ao gerar parte das OS (${criadas.length} já criada(s)). Verifique a aba OS On-Farm antes de repetir. Detalhe: ${osErr.message}`
+              : `Falha ao gerar a OS: ${osErr.message}`,
+          );
+        }
+        if (osRow?.id) criadas.push(osRow.id as string);
       }
 
-      await supabase.from("registros_consultor").update({ status: "convertido_os" as any }).eq("id", registro.id);
+      const { error: convErr } = await supabase
+        .from("registros_consultor")
+        .update({ status: "convertido_os" as any })
+        .eq("id", registro.id);
+      if (convErr) throw convErr;
     },
-    onSuccess: () => { toast.success("OS gerada!"); refetchAll(); }
+    onSuccess: () => { toast.success("OS gerada!"); refetchAll(); },
+    onError: (err: any) => {
+      toast.error(err?.message || "Não foi possível gerar as Ordens de Serviço.");
+      refetchAll();
+    },
   });
 
   const handleApproval = () => {
     if (!selectedRegistro) return;
+    if (approvalMutation.isPending) return;
     const type = actionDialog.type;
+
+    const motivo = validarComentarioDecisao(type, comentario);
+    if (!motivo.ok) {
+      toast.error(motivo.erro);
+      return;
+    }
+    if (!podeDecidirRegistro(selectedRegistro.status)) {
+      toast.error("Esta recomendação não está mais aguardando aprovação.");
+      return;
+    }
+
     let newStatus: RegistroStatus = "enviado_aprovacao";
     if (type === "aprovado") newStatus = "aprovado";
     if (type === "reprovado") newStatus = "reprovado";
@@ -295,23 +340,37 @@ export default function FluxoTecnico() {
     approvalMutation.mutate({ registro: selectedRegistro, type, newStatus, comentario });
   };
 
-  const handleOSStatusChange = async (osId: string, newStatus: string) => {
-      await supabase.from("ordens_servico_onfarm").update({ status: newStatus as any }).eq("id", osId);
-      refetchOS();
+  const handleOSStatusChange = async (os: any, newStatus: string) => {
+    const motivo = blockedOSReason(os?.status, newStatus);
+    if (motivo) {
+      toast.error(motivo);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("ordens_servico_onfarm")
+      .update({ status: newStatus as any })
+      .eq("id", os.id)
+      .eq("status", os.status)
+      .select("id");
+    if (error) {
+      toast.error(error.message || "Não foi possível atualizar a OS.");
+    } else if (!data || data.length === 0) {
+      toast.error("O status desta OS foi alterado por outro usuário. Atualize a lista.");
+    } else {
+      toast.success("Status da OS atualizado.");
+    }
+    refetchOS();
   };
 
-  const filteredPendentes = pendentes.filter(r => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return r.clientes?.nome?.toLowerCase().includes(s) || r.fazendas?.nome?.toLowerCase().includes(s);
+  const filteredPendentes = pendentes.filter((r) =>
+    matchTexto([r.clientes?.nome, r.fazendas?.nome, r.talhoes?.nome], searchAprov),
+  );
+
+  const filteredOS = ordensOnFarm.filter((o) => {
+    if (filterStatus !== "all" && o.status !== filterStatus) return false;
+    return matchTexto([o.numero_os, o.clientes?.nome, o.fazendas?.nome], searchOS);
   });
 
-  const filteredOS = ordensOnFarm.filter(o => {
-    if (filterStatus !== "all" && o.status !== filterStatus) return false;
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return o.numero_os?.toLowerCase().includes(s) || o.clientes?.nome?.toLowerCase().includes(s);
-  });
 
   const pendentesCount = pendentes.length;
   const aprovadosCount = aprovacoes.filter((a: any) => a.status_aprovacao === "aprovado").length;
