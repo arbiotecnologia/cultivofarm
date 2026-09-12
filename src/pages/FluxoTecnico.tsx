@@ -86,26 +86,34 @@ export default function FluxoTecnico() {
   const navigate = useNavigate();
   const { user, role } = useAuth();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [searchAprov, setSearchAprov] = useState("");
+  const [searchOS, setSearchOS] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedRegistro, setSelectedRegistro] = useState<any>(null);
   const [showReview, setShowReview] = useState(false);
   const [actionDialog, setActionDialog] = useState<{ open: boolean; type: string }>({ open: false, type: "" });
   const [comentario, setComentario] = useState("");
-  const [selectedOSId, setSelectedOSId] = useState<string | null>(null);
+  const [selectedOS, setSelectedOS] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
 
   const isAdmin = role === "administrador";
   const isGestor = role === "gestor";
   
-  const { data: pendentes = [], refetch: refetchPendentes } = useQuery({
+  const {
+    data: pendentes = [],
+    refetch: refetchPendentes,
+    isLoading: loadingPendentes,
+    isError: errorPendentes,
+    isFetching: fetchingPendentes,
+  } = useQuery({
     queryKey: ["fluxo-pendentes"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("registros_consultor")
         .select("*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), culturas(nome)")
         .eq("status", "enviado_aprovacao")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data || []) as any[];
     },
     refetchInterval: 300000,
@@ -114,22 +122,30 @@ export default function FluxoTecnico() {
   const { data: aprovacoes = [], refetch: refetchAprovacoes } = useQuery({
     queryKey: ["aprovacoes-todas"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("aprovacoes_tecnicas")
         .select("*, aprovado_por_perfil:aprovado_por(nome), registros_consultor(*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), culturas(nome))")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data || []) as any[];
     },
     refetchInterval: 300000,
   });
 
-  const { data: ordensOnFarm = [], refetch: refetchOS } = useQuery({
+  const {
+    data: ordensOnFarm = [],
+    refetch: refetchOS,
+    isLoading: loadingOS,
+    isError: errorOS,
+    isFetching: fetchingOS,
+  } = useQuery({
     queryKey: ["os-onfarm"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("ordens_servico_onfarm")
         .select("*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome), programacao_producao!ordem_servico_onfarm_id(lotes(id, status, controle_qualidade(resultado)))")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data || []) as any[];
     },
     refetchInterval: 300000,
@@ -138,10 +154,11 @@ export default function FluxoTecnico() {
   const { data: allRegistros = [] } = useQuery({
     queryKey: ["all-registros-dashboard"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("registros_consultor")
         .select("*, clientes(nome, codigo_cliente), fazendas(nome), culturas(nome)")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data || []) as any[];
     },
   });
@@ -152,6 +169,7 @@ export default function FluxoTecnico() {
     refetchOS();
     queryClient.invalidateQueries({ queryKey: ["all-registros-dashboard"] });
   };
+
 
   const openReview = (registro: any) => {
     setSelectedRegistro(registro);
