@@ -38,5 +38,14 @@ export function validateSimulation(f: SimulationForm, needsDate = false) {
   return errors;
 }
 export function assignmentApplies(a: PlanAssignment, partner: string, now = Date.now()) {
-  return a.status === 'published' && a.buyer_scope === 'partner' && a.partner_id === partner && Date.parse(a.valid_from) <= now && (!a.valid_until || Date.parse(a.valid_until) > now);
+  if (!partner || !Number.isFinite(now) || a.status !== 'published') return false;
+  // Assignment validity uses SQL DATE, inclusive at both ends (CURRENT_DATE).
+  const today = new Date(now).toISOString().slice(0, 10);
+  const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+  if (!validDate(a.valid_from) || a.valid_from > today ||
+      (a.valid_until != null && (!validDate(a.valid_until) || a.valid_until < today))) return false;
+  // Default assignments are publishable; default price-table rows are only templates.
+  return (a.buyer_scope === 'partner' && a.partner_id === partner && a.customer_id == null) ||
+    (a.buyer_scope === 'default' && a.partner_id == null && a.customer_id == null);
 }
