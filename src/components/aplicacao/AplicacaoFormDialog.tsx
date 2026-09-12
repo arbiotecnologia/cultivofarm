@@ -12,8 +12,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, MapPin, AlertTriangle, Sprout, FlaskConical, Cloud, Camera, X, ImageIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { validarAplicacao } from "@/lib/aplicacoes/validacao";
+import { dataLocal, validarAplicacao } from "@/lib/aplicacoes/validacao";
 import { EvidenciasUploader, uploadEvidencias, PendingEvidencia } from "./EvidenciasUploader";
+import { dependentesNovaOS, totalAplicacao, unidadeAplicacao } from "@/lib/aplicacoes/unidades";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 
 const MODOS = ["Pulverização foliar", "Aplicação no colo da planta", "Via solo", "Tratamento de semente", "Sulco de plantio", "Jato dirigido"];
@@ -40,8 +41,8 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
 
   const [osId, setOsId] = useState(defaultOsId || "");
-  const [dataAplicacao, setDataAplicacao] = useState(new Date().toISOString().split("T")[0]);
-  const [horaInicio, setHoraInicio] = useState<string>(new Date().toISOString().slice(0, 16));
+  const [dataAplicacao, setDataAplicacao] = useState(dataLocal().slice(0, 10));
+  const [horaInicio, setHoraInicio] = useState<string>(dataLocal());
   const [horaFim, setHoraFim] = useState<string>("");
   const [responsavelId, setResponsavelId] = useState(user?.id || "");
   const [modoAplicacao, setModoAplicacao] = useState("");
@@ -107,8 +108,8 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
     if (aplicacaoOriginal) {
       setOsId(aplicacaoOriginal.ordem_servico_id);
       setDataAplicacao(aplicacaoOriginal.data_aplicacao);
-      setHoraInicio(aplicacaoOriginal.hora_inicio ? new Date(aplicacaoOriginal.hora_inicio).toISOString().slice(0, 16) : "");
-      setHoraFim(aplicacaoOriginal.hora_fim ? new Date(aplicacaoOriginal.hora_fim).toISOString().slice(0, 16) : "");
+      setHoraInicio(aplicacaoOriginal.hora_inicio ? dataLocal(new Date(aplicacaoOriginal.hora_inicio)) : "");
+      setHoraFim(aplicacaoOriginal.hora_fim ? dataLocal(new Date(aplicacaoOriginal.hora_fim)) : "");
       setResponsavelId(aplicacaoOriginal.responsavel_id || "");
       setModoAplicacao(aplicacaoOriginal.modo_aplicacao || "");
       setLoteId(aplicacaoOriginal.lote_usado_id || "");
@@ -167,19 +168,29 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
     },
   });
 
-  useEffect(() => {
-    if (osSel) {
-      const p: any = (osSel as any).produtos;
-      if (!doseAplicada && p?.dose_ml_ha) setDoseAplicada(String(p.dose_ml_ha));
-      if (!areaAplicada && (osSel as any).area_hectares) setAreaAplicada(String((osSel as any).area_hectares));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [osId]);
+  // ordens_servico não possui unidade nem vínculo de prescrição; dose_ml_ha
+  // do catálogo não prova a unidade da recomendação desta OS.
+  const unidade = unidadeAplicacao(null);
+  const erroUnidade = osId
+    ? "A OS não informa uma unidade inequívoca da recomendação. Registro bloqueado até que esse vínculo esteja disponível."
+    : "Selecione a OS";
+  const total = totalAplicacao(doseAplicada, areaAplicada, unidade?.dose);
+  const volumeTotal = total?.valor ?? 0;
+  const desvioAlto = false; // Sem recomendação vinculada, não comparar ao catálogo atual.
+  const desvioPct = 0;
 
-  const volumeTotal = Number(doseAplicada || 0) * Number(areaAplicada || 0);
-  const doseRecomendada = Number((osSel as any)?.produtos?.dose_ml_ha || 0);
-  const desvioPct = doseRecomendada ? Math.abs((Number(doseAplicada) - doseRecomendada) / doseRecomendada) * 100 : 0;
-  const desvioAlto = desvioPct > 20;
+  const trocarOS = (id: string) => {
+    if (id === osId) return;
+    const limpos = dependentesNovaOS();
+    setOsId(id);
+    setDoseAplicada(limpos.dose);
+    setAreaAplicada(limpos.area);
+    setLoteId(limpos.lote);
+    setVolumeCalda(limpos.calda);
+    setModoAplicacao("");
+    setEvidencias([]);
+    setEvidenciasParaManter([]);
+  };
 
   const capturarGPS = () => {
     if (!navigator.geolocation) return toast.error("GPS não disponível");
@@ -191,7 +202,10 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
 
   const submit = async () => {
     if (submittingRef.current) return;
+    if (!unidade) return toast.error(erroUnidade);
+    if (loteId && !lotes.some(l => l.id === loteId)) return toast.error("Selecione um lote do produto da OS");
     const erro = validarAplicacao({
+      dataAplicacao,
       osId,
       doseAplicada,
       areaAplicada,
@@ -222,7 +236,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
         lote_usado_id: loteId || null,
         dose_aplicada: Number(doseAplicada),
         volume_calda_l_ha: volumeCalda ? Number(volumeCalda) : null,
-        volume_total_aplicado_ml: volumeTotal || null,
+        volume_total_aplicado_ml: unidade.total === "mL" ? volumeTotal : null,
         area_aplicada_ha: Number(areaAplicada),
         equipamento: equipamento || null,
         equipamento_modelo: equipamentoModelo || null,
@@ -341,7 +355,7 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
             <h3 className="text-sm font-semibold flex items-center gap-2"><Sprout className="h-4 w-4 text-primary" />Ordem de Serviço</h3>
             <div className="space-y-1.5">
               <Label>OS *</Label>
-              <Select value={osId} onValueChange={setOsId}>
+              <Select value={osId} onValueChange={trocarOS} disabled={saving || !!rectifyId}>
                 <SelectTrigger><SelectValue placeholder="Selecione a OS" /></SelectTrigger>
                 <SelectContent>
                   {ordens.map((o: any) => (
@@ -356,9 +370,9 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
               <Card className="bg-muted/40">
                 <CardContent className="p-3 text-xs grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div><span className="text-muted-foreground">Produto:</span><br /><strong>{(osSel as any).produtos?.nome}</strong></div>
-                  <div><span className="text-muted-foreground">Dose recomendada:</span><br /><strong>{(osSel as any).produtos?.dose_ml_ha || "—"} mL/ha</strong></div>
+                  <div><span className="text-muted-foreground">Dose recomendada:</span><br /><strong>Unidade não informada pela OS</strong></div>
                   <div><span className="text-muted-foreground">Área OS:</span><br /><strong>{(osSel as any).area_hectares || "—"} ha</strong></div>
-                  <div><span className="text-muted-foreground">Volume previsto:</span><br /><strong>{(osSel as any).volume_total_ml ? ((osSel as any).volume_total_ml / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "—"} L</strong></div>
+                  <div><span className="text-muted-foreground">Volume previsto:</span><br /><strong>{(osSel as any).volume_total_ml ? (osSel as any).volume_total_ml.toLocaleString("pt-BR") : "—"} mL</strong></div>
                 </CardContent>
               </Card>
             )}
@@ -391,17 +405,17 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
               </div>
               <div className="space-y-1.5">
                 <Label>Lote usado</Label>
-                <Select value={loteId} onValueChange={setLoteId}>
+                <Select value={loteId} onValueChange={setLoteId} disabled={!osSel || saving}>
                   <SelectTrigger><SelectValue placeholder="Selecione o lote" /></SelectTrigger>
-                  <SelectContent>{lotes.map((l: any) => <SelectItem key={l.id} value={l.id}>{l.codigo_lote} · {l.volume_produzido ? (l.volume_produzido / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "0"} L</SelectItem>)}</SelectContent>
+                  <SelectContent>{lotes.map((l: any) => <SelectItem key={l.id} value={l.id}>{l.codigo_lote}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="space-y-1.5"><Label>Dose real (mL/ha) *</Label><Input type="number" value={doseAplicada} onChange={(e) => setDoseAplicada(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>Dose real{unidade ? ` (${unidade.dose})` : " (unidade não informada)"} *</Label><Input type="number" value={doseAplicada} onChange={(e) => setDoseAplicada(e.target.value)} /></div>
               <div className="space-y-1.5"><Label>Área aplicada (ha) *</Label><Input type="number" value={areaAplicada} onChange={(e) => setAreaAplicada(e.target.value)} /></div>
               <div className="space-y-1.5"><Label>Calda (L/ha)</Label><Input type="number" value={volumeCalda} onChange={(e) => setVolumeCalda(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Volume total</Label><Input value={volumeTotal ? `${(volumeTotal / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} L` : "—"} readOnly className="bg-muted" /></div>
+              <div className="space-y-1.5"><Label>Total aplicado</Label><Input value={total ? `${total.valor.toLocaleString("pt-BR")} ${total.unidade}` : "—"} readOnly className="bg-muted" /></div>
             </div>
             {desvioAlto && (
               <div className="flex gap-2 items-start text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 p-2 rounded border border-amber-200">
@@ -512,7 +526,8 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
             Este registro de aplicação faz parte da rastreabilidade da prescrição agronômica. Confirme se segue a recomendação técnica vigente.
           </p>
 
-          <Button className="w-full h-11" onClick={submit} disabled={saving || !osId}>
+          {osId && !unidade && <p role="alert" className="text-sm text-destructive">{erroUnidade}</p>}
+          <Button className="w-full h-11" onClick={submit} disabled={saving || !osId || !unidade}>
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : "Registrar e finalizar OS"}
           </Button>
         </div>
