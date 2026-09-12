@@ -444,8 +444,13 @@ export default function ConsultorTecnico() {
                     </TableCell>
                     <TableCell className="text-xs">{(c as any).especialidade || 'Geral'}</TableCell>
                     <TableCell>
-                      <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                      {isConsultorAtivo(c as any) ? (
+                        <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">Inativo</Badge>
+                      )}
                     </TableCell>
+
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
