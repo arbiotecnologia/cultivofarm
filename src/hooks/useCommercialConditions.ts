@@ -352,6 +352,7 @@ export function useSimulateConditionPrice() {
         p_unit_type: v.unit_type,
         p_volume_ml: v.volume_ml,
         p_ref_date: new Date().toISOString().slice(0, 10),
+        p_quantity: v.quantity,
       });
       if (error) throw new Error(conditionErrorMessage(error.message));
       return data as Record<string, unknown>;
