@@ -679,7 +679,9 @@ export function MatrizConfiguravelTab() {
           <DialogHeader><DialogTitle>Simulação de preço (servidor)</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Usa o mesmo resolvedor do carrinho. Selecione condição e parceiro nos filtros e escolha um item.
+              Usa o mesmo resolvedor do carrinho. Selecione condição e parceiro nos filtros, escolha o item e a
+              apresentação: a simulação usa a unidade e o volume da regra vigente selecionada e a quantidade informada
+              por você, sem assumir hectare.
             </p>
             <div>
               <Label htmlFor="sim-item">Item</Label>
