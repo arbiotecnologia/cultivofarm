@@ -7,6 +7,17 @@ const corsHeaders = {
 };
 
 const GOOGLE_GATEWAY = "https://connector-gateway.lovable.dev/google_calendar/calendar/v3";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const APP_URL = (Deno.env.get("APP_URL") ?? Deno.env.get("SITE_URL") ?? "https://app.cultivofarm.com.br")
+  .replace(/\/+$/, "");
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -14,19 +25,46 @@ serve(async (req) => {
   try {
     const { solicitacaoId, action } = await req.json();
 
-    const supabase = createClient(
-      Deno.env.get("VITE_SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+      return json(500, { error: "Supabase não configurado" });
+    }
+
+    if (typeof solicitacaoId !== "string" || !/^[0-9a-f-]{36}$/i.test(solicitacaoId)) {
+      return json(400, { error: "Solicitação inválida" });
+    }
+
+    if (!["create", "update", "delete"].includes(action)) {
+      return json(400, { error: "Ação inválida" });
+    }
+
+    const authorization = req.headers.get("Authorization") ?? "";
+    if (!authorization.startsWith("Bearer ")) {
+      return json(401, { error: "Não autenticado" });
+    }
+
+    // A leitura usa a sessão do chamador e, portanto, as políticas RLS do
+    // CultivoFarm. O cliente privilegiado só é usado depois dessa autorização.
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: authorization } },
+    });
+    const { data: authData, error: authError } = await userClient.auth.getUser();
+    if (authError || !authData.user) {
+      return json(401, { error: "Sessão inválida" });
+    }
 
     // 1. Buscar dados da solicitação
-    const { data: sol, error: solError } = await supabase
+    const { data: sol, error: solError } = await userClient
       .from("portal_solicitacoes")
       .select("*, clientes(nome), fazendas(nome), talhoes(nome)")
       .eq("id", solicitacaoId)
       .single();
 
-    if (solError || !sol) throw new Error("Solicitação não encontrada");
+    if (solError || !sol) return json(404, { error: "Solicitação não encontrada ou sem acesso" });
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const GOOGLE_MAIL_API_KEY = Deno.env.get("GOOGLE_MAIL_API_KEY");
@@ -45,7 +83,7 @@ serve(async (req) => {
         Talhão: ${sol.talhoes?.nome || "—"}
         Demanda: ${sol.tipo_demanda}
         Descrição: ${sol.descricao || "—"}
-        Link: ${Deno.env.get("VITE_SUPABASE_URL")?.replace(".supabase.co", ".lovable.app")}/agenda-tecnica?id=${sol.id}
+        Link: ${APP_URL}/agenda-tecnica?id=${sol.id}
       `.trim(),
       start: {
         dateTime: sol.data_prevista_atendimento,

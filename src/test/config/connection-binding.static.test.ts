@@ -25,6 +25,7 @@ const read = (relative: string): string =>
 describe("Vinculo de backend — cliente runtime / config.toml", () => {
   const client = read("src/integrations/supabase/client.ts");
   const toml = read("supabase/config.toml");
+  const env = read(".env");
 
   it("client.ts aponta para o CultivoFarm autorizado", () => {
     const guard = read("src/integrations/supabase/bindingGuard.ts");
@@ -35,6 +36,14 @@ describe("Vinculo de backend — cliente runtime / config.toml", () => {
 
   it("config.toml aponta para o CultivoFarm autorizado", () => {
     expect(toml).toMatch(new RegExp(`^project_id\\s*=\\s*"${CULTIVOFARM_REF}"`, "m"));
+  });
+
+  it("arquivo de ambiente aponta para o mesmo projeto canônico", () => {
+    expect(env).toContain(`VITE_SUPABASE_PROJECT_ID="${CULTIVOFARM_REF}"`);
+    expect(env).toContain(`VITE_SUPABASE_URL="https://${CULTIVOFARM_REF}.supabase.co"`);
+    expect(env).not.toContain(ACCIDENTAL_REF_PREFIX);
+    expect(env).not.toContain(LEGACY_STAGING_REF);
+    expect(env).not.toContain(PRODUCTION_REF);
   });
 
   it("o cliente preserva uma chave publicavel sem usar fallback ambiental", () => {
@@ -71,7 +80,7 @@ describe("Vinculo de backend — cliente runtime / config.toml", () => {
 
   it("paginas com Edge Functions reutilizam as constantes canonicas do cliente", () => {
     const pages = [
-      "src/components/protocolos/catalog/ProfileFieldAI.tsx",
+      "src/lib/fichaIaClient.ts",
       "src/pages/configuracoes/ComunicacaoConfigTab.tsx",
     ] as const;
 
@@ -89,6 +98,11 @@ describe("Vinculo de backend — cliente runtime / config.toml", () => {
         `${page} ainda le VITE_SUPABASE_PUBLISHABLE_KEY`,
       ).toBe(false);
     }
+
+    const profileField = read("src/components/protocolos/catalog/ProfileFieldAI.tsx");
+    expect(profileField).toContain('from "@/lib/fichaIaClient"');
+    expect(profileField).not.toContain("VITE_SUPABASE_URL");
+    expect(profileField).not.toContain("VITE_SUPABASE_PUBLISHABLE_KEY");
   });
 
   it("client.ts exporta as constantes canonicas", () => {
@@ -113,5 +127,18 @@ describe("Vinculo de backend — cliente runtime / config.toml", () => {
       expect(content.includes(LEGACY_STAGING_REF), `${name} referencia staging legado`).toBe(false);
     }
   });
-});
 
+  it("rotinas operacionais não possuem fallback para bancos legados", () => {
+    const calendar = read("supabase/functions/sync-calendar-event/index.ts");
+    const rbac = read("scripts/rbac-audit/run-rbac-audit.ts");
+    const fiscalGate = read("scripts/fiscal-release-gate.sh");
+
+    expect(calendar).not.toContain("VITE_SUPABASE_URL");
+    expect(calendar).toContain('Deno.env.get("SUPABASE_URL")');
+    expect(calendar).toContain("userClient.auth.getUser()");
+    expect(rbac).toContain("CANONICAL_SUPABASE_URL");
+    expect(rbac).not.toContain(LEGACY_STAGING_REF);
+    expect(fiscalGate).toContain(`CANONICAL_REF="${CULTIVOFARM_REF}"`);
+    expect(fiscalGate).not.toContain(LEGACY_STAGING_REF);
+  });
+});

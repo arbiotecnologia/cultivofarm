@@ -1,7 +1,7 @@
 /**
  * Runner da auditoria RBAC contra o Supabase.
  *
- * O que valida, por papel (usuários de teste do staging):
+ * O que valida, por papel (usuários de teste do CultivoFarm):
  *   1. Autenticação e papel efetivo em `public.user_roles`.
  *   2. Contexto de portal retornado pela RPC `get_my_available_portal_contexts`
  *      e rota-home esperada (`getHomeForRole`).
@@ -18,12 +18,17 @@
  *   RBAC_AUDIT_PASSWORD=... bun run audit:rbac
  *   RBAC_AUDIT_PASSWORD=... bun run audit:rbac -- --json relatorio.json
  *
- * Ambiente: aponta para a URL/anon key de `src/integrations/supabase/client.ts`
- * (staging) salvo se SUPABASE_URL / SUPABASE_ANON_KEY forem informados.
+ * Ambiente: usa exclusivamente o vínculo canônico definido no cliente do
+ * CultivoFarm. Overrides são aceitos apenas quando mantêm a mesma URL.
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { writeFileSync } from "node:fs";
 import { canAccess, canWrite, getHomeForRole } from "../../src/lib/permissions";
+import {
+  SUPABASE_PUBLISHABLE_KEY as CANONICAL_SUPABASE_KEY,
+  SUPABASE_URL as CANONICAL_SUPABASE_URL,
+} from "../../src/integrations/supabase/client";
+import { assertCanonicalSupabaseBinding } from "../../src/integrations/supabase/bindingGuard";
 import {
   AUDIT_USERS,
   LANCAMENTO_PROBES,
@@ -32,11 +37,9 @@ import {
   type AuditUser,
 } from "./matrix";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ?? "https://ikaauvsflpmamgxmkhoq.supabase.co";
-const SUPABASE_ANON_KEY =
-  process.env.SUPABASE_ANON_KEY ??
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrYWF1dnNmbHBtYW1neG1raG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NDAxOTQsImV4cCI6MjEwMDIxNjE5NH0.Dq1qqhJX-586Y01GRLnuenzqE2AR5dGLdTg-mkBzFDA";
+const SUPABASE_URL = process.env.SUPABASE_URL ?? CANONICAL_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? CANONICAL_SUPABASE_KEY;
+assertCanonicalSupabaseBinding(SUPABASE_URL);
 const PASSWORD = process.env.RBAC_AUDIT_PASSWORD ?? "";
 
 const DENIED_CODES = new Set(["42501", "PGRST301", "PGRST116"]);

@@ -10,15 +10,15 @@
 #   6. smoke de CORS (origem legítima 2xx, origem estranha 403).
 #
 # Uso:
-#   FISCAL_EXPECTED_REF=ikaauvsflpmamgxmkhoq \
+#   FISCAL_EXPECTED_REF=swzpzcwiasxmjutrmvkm \
 #   FISCAL_EXPECTED_RELEASE=h7e-2026-08-31 \
-#   STAGING_DSN=... ./scripts/fiscal-release-gate.sh
+#   CULTIVOFARM_DSN=... ./scripts/fiscal-release-gate.sh
 #
 # Saída: PASS/FAIL por verificação; exit 1 bloqueia promoção quando houver drift.
 set -uo pipefail
 
-EXPECTED_REF="${FISCAL_EXPECTED_REF:-ikaauvsflpmamgxmkhoq}"
-FORBIDDEN_REF="navfzbwgwzruipouyfnk"
+CANONICAL_REF="swzpzcwiasxmjutrmvkm"
+EXPECTED_REF="${FISCAL_EXPECTED_REF:-$CANONICAL_REF}"
 EXPECTED_RELEASE="${FISCAL_EXPECTED_RELEASE:-h7e-2026-08-31}"
 ALLOWED_ORIGIN="${FISCAL_GATE_ORIGIN:-https://id-preview--a79bb3db-f665-466d-bf41-ee8c6cb91fab.lovable.app}"
 BASE="https://${EXPECTED_REF}.supabase.co/functions/v1"
@@ -29,8 +29,8 @@ ok()   { echo "PASS  $*"; }
 bad()  { echo "FAIL  $*"; fails=$((fails+1)); }
 
 echo "== 1. Project ref"
-[ "$EXPECTED_REF" = "$FORBIDDEN_REF" ] && { bad "ref esperado é a PRODUÇÃO — bloqueado"; exit 1; }
-ok "ref alvo=$EXPECTED_REF (produção $FORBIDDEN_REF fora de escopo)"
+[ "$EXPECTED_REF" != "$CANONICAL_REF" ] && { bad "ref não canônico — somente CultivoFarm é permitido"; exit 1; }
+ok "ref alvo=$EXPECTED_REF (CultivoFarm canônico)"
 
 echo "== 2/3. Release implantado e CORS"
 for fn in "${FUNCTIONS[@]}"; do
@@ -48,17 +48,17 @@ for fn in "${FUNCTIONS[@]}"; do
 done
 
 echo "== 4. Schema do cofre"
-if [ -n "${STAGING_DSN:-}" ]; then
-  cols="$(psql "$STAGING_DSN" -Atc "select string_agg(column_name,',' order by column_name) from information_schema.columns where table_schema='public' and table_name='fiscal_certificate_material';")"
+if [ -n "${CULTIVOFARM_DSN:-}" ]; then
+  cols="$(psql "$CULTIVOFARM_DSN" -Atc "select string_agg(column_name,',' order by column_name) from information_schema.columns where table_schema='public' and table_name='fiscal_certificate_material';")"
   case "$cols" in
     *encrypted_password*|*password_iv*) bad "colunas de senha presentes no cofre" ;;
     *material_format*) ok "cofre sem colunas de senha e com material_format" ;;
     *) bad "cofre não encontrado ou incompleto" ;;
   esac
-  overloads="$(psql "$STAGING_DSN" -Atc "select count(*) from pg_proc where proname='rpc_fiscal_certificate_register_a1';")"
+  overloads="$(psql "$CULTIVOFARM_DSN" -Atc "select count(*) from pg_proc where proname='rpc_fiscal_certificate_register_a1';")"
   [ "$overloads" = "1" ] && ok "RPC com overload único" || bad "RPC com $overloads overloads"
 else
-  echo "SKIP  STAGING_DSN ausente — verificação de schema não executada"
+  echo "SKIP  CULTIVOFARM_DSN ausente — verificação de schema não executada"
 fi
 
 echo "== 5. Secrets obrigatórios (somente presença)"
