@@ -408,9 +408,34 @@ export default function ConsultorTecnico() {
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8">Carregando...</TableCell></TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <p className="text-sm text-destructive">
+                      Não foi possível carregar a equipe técnica.
+                      {(consultoresError as any)?.message ? ` (${(consultoresError as any).message})` : ""}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => { void refetchConsultores(); }}
+                      disabled={isFetching}
+                    >
+                      {isFetching ? "Tentando..." : "Tentar novamente"}
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum consultor encontrado</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    {search.trim()
+                      ? "Nenhum consultor corresponde à busca"
+                      : "Nenhum consultor cadastrado. O cadastro é feito em Configurações > Usuários."}
+                  </TableCell>
+                </TableRow>
               ) : (
+
                 filtered.map((c) => (
                   <TableRow
                     key={c.id}
