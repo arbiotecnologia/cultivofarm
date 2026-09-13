@@ -4,6 +4,36 @@
 
 export const PAGINA_ENVASE = 50;
 
+/**
+ * Tamanho TÉCNICO de página das consultas auxiliares (lotes, produtos).
+ * Não é um teto de resultados: `carregarTudo` percorre as páginas até esgotar.
+ */
+export const PAGINA_TECNICA = 1000;
+
+/** Teto defensivo só para evitar laço infinito; estourar é ERRO explícito, nunca omissão silenciosa. */
+export const MAX_PAGINAS_TECNICAS = 200;
+
+/**
+ * Percorre uma consulta paginada até esgotar os registros. Nenhum limite
+ * silencioso: se o teto defensivo for atingido, lança erro para a tela informar.
+ */
+export async function carregarTudo<T>(
+  buscarPagina: (from: number, to: number) => Promise<T[]>,
+  tamanho = PAGINA_TECNICA,
+  maxPaginas = MAX_PAGINAS_TECNICAS,
+): Promise<T[]> {
+  const acumulado: T[] = [];
+  for (let pagina = 0; pagina < maxPaginas; pagina += 1) {
+    const from = pagina * tamanho;
+    const lote = await buscarPagina(from, from + tamanho - 1);
+    acumulado.push(...(lote ?? []));
+    if ((lote?.length ?? 0) < tamanho) return acumulado;
+  }
+  throw new Error(
+    "Consulta auxiliar excedeu o número máximo de páginas. Refine os filtros — nenhum registro foi omitido silenciosamente.",
+  );
+}
+
 /** Faixa [from, to] para range() do PostgREST (paginação server-side). */
 export function faixaDaPagina(pagina: number, tamanho = PAGINA_ENVASE) {
   const p = Number.isFinite(pagina) && pagina > 0 ? Math.floor(pagina) : 1;
@@ -59,8 +89,10 @@ const cmpData = (a: string | null | undefined, b: string | null | undefined) => 
 };
 
 /**
- * Último CQ de forma determinística: created_at DESC, seq DESC e, na ausência
- * de `seq` no schema atual, data_analise DESC e id DESC como desempate estável.
+ * Último CQ de forma determinística, na MESMA ordem canônica do banco/RPC:
+ * `created_at DESC, seq DESC`. `public.controle_qualidade` POSSUI a coluna `seq`
+ * em produção e ela é sempre o desempate primário; `data_analise DESC` e
+ * `id DESC` existem apenas como fallback defensivo para linhas sem `seq`.
  */
 export function ultimoCQ(lista: RegistroCQ[] | null | undefined): RegistroCQ | null {
   const itens = (lista ?? []).filter(Boolean);
