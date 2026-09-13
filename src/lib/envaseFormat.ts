@@ -27,8 +27,23 @@ export function splitVolumeLabel(label: string): { numero: string; unidade: stri
 }
 
 
-export const defaultValidade = () => {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 6);
-  return d.toISOString().slice(0, 10);
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** Data civil local em ISO (sem deslocamento de fuso por toISOString). */
+export const toISODateLocal = (d: Date) =>
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+/**
+ * Soma meses no calendário local, limitando ao último dia do mês de destino
+ * (31/08 + 6 meses = 28/02, nunca "rollover" para março).
+ */
+export const addMesesLocal = (base: Date, meses: number): Date => {
+  const ano = base.getFullYear();
+  const mes = base.getMonth();
+  const dia = base.getDate();
+  const ultimoDia = new Date(ano, mes + meses + 1, 0).getDate();
+  return new Date(ano, mes + meses, Math.min(dia, ultimoDia));
 };
+
+export const defaultValidade = (base: Date = new Date()) =>
+  toISODateLocal(addMesesLocal(base, 6));
