@@ -1,7 +1,8 @@
 # Roadmap de Tarefas
 
 ## Lotes — 2026-09-13
-- [ ] Auditoria local, correções frontend, testes e relatório; sem acesso a serviços.
+- [x] Auditoria local de Lotes, correções de consulta e relatório em restoration/lotes/README.md; 55/55 focados, 134/135 ampliados.
+- Pendências Lotes: rastreabilidade completa e snapshot/agregações globais exigem etapa autorizada; E2E conectado proibido. Gate ampliado .env divergente separado do runtime aprovado; typecheck separado sem evidência.
 - Constraints numéricas OS aplicadas e validadas manualmente conforme usuário; não reaplicar.
 
 ## Ordens de Serviço — 2026-09-13
