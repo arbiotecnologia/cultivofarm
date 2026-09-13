@@ -13,7 +13,10 @@ export function useSignedUrls(paths: (string | null | undefined)[], bucket: stri
     let cancelado = false;
 
     const fetchUrls = async () => {
-      const validPaths = paths.filter((p): p is string => !!p);
+      // Caminhos válidos e sem repetição: evita pedir a mesma assinatura 2x.
+      const validPaths = Array.from(
+        new Set(paths.filter((p): p is string => typeof p === "string" && p.length > 0)),
+      );
       if (validPaths.length === 0) {
         setUrls({});
         setError(null);
@@ -32,12 +35,24 @@ export function useSignedUrls(paths: (string | null | undefined)[], bucket: stri
 
         const newUrls: Record<string, string> = {};
         (data ?? []).forEach((item) => {
-          if (item.signedUrl) {
-            // A chave é o próprio caminho do objeto.
-            newUrls[item.path || ""] = item.signedUrl;
-          }
+          // A chave é o próprio caminho do objeto; item sem path é descartado.
+          if (item?.signedUrl && item?.path) newUrls[item.path] = item.signedUrl;
         });
-        if (!cancelado) setUrls(newUrls);
+
+        // Resposta parcial (item com erro individual, sem signedUrl ou ausente)
+        // é tratada como falha: preservamos o que veio válido, mas expomos o
+        // erro para habilitar "Tentar novamente". Nunca há fallback inseguro.
+        const faltando = validPaths.filter((p) => !newUrls[p]);
+        if (!cancelado) {
+          setUrls(newUrls);
+          setError(
+            faltando.length > 0
+              ? new Error(
+                  `Falha ao gerar ${faltando.length} de ${validPaths.length} URLs seguras`,
+                )
+              : null,
+          );
+        }
       } catch (err) {
         // Nunca logar a URL assinada nem o token; apenas a mensagem.
         if (!cancelado) {
