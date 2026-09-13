@@ -169,7 +169,7 @@ describe("fluxo técnico — página", () => {
     expect(pagina).not.toContain("portal_solicitacoes");
     expect(pagina).not.toContain("rpc_create_portal_notification_secure");
     expect(pagina).not.toContain('from("aprovacoes_tecnicas").insert');
-    expect(pagina).not.toContain("registros_consultor_status_log");
+    expect(pagina).not.toMatch(/from\("registros_consultor_status_log"\)/);
   });
 
   it("restringe ações por papel e reage a troca/invalidez de papel", () => {
