@@ -105,5 +105,5 @@ export function usePendenciasEsteira() {
     return list;
   }, [rawItems]);
 
-  return { inconsistencias, isLoading };
+  return { inconsistencias, isLoading, isError, refetch };
 }
