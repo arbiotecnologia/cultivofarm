@@ -354,11 +354,11 @@ export default function ConsultorTecnico() {
 
       if (!roles || roles.length === 0) return { consultores: [], orfaos: [] as string[] };
 
-      const userIds = roles.map(r => r.user_id);
+      const userIds = idsUnicos(roles.map(r => r.user_id));
 
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("*")
+        .select(PROFILE_FIELDS)
         .in("user_id", userIds)
         .order("nome");
       if (profilesError) throw profilesError;
