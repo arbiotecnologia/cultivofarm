@@ -191,7 +191,7 @@ BEGIN
   EXCEPTION WHEN others THEN
     RAISE EXCEPTION 'COCKPIT_LOTE_VOLUME_INVALIDO';
   END;
-  IF v_volume IS NULL OR NOT (v_volume > 0) OR v_volume = 'NaN'::numeric THEN
+  IF v_volume IS NULL OR NOT (v_volume > 0) OR v_volume::text IN ('NaN', 'Infinity', '-Infinity') THEN
     RAISE EXCEPTION 'COCKPIT_LOTE_VOLUME_INVALIDO';
   END IF;
 

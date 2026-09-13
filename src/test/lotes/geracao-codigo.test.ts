@@ -126,7 +126,14 @@ describe('Contrato SQL preparado (não aplicado)', () => {
   it('valida volume estritamente positivo e finito', () => {
     expect(rpc).toContain('COCKPIT_LOTE_VOLUME_INVALIDO');
     expect(rpc).toContain("NOT (v_volume > 0)");
-    expect(rpc).toContain("v_volume = 'NaN'::numeric");
+    expect(rpc).toContain('v_volume IS NULL');
+  });
+  it.each(['NaN', 'Infinity', '-Infinity'])('rejeita explicitamente %s no contrato SQL antes do insert', (valor) => {
+    const executavel = rpc.split('\n').filter((linha) => !linha.trim().startsWith('--')).join('\n');
+    const guarda = executavel.match(/IF v_volume IS NULL OR NOT \(v_volume > 0\) OR v_volume::text IN \(([^)]+)\) THEN\s+RAISE EXCEPTION 'COCKPIT_LOTE_VOLUME_INVALIDO';\s+END IF;/);
+    expect(guarda).not.toBeNull();
+    expect(guarda?.[1].split(',').map((item) => item.trim())).toContain(`'${valor}'`);
+    expect(guarda?.index).toBeLessThan(executavel.indexOf('INSERT INTO public.lotes'));
   });
   it('diferencia constraints no unique_violation', () => {
     expect(rpc).toContain('GET STACKED DIAGNOSTICS v_constraint = CONSTRAINT_NAME');
