@@ -14,7 +14,7 @@ import { formatConcentracaoDisplay } from '@/lib/cqFormat';
 import {
   ROTULO_CONFORMIDADE, ROTULO_RESULTADO, avaliarFaixa, avaliarMinimo, avaliarTexto, cockpitCQ,
   dataCQ, dataHoraCQ, divergencias, faixaTexto, formatNumero, noPeriodo, normalizar,
-  selecionarReferencia, statusCQ, vinculoOS, type EstadoConformidade, type Referencia,
+  selecionarReferencia, statusCQ, validarPeriodo, vinculoOS, type EstadoConformidade, type Referencia,
 } from '@/lib/cq/consulta';
 
 type CQRow = Database['public']['Tables']['controle_qualidade']['Row'];
@@ -125,16 +125,19 @@ export default function ControleQualidade() {
     return [c.id, { ref, ph, conc, aparencia, odor, contaminacao, avisos: divergencias(c.resultado, estados, c.lotes?.status) }];
   })), [cqs, refs]);
 
-  const periodoInvalido = !!inicio && !!fim && inicio > fim;
-  const filtrados = useMemo(() => cqs.filter(c =>
-    !periodoInvalido
-    && (!resultado || statusCQ(c.resultado) === resultado)
+  const periodo = validarPeriodo(inicio, fim);
+  const periodoInvalido = !periodo.valido;
+  const filtrados = useMemo(() => {
+    if (periodoInvalido) return [];
+    return cqs.filter(c =>
+    (!resultado || statusCQ(c.resultado) === resultado)
     && (!lote || c.lote_id === lote)
     && (!item || c.lotes?.produto_id === item || c.lotes?.microrganismo_id === item)
     && (!responsavel || (c.responsavel || '') === responsavel)
     && noPeriodo(c.data_analise, inicio, fim)
     && normalizar([c.lotes?.codigo_lote, itemNome(c.lotes ?? null), c.responsavel, c.aparencia, c.odor, c.contaminacao, c.osId].filter(Boolean).join(' ')).includes(normalizar(search))
-  ), [cqs, search, resultado, lote, item, responsavel, inicio, fim, periodoInvalido]);
+    );
+  }, [cqs, search, resultado, lote, item, responsavel, inicio, fim, periodoInvalido]);
 
   const totalPages = Math.max(1, Math.ceil(filtrados.length / 20));
   const currentPage = Math.min(page, totalPages);
@@ -193,16 +196,17 @@ export default function ControleQualidade() {
             {[...new Set(cqs.flatMap(c => (c.responsavel ? [c.responsavel] : [])))].sort().map(r => <option key={r} value={r}>{r}</option>)}
           </select>
         </label>
-        <label className="text-sm">Análise a partir de<Input type="date" value={inicio} onChange={e => setInicio(e.target.value)} /></label>
-        <label className="text-sm">Análise até<Input type="date" value={fim} onChange={e => setFim(e.target.value)} /></label>
+        <label className="text-sm">Análise a partir de<Input type="date" value={inicio} aria-invalid={periodoInvalido} aria-describedby={periodoInvalido ? 'cq-periodo-erro' : undefined} onChange={e => setInicio(e.target.value)} /></label>
+        <label className="text-sm">Análise até<Input type="date" value={fim} aria-invalid={periodoInvalido} aria-describedby={periodoInvalido ? 'cq-periodo-erro' : undefined} onChange={e => setFim(e.target.value)} /></label>
         <Button variant="outline" className="self-end" onClick={() => { setSearch(''); setResultado(''); setLote(''); setItem(''); setResponsavel(''); setInicio(''); setFim(''); setPage(1); }}>Limpar filtros</Button>
       </div>
 
-      {periodoInvalido && <p role="alert" className="text-destructive">A data final não pode ser anterior à inicial.</p>}
+      {!periodo.valido && <p id="cq-periodo-erro" role="alert" className="text-destructive">{periodo.mensagem}</p>}
+      {ready && refs.length === 0 && <p role="status" className="text-muted-foreground">Nenhuma referência ativa acessível. A avaliação de conformidade depende da configuração de referências.</p>}
       {loading && <p role="status">Carregando análises de qualidade…</p>}
       {error && <div role="alert" className="space-y-3"><p>{error}</p><Button variant="outline" onClick={() => void fetchAll()}>Tentar novamente</Button></div>}
 
-      {ready && <>
+      {ready && !periodoInvalido && <>
         <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
           {filtrados.length} de {cqs.length} análise(s) acessível(is)
         </p>

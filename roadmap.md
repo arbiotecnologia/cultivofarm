@@ -1,5 +1,10 @@
 # Roadmap de Tarefas
 
+## CQ — correção consolidada 2026-09-13
+- [ ] Período acessível, contratos focados e preparação de SQL/rollback; nenhum acesso ao banco.
+- Reanálise: preparar bloqueio conservador; homologação SQL/concorrência depende de autorização futura.
+- Demais módulos e destinos históricos abaixo permanecem suspensos; não executar.
+
 ## Lotes — 2026-09-13
 - [x] Auditoria local de Lotes, correções de consulta e relatório em restoration/lotes/README.md; 55/55 focados, 134/135 ampliados.
 - Pendências Lotes: rastreabilidade completa e snapshot/agregações globais exigem etapa autorizada; E2E conectado proibido. Gate ampliado .env divergente separado do runtime aprovado; typecheck separado sem evidência.
