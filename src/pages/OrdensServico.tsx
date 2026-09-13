@@ -121,11 +121,12 @@ interface Microrganismo extends SimpleRef { nome_cientifico: string | null; dose
 export default function OrdensServico() {
   const navigate = useNavigate();
   const { roles } = useAuth();
-  const canCreate = roles.some(r => ["administrador", "gestor", "producao"].includes(r));
+  const canCreate = roles.some(r => ["administrador", "gestor"].includes(r));
   const [loadError, setLoadError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const submissionId = useRef<string | null>(null);
   const loadVersion = useRef(0);
   const [page, setPage] = useState(1);
   const isMobile = useIsMobile();
@@ -257,6 +258,7 @@ export default function OrdensServico() {
     if (savingRef.current || !canCreate || loadError || !loaded) return;
     const validation = validarOS(form, { clientes, fazendas, talhoes, produtos, microrganismos });
     if (validation) { toast.error(validation); return; }
+    submissionId.current ??= crypto.randomUUID();
     savingRef.current = true;
     setSaving(true);
     try {
@@ -266,6 +268,7 @@ export default function OrdensServico() {
       return;
     }
     const { error } = await supabase.from("ordens_servico").insert([{
+      id: submissionId.current,
       cliente_id: form.cliente_id,
       fazenda_id: form.fazenda_id,
       talhao_id: form.talhao_id,
@@ -280,6 +283,7 @@ export default function OrdensServico() {
     }] as any);
     if (error) throw error;
     toast.success("Ordem de serviço registrada.");
+    submissionId.current = null;
     setOpen(false);
     setForm({
       cliente_id: "", fazenda_id: "", talhao_id: "",
@@ -391,7 +395,7 @@ export default function OrdensServico() {
             </Button>
             <Dialog open={open} onOpenChange={(value) => { if (!savingRef.current) setOpen(value); }}>
             <DialogTrigger asChild>
-              <Button disabled={!canCreate || !loaded || loadError} title={!canCreate ? "Cadastro disponível para administração, gestão e produção" : undefined} className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm font-bold sm:font-medium shadow-md">
+              <Button disabled={!canCreate || !loaded || loadError} title={!canCreate ? "Cadastro disponível para administração e gestão" : undefined} className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm font-bold sm:font-medium shadow-md">
                 <Plus className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />Nova OS
               </Button>
             </DialogTrigger>

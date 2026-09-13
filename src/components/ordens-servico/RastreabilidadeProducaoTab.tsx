@@ -132,7 +132,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
     );
   }
 
-  if (isError) return <div role="alert" className="space-y-3"><p>Não foi possível carregar a rastreabilidade completa.</p><Button onClick={() => void refetch()}>Tentar novamente</Button></div>;
+  if (isError) return <div role="alert" className="space-y-3"><p>Não foi possível carregar a rastreabilidade completa ou há múltiplos registros nesta etapa. Consulte o Cockpit para detalhar.</p><Button onClick={() => void refetch()}>Tentar novamente</Button></div>;
 
   const Section = ({ title, icon: Icon, children, active }: { title: string, icon: any, children: React.ReactNode, active?: boolean }) => (
     <div className={cn(
