@@ -78,6 +78,62 @@ export function caminhoEvidencia(clienteId: string, aplicacaoId: string, uuid: s
   return `${clienteId}/${aplicacaoId}/${uuid}.${extensaoSegura(mime)}`;
 }
 
+/**
+ * Detecção de dispositivo móvel, incluindo iPadOS em modo desktop
+ * (MacIntel/Macintosh com touch) e `navigator.userAgentData.mobile`.
+ */
+export function ehDispositivoMovel(nav: any = typeof navigator !== "undefined" ? navigator : undefined): boolean {
+  if (!nav) return false;
+  if (typeof nav.userAgentData?.mobile === "boolean" && nav.userAgentData.mobile) return true;
+  const ua = String(nav.userAgent || "");
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) return true;
+  const plataformaMac = /MacIntel|Macintosh/i.test(String(nav.platform || "")) || /Macintosh/i.test(ua);
+  return plataformaMac && Number(nav.maxTouchPoints || 0) > 1;
+}
+
+/** MIMEs equivalentes que algumas câmeras devolvem fora do padrão. */
+const MIME_CANONICO_CAMERA: Record<string, string> = {
+  "image/jpg": "image/jpeg",
+  "image/pjpeg": "image/jpeg",
+};
+
+/** Inferência por extensão usada SOMENTE quando o MIME vem vazio da câmera. */
+const MIME_POR_EXTENSAO: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  heic: "image/heic",
+  heif: "image/heif",
+};
+
+/**
+ * MIME canônico para arquivos vindos da captura/câmera. Devolve null quando
+ * não é possível resolver com segurança — a allowlist do bucket não é ampliada.
+ */
+export function mimeCanonicoCamera(nome: string, mime: string): string | null {
+  const bruto = (mime || "").toLowerCase().trim();
+  if (bruto) {
+    const alvo = MIME_CANONICO_CAMERA[bruto] || bruto;
+    return mimePermitido(alvo) ? alvo : null;
+  }
+  const ext = (nome || "").toLowerCase().split(".").pop() || "";
+  const inferido = MIME_POR_EXTENSAO[ext];
+  return inferido && mimePermitido(inferido) ? inferido : null;
+}
+
+/**
+ * Normaliza um File vindo da câmera/captura. Retorna o próprio arquivo quando
+ * já está canônico, um File reembalado quando só o MIME precisa mudar, ou null
+ * quando o formato não é aceito.
+ */
+export function normalizarArquivoCamera(file: File): File | null {
+  const alvo = mimeCanonicoCamera(file.name, file.type);
+  if (!alvo) return null;
+  if (alvo === file.type) return file;
+  return new File([file], file.name, { type: alvo, lastModified: file.lastModified });
+}
+
 export const MOTIVO_MIN = 5;
 export const MOTIVO_MAX = 1000;
 
