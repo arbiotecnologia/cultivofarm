@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface OSFlowTimelineProps {
   registroId: string;
@@ -34,34 +35,41 @@ interface OSStatusInfo {
 }
 
 export function OSFlowTimeline({ registroId, className }: OSFlowTimelineProps) {
-  const { data: flowData, isLoading } = useQuery({
+  const { data: flowData, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["os-flow-timeline", registroId],
     queryFn: async () => {
       // 1. Registro e Recomendações (Visita e Aprovação)
-      const { data: registro } = await (supabase as any)
+      const { data: registro, error: registroErr } = await (supabase as any)
         .from("registros_consultor")
         .select("id, status, created_at, data_vistoria")
         .eq("id", registroId)
-        .single();
+        .maybeSingle();
+      if (registroErr) throw registroErr;
 
       // 2. Log de status do registro (Aprovação)
-      const { data: registroLogs } = await (supabase as any)
+      const { data: registroLogs, error: logsErr } = await (supabase as any)
         .from("registros_consultor_status_log")
-        .select("*")
+        .select("id, status_novo, changed_at")
         .eq("registro_consultor_id", registroId)
         .order("changed_at", { ascending: true });
+      if (logsErr) throw logsErr;
 
       // 3. OS On-Farm (Produção até Entrega)
-      const { data: osData } = await (supabase as any)
+      const { data: osData, error: osErr } = await (supabase as any)
         .from("ordens_servico_onfarm")
         .select("id, status, created_at, updated_at, produtos(nome)")
         .eq("registro_consultor_id", registroId);
+      if (osErr) throw osErr;
 
       // 4. Aplicações
       const osIds = osData?.map(os => os.id) || [];
-      const { data: aplicacoes } = osIds.length > 0 
-        ? await (supabase as any).from("aplicacoes").select("*").in("ordem_servico_id", osIds)
-        : { data: [] };
+      const { data: aplicacoes, error: aplicErr } = osIds.length > 0
+        ? await (supabase as any)
+            .from("aplicacoes")
+            .select("id, ordem_servico_id, created_at")
+            .in("ordem_servico_id", osIds)
+        : { data: [], error: null };
+      if (aplicErr) throw aplicErr;
 
       // Processar eventos para a timeline
       const events: any[] = [];
@@ -139,6 +147,18 @@ export function OSFlowTimeline({ registroId, className }: OSFlowTimelineProps) {
   });
 
   if (isLoading) return <div className="h-20 animate-pulse bg-muted rounded-xl" />;
+
+  // Falha nunca pode ser representada como etapa pendente.
+  if (isError) {
+    return (
+      <div role="alert" className={cn("space-y-2", className)}>
+        <p className="text-sm text-destructive">Não foi possível carregar a linha do tempo desta OS.</p>
+        <Button variant="outline" size="sm" disabled={isFetching} onClick={() => { void refetch(); }}>
+          {isFetching ? "Tentando..." : "Tentar novamente"}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-4", className)}>
