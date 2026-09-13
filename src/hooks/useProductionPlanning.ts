@@ -95,22 +95,43 @@ export function useUpdatePlanningDates() {
   });
 }
 
+type PublicacaoResultado = { ok: boolean; planning_id: string; os_created: number; replay?: boolean };
+
 export function useGenerateProductionOrders() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { partner_order_id: string; planning_id: string; numero?: string }) => {
-      const promise = Promise.resolve(
-        (supabase as any).rpc("publish_planning_to_lab" as any, { p_planning_id: vars.planning_id }),
-      ).then(({ data, error }) => {
-        if (error) throw error;
-        return data as { ok: boolean; planning_id: string; os_created: number };
-      });
+    mutationFn: async (vars: {
+      partner_order_id: string;
+      planning_id: string;
+      numero?: string;
+      idempotency_key?: string;
+    }) => {
+      const chave = vars.idempotency_key ?? gerarChaveIdempotencia(vars.planning_id);
 
-      return b2bToast.promise(promise, {
+      const executar = async (): Promise<PublicacaoResultado> => {
+        // Caminho canônico: RPC atômica e idempotente (H10).
+        const { data, error } = await (supabase as any).rpc("rpc_planejamento_publicar_v1" as any, {
+          p_planning_id: vars.planning_id,
+          p_idempotency_key: chave,
+        });
+        if (!error) return data as PublicacaoResultado;
+
+        // Transitório: enquanto a migração H10 não for aplicada, usa o contrato legado.
+        if (rpcIndisponivel(error)) {
+          const legado = await (supabase as any).rpc("publish_planning_to_lab" as any, {
+            p_planning_id: vars.planning_id,
+          });
+          if (legado.error) throw new Error(mensagemPublicacao(legado.error));
+          return { ...(legado.data as PublicacaoResultado), replay: false };
+        }
+        throw new Error(mensagemPublicacao(error));
+      };
+
+      return b2bToast.promise(executar(), {
         action: "generate-op",
         orderNumero: vars.numero ?? vars.planning_id,
         loading: "Publicando demanda no laboratório…",
-        success: (r) => `${r.os_created} ordem(ns) de produção enviada(s) ao Cockpit`,
+        success: (r) => mensagemSucessoPublicacao(r),
         errorFallback: "Falha ao publicar demanda no laboratório",
       });
     },
