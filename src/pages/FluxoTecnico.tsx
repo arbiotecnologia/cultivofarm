@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  MessageSquare, Eye,
+  CheckCircle, MessageSquare, Eye,
   Clock, AlertTriangle, Factory, Truck, ClipboardCheck, Search,
   FileText, Package, Sprout, History,
 } from "lucide-react";
@@ -170,8 +170,7 @@ export default function FluxoTecnico() {
         <p className="text-sm text-muted-foreground">Aprovação de recomendações e acompanhamento de ordens de serviço.</p>
       </div>
 
-      {!RPC_APROVACAO_TRANSACIONAL_DISPONIVEL && (
-        <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+      <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
           <div className="text-sm">
             <p className="font-medium text-destructive">{MSG_DECISAO_INDISPONIVEL}</p>
@@ -181,7 +180,6 @@ export default function FluxoTecnico() {
             </p>
           </div>
         </div>
-      )}
 
       {errorAprovacoes && (
         <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border p-3">
