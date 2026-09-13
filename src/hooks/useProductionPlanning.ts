@@ -150,31 +150,22 @@ export function useRequestReplanning() {
 export function useProductionDashboard() {
   return useQuery({
     queryKey: ["production-dashboard"],
-    queryFn: async () => {
+    queryFn: async (): Promise<ResumoProducao> => {
       const { data, error } = await (supabase as any)
         .from("production_planning")
         .select("status, partner_order_id, partner_orders ( total )");
       if (error) throw error;
-      const rows = (data ?? []) as any[];
-      const byStatus: Record<string, number> = {};
-      let valorTotal = 0;
-      for (const r of rows) {
-        byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
-        valorTotal += Number(r.partner_orders?.total ?? 0);
-      }
-      return {
-        aguardando: byStatus["aguardando_planejamento"] ?? 0,
-        planejado: byStatus["planejado"] ?? 0,
-        emProducao: byStatus["em_producao"] ?? 0,
-        produzido: byStatus["produzido"] ?? 0,
-        entregue: byStatus["entregue"] ?? 0,
-        cancelado: byStatus["cancelado"] ?? 0,
-        total: rows.length,
-        valorTotal,
-      };
+      const rows = ((data ?? []) as any[]).map((r) => ({
+        partner_order_id: r?.partner_order_id ?? null,
+        status: r?.status ?? null,
+        total: r?.partner_orders?.total ?? null,
+      }));
+      return resumirPlanejamento(rows);
     },
+    staleTime: 30_000,
   });
 }
+
 
 export function useB2BCapacityKpis() {
   return useQuery({
