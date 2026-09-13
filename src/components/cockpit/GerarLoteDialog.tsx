@@ -188,7 +188,7 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
             />
           </div>
 
-          <Button type="submit" className="w-full h-11 font-bold" disabled={saving || !form.codigo_lote}>
+          <Button type="submit" className="w-full h-11 font-bold" disabled={saving}>
             {saving ? "Gerando..." : "Registrar Lote"}
           </Button>
         </form>
