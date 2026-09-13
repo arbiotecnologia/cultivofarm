@@ -136,18 +136,23 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
   useEffect(() => { if (defaultOsId) setOsId(defaultOsId); }, [defaultOsId]);
 
   const { data: ordens = [] } = useQuery({
-    queryKey: ["os-para-aplicar"],
+    queryKey: ["os-para-aplicar", rectifyId ? "rect" : "nova"],
     enabled: open,
     queryFn: async () => {
+      // Em retificação a OS já foi finalizada; ela precisa continuar selecionável.
+      const status = rectifyId
+        ? ["entregue", "pronto_entrega", "envase", "finalizada"]
+        : ["entregue", "pronto_entrega", "envase"];
       const { data } = await supabase
         .from("ordens_servico")
         .select("id, cliente_id, area_hectares, volume_total_ml, status, clientes(nome), fazendas(nome), talhoes(nome), produtos(id, nome, dose_ml_ha)")
-        .in("status", ["entregue", "pronto_entrega", "envase"] as any)
+        .in("status", status as any)
         .order("created_at", { ascending: false })
         .limit(200);
       return data || [];
     },
   });
+
 
   const osSel = ordens.find((o: any) => o.id === osId);
 
