@@ -29,6 +29,20 @@ function mensagemErroCamera(e: any): string {
   }
 }
 
+/**
+ * Encerra o MediaStream de UMA tentativa e limpa apenas as referências que
+ * ainda apontam para ele. Uma tentativa antiga nunca derruba a atual.
+ */
+export function encerrarStreamDaTentativa(
+  stream: MediaStream,
+  video: HTMLVideoElement | null,
+  streamRef: { current: MediaStream | null },
+): void {
+  stream.getTracks().forEach((t) => t.stop());
+  if (streamRef.current === stream) streamRef.current = null;
+  if (video && video.srcObject === stream) video.srcObject = null;
+}
+
 export function CameraCaptureDialog({ open, onOpenChange, onCapture }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -53,14 +67,14 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: Props) {
     setPronto(false);
     setLoading(true);
     stop();
-    const descartar = (stream: MediaStream) => stream.getTracks().forEach((t) => t.stop());
+    /** Stream obtido POR ESTA tentativa; nunca o de outra. */
+    let meuStream: MediaStream | null = null;
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error("Seu navegador não suporta acesso à câmera.");
       }
-      let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
+        meuStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: facingMode },
             width: { ideal: 1920 },
@@ -71,47 +85,40 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: Props) {
       } catch (e: any) {
         if (e?.name !== "OverconstrainedError" && e?.name !== "ConstraintNotSatisfiedError") throw e;
         // Uma única nova tentativa sem restrições.
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        meuStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
-      // A tentativa foi cancelada (fechamento/troca) enquanto a promessa resolvia.
+      // A tentativa foi cancelada (fechamento/troca) enquanto a promessa resolvia:
+      // encerra apenas o próprio stream e não toca em estado da tentativa atual.
       if (id !== tentativaRef.current) {
-        descartar(stream);
+        encerrarStreamDaTentativa(meuStream, videoRef.current, streamRef);
         return;
       }
       const video = videoRef.current;
-      // Sem elemento de vídeo não há como exibir a imagem: encerra o stream.
+      // Sem elemento de vídeo não há como exibir a imagem: encerra o próprio stream.
       if (!video) {
-        descartar(stream);
-        streamRef.current = null;
+        encerrarStreamDaTentativa(meuStream, null, streamRef);
         setPronto(false);
-        setError(
-          "O componente de vídeo não está disponível. Use a câmera/galeria do dispositivo.",
-        );
+        setError("O componente de vídeo não está disponível. Use a câmera/galeria do dispositivo.");
         return;
       }
-      streamRef.current = stream;
-      video.srcObject = stream;
+      streamRef.current = meuStream;
+      video.srcObject = meuStream;
       try {
         await video.play();
       } catch {
-        descartar(stream);
-        streamRef.current = null;
-        video.srcObject = null;
-        setPronto(false);
+        encerrarStreamDaTentativa(meuStream, video, streamRef);
         if (id !== tentativaRef.current) return;
+        setPronto(false);
         setError(
           "O vídeo da câmera não pôde ser iniciado automaticamente. Toque em Tentar novamente ou use a câmera do dispositivo.",
         );
         return;
       }
     } catch (e: any) {
-      // Defesa: qualquer stream remanescente desta tentativa é encerrado.
-      if (streamRef.current) {
-        descartar(streamRef.current);
-        streamRef.current = null;
-      }
-      setPronto(false);
+      // Só o stream desta tentativa é encerrado; se nenhum foi obtido, nada é tocado.
+      if (meuStream) encerrarStreamDaTentativa(meuStream, videoRef.current, streamRef);
       if (id !== tentativaRef.current) return;
+      setPronto(false);
       setError(mensagemErroCamera(e));
     } finally {
       if (id === tentativaRef.current) setLoading(false);

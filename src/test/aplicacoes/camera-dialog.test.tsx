@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
-import { CameraCaptureDialog } from "@/components/aplicacao/CameraCaptureDialog";
+import { CameraCaptureDialog, encerrarStreamDaTentativa } from "@/components/aplicacao/CameraCaptureDialog";
 
 /** Stream falso que registra o encerramento de cada track. */
 function streamFalso() {
@@ -44,34 +44,45 @@ describe("CameraCaptureDialog: encerramento do stream em falhas", () => {
     expect(capturar.disabled).toBe(true);
   });
 
-  it("encerra todas as tracks quando o elemento de vídeo não está disponível", async () => {
+  it("ramo sem elemento de vídeo encerra o próprio stream sem tocar em outro", () => {
     const { stream, stop } = streamFalso();
-    montarMediaDevices(stream);
-    playSpy.mockResolvedValue(undefined);
-    // Simula ausência do elemento de vídeo durante a inicialização.
-    const createElement = document.createElement.bind(document);
-    vi.spyOn(document, "createElement").mockImplementation((tag: any, opts?: any) => {
-      const el = createElement(tag, opts);
-      if (String(tag).toLowerCase() === "video") {
-        Object.defineProperty(el, "play", {
-          configurable: true,
-          value: () => Promise.reject(Object.assign(new Error("sem vídeo"), { name: "AbortError" })),
-        });
-      }
-      return el;
-    });
-
-    render(<CameraCaptureDialog open onOpenChange={() => {}} onCapture={() => {}} />);
-
-    await waitFor(() => expect(stop).toHaveBeenCalledTimes(1));
-    expect(await screen.findByRole("alert")).toBeTruthy();
+    const ref: { current: MediaStream | null } = { current: stream };
+    // video === null é exatamente o ramo !video do diálogo.
+    encerrarStreamDaTentativa(stream, null, ref);
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(ref.current).toBeNull();
   });
 
-  it("o código trata explicitamente a ausência do elemento de vídeo encerrando o stream", () => {
+  it("tentativa antiga que falha tarde não derruba a stream da tentativa atual", () => {
+    const a = streamFalso();
+    const b = streamFalso();
+    const ref: { current: MediaStream | null } = { current: b.stream };
+    const video = document.createElement("video");
+    (video as any).srcObject = b.stream;
+
+    // Falha tardia da tentativa A, já obsoleta.
+    encerrarStreamDaTentativa(a.stream, video, ref);
+
+    expect(a.stop).toHaveBeenCalledTimes(1);
+    expect(b.stop).not.toHaveBeenCalled();
+    expect(ref.current).toBe(b.stream);
+    expect((video as any).srcObject).toBe(b.stream);
+  });
+
+  it("na falha da tentativa atual limpa ref e srcObject da própria stream", () => {
+    const { stream, stop } = streamFalso();
+    const ref: { current: MediaStream | null } = { current: stream };
+    const video = document.createElement("video");
+    (video as any).srcObject = stream;
+    encerrarStreamDaTentativa(stream, video, ref);
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(ref.current).toBeNull();
+    expect((video as any).srcObject).toBeNull();
+  });
+
+  it("o catch externo não encerra stream de outra tentativa quando nenhuma foi obtida", () => {
     const src = require("node:fs").readFileSync("src/components/aplicacao/CameraCaptureDialog.tsx", "utf8");
-    const trecho = src.slice(src.indexOf("if (!video)"), src.indexOf("streamRef.current = stream;"));
-    expect(trecho).toContain("descartar(stream)");
-    expect(trecho).toContain("streamRef.current = null");
-    expect(trecho).toContain("setPronto(false)");
+    expect(src).toContain("if (meuStream) encerrarStreamDaTentativa(meuStream, videoRef.current, streamRef);");
+    expect(src).not.toContain("descartar(");
   });
 });
