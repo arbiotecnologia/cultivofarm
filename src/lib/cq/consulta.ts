@@ -52,6 +52,30 @@ export function noPeriodo(value: string | null | undefined, inicio: string, fim:
   return !!day && (!inicio || day >= inicio) && (!fim || day <= fim);
 }
 
+export type PeriodoEstado =
+  | { valido: true }
+  | { valido: false; motivo: 'invertido' | 'data_invalida'; mensagem: string };
+
+/**
+ * Valida o período civil informado (YYYY-MM-DD, sem fuso).
+ * Limites iguais são aceitos; início posterior ao fim é inválido e a consulta
+ * filtrada não deve ser executada nesse estado.
+ */
+export function validarPeriodo(inicio: string, fim: string): PeriodoEstado {
+  const civil = (v: string) => !v || diaSP(v) === v;
+  if (!civil(inicio) || !civil(fim)) {
+    return { valido: false, motivo: 'data_invalida', mensagem: 'Informe datas válidas no formato dia/mês/ano.' };
+  }
+  if (inicio && fim && inicio > fim) {
+    return {
+      valido: false,
+      motivo: 'invertido',
+      mensagem: 'A data inicial não pode ser posterior à data final. Ajuste o período para ver as análises.',
+    };
+  }
+  return { valido: true };
+}
+
 export function statusCQ(resultado: ResultadoCQ | string | null | undefined) {
   return resultado === 'aprovado' || resultado === 'reprovado' ? resultado : 'pendente';
 }

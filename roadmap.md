@@ -1,5 +1,10 @@
 # Roadmap de Tarefas
 
+## CQ — correção consolidada 2026-09-13
+- [x] Período acessível; 30/30 testes CQ; SQL/rollback preparados sem aplicar; gate exit 0 e build automático OK às 04:15:15 UTC.
+- Reanálise: bloqueio conservador preparado, não homologado; execução SQL/concorrência e revisão de rollback dependem de autorização futura. NO-GO de aplicação documentado.
+- Demais módulos e destinos históricos abaixo permanecem suspensos; não executar.
+
 ## Lotes — 2026-09-13
 - [x] Auditoria local de Lotes, correções de consulta e relatório em restoration/lotes/README.md; 55/55 focados, 134/135 ampliados.
 - Pendências Lotes: rastreabilidade completa e snapshot/agregações globais exigem etapa autorizada; E2E conectado proibido. Gate ampliado .env divergente separado do runtime aprovado; typecheck separado sem evidência.

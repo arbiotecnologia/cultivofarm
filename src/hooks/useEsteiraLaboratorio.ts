@@ -280,6 +280,7 @@ export function useEsteiraLaboratorio() {
         .select("resultado")
         .eq("lote_id", lote.id)
         .order("created_at", { ascending: false })
+        .order("seq", { ascending: false })
         .limit(1)
         .maybeSingle();
 
