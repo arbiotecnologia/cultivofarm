@@ -73,7 +73,8 @@ export default function PlanejamentoProducaoDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { role } = useAuth();
-  const { data, isLoading, refetch } = useProductionPlanningDetail(id ?? null);
+  const { data, isLoading, isError, error, refetch, isFetching } = useProductionPlanningDetail(id ?? null);
+  const [gerando, setGerando] = useState(false);
   const generate = useGenerateProductionOrders();
   const updateDates = useUpdatePlanningDates();
 
@@ -125,9 +126,31 @@ export default function PlanejamentoProducaoDetalhe() {
     return arr;
   }, [itemsRaw]);
 
-  if (isLoading || !data) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
+  if (isLoading) return <div className="p-6 text-sm text-muted-foreground" role="status">Carregando…</div>;
 
-  const { planning, partner, order, items, timeline, has_orders } = data;
+  if (isError || !data?.planning || !data?.order) {
+    return (
+      <div className="container mx-auto p-4 md:p-6 space-y-3">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/operacao/planejamento")}>
+          <ArrowLeft className="h-4 w-4 mr-1" aria-hidden="true" /> Voltar
+        </Button>
+        <div className="flex flex-col items-start gap-2" role="alert">
+          <p className="text-sm text-destructive flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            {isError
+              ? mensagemErro(error, "Não foi possível carregar este planejamento.")
+              : "Planejamento não encontrado ou indisponível para o seu perfil."}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { planning, partner: partnerRaw, order, timeline, has_orders } = data as any;
+  const partner = partnerRaw ?? {};
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-4">
