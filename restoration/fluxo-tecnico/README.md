@@ -18,8 +18,13 @@ Conexão exclusiva: CultivoFarm `swzpzcwiasxmjutrmvkm`.
 - `selectedRegistro`, comentário e `actionDialog` são limpos ao fechar a revisão ou trocar de item.
 - Imports/constantes/estados mortos removidos (recharts, StatusStepper, parseConduta, parseNotes,
   getClienteLabel, rowClick, PRESSAO_MAP, URGENCIA_MAP, OS_TIMELINE_STEPS, pieColors, chartConfig, useNavigate).
-- Avanço de status da OS mantém concorrência otimista (`.eq("status", os.status)`), restrito por papel,
-  sem uso de `_avancar_os_status` (função interna, não documentada como API pública).
+- A tela **não** transiciona status de OS: essa ação pertence aos módulos canônicos da esteira.
+  A aba OS On-Farm é somente leitura (colunas Nº OS, Cliente, Origem, Status, Ações) e mantém a
+  coluna "Origem" ("Rec. Técnica" quando `origem = recomendacao_tecnica`, senão "Direta").
+- A mutation e o diálogo de decisão foram removidos (eram inalcançáveis). Resta a revisão somente
+  leitura mais o aviso de integridade; a decisão só volta junto com a RPC transacional abaixo.
+- O aviso de geração de OS indisponível aparece somente quando
+  `proxima_acao_recomendada = "gerar_os"`.
 
 ## Bloqueios de integridade assumidos nesta rodada
 
@@ -51,7 +56,7 @@ Conexão exclusiva: CultivoFarm `swzpzcwiasxmjutrmvkm`.
 
 ## Verificações desta rodada
 
-- Testes focados `src/test/fluxo-tecnico`: **29 aprovados, 0 falhas**.
+- Testes focados `src/test/fluxo-tecnico`: **31 aprovados, 0 falhas**.
 - Typecheck (`tsgo --noEmit`): sem erros.
 - Build automático: **build OK**.
 - Gate de vínculo: **OK — CultivoFarm swzpzcwiasxmjutrmvkm** (`.env` divergente removido novamente).

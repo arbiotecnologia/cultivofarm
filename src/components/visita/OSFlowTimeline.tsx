@@ -1,12 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { formatDateDisplay, formatDateTimeDisplay, formatTimeDisplay } from "@/lib/date-utils";
-import { 
-  CheckCircle2, Clock, Factory, ClipboardCheck, 
-  Package, Truck, Sprout, FileText, AlertCircle,
-  Activity, ArrowRight
+import { formatDateDisplay, formatDateTimeDisplay } from "@/lib/date-utils";
+import {
+  CheckCircle2, Factory, ClipboardCheck,
+  Package, Truck, Sprout, FileText,
+  Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";

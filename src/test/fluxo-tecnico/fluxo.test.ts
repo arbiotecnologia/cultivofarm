@@ -9,10 +9,8 @@ import {
   validarComentarioDecisao,
   podeDecidirRegistro,
   podeDecidirPorPapel,
-  podeDecidir,
   mensagemAmigavel,
   normalizarBusca,
-  proximoStatusOS,
   matchTexto,
   textoOuTraco,
   PAPEIS_DECISAO,
@@ -62,12 +60,6 @@ describe("fluxo técnico — transições de OS", () => {
     expect(blockedOSReason("aberta", "inexistente")).toMatch(/não reconhecida/i);
   });
 
-  it("calcula o próximo status sem ultrapassar o fim do fluxo", () => {
-    expect(proximoStatusOS("aberta")).toBe("aprovada");
-    expect(proximoStatusOS("finalizada")).toBeNull();
-    expect(proximoStatusOS("inexistente")).toBeNull();
-    expect(proximoStatusOS(null)).toBeNull();
-  });
 });
 
 describe("fluxo técnico — decisão de aprovação", () => {
@@ -100,10 +92,8 @@ describe("fluxo técnico — autorização por papel", () => {
     }
   });
 
-  it("papel válido não basta: sem RPC transacional a decisão fica bloqueada", () => {
+  it("sem RPC transacional a decisão permanece indisponível no contrato", () => {
     expect(RPC_APROVACAO_TRANSACIONAL_DISPONIVEL).toBe(false);
-    expect(podeDecidir("administrador", "enviado_aprovacao")).toBe(false);
-    expect(podeDecidir("consultor_tecnico", "enviado_aprovacao")).toBe(false);
   });
 
   it("geração automática de OS permanece bloqueada sem RPC idempotente", () => {
@@ -159,7 +149,7 @@ describe("fluxo técnico — página", () => {
   it("não expõe mensagens internas do banco na UI", () => {
     expect(pagina).not.toMatch(/error\.message/);
     expect(pagina).not.toMatch(/err\?\.message/);
-    expect(pagina).toContain("mensagemAmigavel");
+    expect(pagina).not.toContain("_avancar_os_status");
   });
 
   it("bloqueia decisão e geração automática sem contrato transacional", () => {
@@ -172,11 +162,9 @@ describe("fluxo técnico — página", () => {
     expect(pagina).not.toMatch(/from\("registros_consultor_status_log"\)/);
   });
 
-  it("restringe ações por papel e reage a troca/invalidez de papel", () => {
+  it("restringe a decisão por papel", () => {
     expect(pagina).toContain("podeDecidirPorPapel(role)");
-    expect(pagina).toContain("if (!papelDecide)");
-    expect(pagina).toContain("}, [papelDecide]);");
-    expect(pagina).toContain("!podeDecidir(role, selectedRegistro?.status)");
+    expect(pagina).toContain("a decisão é exclusiva de administrador ou gestor");
   });
 
   it("limpa estado ao fechar a revisão ou trocar de item", () => {
@@ -189,13 +177,46 @@ describe("fluxo técnico — página", () => {
     expect(pagina).toContain("Não foi possível carregar a conversa com o produtor.");
   });
 
-  it("mantém concorrência otimista no avanço da OS", () => {
-    expect(pagina).toContain('.eq("status", os.status)');
-    expect(pagina).toContain("alterado por outro usuário");
+  it("não inventa transição de OS na tela: transição pertence à esteira", () => {
+    for (const morto of [
+      "handleOSStatusChange",
+      "proximoStatusOS",
+      "blockedOSReason",
+      "Avançar",
+      'from("ordens_servico_onfarm")\n        .update',
+    ]) {
+      expect(pagina).not.toContain(morto);
+    }
   });
 
-  it("não usa RPC interna não documentada para transição de OS", () => {
-    expect(pagina).not.toContain("_avancar_os_status");
+  it("restaura a coluna Origem na aba de OS On-Farm", () => {
+    expect(pagina).toContain("origem");
+    expect(pagina).toContain('o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"');
+    expect(pagina).toContain("<TableHead>Origem</TableHead>");
+    expect(pagina).not.toContain("colSpan={4}");
+    expect(pagina).toContain("colSpan={5}");
+  });
+
+  it("avisa sobre geração de OS apenas quando a recomendação geraria OS", () => {
+    expect(pagina).toContain('selectedRegistro.proxima_acao_recomendada === "gerar_os"');
+  });
+
+  it("remove mutation e diálogo de decisão inalcançáveis", () => {
+    for (const morto of [
+      "approvalMutation",
+      "handleApproval",
+      "actionDialog",
+      "openAction",
+      "STATUS_APROVACAO",
+      "useMutation",
+      "Textarea",
+      "DialogFooter",
+      "validarComentarioDecisao",
+      "RegistroStatus",
+    ]) {
+      expect(pagina).not.toContain(morto);
+    }
+    expect(pagina).toContain("MSG_DECISAO_INDISPONIVEL");
   });
 
   it("removeu imports e constantes mortas", () => {
@@ -212,6 +233,12 @@ describe("fluxo técnico — timeline da OS", () => {
 
   it("não usa select('*')", () => {
     expect(timeline).not.toMatch(/\.select\(\s*["'`]\*/);
+  });
+
+  it("não mantém imports mortos", () => {
+    for (const morto of ["date-fns", "ptBR", "formatTimeDisplay", "Clock", "AlertCircle", "ArrowRight"]) {
+      expect(timeline).not.toContain(morto);
+    }
   });
 
   it("mostra erro amigável com retry em vez de etapa pendente", () => {

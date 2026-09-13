@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,46 +7,26 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  CheckCircle, XCircle, MessageSquare, Eye,
+  CheckCircle, MessageSquare, Eye,
   Clock, AlertTriangle, Factory, Truck, ClipboardCheck, Search,
   FileText, Package, Sprout, History,
 } from "lucide-react";
-import { toast } from "sonner";
 import { OSFlowTimeline } from "@/components/visita/OSFlowTimeline";
-import { type RegistroStatus } from "@/lib/registroTransitions";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { RecomendacaoChat } from "@/components/shared/RecomendacaoChat";
 import {
-  blockedOSReason,
   matchTexto,
-  mensagemAmigavel,
-  podeDecidir,
   podeDecidirPorPapel,
-  podeDecidirRegistro,
-  proximoStatusOS,
-  requerMotivo,
   textoOuTraco,
-  validarComentarioDecisao,
   MSG_DECISAO_INDISPONIVEL,
   MSG_GERACAO_OS_INDISPONIVEL,
-  RPC_APROVACAO_TRANSACIONAL_DISPONIVEL,
   RPC_GERACAO_OS_DISPONIVEL,
 } from "@/lib/fluxo-tecnico/fluxo";
-
-const STATUS_APROVACAO: Record<string, { label: string }> = {
-  pendente: { label: "Pendente" },
-  aprovado: { label: "Aprovado" },
-  reprovado: { label: "Reprovado" },
-  solicitar_ajuste: { label: "Ajuste Solicitado" },
-};
 
 const STATUS_OS_ONFARM: Record<string, { label: string; color: string }> = {
   aberta: { label: "Aberta", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
@@ -70,7 +50,7 @@ const SELECT_APROVACOES = "id, status_aprovacao, created_at";
 
 /** Colunas mínimas exibidas na aba de OS On-Farm. */
 const SELECT_OS_ONFARM =
-  "id, numero_os, status, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
+  "id, numero_os, status, origem, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
 
 export default function FluxoTecnico() {
   const { role } = useAuth();
@@ -79,8 +59,6 @@ export default function FluxoTecnico() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedRegistro, setSelectedRegistro] = useState<any>(null);
   const [showReview, setShowReview] = useState(false);
-  const [actionDialog, setActionDialog] = useState<{ open: boolean; type: string }>({ open: false, type: "" });
-  const [comentario, setComentario] = useState("");
   const [selectedOS, setSelectedOS] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -144,16 +122,8 @@ export default function FluxoTecnico() {
     refetchInterval: 300000,
   });
 
-  const refetchAll = () => {
-    void refetchPendentes();
-    void refetchAprovacoes();
-    void refetchOS();
-  };
-
   const limparSelecao = () => {
     setSelectedRegistro(null);
-    setComentario("");
-    setActionDialog({ open: false, type: "" });
   };
 
   const fecharRevisao = () => {
@@ -161,110 +131,10 @@ export default function FluxoTecnico() {
     limparSelecao();
   };
 
-  // Papel inválido ou alterado durante a sessão fecha qualquer diálogo de decisão.
-  useEffect(() => {
-    if (!papelDecide) {
-      setActionDialog({ open: false, type: "" });
-      setComentario("");
-    }
-  }, [papelDecide]);
-
   const openReview = (registro: any) => {
     limparSelecao();
     setSelectedRegistro(registro);
     setShowReview(true);
-  };
-
-  const openAction = (type: string, registro: any) => {
-    if (!podeDecidir(role, registro?.status)) {
-      toast.error(MSG_DECISAO_INDISPONIVEL);
-      return;
-    }
-    setSelectedRegistro(registro);
-    setComentario("");
-    setActionDialog({ open: true, type });
-  };
-
-  /**
-   * Integridade: a decisão exige gravar, na MESMA transação,
-   * `registros_consultor` + `aprovacoes_tecnicas` + `registros_consultor_status_log`.
-   * Como não existe RPC pública transacional no contrato atual, a mutation
-   * falha explicitamente em vez de gravar parcialmente.
-   */
-  const approvalMutation = useMutation({
-    mutationFn: async (_vars: {
-      registro: any; type: string; newStatus: RegistroStatus; comentario: string;
-    }) => {
-      if (!RPC_APROVACAO_TRANSACIONAL_DISPONIVEL) {
-        throw new Error(MSG_DECISAO_INDISPONIVEL);
-      }
-      throw new Error(MSG_DECISAO_INDISPONIVEL);
-    },
-    onSuccess: () => {
-      toast.success("Decisão registrada.");
-      fecharRevisao();
-      refetchAll();
-    },
-    onError: (err: any) => {
-      toast.error(mensagemAmigavel(err, MSG_DECISAO_INDISPONIVEL));
-      refetchAll();
-    },
-  });
-
-  const handleApproval = () => {
-    if (!selectedRegistro) return;
-    if (approvalMutation.isPending) return;
-    if (!podeDecidir(role, selectedRegistro.status)) {
-      toast.error(
-        !papelDecide
-          ? "Seu perfil não tem permissão para decidir recomendações."
-          : !podeDecidirRegistro(selectedRegistro.status)
-            ? "Esta recomendação não está mais aguardando aprovação."
-            : MSG_DECISAO_INDISPONIVEL,
-      );
-      setActionDialog({ open: false, type: "" });
-      return;
-    }
-    const type = actionDialog.type;
-    const motivo = validarComentarioDecisao(type, comentario);
-    if (!motivo.ok) {
-      toast.error(motivo.erro);
-      return;
-    }
-
-    let newStatus: RegistroStatus = "enviado_aprovacao";
-    if (type === "aprovado") newStatus = "aprovado";
-    if (type === "reprovado") newStatus = "reprovado";
-    if (type === "solicitar_ajuste") newStatus = "rascunho";
-
-    approvalMutation.mutate({ registro: selectedRegistro, type, newStatus, comentario });
-  };
-
-  /** Avanço de etapa da OS: concorrência otimista, restrito por papel. */
-  const handleOSStatusChange = async (os: any, newStatus: string) => {
-    if (!papelDecide) {
-      toast.error("Seu perfil não tem permissão para alterar o status da OS.");
-      return;
-    }
-    const motivo = blockedOSReason(os?.status, newStatus);
-    if (motivo) {
-      toast.error(motivo);
-      return;
-    }
-    const { data, error } = await supabase
-      .from("ordens_servico_onfarm")
-      .update({ status: newStatus as any })
-      .eq("id", os.id)
-      .eq("status", os.status)
-      .select("id");
-    if (error) {
-      toast.error(mensagemAmigavel(error, "Não foi possível atualizar a OS."));
-    } else if (!data || data.length === 0) {
-      toast.error("O status desta OS foi alterado por outro usuário. Atualize a lista.");
-    } else {
-      toast.success("Status da OS atualizado.");
-    }
-    void refetchOS();
   };
 
   const filteredPendentes = pendentes.filter((r) =>
@@ -300,8 +170,7 @@ export default function FluxoTecnico() {
         <p className="text-sm text-muted-foreground">Aprovação de recomendações e acompanhamento de ordens de serviço.</p>
       </div>
 
-      {!RPC_APROVACAO_TRANSACIONAL_DISPONIVEL && (
-        <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+      <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
           <div className="text-sm">
             <p className="font-medium text-destructive">{MSG_DECISAO_INDISPONIVEL}</p>
@@ -311,7 +180,6 @@ export default function FluxoTecnico() {
             </p>
           </div>
         </div>
-      )}
 
       {errorAprovacoes && (
         <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border p-3">
@@ -424,16 +292,17 @@ export default function FluxoTecnico() {
                 <TableRow>
                   <TableHead>Nº OS</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Origem</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingOS ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : errorOS ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
+                    <TableCell colSpan={5} className="text-center py-8">
                       <p className="text-sm text-destructive">Não foi possível carregar as ordens de serviço.</p>
                       <Button
                         variant="outline"
@@ -448,32 +317,26 @@ export default function FluxoTecnico() {
                   </TableRow>
                 ) : filteredOS.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       {searchOS.trim() || filterStatus !== "all"
                         ? "Nenhuma OS corresponde aos filtros aplicados."
                         : "Nenhuma OS encontrada."}
                     </TableCell>
                   </TableRow>
                 ) : filteredOS.map((o) => {
-                  const proximo = proximoStatusOS(o.status);
                   return (
                     <TableRow key={o.id}>
                       <TableCell className="font-mono font-bold">{textoOuTraco(o.numero_os)}</TableCell>
                       <TableCell>{textoOuTraco(o.clientes?.nome)}</TableCell>
                       <TableCell>
+                        <Badge variant="outline">
+                          {o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <Badge className={STATUS_OS_ONFARM[o.status]?.color}>{STATUS_OS_ONFARM[o.status]?.label || textoOuTraco(o.status)}</Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-1">
-                        {papelDecide && proximo && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            aria-label={`Avançar OS ${o.numero_os ?? ""} para ${STATUS_OS_ONFARM[proximo]?.label || proximo}`}
-                            onClick={() => { void handleOSStatusChange(o, proximo); }}
-                          >
-                            Avançar
-                          </Button>
-                        )}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -512,63 +375,17 @@ export default function FluxoTecnico() {
                 <p className="text-xs text-muted-foreground italic">
                   Seu perfil pode acompanhar a revisão, mas a decisão é exclusiva de administrador ou gestor.
                 </p>
-              ) : !RPC_APROVACAO_TRANSACIONAL_DISPONIVEL ? (
-                <p role="alert" className="text-sm text-destructive">{MSG_DECISAO_INDISPONIVEL}</p>
               ) : (
-                <div className="flex flex-col gap-2">
-                  <Button className="bg-green-600 hover:bg-green-700" onClick={() => openAction("aprovado", selectedRegistro)}><CheckCircle className="mr-2 h-4 w-4" /> Aprovar Recomendação</Button>
-                  <Button variant="outline" className="text-orange-600 border-orange-300" onClick={() => openAction("solicitar_ajuste", selectedRegistro)}><MessageSquare className="mr-2 h-4 w-4" /> Solicitar Ajuste</Button>
-                  <Button variant="outline" className="text-red-600 border-red-300" onClick={() => openAction("reprovado", selectedRegistro)}><XCircle className="mr-2 h-4 w-4" /> Reprovar</Button>
-                </div>
+                <p role="alert" className="text-sm text-destructive">{MSG_DECISAO_INDISPONIVEL}</p>
               )}
-              {!RPC_GERACAO_OS_DISPONIVEL && (
+              {!RPC_GERACAO_OS_DISPONIVEL
+                && selectedRegistro.proxima_acao_recomendada === "gerar_os" && (
                 <p className="text-xs text-muted-foreground">{MSG_GERACAO_OS_INDISPONIVEL}</p>
               )}
             </div>
           )}
         </SheetContent>
       </Sheet>
-
-      <Dialog
-        open={actionDialog.open}
-        onOpenChange={(open) => { if (!open) { setActionDialog({ open: false, type: "" }); setComentario(""); } }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="capitalize">{STATUS_APROVACAO[actionDialog.type]?.label || actionDialog.type.replace("_", " ")}</DialogTitle>
-            <DialogDescription>Confirma a ação para esta recomendação técnica?</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="comentario-decisao">
-              {requerMotivo(actionDialog.type) ? "Motivo (obrigatório)" : "Observações (opcional)"}
-            </Label>
-            <Textarea
-              id="comentario-decisao"
-              value={comentario}
-              onChange={(e) => setComentario(e.target.value)}
-              placeholder="Descreva o motivo..."
-              className="mt-1"
-              aria-required={requerMotivo(actionDialog.type)}
-            />
-            {requerMotivo(actionDialog.type) && comentario.trim().length === 0 && (
-              <p className="mt-2 text-xs text-destructive">Informe o motivo para esta decisão.</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setActionDialog({ open: false, type: "" }); setComentario(""); }}>Cancelar</Button>
-            <Button
-              onClick={handleApproval}
-              disabled={
-                approvalMutation.isPending ||
-                !podeDecidir(role, selectedRegistro?.status) ||
-                (requerMotivo(actionDialog.type) && comentario.trim().length === 0)
-              }
-            >
-              {approvalMutation.isPending ? "Processando..." : "Confirmar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Sheet open={showHistory} onOpenChange={(open) => { setShowHistory(open); if (!open) setSelectedOS(null); }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
