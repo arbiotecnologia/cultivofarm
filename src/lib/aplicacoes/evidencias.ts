@@ -91,11 +91,26 @@ export function ehDispositivoMovel(nav: any = typeof navigator !== "undefined" ?
   return plataformaMac && Number(nav.maxTouchPoints || 0) > 1;
 }
 
+/**
+ * Entrada de câmera aceita SOMENTE imagens desta lista, ainda que o catálogo
+ * geral de evidências aceite PDF, vídeo e áudio.
+ */
+const MIME_CAMERA_PERMITIDOS = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+] as const;
+
 /** MIMEs equivalentes que algumas câmeras devolvem fora do padrão. */
 const MIME_CANONICO_CAMERA: Record<string, string> = {
   "image/jpg": "image/jpeg",
   "image/pjpeg": "image/jpeg",
 };
+
+const cameraPermitido = (mime: string) =>
+  (MIME_CAMERA_PERMITIDOS as readonly string[]).includes(mime) && mimePermitido(mime);
 
 /** Inferência por extensão usada SOMENTE quando o MIME vem vazio da câmera. */
 const MIME_POR_EXTENSAO: Record<string, string> = {
@@ -115,11 +130,11 @@ export function mimeCanonicoCamera(nome: string, mime: string): string | null {
   const bruto = (mime || "").toLowerCase().trim();
   if (bruto) {
     const alvo = MIME_CANONICO_CAMERA[bruto] || bruto;
-    return mimePermitido(alvo) ? alvo : null;
+    return cameraPermitido(alvo) ? alvo : null;
   }
   const ext = (nome || "").toLowerCase().split(".").pop() || "";
   const inferido = MIME_POR_EXTENSAO[ext];
-  return inferido && mimePermitido(inferido) ? inferido : null;
+  return inferido && cameraPermitido(inferido) ? inferido : null;
 }
 
 /**

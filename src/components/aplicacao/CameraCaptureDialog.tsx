@@ -105,6 +105,12 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: Props) {
         return;
       }
     } catch (e: any) {
+      // Defesa: qualquer stream remanescente desta tentativa é encerrado.
+      if (streamRef.current) {
+        descartar(streamRef.current);
+        streamRef.current = null;
+      }
+      setPronto(false);
       if (id !== tentativaRef.current) return;
       setError(mensagemErroCamera(e));
     } finally {
