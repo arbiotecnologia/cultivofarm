@@ -436,14 +436,14 @@ export default function PlanejamentoProducaoDetalhe() {
         <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" /> Timeline</CardTitle></CardHeader>
         <CardContent>
           <ol className="relative border-l border-border ml-2 space-y-3">
-            {(timeline ?? []).map((ev: any) => (
+            {eventos.map((ev: any) => (
               <li key={ev.id} className="ml-4">
                 <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full bg-primary"></div>
                 <div className="text-sm font-medium">{EVENT_LABEL[ev.event_type] ?? ev.event_type}</div>
                 <div className="text-xs text-muted-foreground">{formatDateTimeDisplay(ev.event_at)}</div>
               </li>
             ))}
-            {(timeline ?? []).length === 0 && <li className="text-sm text-muted-foreground ml-4">Sem eventos.</li>}
+            {eventos.length === 0 && <li className="text-sm text-muted-foreground ml-4">Sem eventos.</li>}
           </ol>
         </CardContent>
       </Card>
