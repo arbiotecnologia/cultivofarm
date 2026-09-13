@@ -76,6 +76,8 @@ interface Envase {
   produto_etiquetas?: { id: string; status: string; trace_token: string; codigo_etiqueta: string } | null;
 }
 
+const LIMITE_BUSCA_LOTES = 200;
+
 const SELECT_ENVASE =
   "id, lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador, etiqueta_id, created_at, lotes!inner(codigo_lote, produto_id, produtos(nome)), produto_etiquetas:etiqueta_id(id, status, trace_token, codigo_etiqueta)";
 
@@ -119,7 +121,7 @@ export default function EnvasePage() {
           .from("lotes")
           .select("id")
           .ilike("codigo_lote", `%${termo}%`)
-          .limit(200);
+          .limit(LIMITE_BUSCA_LOTES);
         if (error) throw error;
         loteIds = (data ?? []).map((l: any) => l.id);
       }

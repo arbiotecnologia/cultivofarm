@@ -42,10 +42,20 @@ export interface RegistroCQ {
   resultado?: string | null;
 }
 
-const tempo = (v: string | null | undefined) => {
-  if (!v) return Number.NEGATIVE_INFINITY;
+const tempo = (v: string | null | undefined): number | null => {
+  if (!v) return null;
   const t = new Date(v).getTime();
-  return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
+  return Number.isFinite(t) ? t : null;
+};
+
+/** Compara datas tratando ausência como "mais antiga", sem produzir NaN. */
+const cmpData = (a: string | null | undefined, b: string | null | undefined) => {
+  const ta = tempo(a);
+  const tb = tempo(b);
+  if (ta === tb) return 0;
+  if (ta === null) return -1;
+  if (tb === null) return 1;
+  return ta < tb ? -1 : 1;
 };
 
 /**
@@ -56,12 +66,12 @@ export function ultimoCQ(lista: RegistroCQ[] | null | undefined): RegistroCQ | n
   const itens = (lista ?? []).filter(Boolean);
   if (itens.length === 0) return null;
   return [...itens].sort((a, b) => {
-    const dt = tempo(b.created_at) - tempo(a.created_at);
+    const dt = cmpData(b.created_at, a.created_at);
     if (dt !== 0) return dt;
     const sa = Number.isFinite(Number(a.seq)) ? Number(a.seq) : Number.NEGATIVE_INFINITY;
     const sb = Number.isFinite(Number(b.seq)) ? Number(b.seq) : Number.NEGATIVE_INFINITY;
     if (sa !== sb) return sb - sa;
-    const dd = tempo(b.data_analise) - tempo(a.data_analise);
+    const dd = cmpData(b.data_analise, a.data_analise);
     if (dd !== 0) return dd;
     return String(b.id ?? "").localeCompare(String(a.id ?? ""));
   })[0];
