@@ -227,9 +227,16 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
       motivoRetificacao,
     });
     if (erro) return toast.error(erro);
+    if (rectifyId) {
+      const erroMotivo = validarMotivoRetificacao(motivoRetificacao);
+      if (erroMotivo) return toast.error(erroMotivo);
+    }
 
     submittingRef.current = true;
     setSaving(true);
+    // O id é gerado antes do upload: os objetos já nascem no caminho definitivo.
+    const aplicacaoId = crypto.randomUUID();
+    let caminhosEnviados: string[] = [];
     try {
       const aplicacaoData = {
         ordem_servico_id: osId,
@@ -257,61 +264,62 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
         resultado_inicial: (resultado as any) || null,
         observacoes: observacoes || null,
         created_by: user?.id || null,
-        // Campos de retificação
-        parent_id: rectifyId || null,
-        versao: rectifyId && aplicacaoOriginal ? (aplicacaoOriginal.versao || 1) + 1 : 1,
-        motivo_retificacao: motivoRetificacao || null,
-        is_latest: true
+        motivo_retificacao: motivoRetificacao.trim() || null,
       };
 
-      // Se for retificação, desativa a anterior
-      if (rectifyId) {
-        await supabase.from("aplicacoes").update({ is_latest: false }).eq("id", rectifyId);
+      const enviadas = evidencias.length && osSel
+        ? await uploadEvidencias(evidencias, aplicacaoId, (osSel as any).cliente_id)
+        : [];
+      caminhosEnviados = enviadas.map(e => e.storage_path);
+
+      // Persistência atômica: aplicação, versionamento, evidências novas e mantidas.
+      const { error: rpcErro } = await (supabase as any).rpc("rpc_salvar_aplicacao_v1", {
+        p_aplicacao_id: aplicacaoId,
+        p_payload: aplicacaoData,
+        p_rectify_id: rectifyId || null,
+        p_evidencias: enviadas,
+        p_evidencias_manter: rectifyId ? evidenciasParaManter : [],
+      });
+      if (rpcErro) throw rpcErro;
+      caminhosEnviados = [];
+
+      // Passos pós-registro NÃO invalidam o cadastro já salvo.
+      try {
+        const { data: osProg } = await supabase.from("programacao_producao").select("id").eq("ordem_servico_id", osId).limit(1).maybeSingle();
+        if (osProg) {
+          await finalizarOS(osProg.id, osId, "manual");
+        } else {
+          const { error: avancoErro } = await (supabase as any).rpc("rpc_avancar_esteira_laboratorio", {
+            p_os_id: osId,
+            p_origem: "manual",
+            p_etapa_destino: "finalizada",
+            p_programacao_id: null,
+          });
+          if (avancoErro) throw avancoErro;
+        }
+      } catch {
+        toast.warning("Aplicação salva, mas a OS não pôde ser finalizada. Finalize pelo Cockpit.");
       }
 
-      const { data: ins, error } = await supabase.from("aplicacoes").insert(aplicacaoData as any).select("id").single();
-      if (error) throw error;
-
-      if (evidencias.length && osSel) {
-        await uploadEvidencias(evidencias, ins.id, (osSel as any).cliente_id, user?.id);
-      }
-
-      // Reutiliza evidências da versão anterior (apenas cria vínculos)
-      if (rectifyId && evidenciasParaManter.length) {
-        const vinculos = evidenciasParaManter.map(evId => ({
-          aplicacao_id: ins.id,
-          evidencia_id: evId
-        }));
-        await supabase.from("aplicacao_evidencias_vinculos").insert(vinculos);
-      }
-
-      // Só finaliza OS se for novo registro ou se quiser garantir que continue finalizada
-      const { data: osProg } = await supabase.from("programacao_producao").select("id").eq("ordem_servico_id", osId).limit(1).maybeSingle();
-      
-      if (osProg) {
-        await finalizarOS(osProg.id, osId, "manual");
-      } else {
-        await supabase.from("ordens_servico").update({ status: "finalizada" as any }).eq("id", osId);
-      }
-
-
-
-      // notificação ao produtor
       if (osSel) {
-        await (supabase as any).rpc("rpc_notificar_gestor", {
-          p_cliente_id: (osSel as any).cliente_id,
-          p_tipo: rectifyId ? "alerta" : "aplicacao",
-          p_titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
-          p_mensagem: rectifyId
-            ? `O registro de aplicação de ${(osSel as any).produtos?.nome || "produto"} foi corrigido.`
-            : `Aplicação de ${(osSel as any).produtos?.nome || "produto"} registrada em ${(osSel as any).fazendas?.nome || ""} / ${(osSel as any).talhoes?.nome || ""}`,
-          p_link: null,
-          p_source_type: "aplicacao",
-          p_source_id: ins.id,
-          p_idempotency_key: `aplic-dialog-${ins.id}-${rectifyId ? "rect" : "new"}`,
-        });
+        try {
+          const { error: notifErro } = await (supabase as any).rpc("rpc_create_portal_notification_secure", {
+            _cliente_id: (osSel as any).cliente_id,
+            _tipo: rectifyId ? "alerta" : "aplicacao",
+            _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
+            _mensagem: rectifyId
+              ? `O registro de aplicação de ${(osSel as any).produtos?.nome || "produto"} foi corrigido.`
+              : `Aplicação de ${(osSel as any).produtos?.nome || "produto"} registrada em ${(osSel as any).fazendas?.nome || ""} / ${(osSel as any).talhoes?.nome || ""}`,
+            _link: null,
+            _source_type: "aplicacao",
+            _source_id: aplicacaoId,
+            _idempotency_key: `aplic-dialog-${aplicacaoId}-${rectifyId ? "rect" : "new"}`,
+          });
+          if (notifErro) throw notifErro;
+        } catch {
+          toast.warning("Aplicação salva, mas o produtor não foi notificado.");
+        }
       }
-
 
       toast.success(rectifyId ? "Aplicação retificada com sucesso" : "Aplicação registrada com sucesso");
       qc.invalidateQueries({ queryKey: ["aplicacoes"] });
@@ -320,12 +328,14 @@ export function AplicacaoFormDialog({ open, onOpenChange, defaultOsId, rectifyId
       onSuccess?.();
       onOpenChange(false);
     } catch (e: any) {
+      await limparObjetosEvidencias(caminhosEnviados);
       toast.error(e.message || "Erro ao salvar");
     } finally {
       submittingRef.current = false;
       setSaving(false);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
