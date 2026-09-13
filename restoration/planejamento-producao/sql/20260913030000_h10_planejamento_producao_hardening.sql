@@ -7,7 +7,7 @@
 --   2) Publicação de OS idempotente e segura contra concorrência/cliques simultâneos.
 --
 -- Regras: transacional, reexecutável, sem uso de DROP destrutivo,
--- sem TRUNCATE, sem alteração de dados existentes. Rollback no README.
+-- sem apagar dados. Rollback documentado no README.
 -- ============================================================================
 
 BEGIN;
