@@ -27,16 +27,10 @@ interface Props {
   onCreated?: () => void;
 }
 
-const generateLotCode = () => {
-  const now = new Date();
-  return `LOT-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(Math.floor(Math.random() * 9999)).padStart(4, "0")}`;
-};
-
 export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props) {
   const { gerarLote } = useEsteiraLaboratorio();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    codigo_lote: "",
     volume_produzido: "",
     responsavel_producao: "",
     tanque: "",
@@ -47,7 +41,6 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
   useEffect(() => {
     if (open && target) {
       setForm({
-        codigo_lote: generateLotCode(),
         volume_produzido: target.volume_solicitado ? String(target.volume_solicitado) : "",
         responsavel_producao: "",
         tanque: "",
@@ -65,8 +58,8 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
     if (saving) return;
     setSaving(true);
     try {
+      // O código do lote é gerado exclusivamente pelo servidor.
       const loteData = {
-        codigo_lote: form.codigo_lote,
         produto_id: target.produto_id || null,
         microrganismo_id: target.microrganismo_id || null,
         programacao_id: target.programacao_id,
