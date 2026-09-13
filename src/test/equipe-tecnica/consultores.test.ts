@@ -46,8 +46,8 @@ describe("equipe técnica — status", () => {
 
 describe("equipe técnica — busca", () => {
   const lista = [
-    { nome: "Ana Souza", email: "ana@arbio.com", crea: "MG-123" },
-    { nome: "Bruno Lima", email: "bruno@arbio.com", crea: null },
+    { nome: "Ana Souza", email: "ana@arbio.com" },
+    { nome: "Bruno Lima", email: "bruno@arbio.com" },
   ];
 
   it("retorna tudo com termo vazio ou só espaços", () => {
@@ -55,10 +55,14 @@ describe("equipe técnica — busca", () => {
     expect(filtrarConsultores(lista, "   ")).toHaveLength(2);
   });
 
-  it("filtra por nome, e-mail e CREA ignorando caixa e espaços", () => {
+  it("filtra por nome e e-mail ignorando caixa e espaços", () => {
     expect(filtrarConsultores(lista, " ANA ")).toHaveLength(1);
     expect(filtrarConsultores(lista, "bruno@")).toHaveLength(1);
-    expect(filtrarConsultores(lista, "mg-123")).toHaveLength(1);
+  });
+
+  it("não busca por campo inexistente no perfil (CREA foi removido)", () => {
+    const comCampoMorto = [{ nome: "Ana", email: "a@a.com", crea: "MG-123" }];
+    expect(filtrarConsultores(comCampoMorto, "mg-123")).toHaveLength(0);
   });
 
   it("não quebra com campos ausentes", () => {
