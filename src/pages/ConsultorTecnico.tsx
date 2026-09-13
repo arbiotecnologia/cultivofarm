@@ -824,27 +824,40 @@ export default function ConsultorTecnico() {
                         <span className="text-[10px] uppercase font-semibold text-muted-foreground flex items-center gap-1">
                           <Camera className="h-3 w-3" /> Evidências e Fotos
                         </span>
-                        
-                        {selectedVistoria.arquivos && selectedVistoria.arquivos.length > 0 && (
-                          <VistoriaFilesHeader 
-                            arquivos={selectedVistoria.arquivos} 
-                            selectedPhotos={selectedPhotos} 
-                            onSelectAll={() => setSelectedPhotos(selectedVistoria.arquivos.map((f: any) => f.id))}
+
+                        {arquivosVistoria.length > 0 && (
+                          <VistoriaFilesHeader
+                            arquivos={arquivosVistoria}
+                            selectedPhotos={selectedPhotos}
+                            onSelectAll={() => setSelectedPhotos(arquivosVistoria.map((f) => f.id))}
                             onClear={() => setSelectedPhotos([])}
-                            vistoriaId={selectedVistoria.id}
                             onDownload={handleDownloadImage}
+                            urlDaEvidencia={urlDaEvidencia}
                           />
                         )}
                       </div>
-                      
-                      {selectedVistoria.arquivos && selectedVistoria.arquivos.length > 0 ? (
-                        <VistoriaFilesGrid 
-                          arquivos={selectedVistoria.arquivos}
+
+                      {signedError && filePaths.length > 0 && (
+                        <div
+                          role="alert"
+                          className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+                        >
+                          <span>Não foi possível gerar os links seguros das evidências.</span>
+                          <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => refreshSignedUrls()}>
+                            Tentar novamente
+                          </Button>
+                        </div>
+                      )}
+
+                      {arquivosVistoria.length > 0 ? (
+                        <VistoriaFilesGrid
+                          arquivos={arquivosVistoria}
                           selectedPhotos={selectedPhotos}
                           onTogglePhoto={(id) => setSelectedPhotos(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])}
                           focusedPhotoIndex={focusedPhotoIndex}
                           onFocusPhoto={setFocusedPhotoIndex}
                           onZoomPhoto={setZoomedImageIndex}
+                          urlDaEvidencia={urlDaEvidencia}
                         />
                       ) : (
                         <div className="text-xs text-muted-foreground bg-muted/20 p-4 rounded-md border border-dashed text-center">
