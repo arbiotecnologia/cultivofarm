@@ -10,7 +10,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const FISCAL_EXPECTED_PROJECT_REF = "swzpzcwiasxmjutrmvkm" as const;
-export const FISCAL_FORBIDDEN_PRODUCTION_REF = "navfzbwgwzruipouyfnk" as const;
 export const FISCAL_PRODUCTION_EMISSION_ALLOWED = false as const;
 
 /** Project ref efetivamente usado em runtime pelo cliente Supabase. */
@@ -36,14 +35,6 @@ export type FiscalBindingCheck = {
 export function checkFiscalProjectRef(ref: string | null): FiscalBindingCheck {
   if (!ref) {
     return { ok: false, ref, reason: "unknown_ref", message: "Ambiente fiscal não identificado." };
-  }
-  if (ref === FISCAL_FORBIDDEN_PRODUCTION_REF) {
-    return {
-      ok: false,
-      ref,
-      reason: "production_forbidden",
-      message: "Operação fiscal bloqueada: ambiente de produção não é permitido nesta fase.",
-    };
   }
   if (ref !== FISCAL_EXPECTED_PROJECT_REF) {
     return {

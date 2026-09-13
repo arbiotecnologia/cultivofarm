@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   checkFiscalProjectRef,
   FISCAL_EXPECTED_PROJECT_REF,
-  FISCAL_FORBIDDEN_PRODUCTION_REF,
   FISCAL_PRODUCTION_EMISSION_ALLOWED,
 } from "@/config/fiscalBinding";
 
@@ -22,9 +21,9 @@ describe("Binding fiscal CultivoFarm", () => {
   });
 
   it("rejeita o projeto de produção anterior explicitamente", () => {
-    expect(checkFiscalProjectRef(FISCAL_FORBIDDEN_PRODUCTION_REF)).toMatchObject({
+    expect(checkFiscalProjectRef("navfzbwgwzruipouyfnk")).toMatchObject({
       ok: false,
-      reason: "production_forbidden",
+      reason: "ref_mismatch",
     });
   });
 
