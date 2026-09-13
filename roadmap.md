@@ -76,3 +76,5 @@
 - Pendente: homologação completa e compilação limpa, bloqueadas por integração divergente e tipos gerados incompletos. Não executar preview conectado.
 - Bloqueio: ambiente divergente e types.ts com 2.060 linhas; arquivos gerados protegidos, restauração exige correção da integração.
 - Sem acesso ao banco, publicação ou GitHub; tarefas históricas fora do escopo permanecem suspensas.
+
+- Nova solicitação: corrigir erros de compilação preexistentes; diagnóstico aponta incompatibilidade dos tipos gerados com o contrato canônico. Não mascarar com casts ou alterar arquivos protegidos.
