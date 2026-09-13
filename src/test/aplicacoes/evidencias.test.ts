@@ -38,7 +38,7 @@ describe("evidências de aplicação", () => {
     expect(ACCEPT_EVIDENCIAS).toBe(MIME_CANONICOS.join(","));
   });
 
-  it.each(MIME_CANONICUS)("aceita %s", m => expect(mimePermitido(m)).toBe(true));
+  it.each(MIME_CANONICOS)("aceita %s", m => expect(mimePermitido(m)).toBe(true));
 
   it.each(["application/x-msdownload", "text/html", "image/svg+xml", "", "application/zip"])(
     "recusa %s", m => expect(mimePermitido(m)).toBe(false),
