@@ -29,6 +29,20 @@ function mensagemErroCamera(e: any): string {
   }
 }
 
+/**
+ * Encerra o MediaStream de UMA tentativa e limpa apenas as referências que
+ * ainda apontam para ele. Uma tentativa antiga nunca derruba a atual.
+ */
+export function encerrarStreamDaTentativa(
+  stream: MediaStream,
+  video: HTMLVideoElement | null,
+  streamRef: { current: MediaStream | null },
+): void {
+  stream.getTracks().forEach((t) => t.stop());
+  if (streamRef.current === stream) streamRef.current = null;
+  if (video && video.srcObject === stream) video.srcObject = null;
+}
+
 export function CameraCaptureDialog({ open, onOpenChange, onCapture }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
