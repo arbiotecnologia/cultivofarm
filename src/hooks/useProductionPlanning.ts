@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { b2bToast } from "@/lib/b2bToast";
+import { resumirPlanejamento, type ResumoProducao } from "@/lib/dashboard-producao/producao";
+
 
 
 export type PlanningRow = {
