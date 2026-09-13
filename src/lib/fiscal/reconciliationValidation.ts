@@ -9,7 +9,7 @@
  * - Nenhum `any`, nenhum upsert, nenhum DELETE.
  */
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 export type ReconciliationPendingRow = any;
 export type FiscalInvoiceRow = any;

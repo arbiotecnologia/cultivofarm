@@ -2,7 +2,7 @@
  * Fase Fiscal 3.17 — Contrato TypeScript estreito da RPC
  * `rpc_fiscal_homologation_readiness`.
  *
- * NOTA: a regeneração oficial do `src/integrations/supabase/types.ts`
+ * NOTA: a regeneração oficial do `src/integrations/supabase/cultivofarm.types.ts`
  * pelo pipeline canônico continua PENDENTE após a aplicação da migration
  * `20260725000000_fiscal_fase3_17_homologation_readiness.sql`. Enquanto
  * isso, este módulo mantém tipos locais mínimos, sem `any` e sem cast

@@ -36,7 +36,7 @@ import {
   TECHNICAL_VISIT_SYNCED_EVENT,
   type TechnicalVisitSyncedDetail,
 } from "@/lib/visitaSyncEvents";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 import WizardCheckinStep from "./wizard/WizardCheckinStep";
 import WizardCampoStep from "./wizard/WizardCampoStep";
 import WizardDiagnosticoStep from "./wizard/WizardDiagnosticoStep";

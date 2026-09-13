@@ -3,7 +3,7 @@
  * `fiscal_invoice_items` (workflow documental MANUAL e auditável).
  *
  * Contrato canônico (não inventar):
- *   src/integrations/supabase/types.ts +
+ *   src/integrations/supabase/cultivofarm.types.ts +
  *   supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql +
  *   supabase/migrations/20260722000000_fiscal_fase3_0_1_integridade.sql
  *
@@ -29,7 +29,7 @@
  * - Nenhum `any`, nenhum cast forçado, nenhum upsert.
  */
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 // ————————————————————————— Tipos do contrato —————————————————————————
 export type FiscalInvoiceRow = any;

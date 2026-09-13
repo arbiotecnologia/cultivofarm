@@ -7,7 +7,7 @@
  *   A coluna `product_id` (aditiva pela migration canônica
  *   `supabase/migrations/20260804000000_fiscal_microrganismos_product_association.sql`)
  *   ainda NÃO está no arquivo canônico
- *   `src/integrations/supabase/types.ts` — `types.ts` só regenera após
+ *   `src/integrations/supabase/cultivofarm.types.ts` — `types.ts` só regenera após
  *   a migration ser promovida pelo mecanismo oficial. Para evitar
  *   `as any` e casts espalhados na UI, este módulo confina o boundary
  *   de tipagem a uma única linha por operação (select/update), via
@@ -34,7 +34,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 type MicroorganismRowOfficial =
   Database["public"]["Tables"]["microrganismos"]["Row"];

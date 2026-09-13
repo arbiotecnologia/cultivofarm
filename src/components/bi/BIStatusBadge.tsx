@@ -1,4 +1,4 @@
-import { Database } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase/cultivofarm.types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 

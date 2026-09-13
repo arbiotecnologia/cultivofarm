@@ -1,7 +1,7 @@
 /**
  * Fase Fiscal 3.3 — Validação pura para `service_fiscal_profiles`.
  *
- * Contrato: `src/integrations/supabase/types.ts` +
+ * Contrato: `src/integrations/supabase/cultivofarm.types.ts` +
  * migrations canônicas 20260721000000 / 20260722000000.
  *
  * Regras específicas de serviços:
@@ -21,7 +21,7 @@
  * - Nenhuma emissão. Nenhum campo fora do contrato.
  */
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 export type ServiceFiscalRow = any;
 export type ServiceFiscalInsert = any;

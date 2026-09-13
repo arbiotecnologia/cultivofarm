@@ -426,7 +426,7 @@ interface DetailProps {
   invoice: import("@/lib/fiscal/reconciliationValidation").FiscalInvoiceRow | null;
   invoiceLoading: boolean;
   invoiceError: Error | null;
-  events: import("@/integrations/supabase/types").Database["public"]["Tables"]["fiscal_events"]["Row"][];
+  events: import("@/integrations/supabase/cultivofarm.types").Database["public"]["Tables"]["fiscal_events"]["Row"][];
   onLink: (target: "receivable_id" | "delivery_id", targetId: string, confirmOverwrite: boolean) => Promise<void>;
   onUnlink: (target: "receivable_id" | "delivery_id", reason: string) => Promise<void>;
 }

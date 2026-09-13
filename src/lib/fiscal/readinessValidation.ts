@@ -8,7 +8,7 @@
  * - Gates externos são declarados como `PENDENTE` até evidência real —
  *   nunca aprovados por teste estático.
  */
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 import {
   FISCAL_ENVIRONMENT,
   FISCAL_CONFIGURATION_STATUS,
