@@ -1111,47 +1111,46 @@ export default function ConsultorTecnico() {
 
 // --- Sub-componentes auxiliares ---
 
-function VistoriaFilesHeader({ 
-  arquivos, 
-  selectedPhotos, 
-  onSelectAll, 
-  onClear, 
-  vistoriaId, 
-  onDownload 
-}: { 
-  arquivos: any[], 
-  selectedPhotos: string[], 
-  onSelectAll: () => void, 
-  onClear: () => void, 
-  vistoriaId: string,
-  onDownload: (url: string, filename: string, caption?: string) => void
+function VistoriaFilesHeader({
+  arquivos,
+  selectedPhotos,
+  onSelectAll,
+  onClear,
+  onDownload,
+  urlDaEvidencia,
+}: {
+  arquivos: EvidenciaVistoria[];
+  selectedPhotos: string[];
+  onSelectAll: () => void;
+  onClear: () => void;
+  onDownload: (arquivo: EvidenciaVistoria, indice: number) => void | Promise<void>;
+  urlDaEvidencia: (a: EvidenciaVistoria) => UrlEvidencia;
 }) {
+  const selecionadas = arquivos
+    .map((f, idx) => ({ f, idx }))
+    .filter(({ f }) => selectedPhotos.includes(f.id));
+  const prontas = selecionadas.filter(({ f }) => urlDaEvidencia(f).estado === "pronta");
+
   return (
     <div className="flex items-center gap-2">
       {selectedPhotos.length > 0 ? (
-        <Button 
-          size="sm" 
-          variant="outline" 
+        <Button
+          size="sm"
+          variant="outline"
           className="h-7 text-[10px] gap-1.5"
+          disabled={prontas.length === 0}
           onClick={() => {
-            const toDownload = arquivos.filter((f: any) => selectedPhotos.includes(f.id));
-            toDownload.forEach((file: any, idx: number) => {
-              setTimeout(() => {
-                onDownload(
-                  file.arquivo_url, 
-                  `visita_${vistoriaId}_${idx}.jpg`,
-                  file.descricao
-                );
-              }, idx * 300);
+            prontas.forEach(({ f, idx }, ordem) => {
+              setTimeout(() => { void onDownload(f, idx); }, ordem * 300);
             });
           }}
         >
-          <Download className="h-3 w-3" /> Baixar Selecionadas ({selectedPhotos.length})
+          <Download className="h-3 w-3" /> Baixar Selecionadas ({prontas.length})
         </Button>
       ) : (
-        <Button 
-          size="sm" 
-          variant="ghost" 
+        <Button
+          size="sm"
+          variant="ghost"
           className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-primary"
           onClick={onSelectAll}
         >
@@ -1159,9 +1158,9 @@ function VistoriaFilesHeader({
         </Button>
       )}
       {selectedPhotos.length > 0 && (
-        <Button 
-          size="sm" 
-          variant="ghost" 
+        <Button
+          size="sm"
+          variant="ghost"
           className="h-7 text-[10px] text-muted-foreground"
           onClick={onClear}
         >
@@ -1172,34 +1171,34 @@ function VistoriaFilesHeader({
   );
 }
 
-function VistoriaFilesGrid({ 
-  arquivos, 
-  selectedPhotos, 
-  onTogglePhoto, 
-  focusedPhotoIndex, 
-  onFocusPhoto, 
-  onZoomPhoto 
-}: { 
-  arquivos: any[], 
-  selectedPhotos: string[], 
-  onTogglePhoto: (id: string) => void, 
-  focusedPhotoIndex: number | null, 
-  onFocusPhoto: (idx: number | null) => void, 
-  onZoomPhoto: (idx: number) => void 
+function VistoriaFilesGrid({
+  arquivos,
+  selectedPhotos,
+  onTogglePhoto,
+  focusedPhotoIndex,
+  onFocusPhoto,
+  onZoomPhoto,
+  urlDaEvidencia,
+}: {
+  arquivos: EvidenciaVistoria[];
+  selectedPhotos: string[];
+  onTogglePhoto: (id: string) => void;
+  focusedPhotoIndex: number | null;
+  onFocusPhoto: (idx: number | null) => void;
+  onZoomPhoto: (idx: number) => void;
+  urlDaEvidencia: (a: EvidenciaVistoria) => UrlEvidencia;
 }) {
-  const filePaths = useMemo(() => arquivos.map(a => a.arquivo_path).filter(Boolean), [arquivos]);
-  const { urls: signedUrls } = useSignedUrls(filePaths);
-
   return (
     <div className="grid grid-cols-3 gap-2">
-      {arquivos.map((file: any, idx: number) => {
+      {arquivos.map((file, idx) => {
         const isSelected = selectedPhotos.includes(file.id);
         const isFocused = focusedPhotoIndex === idx;
-        const effectiveUrl = (file.arquivo_path && signedUrls[file.arquivo_path]) || file.arquivo_url;
-        
+        const { url, estado } = urlDaEvidencia(file);
+        const pronta = estado === "pronta" && !!url;
+
         return (
-          <div 
-            key={file.id} 
+          <div
+            key={file.id}
             className={cn(
               "relative aspect-square rounded-md overflow-hidden bg-muted group transition-all ring-offset-background outline-none",
               isSelected ? "ring-2 ring-primary scale-[0.98]" : "hover:ring-1 hover:ring-primary/50",
@@ -1209,14 +1208,28 @@ function VistoriaFilesGrid({
             onFocus={() => onFocusPhoto(idx)}
             onBlur={() => onFocusPhoto(null)}
           >
-            <img 
-              src={effectiveUrl} 
-              alt={`Evidência ${idx + 1}`} 
-              className="w-full h-full object-cover cursor-zoom-in"
-              onClick={() => onZoomPhoto(idx)}
-            />
-            
-            <div 
+            {pronta ? (
+              <img
+                src={url!}
+                alt={file.legenda || `Evidência ${idx + 1}`}
+                className="w-full h-full object-cover cursor-zoom-in"
+                onClick={() => onZoomPhoto(idx)}
+              />
+            ) : (
+              <div
+                className="w-full h-full flex flex-col items-center justify-center gap-1 text-muted-foreground"
+                aria-label={estado === "carregando" ? "Carregando evidência" : "Evidência indisponível"}
+              >
+                {estado === "carregando"
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <ImageOff className="h-4 w-4" />}
+                <span className="text-[9px] px-1 text-center leading-tight">
+                  {estado === "carregando" ? "Carregando…" : "Indisponível"}
+                </span>
+              </div>
+            )}
+
+            <div
               className={cn(
                 "absolute top-1.5 left-1.5 h-4 w-4 rounded-sm border flex items-center justify-center cursor-pointer transition-all z-20",
                 isSelected ? "bg-primary border-primary text-white" : "bg-black/20 border-white/40 opacity-0 group-hover:opacity-100"
@@ -1229,19 +1242,19 @@ function VistoriaFilesGrid({
               {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
             </div>
 
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex flex-col items-center justify-center p-2 text-center">
-              <Eye className="h-5 w-5 text-white mb-1" />
-              {file.descricao && (
-                <span className="text-[10px] text-white font-medium line-clamp-2 leading-tight px-1">
-                  {file.descricao}
-                </span>
-              )}
-            </div>
+            {pronta && (
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex flex-col items-center justify-center p-2 text-center">
+                <Eye className="h-5 w-5 text-white mb-1" />
+                {file.legenda && (
+                  <span className="text-[10px] text-white font-medium line-clamp-2 leading-tight px-1">
+                    {file.legenda}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
     </div>
   );
 }
-
-
