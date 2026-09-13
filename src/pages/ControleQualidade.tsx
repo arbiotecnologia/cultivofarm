@@ -126,6 +126,7 @@ export default function ControleQualidade() {
   })), [cqs, refs]);
 
   const periodo = validarPeriodo(inicio, fim);
+  const erroPeriodo = periodo.valido ? '' : periodo.mensagem;
   const periodoInvalido = !periodo.valido;
   const filtrados = useMemo(() => {
     if (periodoInvalido) return [];
@@ -201,7 +202,7 @@ export default function ControleQualidade() {
         <Button variant="outline" className="self-end" onClick={() => { setSearch(''); setResultado(''); setLote(''); setItem(''); setResponsavel(''); setInicio(''); setFim(''); setPage(1); }}>Limpar filtros</Button>
       </div>
 
-      {!periodo.valido && <p id="cq-periodo-erro" role="alert" className="text-destructive">{periodo.mensagem}</p>}
+      {erroPeriodo && <p id="cq-periodo-erro" role="alert" className="text-destructive">{erroPeriodo}</p>}
       {ready && refs.length === 0 && <p role="status" className="text-muted-foreground">Nenhuma referência ativa acessível. A avaliação de conformidade depende da configuração de referências.</p>}
       {loading && <p role="status">Carregando análises de qualidade…</p>}
       {error && <div role="alert" className="space-y-3"><p>{error}</p><Button variant="outline" onClick={() => void fetchAll()}>Tentar novamente</Button></div>}
