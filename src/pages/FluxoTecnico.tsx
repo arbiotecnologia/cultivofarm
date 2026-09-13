@@ -1,9 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,86 +14,66 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 import {
-  CheckCircle, XCircle, MessageSquare, Eye, ArrowRightCircle,
+  CheckCircle, XCircle, MessageSquare, Eye,
   Clock, AlertTriangle, Factory, Truck, ClipboardCheck, Search,
-  FileText, Package, Sprout, RotateCcw, Activity, History, Lock
+  FileText, Package, Sprout, History,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { StatusStepper } from "@/components/visita/StatusStepper";
-import { rowClickProps, stopRowClick } from "@/lib/rowClick";
 import { OSFlowTimeline } from "@/components/visita/OSFlowTimeline";
-import {
-  canTransition,
-  getBlockReason,
-  showTransitionErrorToast,
-  STATUS_LABEL_REGISTRO,
-  type RegistroStatus,
-} from "@/lib/registroTransitions";
-import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
-import { parseConduta } from "@/lib/condutaSerializer";
-import { parseNotes } from "@/components/visita/NotasRapidas";
-import { getClienteLabel } from "@/lib/clienteLabel";
+import { type RegistroStatus } from "@/lib/registroTransitions";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { RecomendacaoChat } from "@/components/shared/RecomendacaoChat";
 import {
   blockedOSReason,
   matchTexto,
+  mensagemAmigavel,
+  podeDecidir,
+  podeDecidirPorPapel,
   podeDecidirRegistro,
+  proximoStatusOS,
   requerMotivo,
   textoOuTraco,
   validarComentarioDecisao,
+  MSG_DECISAO_INDISPONIVEL,
+  MSG_GERACAO_OS_INDISPONIVEL,
+  RPC_APROVACAO_TRANSACIONAL_DISPONIVEL,
+  RPC_GERACAO_OS_DISPONIVEL,
 } from "@/lib/fluxo-tecnico/fluxo";
 
-
-const STATUS_APROVACAO: Record<string, { label: string; color: string }> = {
-  pendente: { label: "Pendente", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  aprovado: { label: "Aprovado", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-  reprovado: { label: "Reprovado", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-  solicitar_ajuste: { label: "Ajuste Solicitado", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
+const STATUS_APROVACAO: Record<string, { label: string }> = {
+  pendente: { label: "Pendente" },
+  aprovado: { label: "Aprovado" },
+  reprovado: { label: "Reprovado" },
+  solicitar_ajuste: { label: "Ajuste Solicitado" },
 };
 
-const STATUS_OS_ONFARM: Record<string, { label: string; color: string; icon: any }> = {
-  aberta: { label: "Aberta", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", icon: FileText },
-  aprovada: { label: "Aprovada", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle },
-  programada: { label: "Programada", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", icon: Clock },
-  em_producao: { label: "Em Produção", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400", icon: Factory },
-  em_cq: { label: "Controle Qualidade", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400", icon: ClipboardCheck },
-  envase: { label: "Envase", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400", icon: Package },
-  pronto_entrega: { label: "Pronto Entrega", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", icon: Truck },
-  entregue: { label: "Entregue", color: "bg-green-200 text-green-800 dark:bg-green-900/40 dark:text-green-300", icon: CheckCircle },
-  finalizada: { label: "Finalizada", color: "bg-muted text-muted-foreground", icon: CheckCircle },
-  cancelada: { label: "Cancelada", color: "bg-red-200 text-red-800 dark:bg-red-900/40 dark:text-red-300", icon: XCircle },
+const STATUS_OS_ONFARM: Record<string, { label: string; color: string }> = {
+  aberta: { label: "Aberta", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+  aprovada: { label: "Aprovada", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+  programada: { label: "Programada", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+  em_producao: { label: "Em Produção", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
+  em_cq: { label: "Controle Qualidade", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400" },
+  envase: { label: "Envase", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400" },
+  pronto_entrega: { label: "Pronto Entrega", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+  entregue: { label: "Entregue", color: "bg-green-200 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
+  finalizada: { label: "Finalizada", color: "bg-muted text-muted-foreground" },
+  cancelada: { label: "Cancelada", color: "bg-red-200 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
 };
 
-const PRESSAO_MAP: Record<string, { label: string; color: string }> = {
-  baixo: { label: "Baixo", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-  medio: { label: "Médio", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  alto: { label: "Alto", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
-  severo: { label: "Severo", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-};
+/** Colunas mínimas realmente exibidas na fila de aprovação. */
+const SELECT_PENDENTES =
+  "id, status, data_vistoria, created_at, cliente_id, fazenda_id, talhao_id, solicitacao_id, proxima_acao_recomendada, clientes(nome), fazendas(nome), talhoes(nome)";
 
-const URGENCIA_MAP: Record<string, string> = {
-  baixa: "Baixa", media: "Média", alta: "Alta", critica: "Crítica",
-};
+/** Colunas mínimas usadas apenas para o KPI de aprovadas. */
+const SELECT_APROVACOES = "id, status_aprovacao, created_at";
 
-const OS_TIMELINE_STEPS = ["aberta", "aprovada", "programada", "em_producao", "em_cq", "envase", "pronto_entrega", "entregue", "finalizada"];
-const pieColors = [
-  "hsl(var(--primary))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
-  "#06b6d4", "#ec4899", "#f97316", "#14b8a6",
-];
-const chartConfig = { value: { label: "Quantidade", color: "hsl(var(--primary))" } };
+/** Colunas mínimas exibidas na aba de OS On-Farm. */
+const SELECT_OS_ONFARM =
+  "id, numero_os, status, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
 
 export default function FluxoTecnico() {
-  const isMobile = useIsMobile();
-  const navigate = useNavigate();
-  const { user, role } = useAuth();
-  const queryClient = useQueryClient();
+  const { role } = useAuth();
   const [searchAprov, setSearchAprov] = useState("");
   const [searchOS, setSearchOS] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -105,9 +84,8 @@ export default function FluxoTecnico() {
   const [selectedOS, setSelectedOS] = useState<any>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  const isAdmin = role === "administrador";
-  const isGestor = role === "gestor";
-  
+  const papelDecide = podeDecidirPorPapel(role);
+
   const {
     data: pendentes = [],
     refetch: refetchPendentes,
@@ -119,7 +97,7 @@ export default function FluxoTecnico() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("registros_consultor")
-        .select("*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), culturas(nome)")
+        .select(SELECT_PENDENTES)
         .eq("status", "enviado_aprovacao")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -128,12 +106,18 @@ export default function FluxoTecnico() {
     refetchInterval: 300000,
   });
 
-  const { data: aprovacoes = [], refetch: refetchAprovacoes } = useQuery({
+  const {
+    data: aprovacoes = [],
+    refetch: refetchAprovacoes,
+    isLoading: loadingAprovacoes,
+    isError: errorAprovacoes,
+    isFetching: fetchingAprovacoes,
+  } = useQuery({
     queryKey: ["aprovacoes-todas"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("aprovacoes_tecnicas")
-        .select("*, aprovado_por_perfil:aprovado_por(nome), registros_consultor(*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), culturas(nome))")
+        .select(SELECT_APROVACOES)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as any[];
@@ -152,7 +136,7 @@ export default function FluxoTecnico() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ordens_servico_onfarm")
-        .select("*, clientes(nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome), programacao_producao!ordem_servico_onfarm_id(lotes(id, status, controle_qualidade(resultado)))")
+        .select(SELECT_OS_ONFARM)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as any[];
@@ -160,168 +144,69 @@ export default function FluxoTecnico() {
     refetchInterval: 300000,
   });
 
-  const { data: allRegistros = [] } = useQuery({
-    queryKey: ["all-registros-dashboard"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("registros_consultor")
-        .select("*, clientes(nome, codigo_cliente), fazendas(nome), culturas(nome)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data || []) as any[];
-    },
-  });
-
   const refetchAll = () => {
-    refetchPendentes();
-    refetchAprovacoes();
-    refetchOS();
-    queryClient.invalidateQueries({ queryKey: ["all-registros-dashboard"] });
+    void refetchPendentes();
+    void refetchAprovacoes();
+    void refetchOS();
   };
 
+  const limparSelecao = () => {
+    setSelectedRegistro(null);
+    setComentario("");
+    setActionDialog({ open: false, type: "" });
+  };
+
+  const fecharRevisao = () => {
+    setShowReview(false);
+    limparSelecao();
+  };
+
+  // Papel inválido ou alterado durante a sessão fecha qualquer diálogo de decisão.
+  useEffect(() => {
+    if (!papelDecide) {
+      setActionDialog({ open: false, type: "" });
+      setComentario("");
+    }
+  }, [papelDecide]);
 
   const openReview = (registro: any) => {
+    limparSelecao();
     setSelectedRegistro(registro);
     setShowReview(true);
   };
 
   const openAction = (type: string, registro: any) => {
+    if (!podeDecidir(role, registro?.status)) {
+      toast.error(MSG_DECISAO_INDISPONIVEL);
+      return;
+    }
     setSelectedRegistro(registro);
     setComentario("");
     setActionDialog({ open: true, type });
   };
 
+  /**
+   * Integridade: a decisão exige gravar, na MESMA transação,
+   * `registros_consultor` + `aprovacoes_tecnicas` + `registros_consultor_status_log`.
+   * Como não existe RPC pública transacional no contrato atual, a mutation
+   * falha explicitamente em vez de gravar parcialmente.
+   */
   const approvalMutation = useMutation({
-    mutationFn: async ({ registro, type, newStatus, comentario, isReopen }: {
-      registro: any; type: string; newStatus: RegistroStatus; comentario: string; isReopen?: boolean;
+    mutationFn: async (_vars: {
+      registro: any; type: string; newStatus: RegistroStatus; comentario: string;
     }) => {
-      if (!podeDecidirRegistro(registro.status)) {
-        throw new Error("Esta recomendação não está mais aguardando aprovação.");
+      if (!RPC_APROVACAO_TRANSACIONAL_DISPONIVEL) {
+        throw new Error(MSG_DECISAO_INDISPONIVEL);
       }
-
-      // Transição condicionada ao status lido: se outro usuário já decidiu,
-      // nenhuma linha é afetada e a decisão é abortada antes de gerar registros.
-      const { data: updated, error: updErr } = await supabase
-        .from("registros_consultor")
-        .update({ status: newStatus as any })
-        .eq("id", registro.id)
-        .eq("status", registro.status)
-        .select("id");
-      if (updErr) throw updErr;
-      if (!updated || updated.length === 0) {
-        throw new Error("Esta recomendação já foi decidida por outro usuário. Atualize a fila.");
-      }
-
-      const { error: aprError } = await supabase.from("aprovacoes_tecnicas").insert({
-        registro_consultor_id: registro.id,
-        status_aprovacao: type,
-        aprovado_por: user?.id,
-        aprovado_por_role: role,
-        comentario_gestor: comentario || null,
-        data_aprovacao: new Date().toISOString(),
-        override: isReopen || false,
-      } as any);
-      if (aprError) throw aprError;
-
-      await supabase.from("registros_consultor_status_log").insert({
-        registro_consultor_id: registro.id,
-        status_anterior: registro.status,
-        status_novo: newStatus,
-        changed_by: user?.id,
-        motivo: comentario || null,
-      } as any);
-      return { type, newStatus };
+      throw new Error(MSG_DECISAO_INDISPONIVEL);
     },
-    onSuccess: (data, variables) => {
-      toast.success(`Recomendação ${STATUS_APROVACAO[variables.type]?.label || variables.type}!`);
-      setActionDialog({ open: false, type: "" });
-      setShowReview(false);
-      setSelectedRegistro(null);
-      refetchAll();
-
-      if (variables.newStatus === "aprovado") {
-        if (variables.registro.proxima_acao_recomendada === "gerar_os") {
-          toast.info("Gerando Ordens de Serviço solicitadas...");
-          gerarOSMutation.mutate(variables.registro);
-        } else if (variables.registro.proxima_acao_recomendada === "emitir_recomendação") {
-          (supabase as any).rpc("rpc_create_portal_notification_secure", {
-            p_cliente_id: variables.registro.cliente_id,
-            p_tipo: "informativo",
-            p_titulo: "Recomendação Técnica Aprovada",
-            p_mensagem: `Uma nova recomendação técnica para o talhão ${variables.registro.talhoes?.nome || ""} está aguardando sua decisão no Portal.`,
-            p_link: null,
-            p_source_type: "registros_consultor",
-            p_source_id: variables.registro.id,
-            p_idempotency_key: `fluxo-aprov-rec-${variables.registro.id}`,
-          }).then();
-
-
-          if (variables.registro.solicitacao_id) {
-            supabase.from("portal_solicitacoes").update({
-              status: "aguardando_decisao"
-            }).eq("id", variables.registro.solicitacao_id).then();
-          }
-        }
-      }
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Não foi possível registrar a decisão.");
+    onSuccess: () => {
+      toast.success("Decisão registrada.");
+      fecharRevisao();
       refetchAll();
     },
-  });
-
-  const gerarOSMutation = useMutation({
-    mutationFn: async (registro: any) => {
-      const { data: recs, error: recsErr } = await supabase
-        .from("registros_consultor_recomendacoes")
-        .select("*, produtos(nome, dose_ml_ha)")
-        .eq("registro_consultor_id", registro.id);
-      if (recsErr) throw recsErr;
-
-      if (!recs || recs.length === 0) throw new Error("Nenhuma recomendação encontrada.");
-
-      const urgencia = registro.urgencia;
-      const prioridade = urgencia === "critica" ? "alta" : urgencia === "alta" ? "alta" : "media";
-
-      const criadas: string[] = [];
-      for (const rec of recs) {
-        const dose = rec.dose_recomendada_valor || 0;
-        const area = registro.area_hectares || 0;
-        const volumeTotal = dose * area;
-
-        const { data: osRow, error: osErr } = await supabase.from("ordens_servico_onfarm").insert({
-          registro_consultor_id: registro.id,
-          cliente_id: registro.cliente_id,
-          fazenda_id: registro.fazenda_id,
-          talhao_id: registro.talhao_id,
-          produto_id: rec.produto_biologico_sugerido_id || null,
-          dose_ml_ha: dose,
-          area_hectares: area,
-          volume_total_ml: volumeTotal,
-          modo_aplicacao: rec.modo_aplicacao || null,
-          data_recomendada: new Date().toISOString().split("T")[0],
-          prioridade: prioridade as any,
-          status: "aberta" as any,
-        } as any).select("id").maybeSingle();
-        if (osErr) {
-          throw new Error(
-            criadas.length > 0
-              ? `Falha ao gerar parte das OS (${criadas.length} já criada(s)). Verifique a aba OS On-Farm antes de repetir. Detalhe: ${osErr.message}`
-              : `Falha ao gerar a OS: ${osErr.message}`,
-          );
-        }
-        if (osRow?.id) criadas.push(osRow.id as string);
-      }
-
-      const { error: convErr } = await supabase
-        .from("registros_consultor")
-        .update({ status: "convertido_os" as any })
-        .eq("id", registro.id);
-      if (convErr) throw convErr;
-    },
-    onSuccess: () => { toast.success("OS gerada!"); refetchAll(); },
     onError: (err: any) => {
-      toast.error(err?.message || "Não foi possível gerar as Ordens de Serviço.");
+      toast.error(mensagemAmigavel(err, MSG_DECISAO_INDISPONIVEL));
       refetchAll();
     },
   });
@@ -329,15 +214,21 @@ export default function FluxoTecnico() {
   const handleApproval = () => {
     if (!selectedRegistro) return;
     if (approvalMutation.isPending) return;
+    if (!podeDecidir(role, selectedRegistro.status)) {
+      toast.error(
+        !papelDecide
+          ? "Seu perfil não tem permissão para decidir recomendações."
+          : !podeDecidirRegistro(selectedRegistro.status)
+            ? "Esta recomendação não está mais aguardando aprovação."
+            : MSG_DECISAO_INDISPONIVEL,
+      );
+      setActionDialog({ open: false, type: "" });
+      return;
+    }
     const type = actionDialog.type;
-
     const motivo = validarComentarioDecisao(type, comentario);
     if (!motivo.ok) {
       toast.error(motivo.erro);
-      return;
-    }
-    if (!podeDecidirRegistro(selectedRegistro.status)) {
-      toast.error("Esta recomendação não está mais aguardando aprovação.");
       return;
     }
 
@@ -345,11 +236,16 @@ export default function FluxoTecnico() {
     if (type === "aprovado") newStatus = "aprovado";
     if (type === "reprovado") newStatus = "reprovado";
     if (type === "solicitar_ajuste") newStatus = "rascunho";
-    
+
     approvalMutation.mutate({ registro: selectedRegistro, type, newStatus, comentario });
   };
 
+  /** Avanço de etapa da OS: concorrência otimista, restrito por papel. */
   const handleOSStatusChange = async (os: any, newStatus: string) => {
+    if (!papelDecide) {
+      toast.error("Seu perfil não tem permissão para alterar o status da OS.");
+      return;
+    }
     const motivo = blockedOSReason(os?.status, newStatus);
     if (motivo) {
       toast.error(motivo);
@@ -362,13 +258,13 @@ export default function FluxoTecnico() {
       .eq("status", os.status)
       .select("id");
     if (error) {
-      toast.error(error.message || "Não foi possível atualizar a OS.");
+      toast.error(mensagemAmigavel(error, "Não foi possível atualizar a OS."));
     } else if (!data || data.length === 0) {
       toast.error("O status desta OS foi alterado por outro usuário. Atualize a lista.");
     } else {
       toast.success("Status da OS atualizado.");
     }
-    refetchOS();
+    void refetchOS();
   };
 
   const filteredPendentes = pendentes.filter((r) =>
@@ -380,12 +276,22 @@ export default function FluxoTecnico() {
     return matchTexto([o.numero_os, o.clientes?.nome, o.fazendas?.nome], searchOS);
   });
 
-
-  const pendentesCount = pendentes.length;
-  const aprovadosCount = aprovacoes.filter((a: any) => a.status_aprovacao === "aprovado").length;
-  const osAbertasCount = ordensOnFarm.filter((o: any) => ["aberta", "aprovada", "programada"].includes(o.status)).length;
-  const emProducaoCount = ordensOnFarm.filter((o: any) => o.status === "em_producao").length;
-  const prontasEntregaCount = ordensOnFarm.filter((o: any) => o.status === "pronto_entrega").length;
+  // KPIs: falha nunca vira zero.
+  const kpiPendentes = errorPendentes || loadingPendentes ? "—" : pendentes.length;
+  const kpiAprovados =
+    errorAprovacoes || loadingAprovacoes
+      ? "—"
+      : aprovacoes.filter((a: any) => a.status_aprovacao === "aprovado").length;
+  const kpiIndisponivelOS = errorOS || loadingOS;
+  const kpiOSAbertas = kpiIndisponivelOS
+    ? "—"
+    : ordensOnFarm.filter((o: any) => ["aberta", "aprovada", "programada"].includes(o.status)).length;
+  const kpiEmProducao = kpiIndisponivelOS
+    ? "—"
+    : ordensOnFarm.filter((o: any) => o.status === "em_producao").length;
+  const kpiProntas = kpiIndisponivelOS
+    ? "—"
+    : ordensOnFarm.filter((o: any) => o.status === "pronto_entrega").length;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -394,12 +300,34 @@ export default function FluxoTecnico() {
         <p className="text-sm text-muted-foreground">Aprovação de recomendações e acompanhamento de ordens de serviço.</p>
       </div>
 
+      {!RPC_APROVACAO_TRANSACIONAL_DISPONIVEL && (
+        <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
+          <div className="text-sm">
+            <p className="font-medium text-destructive">{MSG_DECISAO_INDISPONIVEL}</p>
+            <p className="text-muted-foreground">
+              As decisões (aprovar, solicitar ajuste e reprovar) exigem gravação única no servidor. Enquanto isso,
+              a fila permanece disponível apenas para consulta.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {errorAprovacoes && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+          <p className="text-sm text-destructive">Não foi possível carregar os indicadores de aprovação.</p>
+          <Button variant="outline" size="sm" disabled={fetchingAprovacoes} onClick={() => { void refetchAprovacoes(); }}>
+            {fetchingAprovacoes ? "Tentando..." : "Tentar novamente"}
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <KpiCard label="Pendentes" value={pendentesCount} icon={Clock} color="text-yellow-500" />
-        <KpiCard label="Aprovadas" value={aprovadosCount} icon={CheckCircle} color="text-green-500" />
-        <KpiCard label="OS Abertas" value={osAbertasCount} icon={FileText} color="text-blue-500" />
-        <KpiCard label="Em Produção" value={emProducaoCount} icon={Factory} color="text-purple-500" />
-        <KpiCard label="Prontas" value={prontasEntregaCount} icon={Truck} color="text-emerald-500" />
+        <KpiCard label="Pendentes" value={kpiPendentes} icon={Clock} color="text-yellow-500" />
+        <KpiCard label="Aprovadas" value={kpiAprovados} icon={CheckCircle} color="text-green-500" />
+        <KpiCard label="OS Abertas" value={kpiOSAbertas} icon={FileText} color="text-blue-500" />
+        <KpiCard label="Em Produção" value={kpiEmProducao} icon={Factory} color="text-purple-500" />
+        <KpiCard label="Prontas" value={kpiProntas} icon={Truck} color="text-emerald-500" />
       </div>
 
       <Tabs defaultValue="aprovacoes" className="w-full">
@@ -408,18 +336,18 @@ export default function FluxoTecnico() {
           <TabsTrigger value="os-onfarm">OS On-Farm</TabsTrigger>
         </TabsList>
         <TabsContent value="aprovacoes" className="space-y-4 pt-4">
-           <div className="flex items-center gap-2">
-             <Search className="h-4 w-4 text-muted-foreground" />
-             <Input
-               placeholder="Buscar cliente, fazenda ou talhão..."
-               aria-label="Buscar recomendação por cliente, fazenda ou talhão"
-               value={searchAprov}
-               onChange={(e) => setSearchAprov(e.target.value)}
-               className="max-w-sm"
-             />
-           </div>
-           <Card>
-             <Table>
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar cliente, fazenda ou talhão..."
+              aria-label="Buscar recomendação por cliente, fazenda ou talhão"
+              value={searchAprov}
+              onChange={(e) => setSearchAprov(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+          <Card>
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
@@ -430,195 +358,216 @@ export default function FluxoTecnico() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                 {loadingPendentes ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
-                 ) : errorPendentes ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <p className="text-sm text-destructive">Não foi possível carregar a fila de aprovação.</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-3"
-                          onClick={() => { void refetchPendentes(); }}
-                          disabled={fetchingPendentes}
-                        >
-                          {fetchingPendentes ? "Tentando..." : "Tentar novamente"}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                 ) : filteredPendentes.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {searchAprov.trim() ? "Nenhuma recomendação corresponde à busca." : "Nenhuma recomendação pendente."}
-                      </TableCell>
-                    </TableRow>
-                 ) : filteredPendentes.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell>{formatDateDisplay(r.data_vistoria) || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant={r.solicitacao_id ? "secondary" : "outline"} className="text-[10px]">
-                          {r.solicitacao_id ? "Demanda" : "Rotina"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{textoOuTraco(r.clientes?.nome)}</TableCell>
-                      <TableCell>{textoOuTraco(r.fazendas?.nome)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="ghost" onClick={() => openReview(r)}><Eye className="h-4 w-4 mr-1" /> Revisar</Button>
-                      </TableCell>
-                    </TableRow>
-                 ))}
+                {loadingPendentes ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                ) : errorPendentes ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      <p className="text-sm text-destructive">Não foi possível carregar a fila de aprovação.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => { void refetchPendentes(); }}
+                        disabled={fetchingPendentes}
+                      >
+                        {fetchingPendentes ? "Tentando..." : "Tentar novamente"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredPendentes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      {searchAprov.trim() ? "Nenhuma recomendação corresponde à busca." : "Nenhuma recomendação pendente."}
+                    </TableCell>
+                  </TableRow>
+                ) : filteredPendentes.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{formatDateDisplay(r.data_vistoria) || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.solicitacao_id ? "secondary" : "outline"} className="text-[10px]">
+                        {r.solicitacao_id ? "Demanda" : "Rotina"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{textoOuTraco(r.clientes?.nome)}</TableCell>
+                    <TableCell>{textoOuTraco(r.fazendas?.nome)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => openReview(r)}><Eye className="h-4 w-4 mr-1" /> Revisar</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
-             </Table>
-           </Card>
+            </Table>
+          </Card>
         </TabsContent>
 
         <TabsContent value="os-onfarm" className="space-y-4 pt-4">
-            <div className="flex flex-wrap gap-2">
-               <Input
-                 placeholder="Buscar por nº da OS, cliente ou fazenda..."
-                 aria-label="Buscar ordem de serviço por número, cliente ou fazenda"
-                 value={searchOS}
-                 onChange={(e) => setSearchOS(e.target.value)}
-                 className="max-w-sm"
-               />
-               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[180px]" aria-label="Filtrar ordens por status"><SelectValue placeholder="Filtrar Status" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos Status</SelectItem>
-                    {Object.entries(STATUS_OS_ONFARM).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
-                  </SelectContent>
-               </Select>
-            </div>
-            <Card>
-              <Table>
-                  <TableHeader>
-                      <TableRow>
-                          <TableHead>Nº OS</TableHead>
-                          <TableHead>Origem</TableHead>
-                          <TableHead>Cliente</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                     {loadingOS ? (
-                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
-                     ) : errorOS ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8">
-                            <p className="text-sm text-destructive">Não foi possível carregar as ordens de serviço.</p>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mt-3"
-                              onClick={() => { void refetchOS(); }}
-                              disabled={fetchingOS}
-                            >
-                              {fetchingOS ? "Tentando..." : "Tentar novamente"}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                     ) : filteredOS.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                            {searchOS.trim() || filterStatus !== "all"
-                              ? "Nenhuma OS corresponde aos filtros aplicados."
-                              : "Nenhuma OS encontrada."}
-                          </TableCell>
-                        </TableRow>
-                     ) : filteredOS.map((o) => (
-                          <TableRow key={o.id}>
-                              <TableCell className="font-mono font-bold">{textoOuTraco(o.numero_os)}</TableCell>
-                              <TableCell>
-                                <Badge variant={o.origem === "recomendacao_tecnica" ? "secondary" : "outline"} className="text-[10px]">
-                                  {o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{textoOuTraco(o.clientes?.nome)}</TableCell>
-                              <TableCell>
-                                <Badge className={STATUS_OS_ONFARM[o.status]?.color}>{STATUS_OS_ONFARM[o.status]?.label || textoOuTraco(o.status)}</Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  aria-label={`Ver histórico da OS ${o.numero_os ?? ""}`}
-                                  onClick={() => { setSelectedOS(o); setShowHistory(true); }}
-                                >
-                                  <History className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                          </TableRow>
-                     ))}
-                  </TableBody>
-              </Table>
-            </Card>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              placeholder="Buscar por nº da OS, cliente ou fazenda..."
+              aria-label="Buscar ordem de serviço por número, cliente ou fazenda"
+              value={searchOS}
+              onChange={(e) => setSearchOS(e.target.value)}
+              className="max-w-sm"
+            />
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-[180px]" aria-label="Filtrar ordens por status"><SelectValue placeholder="Filtrar Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Status</SelectItem>
+                {Object.entries(STATUS_OS_ONFARM).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nº OS</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingOS ? (
+                  <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                ) : errorOS ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8">
+                      <p className="text-sm text-destructive">Não foi possível carregar as ordens de serviço.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => { void refetchOS(); }}
+                        disabled={fetchingOS}
+                      >
+                        {fetchingOS ? "Tentando..." : "Tentar novamente"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredOS.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      {searchOS.trim() || filterStatus !== "all"
+                        ? "Nenhuma OS corresponde aos filtros aplicados."
+                        : "Nenhuma OS encontrada."}
+                    </TableCell>
+                  </TableRow>
+                ) : filteredOS.map((o) => {
+                  const proximo = proximoStatusOS(o.status);
+                  return (
+                    <TableRow key={o.id}>
+                      <TableCell className="font-mono font-bold">{textoOuTraco(o.numero_os)}</TableCell>
+                      <TableCell>{textoOuTraco(o.clientes?.nome)}</TableCell>
+                      <TableCell>
+                        <Badge className={STATUS_OS_ONFARM[o.status]?.color}>{STATUS_OS_ONFARM[o.status]?.label || textoOuTraco(o.status)}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        {papelDecide && proximo && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            aria-label={`Avançar OS ${o.numero_os ?? ""} para ${STATUS_OS_ONFARM[proximo]?.label || proximo}`}
+                            onClick={() => { void handleOSStatusChange(o, proximo); }}
+                          >
+                            Avançar
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Ver histórico da OS ${o.numero_os ?? ""}`}
+                          onClick={() => { setSelectedOS(o); setShowHistory(true); }}
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
         </TabsContent>
-
       </Tabs>
 
-      <Sheet open={showReview} onOpenChange={setShowReview}>
-         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-            <SheetHeader><SheetTitle>Revisão Técnica</SheetTitle></SheetHeader>
-            {selectedRegistro && (
-              <div className="space-y-6 mt-6">
-                <div className="space-y-2">
-                  <h3 className="font-bold flex items-center gap-2"><Sprout className="h-4 w-4" /> Diagnóstico</h3>
-                  <div className="text-sm grid grid-cols-2 gap-2">
-                    <div className="col-span-2 font-medium text-lg">{selectedRegistro.clientes?.nome}</div>
-                    <div className="text-muted-foreground">Fazenda:</div><div>{selectedRegistro.fazendas?.nome}</div>
-                    <div className="text-muted-foreground">Talhão:</div><div>{selectedRegistro.talhoes?.nome}</div>
-                  </div>
+      <Sheet open={showReview} onOpenChange={(open) => { if (!open) fecharRevisao(); else setShowReview(true); }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Revisão Técnica</SheetTitle></SheetHeader>
+          {selectedRegistro && (
+            <div className="space-y-6 mt-6">
+              <div className="space-y-2">
+                <h3 className="font-bold flex items-center gap-2"><Sprout className="h-4 w-4" /> Diagnóstico</h3>
+                <div className="text-sm grid grid-cols-2 gap-2">
+                  <div className="col-span-2 font-medium text-lg">{textoOuTraco(selectedRegistro.clientes?.nome)}</div>
+                  <div className="text-muted-foreground">Fazenda:</div><div>{textoOuTraco(selectedRegistro.fazendas?.nome)}</div>
+                  <div className="text-muted-foreground">Talhão:</div><div>{textoOuTraco(selectedRegistro.talhoes?.nome)}</div>
                 </div>
-                <Separator />
-                <ChatRecomendacoesRegistro registroId={selectedRegistro.id} />
-                <Separator />
+              </div>
+              <Separator />
+              <ChatRecomendacoesRegistro registroId={selectedRegistro.id} />
+              <Separator />
+              {!papelDecide ? (
+                <p className="text-xs text-muted-foreground italic">
+                  Seu perfil pode acompanhar a revisão, mas a decisão é exclusiva de administrador ou gestor.
+                </p>
+              ) : !RPC_APROVACAO_TRANSACIONAL_DISPONIVEL ? (
+                <p role="alert" className="text-sm text-destructive">{MSG_DECISAO_INDISPONIVEL}</p>
+              ) : (
                 <div className="flex flex-col gap-2">
                   <Button className="bg-green-600 hover:bg-green-700" onClick={() => openAction("aprovado", selectedRegistro)}><CheckCircle className="mr-2 h-4 w-4" /> Aprovar Recomendação</Button>
                   <Button variant="outline" className="text-orange-600 border-orange-300" onClick={() => openAction("solicitar_ajuste", selectedRegistro)}><MessageSquare className="mr-2 h-4 w-4" /> Solicitar Ajuste</Button>
                   <Button variant="outline" className="text-red-600 border-red-300" onClick={() => openAction("reprovado", selectedRegistro)}><XCircle className="mr-2 h-4 w-4" /> Reprovar</Button>
                 </div>
-              </div>
-            )}
-         </SheetContent>
+              )}
+              {!RPC_GERACAO_OS_DISPONIVEL && (
+                <p className="text-xs text-muted-foreground">{MSG_GERACAO_OS_INDISPONIVEL}</p>
+              )}
+            </div>
+          )}
+        </SheetContent>
       </Sheet>
 
-      <Dialog open={actionDialog.open} onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}>
-          <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="capitalize">{actionDialog.type.replace('_', ' ')}</DialogTitle>
-                <DialogDescription>Confirma a ação para esta recomendação técnica?</DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <Label htmlFor="comentario-decisao">
-                  {requerMotivo(actionDialog.type) ? "Motivo (obrigatório)" : "Observações (opcional)"}
-                </Label>
-                <Textarea
-                  id="comentario-decisao"
-                  value={comentario}
-                  onChange={(e) => setComentario(e.target.value)}
-                  placeholder="Descreva o motivo..."
-                  className="mt-1"
-                  aria-required={requerMotivo(actionDialog.type)}
-                />
-                {requerMotivo(actionDialog.type) && comentario.trim().length === 0 && (
-                  <p className="mt-2 text-xs text-destructive">Informe o motivo para esta decisão.</p>
-                )}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setActionDialog({ open: false, type: "" })}>Cancelar</Button>
-                <Button
-                  onClick={handleApproval}
-                  disabled={
-                    approvalMutation.isPending ||
-                    (requerMotivo(actionDialog.type) && comentario.trim().length === 0)
-                  }
-                >
-                  {approvalMutation.isPending ? "Processando..." : "Confirmar"}
-                </Button>
-              </DialogFooter>
-          </DialogContent>
+      <Dialog
+        open={actionDialog.open}
+        onOpenChange={(open) => { if (!open) { setActionDialog({ open: false, type: "" }); setComentario(""); } }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="capitalize">{STATUS_APROVACAO[actionDialog.type]?.label || actionDialog.type.replace("_", " ")}</DialogTitle>
+            <DialogDescription>Confirma a ação para esta recomendação técnica?</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="comentario-decisao">
+              {requerMotivo(actionDialog.type) ? "Motivo (obrigatório)" : "Observações (opcional)"}
+            </Label>
+            <Textarea
+              id="comentario-decisao"
+              value={comentario}
+              onChange={(e) => setComentario(e.target.value)}
+              placeholder="Descreva o motivo..."
+              className="mt-1"
+              aria-required={requerMotivo(actionDialog.type)}
+            />
+            {requerMotivo(actionDialog.type) && comentario.trim().length === 0 && (
+              <p className="mt-2 text-xs text-destructive">Informe o motivo para esta decisão.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setActionDialog({ open: false, type: "" }); setComentario(""); }}>Cancelar</Button>
+            <Button
+              onClick={handleApproval}
+              disabled={
+                approvalMutation.isPending ||
+                !podeDecidir(role, selectedRegistro?.status) ||
+                (requerMotivo(actionDialog.type) && comentario.trim().length === 0)
+              }
+            >
+              {approvalMutation.isPending ? "Processando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       <Sheet open={showHistory} onOpenChange={(open) => { setShowHistory(open); if (!open) setSelectedOS(null); }}>
@@ -645,7 +594,6 @@ export default function FluxoTecnico() {
         </SheetContent>
       </Sheet>
     </div>
-
   );
 }
 
@@ -664,7 +612,7 @@ function KpiCard({ label, value, icon: Icon, color }: any) {
 }
 
 function ChatRecomendacoesRegistro({ registroId }: { registroId: string }) {
-  const { data: recs = [] } = useQuery({
+  const { data: recs = [], isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["recs_chat_registro", registroId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -676,6 +624,21 @@ function ChatRecomendacoesRegistro({ registroId }: { registroId: string }) {
       return data || [];
     },
   });
+
+  if (isLoading) {
+    return <p className="text-xs text-muted-foreground">Carregando conversa...</p>;
+  }
+
+  if (isError) {
+    return (
+      <div role="alert" className="space-y-2">
+        <p className="text-sm text-destructive">Não foi possível carregar a conversa com o produtor.</p>
+        <Button variant="outline" size="sm" disabled={isFetching} onClick={() => { void refetch(); }}>
+          {isFetching ? "Tentando..." : "Tentar novamente"}
+        </Button>
+      </div>
+    );
+  }
 
   if (recs.length === 0) {
     return (

@@ -88,13 +88,22 @@ export function podeDecidirRegistro(status: string | null | undefined): boolean 
   return status === "enviado_aprovacao";
 }
 
-/** Busca tolerante a espaços, aplicada a qualquer conjunto de campos textuais. */
+/** Normalização de busca: ignora caixa, acentos e espaços redundantes. */
+export function normalizarBusca(valor: unknown): string {
+  if (typeof valor !== "string") return "";
+  return valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+/** Busca tolerante a espaços, caixa e acentos. */
 export function matchTexto(campos: Array<unknown>, termo: string): boolean {
-  const q = (termo ?? "").trim().toLowerCase();
+  const q = normalizarBusca(termo);
   if (!q) return true;
-  return campos.some(
-    (c) => typeof c === "string" && c.toLowerCase().includes(q),
-  );
+  return campos.some((c) => normalizarBusca(c).includes(q));
 }
 
 /** Exibição segura de campos opcionais (cliente/fazenda/número da OS). */
@@ -103,3 +112,67 @@ export function textoOuTraco(valor: unknown): string {
   if (typeof valor === "number" && Number.isFinite(valor)) return String(valor);
   return "—";
 }
+
+/* ------------------------------------------------------------------ *
+ * Autorização de decisão (apenas UI — a RLS continua sendo a autoridade)
+ * ------------------------------------------------------------------ */
+
+/** Papéis que podem decidir uma recomendação técnica. */
+export const PAPEIS_DECISAO = ["administrador", "gestor"] as const;
+
+export function podeDecidirPorPapel(role: string | null | undefined): boolean {
+  return (PAPEIS_DECISAO as readonly string[]).includes(role ?? "");
+}
+
+/* ------------------------------------------------------------------ *
+ * Contrato de banco disponível hoje no CultivoFarm
+ * ------------------------------------------------------------------ */
+
+/**
+ * Não existe RPC pública e transacional que grave, em uma única transação,
+ * `registros_consultor.status` + `aprovacoes_tecnicas` + `status_log`.
+ * Enquanto isso, a decisão fica desabilitada para não corromper o fluxo.
+ */
+export const RPC_APROVACAO_TRANSACIONAL_DISPONIVEL = false;
+
+/**
+ * Também não existe RPC idempotente para gerar as OS On-Farm de uma
+ * recomendação aprovada. Geração automática fica bloqueada (evita criação
+ * parcial e duplicação em retry).
+ */
+export const RPC_GERACAO_OS_DISPONIVEL = false;
+
+export const MSG_DECISAO_INDISPONIVEL =
+  "Aprovação temporariamente indisponível para proteção da integridade";
+
+export const MSG_GERACAO_OS_INDISPONIVEL =
+  "Geração automática de Ordens de Serviço temporariamente indisponível para proteção da integridade. A recomendação permanece aprovada e deve ser convertida manualmente.";
+
+/** Só libera a decisão quando papel, status e contrato de banco permitem. */
+export function podeDecidir(
+  role: string | null | undefined,
+  status: string | null | undefined,
+): boolean {
+  return (
+    RPC_APROVACAO_TRANSACIONAL_DISPONIVEL &&
+    podeDecidirPorPapel(role) &&
+    podeDecidirRegistro(status)
+  );
+}
+
+/** Mensagem amigável — nunca expõe texto interno do banco/Supabase. */
+export function mensagemAmigavel(
+  _erro: unknown,
+  fallback = "Não foi possível concluir a operação. Tente novamente.",
+): string {
+  return fallback;
+}
+
+/** Próximo status possível da OS, ou null quando não há avanço permitido. */
+export function proximoStatusOS(atual: string | null | undefined): string | null {
+  if (!atual) return null;
+  const i = (OS_FLOW_ORDER as readonly string[]).indexOf(atual);
+  if (i < 0 || i >= OS_FLOW_ORDER.length - 1) return null;
+  return OS_FLOW_ORDER[i + 1];
+}
+
