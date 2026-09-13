@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,7 +241,7 @@ export default function EnvasePage() {
   const aoFiltrar = <T,>(set: (v: T) => void) => (v: T) => { setPagina(1); set(v); };
   /** Versão para <input>: extrai o valor do evento e volta à primeira página. */
   const aoFiltrarInput = (set: (v: string) => void) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => { setPagina(1); set(e.target.value); };
+    (e: ChangeEvent<HTMLInputElement>) => { setPagina(1); set(e.target.value); };
 
   const loteSel = useMemo(
     () => lotesComplementares.find((l) => l.id === form.lote_id) ?? null,
