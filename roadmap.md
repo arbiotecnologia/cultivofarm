@@ -1,5 +1,11 @@
 # Roadmap de Tarefas
 
+## Ordens de Serviço — 2026-09-13
+- [x] Auditoria local e correções frontend; 64/64 testes focados, 114/115 ampliados. Runtime canônico e tipos íntegros.
+- [ ] Aceite integral bloqueado pelo gate do .env gerenciado divergente; correção externa necessária. Sem E2E conectado nesta etapa.
+- [x] Diagnóstico/SQL numérico não aplicado e rollback documentados; demais riscos de servidor exigem auditoria autorizada.
+- H10 aplicado e verificado manualmente pelo usuário; não reaplicar. Trabalhos históricos fora deste escopo permanecem suspensos.
+
 ## Aplicações — unidades (correção focada)
 - Concluído frontend seguro: bloqueio por unidade ausente no contrato da OS, cálculo dimensional sem conversão, limpeza ao trocar OS e coerência temporal; testes puros 19/19.
 - Pendente: habilitação multiunidade exige vínculo persistente OS/prescrição e snapshot de unidade ausentes no contrato atual; não houve alteração de banco.

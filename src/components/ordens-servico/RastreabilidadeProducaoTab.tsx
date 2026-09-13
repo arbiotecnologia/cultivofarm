@@ -9,6 +9,8 @@ import {
   Info, User, Calendar, AlertTriangle, History
 } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { Button } from "@/components/ui/button";
+import { diaSP } from "@/lib/ordens-servico/validacao";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatConcentracaoDisplay } from "@/lib/cqFormat";
 import { cn } from "@/lib/utils";
@@ -20,87 +22,93 @@ interface Props {
 }
 
 export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
-  const { data: trace, isLoading } = useQuery({
-    queryKey: ["os-trace", osId],
+  const { data: trace, isLoading, isError, refetch } = useQuery({
+    queryKey: ["os-trace", osTipo, osId],
     queryFn: async () => {
+      const checked = async (query: PromiseLike<{ data: any; error: any }>) => {
+        const result = await query;
+        if (result.error) throw result.error;
+        return result;
+      };
       // 1. Integridade e Status Oficial
-      const { data: integridade } = await (supabase as any)
+      const { data: integridade } = await checked((supabase as any)
         .from("vw_esteira_laboratorio")
         .select("*")
         .eq("os_id", osId)
         .eq("origem_os", osTipo)
-        .single();
+        .maybeSingle());
 
       // 2. Programação
-      const { data: programacoes } = await (supabase as any)
+      const { data: programacoes } = await checked((supabase as any)
         .from("programacao_producao")
         .select(`
           *,
           responsavel:profiles!programacao_producao_responsavel_id_fkey(nome)
         `)
-        .eq(osTipo === 'onfarm' ? "ordem_servico_onfarm_id" : "ordem_servico_id", osId);
+        .eq(osTipo === 'onfarm' ? "ordem_servico_onfarm_id" : "ordem_servico_id", osId));
 
       const prog = programacoes?.[0];
 
       // 3. Lote
-      const { data: lotes } = await (supabase as any)
+      const { data: lotes } = !prog?.id ? { data: [] } : await checked((supabase as any)
         .from("lotes")
         .select(`
           *,
           produtos(nome),
           microrganismos(nome, nome_cientifico)
         `)
-        .eq("programacao_id", prog?.id || "");
+        .eq("programacao_id", prog?.id || ""));
 
       const lote = lotes?.[0];
 
       // 4. CQ
-      const { data: cqs } = await (supabase as any)
+      const { data: cqs } = !lote?.id ? { data: [] } : await checked((supabase as any)
         .from("controle_qualidade")
         .select("*")
-        .eq("lote_id", lote?.id || "");
+        .eq("lote_id", lote?.id || ""));
 
       const cq = cqs?.[0];
 
       // 5. Envase
-      const { data: envases } = await (supabase as any)
+      const { data: envases } = !lote?.id ? { data: [] } : await checked((supabase as any)
         .from("envase")
         .select("*")
-        .eq("lote_id", lote?.id || "");
+        .eq("lote_id", lote?.id || ""));
 
       const envase = envases?.[0];
 
       // 6. Estoque / Reserva
-      const { data: estoques } = await (supabase as any)
+      const { data: estoques } = await checked((supabase as any)
         .from("estoque_produto")
         .select("*")
-        .eq("reservado_para_os_id", osId);
+        .eq("reservado_para_os_id", osId));
 
       const estoque = estoques?.[0];
 
       // 7. Entrega
-      const { data: entregas } = await (supabase as any)
+      const { data: entregas } = await checked((supabase as any)
         .from("entregas")
         .select("*")
-        .eq(osTipo === 'onfarm' ? "ordem_servico_onfarm_id" : "ordem_servico_id", osId);
+        .eq(osTipo === 'onfarm' ? "ordem_servico_onfarm_id" : "ordem_servico_id", osId));
 
       const entrega = entregas?.[0];
 
       // 8. Aplicação
-      const { data: aplicacoes } = await (supabase as any)
+      const { data: aplicacoes } = await checked((supabase as any)
         .from("aplicacoes")
         .select("*")
-        .eq(osTipo === 'onfarm' ? "ordem_servico_onfarm_id" : "ordem_servico_id", osId);
+        .eq(osTipo === 'onfarm' ? "ordem_servico_onfarm_id" : "ordem_servico_id", osId));
 
       const aplicacao = aplicacoes?.[0];
 
       // 9. Eventos de Auditoria (Timeline)
-      const { data: eventos } = await (supabase as any)
+      const { data: eventos } = await checked((supabase as any)
         .from("laboratorio_esteira_eventos")
         .select("*")
         .eq("os_id", osId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true }));
 
+      if ([programacoes, lotes, cqs, envases, estoques, entregas, aplicacoes].some(rows => rows?.length > 1)) throw new Error("Rastreabilidade múltipla: consultar Cockpit");
       return {
         integridade,
         prog,
@@ -123,6 +131,8 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       </div>
     );
   }
+
+  if (isError) return <div role="alert" className="space-y-3"><p>Não foi possível carregar a rastreabilidade completa ou há múltiplos registros nesta etapa. Consulte o Cockpit para detalhar.</p><Button onClick={() => void refetch()}>Tentar novamente</Button></div>;
 
   const Section = ({ title, icon: Icon, children, active }: { title: string, icon: any, children: React.ReactNode, active?: boolean }) => (
     <div className={cn(
@@ -156,7 +166,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
       <span className="text-[10px] uppercase text-muted-foreground font-semibold">{label}</span>
       <div className="text-sm font-medium flex items-center gap-1.5">
         {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-        {value || "—"}
+        {value ?? "—"}
       </div>
     </div>
   );
@@ -261,7 +271,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
                   <InfoRow label="Responsável" value={trace.cq.responsavel} />
                   <InfoRow label="Resultado" value={
                     <Badge variant={trace.cq.resultado === 'aprovado' ? 'default' : 'destructive'} className={trace.cq.resultado === 'aprovado' ? 'bg-status-aprovado' : ''}>
-                      {trace.cq.resultado === 'aprovado' ? 'APROVADO' : 'REPROVADO'}
+                      {trace.cq.resultado === 'aprovado' ? 'APROVADO' : trace.cq.resultado === 'reprovado' ? 'REPROVADO' : 'EM ANÁLISE'}
                     </Badge>
                   } />
                   <InfoRow label="Concentração" value={formatConcentracaoDisplay(trace.cq.concentracao)} />
@@ -269,7 +279,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
                 <div className="grid grid-cols-3 gap-2 border-t pt-3">
                   <div className="text-center">
                     <p className="text-[9px] uppercase text-muted-foreground">pH</p>
-                    <p className="font-bold text-xs">{trace.cq.ph || "—"}</p>
+                    <p className="font-bold text-xs">{trace.cq.ph ?? "—"}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-[9px] uppercase text-muted-foreground">Odor</p>
@@ -277,7 +287,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
                   </div>
                   <div className="text-center">
                     <p className="text-[9px] uppercase text-muted-foreground">Contaminação</p>
-                    <p className="font-bold text-xs">{trace.cq.contaminacao || "—"}</p>
+                    <p className="font-bold text-xs">{trace.cq.contaminacao ?? "—"}</p>
                   </div>
                 </div>
               </CardContent>
@@ -375,7 +385,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
             ) : trace?.eventos.map((ev: any) => (
               <div key={ev.id} className="flex gap-3 text-xs">
                 <span className="text-muted-foreground font-mono shrink-0">
-                  {new Date(ev.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(ev.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}
                 </span>
                 <div className="flex flex-col gap-0.5">
                   <div className="font-bold flex items-center gap-1.5">
@@ -383,7 +393,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo }: Props) {
                     {ev.etapa_nova.replace(/_/g, ' ').toUpperCase()}
                   </div>
                   <span className="text-muted-foreground">{ev.observacao}</span>
-                  <span className="text-[10px] text-muted-foreground italic">{formatDateDisplay(ev.created_at)}</span>
+                  <span className="text-[10px] text-muted-foreground italic">{formatDateDisplay(diaSP(ev.created_at))}</span>
                 </div>
               </div>
             ))}

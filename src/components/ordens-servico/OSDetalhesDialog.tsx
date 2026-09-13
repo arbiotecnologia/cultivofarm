@@ -28,7 +28,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
         <DialogHeader className="p-4 sm:p-6 pb-2 border-b">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <DialogTitle className="text-xl font-bold flex flex-wrap items-center gap-2">
                 Ordem de Serviço: <span className="font-mono text-primary">{formatOS(os)}</span>
               </DialogTitle>
               <p className="text-sm text-muted-foreground">
@@ -42,7 +42,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange }: Props) {
                 {os.origem === 'onfarm' ? 'Visita Técnica' : 'Manual'}
               </Badge>
               <Badge className="h-6 bg-primary/10 text-primary border-primary/20">
-                {os.status.replace(/_/g, ' ').toUpperCase()}
+                {(os.status || "Não informado").replace(/_/g, ' ').toUpperCase()}
               </Badge>
             </div>
           </div>
