@@ -89,9 +89,12 @@ export function rotuloFrescor(horas: number | null): string {
 // Coordenadas
 // ---------------------------------------------------------------------------
 
-export type CoordResultado =
-  | { ok: true; lat: number; lng: number }
-  | { ok: false; erro: string };
+export interface CoordResultado {
+  ok: boolean;
+  lat?: number;
+  lng?: number;
+  erro?: string;
+}
 
 export function validarCoordenadas(lat: unknown, lng: unknown): CoordResultado {
   const la = numeroOuNulo(lat);
@@ -133,9 +136,11 @@ export interface LeituraManual {
   radiacao_solar: number | null;
 }
 
-export type ValidacaoManual =
-  | { ok: true; leitura: LeituraManual }
-  | { ok: false; erro: string };
+export interface ValidacaoManual {
+  ok: boolean;
+  leitura?: LeituraManual;
+  erro?: string;
+}
 
 /** Faixas de sanidade física para digitação (não são limiares agronômicos). */
 const FAIXAS: Record<string, { min: number; max: number; label: string }> = {

@@ -94,7 +94,7 @@ export function DashboardClimatico() {
   const handleSync = async () => {
     if (syncing) return;
     if (!fazendaId) { toast.error("Selecione uma fazenda"); return; }
-    if (!coords || !coords.ok) { toast.error(coords?.erro ?? "Coordenadas indisponíveis"); return; }
+    if (!coords?.ok) { toast.error(coords?.erro ?? "Coordenadas indisponíveis"); return; }
     setSyncing(true);
     try {
       const invoke = supabase.functions.invoke("sync-clima", { body: { fazenda_id: fazendaId } });
@@ -117,7 +117,7 @@ export function DashboardClimatico() {
     if (saving) return;
     if (!fazendaId) { toast.error("Selecione uma fazenda"); return; }
     const validacao = validarLeituraManual(form);
-    if (!validacao.ok) { toast.error(validacao.erro); return; }
+    if (!validacao.ok || !validacao.leitura) { toast.error(validacao.erro ?? "Dados inválidos"); return; }
     if (existeLeituraNoMesmoHorario(climaData, validacao.leitura.data_hora)) {
       toast.error("Já existe leitura registrada para esta fazenda neste horário.");
       return;

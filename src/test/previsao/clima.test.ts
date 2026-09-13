@@ -83,7 +83,9 @@ describe("validarCoordenadas", () => {
   });
   it("aceita coordenadas válidas", () => {
     const r = validarCoordenadas("-15.6", "-47.8");
-    expect(r).toEqual({ ok: true, lat: -15.6, lng: -47.8 });
+    expect(r.ok).toBe(true);
+    expect(r.lat).toBe(-15.6);
+    expect(r.lng).toBe(-47.8);
   });
 });
 
@@ -118,11 +120,9 @@ describe("validarLeituraManual", () => {
   it("aceita leitura válida e preserva zero", () => {
     const r = validarLeituraManual({ ...formVazio, temperatura: "25", chuva_mm: "0" }, agora);
     expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.leitura.chuva_mm).toBe(0);
-      expect(r.leitura.umidade).toBeNull();
-      expect(r.leitura.data_hora).toBe(agora.toISOString());
-    }
+    expect(r.leitura?.chuva_mm).toBe(0);
+    expect(r.leitura?.umidade).toBeNull();
+    expect(r.leitura?.data_hora).toBe(agora.toISOString());
   });
 });
 
