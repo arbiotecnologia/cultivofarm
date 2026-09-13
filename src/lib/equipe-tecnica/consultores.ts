@@ -76,12 +76,15 @@ export function normalizarBusca(valor: unknown): string {
     .toLowerCase();
 }
 
-/** Busca tolerante a espaços, caixa e acentuação, sobre nome, e-mail e CREA. */
+/**
+ * Busca tolerante a espaços, caixa e acentuação sobre os campos realmente
+ * existentes no perfil usado pela página: nome e e-mail.
+ */
 export function filtrarConsultores<T extends Record<string, any>>(lista: T[], termo: string): T[] {
   const q = normalizarBusca(termo);
   if (!q) return lista;
   return lista.filter((c) =>
-    [c.nome, c.email, c.crea].some((campo) => normalizarBusca(campo).includes(q)),
+    [c.nome, c.email].some((campo) => normalizarBusca(campo).includes(q)),
   );
 }
 
