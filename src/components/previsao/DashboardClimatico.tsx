@@ -10,89 +10,134 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Thermometer, Droplets, CloudRain, Wind, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import {
+  FONTE_AUTOMATICA,
+  SYNC_TIMEOUT_MS,
+  existeLeituraNoMesmoHorario,
+  formatDataHoraSaoPaulo,
+  formatDiaSaoPaulo,
+  formatMetrica,
+  horasDesde,
+  mediaOuNulo,
+  numeroOuNulo,
+  rotuloFrescor,
+  somaOuNulo,
+  validarCoordenadas,
+  validarLeituraManual,
+  type FormClimaManual,
+} from "@/lib/previsao/clima";
+
+const FORM_INICIAL: FormClimaManual = {
+  data_hora: "",
+  temperatura: "",
+  umidade: "",
+  chuva_mm: "",
+  vento_kmh: "",
+  radiacao_solar: "",
+};
 
 export function DashboardClimatico() {
   const [open, setOpen] = useState(false);
   const [fazendaId, setFazendaId] = useState("");
   const [syncing, setSyncing] = useState(false);
-  const [form, setForm] = useState({ temperatura: "", umidade: "", chuva_mm: "", vento_kmh: "", radiacao_solar: "" });
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<FormClimaManual>(FORM_INICIAL);
 
-  const { data: fazendas } = useQuery({
+  const fazendasQuery = useQuery({
     queryKey: ["fazendas"],
     queryFn: async () => {
-      const { data } = await (supabase as any).from("fazendas").select("id, nome, latitude, longitude").order("nome");
+      const { data, error } = await (supabase as any).from("fazendas").select("id, nome, latitude, longitude").order("nome");
+      if (error) throw error;
       return data ?? [];
     },
   });
 
-  const { data: climaData, refetch } = useQuery({
+  const climaQuery = useQuery({
     queryKey: ["clima_dados", fazendaId],
     queryFn: async () => {
-      if (!fazendaId) return [];
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("clima_dados")
         .select("*")
         .eq("fazenda_id", fazendaId)
         .gte("data_hora", sevenDaysAgo.toISOString())
         .order("data_hora", { ascending: true });
+      if (error) throw error;
       return data ?? [];
     },
     enabled: !!fazendaId,
   });
 
-  const chartData = (climaData ?? []).map((d: any) => ({
-    data: new Date(d.data_hora).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-    temperatura: Number(d.temperatura) || 0,
-    umidade: Number(d.umidade) || 0,
-    chuva: Number(d.chuva_mm) || 0,
-    vento: Number(d.vento_kmh) || 0,
+  const climaData = climaQuery.data ?? [];
+
+  const chartData = climaData.map((d: any) => ({
+    data: formatDiaSaoPaulo(d.data_hora),
+    temperatura: numeroOuNulo(d.temperatura),
+    umidade: numeroOuNulo(d.umidade),
+    chuva: numeroOuNulo(d.chuva_mm),
+    vento: numeroOuNulo(d.vento_kmh),
   }));
 
-  const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-  const tempMedia = avg(chartData.map(d => d.temperatura));
-  const umidMedia = avg(chartData.map(d => d.umidade));
-  const chuvaAcum = chartData.reduce((s, d) => s + d.chuva, 0);
-  const ventoMedia = avg(chartData.map(d => d.vento));
+  const tempMedia = mediaOuNulo(chartData.map((d) => d.temperatura));
+  const umidMedia = mediaOuNulo(chartData.map((d) => d.umidade));
+  const chuvaAcum = somaOuNulo(chartData.map((d) => d.chuva));
+  const ventoMedia = mediaOuNulo(chartData.map((d) => d.vento));
 
-  const selectedFazenda = (fazendas ?? []).find(f => f.id === fazendaId);
-  const hasCoords = selectedFazenda?.latitude && selectedFazenda?.longitude;
+  const ultima = climaData.length ? climaData[climaData.length - 1] : null;
+  const frescor = rotuloFrescor(horasDesde(ultima?.data_hora));
+
+  const selectedFazenda = (fazendasQuery.data ?? []).find((f: any) => f.id === fazendaId);
+  const coords = selectedFazenda ? validarCoordenadas(selectedFazenda.latitude, selectedFazenda.longitude) : null;
+  const hasCoords = coords?.ok === true;
 
   const handleSync = async () => {
+    if (syncing) return;
     if (!fazendaId) { toast.error("Selecione uma fazenda"); return; }
-    if (!hasCoords) { toast.error("Fazenda sem coordenadas cadastradas. Atualize latitude e longitude na página de Fazendas."); return; }
+    if (!coords || !coords.ok) { toast.error(coords?.erro ?? "Coordenadas indisponíveis"); return; }
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-clima", {
-        body: { fazenda_id: fazendaId },
-      });
+      const invoke = supabase.functions.invoke("sync-clima", { body: { fazenda_id: fazendaId } });
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Tempo esgotado ao sincronizar dados climáticos. Tente novamente.")), SYNC_TIMEOUT_MS)
+      );
+      const { data, error } = (await Promise.race([invoke, timeout])) as any;
       if (error) throw error;
       if (data?.error) { toast.error(data.error); return; }
-      toast.success(`Dados sincronizados: ${data.registros} registros de ${data.periodo}`);
-      refetch();
+      toast.success(`Dados de ${FONTE_AUTOMATICA} sincronizados: ${data?.registros ?? 0} registros (${data?.periodo ?? "período informado pela fonte"})`);
+      await climaQuery.refetch();
     } catch (e: any) {
-      toast.error(e.message || "Erro ao sincronizar dados climáticos");
+      toast.error(e?.message || "Erro ao sincronizar dados climáticos");
     } finally {
       setSyncing(false);
     }
   };
 
   const handleInsert = async () => {
+    if (saving) return;
     if (!fazendaId) { toast.error("Selecione uma fazenda"); return; }
-    const { error } = await (supabase as any).from("clima_dados").insert({
-      fazenda_id: fazendaId,
-      temperatura: form.temperatura ? Number(form.temperatura) : null,
-      umidade: form.umidade ? Number(form.umidade) : null,
-      chuva_mm: form.chuva_mm ? Number(form.chuva_mm) : 0,
-      vento_kmh: form.vento_kmh ? Number(form.vento_kmh) : null,
-      radiacao_solar: form.radiacao_solar ? Number(form.radiacao_solar) : null,
-    });
-    if (error) { toast.error("Erro ao salvar dados climáticos"); return; }
-    toast.success("Dados climáticos registrados");
-    setForm({ temperatura: "", umidade: "", chuva_mm: "", vento_kmh: "", radiacao_solar: "" });
-    setOpen(false);
-    refetch();
+    const validacao = validarLeituraManual(form);
+    if (!validacao.ok) { toast.error(validacao.erro); return; }
+    if (existeLeituraNoMesmoHorario(climaData, validacao.leitura.data_hora)) {
+      toast.error("Já existe leitura registrada para esta fazenda neste horário.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any).from("clima_dados").insert({
+        fazenda_id: fazendaId,
+        ...validacao.leitura,
+      });
+      if (error) throw error;
+      toast.success("Dados climáticos registrados");
+      setForm(FORM_INICIAL);
+      setOpen(false);
+      await climaQuery.refetch();
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao salvar dados climáticos");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -100,11 +145,11 @@ export function DashboardClimatico() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="w-64">
           <Select value={fazendaId} onValueChange={setFazendaId}>
-            <SelectTrigger><SelectValue placeholder="Selecione a fazenda" /></SelectTrigger>
+            <SelectTrigger aria-label="Selecionar fazenda"><SelectValue placeholder="Selecione a fazenda" /></SelectTrigger>
             <SelectContent>
-              {(fazendas ?? []).map(f => (
+              {(fazendasQuery.data ?? []).map((f: any) => (
                 <SelectItem key={f.id} value={f.id}>
-                  {f.nome} {f.latitude && f.longitude ? "" : " (sem coordenadas)"}
+                  {f.nome}{validarCoordenadas(f.latitude, f.longitude).ok ? "" : " (sem coordenadas)"}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -116,63 +161,89 @@ export function DashboardClimatico() {
             variant="outline"
             onClick={handleSync}
             disabled={!fazendaId || syncing || !hasCoords}
-            title={!hasCoords ? "Cadastre latitude/longitude da fazenda primeiro" : "Buscar dados climáticos automáticos via Open-Meteo"}
+            title={!hasCoords ? "Cadastre latitude/longitude válidas da fazenda primeiro" : `Buscar dados climáticos automáticos via ${FONTE_AUTOMATICA}`}
           >
             <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Sincronizando..." : "Sincronizar Clima"}
           </Button>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { if (!saving) setOpen(v); }}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Inserir Manual</Button>
+              <Button size="sm" disabled={!fazendaId}><Plus className="h-4 w-4 mr-1" /> Inserir Manual</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Registrar Dados Climáticos</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Temperatura (°C)</Label><Input type="number" value={form.temperatura} onChange={e => setForm(p => ({ ...p, temperatura: e.target.value }))} /></div>
-                <div><Label>Umidade (%)</Label><Input type="number" value={form.umidade} onChange={e => setForm(p => ({ ...p, umidade: e.target.value }))} /></div>
-                <div><Label>Chuva (mm)</Label><Input type="number" value={form.chuva_mm} onChange={e => setForm(p => ({ ...p, chuva_mm: e.target.value }))} /></div>
-                <div><Label>Vento (km/h)</Label><Input type="number" value={form.vento_kmh} onChange={e => setForm(p => ({ ...p, vento_kmh: e.target.value }))} /></div>
-                <div className="col-span-2"><Label>Radiação Solar</Label><Input type="number" value={form.radiacao_solar} onChange={e => setForm(p => ({ ...p, radiacao_solar: e.target.value }))} /></div>
+                <div className="col-span-2">
+                  <Label htmlFor="clima-data">Data e hora da medição</Label>
+                  <Input id="clima-data" type="datetime-local" value={form.data_hora} onChange={e => setForm(p => ({ ...p, data_hora: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground mt-1">Deixe em branco para usar o momento atual. Não são aceitas datas futuras.</p>
+                </div>
+                <div><Label htmlFor="clima-temp">Temperatura (°C)</Label><Input id="clima-temp" type="number" value={form.temperatura} onChange={e => setForm(p => ({ ...p, temperatura: e.target.value }))} /></div>
+                <div><Label htmlFor="clima-umid">Umidade (%)</Label><Input id="clima-umid" type="number" min={0} max={100} value={form.umidade} onChange={e => setForm(p => ({ ...p, umidade: e.target.value }))} /></div>
+                <div><Label htmlFor="clima-chuva">Chuva (mm)</Label><Input id="clima-chuva" type="number" min={0} value={form.chuva_mm} onChange={e => setForm(p => ({ ...p, chuva_mm: e.target.value }))} /></div>
+                <div><Label htmlFor="clima-vento">Vento (km/h)</Label><Input id="clima-vento" type="number" min={0} value={form.vento_kmh} onChange={e => setForm(p => ({ ...p, vento_kmh: e.target.value }))} /></div>
+                <div className="col-span-2"><Label htmlFor="clima-rad">Radiação Solar</Label><Input id="clima-rad" type="number" min={0} value={form.radiacao_solar} onChange={e => setForm(p => ({ ...p, radiacao_solar: e.target.value }))} /></div>
               </div>
-              <Button onClick={handleInsert} className="w-full mt-4">Salvar</Button>
+              <Button onClick={handleInsert} disabled={saving} className="w-full mt-4">{saving ? "Salvando..." : "Salvar"}</Button>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      {/* Coordinates info */}
-      {fazendaId && !hasCoords && (
-        <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
-          <CardContent className="py-3 text-sm text-orange-700 dark:text-orange-400">
-            ⚠️ Esta fazenda não possui coordenadas cadastradas. Atualize a latitude e longitude na página de <strong>Fazendas</strong> para habilitar a sincronização automática de dados climáticos.
+      {fazendasQuery.isError && (
+        <Card className="border-destructive/40">
+          <CardContent className="py-4 flex items-center justify-between gap-4 text-sm">
+            <span>Não foi possível carregar as fazendas.</span>
+            <Button size="sm" variant="outline" onClick={() => fazendasQuery.refetch()}>Tentar novamente</Button>
           </CardContent>
         </Card>
       )}
 
+      {fazendaId && coords && !coords.ok && (
+        <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+          <CardContent className="py-3 text-sm text-orange-700 dark:text-orange-400">
+            ⚠️ {coords.erro} A sincronização automática fica desabilitada até a correção.
+          </CardContent>
+        </Card>
+      )}
+
+      {fazendaId && (
+        <p className="text-xs text-muted-foreground">
+          Janela exibida: últimos 7 dias · Fuso America/São Paulo · Fonte automática: {FONTE_AUTOMATICA} · Última leitura: {ultima ? `${formatDataHoraSaoPaulo(ultima.data_hora)} (${frescor})` : "—"}
+        </p>
+      )}
+
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><Thermometer className="h-4 w-4" />Temp. Média</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{tempMedia.toFixed(1)}°C</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><Droplets className="h-4 w-4" />Umidade Média</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{umidMedia.toFixed(0)}%</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><CloudRain className="h-4 w-4" />Chuva Acum.</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{chuvaAcum.toFixed(1)} mm</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><Wind className="h-4 w-4" />Vento Médio</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{ventoMedia.toFixed(1)} km/h</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><Thermometer className="h-4 w-4" />Temp. Média</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatMetrica(tempMedia, 1, "°C")}</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><Droplets className="h-4 w-4" />Umidade Média</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatMetrica(umidMedia, 0, "%")}</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><CloudRain className="h-4 w-4" />Chuva Acum.</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatMetrica(chuvaAcum, 1, " mm")}</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><Wind className="h-4 w-4" />Vento Médio</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatMetrica(ventoMedia, 1, " km/h")}</p></CardContent></Card>
       </div>
 
       {/* Charts */}
-      {chartData.length > 0 ? (
+      {climaQuery.isLoading ? (
+        <Card><CardContent className="py-12 text-center text-muted-foreground">Carregando dados climáticos...</CardContent></Card>
+      ) : climaQuery.isError ? (
+        <Card className="border-destructive/40"><CardContent className="py-8 text-center space-y-3">
+          <p className="text-sm">Não foi possível carregar os dados climáticos desta fazenda.</p>
+          <Button size="sm" variant="outline" onClick={() => climaQuery.refetch()}>Tentar novamente</Button>
+        </CardContent></Card>
+      ) : chartData.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card><CardHeader><CardTitle className="text-base">Temperatura e Umidade</CardTitle></CardHeader><CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="data" fontSize={12} /><YAxis fontSize={12} /><Tooltip /><Legend />
-                <Line type="monotone" dataKey="temperatura" stroke="hsl(var(--destructive))" name="Temp (°C)" strokeWidth={2} />
-                <Line type="monotone" dataKey="umidade" stroke="hsl(var(--primary))" name="Umidade (%)" strokeWidth={2} />
+                <Line type="monotone" dataKey="temperatura" stroke="hsl(var(--destructive))" name="Temp (°C)" strokeWidth={2} connectNulls={false} />
+                <Line type="monotone" dataKey="umidade" stroke="hsl(var(--primary))" name="Umidade (%)" strokeWidth={2} connectNulls={false} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent></Card>
           <Card><CardHeader><CardTitle className="text-base">Precipitação e Vento</CardTitle></CardHeader><CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="data" fontSize={12} /><YAxis fontSize={12} /><Tooltip /><Legend />
-                <Line type="monotone" dataKey="chuva" stroke="hsl(210 80% 50%)" name="Chuva (mm)" strokeWidth={2} />
-                <Line type="monotone" dataKey="vento" stroke="hsl(150 60% 40%)" name="Vento (km/h)" strokeWidth={2} />
+                <Line type="monotone" dataKey="chuva" stroke="hsl(210 80% 50%)" name="Chuva (mm)" strokeWidth={2} connectNulls={false} />
+                <Line type="monotone" dataKey="vento" stroke="hsl(150 60% 40%)" name="Vento (km/h)" strokeWidth={2} connectNulls={false} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent></Card>
@@ -182,7 +253,7 @@ export function DashboardClimatico() {
           {fazendaId
             ? hasCoords
               ? "Nenhum dado climático nos últimos 7 dias. Clique em 'Sincronizar Clima' para buscar dados automáticos."
-              : "Nenhum dado climático. Cadastre coordenadas ou use 'Inserir Manual'."
+              : "Nenhum dado climático. Cadastre coordenadas válidas ou use 'Inserir Manual'."
             : "Selecione uma fazenda para visualizar os dados climáticos."}
         </CardContent></Card>
       )}
