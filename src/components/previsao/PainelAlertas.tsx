@@ -13,26 +13,43 @@ import { toast } from "sonner";
 
 export function PainelAlertas() {
   const [statusFilter, setStatusFilter] = useState("ativo");
+  const [emAndamento, setEmAndamento] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: alertas, isLoading } = useQuery({
+  const alertasQuery = useQuery({
     queryKey: ["alertas_agronomicos", statusFilter],
     queryFn: async () => {
       let q = (supabase as any).from("alertas_agronomicos").select("*, fazendas(nome), talhoes(nome)").order("data_alerta", { ascending: false });
       if (statusFilter !== "todos") q = q.eq("status", statusFilter as any);
-      const { data } = await q;
+      const { data, error } = await q;
+      if (error) throw error;
       return data ?? [];
     },
   });
+  const { data: alertas, isLoading } = alertasQuery;
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await (supabase as any).from("alertas_agronomicos").update({ status: status as any, updated_at: new Date().toISOString() }).eq("id", id);
+    mutationFn: async ({ id, status, statusAtual }: { id: string; status: string; statusAtual: string }) => {
+      // Filtro por status atual evita sobrescrever mudança feita por outro usuário.
+      const { data, error } = await (supabase as any)
+        .from("alertas_agronomicos")
+        .update({ status: status as any, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("status", statusAtual as any)
+        .select("id");
       if (error) throw error;
+      if (!data?.length) throw new Error("Este alerta já foi atualizado por outro usuário. Recarregue a lista.");
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["alertas_agronomicos"] }); toast.success("Alerta atualizado"); },
-    onError: () => toast.error("Erro ao atualizar alerta"),
+    onError: (e: any) => toast.error(e?.message || "Erro ao atualizar alerta"),
+    onSettled: () => setEmAndamento(null),
   });
+
+  const alterarStatus = (id: string, statusAtual: string, status: string) => {
+    if (emAndamento) return;
+    setEmAndamento(id);
+    updateStatus.mutate({ id, status, statusAtual });
+  };
 
   return (
     <div className="space-y-6">
