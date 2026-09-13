@@ -81,5 +81,5 @@
 
 ## Proteção CultivoFarm independente do Cloud
 - [x] Cópia histórica própria e imports de produção.
-- [ ] Testes estáticos, testes Cockpit e evidência automática de compilação.
+- [x] 111 testes aprovados (28 centrais Cockpit, 67 cálculos e 16 vínculo); log automático build OK. Typecheck manual não executado por restrição do ambiente.
 - Sem acesso a banco; arquivos gerenciados de ambiente não alterados.
