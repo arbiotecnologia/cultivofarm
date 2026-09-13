@@ -12,7 +12,7 @@ import { ArrowLeft, Loader2, Droplets, MapPin, Camera, X, AlertTriangle, History
 import { toast } from "sonner";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { uploadEvidencias, limparObjetosEvidencias, PendingEvidencia } from "@/components/aplicacao/EvidenciasUploader";
-import { ACCEPT_EVIDENCIAS, tipoEvidencia, validarArquivoEvidencia, validarMotivoRetificacao } from "@/lib/aplicacoes/evidencias";
+import { ACCEPT_EVIDENCIAS, normalizarArquivoCamera, tipoEvidencia, validarArquivoEvidencia, validarMotivoRetificacao } from "@/lib/aplicacoes/evidencias";
 import { validarAplicacao } from "@/lib/aplicacoes/validacao";
 
 
@@ -127,11 +127,13 @@ export default function MobileAplicacoes() {
   const doseRec = Number(osSel?.produtos?.dose_ml_ha || 0);
   const desvio = doseRec ? Math.abs((Number(doseAplicada) - doseRec) / doseRec) * 100 : 0;
 
-  const addFiles = (files: FileList | null) => {
+  const addFiles = (files: FileList | null, daCamera = false) => {
     if (!files?.length) return;
     const novos: PendingEvidencia[] = [];
-    for (const f of Array.from(files)) {
+    for (const bruto of Array.from(files)) {
       if (evidencias.length + novos.length >= 20) break;
+      const f = daCamera ? normalizarArquivoCamera(bruto) : bruto;
+      if (!f) { toast.error(`${bruto.name || "foto"}: formato não aceito`); continue; }
       const erro = validarArquivoEvidencia(f);
       if (erro) { toast.error(erro); continue; }
       novos.push({
@@ -395,10 +397,11 @@ export default function MobileAplicacoes() {
             Galeria
           </Button>
         </div>
-        <input ref={cameraRef} type="file" accept="image/jpeg,image/png,image/heic,image/heif" capture="environment" className="hidden"
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
           aria-label="Capturar foto de evidência"
-          onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+          onChange={(e) => { addFiles(e.target.files, true); e.target.value = ""; }} />
         <input ref={fileRef} type="file" multiple accept={ACCEPT_EVIDENCIAS} className="hidden"
+          aria-label="Selecionar arquivos de evidência"
 
           onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
         {evidencias.length > 0 && (

@@ -9,12 +9,11 @@ import {
   ACCEPT_EVIDENCIAS,
   MAX_EVIDENCIA_MB,
   caminhoEvidencia,
+  ehDispositivoMovel,
+  normalizarArquivoCamera,
   tipoEvidencia,
   validarArquivoEvidencia,
 } from "@/lib/aplicacoes/evidencias";
-
-const isMobileDevice = () =>
-  typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 export interface PendingEvidencia {
   id: string;
@@ -46,10 +45,16 @@ export function EvidenciasUploader({ pending, onChange, maxFiles = 20 }: Props) 
   const cameraRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
 
-  const handleAdd = (files: FileList | null) => {
-    if (!files?.length) return;
+  /** Inclusão compartilhada: usada pelo input, pela câmera nativa e pelo canvas. */
+  const incluirArquivos = (files: File[], daCamera = false) => {
+    if (!files.length) return;
     const incoming: PendingEvidencia[] = [];
-    for (const f of Array.from(files)) {
+    for (const bruto of files) {
+      const f = daCamera ? normalizarArquivoCamera(bruto) : bruto;
+      if (!f) {
+        toast.error(`${bruto.name || "foto"}: formato não aceito`);
+        continue;
+      }
       if (pending.length + incoming.length >= maxFiles) {
         toast.error(`Máximo de ${maxFiles} arquivos`);
         break;
@@ -69,6 +74,9 @@ export function EvidenciasUploader({ pending, onChange, maxFiles = 20 }: Props) 
     }
     onChange([...pending, ...incoming]);
   };
+
+  const handleAdd = (files: FileList | null, daCamera = false) =>
+    incluirArquivos(files ? Array.from(files) : [], daCamera);
 
   const remove = (id: string) => {
     const item = pending.find((p) => p.id === id);
@@ -91,7 +99,7 @@ export function EvidenciasUploader({ pending, onChange, maxFiles = 20 }: Props) 
           variant="outline"
           size="sm"
           onClick={() => {
-            if (isMobileDevice()) cameraRef.current?.click();
+            if (ehDispositivoMovel()) cameraRef.current?.click();
             else setCameraOpen(true);
           }}
         >
@@ -104,18 +112,14 @@ export function EvidenciasUploader({ pending, onChange, maxFiles = 20 }: Props) 
       <input ref={inputRef} type="file" multiple accept={ACCEPT_EVIDENCIAS} className="hidden"
         aria-label="Selecionar arquivos de evidência"
         onChange={(e) => { handleAdd(e.target.files); e.target.value = ""; }} />
-      <input ref={cameraRef} type="file" accept="image/jpeg,image/png,image/heic,image/heif" capture="environment" className="hidden"
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
         aria-label="Capturar foto de evidência"
-        onChange={(e) => { handleAdd(e.target.files); e.target.value = ""; }} />
+        onChange={(e) => { handleAdd(e.target.files, true); e.target.value = ""; }} />
 
       <CameraCaptureDialog
         open={cameraOpen}
         onOpenChange={setCameraOpen}
-        onCapture={(file) => {
-          const dt = new DataTransfer();
-          dt.items.add(file);
-          handleAdd(dt.files);
-        }}
+        onCapture={(file) => incluirArquivos([file], true)}
       />
 
       {pending.length > 0 && (
