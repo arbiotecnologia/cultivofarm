@@ -11,9 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTimeDisplay, formatDateDisplay } from "@/lib/date-utils";
 import { brl } from "@/lib/financial/format";
-import { ArrowLeft, Factory, Clock, CheckCircle2, Lock, FlaskConical } from "lucide-react";
+import { ArrowLeft, Factory, Clock, CheckCircle2, Lock, FlaskConical, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { b2bToast } from "@/lib/b2bToast";
+import {
+  mensagemErro,
+  podeGerarOrdens,
+  rotuloStatus,
+  validarDatasPlanejamento,
+  varianteStatus,
+} from "@/lib/planejamento-producao/planejamento";
 
 // Formata a embalagem priorizando o volume real do vasilhame (catalogo_volumes).
 function formatVasilhame(volumeMl: number | null | undefined, rotulo: string | null | undefined, unidade: string | null | undefined, quantidade: number): string {
@@ -67,7 +73,8 @@ export default function PlanejamentoProducaoDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { role } = useAuth();
-  const { data, isLoading, refetch } = useProductionPlanningDetail(id ?? null);
+  const { data, isLoading, isError, error, refetch, isFetching } = useProductionPlanningDetail(id ?? null);
+  const [gerando, setGerando] = useState(false);
   const generate = useGenerateProductionOrders();
   const updateDates = useUpdatePlanningDates();
 
@@ -119,9 +126,35 @@ export default function PlanejamentoProducaoDetalhe() {
     return arr;
   }, [itemsRaw]);
 
-  if (isLoading || !data) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
+  if (isLoading) return <div className="p-6 text-sm text-muted-foreground" role="status">Carregando…</div>;
 
-  const { planning, partner, order, items, timeline, has_orders } = data;
+  if (isError || !data?.planning || !data?.order) {
+    return (
+      <div className="container mx-auto p-4 md:p-6 space-y-3">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/operacao/planejamento")}>
+          <ArrowLeft className="h-4 w-4 mr-1" aria-hidden="true" /> Voltar
+        </Button>
+        <div className="flex flex-col items-start gap-2" role="alert">
+          <p className="text-sm text-destructive flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            {isError
+              ? mensagemErro(error, "Não foi possível carregar este planejamento.")
+              : "Planejamento não encontrado ou indisponível para o seu perfil."}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { planning, partner: partnerRaw, order, timeline, has_orders } = data as any;
+  const partner = partnerRaw ?? {};
+  const validacaoDatas = validarDatasPlanejamento(startDate || null, finishDate || null);
+  const eventos = [...((timeline as any[]) ?? [])].sort((a, b) =>
+    String(a?.event_at ?? "") < String(b?.event_at ?? "") ? -1 : 1,
+  );
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-4">
@@ -132,7 +165,7 @@ export default function PlanejamentoProducaoDetalhe() {
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Factory className="h-5 w-5" /> Planejamento — {order.numero}
         </h1>
-        <Badge variant="outline" className="ml-2">{planning.status}</Badge>
+        <Badge variant={varianteStatus(planning.status)} className="ml-2">{rotuloStatus(planning.status)}</Badge>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -151,7 +184,7 @@ export default function PlanejamentoProducaoDetalhe() {
             <div>Aprovado em: {order.approved_at ? formatDateTimeDisplay(order.approved_at) : "—"}</div>
             <div>Data desejada: {order.requested_delivery_date ? formatDateDisplay(order.requested_delivery_date) : "—"}</div>
             <div>Previsão: {order.estimated_delivery_date ? formatDateDisplay(order.estimated_delivery_date) : "—"}</div>
-            <div className="font-semibold">Total: {brl(order.total ?? 0)}</div>
+            <div className="font-semibold">Total: {order.total != null ? brl(order.total) : "—"}</div>
             
             {order.commercial_notes && <div className="text-muted-foreground">Obs comercial: {order.commercial_notes}</div>}
           </CardContent>
@@ -164,37 +197,44 @@ export default function PlanejamentoProducaoDetalhe() {
           {canManageProduction ? (
             <Button
               size="sm"
-              disabled={has_orders || generate.isPending}
+              disabled={has_orders || generate.isPending || gerando}
               onClick={async () => {
-                // Garante estado fresco antes de chamar o RPC — evita
-                // "ainda não está aprovado" quando a aprovação acabou de propagar.
-                const fresh = await refetch();
-                const freshOrder = fresh.data?.order;
-                const freshItems = fresh.data?.items ?? [];
-                if (freshOrder && freshOrder.ready_for_production !== true) {
-                  toast.error("Pedido ainda não liberado para produção. Conclua a aprovação comercial.");
-                  return;
+                if (gerando || generate.isPending) return; // trava clique repetido
+                setGerando(true);
+                try {
+                  // Garante estado fresco antes de chamar o RPC — evita
+                  // "ainda não está aprovado" quando a aprovação acabou de propagar.
+                  const fresh = await refetch();
+                  const freshData: any = fresh.data;
+                  const freshOrder = freshData?.order;
+                  const freshPlanning = freshData?.planning;
+                  if (!freshOrder || !freshPlanning) {
+                    toast.error("Não foi possível confirmar o estado atual do pedido. Tente novamente.");
+                    return;
+                  }
+                  const validacao = podeGerarOrdens({
+                    status: freshPlanning.status,
+                    hasOrders: freshData?.has_orders,
+                    readyForProduction: freshOrder.ready_for_production,
+                    itens: (freshData?.items ?? []) as any[],
+                  });
+                  if (!validacao.ok) {
+                    toast.error(validacao.erro ?? "Não é possível gerar ordens de produção agora.");
+                    return;
+                  }
+                  await new Promise<void>((resolve) =>
+                    generate.mutate(
+                      { partner_order_id: freshOrder.id, planning_id: freshPlanning.id, numero: freshOrder.numero },
+                      { onSettled: () => { refetch(); resolve(); } },
+                    ),
+                  );
+                } finally {
+                  setGerando(false);
                 }
-                const hasInvalidQty = freshItems.some(
-                  (it: any) => !(Number(it.quantidade) > 0),
-                );
-                if (freshItems.length === 0) {
-                  b2bToast.error("generate-op", "no_items", order.numero);
-                  return;
-                }
-                if (hasInvalidQty) {
-                  b2bToast.error("generate-op", "invalid_quantity", order.numero);
-                  return;
-                }
-                generate.mutate(
-                  { partner_order_id: order.id, planning_id: planning.id, numero: order.numero },
-                  { onSuccess: () => refetch() },
-                );
-
               }}
             >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              {has_orders ? "OPs já geradas" : "Gerar Ordem de Produção"}
+              <CheckCircle2 className="h-4 w-4 mr-1" aria-hidden="true" />
+              {has_orders ? "OPs já geradas" : generate.isPending || gerando ? "Gerando…" : "Gerar Ordem de Produção"}
             </Button>
           ) : (
             <Badge variant="outline" className="gap-1"><Lock className="h-3 w-3" /> Somente leitura</Badge>
@@ -353,32 +393,38 @@ export default function PlanejamentoProducaoDetalhe() {
         <CardHeader><CardTitle className="text-sm">Datas previstas / Observações</CardTitle></CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           <div>
-            <Label>Início previsto</Label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={!canManageProduction} />
+            <Label htmlFor="inicio-previsto">Início previsto</Label>
+            <Input id="inicio-previsto" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={!canManageProduction} />
           </div>
           <div>
-            <Label>Término previsto</Label>
-            <Input type="date" value={finishDate} onChange={(e) => setFinishDate(e.target.value)} disabled={!canManageProduction} />
+            <Label htmlFor="termino-previsto">Término previsto</Label>
+            <Input id="termino-previsto" type="date" value={finishDate} onChange={(e) => setFinishDate(e.target.value)} disabled={!canManageProduction} />
           </div>
           <div className="md:col-span-3">
-            <Label>Observações de produção</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} disabled={!canManageProduction} />
+            <Label htmlFor="obs-producao">Observações de produção</Label>
+            <Textarea id="obs-producao" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} disabled={!canManageProduction} />
           </div>
-          <div className="md:col-span-3 flex justify-end">
+          <div className="md:col-span-3 flex justify-end items-center gap-3">
             {canManageProduction ? (
-              <Button
-                onClick={() =>
-                  updateDates.mutate({
-                    id: planning.id,
-                    planned_start_date: startDate || null,
-                    planned_finish_date: finishDate || null,
-                    production_notes: notes || null,
-                  })
-                }
-                disabled={updateDates.isPending}
-              >
-                Salvar
-              </Button>
+              <>
+                {!validacaoDatas.ok && (
+                  <span className="text-xs text-destructive" role="alert">{validacaoDatas.erro}</span>
+                )}
+                <Button
+                  onClick={() => {
+                    if (updateDates.isPending || !validacaoDatas.ok) return;
+                    updateDates.mutate({
+                      id: planning.id,
+                      planned_start_date: startDate || null,
+                      planned_finish_date: finishDate || null,
+                      production_notes: notes || null,
+                    });
+                  }}
+                  disabled={updateDates.isPending || !validacaoDatas.ok}
+                >
+                  {updateDates.isPending ? "Salvando…" : "Salvar"}
+                </Button>
+              </>
             ) : isReadOnly ? (
               <span className="text-xs text-muted-foreground flex items-center gap-1"><Lock className="h-3 w-3" /> Visualização comercial</span>
             ) : null}
@@ -390,14 +436,14 @@ export default function PlanejamentoProducaoDetalhe() {
         <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" /> Timeline</CardTitle></CardHeader>
         <CardContent>
           <ol className="relative border-l border-border ml-2 space-y-3">
-            {(timeline ?? []).map((ev: any) => (
+            {eventos.map((ev: any) => (
               <li key={ev.id} className="ml-4">
                 <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full bg-primary"></div>
                 <div className="text-sm font-medium">{EVENT_LABEL[ev.event_type] ?? ev.event_type}</div>
                 <div className="text-xs text-muted-foreground">{formatDateTimeDisplay(ev.event_at)}</div>
               </li>
             ))}
-            {(timeline ?? []).length === 0 && <li className="text-sm text-muted-foreground ml-4">Sem eventos.</li>}
+            {eventos.length === 0 && <li className="text-sm text-muted-foreground ml-4">Sem eventos.</li>}
           </ol>
         </CardContent>
       </Card>
