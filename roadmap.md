@@ -70,3 +70,8 @@
 - [x] Verificado: `.env` aponta exclusivamente para CultivoFarm (`swzpzcwiasxmjutrmvkm`).
 - [x] Typecheck limpo; build automático OK; testes focados comerciais + CAT-05/09/10 = 61/61 aprovados.
 - Restrições respeitadas: sem acesso a banco, migrations, backend, deploy ou publicação.
+
+## Cockpit Laboratório — auditoria atual
+- Em execução: correções frontend de estados, filtros, métricas e guardas; testes locais e relatório.
+- Bloqueio: ambiente divergente e types.ts com 2.060 linhas; arquivos gerados protegidos, restauração exige correção da integração.
+- Sem acesso ao banco, publicação ou GitHub; tarefas históricas fora do escopo permanecem suspensas.
