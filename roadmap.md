@@ -106,3 +106,9 @@
 - [x] Cópia histórica própria e imports de produção.
 - [x] 111 testes aprovados (28 centrais Cockpit, 67 cálculos e 16 vínculo); log automático build OK. Typecheck manual não executado por restrição do ambiente.
 - Sem acesso a banco; arquivos gerenciados de ambiente não alterados.
+
+### Validação local do alinhamento final
+- CQ: 31 testes aprovados, 0 falhas (21 consulta + 10 hardening), 2 arquivos; exit 0. Gate de vínculo: OK, exit 0. Suíte completa não executada.
+- `.env` ausente e ignorado; único createClient operacional preservado no cliente canônico.
+- Build automático: build OK; typecheck isolado não executado por restrição do ambiente, sem evidência separada.
+- Nenhum acesso/aplicação de banco, criação de dados, publicação ou sincronização GitHub nesta rodada.

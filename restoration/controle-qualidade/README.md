@@ -124,3 +124,9 @@ Não homologar aprovação→reprovação, aprovação→pendente ou reanálise 
   vínculos duplos; consultas e políticas devem ser confirmadas antes de ampliar o relatório.
 - Ausência de referências é **bloqueio de configuração para testes de conformidade**, não defeito
   a resolver com dados inventados. Nenhum dado criado, SQL executado, publicação ou GitHub.
+
+### Validação local do alinhamento final
+- CQ: 31 testes aprovados, 0 falhas (21 consulta + 10 hardening), 2 arquivos; exit 0. Gate de vínculo: OK, exit 0. Suíte completa não executada.
+- `.env` ausente e ignorado; único createClient operacional preservado no cliente canônico.
+- Build automático: build OK; typecheck isolado não executado por restrição do ambiente, sem evidência separada.
+- Nenhum acesso/aplicação de banco, criação de dados, publicação ou sincronização GitHub nesta rodada.
