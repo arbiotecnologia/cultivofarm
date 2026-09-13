@@ -11,9 +11,11 @@
  *   signed URL quando existir `arquivo_path`.
  */
 
-/** Campos realmente exibidos da tabela `profiles` (evita `select("*")`). */
-export const PROFILE_FIELDS =
-  "id, user_id, nome, email, ativo, avatar_url, created_at" as const;
+/**
+ * Campos realmente usados pela página e por `mapConsultores` (evita
+ * `select("*")` e não traz dado que a tela não exibe).
+ */
+export const PROFILE_FIELDS = "id, user_id, nome, email, ativo" as const;
 
 /**
  * Papéis com acesso amplo real a clientes. Papéis técnicos
