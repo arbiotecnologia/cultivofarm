@@ -83,7 +83,9 @@ interface StepDef {
 export function EsteiraStepper({
   item,
   handlers,
+  disabled = false,
 }: {
+  disabled?: boolean;
   item: StepperItem;
   handlers: EsteiraStepperHandlers;
 }) {
@@ -311,7 +313,7 @@ export function EsteiraStepper({
                   s.state === "blocked" && "border-red-200 bg-red-50/40"
                 )}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold leading-tight">{s.title}</p>
@@ -346,6 +348,7 @@ export function EsteiraStepper({
                   </div>
                   {s.cta && (
                     <Button
+                      disabled={disabled}
                       size="sm"
                       variant={s.cta.variant ?? "default"}
                       className="h-7 text-[11px] shrink-0"

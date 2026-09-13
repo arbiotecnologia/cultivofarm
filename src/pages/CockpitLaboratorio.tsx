@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/ResponsiveHelpers";
@@ -37,7 +37,7 @@ import { PendenciasInconsistenciasTab } from "@/components/cockpit/PendenciasInc
 import { FinalizarOSButton } from "@/components/cockpit/FinalizarOSButton";
 import { ComposicaoProducaoCard } from "@/components/cockpit/ComposicaoProducaoCard";
 import { ProducaoResumoTab } from "@/components/cockpit/ProducaoResumoTab";
-import { SeedFixturesButton } from "@/components/cockpit/SeedFixturesButton";
+import { criarTrava, deduplicarEsteira, filtrarCockpit, formatVolume, podeOperar, somaVolumes, timestampBrasilia, volumeLitros } from "@/lib/cockpit/auditoria";
 
 
 import { useMetricasOperacionais } from "@/hooks/useMetricasOperacionais";
@@ -65,7 +65,7 @@ interface CockpitItem {
   fazenda: string;
   talhao: string;
   produto: string;
-  volume_solicitado: number;
+  volume_solicitado: number | null;
   data_programada: string;
   prioridade: "alta" | "media" | "baixa";
   lote_id?: string;
@@ -131,6 +131,9 @@ export default function CockpitLaboratorio() {
     executarProximaAcao,
   } = useEsteiraLaboratorio();
   const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const trava = useRef(criarTrava());
+  const [busy, setBusy] = useState(false);
   const [filterPrioridade, setFilterPrioridade] = useState("all");
   const [filterOrigem, setFilterOrigem] = useState("all");
   const [filterCliente, setFilterCliente] = useState("all");
@@ -177,7 +180,7 @@ export default function CockpitLaboratorio() {
     [search, filterOrigem, filterPrioridade],
   );
 
-  const { data: listaEsteira, isLoading } = useQuery({
+  const { data: listaEsteira, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["cockpit-laboratorio", listaFiltros, limit],
     queryFn: async () => {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_listar_esteira_v1", {
@@ -186,10 +189,8 @@ export default function CockpitLaboratorio() {
         p_offset: 0,
       });
       if (error) throw error;
-      return (data ?? { items: [], total_count: 0 }) as {
-        items: any[];
-        total_count: number;
-      };
+      if (!data || !Array.isArray(data.items)) throw new Error("Resposta inválida da esteira.");
+      return { items: deduplicarEsteira<any>(data.items), total_count: data.total_count };
     },
     refetchInterval: 300000,
   });
@@ -206,7 +207,7 @@ export default function CockpitLaboratorio() {
 
 
         return {
-          id: item.programacao_id,
+          id: item.programacao_id || `${item.origem_os}:${item.os_id}`,
           os_id: item.os_id,
           numero_os: item.numero_os || "—",
           origem: item.origem_os,
@@ -214,7 +215,7 @@ export default function CockpitLaboratorio() {
           fazenda: item.fazenda_nome || "—",
           talhao: item.talhao_nome || "—",
           produto: item.produto_nome || item.microrganismo_nome || "—",
-          volume_solicitado: item.volume_solicitado_l || 0,
+          volume_solicitado: volumeLitros(item.volume_solicitado_l),
           data_programada: item.data_programada,
           prioridade: item.prioridade || "media",
           lote_id: item.lote_id,
@@ -253,7 +254,7 @@ export default function CockpitLaboratorio() {
   const totalFiltrado = Number(listaEsteira?.total_count ?? items.length);
 
 
-  const { data: history = [] } = useQuery({
+  const { data: history = [], isLoading: historyLoading, isError: historyError, refetch: refetchHistory } = useQuery({
     queryKey: ["esteira-history", selectedItem?.os_id],
     enabled: !!selectedItem,
     queryFn: async () => {
@@ -276,32 +277,10 @@ export default function CockpitLaboratorio() {
   };
 
 
-  // KPIs agregados no servidor sobre TODO o universo autorizado (não sobre a
-  // página carregada) e já respeitando os filtros de busca/origem/prioridade.
-  const { data: metricasGlobais } = useQuery({
-    queryKey: ["cockpit-metricas-globais", listaFiltros],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("rpc_cockpit_metricas_v2", listaFiltros);
-      if (error) throw error;
-      return (data ?? {}) as Record<string, number>;
-    },
-    refetchInterval: 300000,
-  });
-
-  const osSemProgCount = Number(metricasGlobais?.os_sem_programacao ?? 0);
-  const totalUniverso = Number(metricasGlobais?.total ?? totalFiltrado);
-
-  // Busca, prioridade e origem já vêm filtradas do servidor; aqui restam
-  // apenas os recortes locais de cliente/fazenda/produto.
-  const filteredItems = useMemo(() => {
-    return items.filter(item => {
-      if (filterCliente !== "all" && item.cliente_id !== filterCliente) return false;
-      if (filterFazenda !== "all" && item.fazenda_id !== filterFazenda) return false;
-      if (filterProduto !== "all" && item.produto_id !== filterProduto && item.microrganismo_id !== filterProduto) return false;
-      return true;
-    });
-  }, [items, filterCliente, filterFazenda, filterProduto]);
-
+  const totalUniverso = totalFiltrado;
+  const filteredItems = useMemo(() => filtrarCockpit(items, {
+    cliente: filterCliente, fazenda: filterFazenda, produto: filterProduto, status: filterStatus,
+  }), [items, filterCliente, filterFazenda, filterProduto, filterStatus]);
 
   const { uniqueClientes, uniqueFazendas, uniqueProdutos } = useMemo(() => {
     const clientesMap = new Map();
@@ -328,11 +307,7 @@ export default function CockpitLaboratorio() {
   const alerts = useMemo(() => {
     const list: { id: string; type: string; message: string; item?: CockpitItem }[] = [];
     
-    if (osSemProgCount > 0) {
-      list.push({ id: "os-sem-prog", type: "OS sem Programação", message: `${osSemProgCount} ordens de serviço aguardam programação no PCP.` });
-    }
-
-    items.forEach(item => {
+    filteredItems.forEach(item => {
       if (item.stage === "aguardando" && item.created_at && (new Date().getTime() - new Date(item.created_at).getTime()) > 24 * 60 * 60 * 1000) {
         list.push({ id: `wait-prod-${item.id}`, type: "Produção Lenta", message: `OS ${item.numero_os} aguarda início de produção há mais de 24h.`, item });
       }
@@ -350,7 +325,7 @@ export default function CockpitLaboratorio() {
       }
     });
     return list.filter(a => !analyzedAlerts.includes(a.id));
-  }, [items, analyzedAlerts, osSemProgCount]);
+  }, [filteredItems, analyzedAlerts]);
 
   // Cards: valores do agregado server-side quando disponível; a contagem local
   // é apenas fallback enquanto a RPC não responde.
@@ -360,35 +335,23 @@ export default function CockpitLaboratorio() {
       aprovados: 0, reprovados: 0, envase_pendente: 0, estoque_disp: 0,
       entregas: 0, aplicacoes: 0, atrasadas: 0,
     };
-    items.forEach(item => {
+    filteredItems.forEach(item => {
       if (item.stage === "aguardando") local.demandas++;
-      if (item.stage === "em_producao") { local.producao++; local.vol_producao += item.volume_solicitado; }
-      if (item.stage === "aguardando_cq") { local.aguardando_cq += 1; local.vol_cq += item.volume_solicitado; }
-      if (item.lote_status === "aprovado") local.aprovados++;
+      if (item.stage === "em_producao") { local.producao++; local.vol_producao += item.volume_solicitado ?? 0; }
+      if (item.stage === "aguardando_cq") { local.aguardando_cq += 1; local.vol_cq += item.volume_solicitado ?? 0; }
+      if (item.stage === "aprovado_cq") local.aprovados++;
       if (item.lote_status === "reprovado") local.reprovados++;
-      if (item.stage === "aprovado_cq") local.envase_pendente++;
+      if (item.stage === "envase") local.envase_pendente++;
       if (item.stage === "estoque_reserva") local.estoque_disp++;
       if (item.stage === "entrega") local.entregas++;
       if (item.atrasado) local.atrasadas++;
     });
 
-    const g = metricasGlobais;
-    if (!g) return local;
-    return {
-      demandas: Number(g.demandas ?? local.demandas),
-      producao: Number(g.producao ?? local.producao),
-      vol_producao: Number(g.vol_producao ?? local.vol_producao),
-      aguardando_cq: Number(g.aguardando_cq ?? local.aguardando_cq),
-      vol_cq: Number(g.vol_cq ?? local.vol_cq),
-      aprovados: Number(g.aprovados ?? local.aprovados),
-      reprovados: Number(g.reprovados ?? local.reprovados),
-      envase_pendente: Number(g.envase_pendente ?? local.envase_pendente),
-      estoque_disp: Number(g.estoque_disponivel ?? 0) + Number(g.estoque_reservado ?? 0),
-      entregas: Number(g.em_entrega ?? 0) + Number(g.entregues ?? 0),
-      aplicacoes: local.aplicacoes,
-      atrasadas: Number(g.atrasadas ?? local.atrasadas),
+    return { ...local,
+      vol_producao: somaVolumes(filteredItems.filter(i => i.stage === "em_producao").map(i => i.volume_solicitado)),
+      vol_cq: somaVolumes(filteredItems.filter(i => i.stage === "aguardando_cq").map(i => i.volume_solicitado)),
     };
-  }, [items, metricasGlobais]);
+  }, [filteredItems]);
 
   // Abrir sheet diretamente quando recebemos ?os=<id>
   useEffect(() => {
@@ -412,22 +375,18 @@ export default function CockpitLaboratorio() {
     }
   }, [items, selectedItem?.os_id, isLoading]);
 
-  // Auto-atribui o responsável quando o usuário logado é do perfil "producao"
-  useEffect(() => {
-    if (!isProducaoRole) return;
-    if (!selectedItem || !profile?.id) return;
-    if (selectedItem.responsavel_id) return;
-    vincularResponsavel(selectedItem.id, profile.id);
-  }, [isProducaoRole, selectedItem?.id, selectedItem?.responsavel_id, profile?.id, vincularResponsavel]);
-
-
   const refetchCockpit = async () => {
     await qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] });
   };
 
   const runStepperAction = async (action: () => Promise<boolean>) => {
-    const success = await action();
-    if (success) await refetchCockpit();
+    if (!selectedItem || !podeOperar(selectedItem) || isFetching || isError) return;
+    await trava.current(async () => {
+      setBusy(true);
+      try { const success = await action(); await refetchCockpit(); return success; }
+      catch { toast.error("Não foi possível concluir. Atualize a esteira antes de tentar novamente."); return false; }
+      finally { setBusy(false); }
+    });
   };
 
   const handleAvancarEsteira = async (item: CockpitItem) => {
@@ -449,6 +408,7 @@ export default function CockpitLaboratorio() {
 
 
   const abrirGerarLote = (item: CockpitItem) => {
+    if (item.volume_solicitado === null || item.volume_solicitado <= 0) { toast.error("Volume solicitado indisponível ou inválido."); return; }
     if (item.lote_id) {
       toast.error(`Lote já gerado para esta OS (${item.codigo_lote ?? "—"}).`);
       return;
@@ -472,6 +432,7 @@ export default function CockpitLaboratorio() {
 
 
   const abrirRegistroCQ = (item: CockpitItem) => {
+    if (item.stage !== "aguardando_cq" || !podeOperar(item)) return;
     if (!item.lote_id) {
       toast.error("Gere o lote antes de registrar o CQ.");
       return;
@@ -556,16 +517,18 @@ export default function CockpitLaboratorio() {
 
 
 
-  const copySummary = (item: CockpitItem) => {
-    const summary = `OS: ${item.numero_os}\nCliente: ${item.cliente}\nProduto: ${item.produto}\nVolume: ${item.volume_solicitado.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}L\nLote: ${item.codigo_lote || 'N/A'}\nStatus: ${item.stage.replace('_', ' ')}`;
-    navigator.clipboard.writeText(summary);
-    toast.success("Resumo copiado!");
+  const copySummary = async (item: CockpitItem) => {
+    const summary = `OS: ${item.numero_os}\nCliente: ${item.cliente}\nProduto: ${item.produto}\nVolume: ${formatVolume(item.volume_solicitado)}\nLote: ${item.codigo_lote || 'N/A'}\nStatus: ${item.stage.replace('_', ' ')}`;
+    try { await navigator.clipboard.writeText(summary); toast.success("Resumo copiado!"); }
+    catch { toast.error("Não foi possível copiar o resumo."); }
   };
 
   const renderCard = (item: CockpitItem) => (
     <Card
       key={item.id}
       className="mb-2 border-l-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      role="button" tabIndex={0} aria-label={`Abrir OS ${item.numero_os}`}
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedItem(item); } }}
       onClick={() => setSelectedItem(item)}
       style={{ borderLeftColor: item.prioridade === "alta" ? "#ef4444" : item.prioridade === "media" ? "#f59e0b" : "#10b981" }}
     >
@@ -577,7 +540,7 @@ export default function CockpitLaboratorio() {
         <p className="text-xs font-bold leading-tight mb-0.5 truncate text-foreground">{item.produto}</p>
         <p className="text-[10px] text-muted-foreground truncate mb-1.5">{item.titular_nome}</p>
         <div className="flex items-center justify-between text-[10px]">
-          <span className="font-semibold">{item.volume_solicitado.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}L</span>
+          <span className="font-semibold">{formatVolume(item.volume_solicitado)}</span>
           <span className={cn("flex items-center gap-1", item.atrasado ? "text-red-500 font-bold" : "text-muted-foreground")}>
             <Calendar className="h-2.5 w-2.5" />
             {item.data_programada ? formatDateDisplay(item.data_programada) : "S/D"}
@@ -606,10 +569,13 @@ export default function CockpitLaboratorio() {
     <div className="space-y-6 pb-10">
       <div className="flex justify-between items-end flex-wrap gap-4">
         <PageHeader title="Cockpit Operacional" description="Gestão em tempo real da esteira do laboratório." />
-        <SeedFixturesButton />
+        <Button variant="outline" disabled={isFetching} onClick={() => { void refetch(); void qc.invalidateQueries({ queryKey: ["cockpit-producao-resumo"] }); }}>Atualizar</Button>
       </div>
 
 
+      {isLoading && <p role="status">Carregando esteira...</p>}
+      {isError && <div role="alert">Não foi possível carregar a esteira. <Button variant="outline" onClick={() => void refetch()}>Tentar novamente</Button></div>}
+      <p className="text-xs text-muted-foreground">Indicadores e alertas: OS carregadas no recorte atual. Tempos médios: visão geral.</p>
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <div className="xl:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
@@ -633,7 +599,7 @@ export default function CockpitLaboratorio() {
                 <kpi.icon className={cn("h-3 w-3", kpi.color)} />
                 <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">{kpi.label}</p>
               </div>
-              <p className="text-xl font-bold">{kpi.val}</p>
+              <p className="text-xl font-bold">{isLoading || isError ? "—" : kpi.val}</p>
             </CardContent></Card>
           ))}
         </div>
@@ -642,7 +608,7 @@ export default function CockpitLaboratorio() {
           <CardContent className="p-4">
             <h3 className="font-bold text-xs uppercase tracking-widest flex items-center gap-2 text-orange-800 mb-3"><AlertTriangle className="h-3.5 w-3.5" /> Alertas Operacionais</h3>
             <ScrollArea className="h-[120px]">
-              {alerts.length > 0 ? alerts.map(a => (
+              {isLoading || isError ? <p>Alertas indisponíveis.</p> : alerts.length > 0 ? alerts.map(a => (
                 <div key={a.id} className="flex justify-between items-center text-[10px] bg-background p-2 rounded mb-2 border border-orange-100 shadow-sm group">
                   <div className="flex flex-col flex-1 cursor-pointer" onClick={() => a.item && setSelectedItem(a.item)}>
                     <span className="font-bold text-orange-900">{a.type}</span>
@@ -650,7 +616,7 @@ export default function CockpitLaboratorio() {
                   </div>
                   <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" onClick={() => reconhecerAlerta(a.id, a.item?.os_id)}><Check className="h-3 w-3" /></Button>
                 </div>
-              )) : <div className="text-center py-6 text-orange-600 italic text-[10px]">Tudo em dia!</div>}
+              )) : <div className="text-center py-6 text-orange-600 italic text-[10px]">Nenhum alerta no recorte.</div>}
             </ScrollArea>
           </CardContent>
         </Card>
@@ -659,13 +625,17 @@ export default function CockpitLaboratorio() {
       <div className="flex flex-col lg:flex-row gap-3 items-center p-3 border rounded-lg bg-background">
         <div className="relative w-full lg:w-1/3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar OS, cliente, lote..." className="pl-9 h-9 text-xs" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input aria-label="Buscar OS, cliente ou lote" placeholder="Buscar OS, cliente, lote..." className="pl-9 h-9 text-xs" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <p className="text-[11px] text-muted-foreground whitespace-nowrap" aria-live="polite">
           Mostrando <span className="font-semibold">{filteredItems.length}</span> de{" "}
           <span className="font-semibold">{totalUniverso || items.length}</span> OS
         </p>
         <div className="flex flex-wrap gap-2 w-full lg:flex-1 justify-end">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger aria-label="Status" className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todos os status</SelectItem>{Array.from(new Set(items.map(i => i.status_esteira_oficial).filter(Boolean))).sort().map(status => <SelectItem key={status} value={status}>{status.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+          </Select>
           <Select value={filterOrigem} onValueChange={setFilterOrigem}>
             <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue placeholder="Origem" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Todas</SelectItem><SelectItem value="manual">Manual</SelectItem><SelectItem value="onfarm">On-Farm</SelectItem></SelectContent>
@@ -674,7 +644,7 @@ export default function CockpitLaboratorio() {
             <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Todas</SelectItem><SelectItem value="alta">Alta</SelectItem><SelectItem value="media">Média</SelectItem><SelectItem value="baixa">Baixa</SelectItem></SelectContent>
           </Select>
-          <Select value={filterCliente} onValueChange={setFilterCliente}>
+          <Select value={filterCliente} onValueChange={value => { setFilterCliente(value); setFilterFazenda("all"); setFilterProduto("all"); }}>
             <SelectTrigger className="h-9 w-[130px] text-xs truncate"><SelectValue placeholder="Cliente" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Clientes</SelectItem>
@@ -696,7 +666,7 @@ export default function CockpitLaboratorio() {
             </SelectContent>
           </Select>
           <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => { 
-            setSearch(""); setFilterPrioridade("all"); setFilterOrigem("all"); 
+            setFilterStatus("all"); setSearch(""); setFilterPrioridade("all"); setFilterOrigem("all"); 
             setFilterCliente("all"); setFilterFazenda("all"); setFilterProduto("all"); 
           }}>Limpar</Button>
         </div>
@@ -704,7 +674,7 @@ export default function CockpitLaboratorio() {
       
       <div className="flex-1 overflow-hidden mt-2">
         <Tabs defaultValue="fluxo" className="h-full flex flex-col">
-          <div className="px-4 border-b bg-white">
+          <div className="px-4 border-b bg-background overflow-x-auto">
             <TabsList className="bg-muted/50 mb-[-1px]">
               <TabsTrigger value="fluxo" className="flex items-center gap-2 py-2">
                 <Target className="h-4 w-4" /> <span>Fluxo de Produção</span>
@@ -713,7 +683,7 @@ export default function CockpitLaboratorio() {
                 <AlertTriangle className="h-4 w-4" /> 
                 <span>Pendências</span>
                 <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                  {alerts.length}
+                  {isLoading || isError ? "—" : alerts.length}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="producao" className="flex items-center gap-2 py-2">
@@ -776,8 +746,8 @@ export default function CockpitLaboratorio() {
         </Tabs>
       </div>
 
-      {items.length >= limit && (
-        <div className="flex justify-center mt-6"><Button variant="outline" onClick={() => setLimit(prev => prev + 100)}>Carregar Mais</Button></div>
+      {(listaEsteira?.items.length ?? 0) < totalFiltrado && (
+        <div className="flex justify-center mt-6"><Button variant="outline" disabled={isFetching} onClick={() => setLimit(prev => prev + 100)}>Carregar Mais</Button></div>
       )}
 
       <Sheet open={!!selectedItem} onOpenChange={(o) => {
@@ -822,7 +792,7 @@ export default function CockpitLaboratorio() {
 
                       {/* Linha 1: volume + produto + lote/CQ */}
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-lg font-bold text-foreground">{selectedItem.volume_solicitado.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}L</span>
+                        <span className="text-lg font-bold text-foreground">{formatVolume(selectedItem.volume_solicitado)}</span>
                         <span className="text-sm text-muted-foreground">·</span>
                         <span className="text-sm font-semibold text-foreground truncate">
                           {selectedItem.microrganismo_nome || selectedItem.produto}
@@ -844,12 +814,12 @@ export default function CockpitLaboratorio() {
                         </div>
                       </div>
 
-                      <ComposicaoProducaoCard
+                      {selectedItem.volume_solicitado !== null && <ComposicaoProducaoCard
                         osId={selectedItem.os_id}
                         produtoId={selectedItem.produto_id}
                         microrganismoFallback={selectedItem.microrganismo_id ? { id: selectedItem.microrganismo_id, nome: selectedItem.microrganismo_nome ?? selectedItem.produto } : null}
                         volumeTotalL={selectedItem.volume_solicitado}
-                      />
+                      />}
 
                       {/* Linha 2: meta inline editável */}
                       <div className="flex items-center gap-2 flex-wrap text-[11px]">
@@ -863,7 +833,7 @@ export default function CockpitLaboratorio() {
                           <PopoverContent className="w-auto p-0" align="start">
                             <CalendarComponent
                               mode="single"
-                              selected={selectedItem.data_programada ? new Date(selectedItem.data_programada) : undefined}
+                              selected={selectedItem.data_programada ? new Date(`${selectedItem.data_programada.slice(0, 10)}T12:00:00`) : undefined}
                               onSelect={(date) => {
                                 if (!date) return;
                                 const dataISO = format(date, 'yyyy-MM-dd');
@@ -902,9 +872,9 @@ export default function CockpitLaboratorio() {
                         <span className="text-muted-foreground">·</span>
 
                         <Select
-                          value={selectedItem.responsavel_id || (isProducaoRole && profile?.id ? profile.id : "none")}
+                          value={selectedItem.responsavel_id || "none"}
                           onValueChange={(val) => val !== "none" && vincularResponsavel(selectedItem.id, val)}
-                          disabled={isProducaoRole || (!canEditResponsavel && !!selectedItem.responsavel_id)}
+                          disabled={!canEditResponsavel || busy}
                         >
                           <SelectTrigger className="h-7 w-auto gap-1.5 px-2 text-[11px] font-semibold border-none bg-transparent shadow-none focus:ring-0 disabled:opacity-100">
                             <UserPlus className="h-3 w-3" />
@@ -931,6 +901,7 @@ export default function CockpitLaboratorio() {
                     <div className="rounded-lg border bg-white p-4">
                       <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3">Passo a passo da esteira</p>
                       <EsteiraStepper
+                        disabled={busy || isFetching || isError || !podeOperar(selectedItem)}
                         item={{
                           id: selectedItem.id,
                           os_id: selectedItem.os_id,
@@ -958,12 +929,12 @@ export default function CockpitLaboratorio() {
                   </TabsContent>
                   <TabsContent value="history" className="space-y-6">
                     <div className="relative pl-6 border-l-2 border-slate-200 space-y-8 ml-3 py-2">
-                       {history.length > 0 ? history.map((event: any) => (
+                       {historyLoading ? <p role="status">Carregando histórico...</p> : historyError ? <div role="alert">Histórico indisponível. <Button onClick={() => void refetchHistory()}>Tentar novamente</Button></div> : history.length > 0 ? history.map((event: any) => (
                         <div key={event.id} className="relative">
                           <div className="absolute -left-[31px] top-1 h-4 w-4 rounded-full bg-primary border-4 border-background" />
                           <div>
-                            <p className="text-sm font-bold text-foreground">{event.acao.replace('_', ' ').toUpperCase()}</p>
-                            <p className="text-xs text-muted-foreground mb-1">{formatDateTimeDisplay(event.created_at)}</p>
+                            <p className="text-sm font-bold text-foreground">{(event.acao || '—').replace(/_/g, ' ').toUpperCase()}</p>
+                            <p className="text-xs text-muted-foreground mb-1">{timestampBrasilia(event.created_at)}</p>
                             {event.observacao && <p className="text-[11px] bg-muted/50 p-2 rounded italic text-muted-foreground">"{event.observacao}"</p>}
                           </div>
                         </div>
@@ -980,7 +951,7 @@ export default function CockpitLaboratorio() {
                   <FinalizarOSButton 
                     osId={selectedItem.os_id}
                     origem={selectedItem.origem}
-                    podeFinalizar={selectedItem.pode_finalizar}
+                    podeFinalizar={selectedItem.pode_finalizar && podeOperar(selectedItem) && !busy && !isFetching && !isError}
                     bloqueios={selectedItem.bloqueios}
                     className="w-full h-12 text-base"
                     onSuccess={() => {
