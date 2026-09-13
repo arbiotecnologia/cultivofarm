@@ -757,14 +757,17 @@ export default function ConsultorTecnico() {
               ) : (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-200">
                   <div className="flex items-center justify-between border-b pb-2">
-                    <button 
+                    <button
                       onClick={() => {
                         setSelectedVistoria(null);
                         setSelectedPhotos([]);
+                        setFocusedPhotoIndex(null);
+                        setZoomedImageIndex(null);
+                        setEditingCaption(null);
+                        setCaptionValue("");
                       }}
                       className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
                     >
-
                       ← Voltar à lista
                     </button>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Detalhes da Visita</span>
