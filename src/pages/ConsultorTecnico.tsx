@@ -919,7 +919,7 @@ export default function ConsultorTecnico() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelected(null)}>Fechar</Button>
+            <Button variant="outline" onClick={fecharConsultor}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
