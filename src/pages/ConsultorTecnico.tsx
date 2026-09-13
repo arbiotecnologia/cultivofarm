@@ -879,6 +879,19 @@ export default function ConsultorTecnico() {
                   </div>
                   {loadingClientes ? (
                     <div className="text-xs text-muted-foreground">Carregando…</div>
+                  ) : erroClientes ? (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                      <p className="text-xs text-destructive">Não foi possível carregar os clientes vinculados.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 h-7 text-[11px]"
+                        onClick={() => { void refetchClientes(); }}
+                        disabled={fetchingClientes}
+                      >
+                        {fetchingClientes ? "Tentando..." : "Tentar novamente"}
+                      </Button>
+                    </div>
                   ) : clientesVinc && clientesVinc.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {clientesVinc.map((c: any) => (
