@@ -17,7 +17,7 @@ export function somaVolumes(values: unknown[]): number | null {
 }
 
 export function statusConhecido(status: unknown): boolean {
-  return typeof status === "string" && (Object.hasOwn(STAGE_BY_STATUS, status.toLowerCase()) || status === "aguardando");
+  return typeof status === "string" && (Object.prototype.hasOwnProperty.call(STAGE_BY_STATUS, status.toLowerCase()) || status === "aguardando");
 }
 
 export function podeOperar(item: { os_id?: string; id?: string; status_esteira_oficial?: string }): boolean {
