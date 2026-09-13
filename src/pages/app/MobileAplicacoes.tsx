@@ -153,17 +153,37 @@ export default function MobileAplicacoes() {
   };
 
   const handleSubmit = async () => {
-    if (!osId) return toast.error("Selecione a OS");
-    if (!doseAplicada || !areaAplicada) return toast.error("Informe dose e área");
-    if (rectifyId && !motivoRetificacao) return toast.error("Informe o motivo da retificação");
+    if (submitting) return;
+    const horaFimAgora = new Date().toISOString();
+    const erro = validarAplicacao({
+      osId,
+      doseAplicada,
+      areaAplicada,
+      volumeCalda,
+      umidade,
+      vento,
+      temperatura,
+      horaInicio,
+      horaFim: horaFimAgora,
+      rectifyId,
+      motivoRetificacao,
+    });
+    if (erro) return toast.error(erro);
+    if (rectifyId) {
+      const erroMotivo = validarMotivoRetificacao(motivoRetificacao);
+      if (erroMotivo) return toast.error(erroMotivo);
+    }
 
     setSubmitting(true);
+    // Id gerado antes do upload: os objetos já nascem no caminho definitivo.
+    const aplicacaoId = crypto.randomUUID();
+    let caminhosEnviados: string[] = [];
     try {
       const aplicacaoData = {
         ordem_servico_id: osId,
         data_aplicacao: new Date().toISOString().split("T")[0],
         hora_inicio: horaInicio,
-        hora_fim: new Date().toISOString(),
+        hora_fim: horaFimAgora,
         responsavel_id: user?.id || null,
         modo_aplicacao: modoAplicacao || null,
         produto_usado_id: osSel?.produtos?.id || null,
@@ -180,50 +200,70 @@ export default function MobileAplicacoes() {
         resultado_inicial: (resultado as any) || null,
         observacoes: observacoes || null,
         created_by: user?.id || null,
-        // Retificação
-        parent_id: rectifyId || null,
-        versao: rectifyId && aplicacaoOriginal ? (aplicacaoOriginal.versao || 1) + 1 : 1,
-        motivo_retificacao: motivoRetificacao || null,
-        is_latest: true
+        motivo_retificacao: motivoRetificacao.trim() || null,
       };
 
-      if (rectifyId) {
-        await supabase.from("aplicacoes").update({ is_latest: false }).eq("id", rectifyId);
-      }
+      const enviadas = evidencias.length && osSel
+        ? await uploadEvidencias(evidencias, aplicacaoId, osSel.cliente_id)
+        : [];
+      caminhosEnviados = enviadas.map(e => e.storage_path);
 
-      const { data: ins, error } = await supabase.from("aplicacoes").insert(aplicacaoData).select("id").single();
-      if (error) throw error;
+      const { error: rpcErro } = await (supabase as any).rpc("rpc_salvar_aplicacao_v1", {
+        p_aplicacao_id: aplicacaoId,
+        p_payload: aplicacaoData,
+        p_rectify_id: rectifyId || null,
+        p_evidencias: enviadas,
+        p_evidencias_manter: [],
+      });
+      if (rpcErro) throw rpcErro;
+      caminhosEnviados = [];
 
-      if (evidencias.length && osSel) {
-        await uploadEvidencias(evidencias, ins.id, osSel.cliente_id, user?.id);
-      }
-      
-      if (osSel) {
-        await supabase.from("ordens_servico").update({ status: "finalizada" as any }).eq("id", osId);
-        await supabase.rpc("rpc_create_portal_notification_secure", {
-          _cliente_id: osSel.cliente_id,
-          _tipo: rectifyId ? "alerta" : "aplicacao",
-          _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
-          _mensagem: rectifyId
-            ? `Registro corrigido: ${osSel.produtos?.nome || "Produto"} em ${osSel.talhoes?.nome}`
-            : `${osSel.produtos?.nome || "Produto"} aplicado em ${osSel.fazendas?.nome} / ${osSel.talhoes?.nome}`,
-          _link: null,
-          _source_type: "aplicacao",
-          _source_id: ins.id,
-          _idempotency_key: `mobile-aplic-${ins.id}-${rectifyId ? "rect" : "new"}`,
+      // Passos pós-registro não desfazem o cadastro já salvo.
+      try {
+        const { data: prog } = await supabase
+          .from("programacao_producao").select("id").eq("ordem_servico_id", osId).limit(1).maybeSingle();
+        const { error: avancoErro } = await (supabase as any).rpc("rpc_avancar_esteira_laboratorio", {
+          p_os_id: osId,
+          p_origem: "manual",
+          p_etapa_destino: "finalizada",
+          p_programacao_id: prog?.id || null,
         });
+        if (avancoErro) throw avancoErro;
+      } catch {
+        toast.warning("Aplicação salva, mas a OS não pôde ser finalizada.");
       }
 
+      if (osSel) {
+        try {
+          const { error: notifErro } = await (supabase as any).rpc("rpc_create_portal_notification_secure", {
+            _cliente_id: osSel.cliente_id,
+            _tipo: rectifyId ? "alerta" : "aplicacao",
+            _titulo: rectifyId ? "Aplicação retificada" : "Aplicação realizada",
+            _mensagem: rectifyId
+              ? `Registro corrigido: ${osSel.produtos?.nome || "Produto"} em ${osSel.talhoes?.nome}`
+              : `${osSel.produtos?.nome || "Produto"} aplicado em ${osSel.fazendas?.nome} / ${osSel.talhoes?.nome}`,
+            _link: null,
+            _source_type: "aplicacao",
+            _source_id: aplicacaoId,
+            _idempotency_key: `mobile-aplic-${aplicacaoId}-${rectifyId ? "rect" : "new"}`,
+          });
+          if (notifErro) throw notifErro;
+        } catch {
+          toast.warning("Aplicação salva, mas o produtor não foi notificado.");
+        }
+      }
 
       toast.success(rectifyId ? "Aplicação retificada!" : "Aplicação registrada!");
       qc.invalidateQueries({ queryKey: ["aplicacoes"] });
       navigate("/app");
     } catch (err: any) {
+      await limparObjetosEvidencias(caminhosEnviados);
       toast.error(err.message || "Erro ao registrar");
     } finally {
       setSubmitting(false);
     }
   };
+
 
   if (loadingOriginal) {
     return (
