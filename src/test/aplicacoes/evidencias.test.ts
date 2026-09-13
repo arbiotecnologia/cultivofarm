@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   ACCEPT_EVIDENCIAS,
   MAX_EVIDENCIA_BYTES,
+  MIME_EVIDENCIAS_PERMITIDOS,
   caminhoEvidencia,
   extensaoSegura,
   mimePermitido,
@@ -13,16 +14,43 @@ import {
 
 const arquivo = (type: string, size = 1024, name = "a.bin") => ({ name, type, size });
 
+/** Lista canônica exata do bucket/constraint do Supabase CultivoFarm. */
+const MIME_CANONICOS = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "application/pdf",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/wav",
+  "audio/ogg",
+  "audio/webm",
+];
+
 describe("evidências de aplicação", () => {
-  it.each([
-    "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif",
-    "application/pdf", "video/mp4", "video/webm", "video/quicktime",
-    "audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/wav", "audio/ogg",
-  ])("aceita %s", m => expect(mimePermitido(m)).toBe(true));
+  it("a allowlist do frontend é exatamente igual à lista canônica do bucket", () => {
+    expect(MIME_EVIDENCIAS_PERMITIDOS).toEqual(MIME_CANONICOS);
+    expect(ACCEPT_EVIDENCIAS).toBe(MIME_CANONICOS.join(","));
+  });
+
+  it.each(MIME_CANONICOS)("aceita %s", m => expect(mimePermitido(m)).toBe(true));
 
   it.each(["application/x-msdownload", "text/html", "image/svg+xml", "", "application/zip"])(
     "recusa %s", m => expect(mimePermitido(m)).toBe(false),
   );
+
+  it("rejeita aliases de áudio que não estão na allowlist canônica", () => {
+    const aliasesProibidos = ["audio/mp3", "audio/m4a", "audio/x-m4a", "audio/x-wav", "audio/wave"];
+    for (const mime of aliasesProibidos) {
+      expect(mimePermitido(mime)).toBe(false);
+      expect(extensaoSegura(mime)).toBe("bin");
+    }
+  });
 
   it("limita a 10MB e recusa arquivo vazio", () => {
     expect(MAX_EVIDENCIA_BYTES).toBe(10 * 1024 * 1024);
@@ -37,7 +65,9 @@ describe("evidências de aplicação", () => {
     expect(tipoEvidencia("audio/ogg")).toBe("audio");
     expect(tipoEvidencia("application/pdf")).toBe("documento");
     expect(extensaoSegura("video/quicktime")).toBe("mov");
-    expect(extensaoSegura("audio/x-m4a")).toBe("m4a");
+    expect(extensaoSegura("audio/webm")).toBe("webm");
+    expect(extensaoSegura("audio/mp4")).toBe("m4a");
+    expect(extensaoSegura("audio/x-m4a")).toBe("bin");
     expect(caminhoEvidencia("cli", "apl", "uuid", "image/jpeg")).toBe("cli/apl/uuid.jpg");
   });
 
