@@ -126,7 +126,7 @@ export default function ControleQualidade() {
   })), [cqs, refs]);
 
   const periodo = validarPeriodo(inicio, fim);
-  const erroPeriodo = periodo.valido ? '' : periodo.mensagem;
+  const erroPeriodo = 'mensagem' in periodo ? periodo.mensagem : '';
   const periodoInvalido = !periodo.valido;
   const filtrados = useMemo(() => {
     if (periodoInvalido) return [];
