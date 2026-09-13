@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,19 +7,15 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   MessageSquare, Eye,
   Clock, AlertTriangle, Factory, Truck, ClipboardCheck, Search,
   FileText, Package, Sprout, History,
 } from "lucide-react";
-import { toast } from "sonner";
 import { OSFlowTimeline } from "@/components/visita/OSFlowTimeline";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { RecomendacaoChat } from "@/components/shared/RecomendacaoChat";
@@ -125,12 +121,6 @@ export default function FluxoTecnico() {
     },
     refetchInterval: 300000,
   });
-
-  const refetchAll = () => {
-    void refetchPendentes();
-    void refetchAprovacoes();
-    void refetchOS();
-  };
 
   const limparSelecao = () => {
     setSelectedRegistro(null);
