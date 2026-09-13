@@ -1,8 +1,15 @@
 # Roadmap de Tarefas
 
-## CQ — correção consolidada 2026-09-13
-- [x] Período acessível; 30/30 testes CQ; SQL/rollback preparados sem aplicar; gate exit 0 e build automático OK às 04:15:15 UTC.
-- Reanálise: bloqueio conservador preparado, não homologado; execução SQL/concorrência e revisão de rollback dependem de autorização futura. NO-GO de aplicação documentado.
+## CQ — alinhamento final 2026-09-13
+- [x] Subconjunto seguro aplicado manualmente e pós-check aprovado (relato do usuário; sem banco nesta rodada).
+- database=postgres; cq_rows=0; reference_rows=0; RLS das duas tabelas=true; dangerous_grants_remaining=0 (TRUNCATE/TRIGGER/REFERENCES para anon/authenticated).
+- fn_cq_ultimo_resultado: security_definer=false, anon_execute=false, authenticated_execute=true.
+- fn_validate_envase_cq: anon_execute=false, authenticated_execute=false; trigger existente e habilitado=true.
+- cq_h5_ph/cq_h5_concentracao/cq_h5_referencia existentes e validadas: rejeitam NaN/Infinity/-Infinity, faixas inválidas e concentração negativa.
+- Período invertido e limite igual verificados visualmente pelo usuário: funcionam.
+- [x] SQL Editor sem metacomandos, somente subconjunto seguro; reanálise removida do SQL executável; testes/documentação alinhados.
+- Dívidas: atomicidade CQ+avanço e desenho de quarentena/reanálise; NO-GO de homologação desses cenários até desenho e ensaios autorizados.
+- Validação local: somente testes CQ e gate de vínculo; build/typecheck pelos sinais automáticos disponíveis. Sem suíte completa.
 - Demais módulos e destinos históricos abaixo permanecem suspensos; não executar.
 
 ## Lotes — 2026-09-13

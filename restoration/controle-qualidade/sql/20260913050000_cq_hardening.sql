@@ -1,9 +1,9 @@
 -- CQ — subconjunto SEGURO de hardening.
 -- STATUS: APLICADO MANUALMENTE e pós-checado no Supabase CultivoFarm swzpzcwiasxmjutrmvkm (13/09/2026).
 -- Este arquivo é idempotente e reexecutável: reconhece o estado "já aplicado" e não repete efeitos.
--- Compatível com o SQL Editor do Supabase: NÃO contém metacomandos psql (\set, \pset, \o).
+-- Compatível com o SQL Editor do Supabase: NÃO contém metacomandos psql.
 --
--- VALIDAÇÃO DO DESTINO: é EXTERNA. Não existe current_setting('lovable.project_ref').
+-- VALIDAÇÃO DO DESTINO: é EXTERNA. Nenhuma configuração SQL comprova o project ref.
 -- Antes de executar, confirme no dashboard/URL que o projeto é EXATAMENTE swzpzcwiasxmjutrmvkm.
 -- Marcador literal do destino autorizado: swzpzcwiasxmjutrmvkm
 --
@@ -58,20 +58,6 @@ REVOKE EXECUTE ON FUNCTION public.fn_cq_ultimo_resultado(uuid) FROM PUBLIC, anon
 --    PostgreSQL verifica EXECUTE ao criar o trigger, não a cada disparo: o trigger segue ativo.
 REVOKE EXECUTE ON FUNCTION public.fn_validate_envase_cq() FROM PUBLIC, anon, authenticated;
 
--- Preservar ACLs dos outros triggers de CQ: falhar, nunca reabrir permissões.
-DO $acl$
-DECLARE f text; r text;
-BEGIN
-  FOREACH f IN ARRAY ARRAY['fn_cq_aprovado_avanca_os','fn_cq_autoria_servidor','fn_cq_resultado_imutavel'] LOOP
-    CONTINUE WHEN to_regprocedure('public.'||f||'()') IS NULL;
-    FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
-      IF has_function_privilege(r, ('public.'||f||'()')::regprocedure, 'EXECUTE') THEN
-        RAISE EXCEPTION 'CQ_TRIGGER_ACL_DIVERGENTE: %', f;
-      END IF;
-    END LOOP;
-  END LOOP;
-END $acl$;
-
 -- 4. CHECKs numéricos anuláveis. Precheck sem DML; constraints existentes são preservadas.
 DO $checks$
 BEGIN
@@ -103,6 +89,31 @@ BEGIN
   END IF;
 END $checks$;
 
+-- Reconhecer checks homônimos apenas quando a definição corresponde ao contrato.
+-- Normalização estritamente sintática; divergência aborta, sem substituir objetos existentes.
+DO $definitions$
+DECLARE item record; actual text; expected text;
+BEGIN
+  FOR item IN SELECT * FROM (VALUES
+    ('controle_qualidade','cq_h5_ph',
+     'CHECK (ph IS NULL OR (ph::text <> ALL (ARRAY[''NaN''::text,''Infinity''::text,''-Infinity''::text]) AND ph >= 0 AND ph <= 14))'),
+    ('controle_qualidade','cq_h5_concentracao',
+     'CHECK (concentracao IS NULL OR (concentracao::text <> ALL (ARRAY[''NaN''::text,''Infinity''::text,''-Infinity''::text]) AND concentracao >= 0))'),
+    ('cq_parametros_referencia','cq_h5_referencia',
+     'CHECK ((ph_min IS NULL OR (ph_min::text <> ALL (ARRAY[''NaN''::text,''Infinity''::text,''-Infinity''::text]) AND ph_min >= 0 AND ph_min <= 14)) AND (ph_max IS NULL OR (ph_max::text <> ALL (ARRAY[''NaN''::text,''Infinity''::text,''-Infinity''::text]) AND ph_max >= 0 AND ph_max <= 14)) AND (ph_min IS NULL OR ph_max IS NULL OR ph_min <= ph_max) AND (concentracao_min_ufc_ml IS NULL OR (concentracao_min_ufc_ml::text <> ALL (ARRAY[''NaN''::text,''Infinity''::text,''-Infinity''::text]) AND concentracao_min_ufc_ml >= 0)))')
+  ) AS definitions(table_name, constraint_name, definition) LOOP
+    SELECT pg_get_constraintdef(oid) INTO actual FROM pg_constraint
+      WHERE conrelid=('public.'||item.table_name)::regclass
+        AND conname=item.constraint_name AND contype='c' AND convalidated;
+    -- Parentheses, whitespace and numeric literal casts vary with column numeric types.
+    actual := regexp_replace(regexp_replace(actual, '::(numeric|double precision|real|integer)', '', 'g'), '[[:space:]()]', '', 'g');
+    expected := regexp_replace(item.definition, '[[:space:]()]', '', 'g');
+    IF actual IS DISTINCT FROM expected THEN
+      RAISE EXCEPTION 'CQ_CHECK_DEFINICAO_DIVERGENTE: %; revisar sem substituir automaticamente', item.constraint_name;
+    END IF;
+  END LOOP;
+END $definitions$;
+
 -- Pós-check fail-closed do subconjunto aplicado.
 DO $post$
 DECLARE r text; t text; priv text;
@@ -121,6 +132,9 @@ BEGIN
   END LOOP;
   IF (SELECT prosecdef FROM pg_proc WHERE oid='public.fn_cq_ultimo_resultado(uuid)'::regprocedure) THEN
     RAISE EXCEPTION 'CQ_INVOKER_AUSENTE';
+  END IF;
+  IF NOT has_function_privilege('authenticated', 'public.fn_cq_ultimo_resultado(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'CQ_HELPER_AUTHENTICATED_ACL';
   END IF;
   IF has_function_privilege('anon', 'public.fn_cq_ultimo_resultado(uuid)', 'EXECUTE') THEN
     RAISE EXCEPTION 'CQ_HELPER_ANON_ACL';

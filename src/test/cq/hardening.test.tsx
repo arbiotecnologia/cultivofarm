@@ -50,17 +50,20 @@ describe('CQ hardening local — sem banco', () => {
     expect(sql).toContain('swzpzcwiasxmjutrmvkm');
   });
   it('idempotente, sem DML e com pos-check explicito', () => {
-    expect(sql).not.toMatch(/\b(INSERT INTO|DELETE FROM|TRUNCATE|UPDATE public\.)/);
+    expect(sql.replace(/--[^\n]*/g, '')).not.toMatch(/(?:^|;)\s*(INSERT|DELETE|TRUNCATE|UPDATE)\b/im);
     expect(sql).toContain('IF NOT EXISTS (SELECT 1 FROM pg_constraint');
     expect(sql).toContain('dangerous_grants_remaining');
     expect(sql).toContain('CQ_RLS_ALTERADA');
     expect(sql).toContain('has_table_privilege');
     expect(sql).toContain('tgenabled');
   });
-  it('checks finitos, pré/pós e rollback capturado', () => {
+  it('checks finitos, pré/pós e definição homônima verificada', () => {
     expect(sql).toContain("NOT IN ('NaN','Infinity','-Infinity')");
     expect(sql).toContain('ph BETWEEN 0 AND 14'); expect(sql).toContain('concentracao >= 0');
     expect(sql).toContain('ph_min <= ph_max'); expect(sql).toContain('concentracao_min_ufc_ml >= 0');
     expect(sql).toContain('ph_min BETWEEN 0 AND 14');
+    expect(sql).toContain('pg_get_constraintdef');
+    expect(sql).toContain('CQ_CHECK_DEFINICAO_DIVERGENTE');
+    expect(sql).toContain('CQ_HELPER_AUTHENTICATED_ACL');
   });
 });
