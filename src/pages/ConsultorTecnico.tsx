@@ -421,9 +421,15 @@ export default function ConsultorTecnico() {
           </CardHeader>
           <CardContent>
              <div className="text-2xl font-bold font-mono-data">
-               {metricasVisitas.isLoading ? "…" : formatMetric(metricasVisitas.data?.totalCheckinsRealizados, "", 0)}
+               {metricasVisitas.isLoading
+                 ? "…"
+                 : metricasVisitas.error
+                   ? "—"
+                   : formatMetric(metricasVisitas.data?.totalCheckinsRealizados, "", 0)}
              </div>
-
+             {!metricasVisitas.isLoading && metricasVisitas.error && (
+               <p className="text-[11px] text-destructive mt-1">Indisponível no momento.</p>
+             )}
           </CardContent>
         </Card>
         <Card>
@@ -433,9 +439,15 @@ export default function ConsultorTecnico() {
           </CardHeader>
           <CardContent>
              <div className="text-2xl font-bold font-mono-data">
-               {metricasVisitas.isLoading ? "…" : formatMetric(metricasVisitas.data?.totalVisitasRealizadas, "", 0)}
+               {metricasVisitas.isLoading
+                 ? "…"
+                 : metricasVisitas.error
+                   ? "—"
+                   : formatMetric(metricasVisitas.data?.totalVisitasRealizadas, "", 0)}
              </div>
-
+             {!metricasVisitas.isLoading && metricasVisitas.error && (
+               <p className="text-[11px] text-destructive mt-1">Indisponível no momento.</p>
+             )}
           </CardContent>
         </Card>
         <Card>
