@@ -27,16 +27,10 @@ interface Props {
   onCreated?: () => void;
 }
 
-const generateLotCode = () => {
-  const now = new Date();
-  return `LOT-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(Math.floor(Math.random() * 9999)).padStart(4, "0")}`;
-};
-
 export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props) {
   const { gerarLote } = useEsteiraLaboratorio();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    codigo_lote: "",
     volume_produzido: "",
     responsavel_producao: "",
     tanque: "",
@@ -47,7 +41,6 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
   useEffect(() => {
     if (open && target) {
       setForm({
-        codigo_lote: generateLotCode(),
         volume_produzido: target.volume_solicitado ? String(target.volume_solicitado) : "",
         responsavel_producao: "",
         tanque: "",
@@ -65,8 +58,8 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
     if (saving) return;
     setSaving(true);
     try {
+      // O código do lote é gerado exclusivamente pelo servidor.
       const loteData = {
-        codigo_lote: form.codigo_lote,
         produto_id: target.produto_id || null,
         microrganismo_id: target.microrganismo_id || null,
         programacao_id: target.programacao_id,
@@ -79,7 +72,6 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
       const result = await gerarLote(loteData, target.os_id, target.origem);
       if (result) {
         setForm({
-          codigo_lote: "",
           volume_produzido: "",
           responsavel_producao: "",
           tanque: "",
@@ -112,20 +104,13 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label>Código do Lote *</Label>
-            <div className="flex gap-2">
-              <Input
-                value={form.codigo_lote}
-                onChange={(e) => setForm({ ...form, codigo_lote: e.target.value })}
-                className="font-mono"
-                required
-              />
-              <Button type="button" variant="outline" size="sm" onClick={() => setForm({ ...form, codigo_lote: generateLotCode() })}>
-                Gerar
-              </Button>
-            </div>
+          <div className="rounded-md border border-dashed p-3">
+            <p className="text-xs text-muted-foreground">
+              O código do lote é gerado automaticamente pelo sistema no momento do registro,
+              no padrão <span className="font-mono">LT-AAAA-0000</span>. Ele será exibido após a confirmação.
+            </p>
           </div>
+
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -203,7 +188,7 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
             />
           </div>
 
-          <Button type="submit" className="w-full h-11 font-bold" disabled={saving || !form.codigo_lote}>
+          <Button type="submit" className="w-full h-11 font-bold" disabled={saving}>
             {saving ? "Gerando..." : "Registrar Lote"}
           </Button>
         </form>

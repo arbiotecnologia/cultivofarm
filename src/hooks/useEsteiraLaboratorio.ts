@@ -41,7 +41,9 @@ const COCKPIT_ERROS: Record<string, string> = {
   COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE: "Este item de estoque não está reservado para esta OS.",
   COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM: "A origem da OS não confere com a reserva do estoque.",
   COCKPIT_LOTE_PARAMS_INVALIDOS: "Dados insuficientes para gerar o lote.",
-  COCKPIT_LOTE_CODIGO_OBRIGATORIO: "Informe o código do lote.",
+  COCKPIT_LOTE_CODIGO_OBRIGATORIO: "O código do lote é gerado pelo servidor; recarregue a página e tente novamente.",
+  COCKPIT_LOTE_CODIGO_NAO_ACEITO: "O código do lote é definido pelo servidor e não pode ser enviado pelo navegador.",
+  COCKPIT_LOTE_CODIGO_CONFLITO: "Outro lote foi criado ao mesmo tempo. Tente novamente.",
   COCKPIT_SEED_FORBIDDEN: "Apenas administradores podem gerar fixtures.",
   COCKPIT_SEED_BLOQUEADO: "Geração de fixtures indisponível fora do ambiente de homologação.",
   COCKPIT_SEED_INDISPONIVEL: "Gerador de fixtures indisponível neste ambiente.",
@@ -170,8 +172,9 @@ export function useEsteiraLaboratorio() {
         p_programacao_id: loteData.programacao_id,
         p_os_id: osId,
         p_origem: origem,
+        // codigo_lote NUNCA é enviado pelo navegador: o servidor é a única
+        // fonte do código canônico (LT-YYYY-NNNN).
         p_lote: {
-          codigo_lote: loteData.codigo_lote ?? null,
           produto_id: loteData.produto_id ?? null,
           microrganismo_id: loteData.microrganismo_id ?? null,
           volume_produzido: loteData.volume_produzido ?? null,
