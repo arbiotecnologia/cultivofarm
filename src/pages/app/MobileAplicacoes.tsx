@@ -132,17 +132,19 @@ export default function MobileAplicacoes() {
     const novos: PendingEvidencia[] = [];
     for (const f of Array.from(files)) {
       if (evidencias.length + novos.length >= 20) break;
-      if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name} > 10MB`); continue; }
+      const erro = validarArquivoEvidencia(f);
+      if (erro) { toast.error(erro); continue; }
       novos.push({
         id: crypto.randomUUID(),
         file: f,
         previewUrl: URL.createObjectURL(f),
         legenda: "",
-        tipo: f.type.startsWith("image/") ? "foto" : f.type.startsWith("video/") ? "video" : "documento",
+        tipo: tipoEvidencia(f.type),
       });
     }
     setEvidencias([...evidencias, ...novos]);
   };
+
 
   const removeEv = (id: string) => {
     const it = evidencias.find((e) => e.id === id);
