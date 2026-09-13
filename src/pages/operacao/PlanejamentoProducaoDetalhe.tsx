@@ -389,32 +389,38 @@ export default function PlanejamentoProducaoDetalhe() {
         <CardHeader><CardTitle className="text-sm">Datas previstas / Observações</CardTitle></CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           <div>
-            <Label>Início previsto</Label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={!canManageProduction} />
+            <Label htmlFor="inicio-previsto">Início previsto</Label>
+            <Input id="inicio-previsto" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={!canManageProduction} />
           </div>
           <div>
-            <Label>Término previsto</Label>
-            <Input type="date" value={finishDate} onChange={(e) => setFinishDate(e.target.value)} disabled={!canManageProduction} />
+            <Label htmlFor="termino-previsto">Término previsto</Label>
+            <Input id="termino-previsto" type="date" value={finishDate} onChange={(e) => setFinishDate(e.target.value)} disabled={!canManageProduction} />
           </div>
           <div className="md:col-span-3">
-            <Label>Observações de produção</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} disabled={!canManageProduction} />
+            <Label htmlFor="obs-producao">Observações de produção</Label>
+            <Textarea id="obs-producao" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} disabled={!canManageProduction} />
           </div>
-          <div className="md:col-span-3 flex justify-end">
+          <div className="md:col-span-3 flex justify-end items-center gap-3">
             {canManageProduction ? (
-              <Button
-                onClick={() =>
-                  updateDates.mutate({
-                    id: planning.id,
-                    planned_start_date: startDate || null,
-                    planned_finish_date: finishDate || null,
-                    production_notes: notes || null,
-                  })
-                }
-                disabled={updateDates.isPending}
-              >
-                Salvar
-              </Button>
+              <>
+                {!validacaoDatas.ok && (
+                  <span className="text-xs text-destructive" role="alert">{validacaoDatas.erro}</span>
+                )}
+                <Button
+                  onClick={() => {
+                    if (updateDates.isPending || !validacaoDatas.ok) return;
+                    updateDates.mutate({
+                      id: planning.id,
+                      planned_start_date: startDate || null,
+                      planned_finish_date: finishDate || null,
+                      production_notes: notes || null,
+                    });
+                  }}
+                  disabled={updateDates.isPending || !validacaoDatas.ok}
+                >
+                  {updateDates.isPending ? "Salvando…" : "Salvar"}
+                </Button>
+              </>
             ) : isReadOnly ? (
               <span className="text-xs text-muted-foreground flex items-center gap-1"><Lock className="h-3 w-3" /> Visualização comercial</span>
             ) : null}
