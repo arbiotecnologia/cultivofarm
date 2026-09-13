@@ -46,8 +46,6 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
   const [saving, setSaving] = useState(false);
   const [saldo, setSaldo] = useState<{ produzido: number; envasado: number; saldo: number } | null>(null);
   const [demanda, setDemanda] = useState<{ solicitadoL: number; reservadoL: number; pendenteL: number } | null>(null);
-  const [novoVolume, setNovoVolume] = useState("");
-  const [salvandoProducao, setSalvandoProducao] = useState(false);
   // Chave de idempotência por abertura do diálogo: duplo clique/retry não
   // gera envase duplicado — o servidor responde replay.
   const idempotencyKey = useRef<string>(crypto.randomUUID());
@@ -91,7 +89,6 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
       setValidade(defaultValidade());
       setSaldo(null);
       setDemanda(null);
-      setNovoVolume("");
       return;
     }
     setLinhas([novaLinha()]);
