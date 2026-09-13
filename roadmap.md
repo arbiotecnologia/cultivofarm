@@ -72,6 +72,7 @@
 - Restrições respeitadas: sem acesso a banco, migrations, backend, deploy ou publicação.
 
 ## Cockpit Laboratório — auditoria atual
-- Em execução: correções frontend de estados, filtros, métricas e guardas; testes locais e relatório.
+- Correções frontend parciais de estados, filtros, métricas e guardas realizadas; 28 testes focados aprovados; riscos documentados.
+- Pendente: homologação completa e compilação limpa, bloqueadas por integração divergente e tipos gerados incompletos. Não executar preview conectado.
 - Bloqueio: ambiente divergente e types.ts com 2.060 linhas; arquivos gerados protegidos, restauração exige correção da integração.
 - Sem acesso ao banco, publicação ou GitHub; tarefas históricas fora do escopo permanecem suspensas.

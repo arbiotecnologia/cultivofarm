@@ -207,7 +207,7 @@ export default function CockpitLaboratorio() {
 
 
         return {
-          id: item.programacao_id || `${item.origem_os}:${item.os_id}`,
+          id: item.programacao_id,
           os_id: item.os_id,
           numero_os: item.numero_os || "—",
           origem: item.origem_os,
