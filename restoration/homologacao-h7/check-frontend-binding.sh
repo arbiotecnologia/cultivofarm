@@ -19,21 +19,27 @@ ENV_FILE="$ROOT/.env"
 CLIENT_FILE="$ROOT/src/integrations/supabase/client.ts"
 TOML_FILE="$ROOT/supabase/config.toml"
 
-for f in "$ENV_FILE" "$CLIENT_FILE" "$TOML_FILE"; do
+for f in "$CLIENT_FILE" "$TOML_FILE"; do
   [ -f "$f" ] || fail "arquivo de binding ausente: ${f#$ROOT/}"
 done
+
+# .env foi removido do projeto: o runtime usa exclusivamente as constantes
+# literais de client.ts. Se a plataforma regerar o arquivo, ele volta a ser
+# validado fail-closed.
 
 env_value() {
   sed -n "s/^$1[[:space:]]*=[[:space:]]*//p" "$ENV_FILE" | tail -n1 | tr -d '"'"'"'' | tr -d '\r'
 }
 
-ENV_REF="$(env_value VITE_SUPABASE_PROJECT_ID)"
-ENV_URL="$(env_value VITE_SUPABASE_URL)"
+if [ -f "$ENV_FILE" ]; then
+  ENV_REF="$(env_value VITE_SUPABASE_PROJECT_ID)"
+  ENV_URL="$(env_value VITE_SUPABASE_URL)"
 
-[ "$ENV_REF" = "$CULTIVOFARM_REF_EXPECTED" ] || \
-  fail ".env VITE_SUPABASE_PROJECT_ID='${ENV_REF:-<vazio>}' != CultivoFarm esperado ($CULTIVOFARM_REF_EXPECTED)."
-[ "$ENV_URL" = "https://${CULTIVOFARM_REF_EXPECTED}.supabase.co" ] || \
-  fail ".env VITE_SUPABASE_URL nao aponta para o CultivoFarm esperado."
+  [ "$ENV_REF" = "$CULTIVOFARM_REF_EXPECTED" ] || \
+    fail ".env VITE_SUPABASE_PROJECT_ID='${ENV_REF:-<vazio>}' != CultivoFarm esperado ($CULTIVOFARM_REF_EXPECTED)."
+  [ "$ENV_URL" = "https://${CULTIVOFARM_REF_EXPECTED}.supabase.co" ] || \
+    fail ".env VITE_SUPABASE_URL nao aponta para o CultivoFarm esperado."
+fi
 
 grep -q "https://${CULTIVOFARM_REF_EXPECTED}.supabase.co" "$CLIENT_FILE" || \
   fail "client.ts nao aponta para o CultivoFarm esperado."
@@ -42,7 +48,8 @@ grep -Eq "^project_id[[:space:]]*=[[:space:]]*\"${CULTIVOFARM_REF_EXPECTED}\"" "
   fail "supabase/config.toml nao aponta para o CultivoFarm esperado."
 
 # Nenhum ref proibido pode aparecer nos arquivos de binding ativo.
-for f in "$ENV_FILE" "$CLIENT_FILE" "$TOML_FILE"; do
+for f in "$CLIENT_FILE" "$TOML_FILE" "$ENV_FILE"; do
+  [ -f "$f" ] || continue
   for bad in "$LEGACY_STAGING_REF_FORBIDDEN" "$PRODUCTION_REF_FORBIDDEN" "$SANDBOX_REF_FORBIDDEN"; do
     if grep -q "$bad" "$f"; then
       fail "${f#$ROOT/} contem binding proibido ($bad)."
@@ -50,4 +57,4 @@ for f in "$ENV_FILE" "$CLIENT_FILE" "$TOML_FILE"; do
   done
 done
 
-echo "H7d BINDING GATE: OK — CultivoFarm $CULTIVOFARM_REF_EXPECTED (.env, client.ts e config.toml consistentes)."
+echo "H7d BINDING GATE: OK — CultivoFarm $CULTIVOFARM_REF_EXPECTED (client.ts e config.toml consistentes; .env ausente ou consistente)."
