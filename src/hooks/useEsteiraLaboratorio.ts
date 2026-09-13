@@ -173,6 +173,12 @@ export function useEsteiraLaboratorio() {
       return null;
     }
 
+    const volume = Number(loteData?.volume_produzido);
+    if (!Number.isFinite(volume) || volume <= 0) {
+      toast.error(COCKPIT_ERROS.COCKPIT_LOTE_VOLUME_INVALIDO);
+      return null;
+    }
+
     try {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_gerar_lote_v1", {
         p_programacao_id: loteData.programacao_id,
@@ -180,10 +186,10 @@ export function useEsteiraLaboratorio() {
         p_origem: origem,
         // codigo_lote NUNCA é enviado pelo navegador: o servidor é a única
         // fonte do código canônico (LT-YYYY-NNNN).
+        // produto_id e microrganismo_id também não são enviados: o servidor os
+        // deriva exclusivamente da programação bloqueada.
         p_lote: {
-          produto_id: loteData.produto_id ?? null,
-          microrganismo_id: loteData.microrganismo_id ?? null,
-          volume_produzido: loteData.volume_produzido ?? null,
+          volume_produzido: volume,
           data_producao: loteData.data_producao ?? null,
           responsavel_producao: loteData.responsavel_producao ?? null,
           tanque: loteData.tanque ?? null,
@@ -195,6 +201,7 @@ export function useEsteiraLaboratorio() {
         toast.error(traduzErroCockpit(error.message));
         return null;
       }
+
 
       if (data?.replay) {
         toast.error(data.message || "Já existe um lote para esta programação.");
