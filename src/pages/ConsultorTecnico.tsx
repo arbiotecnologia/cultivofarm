@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Search, User, Mail, Phone,
   MapPin, ClipboardCheck, MoreVertical,
-  Users, Map, Calendar, IdCard, Briefcase, ChevronRight, Layout, Camera, Eye, ChevronLeft, X, Edit2, Check, Download
+  Users, Map, Calendar, IdCard, Briefcase, ChevronRight, Camera, Eye, ChevronLeft, X, Edit2, Check, Download,
+  ImageOff, Loader2
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
@@ -39,16 +40,18 @@ import {
   filtrarConsultores,
   isConsultorAtivo,
 } from "@/lib/equipe-tecnica/consultores";
-
-
-
-
-
-
-
-
-
-
+import {
+  PROFILE_FIELDS,
+  temAcessoAmploClientes,
+  idsUnicos,
+  resolverUrlEvidencia,
+  nomeDownloadEvidencia,
+  normalizarLegenda,
+  conferirLinhaUnica,
+  deveIgnorarAtalho,
+  type EvidenciaVistoria,
+  type UrlEvidencia,
+} from "@/lib/equipe-tecnica/evidencias";
 
 export default function ConsultorTecnico() {
   const [search, setSearch] = useState("");
@@ -64,81 +67,141 @@ export default function ConsultorTecnico() {
   const queryClient = useQueryClient();
   const { visitas: metricasVisitas } = useMetricasOperacionais();
 
+  /** Reinicia todo o estado dependente do consultor/vistoria selecionados. */
+  const resetEstadoConsultor = useCallback(() => {
+    setShowVistorias(false);
+    setSelectedVistoria(null);
+    setSelectedClienteFilter("todos");
+    setZoomedImageIndex(null);
+    setSelectedPhotos([]);
+    setFocusedPhotoIndex(null);
+    setEditingCaption(null);
+    setCaptionValue("");
+  }, []);
 
+  const selecionarConsultor = useCallback((consultor: any) => {
+    resetEstadoConsultor();
+    setSelected(consultor);
+  }, [resetEstadoConsultor]);
 
+  const fecharConsultor = useCallback(() => {
+    resetEstadoConsultor();
+    setSelected(null);
+  }, [resetEstadoConsultor]);
+
+  // Evidências da vistoria aberta (contrato: registros_consultor_arquivos).
+  const arquivosVistoria: EvidenciaVistoria[] = useMemo(
+    () => (selectedVistoria?.arquivos ?? []) as EvidenciaVistoria[],
+    [selectedVistoria],
+  );
+  const filePaths = useMemo(
+    () => arquivosVistoria.map((a) => a.arquivo_path).filter(Boolean) as string[],
+    [arquivosVistoria],
+  );
+  const {
+    urls: signedUrls,
+    loading: signedLoading,
+    error: signedError,
+    refresh: refreshSignedUrls,
+  } = useSignedUrls(filePaths);
+
+  /** Fonte única da URL efetiva para grade, ampliação, miniatura e download. */
+  const urlDaEvidencia = useCallback(
+    (arquivo: EvidenciaVistoria | null | undefined): UrlEvidencia =>
+      resolverUrlEvidencia(arquivo, signedUrls, { loading: signedLoading, error: signedError }),
+    [signedUrls, signedLoading, signedError],
+  );
 
   const updateCaptionMutation = useMutation({
-    mutationFn: async ({ id, descricao }: { id: string; descricao: string }) => {
-      const { error } = await supabase
-        .from("arquivos")
-        .update({ descricao })
-        .eq("id", id);
+    mutationFn: async ({ id, legenda, registroId }: { id: string; legenda: string; registroId: string }) => {
+      // Escopo completo: a evidência precisa pertencer à vistoria aberta.
+      const { data, error } = await supabase
+        .from("registros_consultor_arquivos")
+        .update({ legenda })
+        .eq("id", id)
+        .eq("registro_consultor_id", registroId)
+        .select("id");
       if (error) throw error;
+      const conferencia = conferirLinhaUnica(data);
+      if (!conferencia.ok) throw new Error(conferencia.mensagem);
+      return { id, legenda };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["consultor-kpis"] });
+    onSuccess: ({ id, legenda }) => {
+      // Mantém a UI coerente sem recarregar tudo.
+      setSelectedVistoria((atual: any) =>
+        atual
+          ? {
+              ...atual,
+              arquivos: (atual.arquivos ?? []).map((a: any) => (a.id === id ? { ...a, legenda } : a)),
+            }
+          : atual,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["consultor-kpis"] });
       toast.success("Legenda atualizada!");
       setEditingCaption(null);
+      setCaptionValue("");
     },
-    onError: (error) => {
-      toast.error("Erro ao atualizar legenda");
-      console.error(error);
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao atualizar legenda");
     }
   });
 
   const handleUpdateCaption = (id: string) => {
     if (updateCaptionMutation.isPending) return;
-    updateCaptionMutation.mutate({ id, descricao: captionValue });
+    if (!selectedVistoria?.id) return;
+    const normalizada = normalizarLegenda(captionValue);
+    if (!normalizada.valida) {
+      toast.error(normalizada.mensagem ?? "Legenda inválida");
+      return;
+    }
+    updateCaptionMutation.mutate({ id, legenda: normalizada.valor, registroId: selectedVistoria.id });
   };
 
-
-  const handleDownloadImage = async (url: string, filename: string, caption?: string) => {
+  /** Download seguro: URL efetiva já resolvida, extensão real e blob revogado. */
+  const handleDownloadImage = useCallback(async (arquivo: EvidenciaVistoria, indice: number) => {
+    const { url, estado } = urlDaEvidencia(arquivo);
+    if (!url || estado !== "pronta") {
+      toast.error("A imagem ainda não está disponível para download.");
+      return;
+    }
+    let blobUrl: string | null = null;
     try {
       const response = await fetch(url);
+      if (!response.ok) throw new Error(`Falha no download (${response.status})`);
       const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
       link.href = blobUrl;
-      
-      // Limpa a legenda para usar no nome do arquivo (remove caracteres especiais)
-      const cleanCaption = caption 
-        ? caption.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 50) 
-        : '';
-      
-      const finalFilename = cleanCaption 
-        ? `${filename.split('.')[0]}_${cleanCaption}.jpg`
-        : filename;
-
-      link.download = finalFilename || 'evidencia.jpg';
+      link.download = nomeDownloadEvidencia(arquivo, selectedVistoria?.id ?? "visita", indice);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Erro ao baixar imagem:", error);
-      toast.error("Não foi possível baixar a imagem diretamente. Tente clicar com o botão direito e 'Salvar como'.");
-      window.open(url, '_blank');
+    } catch {
+      // Não abrimos a URL assinada em nova aba: é privada e pode estar expirada.
+      toast.error("Não foi possível baixar a imagem. Tente novamente.");
+    } finally {
+      if (blobUrl) window.URL.revokeObjectURL(blobUrl);
     }
-  };
-
+  }, [urlDaEvidencia, selectedVistoria]);
 
   const handleNextImage = useCallback(() => {
-    if (selectedVistoria?.arquivos && zoomedImageIndex !== null) {
-      setZoomedImageIndex((prev) => (prev !== null && prev < selectedVistoria.arquivos.length - 1 ? prev + 1 : 0));
+    if (arquivosVistoria.length && zoomedImageIndex !== null) {
+      setZoomedImageIndex((prev) => (prev !== null && prev < arquivosVistoria.length - 1 ? prev + 1 : 0));
       setEditingCaption(null);
     }
-  }, [selectedVistoria, zoomedImageIndex]);
+  }, [arquivosVistoria, zoomedImageIndex]);
 
   const handlePrevImage = useCallback(() => {
-    if (selectedVistoria?.arquivos && zoomedImageIndex !== null) {
-      setZoomedImageIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : selectedVistoria.arquivos.length - 1));
+    if (arquivosVistoria.length && zoomedImageIndex !== null) {
+      setZoomedImageIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : arquivosVistoria.length - 1));
       setEditingCaption(null);
     }
-  }, [selectedVistoria, zoomedImageIndex]);
+  }, [arquivosVistoria, zoomedImageIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (zoomedImageIndex === null) return;
+      if (deveIgnorarAtalho(e.target)) return;
       if (e.key === "ArrowRight") handleNextImage();
       if (e.key === "ArrowLeft") handlePrevImage();
     };
@@ -148,9 +211,10 @@ export default function ConsultorTecnico() {
 
   useEffect(() => {
     if (!selectedVistoria || zoomedImageIndex !== null) return;
-    
+
     const handleGridKeyDown = (e: KeyboardEvent) => {
-      const files = selectedVistoria.arquivos || [];
+      if (deveIgnorarAtalho(e.target)) return;
+      const files = arquivosVistoria;
       if (files.length === 0) return;
 
       if (focusedPhotoIndex === null) {
@@ -165,11 +229,11 @@ export default function ConsultorTecnico() {
       if (e.key === "ArrowLeft") newIndex = Math.max(0, focusedPhotoIndex - 1);
       if (e.key === "ArrowDown") newIndex = Math.min(files.length - 1, focusedPhotoIndex + 3);
       if (e.key === "ArrowUp") newIndex = Math.max(0, focusedPhotoIndex - 3);
-      
+
       if (e.key === " ") { // Barra de espaço seleciona
         e.preventDefault();
         const file = files[focusedPhotoIndex];
-        setSelectedPhotos(prev => 
+        setSelectedPhotos(prev =>
           prev.includes(file.id) ? prev.filter(id => id !== file.id) : [...prev, file.id]
         );
       }
@@ -186,31 +250,27 @@ export default function ConsultorTecnico() {
 
     window.addEventListener("keydown", handleGridKeyDown);
     return () => window.removeEventListener("keydown", handleGridKeyDown);
-  }, [selectedVistoria, focusedPhotoIndex, zoomedImageIndex]);
+  }, [selectedVistoria, arquivosVistoria, focusedPhotoIndex, zoomedImageIndex]);
 
-
-
-
-
-
-
-
-
-
-  const { data: kpis, isLoading: loadingKpis } = useQuery({
+  const {
+    data: kpis,
+    isLoading: loadingKpis,
+    isError: erroKpis,
+    refetch: refetchKpis,
+    isFetching: fetchingKpis,
+  } = useQuery({
     queryKey: ["consultor-kpis", selected?.user_id, selectedClienteFilter],
-
     enabled: !!selected?.user_id,
     queryFn: async () => {
       const start = new Date();
       start.setDate(1);
       start.setHours(0, 0, 0, 0);
-      
+
       let query = supabase
         .from("registros_consultor")
         .select(`
-          id, 
-          area_hectares, 
+          id,
+          area_hectares,
           data_vistoria,
           status,
           observacoes_tecnicas,
@@ -218,9 +278,8 @@ export default function ConsultorTecnico() {
           cliente_id,
           fazenda:fazendas(nome),
           talhao:talhoes(nome),
-          arquivos(id, arquivo_url, arquivo_path, entidade_tipo, descricao)
+          arquivos:registros_consultor_arquivos(id, arquivo_url, arquivo_path, legenda, nome_arquivo)
         `)
-
         .eq("consultor_responsavel", selected.user_id)
         .gte("data_vistoria", start.toISOString().slice(0, 10));
 
@@ -228,32 +287,40 @@ export default function ConsultorTecnico() {
         query = query.eq("cliente_id", selectedClienteFilter);
       }
 
-      const { data } = await query.order('data_vistoria', { ascending: false });
-      
+      const { data, error } = await query.order('data_vistoria', { ascending: false });
+      if (error) throw error;
+
       const vistorias = data?.length ?? 0;
       const area = (data ?? []).reduce((s: number, r: any) => s + Number(r.area_hectares ?? 0), 0);
-      return { vistorias, area, list: data || [] };
+      return { vistorias, area, list: data ?? [] };
     },
-
-
   });
 
-
-  const { data: clientesVinc, isLoading: loadingClientes } = useQuery({
+  const {
+    data: clientesVinc,
+    isLoading: loadingClientes,
+    isError: erroClientes,
+    refetch: refetchClientes,
+    isFetching: fetchingClientes,
+  } = useQuery({
     queryKey: ["consultor-clientes", selected?.user_id],
     enabled: !!selected?.user_id,
     queryFn: async () => {
-      const { data: vinc } = await supabase
+      const { data: vinc, error: erroVinc } = await supabase
         .from("user_clientes")
         .select("cliente_id, principal")
-        .eq("user_id", selected.user_id);
+        .eq("user_id", selected.user_id)
+        .eq("is_active", true);
+      if (erroVinc) throw erroVinc;
       if (!vinc || vinc.length === 0) return [];
-      const ids = vinc.map((v: any) => v.cliente_id);
-      const { data: clientes } = await supabase
+      const ids = idsUnicos(vinc.map((v: any) => v.cliente_id));
+      if (ids.length === 0) return [];
+      const { data: clientes, error: erroClientesQuery } = await supabase
         .from("clientes")
         .select("id, nome, nome_fantasia")
         .in("id", ids)
         .order("nome");
+      if (erroClientesQuery) throw erroClientesQuery;
       return (clientes ?? []).map((c: any) => ({
         id: c.id,
         nome: c.nome_fantasia || c.nome,
@@ -262,7 +329,7 @@ export default function ConsultorTecnico() {
     },
   });
 
-  const hasAmploAcesso = selected && ["administrador", "gestor", "administrativo", "consultor_tecnico", "tecnico_agronomo"].includes(selected.role);
+  const hasAmploAcesso = !!selected && temAcessoAmploClientes(selected.role);
 
 
 
