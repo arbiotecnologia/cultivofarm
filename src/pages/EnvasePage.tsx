@@ -239,6 +239,9 @@ export default function EnvasePage() {
 
   // Alterar filtros sempre volta à primeira página.
   const aoFiltrar = <T,>(set: (v: T) => void) => (v: T) => { setPagina(1); set(v); };
+  /** Versão para <input>: extrai o valor do evento e volta à primeira página. */
+  const aoFiltrarInput = (set: (v: string) => void) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => { setPagina(1); set(e.target.value); };
 
   const loteSel = useMemo(
     () => lotesComplementares.find((l) => l.id === form.lote_id) ?? null,
@@ -464,7 +467,7 @@ export default function EnvasePage() {
                   id="envase-busca"
                   placeholder="Lote ou operador"
                   value={search}
-                  onChange={aoFiltrar(setSearch)}
+                  onChange={aoFiltrarInput(setSearch)}
                 />
               </div>
             </div>
@@ -482,11 +485,11 @@ export default function EnvasePage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="envase-de">Data inicial</Label>
-              <Input id="envase-de" type="date" value={dateFrom} onChange={aoFiltrar(setDateFrom)} />
+              <Input id="envase-de" type="date" value={dateFrom} onChange={aoFiltrarInput(setDateFrom)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="envase-ate">Data final</Label>
-              <Input id="envase-ate" type="date" value={dateTo} onChange={aoFiltrar(setDateTo)} />
+              <Input id="envase-ate" type="date" value={dateTo} onChange={aoFiltrarInput(setDateTo)} />
             </div>
           </div>
           {!periodo.valido && (
