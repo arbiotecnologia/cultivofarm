@@ -497,20 +497,18 @@ export default function ConsultorTecnico() {
             <TableHeader>
               <TableRow>
                 <TableHead>Consultor / Agrônomo</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Registro (CREA)</TableHead>
+                <TableHead>E-mail</TableHead>
                 <TableHead>Cargo / Função</TableHead>
-                <TableHead>Especialidade</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8">Carregando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8">Carregando...</TableCell></TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8">
                     <p className="text-sm text-destructive">
                       Não foi possível carregar a equipe técnica.
                       {(consultoresError as any)?.message ? ` (${(consultoresError as any).message})` : ""}
@@ -528,7 +526,7 @@ export default function ConsultorTecnico() {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     {search.trim()
                       ? "Nenhum consultor corresponde à busca"
                       : "Nenhum consultor cadastrado. O cadastro é feito em Configurações > Usuários."}
@@ -540,34 +538,26 @@ export default function ConsultorTecnico() {
                   <TableRow
                     key={c.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setSelected(c)}
+                    onClick={() => selecionarConsultor(c)}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <User className="h-4 w-4 text-primary" />
                         </div>
-                        <div className="flex flex-col text-sm">
-                          <span className="font-medium">{c.nome}</span>
-                          <span className="text-xs text-muted-foreground font-mono-data">
-                            Desde { (c as any).data_admissao ? formatDateDisplay((c as any).data_admissao) : '—'}
-                          </span>
-                        </div>
+                        <span className="font-medium text-sm">{c.nome}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col text-xs gap-1">
-                        <div className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> {c.email || '—'}</div>
-                        <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {formatTelefone((c as any).telefone as string | undefined) || '—'}</div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Mail className="h-3 w-3" /> {c.email || '—'}
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono-data text-xs">{(c as any).crea || '—'}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">
                         {ROLE_LABELS[c.role] || c.role || 'Consultor'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{(c as any).especialidade || 'Geral'}</TableCell>
                     <TableCell>
                       {isConsultorAtivo(c as any) ? (
                         <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
@@ -579,10 +569,12 @@ export default function ConsultorTecnico() {
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações de ${c.nome ?? "consultor"}`}>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="text-xs" onClick={() => setSelected(c)}>Ver Perfil Completo</DropdownMenuItem>
+                          <DropdownMenuItem className="text-xs" onClick={() => selecionarConsultor(c)}>Ver Perfil Completo</DropdownMenuItem>
                           <DropdownMenuItem className="text-xs" onClick={() => toast.info("Edição de cadastro disponível via Configurações > Usuários.")}>Editar Cadastro</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
