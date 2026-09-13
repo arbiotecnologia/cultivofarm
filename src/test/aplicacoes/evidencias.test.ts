@@ -195,7 +195,7 @@ describe("câmera: normalização canônica e fallback", () => {
     expect(src).toContain("onCanPlay={avaliarProntidao}");
     expect(src).toContain("v.videoWidth > 0 && v.videoHeight > 0");
     expect(src).toContain("tentativaRef");
-    expect(src).toContain("descartar(stream)");
+    expect(src).toContain("encerrarStreamDaTentativa(meuStream, videoRef.current, streamRef)");
     expect(src).not.toContain("video.play().catch(() => {})");
   });
 
