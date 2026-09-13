@@ -2,9 +2,16 @@ import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, Upload, X, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Camera, Upload, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { CameraCaptureDialog } from "./CameraCaptureDialog";
+import {
+  ACCEPT_EVIDENCIAS,
+  MAX_EVIDENCIA_MB,
+  caminhoEvidencia,
+  tipoEvidencia,
+  validarArquivoEvidencia,
+} from "@/lib/aplicacoes/evidencias";
 
 const isMobileDevice = () =>
   typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -17,6 +24,15 @@ export interface PendingEvidencia {
   tipo: "foto" | "documento" | "video" | "audio";
 }
 
+/** Metadados devolvidos pelo upload; persistidos apenas pela RPC transacional. */
+export interface EvidenciaEnviada {
+  tipo: PendingEvidencia["tipo"];
+  storage_path: string;
+  legenda: string | null;
+  mime: string;
+  tamanho_bytes: number;
+}
+
 interface Props {
   clienteId: string;
   pending: PendingEvidencia[];
@@ -25,14 +41,7 @@ interface Props {
   maxSizeMB?: number;
 }
 
-const detectTipo = (file: File): PendingEvidencia["tipo"] => {
-  if (file.type.startsWith("image/")) return "foto";
-  if (file.type.startsWith("video/")) return "video";
-  if (file.type.startsWith("audio/")) return "audio";
-  return "documento";
-};
-
-export function EvidenciasUploader({ pending, onChange, maxFiles = 20, maxSizeMB = 10 }: Props) {
+export function EvidenciasUploader({ pending, onChange, maxFiles = 20 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -45,8 +54,9 @@ export function EvidenciasUploader({ pending, onChange, maxFiles = 20, maxSizeMB
         toast.error(`Máximo de ${maxFiles} arquivos`);
         break;
       }
-      if (f.size > maxSizeMB * 1024 * 1024) {
-        toast.error(`${f.name}: maior que ${maxSizeMB}MB`);
+      const erro = validarArquivoEvidencia(f);
+      if (erro) {
+        toast.error(erro);
         continue;
       }
       incoming.push({
@@ -54,7 +64,7 @@ export function EvidenciasUploader({ pending, onChange, maxFiles = 20, maxSizeMB
         file: f,
         previewUrl: URL.createObjectURL(f),
         legenda: "",
-        tipo: detectTipo(f),
+        tipo: tipoEvidencia(f.type),
       });
     }
     onChange([...pending, ...incoming]);
@@ -88,12 +98,14 @@ export function EvidenciasUploader({ pending, onChange, maxFiles = 20, maxSizeMB
           <Camera className="h-4 w-4 mr-2" />Câmera
         </Button>
         <span className="text-xs text-muted-foreground self-center">
-          {pending.length}/{maxFiles} · máx {maxSizeMB}MB cada
+          {pending.length}/{maxFiles} · máx {MAX_EVIDENCIA_MB}MB cada
         </span>
       </div>
-      <input ref={inputRef} type="file" multiple accept="image/*,application/pdf,video/*,audio/*" className="hidden"
+      <input ref={inputRef} type="file" multiple accept={ACCEPT_EVIDENCIAS} className="hidden"
+        aria-label="Selecionar arquivos de evidência"
         onChange={(e) => { handleAdd(e.target.files); e.target.value = ""; }} />
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+      <input ref={cameraRef} type="file" accept="image/jpeg,image/png,image/heic,image/heif" capture="environment" className="hidden"
+        aria-label="Capturar foto de evidência"
         onChange={(e) => { handleAdd(e.target.files); e.target.value = ""; }} />
 
       <CameraCaptureDialog
@@ -136,47 +148,55 @@ export function EvidenciasUploader({ pending, onChange, maxFiles = 20, maxSizeMB
   );
 }
 
-/** Faz upload das evidências para o bucket e registra na tabela */
+/**
+ * Remoção segura dos objetos enviados numa tentativa que falhou.
+ * Nunca lança: a limpeza é compensatória e não pode mascarar o erro original.
+ */
+export async function limparObjetosEvidencias(paths: string[]): Promise<void> {
+  const alvos = paths.filter((p) => typeof p === "string" && p.length > 0);
+  if (!alvos.length) return;
+  try {
+    await supabase.storage.from("aplicacao-evidencias").remove(alvos);
+  } catch {
+    /* silencioso: a falha original já é reportada ao usuário */
+  }
+}
+
+/**
+ * Sobe apenas os objetos para `cliente_id/aplicacao_id/uuid.ext` e devolve os
+ * metadados. Nenhuma URL assinada é gerada ou persistida; nenhum registro é
+ * gravado aqui — a persistência é feita por rpc_salvar_aplicacao_v1.
+ * Em qualquer falha, todos os objetos desta tentativa são removidos.
+ */
 export async function uploadEvidencias(
   pending: PendingEvidencia[],
   aplicacaoId: string,
   clienteId: string,
-  userId?: string
-) {
-  if (!pending.length) return;
-  const rows: any[] = [];
-  for (const item of pending) {
-    const ext = item.file.name.split(".").pop()?.toLowerCase() || "bin";
-    const safeName = `${crypto.randomUUID()}.${ext}`;
-    const path = `${clienteId}/${aplicacaoId}/${safeName}`;
-    const { error: upErr } = await supabase.storage
-      .from("aplicacao-evidencias")
-      .upload(path, item.file, { contentType: item.file.type, upsert: false });
-    if (upErr) throw upErr;
-    const { data: signed } = await supabase.storage
-      .from("aplicacao-evidencias")
-      .createSignedUrl(path, 60 * 60 * 24 * 365);
-    rows.push({
-      tipo: item.tipo,
-      url: signed?.signedUrl || null,
-      storage_path: path,
-      legenda: item.legenda || null,
-      mime: item.file.type,
-      tamanho_bytes: item.file.size,
-      created_by: userId || null,
-      // Se for novo upload em uma aplicação, a origem é a própria aplicação
-      versao_origem_id: aplicacaoId
-    });
-  }
-  
-  const { data: inserted, error } = await supabase.from("aplicacao_evidencias").insert(rows).select("id");
-  if (error) throw error;
-
-  if (inserted && inserted.length > 0) {
-    const vinculos = inserted.map(ev => ({
-      aplicacao_id: aplicacaoId,
-      evidencia_id: ev.id
-    }));
-    await supabase.from("aplicacao_evidencias_vinculos").insert(vinculos);
+): Promise<EvidenciaEnviada[]> {
+  if (!pending.length) return [];
+  const enviados: string[] = [];
+  const metadados: EvidenciaEnviada[] = [];
+  try {
+    for (const item of pending) {
+      const erro = validarArquivoEvidencia(item.file);
+      if (erro) throw new Error(erro);
+      const path = caminhoEvidencia(clienteId, aplicacaoId, crypto.randomUUID(), item.file.type);
+      const { error: upErr } = await supabase.storage
+        .from("aplicacao-evidencias")
+        .upload(path, item.file, { contentType: item.file.type, upsert: false });
+      if (upErr) throw upErr;
+      enviados.push(path);
+      metadados.push({
+        tipo: item.tipo,
+        storage_path: path,
+        legenda: item.legenda || null,
+        mime: item.file.type,
+        tamanho_bytes: item.file.size,
+      });
+    }
+    return metadados;
+  } catch (e) {
+    await limparObjetosEvidencias(enviados);
+    throw e;
   }
 }

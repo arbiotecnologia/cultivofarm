@@ -124,11 +124,11 @@ export function AplicacaoCard({ aplicacao: a, doseRecomendada, showActions = tru
 
       if (error) throw error;
 
-      // Registro em aplicacao_emails é feito server-side pela Edge Function
-      // enviar-pdf-aplicacao via rpc_record_aplicacao_email (Fase 0.2).
-      // Não fazer INSERT direto aqui: a policy bloqueia e o status correto
-      // (sent/failed/link_generated_no_send) só é conhecido pela function.
-      await supabase.from("aplicacoes").update({ email_envio: emailDestinatario }).eq("id", a.id);
+      // Registro em aplicacao_emails e em aplicacoes.email_envio é feito
+      // server-side pela Edge Function enviar-pdf-aplicacao. Nenhum update
+      // redundante aqui: o servidor é a autoridade sobre o status do envio.
+
+
 
 
       toast.success(data.emailSent ? "Relatório enviado por e-mail!" : "Link gerado! (E-mail não pôde ser disparado no momento)");
