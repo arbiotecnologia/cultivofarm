@@ -47,8 +47,9 @@ describe('Contrato SQL preparado (não aplicado)', () => {
   it('é transacional e não destrutivo', () => {
     expect(sql).toContain('BEGIN;');
     expect(sql).toContain('COMMIT;');
-    expect(sql).not.toMatch(/CASCADE|TRUNCATE|DROP\s+(TABLE|FUNCTION|POLICY)/i);
-    expect(sql).not.toMatch(/\bDELETE FROM\b|\bUPDATE public\./i);
+    const executavel = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+    expect(executavel).not.toMatch(/CASCADE|TRUNCATE|DROP\s+(TABLE|FUNCTION|POLICY)/i);
+    expect(executavel).not.toMatch(/\bDELETE FROM\b|\bUPDATE public\./i);
   });
   it('exige confirmação explícita do destino canônico', () => {
     expect(sql).toContain("app.audit_target_ref");
