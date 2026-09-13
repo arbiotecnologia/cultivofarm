@@ -826,7 +826,7 @@ export default function OrdensServico() {
               </TableBody>
             </Table>
           </ResponsiveTable>
-          <nav aria-label="Páginas de ordens" className="flex flex-wrap items-center justify-between gap-2 pt-4"><Button variant="outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</Button><span>Página {currentPage} de {pages}</span><Button variant="outline" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}>Próxima</Button></nav></>
+          <nav aria-label="Páginas de ordens" className="flex flex-wrap items-center justify-between gap-2 pt-4"><Button variant="outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</Button><span>Página {currentPage} de {pages}</span><Button variant="outline" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}>Próxima</Button></nav></>}
         </CardContent>
       </Card>
       <OSDetalhesDialog 
