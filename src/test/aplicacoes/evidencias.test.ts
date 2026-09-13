@@ -136,6 +136,22 @@ describe("câmera: normalização canônica e fallback", () => {
     }
   });
 
+  it("recusa PDF, vídeo e áudio na entrada de câmera mesmo estando na allowlist geral", () => {
+    for (const mime of ["application/pdf", "video/mp4", "video/webm", "video/quicktime", "audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg", "audio/webm"]) {
+      expect(mimePermitido(mime)).toBe(true);
+      expect(mimeCanonicoCamera("arquivo", mime)).toBeNull();
+      expect(normalizarArquivoCamera(criar("arquivo", mime))).toBeNull();
+    }
+    expect(mimeCanonicoCamera("doc.pdf", "")).toBeNull();
+    expect(mimeCanonicoCamera("v.mp4", "")).toBeNull();
+  });
+
+  it("aceita apenas as cinco imagens canônicas da câmera", () => {
+    for (const mime of ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]) {
+      expect(mimeCanonicoCamera("f", mime)).toBe(mime);
+    }
+  });
+
   it("recusa extensão e MIME desconhecidos sem ampliar a allowlist", () => {
     expect(mimeCanonicoCamera("f.gif", "")).toBeNull();
     expect(mimeCanonicoCamera("f", "")).toBeNull();
