@@ -34,7 +34,8 @@ Esta é uma auditoria de código, não homologação autenticada nem comprovaç�
 5. Limite de 200/90 dias e limites do serviço nas referências não cobrem histórico global. Sem SLA/timeout de escrita artificial: interromper espera não desfaz INSERT. Mensagem genérica orienta conferência antes de retry.
 6. Não houve E2E autenticado, auditoria real de RLS, teste de concorrência real, inspeção visual autenticada ou alteração de dados. Não certificar acessibilidade/segurança completa com testes estáticos.
 
-## Migração proposta — NÃO APLICAR nesta etapa
+## Migração aplicada manualmente — NÃO REAPLICAR
+Confirmado pelo usuário em 13/09/2026: `ordens_servico_audit_positive_numbers_v1` e `ordens_servico_onfarm_audit_positive_numbers_v1` existem com `convalidated=true` no destino canônico. Sem verificação independente nesta etapa. SQL preservado integralmente. Os procedimentos abaixo são o registro histórico de aplicação e rollback.
 `restoration/ordens-servico/sql/20260913030000_os_numeric_guard.sql`
 Somente CHECKs adicionais em `public.ordens_servico` e `public.ordens_servico_onfarm`, sem DML, sem novas tabelas/funções/grants/policies. Nulos preservados, zero/negativos/não-finitos rejeitados. Base: tipos canônicos e migrations `20260617005026_17538776-af7a-496c-9602-a8df4b87c326.sql`, `20260703144353_2c465fbb-f860-4b3b-8db4-30d662ebddc8.sql`.
 Não é correção completa de RLS/idempotência. Reexecução aborta explicitamente se nome já existir, sem substituir constraints. Histórico inválido aborta integralmente, sem reparação automática.
