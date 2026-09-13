@@ -102,30 +102,11 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
     carregarSaldo();
   }, [open, target?.lote_id, carregarSaldo]);
 
-  const salvarProducao = async () => {
-    if (!target?.lote_id) return;
-    const litros = Number(novoVolume);
-    if (!litros || litros <= 0) {
-      toast.error("Informe um volume produzido maior que zero.");
-      return;
-    }
-    setSalvandoProducao(true);
-    try {
-      const { error } = await supabase
-        .from("lotes")
-        .update({ volume_produzido: litros * 1000 })
-        .eq("id", target.lote_id);
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      toast.success(`Volume produzido atualizado: ${litros} L.`);
-      setNovoVolume("");
-      await carregarSaldo();
-    } finally {
-      setSalvandoProducao(false);
-    }
-  };
+  // Produção NÃO é editável aqui: alterar lotes.volume_produzido direto da tela
+  // criaria mudança de produção sem trilha transacional. Sem produção registrada,
+  // o envase é bloqueado e o operador volta à etapa de produção do Cockpit.
+
+
 
 
   const volSolicitado = linhas.reduce((s, l) => s + volumeDaLinha(l), 0);
