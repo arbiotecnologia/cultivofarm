@@ -1,5 +1,10 @@
 # Roadmap de Tarefas
 
+## Ordens de Serviço — 2026-09-13
+- [ ] Auditoria e correções frontend, testes locais e evidências canônicas; sem acesso ao banco.
+- [ ] Preparar diagnóstico/SQL não aplicado e rollback para riscos de servidor.
+- H10 aplicado e verificado manualmente pelo usuário; não reaplicar. Trabalhos históricos fora deste escopo permanecem suspensos.
+
 ## Aplicações — unidades (correção focada)
 - Concluído frontend seguro: bloqueio por unidade ausente no contrato da OS, cálculo dimensional sem conversão, limpeza ao trocar OS e coerência temporal; testes puros 19/19.
 - Pendente: habilitação multiunidade exige vínculo persistente OS/prescrição e snapshot de unidade ausentes no contrato atual; não houve alteração de banco.

@@ -43,7 +43,10 @@ Preservado: `src/integrations/supabase/client.ts` continua sendo o único `creat
 
 ---
 
-# H10 — Hardening de banco PREPARADO (não aplicado)
+# H10 — Aplicado manualmente pelo operador
+
+Em 13/09/2026, o usuário informou aplicação e verificação direta no CultivoFarm canônico.
+Registro declaratório, sem nova consulta ou reaplicação nesta auditoria. As instruções abaixo são o histórico da preparação.
 
 Script: `restoration/planejamento-producao/sql/20260913030000_h10_planejamento_producao_hardening.sql`
 Nenhuma migração foi aplicada, nenhum banco foi acessado, nada foi publicado ou sincronizado.
