@@ -611,10 +611,14 @@ export default function ConsultorTecnico() {
                         {ROLE_LABELS[selected.role] || selected.role || 'Consultor'}
                       </Badge>
                     </div>
-                    <Badge variant="default" className="ml-auto bg-green-500/10 text-green-600 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                    {isConsultorAtivo(selected) ? (
+                      <Badge variant="default" className="ml-auto bg-green-500/10 text-green-600 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="ml-auto text-[10px] uppercase tracking-wider">Inativo</Badge>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 gap-3 text-sm">
                     <div className="flex items-start gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                       <div>
@@ -622,42 +626,16 @@ export default function ConsultorTecnico() {
                         <div className="break-all">{selected.email || '—'}</div>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Telefone</div>
-                        <div className="font-mono-data">{formatTelefone(selected.telefone) || '—'}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <IdCard className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Registro (CREA)</div>
-                        <div className="font-mono-data">{selected.crea || '—'}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Especialidade</div>
-                        <div>{selected.especialidade || 'Geral'}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Data de Admissão</div>
-                        <div className="font-mono-data">{selected.data_admissao ? formatDateDisplay(selected.data_admissao) : '—'}</div>
-                      </div>
-                    </div>
                   </div>
 
                   <div className="pt-3 border-t">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                       <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Atividade Recente (Mês Atual)</div>
-                      
+
                       {clientesVinc && clientesVinc.length > 0 && (
-                        <select 
+                        <select
+                          id="filtro-cliente-consultor"
+                          aria-label="Filtrar atividade por cliente"
                           value={selectedClienteFilter}
                           onChange={(e) => setSelectedClienteFilter(e.target.value)}
                           className="text-[10px] bg-muted border rounded px-2 py-1 outline-none focus:ring-1 ring-primary/30"
@@ -670,8 +648,22 @@ export default function ConsultorTecnico() {
                       )}
                     </div>
 
+                    {erroKpis ? (
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-center">
+                        <p className="text-xs text-destructive">Não foi possível carregar a atividade deste consultor.</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 h-7 text-[11px]"
+                          onClick={() => { void refetchKpis(); }}
+                          disabled={fetchingKpis}
+                        >
+                          {fetchingKpis ? "Tentando..." : "Tentar novamente"}
+                        </Button>
+                      </div>
+                    ) : (
                     <div className="grid grid-cols-2 gap-3">
-                      <button 
+                      <button
                         onClick={() => setShowVistorias(true)}
                         className="rounded-lg border p-3 text-left hover:border-primary/50 transition-colors group flex flex-col justify-between"
                         disabled={loadingKpis || (kpis?.vistorias ?? 0) === 0}
@@ -691,6 +683,7 @@ export default function ConsultorTecnico() {
                         </div>
                       </div>
                     </div>
+                    )}
                   </div>
                 </>
               ) : !selectedVistoria ? (
