@@ -97,7 +97,7 @@ describe("validarLeituraManual", () => {
   it("rejeita umidade fora de 0–100", () => {
     const r = validarLeituraManual({ ...formVazio, umidade: "150" }, agora);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.erro).toContain("Umidade");
+    expect(r.ok ? "" : r.erro).toContain("Umidade");
   });
   it("rejeita chuva negativa", () => {
     const r = validarLeituraManual({ ...formVazio, chuva_mm: "-3" }, agora);
@@ -113,7 +113,7 @@ describe("validarLeituraManual", () => {
       agora
     );
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.erro).toContain("futuro");
+    expect(r.ok ? "" : r.erro).toContain("futuro");
   });
   it("aceita leitura válida e preserva zero", () => {
     const r = validarLeituraManual({ ...formVazio, temperatura: "25", chuva_mm: "0" }, agora);
