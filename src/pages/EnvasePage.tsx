@@ -27,7 +27,10 @@ import {
   quantidadeInteiraPositiva,
   validadeFutura,
   hojeLocalISO,
+  carregarTudo,
+  PAGINA_TECNICA,
 } from "@/lib/envase/consulta";
+import { useDebounce } from "@/hooks/useDebounce";
 
 function CriarEmbalagensInline({ envaseId, loteId, produtoId, volumeSugerido, quantidadeSugerida }: {
   envaseId: string; loteId: string; produtoId: string | null; volumeSugerido: number; quantidadeSugerida: number;
@@ -76,8 +79,6 @@ interface Envase {
   produto_etiquetas?: { id: string; status: string; trace_token: string; codigo_etiqueta: string } | null;
 }
 
-const LIMITE_BUSCA_LOTES = 200;
-
 const SELECT_ENVASE =
   "id, lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador, etiqueta_id, created_at, lotes!inner(codigo_lote, produto_id, produtos(nome)), produto_etiquetas:etiqueta_id(id, status, trace_token, codigo_etiqueta)";
 
@@ -89,6 +90,8 @@ export default function EnvasePage() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [produtos, setProdutos] = useState<{ id: string; nome: string }[]>([]);
+  const [erroAuxiliares, setErroAuxiliares] = useState<string | null>(null);
+  const [carregandoAuxiliares, setCarregandoAuxiliares] = useState(true);
 
   const [lotesComplementares, setLotesComplementares] = useState<LoteComplementar[]>([]);
   const [open, setOpen] = useState(false);
@@ -105,6 +108,8 @@ export default function EnvasePage() {
     lote_id: "", tipo_embalagem: "frasco_1L", quantidade: "", operador: "", validade: defaultValidade(),
   });
 
+  /** Uma consulta por pausa de digitação, não por tecla. */
+  const buscaDebounced = useDebounce(search.trim(), 400);
   const periodo = validarPeriodo(dateFrom, dateTo);
   const hoje = hojeLocalISO();
 
@@ -114,16 +119,20 @@ export default function EnvasePage() {
     setLoading(true);
     setErro(null);
     try {
-      const termo = search.trim();
+      const termo = buscaDebounced;
       let loteIds: string[] = [];
       if (termo) {
-        const { data, error } = await supabase
-          .from("lotes")
-          .select("id")
-          .ilike("codigo_lote", `%${termo}%`)
-          .limit(LIMITE_BUSCA_LOTES);
-        if (error) throw error;
-        loteIds = (data ?? []).map((l: any) => l.id);
+        const encontrados = await carregarTudo<{ id: string }>(async (from, to) => {
+          const { data, error } = await supabase
+            .from("lotes")
+            .select("id")
+            .ilike("codigo_lote", `%${termo}%`)
+            .order("id")
+            .range(from, to);
+          if (error) throw error;
+          return (data ?? []) as { id: string }[];
+        });
+        loteIds = encontrados.map((l) => l.id);
       }
 
       let query = supabase
@@ -153,36 +162,62 @@ export default function EnvasePage() {
     } finally {
       setLoading(false);
     }
-  }, [search, produtoFilter, dateFrom, dateTo, pagina, periodo.valido]);
+  }, [buscaDebounced, produtoFilter, dateFrom, dateTo, pagina, periodo.valido]);
 
   /** Lotes elegíveis a complemento: último CQ aprovado + lote aprovado + saldo. */
   const carregarComplementares = useCallback(async () => {
+    setCarregandoAuxiliares(true);
+    setErroAuxiliares(null);
     try {
-      const { data: lotes, error } = await supabase
-        .from("lotes")
-        .select("id, codigo_lote, status, volume_produzido, programacao_id, produtos(nome), controle_qualidade(id, created_at, data_analise, resultado)")
-        .eq("status", "aprovado")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
+      // Sem teto: percorre todas as páginas técnicas de lotes aprovados e produtos.
+      const lotes = await carregarTudo<any>(async (from, to) => {
+        const { data, error } = await supabase
+          .from("lotes")
+          .select(
+            "id, codigo_lote, status, volume_produzido, programacao_id, produtos(nome), controle_qualidade(id, seq, created_at, data_analise, resultado)",
+          )
+          .eq("status", "aprovado")
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to);
+        if (error) throw error;
+        return (data ?? []) as any[];
+      });
 
-      const ids = (lotes ?? []).map((l: any) => l.id);
+      const listaProdutos = await carregarTudo<{ id: string; nome: string }>(async (from, to) => {
+        const { data, error } = await supabase
+          .from("produtos")
+          .select("id, nome")
+          .order("nome")
+          .order("id")
+          .range(from, to);
+        if (error) throw error;
+        return (data ?? []) as { id: string; nome: string }[];
+      });
+      setProdutos(listaProdutos);
+
+      const ids = lotes.map((l: any) => l.id);
       if (!ids.length) { setLotesComplementares([]); return; }
 
-      const { data: evs, error: evErro } = await supabase
-        .from("envase")
-        .select("lote_id, volume_por_unidade, quantidade")
-        .in("lote_id", ids);
-      if (evErro) throw evErro;
+      const evs = await carregarTudo<any>(async (from, to) => {
+        const { data, error } = await supabase
+          .from("envase")
+          .select("lote_id, volume_por_unidade, quantidade")
+          .in("lote_id", ids)
+          .order("id")
+          .range(from, to);
+        if (error) throw error;
+        return (data ?? []) as any[];
+      }, PAGINA_TECNICA);
 
       const porLote = new Map<string, any[]>();
-      (evs ?? []).forEach((ev: any) => {
+      evs.forEach((ev: any) => {
         if (!porLote.has(ev.lote_id)) porLote.set(ev.lote_id, []);
         porLote.get(ev.lote_id)!.push(ev);
       });
 
       const elegiveis: LoteComplementar[] = [];
-      (lotes ?? []).forEach((l: any) => {
+      lotes.forEach((l: any) => {
         const doLote = porLote.get(l.id) ?? [];
         const saldo = calcSaldoMl(l.volume_produzido, doLote);
         const ok = podeComplementar({
@@ -203,22 +238,18 @@ export default function EnvasePage() {
         });
       });
       setLotesComplementares(elegiveis);
-    } catch {
+    } catch (e: any) {
+      // Falha NUNCA pode virar "sem opções".
       setLotesComplementares([]);
+      setProdutos([]);
+      setErroAuxiliares(e?.message || "Não foi possível carregar lotes com saldo e produtos.");
+    } finally {
+      setCarregandoAuxiliares(false);
     }
   }, []);
 
   useEffect(() => { carregarHistorico(); }, [carregarHistorico]);
   useEffect(() => { carregarComplementares(); }, [carregarComplementares]);
-
-  useEffect(() => {
-    supabase
-      .from("produtos")
-      .select("id, nome")
-      .order("nome")
-      .limit(300)
-      .then(({ data }) => setProdutos((data ?? []) as any[]));
-  }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
