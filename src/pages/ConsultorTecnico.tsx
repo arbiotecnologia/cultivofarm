@@ -927,44 +927,66 @@ export default function ConsultorTecnico() {
         if (!o) {
           setZoomedImageIndex(null);
           setEditingCaption(null);
+          setCaptionValue("");
         }
       }}>
 
-        <DialogContent 
+        <DialogContent
           className="max-w-4xl p-0 overflow-visible bg-transparent border-none shadow-none flex flex-col items-center justify-center h-[90vh] outline-none"
           onClick={() => setZoomedImageIndex(null)}
         >
-          {zoomedImageIndex !== null && selectedVistoria?.arquivos && (
+          {zoomedImageIndex !== null && arquivosVistoria[zoomedImageIndex] && (() => {
+            const atual = arquivosVistoria[zoomedImageIndex];
+            const { url: urlAtual, estado: estadoAtual } = urlDaEvidencia(atual);
+            const pronta = estadoAtual === "pronta" && !!urlAtual;
+            return (
             <>
-              <div 
+              <div
                 className="relative w-full h-full flex flex-col items-center justify-center"
                 onClick={(e) => e.stopPropagation()}
               >
 
                 {/* Imagem principal */}
                 <div className="relative group/main">
-                  <img 
-                    src={selectedVistoria.arquivos[zoomedImageIndex].arquivo_url} 
-                    alt="Ampliada" 
-                    className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
-                  />
-                  
+                  {pronta ? (
+                    <img
+                      src={urlAtual!}
+                      alt={atual.legenda || `Evidência ${zoomedImageIndex + 1}`}
+                      className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                    />
+                  ) : (
+                    <div className="w-[60vw] max-w-xl h-[50vh] rounded-lg bg-black/60 border border-white/10 flex flex-col items-center justify-center gap-3 text-white/80">
+                      {estadoAtual === "carregando" ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                          <span className="text-xs">Gerando link seguro…</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageOff className="h-6 w-6" />
+                          <span className="text-xs">Não foi possível carregar a evidência.</span>
+                          <Button variant="secondary" size="sm" className="h-7 text-[11px]" onClick={() => refreshSignedUrls()}>
+                            Tentar novamente
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {/* Botão de download no topo da imagem */}
                   <div className="absolute top-4 right-4 flex items-center gap-2">
                     <Badge variant="secondary" className="bg-black/50 text-white border-white/10 backdrop-blur-sm px-3 py-1 font-mono-data">
-                      {zoomedImageIndex + 1} / {selectedVistoria.arquivos.length}
+                      {zoomedImageIndex + 1} / {arquivosVistoria.length}
                     </Badge>
                     <Button
                       variant="secondary"
                       size="icon"
                       className="rounded-full bg-black/50 hover:bg-black/80 text-white border-white/10 backdrop-blur-sm transition-all hover:scale-110 active:scale-95 shadow-xl"
+                      disabled={!pronta}
+                      aria-label="Baixar imagem"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDownloadImage(
-                          selectedVistoria.arquivos[zoomedImageIndex].arquivo_url, 
-                          `visita_${selectedVistoria.id}_${zoomedImageIndex}.jpg`,
-                          selectedVistoria.arquivos[zoomedImageIndex].descricao
-                        );
+                        void handleDownloadImage(atual, zoomedImageIndex);
                       }}
                       title="Baixar imagem"
                     >
@@ -972,34 +994,34 @@ export default function ConsultorTecnico() {
                     </Button>
                   </div>
 
-
-
-                  
                   {/* Legenda na imagem ampliada */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md">
-                    {editingCaption === selectedVistoria.arquivos[zoomedImageIndex].id ? (
+                    {editingCaption === atual.id ? (
                       <div className="flex gap-2 bg-black/80 p-2 rounded-lg backdrop-blur-sm border border-white/10 shadow-xl">
-                        <Input 
+                        <Input
                           value={captionValue}
                           onChange={(e) => setCaptionValue(e.target.value)}
                           placeholder="Digite a legenda..."
+                          aria-label="Legenda da evidência"
                           className="h-8 bg-white/10 border-white/20 text-white text-xs placeholder:text-white/40"
                           autoFocus
-                          onKeyDown={(e) => e.key === 'Enter' && handleUpdateCaption(selectedVistoria.arquivos[zoomedImageIndex].id)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateCaption(atual.id); }}
                         />
-                        <Button 
-                          size="icon" 
-                          className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/80" 
-                          onClick={() => handleUpdateCaption(selectedVistoria.arquivos[zoomedImageIndex].id)}
+                        <Button
+                          size="icon"
+                          className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/80"
+                          aria-label="Salvar legenda"
+                          onClick={() => handleUpdateCaption(atual.id)}
                           disabled={updateCaptionMutation.isPending}
                         >
                           <Check className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          size="icon" 
+                        <Button
+                          size="icon"
                           variant="ghost"
-                          className="h-8 w-8 shrink-0 text-white hover:bg-white/10" 
-                          onClick={() => setEditingCaption(null)}
+                          className="h-8 w-8 shrink-0 text-white hover:bg-white/10"
+                          aria-label="Cancelar edição da legenda"
+                          onClick={() => { setEditingCaption(null); setCaptionValue(""); }}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -1007,12 +1029,12 @@ export default function ConsultorTecnico() {
                     ) : (
                       <div className="bg-black/60 hover:bg-black/80 backdrop-blur-sm p-3 rounded-lg border border-white/10 text-center transition-all group/caption shadow-xl">
                         <p className="text-white text-sm">
-                          {selectedVistoria.arquivos[zoomedImageIndex].descricao || "Sem legenda"}
+                          {atual.legenda || "Sem legenda"}
                         </p>
-                        <button 
+                        <button
                           onClick={() => {
-                            setEditingCaption(selectedVistoria.arquivos[zoomedImageIndex].id);
-                            setCaptionValue(selectedVistoria.arquivos[zoomedImageIndex].descricao || "");
+                            setEditingCaption(atual.id);
+                            setCaptionValue(atual.legenda || "");
                           }}
                           className="mt-1 text-[10px] text-primary hover:underline flex items-center gap-1 mx-auto opacity-0 group-hover/caption:opacity-100 transition-opacity"
                         >
@@ -1024,22 +1046,18 @@ export default function ConsultorTecnico() {
                 </div>
 
                 {/* Setas de navegação */}
-                {selectedVistoria.arquivos.length > 1 && (
+                {arquivosVistoria.length > 1 && (
                   <>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePrevImage();
-                      }}
+                      aria-label="Imagem anterior"
+                      onClick={(e) => { e.stopPropagation(); handlePrevImage(); }}
                       className="absolute left-[-60px] top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full transition-all hover:scale-110 active:scale-95 shadow-xl border border-white/10"
                     >
                       <ChevronLeft className="h-8 w-8" />
                     </button>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNextImage();
-                      }}
+                      aria-label="Próxima imagem"
+                      onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
                       className="absolute right-[-60px] top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full transition-all hover:scale-110 active:scale-95 shadow-xl border border-white/10"
                     >
                       <ChevronRight className="h-8 w-8" />
@@ -1049,32 +1067,41 @@ export default function ConsultorTecnico() {
 
               </div>
 
-
               {/* Miniaturas */}
-              {selectedVistoria.arquivos.length > 1 && (
+              {arquivosVistoria.length > 1 && (
                 <div className="mt-8 flex gap-2 overflow-x-auto p-4 max-w-full scrollbar-hide bg-black/20 rounded-xl backdrop-blur-sm border border-white/5">
-                  {selectedVistoria.arquivos.map((file: any, idx: number) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setZoomedImageIndex(idx);
-                        setEditingCaption(null);
-                      }}
-                      className={cn(
-                        "relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0",
-                        zoomedImageIndex === idx 
-                          ? "border-primary scale-110 shadow-[0_0_15px_rgba(var(--primary),0.5)] z-10" 
-                          : "border-transparent opacity-40 hover:opacity-100 hover:scale-105"
-                      )}
-                    >
-                      <img src={file.arquivo_url} className="w-full h-full object-cover" alt={`Miniatura ${idx + 1}`} />
-                    </button>
-                  ))}
+                  {arquivosVistoria.map((file, idx) => {
+                    const mini = urlDaEvidencia(file);
+                    return (
+                      <button
+                        key={file.id}
+                        aria-label={`Abrir evidência ${idx + 1}`}
+                        onClick={() => { setZoomedImageIndex(idx); setEditingCaption(null); setCaptionValue(""); }}
+                        className={cn(
+                          "relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0",
+                          zoomedImageIndex === idx
+                            ? "border-primary scale-110 shadow-[0_0_15px_rgba(var(--primary),0.5)] z-10"
+                            : "border-transparent opacity-40 hover:opacity-100 hover:scale-105"
+                        )}
+                      >
+                        {mini.estado === "pronta" && mini.url ? (
+                          <img src={mini.url} className="w-full h-full object-cover" alt={`Miniatura ${idx + 1}`} />
+                        ) : (
+                          <div className="w-full h-full bg-black/50 flex items-center justify-center">
+                            {mini.estado === "carregando"
+                              ? <Loader2 className="h-4 w-4 animate-spin text-white/70" />
+                              : <ImageOff className="h-4 w-4 text-white/70" />}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
             </>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
