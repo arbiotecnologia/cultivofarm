@@ -25,7 +25,7 @@ const read = (relative: string): string =>
 describe("Vinculo de backend — cliente runtime / config.toml", () => {
   const client = read("src/integrations/supabase/client.ts");
   const toml = read("supabase/config.toml");
-  const env = read(".env");
+  // .env foi removido do projeto: o runtime nao depende de variaveis ambientais.
 
   it("client.ts aponta para o CultivoFarm autorizado", () => {
     const guard = read("src/integrations/supabase/bindingGuard.ts");
