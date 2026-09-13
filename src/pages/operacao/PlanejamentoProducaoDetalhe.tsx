@@ -161,7 +161,7 @@ export default function PlanejamentoProducaoDetalhe() {
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Factory className="h-5 w-5" /> Planejamento — {order.numero}
         </h1>
-        <Badge variant="outline" className="ml-2">{planning.status}</Badge>
+        <Badge variant={varianteStatus(planning.status)} className="ml-2">{rotuloStatus(planning.status)}</Badge>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -180,7 +180,7 @@ export default function PlanejamentoProducaoDetalhe() {
             <div>Aprovado em: {order.approved_at ? formatDateTimeDisplay(order.approved_at) : "—"}</div>
             <div>Data desejada: {order.requested_delivery_date ? formatDateDisplay(order.requested_delivery_date) : "—"}</div>
             <div>Previsão: {order.estimated_delivery_date ? formatDateDisplay(order.estimated_delivery_date) : "—"}</div>
-            <div className="font-semibold">Total: {brl(order.total ?? 0)}</div>
+            <div className="font-semibold">Total: {order.total != null ? brl(order.total) : "—"}</div>
             
             {order.commercial_notes && <div className="text-muted-foreground">Obs comercial: {order.commercial_notes}</div>}
           </CardContent>
@@ -193,37 +193,44 @@ export default function PlanejamentoProducaoDetalhe() {
           {canManageProduction ? (
             <Button
               size="sm"
-              disabled={has_orders || generate.isPending}
+              disabled={has_orders || generate.isPending || gerando}
               onClick={async () => {
-                // Garante estado fresco antes de chamar o RPC — evita
-                // "ainda não está aprovado" quando a aprovação acabou de propagar.
-                const fresh = await refetch();
-                const freshOrder = fresh.data?.order;
-                const freshItems = fresh.data?.items ?? [];
-                if (freshOrder && freshOrder.ready_for_production !== true) {
-                  toast.error("Pedido ainda não liberado para produção. Conclua a aprovação comercial.");
-                  return;
+                if (gerando || generate.isPending) return; // trava clique repetido
+                setGerando(true);
+                try {
+                  // Garante estado fresco antes de chamar o RPC — evita
+                  // "ainda não está aprovado" quando a aprovação acabou de propagar.
+                  const fresh = await refetch();
+                  const freshData: any = fresh.data;
+                  const freshOrder = freshData?.order;
+                  const freshPlanning = freshData?.planning;
+                  if (!freshOrder || !freshPlanning) {
+                    toast.error("Não foi possível confirmar o estado atual do pedido. Tente novamente.");
+                    return;
+                  }
+                  const validacao = podeGerarOrdens({
+                    status: freshPlanning.status,
+                    hasOrders: freshData?.has_orders,
+                    readyForProduction: freshOrder.ready_for_production,
+                    itens: (freshData?.items ?? []) as any[],
+                  });
+                  if (!validacao.ok) {
+                    toast.error(validacao.erro ?? "Não é possível gerar ordens de produção agora.");
+                    return;
+                  }
+                  await new Promise<void>((resolve) =>
+                    generate.mutate(
+                      { partner_order_id: freshOrder.id, planning_id: freshPlanning.id, numero: freshOrder.numero },
+                      { onSettled: () => { refetch(); resolve(); } },
+                    ),
+                  );
+                } finally {
+                  setGerando(false);
                 }
-                const hasInvalidQty = freshItems.some(
-                  (it: any) => !(Number(it.quantidade) > 0),
-                );
-                if (freshItems.length === 0) {
-                  b2bToast.error("generate-op", "no_items", order.numero);
-                  return;
-                }
-                if (hasInvalidQty) {
-                  b2bToast.error("generate-op", "invalid_quantity", order.numero);
-                  return;
-                }
-                generate.mutate(
-                  { partner_order_id: order.id, planning_id: planning.id, numero: order.numero },
-                  { onSuccess: () => refetch() },
-                );
-
               }}
             >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              {has_orders ? "OPs já geradas" : "Gerar Ordem de Produção"}
+              <CheckCircle2 className="h-4 w-4 mr-1" aria-hidden="true" />
+              {has_orders ? "OPs já geradas" : generate.isPending || gerando ? "Gerando…" : "Gerar Ordem de Produção"}
             </Button>
           ) : (
             <Badge variant="outline" className="gap-1"><Lock className="h-3 w-3" /> Somente leitura</Badge>
