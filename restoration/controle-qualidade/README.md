@@ -50,9 +50,8 @@ para anon/authenticated, RPC somente authenticated, locks e validações present
 - Paginação é local e não é snapshot transacional; históricos muito grandes podem atingir o timeout de 30s.
 - Sem homologação autenticada em navegador, E2E ou teste de concorrência (proibidos nesta etapa).
 
-## SQL preparado
-Nenhum. As lacunas encontradas são de apresentação; alterações de contrato (campos de laudo/anexos,
-conformidade calculada no servidor) exigem diagnóstico autorizado antes de qualquer DDL.
+## SQL aplicável
+O arquivo abaixo contém somente o subconjunto seguro aplicado manualmente, conforme relato do usuário; nenhuma execução nesta rodada.
 
 ## Evidências
 - Testes focados de CQ: **21/21 aprovados** (src/test/cq/consulta.test.ts).
@@ -93,35 +92,28 @@ conformidade calculada no servidor) exigem diagnóstico autorizado antes de qual
 - Há divergência entre o histórico local (revogação do helper em `20260904131239`) e a ACL relatada
   pelo usuário. Por isso não se concede EXECUTE novo: preserva-se authenticated se já houver.
 
-### Migração ÚNICA preparada, NÃO aplicada
-`sql/20260913050000_cq_hardening.sql` (psql, não colar em editor SQL sem adaptar metacomandos).
-- Ref fail-closed e banco postgres; não define artificialmente ref de conexão. Se a configuração
-  `lovable.project_ref` não existir, ABORTAR e obter evidência confiável do destino antes de adaptar.
-- Revoga TRUNCATE/TRIGGER/REFERENCES de anon/authenticated; mantém DML e RLS existentes.
-  Não amplia DML: mínimo efetivo continua determinado pelas políticas. Não altera outros triggers.
-- Helper permanece com corpo e assinatura originais, passa a INVOKER, caminho fixo e sem PUBLIC/anon.
-- Revoga execução direta do trigger de envase. PostgreSQL confere EXECUTE na criação do trigger,
-  não em cada disparo; pós-check exige trigger habilitado. **Contrato estático, não teste real de disparo.**
-- Checks anuláveis: pH e referências 0..14 inclusive, concentração >= 0, mínimo <= máximo,
-  rejeição explícita de NaN e ambos infinitos. Não converte zero em ausência. Precheck sem DML.
-- Rollback é gerado ANTES das mudanças em arquivo local do operador: definição anterior do helper,
-  ACLs retiradas com grant options, remoção somente de checks novos e função/trigger novos.
-  Arquivar cada captura com hash e não sobrescrever rollback da primeira aplicação em reexecuções.
-  `ROLLBACK` transacional é exato em qualquer falha antes de COMMIT; nenhum rollback foi executado.
+### Alinhamento final — 13/09/2026
+**Subconjunto seguro aplicado manualmente e pós-check aprovado**, conforme resultados fornecidos pelo usuário; não reconsultado nesta rodada.
+- database=postgres; cq_rows=0; reference_rows=0.
+- RLS das duas tabelas continua true; dangerous_grants_remaining=0 para TRUNCATE/TRIGGER/REFERENCES de anon/authenticated.
+- fn_cq_ultimo_resultado: SECURITY INVOKER (security_definer=false), anon_execute=false, authenticated_execute=true.
+- fn_validate_envase_cq: anon_execute=false, authenticated_execute=false; trigger existente e habilitado=true.
+- cq_h5_ph, cq_h5_concentracao e cq_h5_referencia existem, estão validadas e rejeitam NaN/Infinity/-Infinity, faixas inválidas e concentração negativa.
+- Frontend de período invertido e limite igual verificado visualmente pelo usuário: funciona.
 
-### Reanálise: regra conservadora preparada, NÃO homologada
-Após qualquer aprovação registrada, bloquear INSERT/UPDATE de CQ para o mesmo lote com erro
-`CQ_REANALISE_BLOQUEADA`; não registrar novo parecer nem alterar silenciosamente lote/OS.
-Inclui aprovação→reprovação, aprovação→pendente, aprovação→aprovação, edição antiga/backdating.
-É intencionalmente mais restritivo que permitir reanálise: lote já liberado exige fluxo formal de
-não conformidade/quarentena, ainda não implementado. Histórico anterior é preservado.
-O teste estático prova presença/ordem da guarda e ausência de DML de status; **não prova execução
-PostgreSQL nem concorrência**. Lock serializa CQ no isolamento READ COMMITTED; concorrência pode
-abortar por deadlock de upgrade, seguro mas exige repetição pelo operador. Outros isolamentos falham.
-**NO-GO para aplicar sem revisão e ensaio autorizado**: confirmar corpo real do helper, ACL/RLS e
-assinaturas, equivalência de checks preexistentes homônimos, comportamento de triggers e reexecução,
-rollback capturado, concorrência com envase/estoque e mensagem no Cockpit. A guarda bloqueia novos
-pareceres após aprovação, não substitui recall de produto nem corrige incoerências históricas.
+### Script alinhado ao subconjunto seguro
+`sql/20260913050000_cq_hardening.sql` é transacional e compatível com SQL Editor, sem metacomandos psql.
+Validação do ref **externa pelo dashboard/URL**: destino exclusivo `swzpzcwiasxmjutrmvkm`; current_database não comprova projeto.
+Preserva dados, DML, RLS, policies, corpos das funções e triggers existentes. Revoga apenas ACLs indicadas, fixa invoker/caminho do helper e mantém authenticated (falha se ausente, sem ampliar grants).
+CHECKs ausentes são criados; homônimos validados têm definição comparada conservadoramente com o contrato: divergência aborta sem substituir nada. Formatação/tipos não reconhecidos exigem revisão, não correção automática.
+Pós-check verifica ACLs, invoker, RLS, trigger habilitado e três constraints validadas, exibindo contagens atuais (não exige tabelas vazias em reexecução).
+Falha antes do COMMIT exige ROLLBACK da transação no editor. Não há geração automática de arquivo de rollback; reversão após COMMIT exige captura prévia e autorização específica, sem restaurar privilégios por suposição.
+
+### Reanálise — proposta textual, sem SQL executável
+**NO-GO; NÃO aplicada e NÃO homologada.** A função fn_cq_bloquear_reanalise_liberada e o trigger correspondente não são criados pelo script aplicável.
+A hipótese de bloquear pareceres após aprovação é somente uma proposta: exige desenhar quarentena/reanálise, não conformidade/recall, autorização, histórico e concorrência com envase/estoque antes de homologar cenários.
+**Dívida preservada: atomicidade CQ+avanço.** O INSERT do parecer e a RPC de avanço continuam em duas transações; falha parcial não foi resolvida.
+Não homologar aprovação→reprovação, aprovação→pendente ou reanálise concorrente sem esse desenho e ensaios autorizados.
 
 ### Proposta separada, reversível — não implementada
 - Registro atômico de CQ+avanço com chave idempotente, snapshot de referência e evento de não
@@ -132,3 +124,9 @@ pareceres após aprovação, não substitui recall de produto nem corrige incoer
   vínculos duplos; consultas e políticas devem ser confirmadas antes de ampliar o relatório.
 - Ausência de referências é **bloqueio de configuração para testes de conformidade**, não defeito
   a resolver com dados inventados. Nenhum dado criado, SQL executado, publicação ou GitHub.
+
+### Validação local do alinhamento final
+- CQ: 31 testes aprovados, 0 falhas (21 consulta + 10 hardening), 2 arquivos; exit 0. Gate de vínculo: OK, exit 0. Suíte completa não executada.
+- `.env` ausente e ignorado; único createClient operacional preservado no cliente canônico.
+- Build automático: build OK; typecheck isolado não executado por restrição do ambiente, sem evidência separada.
+- Nenhum acesso/aplicação de banco, criação de dados, publicação ou sincronização GitHub nesta rodada.
