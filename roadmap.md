@@ -112,3 +112,13 @@
 - `.env` ausente e ignorado; único createClient operacional preservado no cliente canônico.
 - Build automático: build OK; typecheck isolado não executado por restrição do ambiente, sem evidência separada.
 - Nenhum acesso/aplicação de banco, criação de dados, publicação ou sincronização GitHub nesta rodada.
+
+## Envase (13/09/2026)
+- [x] Correção consolidada de frontend: estados de carga/erro/retry, paginação server-side (50, count exato),
+      validação de período, rótulos acessíveis, último CQ determinístico, idempotência estável no complemento,
+      remoção da edição de `lotes.volume_produzido`, `defaultValidade` em calendário local.
+- [x] SQL idempotente + rollback + README com pós-check real em `restoration/envase/` (subconjunto seguro já
+      aplicado manualmente em produção; nada executado nesta rodada).
+- [ ] Dívida: atomicidade CQ + avanço de etapa.
+- [ ] Dívida: desenho de quarentena/reanálise antes de homologar cenários de reprovação.
+- [ ] Dívida: sem dados em `public.envase`, cenários E2E e de concorrência seguem não homologados.

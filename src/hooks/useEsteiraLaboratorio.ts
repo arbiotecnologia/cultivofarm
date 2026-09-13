@@ -376,6 +376,8 @@ export function useEsteiraLaboratorio() {
     osId: string;
     origem: string;
     programacaoId: string;
+    /** Estável por tentativa: retry da mesma tentativa é replay, não duplicata. */
+    idempotencyKey?: string;
   }) => {
     const result = await registrarEnvaseTransacional({
       loteId: params.envaseData.lote_id,
@@ -390,6 +392,7 @@ export function useEsteiraLaboratorio() {
       ],
       validade: params.estoqueData?.validade,
       operador: params.envaseData.operador ?? null,
+      idempotencyKey: params.idempotencyKey,
     });
     return !!result;
   };

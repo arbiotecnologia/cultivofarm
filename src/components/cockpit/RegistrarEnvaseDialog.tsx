@@ -46,8 +46,6 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
   const [saving, setSaving] = useState(false);
   const [saldo, setSaldo] = useState<{ produzido: number; envasado: number; saldo: number } | null>(null);
   const [demanda, setDemanda] = useState<{ solicitadoL: number; reservadoL: number; pendenteL: number } | null>(null);
-  const [novoVolume, setNovoVolume] = useState("");
-  const [salvandoProducao, setSalvandoProducao] = useState(false);
   // Chave de idempotência por abertura do diálogo: duplo clique/retry não
   // gera envase duplicado — o servidor responde replay.
   const idempotencyKey = useRef<string>(crypto.randomUUID());
@@ -91,41 +89,20 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
       setValidade(defaultValidade());
       setSaldo(null);
       setDemanda(null);
-      setNovoVolume("");
       return;
     }
     setLinhas([novaLinha()]);
     setOperador("");
     setValidade(defaultValidade());
-    setNovoVolume("");
     idempotencyKey.current = crypto.randomUUID();
     carregarSaldo();
   }, [open, target?.lote_id, carregarSaldo]);
 
-  const salvarProducao = async () => {
-    if (!target?.lote_id) return;
-    const litros = Number(novoVolume);
-    if (!litros || litros <= 0) {
-      toast.error("Informe um volume produzido maior que zero.");
-      return;
-    }
-    setSalvandoProducao(true);
-    try {
-      const { error } = await supabase
-        .from("lotes")
-        .update({ volume_produzido: litros * 1000 })
-        .eq("id", target.lote_id);
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      toast.success(`Volume produzido atualizado: ${litros} L.`);
-      setNovoVolume("");
-      await carregarSaldo();
-    } finally {
-      setSalvandoProducao(false);
-    }
-  };
+  // Produção NÃO é editável aqui: alterar lotes.volume_produzido direto da tela
+  // criaria mudança de produção sem trilha transacional. Sem produção registrada,
+  // o envase é bloqueado e o operador volta à etapa de produção do Cockpit.
+
+
 
 
   const volSolicitado = linhas.reduce((s, l) => s + volumeDaLinha(l), 0);
@@ -275,30 +252,12 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
             </div>
           )}
           {loteSemProducao && (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3" role="alert">
               <p className="text-xs text-destructive">
-                Este lote não tem volume produzido informado. Registre a produção abaixo para liberar o envase.
+                Este lote não tem volume produzido registrado. O envase fica bloqueado: volte à etapa de
+                produção no Cockpit Laboratório e registre a produção do lote por lá. A produção não pode
+                ser alterada nesta tela.
               </p>
-              <div className="flex items-end gap-2">
-                <div className="flex-1 space-y-1.5">
-                  <Label className="text-xs">Volume produzido (L)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.1"
-                    value={novoVolume}
-                    onChange={(e) => setNovoVolume(e.target.value)}
-                    placeholder="Ex.: 50"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  onClick={salvarProducao}
-                  disabled={salvandoProducao || !Number(novoVolume)}
-                >
-                  {salvandoProducao ? "Salvando..." : "Salvar produção"}
-                </Button>
-              </div>
             </div>
           )}
 
