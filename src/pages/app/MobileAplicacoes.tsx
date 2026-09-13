@@ -12,7 +12,7 @@ import { ArrowLeft, Loader2, Droplets, MapPin, Camera, X, AlertTriangle, History
 import { toast } from "sonner";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { uploadEvidencias, limparObjetosEvidencias, PendingEvidencia } from "@/components/aplicacao/EvidenciasUploader";
-import { ACCEPT_EVIDENCIAS, tipoEvidencia, validarArquivoEvidencia, validarMotivoRetificacao } from "@/lib/aplicacoes/evidencias";
+import { ACCEPT_EVIDENCIAS, normalizarArquivoCamera, tipoEvidencia, validarArquivoEvidencia, validarMotivoRetificacao } from "@/lib/aplicacoes/evidencias";
 import { validarAplicacao } from "@/lib/aplicacoes/validacao";
 
 
