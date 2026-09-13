@@ -13,7 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, MapPin, AlertTriangle, Sprout, FlaskConical, Cloud, Camera, X, ImageIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { dataLocal, validarAplicacao } from "@/lib/aplicacoes/validacao";
-import { EvidenciasUploader, uploadEvidencias, PendingEvidencia } from "./EvidenciasUploader";
+import { EvidenciasUploader, uploadEvidencias, limparObjetosEvidencias, PendingEvidencia } from "./EvidenciasUploader";
+import { validarMotivoRetificacao } from "@/lib/aplicacoes/evidencias";
+
 import { dependentesNovaOS, totalAplicacao, unidadeAplicacao } from "@/lib/aplicacoes/unidades";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 
