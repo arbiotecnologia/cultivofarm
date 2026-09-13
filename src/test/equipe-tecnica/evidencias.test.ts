@@ -17,10 +17,11 @@ import {
 import { filtrarConsultores } from "@/lib/equipe-tecnica/consultores";
 
 describe("equipe técnica — perfis e acesso", () => {
-  it("não usa select('*') em profiles", () => {
+  it("traz apenas os campos realmente necessários de profiles", () => {
+    expect(PROFILE_FIELDS).toBe("id, user_id, nome, email, ativo");
     expect(PROFILE_FIELDS).not.toContain("*");
-    expect(PROFILE_FIELDS).toContain("user_id");
-    expect(PROFILE_FIELDS).toContain("ativo");
+    expect(PROFILE_FIELDS).not.toContain("avatar_url");
+    expect(PROFILE_FIELDS).not.toContain("created_at");
   });
 
   it("papéis técnicos NÃO recebem texto de acesso amplo", () => {
