@@ -55,7 +55,7 @@ export function PainelAlertas() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-48" aria-label="Filtrar alertas por status"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos</SelectItem>
             <SelectItem value="ativo">Ativos</SelectItem>
@@ -83,6 +83,11 @@ export function PainelAlertas() {
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+              ) : alertasQuery.isError ? (
+                <TableRow><TableCell colSpan={7} className="text-center py-8">
+                  <p className="text-sm mb-3">Não foi possível carregar os alertas.</p>
+                  <Button size="sm" variant="outline" onClick={() => alertasQuery.refetch()}>Tentar novamente</Button>
+                </TableCell></TableRow>
               ) : !(alertas ?? []).length ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum alerta encontrado.</TableCell></TableRow>
               ) : (
@@ -102,16 +107,16 @@ export function PainelAlertas() {
                       <div className="flex gap-1">
                         {a.status === "ativo" && (
                           <>
-                            <Button size="sm" variant="ghost" title="Monitorar" onClick={() => updateStatus.mutate({ id: a.id, status: "monitoramento" })}>
+                            <Button size="sm" variant="ghost" title="Monitorar" aria-label="Colocar em monitoramento" disabled={emAndamento !== null} onClick={() => alterarStatus(a.id, a.status, "monitoramento")}>
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
-                            <Button size="sm" variant="ghost" title="Encerrar" onClick={() => updateStatus.mutate({ id: a.id, status: "encerrado" })}>
+                            <Button size="sm" variant="ghost" title="Encerrar" aria-label="Encerrar alerta" disabled={emAndamento !== null} onClick={() => alterarStatus(a.id, a.status, "encerrado")}>
                               <CheckCircle className="h-3.5 w-3.5" />
                             </Button>
                           </>
                         )}
                         {a.status === "monitoramento" && (
-                          <Button size="sm" variant="ghost" title="Encerrar" onClick={() => updateStatus.mutate({ id: a.id, status: "encerrado" })}>
+                          <Button size="sm" variant="ghost" title="Encerrar" aria-label="Encerrar alerta" disabled={emAndamento !== null} onClick={() => alterarStatus(a.id, a.status, "encerrado")}>
                             <CheckCircle className="h-3.5 w-3.5" />
                           </Button>
                         )}
