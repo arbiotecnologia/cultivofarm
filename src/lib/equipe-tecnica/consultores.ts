@@ -66,14 +66,22 @@ export function isConsultorAtivo(c: { ativo?: boolean | null } | null | undefine
   return c?.ativo !== false;
 }
 
-/** Busca tolerante a espaços e acentuação simples, sobre nome, e-mail e CREA. */
+/** Normaliza texto para busca: sem acento, sem caixa, sem espaços nas pontas. */
+export function normalizarBusca(valor: unknown): string {
+  if (typeof valor !== "string") return "";
+  return valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+/** Busca tolerante a espaços, caixa e acentuação, sobre nome, e-mail e CREA. */
 export function filtrarConsultores<T extends Record<string, any>>(lista: T[], termo: string): T[] {
-  const q = (termo ?? "").trim().toLowerCase();
+  const q = normalizarBusca(termo);
   if (!q) return lista;
   return lista.filter((c) =>
-    [c.nome, c.email, c.crea].some(
-      (campo) => typeof campo === "string" && campo.toLowerCase().includes(q),
-    ),
+    [c.nome, c.email, c.crea].some((campo) => normalizarBusca(campo).includes(q)),
   );
 }
 

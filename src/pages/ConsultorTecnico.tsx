@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Search, User, Mail, Phone,
+  Search, User, Mail, Map,
   MapPin, ClipboardCheck, MoreVertical,
-  Users, Map, Calendar, IdCard, Briefcase, ChevronRight, Layout, Camera, Eye, ChevronLeft, X, Edit2, Check, Download
+  Users, Calendar, ChevronRight, Camera, Eye, ChevronLeft, X, Edit2, Check, Download,
+  ImageOff, Loader2
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
@@ -24,7 +25,7 @@ import {
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { formatTelefone } from "@/lib/masks";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -39,16 +40,18 @@ import {
   filtrarConsultores,
   isConsultorAtivo,
 } from "@/lib/equipe-tecnica/consultores";
-
-
-
-
-
-
-
-
-
-
+import {
+  PROFILE_FIELDS,
+  temAcessoAmploClientes,
+  idsUnicos,
+  resolverUrlEvidencia,
+  nomeDownloadEvidencia,
+  normalizarLegenda,
+  conferirLinhaUnica,
+  deveIgnorarAtalho,
+  type EvidenciaVistoria,
+  type UrlEvidencia,
+} from "@/lib/equipe-tecnica/evidencias";
 
 export default function ConsultorTecnico() {
   const [search, setSearch] = useState("");
@@ -64,81 +67,141 @@ export default function ConsultorTecnico() {
   const queryClient = useQueryClient();
   const { visitas: metricasVisitas } = useMetricasOperacionais();
 
+  /** Reinicia todo o estado dependente do consultor/vistoria selecionados. */
+  const resetEstadoConsultor = useCallback(() => {
+    setShowVistorias(false);
+    setSelectedVistoria(null);
+    setSelectedClienteFilter("todos");
+    setZoomedImageIndex(null);
+    setSelectedPhotos([]);
+    setFocusedPhotoIndex(null);
+    setEditingCaption(null);
+    setCaptionValue("");
+  }, []);
 
+  const selecionarConsultor = useCallback((consultor: any) => {
+    resetEstadoConsultor();
+    setSelected(consultor);
+  }, [resetEstadoConsultor]);
 
+  const fecharConsultor = useCallback(() => {
+    resetEstadoConsultor();
+    setSelected(null);
+  }, [resetEstadoConsultor]);
+
+  // Evidências da vistoria aberta (contrato: registros_consultor_arquivos).
+  const arquivosVistoria: EvidenciaVistoria[] = useMemo(
+    () => (selectedVistoria?.arquivos ?? []) as EvidenciaVistoria[],
+    [selectedVistoria],
+  );
+  const filePaths = useMemo(
+    () => arquivosVistoria.map((a) => a.arquivo_path).filter(Boolean) as string[],
+    [arquivosVistoria],
+  );
+  const {
+    urls: signedUrls,
+    loading: signedLoading,
+    error: signedError,
+    refresh: refreshSignedUrls,
+  } = useSignedUrls(filePaths);
+
+  /** Fonte única da URL efetiva para grade, ampliação, miniatura e download. */
+  const urlDaEvidencia = useCallback(
+    (arquivo: EvidenciaVistoria | null | undefined): UrlEvidencia =>
+      resolverUrlEvidencia(arquivo, signedUrls, { loading: signedLoading, error: signedError }),
+    [signedUrls, signedLoading, signedError],
+  );
 
   const updateCaptionMutation = useMutation({
-    mutationFn: async ({ id, descricao }: { id: string; descricao: string }) => {
-      const { error } = await supabase
-        .from("arquivos")
-        .update({ descricao })
-        .eq("id", id);
+    mutationFn: async ({ id, legenda, registroId }: { id: string; legenda: string; registroId: string }) => {
+      // Escopo completo: a evidência precisa pertencer à vistoria aberta.
+      const { data, error } = await supabase
+        .from("registros_consultor_arquivos")
+        .update({ legenda })
+        .eq("id", id)
+        .eq("registro_consultor_id", registroId)
+        .select("id");
       if (error) throw error;
+      const conferencia = conferirLinhaUnica(data);
+      if (!conferencia.ok) throw new Error(conferencia.mensagem);
+      return { id, legenda };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["consultor-kpis"] });
+    onSuccess: ({ id, legenda }) => {
+      // Mantém a UI coerente sem recarregar tudo.
+      setSelectedVistoria((atual: any) =>
+        atual
+          ? {
+              ...atual,
+              arquivos: (atual.arquivos ?? []).map((a: any) => (a.id === id ? { ...a, legenda } : a)),
+            }
+          : atual,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["consultor-kpis"] });
       toast.success("Legenda atualizada!");
       setEditingCaption(null);
+      setCaptionValue("");
     },
-    onError: (error) => {
-      toast.error("Erro ao atualizar legenda");
-      console.error(error);
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao atualizar legenda");
     }
   });
 
   const handleUpdateCaption = (id: string) => {
     if (updateCaptionMutation.isPending) return;
-    updateCaptionMutation.mutate({ id, descricao: captionValue });
+    if (!selectedVistoria?.id) return;
+    const normalizada = normalizarLegenda(captionValue);
+    if (!normalizada.valida) {
+      toast.error(normalizada.mensagem ?? "Legenda inválida");
+      return;
+    }
+    updateCaptionMutation.mutate({ id, legenda: normalizada.valor, registroId: selectedVistoria.id });
   };
 
-
-  const handleDownloadImage = async (url: string, filename: string, caption?: string) => {
+  /** Download seguro: URL efetiva já resolvida, extensão real e blob revogado. */
+  const handleDownloadImage = useCallback(async (arquivo: EvidenciaVistoria, indice: number) => {
+    const { url, estado } = urlDaEvidencia(arquivo);
+    if (!url || estado !== "pronta") {
+      toast.error("A imagem ainda não está disponível para download.");
+      return;
+    }
+    let blobUrl: string | null = null;
     try {
       const response = await fetch(url);
+      if (!response.ok) throw new Error(`Falha no download (${response.status})`);
       const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
       link.href = blobUrl;
-      
-      // Limpa a legenda para usar no nome do arquivo (remove caracteres especiais)
-      const cleanCaption = caption 
-        ? caption.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 50) 
-        : '';
-      
-      const finalFilename = cleanCaption 
-        ? `${filename.split('.')[0]}_${cleanCaption}.jpg`
-        : filename;
-
-      link.download = finalFilename || 'evidencia.jpg';
+      link.download = nomeDownloadEvidencia(arquivo, selectedVistoria?.id ?? "visita", indice);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Erro ao baixar imagem:", error);
-      toast.error("Não foi possível baixar a imagem diretamente. Tente clicar com o botão direito e 'Salvar como'.");
-      window.open(url, '_blank');
+    } catch {
+      // Não abrimos a URL assinada em nova aba: é privada e pode estar expirada.
+      toast.error("Não foi possível baixar a imagem. Tente novamente.");
+    } finally {
+      if (blobUrl) window.URL.revokeObjectURL(blobUrl);
     }
-  };
-
+  }, [urlDaEvidencia, selectedVistoria]);
 
   const handleNextImage = useCallback(() => {
-    if (selectedVistoria?.arquivos && zoomedImageIndex !== null) {
-      setZoomedImageIndex((prev) => (prev !== null && prev < selectedVistoria.arquivos.length - 1 ? prev + 1 : 0));
+    if (arquivosVistoria.length && zoomedImageIndex !== null) {
+      setZoomedImageIndex((prev) => (prev !== null && prev < arquivosVistoria.length - 1 ? prev + 1 : 0));
       setEditingCaption(null);
     }
-  }, [selectedVistoria, zoomedImageIndex]);
+  }, [arquivosVistoria, zoomedImageIndex]);
 
   const handlePrevImage = useCallback(() => {
-    if (selectedVistoria?.arquivos && zoomedImageIndex !== null) {
-      setZoomedImageIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : selectedVistoria.arquivos.length - 1));
+    if (arquivosVistoria.length && zoomedImageIndex !== null) {
+      setZoomedImageIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : arquivosVistoria.length - 1));
       setEditingCaption(null);
     }
-  }, [selectedVistoria, zoomedImageIndex]);
+  }, [arquivosVistoria, zoomedImageIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (zoomedImageIndex === null) return;
+      if (deveIgnorarAtalho(e.target)) return;
       if (e.key === "ArrowRight") handleNextImage();
       if (e.key === "ArrowLeft") handlePrevImage();
     };
@@ -148,9 +211,10 @@ export default function ConsultorTecnico() {
 
   useEffect(() => {
     if (!selectedVistoria || zoomedImageIndex !== null) return;
-    
+
     const handleGridKeyDown = (e: KeyboardEvent) => {
-      const files = selectedVistoria.arquivos || [];
+      if (deveIgnorarAtalho(e.target)) return;
+      const files = arquivosVistoria;
       if (files.length === 0) return;
 
       if (focusedPhotoIndex === null) {
@@ -165,11 +229,11 @@ export default function ConsultorTecnico() {
       if (e.key === "ArrowLeft") newIndex = Math.max(0, focusedPhotoIndex - 1);
       if (e.key === "ArrowDown") newIndex = Math.min(files.length - 1, focusedPhotoIndex + 3);
       if (e.key === "ArrowUp") newIndex = Math.max(0, focusedPhotoIndex - 3);
-      
+
       if (e.key === " ") { // Barra de espaço seleciona
         e.preventDefault();
         const file = files[focusedPhotoIndex];
-        setSelectedPhotos(prev => 
+        setSelectedPhotos(prev =>
           prev.includes(file.id) ? prev.filter(id => id !== file.id) : [...prev, file.id]
         );
       }
@@ -186,31 +250,27 @@ export default function ConsultorTecnico() {
 
     window.addEventListener("keydown", handleGridKeyDown);
     return () => window.removeEventListener("keydown", handleGridKeyDown);
-  }, [selectedVistoria, focusedPhotoIndex, zoomedImageIndex]);
+  }, [selectedVistoria, arquivosVistoria, focusedPhotoIndex, zoomedImageIndex]);
 
-
-
-
-
-
-
-
-
-
-  const { data: kpis, isLoading: loadingKpis } = useQuery({
+  const {
+    data: kpis,
+    isLoading: loadingKpis,
+    isError: erroKpis,
+    refetch: refetchKpis,
+    isFetching: fetchingKpis,
+  } = useQuery({
     queryKey: ["consultor-kpis", selected?.user_id, selectedClienteFilter],
-
     enabled: !!selected?.user_id,
     queryFn: async () => {
       const start = new Date();
       start.setDate(1);
       start.setHours(0, 0, 0, 0);
-      
+
       let query = supabase
         .from("registros_consultor")
         .select(`
-          id, 
-          area_hectares, 
+          id,
+          area_hectares,
           data_vistoria,
           status,
           observacoes_tecnicas,
@@ -218,9 +278,8 @@ export default function ConsultorTecnico() {
           cliente_id,
           fazenda:fazendas(nome),
           talhao:talhoes(nome),
-          arquivos(id, arquivo_url, arquivo_path, entidade_tipo, descricao)
+          arquivos:registros_consultor_arquivos(id, arquivo_url, arquivo_path, legenda, nome_arquivo)
         `)
-
         .eq("consultor_responsavel", selected.user_id)
         .gte("data_vistoria", start.toISOString().slice(0, 10));
 
@@ -228,32 +287,40 @@ export default function ConsultorTecnico() {
         query = query.eq("cliente_id", selectedClienteFilter);
       }
 
-      const { data } = await query.order('data_vistoria', { ascending: false });
-      
+      const { data, error } = await query.order('data_vistoria', { ascending: false });
+      if (error) throw error;
+
       const vistorias = data?.length ?? 0;
       const area = (data ?? []).reduce((s: number, r: any) => s + Number(r.area_hectares ?? 0), 0);
-      return { vistorias, area, list: data || [] };
+      return { vistorias, area, list: data ?? [] };
     },
-
-
   });
 
-
-  const { data: clientesVinc, isLoading: loadingClientes } = useQuery({
+  const {
+    data: clientesVinc,
+    isLoading: loadingClientes,
+    isError: erroClientes,
+    refetch: refetchClientes,
+    isFetching: fetchingClientes,
+  } = useQuery({
     queryKey: ["consultor-clientes", selected?.user_id],
     enabled: !!selected?.user_id,
     queryFn: async () => {
-      const { data: vinc } = await supabase
+      const { data: vinc, error: erroVinc } = await supabase
         .from("user_clientes")
         .select("cliente_id, principal")
-        .eq("user_id", selected.user_id);
+        .eq("user_id", selected.user_id)
+        .eq("is_active", true);
+      if (erroVinc) throw erroVinc;
       if (!vinc || vinc.length === 0) return [];
-      const ids = vinc.map((v: any) => v.cliente_id);
-      const { data: clientes } = await supabase
+      const ids = idsUnicos(vinc.map((v: any) => v.cliente_id));
+      if (ids.length === 0) return [];
+      const { data: clientes, error: erroClientesQuery } = await supabase
         .from("clientes")
         .select("id, nome, nome_fantasia")
         .in("id", ids)
         .order("nome");
+      if (erroClientesQuery) throw erroClientesQuery;
       return (clientes ?? []).map((c: any) => ({
         id: c.id,
         nome: c.nome_fantasia || c.nome,
@@ -262,7 +329,7 @@ export default function ConsultorTecnico() {
     },
   });
 
-  const hasAmploAcesso = selected && ["administrador", "gestor", "administrativo", "consultor_tecnico", "tecnico_agronomo"].includes(selected.role);
+  const hasAmploAcesso = !!selected && temAcessoAmploClientes(selected.role);
 
 
 
@@ -287,11 +354,11 @@ export default function ConsultorTecnico() {
 
       if (!roles || roles.length === 0) return { consultores: [], orfaos: [] as string[] };
 
-      const userIds = roles.map(r => r.user_id);
+      const userIds = idsUnicos(roles.map(r => r.user_id));
 
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("*")
+        .select(PROFILE_FIELDS)
         .in("user_id", userIds)
         .order("nome");
       if (profilesError) throw profilesError;
@@ -354,9 +421,15 @@ export default function ConsultorTecnico() {
           </CardHeader>
           <CardContent>
              <div className="text-2xl font-bold font-mono-data">
-               {metricasVisitas.isLoading ? "…" : formatMetric(metricasVisitas.data?.totalCheckinsRealizados, "", 0)}
+               {metricasVisitas.isLoading
+                 ? "…"
+                 : metricasVisitas.error
+                   ? "—"
+                   : formatMetric(metricasVisitas.data?.totalCheckinsRealizados, "", 0)}
              </div>
-
+             {!metricasVisitas.isLoading && metricasVisitas.error && (
+               <p className="text-[11px] text-destructive mt-1">Indisponível no momento.</p>
+             )}
           </CardContent>
         </Card>
         <Card>
@@ -366,9 +439,15 @@ export default function ConsultorTecnico() {
           </CardHeader>
           <CardContent>
              <div className="text-2xl font-bold font-mono-data">
-               {metricasVisitas.isLoading ? "…" : formatMetric(metricasVisitas.data?.totalVisitasRealizadas, "", 0)}
+               {metricasVisitas.isLoading
+                 ? "…"
+                 : metricasVisitas.error
+                   ? "—"
+                   : formatMetric(metricasVisitas.data?.totalVisitasRealizadas, "", 0)}
              </div>
-
+             {!metricasVisitas.isLoading && metricasVisitas.error && (
+               <p className="text-[11px] text-destructive mt-1">Indisponível no momento.</p>
+             )}
           </CardContent>
         </Card>
         <Card>
@@ -418,20 +497,18 @@ export default function ConsultorTecnico() {
             <TableHeader>
               <TableRow>
                 <TableHead>Consultor / Agrônomo</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Registro (CREA)</TableHead>
+                <TableHead>E-mail</TableHead>
                 <TableHead>Cargo / Função</TableHead>
-                <TableHead>Especialidade</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8">Carregando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8">Carregando...</TableCell></TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8">
                     <p className="text-sm text-destructive">
                       Não foi possível carregar a equipe técnica.
                       {(consultoresError as any)?.message ? ` (${(consultoresError as any).message})` : ""}
@@ -449,7 +526,7 @@ export default function ConsultorTecnico() {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     {search.trim()
                       ? "Nenhum consultor corresponde à busca"
                       : "Nenhum consultor cadastrado. O cadastro é feito em Configurações > Usuários."}
@@ -461,34 +538,26 @@ export default function ConsultorTecnico() {
                   <TableRow
                     key={c.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setSelected(c)}
+                    onClick={() => selecionarConsultor(c)}
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <User className="h-4 w-4 text-primary" />
                         </div>
-                        <div className="flex flex-col text-sm">
-                          <span className="font-medium">{c.nome}</span>
-                          <span className="text-xs text-muted-foreground font-mono-data">
-                            Desde { (c as any).data_admissao ? formatDateDisplay((c as any).data_admissao) : '—'}
-                          </span>
-                        </div>
+                        <span className="font-medium text-sm">{c.nome}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col text-xs gap-1">
-                        <div className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> {c.email || '—'}</div>
-                        <div className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {formatTelefone((c as any).telefone as string | undefined) || '—'}</div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Mail className="h-3 w-3" /> {c.email || '—'}
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono-data text-xs">{(c as any).crea || '—'}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">
                         {ROLE_LABELS[c.role] || c.role || 'Consultor'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{(c as any).especialidade || 'Geral'}</TableCell>
                     <TableCell>
                       {isConsultorAtivo(c as any) ? (
                         <Badge variant="default" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
@@ -500,10 +569,12 @@ export default function ConsultorTecnico() {
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações de ${c.nome ?? "consultor"}`}>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="text-xs" onClick={() => setSelected(c)}>Ver Perfil Completo</DropdownMenuItem>
+                          <DropdownMenuItem className="text-xs" onClick={() => selecionarConsultor(c)}>Ver Perfil Completo</DropdownMenuItem>
                           <DropdownMenuItem className="text-xs" onClick={() => toast.info("Edição de cadastro disponível via Configurações > Usuários.")}>Editar Cadastro</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -517,16 +588,7 @@ export default function ConsultorTecnico() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selected} onOpenChange={(o) => {
-        if (!o) {
-          setSelected(null);
-          setShowVistorias(false);
-          setSelectedVistoria(null);
-          setSelectedClienteFilter("todos");
-          setSelectedPhotos([]);
-        }
-
-      }}>
+      <Dialog open={!!selected} onOpenChange={(o) => { if (!o) fecharConsultor(); }}>
 
 
 
@@ -549,10 +611,14 @@ export default function ConsultorTecnico() {
                         {ROLE_LABELS[selected.role] || selected.role || 'Consultor'}
                       </Badge>
                     </div>
-                    <Badge variant="default" className="ml-auto bg-green-500/10 text-green-600 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                    {isConsultorAtivo(selected) ? (
+                      <Badge variant="default" className="ml-auto bg-green-500/10 text-green-600 border-green-200 text-[10px] uppercase tracking-wider">Ativo</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="ml-auto text-[10px] uppercase tracking-wider">Inativo</Badge>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 gap-3 text-sm">
                     <div className="flex items-start gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                       <div>
@@ -560,42 +626,16 @@ export default function ConsultorTecnico() {
                         <div className="break-all">{selected.email || '—'}</div>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Telefone</div>
-                        <div className="font-mono-data">{formatTelefone(selected.telefone) || '—'}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <IdCard className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Registro (CREA)</div>
-                        <div className="font-mono-data">{selected.crea || '—'}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Especialidade</div>
-                        <div>{selected.especialidade || 'Geral'}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Data de Admissão</div>
-                        <div className="font-mono-data">{selected.data_admissao ? formatDateDisplay(selected.data_admissao) : '—'}</div>
-                      </div>
-                    </div>
                   </div>
 
                   <div className="pt-3 border-t">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                       <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Atividade Recente (Mês Atual)</div>
-                      
+
                       {clientesVinc && clientesVinc.length > 0 && (
-                        <select 
+                        <select
+                          id="filtro-cliente-consultor"
+                          aria-label="Filtrar atividade por cliente"
                           value={selectedClienteFilter}
                           onChange={(e) => setSelectedClienteFilter(e.target.value)}
                           className="text-[10px] bg-muted border rounded px-2 py-1 outline-none focus:ring-1 ring-primary/30"
@@ -608,8 +648,22 @@ export default function ConsultorTecnico() {
                       )}
                     </div>
 
+                    {erroKpis ? (
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-center">
+                        <p className="text-xs text-destructive">Não foi possível carregar a atividade deste consultor.</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 h-7 text-[11px]"
+                          onClick={() => { void refetchKpis(); }}
+                          disabled={fetchingKpis}
+                        >
+                          {fetchingKpis ? "Tentando..." : "Tentar novamente"}
+                        </Button>
+                      </div>
+                    ) : (
                     <div className="grid grid-cols-2 gap-3">
-                      <button 
+                      <button
                         onClick={() => setShowVistorias(true)}
                         className="rounded-lg border p-3 text-left hover:border-primary/50 transition-colors group flex flex-col justify-between"
                         disabled={loadingKpis || (kpis?.vistorias ?? 0) === 0}
@@ -629,6 +683,7 @@ export default function ConsultorTecnico() {
                         </div>
                       </div>
                     </div>
+                    )}
                   </div>
                 </>
               ) : !selectedVistoria ? (
@@ -678,6 +733,21 @@ export default function ConsultorTecnico() {
                             {idx < kpis.list.length - 1 && <Separator className="opacity-50" />}
                           </div>
                         ))
+                      ) : erroKpis ? (
+                        <div className="text-center py-8">
+                          <p className="text-sm text-destructive">Não foi possível carregar as visitas.</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 h-7 text-[11px]"
+                            onClick={() => { void refetchKpis(); }}
+                            disabled={fetchingKpis}
+                          >
+                            {fetchingKpis ? "Tentando..." : "Tentar novamente"}
+                          </Button>
+                        </div>
+                      ) : loadingKpis ? (
+                        <div className="text-center py-8 text-sm text-muted-foreground">Carregando visitas…</div>
                       ) : (
                         <div className="text-center py-8 text-sm text-muted-foreground">Nenhuma visita registrada neste mês.</div>
                       )}
@@ -687,14 +757,17 @@ export default function ConsultorTecnico() {
               ) : (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-200">
                   <div className="flex items-center justify-between border-b pb-2">
-                    <button 
+                    <button
                       onClick={() => {
                         setSelectedVistoria(null);
                         setSelectedPhotos([]);
+                        setFocusedPhotoIndex(null);
+                        setZoomedImageIndex(null);
+                        setEditingCaption(null);
+                        setCaptionValue("");
                       }}
                       className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
                     >
-
                       ← Voltar à lista
                     </button>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Detalhes da Visita</span>
@@ -751,27 +824,40 @@ export default function ConsultorTecnico() {
                         <span className="text-[10px] uppercase font-semibold text-muted-foreground flex items-center gap-1">
                           <Camera className="h-3 w-3" /> Evidências e Fotos
                         </span>
-                        
-                        {selectedVistoria.arquivos && selectedVistoria.arquivos.length > 0 && (
-                          <VistoriaFilesHeader 
-                            arquivos={selectedVistoria.arquivos} 
-                            selectedPhotos={selectedPhotos} 
-                            onSelectAll={() => setSelectedPhotos(selectedVistoria.arquivos.map((f: any) => f.id))}
+
+                        {arquivosVistoria.length > 0 && (
+                          <VistoriaFilesHeader
+                            arquivos={arquivosVistoria}
+                            selectedPhotos={selectedPhotos}
+                            onSelectAll={() => setSelectedPhotos(arquivosVistoria.map((f) => f.id))}
                             onClear={() => setSelectedPhotos([])}
-                            vistoriaId={selectedVistoria.id}
                             onDownload={handleDownloadImage}
+                            urlDaEvidencia={urlDaEvidencia}
                           />
                         )}
                       </div>
-                      
-                      {selectedVistoria.arquivos && selectedVistoria.arquivos.length > 0 ? (
-                        <VistoriaFilesGrid 
-                          arquivos={selectedVistoria.arquivos}
+
+                      {signedError && filePaths.length > 0 && (
+                        <div
+                          role="alert"
+                          className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+                        >
+                          <span>Não foi possível gerar os links seguros das evidências.</span>
+                          <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => refreshSignedUrls()}>
+                            Tentar novamente
+                          </Button>
+                        </div>
+                      )}
+
+                      {arquivosVistoria.length > 0 ? (
+                        <VistoriaFilesGrid
+                          arquivos={arquivosVistoria}
                           selectedPhotos={selectedPhotos}
                           onTogglePhoto={(id) => setSelectedPhotos(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])}
                           focusedPhotoIndex={focusedPhotoIndex}
                           onFocusPhoto={setFocusedPhotoIndex}
                           onZoomPhoto={setZoomedImageIndex}
+                          urlDaEvidencia={urlDaEvidencia}
                         />
                       ) : (
                         <div className="text-xs text-muted-foreground bg-muted/20 p-4 rounded-md border border-dashed text-center">
@@ -793,6 +879,19 @@ export default function ConsultorTecnico() {
                   </div>
                   {loadingClientes ? (
                     <div className="text-xs text-muted-foreground">Carregando…</div>
+                  ) : erroClientes ? (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                      <p className="text-xs text-destructive">Não foi possível carregar os clientes vinculados.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 h-7 text-[11px]"
+                        onClick={() => { void refetchClientes(); }}
+                        disabled={fetchingClientes}
+                      >
+                        {fetchingClientes ? "Tentando..." : "Tentar novamente"}
+                      </Button>
+                    </div>
                   ) : clientesVinc && clientesVinc.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {clientesVinc.map((c: any) => (
@@ -820,7 +919,7 @@ export default function ConsultorTecnico() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelected(null)}>Fechar</Button>
+            <Button variant="outline" onClick={fecharConsultor}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -828,44 +927,66 @@ export default function ConsultorTecnico() {
         if (!o) {
           setZoomedImageIndex(null);
           setEditingCaption(null);
+          setCaptionValue("");
         }
       }}>
 
-        <DialogContent 
+        <DialogContent
           className="max-w-4xl p-0 overflow-visible bg-transparent border-none shadow-none flex flex-col items-center justify-center h-[90vh] outline-none"
           onClick={() => setZoomedImageIndex(null)}
         >
-          {zoomedImageIndex !== null && selectedVistoria?.arquivos && (
+          {zoomedImageIndex !== null && arquivosVistoria[zoomedImageIndex] && (() => {
+            const atual = arquivosVistoria[zoomedImageIndex];
+            const { url: urlAtual, estado: estadoAtual } = urlDaEvidencia(atual);
+            const pronta = estadoAtual === "pronta" && !!urlAtual;
+            return (
             <>
-              <div 
+              <div
                 className="relative w-full h-full flex flex-col items-center justify-center"
                 onClick={(e) => e.stopPropagation()}
               >
 
                 {/* Imagem principal */}
                 <div className="relative group/main">
-                  <img 
-                    src={selectedVistoria.arquivos[zoomedImageIndex].arquivo_url} 
-                    alt="Ampliada" 
-                    className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
-                  />
-                  
+                  {pronta ? (
+                    <img
+                      src={urlAtual!}
+                      alt={atual.legenda || `Evidência ${zoomedImageIndex + 1}`}
+                      className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                    />
+                  ) : (
+                    <div className="w-[60vw] max-w-xl h-[50vh] rounded-lg bg-black/60 border border-white/10 flex flex-col items-center justify-center gap-3 text-white/80">
+                      {estadoAtual === "carregando" ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                          <span className="text-xs">Gerando link seguro…</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageOff className="h-6 w-6" />
+                          <span className="text-xs">Não foi possível carregar a evidência.</span>
+                          <Button variant="secondary" size="sm" className="h-7 text-[11px]" onClick={() => refreshSignedUrls()}>
+                            Tentar novamente
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {/* Botão de download no topo da imagem */}
                   <div className="absolute top-4 right-4 flex items-center gap-2">
                     <Badge variant="secondary" className="bg-black/50 text-white border-white/10 backdrop-blur-sm px-3 py-1 font-mono-data">
-                      {zoomedImageIndex + 1} / {selectedVistoria.arquivos.length}
+                      {zoomedImageIndex + 1} / {arquivosVistoria.length}
                     </Badge>
                     <Button
                       variant="secondary"
                       size="icon"
                       className="rounded-full bg-black/50 hover:bg-black/80 text-white border-white/10 backdrop-blur-sm transition-all hover:scale-110 active:scale-95 shadow-xl"
+                      disabled={!pronta}
+                      aria-label="Baixar imagem"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDownloadImage(
-                          selectedVistoria.arquivos[zoomedImageIndex].arquivo_url, 
-                          `visita_${selectedVistoria.id}_${zoomedImageIndex}.jpg`,
-                          selectedVistoria.arquivos[zoomedImageIndex].descricao
-                        );
+                        void handleDownloadImage(atual, zoomedImageIndex);
                       }}
                       title="Baixar imagem"
                     >
@@ -873,34 +994,34 @@ export default function ConsultorTecnico() {
                     </Button>
                   </div>
 
-
-
-                  
                   {/* Legenda na imagem ampliada */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md">
-                    {editingCaption === selectedVistoria.arquivos[zoomedImageIndex].id ? (
+                    {editingCaption === atual.id ? (
                       <div className="flex gap-2 bg-black/80 p-2 rounded-lg backdrop-blur-sm border border-white/10 shadow-xl">
-                        <Input 
+                        <Input
                           value={captionValue}
                           onChange={(e) => setCaptionValue(e.target.value)}
                           placeholder="Digite a legenda..."
+                          aria-label="Legenda da evidência"
                           className="h-8 bg-white/10 border-white/20 text-white text-xs placeholder:text-white/40"
                           autoFocus
-                          onKeyDown={(e) => e.key === 'Enter' && handleUpdateCaption(selectedVistoria.arquivos[zoomedImageIndex].id)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateCaption(atual.id); }}
                         />
-                        <Button 
-                          size="icon" 
-                          className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/80" 
-                          onClick={() => handleUpdateCaption(selectedVistoria.arquivos[zoomedImageIndex].id)}
+                        <Button
+                          size="icon"
+                          className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/80"
+                          aria-label="Salvar legenda"
+                          onClick={() => handleUpdateCaption(atual.id)}
                           disabled={updateCaptionMutation.isPending}
                         >
                           <Check className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          size="icon" 
+                        <Button
+                          size="icon"
                           variant="ghost"
-                          className="h-8 w-8 shrink-0 text-white hover:bg-white/10" 
-                          onClick={() => setEditingCaption(null)}
+                          className="h-8 w-8 shrink-0 text-white hover:bg-white/10"
+                          aria-label="Cancelar edição da legenda"
+                          onClick={() => { setEditingCaption(null); setCaptionValue(""); }}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -908,12 +1029,12 @@ export default function ConsultorTecnico() {
                     ) : (
                       <div className="bg-black/60 hover:bg-black/80 backdrop-blur-sm p-3 rounded-lg border border-white/10 text-center transition-all group/caption shadow-xl">
                         <p className="text-white text-sm">
-                          {selectedVistoria.arquivos[zoomedImageIndex].descricao || "Sem legenda"}
+                          {atual.legenda || "Sem legenda"}
                         </p>
-                        <button 
+                        <button
                           onClick={() => {
-                            setEditingCaption(selectedVistoria.arquivos[zoomedImageIndex].id);
-                            setCaptionValue(selectedVistoria.arquivos[zoomedImageIndex].descricao || "");
+                            setEditingCaption(atual.id);
+                            setCaptionValue(atual.legenda || "");
                           }}
                           className="mt-1 text-[10px] text-primary hover:underline flex items-center gap-1 mx-auto opacity-0 group-hover/caption:opacity-100 transition-opacity"
                         >
@@ -925,22 +1046,18 @@ export default function ConsultorTecnico() {
                 </div>
 
                 {/* Setas de navegação */}
-                {selectedVistoria.arquivos.length > 1 && (
+                {arquivosVistoria.length > 1 && (
                   <>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePrevImage();
-                      }}
+                      aria-label="Imagem anterior"
+                      onClick={(e) => { e.stopPropagation(); handlePrevImage(); }}
                       className="absolute left-[-60px] top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full transition-all hover:scale-110 active:scale-95 shadow-xl border border-white/10"
                     >
                       <ChevronLeft className="h-8 w-8" />
                     </button>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNextImage();
-                      }}
+                      aria-label="Próxima imagem"
+                      onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
                       className="absolute right-[-60px] top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full transition-all hover:scale-110 active:scale-95 shadow-xl border border-white/10"
                     >
                       <ChevronRight className="h-8 w-8" />
@@ -950,32 +1067,41 @@ export default function ConsultorTecnico() {
 
               </div>
 
-
               {/* Miniaturas */}
-              {selectedVistoria.arquivos.length > 1 && (
+              {arquivosVistoria.length > 1 && (
                 <div className="mt-8 flex gap-2 overflow-x-auto p-4 max-w-full scrollbar-hide bg-black/20 rounded-xl backdrop-blur-sm border border-white/5">
-                  {selectedVistoria.arquivos.map((file: any, idx: number) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setZoomedImageIndex(idx);
-                        setEditingCaption(null);
-                      }}
-                      className={cn(
-                        "relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0",
-                        zoomedImageIndex === idx 
-                          ? "border-primary scale-110 shadow-[0_0_15px_rgba(var(--primary),0.5)] z-10" 
-                          : "border-transparent opacity-40 hover:opacity-100 hover:scale-105"
-                      )}
-                    >
-                      <img src={file.arquivo_url} className="w-full h-full object-cover" alt={`Miniatura ${idx + 1}`} />
-                    </button>
-                  ))}
+                  {arquivosVistoria.map((file, idx) => {
+                    const mini = urlDaEvidencia(file);
+                    return (
+                      <button
+                        key={file.id}
+                        aria-label={`Abrir evidência ${idx + 1}`}
+                        onClick={() => { setZoomedImageIndex(idx); setEditingCaption(null); setCaptionValue(""); }}
+                        className={cn(
+                          "relative w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0",
+                          zoomedImageIndex === idx
+                            ? "border-primary scale-110 shadow-[0_0_15px_rgba(var(--primary),0.5)] z-10"
+                            : "border-transparent opacity-40 hover:opacity-100 hover:scale-105"
+                        )}
+                      >
+                        {mini.estado === "pronta" && mini.url ? (
+                          <img src={mini.url} className="w-full h-full object-cover" alt={`Miniatura ${idx + 1}`} />
+                        ) : (
+                          <div className="w-full h-full bg-black/50 flex items-center justify-center">
+                            {mini.estado === "carregando"
+                              ? <Loader2 className="h-4 w-4 animate-spin text-white/70" />
+                              : <ImageOff className="h-4 w-4 text-white/70" />}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
             </>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
@@ -985,47 +1111,46 @@ export default function ConsultorTecnico() {
 
 // --- Sub-componentes auxiliares ---
 
-function VistoriaFilesHeader({ 
-  arquivos, 
-  selectedPhotos, 
-  onSelectAll, 
-  onClear, 
-  vistoriaId, 
-  onDownload 
-}: { 
-  arquivos: any[], 
-  selectedPhotos: string[], 
-  onSelectAll: () => void, 
-  onClear: () => void, 
-  vistoriaId: string,
-  onDownload: (url: string, filename: string, caption?: string) => void
+function VistoriaFilesHeader({
+  arquivos,
+  selectedPhotos,
+  onSelectAll,
+  onClear,
+  onDownload,
+  urlDaEvidencia,
+}: {
+  arquivos: EvidenciaVistoria[];
+  selectedPhotos: string[];
+  onSelectAll: () => void;
+  onClear: () => void;
+  onDownload: (arquivo: EvidenciaVistoria, indice: number) => void | Promise<void>;
+  urlDaEvidencia: (a: EvidenciaVistoria) => UrlEvidencia;
 }) {
+  const selecionadas = arquivos
+    .map((f, idx) => ({ f, idx }))
+    .filter(({ f }) => selectedPhotos.includes(f.id));
+  const prontas = selecionadas.filter(({ f }) => urlDaEvidencia(f).estado === "pronta");
+
   return (
     <div className="flex items-center gap-2">
       {selectedPhotos.length > 0 ? (
-        <Button 
-          size="sm" 
-          variant="outline" 
+        <Button
+          size="sm"
+          variant="outline"
           className="h-7 text-[10px] gap-1.5"
+          disabled={prontas.length === 0}
           onClick={() => {
-            const toDownload = arquivos.filter((f: any) => selectedPhotos.includes(f.id));
-            toDownload.forEach((file: any, idx: number) => {
-              setTimeout(() => {
-                onDownload(
-                  file.arquivo_url, 
-                  `visita_${vistoriaId}_${idx}.jpg`,
-                  file.descricao
-                );
-              }, idx * 300);
+            prontas.forEach(({ f, idx }, ordem) => {
+              setTimeout(() => { void onDownload(f, idx); }, ordem * 300);
             });
           }}
         >
-          <Download className="h-3 w-3" /> Baixar Selecionadas ({selectedPhotos.length})
+          <Download className="h-3 w-3" /> Baixar Selecionadas ({prontas.length})
         </Button>
       ) : (
-        <Button 
-          size="sm" 
-          variant="ghost" 
+        <Button
+          size="sm"
+          variant="ghost"
           className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-primary"
           onClick={onSelectAll}
         >
@@ -1033,9 +1158,9 @@ function VistoriaFilesHeader({
         </Button>
       )}
       {selectedPhotos.length > 0 && (
-        <Button 
-          size="sm" 
-          variant="ghost" 
+        <Button
+          size="sm"
+          variant="ghost"
           className="h-7 text-[10px] text-muted-foreground"
           onClick={onClear}
         >
@@ -1046,34 +1171,34 @@ function VistoriaFilesHeader({
   );
 }
 
-function VistoriaFilesGrid({ 
-  arquivos, 
-  selectedPhotos, 
-  onTogglePhoto, 
-  focusedPhotoIndex, 
-  onFocusPhoto, 
-  onZoomPhoto 
-}: { 
-  arquivos: any[], 
-  selectedPhotos: string[], 
-  onTogglePhoto: (id: string) => void, 
-  focusedPhotoIndex: number | null, 
-  onFocusPhoto: (idx: number | null) => void, 
-  onZoomPhoto: (idx: number) => void 
+function VistoriaFilesGrid({
+  arquivos,
+  selectedPhotos,
+  onTogglePhoto,
+  focusedPhotoIndex,
+  onFocusPhoto,
+  onZoomPhoto,
+  urlDaEvidencia,
+}: {
+  arquivos: EvidenciaVistoria[];
+  selectedPhotos: string[];
+  onTogglePhoto: (id: string) => void;
+  focusedPhotoIndex: number | null;
+  onFocusPhoto: (idx: number | null) => void;
+  onZoomPhoto: (idx: number) => void;
+  urlDaEvidencia: (a: EvidenciaVistoria) => UrlEvidencia;
 }) {
-  const filePaths = useMemo(() => arquivos.map(a => a.arquivo_path).filter(Boolean), [arquivos]);
-  const { urls: signedUrls } = useSignedUrls(filePaths);
-
   return (
     <div className="grid grid-cols-3 gap-2">
-      {arquivos.map((file: any, idx: number) => {
+      {arquivos.map((file, idx) => {
         const isSelected = selectedPhotos.includes(file.id);
         const isFocused = focusedPhotoIndex === idx;
-        const effectiveUrl = (file.arquivo_path && signedUrls[file.arquivo_path]) || file.arquivo_url;
-        
+        const { url, estado } = urlDaEvidencia(file);
+        const pronta = estado === "pronta" && !!url;
+
         return (
-          <div 
-            key={file.id} 
+          <div
+            key={file.id}
             className={cn(
               "relative aspect-square rounded-md overflow-hidden bg-muted group transition-all ring-offset-background outline-none",
               isSelected ? "ring-2 ring-primary scale-[0.98]" : "hover:ring-1 hover:ring-primary/50",
@@ -1083,14 +1208,28 @@ function VistoriaFilesGrid({
             onFocus={() => onFocusPhoto(idx)}
             onBlur={() => onFocusPhoto(null)}
           >
-            <img 
-              src={effectiveUrl} 
-              alt={`Evidência ${idx + 1}`} 
-              className="w-full h-full object-cover cursor-zoom-in"
-              onClick={() => onZoomPhoto(idx)}
-            />
-            
-            <div 
+            {pronta ? (
+              <img
+                src={url!}
+                alt={file.legenda || `Evidência ${idx + 1}`}
+                className="w-full h-full object-cover cursor-zoom-in"
+                onClick={() => onZoomPhoto(idx)}
+              />
+            ) : (
+              <div
+                className="w-full h-full flex flex-col items-center justify-center gap-1 text-muted-foreground"
+                aria-label={estado === "carregando" ? "Carregando evidência" : "Evidência indisponível"}
+              >
+                {estado === "carregando"
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <ImageOff className="h-4 w-4" />}
+                <span className="text-[9px] px-1 text-center leading-tight">
+                  {estado === "carregando" ? "Carregando…" : "Indisponível"}
+                </span>
+              </div>
+            )}
+
+            <div
               className={cn(
                 "absolute top-1.5 left-1.5 h-4 w-4 rounded-sm border flex items-center justify-center cursor-pointer transition-all z-20",
                 isSelected ? "bg-primary border-primary text-white" : "bg-black/20 border-white/40 opacity-0 group-hover:opacity-100"
@@ -1103,19 +1242,19 @@ function VistoriaFilesGrid({
               {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
             </div>
 
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex flex-col items-center justify-center p-2 text-center">
-              <Eye className="h-5 w-5 text-white mb-1" />
-              {file.descricao && (
-                <span className="text-[10px] text-white font-medium line-clamp-2 leading-tight px-1">
-                  {file.descricao}
-                </span>
-              )}
-            </div>
+            {pronta && (
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex flex-col items-center justify-center p-2 text-center">
+                <Eye className="h-5 w-5 text-white mb-1" />
+                {file.legenda && (
+                  <span className="text-[10px] text-white font-medium line-clamp-2 leading-tight px-1">
+                    {file.legenda}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
     </div>
   );
 }
-
-
