@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,8 @@ import { formatDateDisplay, formatDateToISO, applyDateMask } from "@/lib/date-ut
 import { cn } from "@/lib/utils";
 import { formatOS } from "@/lib/osLabel";
 import { getClienteLabel } from "@/lib/clienteLabel";
-import { unmask } from "@/lib/masks";
+import { useAuth } from "@/hooks/useAuth";
+import { buscaOS, correspondePeriodo, diaSP, volumeOS, unificarOS, validarOS, erroOS } from "@/lib/ordens-servico/validacao";
 import { OSDetalhesDialog } from "@/components/ordens-servico/OSDetalhesDialog";
 
 const getPartnerFromOS = (o: any) => {
@@ -119,6 +120,14 @@ interface Microrganismo extends SimpleRef { nome_cientifico: string | null; dose
 
 export default function OrdensServico() {
   const navigate = useNavigate();
+  const { roles } = useAuth();
+  const canCreate = roles.some(r => ["administrador", "gestor", "producao"].includes(r));
+  const [loadError, setLoadError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const loadVersion = useRef(0);
+  const [page, setPage] = useState(1);
   const isMobile = useIsMobile();
   const [ordens, setOrdens] = useState<OS[]>([]);
   const [clientes, setClientes] = useState<SimpleRef[]>([]);
@@ -155,11 +164,12 @@ export default function OrdensServico() {
   const [volumeCalc, setVolumeCalc] = useState<number>(0);
 
   const fetchAll = async () => {
+    const version = ++loadVersion.current;
     setIsRefreshing(true);
     try {
       // Filtro padrão: últimos 90 dias (reduz leitura sem impactar operação corrente)
       const since90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-      const [{ data: oManual }, { data: oOnfarm }, { data: c }, { data: f }, { data: t }, { data: p }, { data: m }] = await Promise.all([
+      const results = await Promise.all([
         supabase.from("ordens_servico").select("*, clientes(id, nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome), microrganismos(nome, nome_cientifico), partner_orders:partner_order_id(numero, partner_accounts:partner_id(id, razao_social, nome_fantasia, codigo))").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
         supabase.from("ordens_servico_onfarm").select("*, clientes(id, nome, codigo_cliente), fazendas(nome), talhoes(nome), produtos(nome)").gte("created_at", since90).order("created_at", { ascending: false }).limit(200),
         supabase.from("clientes").select("id, nome, codigo_cliente").order("nome"),
@@ -169,19 +179,24 @@ export default function OrdensServico() {
         supabase.from("microrganismos").select("id, nome, nome_cientifico, dose_ml_ha").order("nome"),
       ]);
 
+      if (version !== loadVersion.current) return;
+      if (results.some(result => result.error)) throw new Error("partial_load");
+      const [{ data: oManual }, { data: oOnfarm }, { data: c }, { data: f }, { data: t }, { data: p }, { data: m }] = results;
+      setLoadError(false);
+      setLoaded(true);
       const manuais: OS[] = (oManual || []).map((r: any) => ({ ...r, origem: "manual" as const }));
       const onfarm: OS[] = (oOnfarm || []).map((r: any) => ({ ...r, origem: "onfarm" as const, data_programada: r.data_programada ?? r.data_recomendada ?? null }));
       const unified = [...manuais, ...onfarm].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setOrdens(unified);
+      setOrdens(unificarOS(unified));
       if (c) setClientes(c);
       if (f) setFazendas(f as Fazenda[]);
       if (t) setTalhoes(t as Talhao[]);
       if (p) setProdutos(p as Produto[]);
       if (m) setMicrorganismos(m as Microrganismo[]);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      if (version === loadVersion.current) setLoadError(true);
     } finally {
-      setIsRefreshing(false);
+      if (version === loadVersion.current) setIsRefreshing(false);
     }
   };
 
@@ -206,6 +221,7 @@ export default function OrdensServico() {
       .subscribe();
 
     return () => {
+      loadVersion.current++;
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channelManual);
       supabase.removeChannel(channelOnfarm);
@@ -238,6 +254,12 @@ export default function OrdensServico() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current || !canCreate || loadError || !loaded) return;
+    const validation = validarOS(form, { clientes, fazendas, talhoes, produtos, microrganismos });
+    if (validation) { toast.error(validation); return; }
+    savingRef.current = true;
+    setSaving(true);
+    try {
     const isMicro = form.tipo_item === "microrganismo";
     if (isMicro ? !form.microrganismo_id : !form.produto_id) {
       toast.error(isMicro ? "Selecione um microrganismo." : "Selecione um produto.");
@@ -256,10 +278,8 @@ export default function OrdensServico() {
       data_programada: formatDateToISO(form.data_programada) || null,
       prioridade: form.prioridade as any,
     }] as any);
-    if (error) { toast.error(error.message); return; }
-    toast.success("OS criada — demanda enviada ao laboratório", {
-      description: "A demanda já aparece no PCP em 'Aguardando'.",
-    });
+    if (error) throw error;
+    toast.success("Ordem de serviço registrada.");
     setOpen(false);
     setForm({
       cliente_id: "", fazenda_id: "", talhao_id: "",
@@ -267,7 +287,9 @@ export default function OrdensServico() {
       modo_aplicacao: "foliar",
       area_hectares: "", data_programada: "", prioridade: "media",
     });
-    fetchAll();
+    await fetchAll();
+    } catch (error) { toast.error(erroOS(error)); }
+    finally { savingRef.current = false; setSaving(false); }
   };
 
   const openDetails = (os: OS) => {
@@ -312,21 +334,8 @@ export default function OrdensServico() {
   ).sort((a, b) => a.nome.localeCompare(b.nome));
 
   const filtered = ordens.filter((o) => {
-    const q = search.toLowerCase();
-    const cleanQ = unmask(q);
-    const partnerNome = (o as any)?.partner_orders?.partner_accounts?.nome_fantasia
-      || (o as any)?.partner_orders?.partner_accounts?.razao_social || "";
-    const partnerNumero = (o as any)?.partner_orders?.numero || "";
-    const matchesSearch = 
-      o.numero_os?.toLowerCase().includes(q) ||
-      (o.clientes as any)?.nome?.toLowerCase().includes(q) ||
-      (o.clientes as any)?.codigo_cliente?.includes(cleanQ) ||
-      (o.produtos as any)?.nome?.toLowerCase().includes(q) ||
-      (o.microrganismos as any)?.nome?.toLowerCase().includes(q) ||
-      (o.fazendas as any)?.nome?.toLowerCase().includes(q) ||
-      partnerNome.toLowerCase().includes(q) ||
-      partnerNumero.toLowerCase().includes(q);
-    
+    const matchesSearch = buscaOS(search, [o.numero_os, formatOS(o), o.clientes?.nome, o.clientes?.codigo_cliente, o.produtos?.nome, o.microrganismos?.nome, o.fazendas?.nome, o.talhoes?.nome, getPartnerFromOS(o)?.nome, getPartnerFromOS(o)?.numero]);
+
     const matchesStatus = statusFilter === "all" || o.status === statusFilter;
     const matchesCliente = clienteFilter === "all" || (o.clientes as any)?.id === clienteFilter;
     const partnerId = (o as any)?.partner_orders?.partner_accounts?.id || "";
@@ -335,20 +344,7 @@ export default function OrdensServico() {
       (partnerFilter === "__b2b__" ? !!partnerId : partnerId === partnerFilter);
     const matchesOrigem = origemFilter === "all" || o.origem === origemFilter;
 
-    let matchesDate = true;
-    if (dateFilter !== "all") {
-      const date = new Date(o.data_programada || o.created_at);
-      const today = new Date();
-      if (dateFilter === "today") {
-        matchesDate = date.toDateString() === today.toDateString();
-      } else if (dateFilter === "week") {
-        const lastWeek = new Date();
-        lastWeek.setDate(today.getDate() - 7);
-        matchesDate = date >= lastWeek;
-      } else if (dateFilter === "month") {
-        matchesDate = date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-      }
-    }
+    const matchesDate = correspondePeriodo(o.data_programada || o.created_at, dateFilter);
 
     return matchesSearch && matchesStatus && matchesDate && matchesCliente && matchesPartner && matchesOrigem;
   }).sort((a, b) => {
@@ -360,15 +356,21 @@ export default function OrdensServico() {
     // Default or secondary sort by date (newest first)
     const dateA = new Date(a.data_programada || a.created_at).getTime();
     const dateB = new Date(b.data_programada || b.created_at).getTime();
-    return dateB - dateA;
+    return (Number.isFinite(dateB - dateA) ? dateB - dateA : 0) || `${a.origem}:${a.id}`.localeCompare(`${b.origem}:${b.id}`);
   });
+
+  useEffect(() => { setPage(1); }, [search, statusFilter, dateFilter, clienteFilter, partnerFilter, origemFilter, sortOrder]);
+  const pages = Math.max(1, Math.ceil(filtered.length / 20));
+  const currentPage = Math.min(page, pages);
+  const visible = filtered.slice((currentPage - 1) * 20, currentPage * 20);
+  const emptyLabel = ordens.length ? "Nenhuma OS corresponde aos filtros" : "Nenhuma OS registrada nos últimos 90 dias";
 
   return (
     <>
     <div className="space-y-4 sm:space-y-6 pb-20 sm:pb-0">
       <AuxiliaryScreenBanner
         title="Cadastro e histórico de OS"
-        description="Use esta tela para criar, consultar e editar dados de OS. O avanço da esteira (produção, lote, CQ, envase, reserva, entrega, aplicação) deve ser conduzido pelo Cockpit Laboratório."
+        description="Use esta tela para criar e consultar dados de OS. O avanço da esteira (produção, lote, CQ, envase, reserva, entrega, aplicação) deve ser conduzido pelo Cockpit Laboratório."
         ctaLabel="Abrir Cockpit Laboratório"
       />
       <PageHeader 
@@ -379,28 +381,26 @@ export default function OrdensServico() {
             <Button 
               variant="outline" 
               size="icon" 
-              onClick={() => {
-                fetchAll();
-                toast.success("Dados atualizados com sucesso!");
-              }}
+              onClick={() => void fetchAll()}
+              aria-label="Sincronizar ordens de serviço"
               className="h-12 sm:h-10 w-12 sm:w-10"
               title="Sincronizar agora"
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-5 w-5 sm:h-4 sm:w-4 ${isRefreshing ? "animate-spin" : ""}`} />
             </Button>
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={(value) => { if (!savingRef.current) setOpen(value); }}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm font-bold sm:font-medium shadow-md">
+              <Button disabled={!canCreate || !loaded || loadError} title={!canCreate ? "Cadastro disponível para administração, gestão e produção" : undefined} className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm font-bold sm:font-medium shadow-md">
                 <Plus className="h-5 w-5 sm:h-4 sm:w-4 mr-2" />Nova OS
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Nova Ordem de Serviço</DialogTitle></DialogHeader>
-              <form onSubmit={handleCreate} className="space-y-5 pt-2">
+              <form onSubmit={handleCreate} className="pt-2"><fieldset disabled={saving} className="space-y-5">
                 <div className="space-y-2">
                   <Label>Cliente *</Label>
-                  <Select value={form.cliente_id} onValueChange={(v) => setForm({...form, cliente_id: v, fazenda_id: "", talhao_id: ""})}>
+                  <Select value={form.cliente_id} onValueChange={(v) => setForm({...form, cliente_id: v, fazenda_id: "", talhao_id: "", area_hectares: ""})}>
                     <SelectTrigger className="h-11 sm:h-10 text-base sm:text-sm"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
                     <SelectContent>{clientes.map((c) => <SelectItem key={c.id} value={c.id}>{getClienteLabel(c)}</SelectItem>)}</SelectContent>
                   </Select>
@@ -408,7 +408,7 @@ export default function OrdensServico() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Fazenda *</Label>
-                    <Select value={form.fazenda_id} onValueChange={(v) => setForm({...form, fazenda_id: v, talhao_id: ""})} disabled={!form.cliente_id}>
+                    <Select value={form.fazenda_id} onValueChange={(v) => setForm({...form, fazenda_id: v, talhao_id: "", area_hectares: ""})} disabled={saving || !canCreate || !!validarOS(form, { clientes, fazendas, talhoes, produtos, microrganismos }) || !form.cliente_id}>
                       <SelectTrigger className="h-11 sm:h-10 text-base sm:text-sm"><SelectValue placeholder="Fazenda" /></SelectTrigger>
                       <SelectContent>{filteredFazendas.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}</SelectContent>
                     </Select>
@@ -497,12 +497,12 @@ export default function OrdensServico() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Área (ha)</Label>
-                    <Input type="number" step="0.01" value={form.area_hectares} onChange={(e) => setForm({...form, area_hectares: e.target.value})} className="h-11 sm:h-10 text-base sm:text-sm" />
+                    <Input aria-label="Área em hectares" required min="0.01" type="number" step="0.01" value={form.area_hectares} onChange={(e) => setForm({...form, area_hectares: e.target.value})} className="h-11 sm:h-10 text-base sm:text-sm" />
                   </div>
                   <div className="space-y-2">
                     <Label>Data Programada</Label>
                     <Input 
-                      type="date"
+                      aria-label="Data programada" type="date"
                       value={form.data_programada} 
                       onChange={(e) => setForm({...form, data_programada: e.target.value})} 
                       className="h-11 sm:h-10 text-base sm:text-sm" 
@@ -528,10 +528,10 @@ export default function OrdensServico() {
                     </SelectContent>
                   </Select>
                 </div>
-                  <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg" disabled={!form.cliente_id || !form.fazenda_id || !form.talhao_id || (form.tipo_item === "microrganismo" ? !form.microrganismo_id : !form.produto_id)}>
-                    Criar Ordem de Serviço
+                  <Button type="submit" className="w-full h-12 text-base font-bold shadow-lg" disabled={saving || !canCreate || !!validarOS(form, { clientes, fazendas, talhoes, produtos, microrganismos }) || !form.cliente_id || !form.fazenda_id || !form.talhao_id || (form.tipo_item === "microrganismo" ? !form.microrganismo_id : !form.produto_id)}>
+                    {saving ? "Registrando…" : "Criar Ordem de Serviço"}
                   </Button>
-              </form>
+              </fieldset></form>
             </DialogContent>
           </Dialog>
           </div>
@@ -544,7 +544,7 @@ export default function OrdensServico() {
           const count = ordens.filter((o) => o.status === s.key).length;
           return (
             <div key={s.key} className={`flex-shrink-0 rounded-lg px-3 py-2 text-center min-w-[80px] sm:min-w-[100px] ${s.color}`}>
-              <div className="text-lg font-bold">{count}</div>
+              <div className="text-lg font-bold">{loaded && !loadError ? count : "—"}</div>
               <div className="text-[10px] font-medium">{s.label}</div>
             </div>
           );
@@ -557,25 +557,16 @@ export default function OrdensServico() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               <div className="relative w-full sm:max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar OS..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-full h-11 sm:h-10 text-base sm:text-sm" />
+                <Input aria-label="Buscar ordem, cliente, parceiro ou produto" placeholder="Buscar OS, cliente ou produto…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-full h-11 sm:h-10 text-base sm:text-sm" />
               </div>
               <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-                <Badge 
-                  variant={statusFilter === "all" && dateFilter === "all" && clienteFilter === "all" && partnerFilter === "all" && origemFilter === "all" ? "default" : "outline"}
-                  className="cursor-pointer whitespace-nowrap"
-                  onClick={() => { setStatusFilter("all"); setDateFilter("all"); setClienteFilter("all"); setPartnerFilter("all"); setOrigemFilter("all"); }}
-                >
-                  Todas
-                </Badge>
-                {statusFilter !== "all" && <Badge variant="secondary" className="whitespace-nowrap">{STATUS_PIPELINE.find(s => s.key === statusFilter)?.label || statusFilter} <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => setStatusFilter("all")} /></Badge>}
-                {origemFilter !== "all" && <Badge variant="secondary" className="whitespace-nowrap">{origemFilter === "onfarm" ? "Visita Técnica" : "Manual"} <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => setOrigemFilter("all")} /></Badge>}
-                {partnerFilter !== "all" && <Badge variant="secondary" className="whitespace-nowrap">Parceiro: {partnerFilter === "__b2b__" ? "Todos B2B" : (partnersFromOS.find(p => p.id === partnerFilter)?.nome || "—")} <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => setPartnerFilter("all")} /></Badge>}
+                <Button type="button" variant="outline" onClick={() => { setSearch(""); setStatusFilter("all"); setDateFilter("all"); setClienteFilter("all"); setPartnerFilter("all"); setOrigemFilter("all"); setSortOrder("date"); }}>Limpar filtros</Button>
               </div>
             </div>
 
             <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-6 gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full h-11 sm:h-9 text-sm sm:text-xs">
+                <SelectTrigger aria-label="Status" className="w-full h-11 sm:h-9 text-sm sm:text-xs">
                   <div className="flex items-center gap-2">
                     <Filter className="h-3 w-3 text-muted-foreground" />
                     <SelectValue placeholder="Status" />
@@ -590,7 +581,7 @@ export default function OrdensServico() {
               </Select>
 
               <Select value={origemFilter} onValueChange={setOrigemFilter}>
-                <SelectTrigger className="w-full h-11 sm:h-9 text-sm sm:text-xs">
+                <SelectTrigger aria-label="Origem" className="w-full h-11 sm:h-9 text-sm sm:text-xs">
                   <div className="flex items-center gap-2">
                     <LayoutGrid className="h-3 w-3 text-muted-foreground" />
                     <SelectValue placeholder="Origem" />
@@ -604,7 +595,7 @@ export default function OrdensServico() {
               </Select>
 
               <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="w-full h-11 sm:h-9 text-sm sm:text-xs">
+                <SelectTrigger aria-label="Período" className="w-full h-11 sm:h-9 text-sm sm:text-xs">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3 text-muted-foreground" />
                     <SelectValue placeholder="Período" />
@@ -619,7 +610,7 @@ export default function OrdensServico() {
               </Select>
 
               <Select value={clienteFilter} onValueChange={setClienteFilter}>
-                <SelectTrigger className="w-full h-11 sm:h-9 text-sm sm:text-xs">
+                <SelectTrigger aria-label="Cliente" className="w-full h-11 sm:h-9 text-sm sm:text-xs">
                   <div className="flex items-center gap-2">
                     <User className="h-3 w-3 text-muted-foreground" />
                     <SelectValue placeholder="Cliente" />
@@ -634,7 +625,7 @@ export default function OrdensServico() {
               </Select>
 
               <Select value={partnerFilter} onValueChange={setPartnerFilter}>
-                <SelectTrigger className="w-full h-11 sm:h-9 text-sm sm:text-xs">
+                <SelectTrigger aria-label="Parceiro B2B" className="w-full h-11 sm:h-9 text-sm sm:text-xs">
                   <div className="flex items-center gap-2">
                     <User className="h-3 w-3 text-muted-foreground" />
                     <SelectValue placeholder="Parceiro B2B" />
@@ -666,12 +657,14 @@ export default function OrdensServico() {
           </div>
         </CardHeader>
         <CardContent className={isMobile ? "p-3" : "p-0 sm:p-6 sm:pt-0"}>
+          {loadError ? <div role="alert" className="space-y-3 p-4"><p>Não foi possível carregar todas as informações. Nenhum resultado parcial é exibido.</p><Button disabled={isRefreshing} onClick={() => void fetchAll()}>Tentar novamente</Button></div> : !loaded ? <p role="status" className="p-4">Carregando ordens de serviço…</p> : <>
+          <p role="status" className="text-sm text-muted-foreground pb-3">{filtered.length} de {ordens.length} OS carregadas · últimos 90 dias · até 200 por origem{isRefreshing ? " · Atualizando…" : ""}</p>
           <ResponsiveTable
             mobileCards={
               filtered.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">Nenhuma OS registrada</div>
+                <div className="text-center text-muted-foreground py-8">{emptyLabel}</div>
               ) : (
-                filtered.map((o) => {
+                visible.map((o) => {
                   const prio = prioridadeMap[o.prioridade] || { label: o.prioridade, variant: "secondary" as const };
                   const statusInfo = STATUS_PIPELINE.find((s) => s.key === o.status);
                   const etapa = etapaFromStatus(o.status);
@@ -690,8 +683,8 @@ export default function OrdensServico() {
                         }
                         content={[
                           { label: (o as any).tipo_item === "microrganismo" ? "Microrganismo" : "Produto", value: (o.produtos as any)?.nome || (o.microrganismos as any)?.nome || "—" },
-                          { label: "Volume", value: o.volume_total_ml ? `${(o.volume_total_ml / 1000).toFixed(1)} L` : "—" },
-                          { label: "Data", value: formatDateDisplay(o.data_programada || o.created_at) },
+                          { label: "Volume", value: volumeOS(o.volume_total_ml) },
+                          { label: "Data", value: formatDateDisplay(diaSP(o.data_programada || o.created_at)) },
                           { label: "Status", value: (
                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusInfo?.color || ""}`}>
                               {statusInfo?.label || o.status}
@@ -757,8 +750,8 @@ export default function OrdensServico() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">Nenhuma OS registrada</TableCell></TableRow>
-                ) : filtered.map((o) => {
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">{emptyLabel}</TableCell></TableRow>
+                ) : visible.map((o) => {
                   const prio = prioridadeMap[o.prioridade] || { label: o.prioridade, variant: "secondary" as const };
                   const statusInfo = STATUS_PIPELINE.find((s) => s.key === o.status);
                   const etapa = etapaFromStatus(o.status);
@@ -766,7 +759,7 @@ export default function OrdensServico() {
                     <Fragment key={`${o.origem}-${o.id}`}>
                       <TableRow>
                         <TableCell className="font-mono-data text-xs font-semibold">{formatOS(o)}</TableCell>
-                        <TableCell className="text-sm">{formatDateDisplay(o.data_programada || o.created_at)}</TableCell>
+                        <TableCell className="text-sm">{formatDateDisplay(diaSP(o.data_programada || o.created_at))}</TableCell>
                         <TableCell className="font-medium">
                           <div className="flex flex-col">
                             <OSTitular o={o} />
@@ -781,7 +774,7 @@ export default function OrdensServico() {
                           </Badge>
                         </TableCell>
                         <TableCell>{(o.produtos as any)?.nome || (o.microrganismos as any)?.nome || "—"}</TableCell>
-                        <TableCell className="font-mono-data text-sm">{o.volume_total_ml ? `${(o.volume_total_ml / 1000).toFixed(1)} L` : "—"}</TableCell>
+                        <TableCell className="font-mono-data text-sm">{volumeOS(o.volume_total_ml)}</TableCell>
                         <TableCell><Badge variant={prio.variant}>{prio.label}</Badge></TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo?.color || ""}`}>
@@ -833,6 +826,7 @@ export default function OrdensServico() {
               </TableBody>
             </Table>
           </ResponsiveTable>
+          <nav aria-label="Páginas de ordens" className="flex flex-wrap items-center justify-between gap-2 pt-4"><Button variant="outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</Button><span>Página {currentPage} de {pages}</span><Button variant="outline" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}>Próxima</Button></nav></>
         </CardContent>
       </Card>
       <OSDetalhesDialog 
