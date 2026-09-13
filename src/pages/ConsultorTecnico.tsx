@@ -25,7 +25,7 @@ import {
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { formatTelefone } from "@/lib/masks";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
