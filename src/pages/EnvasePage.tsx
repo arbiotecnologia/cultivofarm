@@ -372,7 +372,18 @@ export default function EnvasePage() {
           <h1 className="text-xl sm:text-2xl font-bold">Envase</h1>
           <p className="text-sm text-muted-foreground">Histórico de envases e complementos de saldo</p>
         </div>
-        {lotesComplementares.length > 0 && (
+        {erroAuxiliares ? (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2" role="alert">
+            <p className="text-sm text-destructive">
+              Falha ao carregar lotes com saldo e produtos. {erroAuxiliares}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => carregarComplementares()}>
+              Tentar novamente
+            </Button>
+          </div>
+        ) : carregandoAuxiliares ? (
+          <p className="text-sm text-muted-foreground" role="status">Carregando lotes com saldo…</p>
+        ) : lotesComplementares.length > 0 && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Envase complementar</Button>
