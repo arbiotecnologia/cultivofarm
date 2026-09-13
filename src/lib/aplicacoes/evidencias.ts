@@ -7,7 +7,7 @@
 export const MAX_EVIDENCIA_MB = 10;
 export const MAX_EVIDENCIA_BYTES = MAX_EVIDENCIA_MB * 1024 * 1024;
 
-/** Allowlist estrita de tipos aceitos. Qualquer outro tipo é recusado. */
+/** Allowlist estrita de tipos aceitos. Deve ser exatamente igual à lista do bucket/constraint do Supabase CultivoFarm. */
 export const MIME_EVIDENCIAS_PERMITIDOS = [
   // imagens
   "image/jpeg",
@@ -23,14 +23,10 @@ export const MIME_EVIDENCIAS_PERMITIDOS = [
   "video/quicktime",
   // áudio
   "audio/mpeg",
-  "audio/mp3",
   "audio/mp4",
-  "audio/m4a",
-  "audio/x-m4a",
   "audio/wav",
-  "audio/x-wav",
-  "audio/wave",
   "audio/ogg",
+  "audio/webm",
 ] as const;
 
 export const ACCEPT_EVIDENCIAS = MIME_EVIDENCIAS_PERMITIDOS.join(",");
@@ -46,14 +42,10 @@ const EXT_POR_MIME: Record<string, string> = {
   "video/webm": "webm",
   "video/quicktime": "mov",
   "audio/mpeg": "mp3",
-  "audio/mp3": "mp3",
   "audio/mp4": "m4a",
-  "audio/m4a": "m4a",
-  "audio/x-m4a": "m4a",
   "audio/wav": "wav",
-  "audio/x-wav": "wav",
-  "audio/wave": "wav",
   "audio/ogg": "ogg",
+  "audio/webm": "webm",
 };
 
 export function mimePermitido(mime: unknown): boolean {
