@@ -58,10 +58,9 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
     if (saving) return;
     setSaving(true);
     try {
-      // O código do lote é gerado exclusivamente pelo servidor.
+      // O código do lote, o produto e o microrganismo são definidos
+      // exclusivamente pelo servidor a partir da programação bloqueada.
       const loteData = {
-        produto_id: target.produto_id || null,
-        microrganismo_id: target.microrganismo_id || null,
         programacao_id: target.programacao_id,
         volume_produzido: form.volume_produzido ? Number(form.volume_produzido) * 1000 : null,
         responsavel_producao: form.responsavel_producao || null,

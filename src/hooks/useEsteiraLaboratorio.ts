@@ -44,6 +44,12 @@ const COCKPIT_ERROS: Record<string, string> = {
   COCKPIT_LOTE_CODIGO_OBRIGATORIO: "O código do lote é gerado pelo servidor; recarregue a página e tente novamente.",
   COCKPIT_LOTE_CODIGO_NAO_ACEITO: "O código do lote é definido pelo servidor e não pode ser enviado pelo navegador.",
   COCKPIT_LOTE_CODIGO_CONFLITO: "Outro lote foi criado ao mesmo tempo. Tente novamente.",
+  COCKPIT_LOTE_PAYLOAD_INVALIDO: "Dados do lote em formato inválido. Recarregue a página e tente novamente.",
+  COCKPIT_LOTE_PROGRAMACAO_NAO_ENCONTRADA: "Programação de produção não encontrada. Atualize a tela e tente novamente.",
+  COCKPIT_LOTE_VINCULO_INVALIDO: "Esta programação não pertence à ordem de serviço informada.",
+  COCKPIT_LOTE_VINCULO_AMBIGUO: "Vínculo da programação com a ordem de serviço está ambíguo. Revise o cadastro antes de gerar o lote.",
+  COCKPIT_LOTE_ITEM_CANONICO_AUSENTE: "A programação não tem produto nem microrganismo definido. Corrija a programação antes de gerar o lote.",
+  COCKPIT_LOTE_VOLUME_INVALIDO: "Informe um volume produzido maior que zero.",
   COCKPIT_SEED_FORBIDDEN: "Apenas administradores podem gerar fixtures.",
   COCKPIT_SEED_BLOQUEADO: "Geração de fixtures indisponível fora do ambiente de homologação.",
   COCKPIT_SEED_INDISPONIVEL: "Gerador de fixtures indisponível neste ambiente.",
@@ -167,6 +173,12 @@ export function useEsteiraLaboratorio() {
       return null;
     }
 
+    const volume = Number(loteData?.volume_produzido);
+    if (!Number.isFinite(volume) || volume <= 0) {
+      toast.error(COCKPIT_ERROS.COCKPIT_LOTE_VOLUME_INVALIDO);
+      return null;
+    }
+
     try {
       const { data, error } = await (supabase as any).rpc("rpc_cockpit_gerar_lote_v1", {
         p_programacao_id: loteData.programacao_id,
@@ -174,10 +186,10 @@ export function useEsteiraLaboratorio() {
         p_origem: origem,
         // codigo_lote NUNCA é enviado pelo navegador: o servidor é a única
         // fonte do código canônico (LT-YYYY-NNNN).
+        // produto_id e microrganismo_id também não são enviados: o servidor os
+        // deriva exclusivamente da programação bloqueada.
         p_lote: {
-          produto_id: loteData.produto_id ?? null,
-          microrganismo_id: loteData.microrganismo_id ?? null,
-          volume_produzido: loteData.volume_produzido ?? null,
+          volume_produzido: volume,
           data_producao: loteData.data_producao ?? null,
           responsavel_producao: loteData.responsavel_producao ?? null,
           tanque: loteData.tanque ?? null,
@@ -189,6 +201,7 @@ export function useEsteiraLaboratorio() {
         toast.error(traduzErroCockpit(error.message));
         return null;
       }
+
 
       if (data?.replay) {
         toast.error(data.message || "Já existe um lote para esta programação.");
