@@ -256,30 +256,12 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
             </div>
           )}
           {loteSemProducao && (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3" role="alert">
               <p className="text-xs text-destructive">
-                Este lote não tem volume produzido informado. Registre a produção abaixo para liberar o envase.
+                Este lote não tem volume produzido registrado. O envase fica bloqueado: volte à etapa de
+                produção no Cockpit Laboratório e registre a produção do lote por lá. A produção não pode
+                ser alterada nesta tela.
               </p>
-              <div className="flex items-end gap-2">
-                <div className="flex-1 space-y-1.5">
-                  <Label className="text-xs">Volume produzido (L)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.1"
-                    value={novoVolume}
-                    onChange={(e) => setNovoVolume(e.target.value)}
-                    placeholder="Ex.: 50"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  onClick={salvarProducao}
-                  disabled={salvandoProducao || !Number(novoVolume)}
-                >
-                  {salvandoProducao ? "Salvando..." : "Salvar produção"}
-                </Button>
-              </div>
             </div>
           )}
 
