@@ -70,3 +70,12 @@ ALTER TABLE public.ordens_servico_onfarm DROP CONSTRAINT IF EXISTS ordens_servic
 COMMIT;
 ```
 Nenhum DROP destrutivo, CASCADE, TRUNCATE ou correção de registros integra o pacote.
+
+## Evidências e bloqueio final
+- Testes focados: 64/64; suíte ampliada: 114/115 (11 arquivos), incluindo 24 novos testes OS e 28 Cockpit.
+- Gate estático de runtime passou: único createClient em client.ts, URL literal `https://swzpzcwiasxmjutrmvkm.supabase.co`, guarda antes da criação, zero refs divergentes, zero imports gerenciados e zero variáveis dinâmicas de conexão na produção.
+- Tipos próprios: 21.850 linhas, SHA-256 `f270cfbd1c4b42fbff928b4ad6bff351b4c37fbc135d880c8bb104ca2ac8cd41`.
+- **NO-GO para aceite integral**: `binding-gate.integration.test.ts` reprova o `.env` gerenciado divergente. Não alterado por restrição do ambiente; nenhum banco foi acessado. Runtime continua canônico independente desse arquivo. Não enfraquecido/ignorado o teste para obter resultado verde.
+- Build automático após correção sintática: `build OK`. Typecheck/build manuais não executados por restrição do ambiente; não alegar comprovação separada de typecheck.
+- Verificação funcional autenticada e teste SQL não executados: proibido acessar banco/dados nesta etapa. Pacote SQL preparado para revisão, não homologado nem aplicado.
+- Próxima ação externa: corrigir vínculo gerenciado antes de repetir gate completo. Nenhuma proteção runtime falhou; arquivos canônicos permaneceram intactos.
