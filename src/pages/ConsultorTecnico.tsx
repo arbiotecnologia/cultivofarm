@@ -511,7 +511,6 @@ export default function ConsultorTecnico() {
                   <TableCell colSpan={5} className="text-center py-8">
                     <p className="text-sm text-destructive">
                       Não foi possível carregar a equipe técnica.
-                      {(consultoresError as any)?.message ? ` (${(consultoresError as any).message})` : ""}
                     </p>
                     <Button
                       variant="outline"
