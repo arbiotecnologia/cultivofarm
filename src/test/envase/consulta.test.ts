@@ -13,6 +13,8 @@ import {
   quantidadeInteiraPositiva,
   validadeFutura,
   hojeLocalISO,
+  carregarTudo,
+  PAGINA_TECNICA,
 } from "@/lib/envase/consulta";
 import { defaultValidade, addMesesLocal, toISODateLocal } from "@/lib/envaseFormat";
 
@@ -59,7 +61,7 @@ describe("último CQ determinístico", () => {
     expect(ultimoCQAprovado(cqs)).toBe(false);
   });
 
-  it("desempata por seq DESC quando created_at empata", () => {
+  it("usa seq DESC como desempate primário (coluna existe em produção)", () => {
     const empate = [
       { id: "x", created_at: "2026-05-01T10:00:00Z", seq: 1, resultado: "aprovado" },
       { id: "y", created_at: "2026-05-01T10:00:00Z", seq: 2, resultado: "reprovado" },
@@ -67,7 +69,15 @@ describe("último CQ determinístico", () => {
     expect(ultimoCQ(empate)?.id).toBe("y");
   });
 
-  it("desempata por id quando não há seq nem diferença de data", () => {
+  it("seq vence data_analise quando created_at empata", () => {
+    const empate = [
+      { id: "x", created_at: "2026-05-01T10:00:00Z", seq: 5, data_analise: "2026-01-01", resultado: "reprovado" },
+      { id: "y", created_at: "2026-05-01T10:00:00Z", seq: 1, data_analise: "2026-04-01", resultado: "aprovado" },
+    ];
+    expect(ultimoCQ(empate)?.id).toBe("x");
+  });
+
+  it("fallback defensivo por id quando não há seq nem diferença de data", () => {
     const empate = [
       { id: "a", created_at: "2026-05-01T10:00:00Z", resultado: "aprovado" },
       { id: "z", created_at: "2026-05-01T10:00:00Z", resultado: "reprovado" },
@@ -97,6 +107,33 @@ describe("elegibilidade a complemento", () => {
     expect(podeComplementar({ status: "aprovado", cqs: aprovado, saldoMl: 5000, jaIniciado: false })).toBe(false);
     expect(podeComplementar({ status: "aprovado", cqs: aprovado, saldoMl: 0, jaIniciado: true })).toBe(false);
     expect(podeComplementar({ status: "aprovado", cqs: aprovado, saldoMl: 5000, jaIniciado: true })).toBe(true);
+  });
+});
+
+describe("carregarTudo (sem teto silencioso)", () => {
+  it("usa página técnica e percorre até esgotar", async () => {
+    expect(PAGINA_TECNICA).toBe(1000);
+    const chamadas: Array<[number, number]> = [];
+    const total = 2500;
+    const itens = Array.from({ length: total }, (_, i) => ({ id: i }));
+    const res = await carregarTudo<{ id: number }>(async (from, to) => {
+      chamadas.push([from, to]);
+      return itens.slice(from, to + 1);
+    }, 1000);
+    expect(res).toHaveLength(total);
+    expect(chamadas).toEqual([[0, 999], [1000, 1999], [2000, 2999]]);
+  });
+
+  it("encerra quando a última página vem cheia e a seguinte vem vazia", async () => {
+    const itens = Array.from({ length: 20 }, (_, i) => i);
+    const res = await carregarTudo<number>(async (from, to) => itens.slice(from, to + 1), 10);
+    expect(res).toHaveLength(20);
+  });
+
+  it("erra explicitamente em vez de omitir registros", async () => {
+    await expect(
+      carregarTudo<number>(async () => [1, 2], 2, 3),
+    ).rejects.toThrow(/nenhum registro foi omitido/i);
   });
 });
 
@@ -148,11 +185,26 @@ describe("contratos do módulo", () => {
   const page = readFileSync("src/pages/EnvasePage.tsx", "utf8");
   const dialog = readFileSync("src/components/cockpit/RegistrarEnvaseDialog.tsx", "utf8");
 
-  it("a página não usa mais janela de 90 dias nem limite fixo de 200", () => {
+  it("a página não usa janela de 90 dias nem nenhum limite silencioso", () => {
     expect(page).not.toMatch(/90 \* 24 \* 60 \* 60 \* 1000/);
-    expect(page).not.toMatch(/\.limit\(200\)/);
+    expect(page).not.toMatch(/\.limit\(/);
     expect(page).toMatch(/count: "exact"/);
     expect(page).toMatch(/\.range\(from, to\)/);
+  });
+
+  it("consultas auxiliares usam carregarTudo e a busca é debounced", () => {
+    expect(page).toMatch(/carregarTudo</);
+    expect(page).toMatch(/useDebounce\(search\.trim\(\), \d+\)/);
+    expect(page).toMatch(/const termo = buscaDebounced;/);
+  });
+
+  it("inclui seq no select de controle de qualidade", () => {
+    expect(page).toMatch(/controle_qualidade\(id, seq, created_at, data_analise, resultado\)/);
+  });
+
+  it("expõe falha das listas auxiliares em vez de exibir ausência de opções", () => {
+    expect(page).toMatch(/erroAuxiliares/);
+    expect(page).toMatch(/Falha ao carregar lotes com saldo e produtos/);
   });
 
   it("a página tem estados de carga, erro com retry e rótulos acessíveis", () => {
@@ -173,25 +225,60 @@ describe("contratos do módulo", () => {
 
 describe("SQL de hardening do envase", () => {
   const sql = readFileSync("restoration/envase/sql/20260913060000_envase_hardening.sql", "utf8");
+  const rollback = readFileSync("restoration/envase/sql/90-rollback.sql", "utf8");
 
   it("é compatível com o SQL Editor (sem metacomandos psql)", () => {
     expect(sql).not.toMatch(/^\s*\\/m);
+    expect(rollback).not.toMatch(/^\s*\\/m);
   });
 
-  it("revoga grants diretos e remove o gatilho legado", () => {
-    expect(sql).toMatch(/REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON TABLE public\.envase FROM anon, authenticated/);
+  it("usa os nomes de constraint exatos aplicados em produção", () => {
+    expect(sql).toMatch(/envase_quantidade_positiva/);
+    expect(sql).toMatch(/envase_volume_valido/);
+    expect(sql).toMatch(/envase_embalagem_volume_coerente/);
+    expect(sql).not.toMatch(/envase_volume_unitario_positivo/);
+    expect(sql).toMatch(/20000/);
+  });
+
+  it("aplica NOT NULL nas duas colunas", () => {
+    expect(sql).toMatch(/ALTER COLUMN quantidade SET NOT NULL/);
+    expect(sql).toMatch(/ALTER COLUMN volume_por_unidade SET NOT NULL/);
+  });
+
+  it("deixa anon sem grant, authenticated só com SELECT e remove o gatilho legado", () => {
+    expect(sql).toMatch(/REVOKE ALL ON TABLE public\.envase FROM anon/);
+    expect(sql).toMatch(/REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON TABLE public\.envase FROM authenticated/);
     expect(sql).toMatch(/DROP TRIGGER IF EXISTS trg_envase_avanca_os ON public\.envase/);
   });
 
-  it("cria as três constraints validadas", () => {
-    expect(sql).toMatch(/envase_quantidade_positiva/);
-    expect(sql).toMatch(/envase_volume_unitario_positivo/);
-    expect(sql).toMatch(/envase_embalagem_volume_coerente/);
-    expect(sql).toMatch(/20000/);
+  it("o pós-check comprova os seis pontos, RLS e o EXECUTE da RPC", () => {
+    expect(sql).toMatch(/ENVASE_CONSTRAINTS_INCOMPLETAS/);
+    expect(sql).toMatch(/ENVASE_NOT_NULL_INCOMPLETO/);
+    expect(sql).toMatch(/ENVASE_ANON_COM_GRANT/);
+    expect(sql).toMatch(/ENVASE_AUTHENTICATED_COM_ESCRITA/);
+    expect(sql).toMatch(/ENVASE_AUTHENTICATED_SEM_SELECT/);
+    expect(sql).toMatch(/ENVASE_TRIGGER_LEGADO_PRESENTE/);
+    expect(sql).toMatch(/ENVASE_RLS_DESATIVADA/);
+    expect(sql).toMatch(/ENVASE_RPC_SEM_EXECUTE_AUTHENTICATED/);
   });
 
   it("não mexe em RLS nem em policies", () => {
     expect(sql).not.toMatch(/ENABLE ROW LEVEL SECURITY/i);
     expect(sql).not.toMatch(/CREATE POLICY|DROP POLICY|ALTER POLICY/i);
+    expect(rollback).not.toMatch(/ENABLE ROW LEVEL SECURITY/i);
+    expect(rollback).not.toMatch(/CREATE POLICY|DROP POLICY|ALTER POLICY/i);
+  });
+
+  it("o rollback restaura exatamente o estado anterior, sem trechos comentados", () => {
+    expect(rollback).toMatch(/DROP CONSTRAINT IF EXISTS envase_embalagem_volume_coerente/);
+    expect(rollback).toMatch(/DROP CONSTRAINT IF EXISTS envase_volume_valido/);
+    expect(rollback).toMatch(/DROP CONSTRAINT IF EXISTS envase_quantidade_positiva/);
+    expect(rollback).toMatch(/ALTER COLUMN quantidade DROP NOT NULL/);
+    expect(rollback).toMatch(/ALTER COLUMN volume_por_unidade DROP NOT NULL/);
+    expect(rollback).toMatch(/CREATE TRIGGER trg_envase_avanca_os[\s\S]*public\.fn_envase_avanca_os\(\)/);
+    expect(rollback).toMatch(/GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public\.envase TO anon;/);
+    expect(rollback).toMatch(/GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE public\.envase TO authenticated;/);
+    expect(rollback).toMatch(/REABRE O RISCO/);
+    expect(rollback).not.toMatch(/^--\s*GRANT/m);
   });
 });
