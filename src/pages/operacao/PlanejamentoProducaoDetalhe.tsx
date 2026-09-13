@@ -151,6 +151,10 @@ export default function PlanejamentoProducaoDetalhe() {
 
   const { planning, partner: partnerRaw, order, timeline, has_orders } = data as any;
   const partner = partnerRaw ?? {};
+  const validacaoDatas = validarDatasPlanejamento(startDate || null, finishDate || null);
+  const eventos = [...((timeline as any[]) ?? [])].sort((a, b) =>
+    String(a?.event_at ?? "") < String(b?.event_at ?? "") ? -1 : 1,
+  );
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-4">
