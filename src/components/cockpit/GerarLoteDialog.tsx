@@ -104,20 +104,13 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label>Código do Lote *</Label>
-            <div className="flex gap-2">
-              <Input
-                value={form.codigo_lote}
-                onChange={(e) => setForm({ ...form, codigo_lote: e.target.value })}
-                className="font-mono"
-                required
-              />
-              <Button type="button" variant="outline" size="sm" onClick={() => setForm({ ...form, codigo_lote: generateLotCode() })}>
-                Gerar
-              </Button>
-            </div>
+          <div className="rounded-md border border-dashed p-3">
+            <p className="text-xs text-muted-foreground">
+              O código do lote é gerado automaticamente pelo sistema no momento do registro,
+              no padrão <span className="font-mono">LT-AAAA-0000</span>. Ele será exibido após a confirmação.
+            </p>
           </div>
+
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
