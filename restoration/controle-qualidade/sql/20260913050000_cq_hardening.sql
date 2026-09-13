@@ -1,77 +1,78 @@
--- PREPARADO, NÃO APLICADO. Executar somente com psql, após revisão/autorização.
--- Não define o ref: a conexão deve prover lovable.project_ref verificável.
--- Rollback capturado ANTES de cada execução; arquivar arquivo com hash, não sobrescrever o anterior.
-\set ON_ERROR_STOP on
+-- CQ — subconjunto SEGURO de hardening.
+-- STATUS: APLICADO MANUALMENTE e pós-checado no Supabase CultivoFarm swzpzcwiasxmjutrmvkm (13/09/2026).
+-- Este arquivo é idempotente e reexecutável: reconhece o estado "já aplicado" e não repete efeitos.
+-- Compatível com o SQL Editor do Supabase: NÃO contém metacomandos psql (\set, \pset, \o).
+--
+-- VALIDAÇÃO DO DESTINO: é EXTERNA. Não existe current_setting('lovable.project_ref').
+-- Antes de executar, confirme no dashboard/URL que o projeto é EXATAMENTE swzpzcwiasxmjutrmvkm.
+-- Marcador literal do destino autorizado: swzpzcwiasxmjutrmvkm
+--
+-- ESCOPO (fiel ao que foi aplicado e verificado):
+--   1. Revogar TRUNCATE/TRIGGER/REFERENCES de anon e authenticated nas duas tabelas de CQ.
+--   2. fn_cq_ultimo_resultado(uuid): SECURITY INVOKER, search_path fixo, sem EXECUTE para PUBLIC/anon.
+--   3. fn_validate_envase_cq(): sem EXECUTE para PUBLIC/anon/authenticated (trigger permanece habilitado).
+--   4. CHECKs cq_h5_ph, cq_h5_concentracao e cq_h5_referencia (rejeitam NaN/Infinity/-Infinity,
+--      faixas inválidas e concentração negativa).
+-- FORA DE ESCOPO: nenhum RLS é habilitado/desabilitado, nenhuma policy é criada/removida/alterada,
+-- nenhum INSERT/UPDATE/DELETE/TRUNCATE é executado. A regra de bloqueio de reanálise está NO-GO
+-- e NÃO faz parte deste arquivo (ver README, seção "Reanálise — proposta textual, sem SQL executável").
+
 BEGIN;
+
+-- Pré-check fail-closed: banco esperado, RLS ativa e dependências presentes.
 DO $pre$
 BEGIN
-  IF current_database() <> 'postgres' OR
-     current_setting('lovable.project_ref', true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN
-    RAISE EXCEPTION 'CQ_AMBIENTE_NAO_COMPROVADO';
+  IF current_database() <> 'postgres' THEN
+    RAISE EXCEPTION 'CQ_AMBIENTE_NAO_COMPROVADO: database=%', current_database();
   END IF;
-  IF EXISTS (SELECT 1 FROM pg_class WHERE oid IN
-    ('public.controle_qualidade'::regclass, 'public.cq_parametros_referencia'::regclass)
-    AND NOT relrowsecurity) THEN RAISE EXCEPTION 'CQ_RLS_OBRIGATORIA'; END IF;
-  IF to_regprocedure('public.fn_cq_ultimo_resultado(uuid)') IS NULL OR
-     to_regprocedure('public.fn_validate_envase_cq()') IS NULL THEN
+  IF to_regclass('public.controle_qualidade') IS NULL
+     OR to_regclass('public.cq_parametros_referencia') IS NULL THEN
+    RAISE EXCEPTION 'CQ_TABELA_AUSENTE';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_class
+    WHERE oid IN ('public.controle_qualidade'::regclass, 'public.cq_parametros_referencia'::regclass)
+      AND NOT relrowsecurity
+  ) THEN
+    RAISE EXCEPTION 'CQ_RLS_OBRIGATORIA';
+  END IF;
+  IF to_regprocedure('public.fn_cq_ultimo_resultado(uuid)') IS NULL
+     OR to_regprocedure('public.fn_validate_envase_cq()') IS NULL THEN
     RAISE EXCEPTION 'CQ_DEPENDENCIA_AUSENTE';
   END IF;
-  IF (SELECT prosecdef FROM pg_proc WHERE oid='public.fn_validate_envase_cq()'::regprocedure) THEN
-    RAISE EXCEPTION 'CQ_TRIGGER_DEVE_SER_INVOKER';
-  END IF;
 END $pre$;
--- Sem janela entre pré-check numérico e instalação dos CHECKs.
+
+-- Sem janela entre o pré-check numérico e a instalação dos CHECKs.
 LOCK TABLE public.controle_qualidade, public.cq_parametros_referencia IN ACCESS EXCLUSIVE MODE;
--- Rollback exato deste passo (atributos/ACL modificados, objetos preexistentes preservados).
--- Arquivo local do operador: NUNCA executar automaticamente.
-\pset tuples_only on
-\pset format unaligned
-\o cq-hardening-rollback.sql
-SELECT 'BEGIN;';
-SELECT $$DO $guard$ BEGIN IF current_setting('lovable.project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'CQ_AMBIENTE_NAO_COMPROVADO'; END IF; END $guard$;$$;
-SELECT pg_get_functiondef('public.fn_cq_ultimo_resultado(uuid)'::regprocedure);
-SELECT CASE WHEN to_regprocedure('public.fn_cq_bloquear_reanalise_liberada()') IS NULL
-  THEN 'DROP TRIGGER IF EXISTS trg_cq_bloquear_reanalise_liberada ON public.controle_qualidade; DROP FUNCTION IF EXISTS public.fn_cq_bloquear_reanalise_liberada();'
-  ELSE pg_get_functiondef('public.fn_cq_bloquear_reanalise_liberada()'::regprocedure) END;
-SELECT format('GRANT %s ON TABLE %s TO %I%s;', a.privilege_type, c.oid::regclass, r.rolname,
-  CASE WHEN a.is_grantable THEN ' WITH GRANT OPTION' ELSE '' END)
-FROM pg_class c CROSS JOIN LATERAL aclexplode(c.relacl) a JOIN pg_roles r ON r.oid=a.grantee
-WHERE c.oid IN ('public.controle_qualidade'::regclass,'public.cq_parametros_referencia'::regclass)
-  AND r.rolname IN ('anon','authenticated') AND a.privilege_type IN ('TRUNCATE','TRIGGER','REFERENCES');
-SELECT format('GRANT EXECUTE ON FUNCTION %s TO %s%s;', p.oid::regprocedure,
-  CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE quote_ident(pg_get_userbyid(a.grantee)) END,
-  CASE WHEN a.is_grantable THEN ' WITH GRANT OPTION' ELSE '' END)
-FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
-WHERE p.oid IN ('public.fn_cq_ultimo_resultado(uuid)'::regprocedure,'public.fn_validate_envase_cq()'::regprocedure)
-  AND (a.grantee=0 OR pg_get_userbyid(a.grantee) IN ('anon','authenticated'))
-  AND a.privilege_type='EXECUTE';
-SELECT format('ALTER TABLE public.%I DROP CONSTRAINT %I;',t,n)
-FROM (VALUES ('controle_qualidade','cq_h5_ph'),('controle_qualidade','cq_h5_concentracao'),
-  ('cq_parametros_referencia','cq_h5_referencia')) v(t,n)
-WHERE NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid=('public.'||t)::regclass AND conname=n);
-SELECT 'COMMIT;';
-\o
-\pset tuples_only off
--- Invoker escolhido: preserva assinatura/corpo e aplica RLS do chamador, inclusive NULL sem linhas visíveis.
--- Chamadas internas SECURITY DEFINER conservam contexto do proprietário; não ampliamos EXECUTE.
+
+-- 1. ACL mínima das tabelas (idempotente: REVOKE de privilégio ausente é no-op).
+REVOKE TRUNCATE, TRIGGER, REFERENCES ON TABLE public.controle_qualidade, public.cq_parametros_referencia FROM anon, authenticated;
+
+-- 2. Helper de leitura: invoker, caminho fixo, sem PUBLIC/anon.
+--    Assinatura e corpo preservados; authenticated mantém EXECUTE se já possuía.
 ALTER FUNCTION public.fn_cq_ultimo_resultado(uuid) SECURITY INVOKER;
 ALTER FUNCTION public.fn_cq_ultimo_resultado(uuid) SET search_path TO public, pg_temp;
 REVOKE EXECUTE ON FUNCTION public.fn_cq_ultimo_resultado(uuid) FROM PUBLIC, anon;
-REVOKE TRUNCATE, TRIGGER, REFERENCES ON TABLE public.controle_qualidade, public.cq_parametros_referencia FROM anon, authenticated;
--- PostgreSQL verifica EXECUTE ao criar o trigger, não a cada disparo. Trigger existente permanece ativo.
+
+-- 3. Função de trigger não é chamável diretamente.
+--    PostgreSQL verifica EXECUTE ao criar o trigger, não a cada disparo: o trigger segue ativo.
 REVOKE EXECUTE ON FUNCTION public.fn_validate_envase_cq() FROM PUBLIC, anon, authenticated;
--- Preservar ACLs dos outros três triggers: falhar, não reabrir permissões.
+
+-- Preservar ACLs dos outros triggers de CQ: falhar, nunca reabrir permissões.
 DO $acl$
 DECLARE f text; r text;
 BEGIN
   FOREACH f IN ARRAY ARRAY['fn_cq_aprovado_avanca_os','fn_cq_autoria_servidor','fn_cq_resultado_imutavel'] LOOP
+    CONTINUE WHEN to_regprocedure('public.'||f||'()') IS NULL;
     FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
-      IF has_function_privilege(r,('public.'||f||'()')::regprocedure,'EXECUTE') THEN
-        RAISE EXCEPTION 'CQ_TRIGGER_ACL_DIVERGENTE: %',f;
+      IF has_function_privilege(r, ('public.'||f||'()')::regprocedure, 'EXECUTE') THEN
+        RAISE EXCEPTION 'CQ_TRIGGER_ACL_DIVERGENTE: %', f;
       END IF;
     END LOOP;
   END LOOP;
 END $acl$;
+
+-- 4. CHECKs numéricos anuláveis. Precheck sem DML; constraints existentes são preservadas.
 DO $checks$
 BEGIN
   IF EXISTS (SELECT 1 FROM public.controle_qualidade WHERE
@@ -84,6 +85,7 @@ BEGIN
     ph_min > ph_max OR (concentracao_min_ufc_ml IS NOT NULL AND
       (concentracao_min_ufc_ml::text IN ('NaN','Infinity','-Infinity') OR concentracao_min_ufc_ml < 0)))
     THEN RAISE EXCEPTION 'CQ_REFERENCIAS_INVALIDAS'; END IF;
+
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.controle_qualidade'::regclass AND conname='cq_h5_ph') THEN
     ALTER TABLE public.controle_qualidade ADD CONSTRAINT cq_h5_ph CHECK
       (ph IS NULL OR (ph::text NOT IN ('NaN','Infinity','-Infinity') AND ph BETWEEN 0 AND 14));
@@ -100,57 +102,66 @@ BEGIN
       (concentracao_min_ufc_ml IS NULL OR (concentracao_min_ufc_ml::text NOT IN ('NaN','Infinity','-Infinity') AND concentracao_min_ufc_ml >= 0)));
   END IF;
 END $checks$;
--- REGRA CONSERVADORA: congelar novos pareceres após QUALQUER aprovação.
--- Evita reprovação posterior mantendo lote/OS liberados; NÃO finge implementar quarentena/recall.
--- Bloqueia também backdating e atualização de pendência antiga após aprovação.
--- Nenhum status é retrocedido; histórico não é sobrescrito. Uma reanálise nessa situação
--- requer fluxo separado de não conformidade/quarentena autorizado, ainda não disponível.
-CREATE OR REPLACE FUNCTION public.fn_cq_bloquear_reanalise_liberada()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public, pg_temp AS $fn$
-BEGIN
-  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'CQ_SESSAO_OBRIGATORIA' USING ERRCODE='42501'; END IF;
-  IF NOT (public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR
-          public.has_role(auth.uid(),'producao') OR public.fn_onfarm_scope_lote(NEW.lote_id)) THEN
-    RAISE EXCEPTION 'CQ_ESCOPO_NEGADO' USING ERRCODE='42501';
-  END IF;
-  -- Lock de tabela evita snapshots concorrentes obsoletos entre dois INSERTs de CQ.
-  -- Sob isolamento REPEATABLE READ/SERIALIZABLE, falhar em vez de usar snapshot antigo.
-  IF current_setting('transaction_isolation') <> 'read committed' THEN
-    RAISE EXCEPTION 'CQ_ISOLAMENTO_NAO_SUPORTADO';
-  END IF;
-  LOCK TABLE public.controle_qualidade IN SHARE ROW EXCLUSIVE MODE;
-  IF TG_OP = 'UPDATE' AND NEW.lote_id IS DISTINCT FROM OLD.lote_id THEN
-    RAISE EXCEPTION 'CQ_LOTE_IMUTAVEL';
-  END IF;
-  IF EXISTS (SELECT 1 FROM public.controle_qualidade WHERE lote_id=NEW.lote_id AND resultado::text='aprovado') THEN
-    RAISE EXCEPTION 'CQ_REANALISE_BLOQUEADA: lote já liberado; solicite tratamento formal de não conformidade. Nenhum parecer ou etapa foi alterado.' USING ERRCODE='23514';
-  END IF;
-  RETURN NEW;
-END $fn$;
-REVOKE ALL ON FUNCTION public.fn_cq_bloquear_reanalise_liberada() FROM PUBLIC, anon, authenticated;
-DO $trigger$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.controle_qualidade'::regclass AND tgname='trg_cq_bloquear_reanalise_liberada') THEN
-    CREATE TRIGGER trg_cq_bloquear_reanalise_liberada BEFORE INSERT OR UPDATE ON public.controle_qualidade
-      FOR EACH ROW EXECUTE FUNCTION public.fn_cq_bloquear_reanalise_liberada();
-  END IF;
-END $trigger$;
+
+-- Pós-check fail-closed do subconjunto aplicado.
 DO $post$
 DECLARE r text; t text; priv text;
 BEGIN
   FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
     FOREACH t IN ARRAY ARRAY['controle_qualidade','cq_parametros_referencia'] LOOP
       FOREACH priv IN ARRAY ARRAY['TRUNCATE','TRIGGER','REFERENCES'] LOOP
-        IF has_table_privilege(r,('public.'||t)::regclass,priv) THEN RAISE EXCEPTION 'CQ_ACL_RESIDUAL'; END IF;
+        IF has_table_privilege(r, ('public.'||t)::regclass, priv) THEN
+          RAISE EXCEPTION 'CQ_ACL_RESIDUAL: % % %', r, t, priv;
+        END IF;
       END LOOP;
     END LOOP;
-    IF has_function_privilege(r,'public.fn_validate_envase_cq()','EXECUTE') THEN RAISE EXCEPTION 'CQ_ENVASE_ACL'; END IF;
+    IF has_function_privilege(r, 'public.fn_validate_envase_cq()', 'EXECUTE') THEN
+      RAISE EXCEPTION 'CQ_ENVASE_ACL: %', r;
+    END IF;
   END LOOP;
-  IF (SELECT prosecdef FROM pg_proc WHERE oid='public.fn_cq_ultimo_resultado(uuid)'::regprocedure) THEN RAISE EXCEPTION 'CQ_INVOKER_AUSENTE'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgfoid='public.fn_validate_envase_cq()'::regprocedure AND tgenabled <> 'D') THEN RAISE EXCEPTION 'CQ_TRIGGER_ENVASE_AUSENTE'; END IF;
-  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid IN ('public.controle_qualidade'::regclass,'public.cq_parametros_referencia'::regclass) AND conname IN ('cq_h5_ph','cq_h5_concentracao','cq_h5_referencia') AND NOT convalidated) THEN RAISE EXCEPTION 'CQ_CHECK_NAO_VALIDADO'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.cq_parametros_referencia WHERE ativo) THEN
-    RAISE NOTICE 'CQ_SEM_REFERENCIA: conformidade bloqueada por configuração ausente; nenhum dado inventado.';
+  IF (SELECT prosecdef FROM pg_proc WHERE oid='public.fn_cq_ultimo_resultado(uuid)'::regprocedure) THEN
+    RAISE EXCEPTION 'CQ_INVOKER_AUSENTE';
   END IF;
+  IF has_function_privilege('anon', 'public.fn_cq_ultimo_resultado(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'CQ_HELPER_ANON_ACL';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgfoid='public.fn_validate_envase_cq()'::regprocedure AND tgenabled <> 'D') THEN
+    RAISE EXCEPTION 'CQ_TRIGGER_ENVASE_AUSENTE';
+  END IF;
+  IF (SELECT count(*) FROM pg_constraint
+      WHERE conrelid IN ('public.controle_qualidade'::regclass,'public.cq_parametros_referencia'::regclass)
+        AND conname IN ('cq_h5_ph','cq_h5_concentracao','cq_h5_referencia') AND convalidated) <> 3 THEN
+    RAISE EXCEPTION 'CQ_CHECK_NAO_VALIDADO';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_class
+             WHERE oid IN ('public.controle_qualidade'::regclass,'public.cq_parametros_referencia'::regclass)
+               AND NOT relrowsecurity) THEN
+    RAISE EXCEPTION 'CQ_RLS_ALTERADA';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.cq_parametros_referencia WHERE ativo) THEN
+    RAISE NOTICE 'CQ_SEM_REFERENCIA: conformidade bloqueada por configuracao ausente; nenhum dado inventado.';
+  END IF;
+  RAISE NOTICE 'CQ_HARDENING_OK: subconjunto seguro presente e validado.';
 END $post$;
+
+-- Relatório final do pós-check (leitura, sem DML).
+SELECT current_database() AS database,
+       (SELECT count(*) FROM public.controle_qualidade) AS cq_rows,
+       (SELECT count(*) FROM public.cq_parametros_referencia) AS reference_rows,
+       (SELECT bool_and(relrowsecurity) FROM pg_class
+         WHERE oid IN ('public.controle_qualidade'::regclass,'public.cq_parametros_referencia'::regclass)) AS rls_ambas_ativas,
+       (SELECT count(*) FROM (VALUES ('anon'),('authenticated')) rr(r)
+          CROSS JOIN (VALUES ('controle_qualidade'),('cq_parametros_referencia')) tt(t)
+          CROSS JOIN (VALUES ('TRUNCATE'),('TRIGGER'),('REFERENCES')) pp(p)
+         WHERE has_table_privilege(rr.r, ('public.'||tt.t)::regclass, pp.p)) AS dangerous_grants_remaining,
+       (SELECT prosecdef FROM pg_proc WHERE oid='public.fn_cq_ultimo_resultado(uuid)'::regprocedure) AS helper_security_definer,
+       has_function_privilege('anon','public.fn_cq_ultimo_resultado(uuid)','EXECUTE') AS helper_anon_execute,
+       has_function_privilege('authenticated','public.fn_cq_ultimo_resultado(uuid)','EXECUTE') AS helper_authenticated_execute,
+       has_function_privilege('anon','public.fn_validate_envase_cq()','EXECUTE') AS envase_anon_execute,
+       has_function_privilege('authenticated','public.fn_validate_envase_cq()','EXECUTE') AS envase_authenticated_execute,
+       (SELECT bool_and(tgenabled <> 'D') FROM pg_trigger WHERE tgfoid='public.fn_validate_envase_cq()'::regprocedure) AS trigger_envase_habilitado,
+       (SELECT count(*) FROM pg_constraint
+         WHERE conrelid IN ('public.controle_qualidade'::regclass,'public.cq_parametros_referencia'::regclass)
+           AND conname IN ('cq_h5_ph','cq_h5_concentracao','cq_h5_referencia') AND convalidated) AS checks_validados;
+
 COMMIT;
