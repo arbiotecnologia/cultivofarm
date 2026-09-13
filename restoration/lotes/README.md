@@ -83,9 +83,17 @@ Observação: o item 2 do diagnóstico antigo (RLS possivelmente permissiva, dup
 Caminho: `restoration/lotes/sql/20260913040000_lotes_codigo_canonico.sql`
 
 Conteúdo: transacional, reexecutável, sem CASCADE/TRUNCATE/DROP destrutivo e sem DML em dados existentes.
-1. Gate `app.audit_target_ref = 'swzpzcwiasxmjutrmvkm'` e pré-condições estruturais (tabela, funções, assinatura da RPC, unicidade de `codigo_lote`) — aborta com mensagem explícita, sem corrigir dados.
-2. `gerar_codigo_lote(integer)` recriada com `pg_advisory_xact_lock(hashtext('gerar_codigo_lote:'||ano))` **antes** do cálculo sequencial; padrão `LT-YYYY-NNNN` preservado; `search_path = public, pg_temp`; REVOKE de PUBLIC/anon, EXECUTE só para `authenticated`.
-3. `rpc_cockpit_gerar_lote_v1` com a **mesma assinatura**: rejeita `codigo_lote` do cliente (`COCKPIT_LOTE_CODIGO_NAO_ACEITO`), gera o código internamente, mantém lock e idempotência por `programacao_id`, validações de origem/OS e checagem de papel; em `unique_violation` tenta até 3 vezes e então falha com `COCKPIT_LOTE_CODIGO_CONFLITO`.
+1. Gate `app.audit_target_ref = 'swzpzcwiasxmjutrmvkm'` e pré-condições estruturais (tabelas `lotes` e `programacao_producao`, funções, assinatura da RPC, unicidade de `codigo_lote` e unicidade por `programacao_id`) — aborta com mensagem explícita, sem corrigir dados.
+2. `gerar_codigo_lote(integer)` recriada com `pg_advisory_xact_lock(hashtext('gerar_codigo_lote:'||ano))` **antes** do cálculo sequencial; padrão `LT-YYYY-NNNN` preservado; `search_path = public, pg_temp`.
+3. `rpc_cockpit_gerar_lote_v1` com a **mesma assinatura**, nesta ordem: autenticação/papel e normalização da origem → validação do payload JSON e recusa de `codigo_lote` do cliente → advisory lock por programação → `SELECT ... FOR UPDATE` da programação → validação do vínculo OS → replay idempotente → derivação do item canônico → validação do volume → código interno → `INSERT` → evento de esteira.
+
+### Correções da revisão bloqueante
+- **Vínculo programação ↔ OS validado na RPC** (a `fn_cockpit_assert_operador_origem` só autentica/normaliza): origem `onfarm` exige `p_os_id = ordem_servico_onfarm_id`; `manual`/`b2b` exigem `p_os_id = ordem_servico_id`; ambos preenchidos, ou o campo incompatível com a origem preenchido, falham como `COCKPIT_LOTE_VINCULO_AMBIGUO`. Divergência = `COCKPIT_LOTE_VINCULO_INVALIDO`, sem criar lote nem evento.
+- **Item canônico derivado só da programação bloqueada**: `produto_id`/`microrganismo_id` foram removidos do payload do navegador; se a programação não tiver nenhum dos dois, falha com `COCKPIT_LOTE_ITEM_CANONICO_AUSENTE` (nada é inventado ou alterado).
+- **Payload e volume validados**: `p_lote` precisa ser objeto JSON (`COCKPIT_LOTE_PAYLOAD_INVALIDO`); `volume_produzido` é obrigatório, numérico, finito e estritamente positivo (`COCKPIT_LOTE_VOLUME_INVALIDO`). Volume produzido pode divergir do planejado — nenhuma igualdade é imposta.
+- **`unique_violation` diferenciado por constraint/índice**: índice sobre `programacao_id` relê e devolve replay idempotente; índice sobre `codigo_lote` repete no máximo 3 vezes e então `COCKPIT_LOTE_CODIGO_CONFLITO`; qualquer outra violação é relançada, sem mascaramento.
+- **Privilégio mínimo em `gerar_codigo_lote`**: EXECUTE revogado de `PUBLIC`, `anon` e `authenticated`. Ela é interna e continua acessível pela RPC `SECURITY DEFINER`, que executa como proprietária. Rollback desse ponto: `GRANT EXECUTE ON FUNCTION public.gerar_codigo_lote(integer) TO authenticated;`.
+- EXECUTE da RPC mantido apenas para `authenticated`; `anon` sem acesso.
 
 Nenhuma policy RLS é criada ou alterada.
 
