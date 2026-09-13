@@ -3,54 +3,62 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { getNivelRiscoCor, getNivelRiscoLabel, getTipoAlertaLabel } from "@/lib/risco-agronomico";
 import { Clock } from "lucide-react";
 
+const TODOS_TALHOES = "__todos__";
+
 export function HistoricoAlertas() {
   const [fazendaId, setFazendaId] = useState("");
-  const [talhaoId, setTalhaoId] = useState("");
+  const [talhaoId, setTalhaoId] = useState(TODOS_TALHOES);
 
   const { data: fazendas } = useQuery({
     queryKey: ["fazendas"],
-    queryFn: async () => { const { data } = await (supabase as any).from("fazendas").select("id, nome").order("nome"); return data ?? []; },
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("fazendas").select("id, nome").order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: talhoes } = useQuery({
     queryKey: ["talhoes_fazenda_hist", fazendaId],
     queryFn: async () => {
-      if (!fazendaId) return [];
-      const { data } = await (supabase as any).from("talhoes").select("id, nome").eq("fazenda_id", fazendaId);
+      const { data, error } = await (supabase as any).from("talhoes").select("id, nome").eq("fazenda_id", fazendaId).order("nome");
+      if (error) throw error;
       return data ?? [];
     },
     enabled: !!fazendaId,
   });
 
-  const { data: alertas } = useQuery({
+  const alertasQuery = useQuery({
     queryKey: ["alertas_historico", fazendaId, talhaoId],
     queryFn: async () => {
-      if (!fazendaId) return [];
       let q = (supabase as any).from("alertas_agronomicos").select("*").eq("fazenda_id", fazendaId).order("data_alerta", { ascending: false });
-      if (talhaoId) q = q.eq("talhao_id", talhaoId);
-      const { data } = await q;
+      if (talhaoId !== TODOS_TALHOES) q = q.eq("talhao_id", talhaoId);
+      const { data, error } = await q;
+      if (error) throw error;
       return data ?? [];
     },
     enabled: !!fazendaId,
   });
+  const alertas = alertasQuery.data;
 
   return (
     <div className="space-y-6">
       <div className="flex gap-4 flex-wrap">
-        <Select value={fazendaId} onValueChange={v => { setFazendaId(v); setTalhaoId(""); }}>
-          <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a fazenda" /></SelectTrigger>
+        <Select value={fazendaId} onValueChange={v => { setFazendaId(v); setTalhaoId(TODOS_TALHOES); }}>
+          <SelectTrigger className="w-56" aria-label="Selecionar fazenda"><SelectValue placeholder="Selecione a fazenda" /></SelectTrigger>
           <SelectContent>{(fazendas ?? []).map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}</SelectContent>
         </Select>
         {fazendaId && (
           <Select value={talhaoId} onValueChange={setTalhaoId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Todos os talhões" /></SelectTrigger>
+            <SelectTrigger className="w-56" aria-label="Filtrar por talhão"><SelectValue placeholder="Todos os talhões" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value={TODOS_TALHOES}>Todos</SelectItem>
               {(talhoes ?? []).map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -59,6 +67,13 @@ export function HistoricoAlertas() {
 
       {!fazendaId ? (
         <Card><CardContent className="py-12 text-center text-muted-foreground">Selecione uma fazenda para ver o histórico.</CardContent></Card>
+      ) : alertasQuery.isLoading ? (
+        <Card><CardContent className="py-12 text-center text-muted-foreground">Carregando histórico...</CardContent></Card>
+      ) : alertasQuery.isError ? (
+        <Card className="border-destructive/40"><CardContent className="py-8 text-center space-y-3">
+          <p className="text-sm">Não foi possível carregar o histórico de alertas.</p>
+          <Button size="sm" variant="outline" onClick={() => alertasQuery.refetch()}>Tentar novamente</Button>
+        </CardContent></Card>
       ) : !(alertas ?? []).length ? (
         <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum alerta registrado.</CardContent></Card>
       ) : (
