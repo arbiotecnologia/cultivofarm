@@ -77,7 +77,7 @@ Observação: o item 2 do diagnóstico antigo (RLS possivelmente permissiva, dup
 - `src/components/cockpit/GerarLoteDialog.tsx`: removidos `generateLotCode`, o campo editável e o botão "Gerar"; o diálogo informa que o código é gerado pelo servidor no padrão `LT-AAAA-0000`; trava de clique duplo preservada.
 - `src/hooks/useEsteiraLaboratorio.ts`: `p_lote` não envia mais `codigo_lote`; novas mensagens para `COCKPIT_LOTE_CODIGO_NAO_ACEITO` e `COCKPIT_LOTE_CODIGO_CONFLITO`; o código exibido é exclusivamente `data.codigo_lote`; replay continua tratado como idempotência.
 - `restoration/lotes/sql/20260913040000_lotes_codigo_canonico.sql` (**NÃO APLICADO**).
-- `src/test/lotes/geracao-codigo.test.ts` (24 testes).
+- `src/test/lotes/geracao-codigo.test.ts` (27 testes).
 
 ## Migração preparada — NÃO APLICADA
 Caminho: `restoration/lotes/sql/20260913040000_lotes_codigo_canonico.sql`
@@ -139,3 +139,11 @@ Ambas são `CREATE OR REPLACE`; nenhum objeto é criado ou removido por esta mig
 - `npx vitest run src/test/lotes src/test/cockpit-laboratorio src/test/config`: **86 aprovados, 1 reprovado** — a única falha é o `binding-gate.integration.test.ts` por causa do `.env` gerenciado divergente, já conhecido e externo ao runtime canônico.
 - `npx tsgo --noEmit`: sem diagnósticos.
 - Runtime canônico preservado: único `createClient` em `src/integrations/supabase/client.ts` com `https://swzpzcwiasxmjutrmvkm.supabase.co`, `cultivofarm.types.ts` intacto, zero imports do `types.ts` gerenciado.
+
+## Correção final bloqueante — valores não finitos (13/09/2026)
+- SQL preparado, **não aplicado**: a guarda agora usa `v_volume IS NULL OR NOT (v_volume > 0) OR v_volume::text IN ('NaN', 'Infinity', '-Infinity')`, rejeitando explicitamente os três valores especiais e preservando volume obrigatório e estritamente positivo.
+- Acrescentados três casos parametrizados de contrato SQL: cada literal deve estar na guarda executável que lança `COCKPIT_LOTE_VOLUME_INVALIDO` antes do `INSERT`; comentários não satisfazem o teste. Não constitui teste de execução PostgreSQL.
+- `npm test -- src/test/lotes src/test/cockpit-laboratorio`: **56 testes aprovados, 0 reprovados, 3 arquivos aprovados** (27 de geração, 20 de consulta, 9 de Cockpit); duração 2,97 s.
+- Build automático após a correção: **build OK**, registro `2026-09-13T03:34:14Z` em `/tmp/observability/build-errors.log`.
+- Typecheck separado **não executado**: o ambiente proíbe execução manual de typecheck/build; o registro automático disponível não apresenta resultado separado de typecheck. As evidências anteriores não representam nova execução.
+- Escopo restrito ao SQL preparado, seu teste e este README; nenhum banco acessado, nenhuma migração aplicada, publicação ou sincronização GitHub realizada.
