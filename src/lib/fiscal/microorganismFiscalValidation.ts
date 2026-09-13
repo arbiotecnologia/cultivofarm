@@ -8,7 +8,7 @@
  *
  * Boundary de tipos:
  *   A tabela `microorganism_fiscal_profiles` ainda NÃO está no arquivo
- *   canônico `src/integrations/supabase/types.ts` (aguarda regen oficial
+ *   canônico `src/integrations/supabase/cultivofarm.types.ts` (aguarda regen oficial
  *   após aplicação da migration). Este módulo define interfaces narrow
  *   que refletem exatamente as colunas da migration canônica
  *   `supabase/migrations/20260806000000_fiscal_microorganism_profiles.sql`.

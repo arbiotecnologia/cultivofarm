@@ -12,7 +12,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { buildFiscalEventIdempotencyKey } from "@/lib/fiscal/eventIdempotency";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 import {
   assertManualEditable,
   linkSchema,

@@ -1,7 +1,7 @@
 /**
  * Tipos manuais para as tabelas/RPCs do Módulo de Comunicação (Fase 1).
  *
- * IMPORTANTE — o arquivo `src/integrations/supabase/types.ts` é gerado a partir
+ * IMPORTANTE — o arquivo `src/integrations/supabase/cultivofarm.types.ts` é gerado a partir
  * do schema aplicado. Como a migration desta fase ainda não foi aplicada em
  * staging, os tipos oficiais NÃO contêm essas tabelas. Este módulo suplementar
  * é a fonte manual usada pela camada de features enquanto a regeneração não

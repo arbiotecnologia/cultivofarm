@@ -12,7 +12,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database, Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/cultivofarm.types";
 
 
 export type RegulatoryLayer = "TECHNICAL" | "REGULATORY";

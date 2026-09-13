@@ -1,7 +1,7 @@
 /**
  * Fase Fiscal 3.2 — Validação pura para `product_fiscal_profiles`.
  *
- * Fonte do contrato: `src/integrations/supabase/types.ts`
+ * Fonte do contrato: `src/integrations/supabase/cultivofarm.types.ts`
  * (relação `product_fiscal_profiles.product_id → produtos.id`).
  *
  * REGRAS:
@@ -12,7 +12,7 @@
  * - `is_active` e `profile_status` opcionais (não mexemos aqui).
  */
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 export type ProductFiscalRow = any;
 export type ProductFiscalInsert = any;

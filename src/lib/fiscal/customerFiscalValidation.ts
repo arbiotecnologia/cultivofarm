@@ -1,7 +1,7 @@
 /**
  * Fase Fiscal 3.4 — Validação pura para `customer_fiscal_profiles`.
  *
- * Contrato canônico: `src/integrations/supabase/types.ts` +
+ * Contrato canônico: `src/integrations/supabase/cultivofarm.types.ts` +
  * `supabase/migrations/20260721000000_fiscal_fase2_fundacao.sql` +
  * `supabase/migrations/20260722000000_fiscal_fase3_0_1_integridade.sql`.
  *
@@ -19,7 +19,7 @@
  * - Nenhuma emissão. Nenhum campo fora do contrato.
  */
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
 export type CustomerFiscalRow = any;
 export type CustomerFiscalInsert = any;

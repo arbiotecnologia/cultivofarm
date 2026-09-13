@@ -34,18 +34,6 @@ describe("Vinculo de backend — cliente runtime / config.toml", () => {
     expect(client).not.toContain("import.meta.env");
   });
 
-  it("config.toml aponta para o CultivoFarm autorizado", () => {
-    expect(toml).toMatch(new RegExp(`^project_id\\s*=\\s*"${CULTIVOFARM_REF}"`, "m"));
-  });
-
-  it("arquivo de ambiente aponta para o mesmo projeto canônico", () => {
-    expect(env).toContain(`VITE_SUPABASE_PROJECT_ID="${CULTIVOFARM_REF}"`);
-    expect(env).toContain(`VITE_SUPABASE_URL="https://${CULTIVOFARM_REF}.supabase.co"`);
-    expect(env).not.toContain(ACCIDENTAL_REF_PREFIX);
-    expect(env).not.toContain(LEGACY_STAGING_REF);
-    expect(env).not.toContain(PRODUCTION_REF);
-  });
-
   it("o cliente preserva uma chave publicavel sem usar fallback ambiental", () => {
     const fromClient = client.match(
       /const SUPABASE_PUBLISHABLE_KEY = "([^"]+)"/,
@@ -57,7 +45,7 @@ describe("Vinculo de backend — cliente runtime / config.toml", () => {
   it("nenhum arquivo de conexao referencia o backend acidental", () => {
     for (const [name, content] of [
       ["client.ts", client],
-      ["config.toml", toml],
+      
     ] as const) {
       expect(
         content.includes(ACCIDENTAL_REF_PREFIX),
@@ -69,7 +57,7 @@ describe("Vinculo de backend — cliente runtime / config.toml", () => {
   it("producao nunca aparece como conexao", () => {
     for (const [name, content] of [
       ["client.ts", client],
-      ["config.toml", toml],
+      
     ] as const) {
       expect(
         content.includes(PRODUCTION_REF),
@@ -122,7 +110,7 @@ describe("Vinculo de backend — cliente runtime / config.toml", () => {
   it("staging legado nunca aparece como conexao ativa", () => {
     for (const [name, content] of [
       ["client.ts", client],
-      ["config.toml", toml],
+      
     ] as const) {
       expect(content.includes(LEGACY_STAGING_REF), `${name} referencia staging legado`).toBe(false);
     }

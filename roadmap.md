@@ -78,3 +78,8 @@
 - Sem acesso ao banco, publicação ou GitHub; tarefas históricas fora do escopo permanecem suspensas.
 
 - Nova solicitação: corrigir erros de compilação preexistentes; diagnóstico aponta incompatibilidade dos tipos gerados com o contrato canônico. Não mascarar com casts ou alterar arquivos protegidos.
+
+## Proteção CultivoFarm independente do Cloud
+- [x] Cópia histórica própria e imports de produção.
+- [x] 111 testes aprovados (28 centrais Cockpit, 67 cálculos e 16 vínculo); log automático build OK. Typecheck manual não executado por restrição do ambiente.
+- Sem acesso a banco; arquivos gerenciados de ambiente não alterados.

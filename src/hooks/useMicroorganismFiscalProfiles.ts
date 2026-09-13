@@ -8,7 +8,7 @@
  *
  * Boundary de tipos:
  *   A tabela `microorganism_fiscal_profiles` ainda NÃO está no arquivo
- *   canônico `src/integrations/supabase/types.ts`. Usamos casts locais
+ *   canônico `src/integrations/supabase/cultivofarm.types.ts`. Usamos casts locais
  *   `as unknown as` estritamente na fronteira supabase, análogos ao
  *   padrão já adotado em `useMicroorganismFiscalAssociation`. Remover
  *   após regen oficial de types.ts.

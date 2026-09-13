@@ -16,7 +16,7 @@ import { Plus, Truck, X, FileDown, CheckCircle } from "lucide-react";
 import { PageHeader, ResponsiveTable, MobileCard } from "@/components/ResponsiveHelpers";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDateDisplay } from "@/lib/date-utils";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/cultivofarm.types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { gerarDocumentoEntregaPDF, rotuloAcaoDocumento, possuiComprovanteDefinitivo, deveReemitirNoDownload, REEMISSAO_NA_ABERTURA_DO_PREVIEW } from "@/lib/comprovanteEntregaPdf";
 

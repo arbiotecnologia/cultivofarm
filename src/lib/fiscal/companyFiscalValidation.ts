@@ -16,7 +16,7 @@
  * - `fiscal_provider` legacy permanece `NONE`.
  */
 import { z } from "zod";
-import type { Database, Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/cultivofarm.types";
 
 type CompanyFiscalExtraColumns = {
   fiscal_email?: string | null;

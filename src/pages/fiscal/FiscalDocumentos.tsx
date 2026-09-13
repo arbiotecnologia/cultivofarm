@@ -524,8 +524,8 @@ interface DetailProps {
   detailLoading: boolean;
   detailError: Error | null;
   items: import("@/lib/fiscal/documentWorkflowValidation").FiscalInvoiceItemRow[];
-  events: import("@/integrations/supabase/types").Database["public"]["Tables"]["fiscal_events"]["Row"][];
-  audit: import("@/integrations/supabase/types").Database["public"]["Tables"]["fiscal_audit_log"]["Row"][];
+  events: import("@/integrations/supabase/cultivofarm.types").Database["public"]["Tables"]["fiscal_events"]["Row"][];
+  audit: import("@/integrations/supabase/cultivofarm.types").Database["public"]["Tables"]["fiscal_audit_log"]["Row"][];
   onSubmit: (
     values: InvoiceFormValues,
     prev: import("@/lib/fiscal/documentWorkflowValidation").FiscalInvoiceRow | null,
