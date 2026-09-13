@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Search, User, Mail, Phone,
+  Search, User, Mail,
   MapPin, ClipboardCheck, MoreVertical,
-  Users, Map, Calendar, IdCard, Briefcase, ChevronRight, Camera, Eye, ChevronLeft, X, Edit2, Check, Download,
+  Users, Calendar, ChevronRight, Camera, Eye, ChevronLeft, X, Edit2, Check, Download,
   ImageOff, Loader2
 } from "lucide-react";
 import {
