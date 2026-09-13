@@ -6,7 +6,7 @@
 --   1) Autorização real no servidor para criar/alterar planejamento e publicar OS.
 --   2) Publicação de OS idempotente e segura contra concorrência/cliques simultâneos.
 --
--- Regras: transacional, reexecutável, sem CASCADE, sem DROP destrutivo,
+-- Regras: transacional, reexecutável, sem uso de DROP destrutivo,
 -- sem TRUNCATE, sem alteração de dados existentes. Rollback no README.
 -- ============================================================================
 
