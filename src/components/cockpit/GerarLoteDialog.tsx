@@ -72,7 +72,6 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
       const result = await gerarLote(loteData, target.os_id, target.origem);
       if (result) {
         setForm({
-          codigo_lote: "",
           volume_produzido: "",
           responsavel_producao: "",
           tanque: "",
