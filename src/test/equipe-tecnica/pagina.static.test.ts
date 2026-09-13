@@ -86,8 +86,9 @@ describe("ConsultorTecnico — contrato estático da página", () => {
   });
 
   it("não exibe colunas inexistentes no contrato de profiles", () => {
-    for (const campo of ["data_admissao", "especialidade", "crea", "formatTelefone"]) {
+    for (const campo of ["data_admissao", "especialidade", ".crea", "formatTelefone"]) {
       expect(fonte).not.toContain(campo);
     }
+    expect(fonte).not.toMatch(/Registro \(CREA\)/);
   });
 });
