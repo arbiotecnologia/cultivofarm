@@ -22,6 +22,12 @@ describe("ConsultorTecnico — contrato estático da página", () => {
     expect((fonte.match(/Tentar novamente/g) ?? []).length).toBeGreaterThanOrEqual(5);
   });
 
+  it("não expõe detalhes internos do banco na interface", () => {
+    expect(fonte).not.toMatch(/consultoresError[^\n]*message/);
+    expect(fonte).not.toMatch(/\{[^\n]*\berror[^\n]*\.message\s*\}/);
+    expect(fonte).not.toContain("JSON.stringify(error");
+  });
+
   it("métricas globais não mostram 0 quando a consulta falha", () => {
     expect(fonte).toContain("metricasVisitas.error");
     expect(fonte).toContain("Indisponível no momento.");
