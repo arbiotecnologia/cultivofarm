@@ -15,15 +15,21 @@ nenhuma publicação, nenhuma sincronização GitHub e nenhum dado criado.
 ## Correções
 1. **Estados reais** — carregamento, erro com "Tentar novamente" e vazio filtrado. Falha nunca mais é
    exibida como "Nenhum envase registrado".
-2. **Sem truncamento** — removidos a janela de 90 dias e o `limit(200)`. Histórico agora é paginado no
-   servidor (50 por página, `count: "exact"`); busca, produto e período filtram no banco, não na página.
+2. **Sem truncamento nem teto silencioso** — removidas a janela de 90 dias e TODAS as chamadas a
+   `.limit()` (lotes por busca, lotes elegíveis e produtos). As consultas auxiliares usam o helper
+   testável `carregarTudo`, que percorre páginas técnicas de 1.000 até esgotar e ERRA explicitamente se
+   atingir o teto defensivo — nunca omite registro em silêncio. A paginação server-side de 50 por página
+   com `count: "exact"` vale apenas para a tabela principal; busca, produto e período filtram no banco.
    Realtime mantém debounce de 1,2 s e qualquer mudança de filtro volta à página 1.
-3. **Período** — data inicial posterior à final bloqueia a consulta com mensagem `role="alert"`, sem
-   empty-state nem paginação enganosa. Busca, produto e datas têm rótulos associados.
+3. **Período e falhas auxiliares** — data inicial posterior à final bloqueia a consulta com mensagem
+   `role="alert"`, sem empty-state nem paginação enganosa. Busca, produto e datas têm rótulos associados.
+   Falha ao carregar lotes com saldo ou produtos aparece como erro com "Tentar novamente", nunca como
+   ausência de opções. A busca do usuário é debounced em 400 ms — sem consulta por tecla.
 4. **Elegibilidade determinística** — o complemento só aparece com lote `aprovado` **e** último CQ
-   aprovado (`created_at DESC`, `seq DESC`; sem coluna `seq` no schema atual, desempate por
-   `data_analise DESC` e `id DESC`). CQ aprovado antigo seguido de reprovação não libera nada.
-   O banco continua sendo a autoridade.
+   aprovado, na MESMA ordem canônica do banco/RPC: `created_at DESC, seq DESC`. A coluna
+   `controle_qualidade.seq` EXISTE em produção, é lida no select e é o desempate primário;
+   `data_analise DESC` e `id DESC` ficam apenas como fallback defensivo para linhas sem `seq`.
+   CQ aprovado antigo seguido de reprovação não libera nada. O banco continua sendo a autoridade.
 5. **Complemento seguro** — chave de idempotência estável por abertura/tentativa (não é regerada em retry
    da mesma tentativa), trava de duplo envio, quantidade inteira positiva e validade estritamente futura.
 6. **Produção intocável na tela** — `RegistrarEnvaseDialog` não altera mais `lotes.volume_produzido`;
@@ -34,10 +40,16 @@ nenhuma publicação, nenhuma sincronização GitHub e nenhum dado criado.
 
 ## Pós-check real informado (produção CultivoFarm)
 - `database=postgres`; `public.envase` vazio, RLS ativa.
-- `anon` sem acesso; `authenticated` somente `SELECT`; INSERT/UPDATE/DELETE/TRUNCATE/TRIGGER/REFERENCES revogados.
-- Gatilho legado `trg_envase_avanca_os` removido.
-- 3 constraints válidas: quantidade positiva e NOT NULL; `volume_por_unidade` positivo/finito e NOT NULL;
-  coerência embalagem-volume (1L=1000, 5L=5000, 20L=20000).
+- `anon` sem QUALQUER grant; `authenticated` somente `SELECT`.
+- Gatilho legado `trg_envase_avanca_os` ausente.
+- `quantidade` e `volume_por_unidade` com `NOT NULL`.
+- 3 constraints válidas, com estes nomes exatos: `envase_quantidade_positiva`, `envase_volume_valido`
+  (positivo e finito) e `envase_embalagem_volume_coerente` (1L=1000, 5L=5000, 20L=20000).
+- RLS de `public.envase` ativa.
+O pós-check do script comprova exatamente esses seis pontos mais a RLS e o `EXECUTE` da RPC para
+`authenticated`. O rollback (`sql/90-rollback.sql`) restaura o estado anterior por completo — inclusive a
+recriação de `trg_envase_avanca_os` com `public.fn_envase_avanca_os()` e os grants de escrita — e por isso
+**REABRE O RISCO**: serve apenas para incidente, com nova homologação em seguida.
 - `rpc_cockpit_registrar_envase_v1` SECURITY DEFINER, executável apenas por `authenticated`, com guarda de
   papel, locks, validações de validade/CQ/volume e idempotência.
 
