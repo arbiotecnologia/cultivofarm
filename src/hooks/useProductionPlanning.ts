@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { b2bToast } from "@/lib/b2bToast";
 import { resumirPlanejamento, type ResumoProducao } from "@/lib/dashboard-producao/producao";
+import {
+  gerarChaveIdempotencia,
+  mensagemPublicacao,
+  mensagemSucessoPublicacao,
+  rpcIndisponivel,
+} from "@/lib/planejamento-producao/planejamento";
 
 
 
