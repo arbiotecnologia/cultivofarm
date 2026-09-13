@@ -20,7 +20,7 @@ export interface Inconsistencia {
 }
 
 export function usePendenciasEsteira() {
-  const { data: rawItems = [], isLoading } = useQuery({
+  const { data: rawItems = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["pendencias-esteira"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -105,5 +105,5 @@ export function usePendenciasEsteira() {
     return list;
   }, [rawItems]);
 
-  return { inconsistencias, isLoading };
+  return { inconsistencias, isLoading, isError, refetch };
 }

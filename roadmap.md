@@ -70,3 +70,11 @@
 - [x] Verificado: `.env` aponta exclusivamente para CultivoFarm (`swzpzcwiasxmjutrmvkm`).
 - [x] Typecheck limpo; build automático OK; testes focados comerciais + CAT-05/09/10 = 61/61 aprovados.
 - Restrições respeitadas: sem acesso a banco, migrations, backend, deploy ou publicação.
+
+## Cockpit Laboratório — auditoria atual
+- Correções frontend parciais de estados, filtros, métricas e guardas realizadas; 28 testes focados aprovados; riscos documentados.
+- Pendente: homologação completa e compilação limpa, bloqueadas por integração divergente e tipos gerados incompletos. Não executar preview conectado.
+- Bloqueio: ambiente divergente e types.ts com 2.060 linhas; arquivos gerados protegidos, restauração exige correção da integração.
+- Sem acesso ao banco, publicação ou GitHub; tarefas históricas fora do escopo permanecem suspensas.
+
+- Nova solicitação: corrigir erros de compilação preexistentes; diagnóstico aponta incompatibilidade dos tipos gerados com o contrato canônico. Não mascarar com casts ou alterar arquivos protegidos.
