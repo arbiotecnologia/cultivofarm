@@ -11,7 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, Droplets, MapPin, Camera, X, AlertTriangle, History } from "lucide-react";
 import { toast } from "sonner";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
-import { uploadEvidencias, PendingEvidencia } from "@/components/aplicacao/EvidenciasUploader";
+import { uploadEvidencias, limparObjetosEvidencias, PendingEvidencia } from "@/components/aplicacao/EvidenciasUploader";
+import { ACCEPT_EVIDENCIAS, tipoEvidencia, validarArquivoEvidencia, validarMotivoRetificacao } from "@/lib/aplicacoes/evidencias";
+import { validarAplicacao } from "@/lib/aplicacoes/validacao";
+
 
 const MODOS = ["Pulverização foliar", "Aplicação no colo da planta", "Via solo", "Tratamento de semente", "Sulco de plantio", "Jato dirigido"];
 const RESULTADOS = [
