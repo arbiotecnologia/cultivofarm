@@ -395,9 +395,11 @@ export default function MobileAplicacoes() {
             Galeria
           </Button>
         </div>
-        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+        <input ref={cameraRef} type="file" accept="image/jpeg,image/png,image/heic,image/heif" capture="environment" className="hidden"
+          aria-label="Capturar foto de evidência"
           onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
-        <input ref={fileRef} type="file" multiple accept="image/*,application/pdf" className="hidden"
+        <input ref={fileRef} type="file" multiple accept={ACCEPT_EVIDENCIAS} className="hidden"
+
           onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
         {evidencias.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
