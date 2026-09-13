@@ -124,6 +124,7 @@ SELECT proname, prosecdef, proconfig FROM pg_proc p JOIN pg_namespace n ON n.oid
  WHERE n.nspname='public' AND proname IN ('gerar_codigo_lote','rpc_cockpit_gerar_lote_v1');
 SELECT pg_get_functiondef('public.gerar_codigo_lote(integer)'::regprocedure) LIKE '%pg_advisory_xact_lock%' AS tem_lock;
 SELECT has_function_privilege('anon','public.gerar_codigo_lote(integer)','EXECUTE') AS anon_exec; -- deve ser false
+SELECT has_function_privilege('authenticated','public.gerar_codigo_lote(integer)','EXECUTE') AS auth_gerador; -- deve ser false (função interna)
 SELECT has_function_privilege('authenticated','public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)','EXECUTE') AS auth_exec; -- true
 ```
 Verificação funcional: gerar um lote pelo Cockpit sem informar código e confirmar padrão `LT-YYYY-NNNN`; repetir a ação na mesma programação e confirmar retorno idempotente.
