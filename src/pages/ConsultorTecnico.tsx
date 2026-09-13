@@ -588,16 +588,7 @@ export default function ConsultorTecnico() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selected} onOpenChange={(o) => {
-        if (!o) {
-          setSelected(null);
-          setShowVistorias(false);
-          setSelectedVistoria(null);
-          setSelectedClienteFilter("todos");
-          setSelectedPhotos([]);
-        }
-
-      }}>
+      <Dialog open={!!selected} onOpenChange={(o) => { if (!o) fecharConsultor(); }}>
 
 
 
