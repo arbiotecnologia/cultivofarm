@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Search, User, Mail,
+  Search, User, Mail, Map,
   MapPin, ClipboardCheck, MoreVertical,
   Users, Calendar, ChevronRight, Camera, Eye, ChevronLeft, X, Edit2, Check, Download,
   ImageOff, Loader2
