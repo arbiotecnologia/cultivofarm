@@ -11,9 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTimeDisplay, formatDateDisplay } from "@/lib/date-utils";
 import { brl } from "@/lib/financial/format";
-import { ArrowLeft, Factory, Clock, CheckCircle2, Lock, FlaskConical } from "lucide-react";
+import { ArrowLeft, Factory, Clock, CheckCircle2, Lock, FlaskConical, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { b2bToast } from "@/lib/b2bToast";
+import {
+  mensagemErro,
+  podeGerarOrdens,
+  rotuloStatus,
+  validarDatasPlanejamento,
+  varianteStatus,
+} from "@/lib/planejamento-producao/planejamento";
 
 // Formata a embalagem priorizando o volume real do vasilhame (catalogo_volumes).
 function formatVasilhame(volumeMl: number | null | undefined, rotulo: string | null | undefined, unidade: string | null | undefined, quantidade: number): string {
