@@ -78,21 +78,39 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: Props) {
         descartar(stream);
         return;
       }
-      streamRef.current = stream;
       const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        try {
-          await video.play();
-        } catch (e: any) {
-          if (id !== tentativaRef.current) return;
-          setError(
-            "O vídeo da câmera não pôde ser iniciado automaticamente. Toque em Tentar novamente ou use a câmera do dispositivo.",
-          );
-          return;
-        }
+      // Sem elemento de vídeo não há como exibir a imagem: encerra o stream.
+      if (!video) {
+        descartar(stream);
+        streamRef.current = null;
+        setPronto(false);
+        setError(
+          "O componente de vídeo não está disponível. Use a câmera/galeria do dispositivo.",
+        );
+        return;
+      }
+      streamRef.current = stream;
+      video.srcObject = stream;
+      try {
+        await video.play();
+      } catch {
+        descartar(stream);
+        streamRef.current = null;
+        video.srcObject = null;
+        setPronto(false);
+        if (id !== tentativaRef.current) return;
+        setError(
+          "O vídeo da câmera não pôde ser iniciado automaticamente. Toque em Tentar novamente ou use a câmera do dispositivo.",
+        );
+        return;
       }
     } catch (e: any) {
+      // Defesa: qualquer stream remanescente desta tentativa é encerrado.
+      if (streamRef.current) {
+        descartar(streamRef.current);
+        streamRef.current = null;
+      }
+      setPronto(false);
       if (id !== tentativaRef.current) return;
       setError(mensagemErroCamera(e));
     } finally {
