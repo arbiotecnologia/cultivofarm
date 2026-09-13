@@ -283,3 +283,57 @@ export function mensagemErro(e: unknown, fallback: string): string {
   }
   return msg;
 }
+
+/* ------------------------------------------------------------------ */
+/* Publicação idempotente (H10)                                        */
+/* ------------------------------------------------------------------ */
+
+/** Chave de idempotência estável por planejamento + tentativa do usuário. */
+export function gerarChaveIdempotencia(planningId: string, semente?: string): string {
+  const base = semente && semente.trim() ? semente.trim() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `plan-pub:${planningId}:${base}`;
+}
+
+/** true quando a RPC idempotente ainda não existe no banco (migração não aplicada). */
+export function rpcIndisponivel(e: unknown): boolean {
+  const err = e as { code?: string; message?: string } | null;
+  const code = err?.code ?? "";
+  const msg = err?.message ?? "";
+  return (
+    code === "42883" ||
+    code === "PGRST202" ||
+    /could not find the function|does not exist|schema cache/i.test(msg)
+  );
+}
+
+/** Mensagem amigável para os erros previstos da publicação. */
+export function mensagemPublicacao(e: unknown): string {
+  const msg = (e as { message?: string } | null)?.message ?? "";
+  if (/nao_autenticado/.test(msg)) return "Sessão expirada. Entre novamente para publicar.";
+  if (/permissao_negada|permission denied|42501/i.test(msg)) {
+    return "Seu perfil não tem permissão para gerar ordens de produção.";
+  }
+  if (/chave_idempotencia_conflitante|23505/.test(msg)) {
+    return "Esta publicação já foi registrada para outro planejamento. Atualize a página.";
+  }
+  if (/chave_idempotencia_obrigatoria|planejamento_invalido/.test(msg)) {
+    return "Não foi possível identificar a solicitação. Tente novamente.";
+  }
+  if (/planejamento_nao_encontrado|planning_not_found/.test(msg)) {
+    return "Planejamento não encontrado. Atualize a página.";
+  }
+  if (/already_published/.test(msg)) return "As ordens deste pedido já foram geradas.";
+  if (/no_items/.test(msg)) return "Pedido sem itens para produzir.";
+  if (/invalid_dates/.test(msg)) return "Datas previstas inválidas.";
+  if (/could not serialize|deadlock|lock/i.test(msg)) {
+    return "Outra publicação está em andamento para este pedido. Tente novamente em instantes.";
+  }
+  return msg || "Falha ao publicar demanda no laboratório.";
+}
+
+/** Mensagem de sucesso, distinguindo repetição (replay) de publicação nova. */
+export function mensagemSucessoPublicacao(r: { replay?: boolean; os_created?: number } | null): string {
+  const n = Number(r?.os_created ?? 0);
+  if (r?.replay) return "Este pedido já havia sido publicado; nenhuma ordem duplicada foi criada.";
+  return `${n} ordem(ns) de produção enviada(s) ao Cockpit`;
+}
