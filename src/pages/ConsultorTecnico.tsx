@@ -733,6 +733,21 @@ export default function ConsultorTecnico() {
                             {idx < kpis.list.length - 1 && <Separator className="opacity-50" />}
                           </div>
                         ))
+                      ) : erroKpis ? (
+                        <div className="text-center py-8">
+                          <p className="text-sm text-destructive">Não foi possível carregar as visitas.</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 h-7 text-[11px]"
+                            onClick={() => { void refetchKpis(); }}
+                            disabled={fetchingKpis}
+                          >
+                            {fetchingKpis ? "Tentando..." : "Tentar novamente"}
+                          </Button>
+                        </div>
+                      ) : loadingKpis ? (
+                        <div className="text-center py-8 text-sm text-muted-foreground">Carregando visitas…</div>
                       ) : (
                         <div className="text-center py-8 text-sm text-muted-foreground">Nenhuma visita registrada neste mês.</div>
                       )}
