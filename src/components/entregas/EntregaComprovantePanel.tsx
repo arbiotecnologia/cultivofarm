@@ -65,7 +65,14 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   // Caminho já enviado ao armazenamento cujo vínculo (RPC) falhou.
   // Estruturado e associado à entrega + arquivo: só é reaproveitado se ambos coincidirem.
   const [pathPendente, setPathPendente] = useState<PathPendente | null>(null);
+  // PNG de assinatura já armazenado cuja RPC falhou: reaproveitado na nova
+  // tentativa da MESMA entrega e MESMA assinatura (mesmo hash), sem reenvio.
+  const [assinaturaPendente, setAssinaturaPendente] = useState<AssinaturaPendente | null>(null);
   const enviandoAnexoRef = useRef(false);
+  // Trava síncrona COMPARTILHADA: assinatura, anexo, confirmação e dispensa
+  // nunca correm em paralelo sobre a mesma comprovação.
+  const acaoRef = useRef(false);
+  const [acaoEmAndamento, setAcaoEmAndamento] = useState(false);
   const entregaAtivaRef = useRef<string | undefined>(entrega?.id);
   // Token monotônico de operação: invalidado na troca de entrega e no unmount.
   const opSeqRef = useRef(0);
@@ -76,12 +83,19 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     entregaAtivaRef.current = entrega?.id;
     opAtivaRef.current = ++opSeqRef.current;
     enviandoAnexoRef.current = false;
+    acaoRef.current = false;
+    setAcaoEmAndamento(false);
     setArquivo(null);
     setErroArquivo(null);
     setEnviandoAnexo(false);
     setPathPendente(null);
+    setAssinaturaPendente(null);
     setOpenUpload(false);
     setOpenSign(false);
+    setOpenConfirm(false);
+    setOpenDispensa(false);
+    setRessalvas("");
+    setMotivoDispensa("");
     setRecebedor({ nome: "", documento: "", cargo: "", telefone: "" });
   }, [entrega?.id]);
 
@@ -96,6 +110,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const pendenteReusavel = !!(
     arquivo && pendenteReusavelPara(pathPendente, entrega?.id, arquivo, normalizarMimeAnexo(arquivo.type))
   );
+
 
 
   // Estado fresco da entrega (o prop pode vir de um snapshot antigo da lista).
