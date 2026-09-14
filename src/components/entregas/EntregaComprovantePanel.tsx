@@ -388,7 +388,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         if (!atual()) return;
         // PNG já armazenado: a nova tentativa apenas vincula, sem reenviar
         // e sem apagar o objeto (resultado incerto).
-        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path });
+        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path, hash, recebedor: recebedorEnvio });
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
         return;
       }
@@ -404,7 +404,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     } catch {
       if (!atual()) return;
       if (path) {
-        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path });
+        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path, hash, recebedor: recebedorEnvio });
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
       } else {
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_ENVIO, variant: "destructive" });
@@ -658,8 +658,8 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
       <div className="flex flex-wrap gap-2 print:hidden">
         {status === "pendente" && (
-          <Button size="sm" onClick={() => iniciarAcao() && gerar.mutate()} disabled={gerar.isPending || acaoEmAndamento}>
-            {gerar.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+          <Button size="sm" onClick={() => { void gerarFormulario(); }} disabled={gerando || acaoEmAndamento}>
+            {gerando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             <FileText className="h-4 w-4 mr-1" /> Gerar formulário
           </Button>
         )}
@@ -807,7 +807,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenConfirm(false)}>Cancelar</Button>
-            <Button onClick={() => iniciarAcao() && confirmar.mutate()} disabled={confirmar.isPending || acaoEmAndamento}>Confirmar</Button>
+            <Button onClick={() => { void confirmarRecebimento(); }} disabled={confirmando || acaoEmAndamento}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -822,7 +822,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDispensa(false)}>Cancelar</Button>
-            <Button onClick={() => iniciarAcao() && dispensar.mutate()} disabled={dispensar.isPending || acaoEmAndamento || motivoDispensa.trim().length < 5}>Dispensar</Button>
+            <Button onClick={() => { void dispensarAssinatura(); }} disabled={dispensando || acaoEmAndamento || motivoDispensa.trim().length < 5}>Dispensar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
