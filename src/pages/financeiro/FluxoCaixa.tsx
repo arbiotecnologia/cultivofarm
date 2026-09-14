@@ -263,7 +263,18 @@ export default function FluxoCaixa() {
   );
 }
 
-function saldoRestante(original: unknown, abatido: unknown, desconto: unknown) {
+/**
+ * Saldo a realizar de um título, alinhado ao RPC get_financial_cashflow:
+ * título quitado (PAID) projeta zero — juros/multa pagos acima do original
+ * não viram projeção negativa. Nos demais status vale original - abatido - desconto.
+ */
+export function saldoRestante(
+  original: unknown,
+  abatido: unknown,
+  desconto: unknown,
+  status?: unknown,
+) {
+  if (String(status ?? "").trim().toUpperCase() === "PAID") return 0;
   return Number(original || 0) - Number(abatido || 0) - Number(desconto || 0);
 }
 
