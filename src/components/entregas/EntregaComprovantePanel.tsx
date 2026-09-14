@@ -116,7 +116,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       toast({ title: "Formulário gerado" });
       invalidate();
     },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
   });
 
   const confirmar = useMutation({
@@ -133,7 +133,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       setRessalvas("");
       invalidate();
     },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
   });
 
   const dispensar = useMutation({
@@ -150,7 +150,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       setMotivoDispensa("");
       invalidate();
     },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
   });
 
   const onConfirmSignature = async (data: {
@@ -185,8 +185,8 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       toast({ title: "Assinatura digital coletada" });
       setOpenSign(false);
       invalidate();
-    } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } catch {
+      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
     }
   };
 
@@ -222,8 +222,8 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       toast({ title: "Comprovante anexado" });
       setOpenUpload(false);
       invalidate();
-    } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } catch {
+      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
     }
   };
 
