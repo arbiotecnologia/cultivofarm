@@ -332,7 +332,6 @@ describe("lacunas da revisão independente", () => {
       digests.push(d as any);
       return d.promise;
     });
-    // @ts-expect-error substituição controlada no teste
     globalThis.crypto.subtle.digest = espiao;
 
     try {
@@ -350,7 +349,6 @@ describe("lacunas da revisão independente", () => {
       expect(digests.length).toBe(1); // segundo hash nem é iniciado
       expect(rpcMock).not.toHaveBeenCalled();
     } finally {
-      // @ts-expect-error restauração
       globalThis.crypto.subtle.digest = original;
     }
   });
@@ -367,7 +365,6 @@ describe("lacunas da revisão independente", () => {
 
     const digests: Array<{ resolve: (v: any) => void }> = [];
     const original = globalThis.crypto.subtle.digest;
-    // @ts-expect-error substituição controlada no teste
     globalThis.crypto.subtle.digest = vi.fn(() => {
       const d = deferred<ArrayBuffer>();
       digests.push(d as any);
@@ -392,7 +389,6 @@ describe("lacunas da revisão independente", () => {
 
       expect(rpcMock).not.toHaveBeenCalled();
     } finally {
-      // @ts-expect-error restauração
       globalThis.crypto.subtle.digest = original;
     }
   });
