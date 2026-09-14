@@ -114,7 +114,13 @@ export default function Entregas() {
   const [filtroFim, setFiltroFim] = useState("");
   const [filtroProduto, setFiltroProduto] = useState("todos");
 
-  const { data: entregas = [] } = useQuery({
+  const {
+    data: entregas = [],
+    isLoading: entregasLoading,
+    isError: entregasErro,
+    refetch: recarregarEntregas,
+    isFetching: entregasFetching,
+  } = useQuery({
     queryKey: ["entregas"],
     queryFn: async () => {
       const { data, error } = await supabase
