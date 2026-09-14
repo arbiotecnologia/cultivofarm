@@ -175,7 +175,9 @@ export function EsteiraStepper({
         key: "cq",
         title: "Controle de Qualidade",
         icon: ClipboardCheck,
-        state: cqAprovado
+        state: !hasLote && ord <= 2
+          ? "blocked"
+          : cqAprovado
           ? "done"
           : cqReprovado
           ? "blocked"
@@ -185,14 +187,16 @@ export function EsteiraStepper({
           ? "done"
           : "pending",
         cta:
-          ord === 2 || cqReprovado
+          hasLote && (ord === 2 || cqReprovado)
             ? {
                 label: cqReprovado ? "Revisar CQ reprovado" : "Registrar resultado CQ",
                 onClick: handlers.onRegistrarCQ ?? (() => navigate(`/controle-qualidade${osQS}`)),
                 variant: "outline",
               }
             : undefined,
-        hint: cqReprovado
+        hint: !hasLote
+          ? "Pré-requisito: gere o lote antes de registrar o CQ."
+          : cqReprovado
           ? "CQ reprovado — revisar lote antes de avançar."
           : undefined,
       },
@@ -313,14 +317,14 @@ export function EsteiraStepper({
                   s.state === "blocked" && "border-red-200 bg-red-50/40"
                 )}
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold leading-tight">{s.title}</p>
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-[9px] uppercase tracking-wider px-1.5 h-4 gap-1",
+                          "text-[9px] uppercase tracking-wider px-1.5 h-4 gap-1 shrink-0",
                           s.state === "done" && "border-emerald-200 text-emerald-700 bg-emerald-50",
                           s.state === "current" && "border-primary/30 text-primary bg-primary/5",
                           s.state === "pending" && "border-slate-200 text-slate-400",
@@ -351,7 +355,7 @@ export function EsteiraStepper({
                       disabled={disabled}
                       size="sm"
                       variant={s.cta.variant ?? "default"}
-                      className="h-7 text-[11px] shrink-0"
+                      className="h-auto min-h-9 w-full whitespace-normal text-[11px] sm:h-7 sm:min-h-0 sm:w-auto sm:shrink-0"
                       onClick={s.cta.onClick}
                     >
                       {s.cta.label}
