@@ -229,42 +229,110 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     }
   };
 
-  const onUploadFile = async (file: File) => {
+  /** Seleção do arquivo: valida, mas NUNCA envia automaticamente. */
+  const onSelecionarArquivo = (file: File | null) => {
+    if (enviandoAnexoRef.current) return;
+    setPathPendente(null);
+    if (!file) {
+      setArquivo(null);
+      setErroArquivo(null);
+      return;
+    }
+    const resultado = validarAnexoComprovante(file);
+    if (!resultado.ok) {
+      setArquivo(null);
+      setErroArquivo(resultado.motivo);
+      return;
+    }
+    setArquivo(file);
+    setErroArquivo(null);
+  };
+
+  /** Envio explícito: só acontece ao clicar em "Enviar comprovante". */
+  const enviarAnexo = async () => {
+    if (enviandoAnexoRef.current) return;
+    const file = arquivo;
+    if (!file) {
+      setErroArquivo("Selecione um arquivo para enviar.");
+      return;
+    }
+    const validacao = validarAnexoComprovante(file);
+    if (!validacao.ok) {
+      setErroArquivo(validacao.motivo);
+      return;
+    }
     if (!recebedor.nome.trim()) {
-      toast({ title: "Informe o recebedor", variant: "destructive" });
+      setErroArquivo("Informe o nome de quem recebeu a entrega.");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "Arquivo excede 10MB", variant: "destructive" });
-      return;
-    }
+
+    // Snapshot no início: mudanças posteriores não afetam este envio.
+    const entregaIdEnvio: string = entrega.id;
+    const recebedorEnvio = { ...recebedor };
+    const pathReaproveitado = pathPendente;
+
+    enviandoAnexoRef.current = true;
+    setEnviandoAnexo(true);
+    setErroArquivo(null);
+
+    let path = pathReaproveitado;
     try {
-      const ext = file.name.split(".").pop() || "bin";
-      const path = `entregas/${entrega.id}/comprovantes/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("entrega-documentos")
-        .upload(path, file, { contentType: file.type || undefined });
-      if (upErr) throw upErr;
+      if (!path) {
+        const novoPath = `entregas/${entregaIdEnvio}/comprovantes/${crypto.randomUUID()}.${validacao.extensao}`;
+        const { error: upErr } = await supabase.storage
+          .from("entrega-documentos")
+          .upload(novoPath, file, { contentType: validacao.mime, upsert: false });
+        if (upErr) {
+          toast({ title: "Erro", description: MSG_FALHA_ENVIO, variant: "destructive" });
+          setErroArquivo(MSG_FALHA_ENVIO);
+          return;
+        }
+        path = novoPath;
+      }
+
       const { error } = await supabase.rpc("rpc_anexar_comprovante_entrega" as any, {
-        p_entrega_id: entrega.id,
+        p_entrega_id: entregaIdEnvio,
         p_payload: {
           arquivo_path: path,
           arquivo_nome: file.name,
-          arquivo_mime: file.type,
-          recebedor_nome: recebedor.nome,
-          recebedor_documento: recebedor.documento || null,
-          recebedor_cargo: recebedor.cargo || null,
-          recebedor_telefone: recebedor.telefone || null,
+          arquivo_mime: validacao.mime,
+          recebedor_nome: recebedorEnvio.nome,
+          recebedor_documento: recebedorEnvio.documento || null,
+          recebedor_cargo: recebedorEnvio.cargo || null,
+          recebedor_telefone: recebedorEnvio.telefone || null,
         },
       });
-      if (error) throw error;
+
+      if (error) {
+        // O arquivo já está no armazenamento: não reenviar e não apagar
+        // (uma falha de rede pode esconder um sucesso do servidor).
+        setPathPendente(path);
+        setErroArquivo(MSG_FALHA_VINCULO);
+        toast({ title: "Erro", description: MSG_FALHA_VINCULO, variant: "destructive" });
+        return;
+      }
+
+      if (entregaAtivaRef.current !== entregaIdEnvio) return;
       toast({ title: "Comprovante anexado" });
+      setPathPendente(null);
+      setArquivo(null);
       setOpenUpload(false);
       invalidate();
     } catch {
-      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
+      if (path) {
+        setPathPendente(path);
+        setErroArquivo(MSG_FALHA_VINCULO);
+        toast({ title: "Erro", description: MSG_FALHA_VINCULO, variant: "destructive" });
+      } else {
+        setErroArquivo(MSG_FALHA_ENVIO);
+        toast({ title: "Erro", description: MSG_FALHA_ENVIO, variant: "destructive" });
+      }
+    } finally {
+      enviandoAnexoRef.current = false;
+      setEnviandoAnexo(false);
     }
   };
+
 
   const copyLink = async () => {
     if (!validationToken) return;
