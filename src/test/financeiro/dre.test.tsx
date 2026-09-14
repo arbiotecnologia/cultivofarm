@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { rpcMock, fromMock } = vi.hoisted(() => ({ rpcMock: vi.fn(), fromMock: vi.fn() }));
@@ -40,9 +41,11 @@ function chain(tabela: string) {
 function abrir() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <DRE />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <DRE />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -133,9 +136,9 @@ describe("DRE Gerencial — estados", () => {
     expect(botao).toHaveAttribute("aria-expanded", "true");
 
     fireEvent.click(screen.getByRole("tab", { name: "Competência" }));
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Receita Bruta/i })).toHaveAttribute("aria-expanded", "false"),
-    );
+    expect(await screen.findByText(/Regime de Competência/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(/Cliente A/)).toBeNull());
+    expect(screen.getByRole("button", { name: /Receita Bruta/i })).toHaveAttribute("aria-expanded", "false");
   });
 });
 
@@ -246,6 +249,6 @@ describe("DRE Gerencial — detalhamento", () => {
     abrir();
     await expandirReceita();
     expect(await screen.findByText(/não foi possível carregar os lançamentos/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /tentar novamente/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /tentar novamente/i }).length).toBeGreaterThan(0);
   });
 });
