@@ -60,14 +60,18 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const [erroArquivo, setErroArquivo] = useState<string | null>(null);
   const [enviandoAnexo, setEnviandoAnexo] = useState(false);
   // Caminho já enviado ao armazenamento cujo vínculo (RPC) falhou.
-  // Mantido para permitir nova tentativa apenas da vinculação, sem reenviar o arquivo.
-  const [pathPendente, setPathPendente] = useState<string | null>(null);
+  // Estruturado e associado à entrega + arquivo: só é reaproveitado se ambos coincidirem.
+  const [pathPendente, setPathPendente] = useState<PathPendente | null>(null);
   const enviandoAnexoRef = useRef(false);
   const entregaAtivaRef = useRef<string | undefined>(entrega?.id);
+  // Token monotônico de operação: invalidado na troca de entrega e no unmount.
+  const opSeqRef = useRef(0);
+  const opAtivaRef = useRef(0);
 
   // Reset seguro ao trocar de entrega: nenhum arquivo anterior pode ser associado.
   useEffect(() => {
     entregaAtivaRef.current = entrega?.id;
+    opAtivaRef.current = ++opSeqRef.current;
     enviandoAnexoRef.current = false;
     setArquivo(null);
     setErroArquivo(null);
@@ -77,6 +81,19 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setOpenSign(false);
     setRecebedor({ nome: "", documento: "", cargo: "", telefone: "" });
   }, [entrega?.id]);
+
+  // Unmount: invalida qualquer operação em voo.
+  useEffect(() => {
+    return () => {
+      opAtivaRef.current = ++opSeqRef.current;
+      entregaAtivaRef.current = undefined;
+    };
+  }, []);
+
+  const pendenteReusavel = !!(
+    arquivo && pendenteReusavelPara(pathPendente, entrega?.id, arquivo, normalizarMimeAnexo(arquivo.type))
+  );
+
 
   // Estado fresco da entrega (o prop pode vir de um snapshot antigo da lista).
   const {
