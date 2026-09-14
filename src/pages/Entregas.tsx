@@ -58,6 +58,7 @@ import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { SeletorLoteEnvasado } from "@/components/entregas/SeletorLoteEnvasado";
 import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/components/entregas/RegistrarEntregaDialog";
 import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
+import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
