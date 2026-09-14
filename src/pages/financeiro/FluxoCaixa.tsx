@@ -263,7 +263,18 @@ export default function FluxoCaixa() {
   );
 }
 
-function saldoRestante(original: unknown, abatido: unknown, desconto: unknown) {
+/**
+ * Saldo a realizar de um título, alinhado ao RPC get_financial_cashflow:
+ * título quitado (PAID) projeta zero — juros/multa pagos acima do original
+ * não viram projeção negativa. Nos demais status vale original - abatido - desconto.
+ */
+export function saldoRestante(
+  original: unknown,
+  abatido: unknown,
+  desconto: unknown,
+  status?: unknown,
+) {
+  if (String(status ?? "").trim().toUpperCase() === "PAID") return 0;
   return Number(original || 0) - Number(abatido || 0) - Number(desconto || 0);
 }
 
@@ -408,7 +419,7 @@ function DrillDownDialog({
                     <TableCell className="text-sm">{r.accounts_receivable?.description}</TableCell>
                     <TableCell className="text-right">{brl(Number(r.original_amount))}</TableCell>
                     <TableCell className="text-right font-medium">
-                      {brl(saldoRestante(r.original_amount, r.received_amount, r.discount_amount))}
+                      {brl(saldoRestante(r.original_amount, r.received_amount, r.discount_amount, r.status))}
                     </TableCell>
                     <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
                   </TableRow>
@@ -435,7 +446,7 @@ function DrillDownDialog({
                     <TableCell className="text-sm">{r.accounts_payable?.description}</TableCell>
                     <TableCell className="text-right">{brl(Number(r.original_amount))}</TableCell>
                     <TableCell className="text-right font-medium">
-                      {brl(saldoRestante(r.original_amount, r.paid_amount, r.discount_amount))}
+                      {brl(saldoRestante(r.original_amount, r.paid_amount, r.discount_amount, r.status))}
                     </TableCell>
                     <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
                   </TableRow>

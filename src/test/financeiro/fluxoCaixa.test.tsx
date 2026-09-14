@@ -6,10 +6,10 @@ const { rpcMock, fromMock } = vi.hoisted(() => ({ rpcMock: vi.fn(), fromMock: vi
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
 
-import FluxoCaixa from "@/pages/financeiro/FluxoCaixa";
+import FluxoCaixa, { saldoRestante } from "@/pages/financeiro/FluxoCaixa";
 import { EstornosResumoCard } from "@/components/financeiro/EstornosResumoCard";
 
-type Resultado = { data?: any; error?: any };
+type Resultado = { data?: any; error?: any; count?: number | null };
 
 /** Builder encadeável que devolve sempre o mesmo resultado. */
 function chain(resultado: Resultado | (() => Promise<Resultado>)) {
@@ -208,6 +208,26 @@ describe("FluxoCaixa — detalhamento do bucket", () => {
   });
 });
 
+describe("FluxoCaixa — saldo restante alinhado ao RPC", () => {
+  it("título quitado com juros projeta zero (a receber 100/110 com juros 10)", () => {
+    expect(saldoRestante(100, 110, 0, "PAID")).toBe(0);
+  });
+
+  it("título quitado com juros projeta zero (a pagar 100/110 com juros 10)", () => {
+    expect(saldoRestante(100, 110, 0, "PAID")).toBe(0);
+    expect(saldoRestante(100, 110, 0, "paid")).toBe(0);
+  });
+
+  it("parcial preserva o saldo original menos recebido e desconto", () => {
+    expect(saldoRestante(100, 50, 0, "PARTIAL")).toBe(50);
+    expect(saldoRestante(1000, 300, 100, "OPEN")).toBe(600);
+  });
+
+  it("estorno mantém o saldo em aberto do título não quitado", () => {
+    expect(saldoRestante(100, -50, 0, "OPEN")).toBe(150);
+  });
+});
+
 describe("EstornosResumoCard", () => {
   it("erro não desaparece: mostra mensagem e retry", async () => {
     fromMock.mockImplementation(() => chain({ data: null, error: { message: "x" } }));
@@ -217,26 +237,52 @@ describe("EstornosResumoCard", () => {
   });
 
   it("zero real é explícito", async () => {
-    fromMock.mockImplementation(() => chain({ data: [], error: null }));
+    fromMock.mockImplementation(() => chain({ data: [], error: null, count: 0 }));
     abrirEstornos();
     expect(await screen.findByText(/nenhum estorno registrado no período/i)).toBeInTheDocument();
   });
 
-  it("soma além de uma página não é truncada", async () => {
+  it("página menor por max_rows do servidor não encerra a paginação", async () => {
     let pagina = 0;
     fromMock.mockImplementation((tabela: string) => {
-      if (tabela !== "receivable_payments") return chain({ data: [], error: null });
+      if (tabela !== "receivable_payments") return chain({ data: [], error: null, count: 0 });
       return chain(async () => {
         const atual = pagina++;
-        if (atual === 0) {
-          return { data: Array.from({ length: 1000 }, (_, i) => ({ id: `a${i}`, amount_received: -1 })), error: null };
-        }
-        return { data: [{ id: "b1", amount_received: -5 }], error: null };
+        // Servidor limita cada resposta a 500 linhas, abaixo do tamanho pedido.
+        const linhas = atual === 0 ? 500 : 101;
+        return {
+          data: Array.from({ length: linhas }, (_, i) => ({ id: `p${atual}-${i}`, amount_received: -1 })),
+          error: null,
+          count: 601,
+        };
       });
     });
     abrirEstornos();
-    expect(await screen.findByText("-R$ 1.005,00")).toBeInTheDocument();
-    expect(screen.getByText("1001")).toBeInTheDocument();
+    expect(await screen.findByText("-R$ 601,00")).toBeInTheDocument();
+    expect(screen.getByText("601")).toBeInTheDocument();
+    expect(screen.queryByText(/não foi possível somar todos os estornos/i)).toBeNull();
+  });
+
+  it("sem contagem confiável não apresenta totais como definitivos", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "receivable_payments"
+        ? chain({ data: [{ id: "a1", amount_received: -10 }], error: null })
+        : chain({ data: [], error: null, count: 0 }),
+    );
+    abrirEstornos();
+    expect(await screen.findByText(/não foi possível somar todos os estornos/i)).toBeInTheDocument();
+    expect(screen.queryByText("-R$ 10,00")).toBeNull();
+  });
+
+  it("limite de segurança atingido não exibe soma truncada", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "receivable_payments"
+        ? chain({ data: [{ id: "a1", amount_received: -1 }], error: null, count: 999999 })
+        : chain({ data: [], error: null, count: 0 }),
+    );
+    abrirEstornos();
+    expect(await screen.findByText(/não foi possível somar todos os estornos/i)).toBeInTheDocument();
+    expect(screen.queryByText(/lançamento\(s\)/i)).toBeNull();
   });
 
   it("período inválido não consulta nada", () => {
