@@ -442,7 +442,13 @@ export function EntregaComprovantePanel({ entrega }: Props) {
             </Button>
             {status !== "confirmado" && status !== "dispensado" && (
               <>
-                <Button size="sm" variant="outline" onClick={() => setOpenSign(true)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setOpenSign(true)}
+                  disabled={enviandoAnexo}
+                  title={enviandoAnexo ? "Aguarde o envio do comprovante terminar." : undefined}
+                >
                   <PenLine className="h-4 w-4 mr-1" /> Coletar assinatura digital
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setOpenUpload(true)}>
