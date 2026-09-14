@@ -636,8 +636,11 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
                 <div className="flex items-center gap-3">
                   <span className="text-muted-foreground">Total:</span>
                   <span className="font-mono-data font-bold text-primary">{totalUnidades} un</span>
-                  {volumeTotalMl > 0 && (
-                    <span className="font-mono-data text-muted-foreground">≈ {(volumeTotalMl / 1000).toFixed(2)} L</span>
+                  {previewVolume.volumeMl > 0 && (
+                    <span className="font-mono-data text-muted-foreground">≈ {(previewVolume.volumeMl / 1000).toFixed(2)} L</span>
+                  )}
+                  {previewVolume.indeterminado && (
+                    <span className="text-muted-foreground">Volume será calculado no registro</span>
                   )}
                 </div>
                 {linhasComErro.length > 0 && (
