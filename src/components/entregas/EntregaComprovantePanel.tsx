@@ -715,6 +715,15 @@ export function EntregaComprovantePanel({ entrega }: Props) {
                 <Copy className="h-4 w-4 mr-1" /> Copiar link de validação
               </Button>
             )}
+            {linkManual && (
+              <input
+                readOnly
+                aria-label="Link de validação para cópia manual"
+                value={linkManual}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full text-xs font-mono border rounded px-2 py-1"
+              />
+            )}
             {comprovante?.arquivo_path && (
               <Button size="sm" variant="ghost" onClick={abrirComprovanteArquivo}>
                 <ExternalLink className="h-4 w-4 mr-1" /> Visualizar comprovante
