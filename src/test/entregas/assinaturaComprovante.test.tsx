@@ -299,6 +299,11 @@ describe("EntregaComprovantePanel — ações de comprovação isoladas por entr
   });
 
   it("confirmar: falha tardia da entrega antiga não fecha o diálogo nem limpa ressalvas da nova", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "entregas"
+        ? chain({ data: { id: "x", comprovante_status: "anexado", validation_token: null } })
+        : chain({ data: { numero_formulario: "AR-ENT-000004" } }),
+    );
     const d = deferred<any>();
     rpcMock.mockReturnValueOnce(d.promise);
     const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
