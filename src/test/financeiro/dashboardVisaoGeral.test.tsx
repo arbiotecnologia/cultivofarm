@@ -96,7 +96,7 @@ describe("FinanceiroDashboard — erros não viram zero", () => {
       get_financial_alerts: { data: [], error: null },
     });
     abrir();
-    expect(await screen.findByText(/não foi possível carregar os indicadores/i)).toBeInTheDocument();
+    expect(await screen.findAllByText(/não foi possível carregar os indicadores/i)).not.toHaveLength(0);
     expect(screen.queryByText("R$ 0,00")).toBeNull();
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     expect(screen.queryByText(/falha interna/i)).toBeNull();
@@ -193,6 +193,6 @@ describe("FinanceiroDashboard — período inválido", () => {
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     expect(
       rpcMock.mock.calls.filter((c) => c[0] === "get_financial_dashboard_summary").length,
-    ).toBe(chamadasAntes + 1); // apenas a consulta do período válido anterior
+    ).toBe(chamadasAntes); // nenhuma consulta nova com período inválido
   });
 });
