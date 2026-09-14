@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
+import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
 
 
 export type EsteiraStage =
