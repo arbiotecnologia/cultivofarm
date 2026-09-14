@@ -51,8 +51,29 @@ const MSG_FALHA_ASSINATURA_ENVIO =
 const MSG_FALHA_ASSINATURA_VINCULO =
   "A assinatura foi enviada, mas não foi possível registrá-la. Tente novamente — a imagem não será enviada de novo.";
 
-/** Assinatura já armazenada cuja vinculação falhou. Identidade = entrega + traço exato. */
-type AssinaturaPendente = { entregaId: string; traco: string; path: string };
+/**
+ * Assinatura já armazenada cuja vinculação falhou.
+ * Identidade = entrega + traço exato + recebedor informado no envio original.
+ * Guarda também o hash e o payload do recebedor ORIGINAIS, para que a nova
+ * tentativa registre exatamente a mesma assinatura já armazenada.
+ */
+type RecebedorPayload = { nome: string; documento: string; cargo: string; telefone: string };
+type AssinaturaPendente = {
+  entregaId: string;
+  traco: string;
+  path: string;
+  hash: string;
+  recebedor: RecebedorPayload;
+};
+
+function mesmoRecebedor(a: RecebedorPayload, b: RecebedorPayload) {
+  return (
+    a.nome.trim() === b.nome.trim() &&
+    (a.documento || "").trim() === (b.documento || "").trim() &&
+    (a.cargo || "").trim() === (b.cargo || "").trim() &&
+    (a.telefone || "").trim() === (b.telefone || "").trim()
+  );
+}
 
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
