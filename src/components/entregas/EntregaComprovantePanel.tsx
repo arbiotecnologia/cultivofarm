@@ -534,7 +534,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
                   {erroArquivo}
                 </p>
               )}
-              {pathPendente && (
+              {pendenteReusavel && (
                 <p className="text-xs text-muted-foreground" data-testid="comprovante-vinculo-pendente">
                   O arquivo já está armazenado. A nova tentativa fará apenas a vinculação, sem enviá-lo novamente.
                 </p>
@@ -547,7 +547,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
             </Button>
             <Button onClick={() => void enviarAnexo()} disabled={enviandoAnexo || !arquivo}>
               {enviandoAnexo && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-              {enviandoAnexo ? "Enviando…" : pathPendente ? "Tentar vincular novamente" : "Enviar comprovante"}
+              {enviandoAnexo ? "Enviando…" : pendenteReusavel ? "Tentar vincular novamente" : "Enviar comprovante"}
             </Button>
           </DialogFooter>
         </DialogContent>
