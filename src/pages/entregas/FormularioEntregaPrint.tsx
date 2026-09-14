@@ -71,14 +71,8 @@ export default function FormularioEntregaPrint() {
     },
   });
 
-  const voltar = () => {
-    // Em aba nova não há histórico: leva sempre para a lista de entregas.
-    if (window.history.length > 1 && window.opener === null && document.referrer) {
-      navigate(-1);
-      return;
-    }
-    navigate("/entregas");
-  };
+  // Aberto em nova aba não há histórico: sempre volta para a lista de entregas.
+  const voltar = () => navigate("/entregas");
 
   const Moldura = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen bg-slate-100 print:bg-white">
