@@ -65,6 +65,24 @@ export function TermoEntregaPanel({ entregaId }: Props) {
   const [recebedor, setRecebedor] = useState({ nome: "", documento: "", cargo: "", telefone: "" });
   const [motivoCancel, setMotivoCancel] = useState("");
   const [busy, setBusy] = useState(false);
+  // Token monotônico por entrega: invalida respostas antigas (inclusive A→B→A).
+  const tokenRef = useRef(0);
+  // Trava síncrona contra duplo envio (o estado `busy` só atualiza no próximo render).
+  const emAndamentoRef = useRef(false);
+
+  useEffect(() => {
+    tokenRef.current += 1;
+    emAndamentoRef.current = false;
+    setRascunho({});
+    setRecebedor({ nome: "", documento: "", cargo: "", telefone: "" });
+    setMotivoCancel("");
+    setBusy(false);
+    return () => {
+      tokenRef.current += 1;
+      emAndamentoRef.current = false;
+    };
+  }, [entregaId]);
+
 
   const itensQuery = useQuery({
     queryKey: ["entrega-conferencia", entregaId],
