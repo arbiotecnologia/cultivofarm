@@ -136,10 +136,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const meta = status ? STATUS_LABEL[status] || STATUS_LABEL.pendente : null;
   const validationToken = (!falhou && !carregando && entregaAtual?.validation_token) || null;
 
-  const invalidate = () => {
+  const invalidate = (entregaId: string = entrega.id) => {
     qc.invalidateQueries({ queryKey: ["entregas"] });
-    qc.invalidateQueries({ queryKey: ["entrega-comprovante", entrega.id] });
-    qc.invalidateQueries({ queryKey: ["entrega-comprovante-status", entrega.id] });
+    qc.invalidateQueries({ queryKey: ["entrega-comprovante", entregaId] });
+    qc.invalidateQueries({ queryKey: ["entrega-comprovante-status", entregaId] });
   };
 
 
