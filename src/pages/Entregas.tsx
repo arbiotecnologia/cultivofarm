@@ -994,7 +994,7 @@ export default function Entregas() {
               </TableHeader>
               <TableBody>
                 {entregasFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">Nenhuma entrega no período</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">Nenhuma entrega no período</TableCell></TableRow>
                 ) : entregasFiltradas.map((e: any) => (
                   <TableRow key={e.id}>
                     <TableCell className="font-mono text-xs">{e.clientes?.codigo_cliente || "—"}</TableCell>
