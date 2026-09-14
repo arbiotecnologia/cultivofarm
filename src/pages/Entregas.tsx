@@ -491,9 +491,8 @@ export default function Entregas() {
             reservasFeitas.push({ item, osId: itemOsId, osTipo: itemOsTipo });
           }
 
-          const vp = item._envase?.volume_por_unidade;
-          const volumeEntregueMl = vp ? quantidade * Number(vp) : null;
-
+          // O volume entregue é calculado e gravado pelo servidor a partir do
+          // item de estoque. O frontend não envia volume como autoridade.
           const entregaData = {
             ordem_servico_id: itemOsTipo !== "onfarm" ? itemOsId : null,
             ordem_servico_onfarm_id: itemOsTipo === "onfarm" ? itemOsId : null,
