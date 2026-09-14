@@ -18,32 +18,49 @@ export const MAX_PAGINAS_ESTORNOS = 20;
 
 type Resumo = { recCount: number; recSum: number; payCount: number; paySum: number; completo: boolean };
 
+/**
+ * Soma verificável: a contagem exata vem do servidor e a paginação avança pelo
+ * número de linhas realmente devolvidas. Assim, uma página menor que o pedido
+ * (limite max_rows do servidor) não é confundida com fim dos dados; só é
+ * considerada completa quando o total somado bate com a contagem exata.
+ */
 async function somarEstornos(
   tabela: "receivable_payments" | "payable_payments",
   coluna: "amount_received" | "amount_paid",
   from: string,
   to: string,
-): Promise<{ soma: number; itens: number; completo: boolean }> {
-  let soma = 0;
-  let itens = 0;
-  for (let pagina = 0; pagina < MAX_PAGINAS_ESTORNOS; pagina++) {
-    const inicio = pagina * PAGINA_ESTORNOS;
-    const { data, error } = await (supabase as any)
+): Promise<{ soma: number; itens: number; total: number; completo: boolean }> {
+  const base = () =>
+    (supabase as any)
       .from(tabela)
-      .select(`id, ${coluna}`)
+      .select(`id, ${coluna}`, { count: "exact" })
       .eq("is_reversal", true)
       .gte("payment_date", from)
-      .lte("payment_date", to)
+      .lte("payment_date", to);
+
+  const { count, error: erroCount } = await base().limit(1).abortSignal?.(undefined as any) ?? {};
+  void erroCount;
+
+  let soma = 0;
+  let itens = 0;
+  let total = Number(count ?? NaN);
+
+  for (let pagina = 0; pagina < MAX_PAGINAS_ESTORNOS; pagina++) {
+    const { data, error, count: countPagina } = await base()
       .order("id")
-      .range(inicio, inicio + PAGINA_ESTORNOS - 1);
+      .range(itens, itens + PAGINA_ESTORNOS - 1);
     if (error) throw error;
+    if (!Number.isFinite(total) && Number.isFinite(Number(countPagina))) total = Number(countPagina);
     const linhas = (data || []) as any[];
     soma += linhas.reduce((s, r) => s + Number(r[coluna] || 0), 0);
     itens += linhas.length;
-    if (linhas.length < PAGINA_ESTORNOS) return { soma, itens, completo: true };
+    // Sem contagem confiável não há como provar o fim da lista.
+    if (!Number.isFinite(total)) return { soma, itens, total: itens, completo: false };
+    if (itens >= total) return { soma, itens, total, completo: true };
+    // Página vazia antes de atingir a contagem: paginação não avança.
+    if (linhas.length === 0) return { soma, itens, total, completo: false };
   }
-  // Excedeu o teto de páginas: a soma seria truncada — melhor declarar incompleta.
-  return { soma, itens, completo: false };
+  return { soma, itens, total: Number.isFinite(total) ? total : itens, completo: false };
 }
 
 /**
