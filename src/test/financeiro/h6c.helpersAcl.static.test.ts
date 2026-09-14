@@ -30,14 +30,23 @@ describe("H6c — ACL dos helpers financeiros SECURITY DEFINER", () => {
     expect(sql).toContain("to_regprocedure(fn) IS NOT NULL");
   });
 
+  // Arquivos de tipos GERADOS pelo Supabase: apenas declaram assinaturas, não chamam nada.
+  const TIPOS_GERADOS = [
+    "src/integrations/supabase/types.ts",
+    "src/integrations/supabase/cultivofarm.types.ts",
+  ];
+
   it("nenhum código do frontend chama os helpers diretamente", () => {
     for (const fn of HELPERS) {
-      const found = execSync(
-        `rg -l --glob '!**/types.ts' -- ${fn} src || true`,
-        { encoding: "utf8" },
-      )
+      const found = execSync(`rg -l -- ${fn} src || true`, { encoding: "utf8" })
         .split("\n")
-        .filter((line) => line.trim() !== "" && !line.includes("src/test/"));
+        .map((line) => line.trim())
+        .filter(
+          (line) =>
+            line !== "" &&
+            !line.startsWith("src/test/") &&
+            !TIPOS_GERADOS.includes(line),
+        );
       expect(found).toEqual([]);
     }
   });
