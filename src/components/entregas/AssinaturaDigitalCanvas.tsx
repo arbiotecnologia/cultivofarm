@@ -68,6 +68,7 @@ export function AssinaturaDigitalCanvas({ onConfirm, onCancel, height = 220 }: P
   };
 
   const start = (e: React.PointerEvent) => {
+    if (processandoRef.current) return;
     e.preventDefault();
     (e.target as Element).setPointerCapture(e.pointerId);
     drawing.current = true;
@@ -78,7 +79,7 @@ export function AssinaturaDigitalCanvas({ onConfirm, onCancel, height = 220 }: P
     pathRef.current.push(`M${x.toFixed(1)} ${y.toFixed(1)}`);
   };
   const move = (e: React.PointerEvent) => {
-    if (!drawing.current) return;
+    if (!drawing.current || processandoRef.current) return;
     const { x, y } = getPos(e);
     const ctx = canvasRef.current!.getContext("2d")!;
     ctx.lineTo(x, y);
@@ -92,49 +93,100 @@ export function AssinaturaDigitalCanvas({ onConfirm, onCancel, height = 220 }: P
   };
 
   const limpar = () => {
+    if (processandoRef.current) return;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     pathRef.current = [];
     pontosRef.current = 0;
     setHasInk(false);
+    setErro(null);
   };
 
   const confirmar = async () => {
-    if (pontosRef.current < 8) {
+    // Trava síncrona: um segundo clique no mesmo tick não inicia outra coleta.
+    if (processandoRef.current) return;
+    if (pontosRef.current < MIN_PONTOS_ASSINATURA) {
+      setErro(MSG_ASSINATURA_CURTA);
       return;
     }
+    processandoRef.current = true;
+    setProcessando(true);
+    setErro(null);
+
+    // Snapshot imutável ANTES de qualquer await: edições/limpezas posteriores
+    // não alteram o que será enviado.
     const canvas = canvasRef.current!;
-    const dataUrl = canvas.toDataURL("image/png");
-    const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), "image/png"));
     const svgPath = pathRef.current.join(" ");
-    const hash = await sha256(svgPath + "|" + new Date().toISOString());
-    onConfirm({ pngBlob: blob, pngDataUrl: dataUrl, svgPath, hash, pontos: pontosRef.current });
+    const pontos = pontosRef.current;
+
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const blob = await new Promise<Blob | null>((res) =>
+        canvas.toBlob((b) => res(b ?? null), "image/png"),
+      );
+      if (!vivoRef.current) return;
+      if (!blob || blob.size <= 0) {
+        setErro(MSG_ASSINATURA_IMAGEM);
+        return;
+      }
+      const hash = await sha256(svgPath + "|" + new Date().toISOString());
+      if (!vivoRef.current) return;
+      // Callback pode ser assíncrono: é aguardado, nunca uma promessa solta.
+      await onConfirm({ pngBlob: blob, pngDataUrl: dataUrl, svgPath, hash, pontos });
+    } catch {
+      if (!vivoRef.current) return;
+      setErro(MSG_ASSINATURA_FALHA);
+    } finally {
+      if (vivoRef.current) {
+        processandoRef.current = false;
+        setProcessando(false);
+      }
+    }
   };
+
+  const bloqueado = processando || !hasInk;
 
   return (
     <div className="space-y-2">
       <div className="rounded-md border bg-white">
         <canvas
           ref={canvasRef}
-          style={{ width: "100%", height, touchAction: "none", display: "block" }}
+          aria-label="Área de desenho da assinatura"
+          style={{
+            width: "100%",
+            height,
+            touchAction: "none",
+            display: "block",
+            opacity: processando ? 0.6 : 1,
+          }}
           onPointerDown={start}
           onPointerMove={move}
           onPointerUp={end}
           onPointerCancel={end}
         />
       </div>
+      {erro && (
+        <p className="text-xs text-destructive" role="alert" data-testid="assinatura-erro">
+          {erro}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2 justify-end">
         {onCancel && (
-          <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={processando}>
             <X className="h-4 w-4 mr-1" /> Cancelar
           </Button>
         )}
-        <Button type="button" variant="outline" size="sm" onClick={limpar}>
+        <Button type="button" variant="outline" size="sm" onClick={limpar} disabled={processando}>
           <Eraser className="h-4 w-4 mr-1" /> Limpar
         </Button>
-        <Button type="button" size="sm" disabled={!hasInk} onClick={confirmar}>
-          <Check className="h-4 w-4 mr-1" /> Confirmar assinatura
+        <Button type="button" size="sm" disabled={bloqueado} onClick={() => void confirmar()}>
+          {processando ? (
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <Check className="h-4 w-4 mr-1" />
+          )}
+          {processando ? "Registrando…" : "Confirmar assinatura"}
         </Button>
       </div>
       <p className="text-[11px] text-muted-foreground">
@@ -143,4 +195,5 @@ export function AssinaturaDigitalCanvas({ onConfirm, onCancel, height = 220 }: P
       </p>
     </div>
   );
+
 }
