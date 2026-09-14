@@ -22,8 +22,8 @@ export default function FormularioEntregaPrint() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const viasParam = Number.parseInt(searchParams.get("vias") ?? "", 10);
-  const vias = viasParam === 2 ? 2 : 1;
+  // Somente os inteiros 1 e 2 são aceitos; qualquer outro valor cai em 1 via.
+  const vias = searchParams.get("vias")?.trim() === "2" ? 2 : 1;
 
   useEffect(() => { document.title = "Formulário de Entrega — AR Bio"; }, []);
 
