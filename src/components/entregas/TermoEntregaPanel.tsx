@@ -157,38 +157,58 @@ export function TermoEntregaPanel({ entregaId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itens, rascunho]);
 
-  const invalidar = () => {
-    qc.invalidateQueries({ queryKey: ["entrega-conferencia", entregaId] });
-    qc.invalidateQueries({ queryKey: ["entrega-termo", entregaId] });
+  /** Sempre invalida a entrega capturada na operação, nunca a atual por engano. */
+  const invalidar = (id: string) => {
+    qc.invalidateQueries({ queryKey: ["entrega-conferencia", id] });
+    qc.invalidateQueries({ queryKey: ["entrega-termo", id] });
   };
 
-  const run = async (fn: () => Promise<void>) => {
-    if (busy) return; // trava duplo clique
+  type Ctx = { vivo: () => boolean; entregaDaOperacao: string };
+
+  const run = async (fn: (ctx: Ctx) => Promise<void>) => {
+    if (emAndamentoRef.current) return; // trava síncrona contra duplo clique
+    emAndamentoRef.current = true;
+    const token = ++tokenRef.current;
+    const entregaDaOperacao = entregaId;
+    const vivo = () => token === tokenRef.current;
     setBusy(true);
     try {
-      await fn();
+      await fn({ vivo, entregaDaOperacao });
     } catch (e: any) {
-      toast({ title: "Não foi possível concluir", description: traduzirErro(e?.message), variant: "destructive" });
+      if (!vivo()) return;
+      toast({
+        title: "Não foi possível concluir",
+        description: e instanceof ErroValidacao ? e.message : traduzirErro(e?.message),
+        variant: "destructive",
+      });
     } finally {
-      setBusy(false);
+      if (vivo()) {
+        setBusy(false);
+        emAndamentoRef.current = false;
+      }
     }
   };
 
   const salvarConferencia = () =>
-    run(async () => {
-      const payload = itens.map((i) => ({
-        etiqueta_id: i.etiqueta_id,
-        status: valorDe(i.etiqueta_id, "status"),
-        quantidade: Number(valorDe(i.etiqueta_id, "quantidade")) || 1,
-        motivo: valorDe(i.etiqueta_id, "motivo") || null,
-      }));
+    run(async ({ vivo, entregaDaOperacao }) => {
+      const payload = itens.map((i) => {
+        const q = parseQuantidadeConferencia(valorDe(i.etiqueta_id, "quantidade"));
+        if (!q.ok) throw new ErroValidacao(`${i.codigo}: ${q.motivo}`);
+        return {
+          etiqueta_id: i.etiqueta_id,
+          status: valorDe(i.etiqueta_id, "status"),
+          quantidade: q.valor,
+          motivo: valorDe(i.etiqueta_id, "motivo") || null,
+        };
+      });
       const { error } = await supabase.rpc("rpc_entrega_registrar_conferencia_v1" as any, {
-        p_entrega_id: entregaId,
+        p_entrega_id: entregaDaOperacao,
         p_itens: payload,
       });
       if (error) throw error;
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       setRascunho({});
-      invalidar();
       toast({ title: "Conferência registrada" });
     });
 
