@@ -289,4 +289,57 @@ describe("EstornosResumoCard", () => {
     abrirEstornos("2026-05-01", "2026-01-01");
     expect(fromMock).not.toHaveBeenCalled();
   });
+
+  it("count:null com página não vazia retorna incompleto e oculta totais", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "receivable_payments"
+        ? chain({ data: [{ id: "a1", amount_received: -10 }], error: null })
+        : chain({ data: [], error: null, count: 0 }),
+    );
+    abrirEstornos();
+    expect(await screen.findByText(/não foi possível somar todos os estornos/i)).toBeInTheDocument();
+    expect(screen.queryByText("-R$ 10,00")).toBeNull();
+    expect(screen.queryByText(/lançamento\(s\)/i)).toBeNull();
+  });
+
+  it("count:null com página vazia retorna incompleto e oculta totais", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "receivable_payments"
+        ? chain({ data: [], error: null })
+        : chain({ data: [], error: null, count: 0 }),
+    );
+    abrirEstornos();
+    expect(await screen.findByText(/não foi possível somar todos os estornos/i)).toBeInTheDocument();
+    expect(screen.queryByText(/nenhum estorno registrado/i)).toBeNull();
+  });
+
+  it("contagem alterada entre páginas retorna incompleto e oculta totais", async () => {
+    let pagina = 0;
+    fromMock.mockImplementation((tabela: string) => {
+      if (tabela !== "receivable_payments") return chain({ data: [], error: null, count: 0 });
+      return chain(async () => {
+        const atual = pagina++;
+        return {
+          data: Array.from({ length: 10 }, (_, i) => ({ id: `p${atual}-${i}`, amount_received: -1 })),
+          error: null,
+          count: atual === 0 ? 20 : 25,
+        };
+      });
+    });
+    abrirEstornos();
+    expect(await screen.findByText(/não foi possível somar todos os estornos/i)).toBeInTheDocument();
+    expect(screen.queryByText(/lançamento\(s\)/i)).toBeNull();
+  });
+
+  it("itens>total retorna incompleto e oculta totais", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "receivable_payments"
+        ? chain({ data: [{ id: "a1", amount_received: -10 }], error: null, count: 0 })
+        : chain({ data: [], error: null, count: 0 }),
+    );
+    abrirEstornos();
+    expect(await screen.findByText(/não foi possível somar todos os estornos/i)).toBeInTheDocument();
+    expect(screen.queryByText("-R$ 10,00")).toBeNull();
+    expect(screen.queryByText(/lançamento\(s\)/i)).toBeNull();
+  });
 });
