@@ -567,8 +567,19 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
   const copyLink = async () => {
     if (!validationToken) return;
-    await navigator.clipboard.writeText(buildValidationUrl(validationToken));
-    toast({ title: "Link de validação copiado" });
+    const url = buildValidationUrl(validationToken);
+    const ok = await copiarTexto(url);
+    if (ok) {
+      setLinkManual(null);
+      toast({ title: "Link de validação copiado" });
+      return;
+    }
+    setLinkManual(url);
+    toast({
+      title: "Não foi possível copiar",
+      description: MSG_COPIA_INDISPONIVEL,
+      variant: "destructive",
+    });
   };
 
   const abrirComprovanteArquivo = async () => {
@@ -698,7 +709,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
               </Button>
             )}
             {validationToken && (
-              <Button size="sm" variant="ghost" onClick={copyLink}>
+              <Button size="sm" variant="ghost" onClick={() => void copyLink()}>
                 <Copy className="h-4 w-4 mr-1" /> Copiar link de validação
               </Button>
             )}
