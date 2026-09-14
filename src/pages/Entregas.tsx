@@ -215,7 +215,9 @@ export default function Entregas() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        const { data: d2 } = await supabase
+        // Tentativa sem o vínculo de cliente reservado (relação opcional).
+        // Se também falhar, o erro sobe: lista vazia jamais mascara falha.
+        const { data: d2, error: e2 } = await supabase
           .from("estoque_produto")
           .select(`
             id, status, quantidade, quantidade_reservada, volume_total, validade,
@@ -227,6 +229,7 @@ export default function Entregas() {
           `)
           .in("status", ["disponivel", "reservado"])
           .order("created_at", { ascending: false });
+        if (e2) throw e2;
         return d2 || [];
       }
       return data || [];
