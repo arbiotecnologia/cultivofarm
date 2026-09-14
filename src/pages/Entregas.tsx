@@ -936,7 +936,8 @@ export default function Entregas() {
                     content={[
                       { label: "Qtd entregue", value: e.quantidade_entregue ? `${e.quantidade_entregue} un` : "—" },
                       { label: "Volume", value: e.volume_entregue_ml ? `${(e.volume_entregue_ml / 1000).toFixed(1)} L` : "—" },
-                      { label: "Motorista", value: e.motorista || "—" },
+                      { label: "Modalidade", value: labelModalidade(e.tipo_entrega) },
+                      { label: labelResponsavelCurto(e.tipo_entrega), value: e.motorista || "—" },
                       { label: "Saída", value: e.data_saida ? formatDateDisplay(e.data_saida) : "—" },
                       { label: "OS", value: (e.ordem_servico_id || e.ordem_servico_onfarm_id) ? formatOSFromId(e.ordem_servico_id || e.ordem_servico_onfarm_id) : "—" },
                     ]}
