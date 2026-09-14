@@ -298,10 +298,11 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
     (acc, l) => acc + (Number(l.quantidade) || 0),
     0,
   );
-  const volumeTotalMl = itensSelecionados.reduce((acc, l) => {
-    const vp = l.item._envase?.volume_por_unidade;
-    return acc + (vp ? Number(l.quantidade || 0) * Number(vp) : 0);
-  }, 0);
+  // Preview do volume a partir do item de estoque (volume_total / quantidade).
+  // Não usa o último envase do lote: um lote pode ter várias embalagens.
+  const previewVolume = calcularVolumePreviewMl(
+    itensSelecionados.map((l) => ({ item: l.item, quantidade: l.quantidade })),
+  );
 
   const linhasComErro = itensSelecionados.filter((l) => {
     const q = Number(l.quantidade) || 0;
