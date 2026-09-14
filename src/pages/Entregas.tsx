@@ -1012,6 +1012,7 @@ export default function Entregas() {
                     </TableCell>
                     <TableCell>{e.quantidade_entregue ?? "—"}</TableCell>
                     <TableCell>{e.volume_entregue_ml ? (e.volume_entregue_ml / 1000).toFixed(1) : "—"}</TableCell>
+                    <TableCell>{labelModalidade(e.tipo_entrega)}</TableCell>
                     <TableCell>{e.motorista || "—"}</TableCell>
                     <TableCell>{e.data_saida ? formatDateDisplay(e.data_saida) : "—"}</TableCell>
                     <TableCell><Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge></TableCell>
