@@ -331,22 +331,28 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
     // Snapshot imutável no início.
     const entregaIdEnvio: string = entrega.id;
-    const recebedorEnvio = { ...recebedor };
-    const hash = data.hash;
+    const recebedorAtualEnvio: RecebedorPayload = { ...recebedor };
     const svgPath = data.svgPath;
     const token = ++opSeqRef.current;
     opAtivaRef.current = token;
     const atual = () => opAtivaRef.current === token && entregaAtivaRef.current === entregaIdEnvio;
 
     // Reaproveita o PNG já armazenado quando só a vinculação falhou antes.
-    const reaproveitado =
+    // Exige MESMA entrega, MESMO traço e MESMO recebedor; nesse caso o hash e
+    // o payload do recebedor originais (associados àquele PNG) são reutilizados,
+    // pois o canvas gera um hash novo a cada confirmação.
+    const pendenteAplicavel =
       assinaturaPendente &&
       assinaturaPendente.entregaId === entregaIdEnvio &&
-      assinaturaPendente.traco === svgPath
-        ? assinaturaPendente.path
+      assinaturaPendente.traco === svgPath &&
+      mesmoRecebedor(assinaturaPendente.recebedor, recebedorAtualEnvio)
+        ? assinaturaPendente
         : null;
 
-    let path = reaproveitado;
+    const hash = pendenteAplicavel ? pendenteAplicavel.hash : data.hash;
+    const recebedorEnvio = pendenteAplicavel ? pendenteAplicavel.recebedor : recebedorAtualEnvio;
+
+    let path = pendenteAplicavel ? pendenteAplicavel.path : null;
     try {
       if (!path) {
         const novoPath = `entregas/${entregaIdEnvio}/assinaturas/${crypto.randomUUID()}.png`;
