@@ -297,7 +297,13 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         </div>
       )}
 
-      {!falhou && comprovante && (
+      {entregaAusente && !falhou && (
+        <p className="text-sm text-muted-foreground" data-testid="comprovante-entrega-ausente">
+          Não foi possível localizar esta entrega ou você não tem acesso a ela.
+        </p>
+      )}
+
+      {!falhou && !carregando && comprovante && (
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
           <div className="space-y-1 text-sm">
             <div><span className="text-muted-foreground">Formulário:</span> <span className="font-mono">{comprovante.numero_formulario}</span></div>
