@@ -9,7 +9,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, fro
 import FluxoCaixa, { saldoRestante } from "@/pages/financeiro/FluxoCaixa";
 import { EstornosResumoCard } from "@/components/financeiro/EstornosResumoCard";
 
-type Resultado = { data?: any; error?: any };
+type Resultado = { data?: any; error?: any; count?: number | null };
 
 /** Builder encadeável que devolve sempre o mesmo resultado. */
 function chain(resultado: Resultado | (() => Promise<Resultado>)) {
