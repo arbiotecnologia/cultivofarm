@@ -499,21 +499,60 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Upload */}
-      <Dialog open={openUpload} onOpenChange={setOpenUpload}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Anexar comprovante assinado</DialogTitle><DialogDescription>Envie o arquivo do formulário assinado e identifique quem recebeu.</DialogDescription></DialogHeader>
+      {/* Dialog: Anexo de comprovante (seleção e envio explícitos) */}
+      <Dialog open={openUpload} onOpenChange={(v) => (enviandoAnexo ? undefined : setOpenUpload(v))}>
+        <DialogContent className="max-w-lg" onInteractOutside={(e) => enviandoAnexo && e.preventDefault()} onEscapeKeyDown={(e) => enviandoAnexo && e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Anexar comprovante assinado</DialogTitle>
+            <DialogDescription>
+              Selecione o arquivo do formulário assinado, identifique quem recebeu e clique em “Enviar comprovante”.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-3">
-            <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
-            <Input
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp"
-              onChange={(e) => e.target.files?.[0] && onUploadFile(e.target.files[0])}
-            />
-            <p className="text-xs text-muted-foreground">PDF, JPG, PNG, WEBP — até 10MB.</p>
+            <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} disabled={enviandoAnexo} />
+            <div className="space-y-1">
+              <Label htmlFor="comprovante-arquivo">Arquivo do comprovante *</Label>
+              <Input
+                id="comprovante-arquivo"
+                type="file"
+                accept={ACCEPT_ANEXO}
+                disabled={enviandoAnexo}
+                aria-invalid={!!erroArquivo}
+                aria-describedby={erroArquivo ? "comprovante-arquivo-erro" : "comprovante-arquivo-ajuda"}
+                onChange={(e) => onSelecionarArquivo(e.target.files?.[0] ?? null)}
+              />
+              <p id="comprovante-arquivo-ajuda" className="text-xs text-muted-foreground">
+                PDF, JPG, PNG ou WEBP — até 10 MB. O envio só acontece ao clicar no botão.
+              </p>
+              {arquivo && !erroArquivo && (
+                <p className="text-xs text-muted-foreground" data-testid="comprovante-arquivo-selecionado">
+                  Selecionado: {arquivo.name} ({formatarTamanho(arquivo.size)})
+                </p>
+              )}
+              {erroArquivo && (
+                <p id="comprovante-arquivo-erro" className="text-xs text-destructive" role="alert">
+                  {erroArquivo}
+                </p>
+              )}
+              {pathPendente && (
+                <p className="text-xs text-muted-foreground" data-testid="comprovante-vinculo-pendente">
+                  O arquivo já está armazenado. A nova tentativa fará apenas a vinculação, sem enviá-lo novamente.
+                </p>
+              )}
+            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenUpload(false)} disabled={enviandoAnexo}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void enviarAnexo()} disabled={enviandoAnexo || !arquivo}>
+              {enviandoAnexo && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {enviandoAnexo ? "Enviando…" : pathPendente ? "Tentar vincular novamente" : "Enviar comprovante"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
       {/* Dialog: Confirmar */}
       <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
