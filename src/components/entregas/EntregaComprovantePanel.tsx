@@ -524,7 +524,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
               <p id="comprovante-arquivo-ajuda" className="text-xs text-muted-foreground">
                 PDF, JPG, PNG ou WEBP — até 10 MB. O envio só acontece ao clicar no botão.
               </p>
-              {arquivo && !erroArquivo && (
+              {arquivo && (
                 <p className="text-xs text-muted-foreground" data-testid="comprovante-arquivo-selecionado">
                   Selecionado: {arquivo.name} ({formatarTamanho(arquivo.size)})
                 </p>
