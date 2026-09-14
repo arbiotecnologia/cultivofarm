@@ -83,13 +83,13 @@ export function FinalizarOSButton({
           onClick={() => {
             toast.info("Ações pendentes para finalização", {
               description: (
-                {bloqueios.length > 0 ? (
+                bloqueios.length > 0 ? (
                   <ul className="list-disc pl-4 mt-2 space-y-1">
                     {bloqueios.map((b, i) => <li key={i}>{b}</li>)}
                   </ul>
                 ) : (
                   <p>A entrega precisa ser confirmada e todas as etapas concluídas.</p>
-                )}
+                )
               )
             });
           }}
