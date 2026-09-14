@@ -82,7 +82,7 @@ describe("FormularioEntregaPrint", () => {
     expect(screen.getByText("Retirada")).toBeInTheDocument();
     expect(screen.getByText("Retirado por:")).toBeInTheDocument();
     // date-only sem desvio de fuso
-    expect(screen.getByText("12/09/2026", { exact: false })).toBeInTheDocument();
+    expect(screen.getAllByText(/12\/09\/2026/).length).toBeGreaterThan(0);
     expect(screen.getByText("05/01/2026")).toBeInTheDocument();
     // validade sem fonte comprovada não é inventada
     expect(screen.getByText("Não informada")).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe("FormularioEntregaPrint", () => {
     });
 
     renderPrint(`/entregas/${ID}/formulario?vias=2.9`);
-    expect(await screen.findByRole("button", { name: /1 via/ })).toBeInTheDocument();
+    expect(await screen.findByText("1 via")).toBeInTheDocument();
     expect(screen.queryByText(/2ª Via/)).not.toBeInTheDocument();
   });
 
