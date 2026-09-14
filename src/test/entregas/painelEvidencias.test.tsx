@@ -134,6 +134,33 @@ describe("EntregaComprovantePanel — estado fresco do servidor", () => {
   });
 });
 
+describe("EntregaComprovantePanel — falha parcial e ausência", () => {
+  it("falha só do comprovante, com entrega carregada, não mostra status nem ações", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "entregas"
+        ? chain({ data: { id: "e1", comprovante_status: "formulario_gerado", validation_token: "tok" } })
+        : chain({ data: null, error: { message: "falha comprovante" } }),
+    );
+
+    render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+
+    expect(await screen.findByTestId("comprovante-erro")).toBeInTheDocument();
+    expect(screen.queryByText("Formulário gerado")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Imprimir formulário/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Copiar link de validação/ })).not.toBeInTheDocument();
+  });
+
+  it("entrega inexistente ou sem acesso não é tratada como pendente", async () => {
+    fromMock.mockImplementation(() => chain({ data: null }));
+
+    render(<EntregaComprovantePanel entrega={{ id: "e1", comprovante_status: "pendente" }} />, { wrapper });
+
+    expect(await screen.findByTestId("comprovante-entrega-ausente")).toBeInTheDocument();
+    expect(screen.queryByText("Pendente")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Gerar formulário/ })).not.toBeInTheDocument();
+  });
+});
+
 describe("EmbalagensEntregaPanel", () => {
   it("erro na consulta não vira contagem zero", async () => {
     fromMock.mockImplementation(() => chain({ data: null, error: { message: "falha" } }));
