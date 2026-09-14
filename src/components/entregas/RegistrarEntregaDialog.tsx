@@ -19,6 +19,8 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import { formatProdutoOuMicro, formatLoteCodigo, formatEmbalagem } from "@/lib/entregaLoteLabel";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveDestinatarioFromOS, emptyDestinatario, type DestinatarioSnapshot } from "@/lib/entregaDestinatario";
+import { calcularVolumePreviewMl } from "@/lib/entregas/volumeEstoque";
+import { labelResponsavel } from "@/lib/entregas/modalidade";
 
 export type LinhaEntrega = {
   estoque_produto_id: string;
