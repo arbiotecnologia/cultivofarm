@@ -228,13 +228,32 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   };
 
   const copyLink = async () => {
-    if (!entrega.validation_token) return;
-    await navigator.clipboard.writeText(buildValidationUrl(entrega.validation_token));
+    if (!validationToken) return;
+    await navigator.clipboard.writeText(buildValidationUrl(validationToken));
     toast({ title: "Link de validação copiado" });
   };
 
-  const openForm = () => window.open(`/entregas/${entrega.id}/formulario`, "_blank");
-  const openForm2Vias = () => window.open(`/entregas/${entrega.id}/formulario?vias=2`, "_blank");
+  const abrirComprovanteArquivo = async () => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("entrega-documentos")
+        .createSignedUrl(comprovante.arquivo_path, 300);
+      if (error || !data?.signedUrl) throw new Error("sem-url");
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      toast({
+        title: "Não foi possível abrir o comprovante",
+        description: "O link seguro do arquivo não pôde ser gerado. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Mesmo documento sempre: abre o formulário já existente, nunca gera outro.
+  const openForm = () => window.open(`/entregas/${entrega.id}/formulario`, "_blank", "noopener,noreferrer");
+  const openForm2Vias = () => window.open(`/entregas/${entrega.id}/formulario?vias=2`, "_blank", "noopener,noreferrer");
+
+  const podeImprimir = !!status && status !== "pendente";
 
   return (
     <Card className="p-4 space-y-4">
@@ -243,10 +262,34 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           <FileText className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">Comprovação de entrega</h3>
         </div>
-        <Badge className={meta.cls} variant="secondary">{meta.label}</Badge>
+        {carregando && !falhou && (
+          <span className="text-xs text-muted-foreground" data-testid="comprovante-carregando">Carregando…</span>
+        )}
+        {meta && !falhou && (
+          <Badge className={meta.cls} variant="secondary">{meta.label}</Badge>
+        )}
       </div>
 
-      {comprovante && (
+      {falhou && (
+        <div
+          className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
+          data-testid="comprovante-erro"
+        >
+          <p>Não foi possível carregar a situação da comprovação desta entrega.</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void recarregarEntrega();
+              void recarregarComprovante();
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      )}
+
+      {!falhou && comprovante && (
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
           <div className="space-y-1 text-sm">
             <div><span className="text-muted-foreground">Formulário:</span> <span className="font-mono">{comprovante.numero_formulario}</span></div>
@@ -276,7 +319,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
             <FileText className="h-4 w-4 mr-1" /> Gerar formulário
           </Button>
         )}
-        {status !== "pendente" && (
+        {podeImprimir && (
           <>
             <Button size="sm" variant="outline" onClick={openForm}>
               <Printer className="h-4 w-4 mr-1" /> Imprimir formulário
@@ -304,16 +347,13 @@ export function EntregaComprovantePanel({ entrega }: Props) {
                 <ShieldAlert className="h-4 w-4 mr-1" /> Dispensar assinatura
               </Button>
             )}
-            {entrega.validation_token && (
+            {validationToken && (
               <Button size="sm" variant="ghost" onClick={copyLink}>
                 <Copy className="h-4 w-4 mr-1" /> Copiar link de validação
               </Button>
             )}
             {comprovante?.arquivo_path && (
-              <Button size="sm" variant="ghost" onClick={async () => {
-                const { data } = await supabase.storage.from("entrega-documentos").createSignedUrl(comprovante.arquivo_path, 300);
-                if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-              }}>
+              <Button size="sm" variant="ghost" onClick={abrirComprovanteArquivo}>
                 <ExternalLink className="h-4 w-4 mr-1" /> Visualizar comprovante
               </Button>
             )}
@@ -321,8 +361,9 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         )}
       </div>
 
-      {status !== "pendente" && (
+      {podeImprimir && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
           <EntregaChecklistPanel entregaId={entrega.id} canEdit={status !== "confirmado" && status !== "dispensado"} />
           <EntregaOcorrenciasPanel entregaId={entrega.id} canAdd={status !== "confirmado" && status !== "dispensado"} />
         </div>
