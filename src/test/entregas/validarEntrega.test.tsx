@@ -229,3 +229,28 @@ describe("ValidarEntrega — rótulos de protótipo", () => {
     expect(await screen.findByText("constructor")).toBeInTheDocument();
   });
 });
+
+describe("copiarTexto — degradação segura", () => {
+  it("retorna false quando a área de transferência rejeita e não lança", async () => {
+    const { copiarTexto } = await import("@/lib/entregas/copiarLink");
+    const original = navigator.clipboard;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new Error("bloqueado")) },
+    });
+    (document as any).execCommand = vi.fn().mockReturnValue(false);
+    await expect(copiarTexto("https://x/y")).resolves.toBe(false);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: original });
+  });
+
+  it("retorna true quando a cópia é aceita", async () => {
+    const { copiarTexto } = await import("@/lib/entregas/copiarLink");
+    const original = navigator.clipboard;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+    await expect(copiarTexto("https://x/y")).resolves.toBe(true);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: original });
+  });
+});
