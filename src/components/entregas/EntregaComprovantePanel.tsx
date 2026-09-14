@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -794,7 +794,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
 
       {/* Dialog: Confirmar */}
-      <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+      <Dialog open={openConfirm} onOpenChange={(v) => (acaoEmAndamento ? undefined : setOpenConfirm(v))}>
         <DialogContent>
           <DialogHeader><DialogTitle>Confirmar recebimento</DialogTitle><DialogDescription>Registre a confirmação do recebimento desta entrega, com ressalvas se necessário.</DialogDescription></DialogHeader>
           <div className="space-y-2">
@@ -813,7 +813,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       </Dialog>
 
       {/* Dialog: Dispensa */}
-      <Dialog open={openDispensa} onOpenChange={setOpenDispensa}>
+      <Dialog open={openDispensa} onOpenChange={(v) => (acaoEmAndamento ? undefined : setOpenDispensa(v))}>
         <DialogContent>
           <DialogHeader><DialogTitle>Dispensar assinatura</DialogTitle><DialogDescription>Informe o motivo da dispensa. A ação é registrada para auditoria.</DialogDescription></DialogHeader>
           <div className="space-y-2">
