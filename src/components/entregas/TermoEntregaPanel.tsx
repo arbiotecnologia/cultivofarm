@@ -213,20 +213,21 @@ export function TermoEntregaPanel({ entregaId }: Props) {
     });
 
   const gerarTermo = () =>
-    run(async () => {
+    run(async ({ vivo, entregaDaOperacao }) => {
       const { error } = await supabase.rpc("rpc_entrega_gerar_termo_v1" as any, {
-        p_entrega_id: entregaId,
+        p_entrega_id: entregaDaOperacao,
         p_template_versao: "termo-entrega-v1",
       });
       if (error) throw error;
-      invalidar();
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       toast({ title: "Termo gerado (rascunho)" });
     });
 
   const assinar = () =>
-    run(async () => {
-      if (!termo?.id) throw new Error("Gere o termo antes de assinar.");
-      if (!recebedor.nome.trim()) throw new Error("Informe o nome do recebedor.");
+    run(async ({ vivo, entregaDaOperacao }) => {
+      if (!termo?.id) throw new ErroValidacao("Gere o termo antes de assinar.");
+      if (!recebedor.nome.trim()) throw new ErroValidacao("Informe o nome do recebedor.");
       const assinaturaHash = await sha256Hex(
         `${termo.snapshot_hash}|${recebedor.nome.trim()}|${recebedor.documento.trim()}`,
       );
