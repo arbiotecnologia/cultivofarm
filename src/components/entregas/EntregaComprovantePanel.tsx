@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AssinaturaDigitalCanvas } from "./AssinaturaDigitalCanvas";
 import { QRCodeComprovante, buildValidationUrl } from "./QRCodeComprovante";
+import { copiarTexto, MSG_COPIA_INDISPONIVEL } from "@/lib/entregas/copiarLink";
 import { EntregaChecklistPanel } from "./EntregaChecklistPanel";
 import { EntregaOcorrenciasPanel } from "./EntregaOcorrenciasPanel";
 import {
@@ -81,6 +82,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const [openSign, setOpenSign] = useState(false);
   const [openUpload, setOpenUpload] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
+  const [linkManual, setLinkManual] = useState<string | null>(null);
   const [openDispensa, setOpenDispensa] = useState(false);
   const [recebedor, setRecebedor] = useState({ nome: "", documento: "", cargo: "", telefone: "" });
   const [ressalvas, setRessalvas] = useState("");
