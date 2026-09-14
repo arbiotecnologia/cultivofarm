@@ -120,6 +120,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setArquivo(null);
     setErroArquivo(null);
     setEnviandoAnexo(false);
+    // Uma operação antiga em voo nunca mantém o contexto novo bloqueado.
+    setGerando(false);
+    setConfirmando(false);
+    setDispensando(false);
     setPathPendente(null);
     setAssinaturaPendente(null);
     setOpenUpload(false);
