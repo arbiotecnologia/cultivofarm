@@ -40,6 +40,9 @@ interface Props {
 }
 
 const MSG_ERRO_GENERICA = "Não foi possível concluir a ação. Tente novamente.";
+const MSG_FALHA_ENVIO = "Não foi possível enviar o arquivo. Verifique a conexão e tente novamente.";
+const MSG_FALHA_VINCULO =
+  "O arquivo foi enviado, mas não foi possível vinculá-lo à entrega. Tente novamente — o arquivo não será enviado de novo.";
 
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
@@ -51,6 +54,29 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const [recebedor, setRecebedor] = useState({ nome: "", documento: "", cargo: "", telefone: "" });
   const [ressalvas, setRessalvas] = useState("");
   const [motivoDispensa, setMotivoDispensa] = useState("");
+
+  // ---- Anexo de comprovante: seleção explícita + envio explícito ----
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [erroArquivo, setErroArquivo] = useState<string | null>(null);
+  const [enviandoAnexo, setEnviandoAnexo] = useState(false);
+  // Caminho já enviado ao armazenamento cujo vínculo (RPC) falhou.
+  // Mantido para permitir nova tentativa apenas da vinculação, sem reenviar o arquivo.
+  const [pathPendente, setPathPendente] = useState<string | null>(null);
+  const enviandoAnexoRef = useRef(false);
+  const entregaAtivaRef = useRef<string | undefined>(entrega?.id);
+
+  // Reset seguro ao trocar de entrega: nenhum arquivo anterior pode ser associado.
+  useEffect(() => {
+    entregaAtivaRef.current = entrega?.id;
+    enviandoAnexoRef.current = false;
+    setArquivo(null);
+    setErroArquivo(null);
+    setEnviandoAnexo(false);
+    setPathPendente(null);
+    setOpenUpload(false);
+    setOpenSign(false);
+    setRecebedor({ nome: "", documento: "", cargo: "", telefone: "" });
+  }, [entrega?.id]);
 
   // Estado fresco da entrega (o prop pode vir de um snapshot antigo da lista).
   const {
