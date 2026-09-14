@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,24 @@ export function defaultPeriodo(): PeriodoState {
   return { preset: "mes_atual", from: r.from, to: r.to, regime: "COMPETENCIA" };
 }
 
+const RE_DATA = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Data existente no calendário (evita 2026-02-31 e afins). */
+function dataValida(v: string): boolean {
+  if (!RE_DATA.test(v)) return false;
+  const [a, m, d] = v.split("-").map(Number);
+  const dt = new Date(a, m - 1, d);
+  return dt.getFullYear() === a && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+
+/** Valida o período sem reescrevê-lo: a interface decide o que bloquear. */
+export function validarPeriodo(value: Pick<PeriodoState, "from" | "to">): string | null {
+  if (!value.from || !value.to) return "Informe as datas inicial e final do período.";
+  if (!dataValida(value.from) || !dataValida(value.to)) return "Data inválida. Use um dia existente no calendário.";
+  if (value.from > value.to) return "A data inicial não pode ser posterior à data final.";
+  return null;
+}
+
 interface Props {
   value: PeriodoState;
   onChange: (v: PeriodoState) => void;
@@ -44,6 +62,11 @@ interface Props {
 }
 
 export function PeriodoFilter({ value, onChange, showRegime = true }: Props) {
+  const uid = useId();
+  const idDe = `${uid}-de`;
+  const idAte = `${uid}-ate`;
+  const idRegime = `${uid}-regime`;
+  const erro = value.preset === "personalizado" ? validarPeriodo(value) : null;
   const presets: { v: PeriodoPreset; l: string }[] = useMemo(() => ([
     { v: "hoje", l: "Hoje" },
     { v: "7d", l: "7 dias" },
@@ -69,22 +92,41 @@ export function PeriodoFilter({ value, onChange, showRegime = true }: Props) {
         ))}
       </div>
       {value.preset === "personalizado" && (
-        <div className="flex gap-2 items-end">
-          <div>
-            <Label className="text-xs">De</Label>
-            <Input type="date" value={value.from} onChange={(e) => onChange({ ...value, from: e.target.value })} className="h-9" />
+        <div className="flex flex-wrap gap-2 items-end w-full sm:w-auto">
+          <div className="min-w-[9rem] flex-1 sm:flex-none">
+            <Label htmlFor={idDe} className="text-xs">De</Label>
+            <Input
+              id={idDe}
+              type="date"
+              value={value.from}
+              aria-invalid={!!erro}
+              onChange={(e) => onChange({ ...value, from: e.target.value })}
+              className="h-9 w-full"
+            />
           </div>
-          <div>
-            <Label className="text-xs">Até</Label>
-            <Input type="date" value={value.to} onChange={(e) => onChange({ ...value, to: e.target.value })} className="h-9" />
+          <div className="min-w-[9rem] flex-1 sm:flex-none">
+            <Label htmlFor={idAte} className="text-xs">Até</Label>
+            <Input
+              id={idAte}
+              type="date"
+              value={value.to}
+              aria-invalid={!!erro}
+              onChange={(e) => onChange({ ...value, to: e.target.value })}
+              className="h-9 w-full"
+            />
           </div>
+          {erro && (
+            <p role="alert" className="w-full text-xs text-destructive">
+              {erro}
+            </p>
+          )}
         </div>
       )}
       {showRegime && (
-        <div className="ml-auto">
-          <Label className="text-xs">Regime</Label>
+        <div className="w-full sm:w-auto sm:ml-auto">
+          <Label htmlFor={idRegime} className="text-xs">Regime</Label>
           <Select value={value.regime} onValueChange={(v: Regime) => onChange({ ...value, regime: v })}>
-            <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger id={idRegime} className="h-9 w-full sm:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="COMPETENCIA">Competência</SelectItem>
               <SelectItem value="CAIXA">Caixa</SelectItem>
