@@ -191,7 +191,13 @@ export default function Entregas() {
   }, [entregasFiltradas]);
 
   // Itens de estoque já envasados, prontos para entrega
-  const { data: itensProntos = [] } = useQuery({
+  const {
+    data: itensProntos = [],
+    isLoading: estoqueLoading,
+    isError: estoqueErro,
+    refetch: recarregarEstoque,
+    isFetching: estoqueFetching,
+  } = useQuery({
     queryKey: ["estoque-prontos-entrega"],
     queryFn: async () => {
       const { data, error } = await supabase
