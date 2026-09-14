@@ -191,7 +191,8 @@ describe("EntregaComprovantePanel — assinatura do comprovante", () => {
     await assinar();
     await waitFor(() => expect(screen.getByTestId("assinatura-vinculo-pendente")).toBeInTheDocument());
     expect(uploadMock).toHaveBeenCalledTimes(1);
-    await assinar();
+    // Nova tentativa da MESMA assinatura: apenas confirma de novo, sem redesenhar.
+    fireEvent.click(screen.getByRole("button", { name: /confirmar assinatura/i }));
     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
     expect(uploadMock).toHaveBeenCalledTimes(1);
   });
