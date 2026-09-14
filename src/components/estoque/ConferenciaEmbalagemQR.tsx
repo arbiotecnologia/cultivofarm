@@ -83,7 +83,15 @@ export function ConferenciaEmbalagemQR({ entregaId }: { entregaId?: string }) {
           <Input
             id="conferencia-qr-codigo"
             value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
+            // Editar o código descarta o resultado anterior: nunca exibir leitura
+            // de um código que não é mais o do campo.
+            onChange={(e) => {
+              if (emAndamentoRef.current) return; // leitura pendente: campo travado
+              setCodigo(e.target.value);
+              setResult(null);
+              setErro(null);
+            }}
+            readOnly={loading}
             onKeyDown={(e) => {
               if (e.key !== "Enter") return;
               e.preventDefault();
