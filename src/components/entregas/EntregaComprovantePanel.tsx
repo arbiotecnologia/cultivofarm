@@ -88,14 +88,22 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     },
   });
 
-  // Nunca inferir "confirmado" pela existência do formulário, nem usar
-  // "pendente" como fallback de falha de consulta.
-  const status: string | null = entregaErro ? null : (entregaAtual?.comprovante_status ?? "pendente");
-  const meta = status ? STATUS_LABEL[status] || STATUS_LABEL.pendente : null;
-  const validationToken = entregaAtual?.validation_token ?? null;
   const isAdmin = role === "administrador" || role === "gestor" || role === "administrativo";
   const carregando = entregaCarregando || comprovanteCarregando;
+  // Falha em qualquer uma das duas consultas invalida status e ações,
+  // inclusive quando só o comprovante falha e a entrega carregou.
   const falhou = entregaErro || comprovanteErro;
+  // Entrega inexistente ou sem acesso: não inferir "pendente".
+  const entregaAusente = !entregaCarregando && !entregaErro && !entregaAtual;
+
+  // Nunca inferir "confirmado" pela existência do formulário, nem usar
+  // "pendente" como fallback de falha/ausência de consulta.
+  const status: string | null =
+    falhou || carregando || entregaAusente
+      ? null
+      : (entregaAtual?.comprovante_status ?? null);
+  const meta = status ? STATUS_LABEL[status] || STATUS_LABEL.pendente : null;
+  const validationToken = (!falhou && !carregando && entregaAtual?.validation_token) || null;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["entregas"] });
@@ -289,7 +297,13 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         </div>
       )}
 
-      {!falhou && comprovante && (
+      {entregaAusente && !falhou && (
+        <p className="text-sm text-muted-foreground" data-testid="comprovante-entrega-ausente">
+          Não foi possível localizar esta entrega ou você não tem acesso a ela.
+        </p>
+      )}
+
+      {!falhou && !carregando && comprovante && (
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
           <div className="space-y-1 text-sm">
             <div><span className="text-muted-foreground">Formulário:</span> <span className="font-mono">{comprovante.numero_formulario}</span></div>

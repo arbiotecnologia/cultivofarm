@@ -6,60 +6,148 @@ import { QRCodeComprovante } from "@/components/entregas/QRCodeComprovante";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft, Copy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { formatDateDisplay, formatDateTimeDisplay } from "@/lib/date-utils";
+import { labelModalidade, labelResponsavel } from "@/lib/entregas/modalidade";
 
 const TERMO = `Declaro, para os devidos fins, que recebi da AR Bio os produtos/bioinsumos descritos neste formulário, conferi as quantidades, identificação dos produtos, lotes, volumes e condições aparentes das embalagens no ato do recebimento. Declaro estar ciente de que o armazenamento, manuseio e aplicação devem seguir as orientações técnicas fornecidas pela AR Bio, respeitando as condições adequadas de conservação e utilização. Eventuais divergências identificadas no recebimento deverão ser registradas neste documento no campo de observações/ressalvas.`;
+
+const NAO_INFORMADA = "Não informada";
+
+/** Colunas reais do banco: clientes.cpf_cnpj/endereco_municipio/endereco_estado,
+ *  fazendas.municipio/estado, lotes.data_producao (não existe data_validade). */
+const SELECT_ENTREGA =
+  "*, clientes(nome,cpf_cnpj,endereco_municipio,endereco_estado), produtos(nome), lotes(codigo_lote,data_producao), ordens_servico(id,numero_os, fazendas(nome,municipio,estado))";
 
 export default function FormularioEntregaPrint() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const vias = Math.max(1, Math.min(2, Number(searchParams.get("vias")) || 1));
+  // Somente os inteiros 1 e 2 são aceitos; qualquer outro valor cai em 1 via.
+  const vias = searchParams.get("vias")?.trim() === "2" ? 2 : 1;
 
   useEffect(() => { document.title = "Formulário de Entrega — AR Bio"; }, []);
 
-  const { data: entrega } = useQuery({
+  const entregaQuery = useQuery({
     queryKey: ["entrega-full", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("entregas")
-        .select("*, clientes(nome,cnpj,municipio,uf), produtos(nome), lotes(codigo_lote,data_fabricacao,data_validade), ordens_servico(*, fazendas(nome,municipio,uf))")
+        .select(SELECT_ENTREGA)
         .eq("id", id!)
         .maybeSingle();
+      if (error) throw error;
       return data as any;
     },
   });
 
-  const { data: comprovante } = useQuery({
+  const comprovanteQuery = useQuery({
     queryKey: ["entrega-comprovante-print", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("entrega_comprovantes" as any)
         .select("*")
         .eq("entrega_id", id!)
         .order("gerado_em", { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data as any;
+      if (error) throw error;
+      return (data as any) ?? null;
     },
   });
 
-  const { data: embalagens } = useQuery({
+  const embalagensQuery = useQuery({
     queryKey: ["entrega-embalagens-print", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("estoque_embalagens")
-        .select("id, codigo_embalagem, volume, unidade, validade_em, fabricado_em, status, etiqueta_id, lote_id, produto_id, lotes(codigo_lote), produtos(nome), produto_etiquetas:etiqueta_id(codigo_etiqueta)")
+        .select("id, codigo_embalagem, volume, unidade, validade_em, status, etiqueta_id, lote_id, produto_id, lotes(codigo_lote), produtos(nome), produto_etiquetas:etiqueta_id(codigo_etiqueta)")
         .eq("entrega_id", id!)
         .order("codigo_embalagem", { ascending: true });
+      if (error) throw error;
       return (data as any[]) ?? [];
     },
   });
 
-  if (!entrega || !comprovante) {
-    return <div className="p-8 text-center text-muted-foreground">Carregando…</div>;
+  // Aberto em nova aba não há histórico: sempre volta para a lista de entregas.
+  const voltar = () => navigate("/entregas");
+
+  const Moldura = ({ children }: { children: React.ReactNode }) => (
+    <div className="min-h-screen bg-slate-100 print:bg-white">
+      <div className="max-w-[800px] mx-auto p-4">
+        <div className="mb-3 print:hidden">
+          <Button variant="outline" size="sm" onClick={voltar}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+          </Button>
+        </div>
+        <div className="bg-white p-8 shadow text-sm text-slate-900">{children}</div>
+      </div>
+    </div>
+  );
+
+  if (!id) {
+    return <Moldura><p data-testid="formulario-ausente">Entrega não informada.</p></Moldura>;
+  }
+
+  const carregando = entregaQuery.isLoading || comprovanteQuery.isLoading || embalagensQuery.isLoading;
+  const falhou = entregaQuery.isError || comprovanteQuery.isError || embalagensQuery.isError;
+
+  if (carregando) {
+    return (
+      <Moldura>
+        <p data-testid="formulario-carregando" className="text-muted-foreground">Carregando…</p>
+      </Moldura>
+    );
+  }
+
+  if (falhou) {
+    return (
+      <Moldura>
+        <div data-testid="formulario-erro" className="space-y-3">
+          <p className="font-semibold">Não foi possível carregar o formulário desta entrega.</p>
+          <p className="text-muted-foreground text-xs">
+            A impressão fica bloqueada até que os dados sejam carregados por completo.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void entregaQuery.refetch();
+              void comprovanteQuery.refetch();
+              void embalagensQuery.refetch();
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      </Moldura>
+    );
+  }
+
+  const entrega = entregaQuery.data;
+  const comprovante = comprovanteQuery.data;
+  const embalagens = embalagensQuery.data ?? [];
+
+  if (!entrega) {
+    return (
+      <Moldura>
+        <p data-testid="formulario-entrega-ausente">
+          Entrega não encontrada ou sem permissão de acesso.
+        </p>
+      </Moldura>
+    );
+  }
+
+  if (!comprovante) {
+    return (
+      <Moldura>
+        <p data-testid="formulario-nao-gerado">
+          O formulário de entrega ainda não foi gerado. Gere o formulário na tela de entregas para poder imprimi-lo.
+        </p>
+      </Moldura>
+    );
   }
 
   const cliente = entrega.clientes;
@@ -75,7 +163,7 @@ export default function FormularioEntregaPrint() {
     <div className="min-h-screen bg-slate-100 print:bg-white">
       <div className="max-w-[800px] mx-auto p-4 print:p-0">
         <div className="flex flex-wrap gap-2 mb-3 print:hidden">
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+          <Button variant="outline" size="sm" onClick={voltar}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
           <Button size="sm" onClick={() => window.print()}>
@@ -92,6 +180,7 @@ export default function FormularioEntregaPrint() {
               });
             }}
             title="Alternar entre 1 e 2 vias (cliente + AR Bio)"
+            data-testid="formulario-vias"
           >
             <Copy className="h-4 w-4 mr-1" /> {vias === 2 ? "2 vias" : "1 via"}
           </Button>
@@ -113,7 +202,7 @@ export default function FormularioEntregaPrint() {
               <div className="text-xl font-bold">AR Bio</div>
               <div className="text-[10px] text-slate-600">Bioinsumos com rastreabilidade</div>
               <div className="mt-2 text-[14px] font-bold uppercase">Formulário de Entrega e Termo de Recebimento de Bioinsumos</div>
-              <div className="text-[10px] mt-1">Nº <span className="font-mono">{comprovante.numero_formulario}</span> · Emitido em {new Date(comprovante.gerado_em).toLocaleString("pt-BR")}</div>
+              <div className="text-[10px] mt-1">Nº <span className="font-mono">{comprovante.numero_formulario}</span> · Emitido em {formatDateTimeDisplay(comprovante.gerado_em)}</div>
             </div>
             <QRCodeComprovante validationToken={comprovante.validation_token} size={90} showActions={false} />
           </div>
@@ -130,7 +219,9 @@ export default function FormularioEntregaPrint() {
               [entrega.endereco_cidade, entrega.endereco_uf].filter(Boolean).join("/"),
               entrega.endereco_cep,
             ].filter(Boolean).join(" · ");
-            const enderecoFallback = `${fazenda?.nome ? fazenda.nome + " · " : ""}${(fazenda?.municipio || cliente?.municipio) || "—"}/${(fazenda?.uf || cliente?.uf) || "—"}`;
+            const municipio = fazenda?.municipio || cliente?.endereco_municipio || "—";
+            const estado = fazenda?.estado || cliente?.endereco_estado || "—";
+            const enderecoFallback = `${fazenda?.nome ? fazenda.nome + " · " : ""}${municipio}/${estado}`;
             const enderecoOverride = entrega.endereco_origem === "personalizado";
             return (
               <>
@@ -138,7 +229,7 @@ export default function FormularioEntregaPrint() {
                   <h2 className="font-bold text-[13px] mb-1">Destinatário</h2>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <div><b>Nome:</b> {nome}</div>
-                    <div><b>CNPJ:</b> {cliente?.cnpj || "—"}</div>
+                    <div><b>CPF/CNPJ:</b> {cliente?.cpf_cnpj || "—"}</div>
                     <div><b>Telefone:</b> {tel || "—"}</div>
                     <div><b>WhatsApp:</b> {wa || "—"}</div>
                   </div>
@@ -166,16 +257,17 @@ export default function FormularioEntregaPrint() {
           <section className="mt-3">
             <h2 className="font-bold text-[13px] mb-1">Dados da Entrega</h2>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-              <div><b>OS:</b> {entrega.ordem_servico_id?.slice(0,8) || "—"}</div>
-              <div><b>Data prevista:</b> {entrega.data_saida ? new Date(entrega.data_saida).toLocaleDateString("pt-BR") : "—"}
+              <div><b>OS:</b> {entrega.ordens_servico?.numero_os || "—"}</div>
+              <div><b>Modalidade:</b> {labelModalidade(entrega.tipo_entrega)}</div>
+              <div><b>Data prevista:</b> {entrega.data_saida ? formatDateDisplay(entrega.data_saida) : "—"}
                 {entrega.hora_saida_prevista ? ` às ${entrega.hora_saida_prevista}` : ""}
               </div>
-              <div><b>Chegada prevista:</b> {entrega.data_chegada_prevista ? new Date(entrega.data_chegada_prevista).toLocaleDateString("pt-BR") : (entrega.data_saida ? new Date(entrega.data_saida).toLocaleDateString("pt-BR") : "—")}
+              <div><b>Chegada prevista:</b> {entrega.data_chegada_prevista ? formatDateDisplay(entrega.data_chegada_prevista) : (entrega.data_saida ? formatDateDisplay(entrega.data_saida) : "—")}
                 {entrega.hora_chegada_prevista ? ` às ${entrega.hora_chegada_prevista}` : ""}
               </div>
-              <div><b>Motorista:</b> {entrega.motorista || "—"}
+              <div><b>{labelResponsavel(entrega.tipo_entrega)}:</b> {entrega.motorista || "—"}
                 {entrega.motorista_telefone ? ` · ${entrega.motorista_telefone}` : ""}
-                {entrega.motorista_documento ? ` · CNH ${entrega.motorista_documento}` : ""}
+                {entrega.motorista_documento ? ` · Doc ${entrega.motorista_documento}` : ""}
               </div>
               <div><b>Veículo:</b> {entrega.veiculo || "—"}
                 {entrega.veiculo_placa ? ` · ${entrega.veiculo_placa}` : ""}
@@ -194,7 +286,7 @@ export default function FormularioEntregaPrint() {
                   <th className="border border-slate-400 p-1 text-left">Lote</th>
                   <th className="border border-slate-400 p-1 text-right">Quantidade</th>
                   <th className="border border-slate-400 p-1 text-right">Volume (mL)</th>
-                  <th className="border border-slate-400 p-1 text-left">Fabricação</th>
+                  <th className="border border-slate-400 p-1 text-left">Produção</th>
                   <th className="border border-slate-400 p-1 text-left">Validade</th>
                 </tr>
               </thead>
@@ -204,15 +296,16 @@ export default function FormularioEntregaPrint() {
                   <td className="border border-slate-400 p-1 font-mono">{entrega.lotes?.codigo_lote || "—"}</td>
                   <td className="border border-slate-400 p-1 text-right">{entrega.quantidade_entregue ?? "—"}</td>
                   <td className="border border-slate-400 p-1 text-right">{entrega.volume_entregue_ml ?? "—"}</td>
-                  <td className="border border-slate-400 p-1">{entrega.lotes?.data_fabricacao ? new Date(entrega.lotes.data_fabricacao).toLocaleDateString("pt-BR") : "—"}</td>
-                  <td className="border border-slate-400 p-1">{entrega.lotes?.data_validade ? new Date(entrega.lotes.data_validade).toLocaleDateString("pt-BR") : "—"}</td>
+                  <td className="border border-slate-400 p-1">{entrega.lotes?.data_producao ? formatDateDisplay(entrega.lotes.data_producao) : "—"}</td>
+                  {/* Não há validade no lote: só é impressa quando vem da embalagem rastreada. */}
+                  <td className="border border-slate-400 p-1">{NAO_INFORMADA}</td>
                 </tr>
               </tbody>
             </table>
           </section>
 
           {/* Embalagens vinculadas */}
-          {embalagens && embalagens.length > 0 && (
+          {embalagens.length > 0 && (
             <section className="mt-3">
               <h2 className="font-bold text-[13px] mb-1">Embalagens vinculadas ({embalagens.length})</h2>
               <table className="w-full border border-slate-400 text-[11px]">
@@ -234,7 +327,7 @@ export default function FormularioEntregaPrint() {
                       <td className="border border-slate-400 p-1 font-mono">{emb.lotes?.codigo_lote || "—"}</td>
                       <td className="border border-slate-400 p-1">{emb.produtos?.nome || "—"}</td>
                       <td className="border border-slate-400 p-1 text-right">{emb.volume} {emb.unidade}</td>
-                      <td className="border border-slate-400 p-1">{emb.validade_em ? new Date(emb.validade_em).toLocaleDateString("pt-BR") : "—"}</td>
+                      <td className="border border-slate-400 p-1">{emb.validade_em ? formatDateDisplay(emb.validade_em) : NAO_INFORMADA}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -283,7 +376,7 @@ export default function FormularioEntregaPrint() {
                 <div>Recebedor</div>
                 {comprovante.recebedor_documento && <div>Doc: {comprovante.recebedor_documento}</div>}
                 {comprovante.recebedor_cargo && <div>{comprovante.recebedor_cargo}</div>}
-                {comprovante.data_assinatura && <div className="text-[10px] text-slate-600">{new Date(comprovante.data_assinatura).toLocaleString("pt-BR")}</div>}
+                {comprovante.data_assinatura && <div className="text-[10px] text-slate-600">{formatDateTimeDisplay(comprovante.data_assinatura)}</div>}
               </div>
             </div>
             <div>
