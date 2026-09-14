@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,11 @@ import { AssinaturaDigitalCanvas } from "./AssinaturaDigitalCanvas";
 import { QRCodeComprovante, buildValidationUrl } from "./QRCodeComprovante";
 import { EntregaChecklistPanel } from "./EntregaChecklistPanel";
 import { EntregaOcorrenciasPanel } from "./EntregaOcorrenciasPanel";
+import {
+  ACCEPT_ANEXO,
+  formatarTamanho,
+  validarAnexoComprovante,
+} from "@/lib/entregas/anexoComprovante";
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   pendente: { label: "Pendente", cls: "bg-muted text-muted-foreground" },
@@ -35,6 +40,9 @@ interface Props {
 }
 
 const MSG_ERRO_GENERICA = "Não foi possível concluir a ação. Tente novamente.";
+const MSG_FALHA_ENVIO = "Não foi possível enviar o arquivo. Verifique a conexão e tente novamente.";
+const MSG_FALHA_VINCULO =
+  "O arquivo foi enviado, mas não foi possível vinculá-lo à entrega. Tente novamente — o arquivo não será enviado de novo.";
 
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
@@ -46,6 +54,29 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const [recebedor, setRecebedor] = useState({ nome: "", documento: "", cargo: "", telefone: "" });
   const [ressalvas, setRessalvas] = useState("");
   const [motivoDispensa, setMotivoDispensa] = useState("");
+
+  // ---- Anexo de comprovante: seleção explícita + envio explícito ----
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [erroArquivo, setErroArquivo] = useState<string | null>(null);
+  const [enviandoAnexo, setEnviandoAnexo] = useState(false);
+  // Caminho já enviado ao armazenamento cujo vínculo (RPC) falhou.
+  // Mantido para permitir nova tentativa apenas da vinculação, sem reenviar o arquivo.
+  const [pathPendente, setPathPendente] = useState<string | null>(null);
+  const enviandoAnexoRef = useRef(false);
+  const entregaAtivaRef = useRef<string | undefined>(entrega?.id);
+
+  // Reset seguro ao trocar de entrega: nenhum arquivo anterior pode ser associado.
+  useEffect(() => {
+    entregaAtivaRef.current = entrega?.id;
+    enviandoAnexoRef.current = false;
+    setArquivo(null);
+    setErroArquivo(null);
+    setEnviandoAnexo(false);
+    setPathPendente(null);
+    setOpenUpload(false);
+    setOpenSign(false);
+    setRecebedor({ nome: "", documento: "", cargo: "", telefone: "" });
+  }, [entrega?.id]);
 
   // Estado fresco da entrega (o prop pode vir de um snapshot antigo da lista).
   const {
@@ -198,42 +229,110 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     }
   };
 
-  const onUploadFile = async (file: File) => {
+  /** Seleção do arquivo: valida, mas NUNCA envia automaticamente. */
+  const onSelecionarArquivo = (file: File | null) => {
+    if (enviandoAnexoRef.current) return;
+    setPathPendente(null);
+    if (!file) {
+      setArquivo(null);
+      setErroArquivo(null);
+      return;
+    }
+    const resultado = validarAnexoComprovante(file);
+    if (resultado.ok === false) {
+      setArquivo(null);
+      setErroArquivo(resultado.motivo);
+      return;
+    }
+    setArquivo(file);
+    setErroArquivo(null);
+  };
+
+  /** Envio explícito: só acontece ao clicar em "Enviar comprovante". */
+  const enviarAnexo = async () => {
+    if (enviandoAnexoRef.current) return;
+    const file = arquivo;
+    if (!file) {
+      setErroArquivo("Selecione um arquivo para enviar.");
+      return;
+    }
+    const validacao = validarAnexoComprovante(file);
+    if (validacao.ok === false) {
+      setErroArquivo(validacao.motivo);
+      return;
+    }
     if (!recebedor.nome.trim()) {
-      toast({ title: "Informe o recebedor", variant: "destructive" });
+      setErroArquivo("Informe o nome de quem recebeu a entrega.");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "Arquivo excede 10MB", variant: "destructive" });
-      return;
-    }
+
+    // Snapshot no início: mudanças posteriores não afetam este envio.
+    const entregaIdEnvio: string = entrega.id;
+    const recebedorEnvio = { ...recebedor };
+    const pathReaproveitado = pathPendente;
+
+    enviandoAnexoRef.current = true;
+    setEnviandoAnexo(true);
+    setErroArquivo(null);
+
+    let path = pathReaproveitado;
     try {
-      const ext = file.name.split(".").pop() || "bin";
-      const path = `entregas/${entrega.id}/comprovantes/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("entrega-documentos")
-        .upload(path, file, { contentType: file.type || undefined });
-      if (upErr) throw upErr;
+      if (!path) {
+        const novoPath = `entregas/${entregaIdEnvio}/comprovantes/${crypto.randomUUID()}.${validacao.extensao}`;
+        const { error: upErr } = await supabase.storage
+          .from("entrega-documentos")
+          .upload(novoPath, file, { contentType: validacao.mime, upsert: false });
+        if (upErr) {
+          toast({ title: "Erro", description: MSG_FALHA_ENVIO, variant: "destructive" });
+          setErroArquivo(MSG_FALHA_ENVIO);
+          return;
+        }
+        path = novoPath;
+      }
+
       const { error } = await supabase.rpc("rpc_anexar_comprovante_entrega" as any, {
-        p_entrega_id: entrega.id,
+        p_entrega_id: entregaIdEnvio,
         p_payload: {
           arquivo_path: path,
           arquivo_nome: file.name,
-          arquivo_mime: file.type,
-          recebedor_nome: recebedor.nome,
-          recebedor_documento: recebedor.documento || null,
-          recebedor_cargo: recebedor.cargo || null,
-          recebedor_telefone: recebedor.telefone || null,
+          arquivo_mime: validacao.mime,
+          recebedor_nome: recebedorEnvio.nome,
+          recebedor_documento: recebedorEnvio.documento || null,
+          recebedor_cargo: recebedorEnvio.cargo || null,
+          recebedor_telefone: recebedorEnvio.telefone || null,
         },
       });
-      if (error) throw error;
+
+      if (error) {
+        // O arquivo já está no armazenamento: não reenviar e não apagar
+        // (uma falha de rede pode esconder um sucesso do servidor).
+        setPathPendente(path);
+        setErroArquivo(MSG_FALHA_VINCULO);
+        toast({ title: "Erro", description: MSG_FALHA_VINCULO, variant: "destructive" });
+        return;
+      }
+
+      if (entregaAtivaRef.current !== entregaIdEnvio) return;
       toast({ title: "Comprovante anexado" });
+      setPathPendente(null);
+      setArquivo(null);
       setOpenUpload(false);
       invalidate();
     } catch {
-      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
+      if (path) {
+        setPathPendente(path);
+        setErroArquivo(MSG_FALHA_VINCULO);
+        toast({ title: "Erro", description: MSG_FALHA_VINCULO, variant: "destructive" });
+      } else {
+        setErroArquivo(MSG_FALHA_ENVIO);
+        toast({ title: "Erro", description: MSG_FALHA_ENVIO, variant: "destructive" });
+      }
+    } finally {
+      enviandoAnexoRef.current = false;
+      setEnviandoAnexo(false);
     }
   };
+
 
   const copyLink = async () => {
     if (!validationToken) return;
@@ -343,7 +442,13 @@ export function EntregaComprovantePanel({ entrega }: Props) {
             </Button>
             {status !== "confirmado" && status !== "dispensado" && (
               <>
-                <Button size="sm" variant="outline" onClick={() => setOpenSign(true)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setOpenSign(true)}
+                  disabled={enviandoAnexo}
+                  title={enviandoAnexo ? "Aguarde o envio do comprovante terminar." : undefined}
+                >
                   <PenLine className="h-4 w-4 mr-1" /> Coletar assinatura digital
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setOpenUpload(true)}>
@@ -394,21 +499,60 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Upload */}
-      <Dialog open={openUpload} onOpenChange={setOpenUpload}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Anexar comprovante assinado</DialogTitle><DialogDescription>Envie o arquivo do formulário assinado e identifique quem recebeu.</DialogDescription></DialogHeader>
+      {/* Dialog: Anexo de comprovante (seleção e envio explícitos) */}
+      <Dialog open={openUpload} onOpenChange={(v) => (enviandoAnexo ? undefined : setOpenUpload(v))}>
+        <DialogContent className="max-w-lg" onInteractOutside={(e) => enviandoAnexo && e.preventDefault()} onEscapeKeyDown={(e) => enviandoAnexo && e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Anexar comprovante assinado</DialogTitle>
+            <DialogDescription>
+              Selecione o arquivo do formulário assinado, identifique quem recebeu e clique em “Enviar comprovante”.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-3">
-            <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
-            <Input
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp"
-              onChange={(e) => e.target.files?.[0] && onUploadFile(e.target.files[0])}
-            />
-            <p className="text-xs text-muted-foreground">PDF, JPG, PNG, WEBP — até 10MB.</p>
+            <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} disabled={enviandoAnexo} />
+            <div className="space-y-1">
+              <Label htmlFor="comprovante-arquivo">Arquivo do comprovante *</Label>
+              <Input
+                id="comprovante-arquivo"
+                type="file"
+                accept={ACCEPT_ANEXO}
+                disabled={enviandoAnexo}
+                aria-invalid={!!erroArquivo}
+                aria-describedby={erroArquivo ? "comprovante-arquivo-erro" : "comprovante-arquivo-ajuda"}
+                onChange={(e) => onSelecionarArquivo(e.target.files?.[0] ?? null)}
+              />
+              <p id="comprovante-arquivo-ajuda" className="text-xs text-muted-foreground">
+                PDF, JPG, PNG ou WEBP — até 10 MB. O envio só acontece ao clicar no botão.
+              </p>
+              {arquivo && (
+                <p className="text-xs text-muted-foreground" data-testid="comprovante-arquivo-selecionado">
+                  Selecionado: {arquivo.name} ({formatarTamanho(arquivo.size)})
+                </p>
+              )}
+              {erroArquivo && (
+                <p id="comprovante-arquivo-erro" className="text-xs text-destructive" role="alert">
+                  {erroArquivo}
+                </p>
+              )}
+              {pathPendente && (
+                <p className="text-xs text-muted-foreground" data-testid="comprovante-vinculo-pendente">
+                  O arquivo já está armazenado. A nova tentativa fará apenas a vinculação, sem enviá-lo novamente.
+                </p>
+              )}
+            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenUpload(false)} disabled={enviandoAnexo}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void enviarAnexo()} disabled={enviandoAnexo || !arquivo}>
+              {enviandoAnexo && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {enviandoAnexo ? "Enviando…" : pathPendente ? "Tentar vincular novamente" : "Enviar comprovante"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
       {/* Dialog: Confirmar */}
       <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
@@ -447,25 +591,59 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   );
 }
 
-function RecebedorFields({ recebedor, setRecebedor }: { recebedor: any; setRecebedor: (v: any) => void }) {
+function RecebedorFields({
+  recebedor,
+  setRecebedor,
+  disabled = false,
+}: {
+  recebedor: any;
+  setRecebedor: (v: any) => void;
+  disabled?: boolean;
+}) {
   return (
     <div className="grid grid-cols-2 gap-2">
       <div className="col-span-2">
-        <Label>Nome do recebedor *</Label>
-        <Input value={recebedor.nome} maxLength={150} onChange={(e) => setRecebedor({ ...recebedor, nome: e.target.value })} />
+        <Label htmlFor="recebedor-nome">Nome do recebedor *</Label>
+        <Input
+          id="recebedor-nome"
+          value={recebedor.nome}
+          maxLength={150}
+          disabled={disabled}
+          onChange={(e) => setRecebedor({ ...recebedor, nome: e.target.value })}
+        />
       </div>
       <div>
-        <Label>Documento</Label>
-        <Input value={recebedor.documento} maxLength={50} onChange={(e) => setRecebedor({ ...recebedor, documento: e.target.value })} />
+        <Label htmlFor="recebedor-documento">Documento</Label>
+        <Input
+          id="recebedor-documento"
+          value={recebedor.documento}
+          maxLength={50}
+          disabled={disabled}
+          onChange={(e) => setRecebedor({ ...recebedor, documento: e.target.value })}
+        />
       </div>
       <div>
-        <Label>Cargo</Label>
-        <Input value={recebedor.cargo} maxLength={100} onChange={(e) => setRecebedor({ ...recebedor, cargo: e.target.value })} />
+        <Label htmlFor="recebedor-cargo">Cargo</Label>
+        <Input
+          id="recebedor-cargo"
+          value={recebedor.cargo}
+          maxLength={100}
+          disabled={disabled}
+          onChange={(e) => setRecebedor({ ...recebedor, cargo: e.target.value })}
+        />
       </div>
       <div className="col-span-2">
-        <Label>Telefone</Label>
-        <MaskedInput mask="telefone" placeholder="(00) 00000-0000" value={recebedor.telefone} onChange={(e) => setRecebedor({ ...recebedor, telefone: e.target.value })} />
+        <Label htmlFor="recebedor-telefone">Telefone</Label>
+        <MaskedInput
+          id="recebedor-telefone"
+          mask="telefone"
+          placeholder="(00) 00000-0000"
+          value={recebedor.telefone}
+          disabled={disabled}
+          onChange={(e) => setRecebedor({ ...recebedor, telefone: e.target.value })}
+        />
       </div>
     </div>
   );
 }
+
