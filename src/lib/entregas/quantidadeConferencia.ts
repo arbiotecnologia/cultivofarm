@@ -6,8 +6,8 @@
 export const MSG_QUANTIDADE_INVALIDA =
   "Informe uma quantidade numérica maior que zero (ex.: 1 ou 1,5).";
 
-export type QuantidadeValida = { ok: true; valor: number };
-export type QuantidadeInvalida = { ok: false; motivo: string };
+export type QuantidadeValida = { ok: true; valor: number; motivo?: undefined };
+export type QuantidadeInvalida = { ok: false; valor?: undefined; motivo: string };
 export type ResultadoQuantidade = QuantidadeValida | QuantidadeInvalida;
 
 /**
