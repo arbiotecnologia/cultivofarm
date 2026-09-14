@@ -19,6 +19,8 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import { formatProdutoOuMicro, formatLoteCodigo, formatEmbalagem } from "@/lib/entregaLoteLabel";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveDestinatarioFromOS, emptyDestinatario, type DestinatarioSnapshot } from "@/lib/entregaDestinatario";
+import { calcularVolumePreviewMl } from "@/lib/entregas/volumeEstoque";
+import { labelResponsavel } from "@/lib/entregas/modalidade";
 
 export type LinhaEntrega = {
   estoque_produto_id: string;
@@ -298,10 +300,11 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
     (acc, l) => acc + (Number(l.quantidade) || 0),
     0,
   );
-  const volumeTotalMl = itensSelecionados.reduce((acc, l) => {
-    const vp = l.item._envase?.volume_por_unidade;
-    return acc + (vp ? Number(l.quantidade || 0) * Number(vp) : 0);
-  }, 0);
+  // Preview do volume a partir do item de estoque (volume_total / quantidade).
+  // Não usa o último envase do lote: um lote pode ter várias embalagens.
+  const previewVolume = calcularVolumePreviewMl(
+    itensSelecionados.map((l) => ({ item: l.item, quantidade: l.quantidade })),
+  );
 
   const linhasComErro = itensSelecionados.filter((l) => {
     const q = Number(l.quantidade) || 0;
@@ -633,8 +636,11 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
                 <div className="flex items-center gap-3">
                   <span className="text-muted-foreground">Total:</span>
                   <span className="font-mono-data font-bold text-primary">{totalUnidades} un</span>
-                  {volumeTotalMl > 0 && (
-                    <span className="font-mono-data text-muted-foreground">≈ {(volumeTotalMl / 1000).toFixed(2)} L</span>
+                  {previewVolume.volumeMl > 0 && (
+                    <span className="font-mono-data text-muted-foreground">≈ {(previewVolume.volumeMl / 1000).toFixed(2)} L</span>
+                  )}
+                  {previewVolume.indeterminado && (
+                    <span className="text-muted-foreground">Volume será calculado no registro</span>
                   )}
                 </div>
                 {linhasComErro.length > 0 && (
@@ -912,20 +918,28 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
             <div className="text-3xl font-black text-primary font-mono-data">
               {totalUnidades} <span className="text-base font-normal text-muted-foreground">un</span>
             </div>
-            {volumeTotalMl > 0 && (
+            {previewVolume.volumeMl > 0 && (
               <div className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1.5">
-                <Truck className="h-3 w-3" /> ≈ {(volumeTotalMl / 1000).toFixed(2)} L
+                <Truck className="h-3 w-3" /> ≈ {(previewVolume.volumeMl / 1000).toFixed(2)} L
               </div>
             )}
+            {previewVolume.indeterminado && (
+              <div className="text-xs text-muted-foreground mt-1">
+                O volume total será calculado no registro da entrega.
+              </div>
+            )}
+            <div className="text-[11px] text-muted-foreground mt-1">
+              {tipoEntrega === "retirada" ? "Retirada no local" : "Entrega por motorista"}
+            </div>
           </div>
 
           {(motorista || veiculo || dataSaida || horaSaidaPrevista || dataChegadaPrevista || horaChegadaPrevista) && (
             <div className="rounded-md border p-3 text-xs space-y-1">
               {motorista && (
                 <div>
-                  <span className="text-muted-foreground">Motorista:</span> {motorista}
+                  <span className="text-muted-foreground">{labelResponsavel(tipoEntrega)}:</span> {motorista}
                   {motoristaTelefone && ` · ${motoristaTelefone}`}
-                  {motoristaDocumento && ` · CNH ${motoristaDocumento}`}
+                  {motoristaDocumento && ` · ${tipoEntrega === "retirada" ? "Doc." : "CNH"} ${motoristaDocumento}`}
                 </div>
               )}
               {veiculo && (

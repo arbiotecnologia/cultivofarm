@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
+import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
 
 
 export type EsteiraStage =
@@ -639,23 +640,21 @@ export function useEsteiraLaboratorio() {
         p_origem: origem,
         p_estoque_produto_id: entregaData.estoque_produto_id,
         p_quantidade: Number(entregaData.quantidade_entregue ?? 0),
-        p_dados: {
-          cliente_id: entregaData.cliente_id ?? null,
-          data_saida: entregaData.data_saida ?? null,
-          motorista: entregaData.motorista ?? null,
-          veiculo: entregaData.veiculo ?? null,
-        },
+        // Whitelist explícita: o volume é calculado no servidor, nunca enviado daqui.
+        p_dados: montarDadosEntrega(entregaData),
       });
 
       if (error) throw new Error(traduzErroCockpit(error.message));
 
-      if (data?.replay) {
-        toast.info(data.message || "Entrega já registrada para este item.");
+      const resultado = validarRespostaCriarEntrega(data);
+
+      if (resultado.replay) {
+        toast.info(resultado.message || "Entrega já registrada para este item.");
       } else {
-        toast.success(data?.message || "Entrega registrada");
+        toast.success(resultado.message || "Entrega registrada");
       }
       invalidateAll();
-      return { id: data?.entrega_id };
+      return { id: resultado.entrega_id };
     } catch (error: any) {
       console.error("[criarEntrega] falha no motor transacional:", error);
       throw new Error(traduzErroCockpit(error?.message) || "Falha ao gravar entrega.");

@@ -58,6 +58,7 @@ import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { SeletorLoteEnvasado } from "@/components/entregas/SeletorLoteEnvasado";
 import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/components/entregas/RegistrarEntregaDialog";
 import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
+import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
@@ -114,7 +115,13 @@ export default function Entregas() {
   const [filtroFim, setFiltroFim] = useState("");
   const [filtroProduto, setFiltroProduto] = useState("todos");
 
-  const { data: entregas = [] } = useQuery({
+  const {
+    data: entregas = [],
+    isLoading: entregasLoading,
+    isError: entregasErro,
+    refetch: recarregarEntregas,
+    isFetching: entregasFetching,
+  } = useQuery({
     queryKey: ["entregas"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -185,7 +192,13 @@ export default function Entregas() {
   }, [entregasFiltradas]);
 
   // Itens de estoque já envasados, prontos para entrega
-  const { data: itensProntos = [] } = useQuery({
+  const {
+    data: itensProntos = [],
+    isLoading: estoqueLoading,
+    isError: estoqueErro,
+    refetch: recarregarEstoque,
+    isFetching: estoqueFetching,
+  } = useQuery({
     queryKey: ["estoque-prontos-entrega"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -203,7 +216,9 @@ export default function Entregas() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        const { data: d2 } = await supabase
+        // Tentativa sem o vínculo de cliente reservado (relação opcional).
+        // Se também falhar, o erro sobe: lista vazia jamais mascara falha.
+        const { data: d2, error: e2 } = await supabase
           .from("estoque_produto")
           .select(`
             id, status, quantidade, quantidade_reservada, volume_total, validade,
@@ -215,6 +230,7 @@ export default function Entregas() {
           `)
           .in("status", ["disponivel", "reservado"])
           .order("created_at", { ascending: false });
+        if (e2) throw e2;
         return d2 || [];
       }
       return data || [];
@@ -491,9 +507,8 @@ export default function Entregas() {
             reservasFeitas.push({ item, osId: itemOsId, osTipo: itemOsTipo });
           }
 
-          const vp = item._envase?.volume_por_unidade;
-          const volumeEntregueMl = vp ? quantidade * Number(vp) : null;
-
+          // O volume entregue é calculado e gravado pelo servidor a partir do
+          // item de estoque. O frontend não envia volume como autoridade.
           const entregaData = {
             ordem_servico_id: itemOsTipo !== "onfarm" ? itemOsId : null,
             ordem_servico_onfarm_id: itemOsTipo === "onfarm" ? itemOsId : null,
@@ -502,7 +517,7 @@ export default function Entregas() {
             lote_id: item.lote_id,
             produto_id: item.produto_id,
             quantidade_entregue: quantidade,
-            volume_entregue_ml: volumeEntregueMl,
+            
             tipo_entrega: tipo_entrega || 'motorista',
             motorista: motorista || null,
             veiculo: veiculo || null,
@@ -862,25 +877,52 @@ export default function Entregas() {
         </CardContent>
       </Card>
 
+      {estoqueErro && (
+        <Card>
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <span className="text-sm text-destructive">
+              Não foi possível carregar os lotes disponíveis para entrega.
+            </span>
+            <Button variant="outline" size="sm" disabled={estoqueFetching} onClick={() => recarregarEstoque()}>
+              Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">Entregas no período</div>
-          <div className="text-2xl font-semibold">{kpis.total}</div>
+          <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.total}</div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">Volume entregue (L)</div>
-          <div className="text-2xl font-semibold">{kpis.volumeL.toFixed(1)}</div>
+          <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.volumeL.toFixed(1)}</div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">OS atendidas</div>
-          <div className="text-2xl font-semibold">{kpis.osDistintas}</div>
+          <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.osDistintas}</div>
         </CardContent></Card>
       </div>
 
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" />Entregas</CardTitle></CardHeader>
         <CardContent className={isMobile ? "p-4" : "p-0 sm:p-6 sm:pt-0"}>
+          {entregasErro ? (
+            <div className="py-10 text-center space-y-3" data-testid="entregas-erro">
+              <p className="text-sm text-destructive">
+                Não foi possível carregar as entregas.
+              </p>
+              <Button variant="outline" size="sm" disabled={entregasFetching} onClick={() => recarregarEntregas()}>
+                Tentar novamente
+              </Button>
+            </div>
+          ) : entregasLoading ? (
+            <div className="py-10 text-center text-sm text-muted-foreground" data-testid="entregas-carregando">
+              Carregando entregas...
+            </div>
+          ) : (
           <ResponsiveTable
             mobileCards={
               entregasFiltradas.length === 0 ? (
@@ -895,7 +937,8 @@ export default function Entregas() {
                     content={[
                       { label: "Qtd entregue", value: e.quantidade_entregue ? `${e.quantidade_entregue} un` : "—" },
                       { label: "Volume", value: e.volume_entregue_ml ? `${(e.volume_entregue_ml / 1000).toFixed(1)} L` : "—" },
-                      { label: "Motorista", value: e.motorista || "—" },
+                      { label: "Modalidade", value: labelModalidade(e.tipo_entrega) },
+                      { label: labelResponsavelCurto(e.tipo_entrega), value: e.motorista || "—" },
                       { label: "Saída", value: e.data_saida ? formatDateDisplay(e.data_saida) : "—" },
                       { label: "OS", value: (e.ordem_servico_id || e.ordem_servico_onfarm_id) ? formatOSFromId(e.ordem_servico_id || e.ordem_servico_onfarm_id) : "—" },
                     ]}
@@ -943,7 +986,8 @@ export default function Entregas() {
                   <TableHead>Lote</TableHead>
                   <TableHead>Qtd</TableHead>
                   <TableHead>Volume (L)</TableHead>
-                  <TableHead>Motorista</TableHead>
+                  <TableHead>Modalidade</TableHead>
+                  <TableHead>Motorista / Retirado por</TableHead>
                   <TableHead>Saída</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
@@ -951,7 +995,7 @@ export default function Entregas() {
               </TableHeader>
               <TableBody>
                 {entregasFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">Nenhuma entrega no período</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">Nenhuma entrega no período</TableCell></TableRow>
                 ) : entregasFiltradas.map((e: any) => (
                   <TableRow key={e.id}>
                     <TableCell className="font-mono text-xs">{e.clientes?.codigo_cliente || "—"}</TableCell>
@@ -969,6 +1013,7 @@ export default function Entregas() {
                     </TableCell>
                     <TableCell>{e.quantidade_entregue ?? "—"}</TableCell>
                     <TableCell>{e.volume_entregue_ml ? (e.volume_entregue_ml / 1000).toFixed(1) : "—"}</TableCell>
+                    <TableCell>{labelModalidade(e.tipo_entrega)}</TableCell>
                     <TableCell>{e.motorista || "—"}</TableCell>
                     <TableCell>{e.data_saida ? formatDateDisplay(e.data_saida) : "—"}</TableCell>
                     <TableCell><Badge variant={STATUS_LABELS[e.status]?.variant || "outline"}>{STATUS_LABELS[e.status]?.label || e.status}</Badge></TableCell>
@@ -1006,6 +1051,7 @@ export default function Entregas() {
               </TableBody>
             </Table>
           </ResponsiveTable>
+          )}
         </CardContent>
       </Card>
 
