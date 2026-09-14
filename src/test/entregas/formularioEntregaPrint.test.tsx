@@ -127,7 +127,8 @@ describe("FormularioEntregaPrint", () => {
     });
 
     renderPrint(`/entregas/${ID}/formulario?vias=2.9`);
-    expect(await screen.findByText("1 via")).toBeInTheDocument();
+    await screen.findByTestId("formulario-vias");
+    expect(screen.getByTestId("formulario-vias").textContent).toContain("1 via");
     expect(screen.queryByText(/2ª Via/)).not.toBeInTheDocument();
   });
 
