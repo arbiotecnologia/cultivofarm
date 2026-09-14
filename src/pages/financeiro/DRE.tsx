@@ -60,6 +60,29 @@ export function grupoPresente(grupo: Grupo) {
   return Number.isFinite(Number(g.total ?? 0)) && Number.isFinite(Number(g.qtd ?? 0));
 }
 
+/**
+ * Contrato mínimo da RPC get_financial_dre_summary.
+ * Não altera cálculos: apenas recusa respostas que virariam zeros na tela.
+ */
+export function contratoDreValido(data: unknown): data is DreData {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+  const d = data as Record<string, unknown>;
+  const numeroFinito = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+  if (!numeroFinito(d.resultado_operacional)) return false;
+  if (!numeroFinito(d.margem_operacional_percentual)) return false;
+  if (d.unclassified_categories !== undefined && !Array.isArray(d.unclassified_categories)) return false;
+  const chaves = [...STRUCTURE.map((s) => s.key), "sem_classificacao"];
+  for (const k of chaves) {
+    const g = d[k];
+    if (g === undefined) continue;
+    if (!g || typeof g !== "object" || Array.isArray(g)) return false;
+    const { total, qtd } = g as Record<string, unknown>;
+    if (!numeroFinito(total)) return false;
+    if (typeof qtd !== "number" || !Number.isInteger(qtd) || qtd < 0) return false;
+  }
+  return true;
+}
+
 export type OrigemDetalhe = { brutas: number; mostradas: number; count: unknown };
 
 /**
