@@ -21,7 +21,10 @@ import { EntregaOcorrenciasPanel } from "./EntregaOcorrenciasPanel";
 import {
   ACCEPT_ANEXO,
   formatarTamanho,
+  normalizarMimeAnexo,
+  pendenteReusavelPara,
   validarAnexoComprovante,
+  type PathPendente,
 } from "@/lib/entregas/anexoComprovante";
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
