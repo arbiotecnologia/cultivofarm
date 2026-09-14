@@ -135,7 +135,10 @@ describe("DRE Gerencial — estados", () => {
     expect(await screen.findByText(/Cliente A/)).toBeInTheDocument();
     expect(botao).toHaveAttribute("aria-expanded", "true");
 
-    fireEvent.click(screen.getByRole("tab", { name: "Competência" }));
+    const aba = screen.getByRole("tab", { name: "Competência" });
+    fireEvent.mouseDown(aba);
+    fireEvent.focus(aba);
+    fireEvent.click(aba);
     expect(await screen.findByText(/Regime de Competência/)).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText(/Cliente A/)).toBeNull());
     expect(screen.getByRole("button", { name: /Receita Bruta/i })).toHaveAttribute("aria-expanded", "false");
