@@ -111,11 +111,15 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   // Token monotônico de operação: invalidado na troca de entrega e no unmount.
   const opSeqRef = useRef(0);
   const opAtivaRef = useRef(0);
+  // Sequência PRÓPRIA da cópia de link: nunca invalida o token de uma gravação.
+  const copiaSeqRef = useRef(0);
+  const copiaAtivaRef = useRef(0);
 
   // Reset seguro ao trocar de entrega: nenhum arquivo anterior pode ser associado.
   useEffect(() => {
     entregaAtivaRef.current = entrega?.id;
     opAtivaRef.current = ++opSeqRef.current;
+    copiaAtivaRef.current = ++copiaSeqRef.current;
     enviandoAnexoRef.current = false;
     acaoRef.current = false;
     setAcaoEmAndamento(false);
@@ -142,6 +146,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   useEffect(() => {
     return () => {
       opAtivaRef.current = ++opSeqRef.current;
+      copiaAtivaRef.current = ++copiaSeqRef.current;
       entregaAtivaRef.current = undefined;
     };
   }, []);
@@ -571,10 +576,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const copyLink = async () => {
     if (!validationToken) return;
     const url = buildValidationUrl(validationToken);
-    const entregaIdEnvio = entrega?.id;
-    const token = ++opSeqRef.current;
-    opAtivaRef.current = token;
-    const atual = () => opAtivaRef.current === token && entregaAtivaRef.current === entregaIdEnvio;
+    const entregaIdCopia = entrega?.id;
+    const tokenCopia = ++copiaSeqRef.current;
+    copiaAtivaRef.current = tokenCopia;
+    const atual = () => copiaAtivaRef.current === tokenCopia && entregaAtivaRef.current === entregaIdCopia;
     const ok = await copiarTexto(url);
     // Troca de entrega ou desmontagem durante a cópia: nada é escrito na tela atual.
     if (!atual()) return;
