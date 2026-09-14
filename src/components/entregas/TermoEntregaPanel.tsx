@@ -346,7 +346,9 @@ export function TermoEntregaPanel({ entregaId }: Props) {
         </div>
 
         {itens.length === 0 ? (
-          <p className="text-muted-foreground">Nenhuma etiqueta vinculada a esta entrega.</p>
+          <p className="text-muted-foreground" data-testid="termo-vazio">
+            Nenhuma etiqueta vinculada a esta entrega.
+          </p>
         ) : (
           <ul className="space-y-3">
             {itens.map((i) => {
