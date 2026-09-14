@@ -94,8 +94,12 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   // Estruturado e associado à entrega + arquivo: só é reaproveitado se ambos coincidirem.
   const [pathPendente, setPathPendente] = useState<PathPendente | null>(null);
   // PNG de assinatura já armazenado cuja RPC falhou: reaproveitado na nova
-  // tentativa da MESMA entrega e MESMA assinatura (mesmo hash), sem reenvio.
+  // tentativa da MESMA entrega, MESMO traço e MESMO recebedor, sem reenvio,
+  // mantendo o hash e o payload originais associados àquele PNG.
   const [assinaturaPendente, setAssinaturaPendente] = useState<AssinaturaPendente | null>(null);
+  const [gerando, setGerando] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const [dispensando, setDispensando] = useState(false);
   const enviandoAnexoRef = useRef(false);
   // Trava síncrona COMPARTILHADA: assinatura, anexo, confirmação e dispensa
   // nunca correm em paralelo sobre a mesma comprovação.
