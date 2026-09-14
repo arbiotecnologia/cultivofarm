@@ -111,7 +111,8 @@ describe("copiar link de validação — isolado das gravações", () => {
     await waitFor(() => expect(uploadMock).toHaveBeenCalledTimes(1));
 
     // Cópia do link no meio da gravação.
-    fireEvent.click(screen.getByRole("button", { name: /copiar link de validação/i }));
+    // O botão fica atrás do diálogo modal (hidden para a árvore acessível).
+    fireEvent.click(screen.getByRole("button", { name: /copiar link de validação/i, hidden: true }));
     await waitFor(() => expect(copiarTextoMock).toHaveBeenCalledTimes(1));
 
     // A gravação conclui normalmente: a RPC é chamada e a trava é liberada.
