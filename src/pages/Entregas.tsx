@@ -985,7 +985,8 @@ export default function Entregas() {
                   <TableHead>Lote</TableHead>
                   <TableHead>Qtd</TableHead>
                   <TableHead>Volume (L)</TableHead>
-                  <TableHead>Motorista</TableHead>
+                  <TableHead>Modalidade</TableHead>
+                  <TableHead>Motorista / Retirado por</TableHead>
                   <TableHead>Saída</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
