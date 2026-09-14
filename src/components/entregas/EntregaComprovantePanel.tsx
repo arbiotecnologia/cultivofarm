@@ -177,6 +177,17 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     qc.invalidateQueries({ queryKey: ["entrega-comprovante-status", entregaId] });
   };
 
+  /** Trava síncrona compartilhada entre assinatura, anexo e demais ações. */
+  const iniciarAcao = () => {
+    if (acaoRef.current) return false;
+    acaoRef.current = true;
+    setAcaoEmAndamento(true);
+    return true;
+  };
+  const liberarAcao = () => {
+    acaoRef.current = false;
+    setAcaoEmAndamento(false);
+  };
 
   const gerar = useMutation({
     mutationFn: async () => {
@@ -191,6 +202,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       invalidate();
     },
     onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
+    onSettled: liberarAcao,
   });
 
   const confirmar = useMutation({
@@ -208,6 +220,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       invalidate();
     },
     onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
+    onSettled: liberarAcao,
   });
 
   const dispensar = useMutation({
@@ -225,44 +238,103 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       invalidate();
     },
     onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
+    onSettled: liberarAcao,
   });
 
-  const onConfirmSignature = async (data: {
-    pngBlob: Blob;
-    svgPath: string;
-    hash: string;
-  }) => {
+  /**
+   * Coleta da assinatura digital do comprovante.
+   * Aguardada pelo canvas; captura entrega, recebedor e hash de forma imutável;
+   * guarda monotônica após cada await (inclusive A→B→A).
+   */
+  const onConfirmSignature = async (data: { pngBlob: Blob; svgPath: string; hash: string }) => {
     if (!recebedor.nome.trim()) {
       toast({ title: "Informe o recebedor", variant: "destructive" });
-      return;
+      throw new Error("recebedor-obrigatorio");
     }
+    if (!iniciarAcao()) {
+      throw new Error("acao-em-andamento");
+    }
+
+    // Snapshot imutável no início.
+    const entregaIdEnvio: string = entrega.id;
+    const recebedorEnvio = { ...recebedor };
+    const hash = data.hash;
+    const svgPath = data.svgPath;
+    const token = ++opSeqRef.current;
+    opAtivaRef.current = token;
+    const atual = () => opAtivaRef.current === token && entregaAtivaRef.current === entregaIdEnvio;
+
+    // Reaproveita o PNG já armazenado quando só a vinculação falhou antes.
+    const reaproveitado =
+      assinaturaPendente &&
+      assinaturaPendente.entregaId === entregaIdEnvio &&
+      assinaturaPendente.hash === hash
+        ? assinaturaPendente.path
+        : null;
+
+    let path = reaproveitado;
     try {
-      const path = `entregas/${entrega.id}/assinaturas/${Date.now()}-assinatura.png`;
-      const { error: upErr } = await supabase.storage
-        .from("entrega-documentos")
-        .upload(path, data.pngBlob, { contentType: "image/png", upsert: false });
-      if (upErr) throw upErr;
+      if (!path) {
+        const novoPath = `entregas/${entregaIdEnvio}/assinaturas/${crypto.randomUUID()}.png`;
+        const { error: upErr } = await supabase.storage
+          .from("entrega-documentos")
+          .upload(novoPath, data.pngBlob, { contentType: "image/png", upsert: false });
+        if (upErr) {
+          if (!atual()) return;
+          toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_ENVIO, variant: "destructive" });
+          return;
+        }
+        path = novoPath;
+      }
+
+      // Operação obsoleta após o upload: não inicia a RPC e não apaga o objeto.
+      if (!atual()) return;
+
       const { error } = await supabase.rpc("rpc_coletar_assinatura_digital_entrega" as any, {
-        p_entrega_id: entrega.id,
+        p_entrega_id: entregaIdEnvio,
         p_payload: {
           assinatura_digital_png_path: path,
-          assinatura_digital_svg: data.svgPath.length < 8000 ? data.svgPath : null,
-          assinatura_hash: data.hash,
+          assinatura_digital_svg: svgPath.length < 8000 ? svgPath : null,
+          assinatura_hash: hash,
           assinatura_user_agent: navigator.userAgent,
-          recebedor_nome: recebedor.nome,
-          recebedor_documento: recebedor.documento || null,
-          recebedor_cargo: recebedor.cargo || null,
-          recebedor_telefone: recebedor.telefone || null,
+          recebedor_nome: recebedorEnvio.nome,
+          recebedor_documento: recebedorEnvio.documento || null,
+          recebedor_cargo: recebedorEnvio.cargo || null,
+          recebedor_telefone: recebedorEnvio.telefone || null,
         },
       });
-      if (error) throw error;
+
+      if (error) {
+        if (!atual()) return;
+        // PNG já armazenado: a nova tentativa apenas vincula, sem reenviar
+        // e sem apagar o objeto (resultado incerto).
+        setAssinaturaPendente({ entregaId: entregaIdEnvio, hash, path });
+        toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
+        return;
+      }
+
+      if (!atual()) {
+        invalidate(entregaIdEnvio);
+        return;
+      }
       toast({ title: "Assinatura digital coletada" });
+      setAssinaturaPendente(null);
       setOpenSign(false);
-      invalidate();
+      invalidate(entregaIdEnvio);
     } catch {
-      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
+      if (!atual()) return;
+      if (path) {
+        setAssinaturaPendente({ entregaId: entregaIdEnvio, hash, path });
+        toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
+      } else {
+        toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_ENVIO, variant: "destructive" });
+      }
+    } finally {
+      // Nunca destrava uma ação que já pertence a outra entrega/operação.
+      if (atual()) liberarAcao();
     }
   };
+
 
   /** Seleção do arquivo: valida, mas NUNCA envia automaticamente. */
   const onSelecionarArquivo = (file: File | null) => {
