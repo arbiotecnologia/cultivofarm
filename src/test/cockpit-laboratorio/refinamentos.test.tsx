@@ -5,9 +5,11 @@ import { FinalizarOSButton } from "@/components/cockpit/FinalizarOSButton";
 import { EsteiraStepper } from "@/components/cockpit/EsteiraStepper";
 import cockpitSource from "@/pages/CockpitLaboratorio.tsx?raw";
 
-const finalizarOS = vi.fn();
-const toastError = vi.fn();
-const toastInfo = vi.fn();
+const { finalizarOS, toastError, toastInfo } = vi.hoisted(() => ({
+  finalizarOS: vi.fn(),
+  toastError: vi.fn(),
+  toastInfo: vi.fn(),
+}));
 
 vi.mock("@/hooks/useEsteiraLaboratorio", () => ({
   useEsteiraLaboratorio: () => ({ finalizarOS }),
