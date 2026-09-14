@@ -38,7 +38,9 @@ const ESPERA_MAXIMA_SEGUNDOS = 300;
 /** Rótulo seguro para valores desconhecidos vindos do servidor. */
 function rotuloSeguro(mapa: Record<string, string>, valor: unknown): string | null {
   if (typeof valor !== "string" || !valor.trim()) return null;
-  return mapa[valor] ?? valor.replace(/_/g, " ");
+  // Consulta própria do objeto: chaves de protótipo ("toString", "constructor") nunca viram rótulo.
+  if (Object.prototype.hasOwnProperty.call(mapa, valor)) return mapa[valor];
+  return valor.replace(/_/g, " ");
 }
 
 /** Só renderiza datas realmente válidas. */

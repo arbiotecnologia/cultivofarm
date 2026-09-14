@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
@@ -35,7 +36,7 @@ function abrir(token?: string) {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   rpcMock.mockResolvedValue({ data: { valido: true, status: "gerado" }, error: null });
 });
 
@@ -150,5 +151,106 @@ describe("ValidarEntrega — falhas e limites", () => {
     await Promise.resolve();
     expect(screen.queryByText("antigo")).toBeNull();
     expect(screen.getByText(/recebimento confirmado/i)).toBeInTheDocument();
+  });
+});
+
+describe("ValidarEntrega — navegação na mesma instância", () => {
+  function Navegador({ alvo }: { alvo: string }) {
+    const navigate = useNavigate();
+    useEffect(() => {
+      navigate(`/validar/${alvo}`);
+    }, [alvo, navigate]);
+    return null;
+  }
+
+  function App({ alvo }: { alvo: string }) {
+    return (
+      <MemoryRouter initialEntries={[`/validar/${alvo}`]}>
+        <Navegador alvo={alvo} />
+        <Routes>
+          <Route path="/validar/:token" element={<ValidarEntrega />} />
+        </Routes>
+      </MemoryRouter>
+    );
+  }
+
+  it("A→B→A na mesma instância descarta a resposta antiga de A", async () => {
+    const dA1 = deferred<any>();
+    rpcMock.mockReturnValueOnce(dA1.promise);
+    const { rerender } = render(<App alvo={TOKEN_A} />);
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+
+    rpcMock.mockResolvedValueOnce({ data: { valido: true, status: "confirmado" }, error: null });
+    rerender(<App alvo={TOKEN_B} />);
+    await screen.findByText(/recebimento confirmado/i);
+
+    const dA2 = deferred<any>();
+    rpcMock.mockReturnValueOnce(dA2.promise);
+    rerender(<App alvo={TOKEN_A} />);
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(3));
+
+    dA1.resolve({ data: { valido: false, mensagem: "resposta antiga de A" }, error: null });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(screen.queryByText("resposta antiga de A")).toBeNull();
+
+    dA2.resolve({ data: { valido: true, status: "gerado" }, error: null });
+    expect(await screen.findByText(/documento registrado/i)).toBeInTheDocument();
+  });
+
+  it("cooldown de rate limit reabilita o botão sem consultar sozinho", async () => {
+    vi.useFakeTimers();
+    try {
+      rpcMock.mockResolvedValueOnce({ data: { retry_after_seconds: 3 }, error: null });
+      abrir(TOKEN_A);
+      await vi.advanceTimersByTimeAsync(10);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(screen.getByRole("button", { name: /tentar novamente em 3s/i })).toBeDisabled();
+
+      await vi.advanceTimersByTimeAsync(3000);
+      const botao = screen.getByRole("button", { name: /^tentar novamente$/i });
+      expect(botao).not.toBeDisabled();
+      expect(rpcMock).toHaveBeenCalledTimes(1);
+
+      rpcMock.mockResolvedValueOnce({ data: { valido: true, status: "gerado" }, error: null });
+      fireEvent.click(botao);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(rpcMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("ValidarEntrega — rótulos de protótipo", () => {
+  it("status com nome de propriedade herdada não vira rótulo interno", async () => {
+    rpcMock.mockResolvedValue({ data: { valido: true, status: "constructor" }, error: null });
+    abrir(TOKEN_A);
+    expect(await screen.findByText("constructor")).toBeInTheDocument();
+  });
+});
+
+describe("copiarTexto — degradação segura", () => {
+  it("retorna false quando a área de transferência rejeita e não lança", async () => {
+    const { copiarTexto } = await import("@/lib/entregas/copiarLink");
+    const original = navigator.clipboard;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new Error("bloqueado")) },
+    });
+    (document as any).execCommand = vi.fn().mockReturnValue(false);
+    await expect(copiarTexto("https://x/y")).resolves.toBe(false);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: original });
+  });
+
+  it("retorna true quando a cópia é aceita", async () => {
+    const { copiarTexto } = await import("@/lib/entregas/copiarLink");
+    const original = navigator.clipboard;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+    await expect(copiarTexto("https://x/y")).resolves.toBe(true);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: original });
   });
 });

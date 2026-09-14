@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AssinaturaDigitalCanvas } from "./AssinaturaDigitalCanvas";
 import { QRCodeComprovante, buildValidationUrl } from "./QRCodeComprovante";
+import { copiarTexto, MSG_COPIA_INDISPONIVEL } from "@/lib/entregas/copiarLink";
 import { EntregaChecklistPanel } from "./EntregaChecklistPanel";
 import { EntregaOcorrenciasPanel } from "./EntregaOcorrenciasPanel";
 import {
@@ -81,6 +82,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const [openSign, setOpenSign] = useState(false);
   const [openUpload, setOpenUpload] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
+  const [linkManual, setLinkManual] = useState<string | null>(null);
   const [openDispensa, setOpenDispensa] = useState(false);
   const [recebedor, setRecebedor] = useState({ nome: "", documento: "", cargo: "", telefone: "" });
   const [ressalvas, setRessalvas] = useState("");
@@ -126,6 +128,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setDispensando(false);
     setPathPendente(null);
     setAssinaturaPendente(null);
+    setLinkManual(null);
     setOpenUpload(false);
     setOpenSign(false);
     setOpenConfirm(false);
@@ -567,8 +570,19 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
   const copyLink = async () => {
     if (!validationToken) return;
-    await navigator.clipboard.writeText(buildValidationUrl(validationToken));
-    toast({ title: "Link de validação copiado" });
+    const url = buildValidationUrl(validationToken);
+    const ok = await copiarTexto(url);
+    if (ok) {
+      setLinkManual(null);
+      toast({ title: "Link de validação copiado" });
+      return;
+    }
+    setLinkManual(url);
+    toast({
+      title: "Não foi possível copiar",
+      description: MSG_COPIA_INDISPONIVEL,
+      variant: "destructive",
+    });
   };
 
   const abrirComprovanteArquivo = async () => {
@@ -698,9 +712,18 @@ export function EntregaComprovantePanel({ entrega }: Props) {
               </Button>
             )}
             {validationToken && (
-              <Button size="sm" variant="ghost" onClick={copyLink}>
+              <Button size="sm" variant="ghost" onClick={() => void copyLink()}>
                 <Copy className="h-4 w-4 mr-1" /> Copiar link de validação
               </Button>
+            )}
+            {linkManual && (
+              <input
+                readOnly
+                aria-label="Link de validação para cópia manual"
+                value={linkManual}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full text-xs font-mono border rounded px-2 py-1"
+              />
             )}
             {comprovante?.arquivo_path && (
               <Button size="sm" variant="ghost" onClick={abrirComprovanteArquivo}>
