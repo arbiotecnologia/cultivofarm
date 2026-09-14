@@ -37,7 +37,11 @@ const ERRO_LABEL: Record<string, string> = {
   termo_substituido: "Termo substituído por uma versão mais recente.",
   pdf_nao_gerado: "PDF ainda não foi gerado para este termo.",
   termo_nao_assinado: "O termo precisa estar assinado.",
+  termo_desatualizado: "Os dados mudaram. Gere novamente o rascunho e confira antes de assinar.",
+  termo_integridade_invalida:
+    "A integridade do termo não pôde ser confirmada. Gere novamente o rascunho antes de assinar.",
 };
+
 
 const MSG_ERRO_GENERICA = "Não foi possível concluir a operação. Tente novamente.";
 const MSG_ERRO_CARREGAR = "Não foi possível carregar a conferência e o termo desta entrega.";
