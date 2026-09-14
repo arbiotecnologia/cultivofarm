@@ -152,3 +152,80 @@ describe("ValidarEntrega — falhas e limites", () => {
     expect(screen.getByText(/recebimento confirmado/i)).toBeInTheDocument();
   });
 });
+
+describe("ValidarEntrega — navegação na mesma instância", () => {
+  it("A→B→A na mesma instância descarta a resposta antiga de A", async () => {
+    const dA1 = deferred<any>();
+    rpcMock.mockReturnValueOnce(dA1.promise);
+    const router = (
+      <MemoryRouter initialEntries={[`/validar/${TOKEN_A}`]}>
+        <Routes>
+          <Route path="/validar/:token" element={<ValidarEntrega />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const { rerender } = render(router);
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+
+    // Navega para B, sem desmontar a instância (mesma árvore, outra rota).
+    rpcMock.mockResolvedValueOnce({ data: { valido: true, status: "confirmado" }, error: null });
+    rerender(
+      <MemoryRouter initialEntries={[`/validar/${TOKEN_B}`]}>
+        <Routes>
+          <Route path="/validar/:token" element={<ValidarEntrega />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByText(/recebimento confirmado/i);
+
+    // Volta para A: nova consulta, e a primeira resposta de A não pode aparecer.
+    const dA2 = deferred<any>();
+    rpcMock.mockReturnValueOnce(dA2.promise);
+    rerender(
+      <MemoryRouter initialEntries={[`/validar/${TOKEN_A}`]}>
+        <Routes>
+          <Route path="/validar/:token" element={<ValidarEntrega />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(3));
+
+    dA1.resolve({ data: { valido: false, mensagem: "resposta antiga de A" }, error: null });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(screen.queryByText("resposta antiga de A")).toBeNull();
+
+    dA2.resolve({ data: { valido: true, status: "gerado" }, error: null });
+    expect(await screen.findByText(/documento registrado/i)).toBeInTheDocument();
+  });
+
+  it("cooldown de rate limit reabilita o botão sem consultar sozinho", async () => {
+    vi.useFakeTimers();
+    try {
+      rpcMock.mockResolvedValueOnce({ data: { retry_after_seconds: 3 }, error: null });
+      abrir(TOKEN_A);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(screen.getByRole("button", { name: /tentar novamente em 3s/i })).toBeDisabled();
+
+      await vi.advanceTimersByTimeAsync(3000);
+      const botao = screen.getByRole("button", { name: /^tentar novamente$/i });
+      expect(botao).not.toBeDisabled();
+      expect(rpcMock).toHaveBeenCalledTimes(1);
+
+      rpcMock.mockResolvedValueOnce({ data: { valido: true, status: "gerado" }, error: null });
+      fireEvent.click(botao);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(rpcMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("ValidarEntrega — rótulos de protótipo", () => {
+  it("status com nome de propriedade herdada não vira rótulo interno", async () => {
+    rpcMock.mockResolvedValue({ data: { valido: true, status: "constructor" }, error: null });
+    abrir(TOKEN_A);
+    expect(await screen.findByText("constructor")).toBeInTheDocument();
+  });
+});
