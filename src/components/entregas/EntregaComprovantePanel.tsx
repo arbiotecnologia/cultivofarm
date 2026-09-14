@@ -51,8 +51,8 @@ const MSG_FALHA_ASSINATURA_ENVIO =
 const MSG_FALHA_ASSINATURA_VINCULO =
   "A assinatura foi enviada, mas não foi possível registrá-la. Tente novamente — a imagem não será enviada de novo.";
 
-/** Assinatura já armazenada cuja vinculação falhou (mesma entrega + mesmo hash). */
-type AssinaturaPendente = { entregaId: string; hash: string; path: string };
+/** Assinatura já armazenada cuja vinculação falhou. Identidade = entrega + traço exato. */
+type AssinaturaPendente = { entregaId: string; traco: string; path: string };
 
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
@@ -274,7 +274,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     const reaproveitado =
       assinaturaPendente &&
       assinaturaPendente.entregaId === entregaIdEnvio &&
-      assinaturaPendente.hash === hash
+      assinaturaPendente.traco === svgPath
         ? assinaturaPendente.path
         : null;
 
@@ -314,7 +314,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         if (!atual()) return;
         // PNG já armazenado: a nova tentativa apenas vincula, sem reenviar
         // e sem apagar o objeto (resultado incerto).
-        setAssinaturaPendente({ entregaId: entregaIdEnvio, hash, path });
+        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path });
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
         return;
       }
@@ -330,7 +330,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     } catch {
       if (!atual()) return;
       if (path) {
-        setAssinaturaPendente({ entregaId: entregaIdEnvio, hash, path });
+        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path });
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
       } else {
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_ENVIO, variant: "destructive" });
