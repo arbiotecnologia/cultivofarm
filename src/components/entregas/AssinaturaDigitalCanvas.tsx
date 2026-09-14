@@ -1,9 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Eraser, Check, X } from "lucide-react";
+import { Eraser, Check, X, Loader2 } from "lucide-react";
+
+export const MIN_PONTOS_ASSINATURA = 8;
+export const MSG_ASSINATURA_CURTA =
+  "Traço muito curto. Assine novamente ocupando mais espaço da área de desenho.";
+export const MSG_ASSINATURA_IMAGEM =
+  "Não foi possível gerar a imagem da assinatura. Limpe e assine novamente.";
+export const MSG_ASSINATURA_FALHA =
+  "Não foi possível registrar a assinatura. Tente novamente.";
 
 interface Props {
-  onConfirm: (data: { pngBlob: Blob; pngDataUrl: string; svgPath: string; hash: string; pontos: number }) => void;
+  onConfirm: (data: {
+    pngBlob: Blob;
+    pngDataUrl: string;
+    svgPath: string;
+    hash: string;
+    pontos: number;
+  }) => Promise<void> | void;
   onCancel?: () => void;
   height?: number;
 }
@@ -20,6 +34,19 @@ export function AssinaturaDigitalCanvas({ onConfirm, onCancel, height = 220 }: P
   const pathRef = useRef<string[]>([]);
   const pontosRef = useRef(0);
   const [hasInk, setHasInk] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [processando, setProcessando] = useState(false);
+  // Trava síncrona: impede duplo envio antes de qualquer re-render.
+  const processandoRef = useRef(false);
+  // Token de montagem: nada é aplicado após o unmount.
+  const vivoRef = useRef(true);
+
+  useEffect(() => {
+    vivoRef.current = true;
+    return () => {
+      vivoRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -33,6 +60,7 @@ export function AssinaturaDigitalCanvas({ onConfirm, onCancel, height = 220 }: P
     ctx.lineCap = "round";
     ctx.strokeStyle = "#0f172a";
   }, []);
+
 
   const getPos = (e: React.PointerEvent) => {
     const rect = canvasRef.current!.getBoundingClientRect();
