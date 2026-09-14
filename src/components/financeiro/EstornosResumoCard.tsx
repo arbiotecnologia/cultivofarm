@@ -38,12 +38,9 @@ async function somarEstornos(
       .gte("payment_date", from)
       .lte("payment_date", to);
 
-  const { count, error: erroCount } = await base().limit(1).abortSignal?.(undefined as any) ?? {};
-  void erroCount;
-
   let soma = 0;
   let itens = 0;
-  let total = Number(count ?? NaN);
+  let total = NaN;
 
   for (let pagina = 0; pagina < MAX_PAGINAS_ESTORNOS; pagina++) {
     const { data, error, count: countPagina } = await base()
