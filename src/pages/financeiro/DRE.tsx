@@ -135,7 +135,7 @@ export default function DRE() {
         p_start_date: periodo.from, p_end_date: periodo.to, p_regime: regime,
       });
       if (error) throw error;
-      if (!data || typeof data !== "object" || Array.isArray(data)) {
+      if (!contratoDreValido(data)) {
         throw new Error("Resposta do DRE ausente ou inválida.");
       }
       return data as DreData;
