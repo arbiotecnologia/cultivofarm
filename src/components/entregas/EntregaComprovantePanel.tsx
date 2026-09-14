@@ -591,25 +591,59 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   );
 }
 
-function RecebedorFields({ recebedor, setRecebedor }: { recebedor: any; setRecebedor: (v: any) => void }) {
+function RecebedorFields({
+  recebedor,
+  setRecebedor,
+  disabled = false,
+}: {
+  recebedor: any;
+  setRecebedor: (v: any) => void;
+  disabled?: boolean;
+}) {
   return (
     <div className="grid grid-cols-2 gap-2">
       <div className="col-span-2">
-        <Label>Nome do recebedor *</Label>
-        <Input value={recebedor.nome} maxLength={150} onChange={(e) => setRecebedor({ ...recebedor, nome: e.target.value })} />
+        <Label htmlFor="recebedor-nome">Nome do recebedor *</Label>
+        <Input
+          id="recebedor-nome"
+          value={recebedor.nome}
+          maxLength={150}
+          disabled={disabled}
+          onChange={(e) => setRecebedor({ ...recebedor, nome: e.target.value })}
+        />
       </div>
       <div>
-        <Label>Documento</Label>
-        <Input value={recebedor.documento} maxLength={50} onChange={(e) => setRecebedor({ ...recebedor, documento: e.target.value })} />
+        <Label htmlFor="recebedor-documento">Documento</Label>
+        <Input
+          id="recebedor-documento"
+          value={recebedor.documento}
+          maxLength={50}
+          disabled={disabled}
+          onChange={(e) => setRecebedor({ ...recebedor, documento: e.target.value })}
+        />
       </div>
       <div>
-        <Label>Cargo</Label>
-        <Input value={recebedor.cargo} maxLength={100} onChange={(e) => setRecebedor({ ...recebedor, cargo: e.target.value })} />
+        <Label htmlFor="recebedor-cargo">Cargo</Label>
+        <Input
+          id="recebedor-cargo"
+          value={recebedor.cargo}
+          maxLength={100}
+          disabled={disabled}
+          onChange={(e) => setRecebedor({ ...recebedor, cargo: e.target.value })}
+        />
       </div>
       <div className="col-span-2">
-        <Label>Telefone</Label>
-        <MaskedInput mask="telefone" placeholder="(00) 00000-0000" value={recebedor.telefone} onChange={(e) => setRecebedor({ ...recebedor, telefone: e.target.value })} />
+        <Label htmlFor="recebedor-telefone">Telefone</Label>
+        <MaskedInput
+          id="recebedor-telefone"
+          mask="telefone"
+          placeholder="(00) 00000-0000"
+          value={recebedor.telefone}
+          disabled={disabled}
+          onChange={(e) => setRecebedor({ ...recebedor, telefone: e.target.value })}
+        />
       </div>
     </div>
   );
 }
+
