@@ -278,3 +278,122 @@ describe("TermoEntregaPanel", () => {
     await waitFor(() => expect(toastMock).toHaveBeenCalledWith({ title: "Conferência registrada" }));
   });
 });
+
+describe("lacunas da revisão independente", () => {
+  it("QR: editar o código limpa o resultado anterior", async () => {
+    rpcMock.mockResolvedValue({
+      data: { found: true, codigo_embalagem: "EMB-1", status: "disponivel", volume: 1, unidade: "L", entrega_id: "A" },
+      error: null,
+    });
+    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+    const input = screen.getByLabelText(/Código da embalagem/i);
+    fireEvent.change(input, { target: { value: "EMB-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+    expect(await screen.findByTestId("qr-pertence")).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "EMB-2" } });
+    expect(screen.queryByTestId("qr-pertence")).not.toBeInTheDocument();
+    expect(screen.queryByText("EMB-1")).not.toBeInTheDocument();
+  });
+
+  it("QR: campo fica travado enquanto a leitura está pendente", async () => {
+    const d = deferred<any>();
+    rpcMock.mockReturnValue(d.promise);
+    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+    const input = screen.getByLabelText(/Código da embalagem/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "EMB-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+
+    fireEvent.change(input, { target: { value: "EMB-9" } });
+    expect(input.value).toBe("EMB-1");
+
+    await act(async () => {
+      d.resolve({ data: { found: false }, error: null });
+    });
+    fireEvent.change(input, { target: { value: "EMB-9" } });
+    expect((screen.getByLabelText(/Código da embalagem/i) as HTMLInputElement).value).toBe("EMB-9");
+  });
+
+  it("Termo: trocar de entrega durante o cálculo do hash não envia a assinatura", async () => {
+    fromMock.mockImplementation((tabela: string) => {
+      if (tabela === "entrega_termos")
+        return chain({
+          data: { id: "t1", versao: 1, status: "rascunho", snapshot_hash: "h", numero_termo: "T-1" },
+          error: null,
+        });
+      if (tabela === "entrega_etiquetas") return chain({ data: [], error: null });
+      return chain({ data: [], error: null });
+    });
+
+    const digests: Array<{ resolve: (v: any) => void }> = [];
+    const original = globalThis.crypto.subtle.digest;
+    const espiao = vi.fn(() => {
+      const d = deferred<ArrayBuffer>();
+      digests.push(d as any);
+      return d.promise;
+    });
+    // @ts-expect-error substituição controlada no teste
+    globalThis.crypto.subtle.digest = espiao;
+
+    try {
+      const { rerender } = render(<TermoEntregaPanel entregaId="A" />, { wrapper });
+      const botao = await screen.findByRole("button", { name: /Assinar/i });
+      fireEvent.change(screen.getByLabelText(/Nome do recebedor/i), { target: { value: "Maria" } });
+      fireEvent.click(botao);
+      await waitFor(() => expect(digests.length).toBe(1));
+
+      rerender(<TermoEntregaPanel entregaId="B" />);
+      await act(async () => {
+        digests[0].resolve(new ArrayBuffer(32));
+      });
+
+      expect(digests.length).toBe(1); // segundo hash nem é iniciado
+      expect(rpcMock).not.toHaveBeenCalled();
+    } finally {
+      // @ts-expect-error restauração
+      globalThis.crypto.subtle.digest = original;
+    }
+  });
+
+  it("Termo: troca durante o segundo hash também impede a chamada com efeito", async () => {
+    fromMock.mockImplementation((tabela: string) => {
+      if (tabela === "entrega_termos")
+        return chain({
+          data: { id: "t1", versao: 1, status: "rascunho", snapshot_hash: "h", numero_termo: "T-1" },
+          error: null,
+        });
+      return chain({ data: [], error: null });
+    });
+
+    const digests: Array<{ resolve: (v: any) => void }> = [];
+    const original = globalThis.crypto.subtle.digest;
+    // @ts-expect-error substituição controlada no teste
+    globalThis.crypto.subtle.digest = vi.fn(() => {
+      const d = deferred<ArrayBuffer>();
+      digests.push(d as any);
+      return d.promise;
+    });
+
+    try {
+      const { rerender } = render(<TermoEntregaPanel entregaId="A" />, { wrapper });
+      fireEvent.change(await screen.findByLabelText(/Nome do recebedor/i), { target: { value: "Maria" } });
+      fireEvent.click(screen.getByRole("button", { name: /Assinar/i }));
+      await waitFor(() => expect(digests.length).toBe(1));
+
+      await act(async () => {
+        digests[0].resolve(new ArrayBuffer(32));
+      });
+      await waitFor(() => expect(digests.length).toBe(2));
+
+      rerender(<TermoEntregaPanel entregaId="B" />);
+      await act(async () => {
+        digests[1].resolve(new ArrayBuffer(32));
+      });
+
+      expect(rpcMock).not.toHaveBeenCalled();
+    } finally {
+      // @ts-expect-error restauração
+      globalThis.crypto.subtle.digest = original;
+    }
+  });
+});
