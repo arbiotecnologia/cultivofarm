@@ -6,7 +6,7 @@ const { rpcMock, fromMock } = vi.hoisted(() => ({ rpcMock: vi.fn(), fromMock: vi
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
 
-import FluxoCaixa from "@/pages/financeiro/FluxoCaixa";
+import FluxoCaixa, { saldoRestante } from "@/pages/financeiro/FluxoCaixa";
 import { EstornosResumoCard } from "@/components/financeiro/EstornosResumoCard";
 
 type Resultado = { data?: any; error?: any };
