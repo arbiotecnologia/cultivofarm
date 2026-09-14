@@ -298,8 +298,35 @@ export function TermoEntregaPanel({ entregaId }: Props) {
     });
 
   if (itensQuery.isLoading || termoQuery.isLoading) {
-    return <Skeleton className="h-48 w-full" />;
+    return <Skeleton className="h-48 w-full" data-testid="termo-carregando" />;
   }
+
+  // Falha de leitura nunca vira "vazio": erro explícito e ações bloqueadas.
+  if (itensQuery.isError || termoQuery.isError) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+            Conferência e termo de entrega
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm" data-testid="termo-erro">
+          <p className="text-destructive">{MSG_ERRO_CARREGAR}</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void itensQuery.refetch();
+              void termoQuery.refetch();
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   return (
     <Card>
