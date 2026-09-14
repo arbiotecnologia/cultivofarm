@@ -799,14 +799,14 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           <DialogHeader><DialogTitle>Confirmar recebimento</DialogTitle><DialogDescription>Registre a confirmação do recebimento desta entrega, com ressalvas se necessário.</DialogDescription></DialogHeader>
           <div className="space-y-2">
             <Label>Ressalvas (opcional)</Label>
-            <Textarea rows={3} value={ressalvas} onChange={(e) => setRessalvas(e.target.value)} placeholder="Descreva ressalvas se houver" />
+            <Textarea rows={3} value={ressalvas} onChange={(e) => setRessalvas(e.target.value)} placeholder="Descreva ressalvas se houver" disabled={acaoEmAndamento} />
             <p className="text-xs text-muted-foreground flex items-start gap-1">
               <AlertTriangle className="h-3 w-3 mt-0.5" />
               Confirmar com ressalvas mantém rastreabilidade. Esta ação é auditada.
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenConfirm(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpenConfirm(false)} disabled={acaoEmAndamento}>Cancelar</Button>
             <Button onClick={() => { void confirmarRecebimento(); }} disabled={confirmando || acaoEmAndamento}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
@@ -818,10 +818,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           <DialogHeader><DialogTitle>Dispensar assinatura</DialogTitle><DialogDescription>Informe o motivo da dispensa. A ação é registrada para auditoria.</DialogDescription></DialogHeader>
           <div className="space-y-2">
             <Label>Motivo *</Label>
-            <Textarea rows={3} value={motivoDispensa} onChange={(e) => setMotivoDispensa(e.target.value)} placeholder="Mínimo 5 caracteres" />
+            <Textarea rows={3} value={motivoDispensa} onChange={(e) => setMotivoDispensa(e.target.value)} placeholder="Mínimo 5 caracteres" disabled={acaoEmAndamento} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDispensa(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpenDispensa(false)} disabled={acaoEmAndamento}>Cancelar</Button>
             <Button onClick={() => { void dispensarAssinatura(); }} disabled={dispensando || acaoEmAndamento || motivoDispensa.trim().length < 5}>Dispensar</Button>
           </DialogFooter>
         </DialogContent>
