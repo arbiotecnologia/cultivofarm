@@ -269,13 +269,20 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     // Snapshot no início: mudanças posteriores não afetam este envio.
     const entregaIdEnvio: string = entrega.id;
     const recebedorEnvio = { ...recebedor };
-    const pathReaproveitado = pathPendente;
+    // Token monotônico: identifica ESTA operação. Trocar de entrega (mesmo A→B→A)
+    // ou desmontar invalida o token e nenhuma alteração local é aplicada depois.
+    const token = ++opSeqRef.current;
+    opAtivaRef.current = token;
+    const atual = () => opAtivaRef.current === token && entregaAtivaRef.current === entregaIdEnvio;
+    // Só reaproveita o caminho pendente se for da MESMA entrega e do MESMO arquivo.
+    const pathReaproveitado = pendenteReusavelPara(pathPendente, entregaIdEnvio, file, validacao.mime);
 
     enviandoAnexoRef.current = true;
     setEnviandoAnexo(true);
     setErroArquivo(null);
 
     let path = pathReaproveitado;
+    let uploadFeitoAgora = false;
     try {
       if (!path) {
         const novoPath = `entregas/${entregaIdEnvio}/comprovantes/${crypto.randomUUID()}.${validacao.extensao}`;
@@ -283,12 +290,18 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           .from("entrega-documentos")
           .upload(novoPath, file, { contentType: validacao.mime, upsert: false });
         if (upErr) {
+          if (!atual()) return;
           toast({ title: "Erro", description: MSG_FALHA_ENVIO, variant: "destructive" });
           setErroArquivo(MSG_FALHA_ENVIO);
           return;
         }
         path = novoPath;
+        uploadFeitoAgora = true;
       }
+
+      // Operação obsoleta após o upload: não inicia a RPC e não apaga o objeto
+      // (o arquivo pertence à entrega antiga; nunca é atribuído à nova).
+      if (!atual()) return;
 
       const { error } = await supabase.rpc("rpc_anexar_comprovante_entrega" as any, {
         p_entrega_id: entregaIdEnvio,
@@ -306,32 +319,61 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       if (error) {
         // O arquivo já está no armazenamento: não reenviar e não apagar
         // (uma falha de rede pode esconder um sucesso do servidor).
-        setPathPendente(path);
+        if (!atual()) return;
+        setPathPendente({
+          entregaId: entregaIdEnvio,
+          path,
+          nome: file.name,
+          tamanho: file.size,
+          lastModified: file.lastModified,
+          mime: validacao.mime,
+        });
         setErroArquivo(MSG_FALHA_VINCULO);
         toast({ title: "Erro", description: MSG_FALHA_VINCULO, variant: "destructive" });
         return;
       }
 
-      if (entregaAtivaRef.current !== entregaIdEnvio) return;
+      // Sucesso de uma operação obsoleta: atualiza os dados da entrega capturada,
+      // sem mexer no estado nem fechar o modal da entrega atual.
+      if (!atual()) {
+        invalidate(entregaIdEnvio);
+        return;
+      }
       toast({ title: "Comprovante anexado" });
       setPathPendente(null);
       setArquivo(null);
       setOpenUpload(false);
-      invalidate();
+      invalidate(entregaIdEnvio);
     } catch {
+      if (!atual()) return;
       if (path) {
-        setPathPendente(path);
+        setPathPendente({
+          entregaId: entregaIdEnvio,
+          path,
+          nome: file.name,
+          tamanho: file.size,
+          lastModified: file.lastModified,
+          mime: validacao.mime,
+        });
         setErroArquivo(MSG_FALHA_VINCULO);
         toast({ title: "Erro", description: MSG_FALHA_VINCULO, variant: "destructive" });
       } else {
-        setErroArquivo(MSG_FALHA_ENVIO);
-        toast({ title: "Erro", description: MSG_FALHA_ENVIO, variant: "destructive" });
+        setErroArquivo(uploadFeitoAgora ? MSG_FALHA_VINCULO : MSG_FALHA_ENVIO);
+        toast({
+          title: "Erro",
+          description: uploadFeitoAgora ? MSG_FALHA_VINCULO : MSG_FALHA_ENVIO,
+          variant: "destructive",
+        });
       }
     } finally {
-      enviandoAnexoRef.current = false;
-      setEnviandoAnexo(false);
+      // Nunca destrava um envio que já pertence a outra entrega/operação.
+      if (atual()) {
+        enviandoAnexoRef.current = false;
+        setEnviandoAnexo(false);
+      }
     }
   };
+
 
 
   const copyLink = async () => {
