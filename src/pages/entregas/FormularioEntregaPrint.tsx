@@ -180,6 +180,7 @@ export default function FormularioEntregaPrint() {
               });
             }}
             title="Alternar entre 1 e 2 vias (cliente + AR Bio)"
+            data-testid="formulario-vias"
           >
             <Copy className="h-4 w-4 mr-1" /> {vias === 2 ? "2 vias" : "1 via"}
           </Button>
