@@ -918,20 +918,28 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
             <div className="text-3xl font-black text-primary font-mono-data">
               {totalUnidades} <span className="text-base font-normal text-muted-foreground">un</span>
             </div>
-            {volumeTotalMl > 0 && (
+            {previewVolume.volumeMl > 0 && (
               <div className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1.5">
-                <Truck className="h-3 w-3" /> ≈ {(volumeTotalMl / 1000).toFixed(2)} L
+                <Truck className="h-3 w-3" /> ≈ {(previewVolume.volumeMl / 1000).toFixed(2)} L
               </div>
             )}
+            {previewVolume.indeterminado && (
+              <div className="text-xs text-muted-foreground mt-1">
+                O volume total será calculado no registro da entrega.
+              </div>
+            )}
+            <div className="text-[11px] text-muted-foreground mt-1">
+              {tipoEntrega === "retirada" ? "Retirada no local" : "Entrega por motorista"}
+            </div>
           </div>
 
           {(motorista || veiculo || dataSaida || horaSaidaPrevista || dataChegadaPrevista || horaChegadaPrevista) && (
             <div className="rounded-md border p-3 text-xs space-y-1">
               {motorista && (
                 <div>
-                  <span className="text-muted-foreground">Motorista:</span> {motorista}
+                  <span className="text-muted-foreground">{labelResponsavel(tipoEntrega)}:</span> {motorista}
                   {motoristaTelefone && ` · ${motoristaTelefone}`}
-                  {motoristaDocumento && ` · CNH ${motoristaDocumento}`}
+                  {motoristaDocumento && ` · ${tipoEntrega === "retirada" ? "Doc." : "CNH"} ${motoristaDocumento}`}
                 </div>
               )}
               {veiculo && (
