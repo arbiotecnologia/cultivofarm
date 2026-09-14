@@ -501,7 +501,7 @@ export default function Entregas() {
             lote_id: item.lote_id,
             produto_id: item.produto_id,
             quantidade_entregue: quantidade,
-            volume_entregue_ml: volumeEntregueMl,
+            
             tipo_entrega: tipo_entrega || 'motorista',
             motorista: motorista || null,
             veiculo: veiculo || null,
