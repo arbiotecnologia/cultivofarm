@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
@@ -35,7 +36,7 @@ function abrir(token?: string) {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   rpcMock.mockResolvedValue({ data: { valido: true, status: "gerado" }, error: null });
 });
 
@@ -154,40 +155,38 @@ describe("ValidarEntrega — falhas e limites", () => {
 });
 
 describe("ValidarEntrega — navegação na mesma instância", () => {
-  it("A→B→A na mesma instância descarta a resposta antiga de A", async () => {
-    const dA1 = deferred<any>();
-    rpcMock.mockReturnValueOnce(dA1.promise);
-    const router = (
-      <MemoryRouter initialEntries={[`/validar/${TOKEN_A}`]}>
+  function Navegador({ alvo }: { alvo: string }) {
+    const navigate = useNavigate();
+    useEffect(() => {
+      navigate(`/validar/${alvo}`);
+    }, [alvo, navigate]);
+    return null;
+  }
+
+  function App({ alvo }: { alvo: string }) {
+    return (
+      <MemoryRouter initialEntries={[`/validar/${alvo}`]}>
+        <Navegador alvo={alvo} />
         <Routes>
           <Route path="/validar/:token" element={<ValidarEntrega />} />
         </Routes>
       </MemoryRouter>
     );
-    const { rerender } = render(router);
+  }
+
+  it("A→B→A na mesma instância descarta a resposta antiga de A", async () => {
+    const dA1 = deferred<any>();
+    rpcMock.mockReturnValueOnce(dA1.promise);
+    const { rerender } = render(<App alvo={TOKEN_A} />);
     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
 
-    // Navega para B, sem desmontar a instância (mesma árvore, outra rota).
     rpcMock.mockResolvedValueOnce({ data: { valido: true, status: "confirmado" }, error: null });
-    rerender(
-      <MemoryRouter initialEntries={[`/validar/${TOKEN_B}`]}>
-        <Routes>
-          <Route path="/validar/:token" element={<ValidarEntrega />} />
-        </Routes>
-      </MemoryRouter>,
-    );
+    rerender(<App alvo={TOKEN_B} />);
     await screen.findByText(/recebimento confirmado/i);
 
-    // Volta para A: nova consulta, e a primeira resposta de A não pode aparecer.
     const dA2 = deferred<any>();
     rpcMock.mockReturnValueOnce(dA2.promise);
-    rerender(
-      <MemoryRouter initialEntries={[`/validar/${TOKEN_A}`]}>
-        <Routes>
-          <Route path="/validar/:token" element={<ValidarEntrega />} />
-        </Routes>
-      </MemoryRouter>,
-    );
+    rerender(<App alvo={TOKEN_A} />);
     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(3));
 
     dA1.resolve({ data: { valido: false, mensagem: "resposta antiga de A" }, error: null });
@@ -204,7 +203,8 @@ describe("ValidarEntrega — navegação na mesma instância", () => {
     try {
       rpcMock.mockResolvedValueOnce({ data: { retry_after_seconds: 3 }, error: null });
       abrir(TOKEN_A);
-      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(10);
+      await vi.advanceTimersByTimeAsync(10);
       expect(screen.getByRole("button", { name: /tentar novamente em 3s/i })).toBeDisabled();
 
       await vi.advanceTimersByTimeAsync(3000);
@@ -214,7 +214,7 @@ describe("ValidarEntrega — navegação na mesma instância", () => {
 
       rpcMock.mockResolvedValueOnce({ data: { valido: true, status: "gerado" }, error: null });
       fireEvent.click(botao);
-      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(10);
       expect(rpcMock).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();
