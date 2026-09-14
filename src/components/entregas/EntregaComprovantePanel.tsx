@@ -571,7 +571,13 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const copyLink = async () => {
     if (!validationToken) return;
     const url = buildValidationUrl(validationToken);
+    const entregaIdEnvio = entrega?.id;
+    const token = ++opSeqRef.current;
+    opAtivaRef.current = token;
+    const atual = () => opAtivaRef.current === token && entregaAtivaRef.current === entregaIdEnvio;
     const ok = await copiarTexto(url);
+    // Troca de entrega ou desmontagem durante a cópia: nada é escrito na tela atual.
+    if (!atual()) return;
     if (ok) {
       setLinkManual(null);
       toast({ title: "Link de validação copiado" });

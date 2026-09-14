@@ -13,20 +13,26 @@ export async function copiarTexto(texto: string): Promise<boolean> {
   } catch {
     // segue para o método alternativo
   }
+  if (typeof document === "undefined" || typeof document.execCommand !== "function") return false;
+  let area: HTMLTextAreaElement | null = null;
   try {
-    if (typeof document === "undefined" || typeof document.execCommand !== "function") return false;
-    const area = document.createElement("textarea");
+    area = document.createElement("textarea");
     area.value = texto;
     area.setAttribute("readonly", "true");
     area.style.position = "fixed";
     area.style.opacity = "0";
     document.body.appendChild(area);
     area.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(area);
-    return ok === true;
+    return document.execCommand("copy") === true;
   } catch {
     return false;
+  } finally {
+    // O campo auxiliar sai do DOM mesmo quando execCommand lança.
+    try {
+      area?.remove();
+    } catch {
+      /* noop */
+    }
   }
 }
 
