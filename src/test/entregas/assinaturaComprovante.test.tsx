@@ -346,3 +346,44 @@ describe("EntregaComprovantePanel — ações de comprovação isoladas por entr
     expect(toastMock).not.toHaveBeenCalled();
   });
 });
+
+describe("EntregaComprovantePanel — término antigo não destrava a ação nova", () => {
+  it("ação de B em voo continua travada quando a ação de A termina", async () => {
+    const dA = deferred<any>();
+    const dB = deferred<any>();
+    rpcMock.mockReturnValueOnce(dA.promise).mockReturnValueOnce(dB.promise);
+    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+
+    // A: dispensa em voo.
+    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
+    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "motivo de A" } });
+    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+
+    // Troca para B e inicia a ação de B, que fica pendente.
+    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
+    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
+    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "motivo de B" } });
+    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
+    expect(rpcMock.mock.calls[1][1].p_motivo).toBe("motivo de B");
+    const botaoB = screen.getByRole("button", { name: /^dispensar$/i });
+    expect(botaoB).toBeDisabled();
+
+    // A termina: não pode destravar B nem fechar o diálogo de B.
+    toastMock.mockClear();
+    dA.resolve({ data: null, error: null });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(toastMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /^dispensar$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /cancelar/i })).toBeDisabled();
+    expect(screen.getByPlaceholderText(/mínimo 5 caracteres/i)).toBeDisabled();
+
+    // Só o término de B libera.
+    dB.resolve({ data: null, error: null });
+    await waitFor(() =>
+      expect(screen.queryByPlaceholderText(/mínimo 5 caracteres/i)).toBeNull(),
+    );
+  });
+});
