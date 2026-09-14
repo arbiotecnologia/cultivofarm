@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,11 @@ import { AssinaturaDigitalCanvas } from "./AssinaturaDigitalCanvas";
 import { QRCodeComprovante, buildValidationUrl } from "./QRCodeComprovante";
 import { EntregaChecklistPanel } from "./EntregaChecklistPanel";
 import { EntregaOcorrenciasPanel } from "./EntregaOcorrenciasPanel";
+import {
+  ACCEPT_ANEXO,
+  formatarTamanho,
+  validarAnexoComprovante,
+} from "@/lib/entregas/anexoComprovante";
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   pendente: { label: "Pendente", cls: "bg-muted text-muted-foreground" },
