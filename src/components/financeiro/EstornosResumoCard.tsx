@@ -125,7 +125,12 @@ export function EstornosResumoCard({ from, to }: Props) {
         </div>
         {atualizando && <span className="text-xs text-muted-foreground">Atualizando…</span>}
 
-        {semEstornos ? (
+        {!data.completo ? (
+          <p className="w-full text-xs text-destructive" role="alert">
+            Não foi possível somar todos os estornos deste período com segurança, então os totais não são
+            exibidos para não induzir a erro. Use o relatório de estornos ou reduza o período.
+          </p>
+        ) : semEstornos ? (
           <span className="text-xs text-muted-foreground">Nenhum estorno registrado no período.</span>
         ) : (
           <>
@@ -141,13 +146,6 @@ export function EstornosResumoCard({ from, to }: Props) {
               Já abatidos do realizado (valores negativos).
             </span>
           </>
-        )}
-
-        {!data.completo && (
-          <p className="w-full text-xs text-destructive" role="alert">
-            Há mais estornos do que é possível somar com segurança aqui. Os valores acima estão incompletos —
-            use o relatório de estornos para o total.
-          </p>
         )}
       </CardContent>
     </Card>
