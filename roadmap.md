@@ -123,4 +123,4 @@
 - [ ] Dívida: desenho de quarentena/reanálise antes de homologar cenários de reprovação.
 - [ ] Dívida: sem dados em `public.envase`, cenários E2E e de concorrência seguem não homologados.
 
-- [ ] Refinar Cockpit pontualmente e adicionar testes focados, sem banco ou publicação.
+- [x] Refinar Cockpit pontualmente e adicionar testes focados, sem banco ou publicação.

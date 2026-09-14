@@ -119,7 +119,8 @@ export function FinalizarOSButton({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Finalização da OS</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
               <p>
                 Você está prestes a finalizar esta Ordem de Serviço laboratorial. 
                 A entrega já foi confirmada e todas as etapas internas foram concluídas.
@@ -133,6 +134,7 @@ export function FinalizarOSButton({
               <p className="text-xs text-muted-foreground italic">
                 Esta ação registrará o encerramento oficial no histórico de auditoria.
               </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
 
