@@ -24,6 +24,10 @@ type Resumo = { recCount: number; recSum: number; payCount: number; paySum: numb
  * (limite max_rows do servidor) não é confundida com fim dos dados; só é
  * considerada completa quando o total somado bate com a contagem exata.
  */
+function contagemValida(count: unknown): count is number {
+  return typeof count === "number" && Number.isFinite(count) && Number.isInteger(count) && count >= 0;
+}
+
 async function somarEstornos(
   tabela: "receivable_payments" | "payable_payments",
   coluna: "amount_received" | "amount_paid",
@@ -40,24 +44,38 @@ async function somarEstornos(
 
   let soma = 0;
   let itens = 0;
-  let total = NaN;
+  let total: number | undefined;
 
   for (let pagina = 0; pagina < MAX_PAGINAS_ESTORNOS; pagina++) {
     const { data, error, count: countPagina } = await base()
       .order("id")
       .range(itens, itens + PAGINA_ESTORNOS - 1);
     if (error) throw error;
-    if (!Number.isFinite(total) && Number.isFinite(Number(countPagina))) total = Number(countPagina);
+
+    // Contagem ausente, null ou qualquer não-número não é confiável.
+    if (!contagemValida(countPagina)) {
+      return { soma, itens, total: itens, completo: false };
+    }
+
+    // A contagem deve ser estável entre páginas; se mudar, os dados estão sendo
+    // alterados durante a leitura e a soma não é verificável.
+    if (total === undefined) {
+      total = countPagina;
+    } else if (total !== countPagina) {
+      return { soma, itens, total: itens, completo: false };
+    }
+
     const linhas = (data || []) as any[];
     soma += linhas.reduce((s, r) => s + Number(r[coluna] || 0), 0);
     itens += linhas.length;
-    // Sem contagem confiável não há como provar o fim da lista.
-    if (!Number.isFinite(total)) return { soma, itens, total: itens, completo: false };
-    if (itens >= total) return { soma, itens, total, completo: true };
+
+    // Só declaramos completo quando o número exato de linhas processadas
+    // coincide com a contagem do servidor (nunca extrapolação).
+    if (itens === total) return { soma, itens, total, completo: true };
     // Página vazia antes de atingir a contagem: paginação não avança.
     if (linhas.length === 0) return { soma, itens, total, completo: false };
   }
-  return { soma, itens, total: Number.isFinite(total) ? total : itens, completo: false };
+  return { soma, itens, total: total ?? itens, completo: false };
 }
 
 /**
