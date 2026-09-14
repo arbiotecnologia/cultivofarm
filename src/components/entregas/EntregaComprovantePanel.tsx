@@ -239,7 +239,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       return;
     }
     const resultado = validarAnexoComprovante(file);
-    if (!resultado.ok) {
+    if (resultado.ok === false) {
       setArquivo(null);
       setErroArquivo(resultado.motivo);
       return;
@@ -257,7 +257,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       return;
     }
     const validacao = validarAnexoComprovante(file);
-    if (!validacao.ok) {
+    if (validacao.ok === false) {
       setErroArquivo(validacao.motivo);
       return;
     }
