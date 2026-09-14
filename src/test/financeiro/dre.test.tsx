@@ -7,7 +7,7 @@ const { rpcMock, fromMock } = vi.hoisted(() => ({ rpcMock: vi.fn(), fromMock: vi
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: rpcMock, from: fromMock } }));
 
-import DRE, { grupoTemAtividade, LIMITE_DETALHE_DRE } from "@/pages/financeiro/DRE";
+import DRE, { grupoTemAtividade, LIMITE_DETALHE_DRE, contratoDreValido } from "@/pages/financeiro/DRE";
 
 type Resultado = { data?: any; error?: any; count?: number | null };
 
