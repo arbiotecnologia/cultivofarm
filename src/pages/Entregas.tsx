@@ -876,25 +876,52 @@ export default function Entregas() {
         </CardContent>
       </Card>
 
+      {estoqueErro && (
+        <Card>
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <span className="text-sm text-destructive">
+              Não foi possível carregar os lotes disponíveis para entrega.
+            </span>
+            <Button variant="outline" size="sm" disabled={estoqueFetching} onClick={() => recarregarEstoque()}>
+              Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">Entregas no período</div>
-          <div className="text-2xl font-semibold">{kpis.total}</div>
+          <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.total}</div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">Volume entregue (L)</div>
-          <div className="text-2xl font-semibold">{kpis.volumeL.toFixed(1)}</div>
+          <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.volumeL.toFixed(1)}</div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">OS atendidas</div>
-          <div className="text-2xl font-semibold">{kpis.osDistintas}</div>
+          <div className="text-2xl font-semibold">{entregasErro ? "—" : kpis.osDistintas}</div>
         </CardContent></Card>
       </div>
 
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" />Entregas</CardTitle></CardHeader>
         <CardContent className={isMobile ? "p-4" : "p-0 sm:p-6 sm:pt-0"}>
+          {entregasErro ? (
+            <div className="py-10 text-center space-y-3" data-testid="entregas-erro">
+              <p className="text-sm text-destructive">
+                Não foi possível carregar as entregas.
+              </p>
+              <Button variant="outline" size="sm" disabled={entregasFetching} onClick={() => recarregarEntregas()}>
+                Tentar novamente
+              </Button>
+            </div>
+          ) : entregasLoading ? (
+            <div className="py-10 text-center text-sm text-muted-foreground" data-testid="entregas-carregando">
+              Carregando entregas...
+            </div>
+          ) : (
           <ResponsiveTable
             mobileCards={
               entregasFiltradas.length === 0 ? (
