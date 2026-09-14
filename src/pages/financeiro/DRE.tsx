@@ -287,15 +287,10 @@ function DreGroupRow({
   const detalhe = useQuery({
     enabled: expanded && podeExpandir,
     queryKey: ["dre-detail", groupKey, periodo.from, periodo.to, regime],
-    queryFn: async (): Promise<{ linhas: LinhaDetalhe[]; parcial: boolean; contagem: number | null }> => {
+    queryFn: async () => {
       const limite = LIMITE_DETALHE_DRE + 1;
       const linhas: LinhaDetalhe[] = [];
-      let parcial = false;
-      let contagem: number | null = null;
-      const somaContagem = (c: unknown) => {
-        if (typeof c === "number" && Number.isInteger(c) && c >= 0) contagem = (contagem ?? 0) + c;
-        else contagem = null;
-      };
+      const origens: OrigemDetalhe[] = [];
 
       if (regime === "CASH") {
         const receb = await (supabase as any)
@@ -322,9 +317,8 @@ function DreGroupRow({
 
         const lr = (receb.data || []) as any[];
         const lp = (pag.data || []) as any[];
-        parcial = lr.length > LIMITE_DETALHE_DRE || lp.length > LIMITE_DETALHE_DRE;
-        somaContagem(receb.count);
-        somaContagem(pag.count);
+        origens.push({ brutas: lr.length, mostradas: Math.min(lr.length, LIMITE_DETALHE_DRE), count: receb.count });
+        origens.push({ brutas: lp.length, mostradas: Math.min(lp.length, LIMITE_DETALHE_DRE), count: pag.count });
 
         lr.slice(0, LIMITE_DETALHE_DRE).forEach((d, i) => {
           const conta = d.accounts_receivable_installments?.accounts_receivable;
@@ -367,9 +361,8 @@ function DreGroupRow({
 
         const lr = (rec.data || []) as any[];
         const lp = (pay.data || []) as any[];
-        parcial = lr.length > LIMITE_DETALHE_DRE || lp.length > LIMITE_DETALHE_DRE;
-        somaContagem(rec.count);
-        somaContagem(pay.count);
+        origens.push({ brutas: lr.length, mostradas: Math.min(lr.length, LIMITE_DETALHE_DRE), count: rec.count });
+        origens.push({ brutas: lp.length, mostradas: Math.min(lp.length, LIMITE_DETALHE_DRE), count: pay.count });
 
         lr.slice(0, LIMITE_DETALHE_DRE).forEach((d, i) => {
           linhas.push({
@@ -391,7 +384,7 @@ function DreGroupRow({
         });
       }
 
-      return { linhas, parcial, contagem };
+      return { linhas, ...resumoDetalhe(origens) };
     },
   });
 
@@ -427,14 +420,23 @@ function DreGroupRow({
             ) : detalhe.isError ? (
               <BlocoErro mensagem={MSG_ERRO_DETALHE_DRE} onTentar={() => void detalhe.refetch()} ocupado={detalhe.isFetching} />
             ) : linhas.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-2">Nenhum lançamento encontrado para este grupo no período.</p>
+              <p className="text-xs text-muted-foreground py-2">
+                {detalhe.data?.contagemDesconhecida || detalhe.data?.totalConhecidoPositivo
+                  ? "Nenhum lançamento foi devolvido nesta leitura, mas a contagem do período não pôde ser verificada — pode haver lançamentos não exibidos."
+                  : "Nenhum lançamento encontrado para este grupo no período."}
+              </p>
             ) : (
               <div className={detalhe.isFetching ? "opacity-60" : undefined}>
                 {detalhe.data?.parcial && (
                   <p className="text-xs text-amber-700 dark:text-amber-500 py-1" role="status">
                     Lista parcial: mostrando até {LIMITE_DETALHE_DRE} lançamentos por origem
-                    {typeof detalhe.data?.contagem === "number" ? ` de ${detalhe.data.contagem} no período` : ""}.
+                    {contagemValida(detalhe.data?.contagem) ? ` de ${detalhe.data?.contagem} no período` : ""}.
                     A soma desta lista não é o total do grupo.
+                  </p>
+                )}
+                {detalhe.data?.contagemDesconhecida && (
+                  <p className="text-xs text-amber-700 dark:text-amber-500 py-1" role="status">
+                    Amostra: o total de lançamentos do período não pôde ser verificado nesta leitura.
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground py-1">
