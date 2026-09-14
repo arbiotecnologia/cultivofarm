@@ -232,7 +232,10 @@ export function TermoEntregaPanel({ entregaId }: Props) {
       const assinaturaHash = await sha256Hex(
         `${termo.snapshot_hash}|${recebedor.nome.trim()}|${recebedor.documento.trim()}`,
       );
+      // Trocou de entrega durante o cálculo: nada com efeito pode ser enviado.
+      if (!vivo()) return;
       const idem = await sha256Hex(`${termo.id}|${termo.versao}|${assinaturaHash}`);
+      if (!vivo()) return;
       const { error } = await supabase.rpc("rpc_entrega_assinar_termo_v1" as any, {
         p_termo_id: termo.id,
         p_payload: {
