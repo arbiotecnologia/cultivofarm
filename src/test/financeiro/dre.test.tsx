@@ -255,3 +255,33 @@ describe("DRE Gerencial — detalhamento", () => {
     expect(screen.getAllByRole("button", { name: /tentar novamente/i }).length).toBeGreaterThan(0);
   });
 });
+
+describe("contratoDreValido", () => {
+  const base = {
+    resultado_operacional: 0,
+    margem_operacional_percentual: 0,
+    unclassified_categories: [],
+  };
+  it("rejeita null, objeto vazio e objeto de erro", () => {
+    expect(contratoDreValido(null)).toBe(false);
+    expect(contratoDreValido({})).toBe(false);
+    expect(contratoDreValido({ error: "boom", message: "x" })).toBe(false);
+    expect(contratoDreValido([])).toBe(false);
+  });
+  it("rejeita campos inválidos", () => {
+    expect(contratoDreValido({ ...base, resultado_operacional: null })).toBe(false);
+    expect(contratoDreValido({ ...base, margem_operacional_percentual: "10" })).toBe(false);
+    expect(contratoDreValido({ ...base, unclassified_categories: {} })).toBe(false);
+    expect(contratoDreValido({ ...base, receita_bruta: { total: "100", qtd: 1 } })).toBe(false);
+    expect(contratoDreValido({ ...base, receita_bruta: { total: 100, qtd: -1 } })).toBe(false);
+    expect(contratoDreValido({ ...base, receita_bruta: { total: 100, qtd: 1.5 } })).toBe(false);
+    expect(contratoDreValido({ ...base, receita_bruta: { total: Infinity, qtd: 0 } })).toBe(false);
+    expect(contratoDreValido({ ...base, receita_bruta: null })).toBe(false);
+  });
+  it("aceita resposta válida vazia e estorno negativo com qtd 0", () => {
+    expect(contratoDreValido(base)).toBe(true);
+    expect(
+      contratoDreValido({ ...base, resultado_operacional: -20, receita_bruta: { total: -40, qtd: 0 } }),
+    ).toBe(true);
+  });
+});
