@@ -34,6 +34,8 @@ interface Props {
   entrega: any;
 }
 
+const MSG_ERRO_GENERICA = "Não foi possível concluir a ação. Tente novamente.";
+
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
   const { user, role } = useAuth();
@@ -45,29 +47,62 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const [ressalvas, setRessalvas] = useState("");
   const [motivoDispensa, setMotivoDispensa] = useState("");
 
-  const { data: comprovante } = useQuery({
+  // Estado fresco da entrega (o prop pode vir de um snapshot antigo da lista).
+  const {
+    data: entregaAtual,
+    isLoading: entregaCarregando,
+    isError: entregaErro,
+    refetch: recarregarEntrega,
+  } = useQuery({
+    queryKey: ["entrega-comprovante-status", entrega?.id],
+    enabled: !!entrega?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("entregas")
+        .select("id, comprovante_status, validation_token")
+        .eq("id", entrega.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  const {
+    data: comprovante,
+    isLoading: comprovanteCarregando,
+    isError: comprovanteErro,
+    refetch: recarregarComprovante,
+  } = useQuery({
     queryKey: ["entrega-comprovante", entrega?.id],
     enabled: !!entrega?.id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("entrega_comprovantes" as any)
         .select("*")
         .eq("entrega_id", entrega.id)
         .order("gerado_em", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (error) throw error;
       return data as any;
     },
   });
 
-  const status = entrega?.comprovante_status || "pendente";
-  const meta = STATUS_LABEL[status] || STATUS_LABEL.pendente;
+  // Nunca inferir "confirmado" pela existência do formulário, nem usar
+  // "pendente" como fallback de falha de consulta.
+  const status: string | null = entregaErro ? null : (entregaAtual?.comprovante_status ?? "pendente");
+  const meta = status ? STATUS_LABEL[status] || STATUS_LABEL.pendente : null;
+  const validationToken = entregaAtual?.validation_token ?? null;
   const isAdmin = role === "administrador" || role === "gestor" || role === "administrativo";
+  const carregando = entregaCarregando || comprovanteCarregando;
+  const falhou = entregaErro || comprovanteErro;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["entregas"] });
     qc.invalidateQueries({ queryKey: ["entrega-comprovante", entrega.id] });
+    qc.invalidateQueries({ queryKey: ["entrega-comprovante-status", entrega.id] });
   };
+
 
   const gerar = useMutation({
     mutationFn: async () => {
