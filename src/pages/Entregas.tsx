@@ -1047,6 +1047,7 @@ export default function Entregas() {
               </TableBody>
             </Table>
           </ResponsiveTable>
+          )}
         </CardContent>
       </Card>
 
