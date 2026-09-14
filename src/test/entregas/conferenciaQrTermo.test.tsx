@@ -338,7 +338,7 @@ describe("lacunas da revisão independente", () => {
     try {
       const { rerender } = render(<TermoEntregaPanel entregaId="A" />, { wrapper });
       const botao = await screen.findByRole("button", { name: /Assinar/i });
-      fireEvent.change(screen.getByLabelText(/Nome do recebedor/i), { target: { value: "Maria" } });
+      fireEvent.change(screen.getByLabelText("Nome *"), { target: { value: "Maria" } });
       fireEvent.click(botao);
       await waitFor(() => expect(digests.length).toBe(1));
 
@@ -376,7 +376,7 @@ describe("lacunas da revisão independente", () => {
 
     try {
       const { rerender } = render(<TermoEntregaPanel entregaId="A" />, { wrapper });
-      fireEvent.change(await screen.findByLabelText(/Nome do recebedor/i), { target: { value: "Maria" } });
+      fireEvent.change(await screen.findByLabelText("Nome *"), { target: { value: "Maria" } });
       fireEvent.click(screen.getByRole("button", { name: /Assinar/i }));
       await waitFor(() => expect(digests.length).toBe(1));
 
