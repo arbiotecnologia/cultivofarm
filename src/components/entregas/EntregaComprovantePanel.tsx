@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,8 @@ interface Props {
   entrega: any;
 }
 
+const MSG_ERRO_GENERICA = "Não foi possível concluir a ação. Tente novamente.";
+
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
   const { user, role } = useAuth();
@@ -45,29 +47,62 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const [ressalvas, setRessalvas] = useState("");
   const [motivoDispensa, setMotivoDispensa] = useState("");
 
-  const { data: comprovante } = useQuery({
+  // Estado fresco da entrega (o prop pode vir de um snapshot antigo da lista).
+  const {
+    data: entregaAtual,
+    isLoading: entregaCarregando,
+    isError: entregaErro,
+    refetch: recarregarEntrega,
+  } = useQuery({
+    queryKey: ["entrega-comprovante-status", entrega?.id],
+    enabled: !!entrega?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("entregas")
+        .select("id, comprovante_status, validation_token")
+        .eq("id", entrega.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  const {
+    data: comprovante,
+    isLoading: comprovanteCarregando,
+    isError: comprovanteErro,
+    refetch: recarregarComprovante,
+  } = useQuery({
     queryKey: ["entrega-comprovante", entrega?.id],
     enabled: !!entrega?.id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("entrega_comprovantes" as any)
         .select("*")
         .eq("entrega_id", entrega.id)
         .order("gerado_em", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (error) throw error;
       return data as any;
     },
   });
 
-  const status = entrega?.comprovante_status || "pendente";
-  const meta = STATUS_LABEL[status] || STATUS_LABEL.pendente;
+  // Nunca inferir "confirmado" pela existência do formulário, nem usar
+  // "pendente" como fallback de falha de consulta.
+  const status: string | null = entregaErro ? null : (entregaAtual?.comprovante_status ?? "pendente");
+  const meta = status ? STATUS_LABEL[status] || STATUS_LABEL.pendente : null;
+  const validationToken = entregaAtual?.validation_token ?? null;
   const isAdmin = role === "administrador" || role === "gestor" || role === "administrativo";
+  const carregando = entregaCarregando || comprovanteCarregando;
+  const falhou = entregaErro || comprovanteErro;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["entregas"] });
     qc.invalidateQueries({ queryKey: ["entrega-comprovante", entrega.id] });
+    qc.invalidateQueries({ queryKey: ["entrega-comprovante-status", entrega.id] });
   };
+
 
   const gerar = useMutation({
     mutationFn: async () => {
@@ -81,7 +116,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       toast({ title: "Formulário gerado" });
       invalidate();
     },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
   });
 
   const confirmar = useMutation({
@@ -98,7 +133,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       setRessalvas("");
       invalidate();
     },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
   });
 
   const dispensar = useMutation({
@@ -115,7 +150,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       setMotivoDispensa("");
       invalidate();
     },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
   });
 
   const onConfirmSignature = async (data: {
@@ -150,8 +185,8 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       toast({ title: "Assinatura digital coletada" });
       setOpenSign(false);
       invalidate();
-    } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } catch {
+      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
     }
   };
 
@@ -187,19 +222,38 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       toast({ title: "Comprovante anexado" });
       setOpenUpload(false);
       invalidate();
-    } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } catch {
+      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
     }
   };
 
   const copyLink = async () => {
-    if (!entrega.validation_token) return;
-    await navigator.clipboard.writeText(buildValidationUrl(entrega.validation_token));
+    if (!validationToken) return;
+    await navigator.clipboard.writeText(buildValidationUrl(validationToken));
     toast({ title: "Link de validação copiado" });
   };
 
-  const openForm = () => window.open(`/entregas/${entrega.id}/formulario`, "_blank");
-  const openForm2Vias = () => window.open(`/entregas/${entrega.id}/formulario?vias=2`, "_blank");
+  const abrirComprovanteArquivo = async () => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("entrega-documentos")
+        .createSignedUrl(comprovante.arquivo_path, 300);
+      if (error || !data?.signedUrl) throw new Error("sem-url");
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      toast({
+        title: "Não foi possível abrir o comprovante",
+        description: "O link seguro do arquivo não pôde ser gerado. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Mesmo documento sempre: abre o formulário já existente, nunca gera outro.
+  const openForm = () => window.open(`/entregas/${entrega.id}/formulario`, "_blank", "noopener,noreferrer");
+  const openForm2Vias = () => window.open(`/entregas/${entrega.id}/formulario?vias=2`, "_blank", "noopener,noreferrer");
+
+  const podeImprimir = !!status && status !== "pendente";
 
   return (
     <Card className="p-4 space-y-4">
@@ -208,10 +262,34 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           <FileText className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">Comprovação de entrega</h3>
         </div>
-        <Badge className={meta.cls} variant="secondary">{meta.label}</Badge>
+        {carregando && !falhou && (
+          <span className="text-xs text-muted-foreground" data-testid="comprovante-carregando">Carregando…</span>
+        )}
+        {meta && !falhou && (
+          <Badge className={meta.cls} variant="secondary">{meta.label}</Badge>
+        )}
       </div>
 
-      {comprovante && (
+      {falhou && (
+        <div
+          className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2"
+          data-testid="comprovante-erro"
+        >
+          <p>Não foi possível carregar a situação da comprovação desta entrega.</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void recarregarEntrega();
+              void recarregarComprovante();
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      )}
+
+      {!falhou && comprovante && (
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
           <div className="space-y-1 text-sm">
             <div><span className="text-muted-foreground">Formulário:</span> <span className="font-mono">{comprovante.numero_formulario}</span></div>
@@ -241,7 +319,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
             <FileText className="h-4 w-4 mr-1" /> Gerar formulário
           </Button>
         )}
-        {status !== "pendente" && (
+        {podeImprimir && (
           <>
             <Button size="sm" variant="outline" onClick={openForm}>
               <Printer className="h-4 w-4 mr-1" /> Imprimir formulário
@@ -269,16 +347,13 @@ export function EntregaComprovantePanel({ entrega }: Props) {
                 <ShieldAlert className="h-4 w-4 mr-1" /> Dispensar assinatura
               </Button>
             )}
-            {entrega.validation_token && (
+            {validationToken && (
               <Button size="sm" variant="ghost" onClick={copyLink}>
                 <Copy className="h-4 w-4 mr-1" /> Copiar link de validação
               </Button>
             )}
             {comprovante?.arquivo_path && (
-              <Button size="sm" variant="ghost" onClick={async () => {
-                const { data } = await supabase.storage.from("entrega-documentos").createSignedUrl(comprovante.arquivo_path, 300);
-                if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-              }}>
+              <Button size="sm" variant="ghost" onClick={abrirComprovanteArquivo}>
                 <ExternalLink className="h-4 w-4 mr-1" /> Visualizar comprovante
               </Button>
             )}
@@ -286,8 +361,9 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         )}
       </div>
 
-      {status !== "pendente" && (
+      {podeImprimir && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
           <EntregaChecklistPanel entregaId={entrega.id} canEdit={status !== "confirmado" && status !== "dispensado"} />
           <EntregaOcorrenciasPanel entregaId={entrega.id} canAdd={status !== "confirmado" && status !== "dispensado"} />
         </div>
@@ -296,7 +372,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {/* Dialog: Assinatura Digital */}
       <Dialog open={openSign} onOpenChange={setOpenSign}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Coletar assinatura digital</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Coletar assinatura digital</DialogTitle><DialogDescription>Informe quem recebeu a entrega e colete a assinatura na área de desenho.</DialogDescription></DialogHeader>
           <div className="space-y-3">
             <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
             <AssinaturaDigitalCanvas onConfirm={onConfirmSignature} onCancel={() => setOpenSign(false)} />
@@ -307,7 +383,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {/* Dialog: Upload */}
       <Dialog open={openUpload} onOpenChange={setOpenUpload}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Anexar comprovante assinado</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Anexar comprovante assinado</DialogTitle><DialogDescription>Envie o arquivo do formulário assinado e identifique quem recebeu.</DialogDescription></DialogHeader>
           <div className="space-y-3">
             <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
             <Input
@@ -323,7 +399,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {/* Dialog: Confirmar */}
       <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Confirmar recebimento</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Confirmar recebimento</DialogTitle><DialogDescription>Registre a confirmação do recebimento desta entrega, com ressalvas se necessário.</DialogDescription></DialogHeader>
           <div className="space-y-2">
             <Label>Ressalvas (opcional)</Label>
             <Textarea rows={3} value={ressalvas} onChange={(e) => setRessalvas(e.target.value)} placeholder="Descreva ressalvas se houver" />
@@ -342,7 +418,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {/* Dialog: Dispensa */}
       <Dialog open={openDispensa} onOpenChange={setOpenDispensa}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Dispensar assinatura</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Dispensar assinatura</DialogTitle><DialogDescription>Informe o motivo da dispensa. A ação é registrada para auditoria.</DialogDescription></DialogHeader>
           <div className="space-y-2">
             <Label>Motivo *</Label>
             <Textarea rows={3} value={motivoDispensa} onChange={(e) => setMotivoDispensa(e.target.value)} placeholder="Mínimo 5 caracteres" />
