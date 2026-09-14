@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { ClipboardCheck, Download, FileSignature, Loader2, Ban } from "lucide-react";
 import { formatDateTimeDisplay } from "@/lib/date-utils";
+import { parseQuantidadeConferencia } from "@/lib/entregas/quantidadeConferencia";
 
 type ConfStatus = "aceito" | "recusado" | "pendente";
 
