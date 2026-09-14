@@ -128,6 +128,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setDispensando(false);
     setPathPendente(null);
     setAssinaturaPendente(null);
+    setLinkManual(null);
     setOpenUpload(false);
     setOpenSign(false);
     setOpenConfirm(false);
