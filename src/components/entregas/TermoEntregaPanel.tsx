@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,11 +38,19 @@ const ERRO_LABEL: Record<string, string> = {
   termo_nao_assinado: "O termo precisa estar assinado.",
 };
 
+const MSG_ERRO_GENERICA = "Não foi possível concluir a operação. Tente novamente.";
+const MSG_ERRO_CARREGAR = "Não foi possível carregar a conferência e o termo desta entrega.";
+const MSG_PDF_SEM_LINK = "Não foi possível obter o link do documento. Tente novamente.";
+
+/** Erros conhecidos viram texto amigável; desconhecidos nunca expõem detalhe interno. */
 function traduzirErro(msg: string | undefined): string {
-  if (!msg) return "Falha na operação.";
+  if (!msg) return MSG_ERRO_GENERICA;
   const chave = Object.keys(ERRO_LABEL).find((k) => msg.includes(k));
-  return chave ? ERRO_LABEL[chave] : msg;
+  return chave ? ERRO_LABEL[chave] : MSG_ERRO_GENERICA;
 }
+
+/** Erros de validação local podem (e devem) ser exibidos ao usuário. */
+class ErroValidacao extends Error {}
 
 async function sha256Hex(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
