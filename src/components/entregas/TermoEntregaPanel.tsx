@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { ClipboardCheck, Download, FileSignature, Loader2, Ban } from "lucide-react";
 import { formatDateTimeDisplay } from "@/lib/date-utils";
+import { parseQuantidadeConferencia } from "@/lib/entregas/quantidadeConferencia";
 
 type ConfStatus = "aceito" | "recusado" | "pendente";
 
@@ -38,11 +39,19 @@ const ERRO_LABEL: Record<string, string> = {
   termo_nao_assinado: "O termo precisa estar assinado.",
 };
 
+const MSG_ERRO_GENERICA = "Não foi possível concluir a operação. Tente novamente.";
+const MSG_ERRO_CARREGAR = "Não foi possível carregar a conferência e o termo desta entrega.";
+const MSG_PDF_SEM_LINK = "Não foi possível obter o link do documento. Tente novamente.";
+
+/** Erros conhecidos viram texto amigável; desconhecidos nunca expõem detalhe interno. */
 function traduzirErro(msg: string | undefined): string {
-  if (!msg) return "Falha na operação.";
+  if (!msg) return MSG_ERRO_GENERICA;
   const chave = Object.keys(ERRO_LABEL).find((k) => msg.includes(k));
-  return chave ? ERRO_LABEL[chave] : msg;
+  return chave ? ERRO_LABEL[chave] : MSG_ERRO_GENERICA;
 }
+
+/** Erros de validação local podem (e devem) ser exibidos ao usuário. */
+class ErroValidacao extends Error {}
 
 async function sha256Hex(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -57,6 +66,24 @@ export function TermoEntregaPanel({ entregaId }: Props) {
   const [recebedor, setRecebedor] = useState({ nome: "", documento: "", cargo: "", telefone: "" });
   const [motivoCancel, setMotivoCancel] = useState("");
   const [busy, setBusy] = useState(false);
+  // Token monotônico por entrega: invalida respostas antigas (inclusive A→B→A).
+  const tokenRef = useRef(0);
+  // Trava síncrona contra duplo envio (o estado `busy` só atualiza no próximo render).
+  const emAndamentoRef = useRef(false);
+
+  useEffect(() => {
+    tokenRef.current += 1;
+    emAndamentoRef.current = false;
+    setRascunho({});
+    setRecebedor({ nome: "", documento: "", cargo: "", telefone: "" });
+    setMotivoCancel("");
+    setBusy(false);
+    return () => {
+      tokenRef.current += 1;
+      emAndamentoRef.current = false;
+    };
+  }, [entregaId]);
+
 
   const itensQuery = useQuery({
     queryKey: ["entrega-conferencia", entregaId],
@@ -131,56 +158,77 @@ export function TermoEntregaPanel({ entregaId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itens, rascunho]);
 
-  const invalidar = () => {
-    qc.invalidateQueries({ queryKey: ["entrega-conferencia", entregaId] });
-    qc.invalidateQueries({ queryKey: ["entrega-termo", entregaId] });
+  /** Sempre invalida a entrega capturada na operação, nunca a atual por engano. */
+  const invalidar = (id: string) => {
+    qc.invalidateQueries({ queryKey: ["entrega-conferencia", id] });
+    qc.invalidateQueries({ queryKey: ["entrega-termo", id] });
   };
 
-  const run = async (fn: () => Promise<void>) => {
-    if (busy) return; // trava duplo clique
+  type Ctx = { vivo: () => boolean; entregaDaOperacao: string };
+
+  const run = async (fn: (ctx: Ctx) => Promise<void>) => {
+    if (emAndamentoRef.current) return; // trava síncrona contra duplo clique
+    emAndamentoRef.current = true;
+    const token = ++tokenRef.current;
+    const entregaDaOperacao = entregaId;
+    const vivo = () => token === tokenRef.current;
     setBusy(true);
     try {
-      await fn();
+      await fn({ vivo, entregaDaOperacao });
     } catch (e: any) {
-      toast({ title: "Não foi possível concluir", description: traduzirErro(e?.message), variant: "destructive" });
+      if (!vivo()) return;
+      toast({
+        title: "Não foi possível concluir",
+        description: e instanceof ErroValidacao ? e.message : traduzirErro(e?.message),
+        variant: "destructive",
+      });
     } finally {
-      setBusy(false);
+      if (vivo()) {
+        setBusy(false);
+        emAndamentoRef.current = false;
+      }
     }
   };
 
   const salvarConferencia = () =>
-    run(async () => {
-      const payload = itens.map((i) => ({
-        etiqueta_id: i.etiqueta_id,
-        status: valorDe(i.etiqueta_id, "status"),
-        quantidade: Number(valorDe(i.etiqueta_id, "quantidade")) || 1,
-        motivo: valorDe(i.etiqueta_id, "motivo") || null,
-      }));
+    run(async ({ vivo, entregaDaOperacao }) => {
+      const payload = itens.map((i) => {
+        const q = parseQuantidadeConferencia(valorDe(i.etiqueta_id, "quantidade"));
+        if (!q.ok) throw new ErroValidacao(`${i.codigo}: ${q.motivo}`);
+        return {
+          etiqueta_id: i.etiqueta_id,
+          status: valorDe(i.etiqueta_id, "status"),
+          quantidade: q.valor,
+          motivo: valorDe(i.etiqueta_id, "motivo") || null,
+        };
+      });
       const { error } = await supabase.rpc("rpc_entrega_registrar_conferencia_v1" as any, {
-        p_entrega_id: entregaId,
+        p_entrega_id: entregaDaOperacao,
         p_itens: payload,
       });
       if (error) throw error;
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       setRascunho({});
-      invalidar();
       toast({ title: "Conferência registrada" });
     });
 
   const gerarTermo = () =>
-    run(async () => {
+    run(async ({ vivo, entregaDaOperacao }) => {
       const { error } = await supabase.rpc("rpc_entrega_gerar_termo_v1" as any, {
-        p_entrega_id: entregaId,
+        p_entrega_id: entregaDaOperacao,
         p_template_versao: "termo-entrega-v1",
       });
       if (error) throw error;
-      invalidar();
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       toast({ title: "Termo gerado (rascunho)" });
     });
 
   const assinar = () =>
-    run(async () => {
-      if (!termo?.id) throw new Error("Gere o termo antes de assinar.");
-      if (!recebedor.nome.trim()) throw new Error("Informe o nome do recebedor.");
+    run(async ({ vivo, entregaDaOperacao }) => {
+      if (!termo?.id) throw new ErroValidacao("Gere o termo antes de assinar.");
+      if (!recebedor.nome.trim()) throw new ErroValidacao("Informe o nome do recebedor.");
       const assinaturaHash = await sha256Hex(
         `${termo.snapshot_hash}|${recebedor.nome.trim()}|${recebedor.documento.trim()}`,
       );
@@ -199,52 +247,87 @@ export function TermoEntregaPanel({ entregaId }: Props) {
         p_idempotency_key: idem,
       });
       if (error) throw error;
-      invalidar();
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       toast({ title: "Termo assinado" });
     });
 
   const pdfMutation = useMutation({
-    mutationFn: async (action: "generate" | "signed_url") => {
+    mutationFn: async ({ action, termoId }: { action: "generate" | "signed_url"; termoId: string }) => {
       const { data, error } = await supabase.functions.invoke("entrega-termo-pdf", {
-        body: { termo_id: termo?.id, action },
+        body: { termo_id: termoId, action },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       return data as any;
     },
-    onError: (e: any) =>
-      toast({ title: "Falha no documento", description: traduzirErro(e?.message), variant: "destructive" }),
   });
 
   const gerarPdf = () =>
-    run(async () => {
-      await pdfMutation.mutateAsync("generate");
-      invalidar();
+    run(async ({ vivo, entregaDaOperacao }) => {
+      if (!termo?.id) throw new ErroValidacao("Gere o termo antes de emitir o PDF.");
+      await pdfMutation.mutateAsync({ action: "generate", termoId: termo.id });
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       toast({ title: "PDF do termo disponível" });
     });
 
   const baixarPdf = () =>
-    run(async () => {
-      const res = await pdfMutation.mutateAsync("signed_url");
-      if (res?.signed_url) window.open(res.signed_url, "_blank", "noopener,noreferrer");
+    run(async ({ vivo }) => {
+      if (!termo?.id) throw new ErroValidacao("Gere o termo antes de baixar o PDF.");
+      const res = await pdfMutation.mutateAsync({ action: "signed_url", termoId: termo.id });
+      if (!vivo()) return;
+      // Ausência de link é falha explícita: nunca silêncio.
+      if (!res?.signed_url) throw new ErroValidacao(MSG_PDF_SEM_LINK);
+      window.open(res.signed_url, "_blank", "noopener,noreferrer");
     });
 
   const cancelarTermo = () =>
-    run(async () => {
-      if (motivoCancel.trim().length < 5) throw new Error("Informe um motivo com pelo menos 5 caracteres.");
+    run(async ({ vivo, entregaDaOperacao }) => {
+      if (!termo?.id) throw new ErroValidacao("Não há termo para cancelar.");
+      if (motivoCancel.trim().length < 5)
+        throw new ErroValidacao("Informe um motivo com pelo menos 5 caracteres.");
       const { error } = await supabase.rpc("rpc_entrega_cancelar_termo_v1" as any, {
         p_termo_id: termo.id,
         p_motivo: motivoCancel.trim(),
       });
       if (error) throw error;
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       setMotivoCancel("");
-      invalidar();
       toast({ title: "Termo cancelado" });
     });
 
   if (itensQuery.isLoading || termoQuery.isLoading) {
-    return <Skeleton className="h-48 w-full" />;
+    return <Skeleton className="h-48 w-full" data-testid="termo-carregando" />;
   }
+
+  // Falha de leitura nunca vira "vazio": erro explícito e ações bloqueadas.
+  if (itensQuery.isError || termoQuery.isError) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+            Conferência e termo de entrega
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm" data-testid="termo-erro">
+          <p className="text-destructive">{MSG_ERRO_CARREGAR}</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void itensQuery.refetch();
+              void termoQuery.refetch();
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   return (
     <Card>
@@ -263,7 +346,9 @@ export function TermoEntregaPanel({ entregaId }: Props) {
         </div>
 
         {itens.length === 0 ? (
-          <p className="text-muted-foreground">Nenhuma etiqueta vinculada a esta entrega.</p>
+          <p className="text-muted-foreground" data-testid="termo-vazio">
+            Nenhuma etiqueta vinculada a esta entrega.
+          </p>
         ) : (
           <ul className="space-y-3">
             {itens.map((i) => {
