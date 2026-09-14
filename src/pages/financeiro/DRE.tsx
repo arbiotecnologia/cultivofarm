@@ -48,6 +48,38 @@ export function grupoTemAtividade(grupo: Grupo) {
   return Number.isFinite(total) && Number.isFinite(qtd) ? qtd !== 0 || total !== 0 : false;
 }
 
+/** Contagem exata confiável: inteiro >= 0 vindo do servidor. */
+export function contagemValida(c: unknown): c is number {
+  return typeof c === "number" && Number.isFinite(c) && Number.isInteger(c) && c >= 0;
+}
+
+/** O grupo existe na resposta do servidor (mesmo zerado), com números válidos. */
+export function grupoPresente(grupo: Grupo) {
+  if (!grupo || typeof grupo !== "object") return false;
+  const g = grupo as any;
+  return Number.isFinite(Number(g.total ?? 0)) && Number.isFinite(Number(g.qtd ?? 0));
+}
+
+export type OrigemDetalhe = { brutas: number; mostradas: number; count: unknown };
+
+/**
+ * Conclusão honesta sobre a amostra: só existe total quando TODAS as contagens
+ * são confiáveis; uma origem pode ser parcial por truncamento local (limite+1)
+ * ou porque a contagem do servidor supera o que foi devolvido (max_rows).
+ */
+export function resumoDetalhe(origens: OrigemDetalhe[]) {
+  const todasValidas = origens.every((o) => contagemValida(o.count));
+  const contagem = todasValidas
+    ? origens.reduce((s, o) => s + (o.count as number), 0)
+    : null;
+  const parcial = origens.some(
+    (o) => o.brutas > LIMITE_DETALHE_DRE || (contagemValida(o.count) && o.count > o.mostradas),
+  );
+  const contagemDesconhecida = !todasValidas;
+  const totalConhecidoPositivo = todasValidas && (contagem as number) > 0;
+  return { contagem, parcial, contagemDesconhecida, totalConhecidoPositivo };
+}
+
 function BlocoErro({ mensagem, onTentar, ocupado }: { mensagem: string; onTentar: () => void; ocupado?: boolean }) {
   return (
     <div className="space-y-2 py-4 text-center" role="alert">
@@ -80,7 +112,10 @@ export default function DRE() {
         p_start_date: periodo.from, p_end_date: periodo.to, p_regime: regime,
       });
       if (error) throw error;
-      return (data || null) as DreData | null;
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("Resposta do DRE ausente ou inválida.");
+      }
+      return data as DreData;
     },
   });
 
@@ -115,7 +150,7 @@ export default function DRE() {
       <PeriodoFilter value={periodo} onChange={setPeriodo} showRegime={false} />
 
       <p className="text-xs text-muted-foreground">
-        No regime de competência cada título entra pelo valor original na data de vencimento. No regime de caixa entram
+        No regime de competência cada parcela entra pelo seu valor original na data de vencimento dela (não o título inteiro). No regime de caixa entram
         os pagamentos pela data em que foram feitos, incluindo estornos com valor negativo. A coluna de quantidade conta
         apenas os lançamentos efetivos: estornos não são contados, por isso um período pode ter valor negativo com
         quantidade zero.
@@ -158,6 +193,9 @@ export default function DRE() {
             <BlocoErro mensagem={MSG_ERRO_DRE} onTentar={() => void dre.refetch()} ocupado={dre.isFetching} />
           ) : (
             <div className={atualizando ? "opacity-60" : undefined}>
+              {atualizando && (
+                <p className="text-xs text-muted-foreground pb-2" role="status">Atualizando DRE…</p>
+              )}
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -176,7 +214,7 @@ export default function DRE() {
                       tone={s.tone}
                       total={get(s.key)}
                       qtd={qty(s.key)}
-                      ativo={grupoTemAtividade(grupo(s.key))}
+                      ativo={grupoPresente(grupo(s.key)) || grupoTemAtividade(grupo(s.key))}
                       periodo={periodo}
                       regime={regime}
                       expanded={!!expanded[s.key]}
@@ -378,7 +416,7 @@ function DreGroupRow({
             <span className="flex items-center gap-1"><span className="w-4" />{label}</span>
           )}
         </TableCell>
-        <TableCell className="text-right text-sm text-muted-foreground">{qtd || SEM_DADO}</TableCell>
+        <TableCell className="text-right text-sm text-muted-foreground">{podeExpandir ? qtd : SEM_DADO}</TableCell>
         <TableCell className={`text-right ${cls}`}>{brl(sign === "-" ? -total : total)}</TableCell>
       </TableRow>
       {expanded && podeExpandir && (
