@@ -46,6 +46,13 @@ const MSG_ERRO_GENERICA = "Não foi possível concluir a ação. Tente novamente
 const MSG_FALHA_ENVIO = "Não foi possível enviar o arquivo. Verifique a conexão e tente novamente.";
 const MSG_FALHA_VINCULO =
   "O arquivo foi enviado, mas não foi possível vinculá-lo à entrega. Tente novamente — o arquivo não será enviado de novo.";
+const MSG_FALHA_ASSINATURA_ENVIO =
+  "Não foi possível enviar a imagem da assinatura. Verifique a conexão e tente novamente.";
+const MSG_FALHA_ASSINATURA_VINCULO =
+  "A assinatura foi enviada, mas não foi possível registrá-la. Tente novamente — a imagem não será enviada de novo.";
+
+/** Assinatura já armazenada cuja vinculação falhou (mesma entrega + mesmo hash). */
+type AssinaturaPendente = { entregaId: string; hash: string; path: string };
 
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
@@ -249,11 +256,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const onConfirmSignature = async (data: { pngBlob: Blob; svgPath: string; hash: string }) => {
     if (!recebedor.nome.trim()) {
       toast({ title: "Informe o recebedor", variant: "destructive" });
-      throw new Error("recebedor-obrigatorio");
+      return;
     }
-    if (!iniciarAcao()) {
-      throw new Error("acao-em-andamento");
-    }
+    // Trava compartilhada: não corre com anexo/confirmação/dispensa.
+    if (!iniciarAcao()) return;
 
     // Snapshot imutável no início.
     const entregaIdEnvio: string = entrega.id;
@@ -357,7 +363,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
   /** Envio explícito: só acontece ao clicar em "Enviar comprovante". */
   const enviarAnexo = async () => {
-    if (enviandoAnexoRef.current) return;
+    if (enviandoAnexoRef.current || acaoRef.current) return;
     const file = arquivo;
     if (!file) {
       setErroArquivo("Selecione um arquivo para enviar.");
@@ -384,6 +390,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     // Só reaproveita o caminho pendente se for da MESMA entrega e do MESMO arquivo.
     const pathReaproveitado = pendenteReusavelPara(pathPendente, entregaIdEnvio, file, validacao.mime);
 
+    if (!iniciarAcao()) return;
     enviandoAnexoRef.current = true;
     setEnviandoAnexo(true);
     setErroArquivo(null);
@@ -477,6 +484,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       if (atual()) {
         enviandoAnexoRef.current = false;
         setEnviandoAnexo(false);
+        liberarAcao();
       }
     }
   };
@@ -576,7 +584,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
       <div className="flex flex-wrap gap-2 print:hidden">
         {status === "pendente" && (
-          <Button size="sm" onClick={() => gerar.mutate()} disabled={gerar.isPending}>
+          <Button size="sm" onClick={() => iniciarAcao() && gerar.mutate()} disabled={gerar.isPending || acaoEmAndamento}>
             {gerar.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             <FileText className="h-4 w-4 mr-1" /> Gerar formulário
           </Button>
@@ -595,23 +603,23 @@ export function EntregaComprovantePanel({ entrega }: Props) {
                   size="sm"
                   variant="outline"
                   onClick={() => setOpenSign(true)}
-                  disabled={enviandoAnexo}
-                  title={enviandoAnexo ? "Aguarde o envio do comprovante terminar." : undefined}
+                  disabled={acaoEmAndamento}
+                  title={acaoEmAndamento ? "Aguarde a ação em andamento terminar." : undefined}
                 >
                   <PenLine className="h-4 w-4 mr-1" /> Coletar assinatura digital
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setOpenUpload(true)}>
+                <Button size="sm" variant="outline" onClick={() => setOpenUpload(true)} disabled={acaoEmAndamento} title={acaoEmAndamento ? "Aguarde a ação em andamento terminar." : undefined}>
                   <Upload className="h-4 w-4 mr-1" /> Anexar comprovante
                 </Button>
               </>
             )}
             {(status === "anexado" || status === "assinatura_digital_coletada") && (
-              <Button size="sm" onClick={() => setOpenConfirm(true)}>
+              <Button size="sm" onClick={() => setOpenConfirm(true)} disabled={acaoEmAndamento}>
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Confirmar recebimento
               </Button>
             )}
             {isAdmin && status !== "confirmado" && status !== "dispensado" && (
-              <Button size="sm" variant="ghost" onClick={() => setOpenDispensa(true)}>
+              <Button size="sm" variant="ghost" onClick={() => setOpenDispensa(true)} disabled={acaoEmAndamento}>
                 <ShieldAlert className="h-4 w-4 mr-1" /> Dispensar assinatura
               </Button>
             )}
@@ -638,7 +646,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       )}
 
       {/* Dialog: Assinatura Digital */}
-      <Dialog open={openSign} onOpenChange={setOpenSign}>
+      <Dialog open={openSign} onOpenChange={(v) => (acaoEmAndamento ? undefined : setOpenSign(v))}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Coletar assinatura digital</DialogTitle><DialogDescription>Informe quem recebeu a entrega e colete a assinatura na área de desenho.</DialogDescription></DialogHeader>
           <div className="space-y-3">
@@ -717,7 +725,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenConfirm(false)}>Cancelar</Button>
-            <Button onClick={() => confirmar.mutate()} disabled={confirmar.isPending}>Confirmar</Button>
+            <Button onClick={() => iniciarAcao() && confirmar.mutate()} disabled={confirmar.isPending || acaoEmAndamento}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -732,7 +740,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDispensa(false)}>Cancelar</Button>
-            <Button onClick={() => dispensar.mutate()} disabled={dispensar.isPending || motivoDispensa.trim().length < 5}>Dispensar</Button>
+            <Button onClick={() => iniciarAcao() && dispensar.mutate()} disabled={dispensar.isPending || acaoEmAndamento || motivoDispensa.trim().length < 5}>Dispensar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
