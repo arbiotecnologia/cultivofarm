@@ -446,7 +446,7 @@ function DrillDownDialog({
                     <TableCell className="text-sm">{r.accounts_payable?.description}</TableCell>
                     <TableCell className="text-right">{brl(Number(r.original_amount))}</TableCell>
                     <TableCell className="text-right font-medium">
-                      {brl(saldoRestante(r.original_amount, r.paid_amount, r.discount_amount))}
+                      {brl(saldoRestante(r.original_amount, r.paid_amount, r.discount_amount, r.status))}
                     </TableCell>
                     <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
                   </TableRow>
