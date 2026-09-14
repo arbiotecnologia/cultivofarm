@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Label } from "@/components/ui/label";
@@ -372,7 +372,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {/* Dialog: Assinatura Digital */}
       <Dialog open={openSign} onOpenChange={setOpenSign}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Coletar assinatura digital</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Coletar assinatura digital</DialogTitle><DialogDescription>Informe quem recebeu a entrega e colete a assinatura na área de desenho.</DialogDescription></DialogHeader>
           <div className="space-y-3">
             <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
             <AssinaturaDigitalCanvas onConfirm={onConfirmSignature} onCancel={() => setOpenSign(false)} />
@@ -383,7 +383,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {/* Dialog: Upload */}
       <Dialog open={openUpload} onOpenChange={setOpenUpload}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Anexar comprovante assinado</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Anexar comprovante assinado</DialogTitle><DialogDescription>Envie o arquivo do formulário assinado e identifique quem recebeu.</DialogDescription></DialogHeader>
           <div className="space-y-3">
             <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
             <Input
@@ -399,7 +399,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {/* Dialog: Confirmar */}
       <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Confirmar recebimento</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Confirmar recebimento</DialogTitle><DialogDescription>Registre a confirmação do recebimento desta entrega, com ressalvas se necessário.</DialogDescription></DialogHeader>
           <div className="space-y-2">
             <Label>Ressalvas (opcional)</Label>
             <Textarea rows={3} value={ressalvas} onChange={(e) => setRessalvas(e.target.value)} placeholder="Descreva ressalvas se houver" />
@@ -418,7 +418,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {/* Dialog: Dispensa */}
       <Dialog open={openDispensa} onOpenChange={setOpenDispensa}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Dispensar assinatura</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Dispensar assinatura</DialogTitle><DialogDescription>Informe o motivo da dispensa. A ação é registrada para auditoria.</DialogDescription></DialogHeader>
           <div className="space-y-2">
             <Label>Motivo *</Label>
             <Textarea rows={3} value={motivoDispensa} onChange={(e) => setMotivoDispensa(e.target.value)} placeholder="Mínimo 5 caracteres" />
