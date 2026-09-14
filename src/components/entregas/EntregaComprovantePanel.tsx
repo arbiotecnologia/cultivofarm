@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -51,8 +51,29 @@ const MSG_FALHA_ASSINATURA_ENVIO =
 const MSG_FALHA_ASSINATURA_VINCULO =
   "A assinatura foi enviada, mas não foi possível registrá-la. Tente novamente — a imagem não será enviada de novo.";
 
-/** Assinatura já armazenada cuja vinculação falhou. Identidade = entrega + traço exato. */
-type AssinaturaPendente = { entregaId: string; traco: string; path: string };
+/**
+ * Assinatura já armazenada cuja vinculação falhou.
+ * Identidade = entrega + traço exato + recebedor informado no envio original.
+ * Guarda também o hash e o payload do recebedor ORIGINAIS, para que a nova
+ * tentativa registre exatamente a mesma assinatura já armazenada.
+ */
+type RecebedorPayload = { nome: string; documento: string; cargo: string; telefone: string };
+type AssinaturaPendente = {
+  entregaId: string;
+  traco: string;
+  path: string;
+  hash: string;
+  recebedor: RecebedorPayload;
+};
+
+function mesmoRecebedor(a: RecebedorPayload, b: RecebedorPayload) {
+  return (
+    a.nome.trim() === b.nome.trim() &&
+    (a.documento || "").trim() === (b.documento || "").trim() &&
+    (a.cargo || "").trim() === (b.cargo || "").trim() &&
+    (a.telefone || "").trim() === (b.telefone || "").trim()
+  );
+}
 
 export function EntregaComprovantePanel({ entrega }: Props) {
   const qc = useQueryClient();
@@ -73,8 +94,12 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   // Estruturado e associado à entrega + arquivo: só é reaproveitado se ambos coincidirem.
   const [pathPendente, setPathPendente] = useState<PathPendente | null>(null);
   // PNG de assinatura já armazenado cuja RPC falhou: reaproveitado na nova
-  // tentativa da MESMA entrega e MESMA assinatura (mesmo hash), sem reenvio.
+  // tentativa da MESMA entrega, MESMO traço e MESMO recebedor, sem reenvio,
+  // mantendo o hash e o payload originais associados àquele PNG.
   const [assinaturaPendente, setAssinaturaPendente] = useState<AssinaturaPendente | null>(null);
+  const [gerando, setGerando] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const [dispensando, setDispensando] = useState(false);
   const enviandoAnexoRef = useRef(false);
   // Trava síncrona COMPARTILHADA: assinatura, anexo, confirmação e dispensa
   // nunca correm em paralelo sobre a mesma comprovação.
@@ -95,6 +120,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setArquivo(null);
     setErroArquivo(null);
     setEnviandoAnexo(false);
+    // Uma operação antiga em voo nunca mantém o contexto novo bloqueado.
+    setGerando(false);
+    setConfirmando(false);
+    setDispensando(false);
     setPathPendente(null);
     setAssinaturaPendente(null);
     setOpenUpload(false);
@@ -196,57 +225,96 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setAcaoEmAndamento(false);
   };
 
-  const gerar = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.rpc("rpc_gerar_formulario_entrega" as any, {
-        p_entrega_id: entrega.id,
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast({ title: "Formulário gerado" });
-      invalidate();
-    },
-    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
-    onSettled: liberarAcao,
-  });
+  /**
+   * Runner das ações de comprovação (gerar/confirmar/dispensar).
+   * Captura entrega, payload e token no início; após o await, uma resposta
+   * de operação obsoleta não emite toast, não fecha diálogo, não limpa campos
+   * e não libera a trava do contexto atual. A invalidação usa apenas a
+   * entrega originalmente capturada.
+   */
+  const executarAcaoComprovacao = async (opts: {
+    setPendente: (v: boolean) => void;
+    executar: (entregaId: string) => Promise<void>;
+    sucessoTitulo: string;
+    aoConcluir?: () => void;
+  }) => {
+    if (!iniciarAcao()) return;
+    const entregaIdEnvio: string = entrega.id;
+    const token = ++opSeqRef.current;
+    opAtivaRef.current = token;
+    const atual = () => opAtivaRef.current === token && entregaAtivaRef.current === entregaIdEnvio;
+    opts.setPendente(true);
+    try {
+      await opts.executar(entregaIdEnvio);
+      if (!atual()) {
+        // Conclusão tardia: atualiza somente os dados da entrega original.
+        invalidate(entregaIdEnvio);
+        return;
+      }
+      toast({ title: opts.sucessoTitulo });
+      opts.aoConcluir?.();
+      invalidate(entregaIdEnvio);
+    } catch {
+      if (!atual()) return;
+      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
+    } finally {
+      if (atual()) {
+        opts.setPendente(false);
+        liberarAcao();
+      }
+    }
+  };
 
-  const confirmar = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("rpc_confirmar_recebimento_entrega" as any, {
-        p_entrega_id: entrega.id,
-        p_payload: { ressalvas: ressalvas || null },
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Recebimento confirmado" });
-      setOpenConfirm(false);
-      setRessalvas("");
-      invalidate();
-    },
-    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
-    onSettled: liberarAcao,
-  });
+  const gerarFormulario = () =>
+    executarAcaoComprovacao({
+      setPendente: setGerando,
+      sucessoTitulo: "Formulário gerado",
+      executar: async (entregaId) => {
+        const { error } = await supabase.rpc("rpc_gerar_formulario_entrega" as any, {
+          p_entrega_id: entregaId,
+        });
+        if (error) throw error;
+      },
+    });
 
-  const dispensar = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("rpc_dispensar_assinatura_entrega" as any, {
-        p_entrega_id: entrega.id,
-        p_motivo: motivoDispensa,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Assinatura dispensada" });
-      setOpenDispensa(false);
-      setMotivoDispensa("");
-      invalidate();
-    },
-    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
-    onSettled: liberarAcao,
-  });
+  const confirmarRecebimento = () => {
+    // Payload capturado no início: uma edição posterior não altera o envio.
+    const ressalvasEnvio = ressalvas || null;
+    return executarAcaoComprovacao({
+      setPendente: setConfirmando,
+      sucessoTitulo: "Recebimento confirmado",
+      aoConcluir: () => {
+        setOpenConfirm(false);
+        setRessalvas("");
+      },
+      executar: async (entregaId) => {
+        const { error } = await supabase.rpc("rpc_confirmar_recebimento_entrega" as any, {
+          p_entrega_id: entregaId,
+          p_payload: { ressalvas: ressalvasEnvio },
+        });
+        if (error) throw error;
+      },
+    });
+  };
+
+  const dispensarAssinatura = () => {
+    const motivoEnvio = motivoDispensa;
+    return executarAcaoComprovacao({
+      setPendente: setDispensando,
+      sucessoTitulo: "Assinatura dispensada",
+      aoConcluir: () => {
+        setOpenDispensa(false);
+        setMotivoDispensa("");
+      },
+      executar: async (entregaId) => {
+        const { error } = await supabase.rpc("rpc_dispensar_assinatura_entrega" as any, {
+          p_entrega_id: entregaId,
+          p_motivo: motivoEnvio,
+        });
+        if (error) throw error;
+      },
+    });
+  };
 
   /**
    * Coleta da assinatura digital do comprovante.
@@ -263,22 +331,28 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
     // Snapshot imutável no início.
     const entregaIdEnvio: string = entrega.id;
-    const recebedorEnvio = { ...recebedor };
-    const hash = data.hash;
+    const recebedorAtualEnvio: RecebedorPayload = { ...recebedor };
     const svgPath = data.svgPath;
     const token = ++opSeqRef.current;
     opAtivaRef.current = token;
     const atual = () => opAtivaRef.current === token && entregaAtivaRef.current === entregaIdEnvio;
 
     // Reaproveita o PNG já armazenado quando só a vinculação falhou antes.
-    const reaproveitado =
+    // Exige MESMA entrega, MESMO traço e MESMO recebedor; nesse caso o hash e
+    // o payload do recebedor originais (associados àquele PNG) são reutilizados,
+    // pois o canvas gera um hash novo a cada confirmação.
+    const pendenteAplicavel =
       assinaturaPendente &&
       assinaturaPendente.entregaId === entregaIdEnvio &&
-      assinaturaPendente.traco === svgPath
-        ? assinaturaPendente.path
+      assinaturaPendente.traco === svgPath &&
+      mesmoRecebedor(assinaturaPendente.recebedor, recebedorAtualEnvio)
+        ? assinaturaPendente
         : null;
 
-    let path = reaproveitado;
+    const hash = pendenteAplicavel ? pendenteAplicavel.hash : data.hash;
+    const recebedorEnvio = pendenteAplicavel ? pendenteAplicavel.recebedor : recebedorAtualEnvio;
+
+    let path = pendenteAplicavel ? pendenteAplicavel.path : null;
     try {
       if (!path) {
         const novoPath = `entregas/${entregaIdEnvio}/assinaturas/${crypto.randomUUID()}.png`;
@@ -314,7 +388,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         if (!atual()) return;
         // PNG já armazenado: a nova tentativa apenas vincula, sem reenviar
         // e sem apagar o objeto (resultado incerto).
-        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path });
+        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path, hash, recebedor: recebedorEnvio });
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
         return;
       }
@@ -330,7 +404,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     } catch {
       if (!atual()) return;
       if (path) {
-        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path });
+        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path, hash, recebedor: recebedorEnvio });
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
       } else {
         toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_ENVIO, variant: "destructive" });
@@ -584,8 +658,8 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
       <div className="flex flex-wrap gap-2 print:hidden">
         {status === "pendente" && (
-          <Button size="sm" onClick={() => iniciarAcao() && gerar.mutate()} disabled={gerar.isPending || acaoEmAndamento}>
-            {gerar.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+          <Button size="sm" onClick={() => { void gerarFormulario(); }} disabled={gerando || acaoEmAndamento}>
+            {gerando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             <FileText className="h-4 w-4 mr-1" /> Gerar formulário
           </Button>
         )}
@@ -720,7 +794,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
 
       {/* Dialog: Confirmar */}
-      <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+      <Dialog open={openConfirm} onOpenChange={(v) => (acaoEmAndamento ? undefined : setOpenConfirm(v))}>
         <DialogContent>
           <DialogHeader><DialogTitle>Confirmar recebimento</DialogTitle><DialogDescription>Registre a confirmação do recebimento desta entrega, com ressalvas se necessário.</DialogDescription></DialogHeader>
           <div className="space-y-2">
@@ -733,13 +807,13 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenConfirm(false)}>Cancelar</Button>
-            <Button onClick={() => iniciarAcao() && confirmar.mutate()} disabled={confirmar.isPending || acaoEmAndamento}>Confirmar</Button>
+            <Button onClick={() => { void confirmarRecebimento(); }} disabled={confirmando || acaoEmAndamento}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog: Dispensa */}
-      <Dialog open={openDispensa} onOpenChange={setOpenDispensa}>
+      <Dialog open={openDispensa} onOpenChange={(v) => (acaoEmAndamento ? undefined : setOpenDispensa(v))}>
         <DialogContent>
           <DialogHeader><DialogTitle>Dispensar assinatura</DialogTitle><DialogDescription>Informe o motivo da dispensa. A ação é registrada para auditoria.</DialogDescription></DialogHeader>
           <div className="space-y-2">
@@ -748,7 +822,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDispensa(false)}>Cancelar</Button>
-            <Button onClick={() => iniciarAcao() && dispensar.mutate()} disabled={dispensar.isPending || acaoEmAndamento || motivoDispensa.trim().length < 5}>Dispensar</Button>
+            <Button onClick={() => { void dispensarAssinatura(); }} disabled={dispensando || acaoEmAndamento || motivoDispensa.trim().length < 5}>Dispensar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

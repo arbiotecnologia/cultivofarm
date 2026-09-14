@@ -227,3 +227,122 @@ describe("EntregaComprovantePanel — assinatura do comprovante", () => {
     ).toBe(false);
   });
 });
+
+describe("EntregaComprovantePanel — reuso do PNG da assinatura", () => {
+  it("retry usa o hash e o payload ORIGINAIS e faz um único upload", async () => {
+    // Cada confirmação gera um hash novo no canvas (timestamp distinto).
+    let t = 0;
+    vi.spyOn(Date.prototype, "toISOString").mockImplementation(() => `2026-01-01T00:00:0${t++}.000Z`);
+    rpcMock.mockResolvedValueOnce({ data: null, error: { message: "falha" } });
+    await abrirAssinatura();
+    await assinar();
+    await waitFor(() => expect(screen.getByTestId("assinatura-vinculo-pendente")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /confirmar assinatura/i }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
+
+    const p1 = rpcMock.mock.calls[0][1].p_payload;
+    const p2 = rpcMock.mock.calls[1][1].p_payload;
+    expect(p2.assinatura_hash).toBe(p1.assinatura_hash);
+    expect(p2.assinatura_digital_png_path).toBe(p1.assinatura_digital_png_path);
+    expect(p2.recebedor_nome).toBe(p1.recebedor_nome);
+    expect(p2.recebedor_documento).toBe(p1.recebedor_documento);
+    expect(p2.recebedor_cargo).toBe(p1.recebedor_cargo);
+    expect(p2.recebedor_telefone).toBe(p1.recebedor_telefone);
+    expect(uploadMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("mudar o recebedor descarta o pendente: reenvia o PNG com o novo payload", async () => {
+    let n = 0;
+    (globalThis.crypto as any).randomUUID = () => `uuid-${++n}`;
+    rpcMock.mockResolvedValueOnce({ data: null, error: { message: "falha" } });
+    await abrirAssinatura();
+    await assinar();
+    await waitFor(() => expect(screen.getByTestId("assinatura-vinculo-pendente")).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/nome do recebedor/i), { target: { value: "João" } });
+    fireEvent.click(screen.getByRole("button", { name: /confirmar assinatura/i }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
+    expect(uploadMock).toHaveBeenCalledTimes(2);
+    expect(rpcMock.mock.calls[1][1].p_payload.recebedor_nome).toBe("João");
+    expect(rpcMock.mock.calls[1][1].p_payload.assinatura_digital_png_path).toBe(
+      "entregas/e1/assinaturas/uuid-2.png",
+    );
+  });
+});
+
+describe("EntregaComprovantePanel — ações de comprovação isoladas por entrega", () => {
+  function statusPendente() {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "entregas"
+        ? chain({ data: { id: "e1", comprovante_status: "pendente", validation_token: null } })
+        : chain({ data: null }),
+    );
+  }
+
+  it("gerar: conclusão tardia após A→B→A não emite toast nem destrava o contexto novo", async () => {
+    statusPendente();
+    const d = deferred<any>();
+    rpcMock.mockReturnValueOnce(d.promise);
+    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+    fireEvent.click(await screen.findByRole("button", { name: /gerar formulário/i }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
+    rerender(<EntregaComprovantePanel entrega={{ id: "e1" }} />);
+    toastMock.mockClear();
+    d.resolve({ data: null, error: null });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(toastMock).not.toHaveBeenCalled();
+    // O botão do contexto novo continua utilizável (mutação antiga não bloqueia).
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /gerar formulário/i })).not.toBeDisabled(),
+    );
+  });
+
+  it("confirmar: falha tardia da entrega antiga não fecha o diálogo nem limpa ressalvas da nova", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "entregas"
+        ? chain({ data: { id: "x", comprovante_status: "anexado", validation_token: null } })
+        : chain({ data: { numero_formulario: "AR-ENT-000004" } }),
+    );
+    const d = deferred<any>();
+    rpcMock.mockReturnValueOnce(d.promise);
+    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+    fireEvent.click(await screen.findByRole("button", { name: /confirmar recebimento/i }));
+    fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i), { target: { value: "caixa amassada" } });
+    fireEvent.click(screen.getByRole("button", { name: /^confirmar$/i }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+    // Payload capturado no início.
+    expect(rpcMock.mock.calls[0][1].p_payload.ressalvas).toBe("caixa amassada");
+
+    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
+    fireEvent.click(await screen.findByRole("button", { name: /confirmar recebimento/i }));
+    fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i), { target: { value: "nova" } });
+    toastMock.mockClear();
+    d.resolve({ data: null, error: { message: "falha" } });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(toastMock).not.toHaveBeenCalled();
+    expect((screen.getByPlaceholderText(/descreva ressalvas/i) as HTMLTextAreaElement).value).toBe("nova");
+    expect(screen.getByRole("button", { name: /^confirmar$/i })).not.toBeDisabled();
+  });
+
+  it("dispensar: troca de entrega reseta o motivo e o término antigo não afeta a nova", async () => {
+    const d = deferred<any>();
+    rpcMock.mockReturnValueOnce(d.promise);
+    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
+    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "cliente ausente" } });
+    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+    expect(rpcMock.mock.calls[0][1].p_motivo).toBe("cliente ausente");
+
+    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
+    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
+    expect((screen.getByPlaceholderText(/mínimo 5 caracteres/i) as HTMLTextAreaElement).value).toBe("");
+    toastMock.mockClear();
+    d.resolve({ data: null, error: null });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(toastMock).not.toHaveBeenCalled();
+  });
+});
