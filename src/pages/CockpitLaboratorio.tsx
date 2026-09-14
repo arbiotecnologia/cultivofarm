@@ -255,7 +255,7 @@ export default function CockpitLaboratorio() {
 
 
   const { data: history = [], isLoading: historyLoading, isError: historyError, refetch: refetchHistory } = useQuery({
-    queryKey: ["esteira-history", selectedItem?.os_id],
+    queryKey: ["esteira-history", selectedItem?.os_id, selectedItem?.status_esteira_oficial],
     enabled: !!selectedItem,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -633,33 +633,33 @@ export default function CockpitLaboratorio() {
         </p>
         <div className="flex flex-wrap gap-2 w-full lg:flex-1 justify-end">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger aria-label="Status" className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label="Filtrar por status" className="h-9 min-w-0 flex-1 basis-[145px] sm:flex-none sm:w-[150px]"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">Todos os status</SelectItem>{Array.from(new Set(items.map(i => i.status_esteira_oficial).filter(Boolean))).sort().map(status => <SelectItem key={status} value={status}>{status.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-            <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue placeholder="Origem" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Todas</SelectItem><SelectItem value="manual">Manual</SelectItem><SelectItem value="onfarm">On-Farm</SelectItem></SelectContent>
+            <SelectTrigger aria-label="Filtrar por origem" className="h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[170px]"><SelectValue placeholder="Origem" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todas as origens</SelectItem><SelectItem value="manual">Manual</SelectItem><SelectItem value="onfarm">On-Farm</SelectItem></SelectContent>
           </Select>
           <Select value={filterPrioridade} onValueChange={setFilterPrioridade}>
-            <SelectTrigger className="h-9 w-[110px] text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Todas</SelectItem><SelectItem value="alta">Alta</SelectItem><SelectItem value="media">Média</SelectItem><SelectItem value="baixa">Baixa</SelectItem></SelectContent>
+            <SelectTrigger aria-label="Filtrar por prioridade" className="h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[180px]"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todas as prioridades</SelectItem><SelectItem value="alta">Alta</SelectItem><SelectItem value="media">Média</SelectItem><SelectItem value="baixa">Baixa</SelectItem></SelectContent>
           </Select>
           <Select value={filterCliente} onValueChange={value => { setFilterCliente(value); setFilterFazenda("all"); setFilterProduto("all"); }}>
-            <SelectTrigger className="h-9 w-[130px] text-xs truncate"><SelectValue placeholder="Cliente" /></SelectTrigger>
+            <SelectTrigger aria-label="Filtrar por cliente" className="h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]"><SelectValue placeholder="Cliente" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Clientes</SelectItem>
               {uniqueClientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterFazenda} onValueChange={setFilterFazenda}>
-            <SelectTrigger className="h-9 w-[130px] text-xs truncate"><SelectValue placeholder="Fazenda" /></SelectTrigger>
+            <SelectTrigger aria-label="Filtrar por fazenda" className="h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]"><SelectValue placeholder="Fazenda" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas Fazendas</SelectItem>
               {uniqueFazendas.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterProduto} onValueChange={setFilterProduto}>
-            <SelectTrigger className="h-9 w-[130px] text-xs truncate"><SelectValue placeholder="Produto" /></SelectTrigger>
+            <SelectTrigger aria-label="Filtrar por produto" className="h-9 min-w-0 flex-1 basis-[145px] text-xs truncate sm:flex-none sm:w-[150px]"><SelectValue placeholder="Produto" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Produtos</SelectItem>
               {uniqueProdutos.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
@@ -674,8 +674,8 @@ export default function CockpitLaboratorio() {
       
       <div className="flex-1 overflow-hidden mt-2">
         <Tabs defaultValue="fluxo" className="h-full flex flex-col">
-          <div className="px-4 border-b bg-background overflow-x-auto">
-            <TabsList className="bg-muted/50 mb-[-1px]">
+          <div className="px-4 border-b bg-background">
+            <TabsList className="h-auto w-full flex flex-wrap justify-start bg-muted/50 mb-[-1px]">
               <TabsTrigger value="fluxo" className="flex items-center gap-2 py-2">
                 <Target className="h-4 w-4" /> <span>Fluxo de Produção</span>
               </TabsTrigger>
@@ -707,7 +707,7 @@ export default function CockpitLaboratorio() {
                       <ScrollArea className="flex-1">
                         <div className="space-y-2 pb-4">
                           {stageItems.map(i => renderCard(i))}
-                          {stageItems.length === 0 && <div className="h-14 border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground text-[9px] italic">Sem registros</div>}
+                          {stageItems.length === 0 && <div className="min-h-14 border-2 border-dashed rounded-lg flex items-center justify-center p-2 text-center text-muted-foreground text-[9px] italic">Nenhuma OS nesta etapa com os filtros atuais</div>}
                         </div>
                       </ScrollArea>
                     </div>
@@ -717,9 +717,9 @@ export default function CockpitLaboratorio() {
 
               <div className="lg:hidden p-4 overflow-y-auto h-full">
                 <Tabs defaultValue="aguardando" className="w-full">
-                  <TabsList className="w-full h-12 overflow-x-auto justify-start bg-muted/50 p-1 mb-4 no-scrollbar scrollbar-hide">
+                  <TabsList aria-label="Etapas da produção" className="grid h-auto w-full grid-cols-2 gap-1 bg-muted/50 p-1 mb-4 sm:grid-cols-3">
                     {STAGES.map(s => (
-                      <TabsTrigger key={s.id} value={s.id} className="text-[10px] px-4 h-full uppercase font-bold">
+                      <TabsTrigger key={s.id} value={s.id} className="min-h-11 whitespace-normal px-2 py-2 text-[10px] leading-tight uppercase font-bold">
                         {s.mobileLabel} ({filteredItems.filter(i => i.stage === s.id).length})
                       </TabsTrigger>
                     ))}
@@ -727,7 +727,7 @@ export default function CockpitLaboratorio() {
                   {STAGES.map(s => (
                     <TabsContent key={s.id} value={s.id} className="space-y-3 pb-20">
                       {filteredItems.filter(i => i.stage === s.id).map(item => renderCard(item))}
-                      {filteredItems.filter(i => i.stage === s.id).length === 0 && <div className="text-center p-10 text-muted-foreground italic text-sm">Vazio</div>}
+                      {filteredItems.filter(i => i.stage === s.id).length === 0 && <div className="text-center p-10 text-muted-foreground italic text-sm">Nenhuma OS nesta etapa com os filtros atuais</div>}
                     </TabsContent>
                   ))}
                 </Tabs>
@@ -858,7 +858,7 @@ export default function CockpitLaboratorio() {
                           value={selectedItem.prioridade}
                           onValueChange={(val) => atualizarPrioridade(selectedItem.os_id, selectedItem.origem, val)}
                         >
-                          <SelectTrigger className="h-7 w-auto gap-1.5 px-2 text-[11px] font-bold border-none bg-transparent shadow-none focus:ring-0">
+                          <SelectTrigger aria-label="Alterar prioridade da OS" className="h-7 w-auto gap-1.5 px-2 text-[11px] font-bold border-none bg-transparent shadow-none focus:ring-0">
                             <Star className="h-3 w-3" />
                             <SelectValue />
                           </SelectTrigger>
@@ -876,7 +876,7 @@ export default function CockpitLaboratorio() {
                           onValueChange={(val) => val !== "none" && vincularResponsavel(selectedItem.id, val)}
                           disabled={!canEditResponsavel || busy}
                         >
-                          <SelectTrigger className="h-7 w-auto gap-1.5 px-2 text-[11px] font-semibold border-none bg-transparent shadow-none focus:ring-0 disabled:opacity-100">
+                          <SelectTrigger aria-label="Alterar responsável pela produção" className="h-7 w-auto gap-1.5 px-2 text-[11px] font-semibold border-none bg-transparent shadow-none focus:ring-0 disabled:opacity-100">
                             <UserPlus className="h-3 w-3" />
                             <SelectValue placeholder="Não atribuído" />
                           </SelectTrigger>

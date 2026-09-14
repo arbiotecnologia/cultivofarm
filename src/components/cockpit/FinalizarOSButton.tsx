@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, AlertTriangle, Loader2, Info } from "lucide-react";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
@@ -13,7 +13,6 @@ import {
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 
 interface Props {
   osId: string;
@@ -39,8 +38,11 @@ export function FinalizarOSButton({
   const { finalizarOS } = useEsteiraLaboratorio();
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const submittingRef = useRef(false);
 
   const handleFinalizar = async () => {
+    if (submittingRef.current) return;
+
     // A finalização agora depende de pode_finalizar (entrega_confirmada)
     // aplicação_bloqueante explicitamente false na view, então não impede.
     if (!podeFinalizar) {
@@ -54,6 +56,7 @@ export function FinalizarOSButton({
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     try {
       const success = await finalizarOS("", osId, origem);
@@ -61,7 +64,12 @@ export function FinalizarOSButton({
         onSuccess?.();
         setConfirmOpen(false);
       }
+    } catch {
+      toast.error("Não foi possível finalizar esta OS.", {
+        description: "Tente novamente. Se o problema continuar, atualize a esteira.",
+      });
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -75,15 +83,19 @@ export function FinalizarOSButton({
           onClick={() => {
             toast.info("Ações pendentes para finalização", {
               description: (
-                <ul className="list-disc pl-4 mt-2 space-y-1">
-                  {bloqueios.map((b, i) => <li key={i}>{b}</li>)}
-                </ul>
+                {bloqueios.length > 0 ? (
+                  <ul className="list-disc pl-4 mt-2 space-y-1">
+                    {bloqueios.map((b, i) => <li key={i}>{b}</li>)}
+                  </ul>
+                ) : (
+                  <p>A entrega precisa ser confirmada e todas as etapas concluídas.</p>
+                )}
               )
             });
           }}
         >
           <AlertTriangle className="h-4 w-4 mr-2" />
-          {showLabel && "Finalizar OS (Pendente)"}
+          {showLabel && "Ver pendências para finalizar"}
         </Button>
       </div>
     );
@@ -101,7 +113,9 @@ export function FinalizarOSButton({
         {showLabel && "Finalizar OS"}
       </Button>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog open={confirmOpen} onOpenChange={(open) => {
+        if (!loading || open) setConfirmOpen(open);
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Finalização da OS</AlertDialogTitle>
@@ -124,8 +138,16 @@ export function FinalizarOSButton({
 
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleFinalizar} className="bg-primary">
-              Sim, Finalizar OS
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                void handleFinalizar();
+              }}
+              disabled={loading}
+              className="bg-primary"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {loading ? "Finalizando…" : "Sim, Finalizar OS"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
