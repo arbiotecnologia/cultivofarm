@@ -88,14 +88,22 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     },
   });
 
-  // Nunca inferir "confirmado" pela existência do formulário, nem usar
-  // "pendente" como fallback de falha de consulta.
-  const status: string | null = entregaErro ? null : (entregaAtual?.comprovante_status ?? "pendente");
-  const meta = status ? STATUS_LABEL[status] || STATUS_LABEL.pendente : null;
-  const validationToken = entregaAtual?.validation_token ?? null;
   const isAdmin = role === "administrador" || role === "gestor" || role === "administrativo";
   const carregando = entregaCarregando || comprovanteCarregando;
+  // Falha em qualquer uma das duas consultas invalida status e ações,
+  // inclusive quando só o comprovante falha e a entrega carregou.
   const falhou = entregaErro || comprovanteErro;
+  // Entrega inexistente ou sem acesso: não inferir "pendente".
+  const entregaAusente = !entregaCarregando && !entregaErro && !entregaAtual;
+
+  // Nunca inferir "confirmado" pela existência do formulário, nem usar
+  // "pendente" como fallback de falha/ausência de consulta.
+  const status: string | null =
+    falhou || carregando || entregaAusente
+      ? null
+      : (entregaAtual?.comprovante_status ?? null);
+  const meta = status ? STATUS_LABEL[status] || STATUS_LABEL.pendente : null;
+  const validationToken = (!falhou && !carregando && entregaAtual?.validation_token) || null;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["entregas"] });
