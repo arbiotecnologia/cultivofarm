@@ -246,46 +246,54 @@ export function TermoEntregaPanel({ entregaId }: Props) {
         p_idempotency_key: idem,
       });
       if (error) throw error;
-      invalidar();
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       toast({ title: "Termo assinado" });
     });
 
   const pdfMutation = useMutation({
-    mutationFn: async (action: "generate" | "signed_url") => {
+    mutationFn: async ({ action, termoId }: { action: "generate" | "signed_url"; termoId: string }) => {
       const { data, error } = await supabase.functions.invoke("entrega-termo-pdf", {
-        body: { termo_id: termo?.id, action },
+        body: { termo_id: termoId, action },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       return data as any;
     },
-    onError: (e: any) =>
-      toast({ title: "Falha no documento", description: traduzirErro(e?.message), variant: "destructive" }),
   });
 
   const gerarPdf = () =>
-    run(async () => {
-      await pdfMutation.mutateAsync("generate");
-      invalidar();
+    run(async ({ vivo, entregaDaOperacao }) => {
+      if (!termo?.id) throw new ErroValidacao("Gere o termo antes de emitir o PDF.");
+      await pdfMutation.mutateAsync({ action: "generate", termoId: termo.id });
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       toast({ title: "PDF do termo disponível" });
     });
 
   const baixarPdf = () =>
-    run(async () => {
-      const res = await pdfMutation.mutateAsync("signed_url");
-      if (res?.signed_url) window.open(res.signed_url, "_blank", "noopener,noreferrer");
+    run(async ({ vivo }) => {
+      if (!termo?.id) throw new ErroValidacao("Gere o termo antes de baixar o PDF.");
+      const res = await pdfMutation.mutateAsync({ action: "signed_url", termoId: termo.id });
+      if (!vivo()) return;
+      // Ausência de link é falha explícita: nunca silêncio.
+      if (!res?.signed_url) throw new ErroValidacao(MSG_PDF_SEM_LINK);
+      window.open(res.signed_url, "_blank", "noopener,noreferrer");
     });
 
   const cancelarTermo = () =>
-    run(async () => {
-      if (motivoCancel.trim().length < 5) throw new Error("Informe um motivo com pelo menos 5 caracteres.");
+    run(async ({ vivo, entregaDaOperacao }) => {
+      if (!termo?.id) throw new ErroValidacao("Não há termo para cancelar.");
+      if (motivoCancel.trim().length < 5)
+        throw new ErroValidacao("Informe um motivo com pelo menos 5 caracteres.");
       const { error } = await supabase.rpc("rpc_entrega_cancelar_termo_v1" as any, {
         p_termo_id: termo.id,
         p_motivo: motivoCancel.trim(),
       });
       if (error) throw error;
+      invalidar(entregaDaOperacao);
+      if (!vivo()) return;
       setMotivoCancel("");
-      invalidar();
       toast({ title: "Termo cancelado" });
     });
 
