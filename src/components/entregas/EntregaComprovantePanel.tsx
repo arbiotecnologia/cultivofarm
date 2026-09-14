@@ -225,57 +225,96 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setAcaoEmAndamento(false);
   };
 
-  const gerar = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.rpc("rpc_gerar_formulario_entrega" as any, {
-        p_entrega_id: entrega.id,
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast({ title: "Formulário gerado" });
-      invalidate();
-    },
-    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
-    onSettled: liberarAcao,
-  });
+  /**
+   * Runner das ações de comprovação (gerar/confirmar/dispensar).
+   * Captura entrega, payload e token no início; após o await, uma resposta
+   * de operação obsoleta não emite toast, não fecha diálogo, não limpa campos
+   * e não libera a trava do contexto atual. A invalidação usa apenas a
+   * entrega originalmente capturada.
+   */
+  const executarAcaoComprovacao = async (opts: {
+    setPendente: (v: boolean) => void;
+    executar: (entregaId: string) => Promise<void>;
+    sucessoTitulo: string;
+    aoConcluir?: () => void;
+  }) => {
+    if (!iniciarAcao()) return;
+    const entregaIdEnvio: string = entrega.id;
+    const token = ++opSeqRef.current;
+    opAtivaRef.current = token;
+    const atual = () => opAtivaRef.current === token && entregaAtivaRef.current === entregaIdEnvio;
+    opts.setPendente(true);
+    try {
+      await opts.executar(entregaIdEnvio);
+      if (!atual()) {
+        // Conclusão tardia: atualiza somente os dados da entrega original.
+        invalidate(entregaIdEnvio);
+        return;
+      }
+      toast({ title: opts.sucessoTitulo });
+      opts.aoConcluir?.();
+      invalidate(entregaIdEnvio);
+    } catch {
+      if (!atual()) return;
+      toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" });
+    } finally {
+      if (atual()) {
+        opts.setPendente(false);
+        liberarAcao();
+      }
+    }
+  };
 
-  const confirmar = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("rpc_confirmar_recebimento_entrega" as any, {
-        p_entrega_id: entrega.id,
-        p_payload: { ressalvas: ressalvas || null },
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Recebimento confirmado" });
-      setOpenConfirm(false);
-      setRessalvas("");
-      invalidate();
-    },
-    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
-    onSettled: liberarAcao,
-  });
+  const gerarFormulario = () =>
+    executarAcaoComprovacao({
+      setPendente: setGerando,
+      sucessoTitulo: "Formulário gerado",
+      executar: async (entregaId) => {
+        const { error } = await supabase.rpc("rpc_gerar_formulario_entrega" as any, {
+          p_entrega_id: entregaId,
+        });
+        if (error) throw error;
+      },
+    });
 
-  const dispensar = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("rpc_dispensar_assinatura_entrega" as any, {
-        p_entrega_id: entrega.id,
-        p_motivo: motivoDispensa,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Assinatura dispensada" });
-      setOpenDispensa(false);
-      setMotivoDispensa("");
-      invalidate();
-    },
-    onError: () => toast({ title: "Erro", description: MSG_ERRO_GENERICA, variant: "destructive" }),
-    onSettled: liberarAcao,
-  });
+  const confirmarRecebimento = () => {
+    // Payload capturado no início: uma edição posterior não altera o envio.
+    const ressalvasEnvio = ressalvas || null;
+    return executarAcaoComprovacao({
+      setPendente: setConfirmando,
+      sucessoTitulo: "Recebimento confirmado",
+      aoConcluir: () => {
+        setOpenConfirm(false);
+        setRessalvas("");
+      },
+      executar: async (entregaId) => {
+        const { error } = await supabase.rpc("rpc_confirmar_recebimento_entrega" as any, {
+          p_entrega_id: entregaId,
+          p_payload: { ressalvas: ressalvasEnvio },
+        });
+        if (error) throw error;
+      },
+    });
+  };
+
+  const dispensarAssinatura = () => {
+    const motivoEnvio = motivoDispensa;
+    return executarAcaoComprovacao({
+      setPendente: setDispensando,
+      sucessoTitulo: "Assinatura dispensada",
+      aoConcluir: () => {
+        setOpenDispensa(false);
+        setMotivoDispensa("");
+      },
+      executar: async (entregaId) => {
+        const { error } = await supabase.rpc("rpc_dispensar_assinatura_entrega" as any, {
+          p_entrega_id: entregaId,
+          p_motivo: motivoEnvio,
+        });
+        if (error) throw error;
+      },
+    });
+  };
 
   /**
    * Coleta da assinatura digital do comprovante.
