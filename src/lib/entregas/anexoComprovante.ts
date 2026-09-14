@@ -73,3 +73,33 @@ export function formatarTamanho(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+/** Caminho já enviado ao armazenamento, associado à entrega e ao arquivo exato. */
+export type PathPendente = {
+  entregaId: string;
+  path: string;
+  nome: string;
+  tamanho: number;
+  lastModified: number;
+  mime: string;
+};
+
+/**
+ * Só reaproveita um upload pendente quando pertence à MESMA entrega e ao MESMO
+ * arquivo (nome, tamanho, data de modificação e MIME). Evita atribuir um caminho
+ * antigo a uma nova entrega ou a outro arquivo.
+ */
+export function pendenteReusavelPara(
+  pendente: PathPendente | null | undefined,
+  entregaId: string | undefined,
+  file: File | null | undefined,
+  mime: string,
+): string | null {
+  if (!pendente || !entregaId || !file) return null;
+  if (pendente.entregaId !== entregaId) return null;
+  if (pendente.nome !== file.name) return null;
+  if (pendente.tamanho !== file.size) return null;
+  if (pendente.lastModified !== file.lastModified) return null;
+  if (pendente.mime !== mime) return null;
+  return pendente.path;
+}
