@@ -650,8 +650,16 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Coletar assinatura digital</DialogTitle><DialogDescription>Informe quem recebeu a entrega e colete a assinatura na área de desenho.</DialogDescription></DialogHeader>
           <div className="space-y-3">
-            <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} />
-            <AssinaturaDigitalCanvas onConfirm={onConfirmSignature} onCancel={() => setOpenSign(false)} />
+            <RecebedorFields recebedor={recebedor} setRecebedor={setRecebedor} disabled={acaoEmAndamento} />
+            {assinaturaPendente && assinaturaPendente.entregaId === entrega?.id && (
+              <p className="text-xs text-muted-foreground" data-testid="assinatura-vinculo-pendente">
+                A imagem da assinatura já está armazenada. A nova tentativa fará apenas o registro, sem enviá-la novamente.
+              </p>
+            )}
+            <AssinaturaDigitalCanvas
+              onConfirm={onConfirmSignature}
+              onCancel={() => (acaoEmAndamento ? undefined : setOpenSign(false))}
+            />
           </div>
         </DialogContent>
       </Dialog>
