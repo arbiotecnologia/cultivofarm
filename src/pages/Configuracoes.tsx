@@ -239,6 +239,12 @@ export default function Configuracoes() {
 
   const createUser = useMutation({
     mutationFn: async () => {
+      if (!newUser.nome.trim() || !newUser.email.trim() || !newUser.password) {
+        throw new Error("Preencha nome, email e senha.");
+      }
+      if (newUser.password.length < 6) {
+        throw new Error("A senha deve ter no mínimo 6 caracteres.");
+      }
       if (newUser.roles.length === 0) {
         throw new Error("Selecione ao menos um perfil de acesso.");
       }
@@ -251,6 +257,8 @@ export default function Configuracoes() {
       const principal = newUserVinculos.find(v => v.principal)?.cliente_id ?? newUserVinculos[0]?.cliente_id;
       const payload: any = {
         ...newUser,
+        nome: newUser.nome.trim(),
+        email: newUser.email.trim(),
         // compat com fluxo legado que espera `role` string
         role: newUser.roles[0],
         roles: newUser.roles,
@@ -624,7 +632,7 @@ export default function Configuracoes() {
                         <div className="space-y-3">
                           <div><Label>Nome *</Label><Input value={newUser.nome} onChange={e => setNewUser({ ...newUser, nome: e.target.value })} /></div>
                           <div><Label>Email *</Label><Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} /></div>
-                          <div><Label>Senha *</Label><Input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} /></div>
+                           <div><Label>Senha *</Label><Input type="password" minLength={6} value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} /></div>
                           <div>
                             <Label>Perfis * (selecione um ou mais)</Label>
                             <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
