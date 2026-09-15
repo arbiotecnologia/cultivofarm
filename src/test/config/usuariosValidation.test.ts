@@ -157,3 +157,37 @@ describe("busca e paginação", () => {
     expect(paginar([], 1, 25)).toMatchObject({ total: 0, totalPaginas: 1, inicio: 0 });
   });
 });
+
+describe("papéis — validação adversarial", () => {
+  it("rejeita papel inexistente", () => {
+    expect(validarNovoUsuario({ ...base, roles: ["inexistente"] }).roles).toBeTruthy();
+    expect(validarNovoUsuario({ ...base, roles: ["administrativo", "root"] }).roles).toBeTruthy();
+  });
+
+  it("rejeita papéis duplicados", () => {
+    expect(validarNovoUsuario({ ...base, roles: ["administrativo", "administrativo"] }).roles).toBeTruthy();
+  });
+
+  it("rejeita os dois papéis de parceiro juntos", () => {
+    const e = validarNovoUsuario({ ...base, roles: ["parceiro_b2b", "parceiro_b2b_tecnico"], partner_id: "p1" });
+    expect(e.roles).toBeTruthy();
+  });
+
+  it("preserva produtor exclusivo e aceita combinações válidas", () => {
+    expect(validarNovoUsuario({ ...base, roles: ["cliente_produtor", "gestor"] }).roles).toBeTruthy();
+    expect(validarNovoUsuario({ ...base, roles: ["gestor", "financeiro"] }).roles).toBeUndefined();
+  });
+});
+
+describe("senha — paridade com o servidor", () => {
+  it("aceita letra acentuada + dígito", () => {
+    expect(senhaValida("ÁÇÃOçã1x")).toBe(true);
+    expect(validarNovoUsuario({ ...base, password: "ÁÇÃOçã1x" }).password).toBeUndefined();
+  });
+  it("mantém limites 8–128 e exige dígito", () => {
+    expect(senhaValida("Ááááááá")).toBe(false);
+    expect(senhaValida("ááááááá1")).toBe(true);
+    expect(senhaValida(`á1${"x".repeat(127)}`)).toBe(false);
+    expect(senhaValida("12345678")).toBe(false);
+  });
+});
