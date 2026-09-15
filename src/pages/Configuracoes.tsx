@@ -443,6 +443,9 @@ export default function Configuracoes() {
       setShowPassword(false);
       setEditUser(null);
       setEditVinculos([]);
+      setEditErros({});
+      setEditResumo(null);
+
     }
   }, [editOpen]);
 
