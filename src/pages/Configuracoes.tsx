@@ -106,14 +106,23 @@ export default function Configuracoes() {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { data: allUsers = [] } = useQuery({
+  const {
+    data: allUsers = [],
+    isLoading: usersLoading,
+    isError: usersError,
+    isFetching: usersFetching,
+    refetch: refetchUsers,
+  } = useQuery({
     queryKey: ["admin-users"],
     enabled: isAdmin,
     queryFn: async () => {
       const { data: profiles, error } = await supabase.from("profiles").select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, cargo, crea, especialidade").order("created_at", { ascending: false });
       if (error) throw error;
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-      const { data: vinc } = await (supabase as any).from("user_clientes").select("user_id, cliente_id, principal");
+      // Falhas em papéis/vínculos NÃO podem ser tratadas como "sem dados".
+      const { data: roles, error: rolesErr } = await supabase.from("user_roles").select("user_id, role");
+      if (rolesErr) throw rolesErr;
+      const { data: vinc, error: vincErr } = await (supabase as any).from("user_clientes").select("user_id, cliente_id, principal");
+      if (vincErr) throw vincErr;
       return (profiles || []).map((p: any) => ({
         ...p,
         roles: (roles || []).filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
