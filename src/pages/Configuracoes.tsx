@@ -196,16 +196,21 @@ export default function Configuracoes() {
   }
 
 
-  const filteredUsers = allUsers.filter((u: any) => {
-    if (filterRole !== "all" && !u.roles.includes(filterRole)) return false;
-    if (filterStatus === "ativo" && u.ativo === false) return false;
-    if (filterStatus === "inativo" && u.ativo !== false) return false;
-    if (debouncedSearchTerm) {
-      const s = debouncedSearchTerm.toLowerCase();
-      return (u.nome || "").toLowerCase().includes(s) || (u.email || "").toLowerCase().includes(s);
-    }
-    return true;
-  });
+  const filteredUsers = useMemo(() => {
+    const porFiltros = allUsers.filter((u: any) => {
+      if (filterRole !== "all" && !u.roles.includes(filterRole)) return false;
+      if (filterStatus === "ativo" && u.ativo === false) return false;
+      if (filterStatus === "inativo" && u.ativo !== false) return false;
+      return true;
+    });
+    return filtrarUsuariosPorBusca(porFiltros as any[], debouncedSearchTerm) as any[];
+  }, [allUsers, filterRole, filterStatus, debouncedSearchTerm]);
+
+  // Paginação client-side sobre o conjunto JÁ filtrado (nada é truncado silenciosamente)
+  const [pagina, setPagina] = useState(1);
+  useEffect(() => { setPagina(1); }, [filterRole, filterStatus, debouncedSearchTerm]);
+  const paginacao = useMemo(() => paginar(filteredUsers, pagina, USUARIOS_POR_PAGINA), [filteredUsers, pagina]);
+  const usuariosPagina = paginacao.itens;
 
   // Sincroniza papéis + vínculo com parceiro em uma única mutação atômica
   async function syncUserRolesAndPartner(userId: string, desiredRoles: string[], partnerId: string) {
