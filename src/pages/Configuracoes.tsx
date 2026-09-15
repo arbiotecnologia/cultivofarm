@@ -1,4 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  validarNovoUsuario,
+  primeiroCampoInvalido,
+  mapearErroCriacaoUsuario,
+  lerCorpoErroFuncao,
+  criacaoBemSucedida,
+  filtrarUsuariosPorBusca,
+  paginar,
+  ERRO_GENERICO_CRIACAO,
+  REGRA_SENHA,
+  SENHA_MIN,
+  SENHA_MAX,
+  USUARIOS_POR_PAGINA,
+  type ErrosNovoUsuario,
+  type CampoNovoUsuario,
+} from "@/lib/configuracoes/usuariosValidation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -90,14 +106,23 @@ export default function Configuracoes() {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { data: allUsers = [] } = useQuery({
+  const {
+    data: allUsers = [],
+    isLoading: usersLoading,
+    isError: usersError,
+    isFetching: usersFetching,
+    refetch: refetchUsers,
+  } = useQuery({
     queryKey: ["admin-users"],
     enabled: isAdmin,
     queryFn: async () => {
       const { data: profiles, error } = await supabase.from("profiles").select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, cargo, crea, especialidade").order("created_at", { ascending: false });
       if (error) throw error;
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-      const { data: vinc } = await (supabase as any).from("user_clientes").select("user_id, cliente_id, principal");
+      // Falhas em papéis/vínculos NÃO podem ser tratadas como "sem dados".
+      const { data: roles, error: rolesErr } = await supabase.from("user_roles").select("user_id, role");
+      if (rolesErr) throw rolesErr;
+      const { data: vinc, error: vincErr } = await (supabase as any).from("user_clientes").select("user_id, cliente_id, principal");
+      if (vincErr) throw vincErr;
       return (profiles || []).map((p: any) => ({
         ...p,
         roles: (roles || []).filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
@@ -171,16 +196,21 @@ export default function Configuracoes() {
   }
 
 
-  const filteredUsers = allUsers.filter((u: any) => {
-    if (filterRole !== "all" && !u.roles.includes(filterRole)) return false;
-    if (filterStatus === "ativo" && u.ativo === false) return false;
-    if (filterStatus === "inativo" && u.ativo !== false) return false;
-    if (debouncedSearchTerm) {
-      const s = debouncedSearchTerm.toLowerCase();
-      return (u.nome || "").toLowerCase().includes(s) || (u.email || "").toLowerCase().includes(s);
-    }
-    return true;
-  });
+  const filteredUsers = useMemo(() => {
+    const porFiltros = allUsers.filter((u: any) => {
+      if (filterRole !== "all" && !u.roles.includes(filterRole)) return false;
+      if (filterStatus === "ativo" && u.ativo === false) return false;
+      if (filterStatus === "inativo" && u.ativo !== false) return false;
+      return true;
+    });
+    return filtrarUsuariosPorBusca(porFiltros as any[], debouncedSearchTerm) as any[];
+  }, [allUsers, filterRole, filterStatus, debouncedSearchTerm]);
+
+  // Paginação client-side sobre o conjunto JÁ filtrado (nada é truncado silenciosamente)
+  const [pagina, setPagina] = useState(1);
+  useEffect(() => { setPagina(1); }, [filterRole, filterStatus, debouncedSearchTerm]);
+  const paginacao = useMemo(() => paginar(filteredUsers, pagina, USUARIOS_POR_PAGINA), [filteredUsers, pagina]);
+  const usuariosPagina = paginacao.itens;
 
   // Sincroniza papéis + vínculo com parceiro em uma única mutação atômica
   async function syncUserRolesAndPartner(userId: string, desiredRoles: string[], partnerId: string) {
@@ -237,23 +267,17 @@ export default function Configuracoes() {
   const [newUser, setNewUser] = useState(initialNewUser);
   const [newUserVinculos, setNewUserVinculos] = useState<ClienteVinculo[]>([]);
 
+  const [createErros, setCreateErros] = useState<ErrosNovoUsuario>({});
+  const [createResumo, setCreateResumo] = useState<string | null>(null);
+  const campoRefs = useRef<Record<string, HTMLElement | null>>({});
+  const registrarCampo = (campo: CampoNovoUsuario) => (el: HTMLElement | null) => { campoRefs.current[campo] = el; };
+  const erroProps = (campo: CampoNovoUsuario) =>
+    createErros[campo]
+      ? ({ "aria-invalid": true, "aria-describedby": `erro-${campo}` } as const)
+      : ({} as const);
+
   const createUser = useMutation({
     mutationFn: async () => {
-      if (!newUser.nome.trim() || !newUser.email.trim() || !newUser.password) {
-        throw new Error("Preencha nome, email e senha.");
-      }
-      if (newUser.password.length < 6) {
-        throw new Error("A senha deve ter no mínimo 6 caracteres.");
-      }
-      if (newUser.roles.length === 0) {
-        throw new Error("Selecione ao menos um perfil de acesso.");
-      }
-      if (newUser.roles.includes("cliente_produtor") && newUserVinculos.length === 0) {
-        throw new Error("Vincule pelo menos um cliente para o perfil de Produtor.");
-      }
-      if (hasPartnerRole(newUser.roles) && !newUser.partner_id) {
-        throw new Error("Selecione o parceiro B2B vinculado.");
-      }
       const principal = newUserVinculos.find(v => v.principal)?.cliente_id ?? newUserVinculos[0]?.cliente_id;
       const payload: any = {
         ...newUser,
@@ -270,8 +294,13 @@ export default function Configuracoes() {
         principal_cliente_id: principal,
       };
       const { data, error } = await supabase.functions.invoke("create-user", { body: payload });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        const corpo = await lerCorpoErroFuncao(error);
+        throw new Error(mapearErroCriacaoUsuario(error, corpo));
+      }
+      if (!criacaoBemSucedida(data)) {
+        throw new Error(mapearErroCriacaoUsuario(null, data) || ERRO_GENERICO_CRIACAO);
+      }
       return data;
     },
     onSuccess: () => {
@@ -281,11 +310,36 @@ export default function Configuracoes() {
       setCreateOpen(false);
       setNewUser(initialNewUser);
       setNewUserVinculos([]);
+      setCreateErros({});
+      setCreateResumo(null);
     },
     onError: (e: Error) => {
+      // Não limpamos o formulário: o administrador corrige e reenvia.
+      setCreateResumo(e.message || ERRO_GENERICO_CRIACAO);
       toast({ title: "Erro ao criar usuário", description: e.message, variant: "destructive" });
     },
   });
+
+  function handleCriarUsuario() {
+    if (createUser.isPending) return; // bloqueia envio duplicado
+    const erros = validarNovoUsuario({
+      nome: newUser.nome,
+      email: newUser.email,
+      password: newUser.password,
+      roles: newUser.roles,
+      partner_id: newUser.partner_id,
+      cliente_ids: newUserVinculos.map(v => v.cliente_id),
+    });
+    setCreateErros(erros);
+    const primeiro = primeiroCampoInvalido(erros);
+    if (primeiro) {
+      setCreateResumo("Corrija os campos destacados antes de continuar.");
+      requestAnimationFrame(() => campoRefs.current[primeiro]?.focus?.());
+      return;
+    }
+    setCreateResumo(null);
+    createUser.mutate();
+  }
 
   // Edit user dialog
   const [editOpen, setEditOpen] = useState(false);
@@ -417,10 +471,13 @@ export default function Configuracoes() {
   });
 
 
+  const senhaForte = (s: string) =>
+    s.length >= SENHA_MIN && s.length <= SENHA_MAX && /[A-Za-z]/.test(s) && /[0-9]/.test(s);
+
   const updateUserPassword = useMutation({
     mutationFn: async () => {
       if (!editUser) throw new Error("Usuário não selecionado");
-      if (newPassword.length < 6) throw new Error("A senha deve ter no mínimo 6 caracteres");
+      if (!senhaForte(newPassword)) throw new Error(REGRA_SENHA);
       if (newPassword !== confirmPassword) throw new Error("As senhas não coincidem");
       const { data, error } = await supabase.functions.invoke("admin-update-user-password", {
         body: { user_id: editUser.user_id, new_password: newPassword },
@@ -629,13 +686,36 @@ export default function Configuracoes() {
                         <DialogHeader>
                           <DialogTitle>Cadastrar Novo Usuário</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-3">
-                          <div><Label>Nome *</Label><Input value={newUser.nome} onChange={e => setNewUser({ ...newUser, nome: e.target.value })} /></div>
-                          <div><Label>Email *</Label><Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} /></div>
-                           <div><Label>Senha *</Label><Input type="password" minLength={6} value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} /></div>
+                        <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
+                          {createResumo && (
+                            <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+                              {createResumo}
+                            </div>
+                          )}
+                          <div>
+                            <Label htmlFor="novo-nome">Nome *</Label>
+                            <Input id="novo-nome" ref={registrarCampo("nome")} value={newUser.nome} onChange={e => setNewUser({ ...newUser, nome: e.target.value })} {...erroProps("nome")} />
+                            {createErros.nome && <p id="erro-nome" className="text-xs text-destructive mt-1">{createErros.nome}</p>}
+                          </div>
+                          <div>
+                            <Label htmlFor="novo-email">Email *</Label>
+                            <Input id="novo-email" ref={registrarCampo("email")} type="email" maxLength={254} value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} {...erroProps("email")} />
+                            {createErros.email && <p id="erro-email" className="text-xs text-destructive mt-1">{createErros.email}</p>}
+                          </div>
+                          <div>
+                            <Label htmlFor="nova-senha">Senha *</Label>
+                            <Input id="nova-senha" ref={registrarCampo("password")} type="password" minLength={SENHA_MIN} maxLength={SENHA_MAX} value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} {...erroProps("password")} />
+                            <p className="text-xs text-muted-foreground mt-1">{REGRA_SENHA}</p>
+                            {createErros.password && <p id="erro-password" className="text-xs text-destructive mt-1">{createErros.password}</p>}
+                          </div>
                           <div>
                             <Label>Perfis * (selecione um ou mais)</Label>
-                            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                            <div
+                              ref={registrarCampo("roles")}
+                              tabIndex={-1}
+                              className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto"
+                              {...erroProps("roles")}
+                            >
                               {ACTIVE_ROLES.map(r => {
                                 const checked = newUser.roles.includes(r);
                                 return (
@@ -651,15 +731,13 @@ export default function Configuracoes() {
                                 );
                               })}
                             </div>
-                            {newUser.roles.includes("cliente_produtor") && newUser.roles.length > 1 && (
-                              <p className="text-xs text-destructive mt-1">Produtor não pode ser combinado com outros perfis.</p>
-                            )}
+                            {createErros.roles && <p id="erro-roles" className="text-xs text-destructive mt-1">{createErros.roles}</p>}
                           </div>
                           {hasPartnerRole(newUser.roles) && (
                             <div>
                               <Label>Parceiro B2B vinculado *</Label>
                               <Select value={newUser.partner_id} onValueChange={v => setNewUser({ ...newUser, partner_id: v })}>
-                                <SelectTrigger><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
+                                <SelectTrigger ref={registrarCampo("partner_id")} {...erroProps("partner_id")}><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
                                 <SelectContent>
                                   {partners.map(p => (
                                     <SelectItem key={p.id} value={p.id}>
@@ -671,6 +749,7 @@ export default function Configuracoes() {
                               <p className="text-xs text-muted-foreground mt-1">
                                 Papel no parceiro: <b>{partnerPapelFromRoles(newUser.roles) === "tecnico" ? "Técnico" : "Gestor"}</b>
                               </p>
+                              {createErros.partner_id && <p id="erro-partner_id" className="text-xs text-destructive mt-1">{createErros.partner_id}</p>}
                             </div>
                           )}
                            <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
@@ -682,17 +761,20 @@ export default function Configuracoes() {
                               <div><Label>Especialidade</Label><Input value={newUser.especialidade} onChange={e => setNewUser({ ...newUser, especialidade: e.target.value })} /></div>
                             </>
                           )}
-                          <ClientesVinculadosField
-                            clientes={clientes}
-                            value={newUserVinculos}
-                            onChange={setNewUserVinculos}
-                            required={newUser.roles.includes('cliente_produtor')}
-                            helperText={newUser.roles.includes('cliente_produtor')
-                              ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
-                              : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
-                          />
+                          <div ref={registrarCampo("cliente_ids")} tabIndex={-1} {...erroProps("cliente_ids")}>
+                            <ClientesVinculadosField
+                              clientes={clientes}
+                              value={newUserVinculos}
+                              onChange={setNewUserVinculos}
+                              required={newUser.roles.includes('cliente_produtor')}
+                              helperText={newUser.roles.includes('cliente_produtor')
+                                ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
+                                : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
+                            />
+                            {createErros.cliente_ids && <p id="erro-cliente_ids" className="text-xs text-destructive mt-1">{createErros.cliente_ids}</p>}
+                          </div>
 
-                          <Button className="w-full" onClick={() => createUser.mutate()} disabled={createUser.isPending || !newUser.nome || !newUser.email || !newUser.password}>
+                          <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending}>
                             {createUser.isPending ? "Criando..." : "Criar Usuário"}
                           </Button>
                         </div>
@@ -726,11 +808,24 @@ export default function Configuracoes() {
                 </div>
 
                 {/* Table */}
+                {usersLoading ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground" aria-live="polite">
+                    Carregando usuários…
+                  </div>
+                ) : usersError ? (
+                  <div role="alert" className="py-10 text-center space-y-3">
+                    <p className="text-sm text-destructive">
+                      Não foi possível carregar a lista de usuários. Os dados podem estar incompletos.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => refetchUsers()}>Tentar novamente</Button>
+                  </div>
+                ) : (
+                <>
                 <ResponsiveTable
                   mobileCards={
-                    filteredUsers.length === 0 ? (
+                    usuariosPagina.length === 0 ? (
                       <div className="text-center text-muted-foreground py-8">Nenhum usuário encontrado</div>
-                    ) : filteredUsers.map((u: any) => (
+                    ) : usuariosPagina.map((u: any) => (
                       <MobileCard
                         key={u.user_id}
                         onClick={() => { setEditUser(u); setEditOpen(true); }}
@@ -796,11 +891,11 @@ export default function Configuracoes() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredUsers.length === 0 ? (
+                      {usuariosPagina.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
-                      ) : filteredUsers.map((u: any) => (
+                      ) : usuariosPagina.map((u: any) => (
                         <TableRow
                           key={u.user_id}
                           {...rowClickProps(() => { setEditUser(u); setEditOpen(true); })}
@@ -846,6 +941,28 @@ export default function Configuracoes() {
                     </TableBody>
                   </Table>
                 </ResponsiveTable>
+
+                {paginacao.total > 0 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
+                    <p className="text-xs text-muted-foreground">
+                      Exibindo {paginacao.inicio}–{paginacao.fim} de {paginacao.total} usuários
+                      {usersFetching ? " · atualizando…" : ""}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" disabled={paginacao.paginaAtual <= 1} onClick={() => setPagina(p => Math.max(1, p - 1))}>
+                        Anterior
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        Página {paginacao.paginaAtual} de {paginacao.totalPaginas}
+                      </span>
+                      <Button variant="outline" size="sm" disabled={paginacao.paginaAtual >= paginacao.totalPaginas} onClick={() => setPagina(p => p + 1)}>
+                        Próxima
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                </>
+                )}
               </CardContent>
             </Card>
 
@@ -940,7 +1057,7 @@ export default function Configuracoes() {
                         <h4 className="font-semibold text-sm">Alterar Senha</h4>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Defina uma nova senha para este usuário. Ele precisará usar a nova senha no próximo login.
+                        Defina uma nova senha para este usuário. Ele precisará usar a nova senha no próximo login. {REGRA_SENHA}
                       </p>
                       <div>
                         <Label>Nova Senha</Label>
@@ -949,7 +1066,7 @@ export default function Configuracoes() {
                             type={showPassword ? "text" : "password"}
                             value={newPassword}
                             onChange={e => setNewPassword(e.target.value)}
-                            placeholder="Mínimo 6 caracteres"
+                            placeholder="Mín. 8 caracteres, com letra e número"
                             className="pr-10"
                           />
                           <button
@@ -980,7 +1097,7 @@ export default function Configuracoes() {
                         onClick={() => updateUserPassword.mutate()}
                         disabled={
                           updateUserPassword.isPending ||
-                          newPassword.length < 6 ||
+                          !senhaForte(newPassword) ||
                           newPassword !== confirmPassword
                         }
                       >
