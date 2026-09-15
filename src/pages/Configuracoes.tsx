@@ -686,13 +686,36 @@ export default function Configuracoes() {
                         <DialogHeader>
                           <DialogTitle>Cadastrar Novo Usuário</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-3">
-                          <div><Label>Nome *</Label><Input value={newUser.nome} onChange={e => setNewUser({ ...newUser, nome: e.target.value })} /></div>
-                          <div><Label>Email *</Label><Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} /></div>
-                           <div><Label>Senha *</Label><Input type="password" minLength={6} value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} /></div>
+                        <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
+                          {createResumo && (
+                            <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+                              {createResumo}
+                            </div>
+                          )}
+                          <div>
+                            <Label htmlFor="novo-nome">Nome *</Label>
+                            <Input id="novo-nome" ref={registrarCampo("nome")} value={newUser.nome} onChange={e => setNewUser({ ...newUser, nome: e.target.value })} {...erroProps("nome")} />
+                            {createErros.nome && <p id="erro-nome" className="text-xs text-destructive mt-1">{createErros.nome}</p>}
+                          </div>
+                          <div>
+                            <Label htmlFor="novo-email">Email *</Label>
+                            <Input id="novo-email" ref={registrarCampo("email")} type="email" maxLength={254} value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} {...erroProps("email")} />
+                            {createErros.email && <p id="erro-email" className="text-xs text-destructive mt-1">{createErros.email}</p>}
+                          </div>
+                          <div>
+                            <Label htmlFor="nova-senha">Senha *</Label>
+                            <Input id="nova-senha" ref={registrarCampo("password")} type="password" minLength={SENHA_MIN} maxLength={SENHA_MAX} value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} {...erroProps("password")} />
+                            <p className="text-xs text-muted-foreground mt-1">{REGRA_SENHA}</p>
+                            {createErros.password && <p id="erro-password" className="text-xs text-destructive mt-1">{createErros.password}</p>}
+                          </div>
                           <div>
                             <Label>Perfis * (selecione um ou mais)</Label>
-                            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                            <div
+                              ref={registrarCampo("roles")}
+                              tabIndex={-1}
+                              className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto"
+                              {...erroProps("roles")}
+                            >
                               {ACTIVE_ROLES.map(r => {
                                 const checked = newUser.roles.includes(r);
                                 return (
@@ -708,15 +731,13 @@ export default function Configuracoes() {
                                 );
                               })}
                             </div>
-                            {newUser.roles.includes("cliente_produtor") && newUser.roles.length > 1 && (
-                              <p className="text-xs text-destructive mt-1">Produtor não pode ser combinado com outros perfis.</p>
-                            )}
+                            {createErros.roles && <p id="erro-roles" className="text-xs text-destructive mt-1">{createErros.roles}</p>}
                           </div>
                           {hasPartnerRole(newUser.roles) && (
                             <div>
                               <Label>Parceiro B2B vinculado *</Label>
                               <Select value={newUser.partner_id} onValueChange={v => setNewUser({ ...newUser, partner_id: v })}>
-                                <SelectTrigger><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
+                                <SelectTrigger ref={registrarCampo("partner_id")} {...erroProps("partner_id")}><SelectValue placeholder="Selecione o parceiro" /></SelectTrigger>
                                 <SelectContent>
                                   {partners.map(p => (
                                     <SelectItem key={p.id} value={p.id}>
@@ -728,6 +749,7 @@ export default function Configuracoes() {
                               <p className="text-xs text-muted-foreground mt-1">
                                 Papel no parceiro: <b>{partnerPapelFromRoles(newUser.roles) === "tecnico" ? "Técnico" : "Gestor"}</b>
                               </p>
+                              {createErros.partner_id && <p id="erro-partner_id" className="text-xs text-destructive mt-1">{createErros.partner_id}</p>}
                             </div>
                           )}
                            <div><Label>Telefone</Label><MaskedInput mask="telefone" value={newUser.telefone} onChange={e => setNewUser({ ...newUser, telefone: e.target.value })} /></div>
@@ -739,17 +761,20 @@ export default function Configuracoes() {
                               <div><Label>Especialidade</Label><Input value={newUser.especialidade} onChange={e => setNewUser({ ...newUser, especialidade: e.target.value })} /></div>
                             </>
                           )}
-                          <ClientesVinculadosField
-                            clientes={clientes}
-                            value={newUserVinculos}
-                            onChange={setNewUserVinculos}
-                            required={newUser.roles.includes('cliente_produtor')}
-                            helperText={newUser.roles.includes('cliente_produtor')
-                              ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
-                              : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
-                          />
+                          <div ref={registrarCampo("cliente_ids")} tabIndex={-1} {...erroProps("cliente_ids")}>
+                            <ClientesVinculadosField
+                              clientes={clientes}
+                              value={newUserVinculos}
+                              onChange={setNewUserVinculos}
+                              required={newUser.roles.includes('cliente_produtor')}
+                              helperText={newUser.roles.includes('cliente_produtor')
+                                ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
+                                : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
+                            />
+                            {createErros.cliente_ids && <p id="erro-cliente_ids" className="text-xs text-destructive mt-1">{createErros.cliente_ids}</p>}
+                          </div>
 
-                          <Button className="w-full" onClick={() => createUser.mutate()} disabled={createUser.isPending || !newUser.nome || !newUser.email || !newUser.password}>
+                          <Button className="w-full" onClick={handleCriarUsuario} disabled={createUser.isPending}>
                             {createUser.isPending ? "Criando..." : "Criar Usuário"}
                           </Button>
                         </div>
