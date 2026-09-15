@@ -1057,7 +1057,7 @@ export default function Configuracoes() {
                         <h4 className="font-semibold text-sm">Alterar Senha</h4>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Defina uma nova senha para este usuário. Ele precisará usar a nova senha no próximo login.
+                        Defina uma nova senha para este usuário. Ele precisará usar a nova senha no próximo login. {REGRA_SENHA}
                       </p>
                       <div>
                         <Label>Nova Senha</Label>
@@ -1066,7 +1066,7 @@ export default function Configuracoes() {
                             type={showPassword ? "text" : "password"}
                             value={newPassword}
                             onChange={e => setNewPassword(e.target.value)}
-                            placeholder="Mínimo 6 caracteres"
+                            placeholder="Mín. 8 caracteres, com letra e número"
                             className="pr-10"
                           />
                           <button
@@ -1097,7 +1097,7 @@ export default function Configuracoes() {
                         onClick={() => updateUserPassword.mutate()}
                         disabled={
                           updateUserPassword.isPending ||
-                          newPassword.length < 6 ||
+                          !senhaForte(newPassword) ||
                           newPassword !== confirmPassword
                         }
                       >
