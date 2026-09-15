@@ -254,23 +254,49 @@ export default function Configuracoes() {
   const paginacao = useMemo(() => paginar(filteredUsers, pagina, USUARIOS_POR_PAGINA), [filteredUsers, pagina]);
   const usuariosPagina = paginacao.itens;
 
-  // Sincroniza papéis + vínculo com parceiro em uma única mutação atômica
+  /**
+   * Sincroniza papéis + vínculo com parceiro.
+   * NÃO é atômico (sem RPC transacional): por isso aplicamos diferença mínima
+   * (insere novos, remove só os retirados) e propagamos TODOS os erros.
+   */
   async function syncUserRolesAndPartner(userId: string, desiredRoles: string[], partnerId: string) {
     const sb = supabase as any;
-    // 1) Substitui todo o conjunto de papéis
-    const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", userId);
-    if (delErr) throw delErr;
-    if (desiredRoles.length > 0) {
-      const rows = desiredRoles.map((r) => ({ user_id: userId, role: r as any }));
-      const { error: insErr } = await supabase.from("user_roles").insert(rows);
+    const { data: atuaisRoles, error: rolesSelErr } = await sb
+      .from("user_roles")
+      .select("id, role")
+      .eq("user_id", userId);
+    if (rolesSelErr) throw rolesSelErr;
+
+    const atuais = (atuaisRoles ?? []).map((r: any) => r.role as string);
+    const { inserir, remover } = diferencaPapeis(atuais, desiredRoles);
+
+    // 1) Primeiro insere os novos (nunca deixa o usuário sem papel algum)
+    if (inserir.length > 0) {
+      const { error: insErr } = await supabase
+        .from("user_roles")
+        .insert(inserir.map((r) => ({ user_id: userId, role: r as any })));
       if (insErr) throw insErr;
     }
-    // 2) Sincroniza partner_users
+    // 2) Depois remove apenas os retirados; os comuns são preservados
+    if (remover.length > 0) {
+      const idsRemover = (atuaisRoles ?? [])
+        .filter((r: any) => remover.includes(r.role))
+        .map((r: any) => r.id);
+      const { error: delErr } = await sb.from("user_roles").delete().in("id", idsRemover);
+      if (delErr) throw delErr;
+    }
+
+    // 3) Sincroniza partner_users (erro de select NÃO é tratado como ausência)
     const isPartner = hasPartnerRole(desiredRoles);
     const papel = partnerPapelFromRoles(desiredRoles);
+    const { data: existing, error: partnerSelErr } = await sb
+      .from("partner_users")
+      .select("id, partner_id, papel")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (partnerSelErr) throw partnerSelErr;
+
     if (isPartner) {
-      if (!partnerId) throw new Error("Selecione o parceiro B2B vinculado.");
-      const { data: existing } = await sb.from("partner_users").select("id, partner_id, papel").eq("user_id", userId).maybeSingle();
       if (!existing) {
         const { error } = await sb.from("partner_users").insert({ user_id: userId, partner_id: partnerId, papel });
         if (error) throw error;
@@ -278,10 +304,12 @@ export default function Configuracoes() {
         const { error } = await sb.from("partner_users").update({ partner_id: partnerId, papel }).eq("id", existing.id);
         if (error) throw error;
       }
-    } else {
-      await sb.from("partner_users").delete().eq("user_id", userId);
+    } else if (existing) {
+      const { error: delPartnerErr } = await sb.from("partner_users").delete().eq("id", existing.id);
+      if (delPartnerErr) throw delPartnerErr;
     }
   }
+
 
   // Toggle ativo
   const toggleAtivo = useMutation({
