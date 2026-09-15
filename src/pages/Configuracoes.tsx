@@ -15,6 +15,8 @@ import {
   type ErrosNovoUsuario,
   type CampoNovoUsuario,
 } from "@/lib/configuracoes/usuariosValidation";
+import { fetchAllRows } from "@/lib/configuracoes/fetchAllRows";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
