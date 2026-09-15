@@ -808,11 +808,24 @@ export default function Configuracoes() {
                 </div>
 
                 {/* Table */}
+                {usersLoading ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground" aria-live="polite">
+                    Carregando usuários…
+                  </div>
+                ) : usersError ? (
+                  <div role="alert" className="py-10 text-center space-y-3">
+                    <p className="text-sm text-destructive">
+                      Não foi possível carregar a lista de usuários. Os dados podem estar incompletos.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => refetchUsers()}>Tentar novamente</Button>
+                  </div>
+                ) : (
+                <>
                 <ResponsiveTable
                   mobileCards={
-                    filteredUsers.length === 0 ? (
+                    usuariosPagina.length === 0 ? (
                       <div className="text-center text-muted-foreground py-8">Nenhum usuário encontrado</div>
-                    ) : filteredUsers.map((u: any) => (
+                    ) : usuariosPagina.map((u: any) => (
                       <MobileCard
                         key={u.user_id}
                         onClick={() => { setEditUser(u); setEditOpen(true); }}
