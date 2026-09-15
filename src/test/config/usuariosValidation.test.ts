@@ -9,6 +9,7 @@ import {
   paginar,
   ERRO_GENERICO_CRIACAO,
   REGRA_SENHA,
+  senhaValida,
 } from "@/lib/configuracoes/usuariosValidation";
 
 const base = {
