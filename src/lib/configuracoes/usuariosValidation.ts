@@ -282,9 +282,10 @@ export function validarEdicaoUsuario(
   }
 
   if (validarTelefone) {
-    const r = validarTelefone(input.telefone ?? "");
-    if (!r.ok) erros.telefone = r.error;
+    const r = validarTelefone(input.telefone ?? "") as { ok: boolean; error?: string };
+    if (!r.ok) erros.telefone = r.error ?? "Telefone inválido.";
   }
+
 
   if (roles.length === 0) {
     erros.roles = "Selecione ao menos um perfil de acesso.";
