@@ -1182,9 +1182,22 @@ export default function Configuracoes() {
                         ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
                         : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
                     />
-                    <Button className="w-full" onClick={() => saveEditUser.mutate()} disabled={saveEditUser.isPending}>
+                    {editResumo && (
+                      <p role="alert" className="text-xs text-destructive border border-destructive/40 rounded-md p-2">
+                        {editResumo}
+                      </p>
+                    )}
+                    {Object.values(editErros).filter(Boolean).length > 0 && (
+                      <ul className="text-xs text-destructive list-disc pl-4">
+                        {Object.entries(editErros).map(([campo, msg]) => (
+                          <li key={campo}>{msg as string}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending}>
                       {saveEditUser.isPending ? "Salvando..." : "Salvar Alterações"}
                     </Button>
+
 
                     <div className="border-t pt-4 mt-2 space-y-3">
                       <div className="flex items-center gap-2">
