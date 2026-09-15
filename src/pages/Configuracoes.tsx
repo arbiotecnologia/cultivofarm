@@ -974,7 +974,9 @@ export default function Configuracoes() {
                           <div className="flex items-center gap-2" onClick={stopRowClick}>
                             <Switch
                               checked={u.ativo !== false}
+                              disabled={u.user_id === user?.id}
                               onCheckedChange={(checked) => toggleAtivo.mutate({ userId: u.user_id, ativo: checked })}
+
                             />
                             <Badge variant={u.ativo === false ? "secondary" : "default"} className="text-[10px]">
                               {u.ativo === false ? "Inativo" : "Ativo"}
