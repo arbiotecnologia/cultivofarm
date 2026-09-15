@@ -411,14 +411,22 @@ export default function Configuracoes() {
     }
   }, [editOpen, editUser?.user_id, partnerLinks]);
 
-  // Deep-link: ?tab=usuarios&user_id=...
+  // Deep-link: ?tab=usuarios&user_id=... — o parâmetro é CONSUMIDO ao abrir,
+  // para que fechar o diálogo não o reabra.
+  const deepLinkConsumido = useRef<string | null>(null);
   useEffect(() => {
     const uid = searchParams.get("user_id");
-    if (uid && isAdmin && allUsers.length > 0 && !editOpen) {
-      const found = allUsers.find((u: any) => u.user_id === uid);
-      if (found) { setEditUser(found); setEditOpen(true); }
-    }
-  }, [searchParams, allUsers, isAdmin, editOpen]);
+    if (!uid || !isAdmin) return;
+    if (deepLinkConsumido.current === uid) return;
+    if (allUsers.length === 0) return;
+    deepLinkConsumido.current = uid;
+    const found = allUsers.find((u: any) => u.user_id === uid);
+    if (found) { setEditUser(found); setEditOpen(true); }
+    const sp = new URLSearchParams(searchParams);
+    sp.delete("user_id");
+    setSearchParams(sp, { replace: true });
+  }, [searchParams, allUsers, isAdmin, setSearchParams]);
+
 
   const saveEditUser = useMutation({
     mutationFn: async () => {
