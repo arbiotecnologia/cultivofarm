@@ -1136,12 +1136,14 @@ export default function Configuracoes() {
                             <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
                               <Checkbox
                                 checked={checked}
+                                disabled={r === "administrador" && checked && editUser.user_id === user?.id}
                                 onCheckedChange={(v) =>
                                   setEditUser({ ...editUser, roles: toggleRole(currentRoles, r, v === true) })
                                 }
                               />
                               {ROLE_LABELS[r]}
                             </label>
+
                           );
                         })}
                       </div>
