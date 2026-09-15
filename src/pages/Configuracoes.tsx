@@ -1055,7 +1055,9 @@ export default function Configuracoes() {
                             <div className="flex items-center gap-2">
                               <Switch
                                 checked={u.ativo !== false}
+                                disabled={u.user_id === user?.id}
                                 onCheckedChange={(checked) => toggleAtivo.mutate({ userId: u.user_id, ativo: checked })}
+
                               />
                               <span className="text-xs text-muted-foreground">{u.ativo === false ? "Inativo" : "Ativo"}</span>
                             </div>
