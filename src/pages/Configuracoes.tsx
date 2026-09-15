@@ -467,32 +467,60 @@ export default function Configuracoes() {
   }, [searchParams, allUsers, isAdmin, setSearchParams]);
 
 
+  // Estado da edição: erros por campo, resumo e marca de escrita já iniciada
+  const [editErros, setEditErros] = useState<ErrosEdicaoUsuario>({});
+  const [editResumo, setEditResumo] = useState<string | null>(null);
+  const escritaIniciada = useRef(false);
+
   const saveEditUser = useMutation({
     mutationFn: async () => {
       if (!editUser) return;
-      const currentRoles = editUser.roles || [];
-      const isProdutor = currentRoles.includes("cliente_produtor");
-      
-      if (isProdutor && editVinculos.length === 0) {
-        throw new Error("Para perfil Produtor é obrigatório ao menos um cliente vinculado.");
-      }
+      escritaIniciada.current = false;
 
-      // 1. Sincroniza user_clientes PRIMEIRO (necessário para a trigger de roles se o perfil for Produtor)
+      // ---- 1) VALIDAÇÃO COMPLETA ANTES DE QUALQUER ESCRITA ----
+      const desiredRoles: string[] = editUser.roles ?? [];
+      const erros = validarEdicaoUsuario(
+        {
+          nome: editUser.nome ?? "",
+          telefone: editUser.telefone ?? "",
+          roles: desiredRoles,
+          partner_id: editUser.partner_id ?? "",
+          cliente_ids: editVinculos.map((v) => v.cliente_id),
+        },
+        (v) => validatePhoneBR(v as any, { fieldLabel: "Telefone" }),
+      );
+      setEditErros(erros);
+      const primeiro = primeiroCampoInvalidoEdicao(erros);
+      if (primeiro) throw new Error(erros[primeiro]!);
+
+      const originalUser = allUsers.find((u) => u.user_id === editUser.user_id);
+      const originalRoles: string[] = originalUser?.roles ?? [];
+      const isSelf = editUser.user_id === user?.id;
+      const bloqueioAdmin = bloqueioAutoRemocaoAdmin(isSelf, originalRoles, desiredRoles);
+      if (bloqueioAdmin) throw new Error(bloqueioAdmin);
+
+      const telefoneValidado = validatePhoneBR(editUser.telefone, { fieldLabel: "Telefone" });
+      if (!telefoneValidado.ok) throw new Error(telefoneValidado.error);
+
       const sb = supabase as any;
-      const { data: atuais, error: selectErr } = await sb.from("user_clientes").select("id, cliente_id, principal").eq("user_id", editUser.user_id);
+      const { data: atuais, error: selectErr } = await sb
+        .from("user_clientes")
+        .select("id, cliente_id, principal")
+        .eq("user_id", editUser.user_id);
       if (selectErr) throw selectErr;
 
       const atuaisMap = new Map<string, { id: string; principal: boolean }>((atuais ?? []).map((r: any) => [r.cliente_id, { id: r.id, principal: !!r.principal }]));
       const desejados = new Set(editVinculos.map(v => v.cliente_id));
 
-      // Deletar os que não estão mais na lista
+      // ---- 2) ESCRITAS (sem atomicidade: a partir daqui pode haver estado parcial) ----
+      escritaIniciada.current = true;
+
       const toDelete = (atuais ?? []).filter((r: any) => !desejados.has(r.cliente_id)).map((r: any) => r.id);
       if (toDelete.length) {
         const { error: delErr } = await sb.from("user_clientes").delete().in("id", toDelete);
         if (delErr) throw delErr;
       }
 
-      // Inserir ou atualizar os desejados
       for (const v of editVinculos) {
         const existing = atuaisMap.get(v.cliente_id);
         if (!existing) {
@@ -504,24 +532,22 @@ export default function Configuracoes() {
         }
       }
 
-      // 2. Atualiza perfil básico
-      // Não atualizamos cliente_id manualmente aqui pois a trigger trg_user_clientes_sync cuida disso
-      const { error: profileErr } = await supabase.from("profiles")
+      // Perfil básico — confirma que exatamente UMA linha foi atualizada
+      const { data: perfilAtualizado, error: profileErr } = await supabase.from("profiles")
         .update({
-          nome: editUser.nome,
-          telefone: (() => { const c = validatePhoneBR(editUser.telefone, { fieldLabel: "Telefone" }); if (!c.ok) throw new Error(c.error); return c.value; })(),
+          nome: (editUser.nome ?? "").trim(),
+          telefone: telefoneValidado.value,
           cargo: editUser.cargo,
           cpf_cnpj: unmaskCpfCnpj(editUser.cpf_cnpj),
           crea: editUser.crea,
           especialidade: editUser.especialidade,
         } as any)
-        .eq("user_id", editUser.user_id);
+        .eq("user_id", editUser.user_id)
+        .select("user_id");
       if (profileErr) throw profileErr;
+      exigirUmaLinha(perfilAtualizado, "dados do perfil");
 
-      // 3. Sincroniza TODOS os papéis + vínculo com parceiro B2B (mudanças multi-role)
-      const desiredRoles: string[] = editUser.roles ?? [];
-      const originalUser = allUsers.find(u => u.user_id === editUser.user_id);
-      const originalRoles: string[] = originalUser?.roles ?? [];
+      // Papéis + vínculo com parceiro B2B
       const rolesChanged =
         desiredRoles.length !== originalRoles.length ||
         desiredRoles.some((r) => !originalRoles.includes(r));
@@ -537,6 +563,9 @@ export default function Configuracoes() {
       return { rolesChanged, userId: editUser.user_id };
     },
     onSuccess: (result) => {
+      escritaIniciada.current = false;
+      setEditErros({});
+      setEditResumo(null);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
       // Cross-tab: se os papéis do usuário mudaram, avisa a sessão dele (se estiver logada em outra aba)
@@ -552,9 +581,20 @@ export default function Configuracoes() {
     },
 
     onError: (e: Error) => {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+      // Falha após início das escritas: estado pode estar parcial. Não repetimos automaticamente
+      // e mantemos o formulário aberto para conferência.
+      const parcial = escritaIniciada.current;
+      escritaIniciada.current = false;
+      if (parcial) {
+        queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+        queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
+      }
+      const msg = parcial ? `${e.message} ${ERRO_EDICAO_PARCIAL}` : e.message;
+      setEditResumo(msg);
+      toast({ title: "Erro", description: msg, variant: "destructive" });
     },
   });
+
 
 
   const senhaForte = (s: string) => senhaValida(s);
