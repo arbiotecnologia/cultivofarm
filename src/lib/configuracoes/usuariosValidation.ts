@@ -241,3 +241,125 @@ export function paginar<T>(itens: T[], pagina: number, tamanho = USUARIOS_POR_PA
     fim: Math.min(inicio + tamanho, total),
   };
 }
+
+/* ===================== Edição de usuário ===================== */
+
+export type CampoEdicaoUsuario = "nome" | "telefone" | "roles" | "partner_id" | "cliente_ids";
+export type ErrosEdicaoUsuario = Partial<Record<CampoEdicaoUsuario, string>>;
+
+export const ORDEM_CAMPOS_EDICAO: CampoEdicaoUsuario[] = [
+  "nome",
+  "telefone",
+  "roles",
+  "partner_id",
+  "cliente_ids",
+];
+
+export type EdicaoUsuarioInput = {
+  nome: string;
+  telefone?: string | null;
+  roles: string[];
+  partner_id?: string | null;
+  cliente_ids?: string[];
+};
+
+/**
+ * Valida TODOS os dados da edição ANTES da primeira escrita.
+ * Senha não faz parte da edição comum (fluxo separado).
+ * `validarTelefone` é injetado para manter esta função pura/testável.
+ */
+export function validarEdicaoUsuario(
+  input: EdicaoUsuarioInput,
+  validarTelefone?: (v: unknown) => { ok: true; value: string | null } | { ok: false; error: string },
+): ErrosEdicaoUsuario {
+  const erros: ErrosEdicaoUsuario = {};
+  const nome = (input.nome ?? "").trim();
+  const roles = input.roles ?? [];
+  const clienteIds = input.cliente_ids ?? [];
+
+  if (nome.length < NOME_MIN || nome.length > NOME_MAX) {
+    erros.nome = `Informe o nome completo (de ${NOME_MIN} a ${NOME_MAX} caracteres).`;
+  }
+
+  if (validarTelefone) {
+    const r = validarTelefone(input.telefone ?? "") as { ok: boolean; error?: string };
+    if (!r.ok) erros.telefone = r.error ?? "Telefone inválido.";
+  }
+
+
+  if (roles.length === 0) {
+    erros.roles = "Selecione ao menos um perfil de acesso.";
+  } else if (new Set(roles).size !== roles.length) {
+    erros.roles = "Há perfis repetidos na seleção.";
+  } else if (roles.some((r) => !PAPEIS_VALIDOS.has(r))) {
+    erros.roles = "Há perfil de acesso inválido na seleção.";
+  } else if (roles.includes("cliente_produtor") && roles.length > 1) {
+    erros.roles = "O perfil Produtor não pode ser combinado com outros perfis.";
+  } else if (roles.includes("parceiro_b2b") && roles.includes("parceiro_b2b_tecnico")) {
+    erros.roles = "Escolha apenas um perfil de Parceiro B2B: Gestor ou Técnico.";
+  }
+
+  if (roles.includes("cliente_produtor") && clienteIds.length === 0) {
+    erros.cliente_ids = "Vincule pelo menos um cliente para o perfil Produtor.";
+  }
+
+  if (temPapelParceiro(roles) && !input.partner_id) {
+    erros.partner_id = "Selecione o parceiro B2B vinculado.";
+  }
+
+  return erros;
+}
+
+export function primeiroCampoInvalidoEdicao(erros: ErrosEdicaoUsuario): CampoEdicaoUsuario | null {
+  return ORDEM_CAMPOS_EDICAO.find((c) => !!erros[c]) ?? null;
+}
+
+/** Diferença de papéis: insere só os novos, remove só os retirados, preserva os comuns. */
+export function diferencaPapeis(atuais: string[], desejados: string[]) {
+  const a = new Set(atuais ?? []);
+  const d = new Set(desejados ?? []);
+  return {
+    inserir: Array.from(d).filter((r) => !a.has(r)),
+    remover: Array.from(a).filter((r) => !d.has(r)),
+    manter: Array.from(d).filter((r) => a.has(r)),
+  };
+}
+
+/**
+ * Proteções de UX (NÃO substituem autorização do servidor):
+ * o administrador não desativa a própria conta nem retira o próprio papel de administrador.
+ */
+export const MSG_AUTO_DESATIVACAO =
+  "Você não pode desativar a sua própria conta. Peça a outro administrador.";
+export const MSG_AUTO_REMOCAO_ADMIN =
+  "Você não pode retirar o seu próprio perfil de Administrador. Peça a outro administrador.";
+
+export function bloqueioAutoDesativacao(isSelf: boolean, ativoDesejado: boolean): string | null {
+  return isSelf && ativoDesejado === false ? MSG_AUTO_DESATIVACAO : null;
+}
+
+export function bloqueioAutoRemocaoAdmin(
+  isSelf: boolean,
+  rolesAtuais: string[],
+  rolesDesejados: string[],
+): string | null {
+  if (!isSelf) return null;
+  const eraAdmin = (rolesAtuais ?? []).includes("administrador");
+  const continuaAdmin = (rolesDesejados ?? []).includes("administrador");
+  return eraAdmin && !continuaAdmin ? MSG_AUTO_REMOCAO_ADMIN : null;
+}
+
+/** Estado possivelmente parcial: houve escrita antes da falha. */
+export const ERRO_EDICAO_PARCIAL =
+  "A alteração falhou depois que parte dos dados já havia sido gravada. Os dados podem estar parcialmente alterados: recarregue a lista e confira antes de enviar novamente.";
+
+/** Confirma que a atualização atingiu exatamente UMA linha (evita sucesso falso com zero linhas). */
+export function exigirUmaLinha(linhas: unknown, contexto: string): void {
+  const qtd = Array.isArray(linhas) ? linhas.length : 0;
+  if (qtd !== 1) {
+    throw new Error(
+      `Não foi possível confirmar a atualização (${contexto}). Recarregue a lista e verifique antes de tentar novamente.`,
+    );
+  }
+}
+

@@ -10,6 +10,15 @@ import {
   ERRO_GENERICO_CRIACAO,
   REGRA_SENHA,
   senhaValida,
+  validarEdicaoUsuario,
+  primeiroCampoInvalidoEdicao,
+  diferencaPapeis,
+  bloqueioAutoDesativacao,
+  bloqueioAutoRemocaoAdmin,
+  exigirUmaLinha,
+  ERRO_EDICAO_PARCIAL,
+  type ErrosEdicaoUsuario,
+
 
 
   SENHA_MIN,
@@ -254,23 +263,49 @@ export default function Configuracoes() {
   const paginacao = useMemo(() => paginar(filteredUsers, pagina, USUARIOS_POR_PAGINA), [filteredUsers, pagina]);
   const usuariosPagina = paginacao.itens;
 
-  // Sincroniza papéis + vínculo com parceiro em uma única mutação atômica
+  /**
+   * Sincroniza papéis + vínculo com parceiro.
+   * NÃO é atômico (sem RPC transacional): por isso aplicamos diferença mínima
+   * (insere novos, remove só os retirados) e propagamos TODOS os erros.
+   */
   async function syncUserRolesAndPartner(userId: string, desiredRoles: string[], partnerId: string) {
     const sb = supabase as any;
-    // 1) Substitui todo o conjunto de papéis
-    const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", userId);
-    if (delErr) throw delErr;
-    if (desiredRoles.length > 0) {
-      const rows = desiredRoles.map((r) => ({ user_id: userId, role: r as any }));
-      const { error: insErr } = await supabase.from("user_roles").insert(rows);
+    const { data: atuaisRoles, error: rolesSelErr } = await sb
+      .from("user_roles")
+      .select("id, role")
+      .eq("user_id", userId);
+    if (rolesSelErr) throw rolesSelErr;
+
+    const atuais = (atuaisRoles ?? []).map((r: any) => r.role as string);
+    const { inserir, remover } = diferencaPapeis(atuais, desiredRoles);
+
+    // 1) Primeiro insere os novos (nunca deixa o usuário sem papel algum)
+    if (inserir.length > 0) {
+      const { error: insErr } = await supabase
+        .from("user_roles")
+        .insert(inserir.map((r) => ({ user_id: userId, role: r as any })));
       if (insErr) throw insErr;
     }
-    // 2) Sincroniza partner_users
+    // 2) Depois remove apenas os retirados; os comuns são preservados
+    if (remover.length > 0) {
+      const idsRemover = (atuaisRoles ?? [])
+        .filter((r: any) => remover.includes(r.role))
+        .map((r: any) => r.id);
+      const { error: delErr } = await sb.from("user_roles").delete().in("id", idsRemover);
+      if (delErr) throw delErr;
+    }
+
+    // 3) Sincroniza partner_users (erro de select NÃO é tratado como ausência)
     const isPartner = hasPartnerRole(desiredRoles);
     const papel = partnerPapelFromRoles(desiredRoles);
+    const { data: existing, error: partnerSelErr } = await sb
+      .from("partner_users")
+      .select("id, partner_id, papel")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (partnerSelErr) throw partnerSelErr;
+
     if (isPartner) {
-      if (!partnerId) throw new Error("Selecione o parceiro B2B vinculado.");
-      const { data: existing } = await sb.from("partner_users").select("id, partner_id, papel").eq("user_id", userId).maybeSingle();
       if (!existing) {
         const { error } = await sb.from("partner_users").insert({ user_id: userId, partner_id: partnerId, papel });
         if (error) throw error;
@@ -278,17 +313,27 @@ export default function Configuracoes() {
         const { error } = await sb.from("partner_users").update({ partner_id: partnerId, papel }).eq("id", existing.id);
         if (error) throw error;
       }
-    } else {
-      await sb.from("partner_users").delete().eq("user_id", userId);
+    } else if (existing) {
+      const { error: delPartnerErr } = await sb.from("partner_users").delete().eq("id", existing.id);
+      if (delPartnerErr) throw delPartnerErr;
     }
   }
 
-  // Toggle ativo
+
+  // Toggle ativo — proteção de UX: ninguém desativa a própria conta
   const toggleAtivo = useMutation({
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
-      const { error } = await supabase.from("profiles").update({ ativo } as any).eq("user_id", userId);
+      const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
+      if (bloqueio) throw new Error(bloqueio);
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({ ativo } as any)
+        .eq("user_id", userId)
+        .select("user_id");
       if (error) throw error;
+      exigirUmaLinha(data, "status do usuário");
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: "Status do usuário atualizado" });
@@ -398,6 +443,9 @@ export default function Configuracoes() {
       setShowPassword(false);
       setEditUser(null);
       setEditVinculos([]);
+      setEditErros({});
+      setEditResumo(null);
+
     }
   }, [editOpen]);
 
@@ -431,32 +479,60 @@ export default function Configuracoes() {
   }, [searchParams, allUsers, isAdmin, setSearchParams]);
 
 
+  // Estado da edição: erros por campo, resumo e marca de escrita já iniciada
+  const [editErros, setEditErros] = useState<ErrosEdicaoUsuario>({});
+  const [editResumo, setEditResumo] = useState<string | null>(null);
+  const escritaIniciada = useRef(false);
+
   const saveEditUser = useMutation({
     mutationFn: async () => {
       if (!editUser) return;
-      const currentRoles = editUser.roles || [];
-      const isProdutor = currentRoles.includes("cliente_produtor");
-      
-      if (isProdutor && editVinculos.length === 0) {
-        throw new Error("Para perfil Produtor é obrigatório ao menos um cliente vinculado.");
-      }
+      escritaIniciada.current = false;
 
-      // 1. Sincroniza user_clientes PRIMEIRO (necessário para a trigger de roles se o perfil for Produtor)
+      // ---- 1) VALIDAÇÃO COMPLETA ANTES DE QUALQUER ESCRITA ----
+      const desiredRoles: string[] = editUser.roles ?? [];
+      const erros = validarEdicaoUsuario(
+        {
+          nome: editUser.nome ?? "",
+          telefone: editUser.telefone ?? "",
+          roles: desiredRoles,
+          partner_id: editUser.partner_id ?? "",
+          cliente_ids: editVinculos.map((v) => v.cliente_id),
+        },
+        (v) => validatePhoneBR(v as any, { fieldLabel: "Telefone" }),
+      );
+      setEditErros(erros);
+      const primeiro = primeiroCampoInvalidoEdicao(erros);
+      if (primeiro) throw new Error(erros[primeiro]!);
+
+      const originalUser = allUsers.find((u) => u.user_id === editUser.user_id);
+      const originalRoles: string[] = originalUser?.roles ?? [];
+      const isSelf = editUser.user_id === user?.id;
+      const bloqueioAdmin = bloqueioAutoRemocaoAdmin(isSelf, originalRoles, desiredRoles);
+      if (bloqueioAdmin) throw new Error(bloqueioAdmin);
+
+      const telefoneValidado = validatePhoneBR(editUser.telefone, { fieldLabel: "Telefone" });
+      if (!telefoneValidado.ok) throw new Error(telefoneValidado.error);
+
       const sb = supabase as any;
-      const { data: atuais, error: selectErr } = await sb.from("user_clientes").select("id, cliente_id, principal").eq("user_id", editUser.user_id);
+      const { data: atuais, error: selectErr } = await sb
+        .from("user_clientes")
+        .select("id, cliente_id, principal")
+        .eq("user_id", editUser.user_id);
       if (selectErr) throw selectErr;
 
       const atuaisMap = new Map<string, { id: string; principal: boolean }>((atuais ?? []).map((r: any) => [r.cliente_id, { id: r.id, principal: !!r.principal }]));
       const desejados = new Set(editVinculos.map(v => v.cliente_id));
 
-      // Deletar os que não estão mais na lista
+      // ---- 2) ESCRITAS (sem atomicidade: a partir daqui pode haver estado parcial) ----
+      escritaIniciada.current = true;
+
       const toDelete = (atuais ?? []).filter((r: any) => !desejados.has(r.cliente_id)).map((r: any) => r.id);
       if (toDelete.length) {
         const { error: delErr } = await sb.from("user_clientes").delete().in("id", toDelete);
         if (delErr) throw delErr;
       }
 
-      // Inserir ou atualizar os desejados
       for (const v of editVinculos) {
         const existing = atuaisMap.get(v.cliente_id);
         if (!existing) {
@@ -468,24 +544,22 @@ export default function Configuracoes() {
         }
       }
 
-      // 2. Atualiza perfil básico
-      // Não atualizamos cliente_id manualmente aqui pois a trigger trg_user_clientes_sync cuida disso
-      const { error: profileErr } = await supabase.from("profiles")
+      // Perfil básico — confirma que exatamente UMA linha foi atualizada
+      const { data: perfilAtualizado, error: profileErr } = await supabase.from("profiles")
         .update({
-          nome: editUser.nome,
-          telefone: (() => { const c = validatePhoneBR(editUser.telefone, { fieldLabel: "Telefone" }); if (!c.ok) throw new Error(c.error); return c.value; })(),
+          nome: (editUser.nome ?? "").trim(),
+          telefone: telefoneValidado.value,
           cargo: editUser.cargo,
           cpf_cnpj: unmaskCpfCnpj(editUser.cpf_cnpj),
           crea: editUser.crea,
           especialidade: editUser.especialidade,
         } as any)
-        .eq("user_id", editUser.user_id);
+        .eq("user_id", editUser.user_id)
+        .select("user_id");
       if (profileErr) throw profileErr;
+      exigirUmaLinha(perfilAtualizado, "dados do perfil");
 
-      // 3. Sincroniza TODOS os papéis + vínculo com parceiro B2B (mudanças multi-role)
-      const desiredRoles: string[] = editUser.roles ?? [];
-      const originalUser = allUsers.find(u => u.user_id === editUser.user_id);
-      const originalRoles: string[] = originalUser?.roles ?? [];
+      // Papéis + vínculo com parceiro B2B
       const rolesChanged =
         desiredRoles.length !== originalRoles.length ||
         desiredRoles.some((r) => !originalRoles.includes(r));
@@ -501,6 +575,9 @@ export default function Configuracoes() {
       return { rolesChanged, userId: editUser.user_id };
     },
     onSuccess: (result) => {
+      escritaIniciada.current = false;
+      setEditErros({});
+      setEditResumo(null);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
       // Cross-tab: se os papéis do usuário mudaram, avisa a sessão dele (se estiver logada em outra aba)
@@ -516,9 +593,20 @@ export default function Configuracoes() {
     },
 
     onError: (e: Error) => {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+      // Falha após início das escritas: estado pode estar parcial. Não repetimos automaticamente
+      // e mantemos o formulário aberto para conferência.
+      const parcial = escritaIniciada.current;
+      escritaIniciada.current = false;
+      if (parcial) {
+        queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+        queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
+      }
+      const msg = parcial ? `${e.message} ${ERRO_EDICAO_PARCIAL}` : e.message;
+      setEditResumo(msg);
+      toast({ title: "Erro", description: msg, variant: "destructive" });
     },
   });
+
 
 
   const senhaForte = (s: string) => senhaValida(s);
@@ -886,7 +974,9 @@ export default function Configuracoes() {
                           <div className="flex items-center gap-2" onClick={stopRowClick}>
                             <Switch
                               checked={u.ativo !== false}
+                              disabled={u.user_id === user?.id}
                               onCheckedChange={(checked) => toggleAtivo.mutate({ userId: u.user_id, ativo: checked })}
+
                             />
                             <Badge variant={u.ativo === false ? "secondary" : "default"} className="text-[10px]">
                               {u.ativo === false ? "Inativo" : "Ativo"}
@@ -965,7 +1055,9 @@ export default function Configuracoes() {
                             <div className="flex items-center gap-2">
                               <Switch
                                 checked={u.ativo !== false}
+                                disabled={u.user_id === user?.id}
                                 onCheckedChange={(checked) => toggleAtivo.mutate({ userId: u.user_id, ativo: checked })}
+
                               />
                               <span className="text-xs text-muted-foreground">{u.ativo === false ? "Inativo" : "Ativo"}</span>
                             </div>
@@ -1044,12 +1136,14 @@ export default function Configuracoes() {
                             <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
                               <Checkbox
                                 checked={checked}
+                                disabled={r === "administrador" && checked && editUser.user_id === user?.id}
                                 onCheckedChange={(v) =>
                                   setEditUser({ ...editUser, roles: toggleRole(currentRoles, r, v === true) })
                                 }
                               />
                               {ROLE_LABELS[r]}
                             </label>
+
                           );
                         })}
                       </div>
@@ -1097,9 +1191,22 @@ export default function Configuracoes() {
                         ? "Obrigatório para o perfil Produtor. O cliente marcado como principal é o padrão ao acessar o portal."
                         : "Opcional. Define quais clientes este usuário poderá visualizar pelo Portal do Produtor."}
                     />
-                    <Button className="w-full" onClick={() => saveEditUser.mutate()} disabled={saveEditUser.isPending}>
+                    {editResumo && (
+                      <p role="alert" className="text-xs text-destructive border border-destructive/40 rounded-md p-2">
+                        {editResumo}
+                      </p>
+                    )}
+                    {Object.values(editErros).filter(Boolean).length > 0 && (
+                      <ul className="text-xs text-destructive list-disc pl-4">
+                        {Object.entries(editErros).map(([campo, msg]) => (
+                          <li key={campo}>{msg as string}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending}>
                       {saveEditUser.isPending ? "Salvando..." : "Salvar Alterações"}
                     </Button>
+
 
                     <div className="border-t pt-4 mt-2 space-y-3">
                       <div className="flex items-center gap-2">
