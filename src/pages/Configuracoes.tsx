@@ -471,6 +471,9 @@ export default function Configuracoes() {
   });
 
 
+  const senhaForte = (s: string) =>
+    s.length >= SENHA_MIN && s.length <= SENHA_MAX && /[A-Za-z]/.test(s) && /[0-9]/.test(s);
+
   const updateUserPassword = useMutation({
     mutationFn: async () => {
       if (!editUser) throw new Error("Usuário não selecionado");
