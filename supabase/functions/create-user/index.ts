@@ -70,8 +70,20 @@ Deno.serve(async (req) => {
       ? Array.from(new Set(rolesInput.filter(Boolean)))
       : (role ? [role] : []);
 
-    if (!email || !password || !nome || rolesArr.length === 0) {
+    if (
+      typeof email !== "string" || !email.trim() ||
+      typeof password !== "string" || !password ||
+      typeof nome !== "string" || !nome.trim() ||
+      rolesArr.length === 0
+    ) {
       return new Response(JSON.stringify({ error: "email, password, nome e ao menos um perfil são obrigatórios" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (password.length < 6) {
+      return new Response(JSON.stringify({ error: "A senha deve ter no mínimo 6 caracteres." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
