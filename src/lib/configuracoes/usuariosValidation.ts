@@ -40,9 +40,19 @@ export const REGRA_SENHA = `A senha deve ter de ${SENHA_MIN} a ${SENHA_MAX} cara
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/** Conjunto canônico de perfis aceitos (espelha `ACTIVE_ROLES`). */
+export const PAPEIS_VALIDOS: ReadonlySet<string> = new Set(ACTIVE_ROLES as readonly string[]);
+
+/** Mesma regra do servidor: 8–128, ao menos uma letra (inclusive acentuada) e um dígito. */
+export function senhaValida(senha: string): boolean {
+  const s = senha ?? "";
+  return s.length >= SENHA_MIN && s.length <= SENHA_MAX && /[A-Za-zÀ-ÿ]/.test(s) && /[0-9]/.test(s);
+}
+
 export function temPapelParceiro(roles: string[]): boolean {
   return roles.some((r) => (PARTNER_ROLES as readonly string[]).includes(r));
 }
+
 
 export function validarNovoUsuario(input: NovoUsuarioInput): ErrosNovoUsuario {
   const erros: ErrosNovoUsuario = {};
