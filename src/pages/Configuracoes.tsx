@@ -9,6 +9,8 @@ import {
   paginar,
   ERRO_GENERICO_CRIACAO,
   REGRA_SENHA,
+  senhaValida,
+
   SENHA_MIN,
   SENHA_MAX,
   USUARIOS_POR_PAGINA,
