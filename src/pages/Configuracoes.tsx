@@ -10,6 +10,15 @@ import {
   ERRO_GENERICO_CRIACAO,
   REGRA_SENHA,
   senhaValida,
+  validarEdicaoUsuario,
+  primeiroCampoInvalidoEdicao,
+  diferencaPapeis,
+  bloqueioAutoDesativacao,
+  bloqueioAutoRemocaoAdmin,
+  exigirUmaLinha,
+  ERRO_EDICAO_PARCIAL,
+  type ErrosEdicaoUsuario,
+
 
 
   SENHA_MIN,
