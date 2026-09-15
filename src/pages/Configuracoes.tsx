@@ -891,11 +891,11 @@ export default function Configuracoes() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredUsers.length === 0 ? (
+                      {usuariosPagina.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum usuário encontrado</TableCell>
                         </TableRow>
-                      ) : filteredUsers.map((u: any) => (
+                      ) : usuariosPagina.map((u: any) => (
                         <TableRow
                           key={u.user_id}
                           {...rowClickProps(() => { setEditUser(u); setEditOpen(true); })}
