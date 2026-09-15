@@ -474,7 +474,7 @@ export default function Configuracoes() {
   const updateUserPassword = useMutation({
     mutationFn: async () => {
       if (!editUser) throw new Error("Usuário não selecionado");
-      if (newPassword.length < 6) throw new Error("A senha deve ter no mínimo 6 caracteres");
+      if (!senhaForte(newPassword)) throw new Error(REGRA_SENHA);
       if (newPassword !== confirmPassword) throw new Error("As senhas não coincidem");
       const { data, error } = await supabase.functions.invoke("admin-update-user-password", {
         body: { user_id: editUser.user_id, new_password: newPassword },
