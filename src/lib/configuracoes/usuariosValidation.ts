@@ -2,6 +2,9 @@
  * Validação e mapeamento de erros da aba Configurações > Usuários.
  * Funções puras — sem acesso a rede, banco ou estado global.
  */
+import { ACTIVE_ROLES } from "@/lib/permissions";
+
+
 
 export type NovoUsuarioInput = {
   nome: string;
