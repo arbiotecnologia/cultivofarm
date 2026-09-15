@@ -267,23 +267,17 @@ export default function Configuracoes() {
   const [newUser, setNewUser] = useState(initialNewUser);
   const [newUserVinculos, setNewUserVinculos] = useState<ClienteVinculo[]>([]);
 
+  const [createErros, setCreateErros] = useState<ErrosNovoUsuario>({});
+  const [createResumo, setCreateResumo] = useState<string | null>(null);
+  const campoRefs = useRef<Record<string, HTMLElement | null>>({});
+  const registrarCampo = (campo: CampoNovoUsuario) => (el: HTMLElement | null) => { campoRefs.current[campo] = el; };
+  const erroProps = (campo: CampoNovoUsuario) =>
+    createErros[campo]
+      ? ({ "aria-invalid": true, "aria-describedby": `erro-${campo}` } as const)
+      : ({} as const);
+
   const createUser = useMutation({
     mutationFn: async () => {
-      if (!newUser.nome.trim() || !newUser.email.trim() || !newUser.password) {
-        throw new Error("Preencha nome, email e senha.");
-      }
-      if (newUser.password.length < 6) {
-        throw new Error("A senha deve ter no mínimo 6 caracteres.");
-      }
-      if (newUser.roles.length === 0) {
-        throw new Error("Selecione ao menos um perfil de acesso.");
-      }
-      if (newUser.roles.includes("cliente_produtor") && newUserVinculos.length === 0) {
-        throw new Error("Vincule pelo menos um cliente para o perfil de Produtor.");
-      }
-      if (hasPartnerRole(newUser.roles) && !newUser.partner_id) {
-        throw new Error("Selecione o parceiro B2B vinculado.");
-      }
       const principal = newUserVinculos.find(v => v.principal)?.cliente_id ?? newUserVinculos[0]?.cliente_id;
       const payload: any = {
         ...newUser,
@@ -300,8 +294,13 @@ export default function Configuracoes() {
         principal_cliente_id: principal,
       };
       const { data, error } = await supabase.functions.invoke("create-user", { body: payload });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        const corpo = await lerCorpoErroFuncao(error);
+        throw new Error(mapearErroCriacaoUsuario(error, corpo));
+      }
+      if (!criacaoBemSucedida(data)) {
+        throw new Error(mapearErroCriacaoUsuario(null, data) || ERRO_GENERICO_CRIACAO);
+      }
       return data;
     },
     onSuccess: () => {
@@ -311,11 +310,36 @@ export default function Configuracoes() {
       setCreateOpen(false);
       setNewUser(initialNewUser);
       setNewUserVinculos([]);
+      setCreateErros({});
+      setCreateResumo(null);
     },
     onError: (e: Error) => {
+      // Não limpamos o formulário: o administrador corrige e reenvia.
+      setCreateResumo(e.message || ERRO_GENERICO_CRIACAO);
       toast({ title: "Erro ao criar usuário", description: e.message, variant: "destructive" });
     },
   });
+
+  function handleCriarUsuario() {
+    if (createUser.isPending) return; // bloqueia envio duplicado
+    const erros = validarNovoUsuario({
+      nome: newUser.nome,
+      email: newUser.email,
+      password: newUser.password,
+      roles: newUser.roles,
+      partner_id: newUser.partner_id,
+      cliente_ids: newUserVinculos.map(v => v.cliente_id),
+    });
+    setCreateErros(erros);
+    const primeiro = primeiroCampoInvalido(erros);
+    if (primeiro) {
+      setCreateResumo("Corrija os campos destacados antes de continuar.");
+      requestAnimationFrame(() => campoRefs.current[primeiro]?.focus?.());
+      return;
+    }
+    setCreateResumo(null);
+    createUser.mutate();
+  }
 
   // Edit user dialog
   const [editOpen, setEditOpen] = useState(false);
