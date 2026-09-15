@@ -116,20 +116,44 @@ export default function Configuracoes() {
     queryKey: ["admin-users"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data: profiles, error } = await supabase.from("profiles").select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, cargo, crea, especialidade").order("created_at", { ascending: false });
-      if (error) throw error;
+      // Leitura paginada real: sem truncar silenciosamente e com ordem estável por PK.
+      const profiles = await fetchAllRows<any>((from, to) =>
+        supabase
+          .from("profiles")
+          .select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, cargo, crea, especialidade")
+          .order("user_id", { ascending: true })
+          .range(from, to),
+      );
       // Falhas em papéis/vínculos NÃO podem ser tratadas como "sem dados".
-      const { data: roles, error: rolesErr } = await supabase.from("user_roles").select("user_id, role");
-      if (rolesErr) throw rolesErr;
-      const { data: vinc, error: vincErr } = await (supabase as any).from("user_clientes").select("user_id, cliente_id, principal");
-      if (vincErr) throw vincErr;
-      return (profiles || []).map((p: any) => ({
-        ...p,
-        roles: (roles || []).filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
-        vinculos: (vinc || [])
-          .filter((v: any) => v.user_id === p.user_id)
-          .map((v: any) => ({ cliente_id: v.cliente_id, principal: !!v.principal })) as ClienteVinculo[],
-      }));
+      const roles = await fetchAllRows<any>((from, to) =>
+        (supabase as any).from("user_roles").select("user_id, role").order("id", { ascending: true }).range(from, to),
+      );
+      const vinc = await fetchAllRows<any>((from, to) =>
+        (supabase as any)
+          .from("user_clientes")
+          .select("user_id, cliente_id, principal")
+          .order("id", { ascending: true })
+          .range(from, to),
+      );
+      const rolesByUser = new Map<string, string[]>();
+      for (const r of roles) {
+        const arr = rolesByUser.get(r.user_id) ?? [];
+        arr.push(r.role);
+        rolesByUser.set(r.user_id, arr);
+      }
+      const vincByUser = new Map<string, ClienteVinculo[]>();
+      for (const v of vinc) {
+        const arr = vincByUser.get(v.user_id) ?? [];
+        arr.push({ cliente_id: v.cliente_id, principal: !!v.principal } as ClienteVinculo);
+        vincByUser.set(v.user_id, arr);
+      }
+      return profiles
+        .map((p: any) => ({
+          ...p,
+          roles: rolesByUser.get(p.user_id) ?? [],
+          vinculos: vincByUser.get(p.user_id) ?? [],
+        }))
+        .sort((a: any, b: any) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")));
     },
   });
 
@@ -137,9 +161,14 @@ export default function Configuracoes() {
     queryKey: ["clientes-lista"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase.from("clientes").select("id, nome, cpf_cnpj").order("nome");
-      if (error) throw error;
-      return (data || []) as { id: string; nome: string; cpf_cnpj: string | null }[];
+      const data = await fetchAllRows<any>((from, to) =>
+        supabase.from("clientes").select("id, nome, cpf_cnpj").order("id", { ascending: true }).range(from, to),
+      );
+      return [...data].sort((a, b) => String(a.nome ?? "").localeCompare(String(b.nome ?? ""))) as {
+        id: string;
+        nome: string;
+        cpf_cnpj: string | null;
+      }[];
     },
   });
 
@@ -148,13 +177,17 @@ export default function Configuracoes() {
     queryKey: ["partner-accounts-lista"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("partner_accounts")
-        .select("id, codigo, razao_social, nome_fantasia, ativo")
-        .eq("ativo", true)
-        .order("razao_social");
-      if (error) throw error;
-      return (data ?? []) as { id: string; codigo: string | null; razao_social: string; nome_fantasia: string | null; ativo: boolean }[];
+      const data = await fetchAllRows<any>((from, to) =>
+        (supabase as any)
+          .from("partner_accounts")
+          .select("id, codigo, razao_social, nome_fantasia, ativo")
+          .eq("ativo", true)
+          .order("id", { ascending: true })
+          .range(from, to),
+      );
+      return [...data].sort((a, b) =>
+        String(a.razao_social ?? "").localeCompare(String(b.razao_social ?? "")),
+      ) as { id: string; codigo: string | null; razao_social: string; nome_fantasia: string | null; ativo: boolean }[];
     },
   });
 
@@ -163,13 +196,17 @@ export default function Configuracoes() {
     queryKey: ["partner-users-links"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("partner_users")
-        .select("id, user_id, partner_id, papel");
-      if (error) throw error;
-      return (data ?? []) as { id: string; user_id: string; partner_id: string; papel: string }[];
+      const data = await fetchAllRows<any>((from, to) =>
+        (supabase as any)
+          .from("partner_users")
+          .select("id, user_id, partner_id, papel")
+          .order("id", { ascending: true })
+          .range(from, to),
+      );
+      return data as { id: string; user_id: string; partner_id: string; papel: string }[];
     },
   });
+
 
   const clienteNomeById = (id: string) => clientes.find(c => c.id === id)?.nome ?? id.slice(0, 8);
   const partnerLinkByUser = (uid: string) => partnerLinks.find(l => l.user_id === uid) || null;
