@@ -74,10 +74,16 @@ describe("mapearErroCriacaoUsuario", () => {
     expect(mapearErroCriacaoUsuario(null, '{"code":"email_ja_cadastrado"}')).toMatch(/já existe/i);
   });
 
-  it("aceita mensagem curta e limpa do servidor", () => {
-    expect(mapearErroCriacaoUsuario(null, '{"error":"Perfil informado não existe"}')).toBe(
-      "Perfil informado não existe",
-    );
+  it("reconhece mensagem conhecida do servidor (com acento/pontuação)", () => {
+    expect(
+      mapearErroCriacaoUsuario(null, '{"error":"email, password, nome e ao menos um perfil são obrigatórios"}'),
+    ).toMatch(/preencha nome/i);
+  });
+
+  it("rejeita QUALQUER texto desconhecido do servidor", () => {
+    expect(mapearErroCriacaoUsuario(null, '{"error":"Perfil informado não existe"}')).toBe(ERRO_GENERICO_CRIACAO);
+    expect(mapearErroCriacaoUsuario(null, '{"message":"debug_secret=EXEMPLO_FICTICIO"}')).toBe(ERRO_GENERICO_CRIACAO);
+    expect(mapearErroCriacaoUsuario({ message: "debug_secret=EXEMPLO_FICTICIO" })).toBe(ERRO_GENERICO_CRIACAO);
   });
 
   it("nunca expõe SQL ou segredos", () => {
@@ -90,9 +96,15 @@ describe("mapearErroCriacaoUsuario", () => {
     expect(mapearErroCriacaoUsuario(null, "<html>erro</html>")).toBe(ERRO_GENERICO_CRIACAO);
     expect(mapearErroCriacaoUsuario(null, undefined)).toBe(ERRO_GENERICO_CRIACAO);
     expect(mapearErroCriacaoUsuario(new Error("Edge Function returned a non-2xx status code"))).toBe(
-      "Edge Function returned a non-2xx status code",
+      ERRO_GENERICO_CRIACAO,
     );
   });
+
+  it("fallback orienta verificar o cadastro, sem sugerir reenvio cego", () => {
+    expect(ERRO_GENERICO_CRIACAO).toMatch(/verifique/i);
+    expect(ERRO_GENERICO_CRIACAO).toMatch(/lista de usuários/i);
+  });
+
 
   it("lê o corpo do FunctionsHttpError", async () => {
     const erro = { context: { text: async () => '{"code":"nao_autorizado"}' } };
