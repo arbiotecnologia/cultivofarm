@@ -1,4 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  validarNovoUsuario,
+  primeiroCampoInvalido,
+  mapearErroCriacaoUsuario,
+  lerCorpoErroFuncao,
+  criacaoBemSucedida,
+  filtrarUsuariosPorBusca,
+  paginar,
+  ERRO_GENERICO_CRIACAO,
+  REGRA_SENHA,
+  SENHA_MIN,
+  SENHA_MAX,
+  USUARIOS_POR_PAGINA,
+  type ErrosNovoUsuario,
+  type CampoNovoUsuario,
+} from "@/lib/configuracoes/usuariosValidation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
