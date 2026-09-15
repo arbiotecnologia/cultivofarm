@@ -60,15 +60,22 @@ export function validarNovoUsuario(input: NovoUsuarioInput): ErrosNovoUsuario {
   else if (email.length > EMAIL_MAX) erros.email = `O e-mail deve ter no máximo ${EMAIL_MAX} caracteres.`;
   else if (!EMAIL_RE.test(email)) erros.email = "Informe um e-mail válido.";
 
-  if (senha.length < SENHA_MIN || senha.length > SENHA_MAX || !/[A-Za-z]/.test(senha) || !/[0-9]/.test(senha)) {
+  if (!senhaValida(senha)) {
     erros.password = REGRA_SENHA;
   }
 
   if (roles.length === 0) {
     erros.roles = "Selecione ao menos um perfil de acesso.";
+  } else if (new Set(roles).size !== roles.length) {
+    erros.roles = "Há perfis repetidos na seleção.";
+  } else if (roles.some((r) => !PAPEIS_VALIDOS.has(r))) {
+    erros.roles = "Há perfil de acesso inválido na seleção.";
   } else if (roles.includes("cliente_produtor") && roles.length > 1) {
     erros.roles = "O perfil Produtor não pode ser combinado com outros perfis.";
+  } else if (roles.includes("parceiro_b2b") && roles.includes("parceiro_b2b_tecnico")) {
+    erros.roles = "Escolha apenas um perfil de Parceiro B2B: Gestor ou Técnico.";
   }
+
 
   if (roles.includes("cliente_produtor") && clienteIds.length === 0) {
     erros.cliente_ids = "Vincule pelo menos um cliente para o perfil Produtor.";
