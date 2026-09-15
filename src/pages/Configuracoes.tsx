@@ -311,12 +311,20 @@ export default function Configuracoes() {
   }
 
 
-  // Toggle ativo
+  // Toggle ativo — proteção de UX: ninguém desativa a própria conta
   const toggleAtivo = useMutation({
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
-      const { error } = await supabase.from("profiles").update({ ativo } as any).eq("user_id", userId);
+      const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
+      if (bloqueio) throw new Error(bloqueio);
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({ ativo } as any)
+        .eq("user_id", userId)
+        .select("user_id");
       if (error) throw error;
+      exigirUmaLinha(data, "status do usuário");
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: "Status do usuário atualizado" });
