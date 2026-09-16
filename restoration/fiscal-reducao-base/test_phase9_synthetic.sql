@@ -19,7 +19,7 @@ DECLARE
   v_item uuid := gen_random_uuid();
   prev jsonb; calc jsonb; snap jsonb; icms_prev jsonb; icms_calc jsonb;
 BEGIN
-  SELECT user_id INTO v_uid FROM public.user_roles WHERE role = 'admin' LIMIT 1;
+  SELECT user_id INTO v_uid FROM public.user_roles WHERE role = 'administrador' LIMIT 1;
   IF v_uid IS NULL THEN RAISE EXCEPTION 'sem usuario admin para o cenario'; END IF;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_uid, 'role', 'authenticated')::text, true);
 
