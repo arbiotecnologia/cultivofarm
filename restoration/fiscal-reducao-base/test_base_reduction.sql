@@ -124,7 +124,7 @@ BEGIN
     PERFORM pg_temp.chk('modo desconhecido rejeitado', false, 'insert aceito');
   EXCEPTION WHEN others THEN
     GET STACKED DIAGNOSTICS erro = MESSAGE_TEXT;
-    PERFORM pg_temp.chk('modo desconhecido rejeitado', erro LIKE '%ftr_base_reduction_mode_domain%', erro);
+    PERFORM pg_temp.chk('modo desconhecido rejeitado', erro LIKE '%ftr_base_reduction_mode_%', erro);
   END;
 END $$;
 
