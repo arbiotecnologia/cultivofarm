@@ -17,6 +17,7 @@ DECLARE
   v_order uuid := gen_random_uuid();
   v_inv uuid := gen_random_uuid();
   v_item uuid := gen_random_uuid();
+  v_prod uuid;
   prev jsonb; calc jsonb; snap jsonb; icms_prev jsonb; icms_calc jsonb;
 BEGIN
   SELECT user_id INTO v_uid FROM public.user_roles WHERE role = 'administrador' LIMIT 1;
@@ -59,10 +60,11 @@ BEGIN
     requires_financial_approval, financial_approval_status, created_by, total)
   VALUES (v_order, v_partner, 'rascunho', v_uid, now(), 'accepted', false, 'approved', v_uid, 10000);
 
+  SELECT id INTO v_prod FROM public.produtos LIMIT 1;
   INSERT INTO public.partner_order_items(
-    id, order_id, quantidade, preco_unitario, preco_unitario_final_snapshot,
+    id, order_id, product_id, quantidade, preco_unitario, preco_unitario_final_snapshot,
     price_source_snapshot, pricing_mode_snapshot, produto_nome_snapshot)
-  VALUES (gen_random_uuid(), v_order, 1, 10000, 10000, 'TABELA', 'price_list', 'PRODUTO SINTETICO');
+  VALUES (gen_random_uuid(), v_order, v_prod, 1, 10000, 10000, 'TABELA', 'price_list', 'PRODUTO SINTETICO');
 
   -- Itens inseridos antes da aprovacao (guard de imutabilidade pos-aprovacao).
   UPDATE public.partner_orders SET status = 'aprovado' WHERE id = v_order;
