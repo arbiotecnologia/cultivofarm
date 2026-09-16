@@ -17,18 +17,31 @@ import type { SidebarNavGroup } from "@/components/nav/types";
  * compartilhada. Rotas, ACCESS_MAP e flags permanecem intactos.
  */
 export function AppSidebar() {
-  const { role } = useAuth();
+  const { role, roles } = useAuth();
   const { config } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || "AR Bio";
+  // Auditoria de perfis: a visibilidade do menu passa a usar a MESMA fonte do
+  // `RoleGuard` (papel efetivo por contexto ativo). Antes usava apenas o papel
+  // primário, escondendo itens que o usuário multipapel podia realmente abrir.
+  const activeContext = readActiveContext();
 
   /** Rota sem query string — deep links (`?tab=`) usam a permissão da página. */
   const routePath = (route: string) =>
     route.indexOf("?") === -1 ? route : route.slice(0, route.indexOf("?"));
 
+  const allowedRolesOk = (item: NavItem) =>
+    !item.allowedRoles ||
+    (roles ?? []).some((r) => (item.allowedRoles as string[]).includes(r));
+
   const isVisible = (item: NavItem) =>
-    canAccess(role, routePath(item.route)) &&
+    resolveEffectiveRouteRole({
+      roles,
+      primaryRole: role,
+      path: routePath(item.route),
+      activeContext,
+    }).allowed &&
     isNavItemFeatureEnabled(item) &&
-    (!item.allowedRoles || (!!role && (item.allowedRoles as string[]).includes(role)));
+    allowedRolesOk(item);
 
   const groups: SidebarNavGroup[] = useMemo(() => {
     return desktopItemsBySection()
@@ -41,7 +54,7 @@ export function AppSidebar() {
       }))
       .filter((g) => g.items.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role]);
+  }, [role, roles, activeContext]);
 
   const isProducao = role === "producao" || role === "operador_onfarm";
 
