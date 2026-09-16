@@ -163,9 +163,13 @@ BEGIN
   PERFORM pg_temp.chk('total vICMS 720',
     (SELECT (fiscal_totals_snapshot->>'vICMS')::numeric FROM public.fiscal_invoices WHERE id = v_inv) = 720,
     (SELECT fiscal_totals_snapshot->>'vICMS' FROM public.fiscal_invoices WHERE id = v_inv));
-  PERFORM pg_temp.chk('total vBC 4000',
-    (SELECT (fiscal_totals_snapshot->>'vBC')::numeric FROM public.fiscal_invoices WHERE id = v_inv) = 4000,
-    (SELECT fiscal_totals_snapshot->>'vBC' FROM public.fiscal_invoices WHERE id = v_inv));
+  -- Totais nao expoem vBC agregado (base por item vive no tax_snapshot do item).
+  PERFORM pg_temp.chk('total vProd 10000',
+    (SELECT (fiscal_totals_snapshot->>'vProd')::numeric FROM public.fiscal_invoices WHERE id = v_inv) = 10000,
+    (SELECT fiscal_totals_snapshot->>'vProd' FROM public.fiscal_invoices WHERE id = v_inv));
+  PERFORM pg_temp.chk('base ICMS do item 4000 (fonte do vBC no XML)',
+    (SELECT (tax_snapshot->'ICMS'->>'base')::numeric FROM public.fiscal_invoice_items WHERE id = v_item) = 4000,
+    (SELECT tax_snapshot->'ICMS'->>'base' FROM public.fiscal_invoice_items WHERE id = v_item));
 
   -- Auditoria da reducao registrada.
   PERFORM pg_temp.chk('auditoria BASE_REDUCTION_CHANGE',
