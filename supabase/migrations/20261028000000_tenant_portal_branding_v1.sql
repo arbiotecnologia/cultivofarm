@@ -30,8 +30,8 @@ BEGIN
   IF auth.uid() IS NULL OR NOT EXISTS (
     SELECT 1 FROM public.user_clientes uc
     WHERE uc.user_id = auth.uid() AND uc.cliente_id = _cliente_id
-      AND COALESCE(uc.is_active, true)
-      AND (uc.valid_until IS NULL OR uc.valid_until >= CURRENT_DATE)
+      AND uc.is_active
+      AND (uc.valid_until IS NULL OR uc.valid_until >= now())
   ) THEN RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501'; END IF;
   IF _marca_nome IS NOT NULL AND char_length(btrim(_marca_nome)) NOT BETWEEN 2 AND 80 THEN
     RAISE EXCEPTION 'Nome da marca inválido' USING ERRCODE = '22023';
@@ -86,8 +86,8 @@ DROP POLICY IF EXISTS "Clientes enviam própria logo" ON storage.objects;
 CREATE POLICY "Clientes enviam própria logo" ON storage.objects FOR INSERT TO authenticated
 WITH CHECK (bucket_id = 'logos' AND (storage.foldername(name))[1] = 'clientes'
   AND EXISTS (SELECT 1 FROM public.user_clientes uc WHERE uc.user_id = auth.uid()
-    AND uc.cliente_id::text = (storage.foldername(name))[2] AND COALESCE(uc.is_active, true)
-    AND (uc.valid_until IS NULL OR uc.valid_until >= CURRENT_DATE)));
+    AND uc.cliente_id::text = (storage.foldername(name))[2] AND uc.is_active
+    AND (uc.valid_until IS NULL OR uc.valid_until >= now())));
 DROP POLICY IF EXISTS "Parceiros gestores enviam própria logo" ON storage.objects;
 CREATE POLICY "Parceiros gestores enviam própria logo" ON storage.objects FOR INSERT TO authenticated
 WITH CHECK (bucket_id = 'logos' AND (storage.foldername(name))[1] = 'parceiros'
