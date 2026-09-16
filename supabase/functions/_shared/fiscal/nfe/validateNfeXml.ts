@@ -142,6 +142,34 @@ export const NFE_GRAMMAR: FieldRule = {
                   ],
                 },
                 {
+                  name: "ICMS20", min: 0, max: 1, type: "C",
+                  children: [
+                    { name: "orig", min: 1, max: 1, type: "N", minLen: 1, maxLen: 1 },
+                    { name: "CST", min: 1, max: 1, type: "N", enum: ["20"] },
+                    { name: "modBC", min: 1, max: 1, type: "N", enum: ["0", "1", "2", "3"] },
+                    { name: "pRedBC", min: 1, max: 1, type: "D4" },
+                    { name: "vBC", min: 1, max: 1, type: "D2" },
+                    { name: "pICMS", min: 1, max: 1, type: "D2" },
+                    { name: "vICMS", min: 1, max: 1, type: "D2" },
+                  ],
+                },
+                {
+                  name: "ICMS40", min: 0, max: 1, type: "C",
+                  children: [
+                    { name: "orig", min: 1, max: 1, type: "N", minLen: 1, maxLen: 1 },
+                    { name: "CST", min: 1, max: 1, type: "N", enum: ["40", "41", "50"] },
+                  ],
+                },
+                {
+                  name: "ICMSSN101", min: 0, max: 1, type: "C",
+                  children: [
+                    { name: "orig", min: 1, max: 1, type: "N", minLen: 1, maxLen: 1 },
+                    { name: "CSOSN", min: 1, max: 1, type: "N", enum: ["101"] },
+                    { name: "pCredSN", min: 1, max: 1, type: "D4" },
+                    { name: "vCredICMSSN", min: 1, max: 1, type: "D2" },
+                  ],
+                },
+                {
                   name: "ICMSSN102", min: 0, max: 1, type: "C",
                   children: [
                     { name: "orig", min: 1, max: 1, type: "N", minLen: 1, maxLen: 1 },
@@ -150,6 +178,28 @@ export const NFE_GRAMMAR: FieldRule = {
                 },
               ],
             },
+            {
+              name: "IPI", min: 0, max: 1, type: "C",
+              children: [
+                { name: "cEnq", min: 1, max: 1, type: "C", minLen: 1, maxLen: 3 },
+                {
+                  name: "IPITrib", min: 0, max: 1, type: "C",
+                  children: [
+                    { name: "CST", min: 1, max: 1, type: "N", minLen: 2, maxLen: 2 },
+                    { name: "vBC", min: 1, max: 1, type: "D2" },
+                    { name: "pIPI", min: 1, max: 1, type: "D4" },
+                    { name: "vIPI", min: 1, max: 1, type: "D2" },
+                  ],
+                },
+                {
+                  name: "IPINT", min: 0, max: 1, type: "C",
+                  children: [
+                    { name: "CST", min: 1, max: 1, type: "N", minLen: 2, maxLen: 2 },
+                  ],
+                },
+              ],
+            },
+
             {
               name: "PIS", min: 1, max: 1, type: "C",
               children: [
