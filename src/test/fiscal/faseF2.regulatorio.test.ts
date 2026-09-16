@@ -104,7 +104,7 @@ describe("Fase F2 — nenhuma inferência no cliente", () => {
     expect(hook).not.toMatch(/as unknown as/);
     expect(hook).not.toContain("callRegulatoryRpc");
     expect(hook).toContain(
-      'import type { Database, Json } from "@/integrations/supabase/types"',
+      'import type { Database, Json } from "@/integrations/supabase/cultivofarm.types"',
     );
     expect(hook).toContain("Database[\"public\"][\"Functions\"]");
   });
