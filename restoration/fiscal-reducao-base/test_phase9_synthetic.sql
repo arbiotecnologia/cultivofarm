@@ -19,6 +19,8 @@ DECLARE
   v_item uuid := gen_random_uuid();
   v_prod uuid;
   v_src uuid := gen_random_uuid();
+  v_cfs uuid;
+  v_cert uuid := gen_random_uuid();
   prev jsonb; calc jsonb; snap jsonb; icms_prev jsonb; icms_calc jsonb;
 BEGIN
   SELECT user_id INTO v_uid FROM public.user_roles WHERE role = 'administrador' LIMIT 1;
@@ -42,7 +44,7 @@ BEGIN
            postal_code = '78000000', street = 'AV SINTETICA', number = '100',
            neighborhood = 'CENTRO', country_code = '1058',
            state_registration = '12345678901', nfe_series_number = 1,
-           uf_accreditations = '["MT"]'::jsonb, certificate_ref = 'SYN-CERT',
+           uf_accreditations = '["MT"]'::jsonb,
            accounting_validated_at = now(),
            ipi_taxpayer = false, icms_st_responsible = false,
            fcp_applicable = false, difal_responsible = false
@@ -57,7 +59,7 @@ BEGIN
     VALUES (gen_random_uuid(), true, 'EMITENTE SINTETICO', '11222333000181', '3', 'MT',
             '5103403', 'CUIABA', '2', 'READY_HOMOLOGATION', false, false, false, false,
             '0111301', 'NAO_CUMULATIVO', '78000000', 'AV SINTETICA', '100', 'CENTRO',
-            '1058', '12345678901', 1, '["MT"]'::jsonb, 'SYN-CERT', now());
+            '1058', '12345678901', 1, '["MT"]'::jsonb, NULL, now());
   END IF;
 
 
@@ -84,6 +86,15 @@ BEGIN
 
   -- Itens inseridos antes da aprovacao (guard de imutabilidade pos-aprovacao).
   UPDATE public.partner_orders SET status = 'aprovado' WHERE id = v_order;
+
+  -- Certificado sintetico disponivel em homologacao (revertido ao final).
+  SELECT id INTO v_cfs FROM public.company_fiscal_settings WHERE is_active LIMIT 1;
+  INSERT INTO public.fiscal_certificates(
+    id, company_settings_id, source_type, environment, status, display_name,
+    valid_from, valid_until, is_active)
+  VALUES (v_cert, v_cfs, 'MANAGED', 'HOMOLOGATION', 'AVAILABLE', 'CERT SINTETICO',
+          now() - interval '1 day', now() + interval '365 days', true);
+  UPDATE public.company_fiscal_settings SET certificate_ref = v_cert::text WHERE id = v_cfs;
 
   -- Fonte oficial exigida pelas evidencias de publicacao.
   INSERT INTO public.fiscal_official_sources(id, source_key, authority, name, url)
