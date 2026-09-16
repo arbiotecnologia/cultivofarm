@@ -115,7 +115,7 @@ BEGIN
     priority, valid_from, status, base_components, credit_own_icms,
     source_id, legal_basis, published_at, published_by)
   VALUES
-    ('SYN-ICMS-20', 1, 'ICMS', 'PERCENT', '3', '20', 18, 'MANUAL', 1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, true, v_src, 'RICMS/MT art. 1', now(), v_uid),
+    ('SYN-ICMS-20', 1, 'ICMS', 'PERCENT', '3', '20', 18, 'MANUAL', 1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, true, v_src, 'RICMS/SC art. 1', now(), v_uid),
     ('SYN-PIS',     1, 'PIS',  'PERCENT', NULL, '01', 1.65, 'NONE',  1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, false, v_src, 'Lei 10.637/2002', now(), v_uid),
     ('SYN-COFINS',  1, 'COFINS','PERCENT',NULL, '01', 7.6,  'NONE',  1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, false, v_src, 'Lei 10.833/2003', now(), v_uid);
 
