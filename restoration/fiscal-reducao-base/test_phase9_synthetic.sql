@@ -24,12 +24,25 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_uid, 'role', 'authenticated')::text, true);
 
   -- Emitente em homologacao, Regime Normal (CRT 3), sem IPI/ST/FCP/DIFAL.
-  INSERT INTO public.company_fiscal_settings(
-    id, is_active, legal_name, cnpj, crt, state, municipality_ibge_code, city,
-    nfe_environment_code, nfe_readiness_status, ipi_taxpayer, icms_st_responsible,
-    fcp_applicable, difal_responsible)
-  VALUES (gen_random_uuid(), true, 'EMITENTE SINTETICO', '11222333000181', '3', 'MT',
-          '5103403', 'CUIABA', '2', 'READY_HOMOLOGATION', false, false, false, false);
+  -- Existe singleton ativo: o cenario ajusta a linha ativa dentro da transacao
+  -- revertida (nenhuma alteracao permanente no emitente real).
+  IF EXISTS (SELECT 1 FROM public.company_fiscal_settings WHERE is_active) THEN
+    UPDATE public.company_fiscal_settings
+       SET legal_name = 'EMITENTE SINTETICO', cnpj = '11222333000181', crt = '3',
+           state = 'MT', municipality_ibge_code = '5103403', city = 'CUIABA',
+           nfe_environment_code = '2', nfe_readiness_status = 'READY_HOMOLOGATION',
+           ipi_taxpayer = false, icms_st_responsible = false,
+           fcp_applicable = false, difal_responsible = false
+     WHERE is_active;
+  ELSE
+    INSERT INTO public.company_fiscal_settings(
+      id, is_active, legal_name, cnpj, crt, state, municipality_ibge_code, city,
+      nfe_environment_code, nfe_readiness_status, ipi_taxpayer, icms_st_responsible,
+      fcp_applicable, difal_responsible)
+    VALUES (gen_random_uuid(), true, 'EMITENTE SINTETICO', '11222333000181', '3', 'MT',
+            '5103403', 'CUIABA', '2', 'READY_HOMOLOGATION', false, false, false, false);
+  END IF;
+
 
   INSERT INTO public.clientes(id, nome, codigo_cliente) VALUES (v_cliente, 'CLIENTE SINTETICO', 'SYN-1');
 
