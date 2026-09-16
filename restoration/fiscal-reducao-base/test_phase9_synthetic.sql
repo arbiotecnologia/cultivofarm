@@ -92,7 +92,7 @@ BEGIN
   INSERT INTO public.fiscal_certificates(
     id, company_settings_id, source_type, environment, status, display_name,
     valid_from, valid_until, is_active)
-  VALUES (v_cert, v_cfs, 'MANAGED', 'HOMOLOGATION', 'AVAILABLE', 'CERT SINTETICO',
+  VALUES (v_cert, v_cfs, 'SYSTEM_STORE', 'HOMOLOGATION', 'AVAILABLE', 'CERT SINTETICO',
           now() - interval '1 day', now() + interval '365 days', true);
   UPDATE public.company_fiscal_settings SET certificate_ref = v_cert::text WHERE id = v_cfs;
 
