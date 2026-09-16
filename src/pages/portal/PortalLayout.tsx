@@ -16,6 +16,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PortalSidebar } from "@/components/nav/PortalSidebar";
 import { useSidebarOpenState } from "@/hooks/useNavCollapseState";
 import { PRODUTOR_MENU_GROUPS } from "@/config/portalMenus";
+import { usePortalBranding } from "@/hooks/useBranding";
 
 
 // Itens do menu passaram a ser declarados em `src/config/portalMenus.ts`
@@ -29,6 +30,7 @@ export default function PortalLayout() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { clienteId, clienteNome, clientes, setClienteAtivo, loading } = usePortalCliente();
+  const brand = usePortalBranding("cliente", clienteId);
 
   // Contagem de recomendações aguardando decisão do produtor
   const { data: aguardandoCount = 0 } = useQuery({
@@ -133,8 +135,10 @@ export default function PortalLayout() {
         />
         <div className="flex-1 flex flex-col min-w-0">
       <PortalTopBar
-        brandTitle="Portal do Produtor"
+        brandTitle={brand.marcaPropria?.nome || "Portal do Produtor"}
+        brandSubtitle={brand.marcaPropria?.nome ? "Portal do Produtor" : undefined}
         brandIcon={Sprout}
+        brandLogoUrl={brand.marcaPropria?.logoUrl ?? null}
         hideBrandOnMobile
         leadingSlot={<SidebarTrigger className="h-10 w-10 shrink-0" />}
         contextSlot={

@@ -54,6 +54,7 @@ BEGIN
     WHERE uc.user_id = auth.uid()
       AND uc.cliente_id = p_cliente_id
       AND uc.is_active
+      AND uc.revoked_at IS NULL
       AND (uc.valid_until IS NULL OR uc.valid_until >= now())
   ) THEN
     RAISE EXCEPTION 'sem vinculo ativo com este cliente';
@@ -92,9 +93,8 @@ BEGIN
       JOIN public.partner_accounts pa ON pa.id = pu.partner_id
      WHERE pu.user_id = auth.uid()
        AND pu.partner_id = p_partner_id
-       AND pu.role = 'gestor'
-       AND coalesce(pu.is_active, true)
-       AND coalesce(pa.is_active, true)
+       AND pu.papel = 'gestor'
+       AND coalesce(pa.ativo, true)
   ) THEN
     RAISE EXCEPTION 'apenas gestor de parceiro ativo pode alterar a identidade';
   END IF;
@@ -116,6 +116,18 @@ REVOKE EXECUTE ON FUNCTION public.save_partner_portal_branding(uuid, text, text,
 GRANT EXECUTE ON FUNCTION public.save_client_portal_branding(uuid, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.save_partner_portal_branding(uuid, text, text, text) TO authenticated;
 
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('logos', 'logos', true, 2097152, ARRAY['image/png','image/jpeg','image/webp'])
+ON CONFLICT (id) DO UPDATE
+  SET public = true,
+      file_size_limit = 2097152,
+      allowed_mime_types = ARRAY['image/png','image/jpeg','image/webp'];
+
+DROP POLICY IF EXISTS "branding logo read" ON storage.objects;
+CREATE POLICY "branding logo read"
+  ON storage.objects FOR SELECT TO anon, authenticated
+  USING (bucket_id = 'logos');
+
 DROP POLICY IF EXISTS "branding logo upload cliente" ON storage.objects;
 CREATE POLICY "branding logo upload cliente"
   ON storage.objects FOR INSERT TO authenticated
@@ -127,6 +139,7 @@ CREATE POLICY "branding logo upload cliente"
       WHERE uc.user_id = auth.uid()
         AND uc.cliente_id::text = (storage.foldername(name))[2]
         AND uc.is_active
+        AND uc.revoked_at IS NULL
         AND (uc.valid_until IS NULL OR uc.valid_until >= now())
     )
   );
@@ -141,8 +154,7 @@ CREATE POLICY "branding logo upload parceiro"
       SELECT 1 FROM public.partner_users pu
       WHERE pu.user_id = auth.uid()
         AND pu.partner_id::text = (storage.foldername(name))[2]
-        AND pu.role = 'gestor'
-        AND coalesce(pu.is_active, true)
+        AND pu.papel = 'gestor'
     )
   );
 

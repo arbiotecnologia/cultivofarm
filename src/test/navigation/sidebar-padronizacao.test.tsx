@@ -63,6 +63,7 @@ describe("N-01 fonte única de itens", () => {
   ];
   const GESTOR_ANTES = [
     "/portal-parceiro/dashboard", "/portal-parceiro/pedidos",
+  "/portal-parceiro/perfil",
     "/portal-parceiro/simulacoes-equipe", "/portal-parceiro/catalogo",
     "/portal-parceiro/fichas", "/portal-parceiro/favoritos",
     "/portal-parceiro/meu-historico", "/portal-parceiro/financeiro",

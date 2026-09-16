@@ -14,6 +14,7 @@ import { PortalSidebar } from "@/components/nav/PortalSidebar";
 import { useSidebarOpenState } from "@/hooks/useNavCollapseState";
 import { PARCEIRO_GESTOR_GROUPS, PARCEIRO_TECNICO_GROUPS } from "@/config/portalMenus";
 import { getPapelLabel } from "@/lib/portal/identidade";
+import { usePortalBranding } from "@/hooks/useBranding";
 
 import {
   Select,
@@ -69,6 +70,8 @@ export default function PortalParceiroLayout() {
     if (isStaff) return allPartners.find((p) => p.id === simulatedId) ?? null;
     return ownPartner;
   }, [isStaff, ownPartner, allPartners, simulatedId]);
+
+  const parceiroBrand = usePortalBranding("parceiro", (partner as any)?.id ?? null);
 
   const location = useLocation();
 
@@ -131,8 +134,9 @@ export default function PortalParceiroLayout() {
         />
         <div className="flex-1 flex flex-col min-w-0">
       <PortalTopBar
-        brandTitle="Portal Parceiro B2B"
+        brandTitle={parceiroBrand.marcaPropria?.nome || "Portal Parceiro B2B"}
         brandIcon={ShoppingCart}
+        brandLogoUrl={parceiroBrand.marcaPropria?.logoUrl ?? null}
         brandSubtitle={getPapelLabel(papelVisual)}
         hideBrandOnMobile
         onSwitchPortal={canSwitchPortal ? () => { void switchPortal(); } : undefined}

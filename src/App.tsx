@@ -151,6 +151,7 @@ import ParceiroDetalheProdutorTecnico from "@/pages/portal-parceiro/DetalheProdu
 import ParceiroTecnicosProdutores from "@/pages/portal-parceiro/TecnicosProdutores";
 import ParceiroUsuariosClientesB2B from "@/pages/portal-parceiro/UsuariosClientesB2B";
 import ParceiroSolicitacoes from "@/pages/portal-parceiro/Solicitacoes";
+import PortalParceiroPerfil from "@/pages/portal-parceiro/PortalParceiroPerfil";
 import ComercialSolicitacoesB2B from "@/pages/comercial/SolicitacoesB2B";
 // PortalMeusPedidos removido do fluxo do produtor (Fase 2 - reformulação B2B). Componente preservado para uso interno futuro.
 import CampanhasComerciais from "@/pages/comercial/CampanhasComerciais";
@@ -460,6 +461,7 @@ const App = () => (
               {/* Portal Parceiro B2B */}
               <Route path="/portal-parceiro" element={<B2BRouteGuard><PortalParceiroLayout /></B2BRouteGuard>}>
                 <Route index element={<Navigate to="/portal-parceiro/dashboard" replace />} />
+                <Route path="perfil" element={<PortalParceiroPerfil />} />
                 <Route path="dashboard" element={<ParceiroDashboardRouter />} />
                 <Route path="pedidos" element={<ParceiroMeusPedidos />} />
                 <Route path="solicitacoes" element={<ParceiroSolicitacoes />} />

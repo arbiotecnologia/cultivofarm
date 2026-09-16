@@ -1,12 +1,13 @@
 import { useAuth } from "@/hooks/useAuth";
 import { usePortalCliente } from "@/hooks/usePortalCliente";
+import { PortalBrandingSettings } from "@/components/portal/PortalBrandingSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Mail, Phone } from "lucide-react";
 import { formatTelefone, formatCpfCnpj } from "@/lib/masks";
 
 export default function PortalPerfil() {
   const { profile } = useAuth();
-  const { clienteNome, loading } = usePortalCliente();
+  const { clienteId, clienteNome, loading } = usePortalCliente();
   const p = profile as any;
 
   if (loading) return <div className="animate-pulse text-muted-foreground p-8">Carregando...</div>;
@@ -61,6 +62,7 @@ export default function PortalPerfil() {
           </p>
         </CardContent>
       </Card>
+      <PortalBrandingSettings scope="cliente" id={clienteId} />
     </div>
   );
 }
