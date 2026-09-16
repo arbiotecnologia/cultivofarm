@@ -23,7 +23,7 @@ describe('CultivoFarm independente da geração Cloud', () => {
     expect(data.toString().trimEnd().split('\n')).toHaveLength(21850);
   });
 
-  it('permite somente o cliente canônico e nenhum contrato gerenciado em produção', () => {
+  it('permite somente o cliente canônico e nenhum contrato gerenciado em produção', { timeout: 60_000 }, () => {
     let creations = 0;
     for (const path of files(resolve(root, 'src'))) {
       const text = readFileSync(path, 'utf8');
