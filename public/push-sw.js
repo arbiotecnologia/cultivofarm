@@ -17,7 +17,7 @@ self.addEventListener("push", (event) => {
       self.registration.showNotification(title, {
         body,
         icon: icon || "/pwa-icon-192.png",
-        badge: badge || "/favicon.ico",
+        badge: badge || "/favicon.png",
         data: { url },
       })
     );

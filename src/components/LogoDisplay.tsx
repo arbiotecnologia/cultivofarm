@@ -1,5 +1,5 @@
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import sMboloArBio from "@/assets/s-mbolo-ar-bio.png";
+import simboloCultivoFarm from "@/assets/simbolo-cultivofarm.png.asset.json";
 import { cn } from "@/lib/utils";
 
 interface LogoDisplayProps {
@@ -46,7 +46,7 @@ export function LogoDisplay({
         />
       ) : (
         <img 
-          src={sMboloArBio} 
+          src={simboloCultivoFarm.url} 
           alt={nomeEmpresa} 
           className={cn("h-full w-full object-contain", size === "xl" ? "p-0" : "p-0.5", imgClassName)} 
         />

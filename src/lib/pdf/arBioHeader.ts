@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
-import logoUrl from "@/assets/s-mbolo-ar-bio.png";
+import logoAsset from "@/assets/logo-cultivofarm.png.asset.json";
+
+const logoUrl = logoAsset.url;
 
 const COMPANY_NAME = "Cultivo Farm";
 const DISCLAIMER =
