@@ -104,7 +104,7 @@ BEGIN
     id, fiscal_invoice_id, item_sequence, item_kind, description, quantity,
     unit_value, gross_value, ncm_snapshot, cfop_snapshot, cst_icms_snapshot,
     origem_snapshot, tax_input_snapshot)
-  VALUES (v_item, v_inv, 1, 'PRODUTO', 'PRODUTO SINTETICO', 1, 10000, 10000,
+  VALUES (v_item, v_inv, 1, 'PRODUCT', 'PRODUTO SINTETICO', 1, 10000, 10000,
           '12345678', '5102', '20', '0',
           '{"ICMS":{"baseReductionPct":60,"baseReductionReason":"homologacao sintetica"}}'::jsonb);
 
