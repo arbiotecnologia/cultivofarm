@@ -18,8 +18,8 @@ import type { SidebarNavGroup } from "@/components/nav/types";
  */
 export function AppSidebar() {
   const { role, roles } = useAuth();
-  const { config } = useSystemConfig();
-  const nomeEmpresa = config?.nome_empresa || "Cultivo Farm";
+  const { config, defaults } = useSystemConfig();
+  const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
   // Auditoria de perfis: a visibilidade do menu passa a usar a MESMA fonte do
   // `RoleGuard` (papel efetivo por contexto ativo). Antes usava apenas o papel
   // primário, escondendo itens que o usuário multipapel podia realmente abrir.
@@ -63,7 +63,6 @@ export function AppSidebar() {
       portal="admin"
       groups={groups}
       brandTitle={nomeEmpresa}
-      brandSubtitle="Cultivo Farm"
       brandSlot={<LogoDisplay size="sm" />}
       itemClassName={(item) =>
         item.route === "/cockpit-laboratorio" && isProducao
