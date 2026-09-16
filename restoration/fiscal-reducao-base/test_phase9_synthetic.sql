@@ -38,6 +38,12 @@ BEGIN
        SET legal_name = 'EMITENTE SINTETICO', cnpj = '11222333000181', crt = '3',
            state = 'MT', municipality_ibge_code = '5103403', city = 'CUIABA',
            nfe_environment_code = '2', nfe_readiness_status = 'READY_HOMOLOGATION',
+           primary_cnae = '0111301', pis_cofins_regime = 'NAO_CUMULATIVO',
+           postal_code = '78000000', street = 'AV SINTETICA', number = '100',
+           neighborhood = 'CENTRO', country_code = '1058',
+           state_registration = '12345678901', nfe_series_number = 1,
+           uf_accreditations = '["MT"]'::jsonb, certificate_ref = 'SYN-CERT',
+           accounting_validated_at = now(),
            ipi_taxpayer = false, icms_st_responsible = false,
            fcp_applicable = false, difal_responsible = false
      WHERE is_active;
@@ -45,9 +51,13 @@ BEGIN
     INSERT INTO public.company_fiscal_settings(
       id, is_active, legal_name, cnpj, crt, state, municipality_ibge_code, city,
       nfe_environment_code, nfe_readiness_status, ipi_taxpayer, icms_st_responsible,
-      fcp_applicable, difal_responsible)
+      fcp_applicable, difal_responsible, primary_cnae, pis_cofins_regime, postal_code,
+      street, number, neighborhood, country_code, state_registration,
+      nfe_series_number, uf_accreditations, certificate_ref, accounting_validated_at)
     VALUES (gen_random_uuid(), true, 'EMITENTE SINTETICO', '11222333000181', '3', 'MT',
-            '5103403', 'CUIABA', '2', 'READY_HOMOLOGATION', false, false, false, false);
+            '5103403', 'CUIABA', '2', 'READY_HOMOLOGATION', false, false, false, false,
+            '0111301', 'NAO_CUMULATIVO', '78000000', 'AV SINTETICA', '100', 'CENTRO',
+            '1058', '12345678901', 1, '["MT"]'::jsonb, 'SYN-CERT', now());
   END IF;
 
 
