@@ -92,3 +92,27 @@ permissões e funções.
 
 Pendências abertas: B1–B9 (correção de banco, fora do escopo autorizado), F2–F8 (decisões
 de produto), navegação real por perfil e relatório de estado do catálogo.
+
+## Navegação real com conta administradora (16/09/2026)
+
+Login efetuado na prévia com a conta administradora informada pelo proprietário
+(credenciais não registradas aqui). Destino após o login: `/dashboard/geral`.
+
+| Rota | Resultado |
+| --- | --- |
+| /dashboard/geral, /configuracoes, /auditoria, /financeiro | abrem normalmente |
+| /portal | abre o Portal do Produtor (bypass de admin confirmado) |
+| /portal-parceiro | redireciona para /portal-parceiro/dashboard, abre |
+| /app | abre o app de campo (papel exibido: Consultor Técnico) |
+| /comunicacao | redireciona para /dashboard/geral (módulo desativado por flag) |
+| /notificacoes | **falhava** com "Erro de Renderização" (realtime) — corrigido |
+
+Correção aplicada: `src/hooks/useNotificacoesUnificadas.ts` criava canais de tempo
+real com nome fixo; ao remontar, o canal já inscrito recebia novos callbacks e o
+Supabase lançava erro, derrubando a página. Agora cada montagem usa um canal
+próprio. Reteste na prévia: a tela abre e reabre sem erro.
+
+Pendências observadas na navegação:
+- Cabeçalho ainda exibe "AR Bio / On-Farm Manager" (nome vem da configuração do
+  sistema no banco; ajuste depende de autorização de escrita).
+- Demais achados de backend deste documento permanecem em aberto.
