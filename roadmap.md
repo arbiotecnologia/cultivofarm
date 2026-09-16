@@ -124,3 +124,5 @@
 - [ ] Dívida: sem dados em `public.envase`, cenários E2E e de concorrência seguem não homologados.
 
 - [x] Refinar Cockpit pontualmente e adicionar testes focados, sem banco ou publicação.
+
+- [ ] Etapa 2: permitir que clientes e parceiros personalizem nome, logomarca e cor nos próprios portais; inclui adequações autorizadas no banco canônico.

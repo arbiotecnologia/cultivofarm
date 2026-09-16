@@ -23,7 +23,7 @@ export default function Auth() {
   const { config, defaults, isLoading: configLoading } = useSystemConfig();
 
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
-  const logoUrl = config?.logo_url || null;
+  const logoUrl = config?.logo_url || logoCultivoFarm.url;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +67,8 @@ export default function Auth() {
               <Skeleton className="h-36 w-96 rounded-xl" />
             ) : (
               <img
-                src={logoCultivoFarm.url}
-                alt="CultivoFarm — Tecnologia que cultiva resultados"
+                src={logoUrl}
+                alt={nomeEmpresa}
                 className="h-36 sm:h-44 w-auto max-w-full object-contain"
               />
             )}

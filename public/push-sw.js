@@ -17,13 +17,13 @@ self.addEventListener("push", (event) => {
       self.registration.showNotification(title, {
         body,
         icon: icon || "/pwa-icon-192.png",
-        badge: badge || "/favicon.ico",
+        badge: badge || "/favicon.png",
         data: { url },
       })
     );
   } catch (e) {
     event.waitUntil(
-      self.registration.showNotification("AR Bio", { body: event.data.text() })
+      self.registration.showNotification("Cultivo Farm", { body: event.data.text() })
     );
   }
 });
