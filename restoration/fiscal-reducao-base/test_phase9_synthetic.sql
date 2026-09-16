@@ -98,7 +98,7 @@ BEGIN
     id, invoice_type, document_model, status, source_type, source_id, customer_id,
     direction, environment, issue_date, created_by, tp_emis, sales_channel)
   VALUES (v_inv, 'NFE', 'NFE', 'DRAFT', 'PARTNER_ORDER', v_order, v_cliente,
-          'OUT', 'HOMOLOGACAO', current_date, v_uid, 1, 'b2b_partner');
+          'OUT', 'HOMOLOGATION', current_date, v_uid, 1, 'b2b_partner');
 
   INSERT INTO public.fiscal_invoice_items(
     id, fiscal_invoice_id, item_sequence, item_kind, description, quantity,
