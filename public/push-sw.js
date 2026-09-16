@@ -23,7 +23,7 @@ self.addEventListener("push", (event) => {
     );
   } catch (e) {
     event.waitUntil(
-      self.registration.showNotification("AR Bio", { body: event.data.text() })
+      self.registration.showNotification("Cultivo Farm", { body: event.data.text() })
     );
   }
 });
