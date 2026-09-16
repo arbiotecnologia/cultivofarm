@@ -50,8 +50,8 @@ describe("Fase 3.19.3 — Estrutura da migration", () => {
   test("apenas colunas reais são atualizadas (updated_at existe)", () => {
     // Se algum dia updated_at faltar em qualquer tabela alvo, migration aborta.
     expect(canonical).toMatch(/updated_at ausente/);
-    // updated_at é usado apenas em tabelas onde types.ts confirma existência.
-    const types = read("src/integrations/supabase/types.ts");
+    // updated_at é usado apenas em tabelas onde os tipos canônicos confirmam existência.
+    const types = read("src/integrations/supabase/cultivofarm.types.ts");
     for (const t of ["company_fiscal_settings", "product_fiscal_profiles", "service_fiscal_profiles"]) {
       const block = types.substring(types.indexOf(`${t}: {`));
       expect(block.substring(0, 4000)).toMatch(/updated_at\s*:/);

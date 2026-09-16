@@ -9,7 +9,8 @@ import { readFileSync } from "node:fs";
 
 const MIGRATION = readFileSync("restoration/comunicacao-fase2/migration.sql", "utf8");
 const PRECHECK = readFileSync("restoration/comunicacao-fase2/precheck.sql", "utf8");
-const TYPES = readFileSync("src/integrations/supabase/types.ts", "utf8");
+// Tipos canônicos do banco Cultivo Farm (o types.ts legado é de outro ambiente).
+const TYPES = readFileSync("src/integrations/supabase/cultivofarm.types.ts", "utf8");
 
 function extractFn(name: string): string {
   const re = new RegExp(

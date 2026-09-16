@@ -19,7 +19,10 @@ const PAGE = resolve(__dirname, "../../pages/configuracoes/FiscalEmpresa.tsx");
 const HOOK = resolve(__dirname, "../../hooks/useFiscalCompanySettings.ts");
 const VALIDATION = resolve(__dirname, "../../lib/fiscal/companyFiscalValidation.ts");
 const NAV = resolve(__dirname, "../../config/navigation.ts");
-const TYPES = resolve(__dirname, "../../integrations/supabase/types.ts");
+// Fonte canônica de tipos do banco Cultivo Farm. O arquivo legado
+// src/integrations/supabase/types.ts pertence a outro ambiente e não é usado
+// pelo aplicativo — conferir o contrato contra ele produzia falso negativo.
+const TYPES = resolve(__dirname, "../../integrations/supabase/cultivofarm.types.ts");
 const CANONICAL_MIGRATION = resolve(
   __dirname,
   "../../../supabase/migrations/20260723000000_fiscal_fase3_15_central_config.sql",

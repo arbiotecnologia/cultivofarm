@@ -63,9 +63,9 @@ ${rels}
 }
 
 describe("verify-fiscal-types-sinief49", () => {
-  test("types.ts real cobre 100% do contrato SINIEF 49 → veredito canônico PASS", () => {
+  test("tipos canônicos cobrem 100% do contrato SINIEF 49 → veredito canônico PASS", () => {
     const real = fs.readFileSync(
-      path.resolve(process.cwd(), "src/integrations/supabase/types.ts"),
+      path.resolve(process.cwd(), "src/integrations/supabase/cultivofarm.types.ts"),
       "utf8",
     );
     const misses = verifySinief49Types(real);
