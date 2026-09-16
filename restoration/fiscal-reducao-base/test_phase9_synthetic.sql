@@ -18,6 +18,7 @@ DECLARE
   v_inv uuid := gen_random_uuid();
   v_item uuid := gen_random_uuid();
   v_prod uuid;
+  v_src uuid := gen_random_uuid();
   prev jsonb; calc jsonb; snap jsonb; icms_prev jsonb; icms_calc jsonb;
 BEGIN
   SELECT user_id INTO v_uid FROM public.user_roles WHERE role = 'administrador' LIMIT 1;
@@ -69,28 +70,35 @@ BEGIN
   -- Itens inseridos antes da aprovacao (guard de imutabilidade pos-aprovacao).
   UPDATE public.partner_orders SET status = 'aprovado' WHERE id = v_order;
 
+  -- Fonte oficial exigida pelas evidencias de publicacao.
+  INSERT INTO public.fiscal_official_sources(id, source_key, authority, name, url)
+  VALUES (v_src, 'SYN-SEFAZ-MT', 'SEFAZ/MT', 'RICMS MT (cenario sintetico)', 'https://example.invalid/ricms-mt');
+
   -- Politica de operacao publicada.
   INSERT INTO public.fiscal_operation_policies(
     id, document_model, active, policy_status, direction, origin_uf, destination_uf,
-    crt, cfop, nature_operation, priority, valid_from, legal_basis, legal_version)
+    crt, cfop, nature_operation, priority, valid_from, legal_basis, legal_version,
+    sales_channel, operation_type, requires_invoice, source_id, published_at, published_by)
   VALUES (gen_random_uuid(), '55', true, 'PUBLISHED', 'OUT', 'MT', 'MT', '3', '5102',
-          'VENDA DE PRODUCAO', 1, current_date - 1, 'RICMS/MT', '2026');
+          'VENDA DE PRODUCAO', 1, current_date - 1, 'RICMS/MT', '2026',
+          'b2b_partner', 'VENDA', true, v_src, now(), v_uid);
 
   -- Regras tributarias publicadas: ICMS MANUAL (CST 20), PIS e COFINS.
   INSERT INTO public.fiscal_tax_rules(
     rule_key, version, tax_kind, calc_mode, crt, cst, rate, base_reduction_mode,
-    priority, valid_from, status, base_components, credit_own_icms)
+    priority, valid_from, status, base_components, credit_own_icms,
+    source_id, legal_basis, published_at, published_by)
   VALUES
-    ('SYN-ICMS-20', 1, 'ICMS', 'PERCENT', '3', '20', 18, 'MANUAL', 1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, true),
-    ('SYN-PIS',     1, 'PIS',  'PERCENT', '3', '01', 1.65, 'NONE',  1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, false),
-    ('SYN-COFINS',  1, 'COFINS','PERCENT','3', '01', 7.6,  'NONE',  1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, false);
+    ('SYN-ICMS-20', 1, 'ICMS', 'PERCENT', '3', '20', 18, 'MANUAL', 1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, true, v_src, 'RICMS/MT art. 1', now(), v_uid),
+    ('SYN-PIS',     1, 'PIS',  'PERCENT', NULL, '01', 1.65, 'NONE',  1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, false, v_src, 'Lei 10.637/2002', now(), v_uid),
+    ('SYN-COFINS',  1, 'COFINS','PERCENT',NULL, '01', 7.6,  'NONE',  1, current_date - 1, 'PUBLISHED', '["PRODUTO"]'::jsonb, false, v_src, 'Lei 10.833/2003', now(), v_uid);
 
   -- Rascunho da NF-e.
   INSERT INTO public.fiscal_invoices(
     id, invoice_type, document_model, status, source_type, source_id, customer_id,
-    direction, environment, issue_date, created_by, tp_emis)
+    direction, environment, issue_date, created_by, tp_emis, sales_channel)
   VALUES (v_inv, 'NFE', 'NFE', 'DRAFT', 'PARTNER_ORDER', v_order, v_cliente,
-          'OUT', 'HOMOLOGACAO', current_date, v_uid, 1);
+          'OUT', 'HOMOLOGACAO', current_date, v_uid, 1, 'b2b_partner');
 
   INSERT INTO public.fiscal_invoice_items(
     id, fiscal_invoice_id, item_sequence, item_kind, description, quantity,
