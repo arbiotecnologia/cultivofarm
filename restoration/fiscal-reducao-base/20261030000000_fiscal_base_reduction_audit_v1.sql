@@ -2,6 +2,12 @@
 -- Incremental, idempotente e reversível. Não altera snapshots históricos.
 BEGIN;
 
+-- 0) Ação dedicada permitida na trilha fiscal (aditivo)
+ALTER TABLE public.fiscal_audit_log DROP CONSTRAINT IF EXISTS fiscal_audit_log_action_check;
+ALTER TABLE public.fiscal_audit_log ADD CONSTRAINT fiscal_audit_log_action_check
+  CHECK (action = ANY (ARRAY['INSERT','UPDATE','DELETE','XML_PREPARED','XML_GENERATED',
+                             'XML_XSD_VALIDATED','XML_SIGNED','XML_FAILED','BASE_REDUCTION_CHANGE']));
+
 -- 1) Validador aceita, opcionalmente, o motivo informado pelo operador (nunca valores calculados)
 CREATE OR REPLACE FUNCTION public.fn_fiscal_tax_input_valid(_input jsonb)
  RETURNS boolean
