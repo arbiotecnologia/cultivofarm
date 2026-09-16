@@ -100,7 +100,18 @@ function buildEndereco(tagName: string, e: Record<string, unknown>, ctx: string)
   ].join("");
 }
 
+/**
+ * dhEmi no leiaute 4.00 exige data-hora com offset (AAAA-MM-DDThh:mm:ssTZD).
+ * Aceita tanto data pura quanto data-hora já completa, sem duplicar sufixo.
+ */
+function normalizeDhEmi(raw: string): string {
+  const v = raw.trim();
+  if (!v.includes("T")) return `${v}T00:00:00-03:00`;
+  return /[+-]\d{2}:\d{2}$/.test(v) ? v : `${v}-03:00`;
+}
+
 function buildIde(p: NfePayload): string {
+
   const ide = p.ide ?? {};
   return [
     "<ide>",
@@ -110,7 +121,7 @@ function buildIde(p: NfePayload): string {
     tag("mod", "55"),
     tag("serie", String(Number(required(ide, "serie", "ide")))),
     tag("nNF", String(Number(required(ide, "nNF", "ide")))),
-    tag("dhEmi", `${required(ide, "dhEmi", "ide")}T00:00:00-03:00`),
+    tag("dhEmi", normalizeDhEmi(String(required(ide, "dhEmi", "ide")))),
     tag("tpNF", required(ide, "tpNF", "ide")),
     tag("idDest", required(ide, "idDest", "ide")),
     tag("cMunFG", digits(required(ide, "cMunFG", "ide"))),
