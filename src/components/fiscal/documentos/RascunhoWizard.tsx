@@ -561,7 +561,10 @@ export default function RascunhoWizard({
                   description: it.description,
                   gross_value: it.gross_value,
                   discount_value: it.discount_value,
-                  tax_input_snapshot: it.tax_input_snapshot,
+                  tax_input_snapshot: (it.tax_input_snapshot ?? {}) as Record<
+                    string,
+                    { baseReductionPct: number }
+                  >,
                 }))}
                 freight={values.freight}
                 insurance={values.insurance}
