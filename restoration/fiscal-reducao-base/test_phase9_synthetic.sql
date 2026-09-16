@@ -67,8 +67,12 @@ BEGIN
 
   INSERT INTO public.customer_fiscal_profiles(
     customer_id, taxpayer_indicator, fiscal_state, fiscal_municipality_ibge_code,
-    final_consumer, icms_taxpayer, nfe_readiness_status, person_type, cpf_cnpj, legal_name)
-  VALUES (v_cliente, '1', 'SC', '4205407', false, true, 'READY', 'PJ', '11222333000181', 'CLIENTE SINTETICO');
+    final_consumer, icms_taxpayer, nfe_readiness_status, person_type, cpf_cnpj, legal_name,
+    fiscal_postal_code, fiscal_street, fiscal_number, fiscal_neighborhood, fiscal_city,
+    country_code, state_registration, fiscal_email)
+  VALUES (v_cliente, '1', 'SC', '4205407', false, true, 'READY', 'PJ', '11222333000181', 'CLIENTE SINTETICO',
+          '88000000', 'RUA SINTETICA', '200', 'CENTRO', 'FLORIANOPOLIS',
+          '1058', '251000001', 'fiscal@example.invalid');
 
   INSERT INTO public.partner_accounts(id, razao_social, client_id, ativo)
   VALUES (v_partner, 'PARCEIRO SINTETICO', v_cliente, true);
