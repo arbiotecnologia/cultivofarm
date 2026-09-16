@@ -164,10 +164,15 @@ export default function TributosPorItemSecao({
                             tax={pv.taxes[k]}
                             disabled={disabled}
                             valorAtual={items[idx]?.tax_input_snapshot?.[k]?.baseReductionPct}
-                            onChange={(pct) => {
+                            motivoAtual={items[idx]?.tax_input_snapshot?.[k]?.baseReductionReason}
+                            onChange={(pct, motivo) => {
                               const atual = { ...(items[idx]?.tax_input_snapshot ?? {}) };
                               if (pct === null) delete atual[k];
-                              else atual[k] = { baseReductionPct: pct };
+                              else
+                                atual[k] = {
+                                  baseReductionPct: pct,
+                                  ...(motivo ? { baseReductionReason: motivo } : {}),
+                                };
                               onChangeItemInput(idx, atual);
                             }}
                           />
@@ -200,10 +205,15 @@ export default function TributosPorItemSecao({
                       disabled={disabled}
                       comRotulo
                       valorAtual={items[idx]?.tax_input_snapshot?.[k]?.baseReductionPct}
-                      onChange={(pct) => {
+                      motivoAtual={items[idx]?.tax_input_snapshot?.[k]?.baseReductionReason}
+                      onChange={(pct, motivo) => {
                         const atual = { ...(items[idx]?.tax_input_snapshot ?? {}) };
                         if (pct === null) delete atual[k];
-                        else atual[k] = { baseReductionPct: pct };
+                        else
+                          atual[k] = {
+                            baseReductionPct: pct,
+                            ...(motivo ? { baseReductionReason: motivo } : {}),
+                          };
                         onChangeItemInput(idx, atual);
                       }}
                     />
