@@ -17,11 +17,16 @@ const managedPath = resolve(root, 'src/integrations/supabase/types');
 const forbidden = ['yzszlzjpovmcteuxjznj', 'chkgpuawcswhefiabwsm', 'navfzbwgwzruipouyfnk', 'ikaauvsflpmamgxmkhoq'];
 
 describe('CultivoFarm independente da geração Cloud', () => {
-  it('preserva byte a byte o contrato histórico completo', () => {
+  it('preserva byte a byte o contrato canônico vigente', () => {
+    // Fase C1 — contrato regenerado a partir do banco Cultivo Farm após as
+    // migrations 20261029000000 (base_reduction_mode / tax_input_snapshot) e
+    // 20261030000000 (auditoria da redução). A trava continua sendo byte a byte;
+    // apenas o alvo foi atualizado para o contrato realmente implantado.
     const data = readFileSync('src/integrations/supabase/cultivofarm.types.ts');
-    expect(createHash('sha256').update(data).digest('hex')).toBe('f270cfbd1c4b42fbff928b4ad6bff351b4c37fbc135d880c8bb104ca2ac8cd41');
-    expect(data.toString().trimEnd().split('\n')).toHaveLength(21850);
+    expect(createHash('sha256').update(data).digest('hex')).toBe('d7a770b0ab2b57cfcceaefcbacb41a859428dabe08fd46833921fd030d4afcb3');
+    expect(data.toString().trimEnd().split('\n')).toHaveLength(21995);
   });
+
 
   it('permite somente o cliente canônico e nenhum contrato gerenciado em produção', { timeout: 60_000 }, () => {
     let creations = 0;

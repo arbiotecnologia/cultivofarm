@@ -91,7 +91,13 @@ describe("FASE 28A — nenhuma migration nova nesta fase", () => {
     expect(migrations).toContain("20260905000000_hardening_digest_schema_v1.sql");
     // Exceção conhecida: migration pendente do simulador comercial, com gate
     // NO-GO registrado em restoration/commercial-package/verification.md.
-    const excecoesConhecidas = new Set(["20261027000000_commercial_simulator_hardening_v1.sql"]);
+    const excecoesConhecidas = new Set([
+      "20261027000000_commercial_simulator_hardening_v1.sql",
+      // Fase C1 — migrations da redução da base reconciliadas e registradas
+      // no histórico oficial do banco canônico (schema_migrations).
+      "20261029000000_fiscal_base_reduction_v1.sql",
+      "20261030000000_fiscal_base_reduction_audit_v1.sql",
+    ]);
     const foraDoPadrao = migrations
       .filter((f: string) => f.slice(0, 14) > "20260905000000")
       .filter((f: string) => !/_h\d/.test(f) && !excecoesConhecidas.has(f));
