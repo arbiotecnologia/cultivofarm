@@ -110,7 +110,7 @@ function buildIde(p: NfePayload): string {
     tag("mod", "55"),
     tag("serie", String(Number(required(ide, "serie", "ide")))),
     tag("nNF", String(Number(required(ide, "nNF", "ide")))),
-    tag("dhEmi", `${required(ide, "dhEmi", "ide")}T00:00:00-03:00`),
+    tag("dhEmi", normalizeDhEmi(String(required(ide, "dhEmi", "ide")))),
     tag("tpNF", required(ide, "tpNF", "ide")),
     tag("idDest", required(ide, "idDest", "ide")),
     tag("cMunFG", digits(required(ide, "cMunFG", "ide"))),
