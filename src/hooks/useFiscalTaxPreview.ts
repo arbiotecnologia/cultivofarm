@@ -63,10 +63,10 @@ export function useFiscalTaxPreview(
         p_items: items as unknown as never,
       });
       if (error) throw new Error(traduzirErroFiscal(error.message));
-      if (!data || typeof data !== "object" || !Array.isArray((data as FiscalTaxPreviewResult).items)) {
+      if (!data || typeof data !== "object" || !Array.isArray((data as unknown as FiscalTaxPreviewResult).items)) {
         throw new Error("Resposta inválida do cálculo tributário.");
       }
-      return data as FiscalTaxPreviewResult;
+      return data as unknown as FiscalTaxPreviewResult;
     },
   });
 }
