@@ -52,7 +52,7 @@ export function OSFlowTimeline({ registroId, className }: OSFlowTimelineProps) {
         .order("changed_at", { ascending: true });
       if (logsErr) throw logsErr;
 
-      // 3. OS On-Farm (Produção até Entrega)
+      // 3. OS de Produção (Produção até Entrega)
       const { data: osData, error: osErr } = await (supabase as any)
         .from("ordens_servico_onfarm")
         .select("id, status, created_at, updated_at, produtos(nome)")

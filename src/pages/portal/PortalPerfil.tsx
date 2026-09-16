@@ -57,7 +57,7 @@ export default function PortalPerfil() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Para suporte técnico ou dúvidas, entre em contato com a equipe A.R Bio através do seu consultor técnico responsável.
+            Para suporte técnico ou dúvidas, entre em contato com a equipe Cultivo Farm através do seu consultor técnico responsável.
           </p>
         </CardContent>
       </Card>

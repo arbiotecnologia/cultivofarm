@@ -177,7 +177,7 @@ export default function PortalParceiroLayout() {
         {!partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
 
           <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-            Seu usuário ainda não está vinculado a um parceiro B2B. Entre em contato com a AR Bio.
+            Seu usuário ainda não está vinculado a um parceiro B2B. Entre em contato com a Cultivo Farm.
           </div>
         ) : !partner ? (
           <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">

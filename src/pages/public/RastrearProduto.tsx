@@ -64,7 +64,7 @@ export default function RastrearProduto() {
           </div>
           <CardTitle className="flex items-center justify-center gap-2">
             <ShieldCheck className="h-5 w-5" />
-            Rastreio AR Bio
+            Rastreio Cultivo Farm
           </CardTitle>
           {data?.status && (
             <Badge

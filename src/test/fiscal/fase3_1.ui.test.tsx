@@ -52,8 +52,8 @@ import FiscalEmpresa from "@/pages/configuracoes/FiscalEmpresa";
 const FULL_ROW = {
   id: "singleton-id",
   cnpj: "11222333000181",
-  legal_name: "AR Bio LTDA",
-  trade_name: "AR Bio",
+  legal_name: "Cultivo Farm LTDA",
+  trade_name: "Cultivo Farm",
   fiscal_email: "fiscal@arbio.com",
   phone: null,
   tax_regime: "SIMPLES_NACIONAL",

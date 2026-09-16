@@ -39,7 +39,7 @@ export const formatPricingResumo = (valorDose100ml: number | null | undefined): 
 };
 
 /**
- * Dose referencial comercial AR Bio para microrganismos:
+ * Dose referencial comercial Cultivo Farm para microrganismos:
  * 1 dose de 100 mL por hectare.
  */
 export const DOSE_REFERENCIAL_MICRO_ML_HA = DOSE_PADRAO_ML;

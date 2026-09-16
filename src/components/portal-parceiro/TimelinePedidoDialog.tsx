@@ -92,7 +92,7 @@ export function TimelinePedidoDialog({ orderId, open, onOpenChange }: Props) {
                 </div>
               ) : (
                 <div className="text-xs opacity-80 mt-1">
-                  Entre em contato com o comercial AR Bio para mais detalhes.
+                  Entre em contato com o comercial Cultivo Farm para mais detalhes.
                 </div>
               )}
               {order?.updated_at && (

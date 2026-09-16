@@ -98,7 +98,7 @@ const doseLitroHaFor = (p: CatalogItem | undefined): number | null => {
   ) {
     return p.valor_ha_brl / p.valor_litro_brl;
   }
-  // Microrganismo: padrão comercial AR Bio = 1 dose de 100 mL por ha (1 L = 10 doses)
+  // Microrganismo: padrão comercial Cultivo Farm = 1 dose de 100 mL por ha (1 L = 10 doses)
   if (p.item_tipo === "microrganismo" && (p.valor_dose_brl ?? 0) > 0) {
     return 1 / DOSES_POR_LITRO;
   }
@@ -640,7 +640,7 @@ export default function NovoPedido() {
                       )}
                       {semPreco && (
                         <p className="text-[11px] text-destructive">
-                          Item sem preço configurado. Remova do carrinho ou solicite preço à AR Bio.
+                          Item sem preço configurado. Remova do carrinho ou solicite preço à Cultivo Farm.
                         </p>
                       )}
 

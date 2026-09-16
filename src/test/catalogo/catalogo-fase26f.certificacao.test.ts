@@ -1,5 +1,5 @@
 /**
- * FASE 26F — Certificação da unificação visual do Catálogo AR Bio.
+ * FASE 26F — Certificação da unificação visual do Catálogo Cultivo Farm.
  * Teste de contrato por leitura: garante que rotas, portais, carrinho e
  * fluxos B2B/produtor permanecem preservados após 26A–26E.
  */

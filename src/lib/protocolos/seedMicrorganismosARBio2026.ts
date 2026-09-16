@@ -9,7 +9,7 @@ export interface SeedMicroARBio {
 }
 
 /**
- * Tabela A.R Bio 2026 — 14 bactérias + 10 fungos (inclui E.M como consórcio).
+ * Tabela Cultivo Farm 2026 — 14 bactérias + 10 fungos (inclui E.M como consórcio).
  * Fonte: PDF "Tabela_A.R_Bio_2026.pdf". Dose padrão 100 mL/ha; 1 L = 10 doses.
  */
 export const SEED_MICROS_AR_BIO_2026: SeedMicroARBio[] = [
@@ -73,7 +73,7 @@ export async function importarMicrosARBio2026(): Promise<ImportResult> {
       dose_ml_ha: 100,
       valor_dose_brl: s.valor_dose_brl,
       valor_litro_brl: Number((s.valor_dose_brl * 10).toFixed(2)),
-      fornecedor: "A.R Biotecnologia",
+      fornecedor: "Cultivo Farm",
       safra_referencia: "2026",
       meio_cultivo: "líquido e sólido",
       producao_on_farm: true,

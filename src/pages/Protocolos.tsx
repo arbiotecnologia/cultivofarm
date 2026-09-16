@@ -496,7 +496,7 @@ export default function Protocolos() {
   const [tab, setTab] = useTabParam("tab", MAIN_TABS, "produtos", TAB_ALIASES);
   useEffect(() => {
     const anterior = document.title;
-    document.title = "Base Técnica Agronômica | AR Bio";
+    document.title = "Base Técnica Agronômica | Cultivo Farm";
     return () => {
       document.title = anterior;
     };

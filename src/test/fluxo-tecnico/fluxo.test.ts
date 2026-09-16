@@ -189,7 +189,7 @@ describe("fluxo técnico — página", () => {
     }
   });
 
-  it("restaura a coluna Origem na aba de OS On-Farm", () => {
+  it("restaura a coluna Origem na aba de OS de Produção", () => {
     expect(pagina).toContain("origem");
     expect(pagina).toContain('o.origem === "recomendacao_tecnica" ? "Rec. Técnica" : "Direta"');
     expect(pagina).toContain("<TableHead>Origem</TableHead>");

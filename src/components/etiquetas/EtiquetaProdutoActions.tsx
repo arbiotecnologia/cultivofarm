@@ -117,11 +117,11 @@ export function EtiquetaProdutoActions({ envaseId, loteId, etiquetaId, traceToke
             </div>
             <div className="space-y-1">
               <Label>Conservação (opcional)</Label>
-              <Input value={conservacao} onChange={(e) => setConservacao(e.target.value)} placeholder="Padrão AR Bio" />
+              <Input value={conservacao} onChange={(e) => setConservacao(e.target.value)} placeholder="Padrão Cultivo Farm" />
             </div>
             <div className="space-y-1">
               <Label>Uso (opcional)</Label>
-              <Input value={uso} onChange={(e) => setUso(e.target.value)} placeholder="Padrão AR Bio" />
+              <Input value={uso} onChange={(e) => setUso(e.target.value)} placeholder="Padrão Cultivo Farm" />
             </div>
             <div className="space-y-1">
               <Label>Observações</Label>

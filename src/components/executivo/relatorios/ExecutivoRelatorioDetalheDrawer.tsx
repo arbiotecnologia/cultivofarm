@@ -119,7 +119,7 @@ export function ExecutivoRelatorioDetalheDrawer({ relatorioId, onClose }: Props)
             {/* Print header */}
             <div className="border-b pb-3">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                AR Bio On-Farm Manager — Portal Executivo
+                Cultivo Farm — Portal Executivo
               </p>
               <h1 className="text-xl font-bold">{rel.titulo}</h1>
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-1">
@@ -318,7 +318,7 @@ export function ExecutivoRelatorioDetalheDrawer({ relatorioId, onClose }: Props)
             )}
 
             <div className="text-[10px] text-muted-foreground border-t pt-2 mt-6">
-              Relatório gerencial gerado pelo Portal Executivo AR Bio em {formatDateTimeDisplay(rel.gerado_em)}.
+              Relatório gerencial gerado pelo Portal Executivo Cultivo Farm em {formatDateTimeDisplay(rel.gerado_em)}.
               Hash: <span className="font-mono">{rel.hash_conteudo}</span>
             </div>
           </div>

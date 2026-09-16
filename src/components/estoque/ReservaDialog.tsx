@@ -473,7 +473,7 @@ export function ReservaDialog({ open, onOpenChange, item, preset, onReserved }: 
                       <SelectContent>
                         {ordensOnfarmVis.map((o: any) => (
                           <SelectItem key={`onfarm:${o.id}`} value={`onfarm:${o.id}`}>
-                            On-Farm · {formatOS(o)} · {o.status}{o._matchesLote ? " · ✓ origem" : ""}
+                            Produção · {formatOS(o)} · {o.status}{o._matchesLote ? " · ✓ origem" : ""}
                           </SelectItem>
                         ))}
                         {ordensPadraoVis.map((o: any) => (

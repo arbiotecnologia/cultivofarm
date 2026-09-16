@@ -96,7 +96,7 @@ export function ExecutivoFazendaDetalheDrawer({ fazendaId, filtros, onClose }: P
               {faz?.id && (
                 <>
                   <Button size="sm" variant="outline" onClick={() => nav(`/fazendas/${faz.id}`)}>Ver fazenda</Button>
-                  <Button size="sm" variant="outline" onClick={() => nav(`/ordens-servico?fazenda=${faz.id}`)}>OS On-Farm</Button>
+                  <Button size="sm" variant="outline" onClick={() => nav(`/ordens-servico?fazenda=${faz.id}`)}>OS de Produção</Button>
                   <Button size="sm" variant="outline" onClick={() => nav(`/entregas?fazenda=${faz.id}`)}>Entregas</Button>
                 </>
               )}

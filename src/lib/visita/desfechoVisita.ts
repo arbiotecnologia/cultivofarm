@@ -2,7 +2,7 @@
  * Semântica do desfecho da visita técnica (H9-G bloco 2A).
  *
  * Regra de domínio: apenas desfechos que produzem um artefato aprovável
- * (recomendação técnica ou OS On-Farm) seguem para aprovação técnica e
+ * (recomendação técnica ou OS de Produção) seguem para aprovação técnica e
  * liberação ao produtor. Desfechos de acompanhamento — apenas monitorar ou
  * programar nova visita — encerram o ciclo na finalização e NÃO podem
  * oferecer ações de aprovação/liberação.
@@ -36,7 +36,7 @@ export function descricaoVisitaFinalizada(
     case "emitir_recomendacao":
       return "Recomendação pronta para envio à aprovação técnica.";
     case "gerar_os":
-      return "OS On-Farm pronta para envio à aprovação técnica.";
+      return "OS de Produção pronta para envio à aprovação técnica.";
     case "monitorar_area":
       return "Desfecho: apenas monitorar. Não há recomendação nem OS para aprovar; acompanhe o plano de monitoramento.";
     case "programar_nova_visita":

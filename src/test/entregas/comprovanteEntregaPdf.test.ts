@@ -66,7 +66,7 @@ import {
   ehComprovanteDefinitivo,
 } from "@/lib/comprovanteEntregaPdf";
 
-const branding = { nome_empresa: "AR Bio", logo_url: null, cor_primaria: "160 84% 22%" };
+const branding = { nome_empresa: "Cultivo Farm", logo_url: null, cor_primaria: "160 84% 22%" };
 
 const item = (over: Record<string, unknown> = {}) => ({
   produto: "Bio Tricho",
@@ -91,7 +91,7 @@ const payloadBase = (over: Record<string, unknown> = {}) => ({
   reemissoes: 0,
   aviso: null,
   conteudo: {
-    emitente: { razao_social: "AR Bio LTDA", cnpj: "12345678000199", cidade: "Unaí", uf: "MG" },
+    emitente: { razao_social: "Cultivo Farm LTDA", cnpj: "12345678000199", cidade: "Unaí", uf: "MG" },
     destinatario: { nome: "Fazenda Boa Vista", cpf_cnpj: "98765432000155", cidade: "Unaí", uf: "MG" },
     ordem_servico: { numero_os: "OS-1024", tipo: "ordem_servico" },
     itens: [item()],
@@ -165,9 +165,9 @@ describe("origem documental amigável", () => {
     expect(rotuloOrigem({ tipo: "ordem_servico", numero_os: "OS-10" }))
       .toEqual({ label: "Ordem de Serviço", valor: "OS-10" });
   });
-  it("OS On-Farm", () => {
+  it("OS de Produção", () => {
     expect(rotuloOrigem({ tipo: "ordem_servico_onfarm", numero_os: "ONF-3" }))
-      .toEqual({ label: "OS On-Farm", valor: "ONF-3" });
+      .toEqual({ label: "OS de Produção", valor: "ONF-3" });
   });
   it("Pedido Parceiro B2B sem nome técnico", () => {
     const r = rotuloOrigem({ tipo: "partner_order", numero_os: "PED-77" });

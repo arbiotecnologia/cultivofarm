@@ -6,7 +6,7 @@
  * `cancelada`, e as decisões de aprovação seguem `aprovacoes_tecnicas`.
  */
 
-/** Ordem canônica do ciclo da OS On-Farm, conforme a página. */
+/** Ordem canônica do ciclo da OS de Produção, conforme a página. */
 export const OS_FLOW_ORDER = [
   "aberta",
   "aprovada",
@@ -136,7 +136,7 @@ export function podeDecidirPorPapel(role: string | null | undefined): boolean {
 export const RPC_APROVACAO_TRANSACIONAL_DISPONIVEL = false;
 
 /**
- * Também não existe RPC idempotente para gerar as OS On-Farm de uma
+ * Também não existe RPC idempotente para gerar as OS de Produção de uma
  * recomendação aprovada. Geração automática fica bloqueada (evita criação
  * parcial e duplicação em retry).
  */

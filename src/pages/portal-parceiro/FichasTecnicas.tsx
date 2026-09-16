@@ -96,7 +96,7 @@ export default function FichasTecnicas() {
       <div>
         <h1 className="text-xl md:text-2xl font-bold">Fichas Técnicas</h1>
         <p className="text-sm text-muted-foreground">
-          Consulte fichas técnicas completas de todos os produtos e microrganismos AR Bio.
+          Consulte fichas técnicas completas de todos os produtos e microrganismos Cultivo Farm.
         </p>
       </div>
 

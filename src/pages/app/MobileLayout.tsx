@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { itemsForPlatform } from "@/config/navigation";
 import { PortalTopBar } from "@/components/portal/PortalTopBar";
 import { getPortalDisplayLabel } from "@/lib/portalDisplayLabel";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
 
 // Tabs derivam da fonte declarativa única (`src/config/navigation.ts`).
 // Fase 2 preserva rotas, ícones e rótulos anteriores — apenas centraliza a fonte.
@@ -34,6 +35,8 @@ export default function MobileLayout() {
   const { isOnline, pendingCount, syncing, syncAll, progress } = useOfflineSync();
   const navigate = useNavigate();
   const { data: contexts } = useAvailableContexts();
+  const { config, defaults } = useSystemConfig();
+  const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
 
   const isProdutor = roles.includes("cliente_produtor");
   const hasTechnical = !!contexts?.has_technical_access;
@@ -91,7 +94,7 @@ export default function MobileLayout() {
 
       {/* Identidade do usuário — padrão único de todos os portais */}
       <PortalTopBar
-        brandTitle="AR Bio Campo"
+        brandTitle={`${nomeEmpresa} Campo`}
         brandSubtitle={getPortalDisplayLabel({ activeCtx, primaryRole, roles })}
         className={cn((!isOnline || pendingCount > 0) && "mt-10")}
       />

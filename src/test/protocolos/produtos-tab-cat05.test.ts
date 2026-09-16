@@ -4,7 +4,7 @@ import path from "node:path";
 
 const filePath = path.resolve(process.cwd(), "src/components/protocolos/ProdutosTab.tsx");
 
-describe("CAT-05: ProdutosTab não deve expor superfície destrutiva do catálogo A.R Bio v1.3", () => {
+describe("CAT-05: ProdutosTab não deve expor superfície destrutiva do catálogo Cultivo Farm v1.3", () => {
   const content = fs.readFileSync(filePath, "utf-8");
 
   it("não importa wipeCatalogoProdutos", () => {
@@ -19,12 +19,12 @@ describe("CAT-05: ProdutosTab não deve expor superfície destrutiva do catálog
     expect(content).not.toContain("isCatalogoARBioV13Aplicado");
   });
 
-  it("não contém o rótulo Recarregar Catálogo A.R Bio v1.3", () => {
-    expect(content).not.toContain("Recarregar Catálogo A.R Bio v1.3");
+  it("não contém o rótulo Recarregar Catálogo Cultivo Farm v1.3", () => {
+    expect(content).not.toContain("Recarregar Catálogo Cultivo Farm v1.3");
   });
 
-  it("não contém o rótulo parcial Recarregar Catálogo A.R Bio", () => {
-    expect(content).not.toContain("Recarregar Catálogo A.R Bio");
+  it("não contém o rótulo parcial Recarregar Catálogo Cultivo Farm", () => {
+    expect(content).not.toContain("Recarregar Catálogo Cultivo Farm");
   });
 
   it("não usa os ícones RefreshCcw nem Loader2 exclusivos do botão legado", () => {

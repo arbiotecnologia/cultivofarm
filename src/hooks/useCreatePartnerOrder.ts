@@ -106,7 +106,7 @@ export function useCreatePartnerOrder() {
       else if (msg.includes("financial_approval_rejected")) toast.error("A condição financeira deste pedido foi reprovada. Solicite ajuste antes de faturar.");
       else if (msg.includes("financial_approval_pending")) toast.error("Este pedido exige aprovação financeira antes do faturamento.");
       else if (msg.includes("discount_exceeds_limit")) toast.error("Desconto acima do limite permitido para o seu perfil.");
-      else if (msg.includes("PRICE_RULE_MISSING")) toast.error("Item sem preço definido para esta condição comercial. Solicite a configuração à AR Bio.");
+      else if (msg.includes("PRICE_RULE_MISSING")) toast.error("Item sem preço definido para esta condição comercial. Solicite a configuração à Cultivo Farm.");
       else if (msg.includes("QUOTE_REQUIRED") || msg.includes("quote_required")) toast.error("Esta condição é sob consulta — o pedido segue para cotação comercial.");
       else if (msg.includes("price_changed") || msg.includes("PRICE_CHANGED")) toast.error("Os preços foram atualizados desde a simulação. Revise o carrinho e confirme novamente.");
       else if (msg.includes("cart_hash_required")) toast.error("Simulação de preços obrigatória. Refaça a simulação antes de enviar o pedido.");
@@ -116,7 +116,7 @@ export function useCreatePartnerOrder() {
       else if (msg.includes("forbidden_financial_terms")) toast.error("Seu perfil técnico não tem acesso a condições financeiras.");
 
       else if (msg.includes("product_unavailable")) toast.error("Um dos itens não está disponível");
-      else if (msg.includes("price_unavailable")) toast.error("Item sem preço configurado. Solicite à AR Bio.");
+      else if (msg.includes("price_unavailable")) toast.error("Item sem preço configurado. Solicite à Cultivo Farm.");
 
       else if (msg.includes("empty_cart")) toast.error("Carrinho vazio");
       else if (msg.includes("invalid_unidade_medida")) toast.error("Unidade de medida inválida para este item. Reabra o catálogo e selecione novamente.");

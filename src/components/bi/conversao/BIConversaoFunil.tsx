@@ -18,7 +18,7 @@ export function BIConversaoFunil({ indicadores, loading }: BIConversaoFunilProps
     { label: "Emitidas", value: indicadores.emitidas, icon: FileText, color: "bg-blue-500" },
     { label: "Liberadas", value: indicadores.liberadas, icon: Zap, color: "bg-purple-500" },
     { label: "Em Decisão", value: indicadores.aguardandoDecisao, icon: Clock, color: "bg-orange-500" },
-    { label: "Em OS On-Farm", value: indicadores.convertidasOS, icon: TrendingUp, color: "bg-emerald-500" },
+    { label: "Em OS de Produção", value: indicadores.convertidasOS, icon: TrendingUp, color: "bg-emerald-500" },
   ];
 
   return (

@@ -16,7 +16,7 @@ export default function IndicadoresComerciais() {
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">Indicadores Comerciais</h1>
-        <p className="text-sm text-muted-foreground">KPIs do módulo B2B AR Bio.</p>
+        <p className="text-sm text-muted-foreground">KPIs do módulo B2B Cultivo Farm.</p>
       </div>
 
       <Card>

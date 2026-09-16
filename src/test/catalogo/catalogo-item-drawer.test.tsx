@@ -1,5 +1,5 @@
 /**
- * FASE 26D/26E — Ficha unificada por item do Catálogo AR Bio (somente leitura).
+ * FASE 26D/26E — Ficha unificada por item do Catálogo Cultivo Farm (somente leitura).
  * Cobre regras de escopo, alertas, diagnóstico de publicação e integração
  * não destrutiva na grade.
  */

@@ -1,5 +1,5 @@
 /**
- * Ficha unificada do Catálogo AR Bio — Fase 26D (somente leitura).
+ * Ficha unificada do Catálogo Cultivo Farm — Fase 26D (somente leitura).
  *
  * Abre um produto ou microrganismo em uma visualização única com abas,
  * reaproveitando exclusivamente os dados já carregados por

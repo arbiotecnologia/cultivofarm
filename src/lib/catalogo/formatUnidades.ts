@@ -1,6 +1,6 @@
 /**
  * Ponto único de verdade para formatação, arredondamento e rótulos
- * de unidades de preço e custo por hectare do catálogo AR Bio.
+ * de unidades de preço e custo por hectare do catálogo Cultivo Farm.
  *
  * Toda tela, hook e PDF deve importar daqui — nunca replicar
  * `toFixed(2)`, sufixos ("/ha", "/L") ou textos como "Sob consulta".

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 /**
- * FASE 8 — Validação do Motor de Condições Comerciais B2B AR Bio
+ * FASE 8 — Validação do Motor de Condições Comerciais B2B Cultivo Farm
  *
  * Fórmula oficial (mesma usada em simulate_b2b_payment_plan_secure e
  * create_partner_order_secure):

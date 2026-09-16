@@ -14,7 +14,7 @@ export interface SystemConfig {
 
 const DEFAULTS: Omit<SystemConfig, "id" | "updated_at"> = {
   logo_url: null,
-  nome_empresa: "AR Bio",
+  nome_empresa: "Cultivo Farm",
   cor_primaria: "160 84% 22%",
   cor_sidebar_bg: "215 25% 12%",
   cor_sidebar_primary: "160 84% 39%",

@@ -1,5 +1,5 @@
 /**
- * Módulo canônico de unidades de preço do catálogo AR Bio.
+ * Módulo canônico de unidades de preço do catálogo Cultivo Farm.
  *
  * Toda tela (catálogo B2B, catálogo técnico, matriz de preços, fichas,
  * carrinho, pedidos e PDFs) deve derivar rótulos e unidade principal daqui,

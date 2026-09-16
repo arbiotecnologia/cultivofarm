@@ -1,5 +1,5 @@
 /**
- * Utilitários para formatação de métricas e KPIs do sistema AR Bio.
+ * Utilitários para formatação de métricas e KPIs do sistema Cultivo Farm.
  * Garante que valores ausentes sejam exibidos como "Sem dados suficientes".
  */
 

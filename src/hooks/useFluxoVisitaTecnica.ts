@@ -253,7 +253,7 @@ export function useFluxoVisitaTecnica() {
         if (res.already_exists) {
           toast.info(res.message || "OS já existente para esta visita.");
         } else {
-          toast.success(res.message || "OS On-Farm gerada com sucesso.");
+          toast.success(res.message || "OS de Produção gerada com sucesso.");
         }
         queryClient.invalidateQueries({ queryKey: ["visita-tecnica", registroId] });
         queryClient.invalidateQueries({ queryKey: ["solicitacoes"] });

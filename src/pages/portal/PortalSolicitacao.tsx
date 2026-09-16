@@ -66,7 +66,7 @@ export default function PortalSolicitacao() {
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Solicitação enviada!", description: "A equipe A.R Bio receberá sua solicitação em breve." });
+      toast({ title: "Solicitação enviada!", description: "A equipe Cultivo Farm receberá sua solicitação em breve." });
       setForm({ fazenda_id: "", talhao_id: "", tipo_demanda: "", descricao: "", urgencia: "media", solicitante_nome: "", solicitante_contato: "" });
     }
   };

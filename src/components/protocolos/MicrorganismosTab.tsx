@@ -115,7 +115,7 @@ export function MicrorganismosTab() {
     valor_dose_brl: 0 as number | null,
     valor_litro_brl: 0 as number | null,
     funcao_agronomica: "",
-    fornecedor: "A.R Biotecnologia",
+    fornecedor: "Cultivo Farm",
     safra_referencia: "2025",
     meio_cultivo: "líquido",
     producao_on_farm: true,
@@ -242,7 +242,7 @@ export function MicrorganismosTab() {
       valor_dose_brl: null,
       valor_litro_brl: null,
       funcao_agronomica: "",
-      fornecedor: "A.R Biotecnologia",
+      fornecedor: "Cultivo Farm",
       safra_referencia: "2025",
       meio_cultivo: "líquido",
       producao_on_farm: true,
@@ -267,7 +267,7 @@ export function MicrorganismosTab() {
       valor_dose_brl: m.valor_dose_brl,
       valor_litro_brl: m.valor_litro_brl ?? (m.valor_dose_brl ? m.valor_dose_brl * 10 : null),
       funcao_agronomica: m.funcao_agronomica || "",
-      fornecedor: m.fornecedor || "A.R Biotecnologia",
+      fornecedor: m.fornecedor || "Cultivo Farm",
       safra_referencia: m.safra_referencia || "2025",
       meio_cultivo: m.meio_cultivo || "líquido",
       producao_on_farm: m.producao_on_farm,
@@ -463,7 +463,7 @@ export function MicrorganismosTab() {
                         onChange={(e) => setForm({...form, producao_on_farm: e.target.checked})}
                         className="h-4 w-4 rounded border-gray-300"
                       />
-                      <Label htmlFor="onfarm">Produção On-Farm</Label>
+                      <Label htmlFor="onfarm">Produção</Label>
                     </div>
                   </div>
                 </div>

@@ -3,7 +3,7 @@ import { FileText, Sprout, FlaskConical, AlertTriangle, ShoppingCart, CheckCircl
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 
 /**
- * KPIs do Catálogo AR Bio — fonte única compartilhada por
+ * KPIs do Catálogo Cultivo Farm — fonte única compartilhada por
  * pela aba "Catálogo Técnico" de `/base-tecnica` (rota unificada; a antiga
  * `/comercial/catalogo` apenas redireciona).
  *

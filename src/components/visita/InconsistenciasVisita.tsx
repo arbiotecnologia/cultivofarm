@@ -80,11 +80,11 @@ export function InconsistenciasVisita() {
               gravidade = "media";
               break;
             case "convertida_os_sem_os":
-              descricao = `Visita ${item.codigo_visita || item.registro_consultor_id.substring(0,8)} convertida mas sem OS On-Farm gerada.`;
+              descricao = `Visita ${item.codigo_visita || item.registro_consultor_id.substring(0,8)} convertida mas sem OS de Produção gerada.`;
               gravidade = "alta";
               break;
             case "os_duplicada":
-              descricao = `Visita ${item.codigo_visita || item.registro_consultor_id.substring(0,8)} possui múltiplas OS On-Farm vinculadas.`;
+              descricao = `Visita ${item.codigo_visita || item.registro_consultor_id.substring(0,8)} possui múltiplas OS de Produção vinculadas.`;
               gravidade = "alta";
               break;
             case "evidencia_sem_arquivo_path":

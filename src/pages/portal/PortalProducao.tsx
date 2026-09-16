@@ -30,7 +30,7 @@ export default function PortalProducao({
     if (!clienteId) return;
     const fetch = async () => {
       setLoading(true);
-      // Fase 10: buscar OS "manuais" e On-Farm separadamente para evitar
+      // Fase 10: buscar OS "manuais" e de Produção separadamente para evitar
       // falso-positivo de IDs cruzados no filtro de programacao_producao.
       const [{ data: osManual }, { data: osOnfarm }] = await Promise.all([
         supabase.from("ordens_servico").select("id, numero_os").eq("cliente_id", clienteId),

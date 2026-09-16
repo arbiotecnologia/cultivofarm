@@ -21,7 +21,7 @@ export function PaymentSimulationSummary({ simulation, cashReferenceAmount }: Pr
         <Alert className="py-2">
           <AlertDescription className="text-xs">
             Esta condição comercial é <strong>sob consulta</strong>. O pedido será enviado para
-            cotação e o valor final será definido pela equipe comercial da AR Bio.
+            cotação e o valor final será definido pela equipe comercial da Cultivo Farm.
           </AlertDescription>
         </Alert>
         {warnings.length > 0 && (

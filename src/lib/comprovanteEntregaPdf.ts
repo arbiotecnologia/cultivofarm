@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import { formatDateDisplay, formatDateTimeDisplay } from "@/lib/date-utils";
 
 /**
- * Documento de entrega AR Bio (layout v2 — Fase 3).
+ * Documento de entrega Cultivo Farm (layout v2 — Fase 3).
  *
  * O conteudo NAO e montado no frontend: ele vem integralmente do motor
  * canonico `rpc_get_comprovante_entrega_data`, que decide entre:
@@ -120,7 +120,7 @@ export function rotuloOrigem(os: any): { label: string; valor: string } | null {
   const tipo = String(os.tipo ?? "");
   const label =
     tipo === "ordem_servico_onfarm"
-      ? "OS On-Farm"
+      ? "OS de Produção"
       : tipo === "partner_order"
         ? "Pedido Parceiro B2B"
         : "Ordem de Serviço";

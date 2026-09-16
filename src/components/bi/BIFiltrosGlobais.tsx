@@ -466,7 +466,7 @@ export function BIFiltrosGlobais({ filtros, onFiltrosChange }: BIFiltrosGlobaisP
             <SelectContent>
               <SelectItem value="todas">Todas as Origens</SelectItem>
               <SelectItem value="manual">Manual (Produção)</SelectItem>
-              <SelectItem value="onfarm">On-Farm (Visita)</SelectItem>
+              <SelectItem value="onfarm">Produção (Visita)</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -3,10 +3,10 @@ import { scopeCan } from "@/components/pedidos-b2b/viewerScope";
 import { canAccess } from "@/lib/permissions";
 
 /**
- * FASE 7 — Contrato do painel comercial AR Bio.
+ * FASE 7 — Contrato do painel comercial Cultivo Farm.
  */
 
-describe("Comercial AR Bio — Solicitações B2B", () => {
+describe("Comercial Cultivo Farm — Solicitações B2B", () => {
   const pedidosGlobais = [
     { id: "p1", partner_id: "A" },
     { id: "p2", partner_id: "B" },
