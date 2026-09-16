@@ -118,6 +118,7 @@ export default function RascunhoWizard({
       iss_withheld: false,
       fiscal_profile_snapshot: {},
       tax_snapshot: {},
+      tax_input_snapshot: {},
     };
     setValues((prev) => ({ ...prev, items: [...prev.items, empty] }));
   }
