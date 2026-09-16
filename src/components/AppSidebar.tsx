@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccess } from "@/lib/permissions";
+import {
+  readActiveContext,
+  resolveEffectiveRouteRole,
+} from "@/lib/navigation/portalRoleContext";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { LogoDisplay } from "@/components/LogoDisplay";
 import { PortalSidebar } from "@/components/nav/PortalSidebar";
