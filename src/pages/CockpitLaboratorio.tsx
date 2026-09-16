@@ -638,7 +638,7 @@ export default function CockpitLaboratorio() {
           </Select>
           <Select value={filterOrigem} onValueChange={setFilterOrigem}>
             <SelectTrigger aria-label="Filtrar por origem" className="h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[170px]"><SelectValue placeholder="Origem" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Todas as origens</SelectItem><SelectItem value="manual">Manual</SelectItem><SelectItem value="onfarm">On-Farm</SelectItem></SelectContent>
+            <SelectContent><SelectItem value="all">Todas as origens</SelectItem><SelectItem value="manual">Manual</SelectItem><SelectItem value="onfarm">Produção</SelectItem></SelectContent>
           </Select>
           <Select value={filterPrioridade} onValueChange={setFilterPrioridade}>
             <SelectTrigger aria-label="Filtrar por prioridade" className="h-9 min-w-0 flex-1 basis-[145px] text-xs sm:flex-none sm:w-[180px]"><SelectValue placeholder="Prioridade" /></SelectTrigger>

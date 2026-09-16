@@ -93,7 +93,7 @@ export default function Estoque() {
           .select("id, data_recomendada, fazendas(nome), talhoes(nome)")
           .in("id", osOnfarmIds);
         (os || []).forEach((o: any) => {
-          osMap[o.id] = { tipoLabel: "On-Farm", fazenda: o.fazendas?.nome, talhao: o.talhoes?.nome, data: o.data_recomendada };
+          osMap[o.id] = { tipoLabel: "Produção", fazenda: o.fazendas?.nome, talhao: o.talhoes?.nome, data: o.data_recomendada };
         });
       }
 

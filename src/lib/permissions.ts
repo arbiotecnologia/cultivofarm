@@ -361,7 +361,7 @@ export const ROLE_LABELS: Record<string, string> = {
   gestor: "Gestor",
   consultor_tecnico: "Consultor Técnico",
   aplicador: "Aplicador",
-  operador_onfarm: "Operador On-Farm",
+  operador_onfarm: "Operador de Produção",
   cliente_produtor: "Cliente/Produtor",
   administrativo: "Administrativo",
   tecnico_agronomo: "Técnico Agrônomo",
