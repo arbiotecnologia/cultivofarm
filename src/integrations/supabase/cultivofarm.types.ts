@@ -8126,6 +8126,144 @@ export type Database = {
           },
         ]
       }
+      fiscal_tax_rules: {
+        Row: {
+          base_components: Json
+          base_reduction_mode: string
+          base_reduction_pct: number | null
+          calc_mode: string
+          created_at: string
+          created_by: string | null
+          credit_own_icms: boolean
+          crt: string | null
+          csosn: string | null
+          cst: string | null
+          deferral_pct: number | null
+          destination_uf: string | null
+          difal_dest_share_pct: number | null
+          fcp_rate: number | null
+          fcp_st_rate: number | null
+          final_consumer: boolean | null
+          id: string
+          internal_rate_pct: number | null
+          interstate_rate_pct: number | null
+          justification: string | null
+          legal_basis: string | null
+          legal_version: string | null
+          mva_pct: number | null
+          ncm_prefix: string | null
+          origin_uf: string | null
+          prepared_by: string | null
+          priority: number
+          product_category: string | null
+          published_at: string | null
+          published_by: string | null
+          rate: number | null
+          rule_key: string
+          source_id: string | null
+          st_modality: string | null
+          status: string
+          superseded_by: string | null
+          tax_kind: string
+          taxpayer_indicator: string | null
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+          version: number
+        }
+        Insert: {
+          base_components?: Json
+          base_reduction_mode?: string
+          base_reduction_pct?: number | null
+          calc_mode?: string
+          created_at?: string
+          created_by?: string | null
+          credit_own_icms?: boolean
+          crt?: string | null
+          csosn?: string | null
+          cst?: string | null
+          deferral_pct?: number | null
+          destination_uf?: string | null
+          difal_dest_share_pct?: number | null
+          fcp_rate?: number | null
+          fcp_st_rate?: number | null
+          final_consumer?: boolean | null
+          id?: string
+          internal_rate_pct?: number | null
+          interstate_rate_pct?: number | null
+          justification?: string | null
+          legal_basis?: string | null
+          legal_version?: string | null
+          mva_pct?: number | null
+          ncm_prefix?: string | null
+          origin_uf?: string | null
+          prepared_by?: string | null
+          priority?: number
+          product_category?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          rate?: number | null
+          rule_key: string
+          source_id?: string | null
+          st_modality?: string | null
+          status?: string
+          superseded_by?: string | null
+          tax_kind: string
+          taxpayer_indicator?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+          version?: number
+        }
+        Update: {
+          base_components?: Json
+          base_reduction_mode?: string
+          base_reduction_pct?: number | null
+          calc_mode?: string
+          created_at?: string
+          created_by?: string | null
+          credit_own_icms?: boolean
+          crt?: string | null
+          csosn?: string | null
+          cst?: string | null
+          deferral_pct?: number | null
+          destination_uf?: string | null
+          difal_dest_share_pct?: number | null
+          fcp_rate?: number | null
+          fcp_st_rate?: number | null
+          final_consumer?: boolean | null
+          id?: string
+          internal_rate_pct?: number | null
+          interstate_rate_pct?: number | null
+          justification?: string | null
+          legal_basis?: string | null
+          legal_version?: string | null
+          mva_pct?: number | null
+          ncm_prefix?: string | null
+          origin_uf?: string | null
+          prepared_by?: string | null
+          priority?: number
+          product_category?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          rate?: number | null
+          rule_key?: string
+          source_id?: string | null
+          st_modality?: string | null
+          status?: string
+          superseded_by?: string | null
+          tax_kind?: string
+          taxpayer_indicator?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       fiscal_invoice_items: {
         Row: {
           cest_snapshot: string | null
@@ -8155,6 +8293,7 @@ export type Database = {
           quantity: number | null
           source_item_id: string | null
           source_item_type: string | null
+          tax_input_snapshot: Json | null
           tax_snapshot: Json | null
           taxable_quantity: number | null
           taxable_unit: string | null
@@ -8189,6 +8328,7 @@ export type Database = {
           quantity?: number | null
           source_item_id?: string | null
           source_item_type?: string | null
+          tax_input_snapshot?: Json | null
           tax_snapshot?: Json | null
           taxable_quantity?: number | null
           taxable_unit?: string | null
@@ -8223,6 +8363,7 @@ export type Database = {
           quantity?: number | null
           source_item_id?: string | null
           source_item_type?: string | null
+          tax_input_snapshot?: Json | null
           tax_snapshot?: Json | null
           taxable_quantity?: number | null
           taxable_unit?: string | null
@@ -20421,6 +20562,10 @@ export type Database = {
       }
       rpc_fiscal_tax_rule_publish: {
         Args: { p_rule_id: string; p_justification?: string | null }
+        Returns: Json
+      }
+      rpc_fiscal_tax_preview_v1: {
+        Args: { p_invoice_id: string }
         Returns: Json
       }
       rpc_fiscal_calculate_invoice_v1: {
