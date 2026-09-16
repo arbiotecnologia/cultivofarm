@@ -20,7 +20,10 @@ import {
   type FiscalTaxPreviewTax,
 } from "@/hooks/useFiscalTaxPreview";
 
-export type TaxInputSnapshot = Record<string, { baseReductionPct: number }>;
+export type TaxInputSnapshot = Record<
+  string,
+  { baseReductionPct: number; baseReductionReason?: string }
+>;
 
 export interface TributosPorItemSecaoProps {
   invoiceId: string | null;
