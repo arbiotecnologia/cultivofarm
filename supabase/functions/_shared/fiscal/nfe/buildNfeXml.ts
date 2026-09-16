@@ -402,6 +402,7 @@ function buildDet(p: NfePayload): string {
         prod,
         "<imposto>",
         icmsBlock(item, crt),
+        ipiBlock(item),
         pisCofinsBlock(item),
         "</imposto>",
         "</det>",
