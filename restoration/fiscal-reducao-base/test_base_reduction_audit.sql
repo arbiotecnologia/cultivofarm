@@ -79,7 +79,7 @@ BEGIN
   END IF;
 
   -- documento congelado bloqueia alteração
-  UPDATE public.fiscal_invoices SET status = 'AUTHORIZED' WHERE id = v_inv;
+  UPDATE public.fiscal_invoices SET status = 'ISSUED' WHERE id = v_inv;
   BEGIN
     UPDATE public.fiscal_invoice_items SET tax_input_snapshot = '{"ICMS":{"baseReductionPct":10}}' WHERE id = v_item;
     RAISE EXCEPTION 'FAIL 14: documento congelado aceitou alteração de redução';
