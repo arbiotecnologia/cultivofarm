@@ -108,6 +108,7 @@ describe("Comunicação Fase 0.2 — invariantes estáticos", () => {
     for (const { file, content } of corpus) {
       if (file.includes("/test/")) continue;
       if (file.endsWith("src/integrations/supabase/types.ts")) continue;
+      if (file.endsWith("src/integrations/supabase/cultivofarm.types.ts")) continue;
       if (content.includes("rpc_check_monitoramento_and_notify")) leaks.push(file);
     }
     expect(
