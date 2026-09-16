@@ -27,6 +27,7 @@ import { ShieldOff, Trash2, Plus, CheckCircle2, AlertTriangle, Search } from "lu
 import { toast } from "@/hooks/use-toast";
 import GeracaoXmlNfeSecao from "@/components/fiscal/documentos/GeracaoXmlNfeSecao";
 import PreflightNfeSecao from "@/components/fiscal/documentos/PreflightNfeSecao";
+import TributosPorItemSecao from "@/components/fiscal/documentos/TributosPorItemSecao";
 
 import {
   emptyRascunho,
@@ -553,6 +554,24 @@ export default function RascunhoWizard({
                 </div>
               </CardContent>
             </Card>
+            <div className="pt-4">
+              <TributosPorItemSecao
+                invoiceId={invoiceId}
+                items={values.items.map((it) => ({
+                  description: it.description,
+                  gross_value: it.gross_value,
+                  discount_value: it.discount_value,
+                  tax_input_snapshot: it.tax_input_snapshot,
+                }))}
+                freight={values.freight}
+                insurance={values.insurance}
+                otherExpenses={values.other_expenses}
+                disabled={readonly}
+                onChangeItemInput={(idx, snapshot) =>
+                  updateItem(idx, { tax_input_snapshot: snapshot })
+                }
+              />
+            </div>
           </TabsContent>
 
           {canUseSinief ? (
