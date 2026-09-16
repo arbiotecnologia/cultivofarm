@@ -93,30 +93,34 @@ export function useNotificacoesUnificadas(options?: { limit?: number }) {
     refetchInterval: 120_000,
   });
 
+  const userId = user?.id ?? null;
+
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
+    // Sufixo único por montagem: evita reaproveitar um canal já inscrito
+    // (Supabase lança erro ao registrar callbacks depois do subscribe()).
     const channel = supabase
-      .channel(`notif-unified-op-${user.id}`)
+      .channel(`notif-unified-op-${userId}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "notificacoes_operacionais",
-          filter: `usuario_id=eq.${user.id}`,
+          filter: `usuario_id=eq.${userId}`,
         },
-        () => qc.invalidateQueries({ queryKey: ["notif-unified", "op", user.id] }),
+        () => qc.invalidateQueries({ queryKey: ["notif-unified", "op", userId] }),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, qc]);
+  }, [userId, qc]);
 
   useEffect(() => {
     if (!clienteId) return;
     const channel = supabase
-      .channel(`notif-unified-portal-${clienteId}`)
+      .channel(`notif-unified-portal-${clienteId}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
