@@ -57,12 +57,15 @@ BEGIN
   INSERT INTO public.partner_orders(
     id, partner_id, status, approved_by, approved_at, payment_condition_status,
     requires_financial_approval, financial_approval_status, created_by, total)
-  VALUES (v_order, v_partner, 'aprovado', v_uid, now(), 'accepted', false, 'approved', v_uid, 10000);
+  VALUES (v_order, v_partner, 'rascunho', v_uid, now(), 'accepted', false, 'approved', v_uid, 10000);
 
   INSERT INTO public.partner_order_items(
     id, order_id, quantidade, preco_unitario, preco_unitario_final_snapshot,
     price_source_snapshot, pricing_mode_snapshot, produto_nome_snapshot)
   VALUES (gen_random_uuid(), v_order, 1, 10000, 10000, 'TABELA', 'price_list', 'PRODUTO SINTETICO');
+
+  -- Itens inseridos antes da aprovacao (guard de imutabilidade pos-aprovacao).
+  UPDATE public.partner_orders SET status = 'aprovado' WHERE id = v_order;
 
   -- Politica de operacao publicada.
   INSERT INTO public.fiscal_operation_policies(
