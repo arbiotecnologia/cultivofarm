@@ -48,9 +48,6 @@ export interface FiscalTaxPreviewItemInput {
   tax_input_snapshot?: Record<string, { baseReductionPct: number }>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args: any) => any;
-
 export function useFiscalTaxPreview(
   invoiceId: string | null,
   items: FiscalTaxPreviewItemInput[],
@@ -61,9 +58,9 @@ export function useFiscalTaxPreview(
     enabled: Boolean(invoiceId) && enabled && items.length > 0,
     retry: false,
     queryFn: async (): Promise<FiscalTaxPreviewResult> => {
-      const { data, error } = await rpc("rpc_fiscal_tax_preview_v1", {
-        p_invoice_id: invoiceId,
-        p_items: items,
+      const { data, error } = await supabase.rpc("rpc_fiscal_tax_preview_v1", {
+        p_invoice_id: invoiceId as string,
+        p_items: items as unknown as never,
       });
       if (error) throw new Error(traduzirErroFiscal(error.message));
       if (!data || typeof data !== "object" || !Array.isArray((data as FiscalTaxPreviewResult).items)) {
