@@ -38,13 +38,13 @@ BEGIN
   IF EXISTS (SELECT 1 FROM public.company_fiscal_settings WHERE is_active) THEN
     UPDATE public.company_fiscal_settings
        SET legal_name = 'EMITENTE SINTETICO', cnpj = '11222333000181', crt = '3',
-           state = 'MT', municipality_ibge_code = '5103403', city = 'CUIABA',
+           state = 'SC', municipality_ibge_code = '4205407', city = 'FLORIANOPOLIS',
            nfe_environment_code = '2', nfe_readiness_status = 'READY_HOMOLOGATION',
            primary_cnae = '0111301', pis_cofins_regime = 'NAO_CUMULATIVO',
            postal_code = '78000000', street = 'AV SINTETICA', number = '100',
            neighborhood = 'CENTRO', country_code = '1058',
-           state_registration = '12345678901', nfe_series_number = 1,
-           uf_accreditations = '["MT"]'::jsonb,
+           state_registration = '251000001', nfe_series_number = 1,
+           uf_accreditations = '["SC"]'::jsonb,
            accounting_validated_at = now(),
            ipi_taxpayer = false, icms_st_responsible = false,
            fcp_applicable = false, difal_responsible = false
@@ -56,10 +56,10 @@ BEGIN
       fcp_applicable, difal_responsible, primary_cnae, pis_cofins_regime, postal_code,
       street, number, neighborhood, country_code, state_registration,
       nfe_series_number, uf_accreditations, certificate_ref, accounting_validated_at)
-    VALUES (gen_random_uuid(), true, 'EMITENTE SINTETICO', '11222333000181', '3', 'MT',
-            '5103403', 'CUIABA', '2', 'READY_HOMOLOGATION', false, false, false, false,
+    VALUES (gen_random_uuid(), true, 'EMITENTE SINTETICO', '11222333000181', '3', 'SC',
+            '4205407', 'FLORIANOPOLIS', '2', 'READY_HOMOLOGATION', false, false, false, false,
             '0111301', 'NAO_CUMULATIVO', '78000000', 'AV SINTETICA', '100', 'CENTRO',
-            '1058', '12345678901', 1, '["MT"]'::jsonb, NULL, now());
+            '1058', '251000001', 1, '["SC"]'::jsonb, NULL, now());
   END IF;
 
 
@@ -68,7 +68,7 @@ BEGIN
   INSERT INTO public.customer_fiscal_profiles(
     customer_id, taxpayer_indicator, fiscal_state, fiscal_municipality_ibge_code,
     final_consumer, icms_taxpayer, nfe_readiness_status, person_type, cpf_cnpj, legal_name)
-  VALUES (v_cliente, '1', 'MT', '5103403', false, true, 'READY', 'PJ', '11222333000181', 'CLIENTE SINTETICO');
+  VALUES (v_cliente, '1', 'SC', '4205407', false, true, 'READY', 'PJ', '11222333000181', 'CLIENTE SINTETICO');
 
   INSERT INTO public.partner_accounts(id, razao_social, client_id, ativo)
   VALUES (v_partner, 'PARCEIRO SINTETICO', v_cliente, true);
@@ -98,15 +98,15 @@ BEGIN
 
   -- Fonte oficial exigida pelas evidencias de publicacao.
   INSERT INTO public.fiscal_official_sources(id, source_key, authority, name, url)
-  VALUES (v_src, 'SYN-SEFAZ-MT', 'SEFAZ/MT', 'RICMS MT (cenario sintetico)', 'https://example.invalid/ricms-mt');
+  VALUES (v_src, 'SYN-SEFAZ-SC', 'SEFAZ/SC', 'RICMS SC (cenario sintetico)', 'https://example.invalid/ricms-sc');
 
   -- Politica de operacao publicada.
   INSERT INTO public.fiscal_operation_policies(
     id, document_model, active, policy_status, direction, origin_uf, destination_uf,
     crt, cfop, nature_operation, priority, valid_from, legal_basis, legal_version,
     sales_channel, operation_type, requires_invoice, source_id, published_at, published_by)
-  VALUES (gen_random_uuid(), '55', true, 'PUBLISHED', 'OUT', 'MT', 'MT', '3', '5102',
-          'VENDA DE PRODUCAO', 1, current_date - 1, 'RICMS/MT', '2026',
+  VALUES (gen_random_uuid(), '55', true, 'PUBLISHED', 'OUT', 'SC', 'SC', '3', '5102',
+          'VENDA DE PRODUCAO', 1, current_date - 1, 'RICMS/SC', '2026',
           'b2b_partner', 'VENDA', true, v_src, now(), v_uid);
 
   -- Regras tributarias publicadas: ICMS MANUAL (CST 20), PIS e COFINS.
