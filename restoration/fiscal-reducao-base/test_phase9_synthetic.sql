@@ -25,6 +25,11 @@ BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'sem usuario admin para o cenario'; END IF;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_uid, 'role', 'authenticated')::text, true);
 
+  -- Marcador de ambiente fiscal (staging) exigido pelo gate; revertido ao final.
+  INSERT INTO public.fiscal_environment_marker(id, project_ref, environment_label, production_emission_allowed)
+  VALUES (true, 'swzpzcwiasxmjutrmvkm', 'STAGING', false)
+  ON CONFLICT (id) DO UPDATE SET environment_label = 'STAGING', production_emission_allowed = false;
+
   -- Emitente em homologacao, Regime Normal (CRT 3), sem IPI/ST/FCP/DIFAL.
   -- Existe singleton ativo: o cenario ajusta a linha ativa dentro da transacao
   -- revertida (nenhuma alteracao permanente no emitente real).
