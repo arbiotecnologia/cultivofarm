@@ -175,29 +175,161 @@ function buildDest(p: NfePayload): string {
   ].join("");
 }
 
-function icmsBlock(item: Record<string, unknown>, crt: string): string {
-  const orig = String(item.orig ?? "0");
+/** Leitura canônica do grupo de um tributo dentro do snapshot congelado. */
+function taxOf(item: Record<string, unknown>, kind: string): Record<string, unknown> {
   const snapshot = (item.taxSnapshot ?? {}) as Record<string, unknown>;
   const taxes = (snapshot.taxes ?? {}) as Record<string, Record<string, unknown>>;
-  const icms = taxes.ICMS ?? {};
+  return taxes[kind] ?? {};
+}
+
+function num(v: unknown): number {
+  const n = typeof v === "number" ? v : Number(v ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Fase F3.4 — Dispatch do grupo ICMS por CRT + CST/CSOSN.
+ *
+ * A redução da base NUNCA é convertida em redução de alíquota: o percentual
+ * vai em `pRedBC` e a base já reduzida (calculada no servidor) vai em `vBC`.
+ * CST sem grupo implementado bloqueia a geração de forma explícita.
+ */
+function icmsBlock(item: Record<string, unknown>, crt: string): string {
+  const orig = String(item.orig ?? "0");
+  const icms = taxOf(item, "ICMS");
   const base = dec(icms.baseValue ?? icms.base ?? 0, 2);
   const rate = dec(icms.rate ?? 0, 2);
   const value = dec(icms.value ?? 0, 2);
+  const redPct = num(icms.baseReductionPct);
+  const nItem = String(item.nItem ?? "?");
 
   if (crt === "1" || crt === "2") {
-    const csosn = String(item.CSOSN ?? "").trim() || "102";
-    return `<ICMS><ICMSSN102><orig>${orig}</orig><CSOSN>${csosn}</CSOSN></ICMSSN102></ICMS>`;
+    const csosn = String(item.CSOSN ?? icms.csosn ?? "").trim() || "102";
+    if (redPct > 0) {
+      throw new NfeBuildError(
+        "NFE_ICMS_REDUCTION_INCOMPATIBLE",
+        `item ${nItem}: redução da base de cálculo não é compatível com CSOSN ${csosn} (Simples Nacional)`,
+      );
+    }
+    if (csosn === "101") {
+      const credito = taxOf(item, "ICMS_SN_CREDIT");
+      return [
+        "<ICMS><ICMSSN101>",
+        tag("orig", orig),
+        tag("CSOSN", "101"),
+        tag("pCredSN", dec(credito.rate ?? icms.rate ?? 0, 4)),
+        tag("vCredICMSSN", dec(credito.value ?? icms.value ?? 0, 2)),
+        "</ICMSSN101></ICMS>",
+      ].join("");
+    }
+    if (csosn === "102" || csosn === "103" || csosn === "300" || csosn === "400") {
+      return `<ICMS><ICMSSN102><orig>${orig}</orig><CSOSN>${csosn}</CSOSN></ICMSSN102></ICMS>`;
+    }
+    throw new NfeBuildError(
+      "NFE_ICMS_CSOSN_UNSUPPORTED",
+      `item ${nItem}: CSOSN ${csosn} ainda não possui grupo XML homologado`,
+    );
   }
-  const cst = String(item.CST ?? "").trim() || "00";
+
+  const cst = String(item.CST ?? icms.cst ?? "").trim() || "00";
+
+  if (cst === "20") {
+    if (!(redPct > 0)) {
+      throw new NfeBuildError(
+        "NFE_ICMS_REDUCTION_MISSING",
+        `item ${nItem}: CST 20 exige percentual de redução da base de cálculo`,
+      );
+    }
+    return [
+      "<ICMS><ICMS20>",
+      tag("orig", orig),
+      tag("CST", "20"),
+      tag("modBC", "3"),
+      tag("pRedBC", dec(redPct, 4)),
+      tag("vBC", base),
+      tag("pICMS", rate),
+      tag("vICMS", value),
+      "</ICMS20></ICMS>",
+    ].join("");
+  }
+
+  if (redPct > 0) {
+    throw new NfeBuildError(
+      "NFE_ICMS_REDUCTION_INCOMPATIBLE",
+      `item ${nItem}: redução da base de cálculo exige CST 20; CST informado: ${cst}`,
+    );
+  }
+
+  if (cst === "00") {
+    return [
+      "<ICMS><ICMS00>",
+      tag("orig", orig),
+      tag("CST", cst),
+      tag("modBC", "3"),
+      tag("vBC", base),
+      tag("pICMS", rate),
+      tag("vICMS", value),
+      "</ICMS00></ICMS>",
+    ].join("");
+  }
+
+  if (cst === "40" || cst === "41" || cst === "50") {
+    return [
+      "<ICMS><ICMS40>",
+      tag("orig", orig),
+      tag("CST", cst),
+      "</ICMS40></ICMS>",
+    ].join("");
+  }
+
+  throw new NfeBuildError(
+    "NFE_ICMS_CST_UNSUPPORTED",
+    `item ${nItem}: CST ${cst} ainda não possui grupo XML homologado`,
+  );
+}
+
+/**
+ * Grupo IPI por item. Só é emitido quando o motor canônico apurou IPI para o
+ * item; valor apurado sem grupo compatível bloqueia a geração.
+ */
+function ipiBlock(item: Record<string, unknown>): string {
+  const ipi = taxOf(item, "IPI");
+  const hasIpi = Object.keys(ipi).length > 0;
+  const value = num(ipi.value);
+  if (!hasIpi && value === 0) return "";
+  const cst = String(ipi.cst ?? "").trim();
+  const nItem = String(item.nItem ?? "?");
+  if (num(ipi.baseReductionPct) > 0) {
+    throw new NfeBuildError(
+      "NFE_IPI_REDUCTION_UNSUPPORTED",
+      `item ${nItem}: redução da base de IPI não possui grupo XML homologado`,
+    );
+  }
+  const cEnq = sanitizeText(ipi.cEnq ?? "999", 3) || "999";
+  if (value > 0 || cst === "00" || cst === "49" || cst === "50" || cst === "99") {
+    if (!cst) {
+      throw new NfeBuildError(
+        "NFE_IPI_CST_MISSING",
+        `item ${nItem}: IPI apurado sem CST no snapshot`,
+      );
+    }
+    return [
+      "<IPI>",
+      tag("cEnq", cEnq),
+      "<IPITrib>",
+      tag("CST", cst),
+      tag("vBC", dec(ipi.baseValue ?? ipi.base ?? 0, 2)),
+      tag("pIPI", dec(ipi.rate ?? 0, 4)),
+      tag("vIPI", dec(ipi.value ?? 0, 2)),
+      "</IPITrib>",
+      "</IPI>",
+    ].join("");
+  }
   return [
-    "<ICMS><ICMS00>",
-    tag("orig", orig),
-    tag("CST", cst),
-    tag("modBC", "3"),
-    tag("vBC", base),
-    tag("pICMS", rate),
-    tag("vICMS", value),
-    "</ICMS00></ICMS>",
+    "<IPI>",
+    tag("cEnq", cEnq),
+    `<IPINT>${tag("CST", cst || "53")}</IPINT>`,
+    "</IPI>",
   ].join("");
 }
 
@@ -270,6 +402,7 @@ function buildDet(p: NfePayload): string {
         prod,
         "<imposto>",
         icmsBlock(item, crt),
+        ipiBlock(item),
         pisCofinsBlock(item),
         "</imposto>",
         "</det>",

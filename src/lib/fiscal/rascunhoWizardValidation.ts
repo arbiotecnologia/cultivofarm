@@ -69,6 +69,16 @@ export const itemSchema = z.object({
   // Snapshots opacos por item (server valida ausência de segredo)
   fiscal_profile_snapshot: jsonRecord,
   tax_snapshot: jsonRecord,
+  /**
+   * SOMENTE entradas do operador (ex.: `{ ICMS: { baseReductionPct: 60 } }`).
+   * Nunca base, alíquota ou valor calculado — o servidor recusa outras chaves.
+   */
+  tax_input_snapshot: z
+    .record(
+      z.string(),
+      z.object({ baseReductionPct: z.number().min(0).max(100) }).strict(),
+    )
+    .default({}),
 });
 
 export const itensStepSchema = z.object({

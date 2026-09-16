@@ -76,6 +76,9 @@ export function useSaveFiscalRascunho() {
           source_item_id: it.source_item_id ?? null,
           fiscal_profile_snapshot: profile,
           tax_snapshot: tax,
+          // Entradas do operador (redução da base por tributo). O servidor
+          // valida as chaves e recalcula tudo pelo motor canônico.
+          tax_input_snapshot: it.tax_input_snapshot ?? {},
         };
       });
 
