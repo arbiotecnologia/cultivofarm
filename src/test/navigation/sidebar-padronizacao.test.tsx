@@ -116,7 +116,7 @@ describe("N-02 permissões inalteradas", () => {
 
   it("admin continua filtrando por canAccess + allowedRoles", () => {
     const src = read("src/components/AppSidebar.tsx");
-    expect(src).toContain("canAccess(role");
+    expect(src).toContain("resolveEffectiveRouteRole");
     expect(src).toContain("item.allowedRoles");
     expect(src).toContain("isNavItemFeatureEnabled");
   });
