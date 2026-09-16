@@ -50,13 +50,13 @@ export default function PortalParceiroLayout() {
     queryKey: ["partner-accounts-active"],
     enabled: isStaff,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("partner_accounts")
         .select("id, razao_social, nome_fantasia, desconto_padrao, ativo, marca_nome, marca_logo_url, marca_cor_primaria")
         .eq("ativo", true)
         .order("razao_social");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as Array<{ id: string; razao_social: string; nome_fantasia: string | null; desconto_padrao: number; ativo: boolean; marca_nome: string | null; marca_logo_url: string | null; marca_cor_primaria: string | null }>;
     },
   });
 
