@@ -175,7 +175,7 @@ export function SolicitacaoActions({ solicitacao, onOpenDetail, onOpenAtribuir }
                 }
               }}
             >
-              <PackageCheck className="h-4 w-4 mr-2" /> Gerar OS On-Farm
+              <PackageCheck className="h-4 w-4 mr-2" /> Gerar OS de Produção
             </DropdownMenuItem>
           )}
           <DropdownMenuItem onClick={gerarPDF}>

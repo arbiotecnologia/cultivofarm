@@ -1,5 +1,5 @@
 /**
- * AR Bio — Portal de Gestão On-Farm
+ * Cultivo Farm — Portal de Gestão On-Farm
  *
  * Este arquivo é um placeholder inerte para o roteamento do projeto.
  * O roteamento real é definido em src/App.tsx.

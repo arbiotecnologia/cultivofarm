@@ -21,7 +21,7 @@ export function ExecutivoHeader({ periodo, ultimaAtualizacao, isFetching, onRefr
   return (
     <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Portal Executivo AR Bio</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Portal Executivo Cultivo Farm</h1>
         <p className="text-sm text-muted-foreground">
           Visão consolidada da operação, entregas, alertas e faturamento.
         </p>

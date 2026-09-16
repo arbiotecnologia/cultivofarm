@@ -18,7 +18,7 @@ export function AppLayout() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <PortalTopBar
-            brandTitle="AR Bio"
+            brandTitle="Cultivo Farm"
             brandSubtitle="On-Farm"
             leadingSlot={<SidebarTrigger className="ml-0 h-10 w-10" />}
           />

@@ -48,7 +48,7 @@ beforeEach(() => {
       {
         certificate_id: "cert-1",
         display_name: "Certificado Homologação",
-        subject_name: "CN=AR Bio LTDA",
+        subject_name: "CN=Cultivo Farm LTDA",
         source_type: "A1_UPLOAD",
         environment: "HOMOLOGATION",
         status: "AVAILABLE",

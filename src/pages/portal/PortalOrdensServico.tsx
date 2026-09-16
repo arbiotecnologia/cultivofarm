@@ -211,7 +211,7 @@ export default function PortalOrdensServico({
               <div className="flex justify-between items-start border-b pb-4">
                 <div className="space-y-1">
                   <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Responsável Técnico</p>
-                  <p className="text-sm font-bold">{selectedLaudo.responsavel || "Laboratório Central A.R Bio"}</p>
+                  <p className="text-sm font-bold">{selectedLaudo.responsavel || "Laboratório Central Cultivo Farm"}</p>
                 </div>
                 <div className="text-right">
                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">ANÁLISE APROVADA</Badge>

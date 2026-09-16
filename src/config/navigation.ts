@@ -23,7 +23,7 @@ export type NavSection =
   | "Dashboard"
   | "Comercial e Relacionamento"
   | "Campo e Assistência Técnica"
-  | "Produção On-Farm"
+  | "Produção"
   | "Financeiro"
   | "Financeiro B2B"
   | "Inteligência e Controle"
@@ -71,7 +71,7 @@ export const DESKTOP_SECTION_ORDER: NavSection[] = [
   "Dashboard",
   "Comercial e Relacionamento",
   "Campo e Assistência Técnica",
-  "Produção On-Farm",
+  "Produção",
   "Financeiro",
   "Financeiro B2B",
   "Inteligência e Controle",
@@ -144,16 +144,16 @@ export const navigation: NavItem[] = [
   { id: "monitoramento", label: "Monitoramento", icon: Clock, route: "/monitoramento-alertas", section: "Campo e Assistência Técnica", order: 6, platforms: ["desktop"], searchKeywords: ["monitoramento", "sla", "acompanhamento", "retorno"] },
   { id: "previsao-climatica", label: "Previsão Climática", icon: CloudSun, route: "/previsao-agronomica", section: "Campo e Assistência Técnica", order: 7, platforms: ["desktop"], searchKeywords: ["clima", "previsão climática", "meteorologia", "previsão", "tempo"] },
 
-  // ── Produção On-Farm ───────────────────────────────────────────────────────
-  { id: "dashboard-producao", label: "Dashboard Produção", icon: Activity, route: "/operacao/dashboard-producao", section: "Produção On-Farm", subSection: "Acompanhamento", order: 1, platforms: ["desktop"], searchKeywords: ["produção", "dashboard", "dashboard produção", "indicadores produção"] },
-  { id: "cockpit-lab", label: "Cockpit Laboratório", icon: FlaskConical, route: "/cockpit-laboratorio", section: "Produção On-Farm", subSection: "Central Operacional", order: 2, platforms: ["desktop"], searchKeywords: ["laboratório", "laboratorio", "lab", "cockpit", "cockpit laboratório", "central operacional", "produção laboratório"] },
-  { id: "planejamento-producao", label: "Planejamento Produção", icon: Factory, route: "/operacao/planejamento", matchRoutes: ["/operacao/planejamento/:id"], section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 3, platforms: ["desktop"], searchKeywords: ["planejamento", "produção", "planejamento produção", "programação produção"] },
-  { id: "ordens-servico", label: "Ordens de Serviço", icon: ClipboardList, route: "/ordens-servico", section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 4, platforms: ["desktop"], searchKeywords: ["os", "ordem", "ordens de serviço", "produção"] },
-  { id: "lotes", label: "Lotes", icon: Boxes, route: "/lotes", section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 5, platforms: ["desktop"], searchKeywords: ["lote", "produção", "lotes"] },
-  { id: "cq", label: "Controle de Qualidade", icon: ShieldCheck, route: "/controle-qualidade", section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 6, platforms: ["desktop"], searchKeywords: ["cq", "qualidade", "controle", "controle de qualidade", "laboratório"] },
-  { id: "envase", label: "Envase", icon: Package, route: "/envase", section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 7, platforms: ["desktop"], searchKeywords: ["envase", "envasar", "embalar", "embalagens", "produção"] },
-  { id: "estoque", label: "Estoque", icon: Warehouse, route: "/estoque", matchRoutes: ["/estoque/embalagens"], section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 8, platforms: ["desktop"], searchKeywords: ["inventário", "insumo", "embalagem", "estoque", "insumos", "embalagens"] },
-  { id: "entregas", label: "Entregas", icon: Truck, route: "/entregas", matchRoutes: ["/entregas/:id/formulario"], section: "Produção On-Farm", subSection: "Fluxo de Produção", order: 9, platforms: ["desktop"], searchKeywords: ["entrega", "logística", "entregas", "expedição"] },
+  // ── Produção ───────────────────────────────────────────────────────
+  { id: "dashboard-producao", label: "Dashboard Produção", icon: Activity, route: "/operacao/dashboard-producao", section: "Produção", subSection: "Acompanhamento", order: 1, platforms: ["desktop"], searchKeywords: ["produção", "dashboard", "dashboard produção", "indicadores produção"] },
+  { id: "cockpit-lab", label: "Cockpit Laboratório", icon: FlaskConical, route: "/cockpit-laboratorio", section: "Produção", subSection: "Central Operacional", order: 2, platforms: ["desktop"], searchKeywords: ["laboratório", "laboratorio", "lab", "cockpit", "cockpit laboratório", "central operacional", "produção laboratório"] },
+  { id: "planejamento-producao", label: "Planejamento Produção", icon: Factory, route: "/operacao/planejamento", matchRoutes: ["/operacao/planejamento/:id"], section: "Produção", subSection: "Fluxo de Produção", order: 3, platforms: ["desktop"], searchKeywords: ["planejamento", "produção", "planejamento produção", "programação produção"] },
+  { id: "ordens-servico", label: "Ordens de Serviço", icon: ClipboardList, route: "/ordens-servico", section: "Produção", subSection: "Fluxo de Produção", order: 4, platforms: ["desktop"], searchKeywords: ["os", "ordem", "ordens de serviço", "produção"] },
+  { id: "lotes", label: "Lotes", icon: Boxes, route: "/lotes", section: "Produção", subSection: "Fluxo de Produção", order: 5, platforms: ["desktop"], searchKeywords: ["lote", "produção", "lotes"] },
+  { id: "cq", label: "Controle de Qualidade", icon: ShieldCheck, route: "/controle-qualidade", section: "Produção", subSection: "Fluxo de Produção", order: 6, platforms: ["desktop"], searchKeywords: ["cq", "qualidade", "controle", "controle de qualidade", "laboratório"] },
+  { id: "envase", label: "Envase", icon: Package, route: "/envase", section: "Produção", subSection: "Fluxo de Produção", order: 7, platforms: ["desktop"], searchKeywords: ["envase", "envasar", "embalar", "embalagens", "produção"] },
+  { id: "estoque", label: "Estoque", icon: Warehouse, route: "/estoque", matchRoutes: ["/estoque/embalagens"], section: "Produção", subSection: "Fluxo de Produção", order: 8, platforms: ["desktop"], searchKeywords: ["inventário", "insumo", "embalagem", "estoque", "insumos", "embalagens"] },
+  { id: "entregas", label: "Entregas", icon: Truck, route: "/entregas", matchRoutes: ["/entregas/:id/formulario"], section: "Produção", subSection: "Fluxo de Produção", order: 9, platforms: ["desktop"], searchKeywords: ["entrega", "logística", "entregas", "expedição"] },
 
   // ── Financeiro ─────────────────────────────────────────────────────────────
   { id: "fin-dashboard", label: "Financeiro", icon: PieChart, route: "/financeiro", section: "Financeiro", subSection: "Visão Geral", order: 1, platforms: ["desktop"], searchKeywords: ["financeiro", "dashboard", "visão financeira", "dashboard financeiro"] },

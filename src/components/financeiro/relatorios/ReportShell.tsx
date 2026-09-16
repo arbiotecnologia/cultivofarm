@@ -124,7 +124,7 @@ export function ReportShell<TData = unknown>({
       <header className="rounded-lg border bg-card p-4 print:border-b print:border-x-0 print:border-t-0 print:rounded-none">
         <div className="flex items-start justify-between flex-wrap gap-2">
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">AR Bio On-Farm Manager</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Cultivo Farm</p>
             <h1 className="text-2xl font-bold leading-tight">{title}</h1>
             {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
@@ -172,7 +172,7 @@ export function ReportShell<TData = unknown>({
       </Card>
 
       <footer className="hidden print:block text-xs text-muted-foreground border-t pt-2 mt-4">
-        AR Bio On-Farm Manager • Relatório gerado eletronicamente • {formatDateTimeDisplay(new Date())}
+        Cultivo Farm • Relatório gerado eletronicamente • {formatDateTimeDisplay(new Date())}
       </footer>
     </div>
   );

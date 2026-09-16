@@ -28,8 +28,8 @@ describe("Fase 4 — reorganização declarativa Comercial/Campo/Produção", ()
     g.items.forEach((i) => expect(i.subSection).toBeUndefined());
   });
 
-  it("Produção On-Farm: 9 itens na ordem exata com subseções", () => {
-    const g = desktopItemsBySection().find((x) => x.section === "Produção On-Farm")!;
+  it("Produção: 9 itens na ordem exata com subseções", () => {
+    const g = desktopItemsBySection().find((x) => x.section === "Produção")!;
     expect(g.items.map((i) => i.id)).toEqual([
       "dashboard-producao", "cockpit-lab",
       "planejamento-producao", "ordens-servico", "lotes", "cq", "envase", "estoque", "entregas",
@@ -67,8 +67,8 @@ describe("Fase 4 — reorganização declarativa Comercial/Campo/Produção", ()
     expect(find("laboratório")).toEqual(expect.arrayContaining(["cockpit-lab", "cq"]));
   });
 
-  it("Cockpit imediatamente após Dashboard Produção no grupo Produção On-Farm", () => {
-    const g = desktopItemsBySection().find((x) => x.section === "Produção On-Farm")!;
+  it("Cockpit imediatamente após Dashboard Produção no grupo Produção", () => {
+    const g = desktopItemsBySection().find((x) => x.section === "Produção")!;
     const idxDash = g.items.findIndex((i) => i.id === "dashboard-producao");
     const idxCockpit = g.items.findIndex((i) => i.id === "cockpit-lab");
     expect(idxCockpit).toBe(idxDash + 1);

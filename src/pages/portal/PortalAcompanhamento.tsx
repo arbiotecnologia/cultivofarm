@@ -99,7 +99,7 @@ function HistoricoTab() {
         ...(osOF.data ?? []).map((o: any) => ({
           id: `osf-${o.id}`,
           tipo: "OS" as const,
-          titulo: o.numero_os ?? "OS On-Farm",
+          titulo: o.numero_os ?? "OS de Produção",
           status: o.status,
           statusLabel: labelOS(o.status),
           data: o.updated_at ?? o.created_at,

@@ -25,8 +25,8 @@ vi.mock("@/hooks/useAuth", () => ({
 
 vi.mock("@/hooks/useSystemConfig", () => ({
   useSystemConfig: () => ({
-    config: { nome_empresa: "AR Bio" },
-    defaults: { nome_empresa: "AR Bio" },
+    config: { nome_empresa: "Cultivo Farm" },
+    defaults: { nome_empresa: "Cultivo Farm" },
   }),
 }));
 

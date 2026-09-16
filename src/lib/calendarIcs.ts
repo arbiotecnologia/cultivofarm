@@ -22,7 +22,7 @@ export function generateIcs(event: IcsEvent): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//AR Bio//On-Farm Manager//PT",
+    "PRODID:-//Cultivo Farm//Cultivo Farm//PT",
     "BEGIN:VEVENT",
     `DTSTAMP:${formatDate(new Date())}`,
     `DTSTART:${formatDate(event.start)}`,

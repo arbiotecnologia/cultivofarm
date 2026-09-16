@@ -33,7 +33,7 @@ const ERROS_COMPROVANTE: Record<string, string> = {
   COMPROVANTE_CLIENTE_OBRIGATORIO: "Vincule o cliente à entrega antes de emitir o comprovante.",
   COMPROVANTE_CONFIRMACAO_SEM_DATA: "Confirme o recebimento antes de emitir o comprovante.",
   COMPROVANTE_OS_OBRIGATORIA:
-    "Vincule a entrega a uma OS, OS On-Farm ou pedido de parceiro legítimo antes de emitir o comprovante definitivo.",
+    "Vincule a entrega a uma OS, OS de Produção ou pedido de parceiro legítimo antes de emitir o comprovante definitivo.",
   COMPROVANTE_VOLUME_OBRIGATORIO:
     "O volume total da entrega precisa estar preenchido e ser maior que zero para emitir o comprovante.",
 };

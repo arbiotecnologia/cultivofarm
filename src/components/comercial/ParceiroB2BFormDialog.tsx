@@ -712,7 +712,7 @@ export function ParceiroB2BFormDialog({ open, onOpenChange, parceiro }: Props) {
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— Não informado —</SelectItem>
-                    <SelectItem value="CIF">CIF (frete por conta da AR Bio)</SelectItem>
+                    <SelectItem value="CIF">CIF (frete por conta da Cultivo Farm)</SelectItem>
                     <SelectItem value="FOB">FOB (frete por conta do parceiro)</SelectItem>
                   </SelectContent>
                 </Select>

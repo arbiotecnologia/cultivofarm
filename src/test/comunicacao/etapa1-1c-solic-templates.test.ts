@@ -138,16 +138,16 @@ const FIXTURES: Fixture[] = [
 
   // ---------- whatsapp (draft) ----------
   { chave: "solic_produtor_atribuida", canal: "whatsapp", versao: 1, status: "draft",
-    corpo: "AR Bio: sua solicitação {{numero}} foi atribuída a um consultor.",
+    corpo: "Cultivo Farm: sua solicitação {{numero}} foi atribuída a um consultor.",
     variaveis: ["numero"] },
   { chave: "solic_produtor_cancelada", canal: "whatsapp", versao: 1, status: "draft",
-    corpo: "AR Bio: sua solicitação {{numero}} foi cancelada.",
+    corpo: "Cultivo Farm: sua solicitação {{numero}} foi cancelada.",
     variaveis: ["numero"] },
   { chave: "solic_produtor_checkin", canal: "whatsapp", versao: 1, status: "draft",
-    corpo: "AR Bio: consultor a caminho para atender sua solicitação {{numero}}.",
+    corpo: "Cultivo Farm: consultor a caminho para atender sua solicitação {{numero}}.",
     variaveis: ["numero"] },
   { chave: "solic_produtor_concluida", canal: "whatsapp", versao: 1, status: "draft",
-    corpo: "AR Bio: sua solicitação {{numero}} foi concluída.",
+    corpo: "Cultivo Farm: sua solicitação {{numero}} foi concluída.",
     variaveis: ["numero"] },
 ];
 

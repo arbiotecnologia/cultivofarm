@@ -79,7 +79,7 @@ export default function PortalDashboard() {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <AlertTriangle className="h-12 w-12 text-yellow-500" />
-        <p className="text-muted-foreground text-center">Seu perfil ainda não está vinculado a um cadastro de cliente. Entre em contato com a equipe A.R Bio.</p>
+        <p className="text-muted-foreground text-center">Seu perfil ainda não está vinculado a um cadastro de cliente. Entre em contato com a equipe Cultivo Farm.</p>
       </div>
     );
   }

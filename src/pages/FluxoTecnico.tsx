@@ -48,7 +48,7 @@ const SELECT_PENDENTES =
 /** Colunas mínimas usadas apenas para o KPI de aprovadas. */
 const SELECT_APROVACOES = "id, status_aprovacao, created_at";
 
-/** Colunas mínimas exibidas na aba de OS On-Farm. */
+/** Colunas mínimas exibidas na aba de OS de Produção. */
 const SELECT_OS_ONFARM =
   "id, numero_os, status, origem, created_at, registro_consultor_id, clientes(nome), fazendas(nome)";
 
@@ -201,7 +201,7 @@ export default function FluxoTecnico() {
       <Tabs defaultValue="aprovacoes" className="w-full">
         <TabsList>
           <TabsTrigger value="aprovacoes">Aprovações</TabsTrigger>
-          <TabsTrigger value="os-onfarm">OS On-Farm</TabsTrigger>
+          <TabsTrigger value="os-onfarm">OS de Produção</TabsTrigger>
         </TabsList>
         <TabsContent value="aprovacoes" className="space-y-4 pt-4">
           <div className="flex items-center gap-2">

@@ -112,7 +112,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
     enabled: !!registros?.length,
   });
 
-  // OS On-Farm (recomendações operacionalizadas)
+  // OS de Produção (recomendações operacionalizadas)
   const { data: ordens } = useQuery({
     queryKey: ["historico-talhao-os", talhaoId],
     queryFn: async () => {
@@ -246,7 +246,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
     os: {
       icon: Clock,
       color: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40",
-      label: "OS On-Farm",
+      label: "OS de Produção",
     },
     aplicacao: {
       icon: Droplets,

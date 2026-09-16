@@ -44,9 +44,9 @@ describe("Base Técnica Agronômica — renomeação de interface", () => {
     }
   });
 
-  it("o item exibe 'Catálogo', não 'Catálogo AR Bio', mas mantém rota, filhos e parâmetros", () => {
+  it("o item exibe 'Catálogo', não 'Catálogo Cultivo Farm', mas mantém rota, filhos e parâmetros", () => {
     expect(item?.label).toBe("Catálogo");
-    expect(item?.label).not.toBe("Catálogo AR Bio");
+    expect(item?.label).not.toBe("Catálogo Cultivo Farm");
     expect(item?.route).toBe("/base-tecnica");
     expect(item?.children?.map((c) => c.route)).toEqual([
       "/base-tecnica?tab=produtos",

@@ -16,7 +16,7 @@ export function BIHeader({ lastUpdated, loading, onUpdate }: BIHeaderProps) {
       <div>
         <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight flex items-center gap-2">
           <BarChart3 className="h-8 w-8 text-primary" />
-          BI Operacional AR Bio
+          BI Operacional Cultivo Farm
         </h1>
         <p className="text-sm text-muted-foreground font-medium">
           Indicadores reais de visitas, produção, qualidade e logística.

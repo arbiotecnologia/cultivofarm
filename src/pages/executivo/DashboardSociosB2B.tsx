@@ -16,7 +16,7 @@ export default function DashboardSociosB2B() {
     <div className="p-4 sm:p-6 space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Dashboard Executivo dos Sócios</h1>
-        <p className="text-sm text-muted-foreground">Visão consolidada da operação B2B AR Bio.</p>
+        <p className="text-sm text-muted-foreground">Visão consolidada da operação B2B Cultivo Farm.</p>
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}

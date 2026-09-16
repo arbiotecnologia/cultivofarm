@@ -56,7 +56,7 @@ export default function MonitoramentoAlertas() {
   const hoje = hojeSaoPaulo();
 
   useEffect(() => {
-    document.title = "Alertas de Monitoramento | AR Bio";
+    document.title = "Alertas de Monitoramento | Cultivo Farm";
   }, []);
 
   const {

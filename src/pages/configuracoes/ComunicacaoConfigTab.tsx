@@ -375,7 +375,7 @@ export default function ComunicacaoConfigTab() {
           "Content-Type": "application/json",
           "apikey": SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ to, subject: "Teste SMTP AR Bio", message: "E-mail de teste enviado pela aba Comunicação." }),
+        body: JSON.stringify({ to, subject: "Teste SMTP Cultivo Farm", message: "E-mail de teste enviado pela aba Comunicação." }),
       });
       const raw = await resp.text();
       let parsed: Record<string, unknown> = {};
@@ -913,7 +913,7 @@ export default function ComunicacaoConfigTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Webhook className="h-4 w-4" /> Webhook de recibos do WhatsApp</CardTitle>
           <CardDescription>
-            Permite que a Meta notifique o AR Bio sobre entrega, leitura e falhas de cada mensagem. Configure os segredos
+            Permite que a Meta notifique o Cultivo Farm sobre entrega, leitura e falhas de cada mensagem. Configure os segredos
             <strong> antes</strong> de ativar a flag de webhook.
           </CardDescription>
         </CardHeader>

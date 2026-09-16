@@ -53,7 +53,7 @@ function getMonthRange(startDate: string, endDate: string) {
 function exportPDF(title: string, headers: string[], rows: string[][]) {
   const doc = new jsPDF();
   doc.setFontSize(16);
-  doc.text(`AR Bio — ${title}`, 14, 20);
+  doc.text(`Cultivo Farm — ${title}`, 14, 20);
   doc.setFontSize(9);
   doc.text(`Gerado em: ${formatDateDisplay(new Date())}`, 14, 28);
   autoTable(doc, { head: [headers], body: rows, startY: 34, styles: { fontSize: 8 } });

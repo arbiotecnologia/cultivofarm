@@ -37,7 +37,7 @@ export function BIEstoqueResumo({ indicadores, loading }: BIEstoqueResumoProps) 
           sufixo={getSufixo(indicadores.volumeSolicitado)}
           loading={loading}
           icone={Warehouse}
-          descricao="Volume total vinculado a OS On-Farm e Manuais"
+          descricao="Volume total vinculado a OS de Produção e Manuais"
         />
         <BICardKPI 
           titulo="Solicitado Aprovado" 

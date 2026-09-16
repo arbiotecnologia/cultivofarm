@@ -191,14 +191,14 @@ describe("N-06 item com filhos", () => {
   const groups = [{ section: "Dashboard", items: [dashboard] }];
 
   it("chevron abre e fecha os filhos", () => {
-    renderSidebar({ portal: "admin", groups, brandTitle: "AR Bio" }, "/clientes");
+    renderSidebar({ portal: "admin", groups, brandTitle: "Cultivo Farm" }, "/clientes");
     expect(screen.getByText("Visão Executiva")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Recolher Dashboard"));
     expect(screen.queryByText("Visão Executiva")).toBeNull();
   });
 
   it("abre automaticamente quando um filho está ativo", () => {
-    renderSidebar({ portal: "admin", groups, brandTitle: "AR Bio" }, "/dashboard/executivo");
+    renderSidebar({ portal: "admin", groups, brandTitle: "Cultivo Farm" }, "/dashboard/executivo");
     expect(screen.getByText("Visão Executiva")).toBeTruthy();
     expect(localStorage.getItem(groupsStorageKey("u1", "admin"))).toContain(
       itemCollapseKey("dashboard"),

@@ -287,7 +287,7 @@ export function AddToCartDialog({
         {volumesDisponiveis.length === 0 ? (
           <Alert className="border-amber-300 bg-amber-50">
             <AlertDescription className="text-xs text-amber-900">
-              Nenhum volume comercial cadastrado para este item. Solicite à AR Bio.
+              Nenhum volume comercial cadastrado para este item. Solicite à Cultivo Farm.
             </AlertDescription>
           </Alert>
         ) : (

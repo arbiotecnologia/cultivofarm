@@ -1,9 +1,9 @@
 import jsPDF from "jspdf";
 import logoUrl from "@/assets/s-mbolo-ar-bio.png";
 
-const COMPANY_NAME = "A.R Biotecnologia";
+const COMPANY_NAME = "Cultivo Farm";
 const DISCLAIMER =
-  "Documento gerado pelo AR Bio On-Farm Manager. Recomendações de bioinsumos exigem prescrição agronômica detalhada.";
+  "Documento gerado pelo Cultivo Farm. Recomendações de bioinsumos exigem prescrição agronômica detalhada.";
 
 let cachedLogo: string | null = null;
 
@@ -31,7 +31,7 @@ export interface ArBioHeaderOptions {
 }
 
 /**
- * Desenha cabeçalho padronizado A.R Bio no topo da página atual.
+ * Desenha cabeçalho padronizado Cultivo Farm no topo da página atual.
  * Retorna a coordenada Y abaixo do cabeçalho, pronta para o conteúdo.
  */
 export async function drawArBioHeader(

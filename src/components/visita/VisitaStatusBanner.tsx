@@ -216,7 +216,7 @@ export function VisitaStatusBanner({
                 }}
               >
                 <PackageCheck className="h-4 w-4" /> 
-                Gerar OS On-Farm
+                Gerar OS de Produção
               </Button>
             )}
 

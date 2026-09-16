@@ -252,7 +252,7 @@ export default function UsuariosClientesB2B() {
               })}
               {clientes.length === 0 && (
                 <div className="p-4 text-sm text-muted-foreground text-center">
-                  Nenhum cliente vinculado ao parceiro. Solicite à AR Bio o vínculo de produtores.
+                  Nenhum cliente vinculado ao parceiro. Solicite à Cultivo Farm o vínculo de produtores.
                 </div>
               )}
             </div>

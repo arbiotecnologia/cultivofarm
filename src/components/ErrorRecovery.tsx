@@ -45,7 +45,7 @@ export function ErrorRecovery({
         </div>
         
         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
-          AR Bio On-Farm
+          Cultivo Farm
         </p>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Catálogo de Protocolos On-Farm A.R Bio v1.3
+ * Catálogo de Protocolos On-Farm Cultivo Farm v1.3
  * Fonte: PDF "Catálogo_de_Produtos_A.R_Bio_-_FSF_Agro.pdf" (p.1-2).
  * Cada produto lista as cepas do PDF com o volume em mL por dose.
  * A soma dos volumes por produto é igual à `dose_ml_ha`.

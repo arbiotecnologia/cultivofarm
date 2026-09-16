@@ -91,7 +91,7 @@ export default function MobileLayout() {
 
       {/* Identidade do usuário — padrão único de todos os portais */}
       <PortalTopBar
-        brandTitle="AR Bio Campo"
+        brandTitle="Cultivo Farm Campo"
         brandSubtitle={getPortalDisplayLabel({ activeCtx, primaryRole, roles })}
         className={cn((!isOnline || pendingCount > 0) && "mt-10")}
       />

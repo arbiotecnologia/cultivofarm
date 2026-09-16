@@ -1,5 +1,5 @@
 /**
- * FASE 27A — Contratos de fontes canônicas do Catálogo AR Bio.
+ * FASE 27A — Contratos de fontes canônicas do Catálogo Cultivo Farm.
  * Auditoria por leitura estática: garante que o carrinho/pedido B2B continua
  * ancorado nas RPCs seguras e que a ficha unificada permanece somente leitura.
  */

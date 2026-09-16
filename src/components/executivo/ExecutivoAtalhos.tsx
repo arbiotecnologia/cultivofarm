@@ -15,7 +15,7 @@ const ATALHOS = [
   { label: "Envase", route: "/envase", icon: FlaskConical },
   { label: "Financeiro", route: "/financeiro", icon: PieChart },
   { label: "Entregas", route: "/entregas", icon: Truck },
-  { label: "OS On-Farm", route: "/ordens-servico", icon: ClipboardList },
+  { label: "OS de Produção", route: "/ordens-servico", icon: ClipboardList },
 ];
 
 export function ExecutivoAtalhos() {

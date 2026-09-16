@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { formatDateDisplay, formatDateTimeDisplay } from "@/lib/date-utils";
 import { labelModalidade, labelResponsavel } from "@/lib/entregas/modalidade";
 
-const TERMO = `Declaro, para os devidos fins, que recebi da AR Bio os produtos/bioinsumos descritos neste formulário, conferi as quantidades, identificação dos produtos, lotes, volumes e condições aparentes das embalagens no ato do recebimento. Declaro estar ciente de que o armazenamento, manuseio e aplicação devem seguir as orientações técnicas fornecidas pela AR Bio, respeitando as condições adequadas de conservação e utilização. Eventuais divergências identificadas no recebimento deverão ser registradas neste documento no campo de observações/ressalvas.`;
+const TERMO = `Declaro, para os devidos fins, que recebi da Cultivo Farm os produtos/bioinsumos descritos neste formulário, conferi as quantidades, identificação dos produtos, lotes, volumes e condições aparentes das embalagens no ato do recebimento. Declaro estar ciente de que o armazenamento, manuseio e aplicação devem seguir as orientações técnicas fornecidas pela Cultivo Farm, respeitando as condições adequadas de conservação e utilização. Eventuais divergências identificadas no recebimento deverão ser registradas neste documento no campo de observações/ressalvas.`;
 
 const NAO_INFORMADA = "Não informada";
 
@@ -25,7 +25,7 @@ export default function FormularioEntregaPrint() {
   // Somente os inteiros 1 e 2 são aceitos; qualquer outro valor cai em 1 via.
   const vias = searchParams.get("vias")?.trim() === "2" ? 2 : 1;
 
-  useEffect(() => { document.title = "Formulário de Entrega — AR Bio"; }, []);
+  useEffect(() => { document.title = "Formulário de Entrega — Cultivo Farm"; }, []);
 
   const entregaQuery = useQuery({
     queryKey: ["entrega-full", id],
@@ -156,7 +156,7 @@ export default function FormularioEntregaPrint() {
   const viasArr = Array.from({ length: vias }, (_, i) => i);
   const labelVia = (i: number) => {
     if (vias === 1) return null;
-    return i === 0 ? "1ª Via — Cliente / Recebedor" : "2ª Via — AR Bio (cópia interna)";
+    return i === 0 ? "1ª Via — Cliente / Recebedor" : "2ª Via — Cultivo Farm (cópia interna)";
   };
 
   return (
@@ -179,7 +179,7 @@ export default function FormularioEntregaPrint() {
                 return sp;
               });
             }}
-            title="Alternar entre 1 e 2 vias (cliente + AR Bio)"
+            title="Alternar entre 1 e 2 vias (cliente + Cultivo Farm)"
             data-testid="formulario-vias"
           >
             <Copy className="h-4 w-4 mr-1" /> {vias === 2 ? "2 vias" : "1 via"}
@@ -199,7 +199,7 @@ export default function FormularioEntregaPrint() {
           {/* Header */}
           <div className="flex justify-between items-start border-b-2 border-slate-900 pb-3">
             <div>
-              <div className="text-xl font-bold">AR Bio</div>
+              <div className="text-xl font-bold">Cultivo Farm</div>
               <div className="text-[10px] text-slate-600">Bioinsumos com rastreabilidade</div>
               <div className="mt-2 text-[14px] font-bold uppercase">Formulário de Entrega e Termo de Recebimento de Bioinsumos</div>
               <div className="text-[10px] mt-1">Nº <span className="font-mono">{comprovante.numero_formulario}</span> · Emitido em {formatDateTimeDisplay(comprovante.gerado_em)}</div>
@@ -383,7 +383,7 @@ export default function FormularioEntregaPrint() {
               <div className="border-b border-slate-700 h-12 mb-1" />
               <div className="text-center">
                 <div><b>{entrega.motorista || "_______________________"}</b></div>
-                <div>Entregador AR Bio</div>
+                <div>Entregador Cultivo Farm</div>
               </div>
             </div>
           </section>
@@ -393,7 +393,7 @@ export default function FormularioEntregaPrint() {
             <div>Documento interno de comprovação de entrega e recebimento.</div>
             <div>Este documento não substitui documento fiscal quando aplicável.</div>
             <div>A emissão de nota fiscal/recibo seguirá o fluxo financeiro/fiscal do sistema.</div>
-            <div>A validação por QR Code confirma o registro do comprovante no sistema AR Bio, sem substituir análise documental quando necessária.</div>
+            <div>A validação por QR Code confirma o registro do comprovante no sistema Cultivo Farm, sem substituir análise documental quando necessária.</div>
             {comprovante.validation_hash && (
               <div className="font-mono break-all mt-1">Hash: {comprovante.validation_hash}</div>
             )}

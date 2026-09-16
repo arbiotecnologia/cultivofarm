@@ -74,7 +74,7 @@ export default function MobileCatalogoTecnico() {
   }, [rows, search, tipo]);
 
   const copyResumo = async (r: Row) => {
-    const txt = `${r.nome}${r.subtitulo ? ` (${r.subtitulo})` : ""}\n${r.resumo ?? "Sem resumo cadastrado"}\n\nAR Bio · Recomendação técnica exige prescrição agronômica.`;
+    const txt = `${r.nome}${r.subtitulo ? ` (${r.subtitulo})` : ""}\n${r.resumo ?? "Sem resumo cadastrado"}\n\nCultivo Farm · Recomendação técnica exige prescrição agronômica.`;
     await navigator.clipboard.writeText(txt);
     toast.success("Resumo copiado");
   };

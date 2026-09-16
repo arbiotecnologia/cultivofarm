@@ -693,7 +693,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
             <Button size="sm" variant="outline" onClick={openForm}>
               <Printer className="h-4 w-4 mr-1" /> Imprimir formulário
             </Button>
-            <Button size="sm" variant="outline" onClick={openForm2Vias} title="Imprime 2 vias: Cliente e AR Bio">
+            <Button size="sm" variant="outline" onClick={openForm2Vias} title="Imprime 2 vias: Cliente e Cultivo Farm">
               <Copy className="h-4 w-4 mr-1" /> Imprimir 2 vias
             </Button>
             {status !== "confirmado" && status !== "dispensado" && (

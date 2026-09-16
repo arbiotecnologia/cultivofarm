@@ -1297,7 +1297,7 @@ export default function VisitaTecnica() {
     }));
 
     return {
-      empresa: { nome: config?.nome_empresa || "AR Bio" },
+      empresa: { nome: config?.nome_empresa || "Cultivo Farm" },
       cliente: v.clientes?.nome,
       fazenda: v.fazendas?.nome,
       talhao: v.talhoes?.nome,
