@@ -45,7 +45,8 @@ BEGIN
    WHERE id = v_item;
 
   SELECT * INTO v_rec FROM public.fiscal_audit_log
-   WHERE record_id = v_item AND action = 'BASE_REDUCTION_CHANGE' ORDER BY changed_at DESC LIMIT 1;
+   WHERE record_id = v_item AND action = 'BASE_REDUCTION_CHANGE'
+     AND (new_values->>'baseReductionPct')::numeric = 60 LIMIT 1;
   IF v_rec IS NULL THEN RAISE EXCEPTION 'FAIL 6: alteração de redução não gerou trilha'; END IF;
   IF (v_rec.new_values->>'baseReductionPct')::numeric <> 60 THEN RAISE EXCEPTION 'FAIL 7: percentual novo incorreto'; END IF;
   IF v_rec.old_values->'baseReductionPct' IS NOT NULL AND v_rec.old_values->>'baseReductionPct' <> '' THEN
@@ -69,7 +70,9 @@ BEGIN
   UPDATE public.fiscal_invoice_items
      SET tax_input_snapshot = '{"ICMS":{"baseReductionPct":33.33}}' WHERE id = v_item;
   SELECT * INTO v_rec FROM public.fiscal_audit_log
-   WHERE record_id = v_item AND action = 'BASE_REDUCTION_CHANGE' ORDER BY changed_at DESC LIMIT 1;
+   WHERE record_id = v_item AND action = 'BASE_REDUCTION_CHANGE'
+     AND (new_values->>'baseReductionPct')::numeric = 33.33 LIMIT 1;
+  IF v_rec IS NULL THEN RAISE EXCEPTION 'FAIL 13a: segunda alteração não registrada'; END IF;
   IF (v_rec.old_values->>'baseReductionPct')::numeric <> 60
      OR (v_rec.new_values->>'baseReductionPct')::numeric <> 33.33 THEN
     RAISE EXCEPTION 'FAIL 13: valores anterior/novo incorretos';
