@@ -114,9 +114,13 @@ describe("FASE 28C — risco A1 documentado e congelado", () => {
     // H3: o baseline segue presente; migrations posteriores pertencem apenas
     // às fases de homologação (H1/H2/H3) e não a esta frente.
     expect(migs).toContain("20260905000000_hardening_digest_schema_v1.sql");
-    expect(
-      migs.filter((f: string) => f.slice(0, 14) > "20260905000000").every((f: string) => /_h\d/.test(f)),
-    ).toBe(true);
+    // Exceção conhecida: migration pendente do simulador comercial, com gate
+    // NO-GO registrado em restoration/commercial-package/verification.md.
+    const excecoesConhecidas = new Set(["20261027000000_commercial_simulator_hardening_v1.sql"]);
+    const foraDoPadrao = migs
+      .filter((f: string) => f.slice(0, 14) > "20260905000000")
+      .filter((f: string) => !/_h\d/.test(f) && !excecoesConhecidas.has(f));
+    expect(foraDoPadrao).toEqual([]);
   });
 });
 
