@@ -20565,7 +20565,7 @@ export type Database = {
         Returns: Json
       }
       rpc_fiscal_tax_preview_v1: {
-        Args: { p_invoice_id: string }
+        Args: { p_invoice_id: string; p_items?: Json }
         Returns: Json
       }
       rpc_fiscal_calculate_invoice_v1: {
