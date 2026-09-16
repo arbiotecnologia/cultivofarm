@@ -14,7 +14,6 @@ import { PortalSidebar } from "@/components/nav/PortalSidebar";
 import { useSidebarOpenState } from "@/hooks/useNavCollapseState";
 import { PARCEIRO_GESTOR_GROUPS, PARCEIRO_TECNICO_GROUPS } from "@/config/portalMenus";
 import { getPapelLabel } from "@/lib/portal/identidade";
-import { useBranding } from "@/hooks/useBranding";
 
 import {
   Select,
@@ -50,13 +49,13 @@ export default function PortalParceiroLayout() {
     queryKey: ["partner-accounts-active"],
     enabled: isStaff,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("partner_accounts")
-        .select("id, razao_social, nome_fantasia, desconto_padrao, ativo, marca_nome, marca_logo_url, marca_cor_primaria")
+        .select("id, razao_social, nome_fantasia, desconto_padrao, ativo")
         .eq("ativo", true)
         .order("razao_social");
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; razao_social: string; nome_fantasia: string | null; desconto_padrao: number; ativo: boolean; marca_nome: string | null; marca_logo_url: string | null; marca_cor_primaria: string | null }>;
+      return data ?? [];
     },
   });
 
@@ -70,8 +69,6 @@ export default function PortalParceiroLayout() {
     if (isStaff) return allPartners.find((p) => p.id === simulatedId) ?? null;
     return ownPartner;
   }, [isStaff, ownPartner, allPartners, simulatedId]);
-  const { branding } = useBranding("parceiro", partner?.id ?? null, partner?.nome_fantasia || partner?.razao_social);
-  const brandSlot = <img src={branding.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded object-contain bg-white" />;
 
   const location = useLocation();
 
@@ -128,14 +125,14 @@ export default function PortalParceiroLayout() {
         <PortalSidebar
           portal="parceiro"
           groups={menuGroups}
-          brandTitle={branding.name}
+          brandTitle="Portal Parceiro B2B"
           brandSubtitle={getPapelLabel(papelVisual)}
-          brandSlot={brandSlot}
+          brandIcon={ShoppingCart}
         />
         <div className="flex-1 flex flex-col min-w-0">
       <PortalTopBar
-        brandTitle={branding.name}
-        brandSlot={brandSlot}
+        brandTitle="Portal Parceiro B2B"
+        brandIcon={ShoppingCart}
         brandSubtitle={getPapelLabel(papelVisual)}
         hideBrandOnMobile
         onSwitchPortal={canSwitchPortal ? () => { void switchPortal(); } : undefined}
@@ -187,7 +184,7 @@ export default function PortalParceiroLayout() {
             {isStaff ? "Selecione um parceiro para visualizar." : "Nenhum parceiro selecionado."}
           </div>
         ) : (
-          <Outlet context={{ partner, isStaff }} />
+          <Outlet context={{ partner }} />
         )}
       </main>
         </div>

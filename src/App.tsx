@@ -189,7 +189,6 @@ import PortalAplicacoes from "@/pages/portal/PortalAplicacoes";
 import PortalSolicitacao from "@/pages/portal/PortalSolicitacao";
 import PortalAgenda from "@/pages/portal/PortalAgenda";
 import PortalPerfil from "@/pages/portal/PortalPerfil";
-import PortalParceiroPerfil from "@/pages/portal-parceiro/PortalParceiroPerfil";
 import { ErrorRecovery } from "@/components/ErrorRecovery";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -477,7 +476,6 @@ const App = () => (
                 <Route path="fichas" element={<ParceiroFichasTecnicas />} />
                 <Route path="simulacoes" element={<ParceiroHistoricoSimulacoes />} />
                 <Route path="simulacoes-equipe" element={<ParceiroSimulacoesEquipe />} />
-                <Route path="perfil" element={<PortalParceiroPerfil />} />
                 <Route path="meus-produtores" element={<ParceiroMeusProdutoresTecnico />} />
                 <Route path="meus-produtores/:clienteId" element={<ParceiroDetalheProdutorTecnico />} />
                 <Route path="tecnicos-produtores" element={<ParceiroTecnicosProdutores />} />

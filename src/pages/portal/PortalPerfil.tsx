@@ -3,13 +3,10 @@ import { usePortalCliente } from "@/hooks/usePortalCliente";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Mail, Phone } from "lucide-react";
 import { formatTelefone, formatCpfCnpj } from "@/lib/masks";
-import { PortalBrandingSettings } from "@/components/portal/PortalBrandingSettings";
-import { useBranding } from "@/hooks/useBranding";
 
 export default function PortalPerfil() {
   const { profile } = useAuth();
-  const { clienteId, clienteNome, loading } = usePortalCliente();
-  const { branding, isLoading: brandingLoading, isError, refetch } = useBranding("cliente", clienteId, clienteNome);
+  const { clienteNome, loading } = usePortalCliente();
   const p = profile as any;
 
   if (loading) return <div className="animate-pulse text-muted-foreground p-8">Carregando...</div>;
@@ -54,13 +51,6 @@ export default function PortalPerfil() {
           </div>
         </CardContent>
       </Card>
-      {clienteId && (brandingLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando identidade visual...</p>
-      ) : isError ? (
-        <div className="space-y-2 rounded-md border p-4"><p className="text-sm text-destructive">Não foi possível carregar a identidade visual.</p><button className="text-sm underline" onClick={() => void refetch()}>Tentar novamente</button></div>
-      ) : (
-        <PortalBrandingSettings kind="cliente" entityId={clienteId} branding={branding} />
-      ))}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Suporte</CardTitle>

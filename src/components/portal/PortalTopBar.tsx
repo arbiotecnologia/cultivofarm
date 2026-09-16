@@ -17,8 +17,6 @@ interface PortalTopBarProps {
   /** Linha secundária da marca (opcional). */
   brandSubtitle?: string;
   brandIcon?: ComponentType<SVGProps<SVGSVGElement>>;
-  /** Substitui o ícone por uma logomarca contextual. */
-  brandSlot?: ReactNode;
   /** Botão de menu (SidebarTrigger, hambúrguer, etc.). */
   leadingSlot?: ReactNode;
   /** Seletor de contexto ativo (cliente, parceiro...). */
@@ -36,7 +34,6 @@ export function PortalTopBar({
   brandTitle,
   brandSubtitle,
   brandIcon: BrandIcon,
-  brandSlot,
   leadingSlot,
   contextSlot,
   hideBrandOnMobile,
@@ -56,7 +53,7 @@ export function PortalTopBar({
       <div className="flex items-center gap-2 min-w-0">
         {leadingSlot}
         <div className={cn("flex items-center gap-2 min-w-0", hideBrandOnMobile && "hidden sm:flex")}>
-          {brandSlot ?? (BrandIcon && <BrandIcon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />)}
+          {BrandIcon && <BrandIcon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />}
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold leading-tight truncate">{brandTitle}</span>
             {brandSubtitle && (
