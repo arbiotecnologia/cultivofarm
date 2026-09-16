@@ -20,7 +20,10 @@ import {
   type FiscalTaxPreviewTax,
 } from "@/hooks/useFiscalTaxPreview";
 
-export type TaxInputSnapshot = Record<string, { baseReductionPct: number }>;
+export type TaxInputSnapshot = Record<
+  string,
+  { baseReductionPct: number; baseReductionReason?: string }
+>;
 
 export interface TributosPorItemSecaoProps {
   invoiceId: string | null;
@@ -161,10 +164,15 @@ export default function TributosPorItemSecao({
                             tax={pv.taxes[k]}
                             disabled={disabled}
                             valorAtual={items[idx]?.tax_input_snapshot?.[k]?.baseReductionPct}
-                            onChange={(pct) => {
+                            motivoAtual={items[idx]?.tax_input_snapshot?.[k]?.baseReductionReason}
+                            onChange={(pct, motivo) => {
                               const atual = { ...(items[idx]?.tax_input_snapshot ?? {}) };
                               if (pct === null) delete atual[k];
-                              else atual[k] = { baseReductionPct: pct };
+                              else
+                                atual[k] = {
+                                  baseReductionPct: pct,
+                                  ...(motivo ? { baseReductionReason: motivo } : {}),
+                                };
                               onChangeItemInput(idx, atual);
                             }}
                           />
@@ -197,10 +205,15 @@ export default function TributosPorItemSecao({
                       disabled={disabled}
                       comRotulo
                       valorAtual={items[idx]?.tax_input_snapshot?.[k]?.baseReductionPct}
-                      onChange={(pct) => {
+                      motivoAtual={items[idx]?.tax_input_snapshot?.[k]?.baseReductionReason}
+                      onChange={(pct, motivo) => {
                         const atual = { ...(items[idx]?.tax_input_snapshot ?? {}) };
                         if (pct === null) delete atual[k];
-                        else atual[k] = { baseReductionPct: pct };
+                        else
+                          atual[k] = {
+                            baseReductionPct: pct,
+                            ...(motivo ? { baseReductionReason: motivo } : {}),
+                          };
                         onChangeItemInput(idx, atual);
                       }}
                     />
@@ -238,6 +251,7 @@ function CampoReducao({
   disabled,
   comRotulo = false,
   valorAtual,
+  motivoAtual,
   onChange,
 }: {
   taxKind: string;
@@ -245,15 +259,20 @@ function CampoReducao({
   disabled: boolean;
   comRotulo?: boolean;
   valorAtual?: number;
-  onChange: (pct: number | null) => void;
+  motivoAtual?: string;
+  onChange: (pct: number | null, motivo?: string) => void;
 }) {
   const modo = String(tax.baseReductionMode ?? "NONE");
   const [texto, setTexto] = useState(
     valorAtual !== undefined ? String(valorAtual) : tax.baseReductionPct ? String(tax.baseReductionPct) : "",
   );
+  const [motivo, setMotivo] = useState(motivoAtual ?? "");
   useEffect(() => {
     if (valorAtual !== undefined) setTexto(String(valorAtual));
   }, [valorAtual]);
+  useEffect(() => {
+    setMotivo(motivoAtual ?? "");
+  }, [motivoAtual]);
 
   if (modo === "NONE") {
     return <span className="text-muted-foreground">—</span>;
@@ -267,6 +286,7 @@ function CampoReducao({
   }
 
   const id = `reducao-${taxKind}-${tax.ruleKey ?? "regra"}`;
+  const idMotivo = `${id}-motivo`;
   const numero = Number(texto);
   const invalido = texto !== "" && (!Number.isFinite(numero) || numero < 0 || numero > 100);
 
@@ -292,7 +312,7 @@ function CampoReducao({
             return;
           }
           const n = Number(v);
-          if (Number.isFinite(n) && n >= 0 && n <= 100) onChange(n);
+          if (Number.isFinite(n) && n >= 0 && n <= 100) onChange(n, motivo.trim() || undefined);
         }}
       />
       {invalido ? (
@@ -300,6 +320,23 @@ function CampoReducao({
           Informe um percentual entre 0 e 100.
         </p>
       ) : null}
+      {comRotulo ? <Label htmlFor={idMotivo}>Motivo da redução</Label> : null}
+      <Input
+        id={idMotivo}
+        type="text"
+        maxLength={240}
+        className="h-8 w-full md:w-48"
+        aria-label="Motivo da redução"
+        placeholder="Motivo (opcional)"
+        disabled={disabled}
+        value={motivo}
+        onChange={(e) => setMotivo(e.target.value)}
+        onBlur={() => {
+          if (texto === "") return;
+          const n = Number(texto);
+          if (Number.isFinite(n) && n >= 0 && n <= 100) onChange(n, motivo.trim() || undefined);
+        }}
+      />
     </div>
   );
 }

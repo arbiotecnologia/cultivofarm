@@ -76,7 +76,12 @@ export const itemSchema = z.object({
   tax_input_snapshot: z
     .record(
       z.string(),
-      z.object({ baseReductionPct: z.number().min(0).max(100) }).strict(),
+      z
+        .object({
+          baseReductionPct: z.number().min(0).max(100),
+          baseReductionReason: z.string().max(240).optional(),
+        })
+        .strict(),
     )
     .default({}),
 });
