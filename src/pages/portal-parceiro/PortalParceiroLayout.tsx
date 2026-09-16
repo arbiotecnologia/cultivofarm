@@ -14,6 +14,7 @@ import { PortalSidebar } from "@/components/nav/PortalSidebar";
 import { useSidebarOpenState } from "@/hooks/useNavCollapseState";
 import { PARCEIRO_GESTOR_GROUPS, PARCEIRO_TECNICO_GROUPS } from "@/config/portalMenus";
 import { getPapelLabel } from "@/lib/portal/identidade";
+import { useBranding } from "@/hooks/useBranding";
 
 import {
   Select,
@@ -51,7 +52,7 @@ export default function PortalParceiroLayout() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partner_accounts")
-        .select("id, razao_social, nome_fantasia, desconto_padrao, ativo")
+        .select("id, razao_social, nome_fantasia, desconto_padrao, ativo, marca_nome, marca_logo_url, marca_cor_primaria")
         .eq("ativo", true)
         .order("razao_social");
       if (error) throw error;
@@ -69,6 +70,8 @@ export default function PortalParceiroLayout() {
     if (isStaff) return allPartners.find((p) => p.id === simulatedId) ?? null;
     return ownPartner;
   }, [isStaff, ownPartner, allPartners, simulatedId]);
+  const { branding } = useBranding("parceiro", partner?.id ?? null, partner?.nome_fantasia || partner?.razao_social);
+  const brandSlot = <img src={branding.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded object-contain bg-white" />;
 
   const location = useLocation();
 
@@ -125,14 +128,14 @@ export default function PortalParceiroLayout() {
         <PortalSidebar
           portal="parceiro"
           groups={menuGroups}
-          brandTitle="Portal Parceiro B2B"
+          brandTitle={branding.name}
           brandSubtitle={getPapelLabel(papelVisual)}
-          brandIcon={ShoppingCart}
+          brandSlot={brandSlot}
         />
         <div className="flex-1 flex flex-col min-w-0">
       <PortalTopBar
-        brandTitle="Portal Parceiro B2B"
-        brandIcon={ShoppingCart}
+        brandTitle={branding.name}
+        brandSlot={brandSlot}
         brandSubtitle={getPapelLabel(papelVisual)}
         hideBrandOnMobile
         onSwitchPortal={canSwitchPortal ? () => { void switchPortal(); } : undefined}
@@ -184,7 +187,7 @@ export default function PortalParceiroLayout() {
             {isStaff ? "Selecione um parceiro para visualizar." : "Nenhum parceiro selecionado."}
           </div>
         ) : (
-          <Outlet context={{ partner }} />
+          <Outlet context={{ partner, isStaff }} />
         )}
       </main>
         </div>

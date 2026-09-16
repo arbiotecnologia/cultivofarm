@@ -19,7 +19,7 @@ export function useMyPartner() {
       if (!pu) return null;
       const { data: partner, error: e2 } = await (supabase as any)
         .from("partner_accounts")
-        .select("id, codigo, razao_social, nome_fantasia, desconto_padrao, ativo")
+        .select("id, codigo, razao_social, nome_fantasia, desconto_padrao, ativo, marca_nome, marca_logo_url, marca_cor_primaria")
         .eq("id", (pu as any).partner_id)
         .maybeSingle();
       if (e2) throw e2;

@@ -88,6 +88,12 @@ export const PARCEIRO_GESTOR_GROUPS: PortalMenuGroup[] = [
       { id: "pb-financeiro", label: "Financeiro", icon: Wallet, route: "/portal-parceiro/financeiro", showFor: "gestor" },
     ],
   },
+  {
+    section: "Conta",
+    items: [
+      { id: "pb-perfil", label: "Perfil e identidade", icon: User, route: "/portal-parceiro/perfil", showFor: "gestor" },
+    ],
+  },
 ];
 
 /** Parceiro B2B — visão do técnico (4 itens, conjunto idêntico ao anterior). */
