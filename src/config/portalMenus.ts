@@ -9,7 +9,7 @@
 import {
   LayoutDashboard, MapPin, FileText, ClipboardList, FlaskConical, Sprout,
   User, PlusCircle, Stethoscope, Calendar, CreditCard,
-  ShoppingCart, ListOrdered, History, Wallet, Star, TrendingUp,
+  ShoppingCart, ListOrdered, History, Wallet, Star, TrendingUp, UserCog,
 } from "lucide-react";
 import type { SidebarNavGroup, SidebarNavItem } from "@/components/nav/types";
 
@@ -86,6 +86,12 @@ export const PARCEIRO_GESTOR_GROUPS: PortalMenuGroup[] = [
     items: [
       { id: "pb-meu-historico", label: "Meu Histórico", icon: TrendingUp, route: "/portal-parceiro/meu-historico", showFor: "gestor" },
       { id: "pb-financeiro", label: "Financeiro", icon: Wallet, route: "/portal-parceiro/financeiro", showFor: "gestor" },
+    ],
+  },
+  {
+    section: "Conta",
+    items: [
+      { id: "pb-perfil", label: "Perfil e identidade", icon: UserCog, route: "/portal-parceiro/perfil", showFor: "gestor" },
     ],
   },
 ];
