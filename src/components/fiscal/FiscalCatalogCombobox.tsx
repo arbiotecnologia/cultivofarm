@@ -7,7 +7,7 @@
  * códigos legados (fora do catálogo vigente) continuam sendo exibidos.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronsUpDown, Loader2, AlertTriangle } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, AlertTriangle, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -43,6 +43,10 @@ export interface FiscalCatalogComboboxProps {
   "aria-describedby"?: string;
   "aria-invalid"?: boolean;
   className?: string;
+  multiline?: boolean;
+  addAction?: boolean;
+  resolvedEntries?: import("@/hooks/useFiscalCatalog").FiscalCatalogResolvedEntry[];
+  externalResolution?: boolean;
 }
 
 function useDebounced(value: string, delay = 250) {
@@ -67,6 +71,10 @@ export default function FiscalCatalogCombobox({
   preferredCodes,
   id,
   className,
+  multiline = false,
+  addAction = false,
+  resolvedEntries,
+  externalResolution = false,
   ...aria
 }: FiscalCatalogComboboxProps) {
   const [open, setOpen] = useState(false);
@@ -81,8 +89,8 @@ export default function FiscalCatalogCombobox({
     enabled: open && !disabled,
   });
 
-  const resolved = useFiscalCatalogResolve(catalogType, value ? [value] : [], !disabled);
-  const current = resolved.data?.find((e) => e.code === value) ?? null;
+  const resolved = useFiscalCatalogResolve(catalogType, value ? [value] : [], !disabled && !externalResolution);
+  const current = (resolvedEntries ?? resolved.data)?.find((e) => e.code === value) ?? null;
   const isLegacy = Boolean(value) && resolved.isSuccess && !current;
 
   const entries = useMemo(() => search.data ?? [], [search.data]);
@@ -106,11 +114,12 @@ export default function FiscalCatalogCombobox({
             aria-invalid={aria["aria-invalid"]}
             aria-describedby={aria["aria-describedby"]}
             disabled={disabled}
-            className="w-full justify-between font-normal"
+            className={cn("w-full min-w-0 justify-between font-normal", multiline && "h-auto min-h-10 whitespace-normal py-3", addAction && "w-auto justify-center")}
             data-testid={`fiscal-catalog-${catalogType.toLowerCase()}`}
           >
-            <span className={cn("truncate text-left", !value && "text-muted-foreground")}>{label}</span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden />
+            {addAction && <Plus className="h-4 w-4 shrink-0" aria-hidden />}
+            <span className={cn(multiline ? "min-w-0 break-words text-left" : "min-w-0 truncate text-left", !value && !addAction && "text-muted-foreground")}>{label}</span>
+            {!addAction && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden />}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[min(32rem,90vw)] p-0" align="start">
@@ -147,7 +156,7 @@ export default function FiscalCatalogCombobox({
                         aria-hidden
                       />
                       <span className="font-mono text-xs mr-2">{entry.code}</span>
-                      <span className="truncate">{entry.description}</span>
+                      <span className={cn(multiline ? "min-w-0 whitespace-normal break-words" : "truncate")}>{entry.description}</span>
                       {entry.is_preferred && (
                         <span className="ml-auto text-[10px] uppercase text-muted-foreground">sugerido</span>
                       )}
