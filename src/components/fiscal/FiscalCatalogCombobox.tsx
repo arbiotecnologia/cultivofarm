@@ -47,6 +47,10 @@ export interface FiscalCatalogComboboxProps {
   addAction?: boolean;
   resolvedEntries?: import("@/hooks/useFiscalCatalog").FiscalCatalogResolvedEntry[];
   externalResolution?: boolean;
+  /** Filtro visual adicional sobre os metadados retornados pelo catálogo. */
+  metadataFilter?: Record<string, string>;
+  /** Restringe os códigos exibidos e evita misturar escopos na busca inicial. */
+  codePrefix?: string;
 }
 
 function useDebounced(value: string, delay = 250) {
@@ -75,6 +79,8 @@ export default function FiscalCatalogCombobox({
   addAction = false,
   resolvedEntries,
   externalResolution = false,
+  metadataFilter,
+  codePrefix,
   ...aria
 }: FiscalCatalogComboboxProps) {
   const [open, setOpen] = useState(false);
@@ -83,7 +89,7 @@ export default function FiscalCatalogCombobox({
 
   const search = useFiscalCatalogSearch({
     catalogType,
-    query: debounced,
+    query: debounced || codePrefix || "",
     parentCode,
     preferredCodes,
     enabled: open && !disabled,
@@ -93,7 +99,16 @@ export default function FiscalCatalogCombobox({
   const current = (resolvedEntries ?? resolved.data)?.find((e) => e.code === value) ?? null;
   const isLegacy = Boolean(value) && resolved.isSuccess && !current;
 
-  const entries = useMemo(() => search.data ?? [], [search.data]);
+  const entries = useMemo(() => {
+    const rows = search.data ?? [];
+    if (!metadataFilter) return rows;
+    return rows.filter((entry) =>
+      (!codePrefix || entry.code.startsWith(codePrefix))
+      && (!metadataFilter || Object.entries(metadataFilter).every(
+        ([key, expected]) => entry.metadata?.[key] === expected,
+      )),
+    );
+  }, [search.data, metadataFilter, codePrefix]);
 
   const label = value
     ? current

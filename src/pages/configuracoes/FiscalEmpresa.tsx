@@ -59,6 +59,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import FiscalCatalogCombobox from "@/components/fiscal/FiscalCatalogCombobox";
+import NatureOperationCombobox from "@/components/fiscal/NatureOperationCombobox";
 import CompanyCnaeFields from "@/components/fiscal/CompanyCnaeFields";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -652,7 +653,14 @@ export default function FiscalEmpresa() {
                   <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODE.toOptions(NFE_NUMBERING_MODES)} onChange={(v) => setNfe("numbering_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_default_nature" label="Natureza padrão da operação">
-                  <Input id="nfe_default_nature" placeholder="Ex.: Venda de mercadoria adquirida de terceiros" value={(nfe.default_nature as string) ?? ""} onChange={(e) => setNfe("default_nature", e.target.value)} />
+                  <NatureOperationCombobox
+                    id="nfe_default_nature"
+                    value={(nfe.default_nature as string) || null}
+                    customOptions={Array.isArray(nfe.custom_operation_natures) ? nfe.custom_operation_natures.filter((item): item is string => typeof item === "string") : []}
+                    onChange={(next) => setNfe("default_nature", next ?? "")}
+                    onCustomOptionsChange={(next) => setNfe("custom_operation_natures", next)}
+                    disabled={readonly}
+                  />
                 </FieldRow>
                 <FieldRow id="nfe_default_finality" label="Finalidade padrão">
                   <SelectNative id="nfe_default_finality" value={(nfe.default_finality as string) ?? "NORMAL"} options={NFE_FINALITY.toOptions(NFE_FINALIDADES)} onChange={(v) => setNfe("default_finality", v)} />
@@ -678,10 +686,10 @@ export default function FiscalEmpresa() {
                   <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCY.toOptions(NFE_CONTINGENCIA)} onChange={(v) => setNfe("contingency_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido" description="Ex.: 5102 — Venda de mercadoria adquirida.">
-                  <Input id="nfe_cfop_in" inputMode="numeric" maxLength={4} placeholder="5102" value={(nfe.suggested_cfop_in_state as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_in_state", e.target.value)} />
+                  <FiscalCatalogCombobox id="nfe_cfop_in" catalogType="CFOP" parentCode="SAIDA" codePrefix="5" metadataFilter={{ direction: "OUT", scope: "INTRA" }} preferredCodes={["5101", "5102"]} value={(nfe.suggested_cfop_in_state as string) || null} onChange={(code) => setNfe("suggested_cfop_in_state", code ?? "")} placeholder="Selecionar CFOP interno…" searchPlaceholder="Buscar por código ou descrição…" multiline disabled={readonly} />
                 </FieldRow>
                 <FieldRow id="nfe_cfop_out" label="CFOP interestadual sugerido" description="Ex.: 6102 — Venda interestadual.">
-                  <Input id="nfe_cfop_out" inputMode="numeric" maxLength={4} placeholder="6102" value={(nfe.suggested_cfop_interstate as string) ?? ""} onChange={(e) => setNfe("suggested_cfop_interstate", e.target.value)} />
+                  <FiscalCatalogCombobox id="nfe_cfop_out" catalogType="CFOP" parentCode="SAIDA" codePrefix="6" metadataFilter={{ direction: "OUT", scope: "INTER" }} preferredCodes={["6101", "6102"]} value={(nfe.suggested_cfop_interstate as string) || null} onChange={(code) => setNfe("suggested_cfop_interstate", code ?? "")} placeholder="Selecionar CFOP interestadual…" searchPlaceholder="Buscar por código ou descrição…" multiline disabled={readonly} />
                 </FieldRow>
                 <div className="md:col-span-2">
                   <FieldRow id="nfe_info" label="Informações adicionais padrão">
