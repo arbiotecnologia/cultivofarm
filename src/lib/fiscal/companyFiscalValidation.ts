@@ -144,6 +144,7 @@ export const nfeConfigurationSchema = z
     series: optionalTrimmedString(20),
     numbering_mode: z.enum(NFE_NUMBERING_MODES).optional(),
     default_nature: optionalTrimmedString(200),
+    custom_operation_natures: z.array(z.string().trim().min(1).max(200)).max(50).optional(),
     default_finality: z.enum(NFE_FINALIDADES).optional(),
     presence_indicator: optionalTrimmedString(20),
     default_end_consumer: z.boolean().optional(),

@@ -43,6 +43,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import SinefOperationsPanel from "@/components/fiscal/documentos/sinief49/SinefOperationsPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { canUseSinief49Operations } from "@/lib/fiscal/sinief49/permissions";
+import NatureOperationCombobox from "@/components/fiscal/NatureOperationCombobox";
 
 const LEGACY_STEPS = ["documento", "destinatario", "itens", "tributos", "revisao"] as const;
 const SINIEF_STEPS = ["documento", "destinatario", "itens", "tributos", "sinief49", "revisao"] as const;
@@ -64,6 +65,8 @@ export interface RascunhoWizardProps {
   expectedVersion?: number;
   onSaved?: (id: string, version: number) => void;
   disabled?: boolean;
+  defaultNature?: string | null;
+  customNatureOptions?: string[];
 }
 
 export default function RascunhoWizard({
@@ -73,8 +76,13 @@ export default function RascunhoWizard({
   expectedVersion = 1,
   onSaved,
   disabled = false,
+  defaultNature = null,
+  customNatureOptions = [],
 }: RascunhoWizardProps) {
-  const [values, setValues] = useState<RascunhoFormValues>(initialValues ?? emptyRascunho());
+  const [values, setValues] = useState<RascunhoFormValues>(() => initialValues ?? {
+    ...emptyRascunho(),
+    natureza_operacao: defaultNature || undefined,
+  });
   const { role } = useAuth();
   const canUseSinief = canUseSinief49Operations(role);
   const STEPS = canUseSinief ? SINIEF_STEPS : LEGACY_STEPS;
@@ -342,8 +350,15 @@ export default function RascunhoWizard({
                   <Input type="date" value={values.issue_date} onChange={(e) => set("issue_date", e.target.value)} />
                 </div>
                 <div className="grid min-w-0 content-start gap-1.5">
-                  <Label>Natureza da operação</Label>
-                  <Input value={values.natureza_operacao ?? ""} onChange={(e) => set("natureza_operacao", e.target.value)} />
+                  <Label htmlFor="draft-operation-nature">Natureza da operação</Label>
+                  <NatureOperationCombobox
+                    id="draft-operation-nature"
+                    value={values.natureza_operacao ?? null}
+                    customOptions={customNatureOptions}
+                    onChange={(next) => set("natureza_operacao", next ?? undefined)}
+                    disabled={readonly}
+                    allowManage={false}
+                  />
                 </div>
                 <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                   <Label>Observações</Label>

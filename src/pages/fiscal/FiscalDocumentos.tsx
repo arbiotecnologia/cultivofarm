@@ -500,6 +500,8 @@ export default function FiscalDocumentos() {
               <RascunhoWizard
                 invoiceId={null}
                 companyCnpj={companyQ.data.cnpj}
+                defaultNature={typeof (companyQ.data.nfe_configuration as Record<string, unknown> | null)?.default_nature === "string" ? ((companyQ.data.nfe_configuration as Record<string, unknown>).default_nature as string) : null}
+                customNatureOptions={Array.isArray((companyQ.data.nfe_configuration as Record<string, unknown> | null)?.custom_operation_natures) ? ((companyQ.data.nfe_configuration as Record<string, unknown>).custom_operation_natures as unknown[]).filter((item): item is string => typeof item === "string") : []}
                 expectedVersion={1}
                 onSaved={(id) => {
                   setWizardOpen(false);
