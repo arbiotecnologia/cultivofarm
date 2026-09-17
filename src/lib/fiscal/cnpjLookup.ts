@@ -160,7 +160,7 @@ export async function lookupCnpj(
   } finally {
     clearTimeout(timeoutId);
     signal?.removeEventListener("abort", onAbort);
-    signal?.removeEventListener("abort", onAbort);
+
   }
 
   if (signal?.aborted) throw new CnpjLookupError("network_error", "aborted");
