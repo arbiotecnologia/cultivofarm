@@ -528,6 +528,29 @@ Deno.serve(async (req) => {
     // H7G-004: `state` descreve apenas o TRANSPORTE. O resultado fiscal é o
     // `outcome` derivado server-side do cStat/protocolo.
     const outcome = (recorded.data as Record<string, unknown> | null)?.outcome ?? null;
+    const authorized = isAuthorized(result) && outcome === "AUTHORIZED";
+
+    // H14: autorização (direta ou confirmada por consulta) converge para o
+    // mesmo fechamento documental idempotente. Falha aqui mantém AUTHORIZED e
+    // reconciliação pendente — nunca reenvio.
+    let closure: Awaited<ReturnType<typeof closeAuthorizedDocument>> | null = null;
+    if (authorized) {
+      closure = await closeAuthorizedDocument(admin, {
+        invoiceId: canonicalInvoiceId,
+        transmissionId,
+        accessKey: result.chNFe ?? null,
+        protocol: result.nProt ?? null,
+        responseXml: res.body,
+      });
+      if (closure.pending) {
+        await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
+          _transmission_id: transmissionId,
+          _state: "SUCCEEDED",
+          _patch: { errorCode: closure.code ?? "FISCAL_AUTHORIZATION_CLOSE_PENDING" },
+        });
+      }
+    }
+
     return json({
       transmissionId,
       service,
@@ -540,9 +563,15 @@ Deno.serve(async (req) => {
       chNFe: result.chNFe,
       nProt: result.nProt,
       nRec: result.nRec,
-      authorized: isAuthorized(result) && outcome === "AUTHORIZED",
+      authorized,
+      protocoledXmlStored: closure ? closure.stored : false,
+      protocoledDocumentId: closure?.documentId ?? null,
+      documentClosurePending: closure ? closure.pending : false,
+      documentClosureCode: closure?.code ?? null,
       retrySafe: false,
-      reconciliationRequired: isRetryable(result),
+      reconciliationRequired: authorized
+        ? closure?.pending === true
+        : isRetryable(result),
     }, ok ? 200 : 502, headers);
 
   } catch (err) {
