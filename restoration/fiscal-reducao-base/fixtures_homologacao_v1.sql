@@ -40,17 +40,18 @@ BEGIN
 END $$;
 
 -- Fonte oficial sintética de homologação -------------------------------
-INSERT INTO public.fiscal_official_sources (id, source_type, title, reference, published_at)
-SELECT gen_random_uuid(), 'OUTRO',
+INSERT INTO public.fiscal_official_sources (source_key, authority, name, url, doc_version, consulted_at, notes, is_active)
+SELECT 'HML_2026', 'HOMOLOGACAO',
        'HOMOLOGAÇÃO — fonte sintética sem valor fiscal',
-       'HML/2026', CURRENT_DATE
+       'https://homologacao.invalid/sem-valor-fiscal', 'HML-1', CURRENT_DATE,
+       'AMBIENTE DE HOMOLOGAÇÃO — SEM VALOR FISCAL', true
 WHERE NOT EXISTS (
-  SELECT 1 FROM public.fiscal_official_sources WHERE reference = 'HML/2026'
+  SELECT 1 FROM public.fiscal_official_sources WHERE source_key = 'HML_2026'
 );
 
 -- Regras de homologação -------------------------------------------------
 WITH src AS (
-  SELECT id FROM public.fiscal_official_sources WHERE reference = 'HML/2026' LIMIT 1
+  SELECT id FROM public.fiscal_official_sources WHERE source_key = 'HML_2026' LIMIT 1
 ), adm AS (
   SELECT ur.user_id FROM public.user_roles ur WHERE ur.role::text = 'administrador' LIMIT 1
 )
