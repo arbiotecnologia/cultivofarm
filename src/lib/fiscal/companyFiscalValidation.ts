@@ -24,6 +24,7 @@ type CompanyFiscalExtraColumns = {
   tax_regime?: string | null;
   crt?: string | null;
   primary_cnae?: string | null;
+  additional_cnaes?: string[] | null;
   municipal_registration?: string | null;
   state_registration?: string | null;
   municipality_ibge_code?: string | null;
@@ -212,6 +213,11 @@ export const companyFiscalFormSchema = z.object({
   tax_regime: optionalTrimmedString(60),
   crt: optionalTrimmedString(20),
   primary_cnae: optionalTrimmedString(20),
+  additional_cnaes: z
+    .array(z.string().trim().min(1).max(20))
+    .max(50)
+    .transform((list) => Array.from(new Set(list)))
+    .optional(),
   municipal_registration: optionalTrimmedString(40),
   state_registration: optionalTrimmedString(40),
   municipality_ibge_code: optionalTrimmedString(10),
@@ -281,6 +287,10 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   assignText("tax_regime", parsed.tax_regime);
   assignText("crt", parsed.crt);
   assignText("primary_cnae", parsed.primary_cnae);
+  if (parsed.additional_cnaes !== undefined) {
+    (payload as Record<string, string[] | null>).additional_cnaes =
+      parsed.additional_cnaes.filter((code) => code !== parsed.primary_cnae);
+  }
   assignText("municipal_registration", parsed.municipal_registration);
   assignText("state_registration", parsed.state_registration);
   assignText("municipality_ibge_code", parsed.municipality_ibge_code);
@@ -360,6 +370,9 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
     tax_regime: row.tax_regime ?? undefined,
     crt: row.crt ?? undefined,
     primary_cnae: row.primary_cnae ?? undefined,
+    additional_cnaes: Array.isArray(row.additional_cnaes)
+      ? row.additional_cnaes.filter((c): c is string => typeof c === "string" && c.trim().length > 0)
+      : undefined,
     municipal_registration: row.municipal_registration ?? undefined,
     state_registration: row.state_registration ?? undefined,
     municipality_ibge_code: row.municipality_ibge_code ?? undefined,
