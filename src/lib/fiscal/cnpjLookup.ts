@@ -141,11 +141,12 @@ export async function lookupCnpj(
   const ctrl = new AbortController();
   const onAbort = () => ctrl.abort();
   signal?.addEventListener("abort", onAbort, { once: true });
-  const timeoutId = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   let timedOut = false;
-  const timeoutMark = setTimeout(() => {
+  const timeoutId = setTimeout(() => {
     timedOut = true;
+    ctrl.abort();
   }, REQUEST_TIMEOUT_MS);
+
 
   let resp: Response;
   try {
