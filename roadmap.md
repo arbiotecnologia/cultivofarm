@@ -1,8 +1,9 @@
 # Roadmap de Tarefas
 
 ## Espaçamento uniforme — módulo fiscal
-- [ ] Padronizar rótulo–controle em 6 px, com alinhamento superior, em páginas, abas, filtros e diálogos fiscais, sem mudanças globais.
-- [ ] Executar testes fiscais/config e conferir compilação; validar visualmente sem acessar destinos divergentes.
+- [x] Padronizar rótulo–controle em 6 px, com alinhamento superior, em 15 arquivos de páginas, abas, filtros e diálogos fiscais, sem mudanças globais. Prontidão não contém rótulos de formulário a ajustar.
+- [x] Testes fiscais/config: 1.798 aprovados, 4 pulados, 1 falha no gate de binding por ambiente gerenciado divergente; compilação automática OK. Sem banco ou publicação.
+- [ ] Conferência visual autenticada bloqueada pelo gate de binding divergente; corrigir vínculo externo antes de acessar dados. Typecheck isolado não executado por restrição do ambiente.
 
 ## CNAEs — harmonia da aba Empresa
 - [x] Integrar lista de descrições completas e botão de adicionar ao estilo existente, sem banco ou publicação.

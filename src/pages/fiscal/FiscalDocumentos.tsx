@@ -838,7 +838,7 @@ function DetailSheet(props: DetailProps) {
             {detail && canWrite && (
               <div className="grid min-w-0 content-start gap-1.5 rounded border p-3 mb-3">
                 <Label className="text-xs">Registrar evento manual (via RPC)</Label>
-                <div className="flex flex-col gap-2 mt-1">
+                <div className="flex flex-col gap-2">
                   <Select
                     value={eventType}
                     onValueChange={(v) => setEventType(v as ManualEventType)}
