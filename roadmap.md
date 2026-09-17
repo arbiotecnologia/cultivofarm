@@ -1,5 +1,10 @@
 # Roadmap de Tarefas
 
+## NFS-e Nacional — N0 (2026-09-17)
+- [x] Receber XML e DANFSe reais; conferir estrutura e cálculos da referência sem importar dados pessoais no projeto.
+- [ ] Consolidar matriz XML × código atual; schema implantado depende de acesso comprovado ao projeto canônico.
+- Fases N1 e seguintes não iniciadas; emissão, publicação e alterações de banco não autorizadas nesta etapa.
+
 ## Natureza da operação e CFOPs selecionáveis
 - [x] Substituir natureza livre por seleção pesquisável com opções personalizadas reutilizáveis.
 - [x] Converter CFOP interno e interestadual em seletores do catálogo, preservando legados.
