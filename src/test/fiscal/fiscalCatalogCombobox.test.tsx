@@ -23,6 +23,11 @@ const CFOP_ROWS = [
   { code: "5101", description: "Venda de produção do estabelecimento", parent_code: null, metadata: {}, is_preferred: false, catalog_version: "2026.1" },
 ];
 
+const SCOPED_CFOP_ROWS = [
+  { code: "5101", description: "Venda interna", parent_code: "SAIDA", metadata: { direction: "OUT", scope: "INTRA" }, is_preferred: true, catalog_version: "2026.1" },
+  { code: "6101", description: "Venda interestadual", parent_code: "SAIDA", metadata: { direction: "OUT", scope: "INTER" }, is_preferred: true, catalog_version: "2026.1" },
+];
+
 beforeEach(() => {
   rpc.mockReset();
 });
@@ -105,5 +110,27 @@ describe("FiscalCatalogCombobox", () => {
     render(<FiscalCatalogCombobox catalogType="CNAE" value={null} onChange={() => {}} />, { wrapper });
     fireEvent.click(screen.getByRole("combobox"));
     await waitFor(() => expect(screen.getByText(/Nenhum código encontrado/i)).toBeInTheDocument());
+  });
+
+  it("separa CFOP interno do interestadual pelos metadados publicados", async () => {
+    rpc.mockImplementation((fn: string) =>
+      fn === "rpc_fiscal_catalog_search_v1"
+        ? Promise.resolve({ data: SCOPED_CFOP_ROWS, error: null })
+        : Promise.resolve({ data: [], error: null }),
+    );
+
+    render(
+      <FiscalCatalogCombobox
+        catalogType="CFOP"
+        value={null}
+        onChange={() => {}}
+        parentCode="SAIDA"
+        metadataFilter={{ direction: "OUT", scope: "INTRA" }}
+      />,
+      { wrapper },
+    );
+    fireEvent.click(screen.getByRole("combobox"));
+    await waitFor(() => expect(screen.getByText("Venda interna")).toBeInTheDocument());
+    expect(screen.queryByText("Venda interestadual")).not.toBeInTheDocument();
   });
 });
