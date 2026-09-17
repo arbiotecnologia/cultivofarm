@@ -29,13 +29,44 @@ DECLARE
   v_newpct jsonb;
   v_tax jsonb;
 BEGIN
-  IF v_old = v_new THEN RETURN NEW; END IF;
   BEGIN v_actor := auth.uid(); EXCEPTION WHEN OTHERS THEN v_actor := NULL; END;
 
   v_taxes := v_snap->'taxes';
   IF v_taxes IS NULL OR jsonb_typeof(v_taxes) <> 'object' THEN
     v_taxes := '{}'::jsonb;
   END IF;
+
+  -- Materializacao do calculo: registra a reducao efetivamente aplicada, com a
+  -- regra, a versao e o fundamento legal vindos do snapshot REAL.
+  IF TG_OP = 'UPDATE' AND NEW.tax_snapshot IS DISTINCT FROM OLD.tax_snapshot THEN
+    FOR v_kind IN SELECT jsonb_object_keys(v_taxes) LOOP
+      v_tax := coalesce(v_taxes -> v_kind, '{}'::jsonb);
+      CONTINUE WHEN coalesce((v_tax->>'baseReductionPct')::numeric, 0) = 0;
+      INSERT INTO public.fiscal_audit_log(table_name, record_id, action, changed_by, old_values, new_values)
+      VALUES (
+        'fiscal_invoice_items', NEW.id, 'BASE_REDUCTION_APPLIED', v_actor,
+        jsonb_build_object('taxKind', v_kind,
+          'baseReductionPct', (coalesce(OLD.tax_snapshot,'{}'::jsonb)->'taxes'->v_kind->>'baseReductionPct')),
+        jsonb_build_object(
+          'taxKind', v_kind,
+          'baseReductionPct', v_tax->>'baseReductionPct',
+          'reason', coalesce(v_tax->>'baseReductionReason', v_new -> v_kind ->> 'baseReductionReason'),
+          'fiscalInvoiceId', NEW.fiscal_invoice_id,
+          'itemId', NEW.id,
+          'changedAt', to_char(now() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SSZ'),
+          'appliedBy', v_tax->>'baseReductionAppliedBy',
+          'appliedAt', v_tax->>'baseReductionAppliedAt',
+          'ruleId', v_tax->>'ruleId',
+          'ruleKey', v_tax->>'ruleKey',
+          'ruleVersion', v_tax->>'ruleVersion',
+          'legalBasis', v_tax->>'legalBasis',
+          'legalVersion', v_tax->>'legalVersion',
+          'baseReductionMode', v_tax->>'baseReductionMode',
+          'baseReductionSource', v_tax->>'baseReductionSource'));
+    END LOOP;
+  END IF;
+
+  IF v_old = v_new THEN RETURN NEW; END IF;
 
   FOR v_kind IN
     SELECT DISTINCT k FROM (
@@ -253,3 +284,10 @@ BEGIN
     'baseOriginal', base_raw, 'base', base_eff, 'value', val,
     'params', extra);
 END $function$;
+
+-- O gatilho passa a observar tambem tax_snapshot, para capturar a reducao
+-- efetivamente aplicada pelo motor (com regra, versao e fundamento legal).
+DROP TRIGGER IF EXISTS trg_fiscal_audit_base_reduction ON public.fiscal_invoice_items;
+CREATE TRIGGER trg_fiscal_audit_base_reduction
+AFTER INSERT OR UPDATE OF tax_input_snapshot, tax_snapshot ON public.fiscal_invoice_items
+FOR EACH ROW EXECUTE FUNCTION public.fn_fiscal_audit_base_reduction();

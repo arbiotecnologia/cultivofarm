@@ -216,7 +216,7 @@ BEGIN
                AND new_values->>'taxKind' = 'ICMS'));
   PERFORM pg_temp.chk('C5 auditoria traz regra/fundamento do snapshot real',
     EXISTS (SELECT 1 FROM public.fiscal_audit_log
-             WHERE record_id = v_item AND action = 'BASE_REDUCTION_CHANGE'
+             WHERE record_id = v_item AND action = 'BASE_REDUCTION_APPLIED'
                AND new_values->>'ruleKey' = 'SYN-C-ICMS-20'
                AND new_values->>'legalBasis' IS NOT NULL
                AND new_values->>'baseReductionMode' = 'MANUAL'
