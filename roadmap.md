@@ -2,7 +2,8 @@
 
 ## NFS-e Nacional — N0 (2026-09-17)
 - [x] Receber XML e DANFSe reais; conferir estrutura e cálculos da referência sem importar dados pessoais no projeto.
-- [ ] Consolidar matriz XML × código atual; schema implantado depende de acesso comprovado ao projeto canônico.
+- [x] Consolidar matriz XML × código atual em docs/auditorias/nfse-nacional-n0-2026-09-17.md; cálculos independentes 3/3, sem teste do motor.
+- [ ] Concluir N0 no schema implantado: bloqueado até acesso comprovado ao projeto canônico; não usar conexão gerenciada divergente.
 - Fases N1 e seguintes não iniciadas; emissão, publicação e alterações de banco não autorizadas nesta etapa.
 
 ## Natureza da operação e CFOPs selecionáveis
