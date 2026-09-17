@@ -213,3 +213,8 @@
 - [x] Refinar Cockpit pontualmente e adicionar testes focados, sem banco ou publicação.
 
 - [ ] Etapa 2: permitir que clientes e parceiros personalizem nome, logomarca e cor nos próprios portais; inclui adequações autorizadas no banco canônico.
+
+## Correção pós-auditoria H14 (somente local)
+- [x] Verificar replay Storage, namespaces, espelhos H13/H14 e stub histórico.
+- [x] Executar testes e registrar resultados sem deploy ou acesso remoto.
+- [ ] Validação integral: binding externo divergente e typecheck separado sem evidência; aguardam ambiente autorizado.

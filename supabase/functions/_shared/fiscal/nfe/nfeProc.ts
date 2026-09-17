@@ -8,6 +8,8 @@
  * Nunca monta documento de produção: `tpAmb` diferente de `2` é recusado.
  */
 
+import { parseXml, type XmlNode } from "./xmlParse.ts";
+
 export const NFE_NAMESPACE = "http://www.portalfiscal.inf.br/nfe";
 export const NFEPROC_VERSION = "4.00";
 
@@ -35,9 +37,42 @@ export function extractSignedNfe(signedXml: string): string {
 
 /** Extrai o bloco `<protNFe>` da resposta bruta da SEFAZ. */
 export function extractProtNFe(responseXml: string): string {
-  const block = /<(?:\w+:)?protNFe[\s>][\s\S]*?<\/(?:\w+:)?protNFe>/i.exec(responseXml)?.[0] ?? "";
+  const block = /<(?:[\w.-]+:)?protNFe[\s>][\s\S]*?<\/(?:[\w.-]+:)?protNFe>/i.exec(responseXml)?.[0] ?? "";
   if (!block) throw new NfeProcError("NFEPROC_PROTOCOL_NOT_FOUND");
-  return block;
+  const matches: { node: XmlNode; scope: Record<string, string> }[] = [];
+  function visit(node: XmlNode, inherited: Record<string, string>) {
+    const scope = { ...inherited };
+    for (const [name, value] of Object.entries(node.attrs)) {
+      if (name === "xmlns" || name.startsWith("xmlns:")) scope[name] = value;
+    }
+    if (node.name.split(":").pop() === "protNFe") matches.push({ node, scope });
+    node.children.forEach(child => visit(child, scope));
+  }
+  visit(parseXml(responseXml), {});
+  if (matches.length !== 1) throw new NfeProcError("NFEPROC_PROTOCOL_AMBIGUOUS");
+  const { node, scope } = matches[0];
+  const prefix = node.name.includes(":") ? node.name.split(":")[0] : "";
+  if ((prefix && scope[`xmlns:${prefix}`] !== NFE_NAMESPACE) ||
+      (!prefix && scope.xmlns && scope.xmlns !== NFE_NAMESPACE)) {
+    throw new NfeProcError("NFEPROC_PROTOCOL_NAMESPACE_INVALID");
+  }
+  scope.xmlns ??= NFE_NAMESPACE;
+  function validate(current: XmlNode, inherited: Record<string, string>) {
+    const local = { ...inherited, ...Object.fromEntries(Object.entries(current.attrs).filter(([k]) => k.startsWith("xmlns"))) };
+    for (const name of [current.name, ...Object.keys(current.attrs)]) {
+      const parts = name.split(":");
+      if (parts.length > 1 && !["xmlns", "xml"].includes(parts[0]) && !local[`xmlns:${parts[0]}`]) {
+        throw new NfeProcError("NFEPROC_PROTOCOL_NAMESPACE_INVALID");
+      }
+    }
+    current.children.forEach(child => validate(child, local));
+  }
+  validate(node, scope);
+  const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const declarations = Object.entries(scope).filter(([name]) => !(name in node.attrs))
+    .map(([name, value]) => ` ${name}="${escape(value)}"`).join("");
+  // Only add inherited declarations to the protocol root; preserve official content verbatim.
+  return block.replace(/^(<[^\s>]+)/, `$1${declarations}`);
 }
 
 export interface BuildNfeProcInput {
