@@ -61,6 +61,10 @@ export function useSaveFiscalRascunho() {
         receivable_id: args.values.receivable_id ?? null,
         delivery_id: args.values.delivery_id ?? null,
         customer_snapshot: args.values.customer_snapshot,
+        // Fase C3: encargos do documento; o rateio por item é do servidor.
+        freight_value: args.values.freight ?? 0,
+        insurance_value: args.values.insurance ?? 0,
+        other_value: args.values.other_expenses ?? 0,
       };
       const itemsPayload = args.values.items.map((it) => {
         const { profile, tax } = buildItemSnapshots(args.values.invoice_type, it);

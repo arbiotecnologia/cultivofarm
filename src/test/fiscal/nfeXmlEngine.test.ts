@@ -148,6 +148,83 @@ describe("buildNfeXml", () => {
   });
 });
 
+describe("Fase C6 — PIS/COFINS por CST e modalidade da base", () => {
+  function comTributos(taxes: Record<string, unknown>) {
+    const base = payload();
+    const det = [{ ...base.det[0], taxSnapshot: { taxes } }];
+    return { ...base, det } as NfePayload;
+  }
+
+  it("CST de alíquota continua gerando PISAliq/COFINSAliq válidos no XSD", () => {
+    const { xml } = buildNfeXml(payload());
+    expect(xml).toContain("<PISAliq>");
+    expect(xml).toContain("<COFINSAliq>");
+    expect(validateNfeXml(xml).valid).toBe(true);
+  });
+
+  it("CST não tributado usa PISNT/COFINSNT e permanece válido no XSD", () => {
+    const { xml } = buildNfeXml(
+      comTributos({
+        ICMS: { baseValue: 250, rate: 18, value: 45, cst: "00" },
+        PIS: { cst: "07", value: 0 },
+        COFINS: { cst: "07", value: 0 },
+      }),
+    );
+    expect(xml).toContain("<PISNT><CST>07</CST></PISNT>");
+    expect(xml).toContain("<COFINSNT><CST>07</CST></COFINSNT>");
+    expect(xml).not.toContain("<PISAliq>");
+    expect(validateNfeXml(xml).valid).toBe(true);
+  });
+
+  it("CST sem grupo homologado bloqueia a geração (fail-closed)", () => {
+    expect(() =>
+      buildNfeXml(
+        comTributos({
+          ICMS: { baseValue: 250, rate: 18, value: 45, cst: "00" },
+          PIS: { cst: "03", value: 4.13, rate: 1.65, baseValue: 250 },
+          COFINS: { cst: "01", value: 19, rate: 7.6, baseValue: 250 },
+        }),
+      ),
+    ).toThrow(expect.objectContaining({ code: "NFE_PIS_CST_UNSUPPORTED" }));
+  });
+
+  it("CST não tributado com valor apurado bloqueia a geração", () => {
+    expect(() =>
+      buildNfeXml(
+        comTributos({
+          ICMS: { baseValue: 250, rate: 18, value: 45, cst: "00" },
+          PIS: { cst: "07", value: 4.13 },
+          COFINS: { cst: "01", value: 19, rate: 7.6, baseValue: 250 },
+        }),
+      ),
+    ).toThrow(expect.objectContaining({ code: "NFE_PIS_NT_WITH_VALUE" }));
+  });
+
+  it("PIS sem CST no snapshot bloqueia a geração", () => {
+    expect(() =>
+      buildNfeXml(
+        comTributos({
+          ICMS: { baseValue: 250, rate: 18, value: 45, cst: "00" },
+          PIS: { value: 0 },
+          COFINS: { cst: "01", value: 19, rate: 7.6, baseValue: 250 },
+        }),
+      ),
+    ).toThrow(expect.objectContaining({ code: "NFE_PIS_CST_MISSING" }));
+  });
+
+  it("modalidade de base diferente do valor da operação bloqueia a geração", () => {
+    expect(() =>
+      buildNfeXml(
+        comTributos({
+          ICMS: { baseValue: 250, rate: 18, value: 45, cst: "00", baseModality: "0" },
+          PIS: { cst: "01", value: 4.13, rate: 1.65, baseValue: 250 },
+          COFINS: { cst: "01", value: 19, rate: 7.6, baseValue: 250 },
+        }),
+      ),
+    ).toThrow(expect.objectContaining({ code: "NFE_ICMS_MODBC_UNSUPPORTED" }));
+  });
+});
+
 describe("validateNfeXml", () => {
   it("reprova namespace ausente", () => {
     const { xml } = buildNfeXml(payload());
