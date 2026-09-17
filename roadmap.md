@@ -1,5 +1,11 @@
 # Roadmap de Tarefas
 
+## Auditoria sequencial de emissão — 2026-09-17
+- [ ] Auditar NF-e: preparação, cálculo, XML, transmissão, retorno e segurança no código atual.
+- [ ] Auditar NFS-e após NF-e, distinguindo o fluxo próprio dos caminhos exclusivos de mercadorias.
+- [ ] Executar testes locais focados e consolidar achados com evidências e limites.
+- Inspeção remota bloqueada enquanto o canal disponível não comprovar o destino canônico; sem transmissão, alteração funcional, banco ou publicação nesta auditoria.
+
 ## NF-e e NFS-e — ponta a ponta em homologação
 - [x] Conferir evidências locais de preparação, cálculo e XML; relatório em docs/auditorias/nfe-nfse-ponta-a-ponta-fase1.md.
 - [ ] Comparar implantação real: bloqueado por canal gerenciado divergente; requer acesso comprovado ao banco canônico.
