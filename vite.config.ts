@@ -24,8 +24,8 @@ export default defineConfig(({ mode }) => ({
       devOptions: { enabled: false },
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       manifest: {
-        name: "AR Bio - Campo",
-        short_name: "AR Bio",
+        name: "Cultivo Farm",
+        short_name: "Cultivo Farm",
         description: "Gestão de bioinsumos on-farm direto do campo",
         theme_color: "#0a6b3a",
         background_color: "#f5f7fa",
