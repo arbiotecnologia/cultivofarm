@@ -123,7 +123,7 @@ export default function UploadCertificadoA1({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleUpload} className="space-y-3">
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Arquivo (.pfx / .p12)</Label>
             <Input
               ref={fileInputRef}
@@ -133,7 +133,7 @@ export default function UploadCertificadoA1({
               data-testid="fiscal-a1-file"
             />
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Senha do certificado</Label>
             <Input
               type="password"
@@ -144,7 +144,7 @@ export default function UploadCertificadoA1({
               data-testid="fiscal-a1-password"
             />
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Nome para exibição</Label>
             <Input
               value={displayName}

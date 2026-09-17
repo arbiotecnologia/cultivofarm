@@ -312,40 +312,40 @@ export default function RascunhoWizard({
             <Card>
               <CardHeader><CardTitle className="text-base">Documento</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Tipo de documento</Label>
                   <select className="h-10 border rounded-md px-3 bg-background w-full" value={values.invoice_type} onChange={(e) => set("invoice_type", e.target.value as RascunhoFormValues["invoice_type"])}>
                     <option value="NFE">NF-e (produtos)</option>
                     <option value="NFSE">NFS-e (serviços)</option>
                   </select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Modelo</Label>
                   <select className="h-10 border rounded-md px-3 bg-background w-full" value={values.document_model} onChange={(e) => set("document_model", e.target.value as RascunhoFormValues["document_model"])}>
                     <option value="NFE">NF-e (modelo 55)</option>
                     <option value="NFSE">NFS-e</option>
                   </select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Ambiente</Label>
                   <select className="h-10 border rounded-md px-3 bg-background w-full" value={values.environment} onChange={(e) => set("environment", e.target.value as RascunhoFormValues["environment"])}>
                     <option value="NOT_CONFIGURED">Não configurado</option>
                     <option value="HOMOLOGATION">Homologação</option>
                   </select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Série</Label>
                   <Input value={values.series} onChange={(e) => set("series", e.target.value)} />
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Data de emissão</Label>
                   <Input type="date" value={values.issue_date} onChange={(e) => set("issue_date", e.target.value)} />
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Natureza da operação</Label>
                   <Input value={values.natureza_operacao ?? ""} onChange={(e) => set("natureza_operacao", e.target.value)} />
                 </div>
-                <div className="md:col-span-2">
+                <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                   <Label>Observações</Label>
                   <Textarea value={values.notes ?? ""} onChange={(e) => set("notes", e.target.value)} />
                 </div>
@@ -373,7 +373,7 @@ export default function RascunhoWizard({
                 {errors.customer_id ? (
                   <p className="text-xs text-destructive" role="alert">{errors.customer_id}</p>
                 ) : null}
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>CPF/CNPJ do destinatário</Label>
                   <Input
                     value={formatCpfCnpj(values.customer_document)}
@@ -413,23 +413,23 @@ export default function RascunhoWizard({
                       <ServicoPicker onPick={(s) => applyServico(idx, s)} disabled={readonly} />
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
-                      <div className="md:col-span-2">
+                      <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                         <Label>Descrição</Label>
                         <Input value={it.description} onChange={(e) => updateItem(idx, { description: e.target.value })} />
                       </div>
-                      <div>
+                      <div className="grid min-w-0 content-start gap-1.5">
                         <Label>Qtd.</Label>
                         <Input type="number" step="0.01" value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} />
                       </div>
-                      <div>
+                      <div className="grid min-w-0 content-start gap-1.5">
                         <Label>Unidade</Label>
                         <Input value={it.commercial_unit} onChange={(e) => updateItem(idx, { commercial_unit: e.target.value })} />
                       </div>
-                      <div>
+                      <div className="grid min-w-0 content-start gap-1.5">
                         <Label>Valor unit.</Label>
                         <Input type="number" step="0.01" value={it.unit_value} onChange={(e) => updateItem(idx, { unit_value: Number(e.target.value) })} />
                       </div>
-                      <div>
+                      <div className="grid min-w-0 content-start gap-1.5">
                         <Label>Total líquido</Label>
                         <Input readOnly value={it.net_value} />
                       </div>
@@ -437,58 +437,58 @@ export default function RascunhoWizard({
 
                     {values.invoice_type === "NFE" ? (
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2 border-t">
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>NCM</Label>
                           <Input value={it.ncm ?? ""} onChange={(e) => updateItem(idx, { ncm: e.target.value.replace(/\D/g, "").slice(0, 8) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>CEST</Label>
                           <Input value={it.cest ?? ""} onChange={(e) => updateItem(idx, { cest: e.target.value.replace(/\D/g, "").slice(0, 7) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>CFOP</Label>
                           <Input value={it.cfop ?? ""} onChange={(e) => updateItem(idx, { cfop: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>Origem</Label>
                           <Input value={it.origin_code ?? ""} onChange={(e) => updateItem(idx, { origin_code: e.target.value.slice(0, 2) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>ICMS CST</Label>
                           <Input value={it.icms_cst ?? ""} onChange={(e) => updateItem(idx, { icms_cst: e.target.value.slice(0, 4) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>ICMS CSOSN</Label>
                           <Input value={it.icms_csosn ?? ""} onChange={(e) => updateItem(idx, { icms_csosn: e.target.value.slice(0, 4) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>IPI CST</Label>
                           <Input value={it.ipi_cst ?? ""} onChange={(e) => updateItem(idx, { ipi_cst: e.target.value.slice(0, 4) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>PIS CST</Label>
                           <Input value={it.pis_cst ?? ""} onChange={(e) => updateItem(idx, { pis_cst: e.target.value.slice(0, 4) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>COFINS CST</Label>
                           <Input value={it.cofins_cst ?? ""} onChange={(e) => updateItem(idx, { cofins_cst: e.target.value.slice(0, 4) })} />
                         </div>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t">
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>Item LC 116</Label>
                           <Input value={it.lc116_item ?? ""} onChange={(e) => updateItem(idx, { lc116_item: e.target.value.slice(0, 10) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>CNAE</Label>
                           <Input value={it.cnae ?? ""} onChange={(e) => updateItem(idx, { cnae: e.target.value.replace(/\D/g, "").slice(0, 7) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>Código municipal</Label>
                           <Input value={it.municipal_taxation_code ?? ""} onChange={(e) => updateItem(idx, { municipal_taxation_code: e.target.value.slice(0, 20) })} />
                         </div>
-                        <div>
+                        <div className="grid min-w-0 content-start gap-1.5">
                           <Label>Alíquota ISS (%)</Label>
                           <Input
                             type="number"
@@ -532,19 +532,19 @@ export default function RascunhoWizard({
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Desconto</Label>
                   <Input type="number" step="0.01" value={values.discount_total} onChange={(e) => set("discount_total", Number(e.target.value))} />
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Frete</Label>
                   <Input type="number" step="0.01" value={values.freight} onChange={(e) => set("freight", Number(e.target.value))} />
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Seguro</Label>
                   <Input type="number" step="0.01" value={values.insurance} onChange={(e) => set("insurance", Number(e.target.value))} />
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Outras despesas</Label>
                   <Input type="number" step="0.01" value={values.other_expenses} onChange={(e) => set("other_expenses", Number(e.target.value))} />
                 </div>
@@ -650,7 +650,7 @@ function ClientePicker({ currentId, currentDoc, disabled, onPick }: ClientePicke
   }, [debounced]);
 
   return (
-    <div className="rounded-md border p-3 space-y-2" data-testid="fiscal-rascunho-cliente-picker">
+    <div className="grid min-w-0 content-start gap-1.5 rounded-md border p-3" data-testid="fiscal-rascunho-cliente-picker">
       <Label>Buscar cliente</Label>
       <div className="relative">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
@@ -721,7 +721,7 @@ function ProdutoPicker({ onPick, disabled }: { onPick: (p: FiscalProdutoLite) =>
   }, [debounced]);
 
   return (
-    <div className="rounded-md border p-2 space-y-1 bg-muted/20" data-testid="fiscal-rascunho-produto-picker">
+    <div className="grid min-w-0 content-start gap-1.5 rounded-md border p-2 bg-muted/20" data-testid="fiscal-rascunho-produto-picker">
       <Label className="text-xs">Selecionar produto (opcional) — preenche perfil fiscal</Label>
       <div className="relative">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
@@ -784,7 +784,7 @@ function ServicoPicker({ onPick, disabled }: { onPick: (s: FiscalServicoLite) =>
   }, [debounced]);
 
   return (
-    <div className="rounded-md border p-2 space-y-1 bg-muted/20" data-testid="fiscal-rascunho-servico-picker">
+    <div className="grid min-w-0 content-start gap-1.5 rounded-md border p-2 bg-muted/20" data-testid="fiscal-rascunho-servico-picker">
       <Label className="text-xs">Selecionar serviço (opcional) — preenche perfil fiscal</Label>
       <div className="relative">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />

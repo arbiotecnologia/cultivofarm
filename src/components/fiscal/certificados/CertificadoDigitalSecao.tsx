@@ -374,7 +374,7 @@ function OsCertificateCard({ companySettingsId, canManage }: OsCardProps) {
         {status?.available && certs.length > 0 && (
           <div className="space-y-3">
             {canManage && (
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label className="text-xs">Nome para exibição</Label>
                 <Input
                   value={displayName}

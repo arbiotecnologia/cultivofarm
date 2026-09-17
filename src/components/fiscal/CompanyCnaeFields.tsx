@@ -17,14 +17,14 @@ export default function CompanyCnaeFields({ primary, secondary, onPrimaryChange,
   const missing = (code: string) => resolution.isSuccess && !entries.some((entry) => entry.code === code && entry.is_active);
   return (
     <div className="min-w-0 space-y-4 md:col-span-2">
-      <div className="min-w-0 space-y-1.5">
+      <div className="grid min-w-0 content-start gap-1.5">
         <Label htmlFor="primary_cnae">CNAE principal</Label>
         <FiscalCatalogCombobox id="primary_cnae" catalogType="CNAE" value={primary}
           onChange={(code) => onPrimaryChange(code ?? "")} multiline externalResolution resolvedEntries={entries}
           placeholder="Selecionar CNAE…" searchPlaceholder="Buscar por código ou atividade" />
         {primary && missing(primary) && <p className="text-xs text-muted-foreground">Código gravado fora do catálogo vigente. Revise antes de emitir.</p>}
       </div>
-      <div className="space-y-2">
+      <div className="grid min-w-0 content-start gap-1.5">
         <Label id="secondary-cnaes-label">CNAEs secundários (opcional)</Label>
         {secondary.length > 0 ? (
           <ul className="divide-y divide-border rounded-md border border-input" aria-labelledby="secondary-cnaes-label">

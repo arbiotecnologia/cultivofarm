@@ -502,7 +502,7 @@ function EditDrawer({
         ) : (
           <form onSubmit={onSubmit} className="mt-4 space-y-4" aria-label="Formulário de perfil fiscal de serviço">
             <fieldset disabled={!canEdit || save.isPending} className="space-y-4">
-              <div className="grid gap-1.5">
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="f-service_id">service_id (UUID, opcional)</Label>
                 <Input
                   id="f-service_id"
@@ -516,7 +516,7 @@ function EditDrawer({
                 ) : null}
               </div>
 
-              <div className="grid gap-1.5">
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="f-source_reference">source_reference (referência transitória)</Label>
                 <Input
                   id="f-source_reference"
@@ -536,7 +536,7 @@ function EditDrawer({
               {STRING_FIELD_META.map(({ key, label, numeric, select, hint, placeholder }) => {
                 const raw = values[key] ?? "";
                 return (
-                  <div key={key} className="grid gap-1.5">
+                  <div key={key} className="grid min-w-0 content-start gap-1.5">
                     <Label htmlFor={`f-${key}`}>{label}</Label>
                     {select ? (
                       <select
@@ -570,7 +570,7 @@ function EditDrawer({
                 );
               })}
 
-              <div className="grid gap-1.5">
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="f-iss_rate">Alíquota ISS (%)</Label>
                 <Input
                   id="f-iss_rate"

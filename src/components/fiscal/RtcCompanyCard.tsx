@@ -63,7 +63,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
         ) : null}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="rtc_environment">Ambiente RTC</Label>
             <Select
               value={form.rtc_environment ?? "NOT_CONFIGURED"}
@@ -80,7 +80,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
             </Select>
             <p className="text-xs text-muted-foreground mt-1">Produção não é oferecida nesta fase.</p>
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="rtc_transition_year">Ano de transição</Label>
             <Input
               id="rtc_transition_year"
@@ -92,7 +92,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
               disabled={disabled}
             />
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="rtc_source_document">Documento normativo</Label>
             <Input
               id="rtc_source_document" maxLength={120}
@@ -102,7 +102,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
               disabled={disabled}
             />
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="rtc_source_version">Versão do documento</Label>
             <Input
               id="rtc_source_version" maxLength={60}
@@ -112,7 +112,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
               disabled={disabled}
             />
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="rtc_effective_from">Vigência inicial</Label>
             <Input
               id="rtc_effective_from" type="date"
@@ -126,7 +126,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
               Data em que a configuração passa a valer (AAAA-MM-DD).
             </p>
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="rtc_last_reviewed_at">Última revisão</Label>
             <Input
               id="rtc_last_reviewed_at" type="date"
@@ -137,7 +137,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
               disabled={disabled}
             />
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="rtc_review_status">Status da revisão contábil</Label>
             <Select
               value={form.accounting_review_status ?? "PENDING"}
@@ -156,7 +156,7 @@ export function RtcCompanyCard({ canEdit }: RtcCompanyCardProps) {
           </div>
         </div>
 
-        <div>
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="rtc_notes">Notas contábeis</Label>
           <Textarea
             id="rtc_notes" maxLength={4000} rows={4}

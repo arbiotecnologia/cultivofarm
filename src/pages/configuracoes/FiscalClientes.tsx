@@ -548,7 +548,7 @@ function EditDrawer({
         ) : (
           <form onSubmit={onSubmit} className="mt-4 space-y-4" aria-label="Formulário de perfil fiscal de cliente">
             <fieldset disabled={!canEdit || save.isPending} className="space-y-4">
-              <div className="grid gap-1.5">
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="f-customer_id">Cliente</Label>
                 {isNew ? (
                   <CustomerPicker
@@ -575,7 +575,7 @@ function EditDrawer({
                 )}
               </div>
 
-              <div className="grid gap-1.5">
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="f-taxpayer_indicator">Indicador de contribuinte</Label>
                 <Select
                   value={values.taxpayer_indicator ?? ""}
@@ -651,7 +651,7 @@ function EditDrawer({
                 if (select) {
                   const opts = withLegacyOption(select, raw);
                   return (
-                    <div key={key} className="grid gap-1.5">
+                    <div key={key} className="grid min-w-0 content-start gap-1.5">
                       <Label htmlFor={`f-${key}`}>{label}</Label>
                       <select
                         id={`f-${key}`}
@@ -685,7 +685,7 @@ function EditDrawer({
                   return setField(key, v);
                 };
                 return (
-                  <div key={key} className="grid gap-1.5">
+                  <div key={key} className="grid min-w-0 content-start gap-1.5">
                     <Label htmlFor={`f-${key}`}>{label}</Label>
                     <Input
                       id={`f-${key}`}
