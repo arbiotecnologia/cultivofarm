@@ -253,9 +253,12 @@ async function closeAuthorizedDocument(
       contentType: "application/xml",
       upsert: false,
     });
-    // Replay: o objeto já existente é o mesmo artefato determinístico.
-    if (up.error && !/exist/i.test(up.error.message ?? "")) {
-      return pending("FISCAL_PROTOCOLED_STORAGE_FAILED");
+    if (up.error) {
+      if (!isAlreadyExistingObject(up.error)) return pending("FISCAL_PROTOCOLED_STORAGE_FAILED");
+      const verificationError = await verifyExistingObject(
+        () => admin.storage.from("fiscal-xml").download(path), sha, bytes.byteLength,
+      );
+      if (verificationError) return pending(verificationError);
     }
 
     const stored = await admin.rpc("rpc_fiscal_invoice_store_protocoled_xml_v1", {
