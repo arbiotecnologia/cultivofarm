@@ -28,6 +28,7 @@
  */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
+import { CANONICAL_SUPABASE_URL, isCanonicalSupabaseUrl } from "../_shared/fiscal/canonicalProject.ts";
 import {
   assertSefazEndpointAllowed,
   resolveSefazEndpoint,
@@ -193,7 +194,12 @@ async function postSoap(
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const { headers, allowed } = corsHeaders(origin);
-  if (req.method === "OPTIONS") return new Response("ok", { headers });
+  // Preflight de origem desconhecida também é recusado (paridade fail-closed
+  // com `fiscal-xml-engine`): OPTIONS nunca devolve 200 fora da allowlist.
+  if (req.method === "OPTIONS") {
+    if (!allowed) return new Response("cors_denied", { status: 403, headers });
+    return new Response("ok", { headers });
+  }
   if (!allowed) return json({ error: "origin_not_allowed" }, 403, headers);
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
 
@@ -204,8 +210,8 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: "server_misconfigured" }, 500, headers);
-  if (supabaseUrl !== "https://swzpzcwiasxmjutrmvkm.supabase.co") {
-    return json({ error: "canonical_project_required" }, 503, headers);
+  if (!isCanonicalSupabaseUrl(supabaseUrl)) {
+    return json({ error: "canonical_project_required", expected: CANONICAL_SUPABASE_URL }, 503, headers);
   }
 
   const authed = createClient(supabaseUrl, anonKey, {
