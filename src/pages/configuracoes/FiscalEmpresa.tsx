@@ -521,14 +521,14 @@ export default function FiscalEmpresa() {
                 <FieldRow id="crt" label="CRT" description="Código do Regime Tributário oficial.">
                   <SelectNative id="crt" value={values.crt ?? ""} options={CRT_OPTIONS} onChange={(v) => set("crt", v)} />
                 </FieldRow>
-                <FieldRow id="primary_cnae" label="CNAE principal" description="7 dígitos, ex.: 0111301 — Cultivo de arroz.">
-                  <Input
+                <FieldRow id="primary_cnae" label="CNAE principal" description="Selecione pela tabela oficial do IBGE (busque por código ou atividade).">
+                  <FiscalCatalogCombobox
                     id="primary_cnae"
-                    inputMode="numeric"
-                    maxLength={7}
-                    placeholder="0000000"
-                    value={values.primary_cnae ?? ""}
-                    onChange={(e) => set("primary_cnae", unmask(e.target.value).slice(0, 7))}
+                    catalogType="CNAE"
+                    value={values.primary_cnae ?? null}
+                    onChange={(code) => set("primary_cnae", code ?? "")}
+                    placeholder="Selecionar CNAE…"
+                    searchPlaceholder="Ex.: 0111301 ou cultivo de arroz"
                   />
                 </FieldRow>
                 <FieldRow id="municipal_registration" label="Inscrição municipal (IM)">
