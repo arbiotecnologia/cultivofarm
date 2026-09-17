@@ -197,6 +197,95 @@ async function postSoap(
   }
 }
 
+/**
+ * H14 — fechamento documental da NF-e autorizada.
+ *
+ * Converge autorização direta e confirmação por consulta para o MESMO caminho
+ * idempotente: recupera o run SIGNED, monta o `nfeProc` com o protocolo já
+ * persistido, grava no bucket fiscal com path determinístico e registra o
+ * artefato. Falha aqui NUNCA rebaixa a autorização nem permite reenvio.
+ */
+async function closeAuthorizedDocument(
+  admin: SupabaseClient,
+  params: {
+    invoiceId: string | null;
+    transmissionId: string;
+    accessKey: string | null;
+    protocol: string | null;
+    responseXml: string;
+  },
+): Promise<{ stored: boolean; pending: boolean; code: string | null; documentId: string | null }> {
+  const pending = (code: string) => ({ stored: false, pending: true, code, documentId: null });
+  const { invoiceId, transmissionId, accessKey, protocol, responseXml } = params;
+  if (!invoiceId || !accessKey || !protocol) return pending("FISCAL_AUTHORIZATION_CLOSE_PENDING");
+
+  try {
+    const run = await admin
+      .from("fiscal_xml_runs")
+      .select("id, signed_path, storage_bucket, access_key, state, signed_at")
+      .eq("fiscal_invoice_id", invoiceId)
+      .eq("state", "SIGNED")
+      .not("signed_path", "is", null)
+      .order("signed_at", { ascending: false })
+      .limit(5);
+    const match = (run.data ?? []).find(
+      (r) => !r.access_key || r.access_key === accessKey,
+    );
+    if (run.error || !match?.signed_path) return pending("FISCAL_SIGNED_XML_UNAVAILABLE");
+
+    const dl = await admin.storage
+      .from((match.storage_bucket as string | null) ?? "fiscal-xml")
+      .download(match.signed_path as string);
+    if (dl.error || !dl.data) return pending("FISCAL_SIGNED_XML_UNAVAILABLE");
+
+    const built = buildNfeProc({
+      signedXml: await dl.data.text(),
+      responseXml,
+      accessKey,
+      protocol,
+      tpAmb: TPAMB,
+    });
+    const bytes = new TextEncoder().encode(built.xml);
+    const sha = await sha256HexOf(built.xml);
+    const path = nfeProcStoragePath(invoiceId, accessKey, protocol);
+
+    const up = await admin.storage.from("fiscal-xml").upload(path, bytes, {
+      contentType: "application/xml",
+      upsert: false,
+    });
+    // Replay: o objeto já existente é o mesmo artefato determinístico.
+    if (up.error && !/exist/i.test(up.error.message ?? "")) {
+      return pending("FISCAL_PROTOCOLED_STORAGE_FAILED");
+    }
+
+    const stored = await admin.rpc("rpc_fiscal_invoice_store_protocoled_xml_v1", {
+      _invoice_id: invoiceId,
+      _transmission_id: transmissionId,
+      _access_key: accessKey,
+      _protocol: protocol,
+      _storage_path: path,
+      _content_sha256: sha,
+      _content_bytes: bytes.byteLength,
+      _xml_run_id: match.id,
+      _storage_bucket: "fiscal-xml",
+    });
+    if (stored.error) {
+      const code = sanitizeSefazText(stored.error.message, 120).split(":")[0].trim();
+      return pending(code || "FISCAL_AUTHORIZATION_CLOSE_PENDING");
+    }
+    const data = stored.data as Record<string, unknown> | null;
+    return {
+      stored: data?.protocoledXmlStored === true,
+      pending: data?.protocoledXmlStored !== true,
+      code: null,
+      documentId: (data?.documentId as string | null) ?? null,
+    };
+  } catch (err) {
+    const code = err instanceof NfeProcError ? err.code : "FISCAL_AUTHORIZATION_CLOSE_PENDING";
+    return pending(code);
+  }
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const { headers, allowed } = corsHeaders(origin);
