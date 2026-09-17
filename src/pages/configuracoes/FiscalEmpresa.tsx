@@ -62,7 +62,7 @@ import FiscalCatalogCombobox from "@/components/fiscal/FiscalCatalogCombobox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
-import { AlertTriangle, ShieldOff, Loader2, CheckCircle2, Circle, Info } from "lucide-react";
+import { AlertTriangle, ShieldOff, Loader2, CheckCircle2, Circle, Info, X } from "lucide-react";
 import CertificadoDigitalSecao from "@/components/fiscal/certificados/CertificadoDigitalSecao";
 import HomologacaoSecao from "@/components/fiscal/homologacao/HomologacaoSecao";
 import { RtcCompanyCard } from "@/components/fiscal/RtcCompanyCard";
