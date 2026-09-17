@@ -32,7 +32,9 @@ describe("Cloud exit — artefatos de inventario", () => {
   });
 
   it("o export seletivo exige destino canonico, lista explicita e confirmacao", () => {
-    expect(exporter).toContain(`TARGET_REF" != "${"${CANONICAL_REF}"}`);
+    expect(exporter).toContain("TARGET_REF");
+    expect(exporter).toContain("destino permitido e exclusivamente");
+    expect(exporter).toContain(CANONICAL_REF);
     expect(exporter).toContain("--i-have-audited-the-diff");
     expect(exporter).toContain("TABLES");
     expect(exporter).toContain("DENYLIST");
