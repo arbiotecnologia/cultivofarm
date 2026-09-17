@@ -71,6 +71,12 @@ describe("H14 namespace and repository mirrors", () => {
     expect(source).toContain('req.method === "OPTIONS"');
     expect(source).toContain("status: 410");
     expect(source).not.toMatch(/createClient|createUser|\.rpc\(|\.from\(|Deno\.env|ikaauvsflpmamgxmkhoq/);
+    // fully self-contained: no external imports of any kind
+    expect(source).not.toMatch(/^\s*import\s/m);
+    expect(source).not.toMatch(/from\s+["'](npm:|https?:\/\/)/);
+    expect(source).toMatch(/Access-Control-Allow-Origin/);
+    expect(source).toMatch(/Access-Control-Allow-Headers/);
+    expect(source).toMatch(/Access-Control-Allow-Methods/);
     expect(source.split("\n").length).toBeLessThan(20);
   });
 });
