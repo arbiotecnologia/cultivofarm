@@ -5,6 +5,10 @@
  * que usa o MESMO motor canônico dos snapshots e do XML. O operador só
  * informa o percentual quando a regra fiscal publicada permite (modo
  * MANUAL). Em modo FIXO o campo fica bloqueado; sem redução, não há campo.
+ *
+ * Fase C3: o rateio de frete, seguro e outras despesas por item é feito
+ * EXCLUSIVAMENTE no servidor (rateio canônico por maior resto, sem perder
+ * centavos). O navegador não rateia nem calcula tributos.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,12 +50,6 @@ const BRL = (v: number | null | undefined) =>
 const PCT = (v: number | null | undefined) =>
   `${Number(v ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}%`;
 
-function rateio(total: number, parte: number, todos: number[]): number {
-  const soma = todos.reduce((a, b) => a + b, 0);
-  if (!Number.isFinite(soma) || soma <= 0) return 0;
-  return Number(((total * parte) / soma).toFixed(2));
-}
-
 export default function TributosPorItemSecao({
   invoiceId,
   items,
@@ -61,20 +59,18 @@ export default function TributosPorItemSecao({
   disabled = false,
   onChangeItemInput,
 }: TributosPorItemSecaoProps) {
-  const brutos = items.map((i) => Number(i.gross_value ?? 0));
-
   const payload: FiscalTaxPreviewItemInput[] = useMemo(
     () =>
       items.map((it, idx) => ({
         item_sequence: idx + 1,
         gross_value: Number(it.gross_value ?? 0),
         discount_value: Number(it.discount_value ?? 0),
-        freight_value: rateio(Number(freight ?? 0), brutos[idx], brutos),
-        insurance_value: rateio(Number(insurance ?? 0), brutos[idx], brutos),
-        other_value: rateio(Number(otherExpenses ?? 0), brutos[idx], brutos),
         tax_input_snapshot: it.tax_input_snapshot ?? {},
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Frete, seguro e outras despesas NÃO entram aqui: o rateio por item é
+    // canônico e server-side (fn_fiscal_apportion_v1), gravado ao salvar o
+    // rascunho. Mudanças nesses valores exigem salvar para refletir na prévia.
     [JSON.stringify(items), freight, insurance, otherExpenses],
   );
 
