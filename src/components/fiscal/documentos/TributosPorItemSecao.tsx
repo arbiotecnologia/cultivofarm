@@ -285,6 +285,8 @@ function CampoReducao({
   const idMotivo = `${id}-motivo`;
   const numero = Number(texto);
   const invalido = texto !== "" && (!Number.isFinite(numero) || numero < 0 || numero > 100);
+  // Fase C5: na redução MANUAL o motivo é obrigatório (o servidor recusa sem ele).
+  const motivoFaltando = texto !== "" && !invalido && motivo.trim() === "";
 
   return (
     <div className="space-y-1">
@@ -323,7 +325,9 @@ function CampoReducao({
         maxLength={240}
         className="h-8 w-full md:w-48"
         aria-label="Motivo da redução"
-        placeholder="Motivo (opcional)"
+        placeholder="Motivo da redução (obrigatório)"
+        required
+        aria-invalid={motivoFaltando}
         disabled={disabled}
         value={motivo}
         onChange={(e) => setMotivo(e.target.value)}
@@ -333,6 +337,11 @@ function CampoReducao({
           if (Number.isFinite(n) && n >= 0 && n <= 100) onChange(n, motivo.trim() || undefined);
         }}
       />
+      {motivoFaltando ? (
+        <p className="text-xs text-destructive" role="alert">
+          Informe o motivo da redução informada.
+        </p>
+      ) : null}
     </div>
   );
 }
