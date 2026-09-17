@@ -45,7 +45,7 @@ export default function NatureOperationCombobox({
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
-  const policies = usePublishedFiscalOperationNatures(!disabled);
+  const policies = usePublishedFiscalOperationNatures(open && !disabled);
 
   const options = useMemo(() => uniqueNatureOperations([
     ...customOptions,
@@ -117,6 +117,7 @@ export default function NatureOperationCombobox({
             <CommandInput placeholder="Buscar natureza da operação…" />
             <CommandList>
               {policies.isLoading ? <div className="flex items-center gap-2 px-3 py-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Carregando…</div> : null}
+              {policies.isError ? <p className="px-3 py-2 text-xs text-destructive" role="alert">Não foi possível carregar as opções publicadas. As opções usuais e personalizadas continuam disponíveis.</p> : null}
               <CommandEmpty>Nenhuma natureza encontrada.</CommandEmpty>
               <CommandGroup>
                 {options.map((option) => {

@@ -20,7 +20,7 @@ describe("NatureOperationCombobox", () => {
     render(<NatureOperationCombobox value="Minha natureza antiga" customOptions={["Minha natureza antiga"]} onChange={() => {}} />, { wrapper });
     fireEvent.click(screen.getByRole("combobox"));
     expect(await screen.findByText("Venda definida por política publicada")).toBeInTheDocument();
-    expect(screen.getByText("Minha natureza antiga")).toBeInTheDocument();
+    expect(screen.getAllByText("Minha natureza antiga")).toHaveLength(2);
   });
 
   it("adiciona opção personalizada normalizada e seleciona o novo valor", async () => {
