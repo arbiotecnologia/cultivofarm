@@ -503,10 +503,8 @@ export default function FiscalDocumentos() {
                 defaultNature={typeof (companyQ.data.nfe_configuration as Record<string, unknown> | null)?.default_nature === "string" ? ((companyQ.data.nfe_configuration as Record<string, unknown>).default_nature as string) : null}
                 customNatureOptions={Array.isArray((companyQ.data.nfe_configuration as Record<string, unknown> | null)?.custom_operation_natures) ? ((companyQ.data.nfe_configuration as Record<string, unknown>).custom_operation_natures as unknown[]).filter((item): item is string => typeof item === "string") : []}
                 expectedVersion={1}
-                onSaved={(id) => {
-                  setWizardOpen(false);
-                  setSelectedId(id);
-                  toast({ title: "Rascunho salvo", description: "Você pode continuar editando pelo detalhe." });
+                onSaved={() => {
+                  toast({ title: "Rascunho salvo", description: "Você pode continuar a preparação e calcular os tributos." });
                 }}
               />
             )}

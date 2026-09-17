@@ -26,7 +26,7 @@
  *   - toda resposta/erro passa por `sanitizeSefazText`.
 
  */
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import {
   assertSefazEndpointAllowed,
@@ -114,8 +114,7 @@ interface MtlsMaterial {
   certificateId: string;
 }
 
-// deno-lint-ignore no-explicit-any
-async function loadMtlsMaterial(admin: any, invoiceId: string | null): Promise<MtlsMaterial> {
+async function loadMtlsMaterial(admin: SupabaseClient, invoiceId: string | null): Promise<MtlsMaterial> {
   // H12: o certificado é SEMPRE o do emitente vinculado à nota — nunca "o mais
   // recente disponível". Sem nota resolvida ou sem vínculo inequívoco: fail-closed.
   if (!invoiceId) throw new SefazSoapError("CERTIFICATE_REQUIRED");
@@ -164,8 +163,9 @@ async function postSoap(
 ): Promise<{ httpStatus: number; body: string }> {
   assertSefazEndpointAllowed(url, TPAMB);
 
-  // deno-lint-ignore no-explicit-any
-  const createHttpClient = (Deno as any).createHttpClient;
+  const createHttpClient = (Deno as unknown as {
+    createHttpClient?: (options: { cert: string; key: string }) => unknown;
+  }).createHttpClient;
   if (typeof createHttpClient !== "function") {
     throw new SefazSoapError("SEFAZ_MTLS_UNAVAILABLE", "runtime sem suporte a mTLS");
   }

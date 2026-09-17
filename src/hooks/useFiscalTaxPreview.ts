@@ -6,7 +6,7 @@
  * percentual de redução quando a regra permite) e exibe o que o motor
  * canônico devolve — o mesmo que gravará snapshots e XML.
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface FiscalTaxPreviewTax {
@@ -71,6 +71,88 @@ export function useFiscalTaxPreview(
   });
 }
 
+export interface FiscalServiceTaxPreviewItem {
+  itemSequence: number;
+  base: number;
+  taxes: {
+    ISS?: FiscalTaxPreviewTax & { withheld?: boolean; lc116Item?: string | null };
+    FEDERAL_WITHHOLDING?: Record<
+      string,
+      { base: number; rate: number; value: number; withheld: boolean }
+    >;
+  };
+}
+
+export interface FiscalServiceTaxPreviewResult {
+  engineVersion: string;
+  documentModel: "NFSE";
+  itemCount: number;
+  vServ: number;
+  vDesc: number;
+  vBC: number;
+  vISS: number;
+  vISSRetido: number;
+  vRetFederais: number;
+  vLiq: number;
+  ibsCbsApplied: false;
+  ibsCbsGate: string;
+  nationalTransmissionSupported: false;
+  items: FiscalServiceTaxPreviewItem[];
+  persisted: boolean;
+  idempotentReplay: boolean;
+}
+
+async function calculateServiceInvoice(
+  invoiceId: string,
+  persist: boolean,
+): Promise<FiscalServiceTaxPreviewResult> {
+  const idempotencyKey = persist
+    ? `nfse-calculate:${invoiceId}:${crypto.randomUUID()}`
+    : `nfse-preview:${invoiceId}`;
+  const { data, error } = await (supabase.rpc.bind(supabase) as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>)(
+    "rpc_fiscal_calculate_service_invoice_v1",
+    {
+      p_invoice_id: invoiceId,
+      p_idempotency_key: idempotencyKey,
+      p_persist: persist,
+    },
+  );
+  if (error) throw new Error(traduzirErroFiscal(error.message));
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Resposta inválida do cálculo de serviços.");
+  }
+  const result = data as Partial<FiscalServiceTaxPreviewResult>;
+  if (result.documentModel !== "NFSE" || !Array.isArray(result.items)) {
+    throw new Error("Resposta inválida do cálculo de serviços.");
+  }
+  return result as FiscalServiceTaxPreviewResult;
+}
+
+/** Prévia NFS-e usa exclusivamente o caminho server-side próprio de serviços. */
+export function useFiscalServiceTaxPreview(invoiceId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ["fiscal", "service-tax-preview", invoiceId ?? "none"],
+    enabled: Boolean(invoiceId) && enabled,
+    retry: false,
+    queryFn: () => calculateServiceInvoice(invoiceId as string, false),
+  });
+}
+
+/** Materializa snapshots e totais NFS-e; não gera DPS nem transmite documento. */
+export function useCalculateFiscalServiceInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (invoiceId: string) => calculateServiceInvoice(invoiceId, true),
+    onSuccess: (_data, invoiceId) => {
+      qc.invalidateQueries({ queryKey: ["fiscal", "service-tax-preview", invoiceId] });
+      qc.invalidateQueries({ queryKey: ["fiscal", "documents"] });
+    },
+  });
+}
+
 /** Converte erros técnicos do motor em texto compreensível, sem SQL cru. */
 export function traduzirErroFiscal(message: string | null | undefined): string {
   const m = String(message ?? "");
@@ -109,6 +191,24 @@ export function traduzirErroFiscal(message: string | null | undefined): string {
   }
   if (m.includes("FISCAL_RULE_NOT_FOUND") || m.includes("no_rule")) {
     return "Não há regra fiscal publicada para esta operação.";
+  }
+  if (m.includes("FISCAL_SERVICE_PROFILE_MISSING")) {
+    return "Cadastre o perfil fiscal do serviço antes de calcular a NFS-e.";
+  }
+  if (m.includes("FISCAL_SERVICE_PROFILE_NOT_VALIDATED")) {
+    return "Valide o perfil fiscal do serviço antes de calcular a NFS-e.";
+  }
+  if (m.includes("FISCAL_SERVICE_LC116_MISSING")) {
+    return "Informe o enquadramento LC 116 do serviço.";
+  }
+  if (m.includes("FISCAL_SERVICE_ISS_RATE_INVALID")) {
+    return "Informe uma alíquota de ISS válida no perfil do serviço.";
+  }
+  if (m.includes("FISCAL_SERVICE_WITHHOLDING_INVALID")) {
+    return "Revise as retenções federais configuradas no perfil do serviço.";
+  }
+  if (m.includes("FISCAL_RTC_LAYOUT_UNVALIDATED")) {
+    return "IBS/CBS está bloqueado porque o leiaute fiscal aplicável ainda não foi validado.";
   }
   return "Não foi possível calcular os tributos agora.";
 }

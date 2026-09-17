@@ -28,6 +28,7 @@ import { toast } from "@/hooks/use-toast";
 import GeracaoXmlNfeSecao from "@/components/fiscal/documentos/GeracaoXmlNfeSecao";
 import PreflightNfeSecao from "@/components/fiscal/documentos/PreflightNfeSecao";
 import TributosPorItemSecao from "@/components/fiscal/documentos/TributosPorItemSecao";
+import TributosServicoSecao from "@/components/fiscal/documentos/TributosServicoSecao";
 
 import {
   emptyRascunho,
@@ -83,9 +84,11 @@ export default function RascunhoWizard({
     ...emptyRascunho(),
     natureza_operacao: defaultNature || undefined,
   });
+  const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(invoiceId);
+  const [currentVersion, setCurrentVersion] = useState(expectedVersion);
   const { role } = useAuth();
   const canUseSinief = canUseSinief49Operations(role);
-  const STEPS = canUseSinief ? SINIEF_STEPS : LEGACY_STEPS;
+  const STEPS = canUseSinief && values.invoice_type === "NFE" ? SINIEF_STEPS : LEGACY_STEPS;
   const [step, setStep] = useState<Step>("documento");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const saveMut = useSaveFiscalRascunho();
@@ -246,11 +249,13 @@ export default function RascunhoWizard({
     }
     try {
       const res = await saveMut.mutateAsync({
-        invoiceId,
+        invoiceId: currentInvoiceId,
         values,
-        expectedVersion,
+        expectedVersion: currentVersion,
         companyCnpj,
       });
+      setCurrentInvoiceId(res.id);
+      setCurrentVersion(res.draft_version);
       toast({ title: "Rascunho salvo", description: `Versão ${res.draft_version}.` });
       onSaved?.(res.id, res.draft_version);
     } catch (err) {
@@ -263,12 +268,12 @@ export default function RascunhoWizard({
   }
 
   async function handleValidateHomologation() {
-    if (!invoiceId) {
+    if (!currentInvoiceId) {
       toast({ title: "Salve o rascunho antes de validar", variant: "destructive" });
       return;
     }
     try {
-      const res = await validateMut.mutateAsync(invoiceId);
+      const res = await validateMut.mutateAsync(currentInvoiceId);
       if (res.status === "READY") {
         toast({ title: "Pronto para homologação", description: "Nenhuma pendência identificada." });
       } else if (res.status === "INCOMPLETE") {
@@ -570,8 +575,8 @@ export default function RascunhoWizard({
               </CardContent>
             </Card>
             <div className="pt-4">
-              <TributosPorItemSecao
-                invoiceId={invoiceId}
+              {values.invoice_type === "NFE" ? <TributosPorItemSecao
+                invoiceId={currentInvoiceId}
                 items={values.items.map((it) => ({
                   description: it.description,
                   gross_value: it.gross_value,
@@ -588,11 +593,11 @@ export default function RascunhoWizard({
                 onChangeItemInput={(idx, snapshot) =>
                   updateItem(idx, { tax_input_snapshot: snapshot })
                 }
-              />
+              /> : <TributosServicoSecao invoiceId={currentInvoiceId} disabled={readonly} />}
             </div>
           </TabsContent>
 
-          {canUseSinief ? (
+          {canUseSinief && values.invoice_type === "NFE" ? (
             <TabsContent value="sinief49">
               <SinefOperationsPanel issuerCnpj={companyCnpj} disabled={readonly} />
             </TabsContent>
@@ -623,18 +628,30 @@ export default function RascunhoWizard({
                   <Button type="button" onClick={handleSave} disabled={saveMut.isPending} data-testid="fiscal-rascunho-salvar">
                     Salvar rascunho
                   </Button>
-                  <Button type="button" variant="secondary" onClick={handleValidateHomologation} disabled={validateMut.isPending || !invoiceId} data-testid="fiscal-rascunho-validar">
+                  <Button type="button" variant="secondary" onClick={handleValidateHomologation} disabled={validateMut.isPending || !currentInvoiceId} data-testid="fiscal-rascunho-validar">
                     Validar para homologação
                   </Button>
                 </div>
               </CardContent>
             </Card>
-            <div className="pt-4">
-              <PreflightNfeSecao invoiceId={invoiceId} />
-            </div>
-            <div className="pt-4">
-              <GeracaoXmlNfeSecao invoiceId={invoiceId} />
-            </div>
+            {values.invoice_type === "NFE" ? (
+              <>
+                <div className="pt-4">
+                  <PreflightNfeSecao invoiceId={currentInvoiceId} />
+                </div>
+                <div className="pt-4">
+                  <GeracaoXmlNfeSecao invoiceId={currentInvoiceId} />
+                </div>
+              </>
+            ) : (
+              <Alert className="mt-4">
+                <ShieldOff className="h-4 w-4" />
+                <AlertTitle>Emissão nacional ainda bloqueada</AlertTitle>
+                <AlertDescription>
+                  O rascunho e a apuração da NFS-e podem ser preparados, mas DPS, XML e transmissão aguardam contrato oficial validado.
+                </AlertDescription>
+              </Alert>
+            )}
 
           </TabsContent>
         </fieldset>
