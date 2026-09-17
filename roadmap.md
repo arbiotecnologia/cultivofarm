@@ -3,7 +3,8 @@
 ## Correções fiscais autorizadas — 2026-09-17
 - [x] Registrar autorização para conexão e correções; preservar bloqueio de produção.
 - [x] Verificar canais disponíveis sem acessar destinos proibidos: credenciais gerenciadas sem alvo canônico comprovado; CULTIVOFARM_DSN e token administrativo ausentes; nenhuma conexão externa de banco listada.
-- [ ] Disponibilizar canal administrativo e ferramenta de migrations comprovadamente canônicos: bloqueado por acesso indisponível nesta sessão.
+- [x] Confirmar conexão direta ao host canônico: autenticação e SELECT current_database() concluídos; nenhuma alteração no banco.
+- [ ] Disponibilizar ferramentas de leitura e migrations comprovadamente canônicas: ferramenta de leitura disponível sem seleção de projeto e binding informado divergente; não utilizada. A conexão direta confirmada não redireciona essas ferramentas.
 - [ ] Comparar implantação e corrigir NF-e, depois NFS-e e IBS/CBS por modelo, conforme plano; sem alterações funcionais até concluir os gates.
 - [ ] Comprovar percursos de homologação: depende das correções, contratos oficiais, credenciais e autorização da etapa de transmissão.
 
