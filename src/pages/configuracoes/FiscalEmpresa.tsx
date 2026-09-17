@@ -579,18 +579,36 @@ export default function FiscalEmpresa() {
                 <FieldRow id="number" label="Número"><Input id="number" inputMode="numeric" value={values.number ?? ""} onChange={(e) => set("number", e.target.value)} /></FieldRow>
                 <FieldRow id="complement" label="Complemento"><Input id="complement" value={values.complement ?? ""} onChange={(e) => set("complement", e.target.value)} /></FieldRow>
                 <FieldRow id="neighborhood" label="Bairro"><Input id="neighborhood" value={values.neighborhood ?? ""} onChange={(e) => set("neighborhood", e.target.value)} /></FieldRow>
-                <FieldRow id="city" label="Cidade"><Input id="city" autoComplete="address-level2" value={values.city ?? ""} onChange={(e) => set("city", e.target.value)} /></FieldRow>
                 <FieldRow id="state" label="UF">
                   <SelectNative id="state" value={values.state ?? ""} options={UF_OPTIONS} onChange={(v) => set("state", v)} />
                 </FieldRow>
-                <FieldRow id="municipality_ibge_code" label="Código IBGE do município" description="7 dígitos — consulte em ibge.gov.br/localidades.">
+                <FieldRow
+                  id="city"
+                  label="Cidade"
+                  description={values.state ? "Selecione pela tabela oficial do IBGE." : "Selecione a UF primeiro."}
+                >
+                  <FiscalCatalogCombobox
+                    id="city"
+                    catalogType="MUNICIPIO_IBGE"
+                    parentCode={values.state ?? null}
+                    disabled={!values.state}
+                    value={values.municipality_ibge_code ?? null}
+                    onChange={(code) => set("municipality_ibge_code", code ?? "")}
+                    onSelectEntry={(entry) => {
+                      const nome = (entry?.metadata as { name?: string } | null)?.name;
+                      if (typeof nome === "string" && nome.length > 0) set("city", nome);
+                    }}
+                    placeholder={values.city ? values.city : "Selecionar município…"}
+                    searchPlaceholder="Buscar município…"
+                  />
+                </FieldRow>
+                <FieldRow id="municipality_ibge_code" label="Código IBGE do município" description="Preenchido automaticamente pelo município selecionado.">
                   <Input
                     id="municipality_ibge_code"
-                    inputMode="numeric"
-                    maxLength={7}
+                    readOnly
+                    aria-readonly="true"
                     placeholder="0000000"
                     value={values.municipality_ibge_code ?? ""}
-                    onChange={(e) => set("municipality_ibge_code", unmask(e.target.value).slice(0, 7))}
                   />
                 </FieldRow>
                 <FieldRow id="country_code" label="Código do país">
