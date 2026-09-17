@@ -58,6 +58,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import FiscalCatalogCombobox from "@/components/fiscal/FiscalCatalogCombobox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
@@ -520,14 +521,14 @@ export default function FiscalEmpresa() {
                 <FieldRow id="crt" label="CRT" description="Código do Regime Tributário oficial.">
                   <SelectNative id="crt" value={values.crt ?? ""} options={CRT_OPTIONS} onChange={(v) => set("crt", v)} />
                 </FieldRow>
-                <FieldRow id="primary_cnae" label="CNAE principal" description="7 dígitos, ex.: 0111301 — Cultivo de arroz.">
-                  <Input
+                <FieldRow id="primary_cnae" label="CNAE principal" description="Selecione pela tabela oficial do IBGE (busque por código ou atividade).">
+                  <FiscalCatalogCombobox
                     id="primary_cnae"
-                    inputMode="numeric"
-                    maxLength={7}
-                    placeholder="0000000"
-                    value={values.primary_cnae ?? ""}
-                    onChange={(e) => set("primary_cnae", unmask(e.target.value).slice(0, 7))}
+                    catalogType="CNAE"
+                    value={values.primary_cnae ?? null}
+                    onChange={(code) => set("primary_cnae", code ?? "")}
+                    placeholder="Selecionar CNAE…"
+                    searchPlaceholder="Ex.: 0111301 ou cultivo de arroz"
                   />
                 </FieldRow>
                 <FieldRow id="municipal_registration" label="Inscrição municipal (IM)">
@@ -578,18 +579,36 @@ export default function FiscalEmpresa() {
                 <FieldRow id="number" label="Número"><Input id="number" inputMode="numeric" value={values.number ?? ""} onChange={(e) => set("number", e.target.value)} /></FieldRow>
                 <FieldRow id="complement" label="Complemento"><Input id="complement" value={values.complement ?? ""} onChange={(e) => set("complement", e.target.value)} /></FieldRow>
                 <FieldRow id="neighborhood" label="Bairro"><Input id="neighborhood" value={values.neighborhood ?? ""} onChange={(e) => set("neighborhood", e.target.value)} /></FieldRow>
-                <FieldRow id="city" label="Cidade"><Input id="city" autoComplete="address-level2" value={values.city ?? ""} onChange={(e) => set("city", e.target.value)} /></FieldRow>
                 <FieldRow id="state" label="UF">
                   <SelectNative id="state" value={values.state ?? ""} options={UF_OPTIONS} onChange={(v) => set("state", v)} />
                 </FieldRow>
-                <FieldRow id="municipality_ibge_code" label="Código IBGE do município" description="7 dígitos — consulte em ibge.gov.br/localidades.">
+                <FieldRow
+                  id="city"
+                  label="Cidade"
+                  description={values.state ? "Selecione pela tabela oficial do IBGE." : "Selecione a UF primeiro."}
+                >
+                  <FiscalCatalogCombobox
+                    id="city"
+                    catalogType="MUNICIPIO_IBGE"
+                    parentCode={values.state ?? null}
+                    disabled={!values.state}
+                    value={values.municipality_ibge_code ?? null}
+                    onChange={(code) => set("municipality_ibge_code", code ?? "")}
+                    onSelectEntry={(entry) => {
+                      const nome = (entry?.metadata as { name?: string } | null)?.name;
+                      if (typeof nome === "string" && nome.length > 0) set("city", nome);
+                    }}
+                    placeholder={values.city ? values.city : "Selecionar município…"}
+                    searchPlaceholder="Buscar município…"
+                  />
+                </FieldRow>
+                <FieldRow id="municipality_ibge_code" label="Código IBGE do município" description="Preenchido automaticamente pelo município selecionado.">
                   <Input
                     id="municipality_ibge_code"
-                    inputMode="numeric"
-                    maxLength={7}
+                    readOnly
+                    aria-readonly="true"
                     placeholder="0000000"
                     value={values.municipality_ibge_code ?? ""}
-                    onChange={(e) => set("municipality_ibge_code", unmask(e.target.value).slice(0, 7))}
                   />
                 </FieldRow>
                 <FieldRow id="country_code" label="Código do país">
@@ -708,7 +727,16 @@ export default function FiscalEmpresa() {
                 <FieldRow id="nfse_national_code" label="Cód. tributação nacional"><Input id="nfse_national_code" value={(nfse.national_taxation_code as string) ?? ""} onChange={(e) => setNfse("national_taxation_code", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_municipal_code" label="Cód. tributação municipal"><Input id="nfse_municipal_code" value={(nfse.municipal_taxation_code as string) ?? ""} onChange={(e) => setNfse("municipal_taxation_code", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_lc116" label="Item LC 116" description="Ex.: 1.05 — Licenciamento de programas."><Input id="nfse_lc116" placeholder="0.00" value={(nfse.lc116_item as string) ?? ""} onChange={(e) => setNfse("lc116_item", e.target.value)} /></FieldRow>
-                <FieldRow id="nfse_cnae" label="CNAE" description="7 dígitos numéricos."><Input id="nfse_cnae" inputMode="numeric" maxLength={7} placeholder="0000000" value={(nfse.cnae as string) ?? ""} onChange={(e) => setNfse("cnae", unmask(e.target.value).slice(0, 7))} /></FieldRow>
+                <FieldRow id="nfse_cnae" label="CNAE" description="Selecione pela tabela oficial do IBGE.">
+                  <FiscalCatalogCombobox
+                    id="nfse_cnae"
+                    catalogType="CNAE"
+                    value={(nfse.cnae as string) ?? null}
+                    onChange={(code) => setNfse("cnae", code ?? "")}
+                    placeholder="Selecionar CNAE…"
+                    searchPlaceholder="Ex.: 0111301 ou cultivo de arroz"
+                  />
+                </FieldRow>
                 <FieldRow id="nfse_iss_rate" label="Alíquota ISS (%)" description="Normalmente entre 2% e 5%, conforme o município.">
                   <Input id="nfse_iss_rate" type="number" step="0.01" min={0} max={100} placeholder="0.00" value={typeof nfse.iss_rate === "number" ? String(nfse.iss_rate) : ""} onChange={(e) => setNfse("iss_rate", e.target.value === "" ? undefined : Number(e.target.value))} />
                 </FieldRow>
