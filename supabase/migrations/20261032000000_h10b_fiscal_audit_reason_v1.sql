@@ -9,6 +9,13 @@
 -- Incremental e idempotente. Nenhum snapshot historico e recalculado.
 
 
+
+-- Novo vocabulario de auditoria: registro da reducao efetivamente aplicada.
+ALTER TABLE public.fiscal_audit_log DROP CONSTRAINT IF EXISTS fiscal_audit_log_action_check;
+ALTER TABLE public.fiscal_audit_log ADD CONSTRAINT fiscal_audit_log_action_check
+  CHECK (action = ANY (ARRAY['INSERT','UPDATE','DELETE','XML_PREPARED','XML_GENERATED',
+    'XML_XSD_VALIDATED','XML_SIGNED','XML_FAILED','BASE_REDUCTION_CHANGE','BASE_REDUCTION_APPLIED']));
+
 -- FASE C5: a funcao lia tax_snapshot->'taxes' como ARRAY, mas o motor canonico
 -- grava um OBJETO indexado por taxKind. O formato canonico do snapshot NAO muda;
 -- a funcao passa a ler o formato real (e o teste artificial foi substituido).
