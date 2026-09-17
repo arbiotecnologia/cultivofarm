@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
 const edge = readFileSync("supabase/functions/fiscal-sefaz-transport/index.ts", "utf8");
+const xmlEngine = readFileSync("supabase/functions/fiscal-xml-engine/index.ts", "utf8");
 const migration = readFileSync("supabase/migrations/20261034000000_fiscal_transport_preview_safety.sql", "utf8");
 
 describe("Fiscal safety regression contracts (not remote E2E)", () => {
@@ -20,6 +21,9 @@ describe("Fiscal safety regression contracts (not remote E2E)", () => {
   });
   it("validates canonical runtime before constructing clients", () => {
     expect(edge.indexOf('supabaseUrl !== "https://swzpzcwiasxmjutrmvkm.supabase.co"')).toBeLessThan(edge.indexOf("const authed = createClient"));
+    expect(xmlEngine).toContain('const STAGING_PROJECT_REF = "swzpzcwiasxmjutrmvkm"');
+    expect(xmlEngine).not.toContain("ikaauvsflpmamgxmkhoq");
+    expect(xmlEngine.indexOf("supabaseUrl !== CANONICAL_SUPABASE_URL")).toBeLessThan(xmlEngine.indexOf("const authed = createClient"));
   });
   it("stages restricted record privileges and blocks merchandise preview for services", () => {
     expect(migration).toContain("FROM PUBLIC, anon, authenticated");

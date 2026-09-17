@@ -54,7 +54,8 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 /** Prefixo obrigatório da fixture sintética do harness F4.2. */
 const HARNESS_FIXTURE_PREFIX = "F42-HARNESS-";
 /** Único project_ref onde a via de chave de teste pode ser ativada. */
-const STAGING_PROJECT_REF = "ikaauvsflpmamgxmkhoq";
+const STAGING_PROJECT_REF = "swzpzcwiasxmjutrmvkm";
+const CANONICAL_SUPABASE_URL = "https://swzpzcwiasxmjutrmvkm.supabase.co";
 
 function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   if (!raw) return null;
@@ -147,6 +148,9 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: "server_misconfigured" }, 500, headers);
+  if (supabaseUrl !== CANONICAL_SUPABASE_URL) {
+    return json({ error: "FISCAL_CANONICAL_PROJECT_REQUIRED" }, 503, headers);
+  }
 
   // Cliente do usuário: toda autorização de negócio ocorre nas RPCs
   // SECURITY DEFINER, que validam o perfil fiscal (fail-closed).
