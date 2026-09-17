@@ -318,19 +318,34 @@ Deno.serve(async (req) => {
     }, 422, headers);
   }
 
-  // 4. Assinatura com o certificado A1 ativo (material cifrado no cofre).
+  // 4. Assinatura com o certificado A1 do EMITENTE da invoice.
+  //    Autoridade canônica: rpc_fiscal_certificate_for_invoice_v1 (fail-closed
+  //    para zero/múltiplos certificados). Nenhum fallback "mais recente".
+  const certResolved = await admin.rpc("rpc_fiscal_certificate_for_invoice_v1", {
+    _invoice_id: invoiceId,
+  });
+  const certPayload = (Array.isArray(certResolved.data) ? certResolved.data[0] : certResolved.data) as
+    | Record<string, unknown>
+    | null;
+  const certificateId = (certPayload?.certificateId ?? certPayload?.certificate_id) as string | undefined;
+  if (certResolved.error || !certificateId) {
+    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
+      detail: "certificado A1 do emitente indisponível ou ambíguo" }, 412, headers);
+  }
+  // Compatibilidade de UI: apenas o certificado devolvido pela RPC é consultado.
   const certRow = await admin
     .from("v_fiscal_certificate_readiness")
     .select("certificate_id, display_name, status, environment")
-    .eq("status", "AVAILABLE").eq("environment", "HOMOLOGATION")
-    .order("valid_until", { ascending: false }).limit(1).maybeSingle();
-  const certificateId = certRow.data?.certificate_id as string | undefined;
-  if (!certificateId) {
+    .eq("certificate_id", certificateId).maybeSingle();
+  if (
+    certRow.error || !certRow.data ||
+    certRow.data.status !== "AVAILABLE" || certRow.data.environment !== "HOMOLOGATION"
+  ) {
     return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
-      detail: "nenhum certificado A1 de homologação disponível" }, 412, headers);
+      detail: "certificado do emitente não está disponível em homologação" }, 412, headers);
   }
 
-  const masterKey = await resolveMasterKey(admin, String(certRow.data?.display_name ?? ""));
+  const masterKey = decodeMasterKey();
   if (!masterKey) {
     // Recuperável: o XML gerado permanece íntegro em GENERATED.
     return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
