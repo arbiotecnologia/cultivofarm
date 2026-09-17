@@ -1,5 +1,9 @@
 # Roadmap de Tarefas
 
+## Espaçamento uniforme — módulo fiscal
+- [ ] Padronizar rótulo–controle em 6 px, com alinhamento superior, em páginas, abas, filtros e diálogos fiscais, sem mudanças globais.
+- [ ] Executar testes fiscais/config e conferir compilação; validar visualmente sem acessar destinos divergentes.
+
 ## CNAEs — harmonia da aba Empresa
 - [x] Integrar lista de descrições completas e botão de adicionar ao estilo existente, sem banco ou publicação.
 - [x] Testes focados: 9/9; suíte fiscal/config: 1.795 aprovados, 4 pulados, 1 falha de binding; build automático OK.
