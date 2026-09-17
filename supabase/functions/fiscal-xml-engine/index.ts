@@ -274,13 +274,16 @@ Deno.serve(async (req) => {
   const basePath = `${invoiceId}/${run.runVersion}`;
   const unsignedPath = `${basePath}/nfe-${built.accessKey}-unsigned.xml`;
 
-  const upUnsigned = await admin.storage.from(BUCKET).upload(unsignedPath, unsignedBytes, {
-    contentType: "application/xml", upsert: false,
-  });
-  // Reentrada: em retomada de GENERATED/XSD_VALIDATED o objeto já existe
-  // com o mesmo conteúdo determinístico — duplicidade não é falha.
-  const duplicateUnsigned = /exists|duplicate/i.test(upUnsigned.error?.message ?? "");
-  if (upUnsigned.error && !duplicateUnsigned) {
+  // Reentrada: em retomada de GENERATED/XSD_VALIDATED o objeto já existe.
+  // Só é aceito quando byte-idêntico ao conteúdo determinístico esperado.
+  const unsignedStore = await ensureStoredArtifact(admin, unsignedPath, unsignedBytes, unsignedSha);
+  if (unsignedStore === "XML_STORAGE_CONFLICT") {
+    return await fail("XML_STORAGE_CONFLICT", "artefato não assinado divergente no mesmo caminho", 409);
+  }
+  if (unsignedStore === "XML_STORAGE_VERIFY_FAILED") {
+    return await fail("XML_STORAGE_VERIFY_FAILED", "não foi possível verificar o artefato existente", 500);
+  }
+  if (unsignedStore) {
     return await fail("XML_STORAGE_FAILED", "falha ao armazenar o XML não assinado", 500);
   }
 
