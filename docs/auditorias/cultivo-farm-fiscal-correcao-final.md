@@ -175,3 +175,55 @@ O proprietário confirmou diretamente no banco canônico: H14 no ledger, `RECONC
 
 ### Limites e estado real
 As Edge Functions continuam **NÃO publicadas**, aguardando auditoria externa e deploy autorizado no alvo canônico. Não houve deploy, acesso remoto ao banco, transmissão de NF-e/NFS-e ou alteração dos bloqueios de produção. `production_emission_allowed=false` permanece conforme evidência anterior, sem revalidação remota nesta rodada. NFS-e e IBS/CBS não foram alterados. Não se declara homologação ponta a ponta nem aptidão para produção.
+
+## Rodada H15 — auditoria final pré-deploy do `fiscal-xml-engine` — 17/09/2026
+
+Sem alteração de banco, sem deploy, sem transmissão de NF-e. Produção fiscal
+permanece bloqueada (`production_emission_allowed=false`).
+
+### 1. Certificado A1 vinculado ao emitente
+- Removida a seleção global `v_fiscal_certificate_readiness` + `order("valid_until" desc).limit(1)`.
+- O certificado passa a ser resolvido exclusivamente por
+  `rpc_fiscal_certificate_for_invoice_v1({ _invoice_id: invoiceId })` com cliente
+  service_role, autoridade canônica já fail-closed para zero/múltiplos certificados.
+- `v_fiscal_certificate_readiness` é consultada apenas pelo `certificate_id`
+  devolvido pela RPC, validando `AVAILABLE` + `HOMOLOGATION`. Sem fallback.
+- Ausência/erro/estado inválido ⇒ `CERTIFICATE_REQUIRED` 412 mantendo a execução
+  recuperável em `GENERATED`.
+
+### 2. Via legada de certificado de teste removida
+- Eliminados `HARNESS_FIXTURE_PREFIX` (`F42-HARNESS-`), `STAGING_PROJECT_REF`,
+  leitura de `FISCAL_TEST_CERTIFICATE_MASTER_KEY`, consulta a
+  `_fiscal_staging_marker` e a função `resolveMasterKey`.
+- Resta somente `decodeMasterKey()` sobre `FISCAL_CERTIFICATE_MASTER_KEY`.
+  Nenhuma chave pode ser escolhida por `display_name`.
+
+### 3. Integridade de Storage (unsigned e signed)
+- Novo helper local `ensureStoredArtifact` reutilizando
+  `isAlreadyExistingObject` / `verifyExistingObject` de
+  `_shared/fiscal/nfe/protocoledStorage.ts`.
+- Upload novo continua `upsert:false`. Objeto já existente é baixado, conferido
+  por SHA-256 e `byteLength` contra o conteúdo determinístico esperado.
+- Divergência ⇒ `XML_STORAGE_CONFLICT` (409), sem sobrescrever e sem registrar
+  `SIGNED`. Falha de verificação ⇒ `XML_STORAGE_VERIFY_FAILED` (500).
+- A regex ampla `/exists|duplicate/i` deixou de ser autoridade de integridade.
+- Semântica de retomada preservada: execução já `SIGNED` continua devolvendo
+  replay no início, antes desta etapa.
+
+### 4. Testes
+- Novo `src/test/fiscal/xmlEngineCertificateStorage.test.ts` (20 testes):
+  ausência de seleção por `valid_until`/`limit(1)`, uso da RPC com `invoiceId`,
+  ausência total das referências de harness/chave de teste/marcador de staging,
+  replay permitido só com hash e tamanho idênticos, replay divergente bloqueado
+  (unsigned e signed), falha de verificação bloqueante, ausência de
+  `upsert:true`, guard canônico e produção bloqueada.
+- Bateria `src/test/fiscal src/test/config src/test/security`: 2.112 aprovados,
+  4 pulados, 1 falha conhecida — `binding-gate.integration.test.ts` reprova o
+  `.env` gerenciado por apontar a projeto proibido; é o comportamento
+  fail-closed esperado.
+- Typecheck, lint dos arquivos alterados e build: sem erros.
+
+### 5. Estado das Edge Functions
+`fiscal-xml-engine` e `fiscal-sefaz-transport` continuam **NÃO PUBLICADAS** no
+runtime canônico `swzpzcwiasxmjutrmvkm`. Código pronto para deploy; publicação
+depende de auditoria externa. Homologação não é declarada completa.
