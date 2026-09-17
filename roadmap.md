@@ -15,6 +15,9 @@
 - [ ] IBS/CBS: tabela de suporte RTC vazia e gate de leiaute falso; alíquotas não são aplicadas como padrão universal nem serializadas sem leiaute oficialmente validado.
 - [ ] Comprovar os dois percursos E2E em homologação após deploy, certificado e fixtures autorizadas; produção e transmissão real continuam bloqueadas.
 - [x] Validação local final desta etapa: 1.730 testes fiscais aprovados, 4 pulados; typecheck e build aprovados. Lint dos arquivos alterados ficou sem erros após tipagem do transporte; lint global segue bloqueado por dívidas preexistentes fora do fiscal.
+- [x] Auditoria pós-aplicação registrada em `docs/auditorias/fiscal-h12-conformidade-pos-aplicacao-2026-09-17.md`; H12 conforme parcialmente, sem certificação E2E/produção.
+- [x] Corrigida referência proibida remanescente no `fiscal-xml-engine` e adicionada guarda canônica antes da criação dos clientes; regressão crítica 35/35.
+- [ ] Reafirmar ACLs explícitas de `rpc_fiscal_tax_preview_v1` e `rpc_fiscal_calculate_invoice_v1` em migration nova, somente após reler as ACLs do banco canônico; canal gerenciado atual é proibido.
 
 ## Auditoria sequencial de emissão — 2026-09-17
 - [x] Auditar NF-e: preparação, cálculo, XML, transmissão, retorno e segurança no código atual.

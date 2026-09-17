@@ -20,7 +20,7 @@
  *   - Nunca loga nem retorna: senha do PFX, material do certificado, chave
  *     privada, JWT, service_role ou o próprio XML por canal não autenticado.
  */
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/nfe/buildNfeXml.ts";
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
@@ -54,7 +54,8 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 /** Prefixo obrigatório da fixture sintética do harness F4.2. */
 const HARNESS_FIXTURE_PREFIX = "F42-HARNESS-";
 /** Único project_ref onde a via de chave de teste pode ser ativada. */
-const STAGING_PROJECT_REF = "ikaauvsflpmamgxmkhoq";
+const STAGING_PROJECT_REF = "swzpzcwiasxmjutrmvkm";
+const CANONICAL_SUPABASE_URL = "https://swzpzcwiasxmjutrmvkm.supabase.co";
 
 function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   if (!raw) return null;
@@ -85,7 +86,7 @@ function decodeMasterKey(): Uint8Array | null {
  * existente é lido, sobrescrito ou ecoado.
  */
 async function resolveMasterKey(
-  admin: { from: (t: string) => any },
+  admin: SupabaseClient,
   certificateDisplayName: string,
 ): Promise<Uint8Array | null> {
   const primary = decodeMasterKey();
@@ -147,6 +148,9 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: "server_misconfigured" }, 500, headers);
+  if (supabaseUrl !== CANONICAL_SUPABASE_URL) {
+    return json({ error: "FISCAL_CANONICAL_PROJECT_REQUIRED" }, 503, headers);
+  }
 
   // Cliente do usuário: toda autorização de negócio ocorre nas RPCs
   // SECURITY DEFINER, que validam o perfil fiscal (fail-closed).
