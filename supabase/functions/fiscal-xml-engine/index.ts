@@ -23,7 +23,6 @@
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import {
-  CANONICAL_PROJECT_REF,
   CANONICAL_SUPABASE_URL,
   isCanonicalSupabaseUrl,
 } from "../_shared/fiscal/canonicalProject.ts";
@@ -31,6 +30,10 @@ import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/n
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
 import { signNfeXml, verifyNfeSignature } from "../_shared/fiscal/nfe/signNfeXml.ts";
 import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
+import {
+  isAlreadyExistingObject,
+  verifyExistingObject,
+} from "../_shared/fiscal/nfe/protocoledStorage.ts";
 
 import { validateAgainstOfficialXsd, XSD_PACKAGE, XSD_VALIDATOR } from "./xsdValidate.ts";
 
@@ -56,11 +59,6 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Prefixo obrigatório da fixture sintética do harness F4.2. */
-const HARNESS_FIXTURE_PREFIX = "F42-HARNESS-";
-/** Único project_ref onde a via de chave de teste pode ser ativada. */
-const STAGING_PROJECT_REF = CANONICAL_PROJECT_REF;
-
 function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   if (!raw) return null;
   try {
@@ -74,37 +72,43 @@ function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   }
 }
 
+/**
+ * Única chave mestra aceita pelo motor fiscal. A via legada de chave de teste
+ * (fixture do harness) foi removida: o banco canônico é produção do SaaS.
+ */
 function decodeMasterKey(): Uint8Array | null {
   return decodeKeyB64(Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY"));
 }
 
 /**
- * F4.2 — via de chave EXCLUSIVA DE STAGING para a fixture do harness.
- *
- * Só é possível ativar quando TODAS as condições valem juntas:
- *   1. o certificado selecionado é a fixture sintética (`F42-HARNESS-*`);
- *   2. `FISCAL_TEST_CERTIFICATE_MASTER_KEY` está definida e tem 32 bytes;
- *   3. `public._fiscal_staging_marker` confirma o project_ref de staging.
- * Fora do staging (marcador ausente/diferente) a função devolve sempre a
- * chave mestra normal — a via de teste é inalcançável. Nenhum secret
- * existente é lido, sobrescrito ou ecoado.
+ * Integridade de artefato imutável no Storage: colisão de path só é aceita
+ * quando o objeto já armazenado é byte-idêntico ao conteúdo determinístico.
+ * Divergência => XML_STORAGE_CONFLICT (nunca sobrescreve).
+ * Falha de verificação => XML_STORAGE_VERIFY_FAILED.
  */
-async function resolveMasterKey(
+async function ensureStoredArtifact(
   admin: SupabaseClient,
-  certificateDisplayName: string,
-): Promise<Uint8Array | null> {
-  const primary = decodeMasterKey();
-  if (!certificateDisplayName.startsWith(HARNESS_FIXTURE_PREFIX)) return primary;
-  const testKey = decodeKeyB64(Deno.env.get("FISCAL_TEST_CERTIFICATE_MASTER_KEY"));
-  if (!testKey) return primary;
-  const marker = await admin
-    .from("_fiscal_staging_marker")
-    .select("project_ref")
-    .eq("marker", "STAGING")
-    .maybeSingle();
-  if (marker.error || marker.data?.project_ref !== STAGING_PROJECT_REF) return primary;
-  return testKey;
+  path: string,
+  bytes: Uint8Array,
+  expectedSha: string,
+): Promise<string | null> {
+  const up = await admin.storage.from(BUCKET).upload(path, bytes, {
+    contentType: "application/xml",
+    upsert: false,
+  });
+  if (!up.error) return null;
+  if (!isAlreadyExistingObject(up.error as Record<string, unknown>)) return "XML_STORAGE_FAILED";
+  const verdict = await verifyExistingObject(
+    () => admin.storage.from(BUCKET).download(path) as unknown as Promise<
+      { data: { arrayBuffer(): Promise<ArrayBuffer> } | null; error: unknown }
+    >,
+    expectedSha,
+    bytes.byteLength,
+  );
+  if (!verdict) return null;
+  return verdict.endsWith("VERIFY_FAILED") ? "XML_STORAGE_VERIFY_FAILED" : "XML_STORAGE_CONFLICT";
 }
+
 
 /**
  * F4.2 — decodifica coluna `bytea` devolvida pelo PostgREST, que serializa
@@ -269,13 +273,16 @@ Deno.serve(async (req) => {
   const basePath = `${invoiceId}/${run.runVersion}`;
   const unsignedPath = `${basePath}/nfe-${built.accessKey}-unsigned.xml`;
 
-  const upUnsigned = await admin.storage.from(BUCKET).upload(unsignedPath, unsignedBytes, {
-    contentType: "application/xml", upsert: false,
-  });
-  // Reentrada: em retomada de GENERATED/XSD_VALIDATED o objeto já existe
-  // com o mesmo conteúdo determinístico — duplicidade não é falha.
-  const duplicateUnsigned = /exists|duplicate/i.test(upUnsigned.error?.message ?? "");
-  if (upUnsigned.error && !duplicateUnsigned) {
+  // Reentrada: em retomada de GENERATED/XSD_VALIDATED o objeto já existe.
+  // Só é aceito quando byte-idêntico ao conteúdo determinístico esperado.
+  const unsignedStore = await ensureStoredArtifact(admin, unsignedPath, unsignedBytes, unsignedSha);
+  if (unsignedStore === "XML_STORAGE_CONFLICT") {
+    return await fail("XML_STORAGE_CONFLICT", "artefato não assinado divergente no mesmo caminho", 409);
+  }
+  if (unsignedStore === "XML_STORAGE_VERIFY_FAILED") {
+    return await fail("XML_STORAGE_VERIFY_FAILED", "não foi possível verificar o artefato existente", 500);
+  }
+  if (unsignedStore) {
     return await fail("XML_STORAGE_FAILED", "falha ao armazenar o XML não assinado", 500);
   }
 
@@ -310,19 +317,34 @@ Deno.serve(async (req) => {
     }, 422, headers);
   }
 
-  // 4. Assinatura com o certificado A1 ativo (material cifrado no cofre).
+  // 4. Assinatura com o certificado A1 do EMITENTE da invoice.
+  //    Autoridade canônica: rpc_fiscal_certificate_for_invoice_v1 (fail-closed
+  //    para zero/múltiplos certificados). Nenhum fallback "mais recente".
+  const certResolved = await admin.rpc("rpc_fiscal_certificate_for_invoice_v1", {
+    _invoice_id: invoiceId,
+  });
+  const certPayload = (Array.isArray(certResolved.data) ? certResolved.data[0] : certResolved.data) as
+    | Record<string, unknown>
+    | null;
+  const certificateId = (certPayload?.certificateId ?? certPayload?.certificate_id) as string | undefined;
+  if (certResolved.error || !certificateId) {
+    return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
+      detail: "certificado A1 do emitente indisponível ou ambíguo" }, 412, headers);
+  }
+  // Compatibilidade de UI: apenas o certificado devolvido pela RPC é consultado.
   const certRow = await admin
     .from("v_fiscal_certificate_readiness")
     .select("certificate_id, display_name, status, environment")
-    .eq("status", "AVAILABLE").eq("environment", "HOMOLOGATION")
-    .order("valid_until", { ascending: false }).limit(1).maybeSingle();
-  const certificateId = certRow.data?.certificate_id as string | undefined;
-  if (!certificateId) {
+    .eq("certificate_id", certificateId).maybeSingle();
+  if (
+    certRow.error || !certRow.data ||
+    certRow.data.status !== "AVAILABLE" || certRow.data.environment !== "HOMOLOGATION"
+  ) {
     return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
-      detail: "nenhum certificado A1 de homologação disponível" }, 412, headers);
+      detail: "certificado do emitente não está disponível em homologação" }, 412, headers);
   }
 
-  const masterKey = await resolveMasterKey(admin, String(certRow.data?.display_name ?? ""));
+  const masterKey = decodeMasterKey();
   if (!masterKey) {
     // Recuperável: o XML gerado permanece íntegro em GENERATED.
     return json({ runId: run.runId, state: "GENERATED", code: "CERTIFICATE_REQUIRED",
@@ -426,10 +448,14 @@ Deno.serve(async (req) => {
   const signedBytes = encoder.encode(signedXml);
   const signedSha = await sha256Hex(signedBytes);
   const signedPath = `${basePath}/nfe-${built.accessKey}-signed.xml`;
-  const upSigned = await admin.storage.from(BUCKET).upload(signedPath, signedBytes, {
-    contentType: "application/xml", upsert: false,
-  });
-  if (upSigned.error && !/exists|duplicate/i.test(upSigned.error.message ?? "")) {
+  const signedStore = await ensureStoredArtifact(admin, signedPath, signedBytes, signedSha);
+  if (signedStore === "XML_STORAGE_CONFLICT") {
+    return await fail("XML_STORAGE_CONFLICT", "artefato assinado divergente no mesmo caminho", 409);
+  }
+  if (signedStore === "XML_STORAGE_VERIFY_FAILED") {
+    return await fail("XML_STORAGE_VERIFY_FAILED", "não foi possível verificar o artefato assinado existente", 500);
+  }
+  if (signedStore) {
     return await fail("XML_STORAGE_FAILED", "falha ao armazenar o XML assinado", 500);
   }
 
