@@ -727,7 +727,16 @@ export default function FiscalEmpresa() {
                 <FieldRow id="nfse_national_code" label="Cód. tributação nacional"><Input id="nfse_national_code" value={(nfse.national_taxation_code as string) ?? ""} onChange={(e) => setNfse("national_taxation_code", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_municipal_code" label="Cód. tributação municipal"><Input id="nfse_municipal_code" value={(nfse.municipal_taxation_code as string) ?? ""} onChange={(e) => setNfse("municipal_taxation_code", e.target.value)} /></FieldRow>
                 <FieldRow id="nfse_lc116" label="Item LC 116" description="Ex.: 1.05 — Licenciamento de programas."><Input id="nfse_lc116" placeholder="0.00" value={(nfse.lc116_item as string) ?? ""} onChange={(e) => setNfse("lc116_item", e.target.value)} /></FieldRow>
-                <FieldRow id="nfse_cnae" label="CNAE" description="7 dígitos numéricos."><Input id="nfse_cnae" inputMode="numeric" maxLength={7} placeholder="0000000" value={(nfse.cnae as string) ?? ""} onChange={(e) => setNfse("cnae", unmask(e.target.value).slice(0, 7))} /></FieldRow>
+                <FieldRow id="nfse_cnae" label="CNAE" description="Selecione pela tabela oficial do IBGE.">
+                  <FiscalCatalogCombobox
+                    id="nfse_cnae"
+                    catalogType="CNAE"
+                    value={(nfse.cnae as string) ?? null}
+                    onChange={(code) => setNfse("cnae", code ?? "")}
+                    placeholder="Selecionar CNAE…"
+                    searchPlaceholder="Ex.: 0111301 ou cultivo de arroz"
+                  />
+                </FieldRow>
                 <FieldRow id="nfse_iss_rate" label="Alíquota ISS (%)" description="Normalmente entre 2% e 5%, conforme o município.">
                   <Input id="nfse_iss_rate" type="number" step="0.01" min={0} max={100} placeholder="0.00" value={typeof nfse.iss_rate === "number" ? String(nfse.iss_rate) : ""} onChange={(e) => setNfse("iss_rate", e.target.value === "" ? undefined : Number(e.target.value))} />
                 </FieldRow>
