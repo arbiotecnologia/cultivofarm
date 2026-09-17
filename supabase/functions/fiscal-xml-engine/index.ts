@@ -20,7 +20,7 @@
  *   - Nunca loga nem retorna: senha do PFX, material do certificado, chave
  *     privada, JWT, service_role ou o próprio XML por canal não autenticado.
  */
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/nfe/buildNfeXml.ts";
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
@@ -86,7 +86,7 @@ function decodeMasterKey(): Uint8Array | null {
  * existente é lido, sobrescrito ou ecoado.
  */
 async function resolveMasterKey(
-  admin: { from: (t: string) => any },
+  admin: SupabaseClient,
   certificateDisplayName: string,
 ): Promise<Uint8Array | null> {
   const primary = decodeMasterKey();
