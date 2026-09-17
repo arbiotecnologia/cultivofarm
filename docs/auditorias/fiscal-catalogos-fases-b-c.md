@@ -81,3 +81,31 @@ permissão negada sem vazamento técnico, catálogo vazio).
 - C7 (E2E real) segue bloqueado pela configuração fiscal incompleta; C8
   (deploy `fiscal-xml-engine`) segue sem credencial de implantação.
 - Não declarado apto para produção.
+
+## Carga oficial (complemento da Fase B)
+
+Scripts: `restoration/fiscal-catalogos/carga_ibge_municipios_cnae_v1.sql` e
+`carga_cfop_subconjunto_v1.sql` (aplicados via RPC administrativa, com trilha).
+
+| Catálogo | Fonte | Versão | Itens | Status |
+| --- | --- | --- | --- | --- |
+| MUNICIPIO_IBGE | IBGE — Localidades | 2026.1 | 5.571 | ACTIVE |
+| CNAE | IBGE/CONCLA — Subclasses 2.3 | 2.3 | 1.332 | ACTIVE |
+| CFOP | Convênio SINIEF s/nº 1970, Anexo II — subconjunto das operações suportadas | 2026.1-SUBCONJUNTO-OPERACIONAL | 64 | ACTIVE |
+
+O CFOP está marcado como **parcial** nos metadados: contém apenas os pares
+1xxx/2xxx/5xxx/6xxx das operações que o sistema suporta (venda, transferência,
+devolução, industrialização, conserto, demonstração, ativo/consumo, outras).
+Ampliar o catálogo é uma nova importação versionada, sem migration estrutural.
+
+## Fase D (parcial) — aba Empresa
+
+- **CNAE principal** e **CNAE da NFS-e**: digitação livre substituída por busca
+  no catálogo oficial (código ou descrição da atividade).
+- **Cidade**: combobox dependente da UF, alimentado pela tabela do IBGE; ao
+  selecionar, preenche o nome da cidade e o **código IBGE**, que passou a ser
+  somente leitura (fim da digitação de 7 dígitos).
+- Valores já gravados fora do catálogo continuam visíveis, com aviso de revisão.
+
+Validações: 1.796 testes aprovados, tipos OK, build OK, conexão exclusivamente
+`swzpzcwiasxmjutrmvkm`. Nada publicado.
