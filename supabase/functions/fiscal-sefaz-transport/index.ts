@@ -202,6 +202,9 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: "server_misconfigured" }, 500, headers);
+  if (supabaseUrl !== "https://swzpzcwiasxmjutrmvkm.supabase.co") {
+    return json({ error: "canonical_project_required" }, 503, headers);
+  }
 
   const authed = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
@@ -221,7 +224,11 @@ Deno.serve(async (req) => {
 
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const parsed: unknown = await req.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return json({ error: "invalid_body" }, 400, headers);
+    }
+    body = parsed as Record<string, unknown>;
   } catch {
     return json({ error: "invalid_body" }, 400, headers);
   }
@@ -361,6 +368,9 @@ Deno.serve(async (req) => {
     return json({ error: "transmission_blocked", code }, status, headers);
   }
   const tx = begun.data as Record<string, unknown>;
+  if (!tx || typeof tx.transmissionId !== "string" || !UUID_RE.test(tx.transmissionId)) {
+    return json({ error: "transmission_begin_invalid", authorized: false, retrySafe: false }, 502, headers);
+  }
   const transmissionId = String(tx.transmissionId);
 
   // Replay: devolve o resultado já persistido, sem novo POST à SEFAZ.
@@ -370,13 +380,18 @@ Deno.serve(async (req) => {
 
   // 4. Transporte com mTLS.
   let material: MtlsMaterial | null = null;
+  let postAttempted = false;
   const started = Date.now();
   try {
     material = await loadMtlsMaterial(admin);
-    await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
+    const sent = await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
       _transmission_id: transmissionId, _state: "SENT", _patch: {},
     });
+    if (sent.error || sent.data?.state !== "SENT" || sent.data?.transmissionId !== transmissionId) {
+      return json({ transmissionId, code: "FISCAL_SENT_PERSISTENCE_FAILED", authorized: false, retrySafe: false }, 503, headers);
+    }
 
+    postAttempted = true;
     const res = await postSoap(endpoint, envelope, material);
     const result = parseSefazResult(res.body);
     const durationMs = Date.now() - started;
@@ -403,6 +418,10 @@ Deno.serve(async (req) => {
       },
     });
 
+    if (recorded.error || recorded.data?.transmissionId !== transmissionId || recorded.data?.state !== (ok ? "SUCCEEDED" : "FAILED")) {
+      return json({ transmissionId, code: "FISCAL_RECONCILIATION_REQUIRED", reconciliationRequired: true, authorized: false, retrySafe: false }, 503, headers);
+    }
+
     // H7G-004: `state` descreve apenas o TRANSPORTE. O resultado fiscal é o
     // `outcome` derivado server-side do cStat/protocolo.
     const outcome = (recorded.data as Record<string, unknown> | null)?.outcome ?? null;
@@ -419,10 +438,16 @@ Deno.serve(async (req) => {
       nProt: result.nProt,
       nRec: result.nRec,
       authorized: isAuthorized(result) && outcome === "AUTHORIZED",
-      retrySafe: isRetryable(result),
+      retrySafe: false,
+      reconciliationRequired: isRetryable(result),
     }, ok ? 200 : 502, headers);
 
   } catch (err) {
+    // A network failure after the POST may still have reached SEFAZ. Keep SENT
+    // persisted and require consultation; never classify it as safe to resend.
+    if (postAttempted) {
+      return json({ transmissionId, code: "FISCAL_RECONCILIATION_REQUIRED", reconciliationRequired: true, authorized: false, retrySafe: false }, 503, headers);
+    }
     const e = err as { code?: string; message?: string };
     const code = e.code ?? "SEFAZ_TRANSPORT_FAILED";
     await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
