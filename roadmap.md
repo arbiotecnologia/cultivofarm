@@ -1,5 +1,21 @@
 # Roadmap de Tarefas
 
+## Correção pós-auditoria — 2026-09-17 (H13)
+- [x] Fase 0: conexão canônica validada, marcador STAGING e produção bloqueada confirmados, ACLs e ledger lidos em transação somente leitura.
+- [x] Fase 1: nome e slogan oficiais em fonte única (`src/config/brand.ts`) e metadados do navegador/redes atualizados; históricos preservados.
+- [x] Fase 2: migration `20261036000000` aplicada no canônico após ensaio revertido — `anon` removido de duas funções fiscais, ACLs reafirmadas e retorno SEFAZ resiliente a falha de fechamento.
+- [x] Fase 5 (parcial): alvo canônico compartilhado, preflight recusado fora da allowlist, perfil fiscal exigido na borda do motor XML e `verify_jwt` explícito no transporte.
+- [x] Evidências: 1.814 testes aprovados, 4 pulados; única falha é o gate do `.env` gerenciado divergente (fail-closed correto).
+- [ ] Implantar as duas Edge Functions fiscais somente no canônico: canal de deploy disponível aponta para projeto proibido.
+- [ ] Montar e armazenar `nfeProc` e fechar a reconciliação após autorização.
+- [ ] Acionamento de consulta pós-timeout por tela ou rotina, para transmissões presas em SENT.
+- [ ] DPS/XML/transmissão nacional NFS-e após contrato oficial validado.
+- [ ] IBS/CBS permanece fail-closed até leiaute, XSD, vigência, CST e cClassTrib oficiais.
+- [ ] Inventário e proposta de baseline/squash das migrations, sem apagar arquivos.
+- [ ] Isolar scripts e harnesses históricos que citam projetos antigos.
+- [ ] E2E em homologação e `NFeStatusServico4` dependem de deploy, certificado e nova autorização.
+- Relatório: docs/auditorias/cultivo-farm-fiscal-correcao-final.md
+
 ## Correções fiscais autorizadas — 2026-09-17
 - [x] Registrar autorização para conexão e correções; preservar bloqueio de produção.
 - [x] Verificar canais disponíveis sem acessar destinos proibidos: credenciais gerenciadas sem alvo canônico comprovado; CULTIVOFARM_DSN e token administrativo ausentes; nenhuma conexão externa de banco listada.
