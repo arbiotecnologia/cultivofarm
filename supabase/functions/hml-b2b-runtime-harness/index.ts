@@ -616,6 +616,18 @@ async function run() {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  // H14 — harness histórico de homologação B2B, escrito para o staging antigo
+  // (`ikaauvsflpmamgxmkhoq`). Ele cria usuários e dados transacionais reais, o
+  // que é inaceitável contra o banco canônico de produção `swzpzcwiasxmjutrmvkm`.
+  // Fica desativado fail-closed; o código é preservado apenas como evidência.
+  return new Response(
+    JSON.stringify({
+      error: "harness_disabled",
+      code: "HML_HARNESS_DISABLED_NON_CANONICAL_TARGET",
+      detail: "Harness histórico desativado: alvo canônico não permite execução mutante.",
+    }),
+    { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
   if (!INTERNAL_SECRET || req.headers.get("x-internal-secret") !== INTERNAL_SECRET) {
     return new Response(JSON.stringify({ error: "forbidden" }), {
       status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
