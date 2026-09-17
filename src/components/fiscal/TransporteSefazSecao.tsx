@@ -30,6 +30,7 @@ const OUTCOME_LABEL: Record<SefazTransmissionOutcome, string> = {
   AUTHORIZED: "Autorizada",
   REJECTED: "Rejeitada",
   EVENT_REGISTERED: "Evento registrado",
+  SERVICE_INFO: "Disponibilidade do serviço",
   TRANSPORT_ERROR: "Erro de transporte",
 };
 

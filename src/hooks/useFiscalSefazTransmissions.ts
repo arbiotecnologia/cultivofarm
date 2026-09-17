@@ -21,6 +21,7 @@ export type SefazTransmissionOutcome =
   | "AUTHORIZED"
   | "REJECTED"
   | "EVENT_REGISTERED"
+  | "SERVICE_INFO"
   | "TRANSPORT_ERROR";
 
 export interface SefazTransmission {
