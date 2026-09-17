@@ -1,5 +1,15 @@
 # Roadmap de Tarefas
 
+## Rodada H14 — fechamento documental NF-e (2026-09-17)
+- [x] Migration `20261037000000` aplicada no canônico após ensaio revertido: bucket `fiscal-xml`, tabela de artefato protocolado com RLS e RPC service_role-only.
+- [x] `nfeProc` montado server-side a partir do XML assinado + protocolo da SEFAZ, com validação de chave/ambiente/protocolo, path determinístico e hash.
+- [x] Falha de fechamento mantém AUTHORIZED + pendência, sem reenvio; replay idempotente e conflito auditado.
+- [x] Harness histórico `hml-b2b-runtime-harness` desativado fail-closed (410).
+- [x] 2.081 testes aprovados (única falha: gate do `.env` gerenciado divergente), typecheck, lint e build OK.
+- [ ] Deploy real de `fiscal-xml-engine` e `fiscal-sefaz-transport` no canônico — prontas, NÃO publicadas.
+- [ ] Acionamento de consulta pós-timeout por tela/rotina.
+- [ ] E2E de homologação com certificado real.
+
 ## Correção pós-auditoria — 2026-09-17 (H13)
 - [x] Fase 0: conexão canônica validada, marcador STAGING e produção bloqueada confirmados, ACLs e ledger lidos em transação somente leitura.
 - [x] Fase 1: nome e slogan oficiais em fonte única (`src/config/brand.ts`) e metadados do navegador/redes atualizados; históricos preservados.

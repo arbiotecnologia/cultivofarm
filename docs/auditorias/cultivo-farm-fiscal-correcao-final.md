@@ -69,3 +69,86 @@ Pós-verificação de ACL no banco confirmou a ausência de `anon` nas seis fun�
 - **Migrations:** H13 aplicada e registrada; histórico preservado.
 
 **A emissão fiscal de produção continua bloqueada.** O sistema não está declarado apto ponta a ponta.
+
+
+---
+
+# Rodada H14 — fechamento documental da NF-e (nfeProc) — 17/09/2026
+
+## Estado auditado (repositório x banco canônico)
+
+- Banco canônico `swzpzcwiasxmjutrmvkm` confirmado no mesmo comando de leitura: marcador `STAGING`, `production_emission_allowed = false`.
+- H13 (`20261036000000`) confirmada aplicada; **não** foi duplicada nem reexecutada.
+- **Drift registrado:** os arquivos SQL da H13 e da H14 vivem em `restoration/fiscal-h13/` e `restoration/fiscal-h14/`, não em `supabase/migrations/`, porque a ferramenta de migrations do ambiente recusa escrita nesse diretório e só publica no projeto interno proibido. O ledger remoto recebeu as versões correspondentes.
+- **Drift corrigido:** o bucket privado `fiscal-xml`, usado pelo motor de XML e pelo transporte, não existia no banco canônico. Criado nesta rodada (privado, 10 MiB, apenas XML).
+- `fiscal-binding-diagnostics` estava correto: espera o ref canônico e trata `navf...` apenas como valor proibido, nunca como produção legítima.
+- Branding ativo confere como **Cultivo Farm**; nenhuma renomeação para “Cultiva Farm” foi feita.
+
+## O que já estava correto e foi preservado
+
+- Guard canônico, JWT, checagem de operador fiscal, `service_role` apenas no servidor, gravação `SENT` antes do POST e timeout pós-POST como `reconciliationRequired` com `retrySafe=false`.
+- `rpc_fiscal_sefaz_transmit_begin_v1` e `rpc_fiscal_sefaz_transmit_record_v1` seguem restritas a `service_role`.
+- Resiliência H13: retorno autorizado preservado mesmo com falha de fechamento.
+- NFS-e própria (`rpc_fiscal_calculate_service_invoice_v1`) e a separação de fluxos foram preservadas; nada de DPS/XML/transmissão nacional foi inventado.
+- IBS/CBS continua fail-closed: `fiscal_rtc_layout_support` permanece sem leiaute suportado e nenhuma alíquota universal foi inserida.
+
+## Arquivos alterados
+
+- `supabase/functions/_shared/fiscal/nfe/nfeProc.ts` (novo): montagem e validação do `nfeProc`, path determinístico e hash.
+- `supabase/functions/fiscal-sefaz-transport/index.ts`: fechamento documental idempotente após retorno autorizado.
+- `supabase/functions/hml-b2b-runtime-harness/index.ts`: harness histórico desativado fail-closed (HTTP 410), pois criava usuários e dados reais e apontava para o staging antigo.
+- `restoration/fiscal-h14/20261037000000_h14_nfeproc_document_closure.sql` e `restoration/fiscal-h14/ROLLBACK.sql` (novos).
+- `src/test/fiscal/nfeProcClosure.test.ts` (novo, 18 testes).
+
+## Migration nova e rollback
+
+Migration `20261037000000_h14_nfeproc_document_closure`, ensaiada em transação revertida e depois aplicada e registrada no ledger canônico:
+
+- bucket privado `fiscal-xml` garantido;
+- tabela `public.fiscal_protocoled_documents` append-only, única por nota/chave/protocolo, com hash SHA-256, bytes, vínculo com a transmissão e o run assinado, e `environment_code` travado em `2`;
+- `GRANT SELECT` para `authenticated` sob RLS com `fn_fiscal_can_operate(auth.uid())`; escrita apenas `service_role`;
+- `rpc_fiscal_invoice_store_protocoled_xml_v1`, `SECURITY DEFINER`, **service_role-only** (verificado: `postgres=X service_role=X`).
+
+Rollback: desativa somente o fechamento automático, mantendo tabela, bucket e artefatos. Nenhuma nota autorizada é rebaixada.
+
+## Lógica do nfeProc
+
+1. Recupera o `fiscal_xml_runs` `SIGNED` da nota, exigindo chave compatível, e baixa o XML assinado do bucket fiscal.
+2. Usa o bloco `protNFe` da resposta da SEFAZ já persistida — conteúdo vindo do cliente nunca é aceito.
+3. Valida assinatura presente, `Id="NFe<chave>"`, `chNFe`, `nProt`, `cStat` em 100/150 e `tpAmb=2` no documento e no protocolo; qualquer divergência falha fechado.
+4. Grava em `fiscal-xml` com path determinístico `nfeproc/<invoice>/<chave>-<protocolo>.xml`; objeto já existente é tratado como replay, sem sobrescrever.
+5. A RPC confere nota autorizada, chave coincidente e transmissão autorizada com o mesmo protocolo e ambiente antes de registrar.
+6. Só então `reconciliation_status` passa a `RECONCILED`; hash, path, transmissão e run ficam auditados.
+7. Replay do mesmo retorno é no-op; chave ou protocolo divergentes geram `FISCAL_PROTOCOLED_DOCUMENT_CONFLICT` com registro de conflito na auditoria.
+8. Falha de Storage, de montagem ou de registro mantém `AUTHORIZED` + `reconciliation_status=PENDING`, marca a transmissão com o código de pendência e **nunca** reenvia a NF-e.
+
+Observação: `fiscal_invoices.xml_document_id` referencia `financial_documents` e por isso **não** foi reaproveitado para o artefato fiscal; o vínculo oficial passou a ser `fiscal_protocoled_documents`.
+
+## Reconciliação
+
+Autorização direta e confirmação por consulta convergem para o mesmo fechamento idempotente. Depois de qualquer POST, a resposta jamais traz `retrySafe=true`; o duplo clique é barrado pela idempotência da abertura de transmissão e pelo índice único do artefato, de modo que nem transmissão nem artefato duplicam.
+
+## Edge Functions — estado real
+
+`fiscal-xml-engine` e `fiscal-sefaz-transport` estão **prontas para deploy e NÃO publicadas** no runtime canônico. O canal de publicação disponível aponta para projeto proibido, então nenhum deploy foi simulado. Ambas mantêm guard canônico, `verify_jwt = true` declarado para o transporte, produção bloqueada e `service_role` somente no servidor; os módulos relativos importados (`_shared/fiscal/...`, incluindo o novo `nfe/nfeProc.ts`) estão presentes e deployáveis.
+
+## Testes
+
+- Fiscal + configuração + segurança: **2.081 aprovados, 4 pulados, 1 falha**, sem nenhum skip novo.
+- A falha é o gate que lê o `.env` gerado pela plataforma (`yzszlzjpovmcteuxjznj`): fail-closed correto e esperado; o aplicativo usa o cliente canônico literal.
+- Novos testes do `nfeProc` (18): montagem, replay/path determinístico, conflito de chave, conflito de protocolo, retorno não autorizado, protocolo ausente, XML sem assinatura, bloqueio de produção, ACL da RPC, RLS da tabela, rollback sem destruição e harness desativado.
+- Ensaio revertido da migration: aprovado. Typecheck: sem erros. Lint dos arquivos alterados: limpo. Build: OK.
+
+## Pendências e riscos
+
+1. Deploy real das duas Edge Functions no canônico — sem isso o fechamento `nfeProc` não roda em runtime.
+2. E2E em homologação com certificado real e `NFeStatusServico4` não executado.
+3. Consulta pós-timeout ainda não tem acionamento automático nem botão dedicado; a via `consult` existe e já converge para o fechamento.
+4. NFS-e nacional (DPS/XML/XSD/transmissão) permanece sem contrato oficial validado.
+5. IBS/CBS segue fail-closed por ausência de leiaute suportado.
+6. Baseline/squash de migrations e isolamento dos scripts históricos continuam abertos.
+7. O `.env` gerenciado pela plataforma continua divergente do projeto canônico.
+
+## Confirmação final
+
+`production_emission_allowed = false`, ambiente `STAGING`, endpoints restritos à homologação. **Nenhuma nota fiscal real foi transmitida nesta rodada.** O sistema **não** está declarado apto para produção nem homologado ponta a ponta.
