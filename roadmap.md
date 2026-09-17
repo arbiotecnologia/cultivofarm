@@ -4,8 +4,9 @@
 - [x] Registrar autorização para conexão e correções; preservar bloqueio de produção.
 - [x] Verificar canais disponíveis sem acessar destinos proibidos: credenciais gerenciadas sem alvo canônico comprovado; CULTIVOFARM_DSN e token administrativo ausentes; nenhuma conexão externa de banco listada.
 - [x] Confirmar conexão direta ao host canônico: autenticação e SELECT current_database() concluídos; nenhuma alteração no banco.
-- [ ] Disponibilizar ferramentas de leitura e migrations comprovadamente canônicas: ferramenta de leitura disponível sem seleção de projeto e binding informado divergente; não utilizada. A conexão direta confirmada não redireciona essas ferramentas.
-- [ ] Comparar implantação e corrigir NF-e, depois NFS-e e IBS/CBS por modelo, conforme plano; sem alterações funcionais até concluir os gates.
+- [x] Auditar o banco canônico em somente leitura: funções, tabelas, políticas, índices e triggers fiscais inventariados; evidências em docs/auditorias/fiscal-correcao-fase-a-2026-09-17.md.
+- [ ] Aplicar migration 20261034000000 (revogar escrita técnica de retorno de usuários autenticados; bloquear preview de serviços): bloqueado pela ferramenta de migrations vinculada a destino proibido.
+- [ ] Concluir correções restantes de NF-e (totalização, certificado por emitente, fechamento de autorização/protocolo/XML), NFS-e própria e IBS/CBS: dependem da aplicação de migrations no banco canônico.
 - [ ] Comprovar percursos de homologação: depende das correções, contratos oficiais, credenciais e autorização da etapa de transmissão.
 
 ## Auditoria sequencial de emissão — 2026-09-17
