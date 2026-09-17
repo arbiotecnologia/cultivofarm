@@ -185,7 +185,7 @@ describe("Fase C6 — PIS/COFINS por CST e modalidade da base", () => {
           COFINS: { cst: "01", value: 19, rate: 7.6, baseValue: 250 },
         }),
       ),
-    ).toThrow(/NFE_PIS_CST_UNSUPPORTED/);
+    ).toThrow(expect.objectContaining({ code: "NFE_PIS_CST_UNSUPPORTED" }));
   });
 
   it("CST não tributado com valor apurado bloqueia a geração", () => {
@@ -197,7 +197,7 @@ describe("Fase C6 — PIS/COFINS por CST e modalidade da base", () => {
           COFINS: { cst: "01", value: 19, rate: 7.6, baseValue: 250 },
         }),
       ),
-    ).toThrow(/NFE_PIS_NT_WITH_VALUE/);
+    ).toThrow(expect.objectContaining({ code: "NFE_PIS_NT_WITH_VALUE" }));
   });
 
   it("PIS sem CST no snapshot bloqueia a geração", () => {
@@ -209,7 +209,7 @@ describe("Fase C6 — PIS/COFINS por CST e modalidade da base", () => {
           COFINS: { cst: "01", value: 19, rate: 7.6, baseValue: 250 },
         }),
       ),
-    ).toThrow(/NFE_PIS_CST_MISSING/);
+    ).toThrow(expect.objectContaining({ code: "NFE_PIS_CST_MISSING" }));
   });
 
   it("modalidade de base diferente do valor da operação bloqueia a geração", () => {
@@ -221,7 +221,7 @@ describe("Fase C6 — PIS/COFINS por CST e modalidade da base", () => {
           COFINS: { cst: "01", value: 19, rate: 7.6, baseValue: 250 },
         }),
       ),
-    ).toThrow(/NFE_ICMS_MODBC_UNSUPPORTED/);
+    ).toThrow(expect.objectContaining({ code: "NFE_ICMS_MODBC_UNSUPPORTED" }));
   });
 });
 

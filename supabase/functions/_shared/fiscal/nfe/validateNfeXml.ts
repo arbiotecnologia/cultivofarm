@@ -204,12 +204,19 @@ export const NFE_GRAMMAR: FieldRule = {
               name: "PIS", min: 1, max: 1, type: "C",
               children: [
                 {
-                  name: "PISAliq", min: 1, max: 1, type: "C",
+                  name: "PISAliq", min: 0, max: 1, type: "C",
                   children: [
                     { name: "CST", min: 1, max: 1, type: "N", minLen: 2, maxLen: 2 },
                     { name: "vBC", min: 1, max: 1, type: "D2" },
                     { name: "pPIS", min: 1, max: 1, type: "D2" },
                     { name: "vPIS", min: 1, max: 1, type: "D2" },
+                  ],
+                },
+                // Fase C6 — CST nao tributado usa o grupo PISNT.
+                {
+                  name: "PISNT", min: 0, max: 1, type: "C",
+                  children: [
+                    { name: "CST", min: 1, max: 1, type: "N", minLen: 2, maxLen: 2 },
                   ],
                 },
               ],
@@ -218,12 +225,19 @@ export const NFE_GRAMMAR: FieldRule = {
               name: "COFINS", min: 1, max: 1, type: "C",
               children: [
                 {
-                  name: "COFINSAliq", min: 1, max: 1, type: "C",
+                  name: "COFINSAliq", min: 0, max: 1, type: "C",
                   children: [
                     { name: "CST", min: 1, max: 1, type: "N", minLen: 2, maxLen: 2 },
                     { name: "vBC", min: 1, max: 1, type: "D2" },
                     { name: "pCOFINS", min: 1, max: 1, type: "D2" },
                     { name: "vCOFINS", min: 1, max: 1, type: "D2" },
+                  ],
+                },
+                // Fase C6 — CST nao tributado usa o grupo COFINSNT.
+                {
+                  name: "COFINSNT", min: 0, max: 1, type: "C",
+                  children: [
+                    { name: "CST", min: 1, max: 1, type: "N", minLen: 2, maxLen: 2 },
                   ],
                 },
               ],
