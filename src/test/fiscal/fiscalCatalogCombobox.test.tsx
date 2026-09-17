@@ -4,8 +4,7 @@
  * preservação de valor legado e estados de carregamento/erro/vazio.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import FiscalCatalogCombobox from "@/components/fiscal/FiscalCatalogCombobox";
 
@@ -41,7 +40,7 @@ describe("FiscalCatalogCombobox", () => {
       { wrapper },
     );
 
-    await userEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getByRole("combobox"));
     await waitFor(() => expect(screen.getByText("Venda interestadual")).toBeInTheDocument());
     const options = screen.getAllByRole("option");
     expect(options[0]).toHaveTextContent("6101");
@@ -68,9 +67,9 @@ describe("FiscalCatalogCombobox", () => {
       <FiscalCatalogCombobox catalogType="CFOP" value={null} onChange={onChange} onSelectEntry={onSelectEntry} />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getByRole("combobox"));
     await waitFor(() => expect(screen.getByText("Venda de produção do estabelecimento")).toBeInTheDocument());
-    await userEvent.click(screen.getByText("Venda de produção do estabelecimento"));
+    fireEvent.click(screen.getByText("Venda de produção do estabelecimento"));
     expect(onChange).toHaveBeenCalledWith("5101");
     expect(onSelectEntry).toHaveBeenCalledWith(expect.objectContaining({ code: "5101" }));
   });
@@ -95,7 +94,7 @@ describe("FiscalCatalogCombobox", () => {
     );
 
     render(<FiscalCatalogCombobox catalogType="CFOP" value={null} onChange={() => {}} />, { wrapper });
-    await userEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getByRole("combobox"));
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("não tem permissão");
     expect(alert.textContent).not.toMatch(/fiscal_reference_entries/);
@@ -104,7 +103,7 @@ describe("FiscalCatalogCombobox", () => {
   it("informa catálogo vazio sem sugerir código algum", async () => {
     rpc.mockResolvedValue({ data: [], error: null });
     render(<FiscalCatalogCombobox catalogType="CNAE" value={null} onChange={() => {}} />, { wrapper });
-    await userEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getByRole("combobox"));
     await waitFor(() => expect(screen.getByText(/Nenhum código encontrado/i)).toBeInTheDocument());
   });
 });
