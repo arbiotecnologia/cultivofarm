@@ -449,10 +449,14 @@ Deno.serve(async (req) => {
   const signedBytes = encoder.encode(signedXml);
   const signedSha = await sha256Hex(signedBytes);
   const signedPath = `${basePath}/nfe-${built.accessKey}-signed.xml`;
-  const upSigned = await admin.storage.from(BUCKET).upload(signedPath, signedBytes, {
-    contentType: "application/xml", upsert: false,
-  });
-  if (upSigned.error && !/exists|duplicate/i.test(upSigned.error.message ?? "")) {
+  const signedStore = await ensureStoredArtifact(admin, signedPath, signedBytes, signedSha);
+  if (signedStore === "XML_STORAGE_CONFLICT") {
+    return await fail("XML_STORAGE_CONFLICT", "artefato assinado divergente no mesmo caminho", 409);
+  }
+  if (signedStore === "XML_STORAGE_VERIFY_FAILED") {
+    return await fail("XML_STORAGE_VERIFY_FAILED", "não foi possível verificar o artefato assinado existente", 500);
+  }
+  if (signedStore) {
     return await fail("XML_STORAGE_FAILED", "falha ao armazenar o XML assinado", 500);
   }
 
