@@ -50,6 +50,12 @@ import {
   summarizeResponse,
 } from "../_shared/fiscal/nfe/sefazSoap.ts";
 import { isSupportedVaultFormat, parseSigningBundle } from "../_shared/fiscal/certificateVault.ts";
+import {
+  buildNfeProc,
+  nfeProcStoragePath,
+  NfeProcError,
+  sha256HexOf,
+} from "../_shared/fiscal/nfe/nfeProc.ts";
 
 const TPAMB = "2";
 const REQUEST_TIMEOUT_MS = 30_000;
