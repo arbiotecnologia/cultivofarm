@@ -152,3 +152,26 @@ Autorização direta e confirmação por consulta convergem para o mesmo fechame
 ## Confirmação final
 
 `production_emission_allowed = false`, ambiente `STAGING`, endpoints restritos à homologação. **Nenhuma nota fiscal real foi transmitida nesta rodada.** O sistema **não** está declarado apto para produção nem homologado ponta a ponta.
+
+
+## Correção pós-auditoria H14 — 17/09/2026 — somente repositório
+
+### Evidência externa recebida
+O proprietário confirmou diretamente no banco canônico: H14 no ledger, `RECONCILED` permitido pelo CHECK, bucket `fiscal-xml` privado/XML-only/10 MiB, tabela com RLS e zero linhas e RPC service_role-only. Esta rodada não realizou nova consulta nem alteração remota. `xml_document_id` não foi usado: sua FK referencia `financial_documents`; a tabela H14 permanece o vínculo fiscal adequado.
+
+### Correções locais
+- `protocoledStorage.ts`: classificação explícita de duplicidade; download obrigatório após colisão; SHA-256 dos bytes realmente armazenados e tamanho devem coincidir. Divergência retorna `FISCAL_PROTOCOLED_STORAGE_CONFLICT`; erro/ausência/leitura indisponível retorna `FISCAL_PROTOCOLED_STORAGE_VERIFY_FAILED`. O transporte retorna pendência antes da RPC, sem sobrescrever, sem reenvio e sem rebaixar AUTHORIZED.
+- `nfeProc.ts`: reutiliza parser XML local para capturar declarações herdadas do SOAP e adicioná-las à raiz do protocolo. Preserva conteúdo oficial e NFe assinada literalmente; recusa prefixos indefinidos e protocolos ambíguos. Teste DOM do nfeProc completo confirma ausência de prefixos órfãos.
+- Espelhos H13/H14 adicionados em `supabase/migrations/`, byte a byte iguais aos respectivos artefatos de `restoration/`. Drift destes dois arquivos resolvido; nenhum SQL foi executado, nenhuma migration foi reaplicada. Conteúdo histórico preservado sem alterações.
+- `hml-b2b-runtime-harness/index.ts`: stub de OPTIONS/410, sem clientes, credenciais, referências antigas ou criação de dados. Nenhuma rotina histórica mutante permanece no entrypoint.
+
+### Validação
+- Focados: 29 testes aprovados nos dois arquivos H14 (incluídos na execução final).
+- Suíte fiscal/config/security: **2.092 aprovados, 1 falha, 4 pulados preexistentes**; nenhum skip adicionado. Falha em `binding-gate.integration.test.ts`: ambiente gerenciado divergente do canônico, recusado pelo gate. Não considerar suíte integralmente aprovada; depende de correção externa do binding.
+- ESLint dos cinco arquivos TypeScript alterados: aprovado, sem diagnósticos.
+- Compilação automática: `build OK` em 2026-09-17T22:15:17Z.
+- Typecheck separado não executado nesta rodada: execução manual de build/typecheck é vedada pelo ambiente; log automático disponível comprova build, não evidencia typecheck separado. Validação de tipos permanece não comprovada.
+- Testes de replay são locais com objetos simulados; não constituem smoke de Storage/Edge Function implantada.
+
+### Limites e estado real
+As Edge Functions continuam **NÃO publicadas**, aguardando auditoria externa e deploy autorizado no alvo canônico. Não houve deploy, acesso remoto ao banco, transmissão de NF-e/NFS-e ou alteração dos bloqueios de produção. `production_emission_allowed=false` permanece conforme evidência anterior, sem revalidação remota nesta rodada. NFS-e e IBS/CBS não foram alterados. Não se declara homologação ponta a ponta nem aptidão para produção.
