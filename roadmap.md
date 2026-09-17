@@ -1,5 +1,11 @@
 # Roadmap de Tarefas
 
+## NF-e e NFS-e — ponta a ponta em homologação
+- [x] Conferir evidências locais de preparação, cálculo e XML; relatório em docs/auditorias/nfe-nfse-ponta-a-ponta-fase1.md.
+- [ ] Comparar implantação real: bloqueado por canal gerenciado divergente; requer acesso comprovado ao banco canônico.
+- [ ] Fechar contratos oficiais NF-e/NFS-e e matriz por campo até retorno autorizado; validação integral de fontes/XSD pendente.
+- [ ] Fases 2/3: aguardam prompts específicos e autorizações; transmissão somente em homologação.
+
 ## NFS-e — valores e tributos, Fase 1 (2026-09-17)
 - [x] Auditar campos, snapshots e motor local, incluindo RTC IBS/CBS existente; relatório em docs/auditorias/nfse-valores-tributos-fase1-2026-09-17.md.
 - [ ] Concluir contrato oficial para CBS 0,9% e IBS total 0,1%: fontes identificadas, mas leitura integral oficial/XSD/checksum e aplicabilidade pendentes; consulta direta à lei apresentou timeout.
