@@ -1,8 +1,9 @@
 # Roadmap de Tarefas
 
 ## CNAEs — harmonia da aba Empresa
-- [ ] Integrar lista de descrições completas e botão de adicionar ao estilo existente, sem banco ou publicação.
-- [ ] Validar testes e apresentação; preservar demais tarefas históricas fora deste escopo.
+- [x] Integrar lista de descrições completas e botão de adicionar ao estilo existente, sem banco ou publicação.
+- [x] Testes focados: 9/9; suíte fiscal/config: 1.795 aprovados, 4 pulados, 1 falha de binding; build automático OK.
+- [ ] Validação visual autenticada bloqueada pelo gate de ambiente divergente; nenhuma chamada ao banco permitida. Typecheck isolado não executado por restrição do ambiente. Demais tarefas históricas fora deste escopo.
 
 ## CQ — alinhamento final 2026-09-13
 - [x] Subconjunto seguro aplicado manualmente e pós-check aprovado (relato do usuário; sem banco nesta rodada).
