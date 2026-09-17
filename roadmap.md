@@ -1,5 +1,12 @@
 # Roadmap de Tarefas
 
+## Correções fiscais autorizadas — 2026-09-17
+- [x] Registrar autorização para conexão e correções; preservar bloqueio de produção.
+- [x] Verificar canais disponíveis sem acessar destinos proibidos: credenciais gerenciadas sem alvo canônico comprovado; CULTIVOFARM_DSN e token administrativo ausentes; nenhuma conexão externa de banco listada.
+- [ ] Disponibilizar canal administrativo e ferramenta de migrations comprovadamente canônicos: bloqueado por acesso indisponível nesta sessão.
+- [ ] Comparar implantação e corrigir NF-e, depois NFS-e e IBS/CBS por modelo, conforme plano; sem alterações funcionais até concluir os gates.
+- [ ] Comprovar percursos de homologação: depende das correções, contratos oficiais, credenciais e autorização da etapa de transmissão.
+
 ## Auditoria sequencial de emissão — 2026-09-17
 - [x] Auditar NF-e: preparação, cálculo, XML, transmissão, retorno e segurança no código atual.
 - [x] Auditar NFS-e após NF-e, distinguindo o fluxo próprio dos caminhos exclusivos de mercadorias.
