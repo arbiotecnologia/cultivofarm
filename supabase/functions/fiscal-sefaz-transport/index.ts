@@ -385,7 +385,7 @@ Deno.serve(async (req) => {
   let postAttempted = false;
   const started = Date.now();
   try {
-    material = await loadMtlsMaterial(admin);
+    material = await loadMtlsMaterial(admin, canonicalInvoiceId);
     const sent = await admin.rpc("rpc_fiscal_sefaz_transmit_record_v1", {
       _transmission_id: transmissionId, _state: "SENT", _patch: {},
     });
