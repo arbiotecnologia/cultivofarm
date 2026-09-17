@@ -1,5 +1,11 @@
 # Roadmap de Tarefas
 
+## NFS-e — valores e tributos, Fase 1 (2026-09-17)
+- [ ] Auditar campos, snapshots e motor local, incluindo RTC IBS/CBS existente.
+- [ ] Conferir fontes oficiais para CBS 0,9% e IBS total 0,1%, vigência, base e totalização.
+- [ ] Inspecionar schema e permissões implantados somente com conexão comprovada ao canônico; canal gerenciado divergente não pode ser utilizado.
+- [ ] Consolidar matriz e gates; Fases 2/3 aguardam prompt específico. Sem alterações funcionais, emissão ou publicação.
+
 ## NFS-e Nacional — N0 (2026-09-17)
 - [x] Receber XML e DANFSe reais; conferir estrutura e cálculos da referência sem importar dados pessoais no projeto.
 - [x] Consolidar matriz XML × código atual em docs/auditorias/nfse-nacional-n0-2026-09-17.md; cálculos independentes 3/3, sem teste do motor.
