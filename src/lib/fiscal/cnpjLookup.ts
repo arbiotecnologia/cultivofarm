@@ -1,30 +1,29 @@
 /**
- * Fase Fiscal H3-A — Consulta cadastral de CNPJ via Edge Function.
+ * Consulta cadastral de CNPJ na tela fiscal da empresa.
  *
  * FONTE
  * - BrasilAPI (`/api/cnpj/v1/{cnpj}`), com dados públicos originados do
  *   CNPJ/RFB. Não é canal oficial da RFB em tempo real. Os dados devem ser
  *   revisados pelo usuário antes de salvar.
  *
- * SEGURANÇA / OBSERVABILIDADE
- * - O frontend chama SOMENTE a Edge Function `fiscal-cnpj-lookup`
- *   (autenticada, com verificação de papel via `has_role`).
- * - Não há fallback direto para BrasilAPI pelo navegador — isso violaria a
- *   autorização e a observabilidade servidor-side.
+ * CANAL
+ * - Mesmo mecanismo já usado nos cadastros de Cliente e Parceiro B2B:
+ *   requisição direta do navegador à base pública. A Edge Function
+ *   `fiscal-cnpj-lookup` permanece no repositório, sem deploy, caso se
+ *   queira voltar ao canal server-side.
  * - Consulta automática indisponível para CNPJ alfanumérico enquanto a
  *   BrasilAPI não expuser o formato — o preenchimento manual continua
  *   possível e o CNPJ digitado nunca é alterado por esta função.
  *
  * PROTEÇÕES:
  * - Validação de DV canônica (`validateCnpjAlpha`) antes do request.
- * - `AbortSignal` encaminhado a `supabase.functions.invoke` (functions-js
- *   2.5+ suporta `signal`), permitindo cancelamento real da chamada de rede
- *   ao desmontar o componente.
+ * - `AbortSignal` + timeout próprio, permitindo cancelamento real da
+ *   chamada de rede ao desmontar o componente.
  * - Whitelist de campos aplicáveis (nenhum campo protegido é tocado).
  */
 import type { CompanyFiscalFormValues } from "./companyFiscalValidation";
 import { unmaskCnpjAlpha, validateCnpjAlpha } from "./cnpjAlpha";
-import { supabase } from "@/integrations/supabase/client";
+
 
 export type CnpjLookupErrorCode =
   | "invalid_cnpj"
