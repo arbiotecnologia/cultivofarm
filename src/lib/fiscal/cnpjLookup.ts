@@ -187,7 +187,7 @@ export async function lookupCnpj(
   const values: Record<string, string> = {};
 
   assign(values, "legal_name", d.razao_social);
-  assign(values, "trade_name", d.nome_fantasia ?? d.razao_social);
+  assign(values, "trade_name", clean200(d.nome_fantasia) ?? d.razao_social);
   assign(values, "primary_cnae", d.cnae_fiscal);
   assign(values, "postal_code", clean200(d.cep)?.replace(/\D/g, ""));
   assign(values, "street", d.logradouro);
