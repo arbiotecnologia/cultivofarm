@@ -22,6 +22,11 @@
  */
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
+import {
+  CANONICAL_PROJECT_REF,
+  CANONICAL_SUPABASE_URL,
+  isCanonicalSupabaseUrl,
+} from "../_shared/fiscal/canonicalProject.ts";
 import { buildNfeXml, NFE_NAMESPACE, type NfePayload } from "../_shared/fiscal/nfe/buildNfeXml.ts";
 import { validateNfeXml } from "../_shared/fiscal/nfe/validateNfeXml.ts";
 import { signNfeXml, verifyNfeSignature } from "../_shared/fiscal/nfe/signNfeXml.ts";
@@ -54,8 +59,7 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 /** Prefixo obrigatório da fixture sintética do harness F4.2. */
 const HARNESS_FIXTURE_PREFIX = "F42-HARNESS-";
 /** Único project_ref onde a via de chave de teste pode ser ativada. */
-const STAGING_PROJECT_REF = "swzpzcwiasxmjutrmvkm";
-const CANONICAL_SUPABASE_URL = "https://swzpzcwiasxmjutrmvkm.supabase.co";
+const STAGING_PROJECT_REF = CANONICAL_PROJECT_REF;
 
 function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   if (!raw) return null;
@@ -148,8 +152,8 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: "server_misconfigured" }, 500, headers);
-  if (supabaseUrl !== CANONICAL_SUPABASE_URL) {
-    return json({ error: "FISCAL_CANONICAL_PROJECT_REQUIRED" }, 503, headers);
+  if (!isCanonicalSupabaseUrl(supabaseUrl)) {
+    return json({ error: "FISCAL_CANONICAL_PROJECT_REQUIRED", expected: CANONICAL_SUPABASE_URL }, 503, headers);
   }
 
   // Cliente do usuário: toda autorização de negócio ocorre nas RPCs
@@ -159,7 +163,15 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
   const claims = await authed.auth.getClaims(authHeader.replace("Bearer ", ""));
-  if (!claims.data?.claims?.sub) return json({ error: "unauthorized" }, 401, headers);
+  const actor = claims.data?.claims?.sub as string | undefined;
+  if (!actor) return json({ error: "unauthorized" }, 401, headers);
+
+  // Defesa em profundidade: o perfil fiscal interno é exigido já no edge, além
+  // da validação fail-closed das RPCs SECURITY DEFINER chamadas adiante.
+  const canOperate = await authed.rpc("fn_fiscal_can_operate", { _uid: actor });
+  if (canOperate.error || canOperate.data !== true) {
+    return json({ error: "permission_denied" }, 403, headers);
+  }
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
