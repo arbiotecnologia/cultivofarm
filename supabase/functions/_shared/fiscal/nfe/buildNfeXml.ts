@@ -243,6 +243,15 @@ function icmsBlock(item: Record<string, unknown>, crt: string): string {
   }
 
   const cst = String(item.CST ?? icms.cst ?? "").trim() || "00";
+  // Fase C6: somente modBC=3 (valor da operação) está homologado nesta etapa.
+  // Qualquer outra modalidade declarada na regra bloqueia a geração.
+  const modBC = String(icms.baseModality ?? icms.modBC ?? "3").trim() || "3";
+  if (modBC !== "3") {
+    throw new NfeBuildError(
+      "NFE_ICMS_MODBC_UNSUPPORTED",
+      `item ${nItem}: modalidade de base de cálculo ${modBC} não homologada (apenas valor da operação)`,
+    );
+  }
 
   if (cst === "20") {
     if (!(redPct > 0)) {
@@ -255,7 +264,7 @@ function icmsBlock(item: Record<string, unknown>, crt: string): string {
       "<ICMS><ICMS20>",
       tag("orig", orig),
       tag("CST", "20"),
-      tag("modBC", "3"),
+      tag("modBC", modBC),
       tag("pRedBC", dec(redPct, 4)),
       tag("vBC", base),
       tag("pICMS", rate),
@@ -276,7 +285,7 @@ function icmsBlock(item: Record<string, unknown>, crt: string): string {
       "<ICMS><ICMS00>",
       tag("orig", orig),
       tag("CST", cst),
-      tag("modBC", "3"),
+      tag("modBC", modBC),
       tag("vBC", base),
       tag("pICMS", rate),
       tag("vICMS", value),
@@ -344,24 +353,67 @@ function ipiBlock(item: Record<string, unknown>): string {
   ].join("");
 }
 
+/**
+ * Fase C6 — dispatch fail-closed de PIS/COFINS por CST.
+ *
+ * CST de tributação por alíquota  -> PISAliq / COFINSAliq
+ * CST não tributado / isento etc. -> PISNT  / COFINSNT
+ * Demais CSTs (quantidade, ST, outras operações) ainda não têm grupo
+ * homologado: a geração é bloqueada com erro técnico explícito. NUNCA
+ * colocamos um CST incompatível dentro do grupo de alíquota.
+ */
+const PIS_COFINS_CST_ALIQ = new Set(["01", "02"]);
+const PIS_COFINS_CST_NT = new Set(["04", "05", "06", "07", "08", "09"]);
+
+function contribBlock(
+  kind: "PIS" | "COFINS",
+  data: Record<string, unknown>,
+  nItem: string,
+): string {
+  const cst = String(data.cst ?? "").trim();
+  if (!cst) {
+    throw new NfeBuildError(
+      `NFE_${kind}_CST_MISSING`,
+      `item ${nItem}: ${kind} sem CST no snapshot tributário`,
+    );
+  }
+  if (num(data.baseReductionPct) > 0 && !PIS_COFINS_CST_ALIQ.has(cst)) {
+    throw new NfeBuildError(
+      `NFE_${kind}_REDUCTION_INCOMPATIBLE`,
+      `item ${nItem}: redução da base de ${kind} incompatível com CST ${cst}`,
+    );
+  }
+  if (PIS_COFINS_CST_ALIQ.has(cst)) {
+    const inner = [
+      tag("CST", cst),
+      tag("vBC", dec(data.baseValue ?? data.base ?? 0, 2)),
+      tag(kind === "PIS" ? "pPIS" : "pCOFINS", dec(data.rate ?? 0, 2)),
+      tag(kind === "PIS" ? "vPIS" : "vCOFINS", dec(data.value ?? 0, 2)),
+    ].join("");
+    return `<${kind}><${kind}Aliq>${inner}</${kind}Aliq></${kind}>`;
+  }
+  if (PIS_COFINS_CST_NT.has(cst)) {
+    if (num(data.value) > 0) {
+      throw new NfeBuildError(
+        `NFE_${kind}_NT_WITH_VALUE`,
+        `item ${nItem}: CST ${cst} de ${kind} não tributado com valor apurado`,
+      );
+    }
+    return `<${kind}><${kind}NT>${tag("CST", cst)}</${kind}NT></${kind}>`;
+  }
+  throw new NfeBuildError(
+    `NFE_${kind}_CST_UNSUPPORTED`,
+    `item ${nItem}: CST ${cst} de ${kind} ainda não possui grupo XML homologado`,
+  );
+}
+
 function pisCofinsBlock(item: Record<string, unknown>): string {
+  const nItem = String(item.nItem ?? "?");
   const snapshot = (item.taxSnapshot ?? {}) as Record<string, unknown>;
   const taxes = (snapshot.taxes ?? {}) as Record<string, Record<string, unknown>>;
-  const pis = taxes.PIS ?? {};
-  const cofins = taxes.COFINS ?? {};
   return [
-    "<PIS><PISAliq>",
-    tag("CST", String(pis.cst ?? "01")),
-    tag("vBC", dec(pis.baseValue ?? pis.base ?? 0, 2)),
-    tag("pPIS", dec(pis.rate ?? 0, 2)),
-    tag("vPIS", dec(pis.value ?? 0, 2)),
-    "</PISAliq></PIS>",
-    "<COFINS><COFINSAliq>",
-    tag("CST", String(cofins.cst ?? "01")),
-    tag("vBC", dec(cofins.baseValue ?? cofins.base ?? 0, 2)),
-    tag("pCOFINS", dec(cofins.rate ?? 0, 2)),
-    tag("vCOFINS", dec(cofins.value ?? 0, 2)),
-    "</COFINSAliq></COFINS>",
+    contribBlock("PIS", taxes.PIS ?? {}, nItem),
+    contribBlock("COFINS", taxes.COFINS ?? {}, nItem),
   ].join("");
 }
 
