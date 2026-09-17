@@ -56,6 +56,7 @@ import {
   NfeProcError,
   sha256HexOf,
 } from "../_shared/fiscal/nfe/nfeProc.ts";
+import { isAlreadyExistingObject, verifyExistingObject } from "../_shared/fiscal/nfe/protocoledStorage.ts";
 
 const TPAMB = "2";
 const REQUEST_TIMEOUT_MS = 30_000;
