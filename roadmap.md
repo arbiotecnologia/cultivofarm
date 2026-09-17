@@ -5,9 +5,16 @@
 - [x] Verificar canais disponíveis sem acessar destinos proibidos: credenciais gerenciadas sem alvo canônico comprovado; CULTIVOFARM_DSN e token administrativo ausentes; nenhuma conexão externa de banco listada.
 - [x] Confirmar conexão direta ao host canônico: autenticação e SELECT current_database() concluídos; nenhuma alteração no banco.
 - [x] Auditar o banco canônico em somente leitura: funções, tabelas, políticas, índices e triggers fiscais inventariados; evidências em docs/auditorias/fiscal-correcao-fase-a-2026-09-17.md.
-- [ ] Aplicar migration 20261034000000 (revogar escrita técnica de retorno de usuários autenticados; bloquear preview de serviços): bloqueado pela ferramenta de migrations vinculada a destino proibido.
-- [ ] Concluir correções restantes de NF-e (totalização, certificado por emitente, fechamento de autorização/protocolo/XML), NFS-e própria e IBS/CBS: dependem da aplicação de migrations no banco canônico.
-- [ ] Comprovar percursos de homologação: depende das correções, contratos oficiais, credenciais e autorização da etapa de transmissão.
+- [x] Migration `fiscal_transport_preview_safety` aplicada externamente e validada pelo proprietário somente em `swzpzcwiasxmjutrmvkm`; não repetida pelo agente.
+- [x] Migration `fiscal_canonical_environment_gate` aplicada externamente no canônico: STAGING, produção bloqueada e transmissão restrita a `service_role`; não repetida.
+- [x] H12 (`20261035000000`) aplicada no canônico após validação do marcador no mesmo comando e dry-run revertido: totalização NF-e, certificado por emitente/nota, fechamento de autorização e cálculo próprio NFS-e com snapshots.
+- [x] NFS-e integrada à preparação existente com prévia server-side e persistência explícita de ISS, retenções e líquido; sem criar motor ou rota paralelos.
+- [ ] Montar e armazenar `nfeProc`; a autorização permanece com reconciliação pendente até esse artefato ser confirmado.
+- [ ] Implantar `fiscal-xml-engine` e `fiscal-sefaz-transport` exclusivamente no canônico: endpoints verificados retornaram 404 e não há token de deploy disponível neste ambiente.
+- [ ] Implementar DPS/XML/transmissão nacional NFS-e somente após validar contrato oficial/XSD; `nationalTransmissionSupported=false` permanece obrigatório.
+- [ ] IBS/CBS: tabela de suporte RTC vazia e gate de leiaute falso; alíquotas não são aplicadas como padrão universal nem serializadas sem leiaute oficialmente validado.
+- [ ] Comprovar os dois percursos E2E em homologação após deploy, certificado e fixtures autorizadas; produção e transmissão real continuam bloqueadas.
+- [x] Validação local final desta etapa: 1.730 testes fiscais aprovados, 4 pulados; typecheck e build aprovados. Lint dos arquivos alterados ficou sem erros após tipagem do transporte; lint global segue bloqueado por dívidas preexistentes fora do fiscal.
 
 ## Auditoria sequencial de emissão — 2026-09-17
 - [x] Auditar NF-e: preparação, cálculo, XML, transmissão, retorno e segurança no código atual.

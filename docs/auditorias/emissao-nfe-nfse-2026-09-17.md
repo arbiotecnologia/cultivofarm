@@ -83,3 +83,17 @@ Nenhum build/typecheck manual foi executado nesta auditoria documental. Log auto
 5. Executar dois E2Es independentes em homologação com autorização específica: salvar/reabrir, calcular, validar XML, transmitir, consultar autorização e recuperar documento; testar timeout, rejeição e repetição.
 
 **Não apto para declaração de ponta a ponta ou produção com as evidências desta auditoria.** Correções de código, banco e funções dependem de etapa autorizada; nenhuma trava foi removida.
+
+## 5. Continuidade autorizada — H12
+
+Estado atualizado após conexão direta validada exclusivamente com o projeto canônico `swzpzcwiasxmjutrmvkm`:
+
+- As migrations `fiscal_transport_preview_safety` e `fiscal_canonical_environment_gate` foram aplicadas externamente pelo proprietário e não foram repetidas.
+- A migration H12 (`20261035000000_h12_fiscal_totals_certificate_authorization_services.sql`) passou por dry-run revertido e foi aplicada no banco canônico. Ela corrige a totalização NF-e, resolve o certificado pelo emitente da nota, fecha o estado de autorização e cria a apuração NFS-e própria dentro da arquitetura fiscal existente.
+- O transporte agora exige persistência `SENT` antes do POST, mantém falhas incertas como reconciliação pendente e seleciona o certificado por `invoice_id`; não há retry automático após timeout/rede.
+- A preparação NFS-e ganhou prévia server-side e persistência explícita de ISS, ISS retido, retenções federais e líquido, preservando snapshots e o identificador/versão do rascunho.
+- `fiscal_rtc_layout_support` permanece vazio e o gate NFS-e/IBS está falso. IBS 0,1% e CBS 0,9% não são aplicados nem emitidos sem vigência, cenário e leiaute oficial validados.
+- Os endpoints canônicos de `fiscal-xml-engine` e `fiscal-sefaz-transport` responderam 404. Sem token de deploy disponível, nenhuma função foi publicada; nenhum destino alternativo foi usado.
+- O `nfeProc` ainda não é montado/armazenado, e DPS/XML/transmissão nacional NFS-e continuam bloqueados (`nationalTransmissionSupported=false`).
+
+Validação local: 1.730 testes fiscais aprovados e 4 pulados; typecheck e build aprovados. O lint global continua falhando por dívidas preexistentes fora do módulo fiscal; os arquivos alterados foram validados separadamente. Portanto, o estado permanece **apto apenas à continuação controlada da homologação**, não apto a E2E completo nem a produção.
