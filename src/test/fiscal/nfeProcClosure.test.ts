@@ -165,8 +165,12 @@ describe("H14 — migration de fechamento documental", () => {
 describe("H14 — harness histórico não pode rodar contra o banco canônico", () => {
   const harness = readFile("supabase/functions/hml-b2b-runtime-harness/index.ts");
 
-  it("está desativado fail-closed", () => {
+  it("está desativado fail-closed e é autocontido", () => {
     expect(harness).toContain("HML_HARNESS_DISABLED_NON_CANONICAL_TARGET");
     expect(harness).toMatch(/status: 410/);
+    expect(harness).not.toMatch(/^\s*import\s/m);
+    expect(harness).not.toMatch(/from\s+["'](npm:|https?:\/\/)/);
+    expect(harness).not.toMatch(/createClient|\.rpc\(|\.from\(|Deno\.env|ikaauvsflpmamgxmkhoq/);
+    expect(harness).toMatch(/Access-Control-Allow-Origin/);
   });
 });
