@@ -209,6 +209,30 @@ BEGIN
      AND (pi->'taxes') IS DISTINCT FROM (i.tax_snapshot->'taxes');
   PERFORM pg_temp.chk('C7 multi-item: preview == snapshot (zero centavo de diferenca)', v_diff = 0, v_diff::text||' itens divergentes');
 
+  -- ============ C5 — auditoria sobre o snapshot REAL ============
+  PERFORM pg_temp.chk('C5 auditoria registrada com taxKind ICMS',
+    EXISTS (SELECT 1 FROM public.fiscal_audit_log
+             WHERE record_id = v_item AND action = 'BASE_REDUCTION_CHANGE'
+               AND new_values->>'taxKind' = 'ICMS'));
+  PERFORM pg_temp.chk('C5 auditoria traz regra/fundamento do snapshot real',
+    EXISTS (SELECT 1 FROM public.fiscal_audit_log
+             WHERE record_id = v_item AND action = 'BASE_REDUCTION_CHANGE'
+               AND new_values->>'ruleKey' = 'SYN-C-ICMS-20'
+               AND new_values->>'legalBasis' IS NOT NULL
+               AND new_values->>'baseReductionMode' = 'MANUAL'
+               AND new_values->>'reason' IS NOT NULL));
+
+  -- C5 — motivo obrigatorio na reducao MANUAL (fail-closed no motor canonico).
+  BEGIN
+    PERFORM public.rpc_fiscal_tax_preview_v1(v_inv2, jsonb_build_array(
+      jsonb_build_object('item_sequence', 1, 'tax_input_snapshot',
+        jsonb_build_object('ICMS', jsonb_build_object('baseReductionPct', 60)))));
+    PERFORM pg_temp.chk('C5 reducao MANUAL sem motivo e bloqueada', false, 'nao levantou erro');
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM pg_temp.chk('C5 reducao MANUAL sem motivo e bloqueada',
+      SQLERRM LIKE '%FISCAL_BASE_REDUCTION_REASON_REQUIRED%', SQLERRM);
+  END;
+
   PERFORM pg_temp.chk('C3 totais do documento incluem encargos',
     (SELECT (fiscal_totals_snapshot->>'vFrete')::numeric FROM public.fiscal_invoices WHERE id = v_inv2) = 100.01,
     (SELECT fiscal_totals_snapshot->>'vFrete' FROM public.fiscal_invoices WHERE id = v_inv2));
