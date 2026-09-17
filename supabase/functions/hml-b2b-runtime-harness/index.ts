@@ -1,5 +1,9 @@
 /** Historical mutating harness disabled. No clients, credentials or data operations. */
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "OPTIONS, POST",
+};
 
 Deno.serve((req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
