@@ -115,13 +115,15 @@ interface MtlsMaterial {
 }
 
 // deno-lint-ignore no-explicit-any
-async function loadMtlsMaterial(admin: any): Promise<MtlsMaterial> {
-  const certRow = await admin
-    .from("v_fiscal_certificate_readiness")
-    .select("certificate_id, status, environment")
-    .eq("status", "AVAILABLE").eq("environment", "HOMOLOGATION")
-    .order("valid_until", { ascending: false }).limit(1).maybeSingle();
-  const certificateId = certRow.data?.certificate_id as string | undefined;
+async function loadMtlsMaterial(admin: any, invoiceId: string | null): Promise<MtlsMaterial> {
+  // H12: o certificado é SEMPRE o do emitente vinculado à nota — nunca "o mais
+  // recente disponível". Sem nota resolvida ou sem vínculo inequívoco: fail-closed.
+  if (!invoiceId) throw new SefazSoapError("CERTIFICATE_REQUIRED");
+  const bound = await admin.rpc("rpc_fiscal_certificate_for_invoice_v1", { _invoice_id: invoiceId });
+  if (bound.error) throw new SefazSoapError("CERTIFICATE_REQUIRED");
+  const certificateId = (bound.data as Record<string, unknown> | null)?.certificateId as
+    | string
+    | undefined;
   if (!certificateId) throw new SefazSoapError("CERTIFICATE_REQUIRED");
 
   const masterKey = decodeMasterKey();
