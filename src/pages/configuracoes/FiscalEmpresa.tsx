@@ -686,10 +686,10 @@ export default function FiscalEmpresa() {
                   <SelectNative id="nfe_contingency_mode" value={(nfe.contingency_mode as string) ?? "DISABLED"} options={NFE_CONTINGENCY.toOptions(NFE_CONTINGENCIA)} onChange={(v) => setNfe("contingency_mode", v)} />
                 </FieldRow>
                 <FieldRow id="nfe_cfop_in" label="CFOP interno sugerido" description="Ex.: 5102 — Venda de mercadoria adquirida.">
-                  <FiscalCatalogCombobox id="nfe_cfop_in" catalogType="CFOP" parentCode="SAIDA" metadataFilter={{ direction: "OUT", scope: "INTRA" }} preferredCodes={["5101", "5102"]} value={(nfe.suggested_cfop_in_state as string) || null} onChange={(code) => setNfe("suggested_cfop_in_state", code ?? "")} placeholder="Selecionar CFOP interno…" searchPlaceholder="Buscar por código ou descrição…" multiline disabled={readonly} />
+                  <FiscalCatalogCombobox id="nfe_cfop_in" catalogType="CFOP" parentCode="SAIDA" codePrefix="5" metadataFilter={{ direction: "OUT", scope: "INTRA" }} preferredCodes={["5101", "5102"]} value={(nfe.suggested_cfop_in_state as string) || null} onChange={(code) => setNfe("suggested_cfop_in_state", code ?? "")} placeholder="Selecionar CFOP interno…" searchPlaceholder="Buscar por código ou descrição…" multiline disabled={readonly} />
                 </FieldRow>
                 <FieldRow id="nfe_cfop_out" label="CFOP interestadual sugerido" description="Ex.: 6102 — Venda interestadual.">
-                  <FiscalCatalogCombobox id="nfe_cfop_out" catalogType="CFOP" parentCode="SAIDA" metadataFilter={{ direction: "OUT", scope: "INTER" }} preferredCodes={["6101", "6102"]} value={(nfe.suggested_cfop_interstate as string) || null} onChange={(code) => setNfe("suggested_cfop_interstate", code ?? "")} placeholder="Selecionar CFOP interestadual…" searchPlaceholder="Buscar por código ou descrição…" multiline disabled={readonly} />
+                  <FiscalCatalogCombobox id="nfe_cfop_out" catalogType="CFOP" parentCode="SAIDA" codePrefix="6" metadataFilter={{ direction: "OUT", scope: "INTER" }} preferredCodes={["6101", "6102"]} value={(nfe.suggested_cfop_interstate as string) || null} onChange={(code) => setNfe("suggested_cfop_interstate", code ?? "")} placeholder="Selecionar CFOP interestadual…" searchPlaceholder="Buscar por código ou descrição…" multiline disabled={readonly} />
                 </FieldRow>
                 <div className="md:col-span-2">
                   <FieldRow id="nfe_info" label="Informações adicionais padrão">

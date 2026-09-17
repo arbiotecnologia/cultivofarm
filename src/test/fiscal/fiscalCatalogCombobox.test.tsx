@@ -125,6 +125,7 @@ describe("FiscalCatalogCombobox", () => {
         value={null}
         onChange={() => {}}
         parentCode="SAIDA"
+        codePrefix="5"
         metadataFilter={{ direction: "OUT", scope: "INTRA" }}
       />,
       { wrapper },
@@ -132,5 +133,6 @@ describe("FiscalCatalogCombobox", () => {
     fireEvent.click(screen.getByRole("combobox"));
     await waitFor(() => expect(screen.getByText("Venda interna")).toBeInTheDocument());
     expect(screen.queryByText("Venda interestadual")).not.toBeInTheDocument();
+    expect(rpc).toHaveBeenCalledWith("rpc_fiscal_catalog_search_v1", expect.objectContaining({ p_query: "5" }));
   });
 });

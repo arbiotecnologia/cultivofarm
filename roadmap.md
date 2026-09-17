@@ -1,10 +1,10 @@
 # Roadmap de Tarefas
 
 ## Natureza da operação e CFOPs selecionáveis
-- [ ] Substituir natureza livre por seleção pesquisável com opções personalizadas reutilizáveis.
-- [ ] Converter CFOP interno e interestadual em seletores do catálogo, preservando legados.
-- [ ] Reutilizar a seleção de natureza na preparação de rascunhos sem sobrepor resoluções obrigatórias do servidor.
-- [ ] Validar com testes fiscais/config, tipos, build e conferência visual; sem banco ou publicação.
+- [x] Substituir natureza livre por seleção pesquisável com opções personalizadas reutilizáveis.
+- [x] Converter CFOP interno e interestadual em seletores do catálogo, preservando legados.
+- [x] Reutilizar a seleção de natureza na preparação de rascunhos sem sobrepor resoluções obrigatórias do servidor.
+- [ ] Conferência visual autenticada bloqueada pela indisponibilidade temporária da conexão; testes, tipos e build validados.
 
 ## Espaçamento uniforme — módulo fiscal
 - [x] Padronizar rótulo–controle em 6 px, com alinhamento superior, em 15 arquivos de páginas, abas, filtros e diálogos fiscais, sem mudanças globais. Prontidão não contém rótulos de formulário a ajustar.
