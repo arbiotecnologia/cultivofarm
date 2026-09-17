@@ -531,6 +531,55 @@ export default function FiscalEmpresa() {
                     searchPlaceholder="Ex.: 0111301 ou cultivo de arroz"
                   />
                 </FieldRow>
+                <FieldRow
+                  id="additional_cnaes"
+                  label="CNAEs secundários (opcional)"
+                  description="Atividades adicionais registradas na empresa. Não substituem o CNAE principal."
+                >
+                  <div className="space-y-2">
+                    <FiscalCatalogCombobox
+                      id="additional_cnaes"
+                      catalogType="CNAE"
+                      value={null}
+                      onChange={(code) => {
+                        const clean = (code ?? "").trim();
+                        if (!clean) return;
+                        if (clean === (values.primary_cnae ?? "")) return;
+                        const current = values.additional_cnaes ?? [];
+                        if (current.includes(clean)) return;
+                        set("additional_cnaes", [...current, clean]);
+                      }}
+                      placeholder="Adicionar CNAE secundário…"
+                      searchPlaceholder="Ex.: 0111301 ou cultivo de arroz"
+                    />
+                    {(values.additional_cnaes ?? []).length > 0 ? (
+                      <ul className="flex flex-wrap gap-2" aria-label="CNAEs secundários selecionados">
+                        {(values.additional_cnaes ?? []).map((code) => (
+                          <li key={code}>
+                            <Badge variant="secondary" className="gap-1 pr-1">
+                              <span>{code}</span>
+                              <button
+                                type="button"
+                                className="rounded-sm p-0.5 hover:bg-muted"
+                                aria-label={`Remover CNAE ${code}`}
+                                onClick={() =>
+                                  set(
+                                    "additional_cnaes",
+                                    (values.additional_cnaes ?? []).filter((c) => c !== code),
+                                  )
+                                }
+                              >
+                                <X className="h-3 w-3" aria-hidden="true" />
+                              </button>
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Nenhum CNAE secundário informado.</p>
+                    )}
+                  </div>
+                </FieldRow>
                 <FieldRow id="municipal_registration" label="Inscrição municipal (IM)">
                   <Input id="municipal_registration" value={values.municipal_registration ?? ""} onChange={(e) => set("municipal_registration", e.target.value)} />
                 </FieldRow>
