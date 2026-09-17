@@ -490,6 +490,29 @@ export default function FiscalEmpresa() {
                 <FieldRow id="trade_name" label="Nome fantasia">
                   <Input id="trade_name" value={values.trade_name ?? ""} onChange={(e) => set("trade_name", e.target.value)} />
                 </FieldRow>
+                <FieldRow id="state_registration" label="Inscrição estadual (IE)" description="Digite ISENTO se não contribuinte.">
+                  <MaskedInput
+                    id="state_registration"
+                    mask="ie"
+                    uf={values.state ?? undefined}
+                    placeholder={values.state ? "Conforme UF selecionada (ou ISENTO)" : "Selecione a UF primeiro"}
+                    autoCapitalize="characters"
+                    value={values.state_registration ?? ""}
+                    onChange={(e) => set("state_registration", e.target.value)}
+                    onBlur={(e) => {
+                      const r = validateIE(values.state ?? null, e.target.value, { allowIsento: true });
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        if (!r.ok) next.state_registration = r.error;
+                        else delete next.state_registration;
+                        return next;
+                      });
+                    }}
+                  />
+                  {errors.state_registration && (
+                    <p className="text-xs text-destructive mt-1">{errors.state_registration}</p>
+                  )}
+                </FieldRow>
                 <FieldRow id="fiscal_email" label="E-mail fiscal">
                   <Input
                     id="fiscal_email"
