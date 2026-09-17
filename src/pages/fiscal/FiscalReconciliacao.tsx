@@ -189,7 +189,7 @@ export default function FiscalReconciliacao() {
           <CardTitle className="text-base">Filtros</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Modelo</Label>
             <Select
               value={documentModel || "__all__"}
@@ -204,7 +204,7 @@ export default function FiscalReconciliacao() {
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Origem</Label>
             <Select
               value={documentOrigin || "__all__"}
@@ -220,7 +220,7 @@ export default function FiscalReconciliacao() {
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Status reconc.</Label>
             <Select
               value={reconciliationStatus || "__all__"}
@@ -235,7 +235,7 @@ export default function FiscalReconciliacao() {
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Vínculo AR</Label>
             <Select
               value={hasReceivable}
@@ -498,7 +498,7 @@ function DetailDrawer(props: DetailProps) {
 
             <TabsContent value="link">
               <div className="space-y-3">
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Campo</Label>
                   <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -508,7 +508,7 @@ function DetailDrawer(props: DetailProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>UUID de referência</Label>
                   <Input
                     value={targetId}
@@ -541,7 +541,7 @@ function DetailDrawer(props: DetailProps) {
 
             <TabsContent value="unlink">
               <div className="space-y-3">
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Campo</Label>
                   <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -551,7 +551,7 @@ function DetailDrawer(props: DetailProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Motivo (10–500 caracteres)</Label>
                   <Textarea
                     value={reason}

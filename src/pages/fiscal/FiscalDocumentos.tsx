@@ -215,7 +215,7 @@ export default function FiscalDocumentos() {
           <CardTitle className="text-base">Filtros</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Busca</Label>
             <Input
               value={search}
@@ -227,7 +227,7 @@ export default function FiscalDocumentos() {
               data-testid="fiscal-doc-search"
             />
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Modelo</Label>
             <Select
               value={documentModel || "__all__"}
@@ -245,7 +245,7 @@ export default function FiscalDocumentos() {
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Status normalizado</Label>
             <Select
               value={normalizedStatus || "__all__"}
@@ -263,7 +263,7 @@ export default function FiscalDocumentos() {
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label>Reconciliação</Label>
             <Select
               value={reconciliationStatus || "__all__"}
@@ -630,7 +630,7 @@ function DetailSheet(props: DetailProps) {
           <TabsContent value="form">
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Tipo</Label>
                   <Select
                     value={values.invoice_type}
@@ -645,7 +645,7 @@ function DetailSheet(props: DetailProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Modelo</Label>
                   <Select
                     value={values.document_model}
@@ -660,7 +660,7 @@ function DetailSheet(props: DetailProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Ambiente</Label>
                   <Select
                     value={values.environment}
@@ -676,7 +676,7 @@ function DetailSheet(props: DetailProps) {
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">Ambiente de Produção não é permitido nesta fase.</p>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Status</Label>
                   <Select
                     value={values.status}
@@ -691,7 +691,7 @@ function DetailSheet(props: DetailProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Status normalizado</Label>
                   <Select
                     value={values.normalized_status}
@@ -706,7 +706,7 @@ function DetailSheet(props: DetailProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Reconciliação</Label>
                   <Select
                     value={values.reconciliation_status}
@@ -721,7 +721,7 @@ function DetailSheet(props: DetailProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Número</Label>
                   <Input
                     value={values.invoice_number}
@@ -729,7 +729,7 @@ function DetailSheet(props: DetailProps) {
                     disabled={readOnly}
                   />
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Série</Label>
                   <Input
                     value={values.series}
@@ -737,7 +737,7 @@ function DetailSheet(props: DetailProps) {
                     disabled={readOnly}
                   />
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Data de emissão</Label>
                   <Input
                     type="date"
@@ -747,7 +747,7 @@ function DetailSheet(props: DetailProps) {
                   />
                   {errors.issue_date && <p className="text-xs text-destructive">{errors.issue_date}</p>}
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Valor total</Label>
                   <Input
                     inputMode="decimal"
@@ -757,7 +757,7 @@ function DetailSheet(props: DetailProps) {
                   />
                   {errors.total_amount && <p className="text-xs text-destructive">{errors.total_amount}</p>}
                 </div>
-                <div className="col-span-2">
+                <div className="grid min-w-0 content-start gap-1.5 col-span-2">
                   <Label>CNPJ da empresa</Label>
                   <Input
                     value={values.company_cnpj}
@@ -765,7 +765,7 @@ function DetailSheet(props: DetailProps) {
                     disabled={readOnly}
                   />
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Conta a receber (ID)</Label>
                   <Input
                     value={values.receivable_id}
@@ -775,7 +775,7 @@ function DetailSheet(props: DetailProps) {
                   />
                   {errors.receivable_id && <p className="text-xs text-destructive">{errors.receivable_id}</p>}
                 </div>
-                <div>
+                <div className="grid min-w-0 content-start gap-1.5">
                   <Label>Entrega (ID)</Label>
                   <Input
                     value={values.delivery_id}
@@ -785,7 +785,7 @@ function DetailSheet(props: DetailProps) {
                   />
                   {errors.delivery_id && <p className="text-xs text-destructive">{errors.delivery_id}</p>}
                 </div>
-                <div className="col-span-2">
+                <div className="grid min-w-0 content-start gap-1.5 col-span-2">
                   <Label>Notas internas</Label>
                   <Textarea
                     value={values.notes}
@@ -836,7 +836,7 @@ function DetailSheet(props: DetailProps) {
 
           <TabsContent value="events">
             {detail && canWrite && (
-              <div className="rounded border p-3 mb-3">
+              <div className="grid min-w-0 content-start gap-1.5 rounded border p-3 mb-3">
                 <Label className="text-xs">Registrar evento manual (via RPC)</Label>
                 <div className="flex flex-col gap-2 mt-1">
                   <Select

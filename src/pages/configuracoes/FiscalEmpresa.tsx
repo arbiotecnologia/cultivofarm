@@ -78,7 +78,7 @@ function FieldRow({
   id, label, description, children,
 }: { id: string; label: string; description?: string; children: React.ReactNode }) {
   return (
-    <div className="grid min-w-0 gap-1.5">
+    <div className="grid min-w-0 content-start gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       {children}
       {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}

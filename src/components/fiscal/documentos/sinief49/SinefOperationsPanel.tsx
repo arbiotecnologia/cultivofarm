@@ -237,7 +237,7 @@ export default function SinefOperationsPanel({
             </select>
 
             {state.uiOption === "DELIVERY_REFUSAL_TOTAL_OR_NOT_FOUND" && (
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>Sub-motivo</Label>
                 <select
                   aria-label="Sub-motivo da recusa"
@@ -279,14 +279,14 @@ export default function SinefOperationsPanel({
                 Simulação: configuração revisada pela contabilidade
               </Label>
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label>UF (opcional)</Label>
               <Input
                 value={state.taxSetupUf ?? ""}
                 onChange={(e) => patch({ taxSetupUf: e.target.value.toUpperCase().slice(0, 2) })}
               />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label>Regime (opcional)</Label>
               <Input
                 value={state.taxSetupRegime ?? ""}
@@ -307,7 +307,7 @@ export default function SinefOperationsPanel({
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>CNPJ do destinatário</Label>
                 <Input
                   value={state.recipient?.cnpj ?? ""}
@@ -322,7 +322,7 @@ export default function SinefOperationsPanel({
                   }
                 />
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>Razão social (opcional)</Label>
                 <Input
                   value={state.recipient?.name ?? ""}
@@ -348,14 +348,14 @@ export default function SinefOperationsPanel({
               <CardDescription>Pedido de origem e previsão de entrega.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>Pedido de origem</Label>
                 <Input
                   value={state.orderId ?? ""}
                   onChange={(e) => patch({ orderId: e.target.value })}
                 />
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>Data prevista de entrega</Label>
                 <Input
                   type="date"
@@ -376,7 +376,7 @@ export default function SinefOperationsPanel({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>Estado do ICMS</Label>
                 <select
                   className="h-10 border rounded-md px-3 bg-background w-full"
@@ -397,7 +397,7 @@ export default function SinefOperationsPanel({
               </div>
               {(state.advanceReferences ?? []).map((r, idx) => (
                 <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end border rounded p-2">
-                  <div className="md:col-span-2">
+                  <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                     <Label>Chave da NF-e de antecipação</Label>
                     <Input
                       value={r.advanceAccessKey}
@@ -412,7 +412,7 @@ export default function SinefOperationsPanel({
                       }}
                     />
                   </div>
-                  <div>
+                  <div className="grid min-w-0 content-start gap-1.5">
                     <Label>Saldo remanescente</Label>
                     <Input
                       type="number"
@@ -460,7 +460,7 @@ export default function SinefOperationsPanel({
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>Motivo</Label>
                 <select
                   className="h-10 border rounded-md px-3 bg-background w-full"
@@ -487,7 +487,7 @@ export default function SinefOperationsPanel({
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>Data do evento</Label>
                 <Input
                   type="date"
@@ -507,7 +507,7 @@ export default function SinefOperationsPanel({
                   }
                 />
               </div>
-              <div className="md:col-span-2">
+              <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                 <Label>Justificativa</Label>
                 <Textarea
                   value={state.stockLossContext?.legalReasonDetails ?? ""}
@@ -525,7 +525,7 @@ export default function SinefOperationsPanel({
                   }
                 />
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>Estado do ICMS</Label>
                 <select
                   className="h-10 border rounded-md px-3 bg-background w-full"
@@ -561,7 +561,7 @@ export default function SinefOperationsPanel({
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2">
+              <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                 <Label>Chave da NF-e original</Label>
                 <Input
                   value={state.original?.originalAccessKey ?? ""}
@@ -579,7 +579,7 @@ export default function SinefOperationsPanel({
                   }
                 />
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label>CNPJ do destinatário original</Label>
                 <Input
                   value={state.original?.originalRecipient.cnpj ?? state.recipient?.cnpj ?? ""}
@@ -598,7 +598,7 @@ export default function SinefOperationsPanel({
                 />
               </div>
               {opCanonical === "RECIPIENT_NOT_FOUND" && (
-                <div className="md:col-span-2">
+                <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                   <Label>Evidências de tentativa de entrega</Label>
                   <Textarea
                     placeholder="Descreva canais, datas e comprovantes"
@@ -640,7 +640,7 @@ export default function SinefOperationsPanel({
             {state.items.map((it, idx) => (
               <div key={idx} className="border rounded p-3 space-y-2">
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
-                  <div>
+                  <div className="grid min-w-0 content-start gap-1.5">
                     <Label>Tipo</Label>
                     <select
                       className="h-10 border rounded-md px-3 bg-background w-full"
@@ -653,14 +653,14 @@ export default function SinefOperationsPanel({
                       <option value="MICROORGANISM">Microrganismo</option>
                     </select>
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                     <Label>Descrição</Label>
                     <Input
                       value={it.description}
                       onChange={(e) => patchItem(idx, { description: e.target.value })}
                     />
                   </div>
-                  <div>
+                  <div className="grid min-w-0 content-start gap-1.5">
                     <Label>Qtd.</Label>
                     <Input
                       type="number"
@@ -669,7 +669,7 @@ export default function SinefOperationsPanel({
                       onChange={(e) => patchItem(idx, { quantity: Number(e.target.value) })}
                     />
                   </div>
-                  <div>
+                  <div className="grid min-w-0 content-start gap-1.5">
                     <Label>Valor unit.</Label>
                     <Input
                       type="number"
@@ -678,7 +678,7 @@ export default function SinefOperationsPanel({
                       onChange={(e) => patchItem(idx, { unitValue: Number(e.target.value) })}
                     />
                   </div>
-                  <div>
+                  <div className="grid min-w-0 content-start gap-1.5">
                     <Label>CFOP</Label>
                     <Input
                       value={it.cfop}
@@ -874,7 +874,7 @@ function ProdutoPicker({
     if (debounced.trim().length >= 2) setOpen(true);
   }, [debounced]);
   return (
-    <div className="space-y-1" data-testid="sinief49-produto-picker">
+    <div className="grid min-w-0 content-start gap-1.5" data-testid="sinief49-produto-picker">
       <Label className="text-xs">Produto</Label>
       {selectedId ? (
         <div className="flex items-center justify-between rounded border px-2 py-1 text-sm">
@@ -956,7 +956,7 @@ function MicrorganismoPicker({
     if (debounced.trim().length >= 2) setOpen(true);
   }, [debounced]);
   return (
-    <div className="space-y-1" data-testid="sinief49-microrganismo-picker">
+    <div className="grid min-w-0 content-start gap-1.5" data-testid="sinief49-microrganismo-picker">
       <Label className="text-xs">Microrganismo (faturável direto)</Label>
       {selectedId ? (
         <div className="flex items-center justify-between rounded border px-2 py-1 text-sm">

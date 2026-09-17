@@ -106,25 +106,25 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
         {/* Códigos e alíquotas */}
         <Section title="Códigos e alíquotas" testId="ibs-cbs-section-codes" defaultOpen>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="cst_ibs_cbs">CST IBS/CBS <span className="text-xs text-muted-foreground">(cstIBSCBS)</span></Label>
               <Input id="cst_ibs_cbs" maxLength={6} value={form.cst_ibs_cbs ?? ""}
                 onChange={(e) => setForm((s) => ({ ...s, cst_ibs_cbs: e.target.value || undefined }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="c_class_trib">Classificação tributária <span className="text-xs text-muted-foreground">(cClassTrib)</span></Label>
               <Input id="c_class_trib" maxLength={10} value={form.c_class_trib ?? ""}
                 onChange={(e) => setForm((s) => ({ ...s, c_class_trib: e.target.value || undefined }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="c_ind_op">Indicador de operação <span className="text-xs text-muted-foreground">(cIndOp)</span></Label>
               <Input id="c_ind_op" maxLength={4} value={form.c_ind_op ?? ""}
                 onChange={(e) => setForm((s) => ({ ...s, c_ind_op: e.target.value || undefined }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="aliquota_cbs">Alíquota CBS (%)</Label>
               <Input id="aliquota_cbs" type="number" step="0.01" min={0} max={100}
                 value={form.aliquota_cbs ?? ""}
@@ -133,7 +133,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
                 }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="aliquota_ibs_uf">Alíquota IBS UF (%)</Label>
               <Input id="aliquota_ibs_uf" type="number" step="0.01" min={0} max={100}
                 value={form.aliquota_ibs_uf ?? ""}
@@ -142,7 +142,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
                 }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="aliquota_ibs_municipio">Alíquota IBS Município (%)</Label>
               <Input id="aliquota_ibs_municipio" type="number" step="0.01" min={0} max={100}
                 value={form.aliquota_ibs_municipio ?? ""}
@@ -160,7 +160,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
         {/* Fonte normativa */}
         <Section title="Fonte normativa e revisão" testId="ibs-cbs-section-source">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="source_document">Documento normativo</Label>
               <Input id="source_document" maxLength={120}
                 placeholder="Ex.: NT NF-e 2025.002"
@@ -168,7 +168,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
                 onChange={(e) => setForm((s) => ({ ...s, source_document: e.target.value || undefined }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="source_version">Versão</Label>
               <Input id="source_version" maxLength={60}
                 placeholder="Ex.: v1.60"
@@ -176,21 +176,21 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
                 onChange={(e) => setForm((s) => ({ ...s, source_version: e.target.value || undefined }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="effective_from">Vigência inicial</Label>
               <Input id="effective_from" type="date"
                 value={(form.effective_from ?? "").slice(0, 10)}
                 onChange={(e) => setForm((s) => ({ ...s, effective_from: e.target.value || undefined }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="last_reviewed_at">Última revisão</Label>
               <Input id="last_reviewed_at" type="date"
                 value={(form.last_reviewed_at ?? "").slice(0, 10)}
                 onChange={(e) => setForm((s) => ({ ...s, last_reviewed_at: e.target.value || undefined }))}
                 disabled={disabled} />
             </div>
-            <div>
+            <div className="grid min-w-0 content-start gap-1.5">
               <Label htmlFor="review_status">Status da revisão contábil</Label>
               <Select
                 value={form.accounting_review_status ?? "PENDING"}
@@ -207,7 +207,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
               </Select>
             </div>
           </div>
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="accounting_notes">Observações</Label>
             <Textarea id="accounting_notes" rows={3} maxLength={2000}
               value={form.accounting_notes ?? ""}
@@ -218,7 +218,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
 
         {/* Crédito presumido */}
         <Section title="Crédito presumido" testId="ibs-cbs-section-credit">
-          <div>
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="c_credito_presumido">Código do crédito presumido <span className="text-xs text-muted-foreground">(cCreditoPresumido)</span></Label>
             <Input id="c_credito_presumido" maxLength={10}
               value={form.c_credito_presumido ?? ""}
@@ -239,7 +239,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
           </div>
           {reducao.applies ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="reducao_pct">Percentual de redução da base (%)</Label>
                 <Input id="reducao_pct" type="number" step="0.01" min={0} max={100}
                   value={reducao.percent_reduction_base ?? ""}
@@ -249,7 +249,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
                   }))}
                   disabled={disabled} />
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="reducao_reason">Motivo</Label>
                 <Input id="reducao_reason" maxLength={500}
                   value={reducao.reason ?? ""}
@@ -259,7 +259,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
                   }))}
                   disabled={disabled} />
               </div>
-              <div className="md:col-span-2">
+              <div className="grid min-w-0 content-start gap-1.5 md:col-span-2">
                 <Label htmlFor="reducao_basis">Fundamento legal</Label>
                 <Input id="reducao_basis" maxLength={500}
                   value={reducao.legal_basis ?? ""}
@@ -285,7 +285,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
           </div>
           {diferimento.applies ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="dif_kind">Tipo</Label>
                 <Select
                   value={diferimento.kind ?? ""}
@@ -302,7 +302,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="dif_basis">Fundamento legal</Label>
                 <Input id="dif_basis" maxLength={500}
                   value={diferimento.legal_basis ?? ""}
@@ -328,7 +328,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
           </div>
           {monofasia.applies ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="mono_stage">Etapa</Label>
                 <Select
                   value={monofasia.stage ?? ""}
@@ -346,7 +346,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="mono_basis">Fundamento legal</Label>
                 <Input id="mono_basis" maxLength={500}
                   value={monofasia.legal_basis ?? ""}
@@ -364,21 +364,21 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
         {isService ? (
           <Section title="NFS-e Nacional (IBS/CBS)" testId="ibs-cbs-section-nfse">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="finNFSe">Finalidade da NFS-e <span className="text-xs text-muted-foreground">(finNFSe)</span></Label>
                 <Input id="finNFSe" maxLength={30}
                   value={getNfseField(form, "finNFSe") ?? ""}
                   onChange={(e) => setForm((s) => setNfseField(s, "finNFSe", e.target.value || undefined))}
                   disabled={disabled} />
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="tpNFSeDebito">Tipo de débito <span className="text-xs text-muted-foreground">(tpNFSeDebito)</span></Label>
                 <Input id="tpNFSeDebito" maxLength={30}
                   value={getNfseField(form, "tpNFSeDebito") ?? ""}
                   onChange={(e) => setForm((s) => setNfseField(s, "tpNFSeDebito", e.target.value || undefined))}
                   disabled={disabled} />
               </div>
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="tpNFSeCredito">Tipo de crédito <span className="text-xs text-muted-foreground">(tpNFSeCredito)</span></Label>
                 <Input id="tpNFSeCredito" maxLength={30}
                   value={getNfseField(form, "tpNFSeCredito") ?? ""}
@@ -395,7 +395,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
               </Label>
             </div>
             {ajusteAtivo ? (
-              <div>
+              <div className="grid min-w-0 content-start gap-1.5">
                 <Label htmlFor="vAjusteBC">Valor de ajuste da base <span className="text-xs text-muted-foreground">(vAjusteBC — R$)</span></Label>
                 <Input id="vAjusteBC" type="number" step="0.01" min={0}
                   value={getNfseField(form, "vAjusteBC") ?? ""}

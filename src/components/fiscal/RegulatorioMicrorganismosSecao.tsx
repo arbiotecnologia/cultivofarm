@@ -819,7 +819,7 @@ function DraftFactsForm({
         </Alert>
       )}
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-categoria">Finalidade regulatória</Label>
           <Select
             value={form.regulatory_category ?? ""}
@@ -834,7 +834,7 @@ function DraftFactsForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-mapa-status">Situação MAPA</Label>
           <Select
             value={form.mapa_status ?? ""}
@@ -849,7 +849,7 @@ function DraftFactsForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-cepa-codigo">Código da cepa</Label>
           <Input
             id="reg-cepa-codigo" disabled={!editable}
@@ -857,7 +857,7 @@ function DraftFactsForm({
             onChange={(e) => set("strain_code", e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-cepa-nome">Nome da cepa</Label>
           <Input
             id="reg-cepa-nome" disabled={!editable}
@@ -865,7 +865,7 @@ function DraftFactsForm({
             onChange={(e) => set("strain_name", e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-formulacao">Formulação</Label>
           <Input
             id="reg-formulacao" disabled={!editable}
@@ -873,7 +873,7 @@ function DraftFactsForm({
             onChange={(e) => set("formulation", e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-registro">Nº de registro MAPA</Label>
           <Input
             id="reg-registro" disabled={!editable || mapaNotApplicable}
@@ -881,7 +881,7 @@ function DraftFactsForm({
             onChange={(e) => set("mapa_registration_number", e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-titular">Titular / fabricante</Label>
           <Input
             id="reg-titular" disabled={!editable}
@@ -889,7 +889,7 @@ function DraftFactsForm({
             onChange={(e) => set("mapa_holder", e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-validade">Validade do registro</Label>
           <Input
             id="reg-validade" type="date" disabled={!editable || mapaNotApplicable}
@@ -899,7 +899,7 @@ function DraftFactsForm({
         </div>
       </div>
 
-      <div className="space-y-1">
+      <div className="grid min-w-0 content-start gap-1.5">
         <Label htmlFor="reg-garantia">Composição e garantia de rótulo</Label>
         <Textarea
           id="reg-garantia" rows={3} disabled={!editable}
@@ -909,7 +909,7 @@ function DraftFactsForm({
       </div>
 
       {mapaNotApplicable && (
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="reg-mapa-na">Justificativa de não aplicabilidade do registro</Label>
           <Textarea
             id="reg-mapa-na" rows={2} disabled={!editable}
@@ -981,27 +981,27 @@ function NcmCandidateForm({
     <div className="border rounded-md p-3 space-y-2">
       <div className="text-sm font-medium">Registrar candidato de NCM</div>
       <div className="grid gap-2 md:grid-cols-2">
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="cand-ncm">NCM (8 dígitos)</Label>
           <Input id="cand-ncm" value={ncm} onChange={(e) => setNcm(e.target.value)} />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="cand-cest">CEST (opcional)</Label>
           <Input id="cand-cest" value={cest} onChange={(e) => setCest(e.target.value)} />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="cand-fonte">Chave da fonte oficial</Label>
           <Input id="cand-fonte" value={sourceKey} onChange={(e) => setSourceKey(e.target.value)} />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="cand-url">URL da fonte</Label>
           <Input id="cand-url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="cand-data">Data da consulta</Label>
           <Input id="cand-data" type="date" value={consultedAt} onChange={(e) => setConsultedAt(e.target.value)} />
         </div>
-        <div className="space-y-1">
+        <div className="grid min-w-0 content-start gap-1.5">
           <Label htmlFor="cand-conf">Confiança da classificação</Label>
           <select
             id="cand-conf"
@@ -1021,7 +1021,7 @@ function NcmCandidateForm({
         </div>
       </div>
 
-      <div className="space-y-1">
+      <div className="grid min-w-0 content-start gap-1.5">
         <Label htmlFor="cand-just">Justificativa técnica (TIPI / notas explicativas)</Label>
         <Textarea id="cand-just" rows={3} value={justification} onChange={(e) => setJustification(e.target.value)} />
       </div>

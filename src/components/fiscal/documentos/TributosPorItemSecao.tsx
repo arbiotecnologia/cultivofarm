@@ -289,7 +289,7 @@ function CampoReducao({
   const motivoFaltando = texto !== "" && !invalido && motivo.trim() === "";
 
   return (
-    <div className="space-y-1">
+    <div className="grid min-w-0 content-start gap-1.5">
       {comRotulo ? <Label htmlFor={id}>Redução da base de cálculo (%)</Label> : null}
       <Input
         id={id}

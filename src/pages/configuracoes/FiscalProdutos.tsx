@@ -760,7 +760,7 @@ function AssociateDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid gap-1.5">
+          <div className="grid min-w-0 content-start gap-1.5">
             <Label htmlFor="picker-search">Buscar produto por nome ou código</Label>
             <Input
               id="picker-search"
@@ -1025,7 +1025,7 @@ function FiscalProfileDrawer({
                 const hint = FIELD_HINTS[k];
                 const placeholder = FIELD_PLACEHOLDERS[k];
                 return (
-                  <div key={k} className="grid gap-1.5">
+                  <div key={k} className="grid min-w-0 content-start gap-1.5">
                     <Label htmlFor={`f-${k}`}>{FIELD_LABELS[k]}</Label>
                     {select ? (
                       <select
