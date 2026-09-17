@@ -23,7 +23,6 @@
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import {
-  CANONICAL_PROJECT_REF,
   CANONICAL_SUPABASE_URL,
   isCanonicalSupabaseUrl,
 } from "../_shared/fiscal/canonicalProject.ts";
