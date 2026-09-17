@@ -133,8 +133,6 @@ BEGIN
     0);
   v_inv := (saved->>'id')::uuid;
 
-  SELECT id, ncm_snapshot IS NOT NULL INTO v_item, saved
-    FROM public.fiscal_invoice_items WHERE fiscal_invoice_id = v_inv;
   SELECT id INTO v_item FROM public.fiscal_invoice_items WHERE fiscal_invoice_id = v_inv;
 
   PERFORM pg_temp.chk('C2 ncm_snapshot materializado pela RPC',
