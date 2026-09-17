@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isAlreadyExistingObject, sha256Bytes, verifyExistingObject } from "../../../supabase/functions/_shared/fiscal/nfe/protocoledStorage.ts";
-import { extractProtNFe, NFE_NAMESPACE } from "../../../supabase/functions/_shared/fiscal/nfe/nfeProc.ts";
+import { buildNfeProc, extractProtNFe, NFE_NAMESPACE } from "../../../supabase/functions/_shared/fiscal/nfe/nfeProc.ts";
 
 describe("H14 Storage integrity", () => {
   const bytes = new TextEncoder().encode("official XML");
@@ -39,6 +39,16 @@ describe("H14 Storage integrity", () => {
 });
 
 describe("H14 namespace and repository mirrors", () => {
+  it("assembles namespace-valid nfeProc without modifying signed NFe", () => {
+    const key = "3".repeat(44);
+    const signed = `<NFe xmlns="${NFE_NAMESPACE}"><infNFe Id="NFe${key}"><tpAmb>2</tpAmb></infNFe><Signature><SignatureValue>original</SignatureValue></Signature></NFe>`;
+    const response = `<s:Envelope xmlns:s="urn:soap" xmlns:nfe="${NFE_NAMESPACE}"><s:Body><nfe:protNFe versao="4.00"><nfe:infProt><nfe:tpAmb>2</nfe:tpAmb><nfe:chNFe>${key}</nfe:chNFe><nfe:nProt>123</nfe:nProt><nfe:cStat>100</nfe:cStat></nfe:infProt></nfe:protNFe></s:Body></s:Envelope>`;
+    const result = buildNfeProc({ signedXml: signed, responseXml: response, accessKey: key, protocol: "123" });
+    expect(result.xml).toContain(signed);
+    const parsed = new DOMParser().parseFromString(result.xml, "application/xml");
+    expect(parsed.querySelector("parsererror")).toBeNull();
+    expect(parsed.getElementsByTagNameNS(NFE_NAMESPACE, "protNFe").length).toBe(1);
+  });
   it("preserves official prefixed content with autonomous namespace declarations", () => {
     const content = '<nfe:infProt><nfe:xMotivo>Autorizado &amp; válido</nfe:xMotivo></nfe:infProt>';
     const fragment = extractProtNFe(`<s:Envelope xmlns:s="urn:soap" xmlns:nfe="${NFE_NAMESPACE}"><s:Body><nfe:protNFe versao="4.00">${content}</nfe:protNFe></s:Body></s:Envelope>`);
