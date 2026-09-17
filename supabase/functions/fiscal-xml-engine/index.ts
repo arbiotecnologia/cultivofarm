@@ -56,11 +56,6 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Prefixo obrigatório da fixture sintética do harness F4.2. */
-const HARNESS_FIXTURE_PREFIX = "F42-HARNESS-";
-/** Único project_ref onde a via de chave de teste pode ser ativada. */
-const STAGING_PROJECT_REF = CANONICAL_PROJECT_REF;
-
 function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   if (!raw) return null;
   try {
@@ -74,37 +69,43 @@ function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   }
 }
 
+/**
+ * Única chave mestra aceita pelo motor fiscal. A via legada de chave de teste
+ * (fixture do harness) foi removida: o banco canônico é produção do SaaS.
+ */
 function decodeMasterKey(): Uint8Array | null {
   return decodeKeyB64(Deno.env.get("FISCAL_CERTIFICATE_MASTER_KEY"));
 }
 
 /**
- * F4.2 — via de chave EXCLUSIVA DE STAGING para a fixture do harness.
- *
- * Só é possível ativar quando TODAS as condições valem juntas:
- *   1. o certificado selecionado é a fixture sintética (`F42-HARNESS-*`);
- *   2. `FISCAL_TEST_CERTIFICATE_MASTER_KEY` está definida e tem 32 bytes;
- *   3. `public._fiscal_staging_marker` confirma o project_ref de staging.
- * Fora do staging (marcador ausente/diferente) a função devolve sempre a
- * chave mestra normal — a via de teste é inalcançável. Nenhum secret
- * existente é lido, sobrescrito ou ecoado.
+ * Integridade de artefato imutável no Storage: colisão de path só é aceita
+ * quando o objeto já armazenado é byte-idêntico ao conteúdo determinístico.
+ * Divergência => XML_STORAGE_CONFLICT (nunca sobrescreve).
+ * Falha de verificação => XML_STORAGE_VERIFY_FAILED.
  */
-async function resolveMasterKey(
+async function ensureStoredArtifact(
   admin: SupabaseClient,
-  certificateDisplayName: string,
-): Promise<Uint8Array | null> {
-  const primary = decodeMasterKey();
-  if (!certificateDisplayName.startsWith(HARNESS_FIXTURE_PREFIX)) return primary;
-  const testKey = decodeKeyB64(Deno.env.get("FISCAL_TEST_CERTIFICATE_MASTER_KEY"));
-  if (!testKey) return primary;
-  const marker = await admin
-    .from("_fiscal_staging_marker")
-    .select("project_ref")
-    .eq("marker", "STAGING")
-    .maybeSingle();
-  if (marker.error || marker.data?.project_ref !== STAGING_PROJECT_REF) return primary;
-  return testKey;
+  path: string,
+  bytes: Uint8Array,
+  expectedSha: string,
+): Promise<string | null> {
+  const up = await admin.storage.from(BUCKET).upload(path, bytes, {
+    contentType: "application/xml",
+    upsert: false,
+  });
+  if (!up.error) return null;
+  if (!isAlreadyExistingObject(up.error as Record<string, unknown>)) return "XML_STORAGE_FAILED";
+  const verdict = await verifyExistingObject(
+    () => admin.storage.from(BUCKET).download(path) as unknown as Promise<
+      { data: { arrayBuffer(): Promise<ArrayBuffer> } | null; error: unknown }
+    >,
+    expectedSha,
+    bytes.byteLength,
+  );
+  if (!verdict) return null;
+  return verdict.endsWith("VERIFY_FAILED") ? "XML_STORAGE_VERIFY_FAILED" : "XML_STORAGE_CONFLICT";
 }
+
 
 /**
  * F4.2 — decodifica coluna `bytea` devolvida pelo PostgREST, que serializa
