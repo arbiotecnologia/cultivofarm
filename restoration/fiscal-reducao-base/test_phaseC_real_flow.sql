@@ -75,14 +75,12 @@ BEGIN
   UPDATE public.partner_orders SET status = 'aprovado' WHERE id = v_order;
 
   -- Perfil fiscal ATIVO do produto: fonte da materializacao server-side (C2).
+  DELETE FROM public.product_fiscal_profiles WHERE product_id = v_prod;
   INSERT INTO public.product_fiscal_profiles(
     product_id, ncm, cest, origin_code, cfop_in_state, cfop_interstate,
     icms_cst, pis_cst, cofins_cst, commercial_unit, profile_status, is_active)
   VALUES (v_prod, '12345678', '1234567', '0', '5102', '6102',
-          '20', '01', '01', 'UN', 'VALIDATED', true)
-  ON CONFLICT (product_id) DO UPDATE
-    SET ncm = '12345678', cest = '1234567', origin_code = '0',
-        cfop_in_state = '5102', cfop_interstate = '6102', icms_cst = '20', is_active = true;
+          '20', '01', '01', 'UN', 'VALIDATED', true);
 
   INSERT INTO public.fiscal_certificates(
     id, company_settings_id, source_type, environment, status, display_name,
