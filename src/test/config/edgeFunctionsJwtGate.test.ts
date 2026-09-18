@@ -33,7 +33,12 @@ function blockOf(name: string): string | null {
   const match = toml.match(
     new RegExp(`\\[functions\\.${name}\\]([\\s\\S]*?)(?=\\n\\[|$)`),
   );
-  return match ? match[1] : null;
+  if (!match) return null;
+  // Comentários não são configuração: descartá-los evita falso positivo.
+  return match[1]
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("#"))
+    .join("\n");
 }
 
 describe("config.toml — proteção de gateway das Edge Functions", () => {
