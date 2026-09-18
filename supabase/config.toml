@@ -19,3 +19,46 @@ static_files = [
   "./functions/fiscal-xml-engine/xsd/*.xsd",
   "./functions/fiscal-xml-engine/xsd/manifest.json",
 ]
+
+# Incidente 2026-09-18: a reconexão do Supabase republicou automaticamente as 37
+# funções com verify_jwt=false, apagando a proteção de gateway que existia.
+# Os blocos abaixo declaram explicitamente verify_jwt=true para todas as funções
+# fiscais e para as seis funções administrativas/privadas que já eram true,
+# impedindo que o default volte a rebaixá-las num próximo deploy.
+# Webhooks e funções com autenticação customizada NÃO são alterados aqui.
+
+[functions.fiscal-binding-diagnostics]
+verify_jwt = true
+
+[functions.fiscal-certificate-revoke]
+verify_jwt = true
+
+[functions.fiscal-certificate-upload]
+verify_jwt = true
+
+[functions.fiscal-cnpj-lookup]
+verify_jwt = true
+
+[functions.fiscal-event-sign]
+verify_jwt = true
+
+[functions.fiscal-preflight]
+verify_jwt = true
+
+[functions.create-user]
+verify_jwt = true
+
+[functions.admin-update-user-password]
+verify_jwt = true
+
+[functions.list-portal-users]
+verify_jwt = true
+
+[functions.enviar-pdf-aplicacao]
+verify_jwt = true
+
+[functions.enviar-pdf-visita]
+verify_jwt = true
+
+[functions.sync-clima]
+verify_jwt = true
