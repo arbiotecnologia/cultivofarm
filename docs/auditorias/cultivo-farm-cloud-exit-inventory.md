@@ -158,3 +158,31 @@ Backups: o export do banco e o download do código-fonte foram obtidos pelo prop
 **Mudança relevante de estado:** a falha histórica de 1 teste de vínculo (`.env` gerenciado apontando para ref proibido) **desapareceu por correção na origem**, não por enfraquecimento de teste. Nenhum teste foi alterado, nenhum `.env` foi ignorado e nenhum resultado foi forçado. Nenhuma correção local foi necessária (diff vazio).
 
 Banco canônico reconsultado pelo proprietário: marcador **STAGING**, `production_emission_allowed=false`. Nesta rodada não houve migration, deploy, emissão, transmissão nem regeneração de schema/tipos. Nenhuma fase seguinte foi iniciada.
+
+## 11. Regressão automática da integração e restauração fiel (mesma FASE 0)
+
+O ato de conectar o Supabase sobrescreveu arquivos do repositório **sem intervenção humana**. Diff auditado contra o baseline `90e0568d` antes de qualquer correção:
+
+| Arquivo | Regressão introduzida pela integração | Ação |
+| --- | --- | --- |
+| `supabase/config.toml` | reduzido a apenas `project_id` (sem newline final); perdidos `[functions.whatsapp-status-webhook] verify_jwt=false`, `[functions.fiscal-sefaz-transport] verify_jwt=true`, `[functions.fiscal-xml-engine] verify_jwt=true` + `static_files` dos 5 XSDs e do `manifest.json` | **restaurado fielmente** do baseline, mantendo `project_id = "swzpzcwiasxmjutrmvkm"` |
+| `src/integrations/supabase/client.ts` | trocou `./cultivofarm.types` por `./types`, removeu `assertCanonicalSupabaseBinding`, removeu os `export` de `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY` e trocou a chave publicável pelo JWT anon | **restaurado fielmente** (guarda canônica antes de `createClient`, contrato `cultivofarm.types`, constantes exportadas) |
+| `package.json` | `@supabase/supabase-js` `^2.110.8` → `^2.116.0` (upgrade incidental) | **restaurado** para `^2.110.8` |
+| `bun.lock` | atualizado para o upgrade acima | **restaurado**; `bun install --frozen-lockfile` reinstalou `2.110.8` (verificado no `node_modules`) |
+| `src/integrations/supabase/types.ts` | regenerado (+22.617/−1.129) | **mantido**: não é importado por código de produção (o contrato canônico é `cultivofarm.types.ts`, protegido por hash), e foi gerado a partir do projeto canônico — não do schema antigo. Nenhuma regeneração foi disparada por este agente. |
+
+Nenhum teste foi alterado, enfraquecido ou ajustado para aceitar configuração vazia.
+
+### Verificação pós-restauração
+
+| Verificação | Comando | Exit | Resultado |
+| --- | --- | --- | --- |
+| Versão do SDK | `node -p "require('@supabase/supabase-js/package.json').version"` | 0 | `2.110.8` |
+| Gate de binding | `bash restoration/homologacao-h7/check-frontend-binding.sh` | 0 | OK — CultivoFarm `swzpzcwiasxmjutrmvkm` |
+| Config + transporte | `npx vitest run src/test/config src/test/fiscal/transportPersistenceSafety.test.ts` | 0 | 90/90 aprovados |
+| Suíte fiscal (XML/SEFAZ/empacotamento) | `npx vitest run src/test/fiscal` | 0 | 1.783 aprovados, 4 pulados, 0 reprovados |
+| Tipos | `npx tsc --noEmit` | 0 | sem erros |
+| Build | `bun run build` | 0 | concluído |
+| Diff residual vs baseline | `git diff --stat 90e0568d` | 0 | apenas `src/integrations/supabase/types.ts` |
+
+Nenhum deploy, migration, emissão ou transmissão. Fase encerrada aguardando auditoria do proprietário.
