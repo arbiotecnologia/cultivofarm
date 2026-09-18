@@ -186,3 +186,38 @@ Nenhum teste foi alterado, enfraquecido ou ajustado para aceitar configuração 
 | Diff residual vs baseline | `git diff --stat 90e0568d` | 0 | apenas `src/integrations/supabase/types.ts` |
 
 Nenhum deploy, migration, emissão ou transmissão. Fase encerrada aguardando auditoria do proprietário.
+
+## 12. INCIDENTE — publicação automática das 37 Edge Functions com verify_jwt=false
+
+Constatado pelo proprietário **diretamente no canônico**: após a reconexão, `list_edge_functions` passou a retornar **37 funções** com `created/updated_at = 1789732049826` e **todas com `verify_jwt=false`**; antes havia **7**, das quais **seis com `verify_jwt=true`**.
+
+Distinção obrigatória de responsabilidade:
+
+- **O agente não executou nenhum deploy.** Nenhuma chamada de deploy foi feita nesta fase nem nas anteriores.
+- **A reconexão do Supabase publicou automaticamente as 37 funções sem gate**, rebaixando `verify_jwt` para `false`. Portanto a afirmação anterior "nenhum deploy" **não vale globalmente** e fica corrigida: vale apenas para ações do agente.
+- A restauração da proteção no gateway remoto é feita pelo proprietário, por canal próprio. O agente **não** republicou nada.
+
+### Confronto /dev-server × Git HEAD × build publicado
+
+| Fonte | `supabase/config.toml` | `client.ts` |
+| --- | --- | --- |
+| `/dev-server` (disco) | blocos restaurados presentes | guarda canônica, `cultivofarm.types`, `brokeredPreviewStorage`, constantes exportadas |
+| Git HEAD `9ff0564b` | idêntico ao disco | idêntico ao disco |
+| `dist/assets/App-*.js` | — | único host presente: `https://swzpzcwiasxmjutrmvkm.supabase.co` |
+
+A leitura por `1c0b886e` mostrava o estado **anterior** à restauração (config reduzido a `project_id`, cliente sem guarda) — é um commit pré-correção, não o estado atual.
+
+### Endurecimento aplicado no repositório (sem deploy)
+
+`supabase/config.toml` passou a declarar **`verify_jwt = true` explicitamente para 14 funções**: as 8 fiscais (`fiscal-binding-diagnostics`, `fiscal-certificate-revoke`, `fiscal-certificate-upload`, `fiscal-cnpj-lookup`, `fiscal-event-sign`, `fiscal-preflight`, `fiscal-sefaz-transport`, `fiscal-xml-engine`) e as 6 previamente protegidas (`create-user`, `admin-update-user-password`, `list-portal-users`, `enviar-pdf-aplicacao`, `enviar-pdf-visita`, `sync-clima`). `whatsapp-status-webhook` permanece `false` (autenticação própria) e as demais funções ficam intocadas até auditoria individual.
+
+Novo gate de regressão: `src/test/config/edgeFunctionsJwtGate.test.ts` falha se qualquer um desses blocos sumir, virar `false` ou se o empacotamento dos XSDs for perdido.
+
+Verificação: `npx vitest run src/test/config` → **98/98 aprovados** (exit 0); `npx tsc --noEmit` → exit 0; gate de binding → OK.
+
+### Pendências abertas
+
+1. Restaurar `verify_jwt` no gateway remoto das 14 funções (ação do proprietário) e reauditar as 23 restantes uma a uma.
+2. Auditar o conteúdo efetivamente publicado pela reconexão — não há evidência de que corresponda ao repositório.
+3. Confirmar se secrets das funções sobreviveram à republicação automática.
+4. Nenhuma emissão, migration ou alteração de dados foi feita nesta rodada.
