@@ -3,6 +3,7 @@
 // Protegido por segredo interno; nunca é chamado pelo app.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { isCanonicalSupabaseUrl } from "../_shared/fiscal/canonicalProject.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -436,7 +437,17 @@ async function run() {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  // TRAVA CANÔNICA (fail-closed, antes de autenticar/ler corpo/consultar):
+  // este harness é MUTANTE (cria usuários e fixtures reais). Ele nunca existiu
+  // implantado no projeto canônico e não pode executar nele. Sem allowlist
+  // alternativa e sem fallback para projetos antigos.
+  if (isCanonicalSupabaseUrl(SUPABASE_URL)) {
+    return new Response(JSON.stringify({
+      error: "harness_disabled_on_canonical_project",
+      code: "ENTREGA_HARNESS_DISABLED_CANONICAL_TARGET",
+    }), { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
   // Acesso restrito: segredo interno OU chave de serviço (uso operacional interno).
   const secret = req.headers.get("x-internal-secret") ?? "";
   const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
