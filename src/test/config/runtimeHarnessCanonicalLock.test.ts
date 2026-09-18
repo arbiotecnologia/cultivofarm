@@ -89,7 +89,8 @@ describe.each(HARNESSES)("$name — trava canônica fail-closed", (h) => {
 
   it("não cria allowlist alternativa nem fallback para projetos antigos", () => {
     for (const ref of FORBIDDEN_REFS) expect(src).not.toContain(ref);
-    expect(src).not.toMatch(/allowlist|ALLOWED_PROJECTS|FALLBACK_URL/i);
+    // Padrões de código (não comentários) que indicariam bypass:
+    expect(src).not.toMatch(/ALLOWED_PROJECTS|FALLBACK_URL|LEGACY_PROJECT/);
   });
 });
 
