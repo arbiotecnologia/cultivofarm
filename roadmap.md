@@ -1,9 +1,10 @@
 # Roadmap de Tarefas
 
 ## H15 — isolamento fiscal por empresa
-- [ ] Auditar schema vivo, RLS, vínculos e seleção legada de emitente no canônico.
-- [ ] Preparar migration nova com guards, rollback e testes; aplicar somente após todos os gates.
+- [x] Auditar schema vivo, RLS, vínculos e seleção legada de emitente no canônico; 2.145 regressões aprovadas, 4 skips existentes.
+- [ ] Preparar migration nova com guards, rollback e testes; bloqueada por leituras SECURITY DEFINER sem escopo, além da RLS. Delimitar guards pontuais sem reescrita em massa de RPCs.
 - [ ] Verificar estado remoto, advisors e regressões; sem certificado, emissão ou alterações de Edge Functions.
+- Evidência e bloqueio: docs/auditorias/fiscal-h15-isolamento-empresa.md. Nenhuma migration H15 submetida/aplicada.
 
 ## Rodada H14 — fechamento documental NF-e (2026-09-17)
 - [x] Migration `20261037000000` aplicada no canônico após ensaio revertido: bucket `fiscal-xml`, tabela de artefato protocolado com RLS e RPC service_role-only.
