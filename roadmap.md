@@ -1,5 +1,10 @@
 # Roadmap de Tarefas
 
+## H15 — isolamento fiscal por empresa
+- [ ] Auditar schema vivo, RLS, vínculos e seleção legada de emitente no canônico.
+- [ ] Preparar migration nova com guards, rollback e testes; aplicar somente após todos os gates.
+- [ ] Verificar estado remoto, advisors e regressões; sem certificado, emissão ou alterações de Edge Functions.
+
 ## Rodada H14 — fechamento documental NF-e (2026-09-17)
 - [x] Migration `20261037000000` aplicada no canônico após ensaio revertido: bucket `fiscal-xml`, tabela de artefato protocolado com RLS e RPC service_role-only.
 - [x] `nfeProc` montado server-side a partir do XML assinado + protocolo da SEFAZ, com validação de chave/ambiente/protocolo, path determinístico e hash.
