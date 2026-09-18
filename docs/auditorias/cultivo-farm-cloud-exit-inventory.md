@@ -37,7 +37,7 @@ Conclusão objetiva: **nenhuma.**
 - Ausência de `fiscal_environment_marker` na origem confirma que ela nunca foi ambiente fiscal válido. O canônico mantém o marcador correto: `STAGING`, `production_emission_allowed=false`.
 - As 21 migrations registradas na origem pertencem ao ciclo gerenciado e **não** devem ser replayadas no canônico.
 
-Portanto o "export seletivo" existe apenas como instrumento auditável; hoje sua lista de tabelas candidatas é **vazia**.
+Portanto não há export seletivo a fazer: a lista de tabelas candidatas é **vazia**.
 
 ## 3. Dependências do Cloud no código e nos canais de deploy
 
@@ -48,28 +48,88 @@ Portanto o "export seletivo" existe apenas como instrumento auditável; hoje sua
 - Únicos arquivos que citam `VITE_SUPABASE`: `src/test/config/connection-binding.static.test.ts` e `src/test/config/cultivofarm-runtime.static.test.ts` — são justamente as guardas que reprovam a divergência. **Permanecem inalteradas.** A Opção B (ignorar o `.env`) **não** foi implementada.
 - Canal de deploy de Edge Functions disponível no ambiente aponta para o projeto gerenciado; por isso `fiscal-xml-engine` e `fiscal-sefaz-transport` seguem **prontas para deploy e não publicadas** no canônico.
 
-## 4. Artefatos criados nesta fase (nenhum executado contra remoto)
+## 4. SQL somente leitura utilizado (evidência)
 
-- `scripts/cloud-exit/inventory-cloud.sh` — inventário somente leitura. Exige `CLOUD_REF` e `CLOUD_DB_URL` coerentes entre si, recusa o canônico como origem, força `default_transaction_read_only`, imprime apenas metadados e contagens.
-- `scripts/cloud-exit/export-selective.sh` — export seletivo para CSV local. Recusa origem canônica, aceita apenas `swzpzcwiasxmjutrmvkm` como destino declarado, exige lista explícita de tabelas, bloqueia tabelas sensíveis (certificados/segredos) e para sem `--i-have-audited-the-diff`. **Não escreve no canônico.**
-- `src/test/config/cloudExitArtifacts.test.ts` — verifica as guardas acima de forma estática.
+Todas as consultas rodaram com `SET default_transaction_read_only = on`, apenas `SELECT`:
 
-## 5. Como pausar/desativar o Cloud ao final
+```sql
+-- tabelas public e contagem exata por tabela
+select table_name,
+       (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text
+from information_schema.tables
+where table_schema = 'public' and table_type = 'BASE TABLE'
+order by table_name;
 
-Limitações reais da plataforma, sem promessas inexistentes:
+-- rotinas public (somente nomes)
+select routine_name from information_schema.routines where routine_schema = 'public' order by routine_name;
 
-- **Não existe desvinculação** do backend gerenciado depois de anexado a um projeto. O que existe é desabilitá-lo para projetos **futuros** (Connectors → Lovable Cloud → Disable Cloud).
-- É possível **pausar** o backend gerenciado. Pausar não apaga conteúdo e não afeta o canônico, que é um projeto Supabase independente com conexão própria.
-- Enquanto o projeto existir, a plataforma continuará regravando o `.env` com o ref gerenciado. Isso mantém a guarda de vínculo reprovando de propósito (1 teste), o que é o comportamento correto e **não** será mascarado.
-- Consequência prática a registrar: o canal gerenciado de deploy/migração permanece inútil para o canônico; migrations continuam aplicadas por `restoration/` + ledger manual, e o deploy das Edge Functions depende de canal externo autorizado.
+-- políticas RLS
+select tablename, policyname from pg_policies where schemaname = 'public' order by tablename, policyname;
 
-## 6. Estado preservado
+-- storage e auth (somente metadados/contagens)
+select id, public from storage.buckets order by id;
+select bucket_id, count(*) from storage.objects group by bucket_id order by bucket_id;
+select count(*) from auth.users;
 
-Rotas, dados e bloqueios fiscais intactos. `production_emission_allowed=false`. Nenhuma NF-e/NFS-e real transmitida. Nenhuma migration nova, nenhum deploy, nenhuma transferência.
+-- migrations registradas
+select version from supabase_migrations.schema_migrations order by version;
+```
 
-## 7. Pendências para a próxima fase (aguardando auditoria do usuário)
+Nenhum valor de segredo, material de certificado ou dado pessoal foi lido — não havia linha alguma.
 
-1. Auditar o diff desta rodada e comparar bancos.
-2. Decidir se o Cloud pode ser pausado imediatamente (inventário indica que sim: origem vazia).
-3. Deploy das Edge Functions no canônico por canal autorizado.
-4. E2E fiscal com certificado real em homologação.
+## 5. Artefatos desta fase
+
+Os scripts `scripts/cloud-exit/inventory-cloud.sh` e `scripts/cloud-exit/export-selective.sh`, e o teste `src/test/config/cloudExitArtifacts.test.ts`, foram **removidos**. Motivos, registrados sem eufemismo:
+
+- Nunca foram executados; o inventário real foi feito pelas consultas da §4.
+- Não há dado algum a exportar seletivamente, então a ferramenta seria capacidade ociosa e arriscada.
+- Falhas reais identificadas na auditoria do diff: o exportador interpolava `TABLES` e `OUTDIR` diretamente em SQL e no meta-comando `\copy` (injeção de identificador/caminho) e não vinculava `CLOUD_DB_URL` à origem declarada de forma robusta; o inventário validava host por substring e usava `ORDER BY 1,2` sobre projeção de coluna única.
+- O teste associado era estático e superficial, dando falsa sensação de cobertura.
+
+Permanece apenas este relatório, com o SQL e as evidências.
+
+## 6. Edge Functions do Cloud (37) — inventário e comparação
+
+A UI do Cloud lista **37 Edge Functions**, entidade distinta das 19 rotinas SQL da §2.
+
+O repositório contém exatamente **37 diretórios de função** em `supabase/functions/` (além de `_shared`, que não é função):
+
+admin-audit-produtos-orfaos, admin-update-user-password, admin-wipe-produtos-catalog, ai-generate-ficha-campo, ai-refresh-fichas, ai-sugerir-alvos, aplicar-sla-alertas, check-monitoramentos-vencidos, communication-health, communication-provider-settings, create-user, entrega-runtime-harness, entrega-termo-pdf, enviar-alertas-notificacoes, enviar-alertas-resumo, enviar-pdf-aplicacao, enviar-pdf-visita, fase-e-runtime-harness, fiscal-binding-diagnostics, fiscal-certificate-revoke, fiscal-certificate-upload, fiscal-cnpj-lookup, fiscal-event-sign, fiscal-preflight, fiscal-sefaz-transport, fiscal-xml-engine, generate-financial-receipt, generate-financial-report, gerar-alertas-operacionais, hml-b2b-runtime-harness, list-portal-users, process-communication-outbox, send-push-notification, sync-calendar-event, sync-clima, test-communication-email, whatsapp-status-webhook.
+
+Conclusão e limite honesto: a contagem coincide (37 = 37) e todo código-fonte de função conhecido está versionado no repositório, incluindo dependências compartilhadas em `supabase/functions/_shared/`. **Não foi possível, por este canal, baixar o código efetivamente implantado no Cloud para diff byte a byte.** Portanto a afirmação máxima sustentável é: *não há função cujo nome exista só no Cloud*; a igualdade de conteúdo linha a linha não está comprovada. Se o backup/export da UI incluir o código das funções, o diff definitivo deve ser feito sobre ele antes de remover o Cloud.
+
+Nomes de secrets referenciados pelo código das funções (**apenas nomes; nenhum valor foi lido ou exibido**): ALERTAS_CRON_SECRET, ALERTAS_NOTIFICACOES_SECRET, ALERTAS_RESUMO_SECRET, ALERTAS_SLA_SECRET, APP_URL, COMMUNICATION_ADMIN_ORIGINS, COMMUNICATION_DELIVERY_ENABLED, COMMUNICATION_INAPP_ADAPTER_ENABLED, COMMUNICATION_TEST_MODE_ENABLED, DENO_DEPLOYMENT_ID, EMAIL_DELIVERY_ENABLED, FISCAL_CERTIFICATE_MASTER_KEY, FISCAL_RELEASE_ID, GEMINI_API_KEY, GOOGLE_MAIL_API_KEY, INTERNAL_FUNCTION_SECRET, LOVABLE_API_KEY, SITE_URL, SMTP_FROM, SMTP_FROM_NAME, SMTP_HOST, SMTP_PASS, SMTP_PORT, SMTP_USER, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY, VAPID_SUBJECT, WHATSAPP_DELIVERY_ENABLED, WHATSAPP_WEBHOOK_ENABLED.
+
+Consequência: qualquer função reimplantada no canônico exige que os secrets equivalentes existam lá. `FISCAL_CERTIFICATE_MASTER_KEY` e `INTERNAL_FUNCTION_SECRET` são críticos e precisam ser reprovisionados por canal seguro — nunca copiados por este agente.
+
+### Serviços do Cloud fora de tabelas e funções (limites a registrar)
+
+- **Jobs/cron**: agendamentos configurados no Cloud (ex.: alertas, outbox de comunicação, clima) não são objetos do schema `public` e não aparecem no inventário SQL. Se existirem, precisam ser recriados no canônico; não foram lidos nesta fase.
+- **E-mails**: templates de autenticação, remetente e domínio de e-mail gerenciados pelo Cloud não migram sozinhos. Entregas externas permanecem desligadas por flag.
+- **Domínios/URLs**: URL de site, redirects de autenticação e domínio publicado são configuração da plataforma, não do banco.
+- **Storage/auth**: no Cloud estão vazios (0 buckets, 0 objetos, 0 usuários), então não há conteúdo a preservar nessas superfícies.
+
+Por isso **não** se afirma "nada a preservar" de forma global: afirma-se que **não há dados, usuários, objetos de storage nem DDL do Cloud a importar**, e que a verificação pendente é o diff do código implantado das 37 funções e a conferência de jobs/e-mail/domínio antes da remoção.
+
+## 7. Pausar ou remover o Cloud — o que a UI realmente oferece
+
+Correção de afirmação anterior: **a afirmação "não existe desvinculação" estava errada** e foi removida.
+
+- A UI oferece, em Cloud > Advanced settings, **Remove Lovable Cloud**, com diálogo declarando exclusão **permanente** da instância, dos dados e dos backups.
+- A UI também oferece **Pause**, que não apaga conteúdo.
+- Remoção é destrutiva e irreversível pelo texto do próprio diálogo. **Não há garantia de reconexão** posterior — e nenhuma garantia desse tipo é feita aqui, porque não foi testada.
+- Nada foi pausado nem removido nesta rodada, conforme instrução; o Export database iniciado pela UI está em andamento sob controle do proprietário.
+- Enquanto o projeto existir vinculado, a plataforma continuará regravando o `.env` com o ref gerenciado, mantendo a guarda de vínculo reprovando de propósito (1 teste). Isso **não** será mascarado.
+- Consequência prática: o canal gerenciado de deploy/migração permanece inútil para o canônico; migrations continuam aplicadas por `restoration/` + ledger manual, e o deploy das Edge Functions depende de canal externo autorizado.
+
+## 8. Estado preservado
+
+Rotas, dados e bloqueios fiscais intactos. `production_emission_allowed=false`. Nenhuma NF-e/NFS-e real transmitida. Nenhuma migration nova, nenhum deploy, nenhuma transferência. Revertida a alteração incidental de `PostgrestVersion` em `src/integrations/supabase/types.ts` (volta a `14.15`); nenhum tipo foi regenerado pelo Cloud.
+
+## 9. Pendências para a próxima fase (aguardando auditoria do usuário)
+
+1. Concluir o Export database da UI e, se ele contiver o código implantado, fazer o diff das 37 funções.
+2. Conferir jobs/cron, configuração de e-mail e domínio antes de qualquer remoção.
+3. Decidir entre Pause e Remove (Remove é permanente, sem garantia de reconexão).
+4. Deploy das Edge Functions no canônico por canal autorizado, com secrets reprovisionados.
+5. E2E fiscal com certificado real em homologação.
