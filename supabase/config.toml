@@ -1,1 +1,21 @@
 project_id = "swzpzcwiasxmjutrmvkm"
+
+[functions.whatsapp-status-webhook]
+verify_jwt = false
+
+# F4.2 — empacotamento do motor XML NF-e.
+# O primeiro deploy omitiu o bundle XSD oficial porque `xsdValidate.ts` lê os
+# arquivos por `import.meta.url` (Deno.readTextFile) e o bundler não os enxerga
+# como dependências de import. `static_files` força a inclusão dos 5 XSDs e do
+# manifesto no artefato implantado. `verify_jwt` permanece true.
+# Transporte SEFAZ: JWT obrigatório declarado explicitamente, para não depender
+# do default da ferramenta em uma função que assina e transmite documentos.
+[functions.fiscal-sefaz-transport]
+verify_jwt = true
+
+[functions.fiscal-xml-engine]
+verify_jwt = true
+static_files = [
+  "./functions/fiscal-xml-engine/xsd/*.xsd",
+  "./functions/fiscal-xml-engine/xsd/manifest.json",
+]
