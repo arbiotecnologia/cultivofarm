@@ -133,3 +133,28 @@ Rotas, dados e bloqueios fiscais intactos. `production_emission_allowed=false`. 
 3. Decidir entre Pause e Remove (Remove é permanente, sem garantia de reconexão).
 4. Deploy das Edge Functions no canônico por canal autorizado, com secrets reprovisionados.
 5. E2E fiscal com certificado real em homologação.
+
+## 10. Corte real do Cloud e revínculo ao canônico (2026-09-18, pós-corte)
+
+Executado pelo proprietário na UI, fora do agente: **Remove Lovable Cloud** (exclusão permanente de instância, dados e backups), com `get_database_status` retornando `enabled=false`; em seguida **Connect Supabase** selecionando **CultivoFarm** na organização Cultivo Farm já autorizada. O Cloud **não** deve ser reabilitado.
+
+Backups: o export do banco e o download do código-fonte foram obtidos pelo proprietário e mantidos **fora** do Cloud. Jobs/cron no Cloud: **zero**. E-mail personalizado/domínio de e-mail: **não configurado**. O **código implantado das Edge Functions do Cloud não pôde ser comparado** (acesso negado a esse canal); portanto **não se afirma preservação byte a byte** — a garantia existente é apenas que os 37 diretórios de função estão versionados no repositório.
+
+### Evidências desta auditoria (somente leitura; nenhum banco alterado)
+
+| Verificação | Comando | Exit | Resultado |
+| --- | --- | --- | --- |
+| `.env` gerado | `sed -E 's/=.*/=<redacted>/' .env` | 0 | apenas `VITE_SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`; host `swzpzcwiasxmjutrmvkm.supabase.co` (nenhum valor de chave exibido) |
+| Variáveis de ambiente | `env \| grep -oE '^(SUPABASE\|VITE_SUPABASE)[A-Z_]*'` | 0 | ref efetivo `swzpzcwiasxmjutrmvkm` em `SUPABASE_URL`, `VITE_SUPABASE_URL`, `SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PROJECT_ID` |
+| Configuração local | `head -2 supabase/config.toml` | 0 | `project_id = "swzpzcwiasxmjutrmvkm"` |
+| Cliente/guard | `src/integrations/supabase/client.ts`, `bindingGuard.ts` | — | URL literal canônica + `assertCanonicalSupabaseBinding` antes de `createClient`; sem `import.meta.env` |
+| Gate de binding | `bash restoration/homologacao-h7/check-frontend-binding.sh` | 0 | `OK — CultivoFarm swzpzcwiasxmjutrmvkm` |
+| Testes de configuração | `npx vitest run src/test/config` | 0 | **81/81 aprovados, 0 reprovados** (10 arquivos) |
+| Tipos | `npx tsc --noEmit` | 0 | sem erros |
+| Build | `bun run build` | 0 | concluído (avisos de chunk/browserslist apenas) |
+| Refs divergentes ativos | `rg` em `src`, `supabase/functions`, `index.html`, `vite.config.ts` | 0 | única ocorrência: `FORBIDDEN_PRODUCTION_REF = "navfzbwgwzruipouyfnk"` em `fiscal-binding-diagnostics/index.ts` — **denylist intencional**, não alvo |
+| Resíduos locais | `git status --porcelain` | 0 | nenhuma alteração pendente; `.env` permanece ignorado pelo Git |
+
+**Mudança relevante de estado:** a falha histórica de 1 teste de vínculo (`.env` gerenciado apontando para ref proibido) **desapareceu por correção na origem**, não por enfraquecimento de teste. Nenhum teste foi alterado, nenhum `.env` foi ignorado e nenhum resultado foi forçado. Nenhuma correção local foi necessária (diff vazio).
+
+Banco canônico reconsultado pelo proprietário: marcador **STAGING**, `production_emission_allowed=false`. Nesta rodada não houve migration, deploy, emissão, transmissão nem regeneração de schema/tipos. Nenhuma fase seguinte foi iniciada.
