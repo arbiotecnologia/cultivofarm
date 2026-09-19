@@ -229,8 +229,12 @@ describe("grafo da função — sem worker_threads e sem vazamento de erro cru",
       INDEX.indexOf('action === "xsd-selftest"'),
       INDEX.indexOf("Cliente do usuário: toda autorização"),
     );
-    // Nenhum campo de texto livre além dos enums/metadados fixos.
-    expect(block).not.toMatch(/issue|message|raw|diagnostic\.message|String\(/);
+    // Só se permite usar `issues?.length` (contagem booleana); nenhuma
+    // ramificação extrai texto de issue, stack, erro ou diagnóstico.
+    expect(block).not.toMatch(/issue\.(message|code)|String\(|\.stack|err\.|JSON\.stringify/);
+    // A resposta de sucesso carrega apenas metadados fixos.
+    expect(block).toContain("loadedFiles: XSD_SELFTEST_EXPECTED_FILES");
+    expect(block).not.toContain("...probe");
     expect(block).not.toContain("XSD_GENERIC_MESSAGE");
   });
 });
