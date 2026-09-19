@@ -2,14 +2,17 @@
  * Fase F4.1-R1 — Validação XSD 1.0 REAL da NF-e 4.00.
  *
  * Usa `xmllint-wasm` (libxml2 compilado para WebAssembly). Todos os XSDs
- * oficiais são carregados de `./xsd/` (bundle local versionado, com hashes
- * em `./xsd/manifest.json`). Nenhuma resolução de rede, DTD ou entidade
- * externa é permitida: `xmllint-wasm` roda em WASM sem acesso a rede e os
- * `xs:include`/`xs:import` são satisfeitos exclusivamente por `preload`.
+ * oficiais vêm de `./xsdBundle.ts`, módulo GERADO a partir de `./xsd/`
+ * (fonte auditável, hashes em `./xsd/manifest.json`). O canal de deploy das
+ * Edge Functions não empacota `static_files`, então nada é lido do disco:
+ * sem `Deno.readTextFile` e sem `import.meta.url`. Nenhuma resolução de rede,
+ * DTD ou entidade externa é permitida: `xmllint-wasm` roda em WASM sem acesso
+ * a rede e os `xs:include`/`xs:import` são satisfeitos apenas por `preload`.
  *
  * Pacote oficial: PL_010e_v1.02 (Portal Nacional da NF-e, 10/07/2026).
  */
 import { validateXML, type XmlValidationError } from "npm:xmllint-wasm@5.3.0";
+import { XSD_BUNDLE, XSD_BUNDLE_ORDER } from "./xsdBundle.ts";
 
 export interface XsdIssue {
   line: number | null;
