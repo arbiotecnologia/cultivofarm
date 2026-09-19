@@ -784,11 +784,11 @@ DECLARE
   v_count integer;
   v_env   text;
 BEGIN
-  PERFORM public.h15_require_staff();
+  IF current_setting('role',true) = 'service_role' THEN IF (SELECT count(*) FROM public.company_fiscal_settings WHERE is_active) <> 1 THEN RAISE EXCEPTION 'H15_SERVICE_EMITTER_AMBIGUOUS' USING ERRCODE='42501'; END IF; ELSE PERFORM public.h15_require_staff(); END IF;
 
   PERFORM public.fn_fiscal_assert_staging_marker(p_operation);
 
-  SELECT count(*) INTO v_count FROM (SELECT * FROM public.company_fiscal_settings WHERE organization_id = public.h15_actor_organization()) company_fiscal_settings WHERE is_active;
+  SELECT count(*) INTO v_count FROM (SELECT * FROM public.company_fiscal_settings WHERE (organization_id = public.h15_actor_organization() OR current_setting('role',true) = 'service_role')) company_fiscal_settings WHERE is_active;
   IF v_count = 0 THEN
     RAISE EXCEPTION
       'FISCAL_ENV_NOT_READY: FISCAL_EMITTER_NOT_CONFIGURED — nenhum emitente fiscal ativo (operacao=%).', p_operation;
@@ -799,7 +799,7 @@ BEGIN
   END IF;
 
   SELECT btrim(coalesce(nfe_environment_code, '')) INTO v_env
-    FROM (SELECT * FROM public.company_fiscal_settings WHERE organization_id = public.h15_actor_organization()) company_fiscal_settings WHERE is_active LIMIT 1;
+    FROM (SELECT * FROM public.company_fiscal_settings WHERE (organization_id = public.h15_actor_organization() OR current_setting('role',true) = 'service_role')) company_fiscal_settings WHERE is_active LIMIT 1;
 
   IF v_env IS NULL OR v_env NOT IN ('1', '2') THEN
     RAISE EXCEPTION
