@@ -124,3 +124,36 @@ Gates ainda abertos antes de submeter: compilar SQL completo contra schema vivo 
 - `verify_jwt=true` e `static_files` do bundle permanecem em `supabase/config.toml`, não alterado.
 - Testes: `src/test/fiscal/xmlEngineXsdSelftest.test.ts` (ordem dos gates, parse único, chamada real ao validador, fail-closed, metadados mínimos, ausência de acesso a banco/Storage, config.toml preservado).
 - Pendência: executar o selftest contra o deploy real do canônico para comprovar o runtime; nenhuma Edge Function foi publicada nesta rodada.
+
+## Correção XSD compilada — fiscal-xml-engine (19/09/2026 02:56 UTC)
+
+**Evidência de runtime (v6).** Chamada POST `{"action":"xsd-selftest"}` com origem
+oficial e chave pública válida retornou **HTTP 500 `{"ok":false,"error":"XSD_BUNDLE_UNAVAILABLE"}`**.
+A API `get_edge_function` lista apenas os `.ts` do artefato implantado e omite os
+5 `.xsd` e o `manifest.json`, apesar de `static_files` em `supabase/config.toml`:
+o canal de deploy atual **não empacota arquivos estáticos**.
+
+**Correção preparada (sem deploy, sem SQL, sem alteração de banco/certificado/transporte/secrets).**
+
+- `scripts/generate-xsd-bundle.mjs` — gerador determinístico; confere cada arquivo
+  contra `xsd/manifest.json` (SHA-256 + bytes) antes de emitir o módulo.
+- `supabase/functions/fiscal-xml-engine/xsdBundle.ts` — **gerado**; exporta
+  `XSD_BUNDLE` (readonly nome→conteúdo), `XSD_BUNDLE_ORDER`, `XSD_BUNDLE_SHA256`,
+  `XSD_BUNDLE_PACKAGE_SHA256` e `XSD_BUNDLE_FILE_COUNT = 5`.
+- `supabase/functions/fiscal-xml-engine/xsdValidate.ts` — carrega os 5 XSDs do
+  módulo compilado; sem `Deno.readTextFile`, sem `import.meta.url`, sem rede.
+  Ordem de preload, schema final `nfe_v4.00.xsd`, cache, sanitização de mensagens
+  e API pública preservados; fail-closed com `XSD_BUNDLE_MISSING_FILE` /
+  `XSD_BUNDLE_MISMATCH`.
+- `supabase/functions/fiscal-xml-engine/xsd/` e `static_files` **mantidos** como
+  fonte de auditoria; `verify_jwt = true` inalterado.
+- `src/test/fiscal/xmlEngineXsdBundle.test.ts` — 14 testes: equivalência byte a
+  byte de cada string embutida com o arquivo fonte e com o SHA-256 do manifesto,
+  5 nomes exatos e ordem, ausência de disco/rede, fail-closed e API preservada.
+  `xmlEngineXsdSelftest.test.ts` (12 testes) segue provando o fail-closed do
+  `xsd-selftest` e a preservação de `verify_jwt`/`static_files`.
+
+**Estado:** correção compilada preparada, **runtime ainda não comprovado** —
+a comprovação depende de redeploy autorizado da função e nova chamada
+`xsd-selftest` (esperado HTTP 200 com `loadedFiles: 5`). Nenhuma função foi
+publicada nesta etapa.
