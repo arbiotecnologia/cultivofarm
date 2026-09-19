@@ -3769,6 +3769,7 @@ export type Database = {
           nfse_provider: string
           nfse_series: string | null
           number: string | null
+          organization_id: string
           phone: string | null
           pis_cofins_regime: string | null
           postal_code: string | null
@@ -3835,6 +3836,7 @@ export type Database = {
           nfse_provider?: string
           nfse_series?: string | null
           number?: string | null
+          organization_id: string
           phone?: string | null
           pis_cofins_regime?: string | null
           postal_code?: string | null
@@ -3901,6 +3903,7 @@ export type Database = {
           nfse_provider?: string
           nfse_series?: string | null
           number?: string | null
+          organization_id?: string
           phone?: string | null
           pis_cofins_regime?: string | null
           postal_code?: string | null
@@ -3920,7 +3923,15 @@ export type Database = {
           updated_by?: string | null
           webhook_ref?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "company_fiscal_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comunicacao_audit_log: {
         Row: {
@@ -8414,6 +8425,7 @@ export type Database = {
           cancel_reason: string | null
           canceled_at: string | null
           company_cnpj: string | null
+          company_settings_id: string
           company_snapshot: Json | null
           created_at: string
           created_by: string
@@ -8483,6 +8495,7 @@ export type Database = {
           cancel_reason?: string | null
           canceled_at?: string | null
           company_cnpj?: string | null
+          company_settings_id: string
           company_snapshot?: Json | null
           created_at?: string
           created_by: string
@@ -8552,6 +8565,7 @@ export type Database = {
           cancel_reason?: string | null
           canceled_at?: string | null
           company_cnpj?: string | null
+          company_settings_id?: string
           company_snapshot?: Json | null
           created_at?: string
           created_by?: string
@@ -8620,6 +8634,27 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "company_fiscal_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_company_readiness"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_invoices_company_settings_id_fkey"
+            columns: ["company_settings_id"]
+            isOneToOne: false
+            referencedRelation: "v_fiscal_nfe_emitter_readiness"
             referencedColumns: ["id"]
           },
           {
@@ -20140,6 +20175,17 @@ export type Database = {
         Args: { p_registro_id: string }
         Returns: string
       }
+      h15_active_company: { Args: never; Returns: string }
+      h15_actor_organization: { Args: never; Returns: string }
+      h15_company_access: { Args: { p_company: string }; Returns: boolean }
+      h15_invoice_access: { Args: { p_invoice: string }; Returns: boolean }
+      h15_related_company: {
+        Args: { p_id: string; p_table: string }
+        Returns: string
+      }
+      h15_require_company: { Args: { p_company: string }; Returns: undefined }
+      h15_require_invoice: { Args: { p_invoice: string }; Returns: undefined }
+      h15_require_staff: { Args: never; Returns: undefined }
       has_active_user_cliente_access: {
         Args: { _cliente_id: string; _levels?: string[]; _user_id: string }
         Returns: boolean
@@ -21911,6 +21957,7 @@ export type Database = {
           nfse_provider: string
           nfse_series: string | null
           number: string | null
+          organization_id: string
           phone: string | null
           pis_cofins_regime: string | null
           postal_code: string | null

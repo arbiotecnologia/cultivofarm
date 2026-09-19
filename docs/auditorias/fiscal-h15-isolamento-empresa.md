@@ -2,6 +2,23 @@
 
 ## Estado desta rodada
 
+**H15 APLICADA E AUDITADA — sincronizada no repositório em 19/09/2026.** Migration aplicada no canônico `swzpzcwiasxmjutrmvkm` (ledger vivo: `20260919015635_h15_fiscal_company_isolation`, `20260919015811_h15_fiscal_helper_acl_tightening`, `20260919015944_h15_emitter_readiness_insert_guard`).
+
+Ensaio adversarial transacional executado dentro da transação de aplicação e revertido integralmente: encerrou com a exceção controlada **P1500 H15_ADVERSARIAL_PASS_ROLLBACK**, que é o resultado de sucesso — nenhuma fixture (organização, perfil, papel ou nota do ensaio) persistiu.
+
+Pós-aplicação confirmado por leitura viva do banco:
+- 0 notas fiscais, 0 certificados, 0 séries; 1 organização ativa; 1 emitente; `production_enabled=0`; marcador canônico = 1.
+- Colunas `company_fiscal_settings.organization_id` e `fiscal_invoices.company_settings_id` NOT NULL com FK RESTRICT e índices confirmados.
+- Candidato contendo 12 helpers, 17 triggers e 30 ALTER POLICY aplicado conforme definido.
+
+Correções pós-auditoria registradas (duas, sincronizadas no repositório):
+1. Separação de identidade organizacional de papel: `h15_actor_organization()` retorna a organização do perfil ativo via `auth.uid()` sem filtrar papel; `h15_require_staff()` verifica explicitamente os papéis fiscais aceitos (administrador, gestor, financeiro).
+2. `h15_related_integrity` corrigido para relações com pai principal anulável: `fiscal_sefaz_transmissions` deriva a empresa do primeiro vínculo não nulo (invoice → xml_run → evento) e exige ao menos um; `fiscal_idempotency_keys` preserva operações técnicas sem nota e valida quando houver invoice. Endurecimento adicional de ACL dos helpers (`20260919015811`) e guard de prontidão do emitente (`20260919015944`) aplicados no mesmo pós-auditoria.
+
+Sincronização do repositório (19/09/2026): `supabase/migrations/20260919015635_h15_fiscal_company_isolation.sql` copiado byte a byte do candidato (md5 `8aab69210e16cfa7b130fa946c40e834`, sem alteração de conteúdo); as demais duas migrations reproduzem o estado vivo do banco. Nenhuma execução remota de SQL ocorreu na sincronização; produção de emissão, Edge Functions, secrets e tipos permanecem inalterados e bloqueados.
+
+## Histórico — estado anterior a esta rodada
+
 **NÃO APLICADA — implementação incompleta; correções pontuais autorizadas pelo usuário, sem necessidade de nova aprovação de escopo.**
 
 Destino confirmado por `supabase/config.toml` e leitura do marcador vivo: `swzpzcwiasxmjutrmvkm`. Banco real de produção do SaaS; `environment_label=STAGING` refere-se à emissão fiscal. `production_emission_allowed=false`.
