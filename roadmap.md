@@ -1,5 +1,11 @@
 # Roadmap de Tarefas
 
+## Gate de prontidão fiscal — auditoria local (19/09/2026)
+- [ ] Auditar A1, revogação, isolamento organizacional, série e configuração nos fluxos existentes.
+- [ ] Corrigir falhas concretas e preparar provisionamento privado do bucket para revisão, sem execução remota.
+- [ ] Validar regressões locais e documentar bloqueios de homologação dependentes do operador.
+- Escopo desta rodada: nenhum SQL remoto, deploy, emissão, certificado, série ou fixture persistente; tarefas históricas abaixo não são autorização para execução.
+
 ## H16 — índices de FK fiscais e initplan de RLS (19/09/2026)
 - [x] H16 aplicada e auditada no canônico `swzpzcwiasxmjutrmvkm` (ledger `20260919141609_h16_fiscal_fk_indexes_and_rls_initplan`); repositório sincronizado com `supabase/migrations/20260919141609_h16_fiscal_fk_indexes_and_rls_initplan.sql` sem execução remota de SQL.
 - [x] 16/16 índices covering de FK fiscais confirmados.
