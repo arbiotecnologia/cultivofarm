@@ -153,6 +153,7 @@ BEGIN
  IF NEW.company_cnpj IS NOT NULL AND regexp_replace(NEW.company_cnpj,'[^0-9]','','g') IS DISTINCT FROM regexp_replace(c.cnpj,'[^0-9]','','g') THEN
  RAISE EXCEPTION 'H15_CNPJ_MISMATCH' USING ERRCODE='23514'; END IF;
  IF NEW.company_snapshot IS NOT NULL AND NEW.company_snapshot <> '{}'::jsonb THEN
+ IF NOT (NEW.company_snapshot ? 'cnpj') OR NULLIF(NEW.company_snapshot->>'cnpj','') IS NULL THEN RAISE EXCEPTION 'H15_SNAPSHOT_CNPJ_REQUIRED' USING ERRCODE='23514'; END IF;
  IF jsonb_typeof(NEW.company_snapshot)<>'object' THEN RAISE EXCEPTION 'H15_SNAPSHOT_INVALID' USING ERRCODE='23514'; END IF;
  -- All identity fields supplied must agree; absent fields remain draft pendencies.
  FOR k IN SELECT jsonb_object_keys(NEW.company_snapshot) LOOP
@@ -175,6 +176,63 @@ BEGIN
 END $h15$;
 REVOKE ALL ON FUNCTION public.h15_company_integrity() FROM PUBLIC,anon,authenticated;
 CREATE TRIGGER h15_company_integrity BEFORE INSERT OR UPDATE ON public.company_fiscal_settings FOR EACH ROW EXECUTE FUNCTION public.h15_company_integrity();
+-- Cross-links must refer to the same issuer, including service writes.
+CREATE OR REPLACE FUNCTION public.h15_related_company(p_table text,p_id uuid) RETURNS uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $h15$
+DECLARE c uuid;
+BEGIN
+ CASE p_table
+ WHEN 'company_fiscal_settings' THEN SELECT id INTO c FROM public.company_fiscal_settings WHERE id=p_id;
+ WHEN 'fiscal_invoices' THEN SELECT company_settings_id INTO c FROM public.fiscal_invoices WHERE id=p_id;
+ WHEN 'fiscal_certificates' THEN SELECT company_settings_id INTO c FROM public.fiscal_certificates WHERE id=p_id;
+ WHEN 'fiscal_document_series' THEN SELECT company_id INTO c FROM public.fiscal_document_series WHERE id=p_id;
+ WHEN 'fiscal_invoice_items' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_invoice_items r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
+ WHEN 'fiscal_events' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_events r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
+ WHEN 'fiscal_xml_runs' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_xml_runs r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
+ WHEN 'fiscal_number_reservations' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_number_reservations r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
+ WHEN 'fiscal_sefaz_transmissions' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_sefaz_transmissions r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
+ ELSE RAISE EXCEPTION 'H15_UNKNOWN_RELATION' USING ERRCODE='23514';
+ END CASE;
+ RETURN c;
+END $h15$;
+REVOKE ALL ON FUNCTION public.h15_related_company(text,uuid) FROM PUBLIC,anon,authenticated;
+CREATE OR REPLACE FUNCTION public.h15_related_integrity() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $h15$
+DECLARE data jsonb:=to_jsonb(NEW); old_data jsonb; owner_company uuid; linked uuid; n integer; target uuid;
+BEGIN
+ IF TG_OP='UPDATE' THEN old_data:=to_jsonb(OLD);
+ IF data->TG_ARGV[0] IS DISTINCT FROM old_data->TG_ARGV[0] THEN RAISE EXCEPTION 'H15_PARENT_IMMUTABLE' USING ERRCODE='23514'; END IF;
+ END IF;
+ target:=nullif(data->>TG_ARGV[0],'')::uuid;
+ owner_company:=public.h15_related_company(TG_ARGV[1],target);
+ IF owner_company IS NULL THEN RAISE EXCEPTION 'H15_PARENT_REQUIRED' USING ERRCODE='23514'; END IF;
+ IF current_setting('role',true) IS DISTINCT FROM 'service_role' THEN PERFORM public.h15_require_company(owner_company); END IF;
+ n:=2;
+ WHILE n<TG_NARGS LOOP
+ target:=nullif(data->>TG_ARGV[n],'')::uuid;
+ IF target IS NOT NULL THEN
+ linked:=public.h15_related_company(TG_ARGV[n+1],target);
+ IF linked IS DISTINCT FROM owner_company THEN RAISE EXCEPTION 'H15_CROSS_COMPANY_REFERENCE:%',TG_ARGV[n] USING ERRCODE='23514'; END IF;
+ END IF;
+ n:=n+2;
+ END LOOP;
+ RETURN NEW;
+END $h15$;
+REVOKE ALL ON FUNCTION public.h15_related_integrity() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('company_settings_id','company_fiscal_settings','parent_invoice_id','fiscal_invoices','substitution_invoice_id','fiscal_invoices');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoice_items FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoice_references FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices','referenced_invoice_id','fiscal_invoices');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoice_item_references FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_item_id','fiscal_invoice_items','referenced_item_id','fiscal_invoice_items');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_certificates FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('company_settings_id','company_fiscal_settings');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_document_series FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('company_id','company_fiscal_settings');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_events FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices','related_event_id','fiscal_events','sefaz_transmission_id','fiscal_sefaz_transmissions');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_xml_runs FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices','reservation_id','fiscal_number_reservations','previous_run_id','fiscal_xml_runs','certificate_id','fiscal_certificates');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_number_reservations FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices','series_id','fiscal_document_series');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_sefaz_transmissions FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices','xml_run_id','fiscal_xml_runs','fiscal_event_id','fiscal_events');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_protocoled_documents FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices','transmission_id','fiscal_sefaz_transmissions','xml_run_id','fiscal_xml_runs');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_calculation_runs FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_idempotency_keys FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices');
+CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_stock_loss_contexts FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices');
 CREATE OR REPLACE FUNCTION public.fn_comprovante_entrega_montar_v1(p_entrega_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
