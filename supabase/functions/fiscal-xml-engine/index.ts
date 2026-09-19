@@ -2,6 +2,14 @@
  * Fase F4 — Edge Function `fiscal-xml-engine`.
  *
  * Ações (POST, admin/perfil fiscal interno):
+ *   0. `xsd-selftest` — diagnóstico somente leitura do bundle XSD: valida um
+ *                      XML mínimo deliberadamente inválido para provar que os
+ *                      5 XSDs oficiais foram empacotados e que o validador
+ *                      executa no runtime. Não acessa banco, Storage,
+ *                      certificado, assinatura nem transporte, e só responde
+ *                      metadados não sensíveis. Disponível após CORS, método,
+ *                      Bearer, gate de projeto canônico e parse do body, mas
+ *                      antes das exigências de claims/perfil fiscal.
  *   1. `generate`  — prepara (RPC), constrói o XML, aplica o precheck de
  *                    gramática, armazena o não assinado, assina com o A1,
  *                    valida o documento ASSINADO contra o XSD 1.0 OFICIAL
@@ -35,11 +43,25 @@ import {
   verifyExistingObject,
 } from "../_shared/fiscal/nfe/protocoledStorage.ts";
 
-import { validateAgainstOfficialXsd, XSD_PACKAGE, XSD_VALIDATOR } from "./xsdValidate.ts";
+import {
+  validateAgainstOfficialXsd,
+  XSD_FILE_COUNT,
+  XSD_PACKAGE,
+  XSD_VALIDATOR,
+} from "./xsdValidate.ts";
 
 const BUCKET = "fiscal-xml";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_IDEMPOTENCY = 200;
+
+// xsd-selftest: XML mínimo deliberadamente inválido — raiz inexistente no
+// leiaute NF-e, o que obriga o libxml2 a carregar a cadeia completa de XSDs
+// (xmldsig → tipos → leiaute → nfe) para reportar a violação. Conteúdo fixo,
+// sem nenhum dado fiscal.
+const XSD_SELFTEST_XML =
+  '<?xml version="1.0" encoding="UTF-8"?>' +
+  '<xsdSelfTestProbe xmlns="http://www.portalfiscal.inf.br/nfe">invalid-root</xsdSelfTestProbe>';
+const XSD_SELFTEST_EXPECTED_FILES = XSD_FILE_COUNT;
 
 function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
   // H7e: helper canônico (união default ∪ ambiente, origem normalizada, sem wildcard).
