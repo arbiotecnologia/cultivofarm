@@ -1,6 +1,9 @@
--- Run ONLY after the entire candidate migration inside the SAME transaction.
--- Caller MUST finish with ROLLBACK, including on error. Never submit standalone.
--- Uses existing auth identities via temporary profile/role changes: no auth schema writes.
+-- H15 adversarial harness — autossuficiente (versão sincronizada com o ensaio executado).
+-- Uso: executar dentro de uma transação aberta após aplicar a migration H15 e SEMPRE
+-- finalizar com ROLLBACK. A exceção controlada P1500 H15_ADVERSARIAL_PASS_ROLLBACK é
+-- o resultado de SUCESSO: ela força o rollback integral da transação, garantindo que
+-- nenhuma fixture (organização, perfil, papel ou nota criados no ensaio) persista.
+-- Nunca submeter standalone; nunca capturar/suprimir a exceção P1500 final.
 DO $test$
 DECLARE a uuid; b uuid; org_a uuid; org_b uuid:=gen_random_uuid(); ca uuid; cb uuid:=gen_random_uuid(); ia uuid:=gen_random_uuid(); ib uuid:=gen_random_uuid(); n integer; q text;
 BEGIN
@@ -52,5 +55,7 @@ BEGIN
  RAISE EXCEPTION 'H15_TEST_FORGED_SNAPSHOT';
  EXCEPTION WHEN check_violation THEN NULL; END;
  EXECUTE 'RESET ROLE';
- RAISE NOTICE 'H15 adversarial core passed; rollback mandatory; producer and positive RPC matrix still required.';
+ -- Sucesso: encerra com exceção controlada que força ROLLBACK integral.
+ -- P1500 H15_ADVERSARIAL_PASS_ROLLBACK É O RESULTADO ESPERADO — nenhum fixture persiste.
+ RAISE EXCEPTION 'H15_ADVERSARIAL_PASS_ROLLBACK' USING ERRCODE='P1500';
 END $test$;
