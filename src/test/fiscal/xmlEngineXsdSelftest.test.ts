@@ -67,10 +67,10 @@ describe("fiscal-xml-engine — comportamento fail-closed do selftest", () => {
   it("chama o validador XSD real com o XML mínimo deliberadamente inválido", () => {
     const selftestBlock = INDEX.slice(
       pos('action === "xsd-selftest"'),
-      pos("authed.auth.getClaims"),
+      pos("Cliente do usuário: toda autorização"),
     );
     expect(selftestBlock).toContain("validateAgainstOfficialXsd(XSD_SELFTEST_XML)");
-    const probe = INDEX.match(/const XSD_SELFTEST_XML =[\s\S]*?;"\s*;/);
+    const probe = INDEX.match(/const XSD_SELFTEST_XML =[\s\S]*?';\n/);
     expect(probe).toBeTruthy();
     expect(probe?.[0]).toContain("xsdSelfTestProbe");
   });
