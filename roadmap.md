@@ -2,11 +2,13 @@
 
 ## Gate de prontidão fiscal — auditoria local (19/09/2026)
 - [x] Auditoria local de A1, revogação, isolamento e configuração concluída; runtime autenticado não testado.
-- [x] Correções locais e contrato Storage API preparados; SQL de prontidão em restoration/fiscal-h17, sem aplicação.
+- [x] H17 aplicada e auditada no canônico, conforme evidência fornecida pelo operador: ledger `20260919143443_h17_certificate_vault_and_readiness`; bucket privado, 10485760 bytes, MIME application/octet-stream, zero policies de cliente.
 - [x] 2.218 testes aprovados, 4 skips; build/typecheck automático OK; bloqueios documentados.
 - [x] Ajustes H17: prontidão verifica validade/revogação/empresa do certificado; remover edição manual de certificate_ref; preservar trigger existente e RPC H15; série configurada no emitente, sem CRUD do contador.
-- [ ] Operador: auditar/aplicar candidato SQL e provisionar bucket via Storage API; deploy e prova com A1/série reais pendentes, fora da autorização desta rodada.
-- Restrição de ferramentas: preparar SQL somente fora de supabase/migrations (diretório gerenciado); provisionamento de bucket exige Storage API, sem executar nesta rodada.
+- [x] Operador informou deploy de fiscal-certificate-upload e fiscal-certificate-revoke v11, ACTIVE, verify_jwt=true; hashes registrados no relatório.
+- [x] Pós-check informado: certificados, séries, notas, transmissões, protocolados, nfe_enabled e production_enabled = 0.
+- [ ] Sincronizar arquivo do ledger `20260919143443` em supabase/migrations e apontar teste para ele: bloqueado pela restrição da sessão a edição direta de migrations; nenhuma ferramenta remota acionada.
+- [ ] Prova dos fluxos com A1/senha e configuração real da série depende do operador; não autoriza emissão.
 - Escopo desta rodada: nenhum SQL remoto, deploy, emissão, certificado, série ou fixture persistente; tarefas históricas abaixo não são autorização para execução.
 
 ## H16 — índices de FK fiscais e initplan de RLS (19/09/2026)
