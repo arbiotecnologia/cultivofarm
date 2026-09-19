@@ -56,8 +56,14 @@ describe("Fiscal safety regression contracts (not remote E2E)", () => {
 
   it("requires the internal fiscal profile in the edge layer too", () => {
     expect(xmlEngine).toContain('authed.rpc("fn_fiscal_can_operate"');
-    expect(xmlEngine.indexOf('authed.rpc("fn_fiscal_can_operate"'))
-      .toBeLessThan(xmlEngine.indexOf('const action = String(body.action'));
+    // xsd-selftest (diagnóstico somente leitura) é a única ação antes do perfil;
+    // todo o roteamento que acessa banco/Storage exige o perfil fiscal antes.
+    const selftest = xmlEngine.indexOf('action === "xsd-selftest"');
+    const canOperate = xmlEngine.indexOf('authed.rpc("fn_fiscal_can_operate"');
+    expect(selftest).toBeGreaterThan(-1);
+    expect(canOperate).toBeGreaterThan(selftest);
+    expect(canOperate).toBeLessThan(xmlEngine.indexOf('action === "download"'));
+    expect(canOperate).toBeLessThan(xmlEngine.indexOf('action !== "generate"'));
     expect(edge).toContain('authed.rpc("fn_fiscal_can_operate"');
   });
 
