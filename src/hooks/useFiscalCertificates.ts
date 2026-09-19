@@ -6,6 +6,7 @@
  * (admin-only, remove ciphertext + logical delete).
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { certificateErrorMessage } from "@/lib/fiscal/certificateErrors";
 import { supabase } from "@/integrations/supabase/client";
 
 // Types.ts ainda não regenerado após a Fase 3.16.
@@ -51,11 +52,11 @@ export function useRevokeFiscalCertificate() {
       const { data, error } = await supabase.functions.invoke("fiscal-certificate-revoke", {
         body: { certificate_id: args.certificateId, reason: args.reason ?? "" },
       });
-      if (error) throw new Error(error.message);
+      if (error || data?.revoked !== true || data?.cleanup_incomplete) throw new Error(await certificateErrorMessage(error, data));
       return data as { revoked: boolean };
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["fiscal", "certificates"] });
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["fiscal"] });
     },
   });
 }
