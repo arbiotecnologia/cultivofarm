@@ -41,3 +41,72 @@ describe('H15 candidate migration safety contracts (not live isolation certifica
     expect(sql).not.toContain('DELETE FROM (');
   });
 });
+
+const helper = (name: string) => {
+  const start = sql.indexOf(`CREATE OR REPLACE FUNCTION public.${name}(`);
+  const end = sql.indexOf('$h15$;', start);
+  if (start < 0 || end < 0) throw new Error(`Missing helper: ${name}`);
+  return sql.slice(start, end);
+};
+describe('H15 identity and nullable-parent correction', () => {
+  it('separates active organization identity from the fiscal role gate', () => {
+    const identity = helper('h15_actor_organization');
+    expect(identity).toContain('p.user_id=auth.uid() AND p.ativo IS TRUE');
+    expect(identity).toContain('o.ativo IS TRUE');
+    expect(identity).not.toContain('has_role');
+    const staff = helper('h15_require_staff');
+    for (const role of ['administrador', 'gestor', 'financeiro']) expect(staff).toContain(`'${role}'::public.app_role`);
+    expect(staff).toContain('IF NOT coalesce(');
+    expect(staff).not.toContain("'administrativo'");
+    expect(helper('h15_company_access')).not.toContain('h15_require_staff');
+    for (const table of ['fiscal_stock_loss_contexts', 'fiscal_invoice_references', 'fiscal_invoice_item_references']) {
+      const policy = sql.split('\n').find(line => line.startsWith('ALTER POLICY') && line.includes(`ON public.${table} `) && line.includes("'administrativo'"));
+      expect(policy).toBeDefined();
+      expect(policy).toContain('h15_invoice_access');
+    }
+  });
+  it('derives transmission ownership from all non-null links and rejects unresolved links', () => {
+    const trigger = helper('h15_related_integrity');
+    expect(trigger).toContain("IF TG_TABLE_NAME<>'fiscal_sefaz_transmissions' THEN");
+    expect(trigger).toContain('n:=0;');
+    expect(trigger).toContain('WHILE n<TG_NARGS LOOP');
+    expect(trigger).toContain('IF target IS NOT NULL THEN');
+    expect(trigger).toContain("IF linked IS NULL THEN RAISE EXCEPTION 'H15_PARENT_REQUIRED'");
+    expect(trigger).toContain('IF owner_company IS NULL THEN owner_company:=linked; END IF;');
+    expect(trigger).toContain('IF linked IS DISTINCT FROM owner_company');
+    expect(trigger.indexOf("IF owner_company IS NULL THEN RAISE EXCEPTION 'H15_PARENT_REQUIRED'", trigger.indexOf('END LOOP'))).toBeGreaterThan(trigger.indexOf('END LOOP'));
+    expect(trigger).toContain("public.h15_related_company('fiscal_sefaz_transmissions',OLD.id)");
+    const resolver = helper('h15_related_company');
+    expect(resolver).toContain('coalesce(i.company_settings_id,xi.company_settings_id,ei.company_settings_id)');
+    expect(resolver).toContain('x.id=r.xml_run_id');
+    expect(resolver).toContain('e.id=r.fiscal_event_id');
+  });
+  it('allows invoice-free idempotency only for service and validates linked invoices normally', () => {
+    const trigger = helper('h15_related_integrity');
+    const branch = trigger.slice(trigger.indexOf("IF TG_TABLE_NAME='fiscal_idempotency_keys'"), trigger.indexOf("IF TG_TABLE_NAME<>'fiscal_sefaz_transmissions'"));
+    expect(branch).toContain('AND target IS NULL');
+    expect(branch).toContain("current_setting('role',true) IS DISTINCT FROM 'service_role'");
+    expect(branch).toContain('H15_TECHNICAL_OPERATION_REQUIRED');
+    expect(branch).toContain('RETURN NEW;');
+    expect(trigger.indexOf('H15_PARENT_IMMUTABLE')).toBeLessThan(trigger.indexOf(branch));
+  });
+  it('checks every trigger primary parent against existing generated schema nullability', () => {
+    const types = readFileSync('src/integrations/supabase/types.ts', 'utf8');
+    const triggers = [...sql.matchAll(/ON public\.(\w+) FOR EACH ROW EXECUTE FUNCTION public\.h15_related_integrity\('([^']+)'/g)];
+    expect(triggers).toHaveLength(14);
+    const nullable: string[] = [];
+    for (const [, table, column] of triggers) {
+      if (table === 'fiscal_invoices') {
+        expect(sql).toContain('company_settings_id uuid NOT NULL REFERENCES');
+        continue;
+      }
+      const start = types.indexOf(`      ${table}: {`);
+      expect(start).toBeGreaterThan(-1);
+      const row = types.slice(start, types.indexOf('        Insert:', start));
+      const field = row.split('\n').find(line => line.trim().startsWith(`${column}:`));
+      expect(field).toBeDefined();
+      if (field?.includes('| null')) nullable.push(table);
+    }
+    expect(nullable.sort()).toEqual(['fiscal_idempotency_keys', 'fiscal_sefaz_transmissions']);
+  });
+});
