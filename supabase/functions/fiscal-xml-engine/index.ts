@@ -57,9 +57,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const MAX_IDEMPOTENCY = 200;
 
 // xsd-selftest: XML mínimo deliberadamente inválido — raiz inexistente no
-// leiaute NF-e, o que obriga o libxml2 a carregar a cadeia completa de XSDs
-// (xmldsig → tipos → leiaute → nfe) para reportar a violação. Conteúdo fixo,
-// sem nenhum dado fiscal.
+// leiaute NF-e, o que obriga o Xerces-C++ (WASM, em processo) a compilar a
+// cadeia completa de XSDs (xmldsig → tipos → leiaute → nfe) para reportar a
+// violação. Conteúdo fixo, sem nenhum dado fiscal.
+
 const XSD_SELFTEST_XML =
   '<?xml version="1.0" encoding="UTF-8"?>' +
   '<xsdSelfTestProbe xmlns="http://www.portalfiscal.inf.br/nfe">invalid-root</xsdSelfTestProbe>';
