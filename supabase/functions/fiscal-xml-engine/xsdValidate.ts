@@ -28,11 +28,7 @@ import {
 } from "./xsdBundleIntegrity.ts";
 import { XERCES_WASM_PACKAGE, XERCES_WASM_SHA256, xercesWasmBinary } from "./xercesWasm.ts";
 
-export interface XsdIssue {
-  line: number | null;
-  code: string;
-  message: string;
-}
+import type { XsdIssue } from "./xsdSanitize.ts";
 
 export interface XsdReport {
   valid: boolean;
