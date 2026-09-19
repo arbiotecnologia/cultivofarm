@@ -226,3 +226,10 @@
 - [x] Verificar replay Storage, namespaces, espelhos H13/H14 e stub histórico.
 - [x] Executar testes e registrar resultados sem deploy ou acesso remoto.
 - [ ] Validação integral: binding externo divergente e typecheck separado sem evidência; aguardam ambiente autorizado.
+
+## Validação XSD em processo — fiscal-xml-engine (19/09/2026)
+- [x] Substituir o adaptador normativo por Xerces-C++ WASM em processo (sem worker threads/subprocesso/FFI/rede).
+- [x] Embutir o binário WASM em TypeScript com gerador reprodutível e teste de hash; remover xmllint-wasm do caminho.
+- [x] Gate fail-closed de integridade (presença, ordem, SHA-256) antes da compilação do schema; sem fallback heurístico.
+- [x] Testes (inválido rejeitado, import ausente, bundle adulterado, erro sem stack/caminho), typecheck e build.
+- [ ] Prova remota: deploy autorizado + `xsd-selftest` no Supabase canônico (pendente, será feita pelo proprietário).

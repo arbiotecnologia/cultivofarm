@@ -1,18 +1,32 @@
 /**
- * Fase F4.1-R1 — Validação XSD 1.0 REAL da NF-e 4.00.
+ * Fase F4.1-R2 — Validação XSD 1.0 REAL da NF-e 4.00, em processo.
  *
- * Usa `xmllint-wasm` (libxml2 compilado para WebAssembly). Todos os XSDs
- * oficiais vêm de `./xsdBundle.ts`, módulo GERADO a partir de `./xsd/`
- * (fonte auditável, hashes em `./xsd/manifest.json`). O canal de deploy das
- * Edge Functions não empacota `static_files`, então nada é lido do disco
- * (sem leitura de arquivo e sem URL de módulo). Nenhuma resolução de rede,
- * DTD ou entidade externa é permitida: `xmllint-wasm` roda em WASM sem acesso
- * a rede e os `xs:include`/`xs:import` são satisfeitos apenas por `preload`.
+ * Adaptador normativo: Apache Xerces-C++ compilado para WebAssembly
+ * (`xerces-wasm@2.0.1`). O binário `.wasm` é EMBUTIDO em `./xercesWasm.ts`
+ * (gerado por `scripts/generate-xerces-wasm.mjs`, com SHA-256 fixado), e os 5
+ * XSDs oficiais vêm de `./xsdBundle.ts` (gerado a partir de `./xsd/`, hashes
+ * em `./xsd/manifest.json`).
  *
- * Pacote oficial: PL_010e_v1.02 (Portal Nacional da NF-e, 10/07/2026).
+ * Por que trocamos o validador anterior (libxml2 via WASM em Worker): aquela
+ * implementação criava um Worker de thread do Node por chamada, incompatível
+ * com o isolamento da Supabase Edge Function (runtime respondia
+ * XSD_VALIDATOR_MEMORY_OR_WASM_FAILED). O Xerces roda síncrono, no MESMO
+ * processo, sem threads de worker, subprocessos, FFI, rede ou serviço externo.
+ *
+ * Nenhum fallback heurístico é aceito como validação normativa: se o schema
+ * não compilar, a validação falha fechada.
+ *
+ * Pacote XSD oficial: PL_010e_v1.02 (Portal Nacional da NF-e, 10/07/2026).
  */
-import { validateXML, type XmlValidationError } from "npm:xmllint-wasm@5.3.0";
-import { XSD_BUNDLE, XSD_BUNDLE_ORDER } from "./xsdBundle.ts";
+// deno-lint-ignore-file no-explicit-any
+import XercesModule from "npm:xerces-wasm@2.0.1/wasm/xerces_validator.js";
+import {
+  loadVerifiedXsdBundle,
+  XSD_ENTRY_SCHEMA as ENTRY,
+  XSD_FILE_COUNT as FILE_COUNT,
+  XSD_FILES as FILES,
+} from "./xsdBundleIntegrity.ts";
+import { XERCES_WASM_PACKAGE, XERCES_WASM_SHA256, xercesWasmBinary } from "./xercesWasm.ts";
 
 export interface XsdIssue {
   line: number | null;
@@ -29,73 +43,79 @@ export interface XsdReport {
 }
 
 export const XSD_PACKAGE = "PL_010e_v1.02";
-export const XSD_VALIDATOR = "xmllint-wasm@5.3.0 (libxml2, XSD 1.0)";
+export const XSD_VALIDATOR = `${XERCES_WASM_PACKAGE} (Apache Xerces-C++, XSD 1.0, in-process WASM)`;
+export const XSD_ENTRY_SCHEMA = ENTRY;
+export const XERCES_WASM_DIGEST = XERCES_WASM_SHA256;
 
-const XSD_FILES = [
-  "xmldsig-core-schema_v1.01.xsd",
-  "tiposBasico_v4.00.xsd",
-  "DFeTiposBasicos_v1.00.xsd",
-  "leiauteNFe_v4.00.xsd",
-  "nfe_v4.00.xsd",
-] as const;
+/** Ordem canônica dos XSDs oficiais (fonte única: xsdBundleIntegrity). */
+const XSD_FILES = FILES;
 
 /** Número de arquivos XSD oficiais no bundle (prova de empacotamento no selftest). */
 export const XSD_FILE_COUNT = XSD_FILES.length;
 
-type Preload = { fileName: string; contents: string };
+let modulePromise: Promise<any> | null = null;
 
-let cache: { schema: Preload; preload: Preload[] } | null = null;
+/** Instancia o módulo WASM uma única vez, com o binário embutido. */
+function xerces(): Promise<any> {
+  if (!modulePromise) {
+    modulePromise = (XercesModule as any)({
+      wasmBinary: xercesWasmBinary(),
+      // Nunca deve ser usado (o binário já foi fornecido); mantido para impedir
+      // qualquer tentativa de resolução relativa a disco/rede.
+      locateFile: () => "embedded:xerces_validator.wasm",
+      print: () => {},
+      printErr: () => {},
+    });
+  }
+  return modulePromise;
+}
+
+type Validator = { validate(xml: string): any; delete(): void };
+
+let validatorCache: Validator | null = null;
 
 /**
- * Carrega os XSDs do módulo compilado `xsdBundle.ts` (nenhum acesso a disco
- * ou rede). Fail-closed: qualquer arquivo ausente/vazio aborta a validação.
+ * Compila a gramática oficial uma única vez e mantém o validador em memória.
+ * Fail-closed: schema/import faltante ou bundle adulterado aborta com
+ * `XSD_SCHEMA_COMPILE_FAILED` — nunca há degradação para heurística.
  */
-// deno-lint-ignore require-await
-async function loadBundle() {
-  if (cache) return cache;
-  if (XSD_BUNDLE_ORDER.length !== XSD_FILES.length) {
-    throw new Error("XSD_BUNDLE_MISMATCH");
+async function loadValidator(): Promise<Validator> {
+  if (validatorCache) return validatorCache;
+  const files = await loadVerifiedXsdBundle();
+  const mod = await xerces();
+  const instance = new mod.ProjectValidator() as Validator & {
+    init(entry: string, files: Record<string, string>, ns: string | null): boolean;
+  };
+  let ok = false;
+  try {
+    ok = instance.init(XSD_ENTRY_SCHEMA, files, null) === true;
+  } catch {
+    ok = false;
   }
-  const files: Preload[] = [];
-  for (let i = 0; i < XSD_FILES.length; i++) {
-    const name = XSD_FILES[i];
-    if (XSD_BUNDLE_ORDER[i] !== name) throw new Error("XSD_BUNDLE_MISMATCH");
-    const contents = XSD_BUNDLE[name];
-    if (typeof contents !== "string" || contents.length === 0) {
-      throw new Error("XSD_BUNDLE_MISSING_FILE");
-    }
-    files.push({ fileName: name, contents });
+  if (!ok) {
+    try {
+      instance.delete();
+    } catch { /* noop */ }
+    throw new Error("XSD_SCHEMA_COMPILE_FAILED");
   }
-  const schema = files[files.length - 1];
-  cache = { schema, preload: files };
-  return cache;
+  validatorCache = instance;
+  return instance;
 }
 
 /**
- * Sanitiza a mensagem do libxml2: remove o recorte do documento (que pode
- * conter dados fiscais) e mantém apenas o caminho/elemento e a razão.
+ * Sanitiza a mensagem do Xerces: mantém apenas elemento/razão, sem recorte do
+ * documento (que poderia conter dados fiscais) nem caminhos locais.
  */
-function toIssue(err: XmlValidationError): XsdIssue {
-  const raw = String(err.message ?? "").split("\n")[0];
-  const m = raw.match(/Element\s+'([^']+)'(?:,\s*attribute\s*'([^']+)')?:?\s*(.*)$/);
-  const element = m ? (m[2] ? `${m[1]}@${m[2]}` : m[1]) : "";
-  const reason = (m ? m[3] : raw).replace(/\[facet\s+'[^']*'\]/g, (s) => s).trim();
+function toIssue(diag: { message?: unknown; line?: unknown }): XsdIssue {
+  const raw = String(diag?.message ?? "").split("\n")[0];
+  const m = raw.match(/element\s+'([^']+)'/i) ?? raw.match(/attribute\s+'([^']+)'/i);
+  const element = m ? m[1] : "";
   return {
-    line: typeof err.loc?.lineNumber === "number" ? err.loc.lineNumber : null,
+    line: typeof diag?.line === "number" && diag.line > 0 ? diag.line : null,
     code: element ? `XSD_INVALID:${element}` : "XSD_INVALID",
-    message: reason.slice(0, 400),
+    message: raw.slice(0, 400),
   };
 }
-
-/**
- * Memória do módulo WASM do libxml2. O default do `xmllint-wasm` é um teto de
- * 32 MiB, insuficiente para o conjunto NF-e (~438 KB de XSD, sendo ~350 KB só
- * o leiauteNFe_v4.00) — a execução aborta no runtime. Elevamos para 64 MiB
- * iniciais e 128 MiB de teto, conforme a recomendação do pacote para schemas
- * grandes. 1 página WASM = 64 KiB.
- */
-export const XSD_INITIAL_MEMORY_PAGES = 1024; // 64 MiB
-export const XSD_MAX_MEMORY_PAGES = 2048; // 128 MiB
 
 export interface XsdBundleInspection {
   ok: boolean;
@@ -104,15 +124,16 @@ export interface XsdBundleInspection {
 }
 
 /**
- * Diagnóstico somente leitura: executa apenas `loadBundle` e informa se os 5
- * XSDs estão presentes e qual é o schema final. Não retorna conteúdo algum.
+ * Diagnóstico somente leitura: confere presença/ordem dos 5 XSDs e informa o
+ * schema final. Não retorna conteúdo algum e não instancia o WASM.
  */
 export async function inspectOfficialXsdBundle(): Promise<XsdBundleInspection> {
-  const { schema, preload } = await loadBundle();
+  const files = await loadVerifiedXsdBundle();
+  const names = Object.keys(files);
   return {
-    ok: preload.length === XSD_FILE_COUNT && schema.fileName === "nfe_v4.00.xsd",
-    fileCount: preload.length,
-    schema: schema.fileName,
+    ok: names.length === FILE_COUNT && names[names.length - 1] === XSD_ENTRY_SCHEMA,
+    fileCount: names.length,
+    schema: XSD_ENTRY_SCHEMA,
   };
 }
 
@@ -122,24 +143,24 @@ export async function validateAgainstOfficialXsd(xml: string): Promise<XsdReport
     return {
       valid: false,
       validator: XSD_VALIDATOR,
-      schema: "nfe_v4.00.xsd",
+      schema: XSD_ENTRY_SCHEMA,
       package: XSD_PACKAGE,
       issues: [{ line: null, code: "XSD_EMPTY_DOCUMENT", message: "documento vazio" }],
     };
   }
-  const { schema, preload } = await loadBundle();
-  const result = await validateXML({
-    xml: [{ fileName: "nfe.xml", contents: xml }],
-    schema: [{ fileName: schema.fileName, contents: schema.contents }],
-    preload,
-    initialMemoryPages: XSD_INITIAL_MEMORY_PAGES,
-    maxMemoryPages: XSD_MAX_MEMORY_PAGES,
-  });
+  const validator = await loadValidator();
+  const result = validator.validate(xml) as {
+    valid?: boolean;
+    parseErrors?: unknown[];
+    schemaErrors?: unknown[];
+  };
+  const diagnostics = [...(result?.parseErrors ?? []), ...(result?.schemaErrors ?? [])];
+  const valid = result?.valid === true && diagnostics.length === 0;
   return {
-    valid: result.valid === true,
+    valid,
     validator: XSD_VALIDATOR,
-    schema: "nfe_v4.00.xsd",
+    schema: XSD_ENTRY_SCHEMA,
     package: XSD_PACKAGE,
-    issues: result.valid ? [] : (result.errors ?? []).map(toIssue),
+    issues: valid ? [] : diagnostics.map((d) => toIssue(d as { message?: unknown; line?: unknown })),
   };
 }
