@@ -1,0 +1,398 @@
+[
+  {
+    "cmd": "DELETE",
+    "qual": "false",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "company_fiscal_settings",
+    "permissive": "PERMISSIVE",
+    "policyname": "company_fiscal_settings_delete",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "INSERT",
+    "qual": null,
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "company_fiscal_settings",
+    "permissive": "PERMISSIVE",
+    "policyname": "company_fiscal_settings_insert",
+    "schemaname": "public",
+    "with_check": "has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role)"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "company_fiscal_settings",
+    "permissive": "PERMISSIVE",
+    "policyname": "company_fiscal_settings_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "UPDATE",
+    "qual": "has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role)",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "company_fiscal_settings",
+    "permissive": "PERMISSIVE",
+    "policyname": "company_fiscal_settings_update",
+    "schemaname": "public",
+    "with_check": "has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role)"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "fn_fiscal_can_operate(auth.uid())",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_protocoled_documents",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_protocoled_documents_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::app_role) AND (((receivable_id IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = fiscal_invoices.receivable_id) AND (ar.customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))))))) OR ((delivery_id IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE ((e.id = fiscal_invoices.delivery_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))))))))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoices",
+    "permissive": "PERMISSIVE",
+    "policyname": "fi_producer_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "DELETE",
+    "qual": "false",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoices",
+    "permissive": "PERMISSIVE",
+    "policyname": "fi_staff_delete",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "INSERT",
+    "qual": null,
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoices",
+    "permissive": "PERMISSIVE",
+    "policyname": "fi_staff_insert",
+    "schemaname": "public",
+    "with_check": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoices",
+    "permissive": "PERMISSIVE",
+    "policyname": "fi_staff_select",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "UPDATE",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoices",
+    "permissive": "PERMISSIVE",
+    "policyname": "fi_staff_update",
+    "schemaname": "public",
+    "with_check": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "fn_fiscal_can_read_internal()",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_number_reservations",
+    "permissive": "PERMISSIVE",
+    "policyname": "f3_internal_read_fiscal_number_reservations",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "INSERT",
+    "qual": null,
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_stock_loss_contexts",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_stock_loss_contexts_insert",
+    "schemaname": "public",
+    "with_check": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_stock_loss_contexts",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_stock_loss_contexts_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "fn_fiscal_can_read_internal(( SELECT auth.uid() AS uid))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_xml_runs",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_xml_runs_select_internal",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "ALL",
+    "qual": "false",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_audit_log",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_audit_log_no_write",
+    "schemaname": "public",
+    "with_check": "false"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role)",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_audit_log",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_audit_log_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "fn_fiscal_can_read_internal()",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_calculation_runs",
+    "permissive": "PERMISSIVE",
+    "policyname": "f3_internal_read_fiscal_calculation_runs",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_certificates",
+    "permissive": "PERMISSIVE",
+    "policyname": "fc_read_metadata",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "fn_fiscal_can_read_internal()",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_document_series",
+    "permissive": "PERMISSIVE",
+    "policyname": "f3_internal_read_fiscal_document_series",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "DELETE",
+    "qual": "false",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_events",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_events_no_delete",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "UPDATE",
+    "qual": "false",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_events",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_events_no_update",
+    "schemaname": "public",
+    "with_check": "false"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_events",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_events_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role)",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_idempotency_keys",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_idempotency_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "INSERT",
+    "qual": null,
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoice_item_references",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_invoice_item_references_insert",
+    "schemaname": "public",
+    "with_check": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoice_item_references",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_invoice_item_references_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoice_items",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_invoice_items_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "ALL",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoice_items",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_invoice_items_write",
+    "schemaname": "public",
+    "with_check": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))"
+  },
+  {
+    "cmd": "INSERT",
+    "qual": null,
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoice_references",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_invoice_references_insert",
+    "schemaname": "public",
+    "with_check": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role))"
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "(has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_invoice_references",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_invoice_references_read",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "DELETE",
+    "qual": "false",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_sefaz_transmissions",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_sefaz_tx_no_delete",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "INSERT",
+    "qual": null,
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_sefaz_transmissions",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_sefaz_tx_no_insert",
+    "schemaname": "public",
+    "with_check": "false"
+  },
+  {
+    "cmd": "UPDATE",
+    "qual": "false",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_sefaz_transmissions",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_sefaz_tx_no_update",
+    "schemaname": "public",
+    "with_check": null
+  },
+  {
+    "cmd": "SELECT",
+    "qual": "fn_fiscal_can_read_internal(( SELECT auth.uid() AS uid))",
+    "roles": [
+      "authenticated"
+    ],
+    "tablename": "fiscal_sefaz_transmissions",
+    "permissive": "PERMISSIVE",
+    "policyname": "fiscal_sefaz_tx_read",
+    "schemaname": "public",
+    "with_check": null
+  }
+]

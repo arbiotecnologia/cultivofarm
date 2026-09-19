@@ -2,7 +2,7 @@
 
 ## Estado desta rodada
 
-**NÃO APLICADA — gate de isolamento integral reprovado na auditoria prévia.**
+**NÃO APLICADA — implementação incompleta; correções pontuais autorizadas pelo usuário, sem necessidade de nova aprovação de escopo.**
 
 Destino confirmado por `supabase/config.toml` e leitura do marcador vivo: `swzpzcwiasxmjutrmvkm`. Banco real de produção do SaaS; `environment_label=STAGING` refere-se à emissão fiscal. `production_emission_allowed=false`.
 
@@ -43,7 +43,18 @@ Também existem consumidores SECURITY DEFINER fora do prefixo fiscal (`fn_financ
 
 **Consequência:** aplicar apenas os vínculos e as políticas solicitadas deixaria vazamento por leitura pública. Triggers poderiam impedir escrita divergente, mas não seriam prova de isolamento de consultas. O estado com um único emitente não elimina esse problema para um staff de outra organização.
 
-Não foi feita reescrita em massa, wrapper paralelo, revogação indiscriminada de RPCs ou alteração de papel global para contornar a limitação de escopo. A migration permanece bloqueada até delimitar guards explícitos nesses caminhos ou suspensão seletiva aprovada dos acessos legados. Segundo emitente continua não homologado.
+Não foi feita reescrita em massa, wrapper paralelo, revogação indiscriminada de RPCs ou alteração de papel global para contornar a limitação de escopo. O usuário autorizou correções pontuais nesses caminhos; a pendência é técnica, não de autorização. Segundo emitente continua não homologado.
+
+### Continuação da auditoria — 19/09/2026
+
+- Inventário local exportado em `restoration/fiscal-h15/inventory.json`: 54 definers com referência textual direta às tabelas selecionadas, incluindo funções técnicas e triggers. Esse número não equivale ao inventário transitivo completo e não substitui a revisão de chamadas indiretas, views e SQL dinâmico.
+- Políticas originais preservadas em `restoration/fiscal-h15/baseline-policies.json`; inclui `fi_producer_read`, sem alteração.
+- Consultas reproduzíveis somente leitura em `restoration/fiscal-h15/01-preflight.sql`; ainda não constituem ensaio nem migration.
+- Outros caminhos examinados: prontidão, elegibilidade, comprovante de entrega, reservas, cálculo, revisão contábil e registro de XML. Guard de papel global não comprova isolamento organizacional em nenhum desses caminhos.
+- Consulta viva das views diretamente dependentes confirmou `security_invoker=true` nas cinco retornadas: certificado, empresa, reconciliação, prontidão NF-e e estado de evento SEFAZ. Execução dessas views dentro de um definer continua exigindo escopo explícito.
+- O índice singleton global existe em `pg_indexes`; sua ausência na lista de constraints não significa ausência de unicidade.
+- `rpc_fiscal_certificate_register_a1` possui guard baseado em claim de papel, mas isso não substitui auditoria de ACL efetiva nem deve ser tratado como prova de ausência de exposição.
+- Nenhuma migration H15 foi criada/submetida nesta continuação; nenhum ensaio transacional ou teste adversarial H15 foi executado. Não há evidência de aplicação automática H15. Não foi feita auditoria global de deploys automáticos.
 
 ## Contratos de escrita a preservar na implementação
 
@@ -68,8 +79,8 @@ As consultas usaram catálogos `information_schema.columns`, `pg_policies`, `pg_
 
 ## Pendências explícitas
 
-1. Delimitar correções pontuais das leituras SECURITY DEFINER sem reescrita em massa das RPCs.
-2. Preparar/aplicar migration H15 e rollback apenas após aprovação desse gate; não há migration H15 aplicada automaticamente nesta rodada.
+1. Implementar as correções pontuais autorizadas, completando também o inventário transitivo das leituras SECURITY DEFINER.
+2. Preparar migration H15 autocontida e rollback; validar e aplicar somente após os guards técnicos. Não é necessária nova aprovação de escopo.
 3. Testes SQL comportamentais de isolamento, adversariais e concorrência, além de pós-check de schema/RLS/ACL e advisors security/performance. Não executados porque não houve alteração.
 4. Revalidar contagens e marcador sob locks na futura migration; o baseline não substitui o guard transacional.
 

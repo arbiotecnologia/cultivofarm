@@ -2,7 +2,7 @@
 
 ## H15 — isolamento fiscal por empresa
 - [x] Auditar schema vivo, RLS, vínculos e seleção legada de emitente no canônico; 2.145 regressões aprovadas, 4 skips existentes.
-- [ ] Preparar migration nova com guards, rollback e testes; bloqueada por leituras SECURITY DEFINER sem escopo, além da RLS. Delimitar guards pontuais sem reescrita em massa de RPCs.
+- [ ] Implementar H15 transacional com guards pontuais em todos os caminhos SECURITY DEFINER; escopo ampliado autorizado em 19/09/2026. Preparar rollback, testes adversariais e aplicar somente após validação.
 - [ ] Verificar estado remoto, advisors e regressões; sem certificado, emissão ou alterações de Edge Functions.
 - Evidência e bloqueio: docs/auditorias/fiscal-h15-isolamento-empresa.md. Nenhuma migration H15 submetida/aplicada.
 
