@@ -2,6 +2,14 @@
  * Fase F4 — Edge Function `fiscal-xml-engine`.
  *
  * Ações (POST, admin/perfil fiscal interno):
+ *   0. `xsd-selftest` — diagnóstico somente leitura do bundle XSD: valida um
+ *                      XML mínimo deliberadamente inválido para provar que os
+ *                      5 XSDs oficiais foram empacotados e que o validador
+ *                      executa no runtime. Não acessa banco, Storage,
+ *                      certificado, assinatura nem transporte, e só responde
+ *                      metadados não sensíveis. Disponível após CORS, método,
+ *                      Bearer, gate de projeto canônico e parse do body, mas
+ *                      antes das exigências de claims/perfil fiscal.
  *   1. `generate`  — prepara (RPC), constrói o XML, aplica o precheck de
  *                    gramática, armazena o não assinado, assina com o A1,
  *                    valida o documento ASSINADO contra o XSD 1.0 OFICIAL
@@ -35,11 +43,25 @@ import {
   verifyExistingObject,
 } from "../_shared/fiscal/nfe/protocoledStorage.ts";
 
-import { validateAgainstOfficialXsd, XSD_PACKAGE, XSD_VALIDATOR } from "./xsdValidate.ts";
+import {
+  validateAgainstOfficialXsd,
+  XSD_FILE_COUNT,
+  XSD_PACKAGE,
+  XSD_VALIDATOR,
+} from "./xsdValidate.ts";
 
 const BUCKET = "fiscal-xml";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_IDEMPOTENCY = 200;
+
+// xsd-selftest: XML mínimo deliberadamente inválido — raiz inexistente no
+// leiaute NF-e, o que obriga o libxml2 a carregar a cadeia completa de XSDs
+// (xmldsig → tipos → leiaute → nfe) para reportar a violação. Conteúdo fixo,
+// sem nenhum dado fiscal.
+const XSD_SELFTEST_XML =
+  '<?xml version="1.0" encoding="UTF-8"?>' +
+  '<xsdSelfTestProbe xmlns="http://www.portalfiscal.inf.br/nfe">invalid-root</xsdSelfTestProbe>';
+const XSD_SELFTEST_EXPECTED_FILES = XSD_FILE_COUNT;
 
 function corsHeaders(origin: string | null): { headers: Record<string, string>; allowed: boolean } {
   // H7e: helper canônico (união default ∪ ambiente, origem normalizada, sem wildcard).
@@ -160,6 +182,40 @@ Deno.serve(async (req) => {
     return json({ error: "FISCAL_CANONICAL_PROJECT_REQUIRED", expected: CANONICAL_SUPABASE_URL }, 503, headers);
   }
 
+  // Body parseado uma única vez, antes das exigências de identidade, para
+  // permitir o autodiagnóstico somente leitura do bundle XSD. Nenhuma outra
+  // ação é liberada antes dos gates de claims e perfil fiscal.
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "invalid_body" }, 400, headers);
+  }
+
+  const action = String(body.action ?? "generate");
+
+  // ------------------------------------------------------------------
+  // xsd-selftest: prova que os 5 XSDs oficiais foram empacotados e que o
+  // validador executa no runtime. Não toca banco, Storage, certificado,
+  // assinatura nem transporte, e não devolve conteúdo sensível.
+  // ------------------------------------------------------------------
+  if (action === "xsd-selftest") {
+    try {
+      const probe = await validateAgainstOfficialXsd(XSD_SELFTEST_XML);
+      const executed = probe.valid === false && (probe.issues?.length ?? 0) > 0;
+      if (!executed) return json({ ok: false, error: "XSD_BUNDLE_UNAVAILABLE" }, 500, headers);
+      return json({
+        ok: true,
+        validator: probe.validator,
+        package: probe.package,
+        schema: probe.schema,
+        loadedFiles: XSD_SELFTEST_EXPECTED_FILES,
+      }, 200, headers);
+    } catch {
+      return json({ ok: false, error: "XSD_BUNDLE_UNAVAILABLE" }, 500, headers);
+    }
+  }
+
   // Cliente do usuário: toda autorização de negócio ocorre nas RPCs
   // SECURITY DEFINER, que validam o perfil fiscal (fail-closed).
   const authed = createClient(supabaseUrl, anonKey, {
@@ -179,14 +235,6 @@ Deno.serve(async (req) => {
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "invalid_body" }, 400, headers);
-  }
-
-  const action = String(body.action ?? "generate");
 
   // ------------------------------------------------------------------
   // download: URL assinada curta para um artefato já produzido

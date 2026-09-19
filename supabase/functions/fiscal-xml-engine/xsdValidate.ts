@@ -36,6 +36,9 @@ const XSD_FILES = [
   "nfe_v4.00.xsd",
 ] as const;
 
+/** Número de arquivos XSD oficiais no bundle (prova de empacotamento no selftest). */
+export const XSD_FILE_COUNT = XSD_FILES.length;
+
 type Preload = { fileName: string; contents: string };
 
 let cache: { schema: Preload; preload: Preload[] } | null = null;
