@@ -100,6 +100,6 @@ describe("xsdValidate — runtime autossuficiente, sem disco e sem rede", () => 
     expect(XSD_VALIDATE).toContain("let cache:");
     expect(XSD_VALIDATE).toContain("export const XSD_FILE_COUNT = XSD_FILES.length");
     expect(XSD_VALIDATE).toContain("export async function validateAgainstOfficialXsd");
-    expect(XSD_VALIDATE).toContain("schema: schema.fileName");
+    expect(XSD_VALIDATE).toContain("fileName: schema.fileName");
   });
 });
