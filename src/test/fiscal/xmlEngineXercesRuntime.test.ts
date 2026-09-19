@@ -23,7 +23,16 @@ import {
   XERCES_WASM_SHA256,
   xercesWasmBinary,
 } from "../../../supabase/functions/fiscal-xml-engine/xercesWasm";
-import { validateAgainstOfficialXsd } from "../../../supabase/functions/fiscal-xml-engine/xsdValidate";
+import {
+  SAFE_NAME_RE,
+  toIssue,
+  XSD_GENERIC_MESSAGE,
+} from "../../../supabase/functions/fiscal-xml-engine/xsdSanitize";
+
+const XSD_SANITIZE = readFileSync(
+  resolve(ROOT, "supabase/functions/fiscal-xml-engine/xsdSanitize.ts"),
+  "utf8",
+);
 
 const ROOT = resolve(__dirname, "../../..");
 const require_ = createRequire(resolve(ROOT, "package.json"));
