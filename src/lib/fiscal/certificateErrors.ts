@@ -22,7 +22,7 @@ export async function certificateErrorMessage(error: unknown, data?: unknown): P
     const value = body as Record<string, unknown>;
     if (value.cleanup_incomplete === true) return "Certificado revogado; limpeza pendente. Tente revogar novamente para concluir.";
     const code = typeof value.code === "string" ? value.code : value.error;
-    if (typeof code === "string" && Object.hasOwn(messages, code)) return messages[code];
+    if (typeof code === "string" && Object.prototype.hasOwnProperty.call(messages, code)) return messages[code];
   }
   return "Não foi possível concluir a operação do certificado. Tente novamente ou contate o administrador.";
 }
