@@ -184,3 +184,40 @@ insuficiente para o conjunto NF-e (~438 KB de XSD, `leiauteNFe_v4.00` ~350 KB).
 **Estado:** correção de memória e diagnóstico preparada, **runtime ainda
 pendente** — comprovação só após redeploy autorizado e nova chamada
 `xsd-selftest` (esperado HTTP 200 com `loadedFiles: 5`). Nada foi publicado.
+
+## Troca do adaptador normativo XSD — fiscal-xml-engine (19/09/2026 13:5x UTC)
+
+**Causa raiz comprovada no runtime:** `xmllint-wasm` instancia um Worker de
+thread do Node por chamada; o isolamento da Supabase Edge Function não suporta
+isso e o selftest respondia `XSD_VALIDATOR_MEMORY_OR_WASM_FAILED`. Elevar
+memória não resolveu.
+
+**Correção aplicada no repositório (sem deploy, sem SQL):**
+
+- `supabase/functions/fiscal-xml-engine/xsdValidate.ts` — adaptador substituído
+  por Apache Xerces-C++ WASM (`xerces-wasm@2.0.1`), síncrono e no MESMO
+  processo: sem worker threads, subprocessos, FFI, rede em runtime ou serviço
+  externo. Contrato público preservado (`validateAgainstOfficialXsd`,
+  `inspectOfficialXsdBundle`, `XSD_FILE_COUNT`, `XSD_PACKAGE`, `XSD_VALIDATOR`).
+- `supabase/functions/fiscal-xml-engine/xercesWasm.ts` (gerado) — binário WASM
+  (2.181.054 bytes, SHA-256 `775d89b1…5019`) embutido em base64; nenhuma
+  dependência de `static_files`, disco ou rede. Gerador reprodutível:
+  `scripts/generate-xerces-wasm.mjs` (aborta em divergência de hash).
+- `supabase/functions/fiscal-xml-engine/xsdBundleIntegrity.ts` (novo) — gate
+  fail-closed por presença, ordem e SHA-256 dos 5 XSDs, executado ANTES da
+  compilação. Necessário porque o compilador do Xerces tolera include ausente
+  (compilaria gramática parcial). Sem qualquer fallback heurístico.
+- Entry/imports: `nfe_v4.00.xsd` → `leiauteNFe_v4.00.xsd` → `tiposBasico`,
+  `DFeTiposBasicos`, `xmldsig-core-schema`. Bundle XSD, hashes e ordem
+  inalterados.
+- `verify_jwt=true`, CORS/Origin, Bearer e gate de projeto canônico intactos;
+  selftest continua sem banco, Storage, certificado, assinatura ou transporte.
+
+**Provas locais:** validação normativa real executada em Node e em Deno
+(`inspect → {ok:true, fileCount:5}`; XML inválido rejeitado com
+`XSD_INVALID:xsdSelfTestProbe`; NF-e incompleta reprovada pelo modelo de
+conteúdo do leiaute). Suítes fiscais/config/segurança: 2.201 aprovados, 4
+pulados; typecheck e build OK.
+
+**Estado:** correção preparada e provada localmente; **runtime remoto ainda não
+comprovado** — depende de deploy autorizado e de nova chamada ao `xsd-selftest`.
