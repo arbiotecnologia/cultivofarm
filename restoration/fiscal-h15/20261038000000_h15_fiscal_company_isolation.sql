@@ -157,8 +157,8 @@ BEGIN
  -- All identity fields supplied must agree; absent fields remain draft pendencies.
  FOR k IN SELECT jsonb_object_keys(NEW.company_snapshot) LOOP
  actual:=NEW.company_snapshot->>k;
- expected:=CASE k WHEN 'cnpj' THEN c.cnpj WHEN 'legal_name' THEN c.legal_name WHEN 'crt' THEN c.crt WHEN 'state_registration' THEN c.state_registration WHEN 'state' THEN c.state WHEN 'municipality_ibge_code' THEN c.municipality_ibge_code WHEN 'nfe_series' THEN c.nfe_series::text WHEN 'nfse_series' THEN c.nfse_series::text WHEN 'fiscal_environment' THEN c.fiscal_environment ELSE NULL END;
- IF k IN ('cnpj','legal_name','crt','state_registration','state','municipality_ibge_code','nfe_series','nfse_series','fiscal_environment') AND actual IS DISTINCT FROM expected THEN
+ expected:=CASE k WHEN 'cnpj' THEN c.cnpj WHEN 'legalName' THEN c.legal_name WHEN 'ie' THEN c.state_registration WHEN 'uf' THEN c.state WHEN 'municipalityIbge' THEN c.municipality_ibge_code WHEN 'series' THEN c.nfe_series_number::text WHEN 'environment' THEN c.nfe_environment_code WHEN 'legal_name' THEN c.legal_name WHEN 'crt' THEN c.crt WHEN 'state_registration' THEN c.state_registration WHEN 'state' THEN c.state WHEN 'municipality_ibge_code' THEN c.municipality_ibge_code WHEN 'nfe_series' THEN c.nfe_series::text WHEN 'nfse_series' THEN c.nfse_series::text WHEN 'fiscal_environment' THEN c.fiscal_environment ELSE NULL END;
+ IF k IN ('legalName','ie','uf','municipalityIbge','series','environment','cnpj','legal_name','crt','state_registration','state','municipality_ibge_code','nfe_series','nfse_series','fiscal_environment') AND actual IS DISTINCT FROM expected THEN
  RAISE EXCEPTION 'H15_SNAPSHOT_MISMATCH:%',k USING ERRCODE='23514'; END IF;
  END LOOP;
  END IF;
@@ -2087,7 +2087,7 @@ BEGIN
     v_new_id := p_invoice_id;
   END IF;
 
-  DELETE FROM (SELECT * FROM public.fiscal_invoice_items WHERE public.h15_invoice_access(fiscal_invoice_id)) fiscal_invoice_items WHERE fiscal_invoice_id = v_new_id;
+  DELETE FROM public.fiscal_invoice_items WHERE fiscal_invoice_id = v_new_id;
 
   INSERT INTO public.fiscal_invoice_items (
     fiscal_invoice_id, item_sequence, item_kind, description,
