@@ -29,12 +29,12 @@ import {
   XSD_GENERIC_MESSAGE,
 } from "../../../supabase/functions/fiscal-xml-engine/xsdSanitize";
 
+const ROOT = resolve(__dirname, "../../..");
 const XSD_SANITIZE = readFileSync(
   resolve(ROOT, "supabase/functions/fiscal-xml-engine/xsdSanitize.ts"),
   "utf8",
 );
 
-const ROOT = resolve(__dirname, "../../..");
 const require_ = createRequire(resolve(ROOT, "package.json"));
 const GLUE_PATH = require_.resolve("xerces-wasm/wasm/xerces_validator.js");
 const WASM_PATH = resolve(GLUE_PATH, "../xerces_validator.wasm");
