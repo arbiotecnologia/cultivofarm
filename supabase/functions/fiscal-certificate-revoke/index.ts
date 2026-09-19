@@ -7,6 +7,7 @@
  * trilha de auditoria continua íntegra.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { isCanonicalSupabaseUrl } from "../_shared/fiscal/canonicalProject.ts";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -45,6 +46,7 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !anonKey || !serviceKey) {
     return json({ error: "server_misconfigured" }, 500, headers);
   }
+  if (!isCanonicalSupabaseUrl(supabaseUrl)) return json({ error: "canonical_project_required" }, 503, headers);
   const authed = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
   });
@@ -64,18 +66,20 @@ Deno.serve(async (req) => {
   } catch {
     return json({ error: "invalid_body" }, 400, headers);
   }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "invalid_body" }, 400, headers);
   const certId = String(body.certificate_id ?? "");
   if (!UUID_RE.test(certId)) return json({ error: "certificate_id_invalid" }, 400, headers);
 
-  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-
   // Valida existência antes de qualquer trabalho.
-  const cert = await admin.from("fiscal_certificates")
+  const cert = await authed.from("fiscal_certificates")
     .select("id").eq("id", certId).maybeSingle();
   if (cert.error || !cert.data) return json({ error: "certificate_not_found" }, 404, headers);
 
-  const { data: mat } = await admin.from("fiscal_certificate_material")
+  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const { data: mat, error: materialError } = await admin.from("fiscal_certificate_material")
     .select("object_path").eq("certificate_id", certId).maybeSingle();
+
+  if (materialError) return json({ error: "material_read_failed" }, 503, headers);
 
   // Revoga logicamente via RPC autenticada.
   const { error: rpcErr } = await authed.rpc("rpc_fiscal_certificate_revoke", {
@@ -89,8 +93,10 @@ Deno.serve(async (req) => {
   if (mat?.object_path) {
     const rm = await admin.storage.from("fiscal-certificates").remove([mat.object_path]);
     if (rm.error) cleanupErrors.push("storage_remove_failed");
-    const del = await admin.from("fiscal_certificate_material").delete().eq("certificate_id", certId);
-    if (del.error) cleanupErrors.push("material_delete_failed");
+    if (!rm.error) {
+      const del = await admin.from("fiscal_certificate_material").delete().eq("certificate_id", certId);
+      if (del.error) cleanupErrors.push("material_delete_failed");
+    }
   }
 
   if (cleanupErrors.length > 0) {

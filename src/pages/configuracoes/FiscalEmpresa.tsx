@@ -6,7 +6,7 @@
  * certificado é aceito, `production_enabled` nunca aparece no payload.
  * Concorrência otimista via `configuration_version`.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { getAccessLevel } from "@/lib/permissions";
@@ -152,6 +152,7 @@ export default function FiscalEmpresa() {
 
   const settingsQuery = useFiscalCompanySettings({ enabled: uiEnabled && access !== "none" });
   const update = useUpdateFiscalCompanySettings();
+  const saveInFlight = useRef(false);
   const init = useInitFiscalCompanySettings();
 
   const [values, setValues] = useState<CompanyFiscalFormValues>(() => rowToFormValues(null));
@@ -367,7 +368,7 @@ export default function FiscalEmpresa() {
   }
 
   async function onSave() {
-    if (!settingsQuery.data) return;
+    if (!settingsQuery.data || saveInFlight.current) return;
     if (!validateLocal()) {
       toast({ title: "Verifique os campos", description: "Há dados inválidos.", variant: "destructive" });
       return;
@@ -381,6 +382,7 @@ export default function FiscalEmpresa() {
       ...values,
       state_registration: normalizeIE(values.state ?? null, values.state_registration, { allowIsento: true }),
     };
+    saveInFlight.current = true;
     try {
       await update.mutateAsync({
         id: settingsQuery.data.id,
@@ -401,6 +403,8 @@ export default function FiscalEmpresa() {
       } else {
         toast({ title: "Não foi possível salvar", variant: "destructive" });
       }
+    } finally {
+      saveInFlight.current = false;
     }
   }
 
@@ -424,7 +428,7 @@ export default function FiscalEmpresa() {
         <AlertTitle>{EMISSION_BANNER}</AlertTitle>
         <AlertDescription className="text-xs">
           Legacy provider: <strong>{LOCKED_PROVIDER}</strong> · Ambiente de produção fiscal: <strong>desabilitado</strong> ·
-          Trava técnica: <strong>{String(emissionLock)}</strong>. Nenhum token, senha ou certificado é aceito nesta tela.
+          Trava técnica: <strong>{String(emissionLock)}</strong>. O A1 é gerenciado exclusivamente na aba Certificado digital.
         </AlertDescription>
       </Alert>
 
@@ -442,7 +446,7 @@ export default function FiscalEmpresa() {
       </Card>
 
       <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList className="flex flex-wrap">
+        <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="nfe">NF-e</TabsTrigger>
           <TabsTrigger value="nfse">NFS-e</TabsTrigger>
@@ -645,10 +649,13 @@ export default function FiscalEmpresa() {
                   </div>
                   <Switch checked={nfe.enabled_for_preparation === true} onCheckedChange={(v) => setNfe("enabled_for_preparation", v)} />
                 </div>
-                <FieldRow id="nfe_environment" label="Ambiente NF-e">
-                  <SelectNative id="nfe_environment" value={(nfe.environment as string) ?? "NOT_CONFIGURED"} options={FISCAL_ENVIRONMENT.toOptions(ALLOWED_ENVIRONMENTS)} onChange={(v) => setNfe("environment", v)} />
+                <FieldRow id="nfe_environment_code" label="Ambiente NF-e">
+                  <Input id="nfe_environment_code" value="Homologação (2)" readOnly />
                 </FieldRow>
-                <FieldRow id="nfe_series" label="Série NF-e"><Input id="nfe_series" value={values.nfe_series ?? ""} onChange={(e) => set("nfe_series", e.target.value)} /></FieldRow>
+                <FieldRow id="nfe_series_number" label="Série NF-e (1–999)">
+                  <Input id="nfe_series_number" type="number" min={1} max={999} step={1} value={values.nfe_series_number ?? ""} onChange={(e) => set("nfe_series_number", e.target.value === "" ? null : Number(e.target.value))} aria-invalid={!!errors.nfe_series_number} />
+                  {errors.nfe_series_number ? <p role="alert" className="text-xs text-destructive">Informe uma série inteira entre 1 e 999.</p> : null}
+                </FieldRow>
                 <FieldRow id="nfe_numbering_mode" label="Modo de numeração">
                   <SelectNative id="nfe_numbering_mode" value={(nfe.numbering_mode as string) ?? "MANUAL_REFERENCE"} options={NFE_NUMBERING_MODE.toOptions(NFE_NUMBERING_MODES)} onChange={(v) => setNfe("numbering_mode", v)} />
                 </FieldRow>
@@ -816,10 +823,10 @@ export default function FiscalEmpresa() {
                   <Input id="nfse_credential_ref" value={values.nfse_credential_ref ?? ""} onChange={(e) => set("nfse_credential_ref", e.target.value)} aria-invalid={!!errors.nfse_credential_ref} />
                   {errors.nfse_credential_ref ? <p className="text-xs text-destructive" role="alert">{errors.nfse_credential_ref}</p> : null}
                 </FieldRow>
-                <FieldRow id="certificate_ref" label="Referência de certificado" description="Somente um identificador. Não cole PFX/P12/PEM.">
-                  <Input id="certificate_ref" value={values.certificate_ref ?? ""} onChange={(e) => set("certificate_ref", e.target.value)} aria-invalid={!!errors.certificate_ref} />
-                  {errors.certificate_ref ? <p className="text-xs text-destructive" role="alert">{errors.certificate_ref}</p> : null}
-                </FieldRow>
+                <div className="space-y-1.5">
+                  <p className="text-sm font-medium">Certificado digital</p>
+                  <p className="text-sm text-muted-foreground">Gerenciado pelo cofre na aba Certificado digital.</p>
+                </div>
                 <FieldRow id="webhook_ref" label="Referência de webhook" description="Somente um identificador. Não cole URL com credencial.">
                   <Input id="webhook_ref" value={values.webhook_ref ?? ""} onChange={(e) => set("webhook_ref", e.target.value)} aria-invalid={!!errors.webhook_ref} />
                   {errors.webhook_ref ? <p className="text-xs text-destructive" role="alert">{errors.webhook_ref}</p> : null}
@@ -883,7 +890,7 @@ export default function FiscalEmpresa() {
       </Tabs>
 
       {canEdit ? (
-        <div className="flex justify-end gap-2 sticky bottom-2 bg-background/80 backdrop-blur-sm p-2 rounded-md border">
+        <div className="flex flex-wrap justify-end gap-2 sticky bottom-2 bg-background/80 backdrop-blur-sm p-2 rounded-md border">
           <Button variant="outline" onClick={onSave} disabled={update.isPending} data-testid="fiscal-empresa-save-draft">
             Salvar rascunho
           </Button>

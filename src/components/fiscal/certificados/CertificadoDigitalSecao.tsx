@@ -18,7 +18,7 @@
  *     fallback "Status indisponível". Nenhum enum cru vaza para a UI.
  *   - Após upload A1 bem-sucedido, refetch da lista (via `onUploaded`).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -101,9 +101,12 @@ export default function CertificadoDigitalSecao({
 }: CertificadoDigitalSecaoProps) {
   const listQ = useFiscalCertificates(companySettingsId);
   const revoke = useRevokeFiscalCertificate();
+  const revokeInFlight = useRef(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   async function handleRevoke(id: string) {
+    if (!canManageCertificates || revokeInFlight.current) return;
+    revokeInFlight.current = true;
     try {
       await revoke.mutateAsync({ certificateId: id, reason: "Revogado pelo administrador" });
       toast({ title: "Certificado revogado", description: "Material removido do cofre." });
@@ -114,6 +117,7 @@ export default function CertificadoDigitalSecao({
         variant: "destructive",
       });
     } finally {
+      revokeInFlight.current = false;
       setConfirmId(null);
     }
   }
@@ -125,8 +129,8 @@ export default function CertificadoDigitalSecao({
         <AlertTitle>Certificado digital — homologação</AlertTitle>
         <AlertDescription className="text-xs">
           Apenas administradores podem carregar, registrar ou revogar certificados.
-          O PFX e a senha do A1 são criptografados no servidor (AES-256-GCM) e
-          nunca persistidos no navegador. O conector nativo do sistema operacional
+          O material de assinatura é cifrado no servidor (AES-256-GCM). A senha
+          serve apenas para abrir o A1 e não é persistida. O conector nativo do sistema operacional
           expõe somente metadados sanitizados. Nenhum certificado carregado aqui
           autoriza emissão.
         </AlertDescription>
@@ -249,7 +253,7 @@ export default function CertificadoDigitalSecao({
                           {c.days_until_expiration === null ? "—" : c.days_until_expiration}
                         </td>
                         <td className="p-2 text-right">
-                          {canManageCertificates && isHomolog && c.is_active && c.status === "AVAILABLE" ? (
+                          {canManageCertificates && isHomolog ? (
                             confirmId === c.certificate_id ? (
                               <div className="flex gap-1 justify-end">
                                 <Button size="sm" variant="destructive" disabled={revoke.isPending} onClick={() => handleRevoke(c.certificate_id)}>
@@ -258,7 +262,7 @@ export default function CertificadoDigitalSecao({
                                 <Button size="sm" variant="ghost" onClick={() => setConfirmId(null)}>Cancelar</Button>
                               </div>
                             ) : (
-                              <Button size="sm" variant="outline" onClick={() => setConfirmId(c.certificate_id)}>
+                              <Button size="sm" variant="outline" disabled={revoke.isPending} onClick={() => setConfirmId(c.certificate_id)}>
                                 Revogar
                               </Button>
                             )

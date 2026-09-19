@@ -1,9 +1,12 @@
 # Roadmap de Tarefas
 
 ## Gate de prontidão fiscal — auditoria local (19/09/2026)
-- [ ] Auditar A1, revogação, isolamento organizacional, série e configuração nos fluxos existentes.
-- [ ] Corrigir falhas concretas e preparar provisionamento privado do bucket para revisão, sem execução remota.
-- [ ] Validar regressões locais e documentar bloqueios de homologação dependentes do operador.
+- [x] Auditoria local de A1, revogação, isolamento e configuração concluída; runtime autenticado não testado.
+- [x] Correções locais e contrato Storage API preparados; SQL de prontidão em restoration/fiscal-h17, sem aplicação.
+- [x] 2.218 testes aprovados, 4 skips; build/typecheck automático OK; bloqueios documentados.
+- [x] Ajustes H17: prontidão verifica validade/revogação/empresa do certificado; remover edição manual de certificate_ref; preservar trigger existente e RPC H15; série configurada no emitente, sem CRUD do contador.
+- [ ] Operador: auditar/aplicar candidato SQL e provisionar bucket via Storage API; deploy e prova com A1/série reais pendentes, fora da autorização desta rodada.
+- Restrição de ferramentas: preparar SQL somente fora de supabase/migrations (diretório gerenciado); provisionamento de bucket exige Storage API, sem executar nesta rodada.
 - Escopo desta rodada: nenhum SQL remoto, deploy, emissão, certificado, série ou fixture persistente; tarefas históricas abaixo não são autorização para execução.
 
 ## H16 — índices de FK fiscais e initplan de RLS (19/09/2026)

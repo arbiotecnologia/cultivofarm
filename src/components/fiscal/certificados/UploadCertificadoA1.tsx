@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { ShieldOff, Upload, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { certificateErrorMessage } from "@/lib/fiscal/certificateErrors";
 import { checkFiscalBinding } from "@/config/fiscalBinding";
 
 export interface UploadCertificadoA1Props {
@@ -27,6 +29,8 @@ export default function UploadCertificadoA1({
   onUploaded,
   disabled,
 }: UploadCertificadoA1Props) {
+  const qc = useQueryClient();
+  const inFlight = useRef(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("Certificado A1 — homologação");
@@ -35,6 +39,7 @@ export default function UploadCertificadoA1({
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
+    if (disabled || inFlight.current) return;
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
       toast({ title: "Selecione um arquivo .pfx ou .p12", variant: "destructive" });
@@ -59,6 +64,7 @@ export default function UploadCertificadoA1({
       return;
     }
 
+    inFlight.current = true;
     setPending(true);
     const fd = new FormData();
     fd.append("file", file);
@@ -69,7 +75,10 @@ export default function UploadCertificadoA1({
       const { data, error } = await supabase.functions.invoke("fiscal-certificate-upload", {
         body: fd,
       });
-      if (error) throw error;
+      if (error) {
+        toast({ title: "Falha ao carregar certificado", description: await certificateErrorMessage(error), variant: "destructive" });
+        return;
+      }
       const res = data as { certificate_id?: string; error?: string; code?: string };
       if (res.code === "CERT_PASSWORD_REQUIRED") {
         toast({
@@ -84,20 +93,25 @@ export default function UploadCertificadoA1({
         return;
       }
       if (!res.certificate_id) {
-        throw new Error(res.error ?? "Resposta inesperada do servidor.");
+        toast({ title: "Falha ao carregar certificado", description: await certificateErrorMessage(null, res), variant: "destructive" });
+        return;
       }
       toast({ title: "Certificado A1 carregado com sucesso" });
+      void qc.invalidateQueries({ queryKey: ["fiscal"] });
       onUploaded?.(res.certificate_id);
     } catch (err) {
       toast({
         title: "Falha ao carregar certificado",
-        description: err instanceof Error ? err.message : "Erro inesperado.",
+        description: await certificateErrorMessage(err),
         variant: "destructive",
       });
     } finally {
       // Limpa material sensível da memória
       setPassword("");
       if (fileInputRef.current) fileInputRef.current.value = "";
+      fd.delete("password");
+      fd.delete("file");
+      inFlight.current = false;
       setPending(false);
     }
   }
@@ -118,14 +132,15 @@ export default function UploadCertificadoA1({
         <CardTitle className="text-base">Carregar certificado A1</CardTitle>
         <CardDescription>
           O arquivo e a senha são enviados diretamente ao cofre seguro do servidor
-          via AES-256-GCM. Nada é armazenado neste navegador. Somente administrador.
+          por conexão segura. O material é cifrado no servidor; a senha não é persistida.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleUpload} className="space-y-3">
           <div className="grid min-w-0 content-start gap-1.5">
-            <Label>Arquivo (.pfx / .p12)</Label>
+            <Label htmlFor="a1-file">Arquivo (.pfx / .p12)</Label>
             <Input
+              id="a1-file"
               ref={fileInputRef}
               type="file"
               accept=".pfx,.p12"
@@ -134,8 +149,10 @@ export default function UploadCertificadoA1({
             />
           </div>
           <div className="grid min-w-0 content-start gap-1.5">
-            <Label>Senha do certificado</Label>
+            <Label htmlFor="a1-password">Senha do certificado</Label>
             <Input
+              id="a1-password"
+              maxLength={256}
               type="password"
               autoComplete="new-password"
               value={password}
@@ -145,8 +162,10 @@ export default function UploadCertificadoA1({
             />
           </div>
           <div className="grid min-w-0 content-start gap-1.5">
-            <Label>Nome para exibição</Label>
+            <Label htmlFor="a1-display-name">Nome para exibição</Label>
             <Input
+              id="a1-display-name"
+              maxLength={200}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               disabled={disabled || pending}

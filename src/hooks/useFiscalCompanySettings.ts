@@ -132,7 +132,9 @@ export function useUpdateFiscalCompanySettings() {
       payload.configuration_version = expectedVersion + 1;
       const { data, error } = await supabase
         .from("company_fiscal_settings")
-        .update(payload)
+        // Canonical database has these additive columns; generated baseline predates them.
+        // Structural annotation retains the complete runtime payload without a parallel client.
+        .update(payload as Database["public"]["Tables"]["company_fiscal_settings"]["Update"])
         .eq("id", id)
         .eq("configuration_version", expectedVersion)
         .select("*")

@@ -28,6 +28,7 @@
  * mensagens internas do banco, JWT, service_role.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { isCanonicalSupabaseUrl } from "../_shared/fiscal/canonicalProject.ts";
 import { fiscalCorsHeaders } from "../_shared/fiscal/corsAllowlist.ts";
 import forge from "npm:node-forge@1";
 import { isPlausibleAsn1Sequence } from "./asn1Screen.ts";
@@ -123,6 +124,7 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !anonKey || !serviceKey) {
     return json({ error: "server_misconfigured" }, 500, headers);
   }
+  if (!isCanonicalSupabaseUrl(supabaseUrl)) return json({ error: "canonical_project_required" }, 503, headers);
   const authed = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
   });
@@ -202,15 +204,15 @@ Deno.serve(async (req) => {
       bytes = new Uint8Array(await file.arrayBuffer());
     }
 
-    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-
     // Confere existência real do company_settings antes de qualquer trabalho pesado.
     // H7e: o CNPJ do emitente NUNCA vem do cliente — sempre lido server-side aqui.
-    const companyExists = await admin.from("company_fiscal_settings")
-      .select("id, cnpj").eq("id", companySettingsId).maybeSingle();
+    const companyExists = await authed.from("company_fiscal_settings")
+      .select("id, cnpj").eq("id", companySettingsId).eq("is_active", true).maybeSingle();
     if (companyExists.error || !companyExists.data) {
       return json({ error: "company_settings_not_found" }, 404, headers);
     }
+
+    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
     // H7c: triagem ASN.1 mínima (BER/DER, incluindo comprimento indefinido `30 80`).
     // A autoridade real de formato é o forge (fromDer + pkcs12FromAsn1) logo abaixo.
@@ -404,7 +406,10 @@ Deno.serve(async (req) => {
     }
 
     return json({ certificate_id: regId, fingerprint_sha256: fingerprintHex }, 200, headers);
+  } catch {
+    return json({ error: "certificate_upload_failed" }, 500, headers);
   } finally {
+    wipeBytes(masterKey);
     wipeBytes(bytes);
     wipeBytes(bundleBytes);
     wipeBytes(encMaterial?.iv ?? null);
