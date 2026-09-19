@@ -43,6 +43,8 @@ type CompanyFiscalExtraColumns = {
   production_enabled?: boolean | null;
   accounting_validated_at?: string | null;
   nfe_series?: string | null;
+  nfe_series_number?: number | null;
+  nfe_environment_code?: string | null;
   nfse_series?: string | null;
   nfe_configuration?: Json | null;
   nfse_configuration?: Json | null;
@@ -235,6 +237,8 @@ export const companyFiscalFormSchema = z.object({
   nfe_enabled: z.boolean().optional(),
   nfse_enabled: z.boolean().optional(),
   nfe_series: optionalTrimmedString(20),
+  nfe_series_number: z.number().int().min(1).max(999).nullable().optional(),
+  nfe_environment_code: z.literal("2").optional(),
   nfse_series: optionalTrimmedString(20),
   nfe_configuration: nfeConfigurationSchema.optional(),
   nfse_configuration: nfseConfigurationSchema.optional(),
@@ -307,13 +311,18 @@ export function buildUpdatePayload(values: CompanyFiscalFormValues): Update {
   assignText("nfse_series", parsed.nfse_series);
   assignText("nfe_credential_ref", parsed.nfe_credential_ref);
   assignText("nfse_credential_ref", parsed.nfse_credential_ref);
-  assignText("certificate_ref", parsed.certificate_ref);
+  // certificate_ref is exclusively managed by the certificate vault.
   assignText("webhook_ref", parsed.webhook_ref);
   assignText("configuration_notes", parsed.configuration_notes);
 
   if (parsed.fiscal_environment !== undefined) payload.fiscal_environment = parsed.fiscal_environment;
   if (parsed.configuration_status !== undefined) payload.configuration_status = parsed.configuration_status;
-  if (parsed.nfe_enabled !== undefined) payload.nfe_enabled = parsed.nfe_enabled;
+  payload.nfe_enabled = false;
+  payload.nfe_environment_code = "2";
+  if (parsed.nfe_series_number !== undefined) {
+    payload.nfe_series_number = parsed.nfe_series_number;
+    payload.nfe_series = parsed.nfe_series_number === null ? null : String(parsed.nfe_series_number);
+  }
   if (parsed.nfse_enabled !== undefined) payload.nfse_enabled = parsed.nfse_enabled;
   if (parsed.nfe_provider !== undefined) payload.nfe_provider = parsed.nfe_provider;
   if (parsed.nfse_provider !== undefined) payload.nfse_provider = parsed.nfse_provider;
@@ -390,6 +399,8 @@ export function rowToFormValues(row: Row | null): CompanyFiscalFormValues {
     nfe_enabled: row.nfe_enabled ?? false,
     nfse_enabled: row.nfse_enabled ?? false,
     nfe_series: row.nfe_series ?? undefined,
+    nfe_series_number: row.nfe_series_number ?? undefined,
+    nfe_environment_code: "2",
     nfse_series: row.nfse_series ?? undefined,
     nfe_configuration: jsonObjectRecord(row.nfe_configuration),
     nfse_configuration: jsonObjectRecord(row.nfse_configuration),
@@ -416,7 +427,7 @@ export function nfeChecklist(v: CompanyFiscalFormValues): ChecklistItem[] {
     { key: "cnpj", label: "CNPJ da empresa", ok: !!v.cnpj },
     { key: "legal_name", label: "Razão social", ok: !!v.legal_name },
     { key: "state_registration", label: "Inscrição estadual", ok: !!v.state_registration },
-    { key: "series", label: "Série NF-e", ok: !!(v.nfe_series || c.series) },
+    { key: "series", label: "Série NF-e", ok: typeof v.nfe_series_number === "number" && Number.isInteger(v.nfe_series_number) && v.nfe_series_number >= 1 && v.nfe_series_number <= 999 },
     { key: "cfop_in_state", label: "CFOP interno sugerido", ok: !!c.suggested_cfop_in_state },
     { key: "cfop_interstate", label: "CFOP interestadual", ok: !!c.suggested_cfop_interstate },
     { key: "environment", label: "Ambiente de homologação", ok: v.fiscal_environment === "HOMOLOGATION" },
