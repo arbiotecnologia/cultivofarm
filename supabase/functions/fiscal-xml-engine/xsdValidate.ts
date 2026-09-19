@@ -28,11 +28,7 @@ import {
 } from "./xsdBundleIntegrity.ts";
 import { XERCES_WASM_PACKAGE, XERCES_WASM_SHA256, xercesWasmBinary } from "./xercesWasm.ts";
 
-export interface XsdIssue {
-  line: number | null;
-  code: string;
-  message: string;
-}
+import type { XsdIssue } from "./xsdSanitize.ts";
 
 export interface XsdReport {
   valid: boolean;
@@ -103,19 +99,13 @@ async function loadValidator(): Promise<Validator> {
 }
 
 /**
- * Sanitiza a mensagem do Xerces: mantém apenas elemento/razão, sem recorte do
- * documento (que poderia conter dados fiscais) nem caminhos locais.
+ * Sanitização de issues: delegada a `xsdSanitize.ts` — nunca devolve texto
+ * cru do Xerces (valor fiscal, trecho de XML, path ou stack).
  */
-function toIssue(diag: { message?: unknown; line?: unknown }): XsdIssue {
-  const raw = String(diag?.message ?? "").split("\n")[0];
-  const m = raw.match(/element\s+'([^']+)'/i) ?? raw.match(/attribute\s+'([^']+)'/i);
-  const element = m ? m[1] : "";
-  return {
-    line: typeof diag?.line === "number" && diag.line > 0 ? diag.line : null,
-    code: element ? `XSD_INVALID:${element}` : "XSD_INVALID",
-    message: raw.slice(0, 400),
-  };
-}
+import { toIssue } from "./xsdSanitize.ts";
+export { toIssue } from "./xsdSanitize.ts";
+export type { XsdIssue } from "./xsdSanitize.ts";
+
 
 export interface XsdBundleInspection {
   ok: boolean;

@@ -23,8 +23,18 @@ import {
   XERCES_WASM_SHA256,
   xercesWasmBinary,
 } from "../../../supabase/functions/fiscal-xml-engine/xercesWasm";
+import {
+  SAFE_NAME_RE,
+  toIssue,
+  XSD_GENERIC_MESSAGE,
+} from "../../../supabase/functions/fiscal-xml-engine/xsdSanitize";
 
 const ROOT = resolve(__dirname, "../../..");
+const XSD_SANITIZE = readFileSync(
+  resolve(ROOT, "supabase/functions/fiscal-xml-engine/xsdSanitize.ts"),
+  "utf8",
+);
+
 const require_ = createRequire(resolve(ROOT, "package.json"));
 const GLUE_PATH = require_.resolve("xerces-wasm/wasm/xerces_validator.js");
 const WASM_PATH = resolve(GLUE_PATH, "../xerces_validator.wasm");
@@ -176,7 +186,55 @@ describe("grafo da função — sem worker_threads e sem vazamento de erro cru",
     expect(block).toContain('error: "XSD_BUNDLE_UNAVAILABLE"');
   });
 
-  it("mensagens do validador são truncadas e sem recorte do documento", () => {
-    expect(XSD_VALIDATE).toContain("raw.slice(0, 400)");
+  it("issues de validação nunca expõem mensagem crua — apenas texto genérico e nome seguro", () => {
+    // Diagnósticos falsos injetados com marcadores que o Xerces poderia ecoar:
+    // valor fiscal, trecho de XML, path, stack e namespace.
+    const FISCAL_VALUE = "12345678000199";
+    const HOSTILE = [
+      `element 'emit', field '${FISCAL_VALUE}': value 12500.00 is not a valid occurrence`,
+      `error in element <det><prod><vProd>12500.00</vProd></prod></det> at /tmp/supabase/functions/fiscal-xml-engine/xsd/nfe_v4.00.xsd:42`,
+      `element 'nfse:infPedido': Unresolved prefix 'nfse:${FISCAL_VALUE}'\n    at XSDValidator.parse (native)\n    at Object.<anonymous> (/root/edge-runtime...)`,
+      `attribute 'x509SerialNumber' value '${FISCAL_VALUE}' does not match`,
+    ];
+    for (const raw of HOSTILE) {
+      const issue = toIssue({ message: raw, line: 7 });
+      expect(issue.message).toBe(XSD_GENERIC_MESSAGE);
+      expect(issue.line).toBe(7);
+      expect(issue.code).toMatch(/^XSD_INVALID(:[A-Za-z_][A-Za-z0-9_.-]{0,63})?$/);
+      const serialized = JSON.stringify(issue);
+      expect(serialized).not.toContain(FISCAL_VALUE);
+      expect(serialized).not.toMatch(/\.stack|\.xsd|\.ts|Deno\.|\/tmp|supabase\/|edge-runtime|native\)|http(s)?:\/\//i);
+      expect(serialized).not.toContain("12500.00");
+    }
+  });
+
+  it("nome sanitizado tem allowlist: prefixo de namespace e nomes inválidos não vazam", () => {
+    // Nomes com namespace, vazios, com espaços ou excessivamente longos
+    // descartam o nome e caem em XSD_INVALID puro.
+    expect(toIssue({ message: "element 'nfse:infPedido' failed" }).code).toBe("XSD_INVALID:infPedido");
+    expect(toIssue({ message: "element 'a b c' failed" }).code).toBe("XSD_INVALID");
+    expect(toIssue({ message: "element '' failed" }).code).toBe("XSD_INVALID");
+    expect(toIssue({ message: `element '${"x".repeat(65)}' failed` }).code).toBe("XSD_INVALID");
+    expect(toIssue({ message: "mensagem sem nome de elemento" }).code).toBe("XSD_INVALID");
+    expect(SAFE_NAME_RE.test("xsdSelfTestProbe")).toBe(true);
+    expect(SAFE_NAME_RE.test("nfse:infPedido")).toBe(false);
+    // A mensagem devolvida é a constante genérica, não recorte do diagnostic.
+    expect(XSD_VALIDATE).not.toContain("raw.slice(0, 400)");
+    expect(XSD_SANITIZE).toContain("XSD_GENERIC_MESSAGE");
+    expect(XSD_SANITIZE).toContain('message: XSD_GENERIC_MESSAGE');
+  });
+
+  it("selftest não devolve texto do validador em nenhuma ramificação", () => {
+    const block = INDEX.slice(
+      INDEX.indexOf('action === "xsd-selftest"'),
+      INDEX.indexOf("Cliente do usuário: toda autorização"),
+    );
+    // Só se permite usar `issues?.length` (contagem booleana); nenhuma
+    // ramificação extrai texto de issue, stack, erro ou diagnóstico.
+    expect(block).not.toMatch(/issue\.(message|code)|String\(|\.stack|err\.|JSON\.stringify/);
+    // A resposta de sucesso carrega apenas metadados fixos.
+    expect(block).toContain("loadedFiles: XSD_SELFTEST_EXPECTED_FILES");
+    expect(block).not.toContain("...probe");
+    expect(block).not.toContain("XSD_GENERIC_MESSAGE");
   });
 });

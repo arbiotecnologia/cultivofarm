@@ -221,3 +221,26 @@ pulados; typecheck e build OK.
 
 **Estado:** correção preparada e provada localmente; **runtime remoto ainda não
 comprovado** — depende de deploy autorizado e de nova chamada ao `xsd-selftest`.
+
+### Endurecimento pós-Xerces — sanitização total das issues do validador
+
+- `supabase/functions/fiscal-xml-engine/xsdSanitize.ts` (novo, módulo puro) —
+  `toIssue` nunca devolve texto cru do Xerces: `message` é sempre a constante
+  genérica `"documento incompatível com o schema XSD oficial"`; o código
+  `XSD_INVALID:<nome>` carrega no máximo um nome de elemento/atributo validado
+  por allowlist NCName (`^[A-Za-z_][A-Za-z0-9_.-]{0,63}$`, prefixo de
+  namespace descartado, 64 chars máx.). Nenhum valor fiscal, trecho de XML,
+  path, stack ou mensagem original é exposto. Módulo sem dependências de
+  runtime para poder ser testado em Vitest.
+- `supabase/functions/fiscal-xml-engine/xsdValidate.ts` — usa/reexporta a
+  sanitização de `xsdSanitize.ts` (removido o recorte `raw.slice(0, 400)`).
+- `supabase/functions/fiscal-xml-engine/index.ts` — somente comentários do
+  selftest atualizados (Xerces/WASM em processo, diagnóstico de execução
+  genérico); JSON/contrato intactos.
+- Testes (`src/test/fiscal/xmlEngineXercesRuntime.test.ts`) — diagnósticos
+  hostis injetados com valor fiscal fictício, trecho de XML, path, stack e
+  namespace: nada vaza em issue, código ou selftest; allowlist de nome
+  cobre namespace, vazio, espaços e excesso de tamanho.
+- Prova Deno end-to-end pós-refatoração: issues retornam apenas
+  `{"line":1,"code":"XSD_INVALID:xsdSelfTestProbe","message":"documento
+  incompatível com o schema XSD oficial"}`.
