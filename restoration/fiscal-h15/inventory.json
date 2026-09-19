@@ -1,0 +1,602 @@
+[
+  {
+    "signature": "fiscal_audit_trigger()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_audit_log",
+      "fiscal_calculation_runs",
+      "fiscal_document_series",
+      "fiscal_events",
+      "fiscal_idempotency_keys",
+      "fiscal_invoice_items",
+      "fiscal_invoices",
+      "fiscal_number_reservations"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "fiscal_audit_trigger_microorganism_profiles()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "fn_audit_fiscal_status()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_invoices"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "fn_comprovante_entrega_montar_v1(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_financial_inconsistencies()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_assert_debtor_recipient(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_audit_base_reduction()",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log",
+      "fiscal_invoice_items"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_certificate_ref_guard()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_certificates"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "fn_fiscal_company_crt()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_emitter_pendencies(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_emitter_pendencies_row(company_fiscal_settings)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_environment_gate_v1(text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_invoice_eligibility(text,uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_invoice_eligibility(text,uuid,uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_scenario_coverage()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "fn_fiscal_sefaz_tx_link_guard()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_xml_runs"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "fn_h7j_fiscal_invoice_delete_guard()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_events",
+      "fiscal_number_reservations",
+      "fiscal_sefaz_transmissions"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "regulatory_audit_trigger()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "rpc_fiscal_calculate_invoice_v1(uuid,text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_calculation_runs",
+      "fiscal_invoice_items",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_calculate_service_invoice_v1(uuid,text,boolean)",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_audit_log",
+      "fiscal_calculation_runs",
+      "fiscal_invoice_items",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_catalog_import_v1(text,text,text,jsonb,text,date,date,text,jsonb)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "rpc_fiscal_catalog_publish_v1(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "rpc_fiscal_certificate_for_invoice_v1(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_certificates",
+      "fiscal_invoices"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "rpc_fiscal_certificate_register_a1(uuid,uuid,text,text,text,text,timestamp with time zone,timestamp with time zone,text,text[],text,text,integer,text,text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_certificates"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_certificate_register_os(uuid,jsonb)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_certificates"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_certificate_revoke(uuid,text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_certificates"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_company_rtc_get()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_company_rtc_save(jsonb,text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_company_settings_init()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_draft_save(uuid,jsonb,jsonb,integer)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_invoice_items",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_draft_validate_homologation(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_certificates",
+      "fiscal_invoice_items",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_emitter_accounting_validate(text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_emitter_request_accounting_review(text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_event_manual(uuid,text,text,text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_events",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_event_sefaz_mark_signed_v1(uuid,text,text,uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_events"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_events",
+      "fiscal_invoices",
+      "fiscal_sefaz_transmissions"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_event_sefaz_reconcile_v1(uuid,uuid,text,text,text,timestamp with time zone)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_events"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_homologation_readiness()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_certificates",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_invoice_apply_authorization_v1(uuid,text,text,timestamp with time zone,text,text,uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log",
+      "fiscal_invoices",
+      "fiscal_xml_runs"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "rpc_fiscal_invoice_store_protocoled_xml_v1(uuid,uuid,text,text,text,text,integer,uuid,text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log",
+      "fiscal_invoices",
+      "fiscal_protocoled_documents",
+      "fiscal_sefaz_transmissions"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "rpc_fiscal_nfe_readiness_v1()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_document_series"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_preflight_v1(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_certificates",
+      "fiscal_invoice_items",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_reserve_nfe_number_v1(uuid,text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_document_series",
+      "fiscal_invoices",
+      "fiscal_number_reservations"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_sefaz_transmission_status_v1(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_sefaz_transmissions"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_sefaz_transmit_begin_v1(text,text,text,text,uuid,uuid,uuid,uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_sefaz_transmissions",
+      "fiscal_xml_runs"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "rpc_fiscal_sefaz_transmit_record_v1(uuid,text,jsonb)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_sefaz_transmissions"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "rpc_fiscal_tax_preview_v1(uuid,jsonb)",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_invoice_items",
+      "fiscal_invoices"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_xml_prepare_v1(uuid,text)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "company_fiscal_settings",
+      "fiscal_audit_log",
+      "fiscal_document_series",
+      "fiscal_invoice_items",
+      "fiscal_invoices",
+      "fiscal_number_reservations",
+      "fiscal_xml_runs"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_xml_record_v1(uuid,text,jsonb)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log",
+      "fiscal_xml_runs"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_fiscal_xml_status_v1(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_xml_runs"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_regulatory_dossier_detail(uuid)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "rpc_upsert_fiscal_invoice_manual(uuid,jsonb)",
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "authenticated": true,
+    "anon": false,
+    "tables": [
+      "fiscal_invoices",
+      "fiscal_number_reservations"
+    ],
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "signature": "tg_fiscal_certificates_audit()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log",
+      "fiscal_certificates"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  },
+  {
+    "signature": "tg_fiscal_cfs_audit()",
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "authenticated": false,
+    "anon": false,
+    "tables": [
+      "fiscal_audit_log"
+    ],
+    "status": "SERVICE_OR_TRIGGER_REVIEW"
+  }
+]
