@@ -4,8 +4,8 @@
  * Usa `xmllint-wasm` (libxml2 compilado para WebAssembly). Todos os XSDs
  * oficiais vêm de `./xsdBundle.ts`, módulo GERADO a partir de `./xsd/`
  * (fonte auditável, hashes em `./xsd/manifest.json`). O canal de deploy das
- * Edge Functions não empacota `static_files`, então nada é lido do disco:
- * sem `Deno.readTextFile` e sem `import.meta.url`. Nenhuma resolução de rede,
+ * Edge Functions não empacota `static_files`, então nada é lido do disco
+ * (sem leitura de arquivo e sem URL de módulo). Nenhuma resolução de rede,
  * DTD ou entidade externa é permitida: `xmllint-wasm` roda em WASM sem acesso
  * a rede e os `xs:include`/`xs:import` são satisfeitos apenas por `preload`.
  *
