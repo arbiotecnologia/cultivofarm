@@ -219,8 +219,8 @@ memória não resolveu.
 conteúdo do leiaute). Suítes fiscais/config/segurança: 2.201 aprovados, 4
 pulados; typecheck e build OK.
 
-**Estado:** correção preparada e provada localmente; **runtime remoto ainda não
-comprovado** — depende de deploy autorizado e de nova chamada ao `xsd-selftest`.
+**Estado:** correção preparada e provada localmente. Prova remota concluída
+em seguida — ver seção abaixo.
 
 ### Endurecimento pós-Xerces — sanitização total das issues do validador
 
