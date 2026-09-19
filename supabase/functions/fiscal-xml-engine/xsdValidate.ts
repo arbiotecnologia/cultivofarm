@@ -132,6 +132,8 @@ export async function validateAgainstOfficialXsd(xml: string): Promise<XsdReport
     xml: [{ fileName: "nfe.xml", contents: xml }],
     schema: [{ fileName: schema.fileName, contents: schema.contents }],
     preload,
+    initialMemoryPages: XSD_INITIAL_MEMORY_PAGES,
+    maxMemoryPages: XSD_MAX_MEMORY_PAGES,
   });
   return {
     valid: result.valid === true,
