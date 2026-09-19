@@ -102,7 +102,8 @@ async function loadValidator(): Promise<Validator> {
  * Sanitização de issues: delegada a `xsdSanitize.ts` — nunca devolve texto
  * cru do Xerces (valor fiscal, trecho de XML, path ou stack).
  */
-export { XSD_GENERIC_MESSAGE, toIssue } from "./xsdSanitize.ts";
+import { toIssue } from "./xsdSanitize.ts";
+export { toIssue } from "./xsdSanitize.ts";
 export type { XsdIssue } from "./xsdSanitize.ts";
 
 
