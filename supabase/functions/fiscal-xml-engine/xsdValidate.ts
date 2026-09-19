@@ -106,16 +106,28 @@ async function loadValidator(): Promise<Validator> {
  * Sanitiza a mensagem do Xerces: mantém apenas elemento/razão, sem recorte do
  * documento (que poderia conter dados fiscais) nem caminhos locais.
  */
+/** Mensagem genérica: jamais expõe texto do Xerces, valor fiscal, XML ou path. */
+const XSD_GENERIC_MESSAGE = "documento incompatível com o schema XSD oficial";
+/** Nome de elemento/atributo aceito: apenas NCName simples, curto. */
+const SAFE_NAME_RE = /^[A-Za-z_][A-Za-z0-9_.-]{0,63}$/;
+
+function safeName(raw: string): string {
+  const m = raw.match(/element\s+'([^']{1,80})'/i) ?? raw.match(/attribute\s+'([^']{1,80})'/i);
+  if (!m) return "";
+  const candidate = m[1].includes(":") ? m[1].slice(m[1].lastIndexOf(":") + 1) : m[1];
+  return SAFE_NAME_RE.test(candidate) ? candidate : "";
+}
+
 function toIssue(diag: { message?: unknown; line?: unknown }): XsdIssue {
   const raw = String(diag?.message ?? "").split("\n")[0];
-  const m = raw.match(/element\s+'([^']+)'/i) ?? raw.match(/attribute\s+'([^']+)'/i);
-  const element = m ? m[1] : "";
+  const element = safeName(raw);
   return {
     line: typeof diag?.line === "number" && diag.line > 0 ? diag.line : null,
     code: element ? `XSD_INVALID:${element}` : "XSD_INVALID",
-    message: raw.slice(0, 400),
+    message: XSD_GENERIC_MESSAGE,
   };
 }
+
 
 export interface XsdBundleInspection {
   ok: boolean;
