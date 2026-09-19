@@ -1,0 +1,10 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "method": "Storage API: getBucket; createBucket if absent; updateBucket if configuration differs",
+  "name": "fiscal-certificates",
+  "public": false,
+  "fileSizeLimit": 10485760,
+  "allowedMimeTypes": ["application/octet-stream"],
+  "objectPoliciesToAdd": [],
+  "status": "NOT_EXECUTED"
+}
