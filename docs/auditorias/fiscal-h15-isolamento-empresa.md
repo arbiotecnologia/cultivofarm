@@ -302,3 +302,61 @@ reversível; nenhuma mutação de dados.
   Os helpers H15 autenticados restantes são dependências de RLS das políticas
   organizacionais; **não revogar em massa**.
 - **Advisors gerais** fora do módulo fiscal permanecem fora desta fase.
+
+## H17 — gate de prontidão, preparação local (19/09/2026)
+
+**Correções locais; não aplicadas remotamente.** Nenhuma consulta/escrita SQL remota,
+Storage remoto, deploy, emissão, transmissão, certificado, série ou fixture criada.
+O bucket ausente é evidência fornecida pelo operador, não verificada remotamente nesta rodada.
+
+### Falhas corrigidas
+- Upload e revogação validam a empresa/certificado com cliente autenticado e RLS
+  antes de criar o cliente elevado; CNPJ vem dessa consulta autorizada.
+  Gate canônico explícito acrescentado; CORS/Bearer/perfil administrador e RPC H15 preservados.
+- Revogação conserva o registro de material quando a remoção física falha,
+  permitindo repetir a limpeza. Erro na leitura do material bloqueia a operação.
+  Interface permite repetir revogação e invalida consultas fiscais também no erro parcial.
+- Erros A1 exibem somente mensagens fixas; senha removida do estado/FormData
+  ao terminar; bytes e chave cifradora limpos no finally. PFX, senha e material
+  permanecem transitórios na operação necessária, sem persistência no navegador.
+- Referência manual de certificado removida da tela e do payload de UPDATE;
+  estado real permanece na aba existente do cofre. Compatibilidade do schema de
+  referências legado preservada, mas certificate_ref nunca é enviado pelo formulário.
+- Série agora escreve nfe_series_number (inteiro 1..999), sincroniza texto legado
+  e fixa nfe_environment_code='2', nfe_enabled=false. production_enabled continua
+  excluído do payload (não pode ser ativado nesta tela). Nenhum contador editável:
+  primeira reserva continua no fluxo canônico, sem CRUD de fiscal_document_series.
+- Bloqueios síncronos contra cliques duplicados no save/upload/revogação; abas e
+  botões permitem quebra de linha. Responsividade autenticada não comprovada visualmente.
+
+### Candidato SQL e provisionamento — desvios explícitos da entrega solicitada
+- `restoration/fiscal-h17/20260919142300_h17_certificate_readiness.sql`:
+  substitui somente as duas funções existentes, preserva autorização H15 e ACL;
+  exige certificado da mesma empresa, AVAILABLE, HOMOLOGATION, ativo, não revogado,
+  com valid_from <= now() e valid_until > now(). Referência inválida não causa cast UUID.
+  Emissor deixa de aparecer pronto quando certificado deixa de ser elegível.
+  Não duplica fn_fiscal_certificate_ref_guard/trg_fiscal_certificate_ref_guard.
+- `restoration/fiscal-h17/rollback.sql`: definições anteriores para revisão;
+  rollback reintroduz a checagem antiga de referência e exige avaliação de segurança.
+- `restoration/fiscal-h17/storage-provisioning.json`: contrato de provisionamento
+  via Storage API, privado, 10 MiB, application/octet-stream, sem policies de clientes.
+  Idempotência prevista por get/create/update. Não executado e não é migration SQL.
+- **Não foi criada migration em supabase/migrations nem INSERT INTO storage.buckets**:
+  ferramentas desta sessão reservam migrations à ferramenta de banco e exigem
+  Storage API para buckets. Não se contornou essa restrição com execução remota.
+  Aplicação do candidato e provisionamento do bucket continuam pendentes do operador.
+- SQL não executado e parser PostgreSQL indisponível localmente: validade funcional
+  do candidato deve ser auditada antes da aplicação. Guard canônico/STAGING presente.
+
+### Evidências e limites
+- `src/test/fiscal/h17Readiness.test.ts`: 15 testes novos aprovados (faixa de série,
+  payload, autorização RLS antes de elevação, limpeza repetível, candidato e erros saneados).
+- Regressão fiscal/config/segurança: **2.218 aprovados, 4 skips preexistentes**, 153 arquivos,
+  exit 0. Compilação/typecheck automáticos: **build OK** após correção de tipos aditivos.
+- Nenhum tipo gerado, dependência, rota, config, migration anterior ou regra de emissão alterada.
+- Fluxos autenticados reais e isolamento com dois operadores não executados: faltam
+  sessão disponível e autorização para persistir dados; sem mocks ou fixtures persistidas.
+- Bloqueios reais: bucket, aplicação auditada do SQL, deploy das correções pelo operador,
+  A1/senha válidos, configuração real da série e homologação. Produção segue bloqueada.
+- Commit é gerenciado pela plataforma; não foi executado git commit. Hash exato final
+  deve ser obtido após o checkpoint da plataforma, sem alegar publicação remota.
