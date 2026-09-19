@@ -176,7 +176,40 @@ describe("grafo da função — sem worker_threads e sem vazamento de erro cru",
     expect(block).toContain('error: "XSD_BUNDLE_UNAVAILABLE"');
   });
 
-  it("mensagens do validador são truncadas e sem recorte do documento", () => {
-    expect(XSD_VALIDATE).toContain("raw.slice(0, 400)");
+  it("issues de validação nunca expõem mensagem crua — apenas texto genérico e nome seguro", async () => {
+    // Marcadores fictícios que o Xerces poderia ecoar: valor fiscal, trecho
+    // de XML, path de arquivo e stack. Nenhum pode aparecer em issue alguma.
+    const FISCAL_VALUE = "12345678000199";
+    const MARKER_XML =
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      `<emitCnpjLeak xmlns="http://www.portalfiscal.inf.br/nfe">${FISCAL_VALUE}</emitCnpjLeak>`;
+    const report = await validateAgainstOfficialXsd(MARKER_XML);
+    expect(report.valid).toBe(false);
+    for (const issue of report.issues ?? []) {
+      expect(issue.message).toBe("documento incompatível com o schema XSD oficial");
+      expect(issue.code).toMatch(/^XSD_INVALID(:[A-Za-z_][A-Za-z0-9_.-]{0,63})?$/);
+      expect(issue.code).not.toContain(FISCAL_VALUE);
+      expect(JSON.stringify(issue)).not.toContain(FISCAL_VALUE);
+      expect(JSON.stringify(issue)).not.toMatch(/\.stack|\.xsd|\.ts|Deno\.|\/tmp|supabase\/|http(s)?:\/\//i);
+    }
+  }, 120_000);
+
+  it("nome sanitizado tem allowlist: prefixo de namespace e nomes inválidos não vazam", () => {
+    // Estático: extração de nome é restrita a NCName simples, sem namespace.
+    expect(XSD_VALIDATE).toContain('SAFE_NAME_RE = /^[A-Za-z_][A-Za-z0-9_.-]{0,63}$/');
+    expect(XSD_VALIDATE).toContain('lastIndexOf(":")');
+    // A mensagem devolvida é a constante genérica, não recorte do diagnostic.
+    expect(XSD_VALIDATE).not.toContain("raw.slice(0, 400)");
+    expect(XSD_VALIDATE).toContain('message: XSD_GENERIC_MESSAGE');
+  });
+
+  it("selftest não devolve texto do validador em nenhuma ramificação", () => {
+    const block = INDEX.slice(
+      INDEX.indexOf('action === "xsd-selftest"'),
+      INDEX.indexOf("Cliente do usuário: toda autorização"),
+    );
+    // Nenhum campo de texto livre além dos enums/metadados fixos.
+    expect(block).not.toMatch(/issue|message|raw|diagnostic\.message|String\(/);
+    expect(block).not.toContain("XSD_GENERIC_MESSAGE");
   });
 });
