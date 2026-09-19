@@ -64,8 +64,7 @@ CREATE INDEX ix_fiscal_invoices_company_settings ON public.fiscal_invoices(compa
 CREATE OR REPLACE FUNCTION public.h15_actor_organization() RETURNS uuid
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $h15$
  SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE
- WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND
- (public.has_role(auth.uid(),'administrador'::public.app_role) OR public.has_role(auth.uid(),'gestor'::public.app_role) OR public.has_role(auth.uid(),'financeiro'::public.app_role));
+ WHERE p.user_id=auth.uid() AND p.ativo IS TRUE;
 $h15$;
 CREATE OR REPLACE FUNCTION public.h15_company_access(p_company uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $h15$
@@ -77,7 +76,11 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $h15$
 $h15$;
 CREATE OR REPLACE FUNCTION public.h15_require_staff() RETURNS void
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $h15$
-BEGIN IF public.h15_actor_organization() IS NULL THEN RAISE EXCEPTION 'H15_ORGANIZATION_FORBIDDEN' USING ERRCODE='42501'; END IF; END $h15$;
+BEGIN
+ IF public.h15_actor_organization() IS NULL THEN RAISE EXCEPTION 'H15_ORGANIZATION_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF NOT coalesce((public.has_role(auth.uid(),'administrador'::public.app_role) OR public.has_role(auth.uid(),'gestor'::public.app_role) OR public.has_role(auth.uid(),'financeiro'::public.app_role)),false) THEN
+ RAISE EXCEPTION 'H15_STAFF_FORBIDDEN' USING ERRCODE='42501'; END IF;
+END $h15$;
 CREATE OR REPLACE FUNCTION public.h15_require_invoice(p_invoice uuid) RETURNS void
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $h15$
 BEGIN IF NOT public.h15_invoice_access(p_invoice) THEN RAISE EXCEPTION 'H15_INVOICE_FORBIDDEN' USING ERRCODE='42501'; END IF; END $h15$;
@@ -190,7 +193,15 @@ BEGIN
  WHEN 'fiscal_events' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_events r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
  WHEN 'fiscal_xml_runs' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_xml_runs r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
  WHEN 'fiscal_number_reservations' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_number_reservations r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
- WHEN 'fiscal_sefaz_transmissions' THEN SELECT i.company_settings_id INTO c FROM public.fiscal_sefaz_transmissions r JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id WHERE r.id=p_id;
+ WHEN 'fiscal_sefaz_transmissions' THEN
+ SELECT coalesce(i.company_settings_id,xi.company_settings_id,ei.company_settings_id) INTO c
+ FROM public.fiscal_sefaz_transmissions r
+ LEFT JOIN public.fiscal_invoices i ON i.id=r.fiscal_invoice_id
+ LEFT JOIN public.fiscal_xml_runs x ON x.id=r.xml_run_id
+ LEFT JOIN public.fiscal_invoices xi ON xi.id=x.fiscal_invoice_id
+ LEFT JOIN public.fiscal_events e ON e.id=r.fiscal_event_id
+ LEFT JOIN public.fiscal_invoices ei ON ei.id=e.fiscal_invoice_id
+ WHERE r.id=p_id;
  ELSE RAISE EXCEPTION 'H15_UNKNOWN_RELATION' USING ERRCODE='23514';
  END CASE;
  RETURN c;
@@ -204,18 +215,32 @@ BEGIN
  IF data->TG_ARGV[0] IS DISTINCT FROM old_data->TG_ARGV[0] THEN RAISE EXCEPTION 'H15_PARENT_IMMUTABLE' USING ERRCODE='23514'; END IF;
  END IF;
  target:=nullif(data->>TG_ARGV[0],'')::uuid;
+ -- Only technical idempotency operations may have no invoice at all.
+ IF TG_TABLE_NAME='fiscal_idempotency_keys' AND target IS NULL THEN
+ IF current_setting('role',true) IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION 'H15_TECHNICAL_OPERATION_REQUIRED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+ END IF;
+ IF TG_TABLE_NAME<>'fiscal_sefaz_transmissions' THEN
  owner_company:=public.h15_related_company(TG_ARGV[1],target);
  IF owner_company IS NULL THEN RAISE EXCEPTION 'H15_PARENT_REQUIRED' USING ERRCODE='23514'; END IF;
- IF current_setting('role',true) IS DISTINCT FROM 'service_role' THEN PERFORM public.h15_require_company(owner_company); END IF;
- n:=2;
+ END IF;
+ -- Transmissions derive their issuer from the first non-null link, not argument zero.
+ n:=0;
  WHILE n<TG_NARGS LOOP
  target:=nullif(data->>TG_ARGV[n],'')::uuid;
  IF target IS NOT NULL THEN
  linked:=public.h15_related_company(TG_ARGV[n+1],target);
+ IF linked IS NULL THEN RAISE EXCEPTION 'H15_PARENT_REQUIRED' USING ERRCODE='23514'; END IF;
+ IF owner_company IS NULL THEN owner_company:=linked; END IF;
  IF linked IS DISTINCT FROM owner_company THEN RAISE EXCEPTION 'H15_CROSS_COMPANY_REFERENCE:%',TG_ARGV[n] USING ERRCODE='23514'; END IF;
  END IF;
  n:=n+2;
  END LOOP;
+ IF owner_company IS NULL THEN RAISE EXCEPTION 'H15_PARENT_REQUIRED' USING ERRCODE='23514'; END IF;
+ IF TG_TABLE_NAME='fiscal_sefaz_transmissions' AND TG_OP='UPDATE' THEN
+ IF owner_company IS DISTINCT FROM public.h15_related_company('fiscal_sefaz_transmissions',OLD.id) THEN RAISE EXCEPTION 'H15_PARENT_IMMUTABLE' USING ERRCODE='23514'; END IF;
+ END IF;
+ IF current_setting('role',true) IS DISTINCT FROM 'service_role' THEN PERFORM public.h15_require_company(owner_company); END IF;
  RETURN NEW;
 END $h15$;
 REVOKE ALL ON FUNCTION public.h15_related_integrity() FROM PUBLIC,anon,authenticated;
