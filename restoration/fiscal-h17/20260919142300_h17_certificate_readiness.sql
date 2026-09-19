@@ -9,7 +9,6 @@ BEGIN
  OR EXISTS (SELECT 1 FROM public.company_fiscal_settings WHERE production_enabled IS TRUE OR nfe_enabled IS TRUE)
  THEN RAISE EXCEPTION 'H17_CANONICAL_SAFE_GATE_REQUIRED'; END IF;
 END $guard$;
-CREATE OR REPLACE mantem os privilegios vigentes).
 CREATE OR REPLACE FUNCTION public.fn_fiscal_emitter_pendencies_row(r company_fiscal_settings)
  RETURNS jsonb
  LANGUAGE plpgsql
