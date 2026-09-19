@@ -200,10 +200,40 @@ Deno.serve(async (req) => {
   // assinatura nem transporte, e não devolve conteúdo sensível.
   // ------------------------------------------------------------------
   if (action === "xsd-selftest") {
+    // Etapa 1: inspeção somente leitura do bundle (sem validador, sem conteúdo).
+    let inspection: { ok: boolean; fileCount: number; schema: string };
+    try {
+      inspection = await inspectOfficialXsdBundle();
+    } catch {
+      return json(
+        { ok: false, error: "XSD_BUNDLE_UNAVAILABLE", diagnostic: "XSD_BUNDLE_CHECK_FAILED" },
+        500,
+        headers,
+      );
+    }
+    if (!inspection.ok || inspection.fileCount !== XSD_SELFTEST_EXPECTED_FILES) {
+      return json(
+        { ok: false, error: "XSD_BUNDLE_UNAVAILABLE", diagnostic: "XSD_BUNDLE_CHECK_FAILED" },
+        500,
+        headers,
+      );
+    }
+    // Etapa 2: execução real do validador. Qualquer falha aqui é do WASM /
+    // memória do libxml2 — diagnóstico enum, nunca mensagem ou stack crus.
     try {
       const probe = await validateAgainstOfficialXsd(XSD_SELFTEST_XML);
       const executed = probe.valid === false && (probe.issues?.length ?? 0) > 0;
-      if (!executed) return json({ ok: false, error: "XSD_BUNDLE_UNAVAILABLE" }, 500, headers);
+      if (!executed) {
+        return json(
+          {
+            ok: false,
+            error: "XSD_BUNDLE_UNAVAILABLE",
+            diagnostic: "XSD_VALIDATOR_MEMORY_OR_WASM_FAILED",
+          },
+          500,
+          headers,
+        );
+      }
       return json({
         ok: true,
         validator: probe.validator,
@@ -212,7 +242,15 @@ Deno.serve(async (req) => {
         loadedFiles: XSD_SELFTEST_EXPECTED_FILES,
       }, 200, headers);
     } catch {
-      return json({ ok: false, error: "XSD_BUNDLE_UNAVAILABLE" }, 500, headers);
+      return json(
+        {
+          ok: false,
+          error: "XSD_BUNDLE_UNAVAILABLE",
+          diagnostic: "XSD_VALIDATOR_MEMORY_OR_WASM_FAILED",
+        },
+        500,
+        headers,
+      );
     }
   }
 
