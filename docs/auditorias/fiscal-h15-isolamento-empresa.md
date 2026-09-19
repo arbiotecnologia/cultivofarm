@@ -275,3 +275,30 @@ leitura/escrita de banco, Storage, certificado, assinatura ou transporte.
 Cadeia completa fechada: bundle compilado íntegro (5 XSDs, hashes) →
 integridade fail-closed → Xerces-C++ WASM em processo → selftest HTTP 200
 com `loadedFiles: 5` no canônico.
+
+---
+
+## H16 — índices de FK fiscais e initplan de RLS (19/09/2026)
+
+**H16 APLICADA E AUDITADA no canônico `swzpzcwiasxmjutrmvkm`** (ledger vivo:
+`20260919141609_h16_fiscal_fk_indexes_and_rls_initplan`). Repositório
+sincronizado com a migration idêntica em
+`supabase/migrations/20260919141609_h16_fiscal_fk_indexes_and_rls_initplan.sql`,
+sem qualquer execução remota de SQL por este agente. Migration aditiva e
+reversível; nenhuma mutação de dados.
+
+- **16/16 índices covering de FK fiscais confirmados** (financial_documents,
+  fiscal_events, fiscal_idempotency_keys, fiscal_invoices,
+  fiscal_protocoled_documents, fiscal_sefaz_transmissions, fiscal_xml_runs).
+- **Performance Advisor:** deixou de apontar as 16 FKs-alvo e o
+  `auth_rls_initplan` da policy `fiscal_protocoled_documents_read`. A policy
+  foi recriada com semântica preservada, agora com `(select auth.uid())`
+  como initplan conjuntivo com `h15_invoice_access(fiscal_invoice_id)`.
+- **`unused_index` imediato é esperado:** as tabelas fiscais estão vazias;
+  não deve motivar remoção dos índices.
+- **Pós-check (somente leitura):** `invoices=0`, `transmissions=0`,
+  `protocoled=0`, `production_enabled=0`; produção fiscal continua bloqueada.
+- **`fiscal_certificate_material` sem policy é deny-by-default deliberado.**
+  Os helpers H15 autenticados restantes são dependências de RLS das políticas
+  organizacionais; **não revogar em massa**.
+- **Advisors gerais** fora do módulo fiscal permanecem fora desta fase.
