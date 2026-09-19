@@ -303,11 +303,12 @@ reversível; nenhuma mutação de dados.
   organizacionais; **não revogar em massa**.
 - **Advisors gerais** fora do módulo fiscal permanecem fora desta fase.
 
-## H17 — gate de prontidão, preparação local (19/09/2026)
+## H17 — gate de prontidão, aplicação e auditoria informadas (19/09/2026)
 
-**Correções locais; não aplicadas remotamente.** Nenhuma consulta/escrita SQL remota,
-Storage remoto, deploy, emissão, transmissão, certificado, série ou fixture criada.
-O bucket ausente é evidência fornecida pelo operador, não verificada remotamente nesta rodada.
+**Aplicação e auditoria remotas informadas pelo operador em 19/09/2026 às 14:36 UTC.**
+Esta rodada apenas registra essa evidência: não houve consulta/escrita SQL remota,
+operação de Storage, deploy, emissão, transmissão ou criação de fixtures pelo assistente.
+A ausência histórica do bucket foi resolvida, conforme evidência abaixo; não houve nova verificação remota nesta rodada.
 
 ### Falhas corrigidas
 - Upload e revogação validam a empresa/certificado com cliente autenticado e RLS
@@ -329,7 +330,7 @@ O bucket ausente é evidência fornecida pelo operador, não verificada remotame
 - Bloqueios síncronos contra cliques duplicados no save/upload/revogação; abas e
   botões permitem quebra de linha. Responsividade autenticada não comprovada visualmente.
 
-### Candidato SQL e provisionamento — desvios explícitos da entrega solicitada
+### Artefatos históricos e sincronização do ledger
 - `restoration/fiscal-h17/20260919142300_h17_certificate_readiness.sql`:
   substitui somente as duas funções existentes, preserva autorização H15 e ACL;
   exige certificado da mesma empresa, AVAILABLE, HOMOLOGATION, ativo, não revogado,
@@ -338,15 +339,26 @@ O bucket ausente é evidência fornecida pelo operador, não verificada remotame
   Não duplica fn_fiscal_certificate_ref_guard/trg_fiscal_certificate_ref_guard.
 - `restoration/fiscal-h17/rollback.sql`: definições anteriores para revisão;
   rollback reintroduz a checagem antiga de referência e exige avaliação de segurança.
-- `restoration/fiscal-h17/storage-provisioning.json`: contrato de provisionamento
-  via Storage API, privado, 10 MiB, application/octet-stream, sem policies de clientes.
-  Idempotência prevista por get/create/update. Não executado e não é migration SQL.
-- **Não foi criada migration em supabase/migrations nem INSERT INTO storage.buckets**:
-  ferramentas desta sessão reservam migrations à ferramenta de banco e exigem
-  Storage API para buckets. Não se contornou essa restrição com execução remota.
-  Aplicação do candidato e provisionamento do bucket continuam pendentes do operador.
-- SQL não executado e parser PostgreSQL indisponível localmente: validade funcional
-  do candidato deve ser auditada antes da aplicação. Guard canônico/STAGING presente.
+- `restoration/fiscal-h17/storage-provisioning.json`: contrato histórico de preparação,
+  preservado como evidência, não como estado atual do bucket remoto.
+- Ledger aplicado informado: `20260919143443_h17_certificate_vault_and_readiness`.
+  A sincronização do arquivo correspondente em `supabase/migrations` permanece bloqueada
+  pela restrição da sessão à edição direta desse diretório. O teste local ainda lê o
+  candidato histórico; não comprova sincronização com o ledger. Nenhuma ferramenta remota
+  foi acionada para contornar a restrição.
+
+### Evidência remota fornecida pelo operador
+- Destino exclusivo: `swzpzcwiasxmjutrmvkm`.
+- Bucket `fiscal-certificates`: privado, limite `10485760` bytes,
+  `allowed_mime_types = application/octet-stream`, zero policies de cliente.
+- Ambas as funções de prontidão exigem certificado da mesma empresa, HOMOLOGATION,
+  AVAILABLE, ativo, não revogado e dentro da validade.
+- Pós-check: certificados=0, séries=0, notas=0, transmissões=0, protocolados=0,
+  nfe_enabled=0, production_enabled=0. Produção permanece bloqueada.
+- `fiscal-certificate-upload`: v11, ACTIVE, verify_jwt=true;
+  SHA `f3fcfefc6e439519e2b0c65228d3964f471207975c28e77283511da28516dfb4`.
+- `fiscal-certificate-revoke`: v11, ACTIVE, verify_jwt=true;
+  SHA `6fbb6b83c6b513391ec4421d1dc8e4371f6ebbffe798fe00e75682b562afb246`.
 
 ### Evidências e limites
 - `src/test/fiscal/h17Readiness.test.ts`: 15 testes novos aprovados (faixa de série,
@@ -356,7 +368,8 @@ O bucket ausente é evidência fornecida pelo operador, não verificada remotame
 - Nenhum tipo gerado, dependência, rota, config, migration anterior ou regra de emissão alterada.
 - Fluxos autenticados reais e isolamento com dois operadores não executados: faltam
   sessão disponível e autorização para persistir dados; sem mocks ou fixtures persistidas.
-- Bloqueios reais: bucket, aplicação auditada do SQL, deploy das correções pelo operador,
-  A1/senha válidos, configuração real da série e homologação. Produção segue bloqueada.
+- Aplicação, bucket e deploy v11 concluídos conforme operador; prova dos fluxos com
+  A1/senha válidos e configuração real da série permanece dependente do operador.
+  Produção segue bloqueada; esta evidência não comprova upload/revogação com A1 real.
 - Commit é gerenciado pela plataforma; não foi executado git commit. Hash exato final
   deve ser obtido após o checkpoint da plataforma, sem alegar publicação remota.
