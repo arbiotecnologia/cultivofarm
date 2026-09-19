@@ -103,3 +103,38 @@ describe("xsdValidate — runtime autossuficiente, sem disco e sem rede", () => 
     expect(XSD_VALIDATE).toContain("fileName: schema.fileName");
   });
 });
+
+describe("xsdValidate — memória do WASM e inspeção somente leitura", () => {
+  it("configura initialMemoryPages=1024 e maxMemoryPages=2048 (64/128 MiB)", () => {
+    expect(XSD_VALIDATE).toContain("export const XSD_INITIAL_MEMORY_PAGES = 1024");
+    expect(XSD_VALIDATE).toContain("export const XSD_MAX_MEMORY_PAGES = 2048");
+    expect(XSD_VALIDATE).toContain("initialMemoryPages: XSD_INITIAL_MEMORY_PAGES");
+    expect(XSD_VALIDATE).toContain("maxMemoryPages: XSD_MAX_MEMORY_PAGES");
+  });
+
+  it("teto de memória não excede 128 MiB e inicial não excede o teto", () => {
+    const initial = Number(XSD_VALIDATE.match(/XSD_INITIAL_MEMORY_PAGES = (\d+)/)![1]);
+    const max = Number(XSD_VALIDATE.match(/XSD_MAX_MEMORY_PAGES = (\d+)/)![1]);
+    expect(initial * 64 * 1024).toBe(64 * 1024 * 1024);
+    expect(max * 64 * 1024).toBe(128 * 1024 * 1024);
+    expect(max * 64 * 1024).toBeLessThanOrEqual(128 * 1024 * 1024);
+    expect(initial).toBeLessThanOrEqual(max);
+  });
+
+  it("inspectOfficialXsdBundle é somente leitura e não expõe conteúdo", () => {
+    const fn = XSD_VALIDATE.slice(
+      XSD_VALIDATE.indexOf("export async function inspectOfficialXsdBundle"),
+      XSD_VALIDATE.indexOf("/** Valida um documento NF-e"),
+    );
+    expect(fn).toContain("await loadBundle()");
+    expect(fn).toContain("fileCount: preload.length");
+    expect(fn).toContain('schema.fileName === "nfe_v4.00.xsd"');
+    expect(fn).not.toContain("validateXML");
+    expect(fn).not.toContain("contents");
+  });
+
+  it("inspeção esperada: 5 arquivos e schema nfe_v4.00.xsd", () => {
+    expect(XSD_BUNDLE_FILE_COUNT).toBe(5);
+    expect(XSD_BUNDLE_ORDER[XSD_BUNDLE_ORDER.length - 1]).toBe("nfe_v4.00.xsd");
+  });
+});

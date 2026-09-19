@@ -157,3 +157,30 @@ o canal de deploy atual **não empacota arquivos estáticos**.
 a comprovação depende de redeploy autorizado da função e nova chamada
 `xsd-selftest` (esperado HTTP 200 com `loadedFiles: 5`). Nenhuma função foi
 publicada nesta etapa.
+
+## Correção de memória do validador XSD — fiscal-xml-engine (19/09/2026 03:03 UTC)
+
+**Evidência de runtime (v8).** O artefato implantado já contém `xsdBundle.ts`
+(o bundle compilado eliminou a ausência de arquivos), mas `xsd-selftest`
+continuou respondendo **HTTP 500 `XSD_BUNDLE_UNAVAILABLE`**. A falha passou a
+ser da execução do `xmllint-wasm`, cujo teto de memória default é 32 MiB —
+insuficiente para o conjunto NF-e (~438 KB de XSD, `leiauteNFe_v4.00` ~350 KB).
+
+**Correção preparada (sem deploy, sem SQL, sem alteração de config/secrets/certificado/transporte).**
+
+- `xsdValidate.ts` — `validateXML` agora recebe `initialMemoryPages = 1024`
+  (64 MiB) e `maxMemoryPages = 2048` (128 MiB), exportados como constantes.
+- `xsdValidate.ts` — nova `inspectOfficialXsdBundle()`, somente leitura:
+  executa apenas `loadBundle` e devolve `{ok, fileCount, schema}`, sem conteúdo.
+- `index.ts` — o `xsd-selftest` passa a rodar a inspeção antes do validador e
+  devolve apenas diagnóstico enum sanitizado junto do erro fixo:
+  `XSD_BUNDLE_CHECK_FAILED` (inspeção) ou `XSD_VALIDATOR_MEMORY_OR_WASM_FAILED`
+  (validador). Nenhuma mensagem, stack ou conteúdo cru é devolvido; o sucesso
+  mantém exatamente `ok/validator/package/schema/loadedFiles: 5`.
+- Testes: `xmlEngineXsdBundle.test.ts` (18) cobre inspeção 5/`nfe_v4.00.xsd` e
+  os limites de memória dentro de 128 MiB; `xmlEngineXsdSelftest.test.ts` (14)
+  cobre a ordem inspeção→validação e a sanitização do erro.
+
+**Estado:** correção de memória e diagnóstico preparada, **runtime ainda
+pendente** — comprovação só após redeploy autorizado e nova chamada
+`xsd-selftest` (esperado HTTP 200 com `loadedFiles: 5`). Nada foi publicado.

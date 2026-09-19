@@ -89,9 +89,28 @@ describe("fiscal-xml-engine — comportamento fail-closed do selftest", () => {
       pos('action === "xsd-selftest"'),
       pos("authed.auth.getClaims"),
     );
-    expect(selftestBlock.match(/XSD_BUNDLE_UNAVAILABLE/g)?.length).toBe(2);
+    expect(selftestBlock.match(/XSD_BUNDLE_UNAVAILABLE/g)?.length).toBe(4);
     expect(selftestBlock).toContain("catch");
     expect(selftestBlock).toContain("500");
+  });
+
+  it("inspeciona o bundle (somente leitura) antes de executar o validador", () => {
+    const selftest = pos('action === "xsd-selftest"');
+    const inspect = INDEX.indexOf("inspectOfficialXsdBundle()", selftest);
+    const validate = INDEX.indexOf("validateAgainstOfficialXsd(XSD_SELFTEST_XML)", selftest);
+    expect(inspect).toBeGreaterThan(selftest);
+    expect(validate).toBeGreaterThan(inspect);
+  });
+
+  it("diagnóstico é enum sanitizado, sem mensagem ou stack crus", () => {
+    const selftestBlock = INDEX.slice(
+      pos('action === "xsd-selftest"'),
+      pos("Cliente do usuário: toda autorização"),
+    );
+    expect(selftestBlock).toContain('diagnostic: "XSD_BUNDLE_CHECK_FAILED"');
+    expect(selftestBlock).toContain('diagnostic: "XSD_VALIDATOR_MEMORY_OR_WASM_FAILED"');
+    expect(selftestBlock).not.toMatch(/catch\s*\(\s*\w+\s*\)/);
+    expect(selftestBlock).not.toMatch(/\.stack|String\(err|err\.message|\bmessage:\s*\w/);
   });
 
   it("sucesso responde apenas metadados não sensíveis", () => {

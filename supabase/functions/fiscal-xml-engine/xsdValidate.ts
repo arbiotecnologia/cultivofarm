@@ -87,6 +87,35 @@ function toIssue(err: XmlValidationError): XsdIssue {
   };
 }
 
+/**
+ * Memória do módulo WASM do libxml2. O default do `xmllint-wasm` é um teto de
+ * 32 MiB, insuficiente para o conjunto NF-e (~438 KB de XSD, sendo ~350 KB só
+ * o leiauteNFe_v4.00) — a execução aborta no runtime. Elevamos para 64 MiB
+ * iniciais e 128 MiB de teto, conforme a recomendação do pacote para schemas
+ * grandes. 1 página WASM = 64 KiB.
+ */
+export const XSD_INITIAL_MEMORY_PAGES = 1024; // 64 MiB
+export const XSD_MAX_MEMORY_PAGES = 2048; // 128 MiB
+
+export interface XsdBundleInspection {
+  ok: boolean;
+  fileCount: number;
+  schema: string;
+}
+
+/**
+ * Diagnóstico somente leitura: executa apenas `loadBundle` e informa se os 5
+ * XSDs estão presentes e qual é o schema final. Não retorna conteúdo algum.
+ */
+export async function inspectOfficialXsdBundle(): Promise<XsdBundleInspection> {
+  const { schema, preload } = await loadBundle();
+  return {
+    ok: preload.length === XSD_FILE_COUNT && schema.fileName === "nfe_v4.00.xsd",
+    fileCount: preload.length,
+    schema: schema.fileName,
+  };
+}
+
 /** Valida um documento NF-e (assinado ou não) contra o XSD oficial 4.00. */
 export async function validateAgainstOfficialXsd(xml: string): Promise<XsdReport> {
   if (typeof xml !== "string" || xml.trim().length === 0) {
@@ -103,6 +132,8 @@ export async function validateAgainstOfficialXsd(xml: string): Promise<XsdReport
     xml: [{ fileName: "nfe.xml", contents: xml }],
     schema: [{ fileName: schema.fileName, contents: schema.contents }],
     preload,
+    initialMemoryPages: XSD_INITIAL_MEMORY_PAGES,
+    maxMemoryPages: XSD_MAX_MEMORY_PAGES,
   });
   return {
     valid: result.valid === true,
