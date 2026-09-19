@@ -119,7 +119,7 @@ describe("fiscal-xml-engine — comportamento fail-closed do selftest", () => {
   it("ramo do selftest não toca banco nem Storage", () => {
     const selftestBlock = INDEX.slice(
       pos('action === "xsd-selftest"'),
-      pos("authed.auth.getClaims"),
+      pos("Cliente do usuário: toda autorização"),
     );
     expect(selftestBlock).not.toMatch(/\.from\(|\.storage\.|createClient|\.rpc\(/);
   });
