@@ -2,9 +2,11 @@
 
 ## H15 — isolamento fiscal por empresa
 - [x] Auditar schema vivo, RLS, vínculos e seleção legada de emitente no canônico; 2.145 regressões aprovadas, 4 skips existentes.
-- [ ] Implementar H15 transacional com guards pontuais em todos os caminhos SECURITY DEFINER; escopo ampliado autorizado em 19/09/2026. Preparar rollback, testes adversariais e aplicar somente após validação.
-- [ ] Verificar estado remoto, advisors e regressões; sem certificado, emissão ou alterações de Edge Functions.
-- Candidato SQL H15 criado em restoration/fiscal-h15/20261038000000_h15_fiscal_company_isolation.sql (39 contratos, 30 políticas, vínculos e triggers); 7 contratos locais aprovados. Ensaio real, cobertura transitiva completa e aplicação ainda pendentes; não submeter sem esses gates.
+- [x] Implementar H15 transacional com guards pontuais em todos os caminhos SECURITY DEFINER; rollback, testes adversariais e aplicação concluídos.
+- [x] Aplicada no canônico e auditada (19/09/2026): ledger `20260919015635_h15_fiscal_company_isolation`, `20260919015811_h15_fiscal_helper_acl_tightening`, `20260919015944_h15_emitter_readiness_insert_guard`. Ensaio adversarial transacional passou com exceção controlada P1500 e rollback integral; 0 notas/certificados/séries, 1 organização/emitente, produção_enabled=0, marcador canônico=1; 12 helpers, 17 triggers, 30 ALTER POLICY; colunas/FKs NOT NULL RESTRICT e índices confirmados.
+- [x] Duas correções pós-auditoria registradas: identidade organizacional separada de papel (h15_actor_organization/h15_require_staff) e h15_related_integrity para pais anuláveis (fiscal_sefaz_transmissions, fiscal_idempotency_keys), além do endurecimento de ACL dos helpers e do guard de prontidão do emitente.
+- [x] Repositório sincronizado: migrations `20260919015635`/`20260919015811`/`20260919015944` criadas em supabase/migrations sem execução remota; `02-adversarial.sql` autossuficiente encerrando com P1500 H15_ADVERSARIAL_PASS_ROLLBACK (sucesso com rollback; nunca persiste fixtures).
+- [ ] Pendências residuais: cobertura transitiva completa (fn_generate_receivable_from_entrega, rpc_create_financial_title, rpc_executivo_financeiro_resumo e caminhos indiretos), matriz positiva/negativa integral e leitura do produtor documentadas por ensaio dedicado; auditoria de advisors pós-aplicação.
 
 ## Rodada H14 — fechamento documental NF-e (2026-09-17)
 - [x] Migration `20261037000000` aplicada no canônico após ensaio revertido: bucket `fiscal-xml`, tabela de artefato protocolado com RLS e RPC service_role-only.
