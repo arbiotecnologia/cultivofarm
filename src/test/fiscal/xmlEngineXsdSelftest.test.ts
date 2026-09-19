@@ -22,6 +22,10 @@ const INDEX = readFileSync(
   "utf8",
 );
 const TOML = readFileSync(resolve(ROOT, "supabase/config.toml"), "utf8");
+const INTEGRITY = readFileSync(
+  resolve(ROOT, "supabase/functions/fiscal-xml-engine/xsdBundleIntegrity.ts"),
+  "utf8",
+);
 const XSD_VALIDATE = readFileSync(
   resolve(ROOT, "supabase/functions/fiscal-xml-engine/xsdValidate.ts"),
   "utf8",
@@ -130,7 +134,7 @@ describe("fiscal-xml-engine — comportamento fail-closed do selftest", () => {
 
   it("contagem de arquivos vem do bundle real (5 XSDs)", () => {
     expect(XSD_VALIDATE).toMatch(/export const XSD_FILE_COUNT = XSD_FILES\.length/);
-    const files = XSD_VALIDATE.match(/const XSD_FILES = \[([\s\S]*?)\] as const/);
+    const files = INTEGRITY.match(/XSD_FILES = \[([\s\S]*?)\] as const/);
     expect(files?.[1]?.match(/\.xsd/g)?.length).toBe(5);
     expect(INDEX).toContain("const XSD_SELFTEST_EXPECTED_FILES = XSD_FILE_COUNT");
   });

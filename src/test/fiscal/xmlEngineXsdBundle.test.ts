@@ -25,6 +25,10 @@ const MANIFEST = JSON.parse(readFileSync(resolve(XSD_DIR, "manifest.json"), "utf
   package_sha256: string;
   files: Array<{ name: string; bytes: number; sha256: string }>;
 };
+const INTEGRITY = readFileSync(
+  resolve(ROOT, "supabase/functions/fiscal-xml-engine/xsdBundleIntegrity.ts"),
+  "utf8",
+);
 const XSD_VALIDATE = readFileSync(
   resolve(ROOT, "supabase/functions/fiscal-xml-engine/xsdValidate.ts"),
   "utf8",
@@ -78,8 +82,10 @@ describe("xsdBundle — equivalência byte a byte com a fonte versionada", () =>
 
 describe("xsdValidate — runtime autossuficiente, sem disco e sem rede", () => {
   it("carrega os schemas do módulo compilado", () => {
-    expect(XSD_VALIDATE).toContain('from "./xsdBundle.ts"');
-    expect(XSD_VALIDATE).toContain("XSD_BUNDLE[name]");
+    expect(INTEGRITY).toContain('from "./xsdBundle.ts"');
+    expect(INTEGRITY).toContain("XSD_BUNDLE_SHA256");
+    expect(XSD_VALIDATE).toContain('from "./xsdBundleIntegrity.ts"');
+    expect(XSD_VALIDATE).toContain("await loadVerifiedXsdBundle()");
   });
 
   it("não usa Deno.readTextFile nem import.meta.url", () => {
@@ -92,33 +98,34 @@ describe("xsdValidate — runtime autossuficiente, sem disco e sem rede", () => 
   });
 
   it("é fail-closed quando um arquivo do bundle falta ou diverge", () => {
-    expect(XSD_VALIDATE).toContain("XSD_BUNDLE_MISSING_FILE");
-    expect(XSD_VALIDATE).toContain("XSD_BUNDLE_MISMATCH");
+    expect(XSD_VALIDATE).toContain("XSD_SCHEMA_COMPILE_FAILED");
+    expect(INTEGRITY).toContain("XSD_BUNDLE_MISSING_FILE");
+    expect(INTEGRITY).toContain("XSD_BUNDLE_MISMATCH");
   });
 
   it("preserva ordem, cache e API pública", () => {
-    expect(XSD_VALIDATE).toContain("let cache:");
+    expect(XSD_VALIDATE).toContain("let validatorCache:");
     expect(XSD_VALIDATE).toContain("export const XSD_FILE_COUNT = XSD_FILES.length");
+    expect(INTEGRITY).toContain("export const XSD_ENTRY_SCHEMA");
     expect(XSD_VALIDATE).toContain("export async function validateAgainstOfficialXsd");
-    expect(XSD_VALIDATE).toContain("fileName: schema.fileName");
+    expect(XSD_VALIDATE).toContain("export const XSD_ENTRY_SCHEMA = ENTRY");
   });
 });
 
-describe("xsdValidate — memória do WASM e inspeção somente leitura", () => {
-  it("configura initialMemoryPages=1024 e maxMemoryPages=2048 (64/128 MiB)", () => {
-    expect(XSD_VALIDATE).toContain("export const XSD_INITIAL_MEMORY_PAGES = 1024");
-    expect(XSD_VALIDATE).toContain("export const XSD_MAX_MEMORY_PAGES = 2048");
-    expect(XSD_VALIDATE).toContain("initialMemoryPages: XSD_INITIAL_MEMORY_PAGES");
-    expect(XSD_VALIDATE).toContain("maxMemoryPages: XSD_MAX_MEMORY_PAGES");
+describe("xsdValidate — adaptador Xerces em processo e inspeção somente leitura", () => {
+  it("usa xerces-wasm com binário embutido e sem worker_threads", () => {
+    expect(XSD_VALIDATE).toContain('npm:xerces-wasm@2.0.1/wasm/xerces_validator.js');
+    expect(XSD_VALIDATE).toContain("wasmBinary: xercesWasmBinary()");
+    expect(XSD_VALIDATE).not.toContain("xmllint-wasm@");
+    expect(XSD_VALIDATE).not.toMatch(/worker_threads|child_process|Deno\.dlopen/);
   });
 
-  it("teto de memória não excede 128 MiB e inicial não excede o teto", () => {
-    const initial = Number(XSD_VALIDATE.match(/XSD_INITIAL_MEMORY_PAGES = (\d+)/)![1]);
-    const max = Number(XSD_VALIDATE.match(/XSD_MAX_MEMORY_PAGES = (\d+)/)![1]);
-    expect(initial * 64 * 1024).toBe(64 * 1024 * 1024);
-    expect(max * 64 * 1024).toBe(128 * 1024 * 1024);
-    expect(max * 64 * 1024).toBeLessThanOrEqual(128 * 1024 * 1024);
-    expect(initial).toBeLessThanOrEqual(max);
+  it("nunca resolve o .wasm por caminho local", () => {
+    expect(XSD_VALIDATE).toContain('locateFile: () => "embedded:xerces_validator.wasm"');
+  });
+
+  it("não há fallback heurístico: schema que não compila aborta", () => {
+    expect(XSD_VALIDATE).toMatch(/throw new Error\("XSD_SCHEMA_COMPILE_FAILED"\)/);
   });
 
   it("inspectOfficialXsdBundle é somente leitura e não expõe conteúdo", () => {
@@ -126,10 +133,10 @@ describe("xsdValidate — memória do WASM e inspeção somente leitura", () => 
       XSD_VALIDATE.indexOf("export async function inspectOfficialXsdBundle"),
       XSD_VALIDATE.indexOf("/** Valida um documento NF-e"),
     );
-    expect(fn).toContain("await loadBundle()");
-    expect(fn).toContain("fileCount: preload.length");
-    expect(fn).toContain('schema.fileName === "nfe_v4.00.xsd"');
-    expect(fn).not.toContain("validateXML");
+    expect(fn).toContain("await loadVerifiedXsdBundle()");
+    expect(fn).toContain("fileCount: names.length");
+    expect(fn).toContain("names[names.length - 1] === XSD_ENTRY_SCHEMA");
+    expect(fn).not.toContain("xerces(");
     expect(fn).not.toContain("contents");
   });
 
