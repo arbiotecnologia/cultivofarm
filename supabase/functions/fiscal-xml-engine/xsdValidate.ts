@@ -46,12 +46,25 @@ type Preload = { fileName: string; contents: string };
 
 let cache: { schema: Preload; preload: Preload[] } | null = null;
 
+/**
+ * Carrega os XSDs do módulo compilado `xsdBundle.ts` (nenhum acesso a disco
+ * ou rede). Fail-closed: qualquer arquivo ausente/vazio aborta a validação.
+ */
+// deno-lint-ignore require-await
 async function loadBundle() {
   if (cache) return cache;
+  if (XSD_BUNDLE_ORDER.length !== XSD_FILES.length) {
+    throw new Error("XSD_BUNDLE_MISMATCH");
+  }
   const files: Preload[] = [];
-  for (const name of XSD_FILES) {
-    const url = new URL(`./xsd/${name}`, import.meta.url);
-    files.push({ fileName: name, contents: await Deno.readTextFile(url) });
+  for (let i = 0; i < XSD_FILES.length; i++) {
+    const name = XSD_FILES[i];
+    if (XSD_BUNDLE_ORDER[i] !== name) throw new Error("XSD_BUNDLE_MISMATCH");
+    const contents = XSD_BUNDLE[name];
+    if (typeof contents !== "string" || contents.length === 0) {
+      throw new Error("XSD_BUNDLE_MISSING_FILE");
+    }
+    files.push({ fileName: name, contents });
   }
   const schema = files[files.length - 1];
   cache = { schema, preload: files };
