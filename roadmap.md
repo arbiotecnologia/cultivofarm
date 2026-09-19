@@ -1,5 +1,14 @@
 # Roadmap de Tarefas
 
+## H16 — índices de FK fiscais e initplan de RLS (19/09/2026)
+- [x] H16 aplicada e auditada no canônico `swzpzcwiasxmjutrmvkm` (ledger `20260919141609_h16_fiscal_fk_indexes_and_rls_initplan`); repositório sincronizado com `supabase/migrations/20260919141609_h16_fiscal_fk_indexes_and_rls_initplan.sql` sem execução remota de SQL.
+- [x] 16/16 índices covering de FK fiscais confirmados.
+- [x] Performance Advisor deixou de apontar as 16 FKs-alvo e o `auth_rls_initplan` da policy `fiscal_protocoled_documents_read` (semântica preservada com `(select auth.uid())`).
+- [x] `unused_index` imediato é esperado — tabelas fiscais estão vazias — e não deve motivar remoção.
+- [x] Pós-check: invoices=0, transmissions=0, protocoled=0, production_enabled=0; produção continua bloqueada.
+- [x] `fiscal_certificate_material` sem policy é deny-by-default deliberado; helpers H15 autenticados restantes são dependências de RLS — não revogar em massa.
+- [x] Advisors gerais fora do módulo fiscal permanecem fora desta fase.
+
 ## H15 — isolamento fiscal por empresa
 - [x] Auditar schema vivo, RLS, vínculos e seleção legada de emitente no canônico; 2.145 regressões aprovadas, 4 skips existentes.
 - [x] Implementar H15 transacional com guards pontuais em todos os caminhos SECURITY DEFINER; rollback, testes adversariais e aplicação concluídos.
