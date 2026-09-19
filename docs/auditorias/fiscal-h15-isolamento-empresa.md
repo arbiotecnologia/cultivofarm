@@ -113,3 +113,14 @@ Arquivos novos: SQL candidato; `function-changes.json`; `ROLLBACK.md`; `02-adver
 Validação executada: parser PostgreSQL aceitou 169 statements; parser PL/pgSQL aceitou funções não-trigger (serialização JSON do parser falha em RETURNS trigger, portanto estes exigem compilação real). Sete testes de contrato passaram; regressões: 2.152 aprovados, 4 skips preexistentes, exit 0. Build automático OK às 01:45:30 UTC. Esses resultados NÃO provam isolamento remoto.
 
 Gates ainda abertos antes de submeter: compilar SQL completo contra schema vivo em transação revertida; executar matriz positiva/negativa e leitura do produtor; fechar cobertura transitiva/SQL dinâmico; revisar contratos de perfis administrativos auxiliares e ACLs técnicas; verificar audit_log e associações por mesma nota, não apenas mesmo emitente. O ensaio SQL preparado cobre duas identidades existentes, tabela, RPCs, imutabilidade e snapshot, mas não foi executado e não cobre ainda toda a matriz. Nenhuma escrita remota nem autoaplicação H15 ocorreu por este agente. Produção não habilitada; Edge Functions/config/secrets/types inalterados.
+
+## Diagnóstico xsd-selftest — fiscal-xml-engine (19/09/2026 02:09 UTC)
+
+**Código preparado, runtime ainda não comprovado.** Implementado no repositório, sem deploy e sem SQL remoto, um diagnóstico seguro e somente leitura do bundle XSD:
+
+- `POST { "action": "xsd-selftest" }` aceito em `supabase/functions/fiscal-xml-engine/index.ts` após CORS, método, presença do Bearer, gate de projeto canônico e parse do body — antes das exigências de claims de usuário e perfil fiscal. Body parseado uma única vez; `generate` e `download` permanecem inalterados depois dos gates de identidade.
+- O selftest valida um XML mínimo deliberadamente inválido (raiz `xsdSelfTestProbe`) via `validateAgainstOfficialXsd`, obrigando o carregamento dos 5 XSDs oficiais. Sucesso só quando o validador executa com `valid=false` e ao menos um erro; caso contrário (ou erro de assets), responde 500 com apenas `{ok:false,error:"XSD_BUNDLE_UNAVAILABLE"}`.
+- Sucesso responde 200 somente com `ok, validator, package, schema, loadedFiles:5` — sem conteúdo XSD, caminhos locais, XML, JWT, secrets ou erros crus. A ação não lê nem escreve banco, Storage, certificado, assinatura ou transporte.
+- `verify_jwt=true` e `static_files` do bundle permanecem em `supabase/config.toml`, não alterado.
+- Testes: `src/test/fiscal/xmlEngineXsdSelftest.test.ts` (ordem dos gates, parse único, chamada real ao validador, fail-closed, metadados mínimos, ausência de acesso a banco/Storage, config.toml preservado).
+- Pendência: executar o selftest contra o deploy real do canônico para comprovar o runtime; nenhuma Edge Function foi publicada nesta rodada.
