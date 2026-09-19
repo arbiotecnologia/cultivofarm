@@ -232,4 +232,4 @@
 - [x] Embutir o binário WASM em TypeScript com gerador reprodutível e teste de hash; remover xmllint-wasm do caminho.
 - [x] Gate fail-closed de integridade (presença, ordem, SHA-256) antes da compilação do schema; sem fallback heurístico.
 - [x] Testes (inválido rejeitado, import ausente, bundle adulterado, erro sem stack/caminho), typecheck e build.
-- [ ] Prova remota: deploy autorizado + `xsd-selftest` no Supabase canônico (pendente, será feita pelo proprietário).
+- [x] Prova remota concluída: `xsd-selftest` no Supabase canônico retornou HTTP 200 (`loadedFiles:5`, v13, verify_jwt=true); pós-check DB zerado, produção bloqueada (19/09/2026 14:11 UTC).
