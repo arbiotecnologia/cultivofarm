@@ -23,6 +23,7 @@ import {
   XERCES_WASM_SHA256,
   xercesWasmBinary,
 } from "../../../supabase/functions/fiscal-xml-engine/xercesWasm";
+import { validateAgainstOfficialXsd } from "../../../supabase/functions/fiscal-xml-engine/xsdValidate";
 
 const ROOT = resolve(__dirname, "../../..");
 const require_ = createRequire(resolve(ROOT, "package.json"));
