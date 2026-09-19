@@ -221,8 +221,10 @@ Deno.serve(async (req) => {
         headers,
       );
     }
-    // Etapa 2: execução real do validador. Qualquer falha aqui é do WASM /
-    // memória do libxml2 — diagnóstico enum, nunca mensagem ou stack crus.
+    // Etapa 2: execução real do validador (Xerces/WASM em processo). Qualquer
+    // falha aqui é um diagnóstico de execução genérico — enum fixo, nunca
+    // mensagem, valor, path ou stack crus.
+
     try {
       const probe = await validateAgainstOfficialXsd(XSD_SELFTEST_XML);
       const executed = probe.valid === false && (probe.issues?.length ?? 0) > 0;
