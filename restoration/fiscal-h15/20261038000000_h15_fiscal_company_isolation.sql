@@ -219,6 +219,22 @@ BEGIN
  RETURN NEW;
 END $h15$;
 REVOKE ALL ON FUNCTION public.h15_related_integrity() FROM PUBLIC,anon,authenticated;
+-- Organization is an authorization boundary: even global admin cannot self-reassign it.
+-- Internal technical provisioning remains possible without granting a new public bypass.
+CREATE OR REPLACE FUNCTION public.h15_profile_organization_guard() RETURNS trigger
+LANGUAGE plpgsql SET search_path=pg_catalog,public AS $h15$
+BEGIN
+ IF current_setting('role',true) IN ('authenticated','anon') THEN
+ IF TG_OP='INSERT' THEN
+ IF NEW.organization_id IS NOT NULL THEN RAISE EXCEPTION 'H15_ORGANIZATION_PROVISIONING_REQUIRED' USING ERRCODE='42501'; END IF;
+ ELSIF NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN
+ RAISE EXCEPTION 'H15_ORGANIZATION_PROVISIONING_REQUIRED' USING ERRCODE='42501';
+ END IF;
+ END IF;
+ RETURN NEW;
+END $h15$;
+REVOKE ALL ON FUNCTION public.h15_profile_organization_guard() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER h15_profile_organization_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.h15_profile_organization_guard();
 CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoices FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('company_settings_id','company_fiscal_settings','parent_invoice_id','fiscal_invoices','substitution_invoice_id','fiscal_invoices');
 CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoice_items FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices');
 CREATE TRIGGER h15_related_integrity BEFORE INSERT OR UPDATE ON public.fiscal_invoice_references FOR EACH ROW EXECUTE FUNCTION public.h15_related_integrity('fiscal_invoice_id','fiscal_invoices','referenced_invoice_id','fiscal_invoices');
