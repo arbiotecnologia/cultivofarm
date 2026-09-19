@@ -1,0 +1,197 @@
+[
+  {
+    "signature": "fn_comprovante_entrega_montar_v1(uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "7ba5c42c46d41c293b21a3e1d8c5ac9f"
+  },
+  {
+    "signature": "fn_financial_inconsistencies()",
+    "action": "scoped_definition",
+    "baseline_md5": "bb0561e38d202cad1dc79ab0539fed4c"
+  },
+  {
+    "signature": "fn_fiscal_assert_debtor_recipient(uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "dc6129167f9668a6e4b617824ce3c971"
+  },
+  {
+    "signature": "fn_fiscal_audit_base_reduction()",
+    "action": "service_only",
+    "baseline_md5": "75a9e528c09d434a6c2807908542f2cd"
+  },
+  {
+    "signature": "fn_fiscal_company_crt()",
+    "action": "scoped_definition",
+    "baseline_md5": "ecc3a7cb8f5ba5435ee813960fc1f3bc"
+  },
+  {
+    "signature": "fn_fiscal_emitter_pendencies(uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "a8d2d89d06574bb6bdc60a0030b0046b"
+  },
+  {
+    "signature": "fn_fiscal_emitter_pendencies_row(company_fiscal_settings)",
+    "action": "scoped_definition",
+    "baseline_md5": "eafb0bbe0af9be113f5e780971a54111"
+  },
+  {
+    "signature": "fn_fiscal_environment_gate_v1(text)",
+    "action": "scoped_definition",
+    "baseline_md5": "fbde4f3e65439f85dcb57eae6bafa54f"
+  },
+  {
+    "signature": "fn_fiscal_invoice_eligibility(text,uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "8a5a0bdc807adedf4692a2de687da199"
+  },
+  {
+    "signature": "fn_fiscal_invoice_eligibility(text,uuid,uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "079dba02241c54d03759ada71399217d"
+  },
+  {
+    "signature": "fn_fiscal_scenario_coverage()",
+    "action": "scoped_definition",
+    "baseline_md5": "ffe68f12ea584bf53c56bc85a2ed4fa8"
+  },
+  {
+    "signature": "rpc_fiscal_calculate_invoice_v1(uuid,text)",
+    "action": "scoped_definition",
+    "baseline_md5": "de6494a3b418e4c2dcd590656d27c70b"
+  },
+  {
+    "signature": "rpc_fiscal_calculate_service_invoice_v1(uuid,text,boolean)",
+    "action": "scoped_definition",
+    "baseline_md5": "9b2f8da105cf9c43d2a3651938c1b19f"
+  },
+  {
+    "signature": "rpc_fiscal_certificate_register_a1(uuid,uuid,text,text,text,text,timestamp with time zone,timestamp with time zone,text,text[],text,text,integer,text,text)",
+    "action": "service_only",
+    "baseline_md5": "5ed6823c5e3ceec316ba84d1019513fe"
+  },
+  {
+    "signature": "rpc_fiscal_certificate_register_os(uuid,jsonb)",
+    "action": "service_only",
+    "baseline_md5": "d5254296c1c458b92768f0258a8c0cc3"
+  },
+  {
+    "signature": "rpc_fiscal_certificate_revoke(uuid,text)",
+    "action": "scoped_definition",
+    "baseline_md5": "395b55b502aea1ecdc2d1ef0794f3e74"
+  },
+  {
+    "signature": "rpc_fiscal_company_rtc_get()",
+    "action": "scoped_definition",
+    "baseline_md5": "810126476e2251f6580808737fac9dfb"
+  },
+  {
+    "signature": "rpc_fiscal_company_rtc_save(jsonb,text)",
+    "action": "scoped_definition",
+    "baseline_md5": "f07c2b710d07f350d3ae0f4fff87debb"
+  },
+  {
+    "signature": "rpc_fiscal_company_settings_init()",
+    "action": "scoped_definition",
+    "baseline_md5": "dbc0a6c31514ee22208d7119a5b666b1"
+  },
+  {
+    "signature": "rpc_fiscal_draft_save(uuid,jsonb,jsonb,integer)",
+    "action": "scoped_definition",
+    "baseline_md5": "71d96ef75040412cc406048ce6574871"
+  },
+  {
+    "signature": "rpc_fiscal_draft_validate_homologation(uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "a55a7e5bafef8ebd790c56f1f922cb1a"
+  },
+  {
+    "signature": "rpc_fiscal_emitter_accounting_validate(text)",
+    "action": "scoped_definition",
+    "baseline_md5": "72272651548c73a27b9783d5a51278a0"
+  },
+  {
+    "signature": "rpc_fiscal_emitter_request_accounting_review(text)",
+    "action": "scoped_definition",
+    "baseline_md5": "3fb243804678de643ee7666b3744ad23"
+  },
+  {
+    "signature": "rpc_fiscal_event_manual(uuid,text,text,text)",
+    "action": "scoped_definition",
+    "baseline_md5": "71b6e629352cf2bf1beeb75da7eb1ae3"
+  },
+  {
+    "signature": "rpc_fiscal_event_sefaz_mark_signed_v1(uuid,text,text,uuid)",
+    "action": "service_only",
+    "baseline_md5": "6dfef7e3dc71254746bb86da6e925024"
+  },
+  {
+    "signature": "rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)",
+    "action": "service_only",
+    "baseline_md5": "426e7c667785a48a5ec6db870de6d469"
+  },
+  {
+    "signature": "rpc_fiscal_event_sefaz_reconcile_v1(uuid,uuid,text,text,text,timestamp with time zone)",
+    "action": "service_only",
+    "baseline_md5": "474c1e8cb40a15bc9fcb2544fef1c4b6"
+  },
+  {
+    "signature": "rpc_fiscal_homologation_readiness()",
+    "action": "scoped_definition",
+    "baseline_md5": "e65d55b798c950dc566bb04226f8dead"
+  },
+  {
+    "signature": "rpc_fiscal_homologation_readiness_rtc_check()",
+    "action": "scoped_definition",
+    "baseline_md5": "d2925334e9c4efbbfa3ea44f3f1ef2bf"
+  },
+  {
+    "signature": "rpc_fiscal_homologation_readiness_v2()",
+    "action": "scoped_definition",
+    "baseline_md5": "97fdaef110fbe18f9930ba4540265165"
+  },
+  {
+    "signature": "rpc_fiscal_nfe_readiness_v1()",
+    "action": "scoped_definition",
+    "baseline_md5": "8e7a1815e6a2d38249cdd2554f512f20"
+  },
+  {
+    "signature": "rpc_fiscal_preflight_v1(uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "dbaf89287d1fca2277cadb2ceed294ac"
+  },
+  {
+    "signature": "rpc_fiscal_reserve_nfe_number_v1(uuid,text)",
+    "action": "scoped_definition",
+    "baseline_md5": "7fcf2dcab61fc7f3351633e91d44ec9b"
+  },
+  {
+    "signature": "rpc_fiscal_sefaz_transmission_status_v1(uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "65f4d8b3deb42ae5277f43925239058a"
+  },
+  {
+    "signature": "rpc_fiscal_tax_preview_v1(uuid,jsonb)",
+    "action": "scoped_definition",
+    "baseline_md5": "34eb3894101eaf0edde224e67db6f363"
+  },
+  {
+    "signature": "rpc_fiscal_xml_prepare_v1(uuid,text)",
+    "action": "scoped_definition",
+    "baseline_md5": "4ca487f33703a3687c62308b7729ff72"
+  },
+  {
+    "signature": "rpc_fiscal_xml_record_v1(uuid,text,jsonb)",
+    "action": "service_only",
+    "baseline_md5": "f4c9030df4c2239a6560ac98693d1388"
+  },
+  {
+    "signature": "rpc_fiscal_xml_status_v1(uuid)",
+    "action": "scoped_definition",
+    "baseline_md5": "b271aff3a74bc76a7baa07cba6a9c0d3"
+  },
+  {
+    "signature": "rpc_upsert_fiscal_invoice_manual(uuid,jsonb)",
+    "action": "scoped_definition",
+    "baseline_md5": "f0c1b15c3f5bc4e44eb7ca130656edad"
+  }
+]

@@ -85,3 +85,14 @@ As consultas usaram catálogos `information_schema.columns`, `pg_policies`, `pg_
 4. Revalidar contagens e marcador sob locks na futura migration; o baseline não substitui o guard transacional.
 
 Não iniciado certificado, emissão, E2E fiscal ou próxima fase. **H15 incompleta, isolamento não certificado.**
+## Implementação candidata — 19/09/2026 01:46 UTC
+
+**Não aplicada. Não certificada para execução em produção.** O versionamento 20261038000000 está livre no ledger consultado. O SQL completo está em `restoration/fiscal-h15/20261038000000_h15_fiscal_company_isolation.sql`, fora de migrations até submissão pelo canal autorizado.
+
+Implementados no candidato: locks e guard canônico/contagens/drift; vínculo organizacional NOT NULL do emitente; vínculo NOT NULL RESTRICT da nota; índices; 39 contratos classificados (reescrita integral de definições ou revogação técnica), 30 políticas conjuntivas preservando `fi_producer_read`; triggers de integridade, imutabilidade e vínculos secundários. Incluído bloqueio de alteração da organização por sessão pública, inclusive administrador: o guard existente de profiles permitia essa troca e invalidaria a fronteira organizacional.
+
+Arquivos novos: SQL candidato; `function-changes.json`; `ROLLBACK.md`; `02-adversarial.sql`; `src/test/config/fiscalH15Isolation.test.ts`.
+
+Validação executada: parser PostgreSQL aceitou 169 statements; parser PL/pgSQL aceitou funções não-trigger (serialização JSON do parser falha em RETURNS trigger, portanto estes exigem compilação real). Sete testes de contrato passaram; regressões: 2.152 aprovados, 4 skips preexistentes, exit 0. Build automático OK às 01:45:30 UTC. Esses resultados NÃO provam isolamento remoto.
+
+Gates ainda abertos antes de submeter: compilar SQL completo contra schema vivo em transação revertida; executar matriz positiva/negativa e leitura do produtor; fechar cobertura transitiva/SQL dinâmico; revisar contratos de perfis administrativos auxiliares e ACLs técnicas; verificar audit_log e associações por mesma nota, não apenas mesmo emitente. O ensaio SQL preparado cobre duas identidades existentes, tabela, RPCs, imutabilidade e snapshot, mas não foi executado e não cobre ainda toda a matriz. Nenhuma escrita remota nem autoaplicação H15 ocorreu por este agente. Produção não habilitada; Edge Functions/config/secrets/types inalterados.

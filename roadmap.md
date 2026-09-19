@@ -4,7 +4,7 @@
 - [x] Auditar schema vivo, RLS, vínculos e seleção legada de emitente no canônico; 2.145 regressões aprovadas, 4 skips existentes.
 - [ ] Implementar H15 transacional com guards pontuais em todos os caminhos SECURITY DEFINER; escopo ampliado autorizado em 19/09/2026. Preparar rollback, testes adversariais e aplicar somente após validação.
 - [ ] Verificar estado remoto, advisors e regressões; sem certificado, emissão ou alterações de Edge Functions.
-- Evidência e bloqueio: docs/auditorias/fiscal-h15-isolamento-empresa.md. Nenhuma migration H15 submetida/aplicada.
+- Candidato SQL H15 criado em restoration/fiscal-h15/20261038000000_h15_fiscal_company_isolation.sql (39 contratos, 30 políticas, vínculos e triggers); 7 contratos locais aprovados. Ensaio real, cobertura transitiva completa e aplicação ainda pendentes; não submeter sem esses gates.
 
 ## Rodada H14 — fechamento documental NF-e (2026-09-17)
 - [x] Migration `20261037000000` aplicada no canônico após ensaio revertido: bucket `fiscal-xml`, tabela de artefato protocolado com RLS e RPC service_role-only.
