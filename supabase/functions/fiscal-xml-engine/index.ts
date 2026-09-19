@@ -44,6 +44,7 @@ import {
 } from "../_shared/fiscal/nfe/protocoledStorage.ts";
 
 import {
+  inspectOfficialXsdBundle,
   validateAgainstOfficialXsd,
   XSD_FILE_COUNT,
   XSD_PACKAGE,
