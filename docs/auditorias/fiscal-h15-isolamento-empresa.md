@@ -244,3 +244,34 @@ em seguida — ver seção abaixo.
 - Prova Deno end-to-end pós-refatoração: issues retornam apenas
   `{"line":1,"code":"XSD_INVALID:xsdSelfTestProbe","message":"documento
   incompatível com o schema XSD oficial"}`.
+
+## Prova remota do xsd-selftest — fiscal-xml-engine (19/09/2026, 14:11 UTC)
+
+**Runtime comprovado no Supabase canônico `swzpzcwiasxmjutrmvkm`.** Registro
+apenas documental — nenhum deploy, SQL ou alteração de código/config nesta
+rodada. Histórico das falhas v6 (`XSD_BUNDLE_UNAVAILABLE` por ausência de
+static_files), v8 (`XSD_BUNDLE_UNAVAILABLE` com bundle presente) e do ciclo
+`xmllint-wasm`→`XSD_VALIDATOR_MEMORY_OR_WASM_FAILED` permanece válido acima;
+todas foram resolvidas pela pilha Xerces-C++ WASM em processo.
+
+**Execução:**
+
+- `fiscal-xml-engine` versão 13, estado ACTIVE, `verify_jwt=true`.
+- Artefato implantado: `ezbr_sha256`
+  `eff4efd1fe45bbce8e3f6c68a70c32cc6109470b3386e9bf31af64b2d3ebf82b`.
+- `POST {"action":"xsd-selftest"}` com Origin oficial e chave pública válida:
+  **HTTP 200**.
+- Resposta exata (não sensível):
+  `{"ok":true,"validator":"xerces-wasm@2.0.1 (Apache Xerces-C++, XSD 1.0, in-process WASM)","package":"PL_010e_v1.02","schema":"nfe_v4.00.xsd","loadedFiles":5}`.
+
+**Pós-check do banco (somente leitura):** `fiscal_invoices=0`,
+`fiscal_certificates=0`, `fiscal_document_series=0`,
+`fiscal_protocoled_documents=0`, `production_enabled_count=0`,
+`canonical_safe_marker=1`. Nenhum documento, certificado ou transmissão foi
+criado; a produção fiscal continua bloqueada. O selftest confirmou-se sem
+leitura/escrita de banco, Storage, certificado, assinatura ou transporte.
+
+**Estado final:** validação XSD normativa comprovada no runtime remoto.
+Cadeia completa fechada: bundle compilado íntegro (5 XSDs, hashes) →
+integridade fail-closed → Xerces-C++ WASM em processo → selftest HTTP 200
+com `loadedFiles: 5` no canônico.
