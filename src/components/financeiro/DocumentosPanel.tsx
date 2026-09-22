@@ -39,7 +39,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
   const fileRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState(defaultType);
 
-  const { data: docs = [] } = useQuery({
+  const { data: docs = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["fin-docs", ownerType, ownerId],
     enabled: !!ownerId,
     queryFn: async () => {
@@ -106,6 +106,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
 
   const isStaff = role === "administrador" || role === "gestor" || role === "administrativo" || role === "financeiro";
   const canDeleteFinal = canDelete && (role === "administrador" || role === "gestor");
+  const podeArquivo = role === "administrador" || role === "gestor" || role === "financeiro";
 
   return (
     <div className="space-y-2">
