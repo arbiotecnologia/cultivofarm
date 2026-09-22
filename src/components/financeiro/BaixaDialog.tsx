@@ -354,18 +354,22 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
       // Classificação única ponta a ponta: incerto trava novo envio até conferência.
       const c = classificarErroBaixaPagar(e);
+      const falhaJournal =
+        c.mensagem === MSG_JOURNAL_INDISPONIVEL || c.mensagem === MSG_JOURNAL_CORROMPIDO;
       if (c.exigeConferencia) {
         setExigeConferencia(true);
         // Preserva chave + payload da tentativa para repetição idempotente após
         // fechar/reabrir ou remontar (nada de arquivo, token ou credencial).
         if (tentativaRef.current) salvarTentativaIncerta(tentativaRef.current);
-      } else if (!pendente && !exigeConferencia) {
+      } else if (!pendente && !exigeConferencia && !falhaJournal) {
         // Recusa comprovada antes de qualquer tentativa incerta: nada a preservar.
+        // Falha/corrupção do journal nunca apaga o registro local.
         limparTentativaIncerta(user?.id, installment?.id);
         tentativaRef.current = null;
       }
       toast.error(c.mensagem);
     },
+
   });
 
   const acumP = acumuladosParcelaPagar(installment);
