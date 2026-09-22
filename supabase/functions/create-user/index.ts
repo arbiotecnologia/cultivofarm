@@ -82,6 +82,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Papel de plataforma SaaS: reservado ao mecanismo interno. Esta função usa
+    // service_role (ignora RLS), portanto o bloqueio precisa ser explícito aqui.
+    if (rolesArr.includes("superadmin") || role === "superadmin") {
+      return new Response(JSON.stringify({ error: "superadmin_role_reserved" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (password.length < 6) {
       return new Response(JSON.stringify({ error: "A senha deve ter no mínimo 6 caracteres." }), {
         status: 400,
