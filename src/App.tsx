@@ -21,6 +21,8 @@ import { PreservedNavigate } from "@/components/PreservedNavigate";
 import SelecionarPortal from "@/pages/SelecionarPortal";
 import AcessoPendente from "@/pages/AcessoPendente";
 import SemPermissao from "@/pages/SemPermissao";
+import PlataformaHome from "@/pages/plataforma/PlataformaHome";
+import { PlataformaGuard } from "@/components/guards/PlataformaGuard";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 import { AppPortalGuard } from "@/components/guards/AppPortalGuard";
 import { TechnicalFeatureGuard } from "@/components/guards/TechnicalFeatureGuard";
@@ -391,6 +393,10 @@ const App = () => (
               <Route path="/selecionar-portal" element={<AuthenticatedShell><SelecionarPortal /></AuthenticatedShell>} />
               <Route path="/acesso-pendente" element={<AuthenticatedShell><AcessoPendente /></AuthenticatedShell>} />
               <Route path="/sem-permissao" element={<AuthenticatedShell><SemPermissao /></AuthenticatedShell>} />
+              {/* Home provisória do Superadmin de Plataforma (somente leitura, fora do ACCESS_MAP). */}
+              <Route element={<PlataformaGuard />}>
+                <Route path="/plataforma" element={<PlataformaHome />} />
+              </Route>
               <Route path="/validar-entrega/:token" element={<ValidarEntrega />} />
               <Route path="/rastrear-produto/:token" element={<RastrearProduto />} />
 
