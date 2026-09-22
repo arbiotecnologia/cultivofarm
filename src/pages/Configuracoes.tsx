@@ -495,16 +495,22 @@ export default function Configuracoes() {
         partnerId: hasPartnerRole(desiredRoles) ? (editUser.partner_id || null) : null,
       });
 
-      let data: unknown;
-      try {
-        const res = await (supabase as any).rpc(RPC_EDITAR_USUARIO, args);
-        // Erro da RPC: classificado UMA única vez, preservando o token original.
-        if (res?.error) throw classificarErroRpcEdicao(res.error);
-        data = res?.data;
-      } catch (e) {
-        // Rede/timeout/exceção de transporte: estado ambíguo, nunca mensagem crua.
-        throw classificarErroRpcEdicao(e);
-      }
+      // Prazo rígido (~20s) cobrindo toda a espera, inclusive sessão/pré-fetch.
+      // Estouro → estado ambíguo: exige recarga, sem repetir e sem afirmar rollback.
+      const data = await executarComDeadlineEdicao(async (signal) => {
+        let req: any = (supabase as any).rpc(RPC_EDITAR_USUARIO, args);
+        if (signal && typeof req?.abortSignal === "function") req = req.abortSignal(signal);
+        try {
+          const res = await req;
+          // Erro da RPC: classificado UMA única vez, preservando o token original.
+          if (res?.error) throw classificarErroRpcEdicao(res.error);
+          return res?.data as unknown;
+        } catch (e) {
+          // Rede/abort/exceção de transporte: estado ambíguo, nunca mensagem crua.
+          throw classificarErroRpcEdicao(e);
+        }
+      });
+
       // Sucesso estrito: success===true, user_id do alvo e updated_at válido.
       if (!edicaoBemSucedida(data, editUser.user_id)) throw erroAmbiguoEdicao();
 
