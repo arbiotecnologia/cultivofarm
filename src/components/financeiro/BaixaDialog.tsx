@@ -16,9 +16,11 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { Upload, FileText, X } from "lucide-react";
 import { hojeSaoPaulo } from "@/lib/financeiro/contasReceber";
 import {
+  ErroBaixaLocal,
   MSG_COMPROVANTE_PENDENTE,
   acumuladosParcela,
   calcularSaldoRecebivel,
+  mapearErroBaixaRecebimento,
   validarBaixaRecebimento,
 } from "@/lib/financeiro/baixaRecebimento";
 import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
@@ -88,6 +90,25 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const save = useMutation({
     mutationFn: async () => {
+      const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
+
+      // Reenvio do comprovante de uma baixa JÁ persistida: nenhuma nova baixa e
+      // nenhuma RPC. Validamos apenas sessão, arquivo e identificador persistido —
+      // método pode ter ficado inativo e o saldo já pode ser zero.
+      if (pendente) {
+        if (!user) throw new ErroBaixaLocal("Sessão expirada. Entre novamente para reenviar o comprovante.");
+        if (!pendente.paymentId) throw new ErroBaixaLocal("Não foi possível identificar a baixa registrada.");
+        if (!file) throw new ErroBaixaLocal("Selecione o comprovante para reenviar.");
+        await anexarComprovanteBaixa(supabase, {
+          ownerType: ownerTypeBase,
+          paymentId: pendente.paymentId,
+          idempotencyKey: idempotencyRef.current,
+          file,
+          uploadedBy: user.id,
+        });
+        return { reenvio: true as const };
+      }
+
       if (receber) {
         const erro = validarBaixaRecebimento({
           parcela: installment,
@@ -98,32 +119,19 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           temArquivo: !!file,
           temSessao: !!user,
         });
-        if (erro) throw new Error(erro);
+        if (erro) throw new ErroBaixaLocal(erro);
       } else {
-        if (!user) throw new Error("Sessão expirada");
-        if (!installment) throw new Error("Parcela não selecionada");
-        if (!form.payment_method_id) throw new Error("Selecione a forma de pagamento");
-        if (!form.amount || Number(form.amount) <= 0) throw new Error("Valor inválido");
+        if (!user) throw new ErroBaixaLocal("Sessão expirada");
+        if (!installment) throw new ErroBaixaLocal("Parcela não selecionada");
+        if (!form.payment_method_id) throw new ErroBaixaLocal("Selecione a forma de pagamento");
+        if (!form.amount || Number(form.amount) <= 0) throw new ErroBaixaLocal("Valor inválido");
         const _jaPago = Number(installment.received_amount ?? installment.paid_amount ?? 0);
         const _saldo = Number(installment.original_amount) + (Number(form.interest_amount) || 0) + (Number(form.penalty_amount) || 0) - (Number(form.discount_amount) || 0) - _jaPago;
-        if (Number(form.amount) - _saldo > 0.005) throw new Error("Valor excede o saldo da parcela.");
-        if (requireReceipt && !file) throw new Error("O anexo do comprovante é obrigatório para esta operação.");
+        if (Number(form.amount) - _saldo > 0.005) throw new ErroBaixaLocal("Valor excede o saldo da parcela.");
+        if (requireReceipt && !file) throw new ErroBaixaLocal("O anexo do comprovante é obrigatório para esta operação.");
       }
 
-      const ownerType = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
-
-      // Reenvio do comprovante de uma baixa já persistida: nenhuma nova baixa.
-      if (pendente) {
-        if (!file) throw new Error("Selecione o comprovante para reenviar.");
-        await anexarComprovanteBaixa(supabase, {
-          ownerType,
-          paymentId: pendente.paymentId,
-          idempotencyKey: idempotencyRef.current,
-          file,
-          uploadedBy: user!.id,
-        });
-        return { reenvio: true as const };
-      }
+      const ownerType = ownerTypeBase;
 
       const payloadBase: any = {
         payment_date: form.payment_date,
@@ -144,7 +152,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
       });
       if (error) throw error;
-      if (!paymentId) throw new Error("Falha ao registrar pagamento.");
+      if (!paymentId) throw new ErroBaixaLocal("Falha ao registrar pagamento.");
 
       if (file) {
         // H6c-004: anexo idempotente por payment_id + tentativa lógica.
@@ -179,15 +187,17 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       toast.success(receber ? "Recebimento registrado" : "Pagamento registrado");
       onClose();
     },
-    onError: (e: any) => {
+    onError: (e: unknown) => {
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
       if (pendente) invalidarTudo();
-      toast.error(e?.message ? String(e.message) : "Não foi possível concluir a operação.");
+      // Erro local tipado mantém a mensagem; remoto passa por allowlist (nunca texto cru).
+      toast.error(mapearErroBaixaRecebimento(e));
     },
   });
 
-  const jaRecebido = acum.recebido;
-  const valorOriginal = acum.original;
+  // Payable mantém exatamente o fallback original (received_amount ?? paid_amount).
+  const jaRecebido = receber ? acum.recebido : Number(installment?.received_amount ?? installment?.paid_amount ?? 0) || 0;
+  const valorOriginal = receber ? acum.original : Number(installment?.original_amount ?? 0) || 0;
   const desc = Number(form.discount_amount) || 0;
   const juros = Number(form.interest_amount) || 0;
   const multa = Number(form.penalty_amount) || 0;
@@ -198,18 +208,32 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const saldoRestante = saldoFinal - valorBaixa;
 
   const settingsBloqueado = receber && !settingsQuery.isSuccess;
-  const travado = !!pendente;
+  const gravando = save.isPending;
+  // Edição travada por pendência de comprovante OU enquanto grava.
+  const travado = !!pendente || gravando;
+
+  /** Fechar nunca apaga a pendência em silêncio: exige confirmação e indica onde retomar. */
+  function tentarFechar() {
+    if (gravando) return;
+    if (pendente) {
+      const ok = window.confirm(
+        "O recebimento já foi registrado, mas o comprovante ainda não foi anexado. Se fechar agora, retome o envio pelo drawer de anexos da conta. Deseja fechar mesmo assim?",
+      );
+      if (!ok) return;
+    }
+    onClose();
+  }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) tentarFechar(); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Registrar {receber ? "Recebimento" : "Pagamento"}</DialogTitle>
         </DialogHeader>
 
-        {travado && (
+        {pendente && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
-            {MSG_COMPROVANTE_PENDENTE}
+            {MSG_COMPROVANTE_PENDENTE} Se fechar esta janela, retome o envio pelo drawer de anexos da conta.
           </div>
         )}
         {settingsBloqueado && (
@@ -315,9 +339,13 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{travado ? "Fechar" : "Cancelar"}</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || settingsBloqueado || (travado && !file)}>
-            {travado ? "Reenviar comprovante" : "Confirmar"}
+          <Button variant="outline" onClick={tentarFechar} disabled={gravando}>{pendente ? "Fechar" : "Cancelar"}</Button>
+          <Button
+            onClick={() => save.mutate()}
+            // Reenvio só exige arquivo: settings/método/saldo não bloqueiam a baixa já persistida.
+            disabled={gravando || (pendente ? !file : settingsBloqueado)}
+          >
+            {pendente ? "Reenviar comprovante" : "Confirmar"}
           </Button>
         </DialogFooter>
       </DialogContent>

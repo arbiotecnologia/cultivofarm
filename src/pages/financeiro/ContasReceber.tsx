@@ -83,7 +83,9 @@ export default function ContasReceber() {
       fetchAllRows<any>((from, to) =>
         supabase
           .from("accounts_receivable_installments")
-          .select("id, receivable_id, original_amount, received_amount, discount_amount, due_date, status")
+          .select(
+            "id, receivable_id, original_amount, received_amount, interest_amount, penalty_amount, discount_amount, due_date, status",
+          )
           .order("id", { ascending: true })
           .range(from, to),
       ),
@@ -111,8 +113,16 @@ export default function ContasReceber() {
    */
   const comprovantes = useQuery({
     queryKey: ["ar-docs", "receber"],
-    enabled: parcelas.isSuccess,
     queryFn: async () => {
+      // A relação parcela -> conta é buscada DENTRO desta mesma query: nunca
+      // computa com parcelas antigas nem fica preso ao sucesso da query de KPI.
+      const vinculos = await fetchAllRows<any>((from, to) =>
+        supabase
+          .from("accounts_receivable_installments")
+          .select("id, receivable_id")
+          .order("id", { ascending: true })
+          .range(from, to),
+      );
       const docs = await fetchAllRows<any>((from, to) =>
         supabase
           .from("financial_documents")
@@ -129,7 +139,7 @@ export default function ContasReceber() {
           .order("id", { ascending: true })
           .range(from, to),
       );
-      return indexarComprovantesReceber(docs, pagamentos, parcelas.data ?? []);
+      return indexarComprovantesReceber(docs, pagamentos, vinculos);
     },
   });
   const docsByConta = comprovantes.data ?? {};
