@@ -245,9 +245,15 @@ describe("BaixaDialog payable — exibição e travas", () => {
     expect(screen.getAllByText(/Desconto acumulado/i).length).toBeGreaterThan(0);
   });
 
+  async function selecionarMetodo() {
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(await screen.findByRole("option", { name: "Pix" }));
+  }
+
   it("chama a RPC de pagamento com amount_paid e idempotency_key", async () => {
     abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
+    await selecionarMetodo();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await waitFor(() => expect(rpcMock).toHaveBeenCalled());
     const [, args] = rpcMock.mock.calls[0];
@@ -259,6 +265,7 @@ describe("BaixaDialog payable — exibição e travas", () => {
     rpcMock.mockResolvedValue({ data: null, error: null });
     abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
+    await selecionarMetodo();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled(),
@@ -270,6 +277,7 @@ describe("BaixaDialog payable — exibição e travas", () => {
     rpcMock.mockRejectedValue(new TypeError("Failed to fetch"));
     abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
+    await selecionarMetodo();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled(),
@@ -281,10 +289,11 @@ describe("BaixaDialog payable — exibição e travas", () => {
     rpcMock.mockResolvedValue({ data: null, error: { code: "23505", message: "dup" } });
     abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
+    await selecionarMetodo();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    await waitFor(() =>
-      expect(screen.getAllByText(/já foi registrado/i).length).toBeGreaterThan(0),
-    );
+    await waitFor(() => expect(rpcMock).toHaveBeenCalled());
+    // Recusa comprovada: sem alerta de incerteza e formulário liberado.
+    expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled();
   });
 });
