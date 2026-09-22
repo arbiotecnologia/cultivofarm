@@ -14,13 +14,16 @@ import { BaixaDialog } from "@/components/financeiro/BaixaDialog";
 import { brl, fmtDate } from "@/lib/financial/format";
 import { fetchAllRows } from "@/lib/configuracoes/fetchAllRows";
 import {
+  CHAVES_INVALIDACAO_RECEBER,
   calcularKpisReceber,
   classificarParcela,
   inicioDoMes,
   inicioDoProximoMes,
+  mapearErroCancelamento,
   rotuloVencimento,
   STATUS_PARCELA_EM_ABERTO,
 } from "@/lib/financeiro/contasReceber";
+import { indexarComprovantesReceber, temComprovanteRecebimento } from "@/lib/financeiro/comprovantesReceber";
 import { useHojeSaoPaulo } from "@/lib/financeiro/useHojeSaoPaulo";
 import { Plus, Wallet, Eye, XCircle, ArrowDownCircle, Clock, CheckCircle, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -54,16 +57,24 @@ export default function ContasReceber() {
         .order("id", { ascending: false })
         .range(from, from + PAGE_SIZE - 1);
       if (error) throw error;
-      return { rows: (data as any[]) ?? [], total: count ?? 0, page: pageParam as number };
+      return {
+        rows: (data as any[]) ?? [],
+        // count pode vir desconhecido (null): nunca tratar como zero.
+        total: typeof count === "number" ? count : null,
+        page: pageParam as number,
+      };
     },
     getNextPageParam: (ultima, todas) => {
+      // Página vazia ou incompleta encerra a paginação, mesmo com count inconsistente.
+      if (!ultima.rows.length || ultima.rows.length < PAGE_SIZE) return undefined;
       const carregadas = todas.reduce((s, p) => s + p.rows.length, 0);
-      return carregadas < ultima.total ? ultima.page + 1 : undefined;
+      if (typeof ultima.total === "number" && carregadas >= ultima.total) return undefined;
+      return ultima.page + 1;
     },
   });
 
   const data = useMemo(() => (lista.data?.pages ?? []).flatMap((p) => p.rows), [lista.data]);
-  const total = lista.data?.pages?.[0]?.total ?? 0;
+  const totalConhecido = lista.data?.pages?.[0]?.total ?? null;
 
   // KPIs de saldo: todas as parcelas, em páginas reais (nunca truncado em 1000).
   const parcelas = useQuery({
@@ -72,7 +83,7 @@ export default function ContasReceber() {
       fetchAllRows<any>((from, to) =>
         supabase
           .from("accounts_receivable_installments")
-          .select("id, original_amount, received_amount, discount_amount, due_date, status")
+          .select("id, receivable_id, original_amount, received_amount, discount_amount, due_date, status")
           .order("id", { ascending: true })
           .range(from, to),
       ),
@@ -93,23 +104,40 @@ export default function ContasReceber() {
       ),
   });
 
-  const documentos = useQuery({
-    queryKey: ["ar-docs-count"],
+  /**
+   * Comprovantes: documentos ligados direto à conta (RECEIVABLE) e documentos
+   * ligados ao evento de baixa (PAYMENT_RECEIVABLE, resolvidos por
+   * pagamento -> parcela -> conta). Pagamentos estornados não valem.
+   */
+  const comprovantes = useQuery({
+    queryKey: ["ar-docs", "receber"],
+    enabled: parcelas.isSuccess,
     queryFn: async () => {
-      const linhas = await fetchAllRows<any>((from, to) =>
+      const docs = await fetchAllRows<any>((from, to) =>
         supabase
           .from("financial_documents")
-          .select("id, owner_id, document_type")
-          .eq("owner_type", "RECEIVABLE")
+          .select("id, owner_id, owner_type, document_type")
+          .in("owner_type", ["RECEIVABLE", "PAYMENT_RECEIVABLE"])
+          .is("deleted_at", null)
           .order("id", { ascending: true })
           .range(from, to),
       );
-      const map: Record<string, string[]> = {};
-      linhas.forEach((d: any) => { (map[d.owner_id] ??= []).push(d.document_type); });
-      return map;
+      const pagamentos = await fetchAllRows<any>((from, to) =>
+        supabase
+          .from("receivable_payments")
+          .select("id, installment_id, is_reversal, reversed_payment_id")
+          .order("id", { ascending: true })
+          .range(from, to),
+      );
+      return indexarComprovantesReceber(docs, pagamentos, parcelas.data ?? []);
     },
   });
-  const docsByOwner = documentos.data ?? {};
+  const docsByConta = comprovantes.data ?? {};
+  const comprovantesProntos = comprovantes.isSuccess;
+
+  function invalidarFinanceiro() {
+    CHAVES_INVALIDACAO_RECEBER.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  }
 
   const cancel = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
@@ -121,43 +149,44 @@ export default function ContasReceber() {
       toast.success("Conta cancelada");
       invalidarFinanceiro();
     },
-    onError: (e: any) => toast.error(e?.message ? String(e.message) : "Não foi possível cancelar a conta."),
+    // Nunca exibe texto cru do servidor.
+    onError: (e: unknown) => toast.error(mapearErroCancelamento(e)),
   });
 
-  function invalidarFinanceiro() {
-    ["ar-list", "ar-kpi-installments", "ar-kpi-payments", "ar-docs-count", "financeiro-dashboard", "fluxo-caixa", "dre"].forEach(
-      (k) => qc.invalidateQueries({ queryKey: [k] }),
-    );
-  }
-
   const kpiIndisponivel = parcelas.isError || pagamentosMes.isError;
+  const kpiCarregando = !kpiIndisponivel && (!parcelas.isSuccess || !pagamentosMes.isSuccess);
   const kpi = useMemo(
     () => calcularKpisReceber(parcelas.data ?? [], pagamentosMes.data ?? [], hoje),
     [parcelas.data, pagamentosMes.data, hoje],
   );
-  const kpiValor = (v: number) => (kpiIndisponivel ? "—" : brl(v));
+  // Carregando nunca exibe zero; erro nunca exibe zero.
+  const kpiValor = (v: number) => (kpiIndisponivel ? "—" : kpiCarregando ? "…" : brl(v));
 
   const filtered = useMemo(() => data.filter((r: any) => {
     if (q && !`${r.description} ${r.clientes?.nome ?? ""} ${r.clientes?.codigo_cliente ?? ""}`.toLowerCase().includes(q.toLowerCase())) return false;
+    const cancelada = r.status === "CANCELED";
     const insts = r.installments || [];
     const abertas = insts.filter((i: any) => EM_ABERTO.includes(i.status));
     const hasOpen = abertas.length > 0;
-    const hasOverdue = abertas.some((i: any) => classificarParcela(i.due_date, hoje) === "vencida");
-    const dueToday = abertas.some((i: any) => classificarParcela(i.due_date, hoje) === "vence_hoje");
-    const hasReceipt = (docsByOwner[r.id] || []).some((t: string) => t === "RECEIPT");
+    // Conta cancelada nunca entra em atraso/vencendo hoje.
+    const hasOverdue = !cancelada && abertas.some((i: any) => classificarParcela(i.due_date, hoje) === "vencida");
+    const dueToday = !cancelada && abertas.some((i: any) => classificarParcela(i.due_date, hoje) === "vence_hoje");
+    const hasReceipt = temComprovanteRecebimento(docsByConta, r.id);
     switch (status) {
       case "all": return true;
-      case "OPEN": return hasOpen && r.status !== "CANCELED";
+      case "OPEN": return hasOpen && !cancelada;
       case "OVERDUE": return hasOverdue;
       case "DUE_TODAY": return dueToday;
       case "PARTIAL": return r.status === "PARTIAL";
       case "PAID": return r.status === "PAID";
       case "NFE_PENDING": return r.fiscal_invoice_required && (r.fiscal_invoice_status === "PENDING" || !r.fiscal_invoice_status);
       // Sem os documentos carregados não é possível afirmar ausência de comprovante.
-      case "NO_RECEIPT": return documentos.isSuccess && r.status === "PAID" && !hasReceipt;
+      case "NO_RECEIPT": return comprovantesProntos && r.status === "PAID" && !hasReceipt;
       default: return r.status === status;
     }
-  }), [data, q, status, docsByOwner, documentos.isSuccess, hoje]);
+  }), [data, q, status, docsByConta, comprovantesProntos, hoje]);
+
+  const bloqueioComprovantes = status === "NO_RECEIPT" && !comprovantesProntos;
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
@@ -204,11 +233,6 @@ export default function ContasReceber() {
           <p className="text-xs text-muted-foreground">
             A busca e os filtros consideram apenas as {data.length} conta(s) já carregadas. Use “Carregar mais” para ampliar a consulta.
           </p>
-          {status === "NO_RECEIPT" && documentos.isError && (
-            <p className="text-xs text-destructive" role="alert">
-              Não foi possível verificar os comprovantes; a lista não pode afirmar que estão ausentes.
-            </p>
-          )}
 
           <div className="overflow-x-auto">
             <Table>
@@ -225,7 +249,22 @@ export default function ContasReceber() {
                     </Button>
                   </TableCell></TableRow>
                 )}
-                {!lista.isLoading && !lista.isError && filtered.map((r: any) => {
+                {/* Sem os comprovantes não se pode afirmar que nenhuma conta está sem comprovante. */}
+                {!lista.isLoading && !lista.isError && bloqueioComprovantes && (
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 space-y-2">
+                    <p className={comprovantes.isError ? "text-destructive" : "text-muted-foreground"}>
+                      {comprovantes.isError
+                        ? "Não foi possível verificar os comprovantes; a lista não pode afirmar que estão ausentes."
+                        : "Verificando os comprovantes…"}
+                    </p>
+                    {comprovantes.isError && (
+                      <Button size="sm" variant="outline" onClick={() => comprovantes.refetch()}>
+                        <RefreshCw className="h-3 w-3 mr-1" />Tentar novamente
+                      </Button>
+                    )}
+                  </TableCell></TableRow>
+                )}
+                {!lista.isLoading && !lista.isError && !bloqueioComprovantes && filtered.map((r: any) => {
                   const cancelada = r.status === "CANCELED";
                   const nextOpen = (r.installments || []).filter((i: any) => i.status !== "PAID" && i.status !== "CANCELED").sort((a: any, b: any) => a.installment_number - b.installment_number)[0];
                   const emCancelamento = cancel.isPending && cancel.variables?.id === r.id;
@@ -237,7 +276,7 @@ export default function ContasReceber() {
                       <TableCell>{brl(r.total_amount)}</TableCell>
                       <TableCell>{fmtDate(r.first_due_date)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {cancelada || r.status === "PAID" ? "—" : rotuloVencimento(nextOpen?.due_date ?? r.first_due_date, hoje)}
+                        {cancelada ? "Cancelada" : r.status === "PAID" ? "Quitada" : rotuloVencimento(nextOpen?.due_date ?? r.first_due_date, hoje)}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{r.origin_type}</TableCell>
                       <TableCell><StatusBadge status={r.status} /></TableCell>
@@ -262,12 +301,18 @@ export default function ContasReceber() {
                     </TableRow>
                   );
                 })}
-                {!lista.isLoading && !lista.isError && !filtered.length && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhuma conta encontrada</TableCell></TableRow>}
+                {!lista.isLoading && !lista.isError && !bloqueioComprovantes && !filtered.length && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhuma conta encontrada</TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
-            <span>{lista.isError ? "Lista indisponível" : `Mostrando ${data.length} de ${total}`}</span>
+            <span>
+              {lista.isError
+                ? "Lista indisponível"
+                : typeof totalConhecido === "number"
+                  ? `Mostrando ${data.length} de ${totalConhecido}`
+                  : `Mostrando ${data.length} conta(s)`}
+            </span>
             {!lista.isError && lista.hasNextPage && (
               <Button size="sm" variant="outline" disabled={lista.isFetchingNextPage} onClick={() => lista.fetchNextPage()}>
                 {lista.isFetchingNextPage ? "Carregando…" : "Carregar mais"}
