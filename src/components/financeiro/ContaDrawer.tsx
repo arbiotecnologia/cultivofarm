@@ -63,15 +63,42 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const totalRecebido = installments.reduce((acc, i: any) => acc + Number((kind === "receivable" ? i.received_amount : i.paid_amount) || 0), 0);
-  const saldoTotal = Number(conta?.total_amount || 0) - totalRecebido;
+  const isReceivable = kind === "receivable";
+  const resumo = resumoSaldoReceber(installments);
+  const totalPago = installments.reduce((acc, i: any) => acc + Number((isReceivable ? i.received_amount : i.paid_amount) || 0), 0);
+  const saldoTotal = isReceivable
+    ? resumo.saldo
+    : Math.max(0, Number(conta?.total_amount || 0) - totalPago);
+
+  const carregandoBase = contaLoading || instLoading;
+  const erroBase = contaErro || instErro;
+
+  if (erroBase) {
+    return (
+      <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+        <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{isReceivable ? "Conta a Receber" : "Conta a Pagar"}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 flex flex-col items-start gap-2 text-sm text-destructive">
+            <span>Não foi possível carregar os dados da conta.</span>
+            <Button size="sm" variant="outline" onClick={() => { refetchConta(); refetchInst(); }}>
+              Tentar novamente
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{kind === "receivable" ? "Conta a Receber" : "Conta a Pagar"}</SheetTitle>
+          <SheetTitle>{isReceivable ? "Conta a Receber" : "Conta a Pagar"}</SheetTitle>
         </SheetHeader>
+
+        {!conta && carregandoBase && <p className="mt-4 text-sm text-muted-foreground">Carregando…</p>}
 
         {conta && (
           <Tabs defaultValue="resumo" className="mt-4">
