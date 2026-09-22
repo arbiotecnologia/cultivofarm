@@ -6,9 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/financeiro/StatusBadge";
 import { brl, fmtDate } from "@/lib/financial/format";
+import { resumoSaldoReceber } from "@/lib/financeiro/contasReceber";
 import { useState } from "react";
 import { BaixaDialog } from "./BaixaDialog";
 import { DocumentosPanel } from "./DocumentosPanel";
+import { DocumentosReceberTab } from "./DocumentosReceberTab";
 import { PagamentosTab } from "./PagamentosTab";
 import { FiscalTab } from "./FiscalTab";
 import { HistoricoTab } from "./HistoricoTab";
@@ -31,7 +33,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
   const fkCol = kind === "receivable" ? "receivable_id" : "payable_id";
   const docOwner: any = kind === "receivable" ? "RECEIVABLE" : "PAYABLE";
 
-  const { data: conta } = useQuery({
+  const { data: conta, isLoading: contaLoading, isError: contaErro, refetch: refetchConta } = useQuery({
     queryKey: ["fin-conta", kind, contaId],
     enabled: !!contaId,
     queryFn: async () => {
@@ -43,7 +45,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
     },
   });
 
-  const { data: installments = [] } = useQuery({
+  const { data: installments = [], isLoading: instLoading, isError: instErro, refetch: refetchInst } = useQuery({
     queryKey: ["fin-inst", kind, contaId],
     enabled: !!contaId,
     queryFn: async () => {
@@ -61,15 +63,42 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const totalRecebido = installments.reduce((acc, i: any) => acc + Number((kind === "receivable" ? i.received_amount : i.paid_amount) || 0), 0);
-  const saldoTotal = Number(conta?.total_amount || 0) - totalRecebido;
+  const isReceivable = kind === "receivable";
+  const resumo = resumoSaldoReceber(installments);
+  const totalPago = installments.reduce((acc, i: any) => acc + Number((isReceivable ? i.received_amount : i.paid_amount) || 0), 0);
+  const saldoTotal = isReceivable
+    ? resumo.saldo
+    : Math.max(0, Number(conta?.total_amount || 0) - totalPago);
+
+  const carregandoBase = contaLoading || instLoading;
+  const erroBase = contaErro || instErro;
+
+  if (erroBase) {
+    return (
+      <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+        <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{isReceivable ? "Conta a Receber" : "Conta a Pagar"}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 flex flex-col items-start gap-2 text-sm text-destructive">
+            <span>Não foi possível carregar os dados da conta.</span>
+            <Button size="sm" variant="outline" onClick={() => { refetchConta(); refetchInst(); }}>
+              Tentar novamente
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{kind === "receivable" ? "Conta a Receber" : "Conta a Pagar"}</SheetTitle>
+          <SheetTitle>{isReceivable ? "Conta a Receber" : "Conta a Pagar"}</SheetTitle>
         </SheetHeader>
+
+        {!conta && carregandoBase && <p className="mt-4 text-sm text-muted-foreground">Carregando…</p>}
 
         {conta && (
           <Tabs defaultValue="resumo" className="mt-4">
@@ -88,8 +117,20 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                 {kind === "payable" && <div><span className="text-muted-foreground">Fornecedor:</span> <strong>{conta.supplier_name ?? "—"}</strong></div>}
                 <div><span className="text-muted-foreground">Categoria:</span> {conta.category?.name ?? "—"}</div>
                 <div><span className="text-muted-foreground">Valor total:</span> <strong>{brl(conta.total_amount)}</strong></div>
-                <div><span className="text-muted-foreground">{kind === "receivable" ? "Recebido" : "Pago"}:</span> {brl(totalRecebido)}</div>
-                <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
+                {isReceivable ? (
+                  <>
+                    <div><span className="text-muted-foreground">Recebido:</span> {brl(resumo.recebido)}</div>
+                    <div><span className="text-muted-foreground">Juros acumulados:</span> {brl(resumo.juros)}</div>
+                    <div><span className="text-muted-foreground">Multa acumulada:</span> {brl(resumo.multa)}</div>
+                    <div><span className="text-muted-foreground">Desconto acumulado:</span> {brl(resumo.desconto)}</div>
+                    <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
+                  </>
+                ) : (
+                  <>
+                    <div><span className="text-muted-foreground">Pago:</span> {brl(totalPago)}</div>
+                    <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
+                  </>
+                )}
                 <div><span className="text-muted-foreground">1º vencimento:</span> {fmtDate(conta.first_due_date)}</div>
                 <div><span className="text-muted-foreground">Parcelas:</span> {conta.installment_count}</div>
                 <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={conta.status} /></div>
@@ -107,18 +148,34 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow>
+                    <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead>{isReceivable && <TableHead>Juros</TableHead>}{isReceivable && <TableHead>Multa</TableHead>}{isReceivable && <TableHead>Desconto</TableHead>}{isReceivable && <TableHead>Saldo</TableHead>}<TableHead>Status</TableHead><TableHead></TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
+                    {instLoading && <TableRow><TableCell colSpan={isReceivable ? 10 : 6} className="text-center text-muted-foreground py-8">Carregando parcelas…</TableCell></TableRow>}
+                    {!instLoading && instErro && (
+                      <TableRow>
+                        <TableCell colSpan={isReceivable ? 10 : 6} className="text-center py-8">
+                          <div className="flex flex-col items-center gap-2 text-sm text-destructive">
+                            <span>Não foi possível carregar as parcelas.</span>
+                            <Button size="sm" variant="outline" onClick={() => refetchInst()}>Tentar novamente</Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {installments.map((r: any) => {
                       const recebido = kind === "receivable" ? r.received_amount : r.paid_amount;
                       const aberto = r.status !== "PAID" && r.status !== "CANCELED";
+                      const saldoP = isReceivable ? resumoSaldoReceber([r]).saldo : null;
                       return (
                         <TableRow key={r.id}>
                           <TableCell>{r.installment_number}</TableCell>
                           <TableCell>{fmtDate(r.due_date)}</TableCell>
                           <TableCell>{brl(r.original_amount)}</TableCell>
                           <TableCell>{brl(recebido)}</TableCell>
+                          {isReceivable && <TableCell>{brl(r.interest_amount)}</TableCell>}
+                          {isReceivable && <TableCell>{brl(r.penalty_amount)}</TableCell>}
+                          {isReceivable && <TableCell>{brl(r.discount_amount)}</TableCell>}
+                          {isReceivable && <TableCell className="font-medium">{brl(saldoP)}</TableCell>}
                           <TableCell><StatusBadge status={r.status} /></TableCell>
                           <TableCell className="text-right space-x-1">
                             {aberto && <Button size="sm" variant="outline" onClick={() => setBaixa(r)}><Wallet className="h-3 w-3 mr-1" />Baixar</Button>}
@@ -127,7 +184,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                         </TableRow>
                       );
                     })}
-                    {!installments.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Sem parcelas</TableCell></TableRow>}
+                    {!installments.length && !instLoading && !instErro && <TableRow><TableCell colSpan={isReceivable ? 10 : 6} className="text-center text-muted-foreground py-8">Sem parcelas</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               </div>
@@ -138,7 +195,11 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
             </TabsContent>
 
             <TabsContent value="documentos" className="mt-4">
-              <DocumentosPanel ownerType={docOwner} ownerId={contaId} defaultType={kind === "receivable" ? "INVOICE" : "BOLETO"} canDelete={canDeleteDoc} />
+              {isReceivable ? (
+                <DocumentosReceberTab contaId={contaId} canDelete={canDeleteDoc} />
+              ) : (
+                <DocumentosPanel ownerType={docOwner} ownerId={contaId} defaultType="BOLETO" canDelete={canDeleteDoc} />
+              )}
             </TabsContent>
 
             {kind === "receivable" && (

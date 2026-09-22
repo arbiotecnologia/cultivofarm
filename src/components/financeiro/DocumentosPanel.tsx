@@ -29,15 +29,17 @@ interface Props {
   defaultType?: string;
   canDelete?: boolean;
   compact?: boolean;
+  /** Chamado após anexar ou remover, para invalidar consultas agregadas. */
+  onChanged?: () => void;
 }
 
-export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", canDelete = false, compact }: Props) {
+export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", canDelete = false, compact, onChanged }: Props) {
   const { user, role } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState(defaultType);
 
-  const { data: docs = [] } = useQuery({
+  const { data: docs = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["fin-docs", ownerType, ownerId],
     enabled: !!ownerId,
     queryFn: async () => {
@@ -71,7 +73,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
       } as any);
       if (insErr) throw insErr;
     },
-    onSuccess: () => { toast.success("Documento anexado"); qc.invalidateQueries({ queryKey: ["fin-docs", ownerType, ownerId] }); },
+    onSuccess: () => { toast.success("Documento anexado"); qc.invalidateQueries({ queryKey: ["fin-docs", ownerType, ownerId] }); onChanged?.(); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -91,6 +93,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
     onSuccess: () => {
       toast.success("Documento removido");
       qc.invalidateQueries({ queryKey: ["fin-docs", ownerType, ownerId] });
+      onChanged?.();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -103,10 +106,11 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
 
   const isStaff = role === "administrador" || role === "gestor" || role === "administrativo" || role === "financeiro";
   const canDeleteFinal = canDelete && (role === "administrador" || role === "gestor");
+  const podeArquivo = role === "administrador" || role === "gestor" || role === "financeiro";
 
   return (
     <div className="space-y-2">
-      {isStaff && ownerId && (
+      {isStaff && ownerId && podeArquivo && (
         <div className={`flex gap-2 items-end ${compact ? "" : "border rounded-md p-3 bg-muted/30"}`}>
           <div className="flex-1 min-w-0">
             <Label className="text-xs">Tipo</Label>
@@ -124,7 +128,14 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
         </div>
       )}
       <div className="space-y-1">
-        {docs.length === 0 ? (
+        {isError ? (
+          <div className="flex items-center gap-2 text-sm text-destructive">
+            <span>Não foi possível carregar os documentos.</span>
+            <Button size="sm" variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
+          </div>
+        ) : isLoading ? (
+          <p className="text-xs text-muted-foreground italic">Carregando documentos…</p>
+        ) : docs.length === 0 ? (
           <p className="text-xs text-muted-foreground italic">Nenhum documento anexado.</p>
         ) : docs.map((d: any) => (
           <div key={d.id} className="flex items-center justify-between gap-2 border rounded p-2 text-sm">
@@ -136,7 +147,9 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
               </div>
             </div>
             <div className="flex gap-1">
-              <Button size="sm" variant="ghost" onClick={() => download(d)}><Download className="h-3 w-3" /></Button>
+              {podeArquivo && (
+                <Button size="sm" variant="ghost" onClick={() => download(d)}><Download className="h-3 w-3" /></Button>
+              )}
               {canDeleteFinal && (
                 <Button size="sm" variant="ghost" onClick={() => remove.mutate({ id: d.id, fileName: d.file_name })} className="text-destructive"><Trash2 className="h-3 w-3" /></Button>
               )}
