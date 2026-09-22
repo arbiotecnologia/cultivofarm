@@ -237,29 +237,30 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     },
   });
 
+  const acumP = acumuladosParcelaPagar(installment);
   // Payable mantém exatamente o fallback original (received_amount ?? paid_amount).
-  const jaRecebido = receber ? acum.recebido : Number(installment?.received_amount ?? installment?.paid_amount ?? 0) || 0;
-  const valorOriginal = receber ? acum.original : Number(installment?.original_amount ?? 0) || 0;
+  const jaRecebido = receber ? acum.recebido : acumP.pago;
+  const valorOriginal = receber ? acum.original : acumP.original;
   const desc = Number(form.discount_amount) || 0;
   const juros = Number(form.interest_amount) || 0;
   const multa = Number(form.penalty_amount) || 0;
   const valorBaixa = Number(form.amount) || 0;
   const saldoFinal = receber
     ? calcularSaldoRecebivel(installment, form)
-    : valorOriginal + juros + multa - desc - jaRecebido;
+    : calcularSaldoPagavel(installment, form);
   const saldoRestante = saldoFinal - valorBaixa;
 
-  const settingsBloqueado = receber && !settingsQuery.isSuccess;
+  const settingsBloqueado = !settingsQuery.isSuccess;
   const gravando = save.isPending;
-  // Edição travada por pendência de comprovante OU enquanto grava.
-  const travado = !!pendente || gravando;
+  // Edição travada por pendência de comprovante, resultado incerto OU enquanto grava.
+  const travado = !!pendente || gravando || exigeConferencia;
 
-  /** Fechar nunca apaga a pendência em silêncio: exige confirmação e indica onde retomar. */
+  /** Fechar nunca apaga pendência/resultado incerto em silêncio: exige confirmação. */
   function tentarFechar() {
     if (gravando) return;
     if (pendente) {
       const ok = window.confirm(
-        "O recebimento já foi registrado, mas o comprovante ainda não foi anexado. Se fechar agora, retome o envio pelo drawer de anexos da conta. Deseja fechar mesmo assim?",
+        `O ${receber ? "recebimento" : "pagamento"} já foi registrado, mas o comprovante ainda não foi anexado. Se fechar agora, retome o envio pelo drawer de anexos da conta. Deseja fechar mesmo assim?`,
       );
       if (!ok) return;
     }
