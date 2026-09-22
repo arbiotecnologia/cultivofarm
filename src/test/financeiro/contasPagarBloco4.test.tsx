@@ -132,7 +132,7 @@ describe("(3) repetição recuperada sem arquivo não declara sucesso completo",
   it("payload original com comprovante + sem arquivo => pagamento confirmado e comprovante pendente", async () => {
     // Tentativa incerta com comprovante selecionado.
     rpcMock.mockResolvedValue({ data: null, error: null });
-    abrirDialog();
+    const primeiro = abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
     await selecionarMetodo();
     anexarArquivo();
@@ -142,8 +142,7 @@ describe("(3) repetição recuperada sem arquivo não declara sucesso completo",
     expect(original.has_receipt).toBe(true);
 
     // Remonta (arquivo se perde) e repete a MESMA tentativa.
-    const { unmount } = abrirDialog();
-    unmount();
+    primeiro.unmount();
     abrirDialog();
     await screen.findByRole("button", { name: /Repetir a mesma tentativa/i });
     rpcMock.mockResolvedValue({ data: UUID, error: null });
