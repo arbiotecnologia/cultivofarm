@@ -11,7 +11,13 @@ export type AppRole =
   | "financeiro"
   | "gestor_comercial"
   | "parceiro_b2b"
-  | "parceiro_b2b_tecnico";
+  | "parceiro_b2b_tecnico"
+  // Papel de plataforma SaaS. NÃO é administrador operacional e NÃO aparece
+  // em `ACTIVE_ROLES` nem em `ACCESS_MAP`: não recebe nenhum módulo
+  // operacional. Enquanto o painel SaaS (Fase S4) não existir, a home segura
+  // provisória é `/sem-permissao` (ver `getHomeForRole`).
+  | "superadmin";
+
 
 export type AccessLevel = "rw" | "r" | "none";
 
