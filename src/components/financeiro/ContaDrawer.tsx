@@ -200,7 +200,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                         </TableRow>
                       );
                     })}
-                    {!installments.length && !instLoading && !instErro && <TableRow><TableCell colSpan={isReceivable ? 10 : 6} className="text-center text-muted-foreground py-8">Sem parcelas</TableCell></TableRow>}
+                    {!installments.length && !instLoading && !instErro && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Sem parcelas</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               </div>
