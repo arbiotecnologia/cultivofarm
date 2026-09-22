@@ -315,11 +315,15 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       if (r?.ignorado) return;
       invalidarTudo();
       if (!receber && !r?.reenvio) {
-        // Pagamento confirmado: a tentativa deixa de estar incerta.
+        // Resultado definitivamente confirmado: só aqui o journal é removido.
+        // Falha de limpeza NÃO transforma o pagamento confirmado em falha e
+        // também não libera novo envio — o bloqueio em memória é desfeito
+        // apenas porque o pagamento foi confirmado pelo servidor.
         limparTentativaIncerta(user?.id, installment?.id);
         tentativaRef.current = null;
         setExigeConferencia(false);
       }
+
       if (r?.comprovantePendente) {
         setPendente({ paymentId: r.paymentId });
         toast.error(receber ? MSG_COMPROVANTE_PENDENTE : MSG_PAGAMENTO_COMPROVANTE_PENDENTE);
