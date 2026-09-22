@@ -20550,6 +20550,7 @@ export type Database = {
       is_executivo: { Args: { _uid: string }; Returns: boolean }
       is_financial_staff: { Args: { _uid: string }; Returns: boolean }
       is_operational_staff: { Args: { _uid: string }; Returns: boolean }
+      is_platform_superadmin: { Args: { _user_id: string }; Returns: boolean }
       is_technical_visit_editable_status: {
         Args: { p_status: string }
         Returns: boolean
