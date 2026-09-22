@@ -52,8 +52,9 @@ describe("SUPERADMIN — migrations", () => {
       [M_FIX, sqlFix],
     ] as const) {
       expect.soft(existsSync(path(`supabase/migrations/${nome}`)), nome).toBe(true);
-      expect.soft(sql.trimStart().startsWith("BEGIN;"), `${nome} deve abrir com BEGIN`).toBe(true);
+      expect.soft(sql, `${nome} deve abrir com BEGIN`).toMatch(/^BEGIN;$/m);
       expect.soft(sql.trimEnd().endsWith("COMMIT;"), `${nome} deve fechar com COMMIT`).toBe(true);
+
     }
   });
 
