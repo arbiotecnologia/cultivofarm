@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/financeiro/StatusBadge";
 import { brl, fmtDate } from "@/lib/financial/format";
 import { resumoSaldoReceber } from "@/lib/financeiro/contasReceber";
+import { resumoSaldoPagar, saldoParcelaPagar } from "@/lib/financeiro/contasPagar";
 import { useState } from "react";
 import { BaixaDialog } from "./BaixaDialog";
 import { DocumentosPanel } from "./DocumentosPanel";
@@ -64,11 +65,14 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
   });
 
   const isReceivable = kind === "receivable";
-  const resumo = resumoSaldoReceber(installments);
-  const totalPago = installments.reduce((acc, i: any) => acc + Number((isReceivable ? i.received_amount : i.paid_amount) || 0), 0);
-  const saldoTotal = isReceivable
-    ? resumo.saldo
-    : Math.max(0, Number(conta?.total_amount || 0) - totalPago);
+  const resumoR = resumoSaldoReceber(installments);
+  const resumoP = resumoSaldoPagar(installments);
+  // Ajustes acumulados e saldo seguem a MESMA fórmula dos KPIs em ambos os ramos.
+  const resumo = isReceivable
+    ? resumoR
+    : { recebido: resumoP.pago, juros: resumoP.juros, multa: resumoP.multa, desconto: resumoP.desconto, saldo: resumoP.saldo };
+  const totalPago = resumo.recebido;
+  const saldoTotal = resumo.saldo;
 
   const carregandoBase = contaLoading || instLoading;
   const erroBase = contaErro || instErro;
@@ -127,7 +131,10 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                   </>
                 ) : (
                   <>
-                    <div><span className="text-muted-foreground">Pago:</span> {brl(totalPago)}</div>
+                    <div><span className="text-muted-foreground">Pago:</span> {brl(resumo.recebido)}</div>
+                    <div><span className="text-muted-foreground">Juros acumulados:</span> {brl(resumo.juros)}</div>
+                    <div><span className="text-muted-foreground">Multa acumulada:</span> {brl(resumo.multa)}</div>
+                    <div><span className="text-muted-foreground">Desconto acumulado:</span> {brl(resumo.desconto)}</div>
                     <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
                   </>
                 )}
@@ -148,7 +155,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead>{isReceivable && <TableHead>Juros</TableHead>}{isReceivable && <TableHead>Multa</TableHead>}{isReceivable && <TableHead>Desconto</TableHead>}{isReceivable && <TableHead>Saldo</TableHead>}<TableHead>Status</TableHead><TableHead></TableHead></TableRow>
+                    <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead><TableHead>Juros</TableHead><TableHead>Multa</TableHead><TableHead>Desconto</TableHead><TableHead>Saldo</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
                     {instLoading && <TableRow><TableCell colSpan={isReceivable ? 10 : 6} className="text-center text-muted-foreground py-8">Carregando parcelas…</TableCell></TableRow>}
@@ -165,17 +172,18 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                     {installments.map((r: any) => {
                       const recebido = kind === "receivable" ? r.received_amount : r.paid_amount;
                       const aberto = r.status !== "PAID" && r.status !== "CANCELED";
-                      const saldoP = isReceivable ? resumoSaldoReceber([r]).saldo : null;
+                      // Mesma fórmula dos KPIs em ambos os ramos.
+                      const saldoP = isReceivable ? resumoSaldoReceber([r]).saldo : saldoParcelaPagar(r);
                       return (
                         <TableRow key={r.id}>
                           <TableCell>{r.installment_number}</TableCell>
                           <TableCell>{fmtDate(r.due_date)}</TableCell>
                           <TableCell>{brl(r.original_amount)}</TableCell>
                           <TableCell>{brl(recebido)}</TableCell>
-                          {isReceivable && <TableCell>{brl(r.interest_amount)}</TableCell>}
-                          {isReceivable && <TableCell>{brl(r.penalty_amount)}</TableCell>}
-                          {isReceivable && <TableCell>{brl(r.discount_amount)}</TableCell>}
-                          {isReceivable && <TableCell className="font-medium">{brl(saldoP)}</TableCell>}
+                          <TableCell>{brl(r.interest_amount)}</TableCell>
+                          <TableCell>{brl(r.penalty_amount)}</TableCell>
+                          <TableCell>{brl(r.discount_amount)}</TableCell>
+                          <TableCell className="font-medium">{brl(saldoP)}</TableCell>
                           <TableCell><StatusBadge status={r.status} /></TableCell>
                           <TableCell className="text-right space-x-1">
                             {aberto && <Button size="sm" variant="outline" onClick={() => setBaixa(r)}><Wallet className="h-3 w-3 mr-1" />Baixar</Button>}
