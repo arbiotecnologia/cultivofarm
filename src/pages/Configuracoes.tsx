@@ -12,11 +12,9 @@ import {
   senhaValida,
   validarEdicaoUsuario,
   primeiroCampoInvalidoEdicao,
-  diferencaPapeis,
   bloqueioAutoDesativacao,
   bloqueioAutoRemocaoAdmin,
   exigirUmaLinha,
-  ERRO_EDICAO_PARCIAL,
   type ErrosEdicaoUsuario,
 
 
@@ -28,6 +26,14 @@ import {
   type CampoNovoUsuario,
 } from "@/lib/configuracoes/usuariosValidation";
 import { fetchAllRows } from "@/lib/configuracoes/fetchAllRows";
+import {
+  RPC_EDITAR_USUARIO,
+  construirArgsEdicao,
+  edicaoBemSucedida,
+  mapearErroEdicaoUsuario,
+  edicaoExigeRecargaAposErro,
+  MSG_EDICAO_NAO_CONFIRMADA,
+} from "@/lib/configuracoes/edicaoUsuarioRpc";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
