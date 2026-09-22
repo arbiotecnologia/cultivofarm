@@ -244,3 +244,66 @@ export function mapearErroEdicaoUsuario(erro: unknown): string {
 export function edicaoExigeRecargaAposErro(erro: unknown): boolean {
   return classificarErroRpcEdicao(erro).exigeRecarga;
 }
+
+/** Prazo máximo da edição de usuário (cobre pré-fetch/auth + RPC). */
+export const DEADLINE_EDICAO_MS = 20_000;
+
+export interface DeadlineEdicaoOpcoes {
+  timeoutMs?: number;
+  /** Injetável em teste; por padrão setTimeout/clearTimeout. */
+  agendar?: (cb: () => void, ms: number) => unknown;
+  cancelar?: (handle: unknown) => void;
+}
+
+/**
+ * Executa a operação de edição com prazo rígido. O relógio cobre TODA a promise
+ * (inclusive espera por sessão/pré-fetch), aborta o request via AbortSignal quando
+ * o executor souber usá-lo e rejeita com estado ambíguo (exige recarga, nunca afirma
+ * rollback). Resolução/rejeição tardias são descartadas: não viram sucesso nem
+ * unhandled rejection, e nenhuma escrita adicional é disparada.
+ */
+export function executarComDeadlineEdicao<T>(
+  executor: (signal: AbortSignal | undefined) => Promise<T>,
+  opcoes: DeadlineEdicaoOpcoes = {},
+): Promise<T> {
+  const ms = opcoes.timeoutMs ?? DEADLINE_EDICAO_MS;
+  const agendar = opcoes.agendar ?? ((cb, t) => setTimeout(cb, t));
+  const cancelar = opcoes.cancelar ?? ((h) => clearTimeout(h as any));
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : undefined;
+
+  return new Promise<T>((resolve, reject) => {
+    let liquidado = false;
+    let handle: unknown;
+
+    const finalizar = (fn: () => void) => {
+      if (liquidado) return; // late resolve/reject é descartado
+      liquidado = true;
+      if (handle !== undefined) cancelar(handle);
+      fn();
+    };
+
+    handle = agendar(() => {
+      finalizar(() => {
+        try {
+          controller?.abort();
+        } catch {
+          /* abort best-effort */
+        }
+        reject(erroAmbiguoEdicao());
+      });
+    }, ms);
+
+    let promessa: Promise<T>;
+    try {
+      promessa = Promise.resolve(executor(controller?.signal));
+    } catch (e) {
+      finalizar(() => reject(e));
+      return;
+    }
+    promessa.then(
+      (v) => finalizar(() => resolve(v)),
+      (e) => finalizar(() => reject(e)),
+    );
+  });
+}
+

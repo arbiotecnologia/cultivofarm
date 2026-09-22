@@ -35,7 +35,9 @@ import {
   classificarErroRpcEdicao,
   erroLocalEdicao,
   erroAmbiguoEdicao,
+  executarComDeadlineEdicao,
 } from "@/lib/configuracoes/edicaoUsuarioRpc";
+
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -442,6 +444,10 @@ export default function Configuracoes() {
     mutationFn: async () => {
       // Sem usuário em edição não existe operação possível — nunca cair em onSuccess.
       if (!editUser) throw erroLocalEdicao("Nenhum usuário em edição. Reabra o cadastro.");
+      // Segundo envio antes de recarregar é bloqueado (estado da linha é incerto).
+      if (exigeRecargaEdicao) throw erroAmbiguoEdicao();
+
+
 
       // ---- 1) VALIDAÇÃO COMPLETA ANTES DA ÚNICA ESCRITA (RPC transacional) ----
       const desiredRoles: string[] = editUser.roles ?? [];
@@ -491,16 +497,22 @@ export default function Configuracoes() {
         partnerId: hasPartnerRole(desiredRoles) ? (editUser.partner_id || null) : null,
       });
 
-      let data: unknown;
-      try {
-        const res = await (supabase as any).rpc(RPC_EDITAR_USUARIO, args);
-        // Erro da RPC: classificado UMA única vez, preservando o token original.
-        if (res?.error) throw classificarErroRpcEdicao(res.error);
-        data = res?.data;
-      } catch (e) {
-        // Rede/timeout/exceção de transporte: estado ambíguo, nunca mensagem crua.
-        throw classificarErroRpcEdicao(e);
-      }
+      // Prazo rígido (~20s) cobrindo toda a espera, inclusive sessão/pré-fetch.
+      // Estouro → estado ambíguo: exige recarga, sem repetir e sem afirmar rollback.
+      const data = await executarComDeadlineEdicao(async (signal) => {
+        let req: any = (supabase as any).rpc(RPC_EDITAR_USUARIO, args);
+        if (signal && typeof req?.abortSignal === "function") req = req.abortSignal(signal);
+        try {
+          const res = await req;
+          // Erro da RPC: classificado UMA única vez, preservando o token original.
+          if (res?.error) throw classificarErroRpcEdicao(res.error);
+          return res?.data as unknown;
+        } catch (e) {
+          // Rede/abort/exceção de transporte: estado ambíguo, nunca mensagem crua.
+          throw classificarErroRpcEdicao(e);
+        }
+      });
+
       // Sucesso estrito: success===true, user_id do alvo e updated_at válido.
       if (!edicaoBemSucedida(data, editUser.user_id)) throw erroAmbiguoEdicao();
 
