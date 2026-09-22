@@ -91,8 +91,19 @@ export function DocumentosReceberTab({ contaId, canDelete = false }: Props) {
   return (
     <div className="space-y-4">
       <div>
+        <h4 className="text-sm font-medium mb-2">Documentos da conta</h4>
+        <div className="mb-3">
+          <DocumentosPanel
+            ownerType="RECEIVABLE"
+            ownerId={contaId}
+            defaultType="INVOICE"
+            canDelete={canDelete}
+            compact
+            onChanged={() => refetch()}
+          />
+        </div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-medium">Documentos da conta</h4>
+          <h4 className="text-sm font-medium">Comprovantes das baixas</h4>
           <Badge variant={temVigente ? "secondary" : "outline"}>
             {temVigente ? "Comprovante de recebimento vigente" : "Sem comprovante vigente"}
           </Badge>
