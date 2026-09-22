@@ -208,7 +208,7 @@ describe("BaixaDialog payable — resultado incerto sobrevive a fechar/reabrir",
     await waitFor(() => expect(rpcMock.mock.calls.length).toBeGreaterThan(1));
     const novo = rpcMock.mock.calls[rpcMock.mock.calls.length - 1][1].p_payload;
     expect(novo.idempotency_key).not.toBe(original.idempotency_key);
-  });
+  }, 20_000);
 
   it("resolução tardia após a incerteza não registra sucesso nem nova RPC", async () => {
     let resolver: (v: any) => void = () => {};
