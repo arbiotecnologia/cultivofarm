@@ -27,18 +27,22 @@ import {
   ErroAnexoPagarLocal,
   ErroBaixaIncerta,
   ErroBaixaPagarLocal,
+  MSG_JOURNAL_CORROMPIDO,
+  MSG_JOURNAL_INDISPONIVEL,
   MSG_PAGAMENTO_COMPROVANTE_PENDENTE,
   MSG_PAGAMENTO_NAO_CONFIRMADO,
   acumuladosParcelaPagar,
   calcularSaldoPagavel,
   classificarErroBaixaPagar,
   executarComDeadlineBaixaPagar,
-  lerTentativaIncerta,
+  lerJournalTentativa,
   limparTentativaIncerta,
+  persistirTentativaAntesEnvio,
   salvarTentativaIncerta,
   validarBaixaPagar,
   type TentativaBaixaPagar,
 } from "@/lib/financeiro/contasPagar";
+
 import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
 import { CHAVES_INVALIDACAO_PAGAR } from "@/lib/financeiro/contasPagar";
 
