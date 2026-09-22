@@ -66,6 +66,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const tentativaRef = useRef<TentativaBaixaPagar | null>(null);
   /** Guarda síncrona contra duplo clique (o estado de pendência do React é assíncrono). */
   const enviandoRef = useRef(false);
+  /** Token da execução dona da guarda: só ela libera a flag. */
+  const donoRef = useRef(0);
 
   const settingsQuery = useQuery({
     queryKey: ["fin-settings"],
