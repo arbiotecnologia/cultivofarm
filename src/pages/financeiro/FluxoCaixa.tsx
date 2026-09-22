@@ -265,18 +265,26 @@ export default function FluxoCaixa() {
 
 /**
  * Saldo a realizar de um título, alinhado ao RPC get_financial_cashflow:
- * título quitado (PAID) projeta zero — juros/multa pagos acima do original
- * não viram projeção negativa. Nos demais status vale original - abatido - desconto.
+ * título quitado (PAID) ou cancelado (CANCELED) projeta zero.
+ * Nos demais status: original + juros + multa - abatido - desconto, em centavos,
+ * com clamp em zero.
  */
 export function saldoRestante(
   original: unknown,
   abatido: unknown,
   desconto: unknown,
   status?: unknown,
+  juros: unknown = 0,
+  multa: unknown = 0,
 ) {
-  if (String(status ?? "").trim().toUpperCase() === "PAID") return 0;
-  return Number(original || 0) - Number(abatido || 0) - Number(desconto || 0);
+  const s = String(status ?? "").trim().toUpperCase();
+  if (s === "PAID" || s === "CANCELED") return 0;
+  const cent = (v: unknown) => Math.round(Number(v || 0) * 100);
+  const total =
+    cent(original) + cent(juros) + cent(multa) - cent(abatido) - cent(desconto);
+  return Math.max(0, total) / 100;
 }
+
 
 function DrillDownDialog({
   row, groupBy, viewMode, periodo, onClose,
