@@ -313,3 +313,43 @@ export function executarComDeadlineEdicao<T>(
   });
 }
 
+
+/**
+ * Erro de validação LOCAL do fluxo de status (autodesativação, zero linhas confirmadas).
+ * A mensagem já é segura e específica, então é exibida como está.
+ */
+export class ErroStatusLocal extends Error {
+  constructor(mensagem: string) {
+    super(mensagem);
+    this.name = "ErroStatusLocal";
+  }
+}
+
+/** Mensagem genérica de falha remota no toggle de status (nunca texto cru do servidor). */
+export const MSG_STATUS_ERRO_GENERICO =
+  "Não foi possível alterar o status do usuário. Recarregue a lista e tente novamente.";
+
+/** Mensagem segura para falta de permissão ao alterar o status. */
+export const MSG_STATUS_SEM_PERMISSAO =
+  "Você não tem permissão para alterar o status deste usuário.";
+
+/**
+ * Mensagem segura do toggle de status. Validação local conhecida preserva o texto;
+ * erro remoto vira mensagem específica (último administrador, permissão) ou genérica.
+ * Nunca expõe SQL, detalhes internos ou `message` bruto do servidor.
+ */
+export function mapearErroStatusUsuario(erro: unknown): string {
+  if (erro instanceof ErroStatusLocal) return erro.message;
+  const partes: string[] = [];
+  if (typeof erro === "string") partes.push(erro);
+  else if (erro && typeof erro === "object") {
+    const e = erro as any;
+    for (const k of ["message", "details", "hint", "code", "error_code"]) {
+      if (typeof e[k] === "string") partes.push(e[k]);
+    }
+  }
+  const texto = partes.join(" ");
+  if (/user_last_active_admin/.test(texto)) return MSG_ULTIMO_ADMIN_ATIVO;
+  if (/\b42501\b|permission denied|row-level security/i.test(texto)) return MSG_STATUS_SEM_PERMISSAO;
+  return MSG_STATUS_ERRO_GENERICO;
+}
