@@ -136,9 +136,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const save = useMutation({
     retry: false,
-    mutationFn: async (vars?: { repetir?: boolean }) => {
-      if (enviandoRef.current) return { ignorado: true as const };
-      enviandoRef.current = true;
+    mutationFn: async (vars?: { repetir?: boolean; token?: number }) => {
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
       const repetir = !receber && !!vars?.repetir;
 
