@@ -3,14 +3,21 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   RPC_EDITAR_USUARIO,
+  CLIENTE_IDS_MAX,
   construirProfilePayload,
   construirArgsEdicao,
   dedupClienteIds,
+  validarLimiteClienteIds,
   resolverPrincipalClienteId,
   edicaoBemSucedida,
   mapearErroEdicaoUsuario,
   edicaoExigeRecargaAposErro,
+  classificarErroRpcEdicao,
+  erroLocalEdicao,
+  erroAmbiguoEdicao,
+  ErroEdicaoUsuario,
   MSG_EDICAO_NAO_CONFIRMADA,
+  MSG_CLIENTES_ACIMA_DO_LIMITE,
 } from "@/lib/configuracoes/edicaoUsuarioRpc";
 
 const ROOT = resolve(__dirname, "../../..");
