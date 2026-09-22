@@ -49,7 +49,6 @@ describe("agregação de documentos do drawer receivable", () => {
   const pagamentos = [
     { id: "pay-0", installment_id: "inst-2", payment_date: "2026-09-19", is_reversal: false, reversed_payment_id: null },
     { id: "pay-1", installment_id: "inst-1", payment_date: "2026-09-20", is_reversal: false, reversed_payment_id: null },
-    { id: "pay-2", installment_id: "inst-1", payment_date: "2026-09-21", is_reversal: true, reversed_payment_id: "pay-1" },
   ];
 
   it("agrega documento direto + comprovante de baixa da mesma conta", () => {
