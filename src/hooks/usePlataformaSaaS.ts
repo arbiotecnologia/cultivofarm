@@ -150,13 +150,13 @@ export function useOrganizacoesSaaS() {
     queryFn: async () => {
       const { data, error } = await db
         .from("organizations")
-        .select("id,name")
-        .order("name")
+        .select("id,nome")
+        .order("nome")
         .limit(LIMITE);
       if (error) throw new Error(error.message);
-      return ((data ?? []) as { id: string; name: string | null }[]).map((o) => ({
+      return ((data ?? []) as { id: string; nome: string | null }[]).map((o) => ({
         id: o.id,
-        nome: o.name ?? "—",
+        nome: o.nome ?? "—",
       }));
     },
     ...opcoes,
