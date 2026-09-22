@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        if (!mountedRef.current || gen !== generationRef.current) return;
+        if (effectCancelled || !mountedRef.current || gen !== generationRef.current) return;
         void fetchProfileAndRole(userId, gen);
       }, 0);
     };
