@@ -105,7 +105,8 @@ export default function FluxoCaixa() {
       <PeriodoFilter value={periodo} onChange={setPeriodo} showRegime={false} />
 
       <p className="text-xs text-muted-foreground">
-        Projetado soma o saldo restante de cada parcela (valor original menos o que já foi recebido/pago e os descontos),
+        Projetado soma o saldo restante de cada parcela (valor original mais juros e multa, menos o que já foi
+        recebido/pago e os descontos; parcelas quitadas ou canceladas contam zero),
         pela data de vencimento — por isso difere do previsto bruto do painel financeiro. Realizado soma os pagamentos
         pela data de pagamento, já incluindo estornos com valor negativo. O acumulado começa em zero no início do
         período selecionado: não é o saldo das contas bancárias.

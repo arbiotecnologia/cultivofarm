@@ -66,6 +66,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const tentativaRef = useRef<TentativaBaixaPagar | null>(null);
   /** Guarda síncrona contra duplo clique (o estado de pendência do React é assíncrono). */
   const enviandoRef = useRef(false);
+  /** Token da execução dona da guarda: só ela libera a flag. */
+  const donoRef = useRef(0);
 
   const settingsQuery = useQuery({
     queryKey: ["fin-settings"],
@@ -134,9 +136,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const save = useMutation({
     retry: false,
-    mutationFn: async (vars?: { repetir?: boolean }) => {
-      if (enviandoRef.current) return { ignorado: true as const };
-      enviandoRef.current = true;
+    mutationFn: async (vars?: { repetir?: boolean; token?: number }) => {
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
       const repetir = !receber && !!vars?.repetir;
 
@@ -149,13 +149,21 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         if (!user) throw erroAnexo("Sessão expirada. Entre novamente para reenviar o comprovante.");
         if (!pendente.paymentId) throw erroAnexo("Não foi possível identificar a baixa registrada.");
         if (!file) throw erroAnexo("Selecione o comprovante para reenviar.");
-        await anexarComprovanteBaixa(supabase, {
-          ownerType: ownerTypeBase,
-          paymentId: pendente.paymentId,
-          idempotencyKey: idempotencyRef.current,
-          file,
-          uploadedBy: user.id,
-        });
+        // Toda falha aqui é falha de ANEXO de uma baixa já confirmada: nunca
+        // vira resultado incerto, nunca persiste tentativa, nunca dispara RPC.
+        try {
+          await anexarComprovanteBaixa(supabase, {
+            ownerType: ownerTypeBase,
+            paymentId: pendente.paymentId,
+            idempotencyKey: idempotencyRef.current,
+            file,
+            uploadedBy: user.id,
+          });
+        } catch {
+          throw erroAnexo(
+            "Não foi possível anexar o comprovante. O pagamento continua registrado; tente enviar o arquivo novamente.",
+          );
+        }
         return { reenvio: true as const };
       }
 
@@ -265,6 +273,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           // Baixa persistida, comprovante não: estado explícito de falha parcial.
           return { comprovantePendente: true as const, paymentId: paymentId as unknown as string };
         }
+      } else if (payloadFinal.has_receipt === true) {
+        // Repetição recuperada: o payload original previa comprovante, mas o
+        // arquivo não sobrevive ao remount. Pagamento confirmado + comprovante
+        // pendente (nunca sucesso completo).
+        return { comprovantePendente: true as const, paymentId: pid };
       }
       return { ok: true as const };
     },
@@ -291,8 +304,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       toast.success(receber ? "Recebimento registrado" : "Pagamento registrado");
       onClose();
     },
-    onSettled: () => {
-      enviandoRef.current = false;
+    onSettled: (_d: unknown, _e: unknown, vars: any) => {
+      // Só a execução dona da guarda libera a flag.
+      if (!vars || vars.token === undefined || vars.token === donoRef.current) {
+        enviandoRef.current = false;
+      }
     },
     onError: (e: unknown) => {
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
@@ -335,8 +351,17 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const gravando = save.isPending;
   // Edição travada por pendência de comprovante, resultado incerto OU enquanto grava.
   const travado = !!pendente || gravando || exigeConferencia;
-  /** Arquivo: travado ao gravar ou com resultado incerto; livre para reenvio pendente. */
-  const arquivoTravado = !pendente && (gravando || exigeConferencia);
+  /** Arquivo: sempre travado enquanto grava; livre apenas em pendência ociosa. */
+  const arquivoTravado = gravando || (!pendente && exigeConferencia);
+
+  /** Handler único: adquire a guarda síncrona ANTES de disparar a mutação. */
+  function iniciarEnvio(vars: { repetir?: boolean } = {}) {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    const token = donoRef.current + 1;
+    donoRef.current = token;
+    save.mutate({ ...vars, token });
+  }
 
   /** Fechar nunca apaga pendência/resultado incerto em silêncio: exige confirmação. */
   function tentarFechar() {
@@ -379,7 +404,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
               chave nova é gerada, mesmo fechando e reabrindo esta janela.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => save.mutate({ repetir: true })} disabled={gravando}>
+              <Button size="sm" variant="outline" onClick={() => iniciarEnvio({ repetir: true })} disabled={gravando}>
                 Repetir a mesma tentativa
               </Button>
               <Button size="sm" variant="ghost" onClick={confirmarConferencia} disabled={gravando}>
@@ -504,7 +529,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         <DialogFooter>
           <Button variant="outline" onClick={tentarFechar} disabled={gravando}>{pendente ? "Fechar" : "Cancelar"}</Button>
           <Button
-            onClick={() => save.mutate({})}
+            onClick={() => iniciarEnvio()}
             // Reenvio só exige arquivo (baixa já persistida, zero RPC de baixa).
             // Resultado incerto trava novo envio até conferência explícita.
             // Nova baixa: settings carregadas obrigatórias.
