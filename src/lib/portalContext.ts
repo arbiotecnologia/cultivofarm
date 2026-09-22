@@ -16,6 +16,9 @@ export const PORTAL_CONTEXT_HOME: Record<PortalContext, string> = {
  * um papel único. NUNCA usar para autorização multiportal.
  */
 const ROLE_PRIORITY: AppRole[] = [
+  // Papel de plataforma SaaS: reconhecido no saneamento para não ser
+  // descartado, sem conceder qualquer acesso operacional.
+  "superadmin",
   "administrador",
   "gestor",
   "gestor_comercial",
