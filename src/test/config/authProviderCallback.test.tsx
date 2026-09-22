@@ -288,5 +288,54 @@ describe("AuthProvider — callback de autenticação", () => {
     expect(screen.getByTestId("loading").textContent).toBe("true");
     h.getSession = async () => ({ data: { session: initialSession }, error: null });
   });
+
+  describe("getSession de efeito descartado (StrictMode)", () => {
+    function slowGetSession(session: any, delay = 40) {
+      h.getSession = async () => {
+        await new Promise((r) => setTimeout(r, delay));
+        return { data: { session }, error: null };
+      };
+    }
+
+    it("getSession antigo com A não troca a identidade depois do evento B", async () => {
+      slowGetSession(sessionA);
+      renderProvider(true);
+      profileRow = { id: "p2", user_id: "user-b", nome: "B", email: "b@x.com", ativo: true };
+      rolesRows = [{ role: "consultor_tecnico" }];
+      emit("SIGNED_IN", sessionB);
+      await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("consultor_tecnico"));
+      await new Promise((r) => setTimeout(r, 80));
+      expect(screen.getByTestId("user").textContent).toBe("user-b");
+      expect(screen.getByTestId("role").textContent).toBe("consultor_tecnico");
+    });
+
+    it("getSession antigo com A não ressuscita a sessão depois do logout", async () => {
+      slowGetSession(sessionA);
+      renderProvider(true);
+      emit("SIGNED_OUT", null);
+      await new Promise((r) => setTimeout(r, 80));
+      expect(screen.getByTestId("user").textContent).toBe("-");
+      expect(screen.getByTestId("role").textContent).toBe("-");
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    it("getSession antigo sem sessão não encerra o loading do efeito ativo", async () => {
+      slowGetSession(null);
+      renderProvider(true);
+      profileDelay = 120;
+      emit("SIGNED_IN", sessionB);
+      await new Promise((r) => setTimeout(r, 70));
+      expect(screen.getByTestId("loading").textContent).toBe("true");
+      profileDelay = 0;
+    });
+
+    it("sessão inicial válida continua carregando perfil e papéis", async () => {
+      initialSession = sessionA;
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId("user").textContent).toBe("user-a"));
+      await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("administrador"));
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+  });
 });
 
