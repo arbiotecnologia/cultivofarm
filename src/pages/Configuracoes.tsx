@@ -436,9 +436,8 @@ export default function Configuracoes() {
   const saveEditUser = useMutation({
     mutationFn: async () => {
       if (!editUser) return;
-      escritaIniciada.current = false;
 
-      // ---- 1) VALIDAÇÃO COMPLETA ANTES DE QUALQUER ESCRITA ----
+      // ---- 1) VALIDAÇÃO COMPLETA ANTES DA ÚNICA ESCRITA (RPC transacional) ----
       const desiredRoles: string[] = editUser.roles ?? [];
       const erros = validarEdicaoUsuario(
         {
@@ -463,68 +462,36 @@ export default function Configuracoes() {
       const telefoneValidado = validatePhoneBR(editUser.telefone, { fieldLabel: "Telefone" });
       if (!telefoneValidado.ok) throw new Error(telefoneValidado.error);
 
-      const sb = supabase as any;
-      const { data: atuais, error: selectErr } = await sb
-        .from("user_clientes")
-        .select("id, cliente_id, principal")
-        .eq("user_id", editUser.user_id);
-      if (selectErr) throw selectErr;
-
-      const atuaisMap = new Map<string, { id: string; principal: boolean }>((atuais ?? []).map((r: any) => [r.cliente_id, { id: r.id, principal: !!r.principal }]));
-      const desejados = new Set(editVinculos.map(v => v.cliente_id));
-
-      // ---- 2) ESCRITAS (sem atomicidade: a partir daqui pode haver estado parcial) ----
-      escritaIniciada.current = true;
-
-      const toDelete = (atuais ?? []).filter((r: any) => !desejados.has(r.cliente_id)).map((r: any) => r.id);
-      if (toDelete.length) {
-        const { error: delErr } = await sb.from("user_clientes").delete().in("id", toDelete);
-        if (delErr) throw delErr;
-      }
-
-      for (const v of editVinculos) {
-        const existing = atuaisMap.get(v.cliente_id);
-        if (!existing) {
-          const { error: insErr } = await sb.from("user_clientes").insert({ user_id: editUser.user_id, cliente_id: v.cliente_id, principal: v.principal });
-          if (insErr) throw insErr;
-        } else if (existing.principal !== v.principal) {
-          const { error: updErr } = await sb.from("user_clientes").update({ principal: v.principal }).eq("id", existing.id);
-          if (updErr) throw updErr;
-        }
-      }
-
-      // Perfil básico — confirma que exatamente UMA linha foi atualizada
-      const { data: perfilAtualizado, error: profileErr } = await supabase.from("profiles")
-        .update({
-          nome: (editUser.nome ?? "").trim(),
+      // ---- 2) UMA ÚNICA CHAMADA: RPC transacional com versão original (updated_at) ----
+      const args = construirArgsEdicao({
+        userId: editUser.user_id,
+        expectedUpdatedAt: editUser.updated_at,
+        profile: {
+          nome: editUser.nome,
           telefone: telefoneValidado.value,
           cargo: editUser.cargo,
           cpf_cnpj: unmaskCpfCnpj(editUser.cpf_cnpj),
           crea: editUser.crea,
           especialidade: editUser.especialidade,
-        } as any)
-        .eq("user_id", editUser.user_id)
-        .select("user_id");
-      if (profileErr) throw profileErr;
-      exigirUmaLinha(perfilAtualizado, "dados do perfil");
+        },
+        roles: desiredRoles,
+        clienteIds: editVinculos.map((v) => v.cliente_id),
+        principalClienteId: resolverPrincipalClienteId(editVinculos),
+        // partner_id somente quando há papel B2B; caso contrário null (servidor deriva o papel)
+        partnerId: hasPartnerRole(desiredRoles) ? (editUser.partner_id || null) : null,
+      });
 
-      // Papéis + vínculo com parceiro B2B
+      const { data, error } = await (supabase as any).rpc(RPC_EDITAR_USUARIO, args);
+      if (error) throw new Error(mapearErroEdicaoUsuario(error));
+      // Sucesso estrito: success===true, user_id do alvo e updated_at válido.
+      if (!edicaoBemSucedida(data, editUser.user_id)) throw new Error(MSG_EDICAO_NAO_CONFIRMADA);
+
       const rolesChanged =
         desiredRoles.length !== originalRoles.length ||
         desiredRoles.some((r) => !originalRoles.includes(r));
-      const originalLink = partnerLinkByUser(editUser.user_id);
-      const partnerChanged =
-        (hasPartnerRole(desiredRoles) && (originalLink?.partner_id !== editUser.partner_id
-          || originalLink?.papel !== partnerPapelFromRoles(desiredRoles)))
-        || (!hasPartnerRole(desiredRoles) && !!originalLink);
-
-      if (rolesChanged || partnerChanged) {
-        await syncUserRolesAndPartner(editUser.user_id, desiredRoles, editUser.partner_id || "");
-      }
       return { rolesChanged, userId: editUser.user_id };
     },
     onSuccess: (result) => {
-      escritaIniciada.current = false;
       setEditErros({});
       setEditResumo(null);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -542,15 +509,14 @@ export default function Configuracoes() {
     },
 
     onError: (e: Error) => {
-      // Falha após início das escritas: estado pode estar parcial. Não repetimos automaticamente
-      // e mantemos o formulário aberto para conferência.
-      const parcial = escritaIniciada.current;
-      escritaIniciada.current = false;
-      if (parcial) {
-        queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-        queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
+      // Mensagens SEMPRE mapeadas (nunca texto cru do servidor).
+      const msg = mapearErroEdicaoUsuario(e);
+      const exigeRecarga = edicaoExigeRecargaAposErro(e);
+      if (exigeRecarga) {
+        // Conflito ou resultado incerto: exige recarregar (e reabrir o diálogo) antes de tentar
+        // novamente — sem retry automático. O diálogo permanece aberto com o formulário intacto.
+        setExigeRecargaEdicao(true);
       }
-      const msg = parcial ? `${e.message} ${ERRO_EDICAO_PARCIAL}` : e.message;
       setEditResumo(msg);
       toast({ title: "Erro", description: msg, variant: "destructive" });
     },
