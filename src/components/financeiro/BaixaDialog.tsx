@@ -88,9 +88,13 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     if (open) {
       setFile(null);
       setPendente(null);
-      // Payable: uma tentativa incerta anterior (mesmo usuário + mesma parcela)
-      // sobrevive a fechar/reabrir e remontar. Nunca geramos chave nova em silêncio.
-      const anterior = receber ? null : lerTentativaIncerta(user?.id, installment?.id);
+      // Payable: uma tentativa anterior (mesmo usuário + mesma parcela) sobrevive
+      // a fechar/reabrir e remontar. Nunca geramos chave nova em silêncio.
+      const leitura = receber
+        ? ({ estado: "ausente" } as const)
+        : lerJournalTentativa(user?.id, installment?.id);
+      const anterior = leitura.estado === "ok" ? leitura.tentativa : null;
+      setJournalFalha(leitura.estado === "falha");
       if (anterior) {
         tentativaRef.current = anterior;
         idempotencyRef.current = anterior.idempotencyKey;
@@ -115,6 +119,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
     } /* eslint-disable-line */
   }, [open, installment?.id, user?.id]);
+
 
   const { data: pms = [] } = useQuery({
     queryKey: ["fin-pm-active"],
