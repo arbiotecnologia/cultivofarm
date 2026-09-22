@@ -277,22 +277,26 @@ export default function Configuracoes() {
   const toggleAtivo = useMutation({
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
       const bloqueio = bloqueioAutoDesativacao(userId === user?.id, ativo);
-      if (bloqueio) throw new Error(bloqueio);
+      if (bloqueio) throw new ErroStatusLocal(bloqueio);
       const { data, error } = await supabase
         .from("profiles")
         .update({ ativo } as any)
         .eq("user_id", userId)
         .select("user_id");
       if (error) throw error;
-      exigirUmaLinha(data, "status do usuário");
+      try {
+        exigirUmaLinha(data, "status do usuário");
+      } catch (e) {
+        throw new ErroStatusLocal((e as Error).message);
+      }
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: "Status do usuário atualizado" });
     },
-    onError: (e: Error) => {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    onError: (e: unknown) => {
+      toast({ title: "Erro", description: mapearErroStatusUsuario(e), variant: "destructive" });
     },
   });
 
