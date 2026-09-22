@@ -164,12 +164,29 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
       const rpcName = receber ? "rpc_register_receivable_payment" : "rpc_register_payable_payment";
       const amountKey = receber ? "amount_received" : "amount_paid";
-      const { data: paymentId, error } = await supabase.rpc(rpcName as any, {
-        p_installment_id: installment.id,
-        p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
-      });
+      const chamar = async (signal: AbortSignal | undefined) => {
+        let req = (supabase as any).rpc(rpcName as any, {
+          p_installment_id: installment.id,
+          p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
+        });
+        if (signal && typeof req?.abortSignal === "function") req = req.abortSignal(signal);
+        return await req;
+      };
+
+      // Payable: prazo rígido cobrindo pré-fetch/auth + RPC. Receivable mantém o
+      // fluxo original.
+      const { data: paymentId, error } = receber
+        ? await supabase.rpc(rpcName as any, {
+            p_installment_id: installment.id,
+            p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
+          })
+        : await executarComDeadlineBaixaPagar(chamar);
       if (error) throw error;
-      if (!paymentId) throw new ErroBaixaLocal("Falha ao registrar pagamento.");
+      // Sucesso estrito: a RPC deve retornar um UUID de pagamento.
+      const pid = typeof paymentId === "string" ? paymentId : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pid)) {
+        throw receber ? new ErroBaixaLocal("Falha ao registrar pagamento.") : new ErroBaixaIncerta();
+      }
 
       if (file) {
         // H6c-004: anexo idempotente por payment_id + tentativa lógica.
