@@ -228,6 +228,8 @@ const PARCELA_75_DB = { ...PARCELA_75, id: "inst-1", installment_number: 1, due_
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Tentativa incerta é persistida por usuário+parcela: cada cenário começa limpo.
+  localStorage.clear();
   resultados = {
     financial_settings: { data: { require_receipt_on_payable_payment: false }, error: null },
     payment_methods: { data: [{ id: "pm-1", name: "Pix" }], error: null },

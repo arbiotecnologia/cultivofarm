@@ -24,6 +24,7 @@ import {
   validarBaixaRecebimento,
 } from "@/lib/financeiro/baixaRecebimento";
 import {
+  ErroAnexoPagarLocal,
   ErroBaixaIncerta,
   ErroBaixaPagarLocal,
   MSG_PAGAMENTO_COMPROVANTE_PENDENTE,
@@ -32,7 +33,11 @@ import {
   calcularSaldoPagavel,
   classificarErroBaixaPagar,
   executarComDeadlineBaixaPagar,
+  lerTentativaIncerta,
+  limparTentativaIncerta,
+  salvarTentativaIncerta,
   validarBaixaPagar,
+  type TentativaBaixaPagar,
 } from "@/lib/financeiro/contasPagar";
 import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
 import { CHAVES_INVALIDACAO_PAGAR } from "@/lib/financeiro/contasPagar";
@@ -57,6 +62,10 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const [pendente, setPendente] = useState<{ paymentId: string } | null>(null);
   /** Resultado incerto (timeout/rede/desconhecido): bloqueia novo envio até conferência. */
   const [exigeConferencia, setExigeConferencia] = useState(false);
+  /** Tentativa incerta preservada (mesma chave e mesmo payload) para repetição idempotente. */
+  const tentativaRef = useRef<TentativaBaixaPagar | null>(null);
+  /** Guarda síncrona contra duplo clique (o estado de pendência do React é assíncrono). */
+  const enviandoRef = useRef(false);
 
   const settingsQuery = useQuery({
     queryKey: ["fin-settings"],
@@ -75,13 +84,35 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   useEffect(() => {
     if (open) {
-      setForm({ ...empty, amount: Math.max(0, saldoInicial) });
       setFile(null);
       setPendente(null);
-      setExigeConferencia(false);
-      idempotencyRef.current = crypto.randomUUID();
+      // Payable: uma tentativa incerta anterior (mesmo usuário + mesma parcela)
+      // sobrevive a fechar/reabrir e remontar. Nunca geramos chave nova em silêncio.
+      const anterior = receber ? null : lerTentativaIncerta(user?.id, installment?.id);
+      if (anterior) {
+        tentativaRef.current = anterior;
+        idempotencyRef.current = anterior.idempotencyKey;
+        setExigeConferencia(true);
+        const p = anterior.payload as any;
+        setForm({
+          ...empty,
+          payment_date: p.payment_date ?? today,
+          amount: Number(p.amount_paid) || 0,
+          payment_method_id: p.payment_method_id ?? "",
+          bank_account_id: p.bank_account_id ?? "",
+          discount_amount: Number(p.discount_amount) || 0,
+          interest_amount: Number(p.interest_amount) || 0,
+          penalty_amount: Number(p.penalty_amount) || 0,
+          notes: p.notes ?? "",
+        });
+      } else {
+        tentativaRef.current = null;
+        setExigeConferencia(false);
+        setForm({ ...empty, amount: Math.max(0, saldoInicial) });
+        idempotencyRef.current = crypto.randomUUID();
+      }
     } /* eslint-disable-line */
-  }, [open, installment?.id]);
+  }, [open, installment?.id, user?.id]);
 
   const { data: pms = [] } = useQuery({
     queryKey: ["fin-pm-active"],
@@ -103,16 +134,21 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   const save = useMutation({
     retry: false,
-    mutationFn: async () => {
+    mutationFn: async (vars?: { repetir?: boolean }) => {
+      if (enviandoRef.current) return { ignorado: true as const };
+      enviandoRef.current = true;
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
+      const repetir = !receber && !!vars?.repetir;
 
       // Reenvio do comprovante de uma baixa JÁ persistida: nenhuma nova baixa e
       // nenhuma RPC. Validamos apenas sessão, arquivo e identificador persistido —
       // método pode ter ficado inativo e o saldo já pode ser zero.
       if (pendente) {
-        if (!user) throw new ErroBaixaLocal("Sessão expirada. Entre novamente para reenviar o comprovante.");
-        if (!pendente.paymentId) throw new ErroBaixaLocal("Não foi possível identificar a baixa registrada.");
-        if (!file) throw new ErroBaixaLocal("Selecione o comprovante para reenviar.");
+        const erroAnexo = (m: string) =>
+          receber ? new ErroBaixaLocal(m) : new ErroAnexoPagarLocal(m);
+        if (!user) throw erroAnexo("Sessão expirada. Entre novamente para reenviar o comprovante.");
+        if (!pendente.paymentId) throw erroAnexo("Não foi possível identificar a baixa registrada.");
+        if (!file) throw erroAnexo("Selecione o comprovante para reenviar.");
         await anexarComprovanteBaixa(supabase, {
           ownerType: ownerTypeBase,
           paymentId: pendente.paymentId,
@@ -124,52 +160,77 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
 
       // Resultado incerto anterior: nenhum novo envio com nova chave até conferência.
-      if (!receber && exigeConferencia) throw new ErroBaixaLocal(MSG_PAGAMENTO_NAO_CONFIRMADO);
+      // Só a repetição explícita da MESMA tentativa (mesma chave e mesmo payload) é aceita.
+      if (!receber && exigeConferencia && !repetir) {
+        throw new ErroBaixaPagarLocal(MSG_PAGAMENTO_NAO_CONFIRMADO);
+      }
+      if (repetir && !tentativaRef.current) {
+        throw new ErroBaixaPagarLocal(MSG_PAGAMENTO_NAO_CONFIRMADO);
+      }
 
-      if (receber) {
-        const erro = validarBaixaRecebimento({
-          parcela: installment,
-          form,
-          metodosAtivos: (pms as any[]).map((p) => String(p.id)),
-          settingsCarregadas: settingsQuery.isSuccess,
-          exigeComprovante: !!requireReceipt,
-          temArquivo: !!file,
-          temSessao: !!user,
-        });
-        if (erro) throw new ErroBaixaLocal(erro);
-      } else {
-        const erro = validarBaixaPagar({
-          parcela: installment,
-          form,
-          metodosAtivos: (pms as any[]).map((p) => String(p.id)),
-          settingsCarregadas: settingsQuery.isSuccess,
-          exigeComprovante: !!requireReceipt,
-          temArquivo: !!file,
-          temSessao: !!user,
-        });
-        if (erro) throw new ErroBaixaPagarLocal(erro);
+      if (!repetir) {
+        if (receber) {
+          const erro = validarBaixaRecebimento({
+            parcela: installment,
+            form,
+            metodosAtivos: (pms as any[]).map((p) => String(p.id)),
+            settingsCarregadas: settingsQuery.isSuccess,
+            exigeComprovante: !!requireReceipt,
+            temArquivo: !!file,
+            temSessao: !!user,
+          });
+          if (erro) throw new ErroBaixaLocal(erro);
+        } else {
+          const erro = validarBaixaPagar({
+            parcela: installment,
+            form,
+            metodosAtivos: (pms as any[]).map((p) => String(p.id)),
+            settingsCarregadas: settingsQuery.isSuccess,
+            exigeComprovante: !!requireReceipt,
+            temArquivo: !!file,
+            temSessao: !!user,
+          });
+          if (erro) throw new ErroBaixaPagarLocal(erro);
+        }
       }
 
       const ownerType = ownerTypeBase;
 
-      const payloadBase: any = {
-        payment_date: form.payment_date,
-        payment_method_id: form.payment_method_id,
-        bank_account_id: form.bank_account_id || null,
-        discount_amount: Number(form.discount_amount) || 0,
-        interest_amount: Number(form.interest_amount) || 0,
-        penalty_amount: Number(form.penalty_amount) || 0,
-        notes: form.notes || null,
-        has_receipt: !!file,
-        idempotency_key: idempotencyRef.current,
-      };
-
       const rpcName = receber ? "rpc_register_receivable_payment" : "rpc_register_payable_payment";
       const amountKey = receber ? "amount_received" : "amount_paid";
+
+      // Repetição idempotente usa EXATAMENTE o payload e a chave da tentativa original.
+      const payloadFinal: any = repetir
+        ? { ...(tentativaRef.current as TentativaBaixaPagar).payload }
+        : {
+            payment_date: form.payment_date,
+            payment_method_id: form.payment_method_id,
+            bank_account_id: form.bank_account_id || null,
+            discount_amount: Number(form.discount_amount) || 0,
+            interest_amount: Number(form.interest_amount) || 0,
+            penalty_amount: Number(form.penalty_amount) || 0,
+            notes: form.notes || null,
+            has_receipt: !!file,
+            idempotency_key: idempotencyRef.current,
+            [amountKey]: Number(form.amount),
+          };
+
+      // Payable: a tentativa fica registrada em memória antes do envio para que um
+      // resultado incerto possa ser repetido sem gerar nova chave.
+      if (!receber && user && installment?.id) {
+        tentativaRef.current = {
+          idempotencyKey: String(payloadFinal.idempotency_key),
+          parcelaId: String(installment.id),
+          usuarioId: user.id,
+          payload: payloadFinal,
+          criadoEm: new Date().toISOString(),
+        };
+      }
+
       const chamar = async (signal: AbortSignal | undefined) => {
         let req = (supabase as any).rpc(rpcName as any, {
           p_installment_id: installment.id,
-          p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
+          p_payload: payloadFinal,
         });
         if (signal && typeof req?.abortSignal === "function") req = req.abortSignal(signal);
         return await req;
@@ -180,7 +241,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       const { data: paymentId, error } = receber
         ? await supabase.rpc(rpcName as any, {
             p_installment_id: installment.id,
-            p_payload: { ...payloadBase, [amountKey]: Number(form.amount) },
+            p_payload: payloadFinal,
           })
         : await executarComDeadlineBaixaPagar(chamar);
       if (error) throw error;
@@ -208,7 +269,14 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       return { ok: true as const };
     },
     onSuccess: (r: any) => {
+      if (r?.ignorado) return;
       invalidarTudo();
+      if (!receber && !r?.reenvio) {
+        // Pagamento confirmado: a tentativa deixa de estar incerta.
+        limparTentativaIncerta(user?.id, installment?.id);
+        tentativaRef.current = null;
+        setExigeConferencia(false);
+      }
       if (r?.comprovantePendente) {
         setPendente({ paymentId: r.paymentId });
         toast.error(receber ? MSG_COMPROVANTE_PENDENTE : MSG_PAGAMENTO_COMPROVANTE_PENDENTE);
@@ -223,6 +291,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       toast.success(receber ? "Recebimento registrado" : "Pagamento registrado");
       onClose();
     },
+    onSettled: () => {
+      enviandoRef.current = false;
+    },
     onError: (e: unknown) => {
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
       if (pendente) invalidarTudo();
@@ -233,7 +304,16 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       }
       // Classificação única ponta a ponta: incerto trava novo envio até conferência.
       const c = classificarErroBaixaPagar(e);
-      if (c.exigeConferencia) setExigeConferencia(true);
+      if (c.exigeConferencia) {
+        setExigeConferencia(true);
+        // Preserva chave + payload da tentativa para repetição idempotente após
+        // fechar/reabrir ou remontar (nada de arquivo, token ou credencial).
+        if (tentativaRef.current) salvarTentativaIncerta(tentativaRef.current);
+      } else if (!pendente && !exigeConferencia) {
+        // Recusa comprovada antes de qualquer tentativa incerta: nada a preservar.
+        limparTentativaIncerta(user?.id, installment?.id);
+        tentativaRef.current = null;
+      }
       toast.error(c.mensagem);
     },
   });
@@ -255,6 +335,8 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const gravando = save.isPending;
   // Edição travada por pendência de comprovante, resultado incerto OU enquanto grava.
   const travado = !!pendente || gravando || exigeConferencia;
+  /** Arquivo: travado ao gravar ou com resultado incerto; livre para reenvio pendente. */
+  const arquivoTravado = !pendente && (gravando || exigeConferencia);
 
   /** Fechar nunca apaga pendência/resultado incerto em silêncio: exige confirmação. */
   function tentarFechar() {
@@ -264,8 +346,23 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         `O ${receber ? "recebimento" : "pagamento"} já foi registrado, mas o comprovante ainda não foi anexado. Se fechar agora, retome o envio pelo drawer de anexos da conta. Deseja fechar mesmo assim?`,
       );
       if (!ok) return;
+    } else if (exigeConferencia) {
+      const ok = window.confirm(
+        "Não foi possível confirmar se este pagamento foi registrado. Ao fechar, a tentativa fica guardada: reabra esta baixa e confira a conta antes de repetir. Deseja fechar mesmo assim?",
+      );
+      if (!ok) return;
     }
     onClose();
+  }
+
+  /** Conferência explícita do usuário: libera o formulário e descarta a tentativa guardada. */
+  function confirmarConferencia() {
+    if (gravando) return;
+    limparTentativaIncerta(user?.id, installment?.id);
+    tentativaRef.current = null;
+    setExigeConferencia(false);
+    idempotencyRef.current = crypto.randomUUID();
+    setForm({ ...empty, amount: Math.max(0, saldoInicial) });
   }
 
   return (
@@ -276,8 +373,19 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         </DialogHeader>
 
         {exigeConferencia && !pendente && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
-            {MSG_PAGAMENTO_NAO_CONFIRMADO} Ao fechar, reabra a baixa somente depois de conferir a lista.
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2" role="alert">
+            <p>
+              {MSG_PAGAMENTO_NAO_CONFIRMADO} A tentativa fica guardada: nenhum novo pagamento é enviado e nenhuma
+              chave nova é gerada, mesmo fechando e reabrindo esta janela.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => save.mutate({ repetir: true })} disabled={gravando}>
+                Repetir a mesma tentativa
+              </Button>
+              <Button size="sm" variant="ghost" onClick={confirmarConferencia} disabled={gravando}>
+                Já conferi a conta — liberar novo pagamento
+              </Button>
+            </div>
           </div>
         )}
         {pendente && (
@@ -366,20 +474,28 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           </div>
           <div className="col-span-2"><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
         </fieldset>
+        {/* Arquivo travado enquanto grava ou com resultado incerto; liberado para o
+            reenvio de um comprovante pendente (baixa já confirmada, zero RPC). */}
         <div className="space-y-2">
           <Label>
             Comprovante {settingsBloqueado ? "" : requireReceipt ? "*" : ""}
           </Label>
           <div className="flex items-center gap-2">
-            <input type="file" ref={fileRef} className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            <input
+              type="file"
+              ref={fileRef}
+              className="hidden"
+              disabled={arquivoTravado}
+              onChange={(e) => { if (!arquivoTravado) setFile(e.target.files?.[0] || null); }}
+            />
             {file ? (
               <div className="flex items-center gap-2 border rounded p-2 text-sm bg-muted flex-1 min-w-0">
                 <FileText className="h-4 w-4 shrink-0 text-primary" />
                 <span className="truncate flex-1">{file.name}</span>
-                <Button type="button" variant="ghost" size="icon" onClick={() => setFile(null)} className="h-6 w-6"><X className="h-3 w-3" /></Button>
+                <Button type="button" variant="ghost" size="icon" disabled={arquivoTravado} onClick={() => setFile(null)} className="h-6 w-6"><X className="h-3 w-3" /></Button>
               </div>
             ) : (
-              <Button type="button" variant="outline" className="w-full" onClick={() => fileRef.current?.click()}>
+              <Button type="button" variant="outline" className="w-full" disabled={arquivoTravado} onClick={() => fileRef.current?.click()}>
                 <Upload className="h-4 w-4 mr-2" /> Selecionar comprovante
               </Button>
             )}

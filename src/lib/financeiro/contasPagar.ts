@@ -259,6 +259,7 @@ function tokenPagarConhecido(erro: unknown): string | null {
 /** Mensagem segura: local mantém o texto tipado; remoto usa allowlist, nunca texto cru. */
 export function mapearErroBaixaPagar(erro: unknown): string {
   if (erro instanceof ErroBaixaPagarLocal) return erro.message;
+  if (erro instanceof ErroAnexoPagarLocal) return erro.message;
   if (erro instanceof ErroBaixaIncerta) return MSG_PAGAMENTO_NAO_CONFIRMADO;
   const token = tokenPagarConhecido(erro);
   return token ? MENSAGENS_PAGAMENTO_REMOTO[token] : MSG_PAGAMENTO_GENERICA;
@@ -270,11 +271,13 @@ export interface ClassificacaoBaixaPagar {
 }
 
 /**
- * Classificação única: guarda local e erro de servidor conhecido são recusas
- * comprovadas (preservam edição); o resto é incerto e exige conferência.
+ * Classificação única: guarda local, falha de ANEXO (pagamento já confirmado) e
+ * erro de servidor conhecido são recusas comprovadas (preservam edição); o resto
+ * é incerto e exige conferência.
  */
 export function classificarErroBaixaPagar(erro: unknown): ClassificacaoBaixaPagar {
   if (erro instanceof ErroBaixaPagarLocal) return { mensagem: erro.message, exigeConferencia: false };
+  if (erro instanceof ErroAnexoPagarLocal) return { mensagem: erro.message, exigeConferencia: false };
   if (erro instanceof ErroBaixaIncerta) {
     return { mensagem: MSG_PAGAMENTO_NAO_CONFIRMADO, exigeConferencia: true };
   }
@@ -392,4 +395,93 @@ export function executarComDeadlineBaixaPagar<T>(
       (e) => finalizar(() => reject(e)),
     );
   });
+}
+
+// ============================================================================
+// Tentativa de baixa payable com resultado incerto — recuperação persistida
+// ============================================================================
+
+/**
+ * Erro local do REENVIO de comprovante de uma baixa já confirmada. Distinto da
+ * validação da baixa: uma falha de anexo nunca torna o pagamento incerto.
+ */
+export class ErroAnexoPagarLocal extends Error {
+  readonly origem = "anexo" as const;
+}
+
+/** Payload exato da tentativa incerta (sem arquivo, token ou credencial). */
+export interface TentativaBaixaPagar {
+  idempotencyKey: string;
+  parcelaId: string;
+  usuarioId: string;
+  payload: Record<string, unknown>;
+  criadoEm: string;
+}
+
+const PREFIXO_TENTATIVA = "fin.baixa-pagar.incerta";
+
+/** Chave isolada por usuário + parcela. */
+export function chaveTentativaPagar(usuarioId: string, parcelaId: string): string {
+  return `${PREFIXO_TENTATIVA}:${usuarioId}:${parcelaId}`;
+}
+
+function storage(): Storage | null {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Grava o mínimo necessário para repetir EXATAMENTE a mesma tentativa. */
+export function salvarTentativaIncerta(t: TentativaBaixaPagar): void {
+  const s = storage();
+  if (!s || !t.usuarioId || !t.parcelaId || !t.idempotencyKey) return;
+  try {
+    s.setItem(chaveTentativaPagar(t.usuarioId, t.parcelaId), JSON.stringify(t));
+  } catch {
+    /* persistência é best-effort; o estado em memória continua bloqueando */
+  }
+}
+
+/** Lê a tentativa incerta do próprio usuário para esta parcela. */
+export function lerTentativaIncerta(
+  usuarioId: string | null | undefined,
+  parcelaId: string | null | undefined,
+): TentativaBaixaPagar | null {
+  const s = storage();
+  if (!s || !usuarioId || !parcelaId) return null;
+  try {
+    const bruto = s.getItem(chaveTentativaPagar(usuarioId, parcelaId));
+    if (!bruto) return null;
+    const t = JSON.parse(bruto) as TentativaBaixaPagar;
+    if (
+      !t ||
+      typeof t.idempotencyKey !== "string" ||
+      !t.idempotencyKey ||
+      t.usuarioId !== usuarioId ||
+      t.parcelaId !== parcelaId ||
+      !t.payload ||
+      typeof t.payload !== "object"
+    ) {
+      return null;
+    }
+    return t;
+  } catch {
+    return null;
+  }
+}
+
+/** Remove a tentativa após conferência explícita ou conclusão. */
+export function limparTentativaIncerta(
+  usuarioId: string | null | undefined,
+  parcelaId: string | null | undefined,
+): void {
+  const s = storage();
+  if (!s || !usuarioId || !parcelaId) return;
+  try {
+    s.removeItem(chaveTentativaPagar(usuarioId, parcelaId));
+  } catch {
+    /* best-effort */
+  }
 }
