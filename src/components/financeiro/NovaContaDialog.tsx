@@ -16,15 +16,18 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { getClienteLabel } from "@/lib/clienteLabel";
 import { hojeSaoPaulo } from "@/lib/financeiro/contasReceber";
 import {
+  ErroCriacaoIncerta,
   ErroNovaContaLocal,
   MSG_NOVA_CONTA_NAO_CONFIRMADA,
   PARCELAS_MAX,
   PARCELAS_MIN,
+  classificarErroNovaConta,
   criacaoBemSucedida,
+  executarComDeadlineNovaConta,
   gerarParcelasReceber,
-  mapearErroNovaConta,
   validarNovaContaReceber,
 } from "@/lib/financeiro/novaContaReceber";
+
 
 type Kind = "receivable" | "payable";
 
