@@ -6,8 +6,8 @@
  * tela — as tabelas SaaS não possuem policy de INSERT/UPDATE/DELETE, e a
  * leitura depende da policy `saas_platform_read` no servidor.
  *
- * Não toca menus operacionais: esta rota vive fora do `AppLayout`/`AppSidebar`
- * e fora do `ACCESS_MAP`.
+ * Não toca menus operacionais: esta rota vive fora do layout administrativo
+ * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
  */
 import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
