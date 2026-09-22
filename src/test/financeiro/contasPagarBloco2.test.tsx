@@ -325,29 +325,34 @@ const CONTA_PAGAR = {
 };
 
 describe("ContaDrawer payable — três pontas", () => {
+  async function abrirAbaParcelas(res: Record<string, any>) {
+    resultados = res;
+    abrirDrawer();
+    const aba = await screen.findByRole("tab", { name: "Parcelas" });
+    fireEvent.click(aba);
+  }
+
   it("Resumo mostra Carregando… (não zeros) enquanto as parcelas carregam", async () => {
-    resultados = {
+    await abrirAbaParcelas({
       accounts_payable: { data: CONTA_PAGAR, error: null },
       accounts_payable_installments: PENDENTE as any,
-    };
-    abrirDrawer();
+    });
     await waitFor(() => expect(screen.getAllByText(/Carregando…/).length).toBeGreaterThan(0));
     expect(screen.queryAllByText(/R\$ 0,00/).length).toBe(0);
   });
 
   it("carregando/erro de parcelas usam colSpan 10 no ramo payable", async () => {
-    resultados = {
+    await abrirAbaParcelas({
       accounts_payable: { data: CONTA_PAGAR, error: null },
       accounts_payable_installments: PENDENTE as any,
-    };
-    abrirDrawer();
+    });
     await waitFor(() =>
       expect(document.querySelector('td[colspan="10"]')).not.toBeNull(),
     );
   });
 
   it("parcela CANCELED exibe saldo não cobrável (—) e fica fora do resumo", async () => {
-    resultados = {
+    await abrirAbaParcelas({
       accounts_payable: { data: CONTA_PAGAR, error: null },
       accounts_payable_installments: {
         data: [
@@ -359,9 +364,8 @@ describe("ContaDrawer payable — três pontas", () => {
         ],
         error: null,
       },
-    };
-    abrirDrawer();
-    await waitFor(() => expect(screen.getByText("—")).toBeInTheDocument());
+    });
+    await waitFor(() => expect(screen.getAllByText("—").length).toBeGreaterThan(0));
     // Resumo ignora canceladas: saldo consolidado é 0.
     await waitFor(() => expect(screen.getAllByText(/R\$ 0,00/).length).toBeGreaterThan(0));
   });
