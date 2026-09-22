@@ -97,7 +97,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
 
   function invalidarTudo() {
     if (receber) CHAVES_INVALIDACAO_RECEBER.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-    else qc.invalidateQueries();
+    else CHAVES_INVALIDACAO_PAGAR.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   }
 
   const save = useMutation({
