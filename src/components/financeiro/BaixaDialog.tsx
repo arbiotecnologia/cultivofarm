@@ -351,8 +351,17 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const gravando = save.isPending;
   // Edição travada por pendência de comprovante, resultado incerto OU enquanto grava.
   const travado = !!pendente || gravando || exigeConferencia;
-  /** Arquivo: travado ao gravar ou com resultado incerto; livre para reenvio pendente. */
-  const arquivoTravado = !pendente && (gravando || exigeConferencia);
+  /** Arquivo: sempre travado enquanto grava; livre apenas em pendência ociosa. */
+  const arquivoTravado = gravando || (!pendente && exigeConferencia);
+
+  /** Handler único: adquire a guarda síncrona ANTES de disparar a mutação. */
+  function iniciarEnvio(vars: { repetir?: boolean } = {}) {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    const token = donoRef.current + 1;
+    donoRef.current = token;
+    save.mutate({ ...vars, token });
+  }
 
   /** Fechar nunca apaga pendência/resultado incerto em silêncio: exige confirmação. */
   function tentarFechar() {
