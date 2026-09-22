@@ -131,7 +131,10 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                   </>
                 ) : (
                   <>
-                    <div><span className="text-muted-foreground">Pago:</span> {brl(totalPago)}</div>
+                    <div><span className="text-muted-foreground">Pago:</span> {brl(resumo.recebido)}</div>
+                    <div><span className="text-muted-foreground">Juros acumulados:</span> {brl(resumo.juros)}</div>
+                    <div><span className="text-muted-foreground">Multa acumulada:</span> {brl(resumo.multa)}</div>
+                    <div><span className="text-muted-foreground">Desconto acumulado:</span> {brl(resumo.desconto)}</div>
                     <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
                   </>
                 )}
