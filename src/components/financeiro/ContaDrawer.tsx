@@ -164,10 +164,10 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                     <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead><TableHead>Juros</TableHead><TableHead>Multa</TableHead><TableHead>Desconto</TableHead><TableHead>Saldo</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
-                    {instLoading && <TableRow><TableCell colSpan={isReceivable ? 10 : 6} className="text-center text-muted-foreground py-8">Carregando parcelas…</TableCell></TableRow>}
+                    {instLoading && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Carregando parcelas…</TableCell></TableRow>}
                     {!instLoading && instErro && (
                       <TableRow>
-                        <TableCell colSpan={isReceivable ? 10 : 6} className="text-center py-8">
+                        <TableCell colSpan={10} className="text-center py-8">
                           <div className="flex flex-col items-center gap-2 text-sm text-destructive">
                             <span>Não foi possível carregar as parcelas.</span>
                             <Button size="sm" variant="outline" onClick={() => refetchInst()}>Tentar novamente</Button>
@@ -177,8 +177,10 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                     )}
                     {installments.map((r: any) => {
                       const recebido = kind === "receivable" ? r.received_amount : r.paid_amount;
-                      const aberto = r.status !== "PAID" && r.status !== "CANCELED";
-                      // Mesma fórmula dos KPIs em ambos os ramos.
+                      const cancelada = r.status === "CANCELED";
+                      const aberto = r.status !== "PAID" && !cancelada;
+                      // Mesma fórmula dos KPIs em ambos os ramos. Cancelada não é
+                      // cobrável: exibe "—" em vez de valor bruto em aberto.
                       const saldoP = isReceivable ? resumoSaldoReceber([r]).saldo : saldoParcelaPagar(r);
                       return (
                         <TableRow key={r.id}>
