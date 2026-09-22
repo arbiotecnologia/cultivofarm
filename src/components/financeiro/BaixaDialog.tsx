@@ -23,7 +23,18 @@ import {
   mapearErroBaixaRecebimento,
   validarBaixaRecebimento,
 } from "@/lib/financeiro/baixaRecebimento";
+import {
+  ErroBaixaIncerta,
+  MSG_PAGAMENTO_COMPROVANTE_PENDENTE,
+  MSG_PAGAMENTO_NAO_CONFIRMADO,
+  acumuladosParcelaPagar,
+  calcularSaldoPagavel,
+  classificarErroBaixaPagar,
+  executarComDeadlineBaixaPagar,
+  validarBaixaPagar,
+} from "@/lib/financeiro/contasPagar";
 import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
+import { CHAVES_INVALIDACAO_PAGAR } from "@/lib/financeiro/contasPagar";
 
 type Kind = "receivable" | "payable";
 
