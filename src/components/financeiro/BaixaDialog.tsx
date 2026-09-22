@@ -101,6 +101,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   }
 
   const save = useMutation({
+    retry: false,
     mutationFn: async () => {
       const ownerTypeBase = receber ? "PAYMENT_RECEIVABLE" : "PAYMENT_PAYABLE";
 
