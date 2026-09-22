@@ -48,12 +48,14 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const idempotencyRef = useRef<string>(crypto.randomUUID());
   const receber = kind === "receivable";
 
-  const today = receber ? hojeSaoPaulo() : new Date().toISOString().slice(0, 10);
+  const today = hojeSaoPaulo();
   const empty: any = { payment_date: today, amount: 0, payment_method_id: "", bank_account_id: "", discount_amount: 0, interest_amount: 0, penalty_amount: 0, notes: "" };
   const [form, setForm] = useState<any>(empty);
   const [file, setFile] = useState<File | null>(null);
   /** Baixa persistida cujo comprovante falhou: payload travado, só reenvio. */
   const [pendente, setPendente] = useState<{ paymentId: string } | null>(null);
+  /** Resultado incerto (timeout/rede/desconhecido): bloqueia novo envio até conferência. */
+  const [exigeConferencia, setExigeConferencia] = useState(false);
 
   const settingsQuery = useQuery({
     queryKey: ["fin-settings"],
@@ -68,15 +70,14 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
   const acum = acumuladosParcela(installment);
   const saldoInicial = receber
     ? calcularSaldoRecebivel(installment)
-    : installment
-      ? Number(installment.original_amount) - Number(installment.received_amount ?? installment.paid_amount ?? 0) - Number(installment.discount_amount ?? 0)
-      : 0;
+    : calcularSaldoPagavel(installment);
 
   useEffect(() => {
     if (open) {
       setForm({ ...empty, amount: Math.max(0, saldoInicial) });
       setFile(null);
       setPendente(null);
+      setExigeConferencia(false);
       idempotencyRef.current = crypto.randomUUID();
     } /* eslint-disable-line */
   }, [open, installment?.id]);
