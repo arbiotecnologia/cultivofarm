@@ -304,8 +304,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       toast.success(receber ? "Recebimento registrado" : "Pagamento registrado");
       onClose();
     },
-    onSettled: () => {
-      enviandoRef.current = false;
+    onSettled: (_d: unknown, _e: unknown, vars: any) => {
+      // Só a execução dona da guarda libera a flag.
+      if (!vars || vars.token === undefined || vars.token === donoRef.current) {
+        enviandoRef.current = false;
+      }
     },
     onError: (e: unknown) => {
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
