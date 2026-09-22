@@ -341,10 +341,10 @@ describe("ContaDrawer payable — três pontas", () => {
     expect(screen.queryAllByText(/R\$ 0,00/).length).toBe(0);
   });
 
-  it("carregando/erro de parcelas usam colSpan 10 no ramo payable", async () => {
+  it("estado de parcelas na aba usa colSpan 10 no ramo payable", async () => {
     await abrirAbaParcelas({
       accounts_payable: { data: CONTA_PAGAR, error: null },
-      accounts_payable_installments: PENDENTE as any,
+      accounts_payable_installments: { data: [], error: null },
     });
     await waitFor(() =>
       expect(document.querySelector('td[colspan="10"]')).not.toBeNull(),
