@@ -117,8 +117,20 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
                 {kind === "payable" && <div><span className="text-muted-foreground">Fornecedor:</span> <strong>{conta.supplier_name ?? "—"}</strong></div>}
                 <div><span className="text-muted-foreground">Categoria:</span> {conta.category?.name ?? "—"}</div>
                 <div><span className="text-muted-foreground">Valor total:</span> <strong>{brl(conta.total_amount)}</strong></div>
-                <div><span className="text-muted-foreground">{kind === "receivable" ? "Recebido" : "Pago"}:</span> {brl(totalRecebido)}</div>
-                <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
+                {isReceivable ? (
+                  <>
+                    <div><span className="text-muted-foreground">Recebido:</span> {brl(resumo.recebido)}</div>
+                    <div><span className="text-muted-foreground">Juros acumulados:</span> {brl(resumo.juros)}</div>
+                    <div><span className="text-muted-foreground">Multa acumulada:</span> {brl(resumo.multa)}</div>
+                    <div><span className="text-muted-foreground">Desconto acumulado:</span> {brl(resumo.desconto)}</div>
+                    <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
+                  </>
+                ) : (
+                  <>
+                    <div><span className="text-muted-foreground">Pago:</span> {brl(totalPago)}</div>
+                    <div><span className="text-muted-foreground">Saldo:</span> <strong>{brl(saldoTotal)}</strong></div>
+                  </>
+                )}
                 <div><span className="text-muted-foreground">1º vencimento:</span> {fmtDate(conta.first_due_date)}</div>
                 <div><span className="text-muted-foreground">Parcelas:</span> {conta.installment_count}</div>
                 <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={conta.status} /></div>
