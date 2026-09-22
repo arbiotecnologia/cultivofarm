@@ -138,6 +138,72 @@ describe("FluxoCaixa — detalhamento do bucket", () => {
     expect(within(dialogo).getByText("R$ 1.000,00")).toBeInTheDocument(); // original
   });
 
+  it("detalhe a receber soma juros e multa acumulados no saldo (cenário real)", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "accounts_receivable_installments"
+        ? chain({
+            data: [
+              {
+                id: "r1", due_date: INICIO_MES, original_amount: 100, received_amount: 40,
+                discount_amount: 10, interest_amount: 20, penalty_amount: 5, status: "PARTIAL",
+                accounts_receivable: { description: "Venda", clientes: { nome: "Ana" } },
+              },
+            ],
+            error: null,
+          })
+        : chain({ data: [], error: null }),
+    );
+    abrir();
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(`ver títulos de ${ROTULO}`, "i") }));
+    const dialogo = await screen.findByRole("dialog");
+    expect(await within(dialogo).findByText("Ana")).toBeInTheDocument();
+    expect(within(dialogo).getByText("R$ 75,00")).toBeInTheDocument(); // 100+20+5-40-10
+  });
+
+  it("detalhe a pagar soma juros e multa acumulados no saldo (cenário real)", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "accounts_payable_installments"
+        ? chain({
+            data: [
+              {
+                id: "p1", due_date: INICIO_MES, original_amount: 100, paid_amount: 40,
+                discount_amount: 10, interest_amount: 20, penalty_amount: 5, status: "PARTIAL",
+                accounts_payable: { supplier_name: "Forn X", description: "Compra" },
+              },
+            ],
+            error: null,
+          })
+        : chain({ data: [], error: null }),
+    );
+    abrir();
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(`ver títulos de ${ROTULO}`, "i") }));
+    const dialogo = await screen.findByRole("dialog");
+    expect(await within(dialogo).findByText("Forn X")).toBeInTheDocument();
+    expect(within(dialogo).getByText("R$ 75,00")).toBeInTheDocument(); // 100+20+5-40-10
+  });
+
+  it("título quitado no detalhe mostra saldo zero mesmo com juros e multa", async () => {
+    fromMock.mockImplementation((tabela: string) =>
+      tabela === "accounts_payable_installments"
+        ? chain({
+            data: [
+              {
+                id: "p1", due_date: INICIO_MES, original_amount: 100, paid_amount: 135,
+                discount_amount: 0, interest_amount: 20, penalty_amount: 5, status: "PAID",
+                accounts_payable: { supplier_name: "Forn X", description: "Compra" },
+              },
+            ],
+            error: null,
+          })
+        : chain({ data: [], error: null }),
+    );
+    abrir();
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(`ver títulos de ${ROTULO}`, "i") }));
+    const dialogo = await screen.findByRole("dialog");
+    expect(await within(dialogo).findByText("Forn X")).toBeInTheDocument();
+    expect(within(dialogo).getByText("R$ 0,00")).toBeInTheDocument();
+  });
+
   it("realizado lista pagamentos e distingue estornos", async () => {
     fromMock.mockImplementation((tabela: string) =>
       tabela === "receivable_payments"
