@@ -243,7 +243,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
-        if (!mountedRef.current || handledAuthEvent) return;
+        // Resultado de efeito descartado (StrictMode/remontagem) não pode
+        // ressuscitar sessão antiga nem encerrar o loading do efeito ativo.
+        if (effectCancelled || !mountedRef.current || handledAuthEvent) return;
 
         if (initialSession?.user) {
           setSession(initialSession);
