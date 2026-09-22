@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        if (!mountedRef.current || gen !== generationRef.current) return;
+        if (effectCancelled || !mountedRef.current || gen !== generationRef.current) return;
         void fetchProfileAndRole(userId, gen);
       }, 0);
     };
@@ -198,6 +198,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Escuta mudanças na autenticação — callback estritamente síncrono.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Efeito descartado (StrictMode/unmount) nunca aplica estado.
+        if (effectCancelled) return;
         handledAuthEvent = true;
         console.log("Auth event:", event, session?.user?.id);
         setSession(session);
@@ -241,7 +243,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
-        if (!mountedRef.current || handledAuthEvent) return;
+        // Resultado de efeito descartado (StrictMode/remontagem) não pode
+        // ressuscitar sessão antiga nem encerrar o loading do efeito ativo.
+        if (effectCancelled || !mountedRef.current || handledAuthEvent) return;
 
         if (initialSession?.user) {
           setSession(initialSession);
