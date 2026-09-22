@@ -274,9 +274,14 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           <DialogTitle>Registrar {receber ? "Recebimento" : "Pagamento"}</DialogTitle>
         </DialogHeader>
 
+        {exigeConferencia && !pendente && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
+            {MSG_PAGAMENTO_NAO_CONFIRMADO} Ao fechar, reabra a baixa somente depois de conferir a lista.
+          </div>
+        )}
         {pendente && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
-            {MSG_COMPROVANTE_PENDENTE} Se fechar esta janela, retome o envio pelo drawer de anexos da conta.
+            {receber ? MSG_COMPROVANTE_PENDENTE : MSG_PAGAMENTO_COMPROVANTE_PENDENTE} Se fechar esta janela, retome o envio pelo drawer de anexos da conta.
           </div>
         )}
         {settingsBloqueado && (
@@ -295,11 +300,9 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
             <p className="text-sm font-medium mb-1">Parcela #{installment.installment_number} · venc. {formatDateDisplay(installment.due_date + "T12:00:00")}</p>
             <div className="grid grid-cols-2 gap-x-3">
               <span className="text-muted-foreground">Valor original:</span><span className="text-right">{brl(valorOriginal)}</span>
-              {receber && (<>
-                <span className="text-muted-foreground">+ Juros acumulados:</span><span className="text-right">{brl(acum.juros)}</span>
-                <span className="text-muted-foreground">+ Multa acumulada:</span><span className="text-right">{brl(acum.multa)}</span>
-                <span className="text-muted-foreground">− Desconto acumulado:</span><span className="text-right">{brl(acum.desconto)}</span>
-              </>)}
+              <span className="text-muted-foreground">+ Juros acumulados:</span><span className="text-right">{brl(receber ? acum.juros : acumP.juros)}</span>
+              <span className="text-muted-foreground">+ Multa acumulada:</span><span className="text-right">{brl(receber ? acum.multa : acumP.multa)}</span>
+              <span className="text-muted-foreground">− Desconto acumulado:</span><span className="text-right">{brl(receber ? acum.desconto : acumP.desconto)}</span>
               <span className="text-muted-foreground">Já {receber ? "recebido" : "pago"}:</span><span className="text-right">{brl(jaRecebido)}</span>
               <span className="text-muted-foreground">+ Juros desta baixa:</span><span className="text-right">{brl(juros)}</span>
               <span className="text-muted-foreground">+ Multa desta baixa:</span><span className="text-right">{brl(multa)}</span>
