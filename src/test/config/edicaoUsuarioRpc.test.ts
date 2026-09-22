@@ -194,31 +194,32 @@ describe("mapearErroEdicaoUsuario — mensagens seguras", () => {
 
 describe("integração Configuracoes.tsx — um único caminho de escrita (RPC)", () => {
   const src = read("src/pages/Configuracoes.tsx");
+  const inicio = src.indexOf("const saveEditUser");
+  const fim = src.indexOf("const senhaForte");
+  const blocoSalvar = inicio >= 0 && fim > inicio ? src.slice(inicio, fim) : "";
 
   it("sem syncUserRolesAndPartner nem fallback de escrita direta no fluxo de edição", () => {
     expect(src).not.toContain("syncUserRolesAndPartner");
-    expect(src).not.toMatch(/from\("user_roles"\)\s*\.\s*insert/);
-    expect(src).not.toMatch(/from\("user_roles"\)\s*\.\s*delete/);
-    expect(src).not.toMatch(/from\("user_clientes"\)\s*\.\s*insert/);
-    expect(src).not.toMatch(/from\("user_clientes"\)\s*\.\s*delete/);
-    expect(src).not.toMatch(/from\("user_clientes"\)\s*\.\s*update/);
+    expect(src).not.toMatch(/from\("user_roles"\)\s*\.\s*(insert|delete)/);
+    expect(src).not.toMatch(/from\("user_clientes"\)\s*\.\s*(insert|update|delete)/);
     expect(src).not.toMatch(/from\("partner_users"\)\s*\.\s*(insert|update|delete)/);
-    // Sem escrita direta de perfil no fluxo de edição (update de profiles restante é só status):
-    expect(src).not.toMatch(/from\("profiles"\)\s*\.\s*update\(\s*\{[^}]*nome:/);
+    // O fluxo de edição não faz escrita direta em profiles (status próprio é outro fluxo):
+    expect(blocoSalvar.length).toBeGreaterThan(0);
+    expect(blocoSalvar).not.toContain(".from(");
   });
 
   it("chama exatamente a RPC com a versão original capturada e sucesso estrito", () => {
-    expect(src).toContain('rpc(RPC_EDITAR_USUARIO');
-    expect(src).toContain("p_expected_updated_at") || expect(src).toContain("expectedUpdatedAt: editUser.updated_at");
-    expect(src).toContain("edicaoBemSucedida");
+    expect(blocoSalvar).toContain("rpc(RPC_EDITAR_USUARIO");
+    expect(blocoSalvar).toContain("expectedUpdatedAt: editUser.updated_at");
+    expect(blocoSalvar).toContain("edicaoBemSucedida");
     expect(src).toContain("mapearErroEdicaoUsuario");
     expect(src).toContain('broadcastPortalEvent({ type: "roles_updated"');
     expect(src).toContain('queryKey: ["admin-users"]');
     expect(src).toContain('queryKey: ["partner-users-links"]');
   });
 
-  it("consulta de usuários inclui updated_at e não refaz fetch antes de salvar", () => {
+  it("consulta de usuários inclui updated_at e o salvamento não refaz fetch antes de salvar", () => {
     expect(src).toMatch(/select\("user_id,[^)]*updated_at/);
-    expect(src).not.toMatch(/mutationFn[\s\S]{0,2200}refetchUsers/);
+    expect(blocoSalvar).not.toContain("refetchUsers");
   });
 });
