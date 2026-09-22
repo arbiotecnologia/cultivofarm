@@ -67,8 +67,19 @@ vi.mock("@/integrations/supabase/client", () => ({
     auth: {
       onAuthStateChange: (handler: any) => {
         h.listeners.push(handler);
-        return { data: { subscription: { unsubscribe: h.unsubscribe } } };
+        return {
+          data: {
+            subscription: {
+              unsubscribe: (...args: any[]) => {
+                const i = h.listeners.indexOf(handler);
+                if (i >= 0) h.listeners.splice(i, 1);
+                return h.unsubscribe(...args);
+              },
+            },
+          },
+        };
       },
+
       getSession: async () => h.getSession(),
       signOut: (...args: any[]) => h.signOut(...args),
     },
