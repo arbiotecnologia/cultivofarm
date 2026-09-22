@@ -209,7 +209,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       invalidarTudo();
       if (r?.comprovantePendente) {
         setPendente({ paymentId: r.paymentId });
-        toast.error(MSG_COMPROVANTE_PENDENTE);
+        toast.error(receber ? MSG_COMPROVANTE_PENDENTE : MSG_PAGAMENTO_COMPROVANTE_PENDENTE);
         return;
       }
       if (r?.reenvio) {
@@ -224,8 +224,15 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
     onError: (e: unknown) => {
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
       if (pendente) invalidarTudo();
-      // Erro local tipado mantém a mensagem; remoto passa por allowlist (nunca texto cru).
-      toast.error(mapearErroBaixaRecebimento(e));
+      if (receber) {
+        // Erro local tipado mantém a mensagem; remoto passa por allowlist (nunca texto cru).
+        toast.error(mapearErroBaixaRecebimento(e));
+        return;
+      }
+      // Classificação única ponta a ponta: incerto trava novo envio até conferência.
+      const c = classificarErroBaixaPagar(e);
+      if (c.exigeConferencia) setExigeConferencia(true);
+      toast.error(c.mensagem);
     },
   });
 
