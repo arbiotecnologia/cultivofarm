@@ -529,7 +529,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         <DialogFooter>
           <Button variant="outline" onClick={tentarFechar} disabled={gravando}>{pendente ? "Fechar" : "Cancelar"}</Button>
           <Button
-            onClick={() => save.mutate({})}
+            onClick={() => iniciarEnvio()}
             // Reenvio só exige arquivo (baixa já persistida, zero RPC de baixa).
             // Resultado incerto trava novo envio até conferência explícita.
             // Nova baixa: settings carregadas obrigatórias.
