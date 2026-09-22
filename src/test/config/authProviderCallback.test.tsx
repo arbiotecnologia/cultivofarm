@@ -7,9 +7,19 @@ import { resolve } from "node:path";
 // ---------- mock do cliente canônico ----------
 type Handler = (event: string, session: any) => unknown;
 
-const listeners: Handler[] = [];
+const h = vi.hoisted(() => ({
+  listeners: [] as any[],
+  unsubscribe: (() => {}) as any,
+  signOut: (() => {}) as any,
+  from: (() => {}) as any,
+  getSession: (() => {}) as any,
+}));
+
+const listeners = h.listeners as Handler[];
 const unsubscribe = vi.fn();
 const signOutSpy = vi.fn(async () => ({ error: null }));
+h.unsubscribe = unsubscribe;
+h.signOut = signOutSpy;
 
 let profileRow: any = { id: "p1", user_id: "user-a", nome: "A", email: "a@x.com", ativo: true };
 let profileError: any = null;
@@ -51,20 +61,23 @@ let initialSession: any = null;
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: (table: string) => tableBuilder(table),
+    from: (table: string) => h.from(table),
     auth: {
-      onAuthStateChange: (handler: Handler) => {
-        listeners.push(handler);
-        return { data: { subscription: { unsubscribe } } };
+      onAuthStateChange: (handler: any) => {
+        h.listeners.push(handler);
+        return { data: { subscription: { unsubscribe: h.unsubscribe } } };
       },
-      getSession: async () => {
-        if (insideCallback) callsInsideCallback += 1;
-        return { data: { session: initialSession }, error: null };
-      },
-      signOut: signOutSpy,
+      getSession: async () => h.getSession(),
+      signOut: (...args: any[]) => h.signOut(...args),
     },
   },
 }));
+
+h.from = (table: string) => tableBuilder(table);
+h.getSession = async () => {
+  if (insideCallback) callsInsideCallback += 1;
+  return { data: { session: initialSession }, error: null };
+};
 
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 
