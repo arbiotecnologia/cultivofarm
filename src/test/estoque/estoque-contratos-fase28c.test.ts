@@ -122,6 +122,11 @@ describe("FASE 28C — risco A1 documentado e congelado", () => {
       // no histórico oficial do banco canônico (schema_migrations).
       "20261029000000_fiscal_base_reduction_v1.sql",
       "20261030000000_fiscal_base_reduction_audit_v1.sql",
+      // Fase de homologação fiscal — trava de segurança do preview de transporte.
+      "20261034000000_fiscal_transport_preview_safety.sql",
+      // Gate S0→S1 — hardening de autorização (revogações de EXECUTE + WITH CHECK
+      // nas policies de UPDATE de profiles). Sem alteração de dados.
+      "20260922152558_478f5ed2-5b4b-45b3-9e48-9d7131c05f49.sql",
     ]);
     const foraDoPadrao = migs
       .filter((f: string) => f.slice(0, 14) > "20260905000000")

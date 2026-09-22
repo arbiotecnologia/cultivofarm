@@ -21,7 +21,7 @@ static_files = [
 ]
 
 # Incidente 2026-09-18: a reconexão do Supabase republicou automaticamente as 37
-# funções com verify_jwt=false, apagando a proteção de gateway que existia.
+# funções sem verificação de JWT no gateway, apagando a proteção de gateway que existia.
 # Os blocos abaixo declaram explicitamente verify_jwt=true para todas as funções
 # fiscais e para as seis funções administrativas/privadas que já eram true,
 # impedindo que o default volte a rebaixá-las num próximo deploy.
