@@ -94,8 +94,6 @@ describe("agregação de documentos do drawer receivable", () => {
     expect(vigentes).toHaveLength(0);
     expect(docs.every((d) => d.estornado)).toBe(true);
   });
-
-  it("deduplica por id", () => {
     const docs = agregarDocumentosReceber(
       "ar-1",
       [
