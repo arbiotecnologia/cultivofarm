@@ -12,11 +12,9 @@ import {
   senhaValida,
   validarEdicaoUsuario,
   primeiroCampoInvalidoEdicao,
-  diferencaPapeis,
   bloqueioAutoDesativacao,
   bloqueioAutoRemocaoAdmin,
   exigirUmaLinha,
-  ERRO_EDICAO_PARCIAL,
   type ErrosEdicaoUsuario,
 
 
@@ -28,6 +26,15 @@ import {
   type CampoNovoUsuario,
 } from "@/lib/configuracoes/usuariosValidation";
 import { fetchAllRows } from "@/lib/configuracoes/fetchAllRows";
+import {
+  RPC_EDITAR_USUARIO,
+  construirArgsEdicao,
+  resolverPrincipalClienteId,
+  edicaoBemSucedida,
+  mapearErroEdicaoUsuario,
+  edicaoExigeRecargaAposErro,
+  MSG_EDICAO_NAO_CONFIRMADA,
+} from "@/lib/configuracoes/edicaoUsuarioRpc";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,7 +141,7 @@ export default function Configuracoes() {
       const profiles = await fetchAllRows<any>((from, to) =>
         supabase
           .from("profiles")
-          .select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, cargo, crea, especialidade")
+          .select("user_id, nome, email, telefone, cpf_cnpj, ativo, created_at, updated_at, cargo, crea, especialidade")
           .order("user_id", { ascending: true })
           .range(from, to),
       );
@@ -263,63 +270,6 @@ export default function Configuracoes() {
   const paginacao = useMemo(() => paginar(filteredUsers, pagina, USUARIOS_POR_PAGINA), [filteredUsers, pagina]);
   const usuariosPagina = paginacao.itens;
 
-  /**
-   * Sincroniza papéis + vínculo com parceiro.
-   * NÃO é atômico (sem RPC transacional): por isso aplicamos diferença mínima
-   * (insere novos, remove só os retirados) e propagamos TODOS os erros.
-   */
-  async function syncUserRolesAndPartner(userId: string, desiredRoles: string[], partnerId: string) {
-    const sb = supabase as any;
-    const { data: atuaisRoles, error: rolesSelErr } = await sb
-      .from("user_roles")
-      .select("id, role")
-      .eq("user_id", userId);
-    if (rolesSelErr) throw rolesSelErr;
-
-    const atuais = (atuaisRoles ?? []).map((r: any) => r.role as string);
-    const { inserir, remover } = diferencaPapeis(atuais, desiredRoles);
-
-    // 1) Primeiro insere os novos (nunca deixa o usuário sem papel algum)
-    if (inserir.length > 0) {
-      const { error: insErr } = await supabase
-        .from("user_roles")
-        .insert(inserir.map((r) => ({ user_id: userId, role: r as any })));
-      if (insErr) throw insErr;
-    }
-    // 2) Depois remove apenas os retirados; os comuns são preservados
-    if (remover.length > 0) {
-      const idsRemover = (atuaisRoles ?? [])
-        .filter((r: any) => remover.includes(r.role))
-        .map((r: any) => r.id);
-      const { error: delErr } = await sb.from("user_roles").delete().in("id", idsRemover);
-      if (delErr) throw delErr;
-    }
-
-    // 3) Sincroniza partner_users (erro de select NÃO é tratado como ausência)
-    const isPartner = hasPartnerRole(desiredRoles);
-    const papel = partnerPapelFromRoles(desiredRoles);
-    const { data: existing, error: partnerSelErr } = await sb
-      .from("partner_users")
-      .select("id, partner_id, papel")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (partnerSelErr) throw partnerSelErr;
-
-    if (isPartner) {
-      if (!existing) {
-        const { error } = await sb.from("partner_users").insert({ user_id: userId, partner_id: partnerId, papel });
-        if (error) throw error;
-      } else if (existing.partner_id !== partnerId || existing.papel !== papel) {
-        const { error } = await sb.from("partner_users").update({ partner_id: partnerId, papel }).eq("id", existing.id);
-        if (error) throw error;
-      }
-    } else if (existing) {
-      const { error: delPartnerErr } = await sb.from("partner_users").delete().eq("id", existing.id);
-      if (delPartnerErr) throw delPartnerErr;
-    }
-  }
-
-
   // Toggle ativo — proteção de UX: ninguém desativa a própria conta
   const toggleAtivo = useMutation({
     mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
@@ -445,6 +395,7 @@ export default function Configuracoes() {
       setEditVinculos([]);
       setEditErros({});
       setEditResumo(null);
+      setExigeRecargaEdicao(false);
 
     }
   }, [editOpen]);
@@ -479,17 +430,16 @@ export default function Configuracoes() {
   }, [searchParams, allUsers, isAdmin, setSearchParams]);
 
 
-  // Estado da edição: erros por campo, resumo e marca de escrita já iniciada
+  // Estado da edição: erros por campo, resumo e trava de recarga pós conflito/incerteza
   const [editErros, setEditErros] = useState<ErrosEdicaoUsuario>({});
   const [editResumo, setEditResumo] = useState<string | null>(null);
-  const escritaIniciada = useRef(false);
+  const [exigeRecargaEdicao, setExigeRecargaEdicao] = useState(false);
 
   const saveEditUser = useMutation({
     mutationFn: async () => {
       if (!editUser) return;
-      escritaIniciada.current = false;
 
-      // ---- 1) VALIDAÇÃO COMPLETA ANTES DE QUALQUER ESCRITA ----
+      // ---- 1) VALIDAÇÃO COMPLETA ANTES DA ÚNICA ESCRITA (RPC transacional) ----
       const desiredRoles: string[] = editUser.roles ?? [];
       const erros = validarEdicaoUsuario(
         {
@@ -514,68 +464,36 @@ export default function Configuracoes() {
       const telefoneValidado = validatePhoneBR(editUser.telefone, { fieldLabel: "Telefone" });
       if (!telefoneValidado.ok) throw new Error(telefoneValidado.error);
 
-      const sb = supabase as any;
-      const { data: atuais, error: selectErr } = await sb
-        .from("user_clientes")
-        .select("id, cliente_id, principal")
-        .eq("user_id", editUser.user_id);
-      if (selectErr) throw selectErr;
-
-      const atuaisMap = new Map<string, { id: string; principal: boolean }>((atuais ?? []).map((r: any) => [r.cliente_id, { id: r.id, principal: !!r.principal }]));
-      const desejados = new Set(editVinculos.map(v => v.cliente_id));
-
-      // ---- 2) ESCRITAS (sem atomicidade: a partir daqui pode haver estado parcial) ----
-      escritaIniciada.current = true;
-
-      const toDelete = (atuais ?? []).filter((r: any) => !desejados.has(r.cliente_id)).map((r: any) => r.id);
-      if (toDelete.length) {
-        const { error: delErr } = await sb.from("user_clientes").delete().in("id", toDelete);
-        if (delErr) throw delErr;
-      }
-
-      for (const v of editVinculos) {
-        const existing = atuaisMap.get(v.cliente_id);
-        if (!existing) {
-          const { error: insErr } = await sb.from("user_clientes").insert({ user_id: editUser.user_id, cliente_id: v.cliente_id, principal: v.principal });
-          if (insErr) throw insErr;
-        } else if (existing.principal !== v.principal) {
-          const { error: updErr } = await sb.from("user_clientes").update({ principal: v.principal }).eq("id", existing.id);
-          if (updErr) throw updErr;
-        }
-      }
-
-      // Perfil básico — confirma que exatamente UMA linha foi atualizada
-      const { data: perfilAtualizado, error: profileErr } = await supabase.from("profiles")
-        .update({
-          nome: (editUser.nome ?? "").trim(),
+      // ---- 2) UMA ÚNICA CHAMADA: RPC transacional com versão original (updated_at) ----
+      const args = construirArgsEdicao({
+        userId: editUser.user_id,
+        expectedUpdatedAt: editUser.updated_at,
+        profile: {
+          nome: editUser.nome,
           telefone: telefoneValidado.value,
           cargo: editUser.cargo,
           cpf_cnpj: unmaskCpfCnpj(editUser.cpf_cnpj),
           crea: editUser.crea,
           especialidade: editUser.especialidade,
-        } as any)
-        .eq("user_id", editUser.user_id)
-        .select("user_id");
-      if (profileErr) throw profileErr;
-      exigirUmaLinha(perfilAtualizado, "dados do perfil");
+        },
+        roles: desiredRoles,
+        clienteIds: editVinculos.map((v) => v.cliente_id),
+        principalClienteId: resolverPrincipalClienteId(editVinculos),
+        // partner_id somente quando há papel B2B; caso contrário null (servidor deriva o papel)
+        partnerId: hasPartnerRole(desiredRoles) ? (editUser.partner_id || null) : null,
+      });
 
-      // Papéis + vínculo com parceiro B2B
+      const { data, error } = await (supabase as any).rpc(RPC_EDITAR_USUARIO, args);
+      if (error) throw new Error(mapearErroEdicaoUsuario(error));
+      // Sucesso estrito: success===true, user_id do alvo e updated_at válido.
+      if (!edicaoBemSucedida(data, editUser.user_id)) throw new Error(MSG_EDICAO_NAO_CONFIRMADA);
+
       const rolesChanged =
         desiredRoles.length !== originalRoles.length ||
         desiredRoles.some((r) => !originalRoles.includes(r));
-      const originalLink = partnerLinkByUser(editUser.user_id);
-      const partnerChanged =
-        (hasPartnerRole(desiredRoles) && (originalLink?.partner_id !== editUser.partner_id
-          || originalLink?.papel !== partnerPapelFromRoles(desiredRoles)))
-        || (!hasPartnerRole(desiredRoles) && !!originalLink);
-
-      if (rolesChanged || partnerChanged) {
-        await syncUserRolesAndPartner(editUser.user_id, desiredRoles, editUser.partner_id || "");
-      }
       return { rolesChanged, userId: editUser.user_id };
     },
     onSuccess: (result) => {
-      escritaIniciada.current = false;
       setEditErros({});
       setEditResumo(null);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -593,15 +511,14 @@ export default function Configuracoes() {
     },
 
     onError: (e: Error) => {
-      // Falha após início das escritas: estado pode estar parcial. Não repetimos automaticamente
-      // e mantemos o formulário aberto para conferência.
-      const parcial = escritaIniciada.current;
-      escritaIniciada.current = false;
-      if (parcial) {
-        queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-        queryClient.invalidateQueries({ queryKey: ["partner-users-links"] });
+      // Mensagens SEMPRE mapeadas (nunca texto cru do servidor).
+      const msg = mapearErroEdicaoUsuario(e);
+      const exigeRecarga = edicaoExigeRecargaAposErro(e);
+      if (exigeRecarga) {
+        // Conflito ou resultado incerto: exige recarregar (e reabrir o diálogo) antes de tentar
+        // novamente — sem retry automático. O diálogo permanece aberto com o formulário intacto.
+        setExigeRecargaEdicao(true);
       }
-      const msg = parcial ? `${e.message} ${ERRO_EDICAO_PARCIAL}` : e.message;
       setEditResumo(msg);
       toast({ title: "Erro", description: msg, variant: "destructive" });
     },
@@ -1203,8 +1120,8 @@ export default function Configuracoes() {
                         ))}
                       </ul>
                     )}
-                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending}>
-                      {saveEditUser.isPending ? "Salvando..." : "Salvar Alterações"}
+                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao}>
+                      {saveEditUser.isPending ? "Salvando..." : exigeRecargaEdicao ? "Recarregue a lista para tentar novamente" : "Salvar Alterações"}
                     </Button>
 
 

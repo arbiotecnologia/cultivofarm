@@ -18820,6 +18820,18 @@ export type Database = {
         Args: { p_note: string; p_partner_order_id: string }
         Returns: Json
       }
+      admin_edit_user_profile_v1: {
+        Args: {
+          p_cliente_ids: string[]
+          p_expected_updated_at: string
+          p_partner_id: string
+          p_principal_cliente_id: string
+          p_profile: Json
+          p_roles: Database["public"]["Enums"]["app_role"][]
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_provision_user_profile_v1: {
         Args: {
           p_cargo?: string
