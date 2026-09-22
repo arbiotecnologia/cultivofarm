@@ -435,6 +435,12 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           <DialogTitle>Registrar {receber ? "Recebimento" : "Pagamento"}</DialogTitle>
         </DialogHeader>
 
+        {journalFalha && !pendente && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
+            {MSG_JOURNAL_CORROMPIDO}
+          </div>
+        )}
+
         {exigeConferencia && !pendente && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-2" role="alert">
             <p>
