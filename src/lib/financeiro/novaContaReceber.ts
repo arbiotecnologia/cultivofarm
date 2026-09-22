@@ -200,7 +200,7 @@ export interface ClassificacaoNovaConta {
 /**
  * Classificação única do erro de criação.
  * - Guarda local (recusa comprovada antes do envio) → preserva edição.
- * - Erro de servidor conhecido (FIN_TITLE_*/SQLSTATE da allowlist) → recusa comprovada,
+ * - Erro de servidor conhecido (token FIN_TITLE ou SQLSTATE da allowlist) → recusa comprovada,
  *   preserva edição.
  * - Timeout, rede, desconhecido ou resposta inválida → incerto: exige conferência.
  */
