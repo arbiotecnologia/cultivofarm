@@ -246,7 +246,7 @@ describe("BaixaDialog payable — exibição e travas", () => {
   });
 
   async function selecionarMetodo() {
-    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getAllByRole("combobox")[0]);
     fireEvent.click(await screen.findByRole("option", { name: "Pix" }));
   }
 
