@@ -121,6 +121,10 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         return { reenvio: true as const };
       }
 
+      if (exigeConferencia) throw new ErroBaixaLocal(
+        receber ? MSG_EDICAO_PENDENTE_RECEBER : MSG_PAGAMENTO_NAO_CONFIRMADO,
+      );
+
       if (receber) {
         const erro = validarBaixaRecebimento({
           parcela: installment,
@@ -133,14 +137,16 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         });
         if (erro) throw new ErroBaixaLocal(erro);
       } else {
-        if (!user) throw new ErroBaixaLocal("Sessão expirada");
-        if (!installment) throw new ErroBaixaLocal("Parcela não selecionada");
-        if (!form.payment_method_id) throw new ErroBaixaLocal("Selecione a forma de pagamento");
-        if (!form.amount || Number(form.amount) <= 0) throw new ErroBaixaLocal("Valor inválido");
-        const _jaPago = Number(installment.received_amount ?? installment.paid_amount ?? 0);
-        const _saldo = Number(installment.original_amount) + (Number(form.interest_amount) || 0) + (Number(form.penalty_amount) || 0) - (Number(form.discount_amount) || 0) - _jaPago;
-        if (Number(form.amount) - _saldo > 0.005) throw new ErroBaixaLocal("Valor excede o saldo da parcela.");
-        if (requireReceipt && !file) throw new ErroBaixaLocal("O anexo do comprovante é obrigatório para esta operação.");
+        const erro = validarBaixaPagar({
+          parcela: installment,
+          form,
+          metodosAtivos: (pms as any[]).map((p) => String(p.id)),
+          settingsCarregadas: settingsQuery.isSuccess,
+          exigeComprovante: !!requireReceipt,
+          temArquivo: !!file,
+          temSessao: !!user,
+        });
+        if (erro) throw new ErroBaixaPagarLocal(erro);
       }
 
       const ownerType = ownerTypeBase;
