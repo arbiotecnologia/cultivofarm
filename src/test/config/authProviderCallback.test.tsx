@@ -113,16 +113,18 @@ function Probe() {
   );
 }
 
-function renderProvider() {
+function renderProvider(strict = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const tree = (
     <QueryClientProvider client={client}>
       <AuthProvider>
         <Probe />
       </AuthProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  return render(strict ? <StrictMode>{tree}</StrictMode> : tree);
 }
+
 
 const sessionA = { user: { id: "user-a" } };
 const sessionB = { user: { id: "user-b" } };
