@@ -14,8 +14,9 @@ export type AppRole =
   | "parceiro_b2b_tecnico"
   // Papel de plataforma SaaS. NÃO é administrador operacional e NÃO aparece
   // em `ACTIVE_ROLES` nem em `ACCESS_MAP`: não recebe nenhum módulo
-  // operacional. Enquanto o painel SaaS (Fase S4) não existir, a home segura
-  // provisória é `/sem-permissao` (ver `getHomeForRole`).
+  // operacional. Enquanto o painel SaaS definitivo (Fase S4) não existir, a
+  // home segura provisória é `/plataforma` — leitura de planos/assinaturas/
+  // histórico, sem qualquer escrita (ver `getHomeForRole`).
   | "superadmin";
 
 
@@ -327,9 +328,10 @@ export function getHomeForRole(role: string | null): string {
       return "/operacao/dashboard-producao";
     case "administrativo":
       return "/solicitacoes";
-    // Papel de plataforma SaaS: sem módulo operacional até a Fase S4.
+    // Papel de plataforma SaaS: home provisória somente leitura (planos,
+    // assinaturas e histórico). Nenhum módulo operacional até a Fase S4.
     case "superadmin":
-      return "/sem-permissao";
+      return "/plataforma";
     default:
       return "/";
   }

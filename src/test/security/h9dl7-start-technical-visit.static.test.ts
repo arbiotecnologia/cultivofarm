@@ -161,10 +161,10 @@ describe("H9-D-L7 — forward e rollback", () => {
     expect(entry!.applied_at).toBe("2026-09-09");
     expect(dossie.forward_sha256).toBe(sha256(FW_PATH));
     expect(dossie.rollback_sha256).toBe(sha256(RB_PATH));
-    expect(manifest.ledger_versoes).toBe(683);
+    expect(manifest.ledger_versoes).toBe(684);
     expect(manifest.total_applied_forwards).toBe(manifest.entries.length);
     expect(manifest.total_applied_forwards).toBe(19);
-    expect(h7p.ledger_versoes).toBe(683);
+    expect(h7p.ledger_versoes).toBe(684);
     expect(h7p.total_repo_only).toBe(59);
   });
 

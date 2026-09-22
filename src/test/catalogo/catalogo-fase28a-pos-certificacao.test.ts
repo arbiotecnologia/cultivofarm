@@ -111,6 +111,8 @@ describe("FASE 28A — nenhuma migration nova nesta fase", () => {
       "20260922160218_b19bd8e6-cb90-4d27-805e-c97272039918.sql",
       "20260922160417_ea6c34e3-2ae3-44fb-9777-909e5cd46774.sql",
       "20260922160736_29af83f9-2f0d-4770-91d4-264de788ccc5.sql",
+      // Home provisória do superadmin — apenas policy de leitura nas tabelas SaaS.
+      "20260922211137_7eae146c-4343-4633-a7ea-844c9e857ee6.sql",
     ]);
     const foraDoPadrao = migrations
       .filter((f: string) => f.slice(0, 14) > "20260905000000")

@@ -49,7 +49,7 @@ const sha256 = (p: string) =>
 describe("H9 — forwards aplicados fora de supabase/migrations", () => {
   it("declara o ambiente de homologação e o ledger corrente", () => {
     expect(manifest.ambiente).toContain("ikaauvsflpmamgxmkhoq");
-    expect(manifest.ledger_versoes).toBe(683);
+    expect(manifest.ledger_versoes).toBe(684);
     expect(manifest.ledger_versoes).toBe(repoOnly.ledger_versoes);
     expect(manifest.entries).toHaveLength(manifest.total_applied_forwards);
   });

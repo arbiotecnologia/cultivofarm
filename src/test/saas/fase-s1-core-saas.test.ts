@@ -227,7 +227,10 @@ describe("FASE S1 — escopo: S2 permanece bloqueada", () => {
     expect(sql).not.toMatch(/ADD COLUMN[\s\S]{0,40}organization_id/i);
   });
 
-  it("nenhum código de frontend consome o núcleo SaaS nesta fase", () => {
+  // Atualizado pela home provisória do superadmin: o único consumo permitido no
+  // frontend é a LEITURA em `/plataforma` (src/hooks/usePlataformaSaaS.ts).
+  // Nenhum módulo operacional, menu ou escrita pode tocar o núcleo SaaS.
+  it("o núcleo SaaS só é consumido pela home de plataforma, em leitura", () => {
     const alvos = ["src/lib", "src/hooks", "src/pages", "src/components", "src/config", "src/routes"];
     const encontrados: string[] = [];
     const varrer = (dir: string) => {
@@ -244,7 +247,9 @@ describe("FASE S1 — escopo: S2 permanece bloqueada", () => {
       }
     };
     alvos.forEach(varrer);
-    expect(encontrados).toEqual([]);
+    expect(encontrados).toEqual(["src/hooks/usePlataformaSaaS.ts"]);
+    const leitura = read("src/hooks/usePlataformaSaaS.ts");
+    expect(leitura).not.toMatch(/\.insert\(|\.update\(|\.upsert\(|\.delete\(|useMutation/);
   });
 
   it("o relatório da fase existe", () => {

@@ -114,7 +114,7 @@ describe("H9-D-L3R2 — extrato do cliente com colunas vivas", () => {
   });
 
   it("o forward está rastreado no manifesto de applied-forwards com ledger 679", () => {
-    expect(manifest.ledger_versoes).toBe(683);
+    expect(manifest.ledger_versoes).toBe(684);
     const e = manifest.entries.find((x) => x.version === "20261011000000");
     expect(e).toBeDefined();
     expect(e!.applied_to_staging).toBe(true);
