@@ -31,9 +31,10 @@ import {
   construirArgsEdicao,
   resolverPrincipalClienteId,
   edicaoBemSucedida,
-  mapearErroEdicaoUsuario,
-  edicaoExigeRecargaAposErro,
-  MSG_EDICAO_NAO_CONFIRMADA,
+  validarLimiteClienteIds,
+  classificarErroRpcEdicao,
+  erroLocalEdicao,
+  erroAmbiguoEdicao,
 } from "@/lib/configuracoes/edicaoUsuarioRpc";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -436,8 +437,11 @@ export default function Configuracoes() {
   const [exigeRecargaEdicao, setExigeRecargaEdicao] = useState(false);
 
   const saveEditUser = useMutation({
+    // Sem retry automático: a RPC é transacional e o conflito exige nova versão original.
+    retry: false,
     mutationFn: async () => {
-      if (!editUser) return;
+      // Sem usuário em edição não existe operação possível — nunca cair em onSuccess.
+      if (!editUser) throw erroLocalEdicao("Nenhum usuário em edição. Reabra o cadastro.");
 
       // ---- 1) VALIDAÇÃO COMPLETA ANTES DA ÚNICA ESCRITA (RPC transacional) ----
       const desiredRoles: string[] = editUser.roles ?? [];
@@ -453,16 +457,20 @@ export default function Configuracoes() {
       );
       setEditErros(erros);
       const primeiro = primeiroCampoInvalidoEdicao(erros);
-      if (primeiro) throw new Error(erros[primeiro]!);
+      if (primeiro) throw erroLocalEdicao(erros[primeiro]!);
+
+      // Limite de vínculos: rejeitado localmente, nunca truncado silenciosamente.
+      const excesso = validarLimiteClienteIds(editVinculos.map((v) => v.cliente_id));
+      if (excesso) throw erroLocalEdicao(excesso);
 
       const originalUser = allUsers.find((u) => u.user_id === editUser.user_id);
       const originalRoles: string[] = originalUser?.roles ?? [];
       const isSelf = editUser.user_id === user?.id;
       const bloqueioAdmin = bloqueioAutoRemocaoAdmin(isSelf, originalRoles, desiredRoles);
-      if (bloqueioAdmin) throw new Error(bloqueioAdmin);
+      if (bloqueioAdmin) throw erroLocalEdicao(bloqueioAdmin);
 
       const telefoneValidado = validatePhoneBR(editUser.telefone, { fieldLabel: "Telefone" });
-      if (!telefoneValidado.ok) throw new Error(telefoneValidado.error);
+      if (!telefoneValidado.ok) throw erroLocalEdicao(telefoneValidado.error);
 
       // ---- 2) UMA ÚNICA CHAMADA: RPC transacional com versão original (updated_at) ----
       const args = construirArgsEdicao({
@@ -483,10 +491,18 @@ export default function Configuracoes() {
         partnerId: hasPartnerRole(desiredRoles) ? (editUser.partner_id || null) : null,
       });
 
-      const { data, error } = await (supabase as any).rpc(RPC_EDITAR_USUARIO, args);
-      if (error) throw new Error(mapearErroEdicaoUsuario(error));
+      let data: unknown;
+      try {
+        const res = await (supabase as any).rpc(RPC_EDITAR_USUARIO, args);
+        // Erro da RPC: classificado UMA única vez, preservando o token original.
+        if (res?.error) throw classificarErroRpcEdicao(res.error);
+        data = res?.data;
+      } catch (e) {
+        // Rede/timeout/exceção de transporte: estado ambíguo, nunca mensagem crua.
+        throw classificarErroRpcEdicao(e);
+      }
       // Sucesso estrito: success===true, user_id do alvo e updated_at válido.
-      if (!edicaoBemSucedida(data, editUser.user_id)) throw new Error(MSG_EDICAO_NAO_CONFIRMADA);
+      if (!edicaoBemSucedida(data, editUser.user_id)) throw erroAmbiguoEdicao();
 
       const rolesChanged =
         desiredRoles.length !== originalRoles.length ||
@@ -510,17 +526,13 @@ export default function Configuracoes() {
       setSearchParams(sp, { replace: true });
     },
 
-    onError: (e: Error) => {
-      // Mensagens SEMPRE mapeadas (nunca texto cru do servidor).
-      const msg = mapearErroEdicaoUsuario(e);
-      const exigeRecarga = edicaoExigeRecargaAposErro(e);
-      if (exigeRecarga) {
-        // Conflito ou resultado incerto: exige recarregar (e reabrir o diálogo) antes de tentar
-        // novamente — sem retry automático. O diálogo permanece aberto com o formulário intacto.
-        setExigeRecargaEdicao(true);
-      }
-      setEditResumo(msg);
-      toast({ title: "Erro", description: msg, variant: "destructive" });
+    onError: (e: unknown) => {
+      // O erro já chega classificado (ErroEdicaoUsuario). Nenhum remapeamento aqui:
+      // validação local mantém a mensagem específica; conflito/ambíguo exigem recarga.
+      const erro = classificarErroRpcEdicao(e);
+      if (erro.exigeRecarga) setExigeRecargaEdicao(true);
+      setEditResumo(erro.message);
+      toast({ title: "Erro", description: erro.message, variant: "destructive" });
     },
   });
 

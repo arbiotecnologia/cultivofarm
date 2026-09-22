@@ -3,14 +3,21 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   RPC_EDITAR_USUARIO,
+  CLIENTE_IDS_MAX,
   construirProfilePayload,
   construirArgsEdicao,
   dedupClienteIds,
+  validarLimiteClienteIds,
   resolverPrincipalClienteId,
   edicaoBemSucedida,
   mapearErroEdicaoUsuario,
   edicaoExigeRecargaAposErro,
+  classificarErroRpcEdicao,
+  erroLocalEdicao,
+  erroAmbiguoEdicao,
+  ErroEdicaoUsuario,
   MSG_EDICAO_NAO_CONFIRMADA,
+  MSG_CLIENTES_ACIMA_DO_LIMITE,
 } from "@/lib/configuracoes/edicaoUsuarioRpc";
 
 const ROOT = resolve(__dirname, "../../..");
@@ -212,14 +219,161 @@ describe("integração Configuracoes.tsx — um único caminho de escrita (RPC)"
     expect(blocoSalvar).toContain("rpc(RPC_EDITAR_USUARIO");
     expect(blocoSalvar).toContain("expectedUpdatedAt: editUser.updated_at");
     expect(blocoSalvar).toContain("edicaoBemSucedida");
-    expect(src).toContain("mapearErroEdicaoUsuario");
+    expect(blocoSalvar).toContain("classificarErroRpcEdicao");
+    expect(blocoSalvar).toContain("retry: false");
     expect(src).toContain('broadcastPortalEvent({ type: "roles_updated"');
     expect(src).toContain('queryKey: ["admin-users"]');
     expect(src).toContain('queryKey: ["partner-users-links"]');
   });
 
+  it("sem usuário em edição lança erro local (nunca cai em onSuccess) e onError não remapeia", () => {
+    expect(blocoSalvar).toMatch(/if \(!editUser\) throw erroLocalEdicao\(/);
+    expect(blocoSalvar).not.toMatch(/if \(!editUser\) return/);
+    const onError = blocoSalvar.slice(blocoSalvar.indexOf("onError:"));
+    expect(onError).toContain("classificarErroRpcEdicao");
+    expect(onError).not.toContain("mapearErroEdicaoUsuario");
+    expect(onError).not.toContain("edicaoExigeRecargaAposErro");
+    // a mutation nunca lança Error cru com texto do servidor
+    expect(blocoSalvar).not.toContain("throw new Error(");
+  });
+
+  it("valida o limite de clientes antes da RPC, sem truncar", () => {
+    expect(blocoSalvar).toContain("validarLimiteClienteIds");
+  });
+
   it("consulta de usuários inclui updated_at e o salvamento não refaz fetch antes de salvar", () => {
     expect(src).toMatch(/select\("user_id,[^)]*updated_at/);
     expect(blocoSalvar).not.toContain("refetchUsers");
+  });
+});
+
+describe("limite de clientes vinculados — nunca truncar", () => {
+  const ids = (n: number, p = "c") => Array.from({ length: n }, (_, i) => `${p}${i}`);
+
+  it("100 únicos são aceitos integralmente", () => {
+    const cem = ids(CLIENTE_IDS_MAX);
+    expect(dedupClienteIds(cem)).toHaveLength(CLIENTE_IDS_MAX);
+    expect(validarLimiteClienteIds(cem)).toBeNull();
+  });
+
+  it("101 únicos são rejeitados localmente, sem perder IDs silenciosamente", () => {
+    const cento1 = ids(CLIENTE_IDS_MAX + 1);
+    expect(dedupClienteIds(cento1)).toHaveLength(CLIENTE_IDS_MAX + 1);
+    expect(validarLimiteClienteIds(cento1)).toBe(MSG_CLIENTES_ACIMA_DO_LIMITE);
+    expect(MSG_CLIENTES_ACIMA_DO_LIMITE).toMatch(/máximo 100/i);
+  });
+
+  it("duplicados acima de 100 no bruto, mas 100 únicos, continuam válidos", () => {
+    const comDuplicados = [...ids(CLIENTE_IDS_MAX), ...ids(20)];
+    expect(dedupClienteIds(comDuplicados)).toHaveLength(CLIENTE_IDS_MAX);
+    expect(validarLimiteClienteIds(comDuplicados)).toBeNull();
+  });
+
+  it("construirArgsEdicao envia todos os IDs únicos sem corte", () => {
+    const args = construirArgsEdicao({
+      userId: UUID_ALVO,
+      expectedUpdatedAt: "2026-09-22T00:00:00Z",
+      profile: { nome: "Maria Silva" },
+      roles: ["administrativo"],
+      clienteIds: ids(CLIENTE_IDS_MAX + 1),
+    });
+    expect((args.p_cliente_ids as string[]).length).toBe(CLIENTE_IDS_MAX + 1);
+  });
+});
+
+describe("sucesso estrito — UUID e timestamptz reais", () => {
+  const base = { success: true, user_id: UUID_ALVO, updated_at: "2026-09-22T00:30:00.123456+00:00" };
+
+  it("aceita timestamptz com fração e offset", () => {
+    expect(edicaoBemSucedida(base, UUID_ALVO)).toBe(true);
+    expect(edicaoBemSucedida({ ...base, updated_at: "2026-09-22T00:30:00Z" }, UUID_ALVO)).toBe(true);
+    expect(edicaoBemSucedida({ ...base, updated_at: "2026-09-22 00:30:00-03" }, UUID_ALVO)).toBe(true);
+  });
+
+  it("rejeita UUID inválido no retorno e no alvo", () => {
+    expect(edicaoBemSucedida({ ...base, user_id: "nao-e-uuid" }, UUID_ALVO)).toBe(false);
+    expect(edicaoBemSucedida({ ...base, user_id: "nao-e-uuid" }, "nao-e-uuid")).toBe(false);
+  });
+
+  it('rejeita timestamp não ISO como "1", "2026" ou texto solto', () => {
+    for (const ts of ["1", "2026", "ontem", "22/09/2026", ""]) {
+      expect(edicaoBemSucedida({ ...base, updated_at: ts }, UUID_ALVO)).toBe(false);
+    }
+  });
+});
+
+describe("classificação única ponta a ponta (mutationFn → onError)", () => {
+  /** Simula o trajeto real: mutationFn lança; onError apenas classifica uma vez. */
+  const trajeto = (lancar: () => never) => {
+    try {
+      lancar();
+    } catch (e) {
+      const erro = classificarErroRpcEdicao(e);
+      return { mensagem: erro.message, codigo: erro.codigo, recarga: erro.exigeRecarga };
+    }
+    throw new Error("deveria ter lançado");
+  };
+
+  const locais: Array<[string, string]> = [
+    ["nome", "Informe o nome completo (de 2 a 150 caracteres)."],
+    ["telefone", "Telefone deve ter 10 ou 11 dígitos."],
+    ["perfis", "Selecione ao menos um perfil de acesso."],
+    ["clientes", MSG_CLIENTES_ACIMA_DO_LIMITE],
+    ["parceiro", "Selecione o parceiro B2B do usuário."],
+  ];
+
+  it.each(locais)("validação local de %s preserva a mensagem específica e não exige recarga", (_c, msg) => {
+    const r = trajeto(() => { throw erroLocalEdicao(msg); });
+    expect(r.mensagem).toBe(msg);
+    expect(r.codigo).toBe("local_validation");
+    expect(r.recarga).toBe(false);
+  });
+
+  it("erro conhecido da RPC (forbidden) mantém a mensagem específica, sem recarga", () => {
+    const r = trajeto(() => {
+      throw classificarErroRpcEdicao({ code: "42501", message: "user_edit_forbidden" });
+    });
+    expect(r.mensagem).toMatch(/não tem permissão/i);
+    expect(r.codigo).toBe("user_edit_forbidden");
+    expect(r.recarga).toBe(false);
+  });
+
+  it("invalid_phone da RPC continua específico após re-classificação (idempotente)", () => {
+    const uma = classificarErroRpcEdicao({ code: "22023", message: "user_edit_invalid_phone" });
+    const duas = classificarErroRpcEdicao(uma);
+    expect(duas).toBe(uma);
+    expect(duas.message).toMatch(/10 ou 11 dígitos/i);
+    expect(duas.exigeRecarga).toBe(false);
+  });
+
+  it("conflito exige recarga e preserva o token", () => {
+    const r = trajeto(() => {
+      throw classificarErroRpcEdicao({ code: "40001", message: "user_edit_conflict" });
+    });
+    expect(r.codigo).toBe("user_edit_conflict");
+    expect(r.recarga).toBe(true);
+  });
+
+  it("timeout/rede vira estado ambíguo com recarga e sem texto cru", () => {
+    const cru = "TypeError: fetch failed ECONNRESET /var/task/stack";
+    const r = trajeto(() => { throw classificarErroRpcEdicao(new Error(cru)); });
+    expect(r.mensagem).toBe(MSG_EDICAO_NAO_CONFIRMADA);
+    expect(r.mensagem).not.toContain("fetch");
+    expect(r.codigo).toBe("ambiguous_result");
+    expect(r.recarga).toBe(true);
+  });
+
+  it("resposta inválida da RPC vira ambíguo explícito", () => {
+    const r = trajeto(() => { throw erroAmbiguoEdicao(); });
+    expect(r.mensagem).toBe(MSG_EDICAO_NAO_CONFIRMADA);
+    expect(r.recarga).toBe(true);
+    expect(erroAmbiguoEdicao()).toBeInstanceOf(ErroEdicaoUsuario);
+  });
+
+  it("mapearErroEdicaoUsuario reflete a mesma classificação", () => {
+    expect(mapearErroEdicaoUsuario(erroLocalEdicao("Telefone inválido: informe 10 ou 11 dígitos."))).toBe(
+      "Telefone inválido: informe 10 ou 11 dígitos.",
+    );
+    expect(edicaoExigeRecargaAposErro(erroLocalEdicao("qualquer coisa local"))).toBe(false);
   });
 });

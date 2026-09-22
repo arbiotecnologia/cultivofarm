@@ -43,7 +43,10 @@ export interface ArgsEdicaoUsuario {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CLIENTE_IDS_MAX = 100;
+/** timestamptz do Postgres/Supabase: ISO-8601 com fração opcional e offset opcional. */
+const TIMESTAMPTZ_RE =
+  /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}(:?\d{2})?)?$/;
+export const CLIENTE_IDS_MAX = 100;
 
 /** Trim seguro: string vazia/só espaços/null → null. Campos vazios são zerados pela RPC. */
 export function textoOuNull(v: unknown): string | null {
@@ -67,13 +70,24 @@ export function construirProfilePayload(profile: ArgsEdicaoUsuario["profile"]): 
   };
 }
 
-/** Remove duplicatas preservando a ordem; a RPC rejeita acima de 100. */
+/**
+ * Remove duplicatas preservando a ordem. NUNCA trunca: perder vínculo silenciosamente
+ * é inaceitável. O excesso acima de CLIENTE_IDS_MAX é rejeitado antes da RPC
+ * (ver `validarLimiteClienteIds`).
+ */
 export function dedupClienteIds(ids: string[]): string[] {
   const out: string[] = [];
   for (const id of ids ?? []) {
     if (typeof id === "string" && id && !out.includes(id)) out.push(id);
   }
-  return out.slice(0, CLIENTE_IDS_MAX);
+  return out;
+}
+
+export const MSG_CLIENTES_ACIMA_DO_LIMITE = `Selecione no máximo ${CLIENTE_IDS_MAX} clientes vinculados. Remova os excedentes e tente novamente.`;
+
+/** Erro local claro quando a seleção única excede o limite aceito pela RPC. */
+export function validarLimiteClienteIds(ids: string[]): string | null {
+  return dedupClienteIds(ids).length > CLIENTE_IDS_MAX ? MSG_CLIENTES_ACIMA_DO_LIMITE : null;
 }
 
 /** Principal: o marcado, se pertencer à lista; caso contrário o primeiro; null se vazio. */
@@ -106,7 +120,8 @@ export function construirArgsEdicao(a: ArgsEdicaoUsuario): Record<string, unknow
 
 /**
  * Sucesso SÓ quando a RPC devolve explicitamente success===true, o user_id do alvo
- * e um updated_at válido (optimestamp). Qualquer outra forma é estado ambíguo.
+ * (UUID válido) e um updated_at em formato timestamptz real. Qualquer outra forma é
+ * estado ambíguo — `Date.parse("1")` não pode ser aceito como timestamp.
  */
 export function edicaoBemSucedida(data: unknown, expectedUserId: string): boolean {
   const d = data as any;
@@ -115,9 +130,12 @@ export function edicaoBemSucedida(data: unknown, expectedUserId: string): boolea
     typeof d === "object" &&
     d.success === true &&
     typeof d.user_id === "string" &&
-    d.user_id === expectedUserId &&
+    UUID_RE.test(d.user_id) &&
+    UUID_RE.test(expectedUserId ?? "") &&
+    d.user_id.toLowerCase() === String(expectedUserId).toLowerCase() &&
     typeof d.updated_at === "string" &&
-    !Number.isNaN(Date.parse(d.updated_at))
+    TIMESTAMPTZ_RE.test(d.updated_at.trim()) &&
+    !Number.isNaN(Date.parse(d.updated_at.trim()))
   );
 }
 
@@ -155,12 +173,45 @@ const MENSAGENS_ERRO_EDICAO: Record<string, string> = {
 
 const TOKEN_ERRO_EDICAO = /user_edit_[a-z0-9_]+/g;
 
+/** Origem da falha, para classificação única ponta a ponta (mutationFn → onError). */
+export type OrigemErroEdicao = "local" | "rpc" | "ambiguo";
+
 /**
- * Mapeia um erro da RPC (PostgrestError ou qualquer exceção) para mensagem segura em português.
- * Token conhecido → mensagem fixa; qualquer outra coisa → estado ambíguo (pede recarga),
+ * Erro tipado da edição de usuário: carrega mensagem SEGURA já classificada, o código
+ * (token allowlist da RPC ou `local_validation`) e se exige recarga. A mutation lança
+ * SEMPRE esta classe; o onError apenas lê — sem remapear e sem perder o token original.
+ */
+export class ErroEdicaoUsuario extends Error {
+  readonly origem: OrigemErroEdicao;
+  readonly codigo: string;
+  readonly exigeRecarga: boolean;
+
+  constructor(mensagem: string, origem: OrigemErroEdicao, codigo: string, exigeRecarga: boolean) {
+    super(mensagem);
+    this.name = "ErroEdicaoUsuario";
+    this.origem = origem;
+    this.codigo = codigo;
+    this.exigeRecarga = exigeRecarga;
+  }
+}
+
+/** Falha de validação local (mensagem já é segura e específica): não exige recarga. */
+export function erroLocalEdicao(mensagem: string): ErroEdicaoUsuario {
+  return new ErroEdicaoUsuario(mensagem, "local", "local_validation", false);
+}
+
+/** Estado ambíguo explícito (resposta inválida da RPC, rede, timeout): exige recarga. */
+export function erroAmbiguoEdicao(): ErroEdicaoUsuario {
+  return new ErroEdicaoUsuario(MSG_EDICAO_NAO_CONFIRMADA, "ambiguo", "ambiguous_result", true);
+}
+
+/**
+ * Classificação ÚNICA do erro bruto da RPC: extrai o token da allowlist e devolve o erro
+ * tipado com mensagem segura. Token desconhecido/ausente → estado ambíguo (pede recarga),
  * sem vazar texto cru do servidor, stack ou detalhes internos.
  */
-export function mapearErroEdicaoUsuario(erro: unknown): string {
+export function classificarErroRpcEdicao(erro: unknown): ErroEdicaoUsuario {
+  if (erro instanceof ErroEdicaoUsuario) return erro;
   const partes: string[] = [];
   if (typeof erro === "string") partes.push(erro);
   else if (erro && typeof erro === "object") {
@@ -172,18 +223,24 @@ export function mapearErroEdicaoUsuario(erro: unknown): string {
   const tokens = partes.join(" ").match(TOKEN_ERRO_EDICAO) ?? [];
   for (const t of tokens) {
     const msg = MENSAGENS_ERRO_EDICAO[t];
-    if (msg) return msg;
+    if (msg) return new ErroEdicaoUsuario(msg, "rpc", t, t === "user_edit_conflict");
   }
-  return MSG_EDICAO_NAO_CONFIRMADA;
+  return erroAmbiguoEdicao();
+}
+
+/**
+ * Mensagem final exibida ao usuário. Erros já classificados preservam a mensagem
+ * específica (inclusive validações locais); o resto passa pela allowlist.
+ */
+export function mapearErroEdicaoUsuario(erro: unknown): string {
+  return classificarErroRpcEdicao(erro).message;
 }
 
 /**
  * Conflito (outra pessoa salvou) e estado ambíguo exigem recarregar a lista
  * e reabrir o diálogo (nova versão original) antes de tentar novamente — sem retry automático.
+ * Validações locais e erros conhecidos de dados NÃO exigem recarga.
  */
 export function edicaoExigeRecargaAposErro(erro: unknown): boolean {
-  const msg = mapearErroEdicaoUsuario(erro);
-  return (
-    msg === MSG_EDICAO_NAO_CONFIRMADA || msg === MENSAGENS_ERRO_EDICAO.user_edit_conflict
-  );
+  return classificarErroRpcEdicao(erro).exigeRecarga;
 }
