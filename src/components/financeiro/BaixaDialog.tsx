@@ -273,6 +273,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           // Baixa persistida, comprovante não: estado explícito de falha parcial.
           return { comprovantePendente: true as const, paymentId: paymentId as unknown as string };
         }
+      } else if (payloadFinal.has_receipt === true) {
+        // Repetição recuperada: o payload original previa comprovante, mas o
+        // arquivo não sobrevive ao remount. Pagamento confirmado + comprovante
+        // pendente (nunca sucesso completo).
+        return { comprovantePendente: true as const, paymentId: pid };
       }
       return { ok: true as const };
     },
