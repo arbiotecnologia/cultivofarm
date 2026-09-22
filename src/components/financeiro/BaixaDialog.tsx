@@ -223,7 +223,6 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       onClose();
     },
     onError: (e: unknown) => {
-      console.log("DEBUG_BAIXA_ERROR", e instanceof Error ? e.stack : JSON.stringify(e));
       // Falha parcial anterior: consultas seguem invalidadas para refletir a baixa.
       if (pendente) invalidarTudo();
       if (receber) {
