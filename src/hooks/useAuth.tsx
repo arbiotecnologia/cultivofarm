@@ -170,10 +170,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     mountedRef.current = true;
+    // StrictMode/remontagem: o efeito anterior pode ter deixado um usuário
+    // marcado como carregado sem que o fetch tenha aplicado estado. Zerar aqui
+    // garante que o novo setup agende o carregamento do mesmo usuário.
+    loadedUserIdRef.current = null;
     // H9-G Bloco 2E — contexto de portal nunca pode ser herdado por outro
     // usuário: qualquer troca de identidade limpa a escolha persistida.
     let lastUserId: string | null = null;
     let handledAuthEvent = false;
+    let effectCancelled = false;
+
 
     // O carregamento NUNCA parte da pilha do callback de onAuthStateChange
     // (chamadas Supabase dentro dele podem travar as próximas). Sempre agendado
