@@ -29,9 +29,11 @@ interface Props {
   defaultType?: string;
   canDelete?: boolean;
   compact?: boolean;
+  /** Chamado após anexar ou remover, para invalidar consultas agregadas. */
+  onChanged?: () => void;
 }
 
-export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", canDelete = false, compact }: Props) {
+export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", canDelete = false, compact, onChanged }: Props) {
   const { user, role } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -71,7 +73,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
       } as any);
       if (insErr) throw insErr;
     },
-    onSuccess: () => { toast.success("Documento anexado"); qc.invalidateQueries({ queryKey: ["fin-docs", ownerType, ownerId] }); },
+    onSuccess: () => { toast.success("Documento anexado"); qc.invalidateQueries({ queryKey: ["fin-docs", ownerType, ownerId] }); onChanged?.(); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -91,6 +93,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
     onSuccess: () => {
       toast.success("Documento removido");
       qc.invalidateQueries({ queryKey: ["fin-docs", ownerType, ownerId] });
+      onChanged?.();
     },
     onError: (e: any) => toast.error(e.message),
   });
