@@ -179,6 +179,11 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
         return { reenvio: true as const };
       }
 
+      // Journal local ilegível/corrompido: nada é apagado e nada é enviado.
+      if (!receber && journalFalha) {
+        throw new ErroBaixaPagarLocal(MSG_JOURNAL_CORROMPIDO);
+      }
+
       // Resultado incerto anterior: nenhum novo envio com nova chave até conferência.
       // Só a repetição explícita da MESMA tentativa (mesma chave e mesmo payload) é aceita.
       if (!receber && exigeConferencia && !repetir) {
@@ -187,6 +192,7 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
       if (repetir && !tentativaRef.current) {
         throw new ErroBaixaPagarLocal(MSG_PAGAMENTO_NAO_CONFIRMADO);
       }
+
 
       if (!repetir) {
         if (receber) {
