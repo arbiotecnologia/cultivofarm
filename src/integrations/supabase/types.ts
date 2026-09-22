@@ -23243,6 +23243,7 @@ export type Database = {
         | "gestor_comercial"
         | "parceiro_b2b"
         | "parceiro_b2b_tecnico"
+        | "superadmin"
       categoria_arquivo_consultor:
         | "praga"
         | "doenca"
@@ -23649,6 +23650,7 @@ export const Constants = {
         "gestor_comercial",
         "parceiro_b2b",
         "parceiro_b2b_tecnico",
+        "superadmin",
       ],
       categoria_arquivo_consultor: [
         "praga",
