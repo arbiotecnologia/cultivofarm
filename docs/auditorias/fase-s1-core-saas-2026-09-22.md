@@ -159,7 +159,7 @@ tsgo --noEmit                → ver seção de fechamento abaixo
 vite build                   → ver seção de fechamento abaixo
 ```
 
-> Preenchido após a execução final: **334 arquivos de teste passaram (1 skipped), 5188 testes passaram (4 skipped), exit 0; typecheck exit 0; build exit 0; prévia "build OK".**
+> Preenchido após a execução final: **334 arquivos de teste passaram (1 skipped), 5193 testes passaram (4 skipped), exit 0; typecheck exit 0; build exit 0; prévia "build OK".**
 
 ---
 
