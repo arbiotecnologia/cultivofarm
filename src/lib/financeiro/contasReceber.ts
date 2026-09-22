@@ -108,6 +108,55 @@ export function calcularKpisReceber(
   return { aberto: cent(aberto), vencido: cent(vencido), vence7: cent(vence7), recebidoMes: cent(recebidoMes) };
 }
 
+/**
+ * Chaves de consulta REAIS dos consumidores financeiros afetados por
+ * criação/baixa/cancelamento nesta tela (verificadas nos componentes).
+ */
+export const CHAVES_INVALIDACAO_RECEBER = [
+  "ar-list",
+  "ar-kpi-installments",
+  "ar-kpi-payments",
+  "ar-docs",
+  "fin-conta",
+  "fin-inst",
+  "fin-payments",
+  "fin-history",
+  "fin-dashboard-summary",
+  "fin-rankings",
+  "fin-alerts",
+  "financeiro-dashboard",
+  "fluxo-caixa",
+  "drill-receber",
+  "drill-recebimentos",
+  "dre",
+  "dre-detail",
+  "entregas-nao-faturadas",
+] as const;
+
+/** Mensagens seguras para falhas no cancelamento — nunca texto cru do servidor. */
+const MENSAGENS_CANCELAMENTO: Record<string, string> = {
+  "42501": "Você não tem permissão para cancelar esta conta.",
+  "40001": "A conta foi alterada por outra pessoa. Recarregue a lista e tente novamente.",
+  P0002: "Conta não encontrada. Recarregue a lista.",
+  "23514": "A conta não está em um estado que permita cancelamento.",
+  "23503": "Existem lançamentos vinculados que impedem o cancelamento.",
+  ar_cancel_has_payments: "Esta conta possui recebimentos registrados e não pode ser cancelada.",
+  ar_cancel_invalid_status: "Esta conta não pode ser cancelada no status atual.",
+  ar_cancel_reason_required: "Informe um motivo de cancelamento com ao menos 5 caracteres.",
+};
+
+export const MSG_CANCELAMENTO_GENERICA = "Não foi possível cancelar a conta. Tente novamente.";
+
+export function mapearErroCancelamento(erro: unknown): string {
+  const e = (erro ?? {}) as { code?: unknown; message?: unknown };
+  const code = typeof e.code === "string" ? e.code : "";
+  if (code && MENSAGENS_CANCELAMENTO[code]) return MENSAGENS_CANCELAMENTO[code];
+  const msg = typeof e.message === "string" ? e.message : "";
+  const token = msg.match(/ar_cancel_[a-z_]+/)?.[0];
+  if (token && MENSAGENS_CANCELAMENTO[token]) return MENSAGENS_CANCELAMENTO[token];
+  return MSG_CANCELAMENTO_GENERICA;
+}
+
 /** Rótulo de vencimento derivado da data — nunca depende de escrita no banco. */
 export function rotuloVencimento(dueDate: unknown, hoje: string): string {
   switch (classificarParcela(dueDate, hoje)) {
