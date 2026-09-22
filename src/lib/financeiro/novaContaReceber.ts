@@ -207,7 +207,7 @@ export interface ClassificacaoNovaConta {
 export function classificarErroNovaConta(erro: unknown): ClassificacaoNovaConta {
   if (erro instanceof ErroNovaContaLocal) return { mensagem: erro.message, exigeConferencia: false };
   if (erro instanceof ErroCriacaoIncerta) {
-    return { mensagem: MSG_NOVA_CONTA_NAO_CONFIRMADA, exigeConferencia: false || true };
+    return { mensagem: MSG_NOVA_CONTA_NAO_CONFIRMADA, exigeConferencia: true };
   }
   const token = tokenConhecido(erro);
   if (token) return { mensagem: MENSAGENS_REMOTAS[token], exigeConferencia: false };
