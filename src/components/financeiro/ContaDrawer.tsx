@@ -155,7 +155,7 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead>{isReceivable && <TableHead>Juros</TableHead>}{isReceivable && <TableHead>Multa</TableHead>}{isReceivable && <TableHead>Desconto</TableHead>}{isReceivable && <TableHead>Saldo</TableHead>}<TableHead>Status</TableHead><TableHead></TableHead></TableRow>
+                    <TableRow><TableHead className="w-12">#</TableHead><TableHead>Vencimento</TableHead><TableHead>Valor</TableHead><TableHead>{kind === "receivable" ? "Recebido" : "Pago"}</TableHead><TableHead>Juros</TableHead><TableHead>Multa</TableHead><TableHead>Desconto</TableHead><TableHead>Saldo</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
                     {instLoading && <TableRow><TableCell colSpan={isReceivable ? 10 : 6} className="text-center text-muted-foreground py-8">Carregando parcelas…</TableCell></TableRow>}
