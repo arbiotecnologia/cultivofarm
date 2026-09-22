@@ -103,7 +103,7 @@ describe("helper — journal pré-envio", () => {
   });
 
   it("falha de escrita (quota) devolve false", () => {
-    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    const spy = vi.spyOn(localStorage, "setItem").mockImplementation(() => {
       throw new Error("QuotaExceededError");
     });
     expect(persistirTentativaAntesEnvio(TENTATIVA)).toBe(false);
@@ -111,7 +111,7 @@ describe("helper — journal pré-envio", () => {
   });
 
   it("leitura de volta divergente devolve false", () => {
-    vi.spyOn(Storage.prototype, "getItem").mockReturnValue("{}");
+    vi.spyOn(localStorage, "getItem").mockReturnValue("{}");
     expect(persistirTentativaAntesEnvio(TENTATIVA)).toBe(false);
   });
 
@@ -122,7 +122,7 @@ describe("helper — journal pré-envio", () => {
     expect(lerTentativaIncerta("u1", "inst-1")).toBeNull();
     // Registro corrompido não é apagado pela leitura.
     expect(localStorage.getItem(CHAVE)).toBe("{isso não é json");
-    const spy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+    const spy = vi.spyOn(localStorage, "getItem").mockImplementation(() => {
       throw new Error("bloqueado");
     });
     expect(lerJournalTentativa("u1", "inst-1")).toEqual({ estado: "falha" });
@@ -133,7 +133,7 @@ describe("helper — journal pré-envio", () => {
     persistirTentativaAntesEnvio(TENTATIVA);
     expect(limparTentativaIncerta("u1", "inst-1")).toBe(true);
     expect(lerJournalTentativa("u1", "inst-1")).toEqual({ estado: "ausente" });
-    const spy = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+    const spy = vi.spyOn(localStorage, "removeItem").mockImplementation(() => {
       throw new Error("bloqueado");
     });
     expect(limparTentativaIncerta("u1", "inst-1")).toBe(false);
@@ -182,7 +182,7 @@ describe("BaixaDialog payable — journal antes de qualquer RPC", () => {
     abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
     await selecionarMetodo();
-    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    const spy = vi.spyOn(localStorage, "setItem").mockImplementation(() => {
       throw new Error("QuotaExceededError");
     });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
@@ -222,7 +222,7 @@ describe("BaixaDialog payable — journal antes de qualquer RPC", () => {
 
     // Nova baixa cujo journal não pode ser removido: pagamento segue confirmado,
     // nenhuma RPC extra é disparada pela falha de limpeza.
-    const spy = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+    const spy = vi.spyOn(localStorage, "removeItem").mockImplementation(() => {
       throw new Error("bloqueado");
     });
     const segundo = abrirDialog();
@@ -238,7 +238,7 @@ describe("BaixaDialog payable — journal antes de qualquer RPC", () => {
   });
 
   it("recusa comprovada do servidor limpa o journal", async () => {
-    rpcMock.mockResolvedValue({ data: null, error: { message: "FIN_PAY_INSTALLMENT_NOT_OPEN" } });
+    rpcMock.mockResolvedValue({ data: null, error: { message: "FIN_INVALID_AMOUNT" } });
     abrirDialog();
     await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar" })).toBeEnabled());
     await selecionarMetodo();
