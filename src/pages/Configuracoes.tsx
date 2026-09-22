@@ -395,6 +395,7 @@ export default function Configuracoes() {
       setEditVinculos([]);
       setEditErros({});
       setEditResumo(null);
+      setExigeRecargaEdicao(false);
 
     }
   }, [editOpen]);
@@ -1119,8 +1120,8 @@ export default function Configuracoes() {
                         ))}
                       </ul>
                     )}
-                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending}>
-                      {saveEditUser.isPending ? "Salvando..." : "Salvar Alterações"}
+                    <Button className="w-full" onClick={() => { if (!saveEditUser.isPending) saveEditUser.mutate(); }} disabled={saveEditUser.isPending || exigeRecargaEdicao}>
+                      {saveEditUser.isPending ? "Salvando..." : exigeRecargaEdicao ? "Recarregue a lista para tentar novamente" : "Salvar Alterações"}
                     </Button>
 
 
