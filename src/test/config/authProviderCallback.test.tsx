@@ -138,6 +138,11 @@ beforeEach(() => {
   profileRow = { id: "p1", user_id: "user-a", nome: "A", email: "a@x.com", ativo: true };
   rolesRows = [{ role: "administrador" }];
   initialSession = null;
+  h.getSession = async () => {
+    if (insideCallback) callsInsideCallback += 1;
+    return { data: { session: initialSession }, error: null };
+  };
+
   signOutSpy.mockClear();
   unsubscribe.mockClear();
   vi.spyOn(console, "log").mockImplementation(() => {});
