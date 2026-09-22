@@ -44,6 +44,8 @@ export function classificarParcela(dueDate: unknown, hoje: string): Classificaca
 export interface ParcelaKpi {
   original_amount?: unknown;
   received_amount?: unknown;
+  interest_amount?: unknown;
+  penalty_amount?: unknown;
   discount_amount?: unknown;
   due_date?: unknown;
   status?: unknown;
@@ -61,9 +63,18 @@ const num = (v: unknown) => {
 
 const cent = (v: number) => Math.round(v * 100) / 100;
 
-/** Saldo em aberto de uma parcela (nunca negativo). */
+/**
+ * Saldo em aberto de uma parcela (nunca negativo).
+ * Mesma fórmula de calcularSaldoRecebivel: inclui juros e multa acumulados.
+ */
 export function saldoParcela(p: ParcelaKpi): number {
-  return Math.max(0, cent(num(p.original_amount) - num(p.received_amount) - num(p.discount_amount)));
+  return Math.max(
+    0,
+    cent(
+      num(p.original_amount) + num(p.interest_amount) + num(p.penalty_amount) -
+        num(p.discount_amount) - num(p.received_amount),
+    ),
+  );
 }
 
 export interface KpisReceber {
