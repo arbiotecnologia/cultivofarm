@@ -339,9 +339,13 @@ export function BaixaDialog({ open, onClose, kind, installment }: Props) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{travado ? "Fechar" : "Cancelar"}</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || settingsBloqueado || (travado && !file)}>
-            {travado ? "Reenviar comprovante" : "Confirmar"}
+          <Button variant="outline" onClick={tentarFechar} disabled={gravando}>{pendente ? "Fechar" : "Cancelar"}</Button>
+          <Button
+            onClick={() => save.mutate()}
+            // Reenvio só exige arquivo: settings/método/saldo não bloqueiam a baixa já persistida.
+            disabled={gravando || (pendente ? !file : settingsBloqueado)}
+          >
+            {pendente ? "Reenviar comprovante" : "Confirmar"}
           </Button>
         </DialogFooter>
       </DialogContent>
