@@ -25,6 +25,7 @@ import {
 } from "@/lib/financeiro/baixaRecebimento";
 import {
   ErroBaixaIncerta,
+  ErroBaixaPagarLocal,
   MSG_PAGAMENTO_COMPROVANTE_PENDENTE,
   MSG_PAGAMENTO_NAO_CONFIRMADO,
   acumuladosParcelaPagar,
