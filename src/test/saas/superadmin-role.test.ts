@@ -206,12 +206,12 @@ describe("SUPERADMIN — frontend", () => {
     }
   });
 
-  it("tem home segura provisória até o painel SaaS existir", () => {
+  it("tem home segura provisória (somente leitura) até o painel SaaS da S4", () => {
     const home = permissions.slice(
       permissions.indexOf("export function getHomeForRole"),
       permissions.indexOf("export function isMobileProfile"),
     );
-    expect(home).toMatch(/case "superadmin":\s*\n\s*return "\/sem-permissao";/);
+    expect(home).toMatch(/case "superadmin":\s*\n\s*return "\/plataforma";/);
   });
 
   it("é rótulo conhecido e é preservado no saneamento de papéis", () => {
