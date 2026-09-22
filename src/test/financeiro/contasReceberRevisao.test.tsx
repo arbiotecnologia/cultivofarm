@@ -93,7 +93,7 @@ describe("2) Payable mantém o fallback paid_amount", () => {
     );
     await waitFor(() => expect(screen.getByText("Saldo a pagar:")).toBeTruthy());
     const linhas = screen.getAllByText(/R\$/).map((n) => n.textContent);
-    expect(linhas).toContain("R$ 60,00");
+    console.log(linhas);expect(linhas).toContain("R$ 60,00");
     expect(linhas).toContain("R$ 40,00");
   });
 });
