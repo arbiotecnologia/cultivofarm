@@ -146,9 +146,9 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
     mutationFn: async () => {
       if (isReceivable) {
         if (exigeConferencia) throw new ErroNovaContaLocal(MSG_NOVA_CONTA_NAO_CONFIRMADA);
-        if (erroParcelas) throw new ErroNovaContaLocal(erroParcelas);
         const erro = validarReceivable();
         if (erro) throw new ErroNovaContaLocal(erro);
+        if (erroParcelas) throw new ErroNovaContaLocal(erroParcelas);
       } else {
         if (!user) throw new Error("Sessão expirada");
         if (!form.description) throw new Error("Descrição é obrigatória");
