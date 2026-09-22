@@ -89,3 +89,84 @@ export function indexarComprovantesReceber(
 export function temComprovanteRecebimento(mapa: Record<string, string[]>, contaId: string): boolean {
   return (mapa[contaId] ?? []).includes("RECEIPT");
 }
+
+export interface DocumentoAgregado {
+  id: string;
+  origem: "conta" | "pagamento";
+  /** Número da parcela quando o documento vem de um pagamento. */
+  parcelaNumero: number | null;
+  /** Data do pagamento (YYYY-MM-DD) quando aplicável. */
+  dataPagamento: string | null;
+  /** Pagamento estornado ou lançamento de estorno. */
+  estornado: boolean;
+  doc: Record<string, unknown>;
+}
+
+interface DocLinha extends DocumentoFinanceiro {
+  id?: unknown;
+}
+
+interface PagamentoLinha extends PagamentoVinculo {
+  payment_date?: unknown;
+}
+
+interface ParcelaLinha extends ParcelaVinculo {
+  installment_number?: unknown;
+}
+
+/**
+ * Agrega documentos de uma conta a receber: anexados direto à conta e
+ * anexados às baixas de suas parcelas. Documentos de outras contas são
+ * descartados. Deduplicado por id, mantendo a primeira ocorrência.
+ */
+export function agregarDocumentosReceber(
+  contaId: string,
+  documentos: DocLinha[],
+  pagamentos: PagamentoLinha[],
+  parcelas: ParcelaLinha[],
+): DocumentoAgregado[] {
+  const parcelaPorId = new Map<string, ParcelaLinha>();
+  for (const i of parcelas) {
+    const id = s(i.id);
+    if (id && s(i.receivable_id) === contaId) parcelaPorId.set(id, i);
+  }
+
+  const vigentes = pagamentosVigentes(pagamentos);
+  const pagamentoPorId = new Map<string, PagamentoLinha>();
+  for (const p of pagamentos) {
+    const id = s(p.id);
+    const parcela = s(p.installment_id);
+    if (!id || !parcela || !parcelaPorId.has(parcela)) continue;
+    pagamentoPorId.set(id, p);
+  }
+
+  const vistos = new Set<string>();
+  const saida: DocumentoAgregado[] = [];
+  for (const d of documentos) {
+    const id = s(d.id);
+    const owner = s(d.owner_id);
+    if (!id || !owner || vistos.has(id)) continue;
+    if (d.owner_type === "RECEIVABLE") {
+      if (owner !== contaId) continue;
+      vistos.add(id);
+      saida.push({ id, origem: "conta", parcelaNumero: null, dataPagamento: null, estornado: false, doc: d as Record<string, unknown> });
+      continue;
+    }
+    if (d.owner_type === "PAYMENT_RECEIVABLE") {
+      const pag = pagamentoPorId.get(owner);
+      if (!pag) continue;
+      const parcela = parcelaPorId.get(s(pag.installment_id)!);
+      const numero = Number(parcela?.installment_number);
+      vistos.add(id);
+      saida.push({
+        id,
+        origem: "pagamento",
+        parcelaNumero: Number.isFinite(numero) ? numero : null,
+        dataPagamento: s(pag.payment_date),
+        estornado: !vigentes.has(owner),
+        doc: d as Record<string, unknown>,
+      });
+    }
+  }
+  return saida;
+}

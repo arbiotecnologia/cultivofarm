@@ -77,6 +77,41 @@ export function saldoParcela(p: ParcelaKpi): number {
   );
 }
 
+export interface ResumoSaldoReceber {
+  original: number;
+  recebido: number;
+  juros: number;
+  multa: number;
+  desconto: number;
+  saldo: number;
+}
+
+/**
+ * Resumo consolidado de uma conta a receber a partir das parcelas.
+ * Parcelas canceladas são ignoradas. Saldo usa a mesma fórmula do KPI
+ * (saldoParcela): original + juros + multa - desconto - recebido.
+ */
+export function resumoSaldoReceber(parcelas: ParcelaKpi[]): ResumoSaldoReceber {
+  const r = { original: 0, recebido: 0, juros: 0, multa: 0, desconto: 0, saldo: 0 };
+  for (const p of parcelas) {
+    if (String(p.status ?? "") === "CANCELED") continue;
+    r.original += num(p.original_amount);
+    r.recebido += num(p.received_amount);
+    r.juros += num(p.interest_amount);
+    r.multa += num(p.penalty_amount);
+    r.desconto += num(p.discount_amount);
+    r.saldo += saldoParcela(p);
+  }
+  return {
+    original: cent(r.original),
+    recebido: cent(r.recebido),
+    juros: cent(r.juros),
+    multa: cent(r.multa),
+    desconto: cent(r.desconto),
+    saldo: cent(r.saldo),
+  };
+}
+
 export interface KpisReceber {
   aberto: number;
   vencido: number;
