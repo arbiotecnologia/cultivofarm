@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/financeiro/StatusBadge";
 import { brl, fmtDate } from "@/lib/financial/format";
 import { resumoSaldoReceber } from "@/lib/financeiro/contasReceber";
+import { resumoSaldoPagar, saldoParcelaPagar } from "@/lib/financeiro/contasPagar";
 import { useState } from "react";
 import { BaixaDialog } from "./BaixaDialog";
 import { DocumentosPanel } from "./DocumentosPanel";
@@ -64,11 +65,14 @@ export function ContaDrawer({ open, onClose, kind, contaId }: Props) {
   });
 
   const isReceivable = kind === "receivable";
-  const resumo = resumoSaldoReceber(installments);
-  const totalPago = installments.reduce((acc, i: any) => acc + Number((isReceivable ? i.received_amount : i.paid_amount) || 0), 0);
-  const saldoTotal = isReceivable
-    ? resumo.saldo
-    : Math.max(0, Number(conta?.total_amount || 0) - totalPago);
+  const resumoR = resumoSaldoReceber(installments);
+  const resumoP = resumoSaldoPagar(installments);
+  // Ajustes acumulados e saldo seguem a MESMA fórmula dos KPIs em ambos os ramos.
+  const resumo = isReceivable
+    ? resumoR
+    : { recebido: resumoP.pago, juros: resumoP.juros, multa: resumoP.multa, desconto: resumoP.desconto, saldo: resumoP.saldo };
+  const totalPago = resumo.recebido;
+  const saldoTotal = resumo.saldo;
 
   const carregandoBase = contaLoading || instLoading;
   const erroBase = contaErro || instErro;
