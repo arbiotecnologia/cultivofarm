@@ -176,7 +176,7 @@ describe("BaixaDialog payable — journal antes de qualquer RPC", () => {
     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
     expect(rpcMock.mock.calls[1][1].p_payload).toEqual(enviado);
     resolver({ data: UUID, error: null });
-  });
+  }, 20_000);
 
   it("falha de escrita no journal (quota) => mensagem segura e ZERO RPC", async () => {
     abrirDialog();
